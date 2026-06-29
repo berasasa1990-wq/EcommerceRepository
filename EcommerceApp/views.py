@@ -1,5 +1,6 @@
 import logging
 import random
+import re
 import requests
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
@@ -14,6 +15,7 @@ from django.contrib.auth.models import User
 from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.html import escape, mark_safe, strip_tags
 from django.views.decorators.http import require_POST
 
 from .cart import Cart
@@ -36,6 +38,7 @@ from .models import (
     Brand,
     Category,
     HomeFeaturedProduct,
+    HomeVlog,
     Order,
     OrderItem,
     Product,
@@ -397,6 +400,7 @@ def _banners_with_image(qs):
 
 
 HOME_SECTION_PRODUCT_LIMIT = 4
+HOME_VLOG_LIMIT = 3
 
 
 def _home_latest_products():
@@ -418,6 +422,67 @@ def _home_featured_products():
     return [entry.artikal for entry in entries]
 
 
+def _home_vlogs():
+    vlogs = []
+    for vlog in HomeVlog.objects.filter(aktivan=True).exclude(slika='').order_by(
+        'redoslijed', '-id',
+    )[:HOME_VLOG_LIMIT]:
+        width, height = image_field_dimensions(vlog.slika, default=(400, 300))
+        vlogs.append({
+            'id': vlog.pk,
+            'slug': vlog.slug,
+            'naslov': vlog.naslov,
+            'slika_url': vlog.slika.url,
+            'image_width': width,
+            'image_height': height,
+        })
+    return vlogs
+
+
+def _vlog_seo_description(sadrzaj, max_len=160):
+    text = strip_tags(sadrzaj).strip()
+    if len(text) <= max_len:
+        return text
+    trimmed = text[:max_len - 1]
+    if ' ' in trimmed:
+        trimmed = trimmed.rsplit(' ', 1)[0]
+    return f'{trimmed}…'
+
+
+def _format_vlog_sadrzaj(sadrzaj):
+    """Razbija tekst u odlomke po rečenicama (tačka + razmak) ako nema više <p> tagova."""
+    sadrzaj = (sadrzaj or '').strip()
+    if not sadrzaj:
+        return mark_safe('')
+
+    if len(re.findall(r'<p[\s>]', sadrzaj, re.I)) > 1:
+        return mark_safe(sadrzaj)
+
+    single_p = re.fullmatch(r'<p[^>]*>(.*)</p>\s*', sadrzaj, re.I | re.S)
+    if single_p:
+        inner = single_p.group(1).strip()
+    elif not re.search(r'<(div|h[1-6]|ul|ol|blockquote)\b', sadrzaj, re.I):
+        inner = sadrzaj
+    else:
+        return mark_safe(sadrzaj)
+
+    parts = [part.strip() for part in re.split(r'(?<=\.)\s+', inner) if part.strip()]
+    if len(parts) <= 1:
+        if single_p:
+            return mark_safe(sadrzaj)
+        if '<' in inner and '>' in inner:
+            return mark_safe(f'<p>{inner}</p>')
+        return mark_safe(f'<p>{escape(inner)}</p>')
+
+    paragraphs = []
+    for part in parts:
+        if '<' in part and '>' in part:
+            paragraphs.append(f'<p>{part}</p>')
+        else:
+            paragraphs.append(f'<p>{escape(part)}</p>')
+    return mark_safe(''.join(paragraphs))
+
+
 def home(request):
     hero_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.HERO, aktivan=True,
@@ -437,6 +502,7 @@ def home(request):
 
     latest_products = []
     featured_products = []
+    home_vlogs = []
     page_obj = None
     search_products = []
 
@@ -447,6 +513,7 @@ def home(request):
     else:
         latest_products = _home_latest_products()
         featured_products = _home_featured_products()
+        home_vlogs = _home_vlogs()
 
     first_hero = hero_banners.first()
     first_grid_banner = grid_banners.first()
@@ -481,6 +548,7 @@ def home(request):
         'spotlight': spotlight,
         'latest_products': latest_products,
         'featured_products': featured_products,
+        'home_vlogs': home_vlogs,
         'showcase_brands': _showcase_brands() if not filters_active else [],
         'search_products': search_products,
         'page_obj': page_obj,
@@ -496,6 +564,41 @@ def home(request):
         'canonical_url': settings.SITE_URL.rstrip('/') + '/',
     }
     return render(request, 'home.html', context)
+
+
+def vlog_detail(request, slug):
+    vlog = get_object_or_404(HomeVlog, slug=slug, aktivan=True)
+    image_width, image_height = image_field_dimensions(vlog.slika, default=(1200, 800))
+    other_vlogs = []
+    for other in HomeVlog.objects.filter(aktivan=True).exclude(slika='').exclude(pk=vlog.pk).order_by(
+        'redoslijed', '-id',
+    )[:3]:
+        width, height = image_field_dimensions(other.slika, default=(400, 300))
+        other_vlogs.append({
+            'slug': other.slug,
+            'naslov': other.naslov,
+            'slika_url': other.slika.url,
+            'image_width': width,
+            'image_height': height,
+        })
+
+    lcp_image_url = request.build_absolute_uri(vlog.slika.url)
+    seo_description = _vlog_seo_description(vlog.sadrzaj)
+
+    context = {
+        **_base_context(),
+        'vlog': vlog,
+        'vlog_sadrzaj_formatted': _format_vlog_sadrzaj(vlog.sadrzaj),
+        'other_vlogs': other_vlogs,
+        'lcp_image_url': lcp_image_url,
+        'image_width': image_width,
+        'image_height': image_height,
+        'seo_title': f'{vlog.naslov} | Vlog — opremazaribolov.ba',
+        'seo_description': seo_description,
+        'canonical_url': settings.SITE_URL.rstrip('/') + vlog.get_absolute_url(),
+        'og_image': request.build_absolute_uri(vlog.slika.url),
+    }
+    return render(request, 'vlog_detail.html', context)
 
 
 def category_detail(request, slug):

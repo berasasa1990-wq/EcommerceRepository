@@ -304,6 +304,51 @@ class HomeFeaturedProduct(models.Model):
         return self.artikal.naziv
 
 
+class HomeVlog(models.Model):
+    naslov = models.CharField(
+        max_length=200,
+        verbose_name='Naslov',
+        help_text='Prikazuje se ispod slike na početnoj.',
+    )
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    slika = models.ImageField(
+        upload_to='vlogs/',
+        verbose_name='Slika',
+        help_text='Thumbnail na početnoj. Preporučeno 4:3 ili kvadrat.',
+    )
+    sadrzaj = models.TextField(
+        verbose_name='Sadržaj',
+        help_text='Tekst vloga u HTML-u. Za link: <a href="/putanja/">tekst</a> ili puni URL.',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Vlog (početna)'
+        verbose_name_plural = 'Vlogovi (početna)'
+        ordering = ['redoslijed', '-id']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.naslov) or 'vlog'
+            slug = base_slug
+            counter = 1
+            while HomeVlog.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f'{base_slug}-{counter}'
+                counter += 1
+            self.slug = slug
+        if self.slika:
+            from .utils.images import apply_image_processing, process_vlog_image
+            apply_image_processing(self, 'slika', post_process=process_vlog_image)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('vlog_detail', kwargs={'slug': self.slug})
+
+    def __str__(self):
+        return self.naslov
+
+
 class Popup(models.Model):
     naziv = models.CharField(
         max_length=100,

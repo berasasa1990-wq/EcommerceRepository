@@ -1,0 +1,24 @@
+<section class="home-vlog" id="vlog">
+    <div class="home-vlog-header home-vlog-header--vlog">
+        <h2>Vlog</h2>
+        <p>Savjeti, novosti i priče s vode</p>
+    </div>
+    <div class="home-vlog-grid">
+        {% for vlog in home_vlogs %}
+        <article class="home-vlog-item">
+            <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card">
+                <span class="home-vlog-card-image-wrap">
+                    <img src="{{ vlog.slika_url }}"
+                         alt="{{ vlog.naslov }}"
+                         class="home-vlog-card-image"
+                         width="{{ vlog.image_width }}"
+                         height="{{ vlog.image_height }}"
+                         loading="lazy"
+                         decoding="async">
+                </span>
+                <h3 class="home-vlog-card-title">{{ vlog.naslov }}</h3>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+</section>

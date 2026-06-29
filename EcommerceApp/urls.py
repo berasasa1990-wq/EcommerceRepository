@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
     path('', views.home, name='home'),
+    path('vlog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
     path('kategorija/<slug:slug>/', views.category_detail, name='category'),
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
     path('artikal/<slug:slug>/dodaj/', views.add_to_cart, name='add_to_cart'),

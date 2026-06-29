@@ -14,6 +14,8 @@ PRODUCT_WHITE_THRESHOLD = 248
 PRODUCT_MAX_DIMENSION = 800
 BANNER_MAX_WIDTH = 1920
 BANNER_JPEG_QUALITY = 82
+VLOG_MAX_WIDTH = 1200
+VLOG_JPEG_QUALITY = 85
 AVIF_SPEED = 6
 MAX_PRODUCT_AVIF_BYTES = 20 * 1024
 
@@ -119,6 +121,23 @@ def _encode_product_avif(img, filename):
 def _jpeg_filename(original_name):
     base = original_name.rsplit('/', 1)[-1]
     return base.rsplit('.', 1)[0] + '.jpg'
+
+
+def process_vlog_image(image_field):
+    """Vlog thumbnail: max 1200px širina, JPEG."""
+    img = Image.open(image_field)
+    img = ImageOps.exif_transpose(img)
+    rgb = _image_to_rgb(img)
+    if rgb.width > VLOG_MAX_WIDTH:
+        ratio = VLOG_MAX_WIDTH / rgb.width
+        new_size = (VLOG_MAX_WIDTH, max(1, int(rgb.height * ratio)))
+        rgb = rgb.resize(new_size, Image.Resampling.LANCZOS)
+
+    buffer = BytesIO()
+    rgb.save(buffer, format='JPEG', quality=VLOG_JPEG_QUALITY, optimize=True)
+    buffer.seek(0)
+    name = _jpeg_filename(image_field.name if hasattr(image_field, 'name') else 'vlog.jpg')
+    return ContentFile(buffer.read(), name=name)
 
 
 def process_banner_image(image_field):

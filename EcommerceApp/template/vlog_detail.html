@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block lcp_preload %}
+{% if lcp_image_url %}
+<link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
+{% endif %}
+{% endblock %}
+
+{% block page_title %}
+<title>{{ seo_title }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description }}">
+{% endblock %}
+
+{% block og_type %}article{% endblock %}
+
+{% block content %}
+<article class="vlog-article">
+    <div class="vlog-article-intro">
+        <nav class="vlog-breadcrumb" aria-label="Navigacija">
+            <a href="{% url 'home' %}">Početna</a>
+            <span class="vlog-breadcrumb-sep" aria-hidden="true">/</span>
+            <a href="{% url 'home' %}#vlog">Vlog</a>
+            <span class="vlog-breadcrumb-sep" aria-hidden="true">/</span>
+            <span class="vlog-breadcrumb-current">{{ vlog.naslov }}</span>
+        </nav>
+
+        <header class="vlog-article-header">
+            <p class="vlog-article-label">Vlog</p>
+            <h1 class="vlog-article-title">{{ vlog.naslov }}</h1>
+        </header>
+    </div>
+
+    <figure class="vlog-article-hero">
+        <img src="{{ vlog.slika.url }}"
+             alt="{{ vlog.naslov }}"
+             class="vlog-article-image"
+             width="{{ image_width }}"
+             height="{{ image_height }}"
+             loading="eager"
+             fetchpriority="high"
+             decoding="async">
+    </figure>
+
+    <div class="vlog-article-body">
+        {{ vlog_sadrzaj_formatted }}
+    </div>
+
+    <footer class="vlog-article-footer">
+        <a href="{% url 'home' %}#vlog" class="vlog-back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Nazad na vlogove
+        </a>
+    </footer>
+</article>
+
+{% if other_vlogs %}
+<section class="vlog-related">
+    <div class="vlog-related-inner">
+        <h2 class="vlog-related-title">Još vlogova</h2>
+        <div class="vlog-related-grid">
+            {% for item in other_vlogs %}
+            <a href="{% url 'vlog_detail' item.slug %}" class="vlog-related-card">
+                <span class="vlog-related-image-wrap">
+                    <img src="{{ item.slika_url }}"
+                         alt="{{ item.naslov }}"
+                         width="{{ item.image_width }}"
+                         height="{{ item.image_height }}"
+                         loading="lazy"
+                         decoding="async">
+                </span>
+                <span class="vlog-related-card-title">{{ item.naslov }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

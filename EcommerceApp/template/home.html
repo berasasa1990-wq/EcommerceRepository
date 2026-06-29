@@ -246,6 +246,10 @@
     {% include 'partials/product_grid.html' with products=featured_products %}
 </section>
 {% endif %}
+
+{% if home_vlogs %}
+{% include 'partials/home_vlog.html' %}
+{% endif %}
 {% endif %}
 
 {% if not filter_params.q and not filter_params.akcija %}

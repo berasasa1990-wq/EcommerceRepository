@@ -27,6 +27,7 @@ from .models import (
     Category,
     Coupon,
     HomeFeaturedProduct,
+    HomeVlog,
     LoyaltyCard,
     Order,
     OrderItem,
@@ -317,6 +318,51 @@ class UpsellOfferAdmin(admin.ModelAdmin):
     def get_trigger_display(self, obj):
         return obj.get_trigger_display()
     get_trigger_display.short_description = 'Trigger'
+
+
+@admin.register(HomeVlog)
+class HomeVlogAdmin(admin.ModelAdmin):
+    list_display = ('naslov', 'slug', 'aktivan', 'redoslijed', 'pregled_slike')
+    list_filter = ('aktivan',)
+    list_editable = ('aktivan', 'redoslijed')
+    search_fields = ('naslov', 'slug', 'sadrzaj')
+    prepopulated_fields = {'slug': ('naslov',)}
+    readonly_fields = ('pregled_slike_velika',)
+    fieldsets = (
+        ('Prikaz na početnoj', {
+            'fields': ('naslov', 'slug', 'slika', 'pregled_slike_velika'),
+            'description': 'Slika i naslov prikazuju se ispod sekcije Izdvojeno. Klik vodi na stranicu vloga.',
+        }),
+        ('Sadržaj vloga', {
+            'fields': ('sadrzaj',),
+            'description': (
+                'HTML tekst s linkovima. Primjer: '
+                '<code>&lt;a href="/kategorija/"&gt;Pogledaj kategoriju&lt;/a&gt;</code> '
+                'ili <code>&lt;a href="https://..." target="_blank" rel="noopener"&gt;vanjski link&lt;/a&gt;</code>.'
+            ),
+        }),
+        ('Podešavanja', {
+            'fields': ('redoslijed', 'aktivan'),
+        }),
+    )
+
+    @admin.display(description='Slika')
+    def pregled_slike(self, obj):
+        if obj and obj.slika:
+            return format_html(
+                '<img src="{}" style="height:40px;border-radius:4px;" />',
+                obj.slika.url,
+            )
+        return '—'
+
+    @admin.display(description='Pregled slike')
+    def pregled_slike_velika(self, obj):
+        if obj and obj.slika:
+            return format_html(
+                '<img src="{}" style="max-height:200px;border-radius:8px;" />',
+                obj.slika.url,
+            )
+        return 'Nema slike'
 
 
 @admin.register(Banner)
