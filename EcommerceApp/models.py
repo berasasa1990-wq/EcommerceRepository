@@ -433,6 +433,19 @@ class Product(models.Model):
         return None
 
     @property
+    def akcija_istice_oznaka(self):
+        if not self.katalog_na_akciji:
+            return None
+        if self.akcija_do and _akcija_jos_vazi(self.akcija_do):
+            days = (self.akcija_do - timezone.localdate()).days
+            if days == 0:
+                return 'Danas ističe'
+            if days == 1:
+                return 'Još 1 dan'
+            return f'Još {days} dana'
+        return 'AKCIJA'
+
+    @property
     def ima_varijacije(self):
         return self.varijacije.exists()
 

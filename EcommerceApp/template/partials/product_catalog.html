@@ -8,6 +8,7 @@
                 {% for product in products %}
                 <a href="{{ product.get_absolute_url }}" class="product-card" data-product-card{% if not hide_variations %} data-cart-on-swatch{% endif %} data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
                     <div class="product-image">
+                        {% include 'partials/product_sale_ribbon.html' with product=product %}
                         {% include 'partials/product_image.html' with product=product %}
                     </div>
                     <div class="variation-swatches{% if hide_variations or not product.varijacije.count %} variation-swatches--empty{% endif %}">

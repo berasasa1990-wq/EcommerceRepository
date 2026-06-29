@@ -19,6 +19,7 @@
     <div class="product-detail-grid">
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">
+                {% include 'partials/product_sale_ribbon.html' with product=product %}
                 {% if product.prikazna_slika %}
                 <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" id="mainProductImage">
                 {% else %}
