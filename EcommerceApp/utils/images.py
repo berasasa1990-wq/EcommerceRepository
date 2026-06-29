@@ -11,7 +11,9 @@ BRAND_LOGO_SIZE = (200, 48)
 BRAND_LOGO_FILL_RATIO = 0.80
 SITE_LOGO_SIZE = (640, 128)
 PRODUCT_WHITE_THRESHOLD = 248
-PRODUCT_IMAGE_QUALITY = 95
+PRODUCT_MAX_DIMENSION = 800
+AVIF_SPEED = 6
+MAX_PRODUCT_AVIF_BYTES = 20 * 1024
 
 
 def is_new_upload(image_field):
@@ -23,21 +25,12 @@ def _png_filename(original_name):
     return base.rsplit('.', 1)[0] + '.png'
 
 
-def _output_filename(original_name, fmt):
+def _avif_filename(original_name):
     base = original_name.rsplit('/', 1)[-1]
-    stem = base.rsplit('.', 1)[0] if '.' in base else base
-    extensions = {
-        'JPEG': '.jpg',
-        'PNG': '.png',
-        'WEBP': '.webp',
-        'GIF': '.gif',
-        'AVIF': '.avif',
-    }
-    return stem + extensions.get(fmt, '.jpg')
+    return base.rsplit('.', 1)[0] + '.avif'
 
 
-def save_product_image_as_is(image_source, *, filename='image.jpg'):
-    """Čuva sliku artikla bez uklanjanja pozadine i bez rezanja na canvas."""
+def _read_image_source(image_source, *, filename='image.jpg'):
     if hasattr(image_source, 'read'):
         image_source.seek(0)
         raw = image_source.read()
@@ -45,37 +38,72 @@ def save_product_image_as_is(image_source, *, filename='image.jpg'):
             raise ValueError('Prazna slika')
         if not filename or filename == 'image.jpg':
             filename = getattr(image_source, 'name', None) or 'image.jpg'
-    else:
-        raw = image_source
-        if not raw:
-            raise ValueError('Prazna slika')
+        return raw, filename
+    if not image_source:
+        raise ValueError('Prazna slika')
+    return image_source, filename
 
-    img = Image.open(BytesIO(raw))
-    img = ImageOps.exif_transpose(img)
 
-    original_format = (img.format or 'JPEG').upper()
-    if original_format == 'JPG':
-        original_format = 'JPEG'
-
+def _encode_avif(img, quality):
     buffer = BytesIO()
-    save_kwargs = {}
-    if original_format == 'JPEG':
-        if img.mode in ('RGBA', 'LA', 'P'):
-            img = img.convert('RGB')
-        save_kwargs = {'quality': PRODUCT_IMAGE_QUALITY, 'optimize': True}
-    elif original_format == 'PNG':
-        save_kwargs = {'optimize': True}
-    elif original_format == 'WEBP':
-        save_kwargs = {'quality': PRODUCT_IMAGE_QUALITY}
-    elif original_format not in ('GIF', 'AVIF'):
-        original_format = 'JPEG'
-        if img.mode in ('RGBA', 'LA', 'P'):
-            img = img.convert('RGB')
-        save_kwargs = {'quality': PRODUCT_IMAGE_QUALITY, 'optimize': True}
+    img.save(buffer, format='AVIF', quality=quality, speed=AVIF_SPEED)
+    return buffer.getvalue()
 
-    img.save(buffer, format=original_format, **save_kwargs)
-    output_name = _output_filename(filename, original_format)
-    return ContentFile(buffer.getvalue(), name=output_name)
+
+def _image_to_rgb(img):
+    img = ImageOps.exif_transpose(img)
+    if img.mode in ('RGBA', 'LA', 'P'):
+        rgba = _ensure_rgba(img)
+        background = Image.new('RGB', rgba.size, (255, 255, 255))
+        background.paste(rgba, mask=rgba.split()[3])
+        return background
+    if img.mode != 'RGB':
+        return img.convert('RGB')
+    return img
+
+
+def _fit_product_dimensions(img, max_dimension=PRODUCT_MAX_DIMENSION):
+    if max(img.size) <= max_dimension:
+        return img
+    return ImageOps.contain(img, (max_dimension, max_dimension), method=Image.Resampling.LANCZOS)
+
+
+def _encode_product_avif(img, filename):
+    filename = _avif_filename(filename)
+    working = _fit_product_dimensions(_image_to_rgb(img))
+
+    best_data = None
+    best_size = float('inf')
+
+    for scale in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2):
+        if scale < 1.0:
+            new_w = max(1, int(working.width * scale))
+            new_h = max(1, int(working.height * scale))
+            candidate = working.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        else:
+            candidate = working
+
+        for quality in range(85, 0, -5):
+            data = _encode_avif(candidate, quality)
+            size = len(data)
+            if size <= MAX_PRODUCT_AVIF_BYTES:
+                return ContentFile(data, name=filename)
+            if size < best_size:
+                best_size = size
+                best_data = data
+
+    logger.warning(
+        'Slika nije smanjena ispod 20KB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
+        best_size,
+    )
+    return ContentFile(best_data, name=filename)
+
+
+def process_product_image(image_source, *, filename='image.jpg'):
+    """Artikal/varijacija: AVIF max 20KB, bez uklanjanja pozadine."""
+    raw, filename = _read_image_source(image_source, filename=filename)
+    img = Image.open(BytesIO(raw))
+    return _encode_product_avif(img, filename)
 
 
 def _ensure_rgba(img):
@@ -129,11 +157,11 @@ def _crop_to_content(rgba_img, *, alpha_threshold=12, white_threshold=PRODUCT_WH
 
 
 def process_product_image_bytes(raw_bytes, filename='image.jpg', **kwargs):
-    return save_product_image_as_is(raw_bytes, filename=filename)
+    return process_product_image(raw_bytes, filename=filename)
 
 
 def process_product_image_manual(image_field):
-    return save_product_image_as_is(image_field)
+    return process_product_image(image_field)
 
 
 def reprocess_existing_image_file(image_field):
@@ -146,7 +174,7 @@ def reprocess_existing_image_file(image_field):
         image_field.close()
     if not raw:
         return None
-    return save_product_image_as_is(raw, filename=image_field.name)
+    return process_product_image(raw, filename=image_field.name)
 
 
 def apply_image_processing(instance, field_name, post_process=None):

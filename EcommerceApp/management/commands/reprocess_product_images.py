@@ -5,7 +5,7 @@ from EcommerceApp.utils.images import reprocess_existing_image_file
 
 
 class Command(BaseCommand):
-    help = 'Ponovo sprema sve slike artikala i varijacija (bez uklanjanja pozadine).'
+    help = 'Ponovo obrađuje sve slike artikala i varijacija u AVIF format (max 20KB).'
 
     def handle(self, *args, **options):
         updated = 0
