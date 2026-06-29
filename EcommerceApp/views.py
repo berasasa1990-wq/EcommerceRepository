@@ -435,10 +435,10 @@ def home(request):
     first_grid_banner = grid_banners.first()
     lcp_image_url = None
     if not filters_active:
-        if first_hero and first_hero.slika:
-            lcp_image_url = request.build_absolute_uri(first_hero.slika.url)
-        elif first_grid_banner and first_grid_banner.slika:
+        if first_grid_banner and first_grid_banner.slika:
             lcp_image_url = request.build_absolute_uri(first_grid_banner.slika.url)
+        elif first_hero and first_hero.slika:
+            lcp_image_url = request.build_absolute_uri(first_hero.slika.url)
 
     spotlight = None
     if spotlight_banner:

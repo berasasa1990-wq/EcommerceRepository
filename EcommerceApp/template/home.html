@@ -62,7 +62,7 @@
 <section class="grid-banners">
     {% for card in grid_banners %}
     <article class="grid-banner">
-        <img src="{{ card.image }}" alt="{{ card.title }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}"{% if not hero_slides and forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+        <img src="{{ card.image }}" alt="{{ card.title }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
         <div class="card-overlay">
             <h3>{{ card.title }}</h3>
             {% if card.subtitle %}
