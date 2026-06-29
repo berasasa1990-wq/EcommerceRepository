@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potvrda narudžbe #{{ order.broj }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #f5f5f5;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #111111;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        table { border-collapse: collapse; }
+        img { border: 0; display: block; max-width: 100%; }
+        .doc {
+            max-width: 800px;
+            margin: 0 auto 32px;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+        }
+        .doc-header {
+            background: #111111;
+            color: #ffffff;
+            padding: 28px 32px;
+        }
+        .doc-header-table { width: 100%; }
+        .doc-brand {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        .doc-brand-tld { font-weight: 400; }
+        .doc-logo {
+            max-height: 48px;
+            width: auto;
+        }
+        .doc-type {
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.72);
+            margin-top: 8px;
+        }
+        .doc-meta {
+            text-align: right;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.88);
+            vertical-align: top;
+        }
+        .doc-meta strong {
+            display: block;
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        .doc-body { padding: 32px; }
+        .section-title {
+            margin: 0 0 14px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #707072;
+        }
+        .info-table { width: 100%; margin-bottom: 28px; }
+        .info-table td {
+            width: 50%;
+            vertical-align: top;
+            padding-right: 16px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f5f5f5;
+            border-radius: 4px;
+            padding: 16px 18px;
+        }
+        .info-box p {
+            margin: 0 0 6px;
+            font-size: 14px;
+        }
+        .info-box p:last-child { margin-bottom: 0; }
+        .info-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #707072;
+            margin-bottom: 2px;
+        }
+        .items-table {
+            width: 100%;
+            margin-top: 8px;
+        }
+        .items-table th {
+            padding: 12px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #707072;
+            text-align: left;
+            border-bottom: 2px solid #111111;
+        }
+        .items-table td {
+            padding: 14px 10px;
+            font-size: 14px;
+            vertical-align: top;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        .items-table .col-qty,
+        .items-table .col-price,
+        .items-table .col-total {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .item-name {
+            display: block;
+            font-weight: 600;
+            color: #111111;
+        }
+        .item-variation {
+            display: block;
+            margin-top: 3px;
+            font-size: 13px;
+            color: #707072;
+        }
+        .totals-wrap {
+            margin-top: 20px;
+            width: 100%;
+        }
+        .totals-table {
+            width: 300px;
+            margin-left: auto;
+        }
+        .totals-table td {
+            padding: 6px 0;
+            font-size: 14px;
+            color: #707072;
+        }
+        .totals-table td:last-child {
+            text-align: right;
+            color: #111111;
+        }
+        .totals-table tr.total-row td {
+            padding-top: 14px;
+            border-top: 2px solid #111111;
+            font-size: 18px;
+            font-weight: 700;
+            color: #111111;
+        }
+        .order-footer {
+            margin-top: 28px;
+            padding-top: 18px;
+            border-top: 1px solid #e5e5e5;
+            font-size: 13px;
+            color: #707072;
+        }
+        .order-footer a { color: #111111; }
+
+        .warranty-section {
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+        .warranty-a4 {
+            width: 210mm;
+            max-width: 100%;
+            min-height: 297mm;
+            margin: 0 auto 24px;
+            padding: 10mm 12mm;
+            background: #ffffff;
+            border: 2px solid #111111;
+            box-sizing: border-box;
+            page-break-after: always;
+            page-break-inside: avoid;
+        }
+        .warranty-a4:last-child {
+            page-break-after: auto;
+            margin-bottom: 0;
+        }
+        .warranty-a4-head {
+            display: table;
+            width: 100%;
+            border-bottom: 2px solid #111111;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .warranty-a4-head-left,
+        .warranty-a4-head-right {
+            display: table-cell;
+            vertical-align: top;
+        }
+        .warranty-a4-head-right {
+            text-align: right;
+            width: 42%;
+        }
+        .warranty-a4-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .warranty-a4-subtitle {
+            margin: 3px 0 0;
+            font-size: 10px;
+            color: #707072;
+        }
+        .warranty-a4-order {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 2px;
+        }
+        .warranty-a4-meta {
+            font-size: 9px;
+            color: #333333;
+            line-height: 1.45;
+        }
+        .warranty-a4-customer {
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 9px;
+            line-height: 1.45;
+        }
+        .warranty-a4-customer td {
+            vertical-align: top;
+            padding: 0 8px 0 0;
+            width: 33.33%;
+        }
+        .warranty-a4-customer strong {
+            display: block;
+            font-size: 8px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #707072;
+            margin-bottom: 2px;
+        }
+        .warranty-order-ref {
+            margin: 0 0 12px;
+            padding: 12px 14px;
+            border: 1px solid #e5e5e5;
+            background: #fafafa;
+            font-size: 11px;
+            line-height: 1.55;
+            color: #111111;
+        }
+        .warranty-order-ref strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #111111;
+        }
+        .warranty-terms {
+            margin: 0;
+            padding: 8px 10px;
+            background: #f5f5f5;
+            font-size: 8px;
+            line-height: 1.45;
+            color: #333333;
+        }
+        .warranty-terms strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 8px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #111111;
+        }
+        .warranty-signatures {
+            width: 100%;
+            margin-top: 12px;
+        }
+        .warranty-signatures td {
+            width: 50%;
+            vertical-align: bottom;
+            padding-top: 18px;
+        }
+        .signature-line {
+            border-top: 1px solid #111111;
+            padding-top: 5px;
+            font-size: 8px;
+            color: #707072;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .print-note {
+            max-width: 800px;
+            margin: 0 auto 24px;
+            padding: 14px 18px;
+            background: #ffffff;
+            border: 1px dashed #c8c8c8;
+            font-size: 13px;
+            color: #707072;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .print-note { display: none; }
+            .doc {
+                border: none;
+                max-width: none;
+                margin-bottom: 0;
+            }
+            .warranty-section {
+                page-break-before: always;
+                max-width: none;
+            }
+            .warranty-a4 {
+                border: 1px solid #111111;
+                margin: 0;
+                width: auto;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    {% if show_warranty %}
+    <p class="print-note">
+        Za štampu: otvorite email u pregledniku i koristite Print (Ctrl+P / Cmd+P).
+        Garantni list odnosi se na broj narudžbe naveden u dokumentu.
+    </p>
+    {% endif %}
+
+    <!-- POTVRDA NARUDŽBE -->
+    <div class="doc">
+        <div class="doc-header">
+            <table class="doc-header-table" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="vertical-align: top;">
+                        {% if logo_url %}
+                        <img src="{{ logo_url }}" alt="{{ site_name }}" class="doc-logo" height="48">
+                        {% else %}
+                        <div class="doc-brand">
+                            opremaza<span class="doc-brand-tld">ribolov</span><span class="doc-brand-tld">.ba</span>
+                        </div>
+                        {% endif %}
+                        <div class="doc-type">Potvrda narudžbe</div>
+                    </td>
+                    <td class="doc-meta">
+                        <strong>#{{ order.broj }}</strong>
+                        Datum: {{ datum }}<br>
+                        Vrijeme: {{ vrijeme }}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="doc-body">
+            <p class="section-title">Podaci o kupcu i dostavi</p>
+            <table class="info-table" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <div class="info-box">
+                            <p><span class="info-label">Kupac</span>{{ order.ime_prezime }}</p>
+                            <p><span class="info-label">Email</span>{{ order.email }}</p>
+                            <p><span class="info-label">Telefon</span>{{ order.telefon }}</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="info-box">
+                            <p><span class="info-label">Adresa dostave</span>{{ order.adresa }}</p>
+                            <p><span class="info-label">Grad</span>{{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}</p>
+                            {% if order.napomena %}
+                            <p><span class="info-label">Napomena</span>{{ order.napomena }}</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <p class="section-title">Stavke narudžbe</p>
+            <table class="items-table" role="presentation" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="width: 46%;">Artikal</th>
+                        <th style="width: 14%;">Šifra</th>
+                        <th class="col-qty" style="width: 10%;">Kol.</th>
+                        <th class="col-price" style="width: 15%;">Cijena</th>
+                        <th class="col-total" style="width: 15%;">Ukupno</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.stavke.all %}
+                    <tr>
+                        <td>
+                            <span class="item-name">{{ item.product_naziv|default:item.naziv }}</span>
+                            {% if item.varijacija_naziv %}
+                            <span class="item-variation">Varijacija: {{ item.varijacija_naziv }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.sifra|default:"—" }}</td>
+                        <td class="col-qty">{{ item.kolicina }}</td>
+                        <td class="col-price">{{ item.cijena }} KM</td>
+                        <td class="col-total">{{ item.ukupno }} KM</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="totals-wrap">
+                <table class="totals-table" role="presentation" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td>Iznos bez PDV-a</td>
+                        <td>{{ summary.pdv_artikli.bez_pdv }} KM</td>
+                    </tr>
+                    <tr>
+                        <td>PDV (17%)</td>
+                        <td>{{ summary.pdv_artikli.pdv }} KM</td>
+                    </tr>
+                    <tr>
+                        <td>Iznos sa PDV-om</td>
+                        <td>{{ summary.medjuzbir }} KM</td>
+                    </tr>
+                    {% if summary.popust %}
+                    <tr>
+                        <td>Popust</td>
+                        <td>-{{ summary.popust }} KM</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td>{{ summary.dostava_naziv }}</td>
+                        <td>{% if summary.besplatna_dostava %}Besplatno{% else %}{{ summary.dostava }} KM{% endif %}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Ukupno za plaćanje</td>
+                        <td>{{ summary.ukupno }} KM</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="order-footer">
+                Hvala vam na kupovini na <a href="{{ site_url }}">{{ site_name }}</a>.
+                {% if store_phone %}Kontakt: {{ store_phone }}{% if store_email %}, {% endif %}{% endif %}
+                {% if store_email %}<a href="mailto:{{ store_email }}">{{ store_email }}</a>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if show_warranty %}
+    <div class="warranty-section">
+        <div class="warranty-a4">
+            <div class="warranty-a4-head">
+                <div class="warranty-a4-head-left">
+                    <h2 class="warranty-a4-title">Garantni list — {{ site_name }}</h2>
+                    <p class="warranty-a4-subtitle">Garancija za cjelokupnu narudžbu</p>
+                </div>
+                <div class="warranty-a4-head-right">
+                    <p class="warranty-a4-order">#{{ order.broj }}</p>
+                    <p class="warranty-a4-meta">
+                        Datum: {{ datum }}<br>
+                        Ukupno: {{ summary.ukupno }} KM
+                    </p>
+                </div>
+            </div>
+
+            <table class="warranty-a4-customer" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <strong>Kupac</strong>
+                        {{ order.ime_prezime }}
+                    </td>
+                    <td>
+                        <strong>Kontakt</strong>
+                        {{ order.telefon }}<br>{{ order.email }}
+                    </td>
+                    <td>
+                        <strong>Adresa</strong>
+                        {{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}
+                    </td>
+                </tr>
+            </table>
+
+            <p class="warranty-order-ref">
+                <strong>Narudžba #{{ order.broj }}</strong>
+                Ovaj garantni list odnosi se isključivo na narudžbu broj {{ order.broj }}, kreiranu {{ datum }} u {{ vrijeme }}.
+                Detaljan popis naručenih artikala nalazi se u potvrdi narudžbe koja je poslana uz ovaj dokument.
+            </p>
+
+            <p class="warranty-terms">
+                <strong>Uslovi garancije</strong>
+                Garancija za narudžbu #{{ order.broj }} važi u skladu s važećim zakonima Bosne i Hercegovine
+                i uslovima proizvođača. Za reklamaciju je potrebno priložiti ovaj garantni list zajedno s
+                potvrdom narudžbe. Reklamacije primamo putem {{ site_name }}{% if store_email %}
+                ({{ store_email }}){% endif %}{% if store_phone %} ili telefona {{ store_phone }}{% endif %}.
+                Garancija ne pokriva oštećenja od nepravilne upotrebe, neovlaštenih popravki ili normalnog habanja.
+            </p>
+
+            <table class="warranty-signatures" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td><div class="signature-line">Potpis / pečat prodavca</div></td>
+                    <td><div class="signature-line">Datum izdavanja — {{ datum }}</div></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+</html>

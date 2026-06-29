@@ -1,0 +1,828 @@
+from decimal import ROUND_HALF_UP, Decimal
+
+from django.conf import settings
+from django.db import models
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.text import slugify
+
+
+def _akcija_jos_vazi(akcija_do):
+    if akcija_do is None:
+        return True
+    return akcija_do >= timezone.localdate()
+
+
+class SiteSettings(models.Model):
+    class ArtikalaPoRedu(models.IntegerChoices):
+        TRI = 3, '3 artikla u redu'
+        CETIRI = 4, '4 artikla u redu'
+
+    logo = models.ImageField(
+        upload_to='site/', blank=True, null=True,
+        verbose_name='Logo sajta',
+        help_text='Prikazuje se u headeru umjesto teksta. Čuva se kao PNG s bijelom pozadinom (max 640×128px).',
+    )
+    dostava_naziv = models.CharField(
+        max_length=100,
+        default='xExpress Brza Pošta',
+        verbose_name='Naziv dostave',
+    )
+    dostava_cijena = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('11.00'),
+        verbose_name='Cijena dostave (KM)',
+    )
+    besplatna_dostava_od = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('250.00'),
+        verbose_name='Besplatna dostava od (KM)',
+        help_text='Narudžbe iznad ovog iznosa imaju besplatnu dostavu.',
+    )
+    novi_korisnik_besplatna_dostava = models.BooleanField(
+        default=False,
+        verbose_name='Novi korisnici — besplatna dostava',
+        help_text='Primjenjuje se na prvu narudžbu registrovanog korisnika.',
+    )
+    novi_korisnik_popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Novi korisnici — popust (%)',
+        help_text='Opcionalno. Npr. unesite 10 za 10% popusta na prvu narudžbu.',
+    )
+    novi_korisnik_popust_km = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Novi korisnici — popust (KM)',
+        help_text='Opcionalno. Fiksni iznos popusta na prvu narudžbu.',
+    )
+    artikala_po_redu = models.PositiveSmallIntegerField(
+        choices=ArtikalaPoRedu.choices,
+        default=ArtikalaPoRedu.CETIRI,
+        verbose_name='Artikala u redu (katalog)',
+        help_text='Broj artikala u jednom redu na početnoj i stranicama kategorija. Po stranici se prikazuje 4 reda.',
+    )
+    prikazi_filter_na_pocetnoj = models.BooleanField(
+        default=False,
+        verbose_name='Prikaži filter na početnoj',
+        help_text='Uključuje filter sidebar lijevo od artikala na početnoj stranici.',
+    )
+    seo_title = models.CharField(
+        max_length=70, blank=True,
+        verbose_name='SEO naslov (početna)',
+        help_text='Preporučeno 50-60 znakova. Ostavi prazno za default.',
+    )
+    meta_description = models.CharField(
+        max_length=160, blank=True,
+        verbose_name='Meta opis (početna)',
+        help_text='Preporučeno do 155-160 znakova. Prikazuje se u Google rezultatima.',
+    )
+    og_image = models.ImageField(
+        upload_to='site/', blank=True, null=True,
+        verbose_name='Social share slika (OG image)',
+        help_text='Preporučeno 1200×630px ili veća. Prikazuje se kad se link dijeli na Facebooku, WhatsAppu itd.',
+    )
+
+    class Meta:
+        verbose_name = 'Postavke sajta'
+        verbose_name_plural = 'Postavke sajta'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        if self.logo:
+            from .utils.images import apply_image_processing, process_site_logo
+            apply_image_processing(self, 'logo', post_process=process_site_logo)
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        pass
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def artikala_po_stranici(self):
+        return self.artikala_po_redu * 4
+
+    def __str__(self):
+        return 'Postavke sajta'
+
+
+class Category(models.Model):
+    naziv = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, blank=True)
+    roditelj = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='podkategorije', verbose_name='Roditeljska kategorija',
+    )
+    redoslijed = models.PositiveIntegerField(default=0)
+    prikazi_u_meniju = models.BooleanField(default=True, verbose_name='Prikaži u meniju')
+    aktivan = models.BooleanField(default=True)
+    odoo_category_id = models.PositiveIntegerField(
+        blank=True, null=True, unique=True, verbose_name='Odoo category ID',
+    )
+    meta_title = models.CharField(
+        max_length=70, blank=True,
+        verbose_name='SEO naslov',
+        help_text='Opcionalno. Ako ostaviš prazno koristi se naziv kategorije.',
+    )
+    meta_description = models.CharField(
+        max_length=160, blank=True,
+        verbose_name='Meta opis',
+        help_text='Opcionalno. Kratak opis za Google i društvene mreže.',
+    )
+
+    class Meta:
+        verbose_name = 'Kategorija'
+        verbose_name_plural = 'Kategorije'
+        ordering = ['redoslijed', 'naziv']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.naziv)
+            if self.roditelj:
+                base_slug = f'{self.roditelj.slug}-{base_slug}'
+            slug = base_slug
+            counter = 1
+            while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f'{base_slug}-{counter}'
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('category', kwargs={'slug': self.slug})
+
+    @property
+    def nivo(self):
+        level = 0
+        parent = self.roditelj
+        while parent:
+            level += 1
+            parent = parent.roditelj
+        return level
+
+    def get_descendant_ids(self):
+        ids = [self.pk]
+        for child in self.podkategorije.all():
+            if child.aktivan:
+                ids.extend(child.get_descendant_ids())
+        return ids
+
+    def __str__(self):
+        if self.roditelj:
+            return f'{self.roditelj.naziv} → {self.naziv}'
+        return self.naziv
+
+
+class Tag(models.Model):
+    naziv = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(unique=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Tag'
+        verbose_name_plural = 'Tagovi'
+        ordering = ['naziv']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.naziv)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.naziv
+
+
+class Brand(models.Model):
+    naziv = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, blank=True)
+    slika = models.ImageField(
+        upload_to='brands/', blank=True, null=True,
+        verbose_name='Logo slika',
+        help_text='Prikazuje se umjesto naziva. Automatski se skalira na 200×48px (logo popunjava 80% prostora).',
+    )
+
+    class Meta:
+        verbose_name = 'Brend'
+        verbose_name_plural = 'Brendovi'
+        ordering = ['naziv']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.naziv)
+        if self.slika:
+            from .utils.images import apply_image_processing, process_brand_logo
+            apply_image_processing(self, 'slika', post_process=process_brand_logo)
+        super().save(*args, **kwargs)
+
+    @property
+    def prikazi_logo(self):
+        return bool(self.slika)
+
+    def __str__(self):
+        return self.naziv
+
+
+class Banner(models.Model):
+    class BannerType(models.TextChoices):
+        HERO = 'hero', 'Hero Carousel'
+        GRID = 'grid', 'Grid Kartica (2x2 ispod Hero)'
+        FEATURED = 'featured', 'Featured Kartica'
+        SPOTLIGHT = 'spotlight', 'Spotlight'
+
+    naslov = models.CharField(max_length=200)
+    podnaslov = models.CharField(max_length=300, blank=True)
+    slika = models.ImageField(upload_to='banners/')
+    link = models.URLField(blank=True)
+    tekst_dugmeta = models.CharField(max_length=50, default='Shop')
+    sekundarno_dugme = models.CharField(max_length=50, blank=True)
+    sekundarni_link = models.URLField(blank=True)
+    tip = models.CharField(max_length=20, choices=BannerType.choices, default=BannerType.HERO)
+    siroka_kartica = models.BooleanField(default=False, help_text='Samo za Featured tip')
+    redoslijed = models.PositiveIntegerField(default=0)
+    aktivan = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Banner'
+        verbose_name_plural = 'Banneri'
+        ordering = ['redoslijed', '-id']
+
+    def __str__(self):
+        return f'{self.get_tip_display()} — {self.naslov}'
+
+
+class Popup(models.Model):
+    naziv = models.CharField(
+        max_length=100,
+        verbose_name='Interni naziv',
+        help_text='Samo za prepoznavanje u adminu.',
+    )
+    slika = models.ImageField(
+        upload_to='popups/',
+        verbose_name='Slika',
+        help_text='Glavna slika pop-upa. Dugme će biti ispod slike.',
+    )  # required by default (no blank=True)
+    tekst_dugmeta = models.CharField(
+        max_length=50,
+        default='Saznaj više',
+        verbose_name='Naziv dugmeta',
+        help_text='Tekst koji se prikazuje na dugmetu ispod slike.',
+    )
+    link_dugmeta = models.CharField(
+        max_length=300,
+        blank=True,
+        verbose_name='Link dugmeta',
+        help_text='Npr. /registracija/ ili puni URL. Prazno = /registracija/.',
+    )
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+    za_prijavljene = models.BooleanField(
+        default=False,
+        verbose_name='Prikaži prijavljenim korisnicima',
+    )
+    za_neprijavljene = models.BooleanField(
+        default=True,
+        verbose_name='Prikaži neprijavljenim korisnicima',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    ponovo_poslije_dana = models.PositiveSmallIntegerField(
+        default=7,
+        verbose_name='Ponovo prikaži poslije (dana)',
+        help_text='Koliko dana ne prikazivati nakon što korisnik zatvori pop-up.',
+    )
+
+    class Meta:
+        verbose_name = 'Pop-up'
+        verbose_name_plural = 'Pop-upi'
+        ordering = ['redoslijed', '-id']
+
+    def prikazi_korisniku(self, user):
+        if not self.aktivan:
+            return False
+        if user.is_authenticated:
+            return self.za_prijavljene
+        return self.za_neprijavljene
+
+    def get_link_href(self):
+        if self.link_dugmeta:
+            if self.link_dugmeta.startswith(('http://', 'https://', '/')):
+                return self.link_dugmeta
+            return f'/{self.link_dugmeta.strip("/")}/'
+        return reverse('register')
+
+    def __str__(self):
+        status = 'aktivan' if self.aktivan else 'neaktivan'
+        return f'{self.naziv} ({status})'
+
+
+class Product(models.Model):
+    naziv = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)
+    sifra = models.CharField(max_length=50, blank=True, null=True, unique=True, verbose_name='Šifra')
+    barkod = models.CharField(max_length=50, blank=True, verbose_name='Barkod')
+    opis = models.TextField(blank=True, verbose_name='Opis')
+    slika = models.ImageField(upload_to='products/', blank=True, null=True)
+    na_stanju = models.BooleanField(default=True, verbose_name='Na stanju')
+    stanje = models.PositiveIntegerField(default=0, verbose_name='Količina')
+    cijena = models.DecimalField(max_digits=10, decimal_places=2)
+    akcijska_cijena = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name='Akcijska cijena',
+    )
+    akcija_do = models.DateField(
+        null=True, blank=True,
+        verbose_name='Akcija važi do',
+        help_text='Opcionalno. Prazno = akcija bez roka. Nakon ovog datuma artikal više nije na akciji.',
+    )
+    kategorija = models.ForeignKey(
+        Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='artikli',
+    )
+    brend = models.ForeignKey(
+        Brand, on_delete=models.SET_NULL, null=True, related_name='artikli',
+    )
+    tagovi = models.ManyToManyField(
+        Tag, blank=True, related_name='artikli', verbose_name='Tagovi',
+    )
+    prikazi_na_pocetnoj = models.BooleanField(default=True, verbose_name='Prikaži na početnoj')
+    aktivan = models.BooleanField(default=True)
+    odoo_template_id = models.PositiveIntegerField(
+        blank=True, null=True, unique=True, verbose_name='Odoo template ID',
+    )
+    meta_title = models.CharField(
+        max_length=70, blank=True,
+        verbose_name='SEO naslov',
+        help_text='Opcionalno — ostavi prazno za automatski (naziv artikla).',
+    )
+    meta_description = models.CharField(
+        max_length=160, blank=True,
+        verbose_name='Meta opis',
+        help_text='Opcionalno — ostavi prazno za automatski opis koji počinje nazivom artikla.',
+    )
+    kreiran = models.DateTimeField(auto_now_add=True)
+    azuriran = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Artikal'
+        verbose_name_plural = 'Artikli'
+        ordering = ['-kreiran']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.naziv)
+            slug = base_slug
+            counter = 1
+            while Product.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f'{base_slug}-{counter}'
+                counter += 1
+            self.slug = slug
+        if self.slika:
+            from .utils.images import apply_image_processing, process_product_image_manual
+            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+        super().save(*args, **kwargs)
+
+    @property
+    def na_akciji(self):
+        if not _akcija_jos_vazi(self.akcija_do):
+            return False
+        return self.akcijska_cijena is not None and self.akcijska_cijena < self.cijena
+
+    @property
+    def bazna_cijena(self):
+        return self.cijena
+
+    @property
+    def prikazna_cijena(self):
+        if self.na_akciji:
+            return self.akcijska_cijena
+        return self.cijena
+
+    @property
+    def katalog_na_akciji(self):
+        if self.na_akciji:
+            return True
+        return any(variation.na_akciji for variation in self.varijacije.all())
+
+    @property
+    def katalog_prikazna_cijena(self):
+        variations = list(self.varijacije.all())
+        if variations:
+            return min(variation.prikazna_cijena for variation in variations)
+        return self.prikazna_cijena
+
+    @property
+    def katalog_bazna_cijena(self):
+        variations = list(self.varijacije.all())
+        if variations:
+            najjeftinija = min(variations, key=lambda variation: variation.prikazna_cijena)
+            return najjeftinija.bazna_cijena
+        return self.bazna_cijena
+
+    @property
+    def prikaz_akcija_istice(self):
+        if not self.katalog_na_akciji or not self.akcija_do:
+            return None
+        if _akcija_jos_vazi(self.akcija_do):
+            return self.akcija_do
+        return None
+
+    @property
+    def ima_varijacije(self):
+        return self.varijacije.exists()
+
+    @property
+    def status_dostupnosti(self):
+        return 'Na stanju' if self.na_stanju else 'Rasprodato'
+
+    @property
+    def ima_sliku(self):
+        return bool(self.slika)
+
+    @property
+    def seo_title(self):
+        """Koristi se za <title> i og:title kad meta_title nije unesen."""
+        return self.meta_title or self.naziv
+
+    @property
+    def seo_description(self):
+        """Koristi se za meta description kad meta_description nije unesen."""
+        if self.meta_description:
+            return self.meta_description
+        return (
+            f"{self.naziv}. Kupite kvalitetnu ribolovačku opremu online u Bosni i Hercegovini. "
+            "Štapovi, mašinice, varalice, najloni, hranilice, pribor i oprema poznatih svjetskih brendova po odličnim cijenama."
+        )
+
+    def get_absolute_url(self):
+        return reverse('product_detail', kwargs={'slug': self.slug})
+
+    def __str__(self):
+        return self.naziv
+
+
+class ProductVariation(models.Model):
+    artikal = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='varijacije',
+    )
+    naziv = models.CharField(max_length=100)
+    sifra = models.CharField(max_length=50, blank=True, null=True, unique=True, verbose_name='Šifra')
+    slika = models.ImageField(upload_to='products/variations/', blank=True, null=True)
+    cijena = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text='Ostavite prazno za cijenu artikla',
+    )
+    akcijska_cijena = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name='Akcijska cijena',
+        help_text='Opcionalno — samo za ovu varijaciju. Inače vrijedi akcija artikla.',
+    )
+    na_stanju = models.BooleanField(default=True, verbose_name='Na stanju')
+    stanje = models.PositiveIntegerField(default=0, verbose_name='Količina')
+    redoslijed = models.PositiveIntegerField(default=0)
+    odoo_template_id = models.PositiveIntegerField(
+        blank=True, null=True, unique=True, verbose_name='Odoo template ID',
+    )
+    odoo_variant_id = models.PositiveIntegerField(
+        blank=True, null=True, unique=True, verbose_name='Odoo variant ID',
+    )
+
+    class Meta:
+        verbose_name = 'Varijacija'
+        verbose_name_plural = 'Varijacije'
+        ordering = ['redoslijed', 'id']
+
+    @property
+    def bazna_cijena(self):
+        return self.cijena if self.cijena is not None else self.artikal.cijena
+
+    @property
+    def efektivna_akcijska_cijena(self):
+        if self.akcijska_cijena is not None and self.akcijska_cijena < self.bazna_cijena:
+            return self.akcijska_cijena
+        if self.artikal.na_akciji:
+            ratio = self.artikal.akcijska_cijena / self.artikal.cijena
+            return (self.bazna_cijena * ratio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return None
+
+    @property
+    def na_akciji(self):
+        return self.efektivna_akcijska_cijena is not None
+
+    @property
+    def prikazna_cijena(self):
+        if self.na_akciji:
+            return self.efektivna_akcijska_cijena
+        return self.bazna_cijena
+
+    @property
+    def status_dostupnosti(self):
+        return 'Na stanju' if self.na_stanju else 'Rasprodato'
+
+    @property
+    def ima_sliku(self):
+        return bool(self.slika)
+
+    def save(self, *args, **kwargs):
+        if self.slika:
+            from .utils.images import apply_image_processing, process_product_image_manual
+            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.artikal.naziv} — {self.naziv}'
+
+
+class UpsellOffer(models.Model):
+    class PrikazTip(models.TextChoices):
+        POPUP = 'popup', 'Popup'
+        BANNER_IZNAD = 'banner_iznad', 'Baner iznad artikala u korpi'
+        BANNER_ISPOD = 'banner_ispod', 'Baner ispod "Nastavi na narudžbu"'
+        CHECKOUT = 'checkout', 'Checkout — poslednja šansa'
+
+    naziv = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='Interni naziv',
+        help_text='Opcionalno — samo za prepoznavanje u adminu.',
+    )
+    ponuda_artikli = models.ManyToManyField(
+        Product,
+        blank=True,
+        verbose_name='Artikli za prikaz',
+        help_text='Opcionalno — artikli koji se nude u popupu ili na baneru u korpi.',
+    )
+    popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust (%)',
+        help_text='Opcionalno - popust na cijenu ponuđenih artikala.',
+    )
+    popust_km = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust (KM)',
+        help_text='Opcionalno - fiksni popust u KM na ponuđene artikle.',
+    )
+    trigger_artikal = models.ForeignKey(
+        Product,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='upsell_triggeri',
+        verbose_name='Trigger artikal',
+        help_text='Ako se ovaj artikal doda u korpu, pokreni ponudu.',
+    )
+    trigger_kategorija = models.ForeignKey(
+        Category,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='upsell_triggeri',
+        verbose_name='Trigger kategorija',
+        help_text='Ako se artikal iz ove kategorije doda u korpu, pokreni ponudu.',
+    )
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    naslov_ponude = models.CharField(
+        max_length=100,
+        default='Specijalna ponuda za vas!',
+        verbose_name='Naslov u popupu',
+        help_text='Možeš izmijeniti tekst "Specijalna ponuda za vas!"',
+    )
+    opis_ponude = models.CharField(
+        max_length=200,
+        default='Dodajte u korpu sa dodatnim popustom',
+        verbose_name='Opis u popupu',
+        help_text='Možeš izmijeniti tekst "Dodajte u korpu sa dodatnim popustom"',
+    )
+    prikaz = models.CharField(
+        max_length=20,
+        choices=PrikazTip.choices,
+        default=PrikazTip.BANNER_IZNAD,
+        verbose_name='Gdje prikazati',
+    )
+    baner_slika = models.ImageField(
+        upload_to='upsell/',
+        blank=True,
+        null=True,
+        verbose_name='Baner slika',
+        help_text='Opcionalno — preporučeno široko i nisko (npr. 1200×200 px).',
+    )
+    tekst_dugmeta = models.CharField(
+        max_length=50,
+        default='Dodaj u korpu',
+        verbose_name='Tekst dugmeta',
+    )
+
+    class Meta:
+        verbose_name = 'Upsell ponuda'
+        verbose_name_plural = 'Upsell ponude'
+        ordering = ['redoslijed', '-id']
+
+    def get_trigger_display(self):
+        if self.trigger_artikal:
+            return f'Artikal: {self.trigger_artikal.naziv}'
+        if self.trigger_kategorija:
+            return f'Kategorija: {self.trigger_kategorija.naziv}'
+        return 'Nema trigger'
+
+    def __str__(self):
+        if self.naziv:
+            return self.naziv
+        return f'Upsell #{self.pk}' if self.pk else 'Upsell ponuda'
+
+
+class LoyaltyCard(models.Model):
+    class Nivo(models.TextChoices):
+        BRONZA = 'bronza', 'Bronza'
+        SREBRNA = 'srebrna', 'Srebrna'
+        ZLATNA = 'zlatna', 'Zlatna'
+        PLATINUM = 'platinum', 'Platinum'
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='loyalty_kartica',
+    )
+    kod = models.CharField(max_length=20, unique=True, verbose_name='Online kod')
+    barkod = models.CharField(max_length=20, unique=True, verbose_name='Barkod')
+    nivo = models.CharField(max_length=20, choices=Nivo.choices, default=Nivo.BRONZA)
+    ukupna_potrosnja = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
+    kreirana = models.DateTimeField(auto_now_add=True)
+    azurirana = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Loyalty kartica'
+        verbose_name_plural = 'Loyalty kartice'
+
+    @property
+    def postotak(self):
+        from .loyalty import tier_info
+        return tier_info(self.nivo)['postotak']
+
+    def __str__(self):
+        return f'{self.user} — {self.get_nivo_display()} ({self.kod})'
+
+
+class Coupon(models.Model):
+    kod = models.CharField(max_length=20, unique=True)
+    naziv = models.CharField(max_length=100)
+    postotak = models.DecimalField(max_digits=5, decimal_places=2)
+    vlasnik = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='kuponi',
+        null=True,
+        blank=True,
+        verbose_name='Vlasnik (samo on može koristiti)',
+    )
+    loyalty_kartica = models.OneToOneField(
+        LoyaltyCard,
+        on_delete=models.CASCADE,
+        related_name='kupon',
+        null=True,
+        blank=True,
+    )
+    aktivan = models.BooleanField(default=True)
+    automatski = models.BooleanField(
+        default=False,
+        verbose_name='Automatski (loyalty)',
+        help_text='Kreiran i ažuriran iz loyalty kartice.',
+    )
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Kupon'
+        verbose_name_plural = 'Kuponi'
+
+    def __str__(self):
+        return f'{self.kod} — {self.postotak}%'
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='profil',
+    )
+    telefon = models.CharField(max_length=30, blank=True)
+    adresa = models.CharField(max_length=300, blank=True)
+    grad = models.CharField(max_length=100, blank=True)
+    postanski_broj = models.CharField(max_length=20, blank=True)
+
+    class Meta:
+        verbose_name = 'Korisnički profil'
+        verbose_name_plural = 'Korisnički profili'
+
+    @property
+    def puno_ime(self):
+        return self.user.get_full_name() or self.user.email
+
+    def __str__(self):
+        return self.puno_ime
+
+
+class Order(models.Model):
+    class Status(models.TextChoices):
+        NOVA = 'nova', 'Nova'
+        POTVRDJENA = 'potvrdjena', 'Potvrđena'
+        POSLANA = 'poslana', 'Poslana'
+        ZAVRSENA = 'zavrsena', 'Završena'
+        OTKAZANA = 'otkazana', 'Otkazana'
+
+    korisnik = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='narudzbe',
+        verbose_name='Korisnik',
+    )
+    broj = models.CharField(max_length=20, unique=True, editable=False)
+    ime_prezime = models.CharField(max_length=200)
+    email = models.EmailField()
+    telefon = models.CharField(max_length=30)
+    adresa = models.CharField(max_length=300)
+    grad = models.CharField(max_length=100)
+    postanski_broj = models.CharField(max_length=20, blank=True)
+    napomena = models.TextField(blank=True)
+    medjuzbir = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    dostava = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    popust = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    kupon_kod = models.CharField(max_length=20, blank=True)
+    ukupno = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NOVA)
+    kreirana = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Narudžba'
+        verbose_name_plural = 'Narudžbe'
+        ordering = ['-kreirana']
+
+    def save(self, *args, **kwargs):
+        if not self.broj:
+            from django.utils import timezone
+            prefix = timezone.localtime().strftime('%Y%m%d')
+            last = Order.objects.filter(broj__startswith=prefix).order_by('-broj').first()
+            seq = int(last.broj[-4:]) + 1 if last else 1
+            self.broj = f'{prefix}{seq:04d}'
+        super().save(*args, **kwargs)
+
+    @property
+    def pdv_pregled(self):
+        from .cart import izracunaj_pdv
+        return izracunaj_pdv(self.ukupno)
+
+    @property
+    def dostava_naziv(self):
+        return SiteSettings.load().dostava_naziv
+
+    def get_status_label(self):
+        return self.Status(self.status).label
+
+    def __str__(self):
+        return f'#{self.broj} — {self.ime_prezime}'
+
+
+class OrderItem(models.Model):
+    narudzba = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='stavke')
+    artikal = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    varijacija = models.ForeignKey(ProductVariation, on_delete=models.SET_NULL, null=True, blank=True)
+    naziv = models.CharField(max_length=200)
+    product_naziv = models.CharField(max_length=200, blank=True)
+    varijacija_naziv = models.CharField(max_length=100, blank=True)
+    sifra = models.CharField(max_length=50, blank=True)
+    cijena = models.DecimalField(max_digits=10, decimal_places=2)
+    kolicina = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        verbose_name = 'Stavka narudžbe'
+        verbose_name_plural = 'Stavke narudžbe'
+
+    @property
+    def ukupno(self):
+        return self.cijena * self.kolicina
+
+    @property
+    def kolicina_range(self):
+        return range(self.kolicina)
+
+    @property
+    def puni_naziv(self):
+        if self.varijacija_naziv:
+            return f'{self.product_naziv or self.naziv} — {self.varijacija_naziv}'
+        return self.product_naziv or self.naziv
+
+    def __str__(self):
+        return f'{self.puni_naziv} × {self.kolicina}'

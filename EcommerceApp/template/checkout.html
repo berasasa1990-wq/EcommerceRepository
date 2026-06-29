@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}<title>Narudžba — opremazaribolov.ba</title>{% endblock %}
+
+{% block content %}
+<section class="checkout-page">
+    <h1>Narudžba</h1>
+    {% if not user.is_authenticated %}
+    <p class="checkout-auth-note">
+        <a href="{% url 'login' %}?next={% url 'checkout' %}">Prijavite se</a>
+        ili <a href="{% url 'register' %}">registrujte</a> da pratite narudžbe na svom nalogu.
+    </p>
+    {% endif %}
+    <div class="checkout-grid">
+        <form method="post" class="checkout-form">
+            {% csrf_token %}
+            <h2>Podaci za dostavu</h2>
+            {% for field in form %}
+            <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-add-to-bag">Pošalji narudžbu</button>
+        </form>
+
+        <aside class="checkout-summary">
+            <h2>Pregled korpe</h2>
+            <ul class="checkout-items">
+                {% for item in cart_items %}
+                <li>
+                    <span class="checkout-item-label">
+                        {% include 'partials/cart_item_name.html' with item=item %}
+                        <span class="checkout-item-qty">× {{ item.quantity }}</span>
+                    </span>
+                    <span>{{ item.ukupno_stavka }} KM</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% include 'partials/order_totals_checkout.html' with summary=summary %}
+            {% include 'partials/upsell_checkout.html' with upsell_offers=upsell_checkout_offers %}
+        </aside>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    {% block meta_robots %}{% endblock %}
+
+    {% with site_name="opremazaribolov.ba" default_title="Oprema za ribolov | opremazaribolov.ba" default_desc="Kvalitetna oprema za ribolov po povoljnim cijenama. Širok izbor štapova, mašinica, udica i pribora za ribolov u Bosni i Hercegovini." %}
+    {% block page_title %}
+    <title>{{ seo_title|default:site_settings.seo_title|default:default_title }}</title>
+    {% endblock %}
+
+    {% block meta_description %}
+    <meta name="description" content="{{ seo_description|default:site_settings.meta_description|default:default_desc }}">
+    {% endblock %}
+
+    {# Canonical URL #}
+    {% block canonical %}
+    {% if canonical_url %}
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% else %}
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    {% endif %}
+    {% endblock %}
+
+    {# Open Graph / Facebook / WhatsApp / LinkedIn #}
+    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:locale" content="bs_BA">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{{ seo_title|default:site_settings.seo_title|default:default_title }}">
+    <meta property="og:description" content="{{ seo_description|default:site_settings.meta_description|default:default_desc }}">
+    {% block og_image %}
+    {% if og_image %}
+    <meta property="og:image" content="{{ og_image }}">
+    {% elif site_settings.og_image %}
+    <meta property="og:image" content="{{ site_settings.og_image.url }}">
+    {% endif %}
+    {% endblock %}
+    <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
+
+    {# Twitter Cards #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_title|default:site_settings.seo_title|default:default_title }}">
+    <meta name="twitter:description" content="{{ seo_description|default:site_settings.meta_description|default:default_desc }}">
+    {% block twitter_image %}
+    {% if og_image %}
+    <meta name="twitter:image" content="{{ og_image }}">
+    {% elif site_settings.og_image %}
+    <meta name="twitter:image" content="{{ site_settings.og_image.url }}">
+    {% endif %}
+    {% endblock %}
+    {% endwith %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Helvetica+Neue:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+
+    {# Structured data (JSON-LD) — Organization + optional page-specific #}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "opremazaribolov.ba",
+      "url": "{{ request.scheme }}://{{ request.get_host }}/",
+      "logo": "{% if site_settings.logo %}{{ request.scheme }}://{{ request.get_host }}{{ site_settings.logo.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}/static/img/logo.png{% endif %}",
+      "sameAs": [],
+      "contactPoint": [{
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "email": "sasabera1990@gmail.com"
+      }]
+    }
+    </script>
+    {% block structured_data %}{% endblock %}
+</head>
+<body>
+    <div class="promo-bar">
+        <p>Besplatna dostava za narudžbe iznad 250 KM <a href="{% url 'register' %}">Pridruži se sada</a></p>
+    </div>
+
+    <header class="header" id="header">
+        <nav class="nav">
+            <button class="nav-toggle" id="navToggle" aria-label="Open menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+
+            <div class="nav-brand-bar">
+                <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
+                    {% if site_settings.logo %}
+                    <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" decoding="async">
+                    {% else %}
+                    <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                        <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M10 22c4-6 8-9 14-10-2 4-2 8 0 12-5-1-9-1-14-2z" fill="currentColor"/>
+                        <path d="M24 12c2 2 3 5 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="13" cy="19" r="1" fill="currentColor"/>
+                    </svg>
+                    <span class="logo-text">
+                        <span class="logo-name">opremaza<span class="logo-accent">ribolov</span></span><span class="logo-tld">.ba</span>
+                    </span>
+                    {% endif %}
+                </a>
+
+                <ul class="nav-menu" id="navLinks">
+                    {% for category in nav_categories %}
+                    <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
+                        data-nav-item
+                        {% if category.podkategorije.all %}data-mega-target="mega-{{ category.slug }}"{% endif %}>
+                        <a href="{{ category.get_absolute_url }}">
+                            {{ category.naziv }}
+                            {% if category.podkategorije.all %}
+                            <span class="nav-chevron" aria-hidden="true"></span>
+                            {% endif %}
+                        </a>
+                        {% if category.podkategorije.all %}
+                        <ul class="nav-submenu">
+                            <li class="nav-submenu-all">
+                                <a href="{{ category.get_absolute_url }}">Sve u {{ category.naziv }}</a>
+                            </li>
+                            {% for sub in category.podkategorije.all %}
+                            <li class="nav-submenu-group">
+                                <a href="{{ sub.get_absolute_url }}" class="nav-submenu-title">{{ sub.naziv }}</a>
+                                {% if sub.podkategorije.all %}
+                                <ul class="nav-submenu-nested">
+                                    {% for subsub in sub.podkategorije.all %}
+                                    <li><a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    <li class="nav-item nav-item--akcija">
+                        <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJSKA PONUDA</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-actions">
+                <button class="icon-btn search-btn" aria-label="Search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
+                {% if user.is_authenticated %}
+                <a href="{% url 'account' %}" class="icon-btn account-btn" aria-label="Moj nalog">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="icon-btn account-btn" aria-label="Prijava">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </a>
+                {% endif %}
+                <a href="{% url 'cart' %}" class="icon-btn cart-btn" aria-label="Korpa">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+                </a>
+            </div>
+        </nav>
+
+        <div class="mega-menu-panel" id="megaMenuPanel">
+            {% for category in nav_categories %}
+            {% if category.podkategorije.all %}
+            <div class="mega-menu" id="mega-{{ category.slug }}" data-mega-menu>
+                <div class="mega-menu-inner">
+                    <div class="mega-menu-subcategories">
+                        {% for sub in category.podkategorije.all %}
+                        <div class="mega-menu-group">
+                            <h4>
+                                <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
+                            </h4>
+                            {% if sub.podkategorije.all %}
+                            <ul>
+                                {% for subsub in sub.podkategorije.all %}
+                                <li>
+                                    <a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="search-overlay" id="searchOverlay">
+            <div class="search-panel">
+                <form class="search-container" method="get" action="{% url 'home' %}" id="searchForm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu" autocomplete="off" enterkeyhint="search" aria-autocomplete="list" aria-controls="searchSuggestions" aria-expanded="false">
+                    <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </form>
+                <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="flash-messages">
+        {% for message in messages %}
+        <p class="flash-message flash-message--{{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'partials/site_popup.html' %}
+    {% include 'partials/upsell_popup.html' %}
+
+    <footer class="footer">
+        <div class="footer-grid">
+            {% for section in footer_sections %}
+            <div class="footer-column">
+                <h4>{{ section.title }}</h4>
+                <ul>
+                    {% for link in section.links %}
+                    <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; {% now "Y" %} opremazaribolov.ba. Sva prava zadržana.</p>
+            <div class="footer-legal">
+                <a href="#">Guides</a>
+                <a href="#">Terms of Sale</a>
+                <a href="#">Terms of Use</a>
+                <a href="#">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

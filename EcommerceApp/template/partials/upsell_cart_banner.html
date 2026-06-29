@@ -1,0 +1,97 @@
+{% if upsell_offers %}
+<div class="upsell-cart-banners upsell-cart-banners--{{ position }}">
+    {% for offer in upsell_offers %}
+    {% for prod in offer.products %}
+    <article class="upsell-cart-banner upsell-cart-banner--{{ position }}"{% if offer.baner_url %} style="--upsell-banner-image: url('{{ offer.baner_url }}');"{% endif %}>
+        <div class="upsell-cart-banner-bg" aria-hidden="true"></div>
+        {% if position == 'banner_iznad' %}
+            {% if offer.popust_postotak %}
+            <span class="upsell-cart-banner-discount-stamp">-{{ offer.popust_postotak|floatformat:0 }}%</span>
+            {% elif prod.has_discount %}
+            <span class="upsell-cart-banner-discount-stamp">Akcija</span>
+            {% endif %}
+        {% endif %}
+        <form method="post" action="{% url 'add_upsell_to_cart' offer.id prod.id %}" class="upsell-cart-banner-content{% if position == 'banner_iznad' %} upsell-cart-banner-content--iznad-row{% elif position == 'banner_ispod' %} upsell-cart-banner-content--ispod-row{% endif %}">
+            {% csrf_token %}
+            {% if position == 'banner_iznad' %}
+            <div class="upsell-cart-banner-media">
+                {% if prod.slika_url %}
+                <img src="{{ prod.slika_url }}" alt="" class="upsell-cart-banner-thumb upsell-cart-banner-thumb--fill">
+                {% else %}
+                <div class="upsell-cart-banner-thumb-placeholder" aria-hidden="true"></div>
+                {% endif %}
+            </div>
+            <div class="upsell-cart-banner-info-row">
+                <p class="upsell-cart-banner-title">{{ prod.naziv }}</p>
+                <p class="upsell-cart-banner-prices upsell-cart-banner-prices--inline">
+                    {% if prod.has_discount %}
+                    <span class="original">{{ prod.original_price }} KM</span>
+                    <span class="discounted">{{ prod.price }} KM</span>
+                    {% else %}
+                    <span class="discounted">{{ prod.price }} KM</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="upsell-cart-banner-actions">
+                {% if prod.has_variations %}
+                <select name="variation_id" class="upsell-cart-banner-select" required aria-label="Varijacija za {{ prod.naziv }}">
+                    <option value="">Varijacija</option>
+                    {% for v in prod.variations %}
+                    <option value="{{ v.id }}">{{ v.naziv }} — {{ v.price }} KM</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <input type="hidden" name="variation_id" value="">
+                {% endif %}
+                <button type="submit" class="btn btn-banner upsell-cart-banner-btn">
+                    {{ offer.tekst_dugmeta|default:"Dodaj u korpu" }}
+                </button>
+            </div>
+            {% else %}
+            <div class="upsell-cart-banner-media upsell-cart-banner-media--ispod">
+                {% if prod.slika_url %}
+                <img src="{{ prod.slika_url }}" alt="" class="upsell-cart-banner-thumb upsell-cart-banner-thumb--fill">
+                {% else %}
+                <div class="upsell-cart-banner-thumb-placeholder" aria-hidden="true"></div>
+                {% endif %}
+            </div>
+            <div class="upsell-cart-banner-ispod-body">
+                <div class="upsell-cart-banner-name-discount">
+                    <p class="upsell-cart-banner-title">{{ prod.naziv }}</p>
+                    {% if offer.popust_postotak %}
+                    <span class="upsell-cart-banner-discount-large upsell-cart-banner-discount-large--beside-name">-{{ offer.popust_postotak|floatformat:0 }}%</span>
+                    {% elif prod.has_discount %}
+                    <span class="upsell-cart-banner-discount-large upsell-cart-banner-discount-large--beside-name">Akcija</span>
+                    {% endif %}
+                </div>
+                <p class="upsell-cart-banner-prices upsell-cart-banner-prices--inline">
+                    {% if prod.has_discount %}
+                    <span class="original">{{ prod.original_price }} KM</span>
+                    <span class="discounted">{{ prod.price }} KM</span>
+                    {% else %}
+                    <span class="discounted">{{ prod.price }} KM</span>
+                    {% endif %}
+                </p>
+                <div class="upsell-cart-banner-actions">
+                    {% if prod.has_variations %}
+                    <select name="variation_id" class="upsell-cart-banner-select" required aria-label="Varijacija za {{ prod.naziv }}">
+                        <option value="">Varijacija</option>
+                        {% for v in prod.variations %}
+                        <option value="{{ v.id }}">{{ v.naziv }} — {{ v.price }} KM</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="hidden" name="variation_id" value="">
+                    {% endif %}
+                    <button type="submit" class="btn btn-banner upsell-cart-banner-btn">
+                        {{ offer.tekst_dugmeta|default:"Dodaj u korpu" }}
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </article>
+    {% endfor %}
+    {% endfor %}
+</div>
+{% endif %}

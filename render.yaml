@@ -1,0 +1,77 @@
+# Render Blueprint for Ecommerce site (Postgre + Disk for media)
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: oprema-za-ribolov
+    env: python
+    region: frankfurt  # or oregon, ohio etc.
+    plan: free  # promijeni u starter ili higher po potrebi
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn EcommerceProject.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12  # ili 3.11, 3.13
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: SITE_URL
+        sync: false  # postavi ručno nakon deploya
+      - key: RENDER_DISK_PATH
+        value: /var/data
+      # Kopiraj ostale iz .env:
+      - key: EMAIL_APP_PASSWORD
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: SYNC_REMOTE_URL
+        sync: false
+      - key: SYNC_API_KEY
+        sync: false
+      - key: ODOO_URL
+        sync: false
+      - key: ODOO_DB
+        sync: false
+      - key: ODOO_USERNAME
+        sync: false
+      - key: ODOO_API_KEY
+        sync: false
+      - key: TURNSTILE_SITE_KEY
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+
+    # Disk za media fajlove (proizvodi, logo, banneri...)
+    disk:
+      name: media-disk
+      mountPath: /var/data
+      sizeGB: 10  # prilagodi (besplatno ima limit)
+
+  # PostgreSQL baza (besplatna za dev, preporučeno za live)
+  - type: pserv
+    name: oprema-db
+    env: postgres
+    plan: free
+    region: frankfurt
+    ipAllowList: []  # samo internal
+
+# Opcionalno: nakon deploya linkaj Postgres sa Web Service-om
+# Render će automatski postaviti DATABASE_URL
+
+# Nakon prvog deploya:
+# 1. Idi u Web Service → Environment → dodaj SITE_URL = https://tvoja-app.onrender.com
+# 2. Poveži Postgres (ako nije automatski)
+# 3. Provjeri da je Disk mountovan na /var/data
+# 4. Pokreni collectstatic ako treba preko shell
+# 5. Ako trebaš inicijalne podatke: python manage.py loaddata ili ručno kroz admin
+
+# Korisni komandi u Render Shell:
+# python manage.py migrate
+# python manage.py collectstatic --noinput
+# python manage.py createsuperuser

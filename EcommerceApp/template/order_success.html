@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block title %}Narudžba primljena — opremazaribolov.ba{% endblock %}
+
+{% block content %}
+<section class="order-success-page">
+    <h1>Hvala na narudžbi!</h1>
+    <p>Vaša narudžba <strong>#{{ order.broj }}</strong> je uspješno primljena.</p>
+    <p>Kontaktiraćemo vas uskoro na <strong>{{ order.email }}</strong> ili <strong>{{ order.telefon }}</strong>.</p>
+    <div class="order-success-summary">
+        <p><strong>Ukupno:</strong> {{ order.ukupno }} KM</p>
+        <p><strong>Dostava:</strong> {{ order.adresa }}, {{ order.grad }}</p>
+    </div>
+    <div class="order-success-actions">
+        {% if user.is_authenticated %}
+        <a href="{% url 'account' %}" class="btn btn-primary">Pogledaj moje narudžbe</a>
+        {% else %}
+        <a href="{% url 'register' %}" class="btn btn-primary">Registruj se i prati narudžbe</a>
+        {% endif %}
+        <a href="{% url 'home' %}" class="btn btn-secondary">Nastavi kupovinu</a>
+    </div>
+</section>
+{% endblock %}

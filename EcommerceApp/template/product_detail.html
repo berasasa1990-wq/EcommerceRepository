@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{{ seo_title|default:product.seo_title }} — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description|default:product.seo_description }}">
+{% endblock %}
+
+{% block og_type %}product{% endblock %}
+
+{% block canonical %}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}">
+{% endblock %}
+
+{% block content %}
+<section class="product-detail">
+    <div class="product-detail-grid">
+        <div class="product-gallery">
+            <div class="product-gallery-main" id="mainProductImageWrap">
+                {% if product.slika %}
+                <img src="{{ product.slika.url }}" alt="{{ product.naziv }}" id="mainProductImage">
+                {% else %}
+                <div class="product-image-placeholder product-image-placeholder--large" id="mainProductImage">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+            {% if product.opis %}
+            <div class="product-detail-description-block">
+                <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
+                <p class="product-detail-description product-detail-description--under-image">{{ product.opis }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="product-detail-info" id="productDetailInfo"{% if product.slika %} data-default-image="{{ product.slika.url }}"{% endif %}>
+            <div class="product-detail-brand">
+                {% include 'partials/brand_display.html' with brand=product.brend %}
+            </div>
+            <h1>{{ product.naziv }}</h1>
+            <p class="product-detail-category">{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}</p>
+
+            {% if not product.varijacije.count %}
+            <div class="product-detail-price" id="detailPrice">
+                {% include 'partials/product_price.html' with item=product %}
+            </div>
+
+            <div class="product-detail-meta">
+                {% if product.sifra %}<p><strong>Šifra:</strong> {{ product.sifra }}</p>{% endif %}
+                {% if product.barkod %}<p><strong>Barkod:</strong> {{ product.barkod }}</p>{% endif %}
+            </div>
+
+            {% if product.na_stanju %}
+            <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form">
+                {% csrf_token %}
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
+            </form>
+            {% else %}
+            <div class="add-to-cart-form">
+                <span class="sold-out-text">Rasprodato</span>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            {% if product.varijacije.count %}
+            <div class="product-detail-variations-block">
+                <h2 class="product-detail-section-title">IZABERI OPCIJU</h2>
+                <div class="product-detail-variations" id="detailVariations">
+                    {% include 'partials/product_detail_variation_rows.html' with product=product %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const mainImage = document.getElementById('mainProductImage');
+    const productInfo = document.getElementById('productDetailInfo');
+    const defaultImage = productInfo?.dataset.defaultImage ?? '';
+
+    document.querySelectorAll('.product-detail-variation-row[data-image]').forEach((row) => {
+        const preview = () => {
+            if (mainImage && mainImage.tagName === 'IMG' && row.dataset.image) {
+                mainImage.src = row.dataset.image;
+            }
+        };
+        row.addEventListener('mouseenter', preview);
+        row.addEventListener('focusin', preview);
+    });
+
+    document.getElementById('detailVariations')?.addEventListener('mouseleave', () => {
+        if (mainImage && mainImage.tagName === 'IMG' && defaultImage) {
+            mainImage.src = defaultImage;
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block og_image %}{% if product.slika %}{{ product.slika.url }}{% endif %}{% endblock %}
+
+{% block structured_data %}
+{% if product %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.naziv|escapejs }}",
+  "image": {% if product.slika %}"{{ request.scheme }}://{{ request.get_host }}{{ product.slika.url }}"{% else %}"{{ request.scheme }}://{{ request.get_host }}/static/img/placeholder.png"{% endif %},
+  "description": "{{ product.seo_description|escapejs }}",
+  {% if product.brend %}"brand": {
+    "@type": "Brand",
+    "name": "{{ product.brend.naziv|escapejs }}"
+  },{% endif %}
+  {% if product.sifra %}"sku": "{{ product.sifra|escapejs }}",{% endif %}
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}",
+    "priceCurrency": "BAM",
+    "price": "{{ product.prikazna_cijena }}",
+    "availability": "{% if product.na_stanju %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "itemCondition": "https://schema.org/NewCondition"
+  }
+}
+</script>
+{% endif %}
+
+{# Breadcrumbs #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Početna",
+      "item": "{{ request.scheme }}://{{ request.get_host }}/"
+    }
+    {% if product.kategorija %},
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ product.kategorija.naziv|escapejs }}",
+      "item": "{{ request.scheme }}://{{ request.get_host }}{{ product.kategorija.get_absolute_url }}"
+    }
+    {% endif %},
+    {
+      "@type": "ListItem",
+      "position": {% if product.kategorija %}3{% else %}2{% endif %},
+      "name": "{{ product.naziv|escapejs }}",
+      "item": "{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}"
+    }
+  ]
+}
+</script>
+{% endblock %}

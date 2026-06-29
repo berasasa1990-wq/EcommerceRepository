@@ -1,0 +1,31 @@
+<section class="product-catalog{% if catalog_compact %} product-catalog--compact{% endif %}">
+    <div class="catalog-layout">
+        {% include 'partials/product_filter_sidebar.html' with filter_action=filter_action %}
+
+        <div class="catalog-products">
+            {% if products %}
+            <div class="product-grid">
+                {% for product in products %}
+                <a href="{{ product.get_absolute_url }}" class="product-card" data-product-card{% if not hide_variations %} data-cart-on-swatch{% endif %} data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
+                    <div class="product-image">
+                        {% include 'partials/product_image.html' with product=product %}
+                    </div>
+                    <div class="variation-swatches{% if hide_variations or not product.varijacije.count %} variation-swatches--empty{% endif %}">
+                        {% if not hide_variations and product.varijacije.count %}
+                        {% include 'partials/product_variation_swatches.html' with product=product card=True %}
+                        {% endif %}
+                    </div>
+                    {% include 'partials/product_card_info.html' with product=product show_akcija_expiry=show_akcija_expiry %}
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="catalog-empty">Nema artikala za odabrane filtere.</p>
+            {% endif %}
+
+            {% if page_obj %}
+            {% include 'partials/catalog_pagination.html' with elided_page_range=elided_page_range %}
+            {% endif %}
+        </div>
+    </div>
+</section>

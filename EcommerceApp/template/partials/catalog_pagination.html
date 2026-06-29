@@ -1,0 +1,33 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="catalog-pagination" aria-label="Stranice artikala">
+    <div class="catalog-pagination-info">
+        Strana {{ page_obj.number }} od {{ page_obj.paginator.num_pages }}
+        ({{ page_obj.paginator.count }} artikala)
+    </div>
+    <div class="catalog-pagination-links">
+        {% if page_obj.has_previous %}
+        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.previous_page_number }}#product-showcase" class="catalog-page-link">Prethodna</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled">Prethodna</span>
+        {% endif %}
+
+        {% for page_num in elided_page_range|default:page_obj.paginator.page_range %}
+            {% if page_num == page_obj.paginator.ELLIPSIS %}
+            <span class="catalog-page-ellipsis">…</span>
+            {% elif page_num == page_obj.number %}
+            <span class="catalog-page-link catalog-page-link--active">{{ page_num }}</span>
+            {% elif page_num == 1 %}
+            <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}{% endif %}#product-showcase" class="catalog-page-link">{{ page_num }}</a>
+            {% else %}
+            <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_num }}#product-showcase" class="catalog-page-link">{{ page_num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.next_page_number }}#product-showcase" class="catalog-page-link">Sljedeća</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled">Sljedeća</span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}

@@ -1,0 +1,89 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .bulk-merge-form { max-width: 760px; margin-top: 20px; }
+    .bulk-merge-form label { display: block; font-weight: 600; margin-bottom: 8px; }
+    .bulk-merge-form input[type="text"] {
+        width: 100%; max-width: 480px; padding: 8px 10px;
+    }
+    .bulk-merge-note {
+        max-width: 760px; background: #f8f8f8; border: 1px solid #e5e5e5;
+        border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; line-height: 1.5;
+    }
+    .bulk-merge-list {
+        margin: 20px 0; padding: 14px 16px; background: #fff;
+        border: 1px solid #e5e5e5; border-radius: 6px; max-width: 760px;
+    }
+    .bulk-merge-list ul { margin: 8px 0 0; padding-left: 18px; max-height: 220px; overflow-y: auto; }
+    .bulk-merge-radios { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .bulk-merge-radios label { font-weight: 500; display: flex; gap: 8px; align-items: flex-start; }
+    .bulk-merge-actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Spoji artikle
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Spoji artikle u jedan proizvod</h1>
+
+    <div class="bulk-merge-note">
+        Odabrani artikli postaju <strong>varijante</strong> jednog artikla.
+        <strong>Glavni artikal zadržava sliku</strong> prikazanu na sajtu.
+        Svaki spojeni artikal zadržava svoju <em>Odoo template ID</em> na varijanti,
+        pa se stanje i dalje ažurira pri Odoo importu iako su u Odoo-u odvojeni proizvodi.
+    </div>
+
+    <div class="bulk-merge-list">
+        <strong>Odabrano: {{ queryset|length }} artikala</strong>
+        <ul>
+            {% for product in queryset %}
+            <li>
+                {{ product.naziv }}
+                {% if product.sifra %}<span style="color:#666;">({{ product.sifra }})</span>{% endif %}
+                {% if product.odoo_template_id %}<span style="color:#666;">— Odoo #{{ product.odoo_template_id }}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post" class="bulk-merge-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for product in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
+        {% endfor %}
+
+        <div class="form-row">
+            <label>Glavni artikal (zadržava sliku)</label>
+            <div class="bulk-merge-radios">
+                {% for radio in form.glavni_artikal %}
+                {{ radio }}
+                {% endfor %}
+            </div>
+            {% if form.glavni_artikal.errors %}
+            <p class="errornote">{{ form.glavni_artikal.errors|join:', ' }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <label for="{{ form.naziv.id_for_label }}">{{ form.naziv.label }}</label>
+            {{ form.naziv }}
+        </div>
+
+        <div class="bulk-merge-actions">
+            <input type="submit" name="apply" value="Spoji artikle" class="default">
+            <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

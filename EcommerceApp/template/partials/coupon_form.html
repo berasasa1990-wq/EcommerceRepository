@@ -1,0 +1,45 @@
+<div class="coupon-box">
+    <h3 class="coupon-box-title">Loyalty kupon</h3>
+    {% if user.is_authenticated and loyalty_card %}
+    <div class="loyalty-code-display">
+        <div class="loyalty-code-display-text">
+            <span class="loyalty-code-display-label">Vaš kod</span>
+            <strong class="loyalty-code-display-value" id="loyaltyCodeValue">{{ loyalty_card.kod }}</strong>
+            <span class="loyalty-code-display-tier">{{ loyalty_card.get_nivo_display }} · {{ loyalty_card.postotak }}% popusta</span>
+        </div>
+        <button type="button" class="btn-copy-code" data-copy-target="loyaltyCodeValue" aria-label="Kopiraj kod">
+            Kopiraj
+        </button>
+    </div>
+    <p class="loyalty-code-hint">Kopirajte kod iznad, zalijepite u polje ispod i kliknite Primijeni.</p>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <div class="coupon-form-row">
+            {{ coupon_form.kod }}
+            <button type="submit" class="btn btn-coupon">Primijeni</button>
+        </div>
+        {% for error in coupon_form.kod.errors %}
+        <p class="form-error">{{ error }}</p>
+        {% endfor %}
+    </form>
+    {% if applied_coupon_code %}
+    <form method="post" action="{% url 'remove_coupon' %}" class="coupon-remove-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <p class="coupon-applied">
+            Aktivan: <strong>{{ applied_coupon_code }}</strong>
+            {% if summary.kupon_postotak %}({{ summary.kupon_postotak }}%){% endif %}
+            <button type="submit" class="coupon-remove-btn">Ukloni</button>
+        </p>
+    </form>
+    {% endif %}
+    {% else %}
+    <p class="coupon-guest-note">
+        <a href="{% url 'login' %}?next={{ request.path }}">Prijavite se</a> da koristite loyalty kupon.
+    </p>
+    {% endif %}
+</div>

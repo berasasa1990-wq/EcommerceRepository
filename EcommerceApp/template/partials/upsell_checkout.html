@@ -1,0 +1,65 @@
+{% if upsell_offers %}
+<section class="checkout-upsell">
+    {% for offer in upsell_offers %}
+    <div class="checkout-upsell-block">
+        <h3 class="checkout-upsell-title">
+            {{ offer.naslov_ponude|default:"Poslednja šansa" }}
+        </h3>
+        {% if offer.opis_ponude %}
+        <p class="checkout-upsell-subtitle">{{ offer.opis_ponude }}</p>
+        {% endif %}
+        {% for prod in offer.products %}
+        <article class="checkout-upsell-card"{% if offer.baner_url %} style="--checkout-upsell-banner: url('{{ offer.baner_url }}');"{% endif %}>
+            {% if offer.baner_url %}
+            <div class="checkout-upsell-card-bg" aria-hidden="true"></div>
+            {% endif %}
+            <form method="post" action="{% url 'add_upsell_to_cart' offer.id prod.id %}" class="checkout-upsell-card-content">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="checkout">
+                <div class="checkout-upsell-media">
+                    {% if prod.slika_url %}
+                    <img src="{{ prod.slika_url }}" alt="" class="checkout-upsell-thumb">
+                    {% else %}
+                    <div class="checkout-upsell-thumb-placeholder" aria-hidden="true"></div>
+                    {% endif %}
+                </div>
+                <div class="checkout-upsell-info">
+                    <div class="checkout-upsell-name-discount">
+                        <p class="checkout-upsell-name">{{ prod.naziv }}</p>
+                        {% if offer.popust_postotak %}
+                        <span class="checkout-upsell-discount">-{{ offer.popust_postotak|floatformat:0 }}%</span>
+                        {% elif prod.has_discount %}
+                        <span class="checkout-upsell-discount">Akcija</span>
+                        {% endif %}
+                    </div>
+                    <p class="checkout-upsell-prices">
+                        {% if prod.has_discount %}
+                        <span class="original">{{ prod.original_price }} KM</span>
+                        <span class="discounted">{{ prod.price }} KM</span>
+                        {% else %}
+                        <span class="discounted">{{ prod.price }} KM</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="checkout-upsell-actions">
+                    {% if prod.has_variations %}
+                    <select name="variation_id" class="checkout-upsell-select" required aria-label="Varijacija za {{ prod.naziv }}">
+                        <option value="">Varijacija</option>
+                        {% for v in prod.variations %}
+                        <option value="{{ v.id }}">{{ v.naziv }} — {{ v.price }} KM</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="hidden" name="variation_id" value="">
+                    {% endif %}
+                    <button type="submit" class="btn btn-banner checkout-upsell-btn">
+                        {{ offer.tekst_dugmeta|default:"Dodaj u korpu" }}
+                    </button>
+                </div>
+            </form>
+        </article>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}

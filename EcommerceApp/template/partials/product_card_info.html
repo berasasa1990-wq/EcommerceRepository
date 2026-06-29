@@ -1,0 +1,18 @@
+<div class="product-info">
+    <h4 data-product-name>{{ product.naziv }}</h4>
+    <p class="product-origin">Made in Japan</p>
+    <div class="product-brand-slot">
+        {% include 'partials/brand_display.html' with brand=product.brend %}
+    </div>
+    {% if show_akcija_expiry and product.prikaz_akcija_istice %}
+    <p class="product-sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
+    {% endif %}
+    <p class="product-price" data-product-price>
+        {% if product.katalog_na_akciji %}
+        <span class="price-sale">{{ product.katalog_prikazna_cijena }} KM</span>
+        <span class="price-original">{{ product.katalog_bazna_cijena }} KM</span>
+        {% else %}
+        <span class="price-current">{{ product.katalog_prikazna_cijena }} KM</span>
+        {% endif %}
+    </p>
+</div>

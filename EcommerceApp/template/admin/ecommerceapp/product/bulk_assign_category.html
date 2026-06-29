@@ -1,0 +1,86 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .bulk-assign-form {
+        max-width: 720px;
+        margin-top: 20px;
+    }
+    .bulk-assign-form label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .bulk-assign-form select {
+        width: 100%;
+        max-width: 480px;
+        padding: 8px 10px;
+    }
+    .bulk-assign-list {
+        margin: 20px 0;
+        padding: 14px 16px;
+        background: #f8f8f8;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        max-width: 720px;
+    }
+    .bulk-assign-list ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+    .bulk-assign-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Dodjela kategorije
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Dodjela kategorije</h1>
+
+    <div class="bulk-assign-list">
+        <strong>Odabrano artikala: {{ queryset|length }}</strong>
+        <ul>
+            {% for product in queryset %}
+            <li>{{ product.naziv }}{% if product.kategorija %} <span style="color:#666;">(trenutno: {{ product.kategorija }})</span>{% endif %}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post" class="bulk-assign-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for product in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
+        {% endfor %}
+
+        <div class="form-row">
+            <label for="{{ form.kategorija.id_for_label }}">{{ form.kategorija.label }}</label>
+            {{ form.kategorija }}
+            {% if form.kategorija.errors %}
+            <p class="errornote">{{ form.kategorija.errors|join:', ' }}</p>
+            {% endif %}
+        </div>
+
+        <div class="bulk-assign-actions">
+            <input type="submit" name="apply" value="Dodijeli kategoriju" class="default">
+            <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

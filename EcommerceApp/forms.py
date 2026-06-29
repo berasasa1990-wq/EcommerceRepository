@@ -1,0 +1,283 @@
+from django import forms
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+
+from .models import Brand, Category, Product, Tag
+
+
+class RegisterForm(forms.Form):
+    ime_prezime = forms.CharField(
+        label='Ime i prezime',
+        max_length=200,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ime i prezime'}),
+    )
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'email@primjer.ba'}),
+    )
+    telefon = forms.CharField(
+        label='Telefon',
+        max_length=30,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+387 6x xxx xxx'}),
+    )
+    lozinka = forms.CharField(
+        label='Lozinka',
+        min_length=8,
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Min. 8 znakova'}),
+    )
+    lozinka_potvrda = forms.CharField(
+        label='Potvrdite lozinku',
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Ponovite lozinku'}),
+    )
+    cf_turnstile_response = forms.CharField(
+        required=True,
+        widget=forms.HiddenInput(),
+        error_messages={
+            'required': 'Molimo potvrdite da niste robot (Turnstile).'
+        }
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
+            raise forms.ValidationError('Korisnik s ovim emailom već postoji.')
+        return email
+
+    def clean(self):
+        cleaned = super().clean()
+        lozinka = cleaned.get('lozinka')
+        potvrda = cleaned.get('lozinka_potvrda')
+        if lozinka and potvrda and lozinka != potvrda:
+            self.add_error('lozinka_potvrda', 'Lozinke se ne podudaraju.')
+        return cleaned
+
+
+class LoginForm(forms.Form):
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'email@primjer.ba', 'autofocus': True}),
+    )
+    lozinka = forms.CharField(
+        label='Lozinka',
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Lozinka'}),
+    )
+
+    def __init__(self, *args, request=None, **kwargs):
+        self.request = request
+        self.user = None
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned = super().clean()
+        email = cleaned.get('email', '').strip().lower()
+        lozinka = cleaned.get('lozinka')
+        if not email or not lozinka:
+            return cleaned
+
+        user = User.objects.filter(email__iexact=email).first()
+        if user is None:
+            user = User.objects.filter(username__iexact=email).first()
+
+        if user is None:
+            raise forms.ValidationError('Pogrešan email ili lozinka.')
+
+        authenticated = authenticate(self.request, username=user.username, password=lozinka)
+        if authenticated is None:
+            raise forms.ValidationError('Pogrešan email ili lozinka.')
+        if not authenticated.is_active:
+            raise forms.ValidationError('Ovaj nalog je deaktiviran.')
+
+        self.user = authenticated
+        return cleaned
+
+
+class ProfileForm(forms.Form):
+    ime_prezime = forms.CharField(
+        label='Ime i prezime',
+        max_length=200,
+        widget=forms.TextInput(attrs={'class': 'form-input'}),
+    )
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={'class': 'form-input'}),
+    )
+    telefon = forms.CharField(
+        label='Telefon',
+        max_length=30,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input'}),
+    )
+    adresa = forms.CharField(
+        label='Adresa',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input'}),
+    )
+    grad = forms.CharField(
+        label='Grad',
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input'}),
+    )
+    postanski_broj = forms.CharField(
+        label='Poštanski broj',
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input'}),
+    )
+
+
+class CouponForm(forms.Form):
+    kod = forms.CharField(
+        label='Kupon kod',
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Unesite loyalty kod',
+            'autocomplete': 'off',
+        }),
+    )
+
+    def clean_kod(self):
+        kod = self.cleaned_data.get('kod', '').strip()
+        if not kod:
+            raise forms.ValidationError('Unesite kupon kod.')
+        return kod.upper()
+
+
+class CheckoutForm(forms.Form):
+    ime_prezime = forms.CharField(
+        label='Ime i prezime', max_length=200,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ime i prezime'}),
+    )
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'email@primjer.ba'}),
+    )
+    telefon = forms.CharField(
+        label='Telefon', max_length=30,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+387 6x xxx xxx'}),
+    )
+    adresa = forms.CharField(
+        label='Adresa',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ulica i broj'}),
+    )
+    grad = forms.CharField(
+        label='Grad', max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Grad'}),
+    )
+    postanski_broj = forms.CharField(
+        label='Poštanski broj', max_length=20, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '71000'}),
+    )
+    napomena = forms.CharField(
+        label='Napomena', required=False,
+        widget=forms.Textarea(attrs={'class': 'form-input form-textarea', 'rows': 3, 'placeholder': 'Opcionalno'}),
+    )
+
+
+class OdooImportForm(forms.Form):
+    odoo_category_id = forms.ChoiceField(
+        label='Odoo product category',
+        choices=[],
+        widget=forms.Select(attrs={'class': 'odoo-select'}),
+    )
+    kategorija = forms.ModelChoiceField(
+        label='Lokalna kategorija (opcionalno)',
+        queryset=Category.objects.filter(aktivan=True).order_by('redoslijed', 'naziv'),
+        required=False,
+        empty_label='— automatski po Odoo mapiranju —',
+        widget=forms.Select(attrs={'class': 'odoo-select'}),
+        help_text='Ako je prazno, koristi lokalnu kategoriju s istim Odoo category ID.',
+    )
+    ukljuci_podkategorije = forms.BooleanField(
+        label='Uključi podkategorije iz Odoo-a',
+        required=False,
+        initial=True,
+    )
+    azuriraj_postojece = forms.BooleanField(
+        label='Ažuriraj postojeće artikle (po Odoo ID)',
+        required=False,
+        initial=True,
+    )
+    ucitaj_slike = forms.BooleanField(
+        label='Učitaj slike iz Odoo-a',
+        required=False,
+        initial=True,
+    )
+    samo_stanje = forms.BooleanField(
+        label='Samo ažuriraj stanje (postojeći artikli)',
+        required=False,
+        initial=False,
+        help_text='Ažurira samo količinu i dostupnost. Ne mijenja naziv, cijenu, kategoriju, slike niti kreira nove artikle.',
+    )
+    preskoci_brendovi = forms.ModelMultipleChoiceField(
+        label='Ne ažuriraj artikle ovih brendova',
+        queryset=Brand.objects.order_by('naziv'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text='Označeni brendovi se preskaču pri ažuriranju postojećih artikala (korisno za brendove koji nisu u Odoo-u).',
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('samo_stanje'):
+            cleaned['azuriraj_postojece'] = True
+            cleaned['ucitaj_slike'] = False
+        return cleaned
+
+    def __init__(self, *args, odoo_category_choices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if odoo_category_choices is not None:
+            self.fields['odoo_category_id'].choices = odoo_category_choices
+
+
+class MergeProductsForm(forms.Form):
+    glavni_artikal = forms.ModelChoiceField(
+        label='Glavni artikal (zadržava sliku)',
+        queryset=Product.objects.none(),
+        widget=forms.RadioSelect,
+    )
+    naziv = forms.CharField(
+        label='Naziv spojenog artikla (opcionalno)',
+        required=False,
+        max_length=200,
+        widget=forms.TextInput(attrs={'class': 'odoo-select', 'placeholder': 'Ostavite prazno za naziv glavnog artikla'}),
+    )
+
+    def __init__(self, *args, selected_products=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if selected_products is not None:
+            self.fields['glavni_artikal'].queryset = selected_products
+            self.fields['glavni_artikal'].initial = selected_products.first()
+
+
+class BulkAssignCategoryForm(forms.Form):
+    kategorija = forms.ModelChoiceField(
+        label='Kategorija na sajtu',
+        queryset=Category.objects.filter(aktivan=True).select_related(
+            'roditelj', 'roditelj__roditelj',
+        ).order_by('redoslijed', 'naziv'),
+        widget=forms.Select(attrs={'class': 'odoo-select'}),
+        empty_label=None,
+    )
+
+
+class BulkAssignBrandForm(forms.Form):
+    brend = forms.ModelChoiceField(
+        label='Brend',
+        queryset=Brand.objects.order_by('naziv'),
+        widget=forms.Select(attrs={'class': 'odoo-select'}),
+        empty_label=None,
+    )
+
+
+class BulkAssignTagsForm(forms.Form):
+    tagovi = forms.ModelMultipleChoiceField(
+        label='Tagovi',
+        queryset=Tag.objects.order_by('naziv'),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        help_text='Odabrani tagovi će biti dodani postojećim tagovima artikala (ne zamjenjuju ih).',
+    )

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}<title>Korpa — opremazaribolov.ba</title>{% endblock %}
+
+{% block content %}
+<section class="cart-page">
+    <h1>Korpa</h1>
+
+    {% if cart_items %}
+    <div class="cart-layout">
+        <div class="cart-main">
+            {% include 'partials/upsell_cart_banner.html' with position='banner_iznad' upsell_offers=upsell_banners_above %}
+            <form method="post" action="{% url 'update_cart' %}" class="cart-form">
+                {% csrf_token %}
+                <div class="cart-items">
+                {% for item in cart_items %}
+                <article class="cart-item">
+                    <div class="cart-item-image">
+                        {% if item.slika %}
+                        <img src="{{ item.slika }}" alt="{{ item.naziv }}">
+                        {% else %}
+                        <div class="product-image-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="cart-item-info">
+                        <h3 class="cart-item-title">
+                            {% include 'partials/cart_item_name.html' with item=item %}
+                        </h3>
+                        {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}
+                        <p class="cart-item-price">{{ item.cijena_decimal }} KM</p>
+                    </div>
+                    <div class="cart-item-qty">
+                        <label for="qty-{{ item.key }}">Kol.</label>
+                        <input type="number" id="qty-{{ item.key }}" name="quantity_{{ item.key }}" value="{{ item.quantity }}" min="1" max="99" class="form-input form-input--qty">
+                    </div>
+                    <div class="cart-item-total">
+                        <p>{{ item.ukupno_stavka }} KM</p>
+                    </div>
+                    <button type="submit" formaction="{% url 'remove_from_cart' item.key %}" formmethod="post" class="cart-item-remove" aria-label="Ukloni">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </article>
+                {% endfor %}
+                </div>
+            </form>
+        </div>
+
+        <aside class="cart-summary">
+            {% include 'partials/coupon_form.html' with coupon_next='cart' %}
+            {% include 'partials/order_totals.html' with summary=summary %}
+            <div class="cart-summary-actions">
+                <a href="{% url 'checkout' %}" class="btn btn-primary btn-add-to-bag btn-cart-checkout">Nastavi na narudžbu</a>
+            </div>
+            {% include 'partials/upsell_cart_banner.html' with position='banner_ispod' upsell_offers=upsell_banners_below %}
+        </aside>
+    </div>
+    {% else %}
+    <p class="cart-empty">Korpa je prazna.</p>
+    <a href="{% url 'home' %}" class="btn btn-primary">Nastavi kupovinu</a>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.cart-item-qty input[type="number"]').forEach((input) => {
+    input.addEventListener('change', () => {
+        const form = input.closest('form');
+        if (form) {
+            form.requestSubmit();
+        }
+    });
+});
+</script>
+{% endblock %}

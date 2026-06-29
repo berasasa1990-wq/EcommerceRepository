@@ -1,0 +1,65 @@
+{% if active_upsell_offer and active_upsell_offer.prikaz == 'popup' %}
+<div class="site-popup-overlay" id="upsellPopupOverlay" hidden
+     data-upsell-id="{{ active_upsell_offer.id }}">
+    <div class="site-popup upsell-popup" role="dialog" aria-modal="true">
+        <button type="button" class="site-popup-close" id="upsellPopupClose" aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <div class="upsell-header">
+            <h3>{{ active_upsell_offer.naslov_ponude|default:"Specijalna ponuda za vas!" }}</h3>
+            <p>{{ active_upsell_offer.opis_ponude|default:"Dodajte u korpu sa dodatnim popustom" }}</p>
+        </div>
+
+        <div class="upsell-products">
+            {% for prod in active_upsell_offer.products %}
+            <div class="upsell-product">
+                <div class="upsell-image-wrap">
+                    {% if prod.slika_url %}
+                    <img src="{{ prod.slika_url }}" alt="{{ prod.naziv }}" class="upsell-image">
+                    {% else %}
+                    <div class="upsell-image-placeholder"></div>
+                    {% endif %}
+                </div>
+                <form method="post" action="{% url 'add_upsell_to_cart' active_upsell_offer.id prod.id %}" class="upsell-right">
+                    {% csrf_token %}
+                    <div class="upsell-name">{{ prod.naziv }}</div>
+                    {% if prod.has_discount %}
+                    <div class="upsell-prices">
+                        <span class="original">{{ prod.original_price }} KM</span>
+                        <span class="discounted">{{ prod.price }} KM</span>
+                        {% if prod.has_variations %}<span class="var-note"> (Od cijene)</span>{% endif %}
+                    </div>
+                    {% else %}
+                    <div class="upsell-prices">
+                        <span class="discounted">{{ prod.price }} KM</span>
+                        {% if prod.has_variations %}<span class="var-note"> (Od cijene)</span>{% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if prod.has_variations %}
+                    <select name="variation_id" class="upsell-var-select" required>
+                        <option value="">Izaberite varijaciju</option>
+                        {% for v in prod.variations %}
+                        <option value="{{ v.id }}">{{ v.naziv }} — {{ v.price }} KM</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="hidden" name="variation_id" value="">
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary btn-small">Dodaj u korpu</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="upsell-note">
+            <small>Ponuda važi samo za ovu sesiju.</small>
+        </div>
+    </div>
+</div>
+{% endif %}

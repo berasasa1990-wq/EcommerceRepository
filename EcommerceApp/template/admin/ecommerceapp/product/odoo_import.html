@@ -1,0 +1,170 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .odoo-import-form {
+        max-width: 720px;
+        margin-top: 20px;
+    }
+    .odoo-import-form .form-row {
+        margin-bottom: 18px;
+    }
+    .odoo-import-form label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .odoo-import-form select,
+    .odoo-import-form input[type="number"] {
+        width: 100%;
+        max-width: 480px;
+        padding: 8px 10px;
+    }
+    .odoo-import-form .help {
+        color: #666;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+    .odoo-import-form .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .odoo-import-form .checkbox-row input {
+        width: auto;
+    }
+    .odoo-import-form .brand-skip-list {
+        list-style: none;
+        margin: 8px 0 0;
+        padding: 12px 14px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        max-width: 480px;
+        background: #fff;
+    }
+    .odoo-import-form .brand-skip-list li {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .odoo-import-form .brand-skip-list li:last-child {
+        margin-bottom: 0;
+    }
+    .odoo-import-form .brand-skip-list label {
+        font-weight: 500;
+        margin: 0;
+    }
+    .odoo-import-form .submit-row {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    .odoo-import-note {
+        max-width: 720px;
+        background: #f8f8f8;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+    .odoo-import-error {
+        max-width: 720px;
+        background: #fff4f4;
+        border: 1px solid #f5c2c2;
+        color: #8a1f1f;
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Import iz Odoo
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Import artikala iz Odoo</h1>
+
+    <div class="odoo-import-note">
+        Odaberite <strong>Odoo product category</strong> čije artikle želite uvesti.
+        Artikli se mapiraju po Odoo ID-u — ponovni import ažurira postojeće zapise.
+        Za automatsko mapiranje kategorija u lokalnoj bazi, u Kategorijama postavite <em>Odoo category ID</em>.
+        Brendove koji nisu u Odoo-u možete označiti ispod — ti artikli se neće dirati pri importu.
+    </div>
+
+    {% if odoo_error %}
+    <div class="odoo-import-error">
+        Nije moguće učitati kategorije iz Odoo-a: {{ odoo_error }}
+    </div>
+    {% endif %}
+
+    <form method="post" class="odoo-import-form">
+        {% csrf_token %}
+
+        <div class="form-row">
+            <label for="{{ form.odoo_category_id.id_for_label }}">{{ form.odoo_category_id.label }}</label>
+            {{ form.odoo_category_id }}
+            {% if form.odoo_category_id.errors %}
+            <p class="errornote">{{ form.odoo_category_id.errors|join:', ' }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <label for="{{ form.kategorija.id_for_label }}">{{ form.kategorija.label }}</label>
+            {{ form.kategorija }}
+            {% if form.kategorija.help_text %}<p class="help">{{ form.kategorija.help_text }}</p>{% endif %}
+        </div>
+
+        <div class="form-row checkbox-row">
+            {{ form.ukljuci_podkategorije }}
+            <label for="{{ form.ukljuci_podkategorije.id_for_label }}">{{ form.ukljuci_podkategorije.label }}</label>
+        </div>
+
+        <div class="form-row checkbox-row">
+            {{ form.azuriraj_postojece }}
+            <label for="{{ form.azuriraj_postojece.id_for_label }}">{{ form.azuriraj_postojece.label }}</label>
+        </div>
+
+        <div class="form-row checkbox-row">
+            {{ form.ucitaj_slike }}
+            <label for="{{ form.ucitaj_slike.id_for_label }}">{{ form.ucitaj_slike.label }}</label>
+        </div>
+
+        <div class="form-row checkbox-row">
+            {{ form.samo_stanje }}
+            <label for="{{ form.samo_stanje.id_for_label }}">{{ form.samo_stanje.label }}</label>
+        </div>
+        {% if form.samo_stanje.help_text %}<p class="help">{{ form.samo_stanje.help_text }}</p>{% endif %}
+
+        <div class="form-row">
+            <span class="label">{{ form.preskoci_brendovi.label }}</span>
+            <ul class="brand-skip-list">
+                {% for checkbox in form.preskoci_brendovi %}
+                <li>{{ checkbox }}</li>
+                {% empty %}
+                <li>Nema brendova u bazi.</li>
+                {% endfor %}
+            </ul>
+            {% if form.preskoci_brendovi.help_text %}<p class="help">{{ form.preskoci_brendovi.help_text }}</p>{% endif %}
+        </div>
+
+        <div class="submit-row">
+            <input type="submit" value="Pokreni import" class="default" {% if odoo_error %}disabled{% endif %}>
+            <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

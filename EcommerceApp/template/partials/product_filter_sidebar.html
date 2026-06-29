@@ -1,0 +1,52 @@
+<aside class="catalog-sidebar">
+    <form class="catalog-filter" method="get" action="{{ filter_action }}#product-showcase">
+        <h2 class="catalog-filter-title">Filter</h2>
+
+        {% if filter_params.q %}
+        <input type="hidden" name="q" value="{{ filter_params.q }}">
+        <p class="filter-search-hint">Pretraga: <strong>{{ filter_params.q }}</strong></p>
+        {% endif %}
+
+        {% if filter_params.akcija %}
+        <input type="hidden" name="akcija" value="{{ filter_params.akcija }}">
+        {% endif %}
+
+        {% if filter_params.brend %}
+        <input type="hidden" name="brend" value="{{ filter_params.brend }}">
+        {% endif %}
+
+        <div class="filter-group">
+            <label class="filter-label" for="filter-kategorija">Kategorija</label>
+            <select id="filter-kategorija" name="kategorija" class="filter-input">
+                <option value="">Sve kategorije</option>
+                {% for cat in filter_categories %}
+                <option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>
+                    {% if cat.nivo == 1 %}— {% elif cat.nivo == 2 %}—— {% endif %}{{ cat.naziv }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <span class="filter-label">Cijena (KM)</span>
+            <div class="filter-price-row">
+                <input type="number" name="cijena_od" class="filter-input" placeholder="Od" min="0" step="0.01" value="{{ filter_params.cijena_od }}">
+                <input type="number" name="cijena_do" class="filter-input" placeholder="Do" min="0" step="0.01" value="{{ filter_params.cijena_do }}">
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label" for="filter-sort">Sortiranje</label>
+            <select id="filter-sort" name="sort" class="filter-input">
+                <option value="">Zadano</option>
+                <option value="rastuca"{% if filter_params.sort == 'rastuca' %} selected{% endif %}>Rastuća cijena</option>
+                <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Opadajuća cijena</option>
+            </select>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-filter">Primijeni</button>
+            <a href="{{ filter_action }}#product-showcase" class="btn btn-secondary btn-filter">Poništi</a>
+        </div>
+    </form>
+</aside>

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{{ seo_title|default:"Oprema za ribolov | opremazaribolov.ba" }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description|default:'Kvalitetna ribolovna oprema po povoljnim cijenama. Štapovi, mašinice, udice, pribor za ribolov — dostava širom BiH.' }}">
+{% endblock %}
+
+{% block content %}
+{% if not filter_params.q and not filter_params.akcija %}
+{% if hero_slides %}
+<section class="hero-carousel" id="heroCarousel">
+    <div class="carousel-track">
+        {% for slide in hero_slides %}
+        <div class="carousel-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
+            <div class="slide-image" style="background-image: url('{{ slide.image }}');"></div>
+            <div class="slide-content">
+                <h2>{{ slide.title }}</h2>
+                {% if slide.subtitle %}
+                <p class="slide-subtitle">{{ slide.subtitle }}</p>
+                {% endif %}
+                <div class="slide-actions">
+                    {% for action in slide.actions %}
+                    <a href="{{ action.url }}" class="btn btn-banner">
+                        {{ action.label }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <button class="carousel-btn carousel-prev" id="carouselPrev" aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+    </button>
+    <button class="carousel-btn carousel-next" id="carouselNext" aria-label="Next slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>
+    </button>
+    <div class="carousel-dots" id="carouselDots">
+        {% for slide in hero_slides %}
+        <button class="dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" aria-label="Go to slide {{ forloop.counter }}"></button>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if grid_banners %}
+<section class="grid-banners">
+    {% for card in grid_banners %}
+    <article class="grid-banner">
+        <div class="card-image" style="background-image: url('{{ card.image }}');"></div>
+        <div class="card-overlay">
+            <h3>{{ card.title }}</h3>
+            {% if card.subtitle %}
+            <p>{{ card.subtitle }}</p>
+            {% endif %}
+            <div class="card-actions">
+                {% for action in card.actions %}
+                <a href="{{ action.url }}" class="btn btn-banner">
+                    {{ action.label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if featured_cards %}
+<section class="featured-grid">
+    {% for card in featured_cards %}
+    <article class="featured-card {% if card.wide %}featured-card--wide{% endif %}">
+        <div class="card-image" style="background-image: url('{{ card.image }}');"></div>
+        <div class="card-overlay">
+            <h3>{{ card.title }}</h3>
+            {% if card.subtitle %}
+            <p>{{ card.subtitle }}</p>
+            {% endif %}
+            <div class="card-actions">
+                {% for action in card.actions %}
+                <a href="{{ action.url }}" class="btn btn-banner">
+                    {{ action.label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if spotlight %}
+<section class="spotlight">
+    <div class="spotlight-inner">
+        <div class="spotlight-image" style="background-image: url('{{ spotlight.image }}');"></div>
+        <div class="spotlight-content">
+            <h2>{{ spotlight.title }}</h2>
+            <p>{{ spotlight.description }}</p>
+            <a href="{{ spotlight.url }}" class="btn btn-banner">{{ spotlight.cta }}</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endif %}
+
+<section class="product-showcase{% if filter_params.q %} product-showcase--search{% endif %}" id="product-showcase">
+    <div class="showcase-header{% if showcase_brands %} showcase-header--with-brands{% endif %}">
+        <div class="showcase-header-text">
+            {% if filter_params.q %}
+            <h2>Rezultati pretrage</h2>
+            <p>
+                {% if page_obj.paginator.count %}
+                Pronađeno {{ page_obj.paginator.count }} artikala za „{{ filter_params.q }}".
+                {% else %}
+                Nema artikala za „{{ filter_params.q }}".
+                {% endif %}
+            </p>
+            {% elif filter_params.akcija %}
+            <h2>Akcija</h2>
+            <p>
+                {% if page_obj.paginator.count %}
+                {{ page_obj.paginator.count }} artikala na sniženoj cijeni.
+                {% else %}
+                Trenutno nema artikala na akciji.
+                {% endif %}
+            </p>
+            {% elif selected_brand %}
+            <h2>{{ selected_brand.naziv }}</h2>
+            <p>
+                {% if page_obj.paginator.count %}
+                {{ page_obj.paginator.count }} artikala brenda {{ selected_brand.naziv }}.
+                {% else %}
+                Nema artikala za odabrani brend.
+                {% endif %}
+            </p>
+            {% else %}
+            <h2>Svi Artikli</h2>
+            <p>Visoki kvalitet udica za ribolov</p>
+            {% endif %}
+        </div>
+        {% if showcase_brands %}
+        <nav class="showcase-brand-strip" aria-label="Filtriraj po brendu">
+            {% for brand in showcase_brands %}
+            <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase"
+               class="showcase-brand-link{% if filter_params.brend == brand.slug %} is-active{% endif %}"
+               title="{{ brand.naziv }}"
+               {% if filter_params.brend == brand.slug %}aria-current="true"{% endif %}>
+                <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" loading="lazy" decoding="async">
+            </a>
+            {% endfor %}
+        </nav>
+        {% endif %}
+    </div>
+    {% url 'home' as home_url %}
+    {% include 'partials/product_catalog.html' with filter_action=home_url catalog_compact=True page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query hide_variations=True show_akcija_expiry=filter_params.akcija %}
+</section>
+
+{% if not filter_params.q and not filter_params.akcija %}
+<section class="trending">
+    <h2>TRENDING</h2>
+    <p class="trending-subtitle">Classic silhouettes and cutting-edge innovation to build your game from the ground up.</p>
+    <div class="trending-grid">
+        {% for column in trending %}
+        <div class="trending-column">
+            <h4>{{ column.title }}</h4>
+            <ul>
+                {% for link in column.links %}
+                <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

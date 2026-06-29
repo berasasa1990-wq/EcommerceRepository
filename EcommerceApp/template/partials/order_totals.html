@@ -1,0 +1,32 @@
+<div class="order-totals">
+    <div class="order-totals-row">
+        <span>Ukupno bez PDV-a</span>
+        <span>{{ summary.pdv_artikli.bez_pdv }} KM</span>
+    </div>
+    <div class="order-totals-row">
+        <span>PDV (17%)</span>
+        <span>{{ summary.pdv_artikli.pdv }} KM</span>
+    </div>
+    <div class="order-totals-row">
+        <span>Ukupno sa PDV-om</span>
+        <span>{{ summary.medjuzbir }} KM</span>
+    </div>
+    <div class="order-totals-row order-totals-row--discount">
+        <span>Popust</span>
+        <span>{% if summary.popust %}-{{ summary.popust }}{% else %}0.00{% endif %} KM</span>
+    </div>
+    <div class="order-totals-row">
+        <span>Dostava{% if summary.dostava_naziv %} — {{ summary.dostava_naziv }}{% endif %}</span>
+        <span>
+            {% if summary.besplatna_dostava %}
+            Besplatno
+            {% else %}
+            {{ summary.dostava }} KM
+            {% endif %}
+        </span>
+    </div>
+    <div class="order-totals-row order-totals-row--total">
+        <span>Ukupno za plaćanje</span>
+        <strong>{{ summary.ukupno }} KM</strong>
+    </div>
+</div>

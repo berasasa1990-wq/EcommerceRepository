@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{% if category.meta_title %}{{ category.meta_title }}{% else %}{{ category.naziv }} | Oprema za ribolov{% endif %} — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block meta_description %}
+{% if category.meta_description %}
+<meta name="description" content="{{ category.meta_description }}">
+{% else %}
+<meta name="description" content="{{ category.naziv }} — širok izbor opreme za ribolov po odličnim cijenama. Brza dostava u Bosni i Hercegovini.">
+{% endif %}
+{% endblock %}
+
+{% block canonical %}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ category.get_absolute_url }}">
+{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Početna",
+      "item": "{{ request.scheme }}://{{ request.get_host }}/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ category.naziv|escapejs }}",
+      "item": "{{ request.scheme }}://{{ request.get_host }}{{ category.get_absolute_url }}"
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="category-page">
+    <div class="category-header">
+        <h1>{{ category.naziv }}</h1>
+        {% if category.podkategorije.all %}
+        <div class="category-subnav">
+            {% for sub in category.podkategorije.all %}
+            <a href="{{ sub.get_absolute_url }}" class="category-subnav-link">{{ sub.naziv }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    {% url 'category' category.slug as category_url %}
+    {% include 'partials/product_catalog.html' with filter_action=category_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija %}
+</section>
+{% endblock %}

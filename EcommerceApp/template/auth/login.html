@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}<title>Prijava — opremazaribolov.ba</title>{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="auth-card">
+        <h1>Prijava</h1>
+        <p class="auth-lead">Prijavite se da pratite narudžbe i brže završite kupovinu.</p>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            {% endif %}
+
+            {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}
+                <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% for field in form %}
+            <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary btn-block">Prijavi se</button>
+        </form>
+
+        <p class="auth-switch">
+            Nemate nalog? <a href="{% url 'register' %}">Registrujte se</a>
+        </p>
+    </div>
+</section>
+{% endblock %}

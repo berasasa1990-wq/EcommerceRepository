@@ -1,0 +1,20 @@
+{% for var in product.varijacije.all %}
+<div class="product-detail-variation-row"{% if var.slika %} data-image="{{ var.slika.url }}"{% endif %}>
+    <span class="product-detail-variation-name">{{ var.naziv }}</span>
+    <span class="product-detail-variation-price">
+        {% include 'partials/product_price.html' with item=var %}
+    </span>
+    {% if var.na_stanju %}
+    <form method="post" action="{% url 'add_to_cart' product.slug %}" class="product-detail-variation-form">
+        {% csrf_token %}
+        <input type="hidden" name="variation_id" value="{{ var.pk }}">
+        <input type="hidden" name="quantity" value="1">
+        <button type="submit" class="btn btn-detail-variation-add">Dodaj u korpu</button>
+    </form>
+    {% else %}
+    <span class="product-detail-variation-form">
+        <span class="sold-out-text">Rasprodato</span>
+    </span>
+    {% endif %}
+</div>
+{% endfor %}

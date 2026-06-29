@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block title %}Moj nalog — opremazaribolov.ba{% endblock %}
+
+{% block content %}
+<section class="account-page">
+    <div class="account-header">
+        <div>
+            <h1>Moj nalog</h1>
+            <p class="account-greeting">Zdravo, {{ user.first_name|default:user.email }}</p>
+        </div>
+        <a href="{% url 'logout' %}" class="btn btn-logout">Odjavi se</a>
+    </div>
+
+    {% include 'partials/loyalty_card.html' %}
+
+    <div class="account-grid">
+        <aside class="account-profile">
+            <h2>Podaci naloga</h2>
+            <form method="post" class="account-form">
+                {% csrf_token %}
+                {% for field in profile_form %}
+                <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                    <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Sačuvaj promjene</button>
+            </form>
+        </aside>
+
+        <div class="account-orders">
+            <h2>Moje narudžbe</h2>
+            {% if orders %}
+            <div class="orders-list">
+                {% for order in orders %}
+                <article class="order-card">
+                    <div class="order-card-head">
+                        <div>
+                            <h3>Narudžba #{{ order.broj }}</h3>
+                            <p class="order-card-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</p>
+                        </div>
+                        <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+                    </div>
+                    <ul class="order-card-items">
+                        {% for item in order.stavke.all %}
+                        <li>
+                            <span>{{ item.puni_naziv }} × {{ item.kolicina }}</span>
+                            <span>{{ item.ukupno }} KM</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="order-card-footer">
+                        <strong>{{ order.ukupno }} KM</strong>
+                        <a href="{% url 'account_order_detail' broj=order.broj %}" class="order-card-link">Detalji narudžbe</a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="account-empty">
+                <p>Još nemate narudžbi povezanih s ovim nalogom.</p>
+                <a href="{% url 'home' %}" class="btn btn-primary">Kreni u kupovinu</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

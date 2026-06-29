@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://opremazaribolov.ba/sitemap.xml
+
+# Disallow private / utility paths
+Disallow: /korpa/
+Disallow: /narudžba/
+Disallow: /nalog/
+Disallow: /prijava/
+Disallow: /registracija/
+Disallow: /odjava/
+Disallow: /admin/
+Disallow: /api/

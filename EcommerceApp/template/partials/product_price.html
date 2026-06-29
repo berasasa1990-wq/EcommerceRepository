@@ -1,0 +1,6 @@
+{% if item.na_akciji %}
+<span class="price-sale">{{ item.prikazna_cijena }} KM</span>
+<span class="price-original">{{ item.bazna_cijena }} KM</span>
+{% else %}
+<span class="price-current">{{ item.prikazna_cijena }} KM</span>
+{% endif %}

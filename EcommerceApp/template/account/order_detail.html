@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block title %}Narudžba #{{ order.broj }} — opremazaribolov.ba{% endblock %}
+
+{% block content %}
+<section class="account-order-page">
+    <div class="account-order-header">
+        <div>
+            <a href="{% url 'account' %}" class="account-back-link">← Nazad na nalog</a>
+            <h1>Narudžba #{{ order.broj }}</h1>
+            <p class="account-order-meta">
+                {{ order.kreirana|date:"d.m.Y. H:i" }}
+                · <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+            </p>
+        </div>
+    </div>
+
+    <div class="account-order-grid">
+        <div class="account-order-panel">
+            <h2>Stavke</h2>
+            <ul class="account-order-items">
+                {% for item in order.stavke.all %}
+                <li class="account-order-item">
+                    <div>
+                        <strong>{{ item.product_naziv|default:item.naziv }}</strong>
+                        {% if item.varijacija_naziv %}
+                        <p class="account-order-item-variation">Varijacija: {{ item.varijacija_naziv }}</p>
+                        {% endif %}
+                        <p class="account-order-item-meta">Šifra: {{ item.sifra|default:"—" }} · {{ item.kolicina }} kom × {{ item.cijena }} KM</p>
+                    </div>
+                    <span>{{ item.ukupno }} KM</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% include 'partials/order_totals.html' with summary=summary %}
+        </div>
+
+        <aside class="account-order-panel">
+            <h2>Dostava</h2>
+            <div class="account-order-info">
+                <p><span>Kupac</span>{{ order.ime_prezime }}</p>
+                <p><span>Email</span>{{ order.email }}</p>
+                <p><span>Telefon</span>{{ order.telefon }}</p>
+                <p><span>Adresa</span>{{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}</p>
+                {% if order.napomena %}
+                <p><span>Napomena</span>{{ order.napomena }}</p>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}
