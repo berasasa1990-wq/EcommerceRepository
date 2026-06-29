@@ -14,22 +14,26 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import re
+
+import re
+
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views.generic.base import TemplateView
+from django.views.static import serve
 
 from EcommerceApp.sitemaps import sitemaps as app_sitemaps
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('EcommerceApp.urls')),
     path('sitemap.xml', sitemap, {'sitemaps': app_sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
+    # Always serve media files (from persistent disk on Render, even in production).
+    # Using explicit re_path + serve so it works both locally (runserver) and on Render.
+    re_path(r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')), serve, {'document_root': settings.MEDIA_ROOT}),
+] + [
+    path('', include('EcommerceApp.urls')),
 ]
-
-# Serve media files (works for local + Render Disk in production)
-# For high traffic consider Cloudinary/S3 in future
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

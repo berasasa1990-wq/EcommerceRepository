@@ -53,14 +53,26 @@ def _env(key, default=''):
 SECRET_KEY = _env('SECRET_KEY', 'django-insecure-_73#1@hjsxhlmfx4+&85s10a(cyb9i*q7-28$_zpjz5vm&+0ek')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = _env('DEBUG', 'False').lower() in ('true', '1', 'yes')
+DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = [
-    h.strip() for h in _env('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-    if h.strip()
-]
+# ALLOWED_HOSTS: always support local development even if .env has production values
+# (e.g. ALLOWED_HOSTS from Render .env section)
+_allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
 
-# Render specific: add the service hostname if provided
+if DEBUG:
+    # Ensure local runserver works (127.0.0.1:8000, localhost, etc.)
+    for local in ['localhost', '127.0.0.1', '0.0.0.0']:
+        if local not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(local)
+
+# Remove duplicates while preserving order
+ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS))
+
+# Render specific: add the service hostname if provided.
+# Render automatski injektuje RENDER_EXTERNAL_HOSTNAME za svaki Web Service.
+# Nema potrebe da ga ručno postavljaš (Render to radi sam).
+# Kod ga koristi da doda u ALLOWED_HOSTS.
 RENDER_EXTERNAL_HOSTNAME = _env('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -149,6 +161,18 @@ else:
         }
     }
 
+# Prevent use of SQLite on actual Render production deploys.
+# We only enforce this when DEBUG=False AND we see Render-specific env vars
+# (RENDER_DISK_PATH or RENDER_EXTERNAL_HOSTNAME). This way local `runserver`
+# can still use SQLite comfortably.
+if (not DEBUG
+        and 'sqlite3' in DATABASES['default']['ENGINE']
+        and (_env('RENDER_DISK_PATH') or _env('RENDER_EXTERNAL_HOSTNAME'))):
+    raise RuntimeError(
+        "Production on Render MUST use PostgreSQL via DATABASE_URL. "
+        "SQLite gets wiped on every deploy and is not allowed when DEBUG=False."
+    )
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -184,7 +208,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = _env('STATIC_URL', '/static/')
+if not STATIC_URL.startswith('/'):
+    STATIC_URL = '/' + STATIC_URL.lstrip('/')
 STATICFILES_DIRS = [
     BASE_DIR / 'EcommerceApp' / 'static',
 ]
@@ -196,19 +222,27 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Media files
 # Local dev: ./media/
 # On Render: use attached Disk (set RENDER_DISK_PATH in environment variables)
-MEDIA_URL = 'media/'
+MEDIA_URL = _env('MEDIA_URL', '/media/')
+if not MEDIA_URL.startswith('/'):
+    MEDIA_URL = '/' + MEDIA_URL.lstrip('/')
 render_disk_path = _env('RENDER_DISK_PATH', '')
 if render_disk_path:
     MEDIA_ROOT = Path(render_disk_path) / 'media'
 else:
     MEDIA_ROOT = BASE_DIR / 'media'
 
-# Ensure media directory exists (important for disk on Render)
+# Ensure media directory and common subdirectories exist (important for disk on Render)
+# This runs safely even if the disk is not yet mounted.
 try:
     MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+    for sub in ['products', 'products/variations', 'site', 'banners', 'popups', 'upsell', 'brands']:
+        (MEDIA_ROOT / sub).mkdir(parents=True, exist_ok=True)
 except (PermissionError, OSError):
-    # On Render the disk is mounted and writable.
-    # Locally or in restricted envs we ignore.
+    # On Render the disk may not be mounted yet, or in local dev without write perms.
+    # Ignore silently; first upload will try to create dirs.
+    if render_disk_path and not os.path.exists(render_disk_path):
+        print(f"WARNING: RENDER_DISK_PATH={render_disk_path} is set but the directory does not exist yet. "
+              "Attach the disk in Render and redeploy.")
     pass
 
 # Email — unesite Gmail App Password u .env datoteku (EMAIL_APP_PASSWORD)
@@ -234,7 +268,8 @@ SYNC_REMOTE_URL = _env('SYNC_REMOTE_URL', '').rstrip('/')
 SYNC_API_KEY = _env('SYNC_API_KEY', '')
 SYNC_TIMEOUT = int(_env('SYNC_TIMEOUT', '15'))
 # Sync je omogućen ako su URL i KEY postavljeni.
-# Na Renderu možeš koristiti RENDER=1 da promijeniš ponašanje ako treba.
+# Render automatski postavlja neke varijable (npr. RENDER_EXTERNAL_HOSTNAME).
+# Ako želiš, možeš postaviti RENDER=true u environment za custom logiku.
 SYNC_ENABLED = bool(SYNC_REMOTE_URL and SYNC_API_KEY)
 
 # Odoo import (XML-RPC, API ključ kao lozinka)

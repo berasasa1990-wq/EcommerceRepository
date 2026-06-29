@@ -33,7 +33,8 @@ python manage.py runserver
      ```bash
      pip install -r requirements.txt && \
      python manage.py collectstatic --noinput && \
-     python manage.py migrate
+     python manage.py migrate && \
+     python manage.py createsuperuser --noinput || true
      ```
    - **Start Command:**
      ```bash
@@ -46,13 +47,20 @@ python manage.py runserver
    - **Mount Path:** `/var/data`
    - **Size:** 5GB ili više
 
-5. **Environment Variables** (postavi u Render dashboard):
-   - `SECRET_KEY` — generiši jak ključ
-   - `DEBUG` = `False`
-   - `ALLOWED_HOSTS` = `tvoja-app.onrender.com,*.onrender.com`
-   - `SITE_URL` = `https://tvoja-app.onrender.com`
-   - `RENDER_DISK_PATH` = `/var/data`
-   - Kopiraj ostale varijable iz `.env` (`EMAIL_*`, `SYNC_*`, `ODOO_*`...)
+5. **Environment Variables** – OVO SE POSTAVLJA U RENDER DASHBOARD (ne iz .env iz GitHuba):
+   - Idi na Web Service → **Environment** tab
+   - Dodaj/uredi varijable tamo
+   - Nakon izmjena → **Manual Deploy** da se primijeni
+   - Ključne:
+     - `SECRET_KEY` (generiši)
+     - `DEBUG=False`
+     - `ALLOWED_HOSTS=tvoja-app.onrender.com,*.onrender.com`
+     - `SITE_URL=https://tvoja-app.onrender.com`
+     - `RENDER_DISK_PATH=/var/data`
+     - `DJANGO_SUPERUSER_*` (za automatsko kreiranje admina)
+     - Sve ostale iz tvog .env (EMAIL, ODOO, SYNC, TURNSTILE...)
+
+   Render automatski postavlja `RENDER_EXTERNAL_HOSTNAME` i `DATABASE_URL` (ako je povezan Postgres).
 
 6. Poveži **PostgreSQL** service sa Web Service-om (Render će dodati `DATABASE_URL` automatski).
 
@@ -63,7 +71,7 @@ python manage.py runserver
 ```bash
 python manage.py migrate
 python manage.py collectstatic --noinput
-python manage.py createsuperuser
+# Superuser se sada automatski kreira preko build komande
 ```
 
 ### Važno za Media

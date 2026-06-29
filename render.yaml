@@ -11,6 +11,8 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
       python manage.py migrate
+      # Kreira superuser ako ne postoji (ne briše postojećeg)
+      python manage.py createsuperuser --noinput || true
     startCommand: gunicorn EcommerceProject.wsgi:application
     envVars:
       - key: PYTHON_VERSION
@@ -22,9 +24,16 @@ services:
       - key: ALLOWED_HOSTS
         value: .onrender.com
       - key: SITE_URL
-        sync: false  # postavi ručno nakon deploya
+        sync: false  # uvijek postavljaj u Render Dashboard → Environment (ne ovdje)
       - key: RENDER_DISK_PATH
         value: /var/data
+      # Superuser se automatski kreira pri svakom deployu (ako ne postoji)
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
       # Kopiraj ostale iz .env:
       - key: EMAIL_APP_PASSWORD
         sync: false

@@ -84,7 +84,7 @@ class ProductVariationInline(admin.TabularInline):
 
     @admin.display(description='Pregled')
     def pregled_slike(self, obj):
-        if obj.slika:
+        if obj and obj.slika:
             return format_html(
                 '<img src="{}" style="height:50px;border-radius:4px;" />',
                 obj.slika.url,
@@ -126,7 +126,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     @admin.display(description='Pregled loga (64px visina)')
     def pregled_loga(self, obj):
-        if obj.logo:
+        if obj and obj.logo:
             return format_html(
                 '<img src="{}" style="height:64px;max-width:480px;object-fit:contain;border:1px solid #eee;border-radius:4px;" />',
                 obj.logo.url,
@@ -186,7 +186,7 @@ class BrandAdmin(admin.ModelAdmin):
 
     @admin.display(description='Logo')
     def pregled_loga(self, obj):
-        if obj.slika:
+        if obj and obj.slika:
             return format_html(
                 '<img src="{}" style="height:24px;max-width:100px;object-fit:contain;" />',
                 obj.slika.url,
@@ -195,7 +195,7 @@ class BrandAdmin(admin.ModelAdmin):
 
     @admin.display(description='Pregled loga (200×48)')
     def pregled_loga_veliki(self, obj):
-        if obj.slika:
+        if obj and obj.slika:
             return format_html(
                 '<img src="{}" style="width:200px;height:48px;object-fit:contain;border:1px solid #eee;border-radius:4px;" />',
                 obj.slika.url,
@@ -309,7 +309,7 @@ class BannerAdmin(admin.ModelAdmin):
 
     @admin.display(description='Slika')
     def pregled_slike(self, obj):
-        if obj.slika:
+        if obj and obj.slika:
             return format_html(
                 '<img src="{}" style="height:40px;border-radius:4px;" />',
                 obj.slika.url,
@@ -318,7 +318,7 @@ class BannerAdmin(admin.ModelAdmin):
 
     @admin.display(description='Pregled slike')
     def pregled_slike_velika(self, obj):
-        if obj.slika:
+        if obj and obj.slika:
             return format_html(
                 '<img src="{}" style="max-height:200px;border-radius:8px;" />',
                 obj.slika.url,
@@ -605,42 +605,54 @@ class ProductAdmin(admin.ModelAdmin):
 
     @admin.display(description='Slika')
     def pregled_slike(self, obj):
-        if obj.slika:
-            return format_html(
-                '<img src="{}" style="height:40px;border-radius:4px;" />',
-                obj.slika.url,
-            )
+        if obj and obj.slika:
+            try:
+                return format_html(
+                    '<img src="{}" style="height:40px;border-radius:4px;" />',
+                    obj.slika.url,
+                )
+            except Exception:
+                return '—'
         return '—'
 
     @admin.display(description='Pregled slike')
     def pregled_slike_velika(self, obj):
-        if obj.slika:
-            return format_html(
-                '<img src="{}" style="max-height:200px;border-radius:8px;" />',
-                obj.slika.url,
-            )
+        if obj and obj.slika:
+            try:
+                return format_html(
+                    '<img src="{}" style="max-height:200px;border-radius:8px;" />',
+                    obj.slika.url,
+                )
+            except Exception:
+                return 'Nema slike'
         return 'Nema slike'
 
     @admin.display(description='Automatski SEO naslov')
     def seo_title_preview(self, obj):
         if obj:
-            return format_html(
-                '<div style="padding:8px 12px; background:#f8f9fa; border:1px solid #ddd; border-radius:4px; font-size:13px; margin:2px 0;">'
-                '<strong>Koristiće se ako polje ostane prazno:</strong><br>'
-                '<span style="color:#0a66c2; font-weight:500;">{}</span>'
-                '</div>',
-                obj.seo_title
-            )
+            try:
+                return format_html(
+                    '<div style="padding:8px 12px; background:#f8f9fa; border:1px solid #ddd; border-radius:4px; font-size:13px; margin:2px 0;">'
+                    '<strong>Koristiće se ako polje ostane prazno:</strong><br>'
+                    '<span style="color:#0a66c2; font-weight:500;">{}</span>'
+                    '</div>',
+                    obj.seo_title
+                )
+            except Exception:
+                return '—'
         return '—'
 
     @admin.display(description='Automatski meta opis')
     def seo_description_preview(self, obj):
         if obj:
-            return format_html(
-                '<div style="padding:8px 12px; background:#f8f9fa; border:1px solid #ddd; border-radius:4px; font-size:13px; line-height:1.4; margin:2px 0;">'
-                '<strong>Koristiće se ako polje ostane prazno:</strong><br>'
-                '<span style="color:#0a66c2;">{}</span>'
-                '</div>',
-                obj.seo_description
-            )
+            try:
+                return format_html(
+                    '<div style="padding:8px 12px; background:#f8f9fa; border:1px solid #ddd; border-radius:4px; font-size:13px; line-height:1.4; margin:2px 0;">'
+                    '<strong>Koristiće se ako polje ostane prazno:</strong><br>'
+                    '<span style="color:#0a66c2;">{}</span>'
+                    '</div>',
+                    obj.seo_description
+                )
+            except Exception:
+                return '—'
         return '—'
