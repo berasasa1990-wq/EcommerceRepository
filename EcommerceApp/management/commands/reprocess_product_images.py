@@ -5,7 +5,7 @@ from EcommerceApp.utils.images import reprocess_existing_image_file
 
 
 class Command(BaseCommand):
-    help = 'Ponovo obrađuje sve slike artikala i varijacija (bijela podloga, ista margina, max 20KB).'
+    help = 'Ponovo sprema sve slike artikala i varijacija (bez uklanjanja pozadine).'
 
     def handle(self, *args, **options):
         updated = 0

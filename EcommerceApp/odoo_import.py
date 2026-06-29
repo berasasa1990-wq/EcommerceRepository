@@ -120,7 +120,7 @@ def _process_odoo_image(image_b64, filename):
     if not raw:
         return None
     try:
-        processed = process_product_image_bytes(raw, filename, strip_background=False)
+        processed = process_product_image_bytes(raw, filename)
         return {'name': processed.name, 'data': processed.read()}
     except Exception as exc:
         logger.warning('Obrada Odoo slike nije uspjela (%s): %s', filename, exc)

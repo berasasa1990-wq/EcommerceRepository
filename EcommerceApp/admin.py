@@ -382,8 +382,8 @@ class ProductAdmin(admin.ModelAdmin):
         ('Slika i cijena', {
             'fields': ('slika', 'pregled_slike_velika', 'cijena', 'akcijska_cijena', 'akcija_do', 'na_stanju', 'stanje'),
             'description': (
-                'Upload slike: uklanja se pozadina, artikal se centrira na bijeloj podlozi 800×800 '
-                '(jednake margine), AVIF max 20KB. Isto vrijedi za ručni upload i Odoo import.'
+                'Upload slike: čuva se originalna slika (bez uklanjanja pozadine i rezanja). '
+                'Isto vrijedi za ručni upload i Odoo import.'
             ),
         }),
         ('Prikaz', {
