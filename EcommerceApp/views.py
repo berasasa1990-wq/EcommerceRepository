@@ -114,7 +114,6 @@ def _showcase_brands():
         slika__isnull=False,
         artikli__aktivan=True,
         artikli__na_stanju=True,
-        artikli__prikazi_na_pocetnoj=True,
     ).exclude(slika='').distinct().order_by('naziv')
 
 
@@ -431,6 +430,7 @@ def home(request):
         } if spotlight_banner else None,
         'latest_products': latest_products,
         'featured_products': featured_products,
+        'showcase_brands': _showcase_brands() if not filters_active else [],
         'search_products': search_products,
         'page_obj': page_obj,
         'filter_params': filter_params,

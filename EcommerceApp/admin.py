@@ -105,9 +105,28 @@ class ProductVariationInline(admin.TabularInline):
         return '—'
 
 
+class HomeFeaturedProductInline(admin.TabularInline):
+    model = HomeFeaturedProduct
+    fk_name = 'postavke'
+    extra = 0
+    max_num = 4
+    autocomplete_fields = ('artikal',)
+    fields = ('artikal', 'redoslijed', 'aktivan')
+    verbose_name = 'Istaknuti artikal'
+    verbose_name_plural = 'Istaknuti artikli na početnoj (do 4)'
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.base_fields['artikal'].help_text = (
+            'Pretražite i odaberite postojeći artikal — ne kreirajte novi.'
+        )
+        return formset
+
+
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     readonly_fields = ('pregled_loga',)
+    inlines = [HomeFeaturedProductInline]
     fieldsets = (
         ('Logo', {
             'fields': ('logo', 'pregled_loga'),
@@ -298,25 +317,6 @@ class UpsellOfferAdmin(admin.ModelAdmin):
     def get_trigger_display(self, obj):
         return obj.get_trigger_display()
     get_trigger_display.short_description = 'Trigger'
-
-
-@admin.register(HomeFeaturedProduct)
-class HomeFeaturedProductAdmin(admin.ModelAdmin):
-    list_display = ('artikal', 'redoslijed', 'aktivan', 'pregled_slike')
-    list_editable = ('redoslijed', 'aktivan')
-    list_filter = ('aktivan',)
-    search_fields = ('artikal__naziv', 'artikal__sifra')
-    autocomplete_fields = ('artikal',)
-    ordering = ('redoslijed', 'id')
-
-    @admin.display(description='Slika')
-    def pregled_slike(self, obj):
-        if obj and obj.artikal and obj.artikal.prikazna_slika:
-            return format_html(
-                '<img src="{}" style="height:40px;border-radius:4px;" />',
-                obj.artikal.prikazna_slika.url,
-            )
-        return '—'
 
 
 @admin.register(Banner)

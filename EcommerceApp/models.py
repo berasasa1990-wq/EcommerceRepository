@@ -260,11 +260,18 @@ class Banner(models.Model):
 
 
 class HomeFeaturedProduct(models.Model):
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='istaknuti_artikli',
+        default=1,
+        editable=False,
+    )
     artikal = models.ForeignKey(
         'Product',
         on_delete=models.CASCADE,
         related_name='istaknuti_na_pocetnoj',
-        verbose_name='Artikal',
+        verbose_name='Postojeći artikal',
         limit_choices_to={'aktivan': True},
     )
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
