@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block lcp_preload %}
 {% if lcp_image_url %}
@@ -23,7 +24,7 @@
             <div class="product-gallery-main" id="mainProductImageWrap">
                 {% include 'partials/product_sale_ribbon.html' with product=product %}
                 {% if product.prikazna_slika %}
-                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" id="mainProductImage" width="{{ product_image_width }}" height="{{ product_image_height }}" loading="eager" fetchpriority="high" decoding="async">
+                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" id="mainProductImage" width="{{ product_image_width }}" height="{{ product_image_height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
                 {% else %}
                 <div class="product-image-placeholder product-image-placeholder--large" id="mainProductImage">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -86,29 +87,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const mainImage = document.getElementById('mainProductImage');
-    const productInfo = document.getElementById('productDetailInfo');
-    const defaultImage = productInfo?.dataset.defaultImage ?? '';
-
-    document.querySelectorAll('.product-detail-variation-row[data-image]').forEach((row) => {
-        const preview = () => {
-            if (mainImage && mainImage.tagName === 'IMG' && row.dataset.image) {
-                mainImage.src = row.dataset.image;
-            }
-        };
-        row.addEventListener('mouseenter', preview);
-        row.addEventListener('focusin', preview);
-    });
-
-    document.getElementById('detailVariations')?.addEventListener('mouseleave', () => {
-        if (mainImage && mainImage.tagName === 'IMG' && defaultImage) {
-            mainImage.src = defaultImage;
-        }
-    });
-});
-</script>
+<script src="{% static 'js/product-detail.min.js' %}" defer></script>
 {% endblock %}
 
 {% block og_image %}{% if product.slika %}{{ product.slika.url }}{% endif %}{% endblock %}

@@ -22,7 +22,7 @@
         {% for slide in hero_slides %}
         <div class="carousel-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
             <div class="slide-image">
-                <img src="{{ slide.image }}" alt="{{ slide.title }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+                <img src="{{ slide.image }}" alt="{{ slide.title }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
             </div>
             <div class="slide-content">
                 <h2>{{ slide.title }}</h2>

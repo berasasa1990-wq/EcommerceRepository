@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -70,14 +71,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.querySelectorAll('.cart-item-qty input[type="number"]').forEach((input) => {
-    input.addEventListener('change', () => {
-        const form = input.closest('form');
-        if (form) {
-            form.requestSubmit();
-        }
-    });
-});
-</script>
+<script src="{% static 'js/cart-qty.min.js' %}" defer></script>
 {% endblock %}

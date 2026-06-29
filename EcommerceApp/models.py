@@ -255,6 +255,12 @@ class Banner(models.Model):
         verbose_name_plural = 'Banneri'
         ordering = ['redoslijed', '-id']
 
+    def save(self, *args, **kwargs):
+        if self.slika:
+            from .utils.images import apply_image_processing, process_banner_image
+            apply_image_processing(self, 'slika', post_process=process_banner_image)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f'{self.get_tip_display()} — {self.naslov}'
 

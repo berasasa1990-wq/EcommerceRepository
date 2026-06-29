@@ -12,6 +12,8 @@ BRAND_LOGO_FILL_RATIO = 0.80
 SITE_LOGO_SIZE = (640, 128)
 PRODUCT_WHITE_THRESHOLD = 248
 PRODUCT_MAX_DIMENSION = 800
+BANNER_MAX_WIDTH = 1920
+BANNER_JPEG_QUALITY = 82
 AVIF_SPEED = 6
 MAX_PRODUCT_AVIF_BYTES = 20 * 1024
 
@@ -112,6 +114,28 @@ def _encode_product_avif(img, filename):
         best_size,
     )
     return ContentFile(best_data, name=filename)
+
+
+def _jpeg_filename(original_name):
+    base = original_name.rsplit('/', 1)[-1]
+    return base.rsplit('.', 1)[0] + '.jpg'
+
+
+def process_banner_image(image_field):
+    """Banneri: max 1920px širina, JPEG za manji LCP payload."""
+    img = Image.open(image_field)
+    img = ImageOps.exif_transpose(img)
+    rgb = _image_to_rgb(img)
+    if rgb.width > BANNER_MAX_WIDTH:
+        ratio = BANNER_MAX_WIDTH / rgb.width
+        new_size = (BANNER_MAX_WIDTH, max(1, int(rgb.height * ratio)))
+        rgb = rgb.resize(new_size, Image.Resampling.LANCZOS)
+
+    buffer = BytesIO()
+    rgb.save(buffer, format='JPEG', quality=BANNER_JPEG_QUALITY, optimize=True)
+    buffer.seek(0)
+    name = _jpeg_filename(image_field.name if hasattr(image_field, 'name') else 'banner.jpg')
+    return ContentFile(buffer.read(), name=name)
 
 
 def process_product_image(image_source, *, filename='image.jpg'):

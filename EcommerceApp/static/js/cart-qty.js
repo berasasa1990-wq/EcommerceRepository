@@ -1,0 +1,1 @@
+document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.cart-item-qty input[type="number"]').forEach((input)=>{input.addEventListener('change',()=>{const form=input.closest('form');if(form){form.requestSubmit();}});});});
