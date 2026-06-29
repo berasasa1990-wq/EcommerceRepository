@@ -34,14 +34,16 @@
     </div>
 
     <figure class="vlog-article-hero">
-        <img src="{{ vlog.slika.url }}"
-             alt="{{ vlog.naslov }}"
-             class="vlog-article-image"
-             width="{{ image_width }}"
-             height="{{ image_height }}"
-             loading="eager"
-             fetchpriority="high"
-             decoding="async">
+        <div class="vlog-article-hero-inner">
+            <img src="{{ vlog.slika.url }}"
+                 alt="{{ vlog.naslov }}"
+                 class="vlog-article-image"
+                 width="{{ image_width }}"
+                 height="{{ image_height }}"
+                 loading="eager"
+                 fetchpriority="high"
+                 decoding="async">
+        </div>
     </figure>
 
     <div class="vlog-article-body">

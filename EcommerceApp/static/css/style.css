@@ -1054,8 +1054,8 @@ main {
 .home-vlog-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    padding: 0 24px;
+    gap: 16px;
+    padding: 0;
 }
 
 .home-vlog-card {
@@ -1081,15 +1081,18 @@ main {
 }
 
 .home-vlog-card-image-wrap {
-    display: block;
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
     background: #f8fafc;
+    line-height: 0;
 }
 
 .home-vlog-card-image {
     width: 100%;
-    height: 100%;
+    height: auto;
+    max-height: 260px;
     object-fit: contain;
     object-position: center;
     display: block;
@@ -1113,7 +1116,9 @@ main {
 
 .vlog-article-intro {
     width: 100%;
-    padding: 16px 48px 20px;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 16px 24px 20px;
     box-sizing: border-box;
 }
 
@@ -1174,9 +1179,16 @@ main {
     padding: 0;
     border: none;
     border-radius: 0;
-    overflow: hidden;
     background: #f8fafc;
     display: block;
+}
+
+.vlog-article-hero-inner {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
 }
 
 .vlog-article-image {
@@ -1184,11 +1196,14 @@ main {
     height: auto;
     display: block;
     object-fit: contain;
+    object-position: center;
 }
 
 .vlog-article-body {
     width: 100%;
-    padding: 32px 48px 0;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 24px 0;
     box-sizing: border-box;
     font-size: 1.0625rem;
     line-height: 1.85;
@@ -1273,8 +1288,9 @@ main {
 
 .vlog-article-footer {
     width: 100%;
-    margin-top: 48px;
-    padding: 32px 48px 0;
+    max-width: 1080px;
+    margin: 48px auto 0;
+    padding: 32px 24px 0;
     box-sizing: border-box;
     border-top: 1px solid var(--gray-200);
 }
@@ -3365,7 +3381,12 @@ body.search-results-active main {
     }
 
     .home-vlog-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .home-vlog-card-image {
+        max-height: 220px;
     }
 
     .vlog-related-grid {
