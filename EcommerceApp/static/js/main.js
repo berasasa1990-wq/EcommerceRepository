@@ -1,3 +1,21 @@
+function stabilizeMobileProductCards() {
+    if (window.innerWidth > 768) return;
+
+    document.querySelectorAll('.product-card').forEach((card) => {
+        card.style.transform = 'none';
+    });
+
+    document.querySelectorAll('.product-image img[data-main-image]').forEach((img) => {
+        img.style.opacity = '1';
+    });
+}
+
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        stabilizeMobileProductCards();
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const header = document.getElementById('header');
     const navToggle = document.getElementById('navToggle');

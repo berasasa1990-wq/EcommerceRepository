@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://opremazaribolov.ba/sitemap.xml
+Sitemap: https://www.opremazaribolov.ba/sitemap.xml
 
 # Disallow private / utility paths
 Disallow: /korpa/
