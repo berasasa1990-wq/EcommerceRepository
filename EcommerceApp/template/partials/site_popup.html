@@ -1,19 +1,38 @@
 {% if active_popup %}
 <div class="site-popup-overlay" id="sitePopupOverlay" hidden
      data-popup-id="{{ active_popup.id }}">
-    <div class="site-popup" role="dialog" aria-modal="true">
-        <button type="button" class="site-popup-close" id="sitePopupClose" aria-label="Zatvori">
+    <div class="site-popup"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="popup-title">
+
+        <h2 id="popup-title" class="visually-hidden">
+            {{ active_popup.naziv }}
+        </h2>
+
+        <button type="button"
+                class="site-popup-close"
+                id="sitePopupClose"
+                aria-label="Zatvori popup">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
         </button>
 
-        <img src="{{ active_popup.slika.url }}" alt="{{ active_popup.naziv }}" class="site-popup-image" width="600" height="600" loading="lazy" decoding="async">
+        <img src="{{ active_popup.slika.url }}"
+             alt="{{ active_popup.naziv }}"
+             class="site-popup-image"
+             width="600"
+             height="600"
+             loading="lazy"
+             decoding="async">
 
-        <a href="{{ active_popup.get_link_href }}" class="btn btn-primary site-popup-cta">
+        <a href="{{ active_popup.get_link_href }}"
+           class="btn btn-primary site-popup-cta">
             {{ active_popup.tekst_dugmeta }}
         </a>
+
     </div>
 </div>
 {% endif %}
