@@ -139,8 +139,6 @@ def import_products_from_odoo(
         odoo_category_id,
         include_children=include_children,
     )
-    template_ids = [item['id'] for item in templates]
-    template_images = client.get_template_images(template_ids) if load_images else {}
 
     stats = {
         'pregledano': len(templates),
@@ -154,6 +152,10 @@ def import_products_from_odoo(
 
     for template in templates:
         try:
+            template_image = None
+            if load_images:
+                template_image = client.get_template_image(template['id'])
+
             result = _import_template_with_retry(
                 client,
                 template,
@@ -162,7 +164,7 @@ def import_products_from_odoo(
                 load_images=load_images,
                 stock_only=stock_only,
                 excluded_brand_ids=excluded_brand_ids,
-                template_image=template_images.get(template['id']),
+                template_image=template_image,
             )
             stats[result['action']] += 1
             stats['varijacija_kreirano'] += result['varijacija_kreirano']

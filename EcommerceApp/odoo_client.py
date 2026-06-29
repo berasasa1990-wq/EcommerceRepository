@@ -3,9 +3,25 @@ from urllib.parse import urljoin
 
 from django.conf import settings
 
+PRODUCT_BATCH_SIZE = 100
+VARIANT_BATCH_SIZE = 80
+IMAGE_BATCH_SIZE = 5
+ODOO_REQUEST_TIMEOUT = 180
+
 
 class OdooError(Exception):
     pass
+
+
+class _TimeoutTransport(xmlrpc.client.Transport):
+    def __init__(self, timeout=ODOO_REQUEST_TIMEOUT, *args, **kwargs):
+        self._timeout = timeout
+        super().__init__(*args, **kwargs)
+
+    def make_connection(self, host):
+        connection = super().make_connection(host)
+        connection.timeout = self._timeout
+        return connection
 
 
 class OdooClient:
@@ -27,6 +43,7 @@ class OdooClient:
     def _proxy(self, path):
         return xmlrpc.client.ServerProxy(
             urljoin(f'{self.url}/', path),
+            transport=_TimeoutTransport(),
             allow_none=True,
         )
 
@@ -71,13 +88,35 @@ class OdooClient:
         except Exception as exc:
             raise OdooError(f'Odoo greška ({model}.{method}): {exc}') from exc
 
-    def search_read(self, model, domain, fields, *, limit=None, order=None):
+    def search_read(self, model, domain, fields, *, limit=None, offset=None, order=None):
         options = {'fields': fields}
         if limit is not None:
             options['limit'] = limit
+        if offset is not None:
+            options['offset'] = offset
         if order:
             options['order'] = order
         return self.execute(model, 'search_read', domain, **options)
+
+    def search_read_batched(self, model, domain, fields, *, batch_size, order=None):
+        results = []
+        offset = 0
+        while True:
+            batch = self.search_read(
+                model,
+                domain,
+                fields,
+                limit=batch_size,
+                offset=offset,
+                order=order,
+            )
+            if not batch:
+                break
+            results.extend(batch)
+            if len(batch) < batch_size:
+                break
+            offset += batch_size
+        return results
 
     def list_product_categories(self):
         records = self.search_read(
@@ -109,11 +148,18 @@ class OdooClient:
             'product_variant_ids',
             'qty_available',
         ]
-        return self.search_read('product.template', domain, fields, order='name asc')
+        return self.search_read_batched(
+            'product.template',
+            domain,
+            fields,
+            batch_size=PRODUCT_BATCH_SIZE,
+            order='name asc',
+        )
 
     def get_product_variants(self, variant_ids, *, with_images=False):
         if not variant_ids:
             return []
+
         fields = [
             'id',
             'display_name',
@@ -123,19 +169,94 @@ class OdooClient:
             'product_tmpl_id',
             'qty_available',
         ]
-        if with_images:
-            fields.append('image_variant_1920')
-        return self.search_read('product.product', [('id', 'in', variant_ids)], fields)
+        variants = []
+        for offset in range(0, len(variant_ids), VARIANT_BATCH_SIZE):
+            chunk = variant_ids[offset:offset + VARIANT_BATCH_SIZE]
+            variants.extend(
+                self.search_read('product.product', [('id', 'in', chunk)], fields)
+            )
 
-    def get_template_images(self, template_ids):
-        if not template_ids:
-            return {}
+        if not with_images:
+            return variants
+
+        images = self.get_variant_images([variant['id'] for variant in variants])
+        for variant in variants:
+            variant['image_variant_1920'] = images.get(variant['id'])
+        return variants
+
+    def get_template_image(self, template_id):
         records = self.search_read(
             'product.template',
-            [('id', 'in', template_ids)],
+            [('id', '=', int(template_id))],
             ['id', 'image_1920'],
+            limit=1,
         )
-        return {record['id']: record.get('image_1920') for record in records}
+        if not records:
+            return None
+        return records[0].get('image_1920')
+
+    def get_template_images(self, template_ids, *, batch_size=IMAGE_BATCH_SIZE):
+        if not template_ids:
+            return {}
+
+        images = {}
+        for offset in range(0, len(template_ids), batch_size):
+            chunk = template_ids[offset:offset + batch_size]
+            try:
+                records = self.search_read(
+                    'product.template',
+                    [('id', 'in', chunk)],
+                    ['id', 'image_1920'],
+                )
+            except OdooError:
+                for template_id in chunk:
+                    image = self.get_template_image(template_id)
+                    if image:
+                        images[int(template_id)] = image
+                continue
+
+            for record in records:
+                image = record.get('image_1920')
+                if image:
+                    images[record['id']] = image
+        return images
+
+    def get_variant_image(self, variant_id):
+        records = self.search_read(
+            'product.product',
+            [('id', '=', int(variant_id))],
+            ['id', 'image_variant_1920'],
+            limit=1,
+        )
+        if not records:
+            return None
+        return records[0].get('image_variant_1920')
+
+    def get_variant_images(self, variant_ids, *, batch_size=IMAGE_BATCH_SIZE):
+        if not variant_ids:
+            return {}
+
+        images = {}
+        for offset in range(0, len(variant_ids), batch_size):
+            chunk = variant_ids[offset:offset + batch_size]
+            try:
+                records = self.search_read(
+                    'product.product',
+                    [('id', 'in', chunk)],
+                    ['id', 'image_variant_1920'],
+                )
+            except OdooError:
+                for variant_id in chunk:
+                    image = self.get_variant_image(variant_id)
+                    if image:
+                        images[int(variant_id)] = image
+                continue
+
+            for record in records:
+                image = record.get('image_variant_1920')
+                if image:
+                    images[record['id']] = image
+        return images
 
 
 def odoo_je_konfigurisan():
