@@ -259,6 +259,26 @@ class Banner(models.Model):
         return f'{self.get_tip_display()} — {self.naslov}'
 
 
+class HomeFeaturedProduct(models.Model):
+    artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='istaknuti_na_pocetnoj',
+        verbose_name='Artikal',
+        limit_choices_to={'aktivan': True},
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Istaknuti artikal (početna)'
+        verbose_name_plural = 'Istaknuti artikli (početna)'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return self.artikal.naziv
+
+
 class Popup(models.Model):
     naziv = models.CharField(
         max_length=100,

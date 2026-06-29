@@ -908,6 +908,52 @@ main {
     align-self: flex-start;
 }
 
+/* Home product sections */
+.home-products,
+.home-search-results {
+    padding: 64px 0;
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+}
+
+.home-products-header {
+    margin-bottom: 32px;
+    padding: 0 48px;
+}
+
+.home-products-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: 0.02em;
+}
+
+.home-products-header p {
+    margin: 0;
+    color: var(--gray-600);
+}
+
+.home-products .product-grid--home,
+.home-search-results .product-grid--home {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    padding: 0 48px;
+}
+
+.home-products .product-image,
+.home-search-results .product-image {
+    max-height: none;
+    width: 100%;
+    aspect-ratio: 1;
+}
+
+.home-search-results--search {
+    padding-top: 32px;
+}
+
 /* Product Showcase */
 .product-showcase {
     padding: 64px 0;
@@ -2873,6 +2919,23 @@ body.search-results-active main {
         border-bottom: none;
     }
 
+    .home-products,
+    .home-search-results {
+        padding: 40px 0;
+    }
+
+    .home-products-header,
+    .home-products .product-grid--home,
+    .home-search-results .product-grid--home {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .home-products .product-grid--home,
+    .home-search-results .product-grid--home {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .product-showcase {
         padding: 40px 0;
     }
@@ -3500,6 +3563,24 @@ body.search-results-active main {
     .category-page {
         padding-left: 16px;
         padding-right: 16px;
+    }
+
+    .home-products,
+    .home-search-results {
+        padding: 32px 0;
+    }
+
+    .home-products-header,
+    .home-products .product-grid--home,
+    .home-search-results .product-grid--home {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .home-products .product-grid--home,
+    .home-search-results .product-grid--home {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
     }
 
     .product-showcase {

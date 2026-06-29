@@ -26,6 +26,7 @@ from .models import (
     Brand,
     Category,
     Coupon,
+    HomeFeaturedProduct,
     LoyaltyCard,
     Order,
     OrderItem,
@@ -297,6 +298,25 @@ class UpsellOfferAdmin(admin.ModelAdmin):
     def get_trigger_display(self, obj):
         return obj.get_trigger_display()
     get_trigger_display.short_description = 'Trigger'
+
+
+@admin.register(HomeFeaturedProduct)
+class HomeFeaturedProductAdmin(admin.ModelAdmin):
+    list_display = ('artikal', 'redoslijed', 'aktivan', 'pregled_slike')
+    list_editable = ('redoslijed', 'aktivan')
+    list_filter = ('aktivan',)
+    search_fields = ('artikal__naziv', 'artikal__sifra')
+    autocomplete_fields = ('artikal',)
+    ordering = ('redoslijed', 'id')
+
+    @admin.display(description='Slika')
+    def pregled_slike(self, obj):
+        if obj and obj.artikal and obj.artikal.prikazna_slika:
+            return format_html(
+                '<img src="{}" style="height:40px;border-radius:4px;" />',
+                obj.artikal.prikazna_slika.url,
+            )
+        return '—'
 
 
 @admin.register(Banner)

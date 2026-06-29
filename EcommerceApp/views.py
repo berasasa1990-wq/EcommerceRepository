@@ -30,17 +30,36 @@ from .render_sync import sync_korisnik, sync_narudzba
 
 logger = logging.getLogger(__name__)
 from .forms import CheckoutForm, CouponForm, LoginForm, ProfileForm, RegisterForm
-from .models import Banner, Brand, Category, Order, OrderItem, Product, ProductVariation, SiteSettings, UpsellOffer, UserProfile
+from .models import (
+    Banner,
+    Brand,
+    Category,
+    HomeFeaturedProduct,
+    Order,
+    OrderItem,
+    Product,
+    ProductVariation,
+    SiteSettings,
+    UpsellOffer,
+    UserProfile,
+)
+
+
+def _in_stock_variations_qs():
+    return ProductVariation.objects.filter(
+        na_stanju=True,
+    ).order_by('redoslijed', 'id')
+
+
+def _prefetch_product_cards(qs):
+    return qs.select_related('kategorija', 'brend').prefetch_related(
+        Prefetch('varijacije', queryset=_in_stock_variations_qs()),
+    )
 
 
 def _product_queryset():
-    in_stock_variations = ProductVariation.objects.filter(
-        na_stanju=True,
-    ).order_by('redoslijed', 'id')
-    return Product.objects.filter(
-        aktivan=True, na_stanju=True,
-    ).select_related('kategorija', 'brend').prefetch_related(
-        Prefetch('varijacije', queryset=in_stock_variations),
+    return _prefetch_product_cards(
+        Product.objects.filter(aktivan=True, na_stanju=True),
     )
 
 
@@ -354,6 +373,28 @@ def _banner_to_card(banner):
     }
 
 
+HOME_SECTION_PRODUCT_LIMIT = 4
+
+
+def _home_latest_products():
+    return list(
+        _product_queryset().order_by('-kreiran')[:HOME_SECTION_PRODUCT_LIMIT],
+    )
+
+
+def _home_featured_products():
+    entries = HomeFeaturedProduct.objects.filter(
+        aktivan=True,
+        artikal__aktivan=True,
+        artikal__na_stanju=True,
+    ).select_related(
+        'artikal', 'artikal__kategorija', 'artikal__brend',
+    ).prefetch_related(
+        Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
+    )[:HOME_SECTION_PRODUCT_LIMIT]
+    return [entry.artikal for entry in entries]
+
+
 def home(request):
     hero_banners = Banner.objects.filter(tip=Banner.BannerType.HERO, aktivan=True)
     grid_banners = Banner.objects.filter(tip=Banner.BannerType.GRID, aktivan=True)[:4]
@@ -361,11 +402,20 @@ def home(request):
     spotlight_banner = Banner.objects.filter(tip=Banner.BannerType.SPOTLIGHT, aktivan=True).first()
 
     filter_params = _get_filter_params(request)
-    products_qs = _product_queryset()
-    if not _filters_active(filter_params):
-        products_qs = products_qs.filter(prikazi_na_pocetnoj=True)
-    products, filter_params = _apply_product_filters(products_qs, request)
-    page_obj = _paginate_home_products(request, products, filter_params)
+    filters_active = _filters_active(filter_params)
+
+    latest_products = []
+    featured_products = []
+    page_obj = None
+    search_products = []
+
+    if filters_active:
+        products, filter_params = _apply_product_filters(_product_queryset(), request)
+        page_obj = _paginate_home_products(request, products, filter_params)
+        search_products = page_obj.object_list
+    else:
+        latest_products = _home_latest_products()
+        featured_products = _home_featured_products()
 
     context = {
         **_base_context(),
@@ -379,13 +429,15 @@ def home(request):
             'cta': spotlight_banner.tekst_dugmeta,
             'url': spotlight_banner.link or '#',
         } if spotlight_banner else None,
-        'products': page_obj.object_list,
+        'latest_products': latest_products,
+        'featured_products': featured_products,
+        'search_products': search_products,
         'page_obj': page_obj,
-        'filter_categories': _filter_categories(),
         'filter_params': filter_params,
-        'catalog_query': _catalog_query_string(filter_params),
-        'elided_page_range': page_obj.paginator.get_elided_page_range(page_obj.number),
-        'showcase_brands': _showcase_brands(),
+        'catalog_query': _catalog_query_string(filter_params) if filters_active else '',
+        'elided_page_range': (
+            page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []
+        ),
         'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
         # SEO
         'seo_title': SiteSettings.load().seo_title or 'Oprema za ribolov | opremazaribolov.ba',

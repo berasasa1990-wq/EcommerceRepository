@@ -1,0 +1,14 @@
+{% if products %}
+<div class="product-grid product-grid--home">
+    {% for product in products %}
+    <a href="{{ product.get_absolute_url }}" class="product-card" data-product-card data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
+        <div class="product-image">
+            {% include 'partials/product_sale_ribbon.html' with product=product %}
+            {% include 'partials/product_image.html' with product=product image_loading='lazy' %}
+        </div>
+        <div class="variation-swatches variation-swatches--empty"></div>
+        {% include 'partials/product_card_info.html' with product=product %}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
