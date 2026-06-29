@@ -22,13 +22,21 @@
         {% for slide in hero_slides %}
         <div class="carousel-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
             <div class="slide-image">
-                <img src="{{ slide.image }}" alt="{{ slide.title }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+                {% if slide.url %}
+                <a href="{{ slide.url }}" class="slide-image-link" aria-label="{{ slide.title|default:'Banner' }}">
+                {% endif %}
+                <img src="{{ slide.image }}" alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+                {% if slide.url %}
+                </a>
+                {% endif %}
             </div>
+            {% if slide.title or slide.subtitle or slide.actions %}
             <div class="slide-content">
-                <h2>{{ slide.title }}</h2>
+                {% if slide.title %}<h2>{{ slide.title }}</h2>{% endif %}
                 {% if slide.subtitle %}
                 <p class="slide-subtitle">{{ slide.subtitle }}</p>
                 {% endif %}
+                {% if slide.actions and not slide.url %}
                 <div class="slide-actions">
                     {% for action in slide.actions %}
                     <a href="{{ action.url }}" class="btn btn-banner">
@@ -36,7 +44,15 @@
                     </a>
                     {% endfor %}
                 </div>
+                {% elif slide.actions and slide.url %}
+                <div class="slide-actions">
+                    {% for action in slide.actions %}
+                    <span class="btn btn-banner">{{ action.label }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -61,22 +77,34 @@
 {% if grid_banners %}
 <section class="grid-banners">
     {% for card in grid_banners %}
+    {% if card.url %}
+    <a href="{{ card.url }}" class="grid-banner grid-banner--linked">
+    {% else %}
     <article class="grid-banner">
-        <img src="{{ card.image }}" alt="{{ card.title }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+    {% endif %}
+        <img src="{{ card.image }}" alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+        {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
-            <h3>{{ card.title }}</h3>
-            {% if card.subtitle %}
-            <p>{{ card.subtitle }}</p>
-            {% endif %}
+            {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}
+            {% if card.subtitle %}<p>{{ card.subtitle }}</p>{% endif %}
+            {% if card.actions %}
             <div class="card-actions">
                 {% for action in card.actions %}
-                <a href="{{ action.url }}" class="btn btn-banner">
-                    {{ action.label }}
-                </a>
+                {% if card.url %}
+                <span class="btn btn-banner">{{ action.label }}</span>
+                {% else %}
+                <a href="{{ action.url }}" class="btn btn-banner">{{ action.label }}</a>
+                {% endif %}
                 {% endfor %}
             </div>
+            {% endif %}
         </div>
+        {% endif %}
+    {% if card.url %}
+    </a>
+    {% else %}
     </article>
+    {% endif %}
     {% endfor %}
 </section>
 {% endif %}
@@ -84,22 +112,34 @@
 {% if featured_cards %}
 <section class="featured-grid">
     {% for card in featured_cards %}
-    <article class="featured-card {% if card.wide %}featured-card--wide{% endif %}">
-        <img src="{{ card.image }}" alt="{{ card.title }}" class="card-image card-image--featured" width="{{ card.image_width }}" height="{{ card.image_height }}" loading="lazy" decoding="async">
+    {% if card.url %}
+    <a href="{{ card.url }}" class="featured-card featured-card--linked{% if card.wide %} featured-card--wide{% endif %}">
+    {% else %}
+    <article class="featured-card{% if card.wide %} featured-card--wide{% endif %}">
+    {% endif %}
+        <img src="{{ card.image }}" alt="{{ card.title|default:'Banner' }}" class="card-image card-image--featured" width="{{ card.image_width }}" height="{{ card.image_height }}" loading="lazy" decoding="async">
+        {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
-            <h3>{{ card.title }}</h3>
-            {% if card.subtitle %}
-            <p>{{ card.subtitle }}</p>
-            {% endif %}
+            {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}
+            {% if card.subtitle %}<p>{{ card.subtitle }}</p>{% endif %}
+            {% if card.actions %}
             <div class="card-actions">
                 {% for action in card.actions %}
-                <a href="{{ action.url }}" class="btn btn-banner">
-                    {{ action.label }}
-                </a>
+                {% if card.url %}
+                <span class="btn btn-banner">{{ action.label }}</span>
+                {% else %}
+                <a href="{{ action.url }}" class="btn btn-banner">{{ action.label }}</a>
+                {% endif %}
                 {% endfor %}
             </div>
+            {% endif %}
         </div>
+        {% endif %}
+    {% if card.url %}
+    </a>
+    {% else %}
     </article>
+    {% endif %}
     {% endfor %}
 </section>
 {% endif %}
@@ -107,11 +147,21 @@
 {% if spotlight %}
 <section class="spotlight">
     <div class="spotlight-inner">
-        <img src="{{ spotlight.image }}" alt="{{ spotlight.title }}" class="spotlight-image" width="{{ spotlight.image_width }}" height="{{ spotlight.image_height }}" loading="lazy" decoding="async">
+        {% if spotlight.url %}
+        <a href="{{ spotlight.url }}" class="spotlight-image-link" aria-label="{{ spotlight.title|default:'Banner' }}">
+        {% endif %}
+        <img src="{{ spotlight.image }}" alt="{{ spotlight.title|default:'Banner' }}" class="spotlight-image" width="{{ spotlight.image_width }}" height="{{ spotlight.image_height }}" loading="lazy" decoding="async">
+        {% if spotlight.url %}
+        </a>
+        {% endif %}
         <div class="spotlight-content">
-            <h2>{{ spotlight.title }}</h2>
-            <p>{{ spotlight.description }}</p>
-            <a href="{{ spotlight.url }}" class="btn btn-banner">{{ spotlight.cta }}</a>
+            {% if spotlight.title %}<h2>{{ spotlight.title }}</h2>{% endif %}
+            {% if spotlight.description %}<p>{{ spotlight.description }}</p>{% endif %}
+            {% if spotlight.cta and spotlight.url %}
+            <span class="btn btn-banner">{{ spotlight.cta }}</span>
+            {% elif spotlight.cta %}
+            <a href="{{ spotlight.url|default:'#' }}" class="btn btn-banner">{{ spotlight.cta }}</a>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -188,10 +238,10 @@
 {% endif %}
 
 {% if featured_products %}
-<section class="home-products">
-    <div class="home-products-header">
+<section class="home-products home-products--izdvojeno">
+    <div class="home-products-header home-products-header--izdvojeno">
         <h2>Izdvojeno</h2>
-        <p>Odabrani artikli</p>
+        <p>Odabrani artikli za vas</p>
     </div>
     {% include 'partials/product_grid.html' with products=featured_products %}
 </section>

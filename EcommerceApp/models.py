@@ -238,13 +238,17 @@ class Banner(models.Model):
         FEATURED = 'featured', 'Featured Kartica'
         SPOTLIGHT = 'spotlight', 'Spotlight'
 
-    naslov = models.CharField(max_length=200)
+    naslov = models.CharField(max_length=200, blank=True, default='')
     podnaslov = models.CharField(max_length=300, blank=True)
-    slika = models.ImageField(upload_to='banners/')
-    link = models.URLField(blank=True)
-    tekst_dugmeta = models.CharField(max_length=50, default='Shop')
+    slika = models.ImageField(upload_to='banners/', blank=True, null=True)
+    link = models.CharField(
+        max_length=300, blank=True,
+        verbose_name='Link',
+        help_text='Npr. /kategorija/ ili https://... Klik na banner vodi na ovaj link.',
+    )
+    tekst_dugmeta = models.CharField(max_length=50, blank=True, default='')
     sekundarno_dugme = models.CharField(max_length=50, blank=True)
-    sekundarni_link = models.URLField(blank=True)
+    sekundarni_link = models.CharField(max_length=300, blank=True)
     tip = models.CharField(max_length=20, choices=BannerType.choices, default=BannerType.HERO)
     siroka_kartica = models.BooleanField(default=False, help_text='Samo za Featured tip')
     redoslijed = models.PositiveIntegerField(default=0)
@@ -261,8 +265,16 @@ class Banner(models.Model):
             apply_image_processing(self, 'slika', post_process=process_banner_image)
         super().save(*args, **kwargs)
 
+    def get_link_href(self):
+        if not self.link:
+            return None
+        if self.link.startswith(('http://', 'https://', '/')):
+            return self.link
+        return f'/{self.link.strip("/")}/'
+
     def __str__(self):
-        return f'{self.get_tip_display()} — {self.naslov}'
+        label = self.naslov or f'Banner #{self.pk}' if self.pk else 'Banner'
+        return f'{self.get_tip_display()} — {label}'
 
 
 class HomeFeaturedProduct(models.Model):

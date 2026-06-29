@@ -329,10 +329,11 @@ class BannerAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Sadržaj', {
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika'),
-            'description': 'Upload slike bannera bez automatske obrade.',
+            'description': 'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan).',
         }),
-        ('Dugmad', {
-            'fields': ('tekst_dugmeta', 'link', 'sekundarno_dugme', 'sekundarni_link'),
+        ('Link i dugmad', {
+            'fields': ('link', 'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link'),
+            'description': 'Link — obavezno za klikabilan banner. Tekst dugmeta je samo vizuelni natpis.',
         }),
         ('Podešavanja', {
             'fields': ('tip', 'siroka_kartica', 'redoslijed', 'aktivan'),

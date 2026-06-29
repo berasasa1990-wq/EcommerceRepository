@@ -340,14 +340,32 @@ def _base_context():
     }
 
 
-def _banner_to_hero_slide(banner):
-    actions = [{'label': banner.tekst_dugmeta, 'url': banner.link or '#', 'primary': True}]
+def _banner_secondary_href(link):
+    if not link:
+        return None
+    if link.startswith(('http://', 'https://', '/')):
+        return link
+    return f'/{link.strip("/")}/'
+
+
+def _banner_actions(banner):
+    actions = []
+    if banner.tekst_dugmeta:
+        actions.append({
+            'label': banner.tekst_dugmeta,
+            'url': banner.get_link_href() or '#',
+            'primary': True,
+        })
     if banner.sekundarno_dugme:
         actions.append({
             'label': banner.sekundarno_dugme,
-            'url': banner.sekundarni_link or '#',
+            'url': _banner_secondary_href(banner.sekundarni_link) or '#',
             'primary': False,
         })
+    return actions
+
+
+def _banner_to_hero_slide(banner):
     image_width, image_height = image_field_dimensions(banner.slika, default=(1920, 1080))
     return {
         'title': banner.naslov,
@@ -355,18 +373,12 @@ def _banner_to_hero_slide(banner):
         'image': banner.slika.url,
         'image_width': image_width,
         'image_height': image_height,
-        'actions': actions,
+        'url': banner.get_link_href(),
+        'actions': _banner_actions(banner),
     }
 
 
 def _banner_to_card(banner):
-    actions = [{'label': banner.tekst_dugmeta, 'url': banner.link or '#', 'primary': True}]
-    if banner.sekundarno_dugme:
-        actions.append({
-            'label': banner.sekundarno_dugme,
-            'url': banner.sekundarni_link or '#',
-            'primary': False,
-        })
     image_width, image_height = image_field_dimensions(banner.slika, default=(1200, 1200))
     return {
         'title': banner.naslov,
@@ -374,9 +386,14 @@ def _banner_to_card(banner):
         'image': banner.slika.url,
         'image_width': image_width,
         'image_height': image_height,
-        'actions': actions,
+        'url': banner.get_link_href(),
+        'actions': _banner_actions(banner),
         'wide': banner.siroka_kartica,
     }
+
+
+def _banners_with_image(qs):
+    return qs.exclude(slika__isnull=True).exclude(slika='')
 
 
 HOME_SECTION_PRODUCT_LIMIT = 4
@@ -402,18 +419,18 @@ def _home_featured_products():
 
 
 def home(request):
-    hero_banners = Banner.objects.filter(
+    hero_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.HERO, aktivan=True,
-    ).order_by('redoslijed', '-id')
-    grid_banners = Banner.objects.filter(
+    ).order_by('redoslijed', '-id'))
+    grid_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.GRID, aktivan=True,
-    ).order_by('redoslijed', '-id')[:4]
-    featured_banners = Banner.objects.filter(
+    ).order_by('redoslijed', '-id'))[:4]
+    featured_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.FEATURED, aktivan=True,
-    ).order_by('redoslijed', '-id')
-    spotlight_banner = Banner.objects.filter(
+    ).order_by('redoslijed', '-id'))
+    spotlight_banner = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.SPOTLIGHT, aktivan=True,
-    ).order_by('redoslijed', '-id').first()
+    ).order_by('redoslijed', '-id')).first()
 
     filter_params = _get_filter_params(request)
     filters_active = _filters_active(filter_params)
@@ -452,7 +469,7 @@ def home(request):
             'image_width': spotlight_width,
             'image_height': spotlight_height,
             'cta': spotlight_banner.tekst_dugmeta,
-            'url': spotlight_banner.link or '#',
+            'url': spotlight_banner.get_link_href(),
         }
 
     context = {
