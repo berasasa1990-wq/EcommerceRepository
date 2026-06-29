@@ -303,7 +303,7 @@ EMAIL_HOST_PASSWORD = _env('EMAIL_APP_PASSWORD').replace(' ', '')
 DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'sasabera1990@gmail.com')
 ORDER_NOTIFICATION_EMAIL = _env('ORDER_NOTIFICATION_EMAIL', 'sasabera1990@gmail.com')
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
-SITE_URL = _env('SITE_URL', 'https://opremazaribolov.ba').rstrip('/')
+SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')
 STORE_EMAIL = _env('STORE_EMAIL', 'sasabera1990@gmail.com')
 

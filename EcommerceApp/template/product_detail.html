@@ -10,10 +10,6 @@
 
 {% block og_type %}product{% endblock %}
 
-{% block canonical %}
-<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}">
-{% endblock %}
-
 {% block content %}
 <section class="product-detail">
     <div class="product-detail-grid">
@@ -118,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
   "@context": "https://schema.org/",
   "@type": "Product",
   "name": "{{ product.naziv|escapejs }}",
-  "image": {% if product.slika %}"{{ request.scheme }}://{{ request.get_host }}{{ product.slika.url }}"{% else %}"{{ request.scheme }}://{{ request.get_host }}/static/img/placeholder.png"{% endif %},
+  "image": {% if product.slika %}"{{ site_url }}{{ product.slika.url }}"{% else %}"{{ site_url }}/static/img/placeholder.png"{% endif %},
   "description": "{{ product.seo_description|escapejs }}",
   {% if product.brend %}"brand": {
     "@type": "Brand",
@@ -127,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
   {% if product.sifra %}"sku": "{{ product.sifra|escapejs }}",{% endif %}
   "offers": {
     "@type": "Offer",
-    "url": "{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}",
+    "url": "{{ canonical_url }}",
     "priceCurrency": "BAM",
     "price": "{{ product.prikazna_cijena }}",
     "availability": "{% if product.na_stanju %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
@@ -147,21 +143,21 @@ document.addEventListener('DOMContentLoaded', () => {
       "@type": "ListItem",
       "position": 1,
       "name": "Početna",
-      "item": "{{ request.scheme }}://{{ request.get_host }}/"
+      "item": "{{ site_url }}/"
     }
     {% if product.kategorija %},
     {
       "@type": "ListItem",
       "position": 2,
       "name": "{{ product.kategorija.naziv|escapejs }}",
-      "item": "{{ request.scheme }}://{{ request.get_host }}{{ product.kategorija.get_absolute_url }}"
+      "item": "{{ site_url }}{{ product.kategorija.get_absolute_url }}"
     }
     {% endif %},
     {
       "@type": "ListItem",
       "position": {% if product.kategorija %}3{% else %}2{% endif %},
       "name": "{{ product.naziv|escapejs }}",
-      "item": "{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}"
+      "item": "{{ canonical_url }}"
     }
   ]
 }

@@ -65,8 +65,8 @@
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "opremazaribolov.ba",
-      "url": "{{ request.scheme }}://{{ request.get_host }}/",
-      "logo": "{% if site_settings.logo %}{{ request.scheme }}://{{ request.get_host }}{{ site_settings.logo.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}/static/img/logo.png{% endif %}",
+      "url": "{{ site_url }}/",
+      "logo": "{% if site_settings.logo %}{{ site_url }}{{ site_settings.logo.url }}{% else %}{{ site_url }}/static/img/logo.png{% endif %}",
       "sameAs": [],
       "contactPoint": [{
         "@type": "ContactPoint",

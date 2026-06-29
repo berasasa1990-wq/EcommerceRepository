@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Prefetch
 
 from .cart import Cart
@@ -30,6 +31,7 @@ def nav_categories(request):
             break
 
     return {
+        'site_url': settings.SITE_URL,
         'nav_categories': categories,
         'site_settings': SiteSettings.load(),
         'cart_count': len(cart),
