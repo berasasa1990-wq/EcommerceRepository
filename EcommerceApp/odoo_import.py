@@ -45,8 +45,8 @@ def import_chunk_size(*, load_images, stock_only, images_only=False):
 
 def merge_import_stats(target, chunk_stats):
     for key in ('pregledano', 'kreirano', 'azurirano', 'preskoceno', 'varijacija_kreirano', 'varijacija_azurirano'):
-        target[key] += chunk_stats.get(key, 0)
-    target['greske'].extend(chunk_stats.get('greske', []))
+        target[key] = target.get(key, 0) + chunk_stats.get(key, 0)
+    target.setdefault('greske', []).extend(chunk_stats.get('greske', []))
     target['position'] = chunk_stats.get('position', target.get('position', 0))
     target['total'] = chunk_stats.get('total', target.get('total', 0))
     target['done'] = chunk_stats.get('done', False)
@@ -120,7 +120,7 @@ def _process_odoo_image(image_b64, filename):
     if not raw:
         return None
     try:
-        processed = process_product_image_bytes(raw, filename)
+        processed = process_product_image_bytes(raw, filename, strip_background=False)
         return {'name': processed.name, 'data': processed.read()}
     except Exception as exc:
         logger.warning('Obrada Odoo slike nije uspjela (%s): %s', filename, exc)

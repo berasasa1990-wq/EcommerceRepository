@@ -6,7 +6,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 from django.utils.html import format_html
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.middleware.csrf import get_token
 
 from .forms import BulkAssignBrandForm, BulkAssignCategoryForm, BulkAssignTagsForm, MergeProductsForm, OdooImportForm
 from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
@@ -408,7 +408,7 @@ class ProductAdmin(admin.ModelAdmin):
         custom_urls = [
             path(
                 'import-odoo/',
-                self.admin_site.admin_view(ensure_csrf_cookie(self.odoo_import_view)),
+                self.admin_site.admin_view(self.odoo_import_view),
                 name='EcommerceApp_product_odoo_import',
             ),
         ]
@@ -445,8 +445,9 @@ class ProductAdmin(admin.ModelAdmin):
         start = job.get('position', 0)
         options = job['options']
 
-        if django_category is None and job.get('django_category_id'):
-            django_category = Category.objects.filter(pk=job['django_category_id']).first()
+        django_category_id = job.get('django_category_id') or options.get('django_category_id')
+        if django_category is None and django_category_id:
+            django_category = Category.objects.filter(pk=django_category_id).first()
 
         chunk_stats = import_products_from_odoo(
             options['odoo_category_id'],
@@ -490,6 +491,8 @@ class ProductAdmin(admin.ModelAdmin):
         return redirect('admin:EcommerceApp_product_changelist')
 
     def odoo_import_view(self, request):
+        get_token(request)
+
         if not odoo_je_konfigurisan():
             messages.error(
                 request,
@@ -504,6 +507,9 @@ class ProductAdmin(admin.ModelAdmin):
             odoo_choices = client.list_product_categories()
         except OdooError as exc:
             odoo_error = str(exc)
+        except Exception as exc:
+            logger.exception('Neočekivana greška pri učitavanju Odoo kategorija')
+            odoo_error = f'Neočekivana greška: {exc}'
 
         import_progress = None
         continue_url = reverse('admin:EcommerceApp_product_odoo_import') + '?continue=1'

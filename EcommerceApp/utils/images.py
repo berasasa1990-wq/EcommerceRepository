@@ -8,6 +8,12 @@ from PIL import Image, ImageOps
 logger = logging.getLogger(__name__)
 
 BRAND_LOGO_SIZE = (200, 48)
+
+
+def rembg_je_dostupan():
+    import importlib.util
+
+    return importlib.util.find_spec('onnxruntime') is not None
 BRAND_LOGO_FILL_RATIO = 0.80
 SITE_LOGO_SIZE = (640, 128)
 PRODUCT_CANVAS_SIZE = (800, 800)
@@ -32,6 +38,11 @@ def _avif_filename(original_name):
 
 
 def remove_background(image_field):
+    if not rembg_je_dostupan():
+        logger.warning('rembg/onnxruntime nije dostupan, čuva se originalna slika.')
+        image_field.seek(0)
+        return ContentFile(image_field.read(), name=_png_filename(image_field.name))
+
     from rembg import remove
 
     image_field.seek(0)
@@ -217,6 +228,10 @@ def _encode_product_avif(canvas, filename, *, keep_canvas_size=False):
 
 
 def _strip_background_from_rgba(img):
+    if not rembg_je_dostupan():
+        logger.warning('rembg/onnxruntime nije dostupan, preskačem uklanjanje pozadine.')
+        return img
+
     try:
         from rembg import remove
 
