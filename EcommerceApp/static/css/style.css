@@ -16,6 +16,7 @@
     --header-height: 84px;
     --promo-height: 36px;
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html {
@@ -23,12 +24,11 @@ html {
 }
 
 body {
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     color: var(--black);
     background: var(--white);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-}
 }
 
 a {
@@ -189,7 +189,6 @@ img {
 }
 
 .nav-menu a {
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 16px;
     font-weight: 500;
     color: #111;
@@ -286,7 +285,6 @@ img {
 }
 
 .mega-menu-group h4 {
-    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
     font-size: 13px;
     font-weight: 500;
     margin: 0;
@@ -329,7 +327,6 @@ img {
 }
 
 .mega-menu-group ul a {
-    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
     font-size: 12px;
     color: var(--gray-600);
     line-height: 1.6;
@@ -1392,20 +1389,6 @@ body.search-results-active main {
     max-height: 173px;
 }
 
-.product-showcase .product-card,
-.category-page .product-card {
-    border: 1px solid var(--gray-200);
-    border-radius: 6px;
-    padding: 10px;
-    background: var(--white);
-    transition: transform var(--transition), border-color var(--transition);
-}
-
-.product-showcase .product-card:hover,
-.category-page .product-card:hover {
-    border-color: #d4d4d4;
-}
-
 .product-catalog--compact .product-card,
 .product-catalog--full .product-card {
     width: 100%;
@@ -1416,14 +1399,19 @@ body.search-results-active main {
     flex-direction: column;
     height: 100%;
     cursor: pointer;
-    transition: transform var(--transition);
     color: var(--black);
     text-decoration: none;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    padding: 10px;
+    background: var(--white);
+    transition: transform var(--transition), border-color var(--transition);
 }
 
 @media (hover: hover) and (pointer: fine) {
     .product-card:hover {
         transform: translateY(-4px);
+        border-color: #d4d4d4;
     }
 }
 
@@ -2007,7 +1995,6 @@ body.search-results-active main {
 }
 
 .category-header h1 {
-    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
     font-size: 32px;
     font-weight: 700;
     margin-bottom: 16px;
@@ -2020,7 +2007,6 @@ body.search-results-active main {
 }
 
 .category-subnav-link {
-    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
     font-size: 16px;
     font-weight: 500;
     color: var(--gray-600);
@@ -3556,8 +3542,7 @@ body.search-results-active main {
         max-height: 112px;
     }
 
-    .product-showcase .product-card,
-    .category-page .product-card {
+    .product-card {
         padding: 8px;
     }
 
