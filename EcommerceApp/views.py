@@ -12,8 +12,9 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db import DatabaseError
 from django.db.models import Prefetch, Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import escape, mark_safe, strip_tags
 from django.views.decorators.http import require_POST
@@ -423,10 +424,24 @@ def _home_featured_products():
 
 
 def _home_vlogs():
+    try:
+        entries = list(HomeVlog.objects.filter(
+            aktivan=True,
+        ).exclude(
+            slika='',
+        ).exclude(
+            slug='',
+        ).order_by('redoslijed', '-id')[:HOME_VLOG_LIMIT])
+    except DatabaseError:
+        logger.exception(
+            'HomeVlog tabela nije dostupna na početnoj — pokreni: python manage.py migrate',
+        )
+        return []
+
     vlogs = []
-    for vlog in HomeVlog.objects.filter(aktivan=True).exclude(slika='').order_by(
-        'redoslijed', '-id',
-    )[:HOME_VLOG_LIMIT]:
+    for vlog in entries:
+        if not vlog.slug:
+            continue
         width, height = image_field_dimensions(vlog.slika, default=(400, 300))
         vlogs.append({
             'id': vlog.pk,
@@ -567,7 +582,13 @@ def home(request):
 
 
 def vlog_detail(request, slug):
-    vlog = get_object_or_404(HomeVlog, slug=slug, aktivan=True)
+    try:
+        vlog = get_object_or_404(HomeVlog, slug=slug, aktivan=True)
+    except DatabaseError:
+        logger.exception(
+            'HomeVlog tabela nije dostupna — pokreni: python manage.py migrate',
+        )
+        raise Http404 from None
     image_width, image_height = image_field_dimensions(vlog.slika, default=(1200, 800))
     other_vlogs = []
     for other in HomeVlog.objects.filter(aktivan=True).exclude(slika='').exclude(pk=vlog.pk).order_by(
