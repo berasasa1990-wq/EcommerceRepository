@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 import dj_database_url
 
@@ -46,6 +47,11 @@ def _env(key, default=''):
     return value or default
 
 
+# Render detection vars (used early for ALLOWED_HOSTS, CSRF, sqlite guard, etc.)
+RENDER_EXTERNAL_HOSTNAME = _env('RENDER_EXTERNAL_HOSTNAME')
+render_disk_path = _env('RENDER_DISK_PATH', '')
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -58,7 +64,15 @@ DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
 # ALLOWED_HOSTS: always support local development even if .env has production values
 # (e.g. ALLOWED_HOSTS from Render .env section)
 _allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
-ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
+ALLOWED_HOSTS = []
+for h in _allowed.split(','):
+    h = h.strip()
+    if not h:
+        continue
+    # Strip scheme if someone put full URL by mistake (e.g. https://...)
+    if '://' in h:
+        h = urlparse(h).hostname or h
+    ALLOWED_HOSTS.append(h)
 
 if DEBUG:
     # Ensure local runserver works (127.0.0.1:8000, localhost, etc.)
@@ -73,9 +87,41 @@ ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS))
 # Render automatski injektuje RENDER_EXTERNAL_HOSTNAME za svaki Web Service.
 # Nema potrebe da ga ručno postavljaš (Render to radi sam).
 # Kod ga koristi da doda u ALLOWED_HOSTS.
-RENDER_EXTERNAL_HOSTNAME = _env('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# CSRF trusted origins - important for Render + local dev
+CSRF_TRUSTED_ORIGINS = []
+
+# From environment (recommended)
+csrf_origins = _env('CSRF_TRUSTED_ORIGINS', '')
+if csrf_origins:
+    CSRF_TRUSTED_ORIGINS.extend(
+        [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
+    )
+
+# Auto-trust Render domains (very important!)
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+# Always trust all .onrender.com subdomains when on Render
+# This makes it work even if RENDER_EXTERNAL_HOSTNAME is not set yet
+if _env('RENDER_EXTERNAL_HOSTNAME') or _env('RENDER', '') or render_disk_path:
+    if 'https://*.onrender.com' not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
+
+# Always allow common local development origins when DEBUG=True
+if DEBUG:
+    for origin in ['http://localhost', 'http://127.0.0.1', 'http://localhost:8000', 'http://127.0.0.1:8000']:
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+
+# Remove duplicates
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
+
+# Always trust *.onrender.com (makes it work reliably on Render without manual setup every time)
+if 'https://*.onrender.com' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
 
 # Production security settings
 if not DEBUG:
@@ -225,7 +271,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = _env('MEDIA_URL', '/media/')
 if not MEDIA_URL.startswith('/'):
     MEDIA_URL = '/' + MEDIA_URL.lstrip('/')
-render_disk_path = _env('RENDER_DISK_PATH', '')
 if render_disk_path:
     MEDIA_ROOT = Path(render_disk_path) / 'media'
 else:

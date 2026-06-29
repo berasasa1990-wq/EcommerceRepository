@@ -27,6 +27,8 @@ services:
         sync: false  # uvijek postavljaj u Render Dashboard → Environment (ne ovdje)
       - key: RENDER_DISK_PATH
         value: /var/data
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false  # https://ecommercerepository.onrender.com,https://*.onrender.com
       # Superuser se automatski kreira pri svakom deployu (ako ne postoji)
       - key: DJANGO_SUPERUSER_USERNAME
         sync: false
