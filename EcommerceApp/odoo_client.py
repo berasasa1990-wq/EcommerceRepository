@@ -13,7 +13,7 @@ class OdooError(Exception):
     pass
 
 
-class _TimeoutTransport(xmlrpc.client.Transport):
+class _TimeoutTransportMixin:
     def __init__(self, timeout=ODOO_REQUEST_TIMEOUT, *args, **kwargs):
         self._timeout = timeout
         super().__init__(*args, **kwargs)
@@ -22,6 +22,14 @@ class _TimeoutTransport(xmlrpc.client.Transport):
         connection = super().make_connection(host)
         connection.timeout = self._timeout
         return connection
+
+
+class _TimeoutTransport(_TimeoutTransportMixin, xmlrpc.client.Transport):
+    pass
+
+
+class _TimeoutSafeTransport(_TimeoutTransportMixin, xmlrpc.client.SafeTransport):
+    pass
 
 
 class OdooClient:
@@ -41,9 +49,10 @@ class OdooClient:
         return cls()
 
     def _proxy(self, path):
+        transport_cls = _TimeoutSafeTransport if self.url.startswith('https://') else _TimeoutTransport
         return xmlrpc.client.ServerProxy(
             urljoin(f'{self.url}/', path),
-            transport=_TimeoutTransport(),
+            transport=transport_cls(),
             allow_none=True,
         )
 
@@ -131,13 +140,8 @@ class OdooClient:
             choices.append((str(record['id']), label))
         return choices
 
-    def get_products_in_category(self, category_id, *, include_children=True):
-        category_id = int(category_id)
-        if include_children:
-            domain = [('categ_id', 'child_of', category_id), ('sale_ok', '=', True)]
-        else:
-            domain = [('categ_id', '=', category_id), ('sale_ok', '=', True)]
-        fields = [
+    def _product_template_fields(self):
+        return [
             'id',
             'name',
             'default_code',
@@ -148,13 +152,35 @@ class OdooClient:
             'product_variant_ids',
             'qty_available',
         ]
+
+    def get_products_in_category(self, category_id, *, include_children=True):
+        category_id = int(category_id)
+        if include_children:
+            domain = [('categ_id', 'child_of', category_id), ('sale_ok', '=', True)]
+        else:
+            domain = [('categ_id', '=', category_id), ('sale_ok', '=', True)]
         return self.search_read_batched(
             'product.template',
             domain,
-            fields,
+            self._product_template_fields(),
             batch_size=PRODUCT_BATCH_SIZE,
             order='name asc',
         )
+
+    def get_templates_by_ids(self, template_ids):
+        if not template_ids:
+            return []
+
+        records = []
+        fields = self._product_template_fields()
+        for offset in range(0, len(template_ids), PRODUCT_BATCH_SIZE):
+            chunk = template_ids[offset:offset + PRODUCT_BATCH_SIZE]
+            records.extend(
+                self.search_read('product.template', [('id', 'in', chunk)], fields)
+            )
+
+        by_id = {record['id']: record for record in records}
+        return [by_id[template_id] for template_id in template_ids if template_id in by_id]
 
     def get_product_variants(self, variant_ids, *, with_images=False):
         if not variant_ids:

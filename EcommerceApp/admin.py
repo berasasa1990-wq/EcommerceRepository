@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from django.http import HttpResponseRedirect
@@ -7,7 +9,16 @@ from django.utils.html import format_html
 
 from .forms import BulkAssignBrandForm, BulkAssignCategoryForm, BulkAssignTagsForm, MergeProductsForm, OdooImportForm
 from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
-from .odoo_import import import_products_from_odoo
+from .odoo_import import (
+    fetch_template_ids_from_odoo,
+    import_chunk_size,
+    import_products_from_odoo,
+    merge_import_stats,
+    _empty_import_stats,
+)
+
+logger = logging.getLogger(__name__)
+ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
     Banner,
@@ -418,38 +429,112 @@ class ProductAdmin(admin.ModelAdmin):
         except OdooError as exc:
             odoo_error = str(exc)
 
+        import_progress = None
+
         if request.method == 'POST':
-            form = OdooImportForm(request.POST, odoo_category_choices=odoo_choices)
-            if form.is_valid():
+            continuing = request.POST.get('continue_import') == '1'
+            if continuing:
+                form = OdooImportForm(odoo_category_choices=odoo_choices)
+                job = request.session.get(ODOO_IMPORT_SESSION_KEY)
+                if not job:
+                    messages.error(request, 'Import sesija je istekla. Pokrenite import ponovo.')
+                    return redirect('admin:EcommerceApp_product_odoo_import')
+            else:
+                form = OdooImportForm(request.POST, odoo_category_choices=odoo_choices)
+                job = None
+
+            if continuing or form.is_valid():
                 try:
-                    stats = import_products_from_odoo(
-                        form.cleaned_data['odoo_category_id'],
-                        django_category=form.cleaned_data['kategorija'],
-                        include_children=form.cleaned_data['ukljuci_podkategorije'],
-                        update_existing=form.cleaned_data['azuriraj_postojece'],
-                        load_images=form.cleaned_data['ucitaj_slike'],
-                        stock_only=form.cleaned_data['samo_stanje'],
-                        excluded_brand_ids=[
-                            brand.pk for brand in form.cleaned_data['preskoci_brendovi']
-                        ],
-                    )
-                    messages.success(
-                        request,
-                        (
-                            f'Odoo import završen: {stats["kreirano"]} novih, '
-                            f'{stats["azurirano"]} ažuriranih, {stats["preskoceno"]} preskočenih. '
-                            f'Varijacije: {stats["varijacija_kreirano"]} novih, '
-                            f'{stats["varijacija_azurirano"]} ažuriranih.'
+                    client = OdooClient.from_settings()
+                    if continuing:
+                        django_category = None
+                        if job.get('django_category_id'):
+                            django_category = Category.objects.filter(pk=job['django_category_id']).first()
+                        cleaned = job['options']
+                        template_ids = job['template_ids']
+                        stats = job.get('stats') or _empty_import_stats(total=len(template_ids))
+                        start = job.get('position', 0)
+                    else:
+                        cleaned = form.cleaned_data
+                        template_ids = fetch_template_ids_from_odoo(
+                            cleaned['odoo_category_id'],
+                            include_children=cleaned['ukljuci_podkategorije'],
+                            client=client,
+                        )
+                        stats = _empty_import_stats(total=len(template_ids))
+                        start = 0
+                        job = {
+                            'template_ids': template_ids,
+                            'position': 0,
+                            'stats': stats,
+                            'options': {
+                                'odoo_category_id': cleaned['odoo_category_id'],
+                                'django_category_id': cleaned['kategorija'].pk if cleaned['kategorija'] else None,
+                                'include_children': cleaned['ukljuci_podkategorije'],
+                                'update_existing': cleaned['azuriraj_postojece'],
+                                'load_images': cleaned['ucitaj_slike'],
+                                'stock_only': cleaned['samo_stanje'],
+                                'excluded_brand_ids': [
+                                    brand.pk for brand in cleaned['preskoci_brendovi']
+                                ],
+                            },
+                        }
+
+                    chunk_stats = import_products_from_odoo(
+                        job['options']['odoo_category_id'],
+                        django_category=django_category if continuing else cleaned['kategorija'],
+                        include_children=job['options']['include_children'],
+                        update_existing=job['options']['update_existing'],
+                        load_images=job['options']['load_images'],
+                        stock_only=job['options']['stock_only'],
+                        excluded_brand_ids=job['options']['excluded_brand_ids'],
+                        client=client,
+                        template_ids=template_ids,
+                        start=start,
+                        limit=import_chunk_size(
+                            load_images=job['options']['load_images'],
+                            stock_only=job['options']['stock_only'],
                         ),
                     )
-                    if stats['greske']:
-                        messages.warning(
+                    stats = merge_import_stats(stats, chunk_stats)
+                    job['position'] = stats['position']
+                    job['stats'] = stats
+
+                    if stats['done']:
+                        request.session.pop(ODOO_IMPORT_SESSION_KEY, None)
+                        messages.success(
                             request,
-                            f'Greške ({len(stats["greske"])}): ' + '; '.join(stats['greske'][:5]),
+                            (
+                                f'Odoo import završen: {stats["kreirano"]} novih, '
+                                f'{stats["azurirano"]} ažuriranih, {stats["preskoceno"]} preskočenih. '
+                                f'Varijacije: {stats["varijacija_kreirano"]} novih, '
+                                f'{stats["varijacija_azurirano"]} ažuriranih.'
+                            ),
                         )
-                    return redirect('admin:EcommerceApp_product_changelist')
+                        if stats['greske']:
+                            messages.warning(
+                                request,
+                                f'Greške ({len(stats["greske"])}): ' + '; '.join(stats['greske'][:5]),
+                            )
+                        return redirect('admin:EcommerceApp_product_changelist')
+
+                    request.session[ODOO_IMPORT_SESSION_KEY] = job
+                    request.session.modified = True
+                    import_progress = {
+                        'processed': stats['position'],
+                        'total': stats['total'],
+                        'percent': int((stats['position'] / stats['total']) * 100) if stats['total'] else 100,
+                    }
                 except OdooError as exc:
+                    request.session.pop(ODOO_IMPORT_SESSION_KEY, None)
                     messages.error(request, str(exc))
+                except Exception as exc:
+                    request.session.pop(ODOO_IMPORT_SESSION_KEY, None)
+                    logger.exception('Neočekivana greška pri Odoo importu')
+                    messages.error(
+                        request,
+                        f'Import nije uspio: {exc}. Pokušajte ponovo ili koristite opciju „Samo ažuriraj stanje”.',
+                    )
         else:
             form = OdooImportForm(odoo_category_choices=odoo_choices)
 
@@ -458,6 +543,7 @@ class ProductAdmin(admin.ModelAdmin):
             'title': 'Import artikala iz Odoo',
             'form': form,
             'odoo_error': odoo_error,
+            'import_progress': import_progress,
             'opts': self.model._meta,
             'has_view_permission': self.has_view_permission(request),
         }

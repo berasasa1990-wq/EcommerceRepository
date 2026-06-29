@@ -15,6 +15,42 @@ logger = logging.getLogger(__name__)
 
 MAX_DB_RETRIES = 6
 DB_RETRY_BASE_DELAY = 0.4
+IMPORT_CHUNK_STOCK_ONLY = 40
+IMPORT_CHUNK_NO_IMAGES = 25
+IMPORT_CHUNK_WITH_IMAGES = 6
+
+
+def _empty_import_stats(*, total=0, position=0):
+    return {
+        'pregledano': 0,
+        'kreirano': 0,
+        'azurirano': 0,
+        'preskoceno': 0,
+        'varijacija_kreirano': 0,
+        'varijacija_azurirano': 0,
+        'greske': [],
+        'total': total,
+        'position': position,
+        'done': total == 0 or position >= total,
+    }
+
+
+def import_chunk_size(*, load_images, stock_only):
+    if stock_only:
+        return IMPORT_CHUNK_STOCK_ONLY
+    if load_images:
+        return IMPORT_CHUNK_WITH_IMAGES
+    return IMPORT_CHUNK_NO_IMAGES
+
+
+def merge_import_stats(target, chunk_stats):
+    for key in ('pregledano', 'kreirano', 'azurirano', 'preskoceno', 'varijacija_kreirano', 'varijacija_azurirano'):
+        target[key] += chunk_stats.get(key, 0)
+    target['greske'].extend(chunk_stats.get('greske', []))
+    target['position'] = chunk_stats.get('position', target.get('position', 0))
+    target['total'] = chunk_stats.get('total', target.get('total', 0))
+    target['done'] = chunk_stats.get('done', False)
+    return target
 
 
 def _decimal(value, default='0'):
@@ -117,6 +153,20 @@ def _run_with_db_retry(callback):
     raise last_error
 
 
+def fetch_template_ids_from_odoo(
+    odoo_category_id,
+    *,
+    include_children=True,
+    client=None,
+):
+    client = client or OdooClient.from_settings()
+    templates = client.get_products_in_category(
+        odoo_category_id,
+        include_children=include_children,
+    )
+    return [template['id'] for template in templates]
+
+
 def import_products_from_odoo(
     odoo_category_id,
     *,
@@ -127,6 +177,9 @@ def import_products_from_odoo(
     stock_only=False,
     excluded_brand_ids=None,
     client=None,
+    template_ids=None,
+    start=0,
+    limit=None,
 ):
     client = client or OdooClient.from_settings()
     django_category = _resolve_django_category(odoo_category_id, django_category)
@@ -135,20 +188,27 @@ def import_products_from_odoo(
         load_images = False
         update_existing = True
 
-    templates = client.get_products_in_category(
-        odoo_category_id,
-        include_children=include_children,
-    )
+    if template_ids is None:
+        template_ids = fetch_template_ids_from_odoo(
+            odoo_category_id,
+            include_children=include_children,
+            client=client,
+        )
 
-    stats = {
-        'pregledano': len(templates),
-        'kreirano': 0,
-        'azurirano': 0,
-        'preskoceno': 0,
-        'varijacija_kreirano': 0,
-        'varijacija_azurirano': 0,
-        'greske': [],
-    }
+    total = len(template_ids)
+    if limit is None:
+        limit = import_chunk_size(load_images=load_images, stock_only=stock_only)
+    end = min(start + max(limit, 0), total)
+    chunk_ids = template_ids[start:end]
+
+    stats = _empty_import_stats(total=total, position=start)
+
+    if not chunk_ids:
+        stats['done'] = True
+        stats['position'] = total
+        return stats
+
+    templates = client.get_templates_by_ids(chunk_ids)
 
     for template in templates:
         try:
@@ -166,13 +226,17 @@ def import_products_from_odoo(
                 excluded_brand_ids=excluded_brand_ids,
                 template_image=template_image,
             )
+            stats['pregledano'] += 1
             stats[result['action']] += 1
             stats['varijacija_kreirano'] += result['varijacija_kreirano']
             stats['varijacija_azurirano'] += result['varijacija_azurirano']
         except Exception as exc:
             logger.exception('Odoo import greška za template %s', template.get('id'))
+            stats['pregledano'] += 1
             stats['greske'].append(f'{template.get("name", "?")}: {exc}')
 
+    stats['position'] = end
+    stats['done'] = end >= total
     return stats
 
 

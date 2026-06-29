@@ -13,7 +13,7 @@ services:
       python manage.py migrate
       # Kreira superuser ako ne postoji (ne briše postojećeg)
       python manage.py createsuperuser --noinput || true
-    startCommand: gunicorn EcommerceProject.wsgi:application
+    startCommand: gunicorn EcommerceProject.wsgi:application --timeout 180 --graceful-timeout 30
     envVars:
       - key: PYTHON_VERSION
         value: 3.12  # ili 3.11, 3.13

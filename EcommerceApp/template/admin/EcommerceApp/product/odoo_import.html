@@ -82,6 +82,26 @@
         padding: 14px 16px;
         margin-bottom: 20px;
     }
+    .odoo-import-progress {
+        max-width: 720px;
+        background: #f2f8ff;
+        border: 1px solid #c8ddf5;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    .odoo-import-progress-bar {
+        height: 12px;
+        background: #dbe7f5;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    .odoo-import-progress-bar span {
+        display: block;
+        height: 100%;
+        background: #417690;
+    }
 </style>
 {% endblock %}
 
@@ -111,6 +131,25 @@
     </div>
     {% endif %}
 
+    {% if import_progress %}
+    <div class="odoo-import-progress">
+        <strong>Import u toku…</strong>
+        <div>Obrađeno {{ import_progress.processed }} / {{ import_progress.total }} artikala ({{ import_progress.percent }}%).</div>
+        <div class="odoo-import-progress-bar">
+            <span style="width: {{ import_progress.percent }}%;"></span>
+        </div>
+        <p class="help" style="margin-top: 10px;">Stranica će se automatski osvježiti dok import traje. Ne zatvarajte ovaj tab.</p>
+    </div>
+    <form method="post" id="odoo-import-continue-form">
+        {% csrf_token %}
+        <input type="hidden" name="continue_import" value="1">
+    </form>
+    <script>
+        window.setTimeout(function () {
+            document.getElementById('odoo-import-continue-form').submit();
+        }, 800);
+    </script>
+    {% else %}
     <form method="post" class="odoo-import-form">
         {% csrf_token %}
 
@@ -166,5 +205,6 @@
             <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
         </div>
     </form>
+    {% endif %}
 </div>
 {% endblock %}
