@@ -141,14 +141,10 @@
         </div>
         <p class="help" style="margin-top: 10px;">Stranica će se automatski osvježiti dok import traje. Ne zatvarajte ovaj tab.</p>
     </div>
-    <form method="post" id="odoo-import-continue-form">
-        {% csrf_token %}
-        <input type="hidden" name="continue_import" value="1">
-    </form>
     <script>
         window.setTimeout(function () {
-            document.getElementById('odoo-import-continue-form').submit();
-        }, 800);
+            window.location.href = '{{ continue_url|escapejs }}';
+        }, 1000);
     </script>
     {% else %}
     <form method="post" class="odoo-import-form">

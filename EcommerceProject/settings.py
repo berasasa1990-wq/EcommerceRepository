@@ -123,9 +123,12 @@ CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
 if 'https://*.onrender.com' not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
 
+# Behind Render/Cloudflare HTTPS proxy Django must trust X-Forwarded-Proto (also with DEBUG=True).
+if RENDER_EXTERNAL_HOSTNAME or _env('RENDER', ''):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Production security settings
 if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
