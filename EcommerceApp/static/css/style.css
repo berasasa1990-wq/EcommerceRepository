@@ -1317,6 +1317,18 @@ body.search-results-active main {
     max-height: 173px;
 }
 
+.product-showcase .product-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    padding: 10px;
+    background: var(--white);
+    transition: transform var(--transition), border-color var(--transition);
+}
+
+.product-showcase .product-card:hover {
+    border-color: #d4d4d4;
+}
+
 .product-catalog--compact .product-card,
 .product-catalog--full .product-card {
     width: 100%;
