@@ -212,6 +212,12 @@ class OdooImportForm(forms.Form):
         initial=False,
         help_text='Ažurira samo količinu i dostupnost. Ne mijenja naziv, cijenu, kategoriju, slike niti kreira nove artikle.',
     )
+    samo_slike = forms.BooleanField(
+        label='Samo učitaj/ažuriraj slike (postojeći artikli)',
+        required=False,
+        initial=False,
+        help_text='Koristi nakon importa bez slika — povlači samo slike iz Odoo-a za artikle koji već postoje u bazi.',
+    )
     preskoci_brendovi = forms.ModelMultipleChoiceField(
         label='Ne ažuriraj artikle ovih brendova',
         queryset=Brand.objects.order_by('naziv'),
@@ -225,6 +231,11 @@ class OdooImportForm(forms.Form):
         if cleaned.get('samo_stanje'):
             cleaned['azuriraj_postojece'] = True
             cleaned['ucitaj_slike'] = False
+            cleaned['samo_slike'] = False
+        if cleaned.get('samo_slike'):
+            cleaned['azuriraj_postojece'] = True
+            cleaned['ucitaj_slike'] = True
+            cleaned['samo_stanje'] = False
         return cleaned
 
     def __init__(self, *args, odoo_category_choices=None, **kwargs):

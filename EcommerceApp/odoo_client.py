@@ -207,7 +207,9 @@ class OdooClient:
 
         images = self.get_variant_images([variant['id'] for variant in variants])
         for variant in variants:
-            variant['image_variant_1920'] = images.get(variant['id'])
+            image = images.get(variant['id'])
+            variant['image_variant_1920'] = image
+            variant['image_1920'] = image
         return variants
 
     def get_template_image(self, template_id):
@@ -256,7 +258,8 @@ class OdooClient:
         )
         if not records:
             return None
-        return records[0].get('image_variant_1920')
+        record = records[0]
+        return record.get('image_variant_1920') or record.get('image_1920')
 
     def get_variant_images(self, variant_ids, *, batch_size=IMAGE_BATCH_SIZE):
         if not variant_ids:
@@ -269,7 +272,7 @@ class OdooClient:
                 records = self.search_read(
                     'product.product',
                     [('id', 'in', chunk)],
-                    ['id', 'image_variant_1920'],
+                    ['id', 'image_variant_1920', 'image_1920'],
                 )
             except OdooError:
                 for variant_id in chunk:
@@ -279,7 +282,7 @@ class OdooClient:
                 continue
 
             for record in records:
-                image = record.get('image_variant_1920')
+                image = record.get('image_variant_1920') or record.get('image_1920')
                 if image:
                     images[record['id']] = image
         return images

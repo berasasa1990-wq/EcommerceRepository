@@ -1,5 +1,5 @@
-{% if product.slika %}
-<img src="{{ product.slika.url }}" alt="{{ product.naziv }}" loading="lazy" data-main-image>
+{% if product.prikazna_slika %}
+<img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" loading="lazy" data-main-image>
 {% else %}
 <div class="product-image-placeholder" data-main-image>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

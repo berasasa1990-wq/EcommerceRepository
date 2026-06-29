@@ -441,8 +441,17 @@ class Product(models.Model):
         return 'Na stanju' if self.na_stanju else 'Rasprodato'
 
     @property
+    def prikazna_slika(self):
+        if self.slika:
+            return self.slika
+        for variation in self.varijacije.all():
+            if variation.slika:
+                return variation.slika
+        return None
+
+    @property
     def ima_sliku(self):
-        return bool(self.slika)
+        return bool(self.prikazna_slika)
 
     @property
     def seo_title(self):

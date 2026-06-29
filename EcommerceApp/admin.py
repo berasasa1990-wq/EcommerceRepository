@@ -474,6 +474,7 @@ class ProductAdmin(admin.ModelAdmin):
                                 'update_existing': cleaned['azuriraj_postojece'],
                                 'load_images': cleaned['ucitaj_slike'],
                                 'stock_only': cleaned['samo_stanje'],
+                                'images_only': cleaned['samo_slike'],
                                 'excluded_brand_ids': [
                                     brand.pk for brand in cleaned['preskoci_brendovi']
                                 ],
@@ -487,6 +488,7 @@ class ProductAdmin(admin.ModelAdmin):
                         update_existing=job['options']['update_existing'],
                         load_images=job['options']['load_images'],
                         stock_only=job['options']['stock_only'],
+                        images_only=job['options'].get('images_only', False),
                         excluded_brand_ids=job['options']['excluded_brand_ids'],
                         client=client,
                         template_ids=template_ids,
@@ -494,6 +496,7 @@ class ProductAdmin(admin.ModelAdmin):
                         limit=import_chunk_size(
                             load_images=job['options']['load_images'],
                             stock_only=job['options']['stock_only'],
+                            images_only=job['options'].get('images_only', False),
                         ),
                     )
                     stats = merge_import_stats(stats, chunk_stats)

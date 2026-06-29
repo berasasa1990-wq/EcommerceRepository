@@ -125,7 +125,7 @@ def search_suggest(request):
         results.append({
             'naziv': product.naziv,
             'url': product.get_absolute_url(),
-            'image': product.slika.url if product.slika else '',
+            'image': product.prikazna_slika.url if product.prikazna_slika else '',
             'price': f'{price:.2f}',
             'on_sale': _product_is_on_sale(product),
         })

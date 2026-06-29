@@ -123,6 +123,7 @@
         Artikli se mapiraju po Odoo ID-u — ponovni import ažurira postojeće zapise.
         Za automatsko mapiranje kategorija u lokalnoj bazi, u Kategorijama postavite <em>Odoo category ID</em>.
         Brendove koji nisu u Odoo-u možete označiti ispod — ti artikli se neće dirati pri importu.
+        Za artikle koji su već uvezeni bez slika, označite <strong>Samo učitaj/ažuriraj slike</strong>.
     </div>
 
     {% if odoo_error %}
@@ -187,6 +188,12 @@
             <label for="{{ form.samo_stanje.id_for_label }}">{{ form.samo_stanje.label }}</label>
         </div>
         {% if form.samo_stanje.help_text %}<p class="help">{{ form.samo_stanje.help_text }}</p>{% endif %}
+
+        <div class="form-row checkbox-row">
+            {{ form.samo_slike }}
+            <label for="{{ form.samo_slike.id_for_label }}">{{ form.samo_slike.label }}</label>
+        </div>
+        {% if form.samo_slike.help_text %}<p class="help">{{ form.samo_slike.help_text }}</p>{% endif %}
 
         <div class="form-row">
             <span class="label">{{ form.preskoci_brendovi.label }}</span>

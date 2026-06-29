@@ -19,8 +19,8 @@
     <div class="product-detail-grid">
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">
-                {% if product.slika %}
-                <img src="{{ product.slika.url }}" alt="{{ product.naziv }}" id="mainProductImage">
+                {% if product.prikazna_slika %}
+                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" id="mainProductImage">
                 {% else %}
                 <div class="product-image-placeholder product-image-placeholder--large" id="mainProductImage">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -39,7 +39,7 @@
             {% endif %}
         </div>
 
-        <div class="product-detail-info" id="productDetailInfo"{% if product.slika %} data-default-image="{{ product.slika.url }}"{% endif %}>
+        <div class="product-detail-info" id="productDetailInfo"{% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
             <div class="product-detail-brand">
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>

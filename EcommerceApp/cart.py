@@ -52,8 +52,8 @@ class Cart:
         slika = ''
         if variation and variation.slika:
             slika = variation.slika.url
-        elif product.slika:
-            slika = product.slika.url
+        elif product.prikazna_slika:
+            slika = product.prikazna_slika.url
 
         if key in self.cart:
             self.cart[key]['quantity'] += quantity

@@ -35,10 +35,10 @@ def _empty_import_stats(*, total=0, position=0):
     }
 
 
-def import_chunk_size(*, load_images, stock_only):
+def import_chunk_size(*, load_images, stock_only, images_only=False):
     if stock_only:
         return IMPORT_CHUNK_STOCK_ONLY
-    if load_images:
+    if load_images or images_only:
         return IMPORT_CHUNK_WITH_IMAGES
     return IMPORT_CHUNK_NO_IMAGES
 
@@ -91,11 +91,30 @@ def _unique_sifra(prefix, odoo_id, *, product_pk=None, variation_pk=None):
         counter += 1
 
 
+def _normalize_odoo_image(image_value):
+    if not image_value or image_value is False:
+        return None
+    if isinstance(image_value, bytes):
+        return image_value
+    if isinstance(image_value, str):
+        return image_value
+    return None
+
+
+def _variant_image_b64(variant, template_image=None):
+    for key in ('image_variant_1920', 'image_1920'):
+        normalized = _normalize_odoo_image(variant.get(key))
+        if normalized:
+            return normalized
+    return _normalize_odoo_image(template_image)
+
+
 def _process_odoo_image(image_b64, filename):
+    image_b64 = _normalize_odoo_image(image_b64)
     if not image_b64:
         return None
     try:
-        raw = base64.b64decode(image_b64)
+        raw = base64.b64decode(image_b64) if isinstance(image_b64, str) else image_b64
     except (ValueError, TypeError):
         return None
     if not raw:
@@ -175,6 +194,7 @@ def import_products_from_odoo(
     update_existing=True,
     load_images=True,
     stock_only=False,
+    images_only=False,
     excluded_brand_ids=None,
     client=None,
     template_ids=None,
@@ -187,6 +207,10 @@ def import_products_from_odoo(
     if stock_only:
         load_images = False
         update_existing = True
+    if images_only:
+        load_images = True
+        update_existing = True
+        stock_only = False
 
     if template_ids is None:
         template_ids = fetch_template_ids_from_odoo(
@@ -197,7 +221,11 @@ def import_products_from_odoo(
 
     total = len(template_ids)
     if limit is None:
-        limit = import_chunk_size(load_images=load_images, stock_only=stock_only)
+        limit = import_chunk_size(
+            load_images=load_images,
+            stock_only=stock_only,
+            images_only=images_only,
+        )
     end = min(start + max(limit, 0), total)
     chunk_ids = template_ids[start:end]
 
@@ -223,6 +251,7 @@ def import_products_from_odoo(
                 update_existing=update_existing,
                 load_images=load_images,
                 stock_only=stock_only,
+                images_only=images_only,
                 excluded_brand_ids=excluded_brand_ids,
                 template_image=template_image,
             )
@@ -242,6 +271,10 @@ def import_products_from_odoo(
 
 def _import_template_with_retry(client, template, **kwargs):
     odoo_template_id = template['id']
+    if kwargs.get('images_only'):
+        prepared = _prepare_template_import(client, template, **kwargs)
+        return _run_with_db_retry(lambda: _commit_images_only_import(prepared))
+
     if ProductVariation.objects.filter(odoo_template_id=odoo_template_id).exists():
         return _run_with_db_retry(
             lambda: _commit_merged_variation_import(
@@ -302,26 +335,39 @@ def _prepare_template_import(
     update_existing,
     load_images,
     stock_only=False,
+    images_only=False,
     excluded_brand_ids=None,
     template_image,
 ):
     excluded_brand_ids = excluded_brand_ids or set()
     odoo_template_id = template['id']
+    normalized_template_image = _normalize_odoo_image(template_image)
     prepared_image = None
-    if load_images and template_image:
+    if load_images and normalized_template_image:
         prepared_image = _process_odoo_image(
-            template_image,
+            normalized_template_image,
             f'odoo-template-{odoo_template_id}.jpg',
         )
 
     variant_payloads = []
     variant_ids = template.get('product_variant_ids') or []
-    if variant_ids and (stock_only or len(variant_ids) > 1):
-        variants = client.get_product_variants(variant_ids, with_images=load_images and not stock_only)
+    needs_variants = bool(
+        variant_ids and (
+            stock_only
+            or images_only
+            or len(variant_ids) > 1
+            or (load_images and not normalized_template_image)
+        )
+    )
+    if needs_variants:
+        variants = client.get_product_variants(
+            variant_ids,
+            with_images=load_images and not stock_only,
+        )
         for variant in variants:
             prepared_variant_image = None
             if load_images:
-                image_b64 = variant.get('image_variant_1920')
+                image_b64 = _variant_image_b64(variant, normalized_template_image)
                 if image_b64:
                     prepared_variant_image = _process_odoo_image(
                         image_b64,
@@ -332,15 +378,76 @@ def _prepare_template_import(
                 'image': prepared_variant_image,
             })
 
+    if load_images and not prepared_image:
+        for payload in variant_payloads:
+            if payload.get('image'):
+                prepared_image = payload['image']
+                break
+
     return {
         'template': template,
         'django_category': django_category,
         'update_existing': update_existing,
         'load_images': load_images,
         'stock_only': stock_only,
+        'images_only': images_only,
         'excluded_brand_ids': excluded_brand_ids,
         'prepared_image': prepared_image,
         'variant_payloads': variant_payloads,
+    }
+
+
+def _commit_images_only_import(prepared):
+    template = prepared['template']
+    excluded_brand_ids = prepared.get('excluded_brand_ids') or set()
+    prepared_image = prepared['prepared_image']
+    variant_payloads = prepared['variant_payloads']
+
+    product = _find_product_for_template(template)
+    if product is None:
+        return _preskoceno_rezultat()
+    if _brend_je_zasticen(product, excluded_brand_ids):
+        return _preskoceno_rezultat()
+
+    changed = False
+    if prepared_image:
+        product.slika.save(
+            prepared_image['name'],
+            _image_content_file(prepared_image),
+            save=False,
+        )
+        changed = True
+
+    product.save()
+
+    variant_stats = {'kreirano': 0, 'azurirano': 0}
+    if variant_payloads:
+        for payload in variant_payloads:
+            if not payload.get('image'):
+                continue
+            variant = payload['variant']
+            variation = ProductVariation.objects.filter(
+                artikal=product,
+                odoo_variant_id=variant['id'],
+            ).first()
+            if variation is None:
+                continue
+            variation.slika.save(
+                payload['image']['name'],
+                _image_content_file(payload['image']),
+                save=False,
+            )
+            variation.save()
+            variant_stats['azurirano'] += 1
+            changed = True
+
+    if not changed:
+        return _preskoceno_rezultat()
+
+    return {
+        'action': 'azurirano',
+        'varijacija_kreirano': 0,
+        'varijacija_azurirano': variant_stats['azurirano'],
     }
 
 
