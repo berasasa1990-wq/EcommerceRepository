@@ -1317,7 +1317,8 @@ body.search-results-active main {
     max-height: 173px;
 }
 
-.product-showcase .product-card {
+.product-showcase .product-card,
+.category-page .product-card {
     border: 1px solid var(--gray-200);
     border-radius: 6px;
     padding: 10px;
@@ -1325,7 +1326,8 @@ body.search-results-active main {
     transition: transform var(--transition), border-color var(--transition);
 }
 
-.product-showcase .product-card:hover {
+.product-showcase .product-card:hover,
+.category-page .product-card:hover {
     border-color: #d4d4d4;
 }
 
