@@ -1,5 +1,11 @@
 {% extends 'base.html' %}
 
+{% block lcp_preload %}
+{% if lcp_image_url %}
+<link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
+{% endif %}
+{% endblock %}
+
 {% block page_title %}
 <title>{{ seo_title|default:"Oprema za ribolov | opremazaribolov.ba" }}</title>
 {% endblock %}
@@ -15,7 +21,9 @@
     <div class="carousel-track">
         {% for slide in hero_slides %}
         <div class="carousel-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
-            <div class="slide-image" style="background-image: url('{{ slide.image }}');"></div>
+            <div class="slide-image">
+                <img src="{{ slide.image }}" alt="{{ slide.title }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+            </div>
             <div class="slide-content">
                 <h2>{{ slide.title }}</h2>
                 {% if slide.subtitle %}
@@ -54,7 +62,7 @@
 <section class="grid-banners">
     {% for card in grid_banners %}
     <article class="grid-banner">
-        <div class="card-image" style="background-image: url('{{ card.image }}');"></div>
+        <img src="{{ card.image }}" alt="{{ card.title }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" loading="lazy" decoding="async">
         <div class="card-overlay">
             <h3>{{ card.title }}</h3>
             {% if card.subtitle %}
@@ -77,7 +85,7 @@
 <section class="featured-grid">
     {% for card in featured_cards %}
     <article class="featured-card {% if card.wide %}featured-card--wide{% endif %}">
-        <div class="card-image" style="background-image: url('{{ card.image }}');"></div>
+        <img src="{{ card.image }}" alt="{{ card.title }}" class="card-image card-image--featured" width="{{ card.image_width }}" height="{{ card.image_height }}" loading="lazy" decoding="async">
         <div class="card-overlay">
             <h3>{{ card.title }}</h3>
             {% if card.subtitle %}
@@ -99,7 +107,7 @@
 {% if spotlight %}
 <section class="spotlight">
     <div class="spotlight-inner">
-        <div class="spotlight-image" style="background-image: url('{{ spotlight.image }}');"></div>
+        <img src="{{ spotlight.image }}" alt="{{ spotlight.title }}" class="spotlight-image" width="{{ spotlight.image_width }}" height="{{ spotlight.image_height }}" loading="lazy" decoding="async">
         <div class="spotlight-content">
             <h2>{{ spotlight.title }}</h2>
             <p>{{ spotlight.description }}</p>
@@ -162,7 +170,7 @@
         <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase"
            class="showcase-brand-link"
            title="{{ brand.naziv }}">
-            <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" loading="lazy" decoding="async">
+            <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" width="200" height="48" loading="lazy" decoding="async">
         </a>
         {% endfor %}
     </nav>

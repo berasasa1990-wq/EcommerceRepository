@@ -267,6 +267,8 @@ STATICFILES_DIRS = [
 # WhiteNoise for efficient static file serving in production
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_MAX_AGE = 31536000
+WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ('jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'ico')
 
 # Media files
 # Local dev: ./media/

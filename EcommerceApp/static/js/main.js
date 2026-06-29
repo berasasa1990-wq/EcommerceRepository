@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const items = results.map((item) => {
             const thumb = item.image
-                ? `<img src="${escapeHtml(item.image)}" alt="" loading="lazy">`
+                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
                 : placeholderThumbSvg;
             const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
             return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">

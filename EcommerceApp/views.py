@@ -27,6 +27,7 @@ from .loyalty import (
 from .pricing import izracunaj_sazetak, sazetak_iz_narudzbe
 from .emails import EmailNotConfiguredError, send_order_emails
 from .render_sync import sync_korisnik, sync_narudzba
+from .utils.images import image_field_dimensions
 
 logger = logging.getLogger(__name__)
 from .forms import CheckoutForm, CouponForm, LoginForm, ProfileForm, RegisterForm
@@ -347,10 +348,13 @@ def _banner_to_hero_slide(banner):
             'url': banner.sekundarni_link or '#',
             'primary': False,
         })
+    image_width, image_height = image_field_dimensions(banner.slika, default=(1920, 1080))
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
         'image': banner.slika.url,
+        'image_width': image_width,
+        'image_height': image_height,
         'actions': actions,
     }
 
@@ -363,10 +367,13 @@ def _banner_to_card(banner):
             'url': banner.sekundarni_link or '#',
             'primary': False,
         })
+    image_width, image_height = image_field_dimensions(banner.slika, default=(1200, 1200))
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
         'image': banner.slika.url,
+        'image_width': image_width,
+        'image_height': image_height,
         'actions': actions,
         'wide': banner.siroka_kartica,
     }
@@ -395,10 +402,18 @@ def _home_featured_products():
 
 
 def home(request):
-    hero_banners = Banner.objects.filter(tip=Banner.BannerType.HERO, aktivan=True)
-    grid_banners = Banner.objects.filter(tip=Banner.BannerType.GRID, aktivan=True)[:4]
-    featured_banners = Banner.objects.filter(tip=Banner.BannerType.FEATURED, aktivan=True)
-    spotlight_banner = Banner.objects.filter(tip=Banner.BannerType.SPOTLIGHT, aktivan=True).first()
+    hero_banners = Banner.objects.filter(
+        tip=Banner.BannerType.HERO, aktivan=True,
+    ).order_by('redoslijed', '-id')
+    grid_banners = Banner.objects.filter(
+        tip=Banner.BannerType.GRID, aktivan=True,
+    ).order_by('redoslijed', '-id')[:4]
+    featured_banners = Banner.objects.filter(
+        tip=Banner.BannerType.FEATURED, aktivan=True,
+    ).order_by('redoslijed', '-id')
+    spotlight_banner = Banner.objects.filter(
+        tip=Banner.BannerType.SPOTLIGHT, aktivan=True,
+    ).order_by('redoslijed', '-id').first()
 
     filter_params = _get_filter_params(request)
     filters_active = _filters_active(filter_params)
@@ -416,18 +431,33 @@ def home(request):
         latest_products = _home_latest_products()
         featured_products = _home_featured_products()
 
-    context = {
-        **_base_context(),
-        'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners],
-        'grid_banners': [_banner_to_card(b) for b in grid_banners],
-        'featured_cards': [_banner_to_card(b) for b in featured_banners],
-        'spotlight': {
+    first_hero = hero_banners.first()
+    lcp_image_url = None
+    if not filters_active and first_hero and first_hero.slika:
+        lcp_image_url = request.build_absolute_uri(first_hero.slika.url)
+
+    spotlight = None
+    if spotlight_banner:
+        spotlight_width, spotlight_height = image_field_dimensions(
+            spotlight_banner.slika, default=(1200, 800),
+        )
+        spotlight = {
             'title': spotlight_banner.naslov,
             'description': spotlight_banner.podnaslov,
             'image': spotlight_banner.slika.url,
+            'image_width': spotlight_width,
+            'image_height': spotlight_height,
             'cta': spotlight_banner.tekst_dugmeta,
             'url': spotlight_banner.link or '#',
-        } if spotlight_banner else None,
+        }
+
+    context = {
+        **_base_context(),
+        'lcp_image_url': lcp_image_url,
+        'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners],
+        'grid_banners': [_banner_to_card(b) for b in grid_banners],
+        'featured_cards': [_banner_to_card(b) for b in featured_banners],
+        'spotlight': spotlight,
         'latest_products': latest_products,
         'featured_products': featured_products,
         'showcase_brands': _showcase_brands() if not filters_active else [],
@@ -486,10 +516,21 @@ def product_detail(request, slug):
         ),
         slug=slug,
     )
+    lcp_image_url = None
+    product_image_width, product_image_height = 800, 800
+    if product.prikazna_slika:
+        product_image_width, product_image_height = image_field_dimensions(
+            product.prikazna_slika, default=(800, 800),
+        )
+        lcp_image_url = request.build_absolute_uri(product.prikazna_slika.url)
+
     context = {
         **_base_context(),
         'product': product,
         'ima_varijacije': product.varijacije.count() > 0,
+        'lcp_image_url': lcp_image_url,
+        'product_image_width': product_image_width,
+        'product_image_height': product_image_height,
         # SEO
         'seo_title': product.seo_title,
         'seo_description': product.seo_description,

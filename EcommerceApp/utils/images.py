@@ -20,6 +20,21 @@ def is_new_upload(image_field):
     return hasattr(image_field, 'file') and isinstance(image_field.file, UploadedFile)
 
 
+def image_field_dimensions(image_field, *, default=(1600, 900)):
+    if not image_field or not image_field.name:
+        return default
+    try:
+        image_field.open('rb')
+        try:
+            with Image.open(image_field) as img:
+                return img.width, img.height
+        finally:
+            image_field.close()
+    except Exception:
+        logger.debug('Ne mogu učitati dimenzije za %s', image_field.name, exc_info=True)
+        return default
+
+
 def _png_filename(original_name):
     base = original_name.rsplit('/', 1)[-1]
     return base.rsplit('.', 1)[0] + '.png'

@@ -1,5 +1,5 @@
 {% if slika %}
-<img src="{{ slika.url }}" alt="{{ label }}">
+<img src="{{ slika.url }}" alt="{{ label }}" width="48" height="48" loading="lazy" decoding="async">
 {% else %}
 <span class="variation-swatch-label">{{ label }}</span>
 {% endif %}

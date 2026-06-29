@@ -651,10 +651,18 @@ main {
 .slide-image {
     width: 100%;
     height: 100%;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-color: #000; /* ili #fff, zavisno od dizajna */
+    background-color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.slide-image-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center center;
 }
 
 .slide-content {
@@ -768,17 +776,19 @@ main {
 }
 
 .grid-banner .card-image {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     background-color: #f5f5f5;
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
+    object-fit: contain;
+    object-position: center;
 }
 
 .grid-banner .card-overlay {
     position: absolute;
     inset: 0;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -819,11 +829,13 @@ main {
     aspect-ratio: 2.5 / 1;
 }
 
-.card-image {
+.featured-card .card-image {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    background-size: cover;
-    background-position: center;
+    object-fit: cover;
+    object-position: center;
     transition: transform 0.6s ease;
 }
 
@@ -834,6 +846,7 @@ main {
 .card-overlay {
     position: absolute;
     inset: 0;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -873,9 +886,11 @@ main {
 }
 
 .spotlight-image {
-    background-size: cover;
-    background-position: center;
+    width: 100%;
+    height: 100%;
     min-height: 400px;
+    object-fit: cover;
+    object-position: center;
 }
 
 .spotlight-content {

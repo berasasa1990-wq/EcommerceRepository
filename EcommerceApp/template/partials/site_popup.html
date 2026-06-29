@@ -9,7 +9,7 @@
             </svg>
         </button>
 
-        <img src="{{ active_popup.slika.url }}" alt="{{ active_popup.naziv }}" class="site-popup-image">
+        <img src="{{ active_popup.slika.url }}" alt="{{ active_popup.naziv }}" class="site-popup-image" width="600" height="600" loading="lazy" decoding="async">
 
         <a href="{{ active_popup.get_link_href }}" class="btn btn-primary site-popup-cta">
             {{ active_popup.tekst_dugmeta }}

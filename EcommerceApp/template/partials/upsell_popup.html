@@ -19,7 +19,7 @@
             <div class="upsell-product">
                 <div class="upsell-image-wrap">
                     {% if prod.slika_url %}
-                    <img src="{{ prod.slika_url }}" alt="{{ prod.naziv }}" class="upsell-image">
+                    <img src="{{ prod.slika_url }}" alt="{{ prod.naziv }}" class="upsell-image" width="120" height="120" loading="lazy" decoding="async">
                     {% else %}
                     <div class="upsell-image-placeholder"></div>
                     {% endif %}

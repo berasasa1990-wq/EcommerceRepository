@@ -16,7 +16,7 @@
             {% if position == 'banner_iznad' %}
             <div class="upsell-cart-banner-media">
                 {% if prod.slika_url %}
-                <img src="{{ prod.slika_url }}" alt="" class="upsell-cart-banner-thumb upsell-cart-banner-thumb--fill">
+                <img src="{{ prod.slika_url }}" alt="" class="upsell-cart-banner-thumb upsell-cart-banner-thumb--fill" width="80" height="80" loading="lazy" decoding="async">
                 {% else %}
                 <div class="upsell-cart-banner-thumb-placeholder" aria-hidden="true"></div>
                 {% endif %}
@@ -50,7 +50,7 @@
             {% else %}
             <div class="upsell-cart-banner-media upsell-cart-banner-media--ispod">
                 {% if prod.slika_url %}
-                <img src="{{ prod.slika_url }}" alt="" class="upsell-cart-banner-thumb upsell-cart-banner-thumb--fill">
+                <img src="{{ prod.slika_url }}" alt="" class="upsell-cart-banner-thumb upsell-cart-banner-thumb--fill" width="80" height="80" loading="lazy" decoding="async">
                 {% else %}
                 <div class="upsell-cart-banner-thumb-placeholder" aria-hidden="true"></div>
                 {% endif %}
