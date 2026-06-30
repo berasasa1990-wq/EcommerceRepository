@@ -222,13 +222,17 @@ img.home-vlog-card-image {
 }
 
 .nav-item--akcija > a.nav-link-akcija {
-    background: #ff9500;
-    color: #111 !important;
+    background: #dc2626;
+    color: #fff !important;
     font-weight: 700;
-    padding: 8px 18px;
-    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 8px;
     line-height: 1.2;
-    transition: background var(--transition), transform var(--transition);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.28);
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
 }
 
 .nav-item--akcija > a.nav-link-akcija::after {
@@ -236,7 +240,9 @@ img.home-vlog-card-image {
 }
 
 .nav-item--akcija > a.nav-link-akcija:hover {
-    background: #e68600;
+    background: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.38);
     opacity: 1;
 }
 
@@ -971,6 +977,27 @@ main {
     scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
 }
 
+.home-search-results--akcija {
+    max-width: none;
+    margin: 0;
+    padding-top: 40px;
+}
+
+.home-search-results--akcija .home-products-header h2 {
+    color: #dc2626;
+    font-size: 2.25rem;
+    font-style: italic;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.1;
+}
+
+.home-search-results--akcija .home-products-header p {
+    color: #991b1b;
+    font-weight: 500;
+}
+
 .home-products-header {
     margin-bottom: 32px;
     padding: 0 48px;
@@ -1455,6 +1482,13 @@ main {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 16px;
     padding: 0 48px;
+}
+
+.home-search-results--akcija .product-grid--home {
+    gap: 4px;
+    padding: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .home-products .product-image,
@@ -3244,10 +3278,14 @@ body.search-results-active main {
 
     .nav-menu.mobile-open .nav-item--akcija > a.nav-link-akcija {
         justify-content: center;
-        margin-top: 4px;
-        padding: 14px 18px;
-        font-size: 16px;
-        border-radius: 999px;
+        margin: 8px 0 4px;
+        padding: 14px 20px;
+        font-size: 14px;
+        letter-spacing: 0.06em;
+        border-radius: 8px;
+        background: #dc2626;
+        color: #fff !important;
+        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.28);
     }
 
     .nav-menu.mobile-open .nav-chevron {
@@ -3497,7 +3535,8 @@ body.search-results-active main {
         padding-right: 24px;
     }
 
-    .home-products .product-grid--home {
+    .home-products .product-grid--home,
+    .home-search-results--akcija .product-grid--home {
         padding-left: 0;
         padding-right: 0;
         gap: 4px;
@@ -3505,6 +3544,7 @@ body.search-results-active main {
 
     .home-products-header--novo h2,
     .home-products-header--izdvojeno h2,
+    .home-search-results--akcija .home-products-header h2,
     .home-vlog-header--blog h2 {
         font-size: 1.9rem;
     }
@@ -4186,7 +4226,8 @@ body.search-results-active main {
         padding-right: 16px;
     }
 
-    .home-products .product-grid--home {
+    .home-products .product-grid--home,
+    .home-search-results--akcija .product-grid--home {
         padding-left: 0;
         padding-right: 0;
         gap: 4px;
@@ -4194,6 +4235,7 @@ body.search-results-active main {
 
     .home-products-header--novo h2,
     .home-products-header--izdvojeno h2,
+    .home-search-results--akcija .home-products-header h2,
     .home-vlog-header--blog h2 {
         font-size: 1.65rem;
     }
@@ -4254,6 +4296,10 @@ body.search-results-active main {
 
     .home-search-results .product-grid--home {
         gap: 12px;
+    }
+
+    .home-search-results--akcija .product-grid--home {
+        gap: 4px;
     }
 
     .product-showcase {

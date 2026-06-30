@@ -161,7 +161,7 @@
 {% endif %}
 
 {% if filter_params.q or filter_params.akcija or filter_params.brend or filter_params.kategorija or filter_params.cijena_od or filter_params.cijena_do or filter_params.sort %}
-<section class="home-search-results{% if filter_params.q %} home-search-results--search{% endif %}" id="product-showcase">
+<section class="home-search-results{% if filter_params.q %} home-search-results--search{% endif %}{% if filter_params.akcija %} home-search-results--akcija{% endif %}" id="product-showcase">
     <div class="home-products-header">
         {% if filter_params.q %}
         <h2>Rezultati pretrage</h2>
