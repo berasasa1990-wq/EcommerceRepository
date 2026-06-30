@@ -1106,7 +1106,7 @@ main {
     font-size: 0.9375rem;
     font-weight: 600;
     line-height: 1.35;
-    color: var(--gray-900);
+    color: var(--black);
 }
 
 .vlog-article {
@@ -1545,7 +1545,7 @@ body.search-results-active main {
     font-size: 14px;
     padding: 10px 12px;
     cursor: pointer;
-    color: var(--gray-900);
+    color: var(--black);
     transition: background var(--transition), color var(--transition);
 }
 
