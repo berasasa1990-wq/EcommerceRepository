@@ -262,7 +262,12 @@ class Banner(models.Model):
     def save(self, *args, **kwargs):
         if self.slika:
             from .utils.images import apply_image_processing, process_banner_image
-            apply_image_processing(self, 'slika', post_process=process_banner_image)
+            tip = self.tip
+            apply_image_processing(
+                self,
+                'slika',
+                post_process=lambda field: process_banner_image(field, tip=tip),
+            )
         super().save(*args, **kwargs)
 
     def get_link_href(self):
