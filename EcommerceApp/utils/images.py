@@ -17,7 +17,7 @@ MAX_VLOG_AVIF_BYTES = 30 * 1024
 VLOG_MAX_DIMENSION = 420
 BANNER_MAX_WIDTH = 1920
 BANNER_JPEG_QUALITY = 82
-MAX_GRID_BANNER_AVIF_BYTES = 30 * 1024
+MAX_GRID_BANNER_AVIF_BYTES = 60 * 1024
 GRID_BANNER_MAX_DIMENSION = 480
 MAX_PRODUCT_AVIF_BYTES = 20 * 1024
 
@@ -148,7 +148,7 @@ def process_vlog_image(image_field):
 
 
 def process_banner_image(image_field, tip='hero'):
-    """Grid banneri: AVIF max 30KB. Ostali tipovi: JPEG max 1920px."""
+    """Grid banneri: AVIF max 60KB. Ostali tipovi: JPEG max 1920px."""
     img = Image.open(image_field)
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     if tip == 'grid':
