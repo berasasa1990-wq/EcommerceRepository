@@ -1,11 +1,7 @@
 <section class="home-vlog" id="vlog">
-    <div class="home-vlog-header">
-        <h2>Vlog</h2>
-        <p>Savjeti, novosti i priče s vode</p>
-    </div>
     <div class="home-vlog-grid">
         {% for vlog in home_vlogs %}
-        <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card">
+        <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card" aria-label="{{ vlog.naslov }}">
             <div class="home-vlog-card-image-wrap">
                 <img src="{{ vlog.slika_url }}"
                      alt="{{ vlog.naslov }}"
@@ -16,7 +12,6 @@
                      loading="lazy"
                      decoding="async">
             </div>
-            <span class="home-vlog-card-title">{{ vlog.naslov }}</span>
         </a>
         {% endfor %}
     </div>
