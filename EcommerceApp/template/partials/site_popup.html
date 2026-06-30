@@ -20,12 +20,12 @@
             </svg>
         </button>
 
-        <img src="{{ active_popup.slika.url }}"
+        <img src=""
+             data-src="{{ active_popup.slika.url }}"
              alt="{{ active_popup.naziv }}"
              class="site-popup-image"
              width="600"
              height="600"
-             loading="lazy"
              decoding="async">
 
         <a href="{{ active_popup.get_link_href }}"

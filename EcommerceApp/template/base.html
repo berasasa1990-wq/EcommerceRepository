@@ -69,7 +69,6 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'css/style.min.css' %}" as="style">
-    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.min.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
@@ -91,7 +90,7 @@
             <div class="nav-brand-bar">
                 <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
                     {% if site_settings.logo %}
-                    <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" loading="lazy" fetchpriority="low" decoding="async">
+                    <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
                     {% else %}
                     <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
                         <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>

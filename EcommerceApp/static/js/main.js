@@ -487,6 +487,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function openPopup() {
+            const popupImage = sitePopupOverlay.querySelector('.site-popup-image');
+            if (popupImage && popupImage.dataset.src && !popupImage.getAttribute('src')) {
+                popupImage.setAttribute('src', popupImage.dataset.src);
+            }
             sitePopupOverlay.hidden = false;
             requestAnimationFrame(() => {
                 sitePopupOverlay.classList.add('is-visible');

@@ -415,16 +415,19 @@ def home(request):
 
     first_hero = hero_banners.first()
     first_grid_banner = grid_banners.first()
+    has_hero_slides = bool(not filters_active and hero_banners.exists())
     lcp_image_url = None
+    eager_first_novo_image = False
     if not filters_active:
-        if first_grid_banner and first_grid_banner.slika:
-            lcp_image_url = request.build_absolute_uri(first_grid_banner.slika.url)
-        elif first_hero and first_hero.slika:
+        if first_hero and first_hero.slika:
             lcp_image_url = request.build_absolute_uri(first_hero.slika.url)
+        elif first_grid_banner and first_grid_banner.slika:
+            lcp_image_url = request.build_absolute_uri(first_grid_banner.slika.url)
         elif latest_products:
             first_product = latest_products[0]
             if first_product.prikazna_slika:
                 lcp_image_url = request.build_absolute_uri(first_product.prikazna_slika.url)
+                eager_first_novo_image = True
 
     spotlight = None
     if spotlight_banner:
@@ -444,6 +447,8 @@ def home(request):
     context = {
         **_base_context(),
         'lcp_image_url': lcp_image_url,
+        'has_hero_slides': has_hero_slides,
+        'eager_first_novo_image': eager_first_novo_image,
         'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners],
         'grid_banners': [_banner_to_card(b) for b in grid_banners],
         'featured_cards': [_banner_to_card(b) for b in featured_banners],

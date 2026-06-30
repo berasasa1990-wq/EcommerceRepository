@@ -417,10 +417,15 @@ class Popup(models.Model):
         return f'{self.naziv} ({status})'
 
 
+SIFRA_MAX_LENGTH = 100
+
+
 class Product(models.Model):
     naziv = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    sifra = models.CharField(max_length=50, blank=True, null=True, unique=True, verbose_name='Šifra')
+    sifra = models.CharField(
+        max_length=SIFRA_MAX_LENGTH, blank=True, null=True, unique=True, verbose_name='Šifra',
+    )
     barkod = models.CharField(max_length=50, blank=True, verbose_name='Barkod')
     opis = models.TextField(
         blank=True,
@@ -592,7 +597,9 @@ class ProductVariation(models.Model):
         Product, on_delete=models.CASCADE, related_name='varijacije',
     )
     naziv = models.CharField(max_length=100)
-    sifra = models.CharField(max_length=50, blank=True, null=True, unique=True, verbose_name='Šifra')
+    sifra = models.CharField(
+        max_length=SIFRA_MAX_LENGTH, blank=True, null=True, unique=True, verbose_name='Šifra',
+    )
     slika = models.ImageField(upload_to='products/variations/', blank=True, null=True)
     cijena = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
@@ -923,7 +930,7 @@ class OrderItem(models.Model):
     naziv = models.CharField(max_length=200)
     product_naziv = models.CharField(max_length=200, blank=True)
     varijacija_naziv = models.CharField(max_length=100, blank=True)
-    sifra = models.CharField(max_length=50, blank=True)
+    sifra = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
     cijena = models.DecimalField(max_digits=10, decimal_places=2)
     kolicina = models.PositiveIntegerField(default=1)
 

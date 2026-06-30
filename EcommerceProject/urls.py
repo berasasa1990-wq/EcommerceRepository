@@ -21,9 +21,8 @@ from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path, re_path
 from django.views.generic.base import TemplateView
-from django.views.static import serve
-
 from EcommerceApp.sitemaps import sitemaps as app_sitemaps
+from EcommerceApp.views_media import serve_media
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,7 +30,7 @@ urlpatterns = [
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
     # Always serve media files (from persistent disk on Render, even in production).
     # Using explicit re_path + serve so it works both locally (runserver) and on Render.
-    re_path(r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')), serve, {'document_root': settings.MEDIA_ROOT}),
+    re_path(r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')), serve_media),
 ] + [
     path('', include('EcommerceApp.urls')),
 ]

@@ -2536,6 +2536,27 @@ body.search-results-active main {
     flex-wrap: wrap;
 }
 
+@media (min-width: 769px) {
+    .category-subnav {
+        justify-content: center;
+    }
+
+    .mega-menu.active {
+        display: flex;
+        justify-content: center;
+    }
+
+    .mega-menu-inner {
+        position: relative;
+        left: auto;
+        top: 16px;
+    }
+
+    .mega-menu-subcategories {
+        justify-content: center;
+    }
+}
+
 .category-subnav-link {
     font-size: 16px;
     font-weight: 500;

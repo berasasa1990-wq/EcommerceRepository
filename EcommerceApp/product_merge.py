@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from .models import Product, ProductVariation
+from .models import SIFRA_MAX_LENGTH, Product, ProductVariation
 
 
 class ProductMergeError(Exception):
@@ -89,7 +89,7 @@ def merge_products(selected_products, primary, *, new_name=None):
                     sifra=variation.sifra,
                 ).exclude(pk=variation.pk).exists()
                 if conflict:
-                    variation.sifra = f'{variation.sifra}-{variation.pk}'[:50]
+                    variation.sifra = f'{variation.sifra}-{variation.pk}'[:SIFRA_MAX_LENGTH]
             variation.artikal = primary
             variation.redoslijed = redoslijed
             variation.save(update_fields=['artikal', 'redoslijed', 'sifra'])

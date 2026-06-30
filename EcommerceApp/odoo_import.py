@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.files.base import ContentFile
 from django.db import OperationalError, transaction
 
-from .models import Category, Product, ProductVariation
+from .models import SIFRA_MAX_LENGTH, Category, Product, ProductVariation
 from .odoo_client import OdooClient, OdooError
 from .product_merge import sync_primary_stock
 from .utils.images import process_product_image_bytes
@@ -312,7 +312,7 @@ def _commit_merged_variation_import(template, *, update_existing, stock_only=Fal
         sifra = (template.get('default_code') or '').strip()
         variation.cijena = _decimal(template.get('list_price'))
         if sifra:
-            variation.sifra = sifra[:50]
+            variation.sifra = sifra[:SIFRA_MAX_LENGTH]
         variation.naziv = (template.get('name') or variation.naziv)[:100]
         variation.save()
 
@@ -530,7 +530,7 @@ def _commit_template_import(prepared):
 
     values = {
         'naziv': (template.get('name') or f'Artikal {odoo_template_id}')[:200],
-        'sifra': sifra[:50],
+        'sifra': sifra[:SIFRA_MAX_LENGTH],
         'barkod': (template.get('barcode') or '')[:50],
         'opis': template.get('description_sale') or '',
         'cijena': _decimal(template.get('list_price')),
@@ -615,7 +615,7 @@ def _commit_variations(product, variant_payloads, *, update_existing):
         values = {
             'artikal': product,
             'naziv': naziv,
-            'sifra': sifra[:50],
+            'sifra': sifra[:SIFRA_MAX_LENGTH],
             'cijena': _decimal(variant.get('lst_price') or product.cijena),
             'na_stanju': qty > 0,
             'stanje': qty,
