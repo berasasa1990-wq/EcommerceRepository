@@ -1016,38 +1016,31 @@ main {
 }
 
 .home-vlog {
+    padding: 16px 0 64px;
     max-width: 1440px;
     margin: 0 auto;
-    padding: 16px 24px 48px;
+    width: 100%;
+    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
 }
 
 .home-vlog-header {
-    margin-bottom: 28px;
-    padding: 0 24px;
+    margin-bottom: 32px;
+    padding: 0 48px;
 }
 
 .home-vlog-header h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0 0 8px;
-}
-
-.home-vlog-header p {
-    margin: 0;
-    color: var(--gray-600);
-}
-
-.home-vlog-header--vlog h2 {
-    color: #1d4ed8;
     font-size: 2.25rem;
     font-style: italic;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     line-height: 1.1;
+    margin: 0 0 8px;
+    color: #1d4ed8;
 }
 
-.home-vlog-header--vlog p {
+.home-vlog-header p {
+    margin: 0;
     color: #1e40af;
     font-weight: 500;
 }
@@ -1055,22 +1048,20 @@ main {
 .home-vlog-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    padding: 0;
+    gap: 20px;
+    padding: 0 48px;
 }
 
 .home-vlog-card {
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 0;
+    height: 100%;
     border: 1px solid var(--gray-200);
     border-radius: 8px;
     background: var(--white);
     color: inherit;
     text-decoration: none;
-    cursor: pointer;
-    text-align: left;
     overflow: hidden;
     transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
@@ -1082,19 +1073,17 @@ main {
 }
 
 .home-vlog-card-image-wrap {
-    display: block;
     position: relative;
     width: 100%;
-    aspect-ratio: 1200 / 479;
+    aspect-ratio: 5 / 2;
     overflow: hidden;
-    background: #111;
-    line-height: 0;
+    background: #f3f4f6;
 }
 
 .home-vlog-card-image {
     width: 100%;
     height: 100%;
-    max-height: none;
+    max-width: none;
     object-fit: cover;
     object-position: center;
     display: block;
@@ -2931,6 +2920,10 @@ body.search-results-active main {
         --header-height: 80px;
     }
 
+    .home-vlog-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .product-catalog--full .catalog-products {
         padding: 0 32px;
     }
@@ -3295,7 +3288,7 @@ body.search-results-active main {
 
     .home-products-header--novo h2,
     .home-products-header--izdvojeno h2,
-    .home-vlog-header--vlog h2 {
+    .home-vlog-header h2 {
         font-size: 1.9rem;
     }
 
@@ -3303,11 +3296,6 @@ body.search-results-active main {
     .home-vlog-grid {
         padding-left: 24px;
         padding-right: 24px;
-    }
-
-    .home-vlog-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
     }
 
     .vlog-related-grid {
@@ -3976,7 +3964,7 @@ body.search-results-active main {
 
     .home-products-header--novo h2,
     .home-products-header--izdvojeno h2,
-    .home-vlog-header--vlog h2 {
+    .home-vlog-header h2 {
         font-size: 1.65rem;
     }
 
@@ -3988,6 +3976,7 @@ body.search-results-active main {
 
     .home-vlog-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 
     .vlog-article-intro,

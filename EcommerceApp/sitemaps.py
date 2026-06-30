@@ -2,7 +2,7 @@ from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Category, Product
+from .models import Category, HomeVlog, Product
 
 
 class StaticViewSitemap(Sitemap):
@@ -30,6 +30,17 @@ class CategorySitemap(Sitemap):
         return obj.get_absolute_url()
 
 
+class VlogSitemap(Sitemap):
+    changefreq = 'weekly'
+    priority = 0.7
+
+    def items(self):
+        return HomeVlog.objects.filter(aktivan=True).exclude(slug='')
+
+    def location(self, obj):
+        return obj.get_absolute_url()
+
+
 class ProductSitemap(Sitemap):
     changefreq = 'daily'
     priority = 0.9
@@ -48,4 +59,5 @@ sitemaps = {
     'static': StaticViewSitemap,
     'kategorije': CategorySitemap,
     'artikli': ProductSitemap,
+    'vlogovi': VlogSitemap,
 }

@@ -1,5 +1,5 @@
 <section class="home-vlog" id="vlog">
-    <div class="home-vlog-header home-vlog-header--vlog">
+    <div class="home-vlog-header">
         <h2>Vlog</h2>
         <p>Savjeti, novosti i priče s vode</p>
     </div>
@@ -7,7 +7,7 @@
         {% for vlog in home_vlogs %}
         <article class="home-vlog-item">
             <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card">
-                <span class="home-vlog-card-image-wrap">
+                <div class="home-vlog-card-image-wrap">
                     <img src="{{ vlog.slika_url }}"
                          alt="{{ vlog.naslov }}"
                          class="home-vlog-card-image"
@@ -15,7 +15,7 @@
                          height="{{ vlog.image_height }}"
                          loading="lazy"
                          decoding="async">
-                </span>
+                </div>
                 <h3 class="home-vlog-card-title">{{ vlog.naslov }}</h3>
             </a>
         </article>

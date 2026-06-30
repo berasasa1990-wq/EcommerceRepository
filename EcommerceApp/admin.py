@@ -322,27 +322,23 @@ class UpsellOfferAdmin(admin.ModelAdmin):
 
 @admin.register(HomeVlog)
 class HomeVlogAdmin(admin.ModelAdmin):
-    list_display = ('naslov', 'slug', 'aktivan', 'redoslijed', 'pregled_slike')
+    list_display = ('naslov', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('aktivan',)
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naslov', 'slug', 'sadrzaj')
     prepopulated_fields = {'slug': ('naslov',)}
     readonly_fields = ('pregled_slike_velika',)
     fieldsets = (
-        ('Prikaz na početnoj', {
-            'fields': ('naslov', 'slug', 'slika', 'pregled_slike_velika'),
-            'description': 'Slika i naslov prikazuju se ispod sekcije Izdvojeno. Klik vodi na stranicu vloga.',
-        }),
-        ('Sadržaj vloga', {
-            'fields': ('sadrzaj',),
+        (None, {
+            'fields': ('naslov', 'slika', 'pregled_slike_velika', 'sadrzaj'),
             'description': (
-                'HTML tekst s linkovima. Primjer: '
-                '<code>&lt;a href="/kategorija/"&gt;Pogledaj kategoriju&lt;/a&gt;</code> '
-                'ili <code>&lt;a href="https://..." target="_blank" rel="noopener"&gt;vanjski link&lt;/a&gt;</code>.'
+                'Vlogovi se prikazuju na početnoj ispod Izdvojeno (3 u redu). '
+                'Na početnoj: slika i naziv. Klik otvara stranicu s opisom.'
             ),
         }),
         ('Podešavanja', {
-            'fields': ('redoslijed', 'aktivan'),
+            'fields': ('slug', 'redoslijed', 'aktivan'),
+            'classes': ('collapse',),
         }),
     )
 

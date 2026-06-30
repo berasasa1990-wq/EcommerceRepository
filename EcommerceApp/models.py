@@ -307,25 +307,25 @@ class HomeFeaturedProduct(models.Model):
 class HomeVlog(models.Model):
     naslov = models.CharField(
         max_length=200,
-        verbose_name='Naslov',
+        verbose_name='Naziv',
         help_text='Prikazuje se ispod slike na početnoj.',
     )
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     slika = models.ImageField(
         upload_to='vlogs/',
         verbose_name='Slika',
-        help_text='Thumbnail na početnoj. Preporučeno 4:3 ili kvadrat.',
+        help_text='Prikazuje se na početnoj (3 u redu). Preporučeno široka slika, npr. 1200×480 px.',
     )
     sadrzaj = models.TextField(
-        verbose_name='Sadržaj',
-        help_text='Tekst vloga u HTML-u. Za link: <a href="/putanja/">tekst</a> ili puni URL.',
+        verbose_name='Opis vloga',
+        help_text='Puni tekst koji se prikazuje kad korisnik otvori vlog. Može HTML: <p>, <a href="/...">link</a>.',
     )
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
 
     class Meta:
-        verbose_name = 'Vlog (početna)'
-        verbose_name_plural = 'Vlogovi (početna)'
+        verbose_name = 'Vlog'
+        verbose_name_plural = 'Vlogovi'
         ordering = ['redoslijed', '-id']
 
     def save(self, *args, **kwargs):
