@@ -1,15 +1,11 @@
 {% extends 'base.html' %}
 
 {% block page_title %}
-<title>{% if category.meta_title %}{{ category.meta_title }}{% else %}{{ category.naziv }} | Oprema za ribolov{% endif %} — opremazaribolov.ba</title>
+<title>{{ seo_title }} — opremazaribolov.ba</title>
 {% endblock %}
 
 {% block meta_description %}
-{% if category.meta_description %}
-<meta name="description" content="{{ category.meta_description }}">
-{% else %}
-<meta name="description" content="{{ category.naziv }} — širok izbor opreme za ribolov po odličnim cijenama. Brza dostava u Bosni i Hercegovini.">
-{% endif %}
+<meta name="description" content="{{ seo_description }}">
 {% endblock %}
 
 {% block structured_data %}

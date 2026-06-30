@@ -573,9 +573,6 @@ def home(request):
             page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []
         ),
         'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
-        # SEO
-        'seo_title': SiteSettings.load().seo_title or 'Oprema za ribolov | opremazaribolov.ba',
-        'seo_description': SiteSettings.load().meta_description or 'Kvalitetna oprema za ribolov po povoljnim cijenama. Štapovi, mašinice, udice i pribor — brza dostava u BiH.',
         'canonical_url': settings.SITE_URL.rstrip('/') + '/',
     }
     return render(request, 'home.html', context)
@@ -680,7 +677,10 @@ def product_detail(request, slug):
         'seo_title': product.seo_title,
         'seo_description': product.seo_description,
         'canonical_url': settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
-        'og_image': product.slika.url if product.slika else None,
+        'og_image': (
+            request.build_absolute_uri(product.prikazna_slika.url)
+            if product.prikazna_slika else None
+        ),
     }
     return render(request, 'product_detail.html', context)
 

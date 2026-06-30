@@ -6,14 +6,6 @@
 {% endif %}
 {% endblock %}
 
-{% block page_title %}
-<title>{{ seo_title|default:"Oprema za ribolov | opremazaribolov.ba" }}</title>
-{% endblock %}
-
-{% block meta_description %}
-<meta name="description" content="{{ seo_description|default:'Kvalitetna ribolovna oprema po povoljnim cijenama. Štapovi, mašinice, udice, pribor za ribolov — dostava širom BiH.' }}">
-{% endblock %}
-
 {% block content %}
 {% if not filter_params.q and not filter_params.akcija %}
 {% if hero_slides %}

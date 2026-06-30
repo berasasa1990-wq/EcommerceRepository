@@ -35,7 +35,7 @@
     {% if og_image %}
     <meta property="og:image" content="{{ og_image }}">
     {% elif site_settings.og_image %}
-    <meta property="og:image" content="{{ site_settings.og_image.url }}">
+    <meta property="og:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
     {% endif %}
     {% endblock %}
     <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
@@ -48,7 +48,7 @@
     {% if og_image %}
     <meta name="twitter:image" content="{{ og_image }}">
     {% elif site_settings.og_image %}
-    <meta name="twitter:image" content="{{ site_settings.og_image.url }}">
+    <meta name="twitter:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
     {% endif %}
     {% endblock %}
     {% endwith %}

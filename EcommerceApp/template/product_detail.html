@@ -90,8 +90,6 @@
 <script src="{% static 'js/product-detail.min.js' %}" defer></script>
 {% endblock %}
 
-{% block og_image %}{% if product.slika %}{{ product.slika.url }}{% endif %}{% endblock %}
-
 {% block structured_data %}
 {% if product %}
 <script type="application/ld+json">
