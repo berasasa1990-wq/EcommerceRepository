@@ -1017,14 +1017,16 @@ main {
 
 .home-vlog {
     padding: 16px 0 64px;
-    max-width: 1440px;
-    margin: 0 auto;
     width: 100%;
+    max-width: none;
+    margin: 0;
     scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+    overflow: hidden;
 }
 
 .home-vlog-header {
-    margin-bottom: 32px;
+    max-width: 1440px;
+    margin: 0 auto 32px;
     padding: 0 48px;
 }
 
@@ -1048,8 +1050,11 @@ main {
 .home-vlog-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 20px;
-    padding: 0 48px;
+    gap: 0;
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding: 0;
 }
 
 .home-vlog-card {
@@ -1057,19 +1062,17 @@ main {
     flex-direction: column;
     width: 100%;
     height: 100%;
-    border: 1px solid var(--gray-200);
-    border-radius: 8px;
+    border: none;
+    border-radius: 0;
     background: var(--white);
     color: inherit;
     text-decoration: none;
     overflow: hidden;
-    transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+    transition: opacity var(--transition);
 }
 
 .home-vlog-card:hover {
-    border-color: #93c5fd;
-    box-shadow: 0 8px 24px rgba(29, 78, 216, 0.12);
-    transform: translateY(-2px);
+    opacity: 0.92;
 }
 
 .home-vlog-card-image-wrap {
@@ -1077,7 +1080,7 @@ main {
     width: 100%;
     aspect-ratio: 5 / 2;
     overflow: hidden;
-    background: #f3f4f6;
+    background: #111;
 }
 
 .home-vlog-card-image {
@@ -2920,10 +2923,6 @@ body.search-results-active main {
         --header-height: 80px;
     }
 
-    .home-vlog-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .product-catalog--full .catalog-products {
         padding: 0 32px;
     }
@@ -3292,8 +3291,7 @@ body.search-results-active main {
         font-size: 1.9rem;
     }
 
-    .home-vlog-header,
-    .home-vlog-grid {
+    .home-vlog-header {
         padding-left: 24px;
         padding-right: 24px;
     }
@@ -3968,15 +3966,19 @@ body.search-results-active main {
         font-size: 1.65rem;
     }
 
-    .home-vlog-header,
-    .home-vlog-grid {
+    .home-vlog-header {
         padding-left: 16px;
         padding-right: 16px;
     }
 
-    .home-vlog-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
+    .home-vlog-card-title {
+        font-size: 0.75rem;
+        padding: 8px 6px 10px;
+        line-height: 1.25;
+    }
+
+    .home-vlog-card-image-wrap {
+        aspect-ratio: 4 / 3;
     }
 
     .vlog-article-intro,
