@@ -464,16 +464,6 @@ def _vlog_seo_description(sadrzaj, max_len=160):
     return f'{trimmed}…'
 
 
-def _format_vlog_sadrzaj(sadrzaj):
-    """Prikazuje sadržaj tačno kako je unesen — bez automatskog lomljenja u odlomke."""
-    sadrzaj = (sadrzaj or '').strip()
-    if not sadrzaj:
-        return mark_safe('')
-    if '<' in sadrzaj and '>' in sadrzaj:
-        return mark_safe(sadrzaj)
-    return mark_safe(f'<div class="vlog-article-text">{escape(sadrzaj)}</div>')
-
-
 def home(request):
     hero_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.HERO, aktivan=True,
@@ -582,7 +572,6 @@ def vlog_detail(request, slug):
     context = {
         **_base_context(),
         'vlog': vlog,
-        'vlog_sadrzaj_formatted': _format_vlog_sadrzaj(vlog.sadrzaj),
         'other_vlogs': other_vlogs,
         'lcp_image_url': lcp_image_url,
         'image_width': image_width,
