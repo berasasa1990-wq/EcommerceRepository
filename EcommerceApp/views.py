@@ -290,7 +290,8 @@ def _banner_to_hero_slide(banner):
 
 
 def _banner_to_card(banner):
-    image_width, image_height = image_field_dimensions(banner.slika, default=(1200, 1200))
+    default_dims = (400, 400) if banner.tip == Banner.BannerType.GRID else (1200, 1200)
+    image_width, image_height = image_field_dimensions(banner.slika, default=default_dims)
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
@@ -307,7 +308,7 @@ def _banners_with_image(qs):
     return qs.exclude(slika__isnull=True).exclude(slika='')
 
 
-HOME_SECTION_PRODUCT_LIMIT = 4
+HOME_SECTION_PRODUCT_LIMIT = 5
 HOME_VLOG_LIMIT = 3
 
 
@@ -385,7 +386,7 @@ def home(request):
     ).order_by('redoslijed', '-id'))
     grid_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.GRID, aktivan=True,
-    ).order_by('redoslijed', '-id'))[:4]
+    ).order_by('redoslijed', '-id'))[:3]
     featured_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.FEATURED, aktivan=True,
     ).order_by('redoslijed', '-id'))

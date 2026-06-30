@@ -74,7 +74,7 @@
     {% else %}
     <article class="grid-banner">
     {% endif %}
-        <img src="{{ card.image }}" alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+        <img src="{{ card.image }}" alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="33vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
         {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
             {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}

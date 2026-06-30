@@ -765,24 +765,27 @@ main {
     transform: scale(1.2);
 }
 
-/* Grid Banners (2x2 below Hero) */
+/* Grid Banners (3 u redu ispod Hero, puna širina) */
 .grid-banners {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding: 16px 48px 32px;
-    max-width: 880px;
-    margin: 0 auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: var(--gray-200);
     box-sizing: border-box;
 }
 
 .grid-banner {
     position: relative;
     aspect-ratio: 1;
-    max-height: 220px;
     overflow: hidden;
     cursor: pointer;
-    border-radius: 6px;
+    background: var(--white);
+    border: 1px solid var(--white);
+    box-sizing: border-box;
 }
 
 .grid-banner--linked,
@@ -819,21 +822,21 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 12px;
+    padding: clamp(12px, 2vw, 24px);
     color: var(--white);
     background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.45));
 }
 
 .grid-banner .card-overlay h3 {
-    font-size: clamp(13px, 1.8vw, 18px);
+    font-size: clamp(14px, 2vw, 24px);
     font-weight: 700;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
     line-height: 1.2;
 }
 
 .grid-banner .card-overlay p {
-    font-size: 11px;
-    margin-bottom: 6px;
+    font-size: clamp(11px, 1.2vw, 14px);
+    margin-bottom: 8px;
     opacity: 0.9;
     line-height: 1.3;
 }
@@ -952,7 +955,14 @@ main {
 }
 
 /* Home product sections */
-.home-products,
+.home-products {
+    padding: 64px 0;
+    max-width: none;
+    margin: 0;
+    width: 100%;
+    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+}
+
 .home-search-results {
     padding: 64px 0;
     max-width: 1440px;
@@ -1029,43 +1039,37 @@ main {
 .home-vlog {
     padding: 16px 0 64px;
     width: 100%;
-    max-width: 1440px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
     scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
     overflow: hidden;
     box-sizing: border-box;
 }
 
 .home-vlog-header {
-    max-width: 1440px;
-    margin: 0 auto 32px;
+    margin-bottom: 24px;
     padding: 0 48px;
 }
 
-.home-vlog-header h2 {
+.home-vlog-header--blog h2 {
     font-size: 2.25rem;
     font-style: italic;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     line-height: 1.1;
-    margin: 0 0 8px;
-    color: #1d4ed8;
-}
-
-.home-vlog-header p {
     margin: 0;
-    color: #1e40af;
-    font-weight: 500;
+    color: #1d4ed8;
 }
 
 .home-vlog-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
     width: 100%;
     margin: 0;
-    padding: 0 48px;
+    padding: 0;
+    background: var(--white);
     box-sizing: border-box;
 }
 
@@ -1073,18 +1077,17 @@ main {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    border: 1px solid var(--gray-200);
-    border-radius: 8px;
+    border: none;
+    border-radius: 0;
     background: var(--white);
     color: inherit;
     text-decoration: none;
     overflow: hidden;
-    transition: border-color var(--transition), box-shadow var(--transition);
+    transition: opacity var(--transition);
 }
 
 .home-vlog-card:hover {
-    border-color: #93c5fd;
-    box-shadow: 0 4px 16px rgba(29, 78, 216, 0.1);
+    opacity: 0.88;
 }
 
 .home-vlog-card-image-wrap {
@@ -1330,8 +1333,8 @@ main {
 }
 
 .vlog-list-inner {
-    max-width: 1440px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
@@ -1356,7 +1359,7 @@ main {
 
 .vlog-list-grid {
     max-width: 100%;
-    padding: 0 48px;
+    padding: 0;
 }
 
 .vlog-list-empty {
@@ -1438,11 +1441,19 @@ main {
     }
 }
 
-.home-products .product-grid--home,
+.home-products .product-grid--home {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .home-search-results .product-grid--home {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
     padding: 0 48px;
 }
 
@@ -3335,14 +3346,9 @@ body.search-results-active main {
     }
 
     .grid-banners {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        max-width: 100%;
-        gap: 8px;
-        padding: 12px 24px 24px;
-    }
-
-    .grid-banner {
-        max-height: 160px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 0;
+        gap: 2px;
     }
 
     .featured-grid {
@@ -3486,15 +3492,20 @@ body.search-results-active main {
     }
 
     .home-products-header,
-    .home-products .product-grid--home,
     .home-search-results .product-grid--home {
         padding-left: 24px;
         padding-right: 24px;
     }
 
+    .home-products .product-grid--home {
+        padding-left: 0;
+        padding-right: 0;
+        gap: 4px;
+    }
+
     .home-products-header--novo h2,
     .home-products-header--izdvojeno h2,
-    .home-vlog-header h2 {
+    .home-vlog-header--blog h2 {
         font-size: 1.9rem;
     }
 
@@ -3506,9 +3517,10 @@ body.search-results-active main {
     .home-vlog-grid,
     .vlog-list-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px;
-        padding-left: 24px;
-        padding-right: 24px;
+        gap: 0;
+        padding-left: 0;
+        padding-right: 0;
+        background: var(--white);
     }
 
     .vlog-related-grid {
@@ -4169,15 +4181,20 @@ body.search-results-active main {
     }
 
     .home-products-header,
-    .home-products .product-grid--home,
     .home-search-results .product-grid--home {
         padding-left: 16px;
         padding-right: 16px;
     }
 
+    .home-products .product-grid--home {
+        padding-left: 0;
+        padding-right: 0;
+        gap: 4px;
+    }
+
     .home-products-header--novo h2,
     .home-products-header--izdvojeno h2,
-    .home-vlog-header h2 {
+    .home-vlog-header--blog h2 {
         font-size: 1.65rem;
     }
 
@@ -4189,9 +4206,10 @@ body.search-results-active main {
     .home-vlog-grid,
     .vlog-list-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        padding-left: 16px;
-        padding-right: 16px;
+        gap: 0;
+        padding-left: 0;
+        padding-right: 0;
+        background: var(--white);
     }
 
     .home-vlog-card-image-wrap {
@@ -4232,6 +4250,9 @@ body.search-results-active main {
     .home-products .product-grid--home,
     .home-search-results .product-grid--home {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-search-results .product-grid--home {
         gap: 12px;
     }
 
