@@ -279,58 +279,9 @@ FOOTER_SECTIONS = [
     },
 ]
 
-TRENDING = [
-    {
-        'title': 'Featured',
-        'links': [
-            {'label': 'Air Force 1', 'url': '#'},
-            {'label': 'Jordan 1', 'url': '#'},
-            {'label': 'Air Max 90', 'url': '#'},
-            {'label': 'Air Max 95', 'url': '#'},
-            {'label': 'Vomero', 'url': '#'},
-            {'label': 'Metcon', 'url': '#'},
-            {'label': 'Pegasus', 'url': '#'},
-        ],
-    },
-    {
-        'title': 'Shoes',
-        'links': [
-            {'label': 'All Shoes', 'url': '#'},
-            {'label': 'Jordan Shoes', 'url': '#'},
-            {'label': 'Running Shoes', 'url': '#'},
-            {'label': 'Basketball Shoes', 'url': '#'},
-            {'label': 'Training Shoes', 'url': '#'},
-            {'label': 'Sale Shoes', 'url': '#'},
-        ],
-    },
-    {
-        'title': 'Clothing',
-        'links': [
-            {'label': 'All Clothing', 'url': '#'},
-            {'label': 'Tops & T-Shirts', 'url': '#'},
-            {'label': 'Shorts', 'url': '#'},
-            {'label': 'Hoodies & Pullovers', 'url': '#'},
-            {'label': 'Joggers & Sweatpants', 'url': '#'},
-            {'label': 'Sale Clothing', 'url': '#'},
-        ],
-    },
-    {
-        'title': 'Kids',
-        'links': [
-            {'label': 'Kids Shoes', 'url': '#'},
-            {'label': 'Kids Basketball Shoes', 'url': '#'},
-            {'label': 'Kids Running Shoes', 'url': '#'},
-            {'label': 'Kids Clothing', 'url': '#'},
-            {'label': 'Kids Sale', 'url': '#'},
-        ],
-    },
-]
-
-
 def _base_context():
     return {
         'footer_sections': FOOTER_SECTIONS,
-        'trending': TRENDING,
     }
 
 

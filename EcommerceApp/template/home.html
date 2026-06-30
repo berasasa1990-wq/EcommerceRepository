@@ -243,23 +243,4 @@
 {% include 'partials/home_vlog.html' %}
 {% endif %}
 {% endif %}
-
-{% if not filter_params.q and not filter_params.akcija %}
-<section class="trending">
-    <h2>TRENDING</h2>
-    <p class="trending-subtitle">Classic silhouettes and cutting-edge innovation to build your game from the ground up.</p>
-    <div class="trending-grid">
-        {% for column in trending %}
-        <div class="trending-column">
-            <h4>{{ column.title }}</h4>
-            <ul>
-                {% for link in column.links %}
-                <li><a href="{{ link.url }}">{{ link.label }}</a></li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
 {% endblock %}

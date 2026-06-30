@@ -2379,53 +2379,6 @@ body.search-results-active main {
     font-size: 16px;
 }
 
-/* Trending */
-.trending {
-    padding: 64px 48px;
-    background: var(--gray-100);
-}
-
-.trending h2 {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 8px;
-}
-
-.trending-subtitle {
-    color: var(--gray-600);
-    font-size: 16px;
-    margin-bottom: 40px;
-    max-width: 500px;
-}
-
-.trending-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 32px;
-}
-
-.trending-column h4 {
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.trending-column li {
-    margin-bottom: 8px;
-}
-
-.trending-column a {
-    font-size: 14px;
-    color: var(--gray-600);
-    transition: color var(--transition);
-}
-
-.trending-column a:hover {
-    color: var(--black);
-}
-
 /* Footer */
 .footer {
     background: var(--black);
@@ -3173,10 +3126,6 @@ body.search-results-active main {
         display: none;
     }
 
-    .trending-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .footer-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -3432,10 +3381,6 @@ body.search-results-active main {
 
     .category-page .catalog-products {
         padding-top: 0;
-    }
-
-    .trending {
-        padding: 40px 24px;
     }
 
     .catalog-layout {
@@ -3942,10 +3887,6 @@ body.search-results-active main {
         max-width: 100%;
         width: 100%;
         box-sizing: border-box;
-    }
-
-    .trending-grid {
-        grid-template-columns: 1fr;
     }
 
     .product-grid {
