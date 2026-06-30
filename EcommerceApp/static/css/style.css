@@ -649,18 +649,19 @@ main {
 }
 
 .slide-image {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    background-color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: #111;
     overflow: hidden;
 }
 
 .slide-image-img {
+    display: block;
     width: 100%;
     height: 100%;
+    max-width: none;
     object-fit: cover;
     object-position: center center;
 }
@@ -785,7 +786,7 @@ main {
 
 .slide-image-link,
 .spotlight-image-link {
-    display: flex;
+    display: block;
     width: 100%;
     height: 100%;
     text-decoration: none;
@@ -1185,6 +1186,7 @@ main {
 }
 
 .vlog-article-hero-inner {
+    position: relative;
     width: 100%;
     max-width: none;
     margin: 0;
@@ -1192,17 +1194,19 @@ main {
     box-sizing: border-box;
     border-radius: 0;
     overflow: hidden;
-    background: #000;
+    background: #111;
     border: none;
     box-shadow: none;
     display: block;
-    min-height: 0;
+    aspect-ratio: 16 / 9;
 }
 
 .vlog-article-image {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: auto;
-    max-height: none;
+    height: 100%;
+    max-width: none;
     display: block;
     object-fit: cover;
     object-position: center;
@@ -1240,6 +1244,13 @@ main {
 
 .vlog-article-body p:last-child {
     margin-bottom: 0;
+}
+
+.vlog-article-text {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .vlog-article-body h2,
@@ -3290,14 +3301,14 @@ body.search-results-active main {
         height: auto;
         min-height: 0;
         max-height: none;
-        background: var(--white);
+        background: #111;
     }
 
     .carousel-track {
         position: relative;
         width: 100%;
         height: 0;
-        padding-bottom: 100%;
+        padding-bottom: 56.25%;
     }
 
     .carousel-slide {
@@ -3309,10 +3320,16 @@ body.search-results-active main {
         height: 100%;
     }
 
-    .slide-image {
-        background-size: contain;
-        background-position: center center;
-        background-color: #000;
+    .slide-image-img {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        object-fit: cover;
+        object-position: center center;
+    }
+
+    .vlog-article-hero-inner {
+        aspect-ratio: 4 / 3;
     }
 
     .carousel-dots {
@@ -4170,9 +4187,16 @@ body.search-results-active main {
         padding: 10px 12px;
     }
 
-    img:not(.product-image img), video {
+    img:not(.product-image img):not(.slide-image-img):not(.vlog-article-image), video {
         max-width: 100%;
         height: auto;
+    }
+
+    .slide-image-img,
+    .vlog-article-image {
+        max-width: none;
+        height: 100%;
+        object-fit: cover;
     }
 
     .logo-image {
@@ -4184,7 +4208,7 @@ body.search-results-active main {
     }
 
     .hero-carousel .carousel-track {
-        padding-bottom: 100%;
+        padding-bottom: 56.25%;
     }
 
     .product-info h4 {
