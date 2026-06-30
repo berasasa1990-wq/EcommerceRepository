@@ -16,10 +16,34 @@ AVIF_SPEED = 6
 MAX_VLOG_AVIF_BYTES = 30 * 1024
 VLOG_MAX_DIMENSION = 420
 BANNER_MAX_WIDTH = 1920
-BANNER_JPEG_QUALITY = 82
 MAX_GRID_BANNER_AVIF_BYTES = 80 * 1024
 GRID_BANNER_MAX_DIMENSION = 400
+MAX_HERO_BANNER_AVIF_BYTES = 150 * 1024
+MAX_FEATURED_BANNER_AVIF_BYTES = 120 * 1024
+MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 120 * 1024
+MAX_DEFAULT_BANNER_AVIF_BYTES = 120 * 1024
+BANNER_AVIF_MIN_QUALITY = 45
 MAX_PRODUCT_AVIF_BYTES = 20 * 1024
+
+BANNER_AVIF_SETTINGS = {
+    'grid': {
+        'max_bytes': MAX_GRID_BANNER_AVIF_BYTES,
+        'max_width': GRID_BANNER_MAX_DIMENSION,
+        'max_height': GRID_BANNER_MAX_DIMENSION,
+    },
+    'hero': {
+        'max_bytes': MAX_HERO_BANNER_AVIF_BYTES,
+        'max_width': BANNER_MAX_WIDTH,
+    },
+    'featured': {
+        'max_bytes': MAX_FEATURED_BANNER_AVIF_BYTES,
+        'max_width': BANNER_MAX_WIDTH,
+    },
+    'spotlight': {
+        'max_bytes': MAX_SPOTLIGHT_BANNER_AVIF_BYTES,
+        'max_width': BANNER_MAX_WIDTH,
+    },
+}
 
 
 def is_new_upload(image_field):
@@ -89,6 +113,23 @@ def _fit_product_dimensions(img, max_dimension=PRODUCT_MAX_DIMENSION):
     return ImageOps.contain(img, (max_dimension, max_dimension), method=Image.Resampling.LANCZOS)
 
 
+def _fit_banner_dimensions(img, *, max_width, max_height=None):
+    rgb = _image_to_rgb(img)
+    if max_height is not None:
+        return ImageOps.contain(
+            rgb,
+            (max_width, max_height),
+            method=Image.Resampling.LANCZOS,
+        )
+    if rgb.width > max_width:
+        ratio = max_width / rgb.width
+        return rgb.resize(
+            (max_width, max(1, int(rgb.height * ratio))),
+            Image.Resampling.LANCZOS,
+        )
+    return rgb
+
+
 def _encode_avif_under_budget(img, filename, *, max_bytes, max_dimension):
     filename = _avif_filename(filename)
     working = _fit_product_dimensions(_image_to_rgb(img), max_dimension=max_dimension)
@@ -130,9 +171,37 @@ def _encode_product_avif(img, filename):
     )
 
 
-def _jpeg_filename(original_name):
-    base = original_name.rsplit('/', 1)[-1]
-    return base.rsplit('.', 1)[0] + '.jpg'
+def _encode_banner_avif(img, filename, *, max_bytes, max_width, max_height=None):
+    """AVIF za banere: prvo smanji kvalitet, zatim dimenzije — min. kvalitet za čitljivost."""
+    filename = _avif_filename(filename)
+    working = _fit_banner_dimensions(img, max_width=max_width, max_height=max_height)
+
+    best_data = None
+    best_size = float('inf')
+
+    for scale in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25):
+        if scale < 1.0:
+            new_w = max(1, int(working.width * scale))
+            new_h = max(1, int(working.height * scale))
+            candidate = working.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        else:
+            candidate = working
+
+        for quality in range(85, BANNER_AVIF_MIN_QUALITY - 1, -5):
+            data = _encode_avif(candidate, quality)
+            size = len(data)
+            if size <= max_bytes:
+                return ContentFile(data, name=filename)
+            if size < best_size:
+                best_size = size
+                best_data = data
+
+    logger.warning(
+        'Banner nije smanjen ispod %dKB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
+        max_bytes // 1024,
+        best_size,
+    )
+    return ContentFile(best_data, name=filename)
 
 
 def process_vlog_image(image_field):
@@ -148,28 +217,14 @@ def process_vlog_image(image_field):
 
 
 def process_banner_image(image_field, tip='hero'):
-    """Grid banneri: AVIF max 80KB. Ostali tipovi: JPEG max 1920px."""
+    """Svi banneri: AVIF, što manji fajl uz zadržanu kvalitetu slike."""
     img = Image.open(image_field)
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
-    if tip == 'grid':
-        return _encode_avif_under_budget(
-            img,
-            filename,
-            max_bytes=MAX_GRID_BANNER_AVIF_BYTES,
-            max_dimension=GRID_BANNER_MAX_DIMENSION,
-        )
-
-    rgb = _image_to_rgb(img)
-    if rgb.width > BANNER_MAX_WIDTH:
-        ratio = BANNER_MAX_WIDTH / rgb.width
-        new_size = (BANNER_MAX_WIDTH, max(1, int(rgb.height * ratio)))
-        rgb = rgb.resize(new_size, Image.Resampling.LANCZOS)
-
-    buffer = BytesIO()
-    rgb.save(buffer, format='JPEG', quality=BANNER_JPEG_QUALITY, optimize=True)
-    buffer.seek(0)
-    name = _jpeg_filename(filename)
-    return ContentFile(buffer.read(), name=name)
+    settings = BANNER_AVIF_SETTINGS.get(tip, {
+        'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
+        'max_width': BANNER_MAX_WIDTH,
+    })
+    return _encode_banner_avif(img, filename, **settings)
 
 
 def process_product_image(image_source, *, filename='image.jpg'):

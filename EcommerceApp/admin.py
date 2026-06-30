@@ -373,7 +373,8 @@ class BannerAdmin(admin.ModelAdmin):
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika'),
             'description': (
                 'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan). '
-                'Grid Kartica (3 u redu): upload slike se konvertuje u AVIF (max 80KB).'
+                'Upload slike se automatski konvertuje u AVIF (optimizovana veličina, zadržana kvaliteta): '
+                'Grid max 80KB, Hero max 150KB, Featured/Spotlight max 120KB.'
             ),
         }),
         ('Link i dugmad', {
