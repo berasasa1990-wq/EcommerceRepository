@@ -1477,6 +1477,11 @@ main {
     box-sizing: border-box;
 }
 
+.home-products--novo .product-grid--home,
+.home-products--izdvojeno .product-grid--home {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .home-search-results .product-grid--home {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -3390,11 +3395,6 @@ body.search-results-active main {
     }
 
     .grid-banner:nth-child(n+3) {
-        display: none;
-    }
-
-    .home-products--novo .product-grid--home .product-card:nth-child(n+5),
-    .home-products--izdvojeno .product-grid--home .product-card:nth-child(n+5) {
         display: none;
     }
 

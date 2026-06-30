@@ -110,11 +110,11 @@ class HomeFeaturedProductInline(admin.TabularInline):
     model = HomeFeaturedProduct
     fk_name = 'postavke'
     extra = 0
-    max_num = 5
+    max_num = 4
     autocomplete_fields = ('artikal',)
     fields = ('artikal', 'redoslijed', 'aktivan')
     verbose_name = 'Istaknuti artikal'
-    verbose_name_plural = 'Istaknuti artikli na početnoj (do 5)'
+    verbose_name_plural = 'Istaknuti artikli na početnoj (do 4)'
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)

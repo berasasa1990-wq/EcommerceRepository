@@ -308,7 +308,7 @@ def _banners_with_image(qs):
     return qs.exclude(slika__isnull=True).exclude(slika='')
 
 
-HOME_SECTION_PRODUCT_LIMIT = 5
+HOME_SECTION_PRODUCT_LIMIT = 4
 HOME_VLOG_LIMIT = 3
 
 
