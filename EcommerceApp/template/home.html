@@ -225,7 +225,7 @@
         <h2>Novo</h2>
         <p>Najnoviji artikli na sajtu</p>
     </div>
-    {% include 'partials/product_grid.html' with products=latest_products %}
+    {% include 'partials/product_grid.html' with products=latest_products eager_first_image=True home_mobile_product_limit=home_mobile_product_limit %}
 </section>
 {% endif %}
 
@@ -235,7 +235,7 @@
         <h2>Izdvojeno</h2>
         <p>Odabrani artikli za vas</p>
     </div>
-    {% include 'partials/product_grid.html' with products=featured_products %}
+    {% include 'partials/product_grid.html' with products=featured_products home_mobile_product_limit=home_mobile_product_limit %}
 </section>
 {% endif %}
 

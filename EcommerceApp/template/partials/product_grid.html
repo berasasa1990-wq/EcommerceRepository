@@ -1,10 +1,14 @@
 {% if products %}
 <div class="product-grid product-grid--home">
     {% for product in products %}
-    <a href="{{ product.get_absolute_url }}" class="product-card" data-product-card data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
+    <a href="{{ product.get_absolute_url }}" class="product-card{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
         <div class="product-image">
             {% include 'partials/product_sale_ribbon.html' with product=product %}
+            {% if eager_first_image and forloop.first %}
+            {% include 'partials/product_image.html' with product=product image_loading='eager' %}
+            {% else %}
             {% include 'partials/product_image.html' with product=product image_loading='lazy' %}
+            {% endif %}
         </div>
         <div class="variation-swatches variation-swatches--empty"></div>
         {% include 'partials/product_card_info.html' with product=product %}

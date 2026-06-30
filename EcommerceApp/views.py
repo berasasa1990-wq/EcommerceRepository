@@ -309,6 +309,7 @@ def _banners_with_image(qs):
 
 
 HOME_SECTION_PRODUCT_LIMIT = 5
+HOME_SECTION_PRODUCT_LIMIT_MOBILE = 4
 HOME_VLOG_LIMIT = 3
 
 
@@ -420,6 +421,10 @@ def home(request):
             lcp_image_url = request.build_absolute_uri(first_grid_banner.slika.url)
         elif first_hero and first_hero.slika:
             lcp_image_url = request.build_absolute_uri(first_hero.slika.url)
+        elif latest_products:
+            first_product = latest_products[0]
+            if first_product.prikazna_slika:
+                lcp_image_url = request.build_absolute_uri(first_product.prikazna_slika.url)
 
     spotlight = None
     if spotlight_banner:
@@ -455,6 +460,7 @@ def home(request):
             page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []
         ),
         'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
+        'home_mobile_product_limit': HOME_SECTION_PRODUCT_LIMIT_MOBILE,
         'canonical_url': settings.SITE_URL.rstrip('/') + '/',
     }
     return render(request, 'home.html', context)
