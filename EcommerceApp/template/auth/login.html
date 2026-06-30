@@ -4,6 +4,10 @@
 
 {% block page_title %}<title>Prijava — opremazaribolov.ba</title>{% endblock %}
 
+{% block extra_js %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endblock %}
+
 {% block content %}
 <section class="auth-page">
     <div class="auth-card">
@@ -24,7 +28,7 @@
             </div>
             {% endif %}
 
-            {% for field in form %}
+            {% for field in form.visible_fields %}
             <div class="form-group{% if field.errors %} form-group--error{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
@@ -33,6 +37,19 @@
                 {% endfor %}
             </div>
             {% endfor %}
+
+            {% if turnstile_site_key %}
+            <div class="form-group">
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="light" data-response-field-name="cf_turnstile_response"></div>
+                {% for error in form.cf_turnstile_response.errors %}
+                <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="form-group">
+                <p class="form-error">Turnstile nije konfigurisan.</p>
+            </div>
+            {% endif %}
 
             <button type="submit" class="btn btn-primary btn-block">Prijavi se</button>
         </form>

@@ -62,6 +62,13 @@ class LoginForm(forms.Form):
         label='Lozinka',
         widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Lozinka'}),
     )
+    cf_turnstile_response = forms.CharField(
+        required=True,
+        widget=forms.HiddenInput(),
+        error_messages={
+            'required': 'Molimo potvrdite da niste robot (Turnstile).'
+        }
+    )
 
     def __init__(self, *args, request=None, **kwargs):
         self.request = request

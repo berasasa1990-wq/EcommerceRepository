@@ -1,0 +1,54 @@
+{
+  "label": "Podešavanja stanje 30.06.2026. 20:05",
+  "restore_phrase": "vrati podesavanja sa 20:05",
+  "images": {
+    "product_avif_max_kb": 20,
+    "product_max_dimension": 800,
+    "vlog_avif_max_kb": 30,
+    "vlog_max_dimension": 420,
+    "grid_banner_avif_max_kb": 80,
+    "grid_banner_max_dimension": 400,
+    "grid_banner_format": "avif",
+    "other_banner_format": "jpeg",
+    "other_banner_max_width": 1920,
+    "other_banner_jpeg_quality": 82
+  },
+  "home": {
+    "grid_banners_layout_desktop": "3 u redu, puna širina, gap 2px, bijeli border 1px",
+    "grid_banners_max_count": 3,
+    "grid_banners_layout_mobile": "2 u redu, puna širina, gap 2px, bijeli border 1px, max 2 vidljiva",
+    "home_section_product_limit": 5,
+    "home_products_desktop_columns": 5,
+    "home_products_mobile_columns": 4,
+    "home_products_mobile_visible": 4,
+    "home_vlog_limit": 3,
+    "home_vlog_desktop_columns": 3,
+    "home_vlog_mobile_visible": 2,
+    "featured_products_max": 5,
+    "trending_section": false,
+    "vlog_title": "Blogovi — Klik na željeni",
+    "vlog_background": "white, edge-to-edge"
+  },
+  "auth": {
+    "turnstile_login": true,
+    "turnstile_register": true
+  },
+  "nav": {
+    "akcija_button": "crvena pozadina, bijeli tekst"
+  },
+  "product": {
+    "karakteristike": false,
+    "warranty_badge": false
+  },
+  "footer": {
+    "layout": "3 columns",
+    "left": ["Kontaktirajte nas", "opremazaribolov.ba@gmail.com", "www.opremazaribolov.ba", "www.facebook.com/opremazaribolov.ba"],
+    "center_links": ["O nama /o-nama/", "Način plaćanja /nacin-placanja/", "Blog /vlog/"],
+    "right": ["Dostupnost 24/7 online podrška", "Email: opremazaribolov.ba"]
+  },
+  "pages": {
+    "about_us": "/o-nama/",
+    "payment_methods": "/nacin-placanja/",
+    "vlog_list": "/vlog/"
+  }
+}

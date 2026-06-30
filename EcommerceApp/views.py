@@ -1058,22 +1058,28 @@ def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST, request=request)
         if form.is_valid():
-            login(request, form.user)
-            Order.objects.filter(
-                email__iexact=form.user.email,
-                korisnik__isnull=True,
-            ).update(korisnik=form.user)
-            osiguraj_loyalty_karticu(form.user)
-            messages.success(request, 'Uspješno ste se prijavili.')
-            redirect_to = request.POST.get('next') or next_url
-            if redirect_to and redirect_to.startswith('/'):
-                return redirect(redirect_to)
-            return redirect('account')
+            token = form.cleaned_data.get('cf_turnstile_response')
+            secret = getattr(settings, 'TURNSTILE_SECRET_KEY', '')
+            if secret and not verify_turnstile(token, request):
+                form.add_error(None, 'Turnstile provjera nije uspjela. Molimo pokušajte ponovo.')
+            else:
+                login(request, form.user)
+                Order.objects.filter(
+                    email__iexact=form.user.email,
+                    korisnik__isnull=True,
+                ).update(korisnik=form.user)
+                osiguraj_loyalty_karticu(form.user)
+                messages.success(request, 'Uspješno ste se prijavili.')
+                redirect_to = request.POST.get('next') or next_url
+                if redirect_to and redirect_to.startswith('/'):
+                    return redirect(redirect_to)
+                return redirect('account')
 
     context = {
         **_base_context(),
         'form': form,
         'next_url': next_url,
+        'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
     }
     return render(request, 'auth/login.html', context)
 
