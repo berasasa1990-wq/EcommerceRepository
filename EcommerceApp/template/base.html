@@ -7,13 +7,17 @@
     <meta name="facebook-domain-verification" content="kqrup8bjdtrxwf6mmy8bu5qp01g4tn" />
     {% block meta_robots %}{% endblock %}
 
-    {% with site_name="opremazaribolov.ba" default_title="Oprema za ribolov | opremazaribolov.ba" default_desc="Kvalitetna oprema za ribolov po povoljnim cijenama. Širok izbor štapova, mašinica, udica i pribora za ribolov u Bosni i Hercegovini." %}
+    {% with site_name="opremazaribolov.ba" %}
     {% block page_title %}
-    <title>{{ seo_title|default:site_settings.seo_title|default:default_title }}</title>
+    <title>{{ seo_title|default:site_settings.seo_title|default:site_name }}</title>
     {% endblock %}
 
     {% block meta_description %}
-    <meta name="description" content="{{ seo_description|default:site_settings.meta_description|default:default_desc }}">
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta name="description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
     {% endblock %}
 
     {# Canonical URL #}
@@ -29,21 +33,30 @@
     <meta property="og:site_name" content="{{ site_name }}">
     <meta property="og:locale" content="bs_BA">
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    <meta property="og:title" content="{{ seo_title|default:site_settings.seo_title|default:default_title }}">
-    <meta property="og:description" content="{{ seo_description|default:site_settings.meta_description|default:default_desc }}">
+    <meta property="og:title" content="{{ seo_title|default:site_settings.seo_title|default:site_name }}">
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta property="og:description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
     {% block og_image %}
     {% if og_image %}
     <meta property="og:image" content="{{ og_image }}">
     {% elif site_settings.og_image %}
     <meta property="og:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
+    <meta property="og:image:secure_url" content="{{ site_url }}{{ site_settings.og_image.url }}">
     {% endif %}
     {% endblock %}
     <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
 
     {# Twitter Cards #}
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo_title|default:site_settings.seo_title|default:default_title }}">
-    <meta name="twitter:description" content="{{ seo_description|default:site_settings.meta_description|default:default_desc }}">
+    <meta name="twitter:title" content="{{ seo_title|default:site_settings.seo_title|default:site_name }}">
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta name="twitter:description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
     {% block twitter_image %}
     {% if og_image %}
     <meta name="twitter:image" content="{{ og_image }}">

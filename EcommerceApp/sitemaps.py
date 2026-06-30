@@ -6,8 +6,8 @@ from .models import Category, Product
 
 
 class StaticViewSitemap(Sitemap):
-    priority = 0.5
-    changefreq = 'weekly'
+    priority = 1.0
+    changefreq = 'daily'
 
     def items(self):
         return ['home']
