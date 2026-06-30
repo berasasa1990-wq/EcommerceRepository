@@ -1020,9 +1020,9 @@ main {
 }
 
 .home-vlog {
-    padding: 8px 12px 64px;
+    padding: 16px 0 64px;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1440px;
     margin: 0 auto;
     scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
     overflow: hidden;
@@ -1054,11 +1054,11 @@ main {
 
 .home-vlog-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
     width: 100%;
     margin: 0;
-    padding: 0;
+    padding: 0 48px;
     box-sizing: border-box;
 }
 
@@ -1323,9 +1323,9 @@ main {
 }
 
 .vlog-list-inner {
-    max-width: 1200px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 0 12px;
+    padding: 0;
     box-sizing: border-box;
 }
 
@@ -1349,6 +1349,7 @@ main {
 
 .vlog-list-grid {
     max-width: 100%;
+    padding: 0 48px;
 }
 
 .vlog-list-empty {
@@ -3488,9 +3489,12 @@ body.search-results-active main {
         padding-right: 24px;
     }
 
-    .home-vlog-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
+    .home-vlog-grid,
+    .vlog-list-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        padding-left: 24px;
+        padding-right: 24px;
     }
 
     .vlog-related-grid {
@@ -4168,9 +4172,12 @@ body.search-results-active main {
         padding-right: 16px;
     }
 
-    .home-vlog-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
+    .home-vlog-grid,
+    .vlog-list-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding-left: 16px;
+        padding-right: 16px;
     }
 
     .home-vlog-card-image-wrap {
