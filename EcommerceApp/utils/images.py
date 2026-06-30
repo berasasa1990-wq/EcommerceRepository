@@ -12,12 +12,17 @@ BRAND_LOGO_FILL_RATIO = 0.80
 SITE_LOGO_SIZE = (640, 128)
 PRODUCT_WHITE_THRESHOLD = 248
 PRODUCT_MAX_DIMENSION = 800
-BANNER_MAX_WIDTH = 1920
-BANNER_JPEG_QUALITY = 82
 VLOG_MAX_WIDTH = 1200
 VLOG_JPEG_QUALITY = 85
 AVIF_SPEED = 6
 MAX_PRODUCT_AVIF_BYTES = 20 * 1024
+MAX_BANNER_AVIF_BYTES = 30 * 1024
+BANNER_TYPE_MAX_DIMENSION = {
+    'hero': 1280,
+    'grid': 420,
+    'featured': 720,
+    'spotlight': 900,
+}
 
 
 def is_new_upload(image_field):
@@ -87,9 +92,9 @@ def _fit_product_dimensions(img, max_dimension=PRODUCT_MAX_DIMENSION):
     return ImageOps.contain(img, (max_dimension, max_dimension), method=Image.Resampling.LANCZOS)
 
 
-def _encode_product_avif(img, filename):
+def _encode_avif_under_budget(img, filename, *, max_bytes, max_dimension):
     filename = _avif_filename(filename)
-    working = _fit_product_dimensions(_image_to_rgb(img))
+    working = _fit_product_dimensions(_image_to_rgb(img), max_dimension=max_dimension)
 
     best_data = None
     best_size = float('inf')
@@ -105,17 +110,27 @@ def _encode_product_avif(img, filename):
         for quality in range(85, 0, -5):
             data = _encode_avif(candidate, quality)
             size = len(data)
-            if size <= MAX_PRODUCT_AVIF_BYTES:
+            if size <= max_bytes:
                 return ContentFile(data, name=filename)
             if size < best_size:
                 best_size = size
                 best_data = data
 
     logger.warning(
-        'Slika nije smanjena ispod 20KB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
+        'Slika nije smanjena ispod %dKB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
+        max_bytes // 1024,
         best_size,
     )
     return ContentFile(best_data, name=filename)
+
+
+def _encode_product_avif(img, filename):
+    return _encode_avif_under_budget(
+        img,
+        filename,
+        max_bytes=MAX_PRODUCT_AVIF_BYTES,
+        max_dimension=PRODUCT_MAX_DIMENSION,
+    )
 
 
 def _jpeg_filename(original_name):
@@ -140,21 +155,17 @@ def process_vlog_image(image_field):
     return ContentFile(buffer.read(), name=name)
 
 
-def process_banner_image(image_field):
-    """Banneri: max 1920px širina, JPEG za manji LCP payload."""
+def process_banner_image(image_field, tip='hero'):
+    """Banneri: AVIF max 30KB, dimenzija ovisi o tipu (grid manji za 3 u redu)."""
     img = Image.open(image_field)
-    img = ImageOps.exif_transpose(img)
-    rgb = _image_to_rgb(img)
-    if rgb.width > BANNER_MAX_WIDTH:
-        ratio = BANNER_MAX_WIDTH / rgb.width
-        new_size = (BANNER_MAX_WIDTH, max(1, int(rgb.height * ratio)))
-        rgb = rgb.resize(new_size, Image.Resampling.LANCZOS)
-
-    buffer = BytesIO()
-    rgb.save(buffer, format='JPEG', quality=BANNER_JPEG_QUALITY, optimize=True)
-    buffer.seek(0)
-    name = _jpeg_filename(image_field.name if hasattr(image_field, 'name') else 'banner.jpg')
-    return ContentFile(buffer.read(), name=name)
+    max_dimension = BANNER_TYPE_MAX_DIMENSION.get(tip, 960)
+    filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
+    return _encode_avif_under_budget(
+        img,
+        filename,
+        max_bytes=MAX_BANNER_AVIF_BYTES,
+        max_dimension=max_dimension,
+    )
 
 
 def process_product_image(image_source, *, filename='image.jpg'):

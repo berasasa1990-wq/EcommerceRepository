@@ -371,7 +371,10 @@ class BannerAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Sadržaj', {
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika'),
-            'description': 'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan).',
+            'description': (
+                'Sva polja su opcionalna. Upload slike: konvertuje se u AVIF (max 30KB). '
+                'Klik na banner vodi na Link (cijeli banner je klikabilan).'
+            ),
         }),
         ('Link i dugmad', {
             'fields': ('link', 'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link'),
