@@ -19,7 +19,7 @@
     "grid_banners_layout_mobile": "2 u redu, puna širina, gap 2px, bijeli border 1px, max 2 vidljiva",
     "home_section_product_limit": 5,
     "home_products_desktop_columns": 5,
-    "home_products_mobile_columns": 4,
+    "home_products_mobile_columns": 2,
     "home_products_mobile_visible": 4,
     "home_vlog_limit": 3,
     "home_vlog_desktop_columns": 3,
