@@ -1,0 +1,43 @@
+{
+  "label": "Podešavanja stanje 30.06.2026. 19:06",
+  "restore_phrase": "vrati podesavanja sa 19:06",
+  "images": {
+    "product_avif_max_kb": 20,
+    "product_max_dimension": 800,
+    "vlog_avif_max_kb": 30,
+    "vlog_max_dimension": 420,
+    "grid_banner_avif_max_kb": 80,
+    "grid_banner_max_dimension": 480,
+    "grid_banner_format": "avif",
+    "other_banner_format": "jpeg",
+    "other_banner_max_width": 1920,
+    "other_banner_jpeg_quality": 82
+  },
+  "home": {
+    "grid_banners_layout": "2x2",
+    "grid_banners_max_count": 4,
+    "home_vlog_limit": 3,
+    "trending_section": false,
+    "vlog_grid_desktop": "4 columns, first 3 used (aligned with Izdvojeno products)",
+    "vlog_grid_mobile": "2 per row",
+    "vlog_container_max_width_px": 1440,
+    "vlog_grid_padding_desktop": "0 48px",
+    "vlog_grid_gap_desktop_px": 20
+  },
+  "product": {
+    "karakteristike": false,
+    "warranty_badge": false,
+    "opis_only_on_product_page": true
+  },
+  "footer": {
+    "layout": "3 columns",
+    "left": ["Kontaktirajte nas", "opremazaribolov.ba@gmail.com", "www.opremazaribolov.ba", "www.facebook.com/opremazaribolov.ba"],
+    "center_links": ["O nama /o-nama/", "Način plaćanja /nacin-placanja/", "Blog /vlog/"],
+    "right": ["Dostupnost 24/7 online podrška", "Email: opremazaribolov.ba"]
+  },
+  "pages": {
+    "about_us": "/o-nama/",
+    "payment_methods": "/nacin-placanja/",
+    "vlog_list": "/vlog/"
+  }
+}

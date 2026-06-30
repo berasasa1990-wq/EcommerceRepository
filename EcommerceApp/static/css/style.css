@@ -768,16 +768,21 @@ main {
 /* Grid Banners (2x2 below Hero) */
 .grid-banners {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
-    padding: 4px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px 48px 32px;
+    max-width: 880px;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
 .grid-banner {
     position: relative;
     aspect-ratio: 1;
+    max-height: 220px;
     overflow: hidden;
     cursor: pointer;
+    border-radius: 6px;
 }
 
 .grid-banner--linked,
@@ -814,21 +819,23 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 24px;
+    padding: 12px;
     color: var(--white);
     background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.45));
 }
 
 .grid-banner .card-overlay h3 {
-    font-size: clamp(18px, 2.5vw, 28px);
+    font-size: clamp(13px, 1.8vw, 18px);
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    line-height: 1.2;
 }
 
 .grid-banner .card-overlay p {
-    font-size: 14px;
-    margin-bottom: 12px;
+    font-size: 11px;
+    margin-bottom: 6px;
     opacity: 0.9;
+    line-height: 1.3;
 }
 
 /* Featured Grid */
@@ -3328,7 +3335,14 @@ body.search-results-active main {
     }
 
     .grid-banners {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: 100%;
+        gap: 8px;
+        padding: 12px 24px 24px;
+    }
+
+    .grid-banner {
+        max-height: 160px;
     }
 
     .featured-grid {
