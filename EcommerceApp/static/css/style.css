@@ -2135,8 +2135,66 @@ body.search-results-active main {
     margin-bottom: 12px;
 }
 
-.product-detail-description-block {
-    margin-top: 20px;
+.product-detail-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 48px 64px;
+    margin-top: 56px;
+    padding-top: 48px;
+    border-top: 1px solid var(--gray-200);
+    align-items: start;
+}
+
+.product-detail-content--only-karakteristike {
+    grid-template-columns: 1fr;
+    justify-items: end;
+}
+
+.product-detail-content--only-karakteristike .product-detail-karakteristike-col {
+    max-width: 420px;
+    width: 100%;
+}
+
+.product-detail-opis-col .product-detail-description {
+    margin-top: 0;
+    max-width: none;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--gray-600);
+}
+
+.product-detail-description-text {
+    margin: 0;
+}
+
+.product-karakteristike-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.product-karakteristika-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    border: 1px solid var(--gray-200);
+    border-radius: 4px;
+    background: var(--white);
+}
+
+.product-karakteristika-naziv {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--black);
+}
+
+.product-karakteristika-vrijednost {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--gray-600);
 }
 
 .product-detail-variations-block {
@@ -2148,12 +2206,6 @@ body.search-results-active main {
     flex-direction: column;
     gap: 0;
     width: 100%;
-}
-
-.product-detail-description--under-image {
-    margin-top: 0;
-    margin-bottom: 0;
-    max-width: none;
 }
 
 .product-detail-variation-row {
@@ -3865,7 +3917,7 @@ body.search-results-active main {
         align-items: center;
     }
 
-    /* Product detail: opis ispod varijacija (samo mobilno) */
+    /* Product detail: slika pa info (mobilno) */
     .product-detail-grid {
         display: flex;
         flex-direction: column;
@@ -3883,9 +3935,19 @@ body.search-results-active main {
         order: 2;
     }
 
-    .product-detail-description-block {
-        order: 3;
-        margin-top: 24px;
+    .product-detail-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        margin-top: 32px;
+        padding-top: 32px;
+    }
+
+    .product-detail-content--only-karakteristike {
+        justify-items: stretch;
+    }
+
+    .product-detail-content--only-karakteristike .product-detail-karakteristike-col {
+        max-width: none;
     }
 }
 

@@ -619,7 +619,8 @@ def product_detail(request, slug):
         Product.objects.filter(aktivan=True)
         .select_related('kategorija', 'brend')
         .prefetch_related(
-            Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id'))
+            Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id')),
+            'karakteristike',
         ),
         slug=slug,
     )

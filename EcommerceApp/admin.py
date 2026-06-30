@@ -33,6 +33,7 @@ from .models import (
     OrderItem,
     Popup,
     Product,
+    ProductKarakteristika,
     ProductVariation,
     SiteSettings,
     Tag,
@@ -85,6 +86,15 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'telefon', 'grad')
     search_fields = ('user__email', 'user__first_name', 'telefon')
     autocomplete_fields = ('user',)
+
+
+class ProductKarakteristikaInline(admin.TabularInline):
+    model = ProductKarakteristika
+    extra = 1
+    fields = ('naziv', 'vrijednost', 'redoslijed')
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Karakteristika'
+    verbose_name_plural = 'Karakteristike — dodaj novu ispod'
 
 
 class ProductVariationInline(admin.TabularInline):
@@ -415,7 +425,7 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('naziv', 'sifra', 'barkod', 'tagovi__naziv', 'odoo_template_id', 'meta_title', 'meta_description')
     prepopulated_fields = {'slug': ('naziv',)}
     readonly_fields = ('pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview')
-    inlines = [ProductVariationInline]
+    inlines = [ProductKarakteristikaInline, ProductVariationInline]
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -440,7 +450,14 @@ class ProductAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Osnovno', {
-            'fields': ('naziv', 'slug', 'sifra', 'barkod', 'brend', 'kategorija', 'tagovi', 'opis'),
+            'fields': ('naziv', 'slug', 'sifra', 'barkod', 'brend', 'kategorija', 'tagovi'),
+        }),
+        ('Opis i karakteristike', {
+            'fields': ('opis',),
+            'description': (
+                'Opis se prikazuje na stranici artikla. Karakteristike dodaj ispod — '
+                'svaki artikal ima po defaultu <strong>Garancija</strong> i <strong>Kvalitet</strong>.'
+            ),
         }),
         ('Slika i cijena', {
             'fields': ('slika', 'pregled_slike_velika', 'cijena', 'akcijska_cijena', 'akcija_do', 'na_stanju', 'stanje'),

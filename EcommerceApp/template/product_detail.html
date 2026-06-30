@@ -35,12 +35,6 @@
                 </div>
                 {% endif %}
             </div>
-            {% if product.opis %}
-            <div class="product-detail-description-block">
-                <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
-                <p class="product-detail-description product-detail-description--under-image">{{ product.opis }}</p>
-            </div>
-            {% endif %}
         </div>
 
         <div class="product-detail-info" id="productDetailInfo"{% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
@@ -83,6 +77,41 @@
             {% endif %}
         </div>
     </div>
+
+    {% if product.opis or product.karakteristike.all %}
+    <div class="product-detail-content{% if not product.opis %} product-detail-content--only-karakteristike{% endif %}">
+        {% if product.opis %}
+        <div class="product-detail-opis-col">
+            <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
+            <div class="product-detail-description">
+                {% if '<' in product.opis and '>' in product.opis %}
+                {{ product.opis|safe }}
+                {% else %}
+                <div class="product-detail-description-text">{{ product.opis|linebreaksbr }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% with karakteristike=product.karakteristike.all %}
+        {% if karakteristike %}
+        <div class="product-detail-karakteristike-col">
+            <h2 class="product-detail-section-title">KARAKTERISTIKE</h2>
+            <div class="product-karakteristike-list">
+                {% for k in karakteristike %}
+                <div class="product-karakteristika-card">
+                    <span class="product-karakteristika-naziv">{{ k.naziv }}</span>
+                    {% if k.vrijednost %}
+                    <span class="product-karakteristika-vrijednost">{{ k.vrijednost|linebreaksbr }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+    {% endif %}
 </section>
 {% endblock %}
 
