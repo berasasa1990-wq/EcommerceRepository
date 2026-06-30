@@ -584,6 +584,15 @@ class Product(models.Model):
             "Štapovi, mašinice, varalice, najloni, hranilice, pribor i oprema poznatih svjetskih brendova po odličnim cijenama."
         )
 
+    @property
+    def garancija_oznaka(self):
+        """Tekst za žig garancije na stranici artikla."""
+        for k in self.karakteristike.all():
+            if k.naziv == 'Garancija':
+                vrijednost = (k.vrijednost or '').strip()
+                return vrijednost or 'GARANTNI'
+        return None
+
     def get_absolute_url(self):
         return reverse('product_detail', kwargs={'slug': self.slug})
 
