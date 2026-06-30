@@ -5,21 +5,19 @@
     </div>
     <div class="home-vlog-grid">
         {% for vlog in home_vlogs %}
-        <article class="home-vlog-item">
-            <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card">
-                <div class="home-vlog-card-image-wrap">
-                    <img src="{{ vlog.slika_url }}"
-                         alt="{{ vlog.naslov }}"
-                         class="home-vlog-card-image"
-                         width="{{ vlog.image_width }}"
-                         height="{{ vlog.image_height }}"
-                         sizes="33vw"
-                         loading="lazy"
-                         decoding="async">
-                </div>
-                <h3 class="home-vlog-card-title">{{ vlog.naslov }}</h3>
-            </a>
-        </article>
+        <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card">
+            <div class="home-vlog-card-image-wrap">
+                <img src="{{ vlog.slika_url }}"
+                     alt="{{ vlog.naslov }}"
+                     class="home-vlog-card-image"
+                     width="{{ vlog.image_width }}"
+                     height="{{ vlog.image_height }}"
+                     sizes="33vw"
+                     loading="lazy"
+                     decoding="async">
+            </div>
+            <span class="home-vlog-card-title">{{ vlog.naslov }}</span>
+        </a>
         {% endfor %}
     </div>
 </section>
