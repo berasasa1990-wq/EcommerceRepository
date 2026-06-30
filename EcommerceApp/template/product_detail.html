@@ -22,7 +22,6 @@
     <div class="product-detail-grid">
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">
-                {% include 'partials/product_warranty_badge.html' with product=product %}
                 {% include 'partials/product_sale_ribbon.html' with product=product %}
                 {% if product.prikazna_slika %}
                 <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" id="mainProductImage" width="{{ product_image_width }}" height="{{ product_image_height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
@@ -79,9 +78,8 @@
         </div>
     </div>
 
-    {% if product.opis or product.karakteristike.all %}
-    <div class="product-detail-content{% if not product.opis %} product-detail-content--only-karakteristike{% endif %}">
-        {% if product.opis %}
+    {% if product.opis %}
+    <div class="product-detail-content">
         <div class="product-detail-opis-col">
             <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
             <div class="product-detail-description">
@@ -92,25 +90,6 @@
                 {% endif %}
             </div>
         </div>
-        {% endif %}
-
-        {% with karakteristike=product.karakteristike.all %}
-        {% if karakteristike %}
-        <div class="product-detail-karakteristike-col">
-            <h2 class="product-detail-section-title">KARAKTERISTIKE</h2>
-            <div class="product-karakteristike-list">
-                {% for k in karakteristike %}
-                <div class="product-karakteristika-card">
-                    <span class="product-karakteristika-naziv">{{ k.naziv }}</span>
-                    {% if k.vrijednost %}
-                    <span class="product-karakteristika-vrijednost">{{ k.vrijednost|linebreaksbr }}</span>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-        {% endwith %}
     </div>
     {% endif %}
 </section>

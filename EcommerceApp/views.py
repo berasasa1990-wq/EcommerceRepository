@@ -248,43 +248,33 @@ def _paginate_home_products(request, products, filter_params):
 
 FOOTER_SECTIONS = [
     {
-        'title': 'Resources',
-        'links': [
-            {'label': 'Gift Cards', 'url': '#'},
-            {'label': 'Find a Store', 'url': '#'},
-            {'label': 'Membership', 'url': '#'},
-            {'label': 'Nike Journal', 'url': '#'},
-            {'label': 'Site Feedback', 'url': '#'},
+        'title': 'Kontakt',
+        'items': [
+            {
+                'type': 'link',
+                'label': 'opremazaribolov.ba@gmail.com',
+                'url': 'mailto:opremazaribolov.ba@gmail.com',
+            },
         ],
     },
     {
-        'title': 'Help',
-        'links': [
-            {'label': 'Get Help', 'url': '#'},
-            {'label': 'Order Status', 'url': '#'},
-            {'label': 'Shipping and Delivery', 'url': '#'},
-            {'label': 'Returns', 'url': '#'},
-            {'label': 'Payment Options', 'url': '#'},
+        'title': 'Informacije',
+        'items': [
+            {'type': 'text', 'label': 'Garancija na sve proizvode'},
+            {'type': 'text', 'label': 'Dostava brzom poštom na kućnu adresu u roku 48h'},
+            {'type': 'text', 'label': 'Plaćanje pri prijemu robe'},
+            {'type': 'text', 'label': 'Mogućnost otvaranja paketa po želji kupca'},
+            {'type': 'text', 'label': 'Zamjena artikla u slučaju oštećenja'},
         ],
     },
     {
-        'title': 'Company',
-        'links': [
-            {'label': 'About Nike', 'url': '#'},
-            {'label': 'News', 'url': '#'},
-            {'label': 'Careers', 'url': '#'},
-            {'label': 'Investors', 'url': '#'},
-            {'label': 'Purpose', 'url': '#'},
-        ],
-    },
-    {
-        'title': 'Promotions & Discounts',
-        'links': [
-            {'label': 'Student', 'url': '#'},
-            {'label': 'Military', 'url': '#'},
-            {'label': 'Teacher', 'url': '#'},
-            {'label': 'First Responders & Medical', 'url': '#'},
-            {'label': 'Birthday', 'url': '#'},
+        'title': 'Pratite nas',
+        'items': [
+            {
+                'type': 'facebook',
+                'label': 'opremazaribolov.ba',
+                'url': 'https://www.facebook.com/opremazaribolov.ba',
+            },
         ],
     },
 ]
@@ -620,7 +610,6 @@ def product_detail(request, slug):
         .select_related('kategorija', 'brend')
         .prefetch_related(
             Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id')),
-            'karakteristike',
         ),
         slug=slug,
     )

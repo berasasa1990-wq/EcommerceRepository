@@ -420,7 +420,7 @@ class Product(models.Model):
     opis = models.TextField(
         blank=True,
         verbose_name='Opis',
-        help_text='Prikazuje se na stranici artikla lijevo od karakteristika.',
+        help_text='Prikazuje se na stranici artikla.',
     )
     slika = models.ImageField(upload_to='products/', blank=True, null=True)
     na_stanju = models.BooleanField(default=True, verbose_name='Na stanju')
@@ -480,15 +480,6 @@ class Product(models.Model):
             from .utils.images import apply_image_processing, process_product_image_manual
             apply_image_processing(self, 'slika', post_process=process_product_image_manual)
         super().save(*args, **kwargs)
-        self.osiguraj_default_karakteristike()
-
-    def osiguraj_default_karakteristike(self):
-        for redoslijed, (naziv, vrijednost) in enumerate(DEFAULT_PRODUCT_KARAKTERISTIKE):
-            ProductKarakteristika.objects.get_or_create(
-                artikal=self,
-                naziv=naziv,
-                defaults={'vrijednost': vrijednost, 'redoslijed': redoslijed},
-            )
 
     @property
     def na_akciji(self):
@@ -584,49 +575,8 @@ class Product(models.Model):
             "Štapovi, mašinice, varalice, najloni, hranilice, pribor i oprema poznatih svjetskih brendova po odličnim cijenama."
         )
 
-    @property
-    def garancija_oznaka(self):
-        """Tekst za žig garancije na stranici artikla."""
-        for k in self.karakteristike.all():
-            if k.naziv == 'Garancija':
-                vrijednost = (k.vrijednost or '').strip()
-                return vrijednost or 'GARANTNI'
-        return None
-
     def get_absolute_url(self):
         return reverse('product_detail', kwargs={'slug': self.slug})
-
-    def __str__(self):
-        return self.naziv
-
-
-DEFAULT_PRODUCT_KARAKTERISTIKE = (
-    ('Garancija', ''),
-    ('Kvalitet', ''),
-)
-
-
-class ProductKarakteristika(models.Model):
-    artikal = models.ForeignKey(
-        Product,
-        on_delete=models.CASCADE,
-        related_name='karakteristike',
-        verbose_name='Artikal',
-    )
-    naziv = models.CharField(max_length=120, verbose_name='Naziv')
-    vrijednost = models.TextField(blank=True, verbose_name='Vrijednost')
-    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
-
-    class Meta:
-        verbose_name = 'Karakteristika'
-        verbose_name_plural = 'Karakteristike'
-        ordering = ['redoslijed', 'id']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['artikal', 'naziv'],
-                name='unique_karakteristika_po_artiklu',
-            ),
-        ]
 
     def __str__(self):
         return self.naziv

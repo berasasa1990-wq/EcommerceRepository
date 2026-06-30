@@ -246,8 +246,21 @@
             <div class="footer-column">
                 <h4>{{ section.title }}</h4>
                 <ul>
-                    {% for link in section.links %}
-                    <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+                    {% for item in section.items %}
+                    <li>
+                        {% if item.type == 'link' %}
+                        <a href="{{ item.url }}">{{ item.label }}</a>
+                        {% elif item.type == 'text' %}
+                        <span class="footer-text">{{ item.label }}</span>
+                        {% elif item.type == 'facebook' %}
+                        <a href="{{ item.url }}" class="footer-facebook-link" target="_blank" rel="noopener noreferrer" aria-label="Facebook — {{ item.label }}">
+                            <svg class="footer-facebook-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+                            </svg>
+                            <span>{{ item.label }}</span>
+                        </a>
+                        {% endif %}
+                    </li>
                     {% endfor %}
                 </ul>
             </div>
@@ -255,12 +268,6 @@
         </div>
         <div class="footer-bottom">
             <p>&copy; {% now "Y" %} opremazaribolov.ba. Sva prava zadržana.</p>
-            <div class="footer-legal">
-                <a href="#">Guides</a>
-                <a href="#">Terms of Sale</a>
-                <a href="#">Terms of Use</a>
-                <a href="#">Privacy Policy</a>
-            </div>
         </div>
     </footer>
 
@@ -271,11 +278,11 @@
       "name": "opremazaribolov.ba",
       "url": "{{ site_url }}/",
       "logo": "{% if site_settings.logo %}{{ site_url }}{{ site_settings.logo.url }}{% else %}{{ site_url }}/static/img/logo.png{% endif %}",
-      "sameAs": [],
+      "sameAs": ["https://www.facebook.com/opremazaribolov.ba"],
       "contactPoint": [{
         "@type": "ContactPoint",
         "contactType": "customer service",
-        "email": "sasabera1990@gmail.com"
+        "email": "opremazaribolov.ba@gmail.com"
       }]
     }
     </script>
