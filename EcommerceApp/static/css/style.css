@@ -1110,7 +1110,7 @@ main {
 .vlog-article {
     width: 100%;
     max-width: none;
-    padding: 0 0 56px;
+    padding: 0 0 64px;
     background: var(--white);
 }
 
@@ -1118,7 +1118,7 @@ main {
     width: 100%;
     max-width: 1080px;
     margin: 0 auto;
-    padding: 16px 24px 20px;
+    padding: 20px 24px 24px;
     box-sizing: border-box;
 }
 
@@ -1176,40 +1176,53 @@ main {
 .vlog-article-hero {
     width: 100%;
     margin: 0;
-    padding: 0;
+    padding: 0 24px;
     border: none;
-    border-radius: 0;
-    background: #f8fafc;
+    background: transparent;
     display: block;
+    box-sizing: border-box;
 }
 
 .vlog-article-hero-inner {
     width: 100%;
     max-width: 1080px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 12px;
     box-sizing: border-box;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 4px 24px rgba(17, 17, 17, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
 }
 
 .vlog-article-image {
     width: 100%;
     height: auto;
+    max-height: min(56vw, 560px);
     display: block;
     object-fit: contain;
     object-position: center;
+    border-radius: 8px;
 }
 
 .vlog-article-body {
     width: 100%;
-    max-width: 1080px;
+    max-width: 680px;
     margin: 0 auto;
     padding: 32px 24px 0;
     box-sizing: border-box;
     font-size: 1.0625rem;
-    line-height: 1.85;
-    color: #374151;
+    line-height: 1.72;
+    color: #3d4450;
     overflow-wrap: break-word;
     word-wrap: break-word;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
 }
 
 .vlog-article-body > *:first-child {
@@ -1221,9 +1234,13 @@ main {
 }
 
 .vlog-article-body p {
-    margin: 0 0 1.35em;
+    margin: 0 0 0.85em;
     max-width: 100%;
     white-space: normal;
+}
+
+.vlog-article-body p:last-child {
+    margin-bottom: 0;
 }
 
 .vlog-article-body h2,
@@ -1377,6 +1394,31 @@ main {
     font-size: 0.9375rem;
     font-weight: 600;
     line-height: 1.35;
+}
+
+@media (min-width: 1024px) {
+    .vlog-article-intro {
+        padding-top: 28px;
+        padding-bottom: 28px;
+    }
+
+    .vlog-article-hero-inner {
+        padding: 16px;
+    }
+
+    .vlog-article-image {
+        max-height: 560px;
+    }
+
+    .vlog-article-body {
+        padding-top: 40px;
+        font-size: 1.125rem;
+        line-height: 1.74;
+    }
+
+    .vlog-article-body p {
+        margin-bottom: 0.9em;
+    }
 }
 
 .home-products .product-grid--home,
@@ -3400,6 +3442,15 @@ body.search-results-active main {
         padding-right: 24px;
     }
 
+    .vlog-article-hero {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .vlog-article-image {
+        max-height: min(52vw, 480px);
+    }
+
     .home-products .product-grid--home,
     .home-search-results .product-grid--home {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4077,8 +4128,35 @@ body.search-results-active main {
         padding-right: 16px;
     }
 
+    .vlog-article-hero {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .vlog-article-hero-inner {
+        padding: 8px;
+        border-radius: 10px;
+        min-height: 140px;
+    }
+
+    .vlog-article-image {
+        max-height: min(68vw, 360px);
+        border-radius: 6px;
+    }
+
+    .vlog-article-title {
+        font-size: clamp(1.45rem, 6vw, 1.75rem);
+    }
+
     .vlog-article-body {
-        padding-top: 24px;
+        padding-top: 20px;
+        font-size: 1rem;
+        line-height: 1.68;
+        max-width: 100%;
+    }
+
+    .vlog-article-body p {
+        margin-bottom: 0.75em;
     }
 
     .vlog-related {

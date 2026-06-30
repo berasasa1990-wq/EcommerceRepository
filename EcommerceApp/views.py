@@ -464,8 +464,21 @@ def _vlog_seo_description(sadrzaj, max_len=160):
     return f'{trimmed}…'
 
 
+def _vlog_paragraph_html(text):
+    text = text.strip()
+    if not text:
+        return ''
+    if '<' in text and '>' in text:
+        return f'<p>{text}</p>'
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) > 1:
+        body = '<br>\n'.join(escape(line) for line in lines)
+        return f'<p>{body}</p>'
+    return f'<p>{escape(text)}</p>'
+
+
 def _format_vlog_sadrzaj(sadrzaj):
-    """Razbija tekst u odlomke po rečenicama (tačka + razmak) ako nema više <p> tagova."""
+    """Formatira sadržaj u pregledne odlomke s malim razmacima."""
     sadrzaj = (sadrzaj or '').strip()
     if not sadrzaj:
         return mark_safe('')
@@ -473,29 +486,28 @@ def _format_vlog_sadrzaj(sadrzaj):
     if len(re.findall(r'<p[\s>]', sadrzaj, re.I)) > 1:
         return mark_safe(sadrzaj)
 
+    if re.search(r'<(div|h[1-6]|ul|ol|blockquote)\b', sadrzaj, re.I):
+        return mark_safe(sadrzaj)
+
     single_p = re.fullmatch(r'<p[^>]*>(.*)</p>\s*', sadrzaj, re.I | re.S)
     if single_p:
         inner = single_p.group(1).strip()
-    elif not re.search(r'<(div|h[1-6]|ul|ol|blockquote)\b', sadrzaj, re.I):
-        inner = sadrzaj
     else:
-        return mark_safe(sadrzaj)
+        inner = sadrzaj
+
+    if '\n\n' in inner or '\r\n\r\n' in inner:
+        blocks = re.split(r'\n\s*\n', inner)
+        paragraphs = [_vlog_paragraph_html(block) for block in blocks if block.strip()]
+        if paragraphs:
+            return mark_safe(''.join(paragraphs))
 
     parts = [part.strip() for part in re.split(r'(?<=\.)\s+', inner) if part.strip()]
     if len(parts) <= 1:
         if single_p:
             return mark_safe(sadrzaj)
-        if '<' in inner and '>' in inner:
-            return mark_safe(f'<p>{inner}</p>')
-        return mark_safe(f'<p>{escape(inner)}</p>')
+        return mark_safe(_vlog_paragraph_html(inner))
 
-    paragraphs = []
-    for part in parts:
-        if '<' in part and '>' in part:
-            paragraphs.append(f'<p>{part}</p>')
-        else:
-            paragraphs.append(f'<p>{escape(part)}</p>')
-    return mark_safe(''.join(paragraphs))
+    return mark_safe(''.join(_vlog_paragraph_html(part) for part in parts))
 
 
 def home(request):
