@@ -234,7 +234,7 @@ class Brand(models.Model):
 class Banner(models.Model):
     class BannerType(models.TextChoices):
         HERO = 'hero', 'Hero Carousel'
-        GRID = 'grid', 'Grid Kartica (3 u redu ispod Hero)'
+        GRID = 'grid', 'Grid Kartica (2x2 ispod Hero)'
         FEATURED = 'featured', 'Featured Kartica'
         SPOTLIGHT = 'spotlight', 'Spotlight'
 
@@ -262,12 +262,7 @@ class Banner(models.Model):
     def save(self, *args, **kwargs):
         if self.slika:
             from .utils.images import apply_image_processing, process_banner_image
-            tip = self.tip
-            apply_image_processing(
-                self,
-                'slika',
-                post_process=lambda field: process_banner_image(field, tip=tip),
-            )
+            apply_image_processing(self, 'slika', post_process=process_banner_image)
         super().save(*args, **kwargs)
 
     def get_link_href(self):
@@ -319,7 +314,7 @@ class HomeVlog(models.Model):
     slika = models.ImageField(
         upload_to='vlogs/',
         verbose_name='Slika',
-        help_text='Prikazuje se na početnoj (3 u redu). Preporučeno široka slika, npr. 1200×480 px.',
+        help_text='Upload: konvertuje se u AVIF (max 30KB). Prikazuje se na početnoj (3 u redu) i na stranici vloga.',
     )
     sadrzaj = models.TextField(
         verbose_name='Opis vloga',

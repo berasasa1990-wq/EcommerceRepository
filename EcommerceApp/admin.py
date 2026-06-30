@@ -333,7 +333,7 @@ class HomeVlogAdmin(admin.ModelAdmin):
             'fields': ('naslov', 'slika', 'pregled_slike_velika', 'sadrzaj'),
             'description': (
                 'Vlogovi se prikazuju na početnoj ispod Izdvojeno (3 u redu). '
-                'Na početnoj: slika i naziv. Klik otvara stranicu s opisom.'
+                'Upload slike: konvertuje se u AVIF (max 30KB). Klik otvara stranicu s opisom.'
             ),
         }),
         ('Podešavanja', {
@@ -371,10 +371,7 @@ class BannerAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Sadržaj', {
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika'),
-            'description': (
-                'Sva polja su opcionalna. Upload slike: konvertuje se u AVIF (max 30KB). '
-                'Klik na banner vodi na Link (cijeli banner je klikabilan).'
-            ),
+            'description': 'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan).',
         }),
         ('Link i dugmad', {
             'fields': ('link', 'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link'),

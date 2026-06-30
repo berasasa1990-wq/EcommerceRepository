@@ -765,15 +765,12 @@ main {
     transform: scale(1.2);
 }
 
-/* Grid Banners (3 u redu ispod Hero) */
+/* Grid Banners (2x2 below Hero) */
 .grid-banners {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    padding: 8px 12px;
-    max-width: 1200px;
-    margin: 0 auto;
-    box-sizing: border-box;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 4px;
 }
 
 .grid-banner {
@@ -817,23 +814,21 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 12px;
+    padding: 24px;
     color: var(--white);
     background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.45));
 }
 
 .grid-banner .card-overlay h3 {
-    font-size: clamp(12px, 1.6vw, 18px);
+    font-size: clamp(18px, 2.5vw, 28px);
     font-weight: 700;
-    margin-bottom: 2px;
-    line-height: 1.2;
+    margin-bottom: 4px;
 }
 
 .grid-banner .card-overlay p {
-    font-size: 11px;
-    margin-bottom: 6px;
+    font-size: 14px;
+    margin-bottom: 12px;
     opacity: 0.9;
-    line-height: 1.3;
 }
 
 /* Featured Grid */
@@ -1025,12 +1020,13 @@ main {
 }
 
 .home-vlog {
-    padding: 8px 0 64px;
+    padding: 8px 12px 64px;
     width: 100%;
-    max-width: none;
-    margin: 0;
+    max-width: 1200px;
+    margin: 0 auto;
     scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .home-vlog-header {
@@ -1057,22 +1053,18 @@ main {
 }
 
 .home-vlog-grid {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     width: 100%;
-    max-width: 100%;
     margin: 0;
-    padding: 0 12px;
-    gap: 12px;
+    padding: 0;
     box-sizing: border-box;
 }
 
 .home-vlog-card {
     display: flex;
     flex-direction: column;
-    flex: 1 1 0;
     min-width: 0;
     border: 1px solid var(--gray-200);
     border-radius: 8px;
@@ -1097,7 +1089,7 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
+    padding: 6px;
     box-sizing: border-box;
 }
 
@@ -1333,6 +1325,8 @@ main {
 .vlog-list-inner {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 12px;
+    box-sizing: border-box;
 }
 
 .vlog-list-header {
@@ -3333,9 +3327,7 @@ body.search-results-active main {
     }
 
     .grid-banners {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
-        padding: 6px 8px;
+        grid-template-columns: 1fr;
     }
 
     .featured-grid {
@@ -3497,8 +3489,8 @@ body.search-results-active main {
     }
 
     .home-vlog-grid {
-        padding: 0 10px;
-        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
     }
 
     .vlog-related-grid {
@@ -4177,12 +4169,12 @@ body.search-results-active main {
     }
 
     .home-vlog-grid {
-        padding: 0 8px;
-        gap: 8px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
     }
 
     .home-vlog-card-image-wrap {
-        padding: 6px;
+        padding: 4px;
     }
 
     .home-vlog-card-title {

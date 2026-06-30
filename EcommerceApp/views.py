@@ -290,8 +290,7 @@ def _banner_to_hero_slide(banner):
 
 
 def _banner_to_card(banner):
-    default_dims = (420, 420) if banner.tip == Banner.BannerType.GRID else (1200, 1200)
-    image_width, image_height = image_field_dimensions(banner.slika, default=default_dims)
+    image_width, image_height = image_field_dimensions(banner.slika, default=(1200, 1200))
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
@@ -354,7 +353,7 @@ def _vlog_cards(limit=None):
     for vlog in entries:
         if not vlog.slug:
             continue
-        width, height = image_field_dimensions(vlog.slika, default=(400, 300))
+        width, height = image_field_dimensions(vlog.slika, default=(420, 420))
         vlogs.append({
             'id': vlog.pk,
             'slug': vlog.slug,
@@ -386,7 +385,7 @@ def home(request):
     ).order_by('redoslijed', '-id'))
     grid_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.GRID, aktivan=True,
-    ).order_by('redoslijed', '-id'))[:3]
+    ).order_by('redoslijed', '-id'))[:4]
     featured_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.FEATURED, aktivan=True,
     ).order_by('redoslijed', '-id'))
@@ -468,7 +467,7 @@ def vlog_detail(request, slug):
             'HomeVlog tabela nije dostupna — pokreni: python manage.py migrate',
         )
         raise Http404 from None
-    image_width, image_height = image_field_dimensions(vlog.slika, default=(1200, 800))
+    image_width, image_height = image_field_dimensions(vlog.slika, default=(420, 420))
     other_vlogs = []
     for other in HomeVlog.objects.filter(aktivan=True).exclude(slika='').exclude(pk=vlog.pk).order_by(
         'redoslijed', '-id',
