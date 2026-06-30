@@ -18,19 +18,7 @@
 
 {% block content %}
 <article class="vlog-article">
-    <figure class="vlog-article-hero">
-        <img src="{{ vlog.slika.url }}"
-             alt="{{ vlog.naslov }}"
-             class="vlog-article-image"
-             width="{{ image_width }}"
-             height="{{ image_height }}"
-             sizes="100vw"
-             loading="eager"
-             fetchpriority="high"
-             decoding="async">
-    </figure>
-
-    <div class="vlog-article-intro">
+    <div class="vlog-article-inner">
         <nav class="vlog-breadcrumb" aria-label="Navigacija">
             <a href="{% url 'home' %}">Početna</a>
             <span class="vlog-breadcrumb-sep" aria-hidden="true">/</span>
@@ -40,16 +28,33 @@
         </nav>
 
         <header class="vlog-article-header">
-            <p class="vlog-article-label">Vlog</p>
             <h1 class="vlog-article-title">{{ vlog.naslov }}</h1>
         </header>
-    </div>
 
-    {% if vlog.sadrzaj %}
-    <div class="vlog-article-body">
-        {{ vlog.sadrzaj|safe }}
+        {% if vlog.slika %}
+        <figure class="vlog-article-media">
+            <img src="{{ vlog.slika.url }}"
+                 alt="{{ vlog.naslov }}"
+                 class="vlog-article-image"
+                 width="{{ image_width }}"
+                 height="{{ image_height }}"
+                 sizes="(max-width: 768px) 280px, 360px"
+                 loading="eager"
+                 fetchpriority="high"
+                 decoding="async">
+        </figure>
+        {% endif %}
+
+        {% if vlog.sadrzaj %}
+        <div class="vlog-article-body">
+            {% if '<' in vlog.sadrzaj and '>' in vlog.sadrzaj %}
+            {{ vlog.sadrzaj|safe }}
+            {% else %}
+            <div class="vlog-article-text">{{ vlog.sadrzaj|linebreaksbr }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </article>
 
 {% if other_vlogs %}
