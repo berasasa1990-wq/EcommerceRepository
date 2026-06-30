@@ -1084,20 +1084,20 @@ main {
 .home-vlog-card-image-wrap {
     position: relative;
     width: 100%;
-    padding-top: 42%;
-    height: 0;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
-    background: #111;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .home-vlog-card-image {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
-    max-width: none;
-    object-fit: cover;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
     object-position: center;
     display: block;
 }
@@ -3984,24 +3984,6 @@ body.search-results-active main {
         padding-right: 16px;
     }
 
-    .home-vlog-grid {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        width: 100%;
-        max-width: 100%;
-        margin: 0;
-    }
-
-    .home-vlog-card {
-        flex: 1 1 0;
-        min-width: 0;
-    }
-
-    .home-vlog-card-image-wrap {
-        padding-top: 50%;
-    }
-
     .home-vlog-card-title {
         font-size: 0.625rem;
         padding: 6px 4px 8px;
@@ -4088,13 +4070,12 @@ body.search-results-active main {
     }
 
     .home-vlog-card-image {
-        position: absolute;
-        top: 0;
-        left: 0;
         width: 100%;
         height: 100%;
-        max-width: none;
-        object-fit: cover;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        object-position: center;
     }
 
     .logo-image {
