@@ -417,7 +417,7 @@ class Popup(models.Model):
         return f'{self.naziv} ({status})'
 
 
-SIFRA_MAX_LENGTH = 100
+SIFRA_MAX_LENGTH = 200
 
 
 class Product(models.Model):
