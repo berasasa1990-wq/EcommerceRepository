@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{{ seo_title }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description }}">
+{% endblock %}
+
+{% block content %}
+<article class="info-page">
+    <div class="info-page-inner">
+        <nav class="info-breadcrumb" aria-label="Navigacija">
+            <a href="{% url 'home' %}">Početna</a>
+            <span class="info-breadcrumb-sep" aria-hidden="true">/</span>
+            <span class="info-breadcrumb-current">O nama</span>
+        </nav>
+
+        <header class="info-page-header">
+            <h1>O nama</h1>
+        </header>
+
+        <div class="info-page-body">
+            <p>
+                opremazaribolov.ba nastao je iz dugogodišnje strasti prema ribolovu i kvalitetnoj opremi.
+                Godinama smo bili u svakodnevnom kontaktu s ribarima, razumjeli njihove potrebe i tražili
+                najbolje proizvode koje tržište nudi.
+            </p>
+            <p>
+                Iskustvo stečeno kroz ribolov i rad s opremom prirodno je preraslo u prodaju — željeli smo
+                ribarima u Bosni i Hercegovini pružiti što bolju, pregledniju i pouzdaniju ponudu na jednom mjestu.
+            </p>
+            <p>
+                Danas nudimo širok asortiman ribolovačke opreme renomiranih brendova, uz savjete i podršku
+                koje dolaze iz prakse, a ne samo iz kataloga. Naš cilj je jednostavan: da svaki ribar pronađe
+                opremu koja mu odgovara i kojoj može vjerovati.
+            </p>
+        </div>
+    </div>
+</article>
+{% endblock %}

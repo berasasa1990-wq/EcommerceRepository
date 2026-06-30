@@ -1,0 +1,36 @@
+<footer class="footer">
+    <div class="footer-grid">
+        <div class="footer-column footer-column--contact">
+            <h4>Kontaktirajte nas:</h4>
+            <ul>
+                <li>
+                    <a href="mailto:opremazaribolov.ba@gmail.com">opremazaribolov.ba@gmail.com</a>
+                </li>
+                <li>
+                    <a href="{{ site_url }}/">www.opremazaribolov.ba</a>
+                </li>
+                <li>
+                    <a href="https://www.facebook.com/opremazaribolov.ba" target="_blank" rel="noopener noreferrer">www.facebook.com/opremazaribolov.ba</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="footer-column footer-column--nav">
+            <ul class="footer-nav-list">
+                <li><a href="{% url 'about_us' %}">O nama</a></li>
+                <li><a href="{% url 'payment_methods' %}">Način plaćanja</a></li>
+                <li><a href="{% url 'vlog_list' %}">Blog</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-column footer-column--support">
+            <p class="footer-support-title">Dostupnost 24/7 online podrška</p>
+            <p class="footer-support-email">
+                Email: <a href="mailto:opremazaribolov.ba@gmail.com">opremazaribolov.ba</a>
+            </p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; {% now "Y" %} opremazaribolov.ba. Sva prava zadržana.</p>
+    </div>
+</footer>

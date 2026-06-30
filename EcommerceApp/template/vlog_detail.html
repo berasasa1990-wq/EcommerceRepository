@@ -22,7 +22,7 @@
         <nav class="vlog-breadcrumb" aria-label="Navigacija">
             <a href="{% url 'home' %}">Početna</a>
             <span class="vlog-breadcrumb-sep" aria-hidden="true">/</span>
-            <a href="{% url 'home' %}#vlog">Vlog</a>
+            <a href="{% url 'vlog_list' %}">Blog</a>
             <span class="vlog-breadcrumb-sep" aria-hidden="true">/</span>
             <span class="vlog-breadcrumb-current">{{ vlog.naslov }}</span>
         </nav>

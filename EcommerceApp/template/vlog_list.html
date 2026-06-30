@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{{ seo_title }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description }}">
+{% endblock %}
+
+{% block content %}
+<section class="vlog-list-page">
+    <div class="vlog-list-inner">
+        <header class="vlog-list-header">
+            <h1>Blog</h1>
+            <p>Savjeti, priče i novosti iz svijeta ribolova</p>
+        </header>
+
+        {% if vlogs %}
+        <div class="home-vlog-grid vlog-list-grid">
+            {% for vlog in vlogs %}
+            <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card" aria-label="{{ vlog.naslov }}">
+                <div class="home-vlog-card-image-wrap">
+                    <img src="{{ vlog.slika_url }}"
+                         alt="{{ vlog.naslov }}"
+                         class="home-vlog-card-image"
+                         width="{{ vlog.image_width }}"
+                         height="{{ vlog.image_height }}"
+                         sizes="(max-width: 768px) 100vw, 33vw"
+                         loading="lazy"
+                         decoding="async">
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="vlog-list-empty">Trenutno nema objava na blogu.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

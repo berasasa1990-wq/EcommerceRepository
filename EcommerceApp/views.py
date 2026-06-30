@@ -16,6 +16,7 @@ from django.db import DatabaseError
 from django.db.models import Prefetch, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.html import escape, mark_safe, strip_tags
 from django.views.decorators.http import require_POST
 
@@ -246,43 +247,8 @@ def _paginate_home_products(request, products, filter_params):
     return page_obj
 
 
-FOOTER_SECTIONS = [
-    {
-        'title': 'Kontakt',
-        'items': [
-            {
-                'type': 'link',
-                'label': 'opremazaribolov.ba@gmail.com',
-                'url': 'mailto:opremazaribolov.ba@gmail.com',
-            },
-        ],
-    },
-    {
-        'title': 'Informacije',
-        'items': [
-            {'type': 'text', 'label': 'Garancija na sve proizvode'},
-            {'type': 'text', 'label': 'Dostava brzom poštom na kućnu adresu u roku 48h'},
-            {'type': 'text', 'label': 'Plaćanje pri prijemu robe'},
-            {'type': 'text', 'label': 'Mogućnost otvaranja paketa po želji kupca'},
-            {'type': 'text', 'label': 'Zamjena artikla u slučaju oštećenja'},
-        ],
-    },
-    {
-        'title': 'Pratite nas',
-        'items': [
-            {
-                'type': 'facebook',
-                'label': 'opremazaribolov.ba',
-                'url': 'https://www.facebook.com/opremazaribolov.ba',
-            },
-        ],
-    },
-]
-
 def _base_context():
-    return {
-        'footer_sections': FOOTER_SECTIONS,
-    }
+    return {}
 
 
 def _banner_secondary_href(link):
@@ -364,18 +330,22 @@ def _home_featured_products():
     return [entry.artikal for entry in entries]
 
 
-def _home_vlogs():
+def _vlog_cards(limit=None):
     try:
-        entries = list(HomeVlog.objects.filter(
+        entries_qs = HomeVlog.objects.filter(
             aktivan=True,
         ).exclude(
             slika='',
         ).exclude(
             slug='',
-        ).order_by('redoslijed', '-id')[:HOME_VLOG_LIMIT])
+        ).order_by('redoslijed', '-id')
+        if limit is not None:
+            entries = list(entries_qs[:limit])
+        else:
+            entries = list(entries_qs)
     except DatabaseError:
         logger.exception(
-            'HomeVlog tabela nije dostupna na početnoj — pokreni: python manage.py migrate',
+            'HomeVlog tabela nije dostupna — pokreni: python manage.py migrate',
         )
         return []
 
@@ -393,6 +363,10 @@ def _home_vlogs():
             'image_height': height,
         })
     return vlogs
+
+
+def _home_vlogs():
+    return _vlog_cards(HOME_VLOG_LIMIT)
 
 
 def _vlog_seo_description(sadrzaj, max_len=160):
@@ -523,6 +497,44 @@ def vlog_detail(request, slug):
         'og_image': request.build_absolute_uri(vlog.slika.url),
     }
     return render(request, 'vlog_detail.html', context)
+
+
+def about_us(request):
+    context = {
+        **_base_context(),
+        'seo_title': 'O nama — opremazaribolov.ba',
+        'seo_description': (
+            'Saznajte više o opremazaribolov.ba — dugogodišnje iskustvo u ribolovu '
+            'i opremi, sada u online prodaji za ribare u Bosni i Hercegovini.'
+        ),
+        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('about_us'),
+    }
+    return render(request, 'pages/about.html', context)
+
+
+def payment_methods(request):
+    context = {
+        **_base_context(),
+        'seo_title': 'Način plaćanja — opremazaribolov.ba',
+        'seo_description': (
+            'Plaćanje prilikom preuzimanja, dostava brzom poštom u roku 48h i sigurno slanje pošiljki.'
+        ),
+        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('payment_methods'),
+    }
+    return render(request, 'pages/payment.html', context)
+
+
+def vlog_list(request):
+    context = {
+        **_base_context(),
+        'vlogs': _vlog_cards(),
+        'seo_title': 'Blog — opremazaribolov.ba',
+        'seo_description': (
+            'Blog i vlog opremazaribolov.ba — savjeti, priče i novosti iz svijeta ribolova.'
+        ),
+        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('vlog_list'),
+    }
+    return render(request, 'vlog_list.html', context)
 
 
 def category_detail(request, slug):
