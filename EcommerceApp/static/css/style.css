@@ -661,7 +661,7 @@ main {
 .slide-image-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center center;
 }
 
@@ -1176,38 +1176,37 @@ main {
 .vlog-article-hero {
     width: 100%;
     margin: 0;
-    padding: 0 24px;
+    padding: 0;
     border: none;
-    background: transparent;
+    background: #000;
     display: block;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .vlog-article-hero-inner {
     width: 100%;
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 12px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
-    border-radius: 14px;
+    border-radius: 0;
     overflow: hidden;
-    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 1px solid var(--gray-200);
-    box-shadow: 0 4px 24px rgba(17, 17, 17, 0.06);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 180px;
+    background: #000;
+    border: none;
+    box-shadow: none;
+    display: block;
+    min-height: 0;
 }
 
 .vlog-article-image {
     width: 100%;
     height: auto;
-    max-height: min(56vw, 560px);
+    max-height: none;
     display: block;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center;
-    border-radius: 8px;
+    border-radius: 0;
 }
 
 .vlog-article-body {
@@ -1400,14 +1399,6 @@ main {
     .vlog-article-intro {
         padding-top: 28px;
         padding-bottom: 28px;
-    }
-
-    .vlog-article-hero-inner {
-        padding: 16px;
-    }
-
-    .vlog-article-image {
-        max-height: 560px;
     }
 
     .vlog-article-body {
@@ -3442,15 +3433,6 @@ body.search-results-active main {
         padding-right: 24px;
     }
 
-    .vlog-article-hero {
-        padding-left: 24px;
-        padding-right: 24px;
-    }
-
-    .vlog-article-image {
-        max-height: min(52vw, 480px);
-    }
-
     .home-products .product-grid--home,
     .home-search-results .product-grid--home {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4126,22 +4108,6 @@ body.search-results-active main {
     .vlog-article-footer {
         padding-left: 16px;
         padding-right: 16px;
-    }
-
-    .vlog-article-hero {
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
-    .vlog-article-hero-inner {
-        padding: 8px;
-        border-radius: 10px;
-        min-height: 140px;
-    }
-
-    .vlog-article-image {
-        max-height: min(68vw, 360px);
-        border-radius: 6px;
     }
 
     .vlog-article-title {
