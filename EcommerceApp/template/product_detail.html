@@ -29,6 +29,7 @@
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">
                 {% include 'partials/product_sale_ribbon.html' with product=product %}
+                {% include 'partials/product_discount_badge.html' with product=product %}
                 {% if product.prikazna_slika %}
                 <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" id="mainProductImage" width="{{ product_image_width }}" height="{{ product_image_height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
                 {% else %}

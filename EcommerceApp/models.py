@@ -13,6 +13,29 @@ def _akcija_jos_vazi(akcija_do):
     return akcija_do >= timezone.localdate()
 
 
+def _izracunaj_akcijsku_od_postotka(bazna_cijena, postotak):
+    if bazna_cijena is None or postotak is None or postotak <= 0:
+        return None
+    faktor = Decimal('1') - (postotak / Decimal('100'))
+    return (bazna_cijena * faktor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+def _izracunaj_postotak_umanjenja(bazna_cijena, prikazna_cijena):
+    if (
+        bazna_cijena is None
+        or prikazna_cijena is None
+        or bazna_cijena <= 0
+        or prikazna_cijena >= bazna_cijena
+    ):
+        return None
+    postotak = (
+        (bazna_cijena - prikazna_cijena) / bazna_cijena * Decimal('100')
+    ).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+    if postotak <= 0:
+        return None
+    return int(postotak)
+
+
 class SiteSettings(models.Model):
     class ArtikalaPoRedu(models.IntegerChoices):
         TRI = 3, '3 artikla u redu'
@@ -490,6 +513,12 @@ class Product(models.Model):
     akcijska_cijena = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
         verbose_name='Akcijska cijena',
+        help_text='Ručni iznos. Ili ostavite prazno i unesite popust (%) ispod.',
+    )
+    akcija_postotak = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name='Popust (%)',
+        help_text='Opcionalno — automatski umanjuje redovnu cijenu za ovaj postotak.',
     )
     akcija_do = models.DateField(
         null=True, blank=True,
@@ -538,6 +567,10 @@ class Product(models.Model):
                 self.naziv,
                 pk=self.pk,
                 fallback='artikal',
+            )
+        if self.akcija_postotak:
+            self.akcijska_cijena = _izracunaj_akcijsku_od_postotka(
+                self.cijena, self.akcija_postotak,
             )
         if self.slika:
             from .utils.images import apply_image_processing, process_product_image_manual
@@ -603,6 +636,15 @@ class Product(models.Model):
         return 'AKCIJA'
 
     @property
+    def katalog_akcija_postotak(self):
+        if not self.katalog_na_akciji:
+            return None
+        return _izracunaj_postotak_umanjenja(
+            self.katalog_bazna_cijena,
+            self.katalog_prikazna_cijena,
+        )
+
+    @property
     def ima_varijacije(self):
         return self.varijacije.exists()
 
@@ -661,7 +703,12 @@ class ProductVariation(models.Model):
     akcijska_cijena = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
         verbose_name='Akcijska cijena',
-        help_text='Opcionalno — samo za ovu varijaciju. Inače vrijedi akcija artikla.',
+        help_text='Ručni iznos za varijaciju. Ili unesite popust (%) ispod.',
+    )
+    akcija_postotak = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name='Popust (%)',
+        help_text='Opcionalno — umanjuje cijenu ove varijacije za ovaj postotak.',
     )
     na_stanju = models.BooleanField(default=True, verbose_name='Na stanju')
     stanje = models.PositiveIntegerField(default=0, verbose_name='Količina')
@@ -710,6 +757,10 @@ class ProductVariation(models.Model):
         return bool(self.slika)
 
     def save(self, *args, **kwargs):
+        if self.akcija_postotak:
+            self.akcijska_cijena = _izracunaj_akcijsku_od_postotka(
+                self.bazna_cijena, self.akcija_postotak,
+            )
         if self.slika:
             from .utils.images import apply_image_processing, process_product_image_manual
             apply_image_processing(self, 'slika', post_process=process_product_image_manual)

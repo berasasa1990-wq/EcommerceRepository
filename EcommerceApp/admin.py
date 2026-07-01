@@ -91,7 +91,7 @@ class ProductVariationInline(admin.TabularInline):
     model = ProductVariation
     extra = 1
     fields = (
-        'naziv', 'sifra', 'slika', 'cijena', 'akcijska_cijena',
+        'naziv', 'sifra', 'slika', 'cijena', 'akcija_postotak', 'akcijska_cijena',
         'na_stanju', 'stanje', 'redoslijed', 'odoo_template_id', 'pregled_slike',
     )
     readonly_fields = ('odoo_template_id', 'pregled_slike')
@@ -470,10 +470,14 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('opis',),
         }),
         ('Slika i cijena', {
-            'fields': ('slika', 'pregled_slike_velika', 'cijena', 'akcijska_cijena', 'akcija_do', 'na_stanju', 'stanje'),
+            'fields': (
+                'slika', 'pregled_slike_velika', 'cijena',
+                'akcija_postotak', 'akcijska_cijena', 'akcija_do',
+                'na_stanju', 'stanje',
+            ),
             'description': (
-                'Upload slike: konvertuje se u AVIF (max 20KB), bez uklanjanja pozadine. '
-                'Isto vrijedi za ručni upload i Odoo import.'
+                'Akcija: unesite popust (%) za automatski izračun akcijske cijene, '
+                'ili ručno unesite akcijsku cijenu. Upload slike: automatski se konvertuje u AVIF (max 15KB).'
             ),
         }),
         ('Prikaz', {

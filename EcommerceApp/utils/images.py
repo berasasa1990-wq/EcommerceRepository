@@ -30,7 +30,7 @@ MAX_DEFAULT_BANNER_AVIF_BYTES = 200 * 1024
 BANNER_AVIF_MAX_QUALITY = 88
 BANNER_AVIF_MIN_QUALITY = 72
 BANNER_AVIF_QUALITY_STEP = 3
-MAX_PRODUCT_AVIF_BYTES = 20 * 1024
+MAX_PRODUCT_AVIF_BYTES = 15 * 1024
 
 BANNER_AVIF_SETTINGS = {
     'grid': {
@@ -183,14 +183,26 @@ def _fit_banner_dimensions(img, *, max_width, max_height=None, crop=False):
     return rgb
 
 
-def _encode_avif_under_budget(img, filename, *, max_bytes, max_dimension):
+def _encode_avif_under_budget(
+    img,
+    filename,
+    *,
+    max_bytes,
+    max_dimension,
+    strict=False,
+    scale_steps=None,
+    quality_step=5,
+):
     filename = _avif_filename(filename)
     working = _fit_product_dimensions(_image_to_rgb(img), max_dimension=max_dimension)
 
     best_data = None
     best_size = float('inf')
+    scales = scale_steps or (
+        1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2,
+    )
 
-    for scale in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2):
+    for scale in scales:
         if scale < 1.0:
             new_w = max(1, int(working.width * scale))
             new_h = max(1, int(working.height * scale))
@@ -198,7 +210,7 @@ def _encode_avif_under_budget(img, filename, *, max_bytes, max_dimension):
         else:
             candidate = working
 
-        for quality in range(85, 0, -5):
+        for quality in range(85, 0, -quality_step):
             data = _encode_avif(candidate, quality)
             size = len(data)
             if size <= max_bytes:
@@ -206,6 +218,12 @@ def _encode_avif_under_budget(img, filename, *, max_bytes, max_dimension):
             if size < best_size:
                 best_size = size
                 best_data = data
+
+    if strict:
+        raise ValueError(
+            f'Slika se ne može smanjiti ispod {max_bytes // 1024}KB. '
+            'Koristite jednostavniju sliku ili manju rezoluciju.',
+        )
 
     logger.warning(
         'Slika nije smanjena ispod %dKB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
@@ -221,6 +239,11 @@ def _encode_product_avif(img, filename):
         filename,
         max_bytes=MAX_PRODUCT_AVIF_BYTES,
         max_dimension=PRODUCT_MAX_DIMENSION,
+        strict=True,
+        scale_steps=(
+            1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.12, 0.1,
+        ),
+        quality_step=3,
     )
 
 
@@ -388,7 +411,7 @@ def reprocess_existing_banner_file(image_field, *, tip='hero'):
 
 
 def process_product_image(image_source, *, filename='image.jpg'):
-    """Artikal/varijacija: AVIF max 20KB, bez uklanjanja pozadine."""
+    """Artikal/varijacija: AVIF max 15KB, bez uklanjanja pozadine."""
     raw, filename = _read_image_source(image_source, filename=filename)
     img = Image.open(BytesIO(raw))
     return _encode_product_avif(img, filename)
