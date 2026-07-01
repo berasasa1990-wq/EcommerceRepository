@@ -663,7 +663,7 @@ main {
     color: #111 !important;
 }
 
-/* Hero Carousel — fiksni omjer 4:1 kao upload banner (1920×480) */
+/* Hero Carousel — fiksni omjer 3:1 kao upload banner (1920×640) */
 .hero-carousel {
     position: relative;
     width: 100%;
@@ -674,7 +674,7 @@ main {
 
 .carousel-track {
     width: 100%;
-    aspect-ratio: 4 / 1;
+    aspect-ratio: 3 / 1;
     position: relative;
     height: auto;
 }
@@ -3691,7 +3691,7 @@ body.search-results-active main {
     }
 
     .carousel-track {
-        aspect-ratio: 4 / 1;
+        aspect-ratio: 3 / 1;
         height: auto;
         padding-bottom: 0;
     }
@@ -4638,7 +4638,7 @@ body.search-results-active main {
     }
 
     .hero-carousel .carousel-track {
-        aspect-ratio: 4 / 1;
+        aspect-ratio: 3 / 1;
         padding-bottom: 0;
         height: auto;
     }
