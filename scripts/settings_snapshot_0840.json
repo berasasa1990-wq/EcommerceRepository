@@ -1,0 +1,119 @@
+{
+  "label": "Podešavanja stanje 01.07.2026. 08:40",
+  "restore_phrase": "vrati na 08:40",
+  "note": "Snapshot snimljen u trenutku komande zapamti 08:40. Live kod je vraćen na git HEAD (prije lokalnih izmjena); kad kažeš vrati na 08:40, koristi scripts/restore_snapshot_0840.sh",
+  "git_commit": "57b0ec7",
+  "snapshot_dir": "scripts/snapshots/0840",
+  "restore_script": "scripts/restore_snapshot_0840.sh",
+  "sitemaps": {
+    "file": "EcommerceApp/sitemaps.py",
+    "url": "/sitemap.xml",
+    "sections": {
+      "static": {
+        "priority": 1.0,
+        "changefreq": "daily",
+        "views": ["home", "about_us", "payment_methods", "vlog_list"]
+      },
+      "kategorije": {
+        "priority": 0.8,
+        "changefreq": "daily",
+        "model": "Category",
+        "filter": "aktivan=True"
+      },
+      "artikli": {
+        "priority": 0.9,
+        "changefreq": "daily",
+        "model": "Product",
+        "filter": "aktivan=True"
+      },
+      "vlogovi": {
+        "priority": 0.7,
+        "changefreq": "weekly",
+        "model": "HomeVlog",
+        "filter": "aktivan=True, slug not empty"
+      }
+    }
+  },
+  "images": {
+    "product_avif_max_kb": 20,
+    "product_max_dimension": 400,
+    "vlog_avif_max_kb": 30,
+    "vlog_max_dimension": 420,
+    "grid_banner_avif_max_kb": 55,
+    "grid_banner_max_dimension": 360,
+    "hero_banner_max_width": 1280,
+    "hero_banner_avif_max_kb": 90,
+    "featured_banner_avif_max_kb": 120,
+    "spotlight_banner_avif_max_kb": 120,
+    "other_banner_max_width": 1920,
+    "grid_banner_format": "avif",
+    "all_banners_avif": true
+  },
+  "home": {
+    "grid_banners_layout_desktop": "3 u redu, puna širina, gap 2px, bijeli border 1px",
+    "grid_banners_max_count": 3,
+    "grid_banners_layout_mobile": "2 u redu, max 2 vidljiva (3. skriven)",
+    "home_section_product_limit": 5,
+    "home_products_desktop_columns": 5,
+    "home_products_mobile_columns": 2,
+    "home_products_mobile_visible": 4,
+    "home_vlog_limit": 3,
+    "home_vlog_desktop_columns": 3,
+    "home_vlog_mobile_visible": 2,
+    "trending_section": false,
+    "lcp_priority": "hero → grid banner → prvi Novo artikal"
+  },
+  "auth": {
+    "turnstile_login": true,
+    "turnstile_register": true
+  },
+  "nav": {
+    "akcija_button": "crvena pozadina, bijeli tekst",
+    "category_subnav_desktop": "centrirano",
+    "mega_menu_subcategories_desktop": "centrirano"
+  },
+  "product": {
+    "made_in_japan": "samo ako proizvedeno_u_japanu=True (bulk akcija u adminu)",
+    "bulk_actions": ["Proizvedeno u Japanu", "Ukloni oznaku Japan"],
+    "product_detail_policies": {
+      "dostava": "Dostava brzom poštom u roku od 48h.",
+      "povrat": "Ukoliko je roba oštećena ili ne odgovara poručenoj, vršimo povrat.",
+      "garancija": "Garancija na kvalitet."
+    },
+    "karakteristike": false,
+    "warranty_badge": false,
+    "sifra_max_length": 200
+  },
+  "media_cache": {
+    "serve_media": "EcommerceApp/views_media.py",
+    "cache_control": "public, max-age=31536000, immutable"
+  },
+  "footer": {
+    "layout": "3 columns",
+    "left": ["Kontaktirajte nas", "opremazaribolov.ba@gmail.com", "www.opremazaribolov.ba", "www.facebook.com/opremazaribolov.ba"],
+    "center_links": ["O nama /o-nama/", "Način plaćanja /nacin-placanja/", "Blog /vlog/"],
+    "right": ["Dostupnost 24/7 online podrška", "Email: opremazaribolov.ba"]
+  },
+  "pages": {
+    "about_us": "/o-nama/",
+    "payment_methods": "/nacin-placanja/",
+    "vlog_list": "/vlog/"
+  },
+  "migrations": {
+    "latest": "0047_product_proizvedeno_u_japanu"
+  },
+  "snapshot_files": [
+    "EcommerceApp/sitemaps.py",
+    "EcommerceApp/admin.py",
+    "EcommerceApp/models.py",
+    "EcommerceApp/utils/images.py",
+    "EcommerceApp/views_media.py",
+    "EcommerceApp/template/home.html",
+    "EcommerceApp/template/product_detail.html",
+    "EcommerceApp/template/partials/product_card_info.html",
+    "EcommerceApp/static/css/style.css",
+    "EcommerceApp/static/css/style.min.css",
+    "EcommerceApp/migrations/0047_product_proizvedeno_u_japanu.py",
+    "EcommerceProject/urls.py"
+  ]
+}
