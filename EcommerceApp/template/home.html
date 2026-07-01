@@ -2,7 +2,7 @@
 
 {% block lcp_preload %}
 {% if lcp_image_url %}
-<link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
+<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %}{% if lcp_image_sizes %} imagesizes="{{ lcp_image_sizes }}"{% endif %} fetchpriority="high">
 {% endif %}
 {% endblock %}
 

@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 
 from EcommerceApp.models import Banner
 from EcommerceApp.utils.images import (
-    BANNER_GRID_RESPONSIVE_WIDTHS,
+    banner_responsive_widths,
     reprocess_existing_banner_file,
     save_processed_image,
 )
@@ -26,9 +26,7 @@ class Command(BaseCommand):
                     save_processed_image(
                         banner.slika,
                         processed,
-                        responsive_widths=(
-                            BANNER_GRID_RESPONSIVE_WIDTHS if banner.tip == 'grid' else ()
-                        ),
+                        responsive_widths=banner_responsive_widths(banner.tip),
                     )
                     banner.save(update_fields=['slika'])
                 else:

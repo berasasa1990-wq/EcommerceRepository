@@ -507,16 +507,50 @@ def home(request):
     first_grid_banner = grid_banners.first()
     has_hero_slides = bool(not filters_active and hero_banners.exists())
     lcp_image_url = None
+    lcp_image_srcset = None
+    lcp_image_sizes = None
     eager_first_novo_image = False
     if not filters_active:
         if first_hero and first_hero.slika:
-            lcp_image_url = request.build_absolute_uri(first_hero.slika.url)
+            from .utils.images import banner_image_responsive_meta
+
+            hero_lcp = banner_image_responsive_meta(
+                first_hero.slika,
+                tip='hero',
+                default=(1920, 640),
+            )
+            lcp_image_url = request.build_absolute_uri(
+                hero_lcp.get('preload_src') or hero_lcp['src'],
+            )
+            lcp_image_srcset = hero_lcp.get('srcset') or None
+            lcp_image_sizes = '100vw'
         elif first_grid_banner and first_grid_banner.slika:
-            lcp_image_url = request.build_absolute_uri(first_grid_banner.slika.url)
+            from .utils.images import banner_image_responsive_meta
+
+            grid_lcp = banner_image_responsive_meta(
+                first_grid_banner.slika,
+                tip='grid',
+                default=(360, 360),
+            )
+            lcp_image_url = request.build_absolute_uri(
+                grid_lcp.get('preload_src') or grid_lcp['src'],
+            )
+            lcp_image_srcset = grid_lcp.get('srcset') or None
+            lcp_image_sizes = '(max-width: 768px) 50vw, 360px'
         elif latest_products:
             first_product = latest_products[0]
             if first_product.prikazna_slika:
-                lcp_image_url = request.build_absolute_uri(first_product.prikazna_slika.url)
+                product_lcp = first_product.prikazna_slika_responsive
+                if product_lcp:
+                    lcp_image_url = request.build_absolute_uri(
+                        product_lcp.get('preload_src') or product_lcp['src'],
+                    )
+                    lcp_image_srcset = product_lcp.get('srcset') or None
+                    lcp_image_sizes = '(max-width: 768px) 50vw, 16vw'
+                else:
+                    lcp_image_url = request.build_absolute_uri(
+                        first_product.prikazna_slika.url,
+                    )
                 eager_first_novo_image = True
 
     spotlight = None
@@ -542,6 +576,8 @@ def home(request):
     context = {
         **_base_context(),
         'lcp_image_url': lcp_image_url,
+        'lcp_image_srcset': lcp_image_srcset,
+        'lcp_image_sizes': lcp_image_sizes,
         'has_hero_slides': has_hero_slides,
         'eager_first_novo_image': eager_first_novo_image,
         'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners],
