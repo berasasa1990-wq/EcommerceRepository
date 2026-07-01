@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.files.base import ContentFile
 from django.db import OperationalError, transaction
 
-from .models import SIFRA_MAX_LENGTH, Category, Product, ProductVariation
+from .models import BARKOD_MAX_LENGTH, SIFRA_MAX_LENGTH, Category, Product, ProductVariation
 from .odoo_client import OdooClient, OdooError
 from .product_merge import sync_primary_stock
 from .utils.images import process_product_image_bytes
@@ -531,7 +531,7 @@ def _commit_template_import(prepared):
     values = {
         'naziv': (template.get('name') or f'Artikal {odoo_template_id}')[:200],
         'sifra': sifra[:SIFRA_MAX_LENGTH],
-        'barkod': (template.get('barcode') or '')[:50],
+        'barkod': (template.get('barcode') or '')[:BARKOD_MAX_LENGTH],
         'opis': template.get('description_sale') or '',
         'cijena': _decimal(template.get('list_price')),
         'kategorija': django_category,

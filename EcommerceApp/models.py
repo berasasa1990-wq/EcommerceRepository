@@ -454,15 +454,30 @@ class Popup(models.Model):
 
 
 SIFRA_MAX_LENGTH = 200
+SLUG_MAX_LENGTH = 220
+BARKOD_MAX_LENGTH = 200
+
+
+def _build_unique_slug(model_cls, source_text, *, pk=None, max_length=SLUG_MAX_LENGTH, fallback='item'):
+    base_slug = slugify(source_text) or fallback
+    base_slug = base_slug[:max_length]
+    slug = base_slug
+    counter = 1
+    while model_cls.objects.filter(slug=slug).exclude(pk=pk).exists():
+        suffix = f'-{counter}'
+        trim_to = max(1, max_length - len(suffix))
+        slug = f'{base_slug[:trim_to]}{suffix}'
+        counter += 1
+    return slug
 
 
 class Product(models.Model):
     naziv = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(max_length=SLUG_MAX_LENGTH, unique=True, blank=True)
     sifra = models.CharField(
         max_length=SIFRA_MAX_LENGTH, blank=True, null=True, unique=True, verbose_name='Šifra',
     )
-    barkod = models.CharField(max_length=50, blank=True, verbose_name='Barkod')
+    barkod = models.CharField(max_length=BARKOD_MAX_LENGTH, blank=True, verbose_name='Barkod')
     opis = models.TextField(
         blank=True,
         verbose_name='Opis',
@@ -518,13 +533,12 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(self.naziv)
-            slug = base_slug
-            counter = 1
-            while Product.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                slug = f'{base_slug}-{counter}'
-                counter += 1
-            self.slug = slug
+            self.slug = _build_unique_slug(
+                Product,
+                self.naziv,
+                pk=self.pk,
+                fallback='artikal',
+            )
         if self.slika:
             from .utils.images import apply_image_processing, process_product_image_manual
             apply_image_processing(self, 'slika', post_process=process_product_image_manual)
