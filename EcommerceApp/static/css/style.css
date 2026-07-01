@@ -255,7 +255,6 @@ img.home-vlog-card-image {
     border-top: 1px solid var(--gray-200);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
     padding: 16px 0 24px;
-    min-height: calc(40px + 5 * 1.75rem);
     box-sizing: border-box;
 }
 
@@ -284,6 +283,14 @@ img.home-vlog-card-image {
         left: 0;
         right: 0;
         height: 16px;
+    }
+
+    .mega-menu-panel.is-height-synced {
+        overflow: hidden;
+    }
+
+    .mega-menu.active {
+        min-height: 100%;
     }
 }
 
