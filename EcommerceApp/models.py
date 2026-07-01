@@ -266,7 +266,7 @@ class Brand(models.Model):
 class Banner(models.Model):
     class BannerType(models.TextChoices):
         HERO = 'hero', 'Hero Carousel'
-        GRID = 'grid', 'Grid Kartica (3 u redu ispod Hero)'
+        GRID = 'grid', 'Grid Kartica (4 u redu ispod Hero)'
         FEATURED = 'featured', 'Featured Kartica'
         SPOTLIGHT = 'spotlight', 'Spotlight'
 
@@ -293,13 +293,17 @@ class Banner(models.Model):
 
     def save(self, *args, **kwargs):
         if self.slika:
+            from django.core.exceptions import ValidationError
             from .utils.images import apply_image_processing, process_banner_image
             tip = self.tip
-            apply_image_processing(
-                self,
-                'slika',
-                post_process=lambda field: process_banner_image(field, tip=tip),
-            )
+            try:
+                apply_image_processing(
+                    self,
+                    'slika',
+                    post_process=lambda field: process_banner_image(field, tip=tip),
+                )
+            except ValueError as exc:
+                raise ValidationError({'slika': str(exc)}) from exc
         super().save(*args, **kwargs)
 
     def get_link_href(self):

@@ -79,6 +79,17 @@ def _avif_filename(original_name):
     return base.rsplit('.', 1)[0] + '.avif'
 
 
+def _jpeg_filename(original_name):
+    base = original_name.rsplit('/', 1)[-1]
+    return base.rsplit('.', 1)[0] + '.jpg'
+
+
+def _reset_upload(image_field):
+    upload = getattr(image_field, 'file', None)
+    if upload is not None and hasattr(upload, 'seek'):
+        upload.seek(0)
+
+
 def _read_image_source(image_source, *, filename='image.jpg'):
     if hasattr(image_source, 'read'):
         image_source.seek(0)
@@ -236,15 +247,38 @@ def process_vlog_image(image_field):
     )
 
 
+def _encode_banner_jpeg_fallback(img, filename, *, max_width, max_height=None, quality=88):
+    """Rezerva ako AVIF enkoder nije dostupan na serveru."""
+    working = _fit_banner_dimensions(img, max_width=max_width, max_height=max_height)
+    buffer = BytesIO()
+    working.save(buffer, format='JPEG', quality=quality, optimize=True)
+    return ContentFile(buffer.getvalue(), name=_jpeg_filename(filename))
+
+
 def process_banner_image(image_field, tip='hero'):
-    """Svi banneri: AVIF visokog kvaliteta, optimizovan za brzo učitavanje."""
-    img = Image.open(image_field)
+    """Svi banneri: AVIF visokog kvaliteta, JPEG rezerva ako AVIF ne uspije."""
+    _reset_upload(image_field)
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     settings = BANNER_AVIF_SETTINGS.get(tip, {
         'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
         'max_width': BANNER_MAX_WIDTH,
     })
-    return _encode_banner_avif(img, filename, **settings)
+    with Image.open(image_field) as img:
+        img.load()
+        source = img.copy()
+    try:
+        return _encode_banner_avif(source, filename, **settings)
+    except Exception as exc:
+        logger.warning(
+            'AVIF obrada bannera nije uspjela (%s), čuvam optimizovani JPEG.',
+            exc,
+        )
+        return _encode_banner_jpeg_fallback(
+            source,
+            filename,
+            max_width=settings['max_width'],
+            max_height=settings.get('max_height'),
+        )
 
 
 def reprocess_existing_banner_file(image_field, *, tip='hero'):
@@ -347,11 +381,16 @@ def apply_image_processing(instance, field_name, post_process=None):
     image_field = getattr(instance, field_name, None)
     if not image_field or not is_new_upload(image_field):
         return
+    _reset_upload(image_field)
     try:
         processed = post_process(image_field) if post_process else image_field
         getattr(instance, field_name).save(processed.name, processed, save=False)
     except Exception as exc:
-        logger.warning('Obrada slike nije uspjela za %s.%s: %s', instance, field_name, exc)
+        _reset_upload(image_field)
+        logger.exception('Obrada slike nije uspjela za %s.%s', instance, field_name)
+        raise ValueError(
+            f'Obrada slike nije uspjela: {exc}. Pokušajte manju sliku ili JPG/PNG format.',
+        ) from exc
 
 
 def _logo_target_size(canvas_size, fill_ratio=1.0):
