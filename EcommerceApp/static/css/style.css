@@ -18,7 +18,7 @@
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --home-product-inset: 12px;
-    --product-detail-side-inset: calc(var(--home-product-inset) + 40px);
+    --product-detail-side-inset: var(--home-product-inset);
     --home-mobile-side-inset: clamp(8px, 5.12vw, 20px);
     --home-mobile-card-gap: 4px;
 }
@@ -1180,18 +1180,18 @@ main {
     padding-bottom: 40px;
 }
 
-@media (min-width: 769px) {
-    .product-detail {
-        max-width: none;
-        width: 100%;
-        padding-left: var(--product-detail-side-inset);
-        padding-right: var(--product-detail-side-inset);
-    }
+.product-detail-related .home-product-catalog .home-products-header,
+.product-detail-related .home-product-carousel {
+    padding-left: var(--product-detail-side-inset);
+    padding-right: var(--product-detail-side-inset);
+}
 
-    .product-detail-related .home-product-catalog .home-products-header {
-        padding-left: var(--product-detail-side-inset);
-        padding-right: var(--product-detail-side-inset);
-    }
+.product-detail-related .home-product-carousel__btn--prev {
+    left: var(--product-detail-side-inset);
+}
+
+.product-detail-related .home-product-carousel__btn--next {
+    right: var(--product-detail-side-inset);
 }
 
 .home-products-header--izdvojeno h2 {
@@ -2747,9 +2747,11 @@ body.search-results-active main {
 
 /* Product Detail */
 .product-detail {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 40px 24px 72px;
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 40px var(--product-detail-side-inset) 72px;
+    box-sizing: border-box;
 }
 
 .product-detail-back {
@@ -4882,6 +4884,11 @@ body.search-results-active main {
     .product-detail-content {
         margin-top: 32px;
         padding-top: 32px;
+    }
+
+    .product-detail {
+        padding-left: var(--home-mobile-side-inset);
+        padding-right: var(--home-mobile-side-inset);
     }
 
     .product-detail-back {
