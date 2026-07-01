@@ -453,7 +453,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!viewport || !track || !slides.length) return;
 
             let index = 0;
+            let autoplayTimer = null;
             const gap = 8;
+            const autoplayMs = parseInt(root.dataset.autoplayMs, 10) || 4500;
 
             function visibleCount() {
                 const mobile = parseInt(root.dataset.visibleMobile, 10) || 2;
@@ -482,19 +484,89 @@ document.addEventListener('DOMContentLoaded', () => {
             function updatePosition() {
                 const offset = index * slideStep();
                 track.style.transform = `translate3d(-${offset}px, 0, 0)`;
-                const atEnd = index >= maxIndex();
-                if (prevBtn) prevBtn.disabled = index <= 0;
-                if (nextBtn) nextBtn.disabled = atEnd;
-                root.classList.toggle('home-product-carousel--static', slides.length <= visibleCount());
+                const isStatic = slides.length <= visibleCount();
+                if (prevBtn) prevBtn.disabled = isStatic;
+                if (nextBtn) nextBtn.disabled = isStatic;
+                root.classList.toggle('home-product-carousel--static', isStatic);
             }
 
-            function goTo(nextIndex) {
-                index = Math.max(0, Math.min(nextIndex, maxIndex()));
+            function goTo(nextIndex, { animate = true } = {}) {
+                const limit = maxIndex();
+                if (limit === 0) {
+                    index = 0;
+                    updatePosition();
+                    return;
+                }
+
+                if (nextIndex > limit) {
+                    track.style.transition = animate ? '' : 'none';
+                    index = 0;
+                    updatePosition();
+                    if (!animate) {
+                        requestAnimationFrame(() => {
+                            void track.offsetWidth;
+                            track.style.transition = '';
+                        });
+                    }
+                    return;
+                }
+
+                if (nextIndex < 0) {
+                    track.style.transition = animate ? '' : 'none';
+                    index = limit;
+                    updatePosition();
+                    if (!animate) {
+                        requestAnimationFrame(() => {
+                            void track.offsetWidth;
+                            track.style.transition = '';
+                        });
+                    }
+                    return;
+                }
+
+                track.style.transition = '';
+                index = nextIndex;
                 updatePosition();
             }
 
-            prevBtn?.addEventListener('click', () => goTo(index - 1));
-            nextBtn?.addEventListener('click', () => goTo(index + 1));
+            function startAutoplay() {
+                clearInterval(autoplayTimer);
+                if (slides.length <= visibleCount()) return;
+                autoplayTimer = setInterval(() => {
+                    if (index >= maxIndex()) {
+                        goTo(0, { animate: false });
+                    } else {
+                        goTo(index + 1);
+                    }
+                }, autoplayMs);
+            }
+
+            function resetAutoplay() {
+                clearInterval(autoplayTimer);
+                startAutoplay();
+            }
+
+            prevBtn?.addEventListener('click', () => {
+                if (index <= 0) {
+                    goTo(maxIndex(), { animate: false });
+                } else {
+                    goTo(index - 1);
+                }
+                resetAutoplay();
+            });
+            nextBtn?.addEventListener('click', () => {
+                if (index >= maxIndex()) {
+                    goTo(0, { animate: false });
+                } else {
+                    goTo(index + 1);
+                }
+                resetAutoplay();
+            });
+
+            root.addEventListener('mouseenter', () => clearInterval(autoplayTimer));
+            root.addEventListener('mouseleave', startAutoplay);
+            root.addEventListener('focusin', () => clearInterval(autoplayTimer));
+            root.addEventListener('focusout', startAutoplay);
 
             let touchStartX = 0;
             viewport.addEventListener('touchstart', (e) => {
@@ -505,11 +577,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const diff = touchStartX - e.changedTouches[0].clientX;
                 if (Math.abs(diff) > 40) {
                     goTo(diff > 0 ? index + 1 : index - 1);
+                    resetAutoplay();
                 }
             }, { passive: true });
 
             window.addEventListener('resize', updateLayout);
             updateLayout();
+            startAutoplay();
         });
     }
 

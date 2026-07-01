@@ -1,5 +1,5 @@
 {% if products %}
-<div class="home-product-carousel" data-visible-desktop="6" data-visible-mobile="2">
+<div class="home-product-carousel" data-visible-desktop="6" data-visible-mobile="2" data-autoplay-ms="4500">
     <button type="button" class="home-product-carousel__btn home-product-carousel__btn--prev" aria-label="Prethodni artikli" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polyline points="15 18 9 12 15 6"/>
@@ -25,8 +25,7 @@
                         {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 50vw, 16vw' %}
                         {% endif %}
                     </div>
-                    <div class="variation-swatches variation-swatches--empty"></div>
-                    {% include 'partials/product_card_info.html' with product=product %}
+                    {% include 'partials/product_card_home_info.html' with product=product %}
                 </a>
             </div>
             {% endfor %}

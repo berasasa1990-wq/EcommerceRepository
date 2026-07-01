@@ -1,0 +1,14 @@
+<div class="product-info product-info--home">
+    <h4 class="product-info__name" data-product-name>{{ product.naziv }}</h4>
+    {% if product.kategorija %}
+    <p class="product-info__category">{{ product.kategorija.naziv }}</p>
+    {% endif %}
+    <p class="product-price product-price--home" data-product-price>
+        {% if product.katalog_na_akciji %}
+        <span class="price-sale">{{ product.katalog_prikazna_cijena }} KM</span>
+        <span class="price-original">{{ product.katalog_bazna_cijena }} KM</span>
+        {% else %}
+        <span class="price-current">{{ product.katalog_prikazna_cijena }} KM</span>
+        {% endif %}
+    </p>
+</div>
