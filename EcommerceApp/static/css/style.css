@@ -1109,6 +1109,12 @@ main {
     max-height: 196px;
 }
 
+@media (min-width: 769px) {
+    .home-product-catalog .product-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
 .home-vlog {
     padding: 16px 0 64px;
     width: 100%;
