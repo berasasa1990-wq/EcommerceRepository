@@ -1,15 +1,11 @@
 from django.core.management.base import BaseCommand
 
 from EcommerceApp.models import Banner
-from EcommerceApp.utils.images import (
-    _banner_responsive_widths_for_instance,
-    reprocess_existing_banner_file,
-    save_processed_image,
-)
+from EcommerceApp.utils.images import reprocess_existing_banner_file
 
 
 class Command(BaseCommand):
-    help = 'Ponovo obrađuje banner slike (AVIF/JPEG) + responsive varijante.'
+    help = 'Ponovo obrađuje banner slike (Hero JPEG, ostalo AVIF/JPEG).'
 
     def handle(self, *args, **options):
         updated = 0
@@ -22,12 +18,7 @@ class Command(BaseCommand):
                 if processed is None:
                     skipped += 1
                     continue
-                save_processed_image(
-                    banner.slika,
-                    processed,
-                    responsive_widths=_banner_responsive_widths_for_instance(banner),
-                )
-                banner.save(update_fields=['slika'])
+                banner.slika.save(processed.name, processed, save=True)
                 updated += 1
                 self.stdout.write(f'OK banner: {banner}')
             except Exception as exc:

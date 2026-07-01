@@ -24,13 +24,13 @@ BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_HEIGHT = 640
 HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280, 1920)
-MAX_GRID_BANNER_AVIF_BYTES = 28 * 1024
-GRID_BANNER_MAX_DIMENSION = 360
+MAX_GRID_BANNER_AVIF_BYTES = 85 * 1024
+GRID_BANNER_MAX_DIMENSION = 420
 BANNER_GRID_RESPONSIVE_WIDTHS = (180, 280, 360)
 MAX_HERO_BANNER_AVIF_BYTES = 220 * 1024
-MAX_FEATURED_BANNER_AVIF_BYTES = 55 * 1024
-MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 55 * 1024
-MAX_DEFAULT_BANNER_AVIF_BYTES = 55 * 1024
+MAX_FEATURED_BANNER_AVIF_BYTES = 200 * 1024
+MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 200 * 1024
+MAX_DEFAULT_BANNER_AVIF_BYTES = 200 * 1024
 FEATURED_BANNER_RESPONSIVE_WIDTHS = (400, 800, 1200)
 SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS = (400, 800, 1200)
 BANNER_AVIF_MAX_QUALITY = 82
@@ -708,36 +708,8 @@ def _load_banner_source(image_field):
         return _image_to_rgb(img)
 
 
-def _encode_hero_jpeg_responsive(source, filename, settings):
-    crop = settings.get('crop', False)
-    main = _encode_banner_jpeg_fallback(
-        source,
-        filename,
-        max_width=settings['max_width'],
-        max_height=settings.get('max_height'),
-        crop=crop,
-        quality=85,
-    )
-    variants = {}
-    main_name = _jpeg_filename(filename)
-    for width in HERO_BANNER_RESPONSIVE_WIDTHS:
-        if width >= settings['max_width']:
-            continue
-        height = max(1, int(settings.get('max_height', 640) * width / settings['max_width']))
-        variant_name = _responsive_variant_name(main_name, width)
-        variants[width] = _encode_banner_jpeg_fallback(
-            source,
-            variant_name,
-            max_width=width,
-            max_height=height,
-            crop=crop,
-            quality=82,
-        )
-    return {'main': main, 'variants': variants}
-
-
 def process_banner_image(image_field, tip='hero'):
-    """Banneri: Hero JPEG + responsive; ostalo AVIF + responsive uz JPEG rezervu."""
+    """Banneri: Hero u JPEG (pouzdano), ostalo AVIF uz JPEG rezervu — jedna slika, bez varijanti."""
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     settings = BANNER_AVIF_SETTINGS.get(tip, {
         'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
@@ -750,59 +722,34 @@ def process_banner_image(image_field, tip='hero'):
             f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG.',
         ) from exc
 
+    jpeg_quality = 90 if tip == 'hero' else 88
     use_jpeg = tip == 'hero' or not _avif_supported()
+    crop = settings.get('crop', False)
     if use_jpeg:
-        return _encode_hero_jpeg_responsive(source, filename, settings)
-
-    responsive_map = {
-        'grid': (BANNER_GRID_RESPONSIVE_WIDTHS, BANNER_GRID_VARIANT_MAX_BYTES, GRID_BANNER_MAX_DIMENSION, True),
-        'featured': (FEATURED_BANNER_RESPONSIVE_WIDTHS, BANNER_WIDE_VARIANT_MAX_BYTES, BANNER_MAX_WIDTH, False),
-        'spotlight': (SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS, BANNER_WIDE_VARIANT_MAX_BYTES, BANNER_MAX_WIDTH, False),
-    }
-    widths, max_bytes_map, main_max_dimension, square = responsive_map.get(
-        tip,
-        (FEATURED_BANNER_RESPONSIVE_WIDTHS, BANNER_WIDE_VARIANT_MAX_BYTES, BANNER_MAX_WIDTH, False),
-    )
-    banner_settings = {
-        'max_width': settings.get('max_width', main_max_dimension),
-        'max_height': settings.get('max_height'),
-        'crop': settings.get('crop', False),
-    }
-    if square:
-        banner_settings['max_height'] = settings.get('max_height', GRID_BANNER_MAX_DIMENSION)
+        return _encode_banner_jpeg_fallback(
+            source,
+            filename,
+            max_width=settings['max_width'],
+            max_height=settings.get('max_height'),
+            crop=crop,
+            quality=jpeg_quality,
+        )
 
     try:
-        main = _encode_banner_avif(source, filename, **settings)
-        return {
-            'main': main,
-            'variants': _build_responsive_variants(
-                source,
-                main.name,
-                widths=widths,
-                max_bytes_map=max_bytes_map,
-                main_max_dimension=main_max_dimension,
-                fit_banner=True,
-                banner_settings=banner_settings,
-            ),
-        }
+        return _encode_banner_avif(source, filename, **settings)
     except Exception as exc:
         logger.warning(
             'AVIF obrada bannera nije uspjela (%s), čuvam optimizovani JPEG.',
             exc,
         )
-        if tip == 'grid':
-            return {
-                'main': _encode_banner_jpeg_fallback(
-                    source,
-                    filename,
-                    max_width=settings['max_width'],
-                    max_height=settings.get('max_height', GRID_BANNER_MAX_DIMENSION),
-                    crop=False,
-                    quality=82,
-                ),
-                'variants': {},
-            }
-        return _encode_hero_jpeg_responsive(source, filename, settings)
+        return _encode_banner_jpeg_fallback(
+            source,
+            filename,
+            max_width=settings['max_width'],
+            max_height=settings.get('max_height'),
+            crop=crop,
+            quality=jpeg_quality,
+        )
 
 
 def reprocess_existing_banner_file(image_field, *, tip='hero'):
