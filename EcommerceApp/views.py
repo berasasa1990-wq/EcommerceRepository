@@ -420,6 +420,17 @@ def _home_featured_products():
     return [entry.artikal for entry in entries]
 
 
+def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT):
+    if not product.kategorija_id:
+        return []
+    return list(
+        _product_queryset()
+        .filter(kategorija_id=product.kategorija_id)
+        .exclude(pk=product.pk)
+        .order_by('-kreiran')[:limit],
+    )
+
+
 def _vlog_cards(limit=None):
     try:
         entries_qs = HomeVlog.objects.filter(
@@ -751,10 +762,13 @@ def product_detail(request, slug):
         )
         lcp_image_url = request.build_absolute_uri(product.prikazna_slika.url)
 
+    related_products = _related_category_products(product)
+
     context = {
         **_base_context(),
         'product': product,
         'ima_varijacije': product.varijacije.count() > 0,
+        'related_products': related_products,
         'lcp_image_url': lcp_image_url,
         'product_image_width': product_image_width,
         'product_image_height': product_image_height,

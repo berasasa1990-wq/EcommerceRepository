@@ -1160,6 +1160,14 @@ main {
     padding-top: 16px;
 }
 
+.product-detail-related.home-products {
+    padding-top: 0;
+}
+
+.product-detail:has(+ .product-detail-related) {
+    padding-bottom: 40px;
+}
+
 .home-products-header--izdvojeno h2 {
     color: #c2410c;
     font-size: 2.25rem;

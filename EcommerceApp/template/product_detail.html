@@ -120,6 +120,22 @@
     </div>
     {% endif %}
 </section>
+
+{% if related_products %}
+<section class="home-products home-products--izdvojeno product-detail-related">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                <div class="home-products-header home-products-header--izdvojeno">
+                    <h2>Povezani artikli</h2>
+                    <p>Iz kategorije {{ product.kategorija.naziv }}</p>
+                </div>
+                {% include 'partials/home_product_carousel.html' with products=related_products %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
