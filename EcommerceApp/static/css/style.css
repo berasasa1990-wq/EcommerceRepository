@@ -388,6 +388,58 @@ img.home-vlog-card-image {
     color: var(--black);
 }
 
+@media (min-width: 1025px) {
+    .mega-menu-group h4 a {
+        transition: color var(--transition), transform 0.22s ease, opacity var(--transition);
+    }
+
+    .mega-menu-group h4 a:hover {
+        opacity: 1;
+        transform: translateX(4px);
+    }
+
+    .mega-menu-group ul a {
+        transition: color 0.22s ease, transform 0.22s ease, background-size 0.25s ease;
+        background-image: linear-gradient(currentColor, currentColor);
+        background-size: 0% 1px;
+        background-position: 0 100%;
+        background-repeat: no-repeat;
+    }
+
+    .mega-menu-group ul a:hover {
+        color: var(--black);
+        transform: translateX(5px);
+        background-size: 100% 1px;
+    }
+
+    .category-subnav-title,
+    .category-subnav-child {
+        display: inline-block;
+        transition: color 0.22s ease, transform 0.22s ease, opacity var(--transition);
+    }
+
+    .category-subnav-title:hover,
+    .category-subnav-child:hover {
+        opacity: 1;
+        color: var(--black);
+        transform: translateX(4px);
+    }
+}
+
+.site-prep-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--gray-100);
+}
+
+.site-prep-card {
+    width: 100%;
+    max-width: 420px;
+}
+
 .nav-actions {
     display: flex;
     align-items: center;

@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Sajt u pripremi — opremazaribolov.ba</title>
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260701u">
+</head>
+<body>
+    <section class="auth-page site-prep-page">
+        <div class="auth-card site-prep-card">
+            <h1>Sajt u pripremi</h1>
+            <p class="auth-lead">Unesite lozinku za pristup dok radimo na novoj verziji trgovine.</p>
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next_url }}">
+
+                {% if error %}
+                <div class="form-errors">
+                    <p class="form-error">{{ error }}</p>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="sitePrepPassword">Lozinka</label>
+                    <input
+                        type="password"
+                        id="sitePrepPassword"
+                        name="lozinka"
+                        class="form-input"
+                        autocomplete="current-password"
+                        required
+                        autofocus
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Ulaz</button>
+            </form>
+        </div>
+    </section>
+</body>
+</html>

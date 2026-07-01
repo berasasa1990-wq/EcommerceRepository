@@ -161,6 +161,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'EcommerceApp.middleware.site_prep_lock.SitePrepLockMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -339,3 +340,14 @@ ODOO_API_KEY = _env('ODOO_API_KEY', '')
 # Cloudflare Turnstile (https://developers.cloudflare.com/turnstile/)
 TURNSTILE_SITE_KEY = _env('TURNSTILE_SITE_KEY', '')
 TURNSTILE_SECRET_KEY = _env('TURNSTILE_SECRET_KEY', '')
+
+# Zaštita sajta dok je u pripremi (SITE_PREP_ENABLED=false kad završiš lansiranje)
+SITE_PREP_PASSWORD = _env('SITE_PREP_PASSWORD', 'OpremaZaribolov2026')
+_site_prep_env = _env('SITE_PREP_ENABLED', '').lower()
+if _site_prep_env in ('false', '0', 'no'):
+    SITE_PREP_ENABLED = False
+elif _site_prep_env in ('true', '1', 'yes'):
+    SITE_PREP_ENABLED = True
+else:
+    SITE_PREP_ENABLED = bool(SITE_PREP_PASSWORD)
+SITE_PREP_SESSION_KEY = 'site_prep_unlocked'

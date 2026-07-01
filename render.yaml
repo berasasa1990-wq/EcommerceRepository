@@ -69,6 +69,10 @@ services:
         sync: false
       - key: TURNSTILE_SECRET_KEY
         sync: false
+      - key: SITE_PREP_ENABLED
+        value: "true"
+      - key: SITE_PREP_PASSWORD
+        value: OpremaZaribolov2026
 
     # Disk za media fajlove (proizvodi, logo, banneri...)
     disk:

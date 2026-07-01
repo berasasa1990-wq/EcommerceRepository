@@ -1,12 +1,14 @@
 from django.urls import path
 
 from . import views
+from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
+    path('priprema-pristup/', views_site_prep.site_prep_unlock, name='site_prep_unlock'),
     path('', views.home, name='home'),
     path('o-nama/', views.about_us, name='about_us'),
     path('nacin-placanja/', views.payment_methods, name='payment_methods'),
