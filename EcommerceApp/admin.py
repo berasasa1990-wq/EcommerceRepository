@@ -149,6 +149,18 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'description': 'Naslov i opis za Google pretragu i kad se link dijeli (Facebook, WhatsApp, itd.). '
                            'Og image treba biti široka slika (preporučeno 1200×630 px).',
         }),
+        ('Početna stranica — tekstovi', {
+            'fields': (
+                'naslov_novo', 'podnaslov_novo',
+                'naslov_izdvojeno', 'podnaslov_izdvojeno',
+                'naslov_blog',
+            ),
+            'description': 'Naslovi sekcija Novo, Izdvojeno i Blog na početnoj stranici.',
+        }),
+        ('Stranica artikla — uslovi', {
+            'fields': ('politika_dostava', 'politika_povrat', 'politika_garancija'),
+            'description': 'Tekstovi ispod dugmeta „Dodaj u korpu” na svakom artiklu.',
+        }),
     )
 
     def has_add_permission(self, request):

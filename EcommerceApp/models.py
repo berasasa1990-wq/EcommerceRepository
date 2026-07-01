@@ -88,10 +88,42 @@ class SiteSettings(models.Model):
         verbose_name='Social share slika (OG image)',
         help_text='Preporučeno 1200×630px ili veća. Prikazuje se kad se link dijeli na Facebooku, WhatsAppu itd.',
     )
+    politika_dostava = models.TextField(
+        default='Dostava brzom poštom u roku od 48h.',
+        verbose_name='Uslovi dostave — tekst',
+    )
+    politika_povrat = models.TextField(
+        default='Ukoliko je roba oštećena ili ne odgovara poručenoj, vršimo povrat.',
+        verbose_name='Povrat robe — tekst',
+    )
+    politika_garancija = models.TextField(
+        default='Garancija na kvalitet.',
+        verbose_name='Garancija — tekst',
+    )
+    naslov_novo = models.CharField(
+        max_length=120, default='Novo',
+        verbose_name='Novo — naslov',
+    )
+    podnaslov_novo = models.CharField(
+        max_length=200, default='Najnoviji artikli na sajtu',
+        verbose_name='Novo — podnaslov',
+    )
+    naslov_izdvojeno = models.CharField(
+        max_length=120, default='Izdvojeno',
+        verbose_name='Izdvojeno — naslov',
+    )
+    podnaslov_izdvojeno = models.CharField(
+        max_length=200, default='Odabrani artikli za vas',
+        verbose_name='Izdvojeno — podnaslov',
+    )
+    naslov_blog = models.CharField(
+        max_length=200, default='Blogovi — Klik na željeni',
+        verbose_name='Blog — naslov',
+    )
 
     class Meta:
-        verbose_name = 'Postavke sajta'
-        verbose_name_plural = 'Postavke sajta'
+        verbose_name = 'Podešavanja'
+        verbose_name_plural = 'Podešavanja'
 
     def save(self, *args, **kwargs):
         self.pk = 1
@@ -113,7 +145,7 @@ class SiteSettings(models.Model):
         return self.artikala_po_redu * 4
 
     def __str__(self):
-        return 'Postavke sajta'
+        return 'Podešavanja'
 
 
 class Category(models.Model):

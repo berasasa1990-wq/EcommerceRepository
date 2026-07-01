@@ -80,9 +80,9 @@
             {% endif %}
 
             <div class="product-detail-policies">
-                <p><strong>Uslovi dostave:</strong> Dostava brzom poštom u roku od 48h.</p>
-                <p><strong>Povrat robe:</strong> Ukoliko je roba oštećena ili ne odgovara poručenoj, vršimo povrat.</p>
-                <p><strong>Garancija:</strong> Garancija na kvalitet.</p>
+                <p><strong>Uslovi dostave:</strong> {{ site_settings.politika_dostava }}</p>
+                <p><strong>Povrat robe:</strong> {{ site_settings.politika_povrat }}</p>
+                <p><strong>Garancija:</strong> {{ site_settings.politika_garancija }}</p>
             </div>
         </div>
     </div>
