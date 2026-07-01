@@ -293,13 +293,17 @@ class Banner(models.Model):
 
     def save(self, *args, **kwargs):
         if self.slika:
-            from .utils.images import apply_image_processing, is_new_upload, process_banner_image
-            if is_new_upload(self.slika):
+            from django.core.exceptions import ValidationError
+            from .utils.images import apply_image_processing, process_banner_image
+            tip = self.tip
+            try:
                 apply_image_processing(
                     self,
                     'slika',
-                    post_process=lambda field: process_banner_image(field, tip=self.tip),
+                    post_process=lambda field: process_banner_image(field, tip=tip),
                 )
+            except ValueError as exc:
+                raise ValidationError({'slika': str(exc)}) from exc
         super().save(*args, **kwargs)
 
     def get_link_href(self):

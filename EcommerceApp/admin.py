@@ -8,14 +8,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 from django.middleware.csrf import get_token
 
-from .forms import (
-    BannerAdminForm,
-    BulkAssignBrandForm,
-    BulkAssignCategoryForm,
-    BulkAssignTagsForm,
-    MergeProductsForm,
-    OdooImportForm,
-)
+from .forms import BulkAssignBrandForm, BulkAssignCategoryForm, BulkAssignTagsForm, MergeProductsForm, OdooImportForm
 from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
 from .odoo_import import (
     fetch_template_ids_from_odoo,
@@ -382,7 +375,6 @@ class HomeVlogAdmin(admin.ModelAdmin):
 
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
-    form = BannerAdminForm
     list_display = ('naslov', 'tip', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
@@ -394,7 +386,7 @@ class BannerAdmin(admin.ModelAdmin):
             'description': (
                 'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan). '
                 'Upload slike se automatski optimizuje: '
-                'Hero → AVIF + JPEG responsive (640–1920px, 3:1). Grid/Featured/Spotlight → AVIF ili JPEG. '
+                'Hero → JPEG 1920×640 (3:1, centrirano rezanje), Grid/Featured/Spotlight → AVIF ili JPEG. '
                 'Preporučen format uploada: JPG ili PNG. '
                 'Tip „Hero Carousel” za karusel, „Grid Kartica” za 4 kartice ispod.'
             ),

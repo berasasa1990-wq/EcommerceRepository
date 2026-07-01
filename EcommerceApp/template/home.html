@@ -2,11 +2,7 @@
 
 {% block lcp_preload %}
 {% if lcp_image_url %}
-{% if lcp_image_srcset %}
-<link rel="preload" as="image" href="{{ lcp_image_url }}" imagesrcset="{{ lcp_image_srcset }}" imagesizes="100vw" fetchpriority="high">
-{% else %}
 <link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
-{% endif %}
 {% endif %}
 {% endblock %}
 
@@ -21,15 +17,7 @@
                 {% if slide.url %}
                 <a href="{{ slide.url }}" class="slide-image-link" aria-label="{{ slide.title|default:'Banner' }}">
                 {% endif %}
-                <picture>
-                    {% if slide.image_srcset_avif %}
-                    <source type="image/avif" srcset="{{ slide.image_srcset_avif }}" sizes="100vw">
-                    {% endif %}
-                    {% if slide.image_srcset_jpeg %}
-                    <source type="image/jpeg" srcset="{{ slide.image_srcset_jpeg }}" sizes="100vw">
-                    {% endif %}
-                    <img src="{{ slide.image }}" alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
-                </picture>
+                <img src="{{ slide.image }}" alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
                 {% if slide.url %}
                 </a>
                 {% endif %}

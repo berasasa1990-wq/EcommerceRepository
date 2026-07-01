@@ -5,7 +5,7 @@ from EcommerceApp.utils.images import reprocess_existing_banner_file
 
 
 class Command(BaseCommand):
-    help = 'Ponovo obrađuje banner slike (Hero: responsive AVIF+JPEG, ostalo: AVIF).'
+    help = 'Ponovo obrađuje sve banner slike u AVIF format uz viši kvalitet.'
 
     def handle(self, *args, **options):
         updated = 0

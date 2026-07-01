@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
-from .models import Banner, Brand, Category, Product, Tag
+from .models import Brand, Category, Product, Tag
 
 
 class RegisterForm(forms.Form):
@@ -299,18 +299,3 @@ class BulkAssignTagsForm(forms.Form):
         required=True,
         help_text='Odabrani tagovi će biti dodani postojećim tagovima artikala (ne zamjenjuju ih).',
     )
-
-
-class BannerAdminForm(forms.ModelForm):
-    class Meta:
-        model = Banner
-        fields = '__all__'
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        try:
-            if commit:
-                instance.save()
-        except ValueError as exc:
-            raise forms.ValidationError({'slika': str(exc)}) from exc
-        return instance
