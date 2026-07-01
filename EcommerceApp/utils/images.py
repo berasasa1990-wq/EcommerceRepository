@@ -37,9 +37,8 @@ BANNER_AVIF_MAX_QUALITY = 82
 BANNER_AVIF_MIN_QUALITY = 68
 BANNER_AVIF_QUALITY_STEP = 2
 MAX_PRODUCT_AVIF_BYTES = 15 * 1024
-AGGRESSIVE_SCALE_STEPS = (
-    1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.12, 0.1,
-)
+MAIN_SCALE_STEPS = (1.0, 0.85, 0.7, 0.55, 0.4, 0.3)
+FAST_VARIANT_QUALITIES = (68, 58, 48, 38, 28)
 PRODUCT_VARIANT_MAX_BYTES = {
     120: 4 * 1024,
     200: 8 * 1024,
@@ -125,7 +124,7 @@ def _reset_upload(image_field):
         upload.seek(0)
 
 
-def _banner_avif_supported():
+def _avif_supported():
     global _BANNER_AVIF_SUPPORTED
     if _BANNER_AVIF_SUPPORTED is not None:
         return _BANNER_AVIF_SUPPORTED
@@ -142,9 +141,12 @@ def _banner_avif_supported():
         )
         _BANNER_AVIF_SUPPORTED = len(buffer.getvalue()) > 0
     except Exception:
-        logger.warning('AVIF enkoder nije dostupan na serveru, banneri idu u JPEG.', exc_info=True)
+        logger.warning('AVIF enkoder nije dostupan na serveru, koristi se JPEG rezerva.', exc_info=True)
         _BANNER_AVIF_SUPPORTED = False
     return _BANNER_AVIF_SUPPORTED
+
+
+_banner_avif_supported = _avif_supported
 
 
 def _read_image_source(image_source, *, filename='image.jpg'):
@@ -165,6 +167,26 @@ def _encode_avif(img, quality, *, speed=AVIF_SPEED):
     buffer = BytesIO()
     img.save(buffer, format='AVIF', quality=quality, speed=speed)
     return buffer.getvalue()
+
+
+def _encode_avif_safe(img, quality, *, speed=AVIF_SPEED):
+    try:
+        return _encode_avif(img, quality, speed=speed)
+    except Exception:
+        logger.debug('AVIF enkodiranje nije uspjelo (quality=%s).', quality, exc_info=True)
+        return None
+
+
+def _encode_jpeg_image(rgb_img, filename, *, max_dimension, max_bytes, quality=82):
+    filename = _jpeg_filename(filename)
+    working = _fit_product_dimensions(_image_to_rgb(rgb_img), max_dimension=max_dimension)
+    for q in (quality, 75, 65, 55, 45):
+        buffer = BytesIO()
+        working.save(buffer, format='JPEG', quality=q, optimize=True, progressive=True)
+        data = buffer.getvalue()
+        if len(data) <= max_bytes:
+            return ContentFile(data, name=filename)
+    return ContentFile(data, name=filename)
 
 
 def _encode_banner_avif_data(img, quality):
@@ -240,8 +262,10 @@ def _encode_avif_under_budget(
         else:
             candidate = working
 
-        for quality in range(85, 0, -quality_step):
-            data = _encode_avif(candidate, quality)
+        for quality in range(80, 0, -quality_step):
+            data = _encode_avif_safe(candidate, quality)
+            if data is None:
+                continue
             size = len(data)
             if size <= max_bytes:
                 return ContentFile(data, name=filename)
@@ -249,17 +273,16 @@ def _encode_avif_under_budget(
                 best_size = size
                 best_data = data
 
+    if best_data is None:
+        raise ValueError('AVIF enkoder nije dostupan. Koristite JPG ili PNG.')
+
     if strict:
-        raise ValueError(
-            f'Slika se ne može smanjiti ispod {max_bytes // 1024}KB. '
-            'Koristite jednostavniju sliku ili manju rezoluciju.',
+        logger.warning(
+            'Slika nije smanjena ispod %dKB (najmanje: %d bytes), čuva se najbliža verzija.',
+            max_bytes // 1024,
+            best_size,
         )
 
-    logger.warning(
-        'Slika nije smanjena ispod %dKB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
-        max_bytes // 1024,
-        best_size,
-    )
     return ContentFile(best_data, name=filename)
 
 
@@ -276,7 +299,7 @@ def _responsive_variant_name(main_name, width):
 _product_responsive_variant_name = _responsive_variant_name
 
 
-def _encode_avif_variant(
+def _encode_fast_responsive_variant(
     rgb_img,
     filename,
     *,
@@ -292,27 +315,69 @@ def _encode_avif_variant(
             max_height=banner_settings.get('variant_height'),
             crop=banner_settings.get('crop', False),
         )
+    else:
+        working = _fit_product_dimensions(_image_to_rgb(rgb_img), max_dimension=max_dimension)
+
+    if not filename.endswith(('.avif', '.jpg', '.jpeg')):
+        filename = _avif_filename(filename)
+
+    best_data = None
+    for quality in FAST_VARIANT_QUALITIES:
+        data = _encode_avif_safe(working, quality)
+        if data is None:
+            break
+        if len(data) <= max_bytes:
+            return ContentFile(data, name=filename)
+        best_data = data
+
+    if best_data is not None:
+        return ContentFile(best_data, name=filename)
+
+    buffer = BytesIO()
+    working.save(buffer, format='JPEG', quality=70, optimize=True, progressive=True)
+    jpeg_name = _jpeg_filename(filename)
+    return ContentFile(buffer.getvalue(), name=jpeg_name)
+
+
+def _encode_avif_variant(
+    rgb_img,
+    filename,
+    *,
+    max_dimension,
+    max_bytes,
+    fit_banner=False,
+    banner_settings=None,
+):
+    if fit_banner and banner_settings:
+        working = _fit_banner_dimensions(
+            rgb_img,
+            max_width=banner_settings.get('max_width', max_dimension),
+            max_height=banner_settings.get('max_height'),
+            crop=banner_settings.get('crop', False),
+        )
         filename = _avif_filename(filename) if not filename.endswith('.avif') else filename
         best_data = None
-        best_size = float('inf')
         for quality in range(BANNER_AVIF_MAX_QUALITY, BANNER_AVIF_MIN_QUALITY - 1, -BANNER_AVIF_QUALITY_STEP):
-            data = _encode_banner_avif_data(working, quality)
-            size = len(data)
-            if size <= max_bytes:
+            data = _encode_avif_safe(working, quality, speed=BANNER_AVIF_SPEED)
+            if data is None:
+                break
+            if len(data) <= max_bytes:
                 return ContentFile(data, name=filename)
-            if size < best_size:
-                best_size = size
-                best_data = data
-        return ContentFile(best_data, name=filename)
+            best_data = data
+        if best_data is not None:
+            return ContentFile(best_data, name=filename)
+        buffer = BytesIO()
+        working.save(buffer, format='JPEG', quality=82, optimize=True, progressive=True)
+        return ContentFile(buffer.getvalue(), name=_jpeg_filename(filename))
 
     return _encode_avif_under_budget(
         rgb_img,
         filename,
         max_bytes=max_bytes,
         max_dimension=max_dimension,
-        strict=True,
-        scale_steps=AGGRESSIVE_SCALE_STEPS,
-        quality_step=2,
+        strict=False,
+        scale_steps=MAIN_SCALE_STEPS,
+        quality_step=4,
     )
 
 
@@ -340,14 +405,25 @@ def _build_responsive_variants(
             if variant_settings.get('max_height') and variant_settings.get('max_width'):
                 ratio = variant_settings['max_height'] / variant_settings['max_width']
                 variant_settings['variant_height'] = max(1, int(width * ratio))
-        variants[width] = _encode_avif_variant(
-            rgb_img,
-            variant_name,
-            max_dimension=width,
-            max_bytes=max_bytes_map.get(width, max_bytes_map.get(main_max_dimension, MAX_PRODUCT_AVIF_BYTES)),
-            fit_banner=fit_banner,
-            banner_settings=variant_settings,
-        )
+        try:
+            variants[width] = _encode_fast_responsive_variant(
+                rgb_img,
+                variant_name,
+                max_dimension=width,
+                max_bytes=max_bytes_map.get(
+                    width,
+                    max_bytes_map.get(main_max_dimension, MAX_PRODUCT_AVIF_BYTES),
+                ),
+                fit_banner=fit_banner,
+                banner_settings=variant_settings,
+            )
+        except Exception:
+            logger.warning(
+                'Responsive varijanta %sw nije kreirana za %s',
+                width,
+                main_filename,
+                exc_info=True,
+            )
     return variants
 
 
@@ -482,26 +558,49 @@ def _encode_product_avif(rgb_img, filename):
 
 
 def _processed_image_result(rgb_img, filename, *, widths, max_bytes_map, main_max_dimension, fit_banner=False, banner_settings=None):
-    main = _encode_avif_variant(
-        rgb_img,
-        filename,
-        max_dimension=main_max_dimension,
-        max_bytes=max_bytes_map.get(main_max_dimension, MAX_PRODUCT_AVIF_BYTES),
-        fit_banner=fit_banner,
-        banner_settings=banner_settings,
-    )
-    return {
-        'main': main,
-        'variants': _build_responsive_variants(
+    main_bytes = max_bytes_map.get(main_max_dimension, MAX_PRODUCT_AVIF_BYTES)
+    try:
+        if _avif_supported():
+            main = _encode_avif_variant(
+                rgb_img,
+                filename,
+                max_dimension=main_max_dimension,
+                max_bytes=main_bytes,
+                fit_banner=fit_banner,
+                banner_settings=banner_settings,
+            )
+        else:
+            main = _encode_jpeg_image(
+                rgb_img,
+                filename,
+                max_dimension=main_max_dimension,
+                max_bytes=main_bytes,
+            )
+    except Exception as exc:
+        logger.warning('AVIF obrada glavne slike nije uspjela, koristim JPEG (%s).', exc)
+        main = _encode_jpeg_image(
             rgb_img,
-            main.name,
-            widths=widths,
-            max_bytes_map=max_bytes_map,
-            main_max_dimension=main_max_dimension,
-            fit_banner=fit_banner,
-            banner_settings=banner_settings,
-        ),
-    }
+            filename,
+            max_dimension=main_max_dimension,
+            max_bytes=main_bytes,
+        )
+
+    variants = {}
+    if widths:
+        try:
+            variants = _build_responsive_variants(
+                rgb_img,
+                main.name,
+                widths=widths,
+                max_bytes_map=max_bytes_map,
+                main_max_dimension=main_max_dimension,
+                fit_banner=fit_banner,
+                banner_settings=banner_settings,
+            )
+        except Exception:
+            logger.warning('Responsive varijante nisu kreirane za %s', filename, exc_info=True)
+
+    return {'main': main, 'variants': variants}
 
 
 def _encode_banner_avif(
@@ -639,7 +738,7 @@ def process_banner_image(image_field, tip='hero'):
             f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG.',
         ) from exc
 
-    use_jpeg = tip == 'hero' or not _banner_avif_supported()
+    use_jpeg = tip == 'hero' or not _avif_supported()
     if use_jpeg:
         return _encode_hero_jpeg_responsive(source, filename, settings)
 
