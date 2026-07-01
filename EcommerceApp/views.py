@@ -355,7 +355,7 @@ def _banner_to_hero_slide(banner):
     image_meta = banner_image_responsive_meta(
         banner.slika,
         tip='hero',
-        default=(1920, 640),
+        default=(1920, 560),
     )
     return {
         'title': banner.naslov,
@@ -518,7 +518,7 @@ def home(request):
             hero_lcp = banner_image_responsive_meta(
                 first_hero.slika,
                 tip='hero',
-                default=(1920, 640),
+                default=(1920, 560),
             )
             lcp_image_url = request.build_absolute_uri(
                 hero_lcp.get('preload_src') or hero_lcp['src'],

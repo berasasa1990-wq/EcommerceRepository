@@ -393,7 +393,7 @@ class BannerAdmin(admin.ModelAdmin):
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika'),
             'description': (
                 'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan). '
-                'Upload slike: Hero → JPEG 1920×640 (3:1), Grid/Featured/Spotlight → AVIF ili JPEG. '
+                'Upload slike: Hero → JPEG 1920×560 (24:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
                 'Preporučen format: JPG ili PNG. '
                 'Tip „Hero Carousel” za karusel, „Grid Kartica” za 8 kartica ispod (4×2 desktop, 6 mobilni).'
             ),
