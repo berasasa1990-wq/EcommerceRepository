@@ -378,7 +378,7 @@ class HomeVlog(models.Model):
     slika = models.ImageField(
         upload_to='vlogs/',
         verbose_name='Slika',
-        help_text='Upload: konvertuje se u AVIF (max 30KB). Prikazuje se na početnoj (3 u redu) i na stranici vloga.',
+        help_text='Upload: AVIF max 18KB + responsive 180/280/360w. Prikaz na početnoj (3 u redu) i stranici vloga.',
     )
     sadrzaj = models.TextField(
         verbose_name='Opis vloga',

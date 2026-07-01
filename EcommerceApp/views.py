@@ -350,30 +350,41 @@ def _banner_actions(banner):
 
 
 def _banner_to_hero_slide(banner):
-    image_width, image_height = image_field_dimensions(
+    from .utils.images import banner_image_responsive_meta
+
+    image_meta = banner_image_responsive_meta(
         banner.slika,
+        tip='hero',
         default=(1920, 640),
     )
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
-        'image': banner.slika.url,
-        'image_width': image_width,
-        'image_height': image_height,
+        'image': image_meta['src'],
+        'image_srcset': image_meta['srcset'],
+        'image_width': image_meta['width'],
+        'image_height': image_meta['height'],
         'url': banner.get_link_href(),
         'actions': _banner_actions(banner),
     }
 
 
 def _banner_to_card(banner):
-    default_dims = (400, 400) if banner.tip == Banner.BannerType.GRID else (1200, 1200)
-    image_width, image_height = image_field_dimensions(banner.slika, default=default_dims)
+    from .utils.images import banner_image_responsive_meta
+
+    default_dims = (360, 360) if banner.tip == Banner.BannerType.GRID else (1200, 800)
+    image_meta = banner_image_responsive_meta(
+        banner.slika,
+        tip=banner.tip,
+        default=default_dims,
+    )
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
-        'image': banner.slika.url,
-        'image_width': image_width,
-        'image_height': image_height,
+        'image': image_meta['src'],
+        'image_srcset': image_meta['srcset'],
+        'image_width': image_meta['width'],
+        'image_height': image_meta['height'],
         'url': banner.get_link_href(),
         'actions': _banner_actions(banner),
         'wide': banner.siroka_kartica,
@@ -431,14 +442,17 @@ def _vlog_cards(limit=None):
     for vlog in entries:
         if not vlog.slug:
             continue
-        width, height = image_field_dimensions(vlog.slika, default=(420, 420))
+        from .utils.images import vlog_image_responsive_meta
+
+        image_meta = vlog_image_responsive_meta(vlog.slika, default=(360, 360))
         vlogs.append({
             'id': vlog.pk,
             'slug': vlog.slug,
             'naslov': vlog.naslov,
-            'slika_url': vlog.slika.url,
-            'image_width': width,
-            'image_height': height,
+            'slika_url': image_meta['src'],
+            'slika_srcset': image_meta['srcset'],
+            'image_width': image_meta['width'],
+            'image_height': image_meta['height'],
         })
     return vlogs
 
@@ -507,15 +521,20 @@ def home(request):
 
     spotlight = None
     if spotlight_banner:
-        spotlight_width, spotlight_height = image_field_dimensions(
-            spotlight_banner.slika, default=(1200, 800),
+        from .utils.images import banner_image_responsive_meta
+
+        spotlight_image = banner_image_responsive_meta(
+            spotlight_banner.slika,
+            tip='spotlight',
+            default=(1200, 800),
         )
         spotlight = {
             'title': spotlight_banner.naslov,
             'description': spotlight_banner.podnaslov,
-            'image': spotlight_banner.slika.url,
-            'image_width': spotlight_width,
-            'image_height': spotlight_height,
+            'image': spotlight_image['src'],
+            'image_srcset': spotlight_image['srcset'],
+            'image_width': spotlight_image['width'],
+            'image_height': spotlight_image['height'],
             'cta': spotlight_banner.tekst_dugmeta,
             'url': spotlight_banner.get_link_href(),
         }
@@ -555,21 +574,24 @@ def vlog_detail(request, slug):
             'HomeVlog tabela nije dostupna — pokreni: python manage.py migrate',
         )
         raise Http404 from None
-    image_width, image_height = image_field_dimensions(vlog.slika, default=(420, 420))
+    from .utils.images import vlog_image_responsive_meta
+
+    vlog_image = vlog_image_responsive_meta(vlog.slika, default=(360, 360))
     other_vlogs = []
     for other in HomeVlog.objects.filter(aktivan=True).exclude(slika='').exclude(pk=vlog.pk).order_by(
         'redoslijed', '-id',
     )[:3]:
-        width, height = image_field_dimensions(other.slika, default=(400, 300))
+        image_meta = vlog_image_responsive_meta(other.slika, default=(280, 280))
         other_vlogs.append({
             'slug': other.slug,
             'naslov': other.naslov,
-            'slika_url': other.slika.url,
-            'image_width': width,
-            'image_height': height,
+            'slika_url': image_meta['src'],
+            'slika_srcset': image_meta['srcset'],
+            'image_width': image_meta['width'],
+            'image_height': image_meta['height'],
         })
 
-    lcp_image_url = request.build_absolute_uri(vlog.slika.url)
+    lcp_image_url = request.build_absolute_uri(vlog_image['src'])
     seo_description = _vlog_seo_description(vlog.sadrzaj)
 
     context = {
@@ -577,12 +599,13 @@ def vlog_detail(request, slug):
         'vlog': vlog,
         'other_vlogs': other_vlogs,
         'lcp_image_url': lcp_image_url,
-        'image_width': image_width,
-        'image_height': image_height,
+        'vlog_image': vlog_image,
+        'image_width': vlog_image['width'],
+        'image_height': vlog_image['height'],
         'seo_title': f'{vlog.naslov} | Vlog — opremazaribolov.ba',
         'seo_description': seo_description,
         'canonical_url': settings.SITE_URL.rstrip('/') + vlog.get_absolute_url(),
-        'og_image': request.build_absolute_uri(vlog.slika.url),
+        'og_image': request.build_absolute_uri(vlog_image['src']),
     }
     return render(request, 'vlog_detail.html', context)
 

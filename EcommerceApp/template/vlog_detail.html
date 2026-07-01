@@ -33,12 +33,13 @@
 
         {% if vlog.slika %}
         <figure class="vlog-article-media">
-            <img src="{{ vlog.slika.url }}"
+            <img src="{{ vlog_image.src }}"
+                 {% if vlog_image.srcset %}srcset="{{ vlog_image.srcset }}"{% endif %}
                  alt="{{ vlog.naslov }}"
                  class="vlog-article-image"
                  width="{{ image_width }}"
                  height="{{ image_height }}"
-                 sizes="(max-width: 768px) 280px, 360px"
+                 sizes="(max-width: 768px) 100vw, 360px"
                  loading="eager"
                  fetchpriority="high"
                  decoding="async">
@@ -66,9 +67,11 @@
             <a href="{% url 'vlog_detail' item.slug %}" class="vlog-related-card">
                 <span class="vlog-related-image-wrap">
                     <img src="{{ item.slika_url }}"
+                         {% if item.slika_srcset %}srcset="{{ item.slika_srcset }}"{% endif %}
                          alt="{{ item.naslov }}"
                          width="{{ item.image_width }}"
                          height="{{ item.image_height }}"
+                         sizes="(max-width: 768px) 50vw, 200px"
                          loading="lazy"
                          decoding="async">
                 </span>

@@ -22,11 +22,12 @@
             <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card" aria-label="{{ vlog.naslov }}">
                 <div class="home-vlog-card-image-wrap">
                     <img src="{{ vlog.slika_url }}"
+                         {% if vlog.slika_srcset %}srcset="{{ vlog.slika_srcset }}"{% endif %}
                          alt="{{ vlog.naslov }}"
                          class="home-vlog-card-image"
                          width="{{ vlog.image_width }}"
                          height="{{ vlog.image_height }}"
-                         sizes="(max-width: 768px) 50vw, 25vw"
+                         sizes="(max-width: 768px) 50vw, 33vw"
                          loading="lazy"
                          decoding="async">
                 </div>

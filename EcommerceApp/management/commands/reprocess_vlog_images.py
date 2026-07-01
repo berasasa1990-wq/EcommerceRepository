@@ -1,38 +1,38 @@
 from django.core.management.base import BaseCommand
 
-from EcommerceApp.models import Banner
+from EcommerceApp.models import HomeVlog
 from EcommerceApp.utils.images import (
-    _banner_responsive_widths_for_instance,
-    reprocess_existing_banner_file,
+    VLOG_RESPONSIVE_WIDTHS,
+    reprocess_existing_vlog_file,
     save_processed_image,
 )
 
 
 class Command(BaseCommand):
-    help = 'Ponovo obrađuje banner slike (AVIF/JPEG) + responsive varijante.'
+    help = 'Ponovo obrađuje vlog slike u AVIF (max 18KB) + responsive 180/280/360w.'
 
     def handle(self, *args, **options):
         updated = 0
         skipped = 0
         errors = 0
 
-        for banner in Banner.objects.exclude(slika='').iterator():
+        for vlog in HomeVlog.objects.exclude(slika='').iterator():
             try:
-                processed = reprocess_existing_banner_file(banner.slika, tip=banner.tip)
+                processed = reprocess_existing_vlog_file(vlog.slika)
                 if processed is None:
                     skipped += 1
                     continue
                 save_processed_image(
-                    banner.slika,
+                    vlog.slika,
                     processed,
-                    responsive_widths=_banner_responsive_widths_for_instance(banner),
+                    responsive_widths=VLOG_RESPONSIVE_WIDTHS,
                 )
-                banner.save(update_fields=['slika'])
+                vlog.save(update_fields=['slika'])
                 updated += 1
-                self.stdout.write(f'OK banner: {banner}')
+                self.stdout.write(f'OK vlog: {vlog.naslov}')
             except Exception as exc:
                 errors += 1
-                self.stderr.write(f'GREŠKA banner {banner.pk}: {exc}')
+                self.stderr.write(f'GREŠKA vlog {vlog.pk}: {exc}')
 
         self.stdout.write(self.style.SUCCESS(
             f'Završeno: {updated} obrađeno, {skipped} preskočeno, {errors} grešaka.',

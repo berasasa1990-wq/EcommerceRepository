@@ -14,28 +14,52 @@ BRAND_LOGO_FILL_RATIO = 0.80
 SITE_LOGO_SIZE = (640, 128)
 PRODUCT_WHITE_THRESHOLD = 248
 PRODUCT_MAX_DIMENSION = 400
-PRODUCT_RESPONSIVE_WIDTHS = (120, 200)
+PRODUCT_RESPONSIVE_WIDTHS = (120, 200, 320)
 AVIF_SPEED = 6
 BANNER_AVIF_SPEED = 4
-MAX_VLOG_AVIF_BYTES = 30 * 1024
-VLOG_MAX_DIMENSION = 420
+MAX_VLOG_AVIF_BYTES = 18 * 1024
+VLOG_MAX_DIMENSION = 360
+VLOG_RESPONSIVE_WIDTHS = (180, 280, 360)
 BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_HEIGHT = 640
-MAX_GRID_BANNER_AVIF_BYTES = 85 * 1024
-GRID_BANNER_MAX_DIMENSION = 420
+HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280, 1920)
+MAX_GRID_BANNER_AVIF_BYTES = 28 * 1024
+GRID_BANNER_MAX_DIMENSION = 360
+BANNER_GRID_RESPONSIVE_WIDTHS = (180, 280, 360)
 MAX_HERO_BANNER_AVIF_BYTES = 220 * 1024
-MAX_FEATURED_BANNER_AVIF_BYTES = 200 * 1024
-MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 200 * 1024
-MAX_DEFAULT_BANNER_AVIF_BYTES = 200 * 1024
-BANNER_AVIF_MAX_QUALITY = 88
-BANNER_AVIF_MIN_QUALITY = 72
-BANNER_AVIF_QUALITY_STEP = 3
+MAX_FEATURED_BANNER_AVIF_BYTES = 55 * 1024
+MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 55 * 1024
+MAX_DEFAULT_BANNER_AVIF_BYTES = 55 * 1024
+FEATURED_BANNER_RESPONSIVE_WIDTHS = (400, 800, 1200)
+SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS = (400, 800, 1200)
+BANNER_AVIF_MAX_QUALITY = 82
+BANNER_AVIF_MIN_QUALITY = 68
+BANNER_AVIF_QUALITY_STEP = 2
 MAX_PRODUCT_AVIF_BYTES = 15 * 1024
+AGGRESSIVE_SCALE_STEPS = (
+    1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.12, 0.1,
+)
 PRODUCT_VARIANT_MAX_BYTES = {
     120: 4 * 1024,
     200: 8 * 1024,
+    320: 12 * 1024,
     400: MAX_PRODUCT_AVIF_BYTES,
+}
+VLOG_VARIANT_MAX_BYTES = {
+    180: 5 * 1024,
+    280: 10 * 1024,
+    360: MAX_VLOG_AVIF_BYTES,
+}
+BANNER_GRID_VARIANT_MAX_BYTES = {
+    180: 6 * 1024,
+    280: 12 * 1024,
+    360: MAX_GRID_BANNER_AVIF_BYTES,
+}
+BANNER_WIDE_VARIANT_MAX_BYTES = {
+    400: 18 * 1024,
+    800: 32 * 1024,
+    1200: MAX_FEATURED_BANNER_AVIF_BYTES,
 }
 
 BANNER_AVIF_SETTINGS = {
@@ -239,85 +263,145 @@ def _encode_avif_under_budget(
     return ContentFile(best_data, name=filename)
 
 
-def _product_responsive_variant_name(main_name, width):
-    base = main_name.rsplit('/', 1)[-1].rsplit('.', 1)[0]
-    folder = main_name.rsplit('/', 1)[0] if '/' in main_name else ''
-    variant = f'{base}-{width}w.avif'
+def _responsive_variant_name(main_name, width):
+    if '/' in main_name:
+        folder, filename = main_name.rsplit('/', 1)
+    else:
+        folder, filename = '', main_name
+    base, ext = filename.rsplit('.', 1)
+    variant = f'{base}-{width}w.{ext}'
     return f'{folder}/{variant}' if folder else variant
 
 
-def _encode_product_variant(rgb_img, filename, *, max_dimension):
+_product_responsive_variant_name = _responsive_variant_name
+
+
+def _encode_avif_variant(
+    rgb_img,
+    filename,
+    *,
+    max_dimension,
+    max_bytes,
+    fit_banner=False,
+    banner_settings=None,
+):
+    if fit_banner and banner_settings:
+        working = _fit_banner_dimensions(
+            rgb_img,
+            max_width=banner_settings.get('variant_width', max_dimension),
+            max_height=banner_settings.get('variant_height'),
+            crop=banner_settings.get('crop', False),
+        )
+        filename = _avif_filename(filename) if not filename.endswith('.avif') else filename
+        best_data = None
+        best_size = float('inf')
+        for quality in range(BANNER_AVIF_MAX_QUALITY, BANNER_AVIF_MIN_QUALITY - 1, -BANNER_AVIF_QUALITY_STEP):
+            data = _encode_banner_avif_data(working, quality)
+            size = len(data)
+            if size <= max_bytes:
+                return ContentFile(data, name=filename)
+            if size < best_size:
+                best_size = size
+                best_data = data
+        return ContentFile(best_data, name=filename)
+
     return _encode_avif_under_budget(
         rgb_img,
         filename,
-        max_bytes=PRODUCT_VARIANT_MAX_BYTES.get(max_dimension, MAX_PRODUCT_AVIF_BYTES),
+        max_bytes=max_bytes,
         max_dimension=max_dimension,
         strict=True,
-        scale_steps=(
-            1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.12, 0.1,
-        ),
-        quality_step=3,
+        scale_steps=AGGRESSIVE_SCALE_STEPS,
+        quality_step=2,
     )
 
 
-def _encode_product_avif(img, filename):
-    return _encode_product_variant(
-        _image_to_rgb(img),
-        _avif_filename(filename),
-        max_dimension=PRODUCT_MAX_DIMENSION,
-    )
-
-
-def _build_product_responsive_variants(rgb_img, main_filename):
+def _build_responsive_variants(
+    rgb_img,
+    main_filename,
+    *,
+    widths,
+    max_bytes_map,
+    main_max_dimension,
+    fit_banner=False,
+    banner_settings=None,
+):
+    main_name = main_filename
+    if not fit_banner:
+        main_name = _avif_filename(main_filename)
     variants = {}
-    for width in PRODUCT_RESPONSIVE_WIDTHS:
-        variant_name = _product_responsive_variant_name(
-            _avif_filename(main_filename),
-            width,
-        )
-        variants[width] = _encode_product_variant(
+    for width in widths:
+        if width >= main_max_dimension:
+            continue
+        variant_name = _responsive_variant_name(main_name, width)
+        variant_settings = dict(banner_settings or {})
+        if fit_banner:
+            variant_settings['variant_width'] = width
+            if variant_settings.get('max_height') and variant_settings.get('max_width'):
+                ratio = variant_settings['max_height'] / variant_settings['max_width']
+                variant_settings['variant_height'] = max(1, int(width * ratio))
+        variants[width] = _encode_avif_variant(
             rgb_img,
             variant_name,
             max_dimension=width,
+            max_bytes=max_bytes_map.get(width, max_bytes_map.get(main_max_dimension, MAX_PRODUCT_AVIF_BYTES)),
+            fit_banner=fit_banner,
+            banner_settings=variant_settings,
         )
     return variants
 
 
-def delete_product_responsive_variants(storage, main_name):
+def delete_responsive_variants(storage, main_name, widths):
     if not main_name:
         return
-    for width in PRODUCT_RESPONSIVE_WIDTHS:
-        variant_name = _product_responsive_variant_name(main_name, width)
-        if storage.exists(variant_name):
-            storage.delete(variant_name)
+    if '/' in main_name:
+        folder, filename = main_name.rsplit('/', 1)
+    else:
+        folder, filename = '', main_name
+    base = filename.rsplit('.', 1)[0]
+    for width in widths:
+        for ext in ('avif', 'jpg', 'jpeg', 'png', 'webp'):
+            variant = f'{base}-{width}w.{ext}'
+            path = f'{folder}/{variant}' if folder else variant
+            if storage.exists(path):
+                storage.delete(path)
 
 
-def save_product_responsive_variants(storage, main_name, variants):
+def save_responsive_variants(storage, main_name, variants):
     if not main_name:
         return
     for width, content in variants.items():
-        variant_name = _product_responsive_variant_name(main_name, width)
+        variant_name = _responsive_variant_name(main_name, width)
         if storage.exists(variant_name):
             storage.delete(variant_name)
         storage.save(variant_name, content)
 
 
-def save_processed_product_image(image_field, processed):
+def save_processed_image(image_field, processed, *, responsive_widths=()):
     if isinstance(processed, dict) and 'main' in processed:
         main = processed['main']
         variants = processed.get('variants', {})
         storage = image_field.storage
         old_name = image_field.name
         if old_name:
-            delete_product_responsive_variants(storage, old_name)
+            delete_responsive_variants(storage, old_name, responsive_widths)
         image_field.save(main.name, main, save=False)
-        save_product_responsive_variants(storage, image_field.name, variants)
+        save_responsive_variants(storage, image_field.name, variants)
         return image_field
     image_field.save(processed.name, processed, save=False)
     return image_field
 
 
-def product_image_responsive_meta(image_field, *, default=(400, 400)):
+save_processed_product_image = save_processed_image
+
+
+def image_responsive_meta(
+    image_field,
+    *,
+    widths=(),
+    max_dimension=None,
+    default=(400, 400),
+):
     if not image_field or not image_field.name:
         return {
             'src': '',
@@ -327,13 +411,14 @@ def product_image_responsive_meta(image_field, *, default=(400, 400)):
         }
 
     width, height = image_field_dimensions(image_field, default=default)
-    display_width = min(width, PRODUCT_MAX_DIMENSION)
+    cap = max_dimension or width
+    display_width = min(width, cap)
     display_height = max(1, int(height * (display_width / width))) if width else default[1]
 
     storage = image_field.storage
     entries = []
-    for variant_width in PRODUCT_RESPONSIVE_WIDTHS:
-        variant_name = _product_responsive_variant_name(image_field.name, variant_width)
+    for variant_width in widths:
+        variant_name = _responsive_variant_name(image_field.name, variant_width)
         if storage.exists(variant_name):
             entries.append(f'{storage.url(variant_name)} {variant_width}w')
 
@@ -343,6 +428,79 @@ def product_image_responsive_meta(image_field, *, default=(400, 400)):
         'srcset': ', '.join(entries),
         'width': display_width,
         'height': display_height,
+    }
+
+
+def product_image_responsive_meta(image_field, *, default=(400, 400)):
+    return image_responsive_meta(
+        image_field,
+        widths=PRODUCT_RESPONSIVE_WIDTHS,
+        max_dimension=PRODUCT_MAX_DIMENSION,
+        default=default,
+    )
+
+
+def vlog_image_responsive_meta(image_field, *, default=(360, 360)):
+    return image_responsive_meta(
+        image_field,
+        widths=VLOG_RESPONSIVE_WIDTHS,
+        max_dimension=VLOG_MAX_DIMENSION,
+        default=default,
+    )
+
+
+def banner_image_responsive_meta(image_field, *, tip='grid', default=None):
+    if default is None:
+        default = (360, 360) if tip == 'grid' else (1200, 800)
+    widths = {
+        'grid': BANNER_GRID_RESPONSIVE_WIDTHS,
+        'hero': HERO_BANNER_RESPONSIVE_WIDTHS,
+        'featured': FEATURED_BANNER_RESPONSIVE_WIDTHS,
+        'spotlight': SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS,
+    }.get(tip, FEATURED_BANNER_RESPONSIVE_WIDTHS)
+    max_dimension = {
+        'grid': GRID_BANNER_MAX_DIMENSION,
+        'hero': HERO_BANNER_MAX_WIDTH,
+        'featured': BANNER_MAX_WIDTH,
+        'spotlight': BANNER_MAX_WIDTH,
+    }.get(tip, BANNER_MAX_WIDTH)
+    return image_responsive_meta(
+        image_field,
+        widths=widths,
+        max_dimension=max_dimension,
+        default=default,
+    )
+
+
+def _encode_product_avif(rgb_img, filename):
+    return _encode_avif_variant(
+        rgb_img,
+        _avif_filename(filename),
+        max_dimension=PRODUCT_MAX_DIMENSION,
+        max_bytes=MAX_PRODUCT_AVIF_BYTES,
+    )
+
+
+def _processed_image_result(rgb_img, filename, *, widths, max_bytes_map, main_max_dimension, fit_banner=False, banner_settings=None):
+    main = _encode_avif_variant(
+        rgb_img,
+        filename,
+        max_dimension=main_max_dimension,
+        max_bytes=max_bytes_map.get(main_max_dimension, MAX_PRODUCT_AVIF_BYTES),
+        fit_banner=fit_banner,
+        banner_settings=banner_settings,
+    )
+    return {
+        'main': main,
+        'variants': _build_responsive_variants(
+            rgb_img,
+            main.name,
+            widths=widths,
+            max_bytes_map=max_bytes_map,
+            main_max_dimension=main_max_dimension,
+            fit_banner=fit_banner,
+            banner_settings=banner_settings,
+        ),
     }
 
 
@@ -398,14 +556,16 @@ def _encode_banner_avif(
 
 
 def process_vlog_image(image_field):
-    """Vlog slike: AVIF max 30KB, max 420px (3 u redu na početnoj)."""
+    """Vlog slike: AVIF max 18KB, max 360px + responsive 180/280w."""
     img = Image.open(image_field)
     filename = image_field.name if hasattr(image_field, 'name') else 'vlog.jpg'
-    return _encode_avif_under_budget(
-        img,
+    rgb = _image_to_rgb(img)
+    return _processed_image_result(
+        rgb,
         filename,
-        max_bytes=MAX_VLOG_AVIF_BYTES,
-        max_dimension=VLOG_MAX_DIMENSION,
+        widths=VLOG_RESPONSIVE_WIDTHS,
+        max_bytes_map=VLOG_VARIANT_MAX_BYTES,
+        main_max_dimension=VLOG_MAX_DIMENSION,
     )
 
 
@@ -437,8 +597,36 @@ def _load_banner_source(image_field):
         return _image_to_rgb(img)
 
 
+def _encode_hero_jpeg_responsive(source, filename, settings):
+    crop = settings.get('crop', False)
+    main = _encode_banner_jpeg_fallback(
+        source,
+        filename,
+        max_width=settings['max_width'],
+        max_height=settings.get('max_height'),
+        crop=crop,
+        quality=85,
+    )
+    variants = {}
+    main_name = _jpeg_filename(filename)
+    for width in HERO_BANNER_RESPONSIVE_WIDTHS:
+        if width >= settings['max_width']:
+            continue
+        height = max(1, int(settings.get('max_height', 640) * width / settings['max_width']))
+        variant_name = _responsive_variant_name(main_name, width)
+        variants[width] = _encode_banner_jpeg_fallback(
+            source,
+            variant_name,
+            max_width=width,
+            max_height=height,
+            crop=crop,
+            quality=82,
+        )
+    return {'main': main, 'variants': variants}
+
+
 def process_banner_image(image_field, tip='hero'):
-    """Banneri: Hero u JPEG (pouzdano), ostalo AVIF uz JPEG rezervu."""
+    """Banneri: Hero JPEG + responsive; ostalo AVIF + responsive uz JPEG rezervu."""
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     settings = BANNER_AVIF_SETTINGS.get(tip, {
         'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
@@ -451,34 +639,47 @@ def process_banner_image(image_field, tip='hero'):
             f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG.',
         ) from exc
 
-    jpeg_quality = 90 if tip == 'hero' else 88
     use_jpeg = tip == 'hero' or not _banner_avif_supported()
-    crop = settings.get('crop', False)
     if use_jpeg:
-        return _encode_banner_jpeg_fallback(
-            source,
-            filename,
-            max_width=settings['max_width'],
-            max_height=settings.get('max_height'),
-            crop=crop,
-            quality=jpeg_quality,
-        )
+        return _encode_hero_jpeg_responsive(source, filename, settings)
+
+    responsive_map = {
+        'grid': (BANNER_GRID_RESPONSIVE_WIDTHS, BANNER_GRID_VARIANT_MAX_BYTES, GRID_BANNER_MAX_DIMENSION, True),
+        'featured': (FEATURED_BANNER_RESPONSIVE_WIDTHS, BANNER_WIDE_VARIANT_MAX_BYTES, BANNER_MAX_WIDTH, False),
+        'spotlight': (SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS, BANNER_WIDE_VARIANT_MAX_BYTES, BANNER_MAX_WIDTH, False),
+    }
+    widths, max_bytes_map, main_max_dimension, square = responsive_map.get(
+        tip,
+        (FEATURED_BANNER_RESPONSIVE_WIDTHS, BANNER_WIDE_VARIANT_MAX_BYTES, BANNER_MAX_WIDTH, False),
+    )
+    banner_settings = {
+        'max_width': settings.get('max_width', main_max_dimension),
+        'max_height': settings.get('max_height'),
+        'crop': settings.get('crop', False),
+    }
+    if square:
+        banner_settings['max_height'] = settings.get('max_height', GRID_BANNER_MAX_DIMENSION)
 
     try:
-        return _encode_banner_avif(source, filename, **settings)
+        main = _encode_banner_avif(source, filename, **settings)
+        return {
+            'main': main,
+            'variants': _build_responsive_variants(
+                source,
+                main.name,
+                widths=widths,
+                max_bytes_map=max_bytes_map,
+                main_max_dimension=main_max_dimension,
+                fit_banner=True,
+                banner_settings=banner_settings,
+            ),
+        }
     except Exception as exc:
         logger.warning(
             'AVIF obrada bannera nije uspjela (%s), čuvam optimizovani JPEG.',
             exc,
         )
-        return _encode_banner_jpeg_fallback(
-            source,
-            filename,
-            max_width=settings['max_width'],
-            max_height=settings.get('max_height'),
-            crop=crop,
-            quality=jpeg_quality,
-        )
+        return _encode_hero_jpeg_responsive(source, filename, settings)
 
 
 def reprocess_existing_banner_file(image_field, *, tip='hero'):
@@ -491,34 +692,24 @@ def reprocess_existing_banner_file(image_field, *, tip='hero'):
         image_field.close()
     if not raw:
         return None
-    img = Image.open(BytesIO(raw))
-    settings = BANNER_AVIF_SETTINGS.get(tip, {
-        'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
-        'max_width': BANNER_MAX_WIDTH,
-    })
-    if tip == 'hero':
-        source = _image_to_rgb(img)
-        return _encode_banner_jpeg_fallback(
-            source,
-            image_field.name,
-            max_width=settings['max_width'],
-            max_height=settings.get('max_height'),
-            crop=settings.get('crop', False),
-            quality=90,
-        )
-    return _encode_banner_avif(img, image_field.name, **settings)
+
+    buffer = BytesIO(raw)
+    buffer.name = image_field.name
+    return process_banner_image(buffer, tip=tip)
 
 
 def process_product_image(image_source, *, filename='image.jpg'):
-    """Artikal/varijacija: AVIF max 15KB + responsive varijante 120w/200w."""
+    """Artikal/varijacija: AVIF max 15KB + responsive 120/200/320w."""
     raw, filename = _read_image_source(image_source, filename=filename)
     img = Image.open(BytesIO(raw))
     rgb = _image_to_rgb(img)
-    main = _encode_product_avif(rgb, filename)
-    return {
-        'main': main,
-        'variants': _build_product_responsive_variants(rgb, filename),
-    }
+    return _processed_image_result(
+        rgb,
+        filename,
+        widths=PRODUCT_RESPONSIVE_WIDTHS,
+        max_bytes_map=PRODUCT_VARIANT_MAX_BYTES,
+        main_max_dimension=PRODUCT_MAX_DIMENSION,
+    )
 
 
 def _ensure_rgba(img):
@@ -592,6 +783,21 @@ def reprocess_existing_image_file(image_field):
     return process_product_image(raw, filename=image_field.name)
 
 
+def reprocess_existing_vlog_file(image_field):
+    if not image_field or not image_field.name:
+        return None
+    image_field.open('rb')
+    try:
+        raw = image_field.read()
+    finally:
+        image_field.close()
+    if not raw:
+        return None
+    buffer = BytesIO(raw)
+    buffer.name = image_field.name
+    return process_vlog_image(buffer)
+
+
 def prepared_product_image_payload(processed):
     if isinstance(processed, dict) and 'main' in processed:
         main = processed['main']
@@ -611,11 +817,36 @@ def save_prepared_product_image(image_field, prepared_image):
     variants = {
         width: ContentFile(
             data,
-            name=_product_responsive_variant_name(prepared_image['name'], width),
+            name=_responsive_variant_name(prepared_image['name'], width),
         )
         for width, data in prepared_image.get('variants', {}).items()
     }
-    return save_processed_product_image(image_field, {'main': content, 'variants': variants})
+    return save_processed_image(
+        image_field,
+        {'main': content, 'variants': variants},
+        responsive_widths=PRODUCT_RESPONSIVE_WIDTHS,
+    )
+
+
+def _responsive_widths_for_post_process(post_process):
+    if post_process is None:
+        return ()
+    name = getattr(post_process, '__name__', '')
+    if name in ('process_product_image_manual', 'process_product_image'):
+        return PRODUCT_RESPONSIVE_WIDTHS
+    if name == 'process_vlog_image':
+        return VLOG_RESPONSIVE_WIDTHS
+    return ()
+
+
+def _banner_responsive_widths_for_instance(instance):
+    tip = getattr(instance, 'tip', 'grid')
+    return {
+        'grid': BANNER_GRID_RESPONSIVE_WIDTHS,
+        'hero': HERO_BANNER_RESPONSIVE_WIDTHS,
+        'featured': FEATURED_BANNER_RESPONSIVE_WIDTHS,
+        'spotlight': SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS,
+    }.get(tip, FEATURED_BANNER_RESPONSIVE_WIDTHS)
 
 
 def apply_image_processing(instance, field_name, post_process=None):
@@ -625,7 +856,14 @@ def apply_image_processing(instance, field_name, post_process=None):
     _reset_upload(image_field)
     try:
         processed = post_process(image_field) if post_process else image_field
-        save_processed_product_image(getattr(instance, field_name), processed)
+        responsive_widths = _responsive_widths_for_post_process(post_process)
+        if callable(post_process) and getattr(post_process, '__name__', '') == '<lambda>':
+            responsive_widths = _banner_responsive_widths_for_instance(instance)
+        save_processed_image(
+            getattr(instance, field_name),
+            processed,
+            responsive_widths=responsive_widths,
+        )
     except Exception as exc:
         _reset_upload(image_field)
         logger.exception('Obrada slike nije uspjela za %s.%s', instance, field_name)
