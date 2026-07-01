@@ -8,164 +8,143 @@
         body {
             margin: 0;
             padding: 24px;
-            background: #f5f5f5;
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            color: #111111;
-            line-height: 1.5;
+            background: #ffffff;
+            font-family: "Century Gothic", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #000000;
+            line-height: 1.45;
             -webkit-font-smoothing: antialiased;
         }
         table { border-collapse: collapse; }
         img { border: 0; display: block; max-width: 100%; }
         .doc {
-            max-width: 800px;
+            max-width: 820px;
             margin: 0 auto 32px;
             background: #ffffff;
-            border: 1px solid #e5e5e5;
-        }
-        .doc-header {
-            background: #ffffff;
-            color: #111111;
-            padding: 28px 32px;
-            border-bottom: 1px solid #e5e5e5;
         }
         .doc-header-table { width: 100%; }
-        .doc-brand {
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            line-height: 1.2;
-        }
-        .doc-brand-tld { font-weight: 400; }
         .doc-logo {
-            max-height: 48px;
+            max-height: 56px;
             width: auto;
         }
-        .doc-type {
-            font-size: 11px;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            color: #707072;
-            margin-top: 8px;
+        .doc-title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #28403d;
+            letter-spacing: -0.01em;
         }
         .doc-meta {
             text-align: right;
             font-size: 13px;
-            color: #707072;
+            color: #000000;
             vertical-align: top;
+            line-height: 1.6;
         }
-        .doc-meta strong {
-            display: block;
-            font-size: 20px;
-            color: #111111;
-            margin-bottom: 4px;
+        .doc-meta p {
+            margin: 0 0 4px;
         }
-        .doc-body { padding: 32px; }
-        .section-title {
-            margin: 0 0 14px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #707072;
+        .parties-table {
+            width: 100%;
+            margin: 28px 0 18px;
         }
-        .info-table { width: 100%; margin-bottom: 28px; }
-        .info-table td {
+        .parties-table td {
             width: 50%;
             vertical-align: top;
-            padding-right: 16px;
-            font-size: 14px;
+            padding-right: 18px;
+            font-size: 13px;
+            color: #404040;
+            line-height: 1.55;
         }
-        .info-box {
-            background: transparent;
-            border-radius: 0;
-            padding: 0;
-        }
-        .info-box p {
-            margin: 0 0 6px;
-            font-size: 14px;
-            color: #111111;
-        }
-        .info-box p:last-child { margin-bottom: 0; }
-        .info-label {
+        .party-label {
             display: block;
-            font-size: 11px;
+            margin-bottom: 8px;
+            font-size: 13px;
             font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: #111111;
-            margin-bottom: 2px;
+            letter-spacing: 0.04em;
+            color: #28403d;
+        }
+        .party-name {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 700;
+            color: #28403d;
         }
         .items-table {
             width: 100%;
             margin-top: 8px;
+            border: 1px solid #c4bc96;
         }
         .items-table th {
-            padding: 12px 10px;
+            padding: 10px 8px;
             font-size: 11px;
             font-weight: 700;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: #707072;
-            text-align: left;
-            border-bottom: 2px solid #111111;
+            color: #000000;
+            text-align: center;
+            background: #d9d9d9;
+            border: 1px solid #c4bc96;
         }
         .items-table td {
-            padding: 14px 10px;
-            font-size: 14px;
+            padding: 12px 8px;
+            font-size: 13px;
             vertical-align: top;
-            border-bottom: 1px solid #e5e5e5;
+            border: 1px solid #c4bc96;
+            color: #000000;
+        }
+        .items-table .col-name {
+            text-align: left;
         }
         .items-table .col-qty,
         .items-table .col-price,
-        .items-table .col-total {
-            text-align: right;
+        .items-table .col-total,
+        .items-table .col-pdv {
+            text-align: center;
             white-space: nowrap;
         }
         .item-name {
             display: block;
             font-weight: 600;
-            color: #111111;
+            color: #000000;
         }
         .item-variation {
             display: block;
             margin-top: 3px;
-            font-size: 13px;
-            color: #707072;
+            font-size: 12px;
+            color: #595959;
         }
         .totals-wrap {
-            margin-top: 20px;
+            margin-top: 18px;
             width: 100%;
         }
         .totals-table {
-            width: 300px;
+            width: 340px;
             margin-left: auto;
         }
         .totals-table td {
-            padding: 8px 0;
+            padding: 5px 0;
             font-size: 14px;
-            color: #111111;
+            color: #000000;
         }
         .totals-table td:last-child {
             text-align: right;
-            color: #111111;
+            white-space: nowrap;
         }
         .totals-table tr.total-row td {
-            padding-top: 14px;
-            border-top: none;
+            padding-top: 10px;
             font-size: 16px;
             font-weight: 700;
-            color: #111111;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+            color: #28403d;
         }
         .order-footer {
             margin-top: 28px;
-            padding-top: 18px;
-            border-top: 1px solid #e5e5e5;
-            font-size: 13px;
-            color: #707072;
+            padding-top: 16px;
+            border-top: 1px solid #d9d9d9;
+            font-size: 12px;
+            color: #404040;
+            line-height: 1.6;
         }
-        .order-footer a { color: #111111; }
+        .order-footer a { color: #28403d; }
 
         .warranty-section {
             max-width: 210mm;
@@ -293,15 +272,14 @@
             letter-spacing: 0.04em;
         }
         .print-note {
-            max-width: 800px;
+            max-width: 820px;
             margin: 0 auto 24px;
             padding: 14px 18px;
-            background: #ffffff;
-            border: 1px dashed #c8c8c8;
+            background: #f5f5f5;
+            border: 1px dashed #c4bc96;
             font-size: 13px;
-            color: #707072;
+            color: #595959;
             text-align: center;
-            border-radius: 4px;
         }
 
         @page {
@@ -316,7 +294,6 @@
             }
             .print-note { display: none; }
             .doc {
-                border: none;
                 max-width: none;
                 margin-bottom: 0;
             }
@@ -342,104 +319,115 @@
     </p>
     {% endif %}
 
-    <!-- POTVRDA NARUDŽBE -->
     <div class="doc">
-        <div class="doc-header">
-            <table class="doc-header-table" role="presentation" cellpadding="0" cellspacing="0">
+        <table class="doc-header-table" role="presentation" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="vertical-align: top; width: 55%;">
+                    {% if logo_url %}
+                    <img src="{{ logo_url }}" alt="{{ site_name }}" class="doc-logo" height="56">
+                    {% else %}
+                    <p class="doc-title">{{ site_name }}</p>
+                    {% endif %}
+                </td>
+                <td class="doc-meta">
+                    <p class="doc-title">Narudžba br. {{ order.broj }}</p>
+                    <p>Datum narudžbe: {{ datum_kratko }} {{ vrijeme }}</p>
+                    <p>Datum isporuke: {{ datum_kratko }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <table class="parties-table" role="presentation" cellpadding="0" cellspacing="0">
+            <tr>
+                <td>
+                    <span class="party-label">KUPAC:</span>
+                    <span class="party-name">{{ order.ime_prezime }}</span>
+                    {{ order.adresa }}<br>
+                    {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}<br>
+                    Telefon: {{ order.telefon }}<br>
+                    Email: {{ order.email }}
+                    {% if order.napomena %}
+                    <br><br>Napomena: {{ order.napomena }}
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="party-label">PRODAVAC:</span>
+                    <span class="party-name">{{ site_name }}</span>
+                    {% if store_email %}Email: {{ store_email }}<br>{% endif %}
+                    {% if store_phone %}Telefon: {{ store_phone }}<br>{% endif %}
+                    Web: <a href="{{ site_url }}">{{ site_url }}</a>
+                </td>
+            </tr>
+        </table>
+
+        <table class="items-table" role="presentation" cellpadding="0" cellspacing="0">
+            <thead>
                 <tr>
-                    <td style="vertical-align: top;">
-                        {% if logo_url %}
-                        <img src="{{ logo_url }}" alt="{{ site_name }}" class="doc-logo" height="48">
-                        {% else %}
-                        <div class="doc-brand">
-                            opremaza<span class="doc-brand-tld">ribolov</span><span class="doc-brand-tld">.ba</span>
-                        </div>
+                    <th class="col-name" style="width: 38%;">Naziv</th>
+                    <th class="col-qty" style="width: 12%;">Količina</th>
+                    <th class="col-price" style="width: 16%;">Cijena</th>
+                    <th class="col-total" style="width: 16%;">Ukupno</th>
+                    <th class="col-pdv" style="width: 18%;">PDV</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in order_lines %}
+                <tr>
+                    <td class="col-name">
+                        <span class="item-name">{{ line.item.product_naziv|default:line.item.naziv }}</span>
+                        {% if line.item.varijacija_naziv %}
+                        <span class="item-variation">{{ line.item.varijacija_naziv }}</span>
                         {% endif %}
-                        <div class="doc-type">Potvrda narudžbe</div>
                     </td>
-                    <td class="doc-meta">
-                        <strong>#{{ order.broj }}</strong>
-                        Datum: {{ datum }}<br>
-                        Vrijeme: {{ vrijeme }}
-                    </td>
+                    <td class="col-qty">{{ line.item.kolicina }}</td>
+                    <td class="col-price">{{ line.item.cijena }} KM</td>
+                    <td class="col-total">{{ line.item.ukupno }} KM</td>
+                    <td class="col-pdv">{{ line.pdv }} ({{ line.pdv_postotak }}%)</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-wrap">
+            <table class="totals-table" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>UKUPNO</td>
+                    <td>{{ summary.pdv_artikli.bez_pdv }} KM</td>
+                </tr>
+                <tr>
+                    <td>PDV ({{ pdv_postotak }}%)</td>
+                    <td>{{ summary.pdv_artikli.pdv }} KM</td>
+                </tr>
+                <tr>
+                    <td>Iznos sa PDV-om</td>
+                    <td>{{ summary.medjuzbir }} KM</td>
+                </tr>
+                {% if summary.popust %}
+                <tr>
+                    <td>Popust</td>
+                    <td>-{{ summary.popust }} KM</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td>Dostava{% if dostava_naziv %} — {{ dostava_naziv }}{% endif %}</td>
+                    <td>{% if summary.besplatna_dostava %}Besplatno{% else %}{{ summary.dostava }} KM{% endif %}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Ukupno za platiti</td>
+                    <td>{{ summary.ukupno }} KM</td>
                 </tr>
             </table>
         </div>
 
-        <div class="doc-body">
-            <p class="section-title">Podaci o kupcu i dostavi</p>
-            <table class="info-table" role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td>
-                        <div class="info-box">
-                            <p><span class="info-label">Kupac</span>{{ order.ime_prezime }}</p>
-                            <p><span class="info-label">Email</span>{{ order.email }}</p>
-                            <p><span class="info-label">Telefon</span>{{ order.telefon }}</p>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="info-box">
-                            <p><span class="info-label">Adresa dostave</span>{{ order.adresa }}</p>
-                            <p><span class="info-label">Grad</span>{{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}</p>
-                            {% if order.napomena %}
-                            <p><span class="info-label">Napomena</span>{{ order.napomena }}</p>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-            </table>
-
-            <p class="section-title">Stavke narudžbe</p>
-            <table class="items-table" role="presentation" cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th style="width: 46%;">Artikal</th>
-                        <th style="width: 14%;">Šifra</th>
-                        <th class="col-qty" style="width: 10%;">Kol.</th>
-                        <th class="col-price" style="width: 15%;">Cijena</th>
-                        <th class="col-total" style="width: 15%;">Ukupno</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in order.stavke.all %}
-                    <tr>
-                        <td>
-                            <span class="item-name">{{ item.product_naziv|default:item.naziv }}</span>
-                            {% if item.varijacija_naziv %}
-                            <span class="item-variation">Varijacija: {{ item.varijacija_naziv }}</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ item.sifra|default:"—" }}</td>
-                        <td class="col-qty">{{ item.kolicina }}</td>
-                        <td class="col-price">{{ item.cijena }} KM</td>
-                        <td class="col-total">{{ item.ukupno }} KM</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <div class="totals-wrap">
-                <table class="totals-table" role="presentation" cellpadding="0" cellspacing="0">
-                    <tr>
-                        <td>Iznos sa PDV-om</td>
-                        <td>{{ summary.medjuzbir }} KM</td>
-                    </tr>
-                    <tr>
-                        <td>Dostava</td>
-                        <td>{% if summary.besplatna_dostava %}Besplatno{% else %}{{ summary.dostava }} KM{% endif %}</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td>Ukupno za plaćanje</td>
-                        <td>{{ summary.ukupno }} KM</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="order-footer">
-                Hvala vam na kupovini na <a href="{{ site_url }}">{{ site_name }}</a>.
-                {% if store_phone %}Kontakt: {{ store_phone }}{% if store_email %}, {% endif %}{% endif %}
-                {% if store_email %}<a href="mailto:{{ store_email }}">{{ store_email }}</a>{% endif %}
-            </div>
+        <div class="order-footer">
+            Način plaćanja: pouzećem pri preuzimanju pošiljke.<br>
+            Hvala vam na kupovini na <a href="{{ site_url }}">{{ site_name }}</a>.
+            {% if store_phone or store_email %}
+            <br>Kontakt:
+            {% if store_phone %}{{ store_phone }}{% endif %}
+            {% if store_phone and store_email %}, {% endif %}
+            {% if store_email %}<a href="mailto:{{ store_email }}">{{ store_email }}</a>{% endif %}
+            {% endif %}
         </div>
     </div>
 

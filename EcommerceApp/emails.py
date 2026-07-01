@@ -6,6 +6,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from .cart import PDV_STOPA, izracunaj_pdv
 from .models import SiteSettings
 from .pricing import sazetak_iz_narudzbe
 
@@ -67,22 +68,42 @@ def _admin_order_text(order):
     return '\n'.join(lines)
 
 
+def _order_lines(order):
+    pdv_postotak = int(PDV_STOPA * 100)
+    lines = []
+    for item in order.stavke.all():
+        line_pdv = izracunaj_pdv(item.ukupno)
+        lines.append({
+            'item': item,
+            'pdv': line_pdv['pdv'],
+            'pdv_postotak': pdv_postotak,
+        })
+    return lines
+
+
 def _email_context(order, show_warranty=False):
     site_settings = SiteSettings.load()
     logo_url = None
     if site_settings.logo:
         logo_url = f'{settings.SITE_URL}{site_settings.logo.url}'
 
+    created = timezone.localtime(order.kreirana)
+    pdv_postotak = int(PDV_STOPA * 100)
+
     return {
         'order': order,
+        'order_lines': _order_lines(order),
         'summary': sazetak_iz_narudzbe(order),
-        'datum': timezone.localtime(order.kreirana).strftime('%d.%m.%Y.'),
-        'vrijeme': timezone.localtime(order.kreirana).strftime('%H:%M'),
+        'datum': created.strftime('%d.%m.%Y.'),
+        'datum_kratko': f'{created.day}. {created.month}. {created.year}.',
+        'vrijeme': created.strftime('%H:%M'),
+        'pdv_postotak': pdv_postotak,
         'site_name': 'opremazaribolov.ba',
         'site_url': settings.SITE_URL,
         'logo_url': logo_url,
         'store_email': settings.STORE_EMAIL,
         'store_phone': settings.STORE_PHONE,
+        'dostava_naziv': site_settings.dostava_naziv,
         'show_warranty': show_warranty,
     }
 
