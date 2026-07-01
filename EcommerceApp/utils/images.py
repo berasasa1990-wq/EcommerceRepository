@@ -25,6 +25,7 @@ HERO_BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_HEIGHT = 640
 HERO_RESPONSIVE_WIDTHS = (640, 768, 1024, 1280, 1920)
 HERO_LCP_PRELOAD_WIDTH = 768
+BANNER_UPLOAD_PREFIX = 'banners'
 MAX_GRID_BANNER_AVIF_BYTES = 85 * 1024
 GRID_BANNER_MAX_DIMENSION = 420
 MAX_HERO_BANNER_AVIF_BYTES = 220 * 1024
@@ -328,107 +329,114 @@ def _hero_variant_max_bytes(width):
     return max(24 * 1024, int(MAX_HERO_BANNER_AVIF_BYTES * scale))
 
 
-def _hero_upload_stem(filename):
-    folder, base_name = filename.rsplit('/', 1) if '/' in filename else ('banners', filename)
-    stem = re.sub(r'-w\d+$', '', base_name.rsplit('.', 1)[0])
-    return f'{folder}/{stem}'
+def _hero_basename(filename):
+    base_name = filename.rsplit('/', 1)[-1]
+    return re.sub(r'-w\d+$', '', base_name.rsplit('.', 1)[0])
+
+
+def _hero_storage_stem(filename):
+    return f'{BANNER_UPLOAD_PREFIX}/{_hero_basename(filename)}'
+
+
+def _hero_field_filename(basename, width, extension):
+    return f'{basename}-w{width}.{extension}'
 
 
 def _hero_asset_stem(path):
-    base, _ext = path.rsplit('.', 1)
-    match = re.match(r'^(?P<stem>.+)-w\d+$', base)
+    base_name = path.rsplit('/', 1)[-1].rsplit('.', 1)[0]
+    match = re.match(r'^(?P<stem>.+)-w\d+$', base_name)
     if match:
-        return match.group('stem')
-    return base
+        return f'{BANNER_UPLOAD_PREFIX}/{match.group("stem")}'
+    return f'{BANNER_UPLOAD_PREFIX}/{base_name}'
 
 
 def _hero_variant_storage_name(stem, width, extension):
     return f'{stem}-w{width}.{extension}'
 
 
-def _encode_hero_variant_avif(img, *, width, crop, max_bytes):
+def _hero_working_image(source, width, *, crop):
     height = _hero_height_for_width(width)
-    working = _fit_banner_dimensions(
-        img,
+    return _fit_banner_dimensions(
+        source,
         max_width=width,
         max_height=height,
         crop=crop,
     )
 
+
+def _encode_hero_variant_avif(working, *, max_bytes):
     best_data = None
-    best_size = float('inf')
-
-    for scale in (1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6):
-        if scale < 1.0:
-            new_w = max(1, int(working.width * scale))
-            new_h = max(1, int(working.height * scale))
-            candidate = working.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        else:
-            candidate = working
-
-        for quality in range(
-            BANNER_AVIF_MAX_QUALITY,
-            BANNER_AVIF_MIN_QUALITY - 1,
-            -BANNER_AVIF_QUALITY_STEP,
-        ):
-            data = _encode_banner_avif_data(candidate, quality)
-            size = len(data)
-            if size <= max_bytes:
-                return data
-            if size < best_size:
-                best_size = size
-                best_data = data
-
+    for quality in range(
+        BANNER_AVIF_MAX_QUALITY,
+        BANNER_AVIF_MIN_QUALITY - 1,
+        -BANNER_AVIF_QUALITY_STEP,
+    ):
+        data = _encode_banner_avif_data(working, quality)
+        best_data = data
+        if len(data) <= max_bytes:
+            return data
     return best_data
 
 
-def _encode_hero_variant_jpeg(img, *, width, crop, quality=85):
-    height = _hero_height_for_width(width)
-    working = _fit_banner_dimensions(
-        img,
-        max_width=width,
-        max_height=height,
-        crop=crop,
-    )
+def _encode_hero_variant_jpeg(working, *, quality=85):
     buffer = BytesIO()
     working.save(buffer, format='JPEG', quality=quality, optimize=True, progressive=True)
     return buffer.getvalue()
 
 
 def _save_hero_responsive_variants(source, filename, *, crop):
-    stem = _hero_upload_stem(filename)
+    basename = _hero_basename(filename)
+    storage_stem = _hero_storage_stem(filename)
     use_avif = _banner_avif_supported()
     primary_name = None
     primary_bytes = None
     jpeg_by_width = {}
 
+    master = _hero_working_image(source, HERO_BANNER_MAX_WIDTH, crop=crop)
+
     for width in HERO_RESPONSIVE_WIDTHS:
+        if width == master.width:
+            working = master
+        else:
+            height = _hero_height_for_width(width)
+            working = master.resize((width, height), Image.Resampling.LANCZOS)
+
         jpeg_quality = 88 if width >= 1280 else 85
-        jpeg_bytes = _encode_hero_variant_jpeg(
-            source,
-            width=width,
-            crop=crop,
-            quality=jpeg_quality,
-        )
-        jpeg_name = _hero_variant_storage_name(stem, width, 'jpg')
-        default_storage.save(jpeg_name, ContentFile(jpeg_bytes, name=jpeg_name))
+        jpeg_bytes = _encode_hero_variant_jpeg(working, quality=jpeg_quality)
         jpeg_by_width[width] = jpeg_bytes
 
+        avif_bytes = None
         if use_avif:
-            avif_bytes = _encode_hero_variant_avif(
-                source,
-                width=width,
-                crop=crop,
-                max_bytes=_hero_variant_max_bytes(width),
-            )
-            avif_name = _hero_variant_storage_name(stem, width, 'avif')
-            default_storage.save(avif_name, ContentFile(avif_bytes, name=avif_name))
-            if width == HERO_BANNER_MAX_WIDTH:
-                primary_name = avif_name
+            try:
+                avif_bytes = _encode_hero_variant_avif(
+                    working,
+                    max_bytes=_hero_variant_max_bytes(width),
+                )
+            except Exception:
+                logger.warning(
+                    'AVIF varijanta hero bannera (%sw) nije uspjela.',
+                    width,
+                    exc_info=True,
+                )
+
+        if width == HERO_BANNER_MAX_WIDTH:
+            if avif_bytes:
+                primary_name = _hero_field_filename(basename, width, 'avif')
                 primary_bytes = avif_bytes
+            else:
+                primary_name = _hero_field_filename(basename, width, 'jpg')
+                primary_bytes = jpeg_bytes
+            continue
+
+        jpeg_name = _hero_variant_storage_name(storage_stem, width, 'jpg')
+        default_storage.save(jpeg_name, ContentFile(jpeg_bytes, name=jpeg_name))
+
+        if avif_bytes:
+            avif_name = _hero_variant_storage_name(storage_stem, width, 'avif')
+            default_storage.save(avif_name, ContentFile(avif_bytes, name=avif_name))
 
     if primary_name is None:
-        primary_name = _hero_variant_storage_name(stem, HERO_BANNER_MAX_WIDTH, 'jpg')
+        primary_name = _hero_field_filename(basename, HERO_BANNER_MAX_WIDTH, 'jpg')
         primary_bytes = jpeg_by_width[HERO_BANNER_MAX_WIDTH]
 
     return ContentFile(primary_bytes, name=primary_name)
@@ -450,7 +458,20 @@ def build_hero_responsive_sources(image_field, request=None):
     avif_urls = {}
     jpeg_urls = {}
 
+    main_url = image_field.url
+    if request and main_url.startswith('/'):
+        main_url = request.build_absolute_uri(main_url)
+
     for width in HERO_RESPONSIVE_WIDTHS:
+        if width == HERO_BANNER_MAX_WIDTH:
+            if image_field.name.endswith('.avif'):
+                avif_urls[width] = main_url
+                srcset_avif.append(f'{main_url} {width}w')
+            elif image_field.name.endswith(('.jpg', '.jpeg')):
+                jpeg_urls[width] = main_url
+                srcset_jpeg.append(f'{main_url} {width}w')
+            continue
+
         avif_name = _hero_variant_storage_name(stem, width, 'avif')
         jpeg_name = _hero_variant_storage_name(stem, width, 'jpg')
         if default_storage.exists(avif_name):
