@@ -3,9 +3,11 @@ from io import BytesIO
 
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, features
 
 logger = logging.getLogger(__name__)
+
+_BANNER_AVIF_SUPPORTED = None
 
 BRAND_LOGO_SIZE = (200, 48)
 BRAND_LOGO_FILL_RATIO = 0.80
@@ -88,6 +90,28 @@ def _reset_upload(image_field):
     upload = getattr(image_field, 'file', None)
     if upload is not None and hasattr(upload, 'seek'):
         upload.seek(0)
+
+
+def _banner_avif_supported():
+    global _BANNER_AVIF_SUPPORTED
+    if _BANNER_AVIF_SUPPORTED is not None:
+        return _BANNER_AVIF_SUPPORTED
+    try:
+        if not features.check('avif'):
+            _BANNER_AVIF_SUPPORTED = False
+            return False
+        buffer = BytesIO()
+        Image.new('RGB', (16, 16), (255, 255, 255)).save(
+            buffer,
+            format='AVIF',
+            quality=80,
+            speed=BANNER_AVIF_SPEED,
+        )
+        _BANNER_AVIF_SUPPORTED = len(buffer.getvalue()) > 0
+    except Exception:
+        logger.warning('AVIF enkoder nije dostupan na serveru, banneri idu u JPEG.', exc_info=True)
+        _BANNER_AVIF_SUPPORTED = False
+    return _BANNER_AVIF_SUPPORTED
 
 
 def _read_image_source(image_source, *, filename='image.jpg'):
@@ -248,24 +272,45 @@ def process_vlog_image(image_field):
 
 
 def _encode_banner_jpeg_fallback(img, filename, *, max_width, max_height=None, quality=88):
-    """Rezerva ako AVIF enkoder nije dostupan na serveru."""
+    """Pouzdan JPEG format za banere (posebno Hero)."""
     working = _fit_banner_dimensions(img, max_width=max_width, max_height=max_height)
     buffer = BytesIO()
-    working.save(buffer, format='JPEG', quality=quality, optimize=True)
+    working.save(buffer, format='JPEG', quality=quality, optimize=True, progressive=True)
     return ContentFile(buffer.getvalue(), name=_jpeg_filename(filename))
 
 
-def process_banner_image(image_field, tip='hero'):
-    """Svi banneri: AVIF visokog kvaliteta, JPEG rezerva ako AVIF ne uspije."""
+def _load_banner_source(image_field):
     _reset_upload(image_field)
+    with Image.open(image_field) as img:
+        img.load()
+        return _image_to_rgb(img)
+
+
+def process_banner_image(image_field, tip='hero'):
+    """Banneri: Hero u JPEG (pouzdano), ostalo AVIF uz JPEG rezervu."""
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     settings = BANNER_AVIF_SETTINGS.get(tip, {
         'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
         'max_width': BANNER_MAX_WIDTH,
     })
-    with Image.open(image_field) as img:
-        img.load()
-        source = img.copy()
+    try:
+        source = _load_banner_source(image_field)
+    except Exception as exc:
+        raise ValueError(
+            f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG.',
+        ) from exc
+
+    jpeg_quality = 90 if tip == 'hero' else 88
+    use_jpeg = tip == 'hero' or not _banner_avif_supported()
+    if use_jpeg:
+        return _encode_banner_jpeg_fallback(
+            source,
+            filename,
+            max_width=settings['max_width'],
+            max_height=settings.get('max_height'),
+            quality=jpeg_quality,
+        )
+
     try:
         return _encode_banner_avif(source, filename, **settings)
     except Exception as exc:
@@ -278,6 +323,7 @@ def process_banner_image(image_field, tip='hero'):
             filename,
             max_width=settings['max_width'],
             max_height=settings.get('max_height'),
+            quality=jpeg_quality,
         )
 
 
