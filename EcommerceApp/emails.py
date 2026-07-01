@@ -6,7 +6,6 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .cart import PDV_STOPA, izracunaj_pdv
 from .models import SiteSettings
 from .pricing import sazetak_iz_narudzbe
 
@@ -68,50 +67,34 @@ def _admin_order_text(order):
     return '\n'.join(lines)
 
 
-def _order_lines(order):
-    pdv_postotak = int(PDV_STOPA * 100)
-    lines = []
-    for item in order.stavke.all():
-        line_pdv = izracunaj_pdv(item.ukupno)
-        lines.append({
-            'item': item,
-            'pdv': line_pdv['pdv'],
-            'pdv_postotak': pdv_postotak,
-        })
-    return lines
-
-
-def _email_context(order, show_warranty=False):
+def _email_context(order):
     site_settings = SiteSettings.load()
     logo_url = None
     if site_settings.logo:
         logo_url = f'{settings.SITE_URL}{site_settings.logo.url}'
 
     created = timezone.localtime(order.kreirana)
-    pdv_postotak = int(PDV_STOPA * 100)
 
     return {
         'order': order,
-        'order_lines': _order_lines(order),
         'summary': sazetak_iz_narudzbe(order),
         'datum': created.strftime('%d.%m.%Y.'),
         'datum_kratko': f'{created.day}. {created.month}. {created.year}.',
         'vrijeme': created.strftime('%H:%M'),
-        'pdv_postotak': pdv_postotak,
         'site_name': 'opremazaribolov.ba',
         'site_url': settings.SITE_URL,
         'logo_url': logo_url,
         'store_email': settings.STORE_EMAIL,
         'store_phone': settings.STORE_PHONE,
         'dostava_naziv': site_settings.dostava_naziv,
-        'show_warranty': show_warranty,
+        'politika_garancija': site_settings.politika_garancija,
     }
 
 
-def _render_order_html(order, show_warranty=False):
+def _render_order_html(order):
     return render_to_string(
         'emails/order_customer.html',
-        _email_context(order, show_warranty=show_warranty),
+        _email_context(order),
     )
 
 
@@ -127,7 +110,7 @@ def send_admin_order_notification(order):
         to=[recipient],
         reply_to=[order.email],
     )
-    admin_mail.attach_alternative(_render_order_html(order, show_warranty=True), 'text/html')
+    admin_mail.attach_alternative(_render_order_html(order), 'text/html')
     admin_mail.send(fail_silently=False)
     logger.info(
         'Admin obavijest za narudžbu #%s poslana na %s (SMTP: %s)',
@@ -144,7 +127,7 @@ def send_customer_order_confirmation(order):
     customer_text = (
         f'Hvala na narudžbi #{order.broj}.\n\n'
         f'Ukupno za plaćanje: {order.ukupno} KM\n\n'
-        f'U prilogu emaila nalazi se potvrda vaše narudžbe.\n'
+        f'U prilogu emaila nalazi se potvrda narudžbe i garantni list.\n'
     )
     customer_mail = EmailMultiAlternatives(
         subject=f'Potvrda narudžbe #{order.broj} — opremazaribolov.ba',
@@ -153,7 +136,7 @@ def send_customer_order_confirmation(order):
         to=[order.email],
         reply_to=[settings.ORDER_NOTIFICATION_EMAIL],
     )
-    customer_mail.attach_alternative(_render_order_html(order, show_warranty=False), 'text/html')
+    customer_mail.attach_alternative(_render_order_html(order), 'text/html')
     customer_mail.send(fail_silently=False)
     logger.info(
         'Potvrda narudžbe #%s poslana kupcu na %s',

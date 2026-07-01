@@ -97,8 +97,7 @@
         }
         .items-table .col-qty,
         .items-table .col-price,
-        .items-table .col-total,
-        .items-table .col-pdv {
+        .items-table .col-total {
             text-align: center;
             white-space: nowrap;
         }
@@ -118,7 +117,7 @@
             width: 100%;
         }
         .totals-table {
-            width: 340px;
+            width: 360px;
             margin-left: auto;
         }
         .totals-table td {
@@ -131,10 +130,12 @@
             white-space: nowrap;
         }
         .totals-table tr.total-row td {
-            padding-top: 10px;
+            padding-top: 12px;
             font-size: 16px;
             font-weight: 700;
             color: #28403d;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
         .order-footer {
             margin-top: 28px;
@@ -148,30 +149,26 @@
 
         .warranty-section {
             max-width: 210mm;
-            margin: 0 auto;
+            margin: 48px auto 0;
+            page-break-before: always;
         }
         .warranty-a4 {
             width: 210mm;
             max-width: 100%;
             min-height: 297mm;
-            margin: 0 auto 24px;
-            padding: 10mm 12mm;
+            margin: 0 auto;
+            padding: 14mm 16mm;
             background: #ffffff;
-            border: 2px solid #111111;
+            border: 2px solid #28403d;
             box-sizing: border-box;
-            page-break-after: always;
             page-break-inside: avoid;
-        }
-        .warranty-a4:last-child {
-            page-break-after: auto;
-            margin-bottom: 0;
         }
         .warranty-a4-head {
             display: table;
             width: 100%;
-            border-bottom: 2px solid #111111;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            border-bottom: 2px solid #28403d;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
         }
         .warranty-a4-head-left,
         .warranty-a4-head-right {
@@ -180,106 +177,124 @@
         }
         .warranty-a4-head-right {
             text-align: right;
-            width: 42%;
+            width: 40%;
         }
         .warranty-a4-title {
             margin: 0;
-            font-size: 14px;
+            font-size: 22px;
             font-weight: 700;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
+            color: #28403d;
         }
         .warranty-a4-subtitle {
-            margin: 3px 0 0;
-            font-size: 10px;
-            color: #707072;
+            margin: 6px 0 0;
+            font-size: 12px;
+            color: #595959;
         }
         .warranty-a4-order {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 700;
-            margin: 0 0 2px;
+            margin: 0 0 4px;
+            color: #28403d;
         }
         .warranty-a4-meta {
-            font-size: 9px;
-            color: #333333;
-            line-height: 1.45;
+            font-size: 11px;
+            color: #404040;
+            line-height: 1.5;
         }
         .warranty-a4-customer {
             width: 100%;
-            margin-bottom: 10px;
-            font-size: 9px;
-            line-height: 1.45;
+            margin-bottom: 16px;
+            font-size: 11px;
+            line-height: 1.55;
         }
         .warranty-a4-customer td {
             vertical-align: top;
-            padding: 0 8px 0 0;
+            padding: 0 10px 0 0;
             width: 33.33%;
         }
         .warranty-a4-customer strong {
             display: block;
-            font-size: 8px;
-            letter-spacing: 0.06em;
+            font-size: 9px;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #707072;
-            margin-bottom: 2px;
+            color: #28403d;
+            margin-bottom: 4px;
+        }
+        .warranty-items {
+            width: 100%;
+            margin: 0 0 16px;
+            border: 1px solid #c4bc96;
+        }
+        .warranty-items th,
+        .warranty-items td {
+            padding: 8px 10px;
+            font-size: 11px;
+            border: 1px solid #c4bc96;
+            text-align: left;
+        }
+        .warranty-items th {
+            background: #d9d9d9;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
         .warranty-order-ref {
-            margin: 0 0 12px;
+            margin: 0 0 14px;
             padding: 12px 14px;
-            border: 1px solid #e5e5e5;
-            background: #fafafa;
-            font-size: 11px;
-            line-height: 1.55;
+            border: 1px solid #c4bc96;
+            background: #f7f7f7;
+            font-size: 12px;
+            line-height: 1.6;
             color: #111111;
         }
         .warranty-order-ref strong {
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             font-size: 13px;
-            color: #111111;
+            color: #28403d;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
         .warranty-terms {
-            margin: 0;
-            padding: 8px 10px;
+            margin: 0 0 16px;
+            padding: 14px 16px;
             background: #f5f5f5;
-            font-size: 8px;
-            line-height: 1.45;
-            color: #333333;
+            font-size: 11px;
+            line-height: 1.65;
+            color: #222222;
         }
         .warranty-terms strong {
             display: block;
-            margin-bottom: 4px;
-            font-size: 8px;
-            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            font-size: 11px;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: #111111;
+            color: #28403d;
+        }
+        .warranty-terms p {
+            margin: 0 0 10px;
+        }
+        .warranty-terms p:last-child {
+            margin-bottom: 0;
         }
         .warranty-signatures {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 28px;
         }
         .warranty-signatures td {
             width: 50%;
             vertical-align: bottom;
-            padding-top: 18px;
+            padding-top: 36px;
         }
         .signature-line {
-            border-top: 1px solid #111111;
-            padding-top: 5px;
-            font-size: 8px;
-            color: #707072;
+            border-top: 1px solid #28403d;
+            padding-top: 6px;
+            font-size: 10px;
+            color: #595959;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-        }
-        .print-note {
-            max-width: 820px;
-            margin: 0 auto 24px;
-            padding: 14px 18px;
-            background: #f5f5f5;
-            border: 1px dashed #c4bc96;
-            font-size: 13px;
-            color: #595959;
-            text-align: center;
         }
 
         @page {
@@ -292,7 +307,6 @@
                 background: #ffffff;
                 padding: 0;
             }
-            .print-note { display: none; }
             .doc {
                 max-width: none;
                 margin-bottom: 0;
@@ -300,9 +314,10 @@
             .warranty-section {
                 page-break-before: always;
                 max-width: none;
+                margin-top: 0;
             }
             .warranty-a4 {
-                border: 1px solid #111111;
+                border: 1px solid #28403d;
                 margin: 0;
                 width: auto;
                 min-height: auto;
@@ -311,13 +326,6 @@
     </style>
 </head>
 <body>
-
-    {% if show_warranty %}
-    <p class="print-note">
-        Za štampu: otvorite email u pregledniku i koristite Print (Ctrl+P / Cmd+P).
-        Garantni list odnosi se na broj narudžbe naveden u dokumentu.
-    </p>
-    {% endif %}
 
     <div class="doc">
         <table class="doc-header-table" role="presentation" cellpadding="0" cellspacing="0">
@@ -363,26 +371,24 @@
         <table class="items-table" role="presentation" cellpadding="0" cellspacing="0">
             <thead>
                 <tr>
-                    <th class="col-name" style="width: 38%;">Naziv</th>
-                    <th class="col-qty" style="width: 12%;">Količina</th>
-                    <th class="col-price" style="width: 16%;">Cijena</th>
-                    <th class="col-total" style="width: 16%;">Ukupno</th>
-                    <th class="col-pdv" style="width: 18%;">PDV</th>
+                    <th class="col-name" style="width: 46%;">Naziv</th>
+                    <th class="col-qty" style="width: 14%;">Količina</th>
+                    <th class="col-price" style="width: 20%;">Cijena</th>
+                    <th class="col-total" style="width: 20%;">Ukupno sa PDV-om</th>
                 </tr>
             </thead>
             <tbody>
-                {% for line in order_lines %}
+                {% for item in order.stavke.all %}
                 <tr>
                     <td class="col-name">
-                        <span class="item-name">{{ line.item.product_naziv|default:line.item.naziv }}</span>
-                        {% if line.item.varijacija_naziv %}
-                        <span class="item-variation">{{ line.item.varijacija_naziv }}</span>
+                        <span class="item-name">{{ item.product_naziv|default:item.naziv }}</span>
+                        {% if item.varijacija_naziv %}
+                        <span class="item-variation">{{ item.varijacija_naziv }}</span>
                         {% endif %}
                     </td>
-                    <td class="col-qty">{{ line.item.kolicina }}</td>
-                    <td class="col-price">{{ line.item.cijena }} KM</td>
-                    <td class="col-total">{{ line.item.ukupno }} KM</td>
-                    <td class="col-pdv">{{ line.pdv }} ({{ line.pdv_postotak }}%)</td>
+                    <td class="col-qty">{{ item.kolicina }}</td>
+                    <td class="col-price">{{ item.cijena }} KM</td>
+                    <td class="col-total">{{ item.ukupno }} KM</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -390,14 +396,6 @@
 
         <div class="totals-wrap">
             <table class="totals-table" role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td>UKUPNO</td>
-                    <td>{{ summary.pdv_artikli.bez_pdv }} KM</td>
-                </tr>
-                <tr>
-                    <td>PDV ({{ pdv_postotak }}%)</td>
-                    <td>{{ summary.pdv_artikli.pdv }} KM</td>
-                </tr>
                 <tr>
                     <td>Iznos sa PDV-om</td>
                     <td>{{ summary.medjuzbir }} KM</td>
@@ -413,7 +411,7 @@
                     <td>{% if summary.besplatna_dostava %}Besplatno{% else %}{{ summary.dostava }} KM{% endif %}</td>
                 </tr>
                 <tr class="total-row">
-                    <td>Ukupno za platiti</td>
+                    <td>UKUPNO ZA PLATITI</td>
                     <td>{{ summary.ukupno }} KM</td>
                 </tr>
             </table>
@@ -431,19 +429,18 @@
         </div>
     </div>
 
-    {% if show_warranty %}
     <div class="warranty-section">
         <div class="warranty-a4">
             <div class="warranty-a4-head">
                 <div class="warranty-a4-head-left">
-                    <h2 class="warranty-a4-title">Garantni list — {{ site_name }}</h2>
-                    <p class="warranty-a4-subtitle">Garancija za cjelokupnu narudžbu</p>
+                    <h2 class="warranty-a4-title">Garancija</h2>
+                    <p class="warranty-a4-subtitle">Garantni list vezan za narudžbu</p>
                 </div>
                 <div class="warranty-a4-head-right">
-                    <p class="warranty-a4-order">#{{ order.broj }}</p>
+                    <p class="warranty-a4-order">Narudžba #{{ order.broj }}</p>
                     <p class="warranty-a4-meta">
-                        Datum: {{ datum }}<br>
-                        Ukupno: {{ summary.ukupno }} KM
+                        Datum izdavanja: {{ datum }}<br>
+                        Vrijeme: {{ vrijeme }}
                     </p>
                 </div>
             </div>
@@ -451,34 +448,78 @@
             <table class="warranty-a4-customer" role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
                     <td>
+                        <strong>Prodavac</strong>
+                        {{ site_name }}
+                    </td>
+                    <td>
                         <strong>Kupac</strong>
                         {{ order.ime_prezime }}
                     </td>
                     <td>
-                        <strong>Kontakt</strong>
+                        <strong>Kontakt kupca</strong>
                         {{ order.telefon }}<br>{{ order.email }}
                     </td>
-                    <td>
-                        <strong>Adresa</strong>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding-top: 10px;">
+                        <strong>Adresa kupca</strong>
                         {{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}
                     </td>
                 </tr>
             </table>
 
+            <table class="warranty-items" role="presentation" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="width: 70%;">Artikal</th>
+                        <th style="width: 15%;">Šifra</th>
+                        <th style="width: 15%;">Količina</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.stavke.all %}
+                    <tr>
+                        <td>
+                            {{ item.product_naziv|default:item.naziv }}
+                            {% if item.varijacija_naziv %} — {{ item.varijacija_naziv }}{% endif %}
+                        </td>
+                        <td>{{ item.sifra|default:"—" }}</td>
+                        <td>{{ item.kolicina }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
             <p class="warranty-order-ref">
-                <strong>Narudžba #{{ order.broj }}</strong>
-                Ovaj garantni list odnosi se isključivo na narudžbu broj {{ order.broj }}, kreiranu {{ datum }} u {{ vrijeme }}.
-                Detaljan popis naručenih artikala nalazi se u potvrdi narudžbe koja je poslana uz ovaj dokument.
+                <strong>Potvrda garancije za narudžbu #{{ order.broj }}</strong>
+                Ovaj garantni list izdaje se za narudžbu broj {{ order.broj }}, kreiranu {{ datum }} u {{ vrijeme }},
+                i odnosi se na sve artikle navedene u gornjoj tabeli. Garancija je važeća uz originalnu potvrdu narudžbe.
             </p>
 
-            <p class="warranty-terms">
-                <strong>Uslovi garancije</strong>
-                Garancija za narudžbu #{{ order.broj }} važi u skladu s važećim zakonima Bosne i Hercegovine
-                i uslovima proizvođača. Za reklamaciju je potrebno priložiti ovaj garantni list zajedno s
-                potvrdom narudžbe. Reklamacije primamo putem {{ site_name }}{% if store_email %}
-                ({{ store_email }}){% endif %}{% if store_phone %} ili telefona {{ store_phone }}{% endif %}.
-                Garancija ne pokriva oštećenja od nepravilne upotrebe, neovlaštenih popravki ili normalnog habanja.
-            </p>
+            <div class="warranty-terms">
+                <strong>Uslovi garancije u Bosni i Hercegovini</strong>
+                <p>
+                    Proizvodi iz ove narudžbe pokriveni su garancijom u skladu s važećim zakonima Bosne i Hercegovine,
+                    uključujući propise o zaštiti potrošača na nivou entiteta i Brčko distrikta, kao i uslovima
+                    proizvođača navedenim uz pojedinačne artikle.
+                </p>
+                <p>
+                    Potrošač ima pravo na reklamaciju u slučaju materijalnog nedostatka proizvoda, neusklađenosti
+                    isporučenog artikla s ugovorenim, oštećenja nastalog pri transportu koje nije uzrokovano kupcem,
+                    te u drugim slučajevima predviđenim zakonom. Za ostvarivanje prava iz garancije potrebno je
+                    priložiti ovaj garantni list zajedno s potvrdom narudžbe #{{ order.broj }}.
+                </p>
+                <p>
+                    Reklamacije se podnose putem {{ site_name }}{% if store_email %} na {{ store_email }}{% endif %}{% if store_phone %}, telefonom {{ store_phone }}{% endif %}.
+                    Rok za prijavu reklamacije i način rješavanja određeni su važećim propisima i uslovima proizvođača.
+                    Garancija ne pokriva oštećenja nastala nepravilnom upotrebom, neovlaštenim popravkama ili
+                    intervencijama, fizičkim oštećenjem nakon preuzimanja proizvoda, normalnim habanjem i trošenjem,
+                    te oštećenja nastala nepridržavanjem uputstava proizvođača.
+                </p>
+                {% if politika_garancija %}
+                <p>{{ politika_garancija }}</p>
+                {% endif %}
+            </div>
 
             <table class="warranty-signatures" role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
@@ -488,7 +529,6 @@
             </table>
         </div>
     </div>
-    {% endif %}
 
 </body>
 </html>
