@@ -17,6 +17,7 @@
     --promo-height: 36px;
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --home-product-inset: 12px;
 }
 
 html {
@@ -1025,8 +1026,8 @@ main {
 
 .home-search-results {
     padding: 64px 0;
-    max-width: 1440px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
     width: 100%;
     scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
 }
@@ -1053,9 +1054,9 @@ main {
 }
 
 .home-products-header {
-    max-width: 1440px;
-    margin: 0 auto 32px;
-    padding: 0 48px;
+    max-width: none;
+    margin: 0 0 32px;
+    padding: 0 var(--home-product-inset);
     text-align: center;
     box-sizing: border-box;
 }
@@ -1132,18 +1133,31 @@ main {
 
 .home-product-catalog {
     width: 100%;
+    max-width: none;
 }
 
+.home-product-catalog .catalog-layout,
+.home-product-catalog .catalog-layout--full {
+    width: 100%;
+    max-width: none;
+}
+
+.home-product-catalog .catalog-layout--full .catalog-products,
 .home-product-catalog .catalog-products {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     padding-top: 0;
     padding-bottom: 0;
+    box-sizing: border-box;
 }
 
 .home-product-catalog .home-products-header,
 .home-product-catalog .home-vlog-header {
     max-width: none;
     margin: 0 0 32px;
-    padding: 0;
+    padding: 0 var(--home-product-inset);
     text-align: center;
 }
 
@@ -1155,8 +1169,9 @@ main {
 .home-product-catalog .home-vlog-grid {
     max-width: none;
     margin: 0;
-    padding: 0;
+    padding: 0 var(--home-product-inset);
     width: 100%;
+    box-sizing: border-box;
 }
 
 .home-product-catalog .product-image {
@@ -1167,13 +1182,18 @@ main {
 
 @media (min-width: 769px) {
     .home-product-catalog.product-catalog--compact .catalog-products .product-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 8px;
     }
 
     .home-product-catalog .product-image {
-        max-height: 173px;
-        aspect-ratio: auto;
+        max-height: none;
+        aspect-ratio: 1;
+    }
+
+    .home-products--novo .product-card,
+    .home-products--izdvojeno .product-card {
+        padding: 8px;
     }
 }
 
@@ -1588,31 +1608,31 @@ main {
 
 .home-products .product-grid--home {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0 48px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    max-width: none;
+    margin: 0;
+    padding: 0 var(--home-product-inset);
     width: 100%;
     box-sizing: border-box;
 }
 
 .home-search-results .product-grid--home {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 16px;
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0 48px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    max-width: none;
+    margin: 0;
+    padding: 0 var(--home-product-inset);
     width: 100%;
     box-sizing: border-box;
 }
 
 .home-search-results--akcija .product-grid--home {
-    gap: 4px;
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0 48px;
+    gap: 12px;
+    max-width: none;
+    margin: 0;
+    padding: 0 var(--home-product-inset);
     width: 100%;
     box-sizing: border-box;
 }

@@ -247,7 +247,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     return products, params
 
 
-HOME_PRODUCTS_PER_PAGE = 16
+HOME_PRODUCTS_PER_PAGE = 18
 HOME_PRODUCT_ORDER_KEY = 'home_product_ids'
 HOME_FILTER_KEY = 'home_filter_key'
 
@@ -384,7 +384,7 @@ def _banners_with_image(qs):
     return qs.exclude(slika__isnull=True).exclude(slika='')
 
 
-HOME_SECTION_PRODUCT_LIMIT = 5
+HOME_SECTION_PRODUCT_LIMIT = 6
 HOME_SECTION_PRODUCT_LIMIT_MOBILE = 4
 HOME_VLOG_LIMIT = 3
 
