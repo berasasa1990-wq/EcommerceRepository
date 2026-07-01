@@ -3,6 +3,19 @@
         {% include 'partials/product_filter_sidebar.html' with filter_action=filter_action %}
 
         <div class="catalog-products">
+            {% if category %}
+            <div class="category-header">
+                <h1>{{ category.naziv }}</h1>
+                {% if category.podkategorije.all %}
+                <div class="category-subnav">
+                    {% for sub in category.podkategorije.all %}
+                    <a href="{{ sub.get_absolute_url }}" class="category-subnav-link">{{ sub.naziv }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             {% if products %}
             <div class="product-grid">
                 {% for product in products %}

@@ -2647,28 +2647,26 @@ body.search-results-active main {
     padding: 48px 0 80px;
 }
 
-.category-page .category-header {
-    max-width: 1440px;
-    margin: 0 auto 40px;
-    padding: 0 48px;
-}
-
-.category-header {
-    margin-bottom: 40px;
+.category-page .catalog-products .category-header {
+    margin: 0 0 24px;
+    padding: 0;
+    max-width: none;
 }
 
 .category-header h1 {
     font-size: 32px;
     font-weight: 700;
-    margin-bottom: 16px;
+    margin: 0 0 12px;
+    text-align: left;
 }
 
 .category-subnav {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 24px;
+    gap: 10px 24px;
     width: 100%;
     justify-content: flex-start;
+    align-items: flex-start;
     box-sizing: border-box;
 }
 
@@ -3759,8 +3757,7 @@ body.search-results-active main {
         padding: 40px 0;
     }
 
-    .product-showcase .showcase-header,
-    .category-page .category-header {
+    .product-showcase .showcase-header {
         padding: 0 24px;
     }
 
@@ -3786,15 +3783,15 @@ body.search-results-active main {
         padding-bottom: 48px;
     }
 
-    .category-page .category-header {
+    .category-page .catalog-products .category-header {
         margin-bottom: 12px;
     }
 
-    .category-page .category-header h1 {
-        margin-bottom: 10px;
+    .category-page .catalog-products .category-header h1 {
+        margin-bottom: 8px;
     }
 
-    .category-page .category-header .category-subnav {
+    .category-page .catalog-products .category-subnav {
         margin-bottom: 0;
         padding-bottom: 4px;
     }
@@ -4362,11 +4359,11 @@ body.search-results-active main {
         padding-bottom: 40px;
     }
 
-    .category-page .category-header {
+    .category-page .catalog-products .category-header {
         margin-bottom: 8px;
     }
 
-    .category-page .category-header h1 {
+    .category-page .catalog-products .category-header h1 {
         margin-bottom: 8px;
         font-size: 24px;
     }
@@ -4376,7 +4373,7 @@ body.search-results-active main {
         font-size: 15px;
     }
 
-    h1, .auth-card h1, .category-page .category-header h1 {
+    h1, .auth-card h1, .category-page .catalog-products .category-header h1 {
         font-size: 26px;
     }
 
