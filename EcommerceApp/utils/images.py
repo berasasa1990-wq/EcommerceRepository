@@ -638,7 +638,9 @@ def _encode_banner_avif(
             min_quality - 1,
             -BANNER_AVIF_QUALITY_STEP,
         ):
-            data = _encode_banner_avif_data(candidate, quality)
+            data = _encode_avif_safe(candidate, quality, speed=BANNER_AVIF_SPEED)
+            if data is None:
+                break
             size = len(data)
             if size <= max_bytes:
                 return ContentFile(data, name=filename)
@@ -646,12 +648,22 @@ def _encode_banner_avif(
                 best_size = size
                 best_data = data
 
-    logger.warning(
-        'Banner nije smanjen ispod %dKB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
-        max_bytes // 1024,
-        best_size,
+    if best_data is not None:
+        logger.warning(
+            'Banner nije smanjen ispod %dKB (najmanje: %d bytes), čuva se najbliža AVIF verzija.',
+            max_bytes // 1024,
+            best_size,
+        )
+        return ContentFile(best_data, name=filename)
+
+    return _encode_banner_jpeg_fallback(
+        img,
+        filename,
+        max_width=max_width,
+        max_height=max_height,
+        crop=crop,
+        quality=82,
     )
-    return ContentFile(best_data, name=filename)
 
 
 def process_vlog_image(image_field):
@@ -778,6 +790,18 @@ def process_banner_image(image_field, tip='hero'):
             'AVIF obrada bannera nije uspjela (%s), čuvam optimizovani JPEG.',
             exc,
         )
+        if tip == 'grid':
+            return {
+                'main': _encode_banner_jpeg_fallback(
+                    source,
+                    filename,
+                    max_width=settings['max_width'],
+                    max_height=settings.get('max_height', GRID_BANNER_MAX_DIMENSION),
+                    crop=False,
+                    quality=82,
+                ),
+                'variants': {},
+            }
         return _encode_hero_jpeg_responsive(source, filename, settings)
 
 
@@ -948,6 +972,16 @@ def _banner_responsive_widths_for_instance(instance):
     }.get(tip, FEATURED_BANNER_RESPONSIVE_WIDTHS)
 
 
+def _save_raw_upload(image_field):
+    upload = getattr(image_field, 'file', None)
+    if upload is None:
+        return False
+    _reset_upload(image_field)
+    name = getattr(upload, 'name', None) or 'upload.jpg'
+    image_field.save(name, upload, save=False)
+    return True
+
+
 def apply_image_processing(instance, field_name, post_process=None):
     image_field = getattr(instance, field_name, None)
     if not image_field or not is_new_upload(image_field):
@@ -955,6 +989,11 @@ def apply_image_processing(instance, field_name, post_process=None):
     _reset_upload(image_field)
     try:
         processed = post_process(image_field) if post_process else image_field
+        if not isinstance(processed, dict) or 'main' not in processed:
+            if hasattr(processed, 'read'):
+                processed.seek(0)
+            getattr(instance, field_name).save(processed.name, processed, save=False)
+            return
         responsive_widths = _responsive_widths_for_post_process(post_process)
         if callable(post_process) and getattr(post_process, '__name__', '') == '<lambda>':
             responsive_widths = _banner_responsive_widths_for_instance(instance)
@@ -966,6 +1005,14 @@ def apply_image_processing(instance, field_name, post_process=None):
     except Exception as exc:
         _reset_upload(image_field)
         logger.exception('Obrada slike nije uspjela za %s.%s', instance, field_name)
+        if _save_raw_upload(getattr(instance, field_name)):
+            logger.warning(
+                'Sačuvan je originalni upload bez obrade za %s.%s (%s).',
+                instance,
+                field_name,
+                exc,
+            )
+            return
         raise ValueError(
             f'Obrada slike nije uspjela: {exc}. Pokušajte manju sliku ili JPG/PNG format.',
         ) from exc

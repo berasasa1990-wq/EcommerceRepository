@@ -8,7 +8,14 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 from django.middleware.csrf import get_token
 
-from .forms import BulkAssignBrandForm, BulkAssignCategoryForm, BulkAssignTagsForm, MergeProductsForm, OdooImportForm
+from .forms import (
+    BannerAdminForm,
+    BulkAssignBrandForm,
+    BulkAssignCategoryForm,
+    BulkAssignTagsForm,
+    MergeProductsForm,
+    OdooImportForm,
+)
 from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
 from .odoo_import import (
     fetch_template_ids_from_odoo,
@@ -375,6 +382,7 @@ class HomeVlogAdmin(admin.ModelAdmin):
 
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
+    form = BannerAdminForm
     list_display = ('naslov', 'tip', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')

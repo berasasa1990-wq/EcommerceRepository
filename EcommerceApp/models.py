@@ -316,17 +316,13 @@ class Banner(models.Model):
 
     def save(self, *args, **kwargs):
         if self.slika:
-            from django.core.exceptions import ValidationError
             from .utils.images import apply_image_processing, process_banner_image
             tip = self.tip
-            try:
-                apply_image_processing(
-                    self,
-                    'slika',
-                    post_process=lambda field: process_banner_image(field, tip=tip),
-                )
-            except ValueError as exc:
-                raise ValidationError({'slika': str(exc)}) from exc
+            apply_image_processing(
+                self,
+                'slika',
+                post_process=lambda field, banner_tip=tip: process_banner_image(field, tip=banner_tip),
+            )
         super().save(*args, **kwargs)
 
     def get_link_href(self):
@@ -402,12 +398,8 @@ class HomeVlog(models.Model):
                 counter += 1
             self.slug = slug
         if self.slika:
-            from django.core.exceptions import ValidationError
             from .utils.images import apply_image_processing, process_vlog_image
-            try:
-                apply_image_processing(self, 'slika', post_process=process_vlog_image)
-            except ValueError as exc:
-                raise ValidationError({'slika': str(exc)}) from exc
+            apply_image_processing(self, 'slika', post_process=process_vlog_image)
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
@@ -577,12 +569,8 @@ class Product(models.Model):
                 self.cijena, self.akcija_postotak,
             )
         if self.slika:
-            from django.core.exceptions import ValidationError
             from .utils.images import apply_image_processing, process_product_image_manual
-            try:
-                apply_image_processing(self, 'slika', post_process=process_product_image_manual)
-            except ValueError as exc:
-                raise ValidationError({'slika': str(exc)}) from exc
+            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
         super().save(*args, **kwargs)
 
     @property
@@ -779,12 +767,8 @@ class ProductVariation(models.Model):
                 self.bazna_cijena, self.akcija_postotak,
             )
         if self.slika:
-            from django.core.exceptions import ValidationError
             from .utils.images import apply_image_processing, process_product_image_manual
-            try:
-                apply_image_processing(self, 'slika', post_process=process_product_image_manual)
-            except ValueError as exc:
-                raise ValidationError({'slika': str(exc)}) from exc
+            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
         super().save(*args, **kwargs)
 
     def __str__(self):

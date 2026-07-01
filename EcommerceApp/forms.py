@@ -2,7 +2,22 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
-from .models import Brand, Category, Product, Tag
+from .models import Banner, Brand, Category, Product, Tag
+
+
+class BannerAdminForm(forms.ModelForm):
+    class Meta:
+        model = Banner
+        fields = '__all__'
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            try:
+                instance.save()
+            except ValueError as exc:
+                raise forms.ValidationError({'slika': str(exc)}) from exc
+        return instance
 
 
 class RegisterForm(forms.Form):
