@@ -440,6 +440,81 @@ document.addEventListener('DOMContentLoaded', () => {
         startAutoplay();
     }
 
+    function initHomeProductCarousels() {
+        const carousels = document.querySelectorAll('.home-product-carousel');
+        if (!carousels.length) return;
+
+        carousels.forEach((root) => {
+            const viewport = root.querySelector('.home-product-carousel__viewport');
+            const track = root.querySelector('.home-product-carousel__track');
+            const slides = root.querySelectorAll('.home-product-carousel__slide');
+            const prevBtn = root.querySelector('.home-product-carousel__btn--prev');
+            const nextBtn = root.querySelector('.home-product-carousel__btn--next');
+            if (!viewport || !track || !slides.length) return;
+
+            let index = 0;
+            const gap = 8;
+
+            function visibleCount() {
+                const mobile = parseInt(root.dataset.visibleMobile, 10) || 2;
+                const desktop = parseInt(root.dataset.visibleDesktop, 10) || 6;
+                return window.innerWidth <= 768 ? mobile : desktop;
+            }
+
+            function maxIndex() {
+                return Math.max(0, slides.length - visibleCount());
+            }
+
+            function slideStep() {
+                const slideWidth = parseFloat(getComputedStyle(root).getPropertyValue('--carousel-slide-width'));
+                return slideWidth + gap;
+            }
+
+            function updateLayout() {
+                const visible = visibleCount();
+                const viewportWidth = viewport.clientWidth;
+                const slideWidth = (viewportWidth - (visible - 1) * gap) / visible;
+                root.style.setProperty('--carousel-slide-width', `${slideWidth}px`);
+                index = Math.min(index, maxIndex());
+                updatePosition();
+            }
+
+            function updatePosition() {
+                const offset = index * slideStep();
+                track.style.transform = `translate3d(-${offset}px, 0, 0)`;
+                const atEnd = index >= maxIndex();
+                if (prevBtn) prevBtn.disabled = index <= 0;
+                if (nextBtn) nextBtn.disabled = atEnd;
+                root.classList.toggle('home-product-carousel--static', slides.length <= visibleCount());
+            }
+
+            function goTo(nextIndex) {
+                index = Math.max(0, Math.min(nextIndex, maxIndex()));
+                updatePosition();
+            }
+
+            prevBtn?.addEventListener('click', () => goTo(index - 1));
+            nextBtn?.addEventListener('click', () => goTo(index + 1));
+
+            let touchStartX = 0;
+            viewport.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            }, { passive: true });
+
+            viewport.addEventListener('touchend', (e) => {
+                const diff = touchStartX - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 40) {
+                    goTo(diff > 0 ? index + 1 : index - 1);
+                }
+            }, { passive: true });
+
+            window.addEventListener('resize', updateLayout);
+            updateLayout();
+        });
+    }
+
+    initHomeProductCarousels();
+
     function getCsrfToken() {
         const match = document.cookie.match(/csrftoken=([^;]+)/);
         return match ? decodeURIComponent(match[1]) : '';

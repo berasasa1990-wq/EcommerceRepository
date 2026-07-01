@@ -395,8 +395,9 @@ def _banners_with_image(qs):
     return qs.exclude(slika__isnull=True).exclude(slika='')
 
 
-HOME_SECTION_PRODUCT_LIMIT = 6
-HOME_SECTION_PRODUCT_LIMIT_MOBILE = 4
+HOME_SECTION_PRODUCT_LIMIT = 10
+HOME_SECTION_PRODUCT_VISIBLE = 6
+HOME_SECTION_PRODUCT_VISIBLE_MOBILE = 2
 HOME_VLOG_LIMIT = 3
 
 
@@ -596,7 +597,8 @@ def home(request):
             page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []
         ),
         'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
-        'home_mobile_product_limit': HOME_SECTION_PRODUCT_LIMIT_MOBILE,
+        'home_section_product_visible': HOME_SECTION_PRODUCT_VISIBLE,
+        'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
         'canonical_url': settings.SITE_URL.rstrip('/') + '/',
     }
     return render(request, 'home.html', context)
