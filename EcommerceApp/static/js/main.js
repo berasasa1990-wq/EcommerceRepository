@@ -41,7 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const panelRect = megaMenuPanel.getBoundingClientRect();
         const linkRect = link.getBoundingClientRect();
-        inner.style.left = `${linkRect.left - panelRect.left}px`;
+        const offset = Math.max(0, Math.round(linkRect.left - panelRect.left));
+        inner.style.paddingLeft = `${offset}px`;
+        inner.style.left = '';
     }
 
     function closeMegaMenu() {
