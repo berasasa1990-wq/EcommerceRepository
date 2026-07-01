@@ -13,17 +13,20 @@ SITE_LOGO_SIZE = (640, 128)
 PRODUCT_WHITE_THRESHOLD = 248
 PRODUCT_MAX_DIMENSION = 400
 AVIF_SPEED = 6
+BANNER_AVIF_SPEED = 4
 MAX_VLOG_AVIF_BYTES = 30 * 1024
 VLOG_MAX_DIMENSION = 420
 BANNER_MAX_WIDTH = 1920
-HERO_BANNER_MAX_WIDTH = 1280
-MAX_GRID_BANNER_AVIF_BYTES = 55 * 1024
-GRID_BANNER_MAX_DIMENSION = 360
-MAX_HERO_BANNER_AVIF_BYTES = 90 * 1024
-MAX_FEATURED_BANNER_AVIF_BYTES = 120 * 1024
-MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 120 * 1024
-MAX_DEFAULT_BANNER_AVIF_BYTES = 120 * 1024
-BANNER_AVIF_MIN_QUALITY = 45
+HERO_BANNER_MAX_WIDTH = 1920
+MAX_GRID_BANNER_AVIF_BYTES = 85 * 1024
+GRID_BANNER_MAX_DIMENSION = 420
+MAX_HERO_BANNER_AVIF_BYTES = 220 * 1024
+MAX_FEATURED_BANNER_AVIF_BYTES = 200 * 1024
+MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 200 * 1024
+MAX_DEFAULT_BANNER_AVIF_BYTES = 200 * 1024
+BANNER_AVIF_MAX_QUALITY = 88
+BANNER_AVIF_MIN_QUALITY = 72
+BANNER_AVIF_QUALITY_STEP = 3
 MAX_PRODUCT_AVIF_BYTES = 20 * 1024
 
 BANNER_AVIF_SETTINGS = {
@@ -90,10 +93,14 @@ def _read_image_source(image_source, *, filename='image.jpg'):
     return image_source, filename
 
 
-def _encode_avif(img, quality):
+def _encode_avif(img, quality, *, speed=AVIF_SPEED):
     buffer = BytesIO()
-    img.save(buffer, format='AVIF', quality=quality, speed=AVIF_SPEED)
+    img.save(buffer, format='AVIF', quality=quality, speed=speed)
     return buffer.getvalue()
+
+
+def _encode_banner_avif_data(img, quality):
+    return _encode_avif(img, quality, speed=BANNER_AVIF_SPEED)
 
 
 def _image_to_rgb(img):
@@ -172,15 +179,23 @@ def _encode_product_avif(img, filename):
     )
 
 
-def _encode_banner_avif(img, filename, *, max_bytes, max_width, max_height=None):
-    """AVIF za banere: prvo smanji kvalitet, zatim dimenzije — min. kvalitet za čitljivost."""
+def _encode_banner_avif(
+    img,
+    filename,
+    *,
+    max_bytes,
+    max_width,
+    max_height=None,
+    min_quality=BANNER_AVIF_MIN_QUALITY,
+):
+    """AVIF za banere: visok kvalitet na punoj rezoluciji, zatim blago smanjenje dimenzija."""
     filename = _avif_filename(filename)
     working = _fit_banner_dimensions(img, max_width=max_width, max_height=max_height)
 
     best_data = None
     best_size = float('inf')
 
-    for scale in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25):
+    for scale in (1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6):
         if scale < 1.0:
             new_w = max(1, int(working.width * scale))
             new_h = max(1, int(working.height * scale))
@@ -188,8 +203,12 @@ def _encode_banner_avif(img, filename, *, max_bytes, max_width, max_height=None)
         else:
             candidate = working
 
-        for quality in range(85, BANNER_AVIF_MIN_QUALITY - 1, -5):
-            data = _encode_avif(candidate, quality)
+        for quality in range(
+            BANNER_AVIF_MAX_QUALITY,
+            min_quality - 1,
+            -BANNER_AVIF_QUALITY_STEP,
+        ):
+            data = _encode_banner_avif_data(candidate, quality)
             size = len(data)
             if size <= max_bytes:
                 return ContentFile(data, name=filename)
@@ -218,7 +237,7 @@ def process_vlog_image(image_field):
 
 
 def process_banner_image(image_field, tip='hero'):
-    """Svi banneri: AVIF, što manji fajl uz zadržanu kvalitetu slike."""
+    """Svi banneri: AVIF visokog kvaliteta, optimizovan za brzo učitavanje."""
     img = Image.open(image_field)
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     settings = BANNER_AVIF_SETTINGS.get(tip, {
@@ -226,6 +245,24 @@ def process_banner_image(image_field, tip='hero'):
         'max_width': BANNER_MAX_WIDTH,
     })
     return _encode_banner_avif(img, filename, **settings)
+
+
+def reprocess_existing_banner_file(image_field, *, tip='hero'):
+    if not image_field or not image_field.name:
+        return None
+    image_field.open('rb')
+    try:
+        raw = image_field.read()
+    finally:
+        image_field.close()
+    if not raw:
+        return None
+    img = Image.open(BytesIO(raw))
+    settings = BANNER_AVIF_SETTINGS.get(tip, {
+        'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
+        'max_width': BANNER_MAX_WIDTH,
+    })
+    return _encode_banner_avif(img, image_field.name, **settings)
 
 
 def process_product_image(image_source, *, filename='image.jpg'):

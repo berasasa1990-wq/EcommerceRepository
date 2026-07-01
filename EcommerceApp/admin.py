@@ -385,8 +385,8 @@ class BannerAdmin(admin.ModelAdmin):
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika'),
             'description': (
                 'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan). '
-                'Upload slike se automatski konvertuje u AVIF (optimizovana veličina, zadržana kvaliteta): '
-                'Grid max 55KB/360px, Hero max 90KB/1280px, Featured/Spotlight max 120KB.'
+                'Upload slike se automatski konvertuje u AVIF (visok kvalitet, manji fajl): '
+                'Grid max 85KB/420px, Hero max 220KB/1920px, Featured/Spotlight max 200KB/1920px.'
             ),
         }),
         ('Link i dugmad', {
