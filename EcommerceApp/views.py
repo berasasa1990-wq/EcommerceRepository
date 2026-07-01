@@ -3,7 +3,7 @@ import random
 import re
 import requests
 from decimal import Decimal, InvalidOperation
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
 from .models import SiteSettings
@@ -576,6 +576,20 @@ def category_detail(request, slug):
     return render(request, 'category.html', context)
 
 
+def _product_back_url(request, product):
+    referer = request.META.get('HTTP_REFERER', '')
+    current_url = request.build_absolute_uri()
+    if referer:
+        ref = urlparse(referer)
+        cur = urlparse(current_url)
+        if ref.netloc == cur.netloc and referer.rstrip('/') != current_url.rstrip('/'):
+            if product.get_absolute_url() not in ref.path:
+                return referer
+    if product.kategorija_id:
+        return request.build_absolute_uri(product.kategorija.get_absolute_url())
+    return request.build_absolute_uri(reverse('home'))
+
+
 def product_detail(request, slug):
     # Allow sold-out products (na_stanju=False) to be shown on product page
     # but only active ones. We prefetch ALL variations (not just in-stock) so we
@@ -611,6 +625,7 @@ def product_detail(request, slug):
             request.build_absolute_uri(product.prikazna_slika.url)
             if product.prikazna_slika else None
         ),
+        'product_back_url': _product_back_url(request, product),
     }
     return render(request, 'product_detail.html', context)
 
