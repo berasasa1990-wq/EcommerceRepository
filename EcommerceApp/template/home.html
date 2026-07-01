@@ -74,7 +74,7 @@
     {% else %}
     <article class="grid-banner">
     {% endif %}
-                <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="(max-width: 768px) 50vw, 25vw"{% if forloop.first and not has_hero_slides %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% if forloop.first %} fetchpriority="low"{% endif %}{% endif %} decoding="async">
+                <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="(max-width: 768px) 50vw, 360px"{% if forloop.first and not has_hero_slides %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% if forloop.first %} fetchpriority="low"{% endif %}{% endif %} decoding="async">
         {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
             {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}

@@ -317,11 +317,11 @@ class Banner(models.Model):
     def save(self, *args, **kwargs):
         if self.slika:
             from functools import partial
-            from .utils.images import apply_image_processing, process_banner_image
+            from .utils.images import apply_image_processing, process_banner_image_for_admin
             apply_image_processing(
                 self,
                 'slika',
-                post_process=partial(process_banner_image, tip=self.tip),
+                post_process=partial(process_banner_image_for_admin, tip=self.tip),
             )
         super().save(*args, **kwargs)
 

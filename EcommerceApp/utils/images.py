@@ -19,14 +19,14 @@ AVIF_SPEED = 6
 BANNER_AVIF_SPEED = 4
 MAX_VLOG_AVIF_BYTES = 18 * 1024
 VLOG_MAX_DIMENSION = 360
-VLOG_RESPONSIVE_WIDTHS = (180, 280, 360)
+VLOG_RESPONSIVE_WIDTHS = (200, 280, 320)
 BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_HEIGHT = 640
 HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280, 1920)
-MAX_GRID_BANNER_AVIF_BYTES = 85 * 1024
-GRID_BANNER_MAX_DIMENSION = 420
-BANNER_GRID_RESPONSIVE_WIDTHS = (180, 280, 360)
+MAX_GRID_BANNER_AVIF_BYTES = 45 * 1024
+GRID_BANNER_MAX_DIMENSION = 360
+BANNER_GRID_RESPONSIVE_WIDTHS = (280,)
 MAX_HERO_BANNER_AVIF_BYTES = 220 * 1024
 MAX_FEATURED_BANNER_AVIF_BYTES = 200 * 1024
 MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 200 * 1024
@@ -46,13 +46,13 @@ PRODUCT_VARIANT_MAX_BYTES = {
     400: MAX_PRODUCT_AVIF_BYTES,
 }
 VLOG_VARIANT_MAX_BYTES = {
-    180: 5 * 1024,
+    200: 6 * 1024,
     280: 10 * 1024,
+    320: 14 * 1024,
     360: MAX_VLOG_AVIF_BYTES,
 }
 BANNER_GRID_VARIANT_MAX_BYTES = {
-    180: 6 * 1024,
-    280: 12 * 1024,
+    280: 18 * 1024,
     360: MAX_GRID_BANNER_AVIF_BYTES,
 }
 BANNER_WIDE_VARIANT_MAX_BYTES = {
@@ -752,6 +752,33 @@ def process_banner_image(image_field, tip='hero'):
         )
 
 
+def process_banner_image_for_admin(image_field, tip='hero'):
+    """Jednostavan upload + lagana 280w varijanta samo za grid (PageSpeed)."""
+    main = process_banner_image(image_field, tip=tip)
+    if tip != 'grid':
+        return main
+    try:
+        _reset_upload(image_field)
+        source = _load_banner_source(image_field)
+        variants = _build_responsive_variants(
+            source,
+            main.name,
+            widths=BANNER_GRID_RESPONSIVE_WIDTHS,
+            max_bytes_map=BANNER_GRID_VARIANT_MAX_BYTES,
+            main_max_dimension=GRID_BANNER_MAX_DIMENSION,
+            fit_banner=True,
+            banner_settings={
+                'max_width': GRID_BANNER_MAX_DIMENSION,
+                'max_height': GRID_BANNER_MAX_DIMENSION,
+                'crop': False,
+            },
+        )
+        return {'main': main, 'variants': variants}
+    except Exception:
+        logger.warning('Grid banner responsive varijante nisu kreirane.', exc_info=True)
+        return main
+
+
 def reprocess_existing_banner_file(image_field, *, tip='hero'):
     if not image_field or not image_field.name:
         return None
@@ -765,6 +792,8 @@ def reprocess_existing_banner_file(image_field, *, tip='hero'):
 
     buffer = BytesIO(raw)
     buffer.name = image_field.name
+    if tip == 'grid':
+        return process_banner_image_for_admin(buffer, tip=tip)
     return process_banner_image(buffer, tip=tip)
 
 
@@ -906,6 +935,8 @@ def _responsive_widths_for_post_process(post_process):
         return PRODUCT_RESPONSIVE_WIDTHS
     if name == 'process_vlog_image':
         return VLOG_RESPONSIVE_WIDTHS
+    if name == 'process_banner_image_for_admin':
+        return BANNER_GRID_RESPONSIVE_WIDTHS
     return ()
 
 
@@ -942,7 +973,10 @@ def apply_image_processing(instance, field_name, post_process=None):
             getattr(instance, field_name).save(processed.name, processed, save=False)
             return
         responsive_widths = _responsive_widths_for_post_process(post_process)
-        if callable(post_process) and getattr(post_process, '__name__', '') == '<lambda>':
+        func_name = getattr(post_process, '__name__', '') if callable(post_process) else ''
+        if func_name == 'process_banner_image_for_admin' and getattr(instance, 'tip', '') == 'grid':
+            responsive_widths = BANNER_GRID_RESPONSIVE_WIDTHS
+        elif func_name == '<lambda>':
             responsive_widths = _banner_responsive_widths_for_instance(instance)
         save_processed_image(
             getattr(instance, field_name),

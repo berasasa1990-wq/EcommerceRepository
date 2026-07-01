@@ -1,7 +1,11 @@
 from django.core.management.base import BaseCommand
 
 from EcommerceApp.models import Banner
-from EcommerceApp.utils.images import reprocess_existing_banner_file
+from EcommerceApp.utils.images import (
+    BANNER_GRID_RESPONSIVE_WIDTHS,
+    reprocess_existing_banner_file,
+    save_processed_image,
+)
 
 
 class Command(BaseCommand):
@@ -18,7 +22,17 @@ class Command(BaseCommand):
                 if processed is None:
                     skipped += 1
                     continue
-                banner.slika.save(processed.name, processed, save=True)
+                if isinstance(processed, dict) and 'main' in processed:
+                    save_processed_image(
+                        banner.slika,
+                        processed,
+                        responsive_widths=(
+                            BANNER_GRID_RESPONSIVE_WIDTHS if banner.tip == 'grid' else ()
+                        ),
+                    )
+                    banner.save(update_fields=['slika'])
+                else:
+                    banner.slika.save(processed.name, processed, save=True)
                 updated += 1
                 self.stdout.write(f'OK banner: {banner}')
             except Exception as exc:
