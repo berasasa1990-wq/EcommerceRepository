@@ -1,21 +1,27 @@
 <section class="home-vlog" id="vlog">
-    <div class="home-vlog-header home-vlog-header--blog">
-        <h2>{{ site_settings.naslov_blog }}</h2>
-    </div>
-    <div class="home-vlog-grid">
-        {% for vlog in home_vlogs %}
-        <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card" aria-label="{{ vlog.naslov }}">
-            <div class="home-vlog-card-image-wrap">
-                <img src="{{ vlog.slika_url }}"
-                     alt="{{ vlog.naslov }}"
-                     class="home-vlog-card-image"
-                     width="{{ vlog.image_width }}"
-                     height="{{ vlog.image_height }}"
-                     sizes="(max-width: 768px) 50vw, 25vw"
-                     loading="lazy"
-                     decoding="async">
+    <div class="product-catalog home-product-catalog home-vlog-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                <div class="home-vlog-header home-vlog-header--blog">
+                    <h2>{{ site_settings.naslov_blog }}</h2>
+                </div>
+                <div class="home-vlog-grid">
+                    {% for vlog in home_vlogs %}
+                    <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card" aria-label="{{ vlog.naslov }}">
+                        <div class="home-vlog-card-image-wrap">
+                            <img src="{{ vlog.slika_url }}"
+                                 alt="{{ vlog.naslov }}"
+                                 class="home-vlog-card-image"
+                                 width="{{ vlog.image_width }}"
+                                 height="{{ vlog.image_height }}"
+                                 sizes="(max-width: 768px) 50vw, 25vw"
+                                 loading="lazy"
+                                 decoding="async">
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
             </div>
-        </a>
-        {% endfor %}
+        </div>
     </div>
 </section>
