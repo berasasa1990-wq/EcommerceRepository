@@ -20,6 +20,7 @@ MAX_VLOG_AVIF_BYTES = 30 * 1024
 VLOG_MAX_DIMENSION = 420
 BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 1920
+HERO_BANNER_MAX_HEIGHT = 480
 MAX_GRID_BANNER_AVIF_BYTES = 85 * 1024
 GRID_BANNER_MAX_DIMENSION = 420
 MAX_HERO_BANNER_AVIF_BYTES = 220 * 1024
@@ -40,6 +41,8 @@ BANNER_AVIF_SETTINGS = {
     'hero': {
         'max_bytes': MAX_HERO_BANNER_AVIF_BYTES,
         'max_width': HERO_BANNER_MAX_WIDTH,
+        'max_height': HERO_BANNER_MAX_HEIGHT,
+        'crop': True,
     },
     'featured': {
         'max_bytes': MAX_FEATURED_BANNER_AVIF_BYTES,
@@ -156,9 +159,16 @@ def _fit_product_dimensions(img, max_dimension=PRODUCT_MAX_DIMENSION):
     return ImageOps.contain(img, (max_dimension, max_dimension), method=Image.Resampling.LANCZOS)
 
 
-def _fit_banner_dimensions(img, *, max_width, max_height=None):
+def _fit_banner_dimensions(img, *, max_width, max_height=None, crop=False):
     rgb = _image_to_rgb(img)
     if max_height is not None:
+        if crop:
+            return ImageOps.fit(
+                rgb,
+                (max_width, max_height),
+                method=Image.Resampling.LANCZOS,
+                centering=(0.5, 0.5),
+            )
         return ImageOps.contain(
             rgb,
             (max_width, max_height),
@@ -221,11 +231,17 @@ def _encode_banner_avif(
     max_bytes,
     max_width,
     max_height=None,
+    crop=False,
     min_quality=BANNER_AVIF_MIN_QUALITY,
 ):
     """AVIF za banere: visok kvalitet na punoj rezoluciji, zatim blago smanjenje dimenzija."""
     filename = _avif_filename(filename)
-    working = _fit_banner_dimensions(img, max_width=max_width, max_height=max_height)
+    working = _fit_banner_dimensions(
+        img,
+        max_width=max_width,
+        max_height=max_height,
+        crop=crop,
+    )
 
     best_data = None
     best_size = float('inf')
@@ -271,9 +287,22 @@ def process_vlog_image(image_field):
     )
 
 
-def _encode_banner_jpeg_fallback(img, filename, *, max_width, max_height=None, quality=88):
+def _encode_banner_jpeg_fallback(
+    img,
+    filename,
+    *,
+    max_width,
+    max_height=None,
+    crop=False,
+    quality=88,
+):
     """Pouzdan JPEG format za banere (posebno Hero)."""
-    working = _fit_banner_dimensions(img, max_width=max_width, max_height=max_height)
+    working = _fit_banner_dimensions(
+        img,
+        max_width=max_width,
+        max_height=max_height,
+        crop=crop,
+    )
     buffer = BytesIO()
     working.save(buffer, format='JPEG', quality=quality, optimize=True, progressive=True)
     return ContentFile(buffer.getvalue(), name=_jpeg_filename(filename))
@@ -302,12 +331,14 @@ def process_banner_image(image_field, tip='hero'):
 
     jpeg_quality = 90 if tip == 'hero' else 88
     use_jpeg = tip == 'hero' or not _banner_avif_supported()
+    crop = settings.get('crop', False)
     if use_jpeg:
         return _encode_banner_jpeg_fallback(
             source,
             filename,
             max_width=settings['max_width'],
             max_height=settings.get('max_height'),
+            crop=crop,
             quality=jpeg_quality,
         )
 
@@ -323,6 +354,7 @@ def process_banner_image(image_field, tip='hero'):
             filename,
             max_width=settings['max_width'],
             max_height=settings.get('max_height'),
+            crop=crop,
             quality=jpeg_quality,
         )
 

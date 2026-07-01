@@ -669,7 +669,7 @@ main {
     width: 100%;
     max-width: 100vw;
     overflow: hidden;
-    background: #111;
+    background: var(--white);
 }
 
 .carousel-track {
@@ -707,7 +707,6 @@ main {
     inset: 0;
     width: 100%;
     height: 100%;
-    background-color: #111;
     overflow: hidden;
 }
 
@@ -722,7 +721,7 @@ main {
     width: 100%;
     height: 100%;
     max-width: none;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center center;
 }
 
@@ -3688,7 +3687,7 @@ body.search-results-active main {
     }
 
     .hero-carousel {
-        background: #111;
+        background: var(--white);
     }
 
     .carousel-track {
@@ -3706,10 +3705,6 @@ body.search-results-active main {
         height: 100%;
     }
 
-    .slide-image {
-        background-color: #111;
-    }
-
     .slide-image-link {
         display: block;
         width: 100%;
@@ -3720,7 +3715,7 @@ body.search-results-active main {
         width: 100%;
         height: 100%;
         max-width: none;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
     }
 
@@ -4611,15 +4606,11 @@ body.search-results-active main {
         height: auto;
     }
 
-    .slide-image {
-        background-color: #111;
-    }
-
     .slide-image-img {
         width: 100%;
         max-width: none;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
     }
 
