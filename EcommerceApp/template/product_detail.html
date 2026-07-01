@@ -31,7 +31,9 @@
                 {% include 'partials/product_sale_ribbon.html' with product=product %}
                 {% include 'partials/product_discount_badge.html' with product=product %}
                 {% if product.prikazna_slika %}
-                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" id="mainProductImage" width="{{ product_image_width }}" height="{{ product_image_height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
+                {% with img=product.prikazna_slika_responsive %}
+                <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
+                {% endwith %}
                 {% else %}
                 <div class="product-image-placeholder product-image-placeholder--large" id="mainProductImage">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

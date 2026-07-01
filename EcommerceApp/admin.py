@@ -477,7 +477,7 @@ class ProductAdmin(admin.ModelAdmin):
             ),
             'description': (
                 'Akcija: unesite popust (%) za automatski izračun akcijske cijene, '
-                'ili ručno unesite akcijsku cijenu. Upload slike: automatski se konvertuje u AVIF (max 15KB).'
+                'ili ručno unesite akcijsku cijenu. Upload slike: AVIF max 15KB + responsive 120w/200w.'
             ),
         }),
         ('Prikaz', {

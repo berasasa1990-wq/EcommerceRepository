@@ -14,6 +14,7 @@ BRAND_LOGO_FILL_RATIO = 0.80
 SITE_LOGO_SIZE = (640, 128)
 PRODUCT_WHITE_THRESHOLD = 248
 PRODUCT_MAX_DIMENSION = 400
+PRODUCT_RESPONSIVE_WIDTHS = (120, 200)
 AVIF_SPEED = 6
 BANNER_AVIF_SPEED = 4
 MAX_VLOG_AVIF_BYTES = 30 * 1024
@@ -31,6 +32,11 @@ BANNER_AVIF_MAX_QUALITY = 88
 BANNER_AVIF_MIN_QUALITY = 72
 BANNER_AVIF_QUALITY_STEP = 3
 MAX_PRODUCT_AVIF_BYTES = 15 * 1024
+PRODUCT_VARIANT_MAX_BYTES = {
+    120: 4 * 1024,
+    200: 8 * 1024,
+    400: MAX_PRODUCT_AVIF_BYTES,
+}
 
 BANNER_AVIF_SETTINGS = {
     'grid': {
@@ -233,18 +239,111 @@ def _encode_avif_under_budget(
     return ContentFile(best_data, name=filename)
 
 
-def _encode_product_avif(img, filename):
+def _product_responsive_variant_name(main_name, width):
+    base = main_name.rsplit('/', 1)[-1].rsplit('.', 1)[0]
+    folder = main_name.rsplit('/', 1)[0] if '/' in main_name else ''
+    variant = f'{base}-{width}w.avif'
+    return f'{folder}/{variant}' if folder else variant
+
+
+def _encode_product_variant(rgb_img, filename, *, max_dimension):
     return _encode_avif_under_budget(
-        img,
+        rgb_img,
         filename,
-        max_bytes=MAX_PRODUCT_AVIF_BYTES,
-        max_dimension=PRODUCT_MAX_DIMENSION,
+        max_bytes=PRODUCT_VARIANT_MAX_BYTES.get(max_dimension, MAX_PRODUCT_AVIF_BYTES),
+        max_dimension=max_dimension,
         strict=True,
         scale_steps=(
             1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.12, 0.1,
         ),
         quality_step=3,
     )
+
+
+def _encode_product_avif(img, filename):
+    return _encode_product_variant(
+        _image_to_rgb(img),
+        _avif_filename(filename),
+        max_dimension=PRODUCT_MAX_DIMENSION,
+    )
+
+
+def _build_product_responsive_variants(rgb_img, main_filename):
+    variants = {}
+    for width in PRODUCT_RESPONSIVE_WIDTHS:
+        variant_name = _product_responsive_variant_name(
+            _avif_filename(main_filename),
+            width,
+        )
+        variants[width] = _encode_product_variant(
+            rgb_img,
+            variant_name,
+            max_dimension=width,
+        )
+    return variants
+
+
+def delete_product_responsive_variants(storage, main_name):
+    if not main_name:
+        return
+    for width in PRODUCT_RESPONSIVE_WIDTHS:
+        variant_name = _product_responsive_variant_name(main_name, width)
+        if storage.exists(variant_name):
+            storage.delete(variant_name)
+
+
+def save_product_responsive_variants(storage, main_name, variants):
+    if not main_name:
+        return
+    for width, content in variants.items():
+        variant_name = _product_responsive_variant_name(main_name, width)
+        if storage.exists(variant_name):
+            storage.delete(variant_name)
+        storage.save(variant_name, content)
+
+
+def save_processed_product_image(image_field, processed):
+    if isinstance(processed, dict) and 'main' in processed:
+        main = processed['main']
+        variants = processed.get('variants', {})
+        storage = image_field.storage
+        old_name = image_field.name
+        if old_name:
+            delete_product_responsive_variants(storage, old_name)
+        image_field.save(main.name, main, save=False)
+        save_product_responsive_variants(storage, image_field.name, variants)
+        return image_field
+    image_field.save(processed.name, processed, save=False)
+    return image_field
+
+
+def product_image_responsive_meta(image_field, *, default=(400, 400)):
+    if not image_field or not image_field.name:
+        return {
+            'src': '',
+            'srcset': '',
+            'width': default[0],
+            'height': default[1],
+        }
+
+    width, height = image_field_dimensions(image_field, default=default)
+    display_width = min(width, PRODUCT_MAX_DIMENSION)
+    display_height = max(1, int(height * (display_width / width))) if width else default[1]
+
+    storage = image_field.storage
+    entries = []
+    for variant_width in PRODUCT_RESPONSIVE_WIDTHS:
+        variant_name = _product_responsive_variant_name(image_field.name, variant_width)
+        if storage.exists(variant_name):
+            entries.append(f'{storage.url(variant_name)} {variant_width}w')
+
+    entries.append(f'{image_field.url} {display_width}w')
+    return {
+        'src': image_field.url,
+        'srcset': ', '.join(entries),
+        'width': display_width,
+        'height': display_height,
+    }
 
 
 def _encode_banner_avif(
@@ -411,10 +510,15 @@ def reprocess_existing_banner_file(image_field, *, tip='hero'):
 
 
 def process_product_image(image_source, *, filename='image.jpg'):
-    """Artikal/varijacija: AVIF max 15KB, bez uklanjanja pozadine."""
+    """Artikal/varijacija: AVIF max 15KB + responsive varijante 120w/200w."""
     raw, filename = _read_image_source(image_source, filename=filename)
     img = Image.open(BytesIO(raw))
-    return _encode_product_avif(img, filename)
+    rgb = _image_to_rgb(img)
+    main = _encode_product_avif(rgb, filename)
+    return {
+        'main': main,
+        'variants': _build_product_responsive_variants(rgb, filename),
+    }
 
 
 def _ensure_rgba(img):
@@ -488,6 +592,32 @@ def reprocess_existing_image_file(image_field):
     return process_product_image(raw, filename=image_field.name)
 
 
+def prepared_product_image_payload(processed):
+    if isinstance(processed, dict) and 'main' in processed:
+        main = processed['main']
+        payload = {
+            'name': main.name,
+            'data': main.read(),
+            'variants': {},
+        }
+        for width, content in processed.get('variants', {}).items():
+            payload['variants'][width] = content.read()
+        return payload
+    return {'name': processed.name, 'data': processed.read(), 'variants': {}}
+
+
+def save_prepared_product_image(image_field, prepared_image):
+    content = ContentFile(prepared_image['data'], name=prepared_image['name'])
+    variants = {
+        width: ContentFile(
+            data,
+            name=_product_responsive_variant_name(prepared_image['name'], width),
+        )
+        for width, data in prepared_image.get('variants', {}).items()
+    }
+    return save_processed_product_image(image_field, {'main': content, 'variants': variants})
+
+
 def apply_image_processing(instance, field_name, post_process=None):
     image_field = getattr(instance, field_name, None)
     if not image_field or not is_new_upload(image_field):
@@ -495,7 +625,7 @@ def apply_image_processing(instance, field_name, post_process=None):
     _reset_upload(image_field)
     try:
         processed = post_process(image_field) if post_process else image_field
-        getattr(instance, field_name).save(processed.name, processed, save=False)
+        save_processed_product_image(getattr(instance, field_name), processed)
     except Exception as exc:
         _reset_upload(image_field)
         logger.exception('Obrada slike nije uspjela za %s.%s', instance, field_name)

@@ -3,13 +3,12 @@ import logging
 import time
 from decimal import Decimal, InvalidOperation
 
-from django.core.files.base import ContentFile
 from django.db import OperationalError, transaction
 
 from .models import BARKOD_MAX_LENGTH, SIFRA_MAX_LENGTH, Category, Product, ProductVariation
 from .odoo_client import OdooClient, OdooError
 from .product_merge import sync_primary_stock
-from .utils.images import process_product_image_bytes
+from .utils.images import prepared_product_image_payload, process_product_image_bytes, save_prepared_product_image
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +120,10 @@ def _process_odoo_image(image_b64, filename):
         return None
     try:
         processed = process_product_image_bytes(raw, filename)
-        return {'name': processed.name, 'data': processed.read()}
+        return prepared_product_image_payload(processed)
     except Exception as exc:
         logger.warning('Obrada Odoo slike nije uspjela (%s): %s', filename, exc)
         return {'name': filename, 'data': raw}
-
-
-def _image_content_file(prepared_image):
-    return ContentFile(prepared_image['data'], name=prepared_image['name'])
 
 
 def _resolve_django_category(odoo_category_id, selected_category):
@@ -411,11 +406,7 @@ def _commit_images_only_import(prepared):
 
     changed = False
     if prepared_image:
-        product.slika.save(
-            prepared_image['name'],
-            _image_content_file(prepared_image),
-            save=False,
-        )
+        save_prepared_product_image(product.slika, prepared_image)
         changed = True
 
     product.save()
@@ -432,11 +423,7 @@ def _commit_images_only_import(prepared):
             ).first()
             if variation is None:
                 continue
-            variation.slika.save(
-                payload['image']['name'],
-                _image_content_file(payload['image']),
-                save=False,
-            )
+            save_prepared_product_image(variation.slika, payload['image'])
             variation.save()
             variant_stats['azurirano'] += 1
             changed = True
@@ -550,11 +537,7 @@ def _commit_template_import(prepared):
             setattr(product, key, value)
 
     if prepared_image:
-        product.slika.save(
-            prepared_image['name'],
-            _image_content_file(prepared_image),
-            save=False,
-        )
+        save_prepared_product_image(product.slika, prepared_image)
 
     product.save()
 
@@ -629,11 +612,7 @@ def _commit_variations(product, variant_payloads, *, update_existing):
                 setattr(variation, key, value)
 
         if prepared_image:
-            variation.slika.save(
-                prepared_image['name'],
-                _image_content_file(prepared_image),
-                save=False,
-            )
+            save_prepared_product_image(variation.slika, prepared_image)
 
         variation.save()
         if created:

@@ -1,5 +1,7 @@
 {% if product.prikazna_slika %}
-<img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" width="400" height="400" sizes="(max-width: 768px) 50vw, 25vw" loading="{{ image_loading|default:'lazy' }}"{% if image_loading == 'eager' %} fetchpriority="high"{% else %} fetchpriority="low"{% endif %} decoding="async" data-main-image>
+{% with img=product.prikazna_slika_responsive %}
+<img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" width="{{ img.width }}" height="{{ img.height }}" sizes="{{ image_sizes|default:'(max-width: 768px) 50vw, 16vw' }}" loading="{{ image_loading|default:'lazy' }}"{% if image_loading == 'eager' %} fetchpriority="high"{% else %} fetchpriority="low"{% endif %} decoding="async" data-main-image>
+{% endwith %}
 {% else %}
 <div class="product-image-placeholder" data-main-image>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

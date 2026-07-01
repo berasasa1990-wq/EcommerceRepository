@@ -12,9 +12,9 @@
             {% include 'partials/product_discount_badge.html' with product=product %}
             {% endif %}
             {% if eager_first_image and forloop.first %}
-            {% include 'partials/product_image.html' with product=product image_loading='eager' %}
+            {% include 'partials/product_image.html' with product=product image_loading='eager' image_sizes='(max-width: 768px) 50vw, 16vw' %}
             {% else %}
-            {% include 'partials/product_image.html' with product=product image_loading='lazy' %}
+            {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 50vw, 16vw' %}
             {% endif %}
         </div>
         <div class="variation-swatches variation-swatches--empty"></div>

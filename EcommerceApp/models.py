@@ -666,6 +666,15 @@ class Product(models.Model):
         return bool(self.prikazna_slika)
 
     @property
+    def prikazna_slika_responsive(self):
+        from .utils.images import product_image_responsive_meta
+
+        slika = self.prikazna_slika
+        if not slika:
+            return None
+        return product_image_responsive_meta(slika)
+
+    @property
     def seo_title(self):
         """Koristi se za <title> i og:title kad meta_title nije unesen."""
         return self.meta_title or self.naziv

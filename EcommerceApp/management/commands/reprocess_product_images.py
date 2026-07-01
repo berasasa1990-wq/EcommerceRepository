@@ -1,11 +1,11 @@
 from django.core.management.base import BaseCommand
 
 from EcommerceApp.models import Product, ProductVariation
-from EcommerceApp.utils.images import reprocess_existing_image_file
+from EcommerceApp.utils.images import reprocess_existing_image_file, save_processed_product_image
 
 
 class Command(BaseCommand):
-    help = 'Ponovo obrađuje sve slike artikala i varijacija u AVIF format (max 15KB).'
+    help = 'Ponovo obrađuje slike artikala u AVIF (max 15KB) + responsive varijante 120w/200w.'
 
     def handle(self, *args, **options):
         updated = 0
@@ -18,7 +18,8 @@ class Command(BaseCommand):
                 if processed is None:
                     skipped += 1
                     continue
-                product.slika.save(processed.name, processed, save=True)
+                save_processed_product_image(product.slika, processed)
+                product.save(update_fields=['slika'])
                 updated += 1
                 self.stdout.write(f'OK artikal: {product.naziv}')
             except Exception as exc:
@@ -31,7 +32,8 @@ class Command(BaseCommand):
                 if processed is None:
                     skipped += 1
                     continue
-                variation.slika.save(processed.name, processed, save=True)
+                save_processed_product_image(variation.slika, processed)
+                variation.save(update_fields=['slika'])
                 updated += 1
                 self.stdout.write(f'OK varijacija: {variation}')
             except Exception as exc:
