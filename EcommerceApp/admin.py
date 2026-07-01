@@ -388,7 +388,7 @@ class BannerAdmin(admin.ModelAdmin):
                 'Upload slike se automatski optimizuje: '
                 'Hero → JPEG 1920×640 (3:1, centrirano rezanje), Grid/Featured/Spotlight → AVIF ili JPEG. '
                 'Preporučen format uploada: JPG ili PNG. '
-                'Tip „Hero Carousel” za karusel, „Grid Kartica” za 4 kartice ispod.'
+                'Tip „Hero Carousel” za karusel, „Grid Kartica” za 8 kartica ispod (4×2 desktop, 6 mobilni).'
             ),
         }),
         ('Link i dugmad', {

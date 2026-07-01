@@ -826,7 +826,7 @@ main {
     transform: scale(1.2);
 }
 
-/* Grid Banners (4 u redu ispod Hero, puna širina) */
+/* Grid Banners — desktop 4×2 (8), mobilni 2×3 (6) */
 .grid-banners {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3661,6 +3661,10 @@ body.search-results-active main {
         padding: 0;
         gap: 1px;
         background: var(--white);
+    }
+
+    .grid-banner:nth-child(n+7) {
+        display: none;
     }
 
     .home-vlog-grid .home-vlog-card:nth-child(n+3) {

@@ -463,7 +463,7 @@ def home(request):
     ).order_by('redoslijed', '-id'))
     grid_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.GRID, aktivan=True,
-    ).order_by('redoslijed', '-id'))[:4]
+    ).order_by('redoslijed', '-id'))[:8]
     featured_banners = _banners_with_image(Banner.objects.filter(
         tip=Banner.BannerType.FEATURED, aktivan=True,
     ).order_by('redoslijed', '-id'))

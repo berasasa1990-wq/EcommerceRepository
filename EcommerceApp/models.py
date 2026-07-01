@@ -266,7 +266,7 @@ class Brand(models.Model):
 class Banner(models.Model):
     class BannerType(models.TextChoices):
         HERO = 'hero', 'Hero Carousel'
-        GRID = 'grid', 'Grid Kartica (4 u redu ispod Hero)'
+        GRID = 'grid', 'Grid Kartica (4×2 ispod Hero, 8 desktop / 6 mobilni)'
         FEATURED = 'featured', 'Featured Kartica'
         SPOTLIGHT = 'spotlight', 'Spotlight'
 
