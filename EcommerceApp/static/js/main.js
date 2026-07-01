@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let index = 0;
             let autoplayTimer = null;
-            const gap = 8;
+            let gap = 8;
             const autoplayMs = parseInt(root.dataset.autoplayMs, 10) || 4500;
 
             function visibleCount() {
@@ -472,7 +472,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return slideWidth + gap;
             }
 
+            function readGap() {
+                const trackStyles = getComputedStyle(track);
+                const parsed = parseFloat(trackStyles.columnGap || trackStyles.gap);
+                return Number.isFinite(parsed) ? parsed : 8;
+            }
+
             function updateLayout() {
+                gap = readGap();
                 const visible = visibleCount();
                 const viewportWidth = viewport.clientWidth;
                 const slideWidth = (viewportWidth - (visible - 1) * gap) / visible;
