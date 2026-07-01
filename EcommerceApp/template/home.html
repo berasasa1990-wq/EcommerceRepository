@@ -228,7 +228,7 @@
                     <h2>{{ site_settings.naslov_novo }}</h2>
                     <p>{{ site_settings.podnaslov_novo }}</p>
                 </div>
-                {% include 'partials/product_grid.html' with products=latest_products eager_first_image=eager_first_novo_image home_mobile_product_limit=home_mobile_product_limit use_catalog_grid=True %}
+                {% include 'partials/product_grid.html' with products=latest_products eager_first_image=eager_first_novo_image home_mobile_product_limit=home_mobile_product_limit use_catalog_grid=True home_section_badge='novo' %}
             </div>
         </div>
     </div>
@@ -244,7 +244,7 @@
                     <h2>{{ site_settings.naslov_izdvojeno }}</h2>
                     <p>{{ site_settings.podnaslov_izdvojeno }}</p>
                 </div>
-                {% include 'partials/product_grid.html' with products=featured_products home_mobile_product_limit=home_mobile_product_limit use_catalog_grid=True %}
+                {% include 'partials/product_grid.html' with products=featured_products home_mobile_product_limit=home_mobile_product_limit use_catalog_grid=True home_section_badge='hit' %}
             </div>
         </div>
     </div>

@@ -3,7 +3,13 @@
     {% for product in products %}
     <a href="{{ product.get_absolute_url }}" class="product-card{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
         <div class="product-image">
+            {% if home_section_badge == 'novo' %}
+            <span class="product-home-ribbon product-home-ribbon--novo" aria-hidden="true">Novo</span>
+            {% elif home_section_badge == 'hit' %}
+            <span class="product-home-ribbon product-home-ribbon--hit" aria-hidden="true">HIT PONUDA</span>
+            {% else %}
             {% include 'partials/product_sale_ribbon.html' with product=product %}
+            {% endif %}
             {% if eager_first_image and forloop.first %}
             {% include 'partials/product_image.html' with product=product image_loading='eager' %}
             {% else %}

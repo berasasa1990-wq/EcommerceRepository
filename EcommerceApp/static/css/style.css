@@ -2147,13 +2147,13 @@ body.search-results-active main {
     flex-shrink: 0;
 }
 
-.product-sale-ribbon {
+.product-sale-ribbon,
+.product-home-ribbon {
     position: absolute;
     top: 16px;
     left: -34px;
     width: 132px;
     transform: rotate(-45deg);
-    background: #d93025;
     color: var(--white);
     font-size: 10px;
     font-weight: 700;
@@ -2164,6 +2164,22 @@ body.search-results-active main {
     pointer-events: none;
     line-height: 1.2;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.product-sale-ribbon {
+    background: #d93025;
+}
+
+.product-home-ribbon--novo {
+    background: #16a34a;
+}
+
+.product-home-ribbon--hit {
+    background: #dc2626;
+    font-size: 8px;
+    letter-spacing: 0.02em;
+    width: 148px;
+    left: -38px;
 }
 
 .product-image img {
@@ -3819,19 +3835,38 @@ body.search-results-active main {
         padding: 32px 24px 0;
     }
 
+    .home-product-catalog .product-grid,
+    .home-product-catalog .home-products-header,
     .home-products-header,
     .home-products .product-grid--home,
     .home-search-results .product-grid--home,
+    .home-search-results .home-products-header,
     .home-search-results--akcija .product-grid--home,
+    .home-search-results--akcija .home-products-header {
+        padding-left: var(--home-product-inset);
+        padding-right: var(--home-product-inset);
+    }
+
     .home-vlog-header,
     .home-vlog-grid {
         padding-left: 24px;
         padding-right: 24px;
     }
 
+    .home-product-catalog.product-catalog--compact .catalog-products .product-grid,
     .home-products .product-grid--home,
+    .home-search-results .product-grid--home {
+        gap: 8px;
+    }
+
     .home-search-results--akcija .product-grid--home {
         gap: 4px;
+    }
+
+    .home-products--novo .product-card,
+    .home-products--izdvojeno .product-card,
+    .home-search-results .product-card {
+        padding: 6px;
     }
 
     .home-products-header--novo h2,
@@ -4523,19 +4558,52 @@ body.search-results-active main {
         height: 44px;
     }
 
+    .home-product-catalog .product-grid,
+    .home-product-catalog .home-products-header,
     .home-products-header,
     .home-products .product-grid--home,
     .home-search-results .product-grid--home,
+    .home-search-results .home-products-header,
     .home-search-results--akcija .product-grid--home,
-    .home-vlog-header,
-    .home-vlog-grid {
-        padding-left: 24px;
-        padding-right: 24px;
+    .home-search-results--akcija .home-products-header {
+        padding-left: var(--home-product-inset);
+        padding-right: var(--home-product-inset);
     }
 
+    .home-vlog-header,
+    .home-vlog-grid {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .home-product-catalog.product-catalog--compact .catalog-products .product-grid,
     .home-products .product-grid--home,
+    .home-search-results .product-grid--home {
+        gap: 8px;
+    }
+
     .home-search-results--akcija .product-grid--home {
         gap: 4px;
+    }
+
+    .home-products--novo .product-card,
+    .home-products--izdvojeno .product-card,
+    .home-search-results .product-card {
+        padding: 6px;
+    }
+
+    .product-home-ribbon {
+        top: 12px;
+        left: -30px;
+        width: 108px;
+        font-size: 8px;
+        padding: 5px 0;
+    }
+
+    .product-home-ribbon--hit {
+        width: 120px;
+        left: -34px;
+        font-size: 7px;
     }
 
     .home-products-header--novo h2,
