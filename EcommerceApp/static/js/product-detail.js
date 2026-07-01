@@ -26,4 +26,76 @@ document.addEventListener('DOMContentLoaded', () => {
             history.back();
         });
     }
+
+    function getCsrfToken() {
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function updateCartBadge(count) {
+        const cartBtn = document.querySelector('.cart-btn');
+        if (!cartBtn) return;
+        let badge = cartBtn.querySelector('.cart-badge');
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'cart-badge';
+                cartBtn.appendChild(badge);
+            }
+            badge.textContent = count;
+        } else if (badge) {
+            badge.remove();
+        }
+    }
+
+    function showCartToast(message) {
+        let toast = document.querySelector('.cart-toast');
+        if (!toast) {
+            toast = document.createElement('p');
+            toast.className = 'cart-toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add('cart-toast--visible');
+        clearTimeout(showCartToast.timer);
+        showCartToast.timer = setTimeout(() => {
+            toast.classList.remove('cart-toast--visible');
+        }, 2200);
+    }
+
+    async function submitAddToCartForm(form) {
+        const submitBtn = form.querySelector('[type="submit"]');
+        const body = new URLSearchParams(new FormData(form));
+        body.set('stay', '1');
+
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: body.toString(),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+            }
+            updateCartBadge(data.cart_count);
+            showCartToast(data.message);
+        } catch (err) {
+            showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    document.querySelectorAll('form.add-to-cart-form, form.product-detail-variation-form').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            submitAddToCartForm(form);
+        });
+    });
 });
