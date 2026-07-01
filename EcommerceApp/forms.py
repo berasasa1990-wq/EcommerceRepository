@@ -10,6 +10,28 @@ class BannerAdminForm(forms.ModelForm):
         model = Banner
         fields = '__all__'
 
+    def clean_video(self):
+        video = self.cleaned_data.get('video')
+        if not video:
+            return video
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from .utils.videos import validate_banner_video
+        try:
+            validate_banner_video(video)
+        except DjangoValidationError as exc:
+            raise forms.ValidationError(exc.messages) from exc
+        return video
+
+    def clean(self):
+        cleaned_data = super().clean()
+        slika = cleaned_data.get('slika')
+        video = cleaned_data.get('video')
+        has_slika = bool(slika) or bool(getattr(self.instance, 'slika', None))
+        has_video = bool(video) or bool(getattr(self.instance, 'video', None))
+        if not has_slika and not has_video:
+            raise forms.ValidationError('Banner mora imati sliku ili video.')
+        return cleaned_data
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         if commit:
@@ -17,6 +39,8 @@ class BannerAdminForm(forms.ModelForm):
                 instance.save()
             except ValueError as exc:
                 raise forms.ValidationError({'slika': str(exc)}) from exc
+            except Exception as exc:
+                raise forms.ValidationError({'video': str(exc)}) from exc
         return instance
 
 

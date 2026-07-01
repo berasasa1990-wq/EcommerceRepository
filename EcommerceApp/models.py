@@ -296,6 +296,13 @@ class Banner(models.Model):
     naslov = models.CharField(max_length=200, blank=True, default='')
     podnaslov = models.CharField(max_length=300, blank=True)
     slika = models.ImageField(upload_to='banners/', blank=True, null=True)
+    video = models.FileField(
+        upload_to='banners/videos/',
+        blank=True,
+        null=True,
+        verbose_name='Video (max 6 s)',
+        help_text='Opcionalno. MP4/WebM/MOV, najviše 6 sekundi. Ako je postavljen, prikazuje se umjesto slike.',
+    )
     link = models.CharField(
         max_length=300, blank=True,
         verbose_name='Link',
@@ -314,7 +321,18 @@ class Banner(models.Model):
         verbose_name_plural = 'Banneri'
         ordering = ['redoslijed', '-id']
 
+    @property
+    def ima_medij(self):
+        return bool(self.slika) or bool(self.video)
+
     def save(self, *args, **kwargs):
+        if self.video:
+            from django.core.exceptions import ValidationError
+            from .utils.videos import validate_banner_video
+            try:
+                validate_banner_video(self.video)
+            except ValidationError as exc:
+                raise ValueError(exc.messages[0]) from exc
         if self.slika:
             from functools import partial
             from .utils.images import apply_image_processing, process_banner_image_for_admin

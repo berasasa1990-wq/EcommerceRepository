@@ -17,7 +17,11 @@
                 {% if slide.url %}
                 <a href="{{ slide.url }}" class="slide-image-link" aria-label="{{ slide.title|default:'Banner' }}">
                 {% endif %}
+                {% if slide.has_video %}
+                <video class="slide-image-img slide-image-video" src="{{ slide.video }}" autoplay muted loop playsinline preload="metadata"{% if slide.image %} poster="{{ slide.image }}"{% endif %} width="{{ slide.image_width }}" height="{{ slide.image_height }}" aria-label="{{ slide.title|default:'Banner' }}"></video>
+                {% else %}
                 <img src="{{ slide.image }}"{% if slide.image_srcset %} srcset="{{ slide.image_srcset }}"{% endif %} alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+                {% endif %}
                 {% if slide.url %}
                 </a>
                 {% endif %}
@@ -74,7 +78,11 @@
     {% else %}
     <article class="grid-banner">
     {% endif %}
+                {% if card.has_video %}
+                <video class="card-image card-image--grid banner-media-video" src="{{ card.video }}" autoplay muted loop playsinline preload="metadata"{% if card.image %} poster="{{ card.image }}"{% endif %} width="{{ card.image_width }}" height="{{ card.image_height }}" aria-label="{{ card.title|default:'Banner' }}"></video>
+                {% else %}
                 <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="(max-width: 768px) 50vw, 360px"{% if forloop.first and not has_hero_slides %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% if forloop.first %} fetchpriority="low"{% endif %}{% endif %} decoding="async">
+                {% endif %}
         {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
             {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}
@@ -109,7 +117,7 @@
     {% else %}
     <article class="featured-card{% if card.wide %} featured-card--wide{% endif %}">
     {% endif %}
-        <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="card-image card-image--featured" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="lazy" decoding="async">
+        {% include 'partials/banner_media.html' with card=card video_class='card-image card-image--featured banner-media-video' image_class='card-image card-image--featured' image_sizes='(max-width: 768px) 100vw, 50vw' image_loading='lazy' %}
         {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
             {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}
@@ -142,7 +150,7 @@
         {% if spotlight.url %}
         <a href="{{ spotlight.url }}" class="spotlight-image-link" aria-label="{{ spotlight.title|default:'Banner' }}">
         {% endif %}
-        <img src="{{ spotlight.image }}"{% if spotlight.image_srcset %} srcset="{{ spotlight.image_srcset }}"{% endif %} alt="{{ spotlight.title|default:'Banner' }}" class="spotlight-image" width="{{ spotlight.image_width }}" height="{{ spotlight.image_height }}" sizes="(max-width: 768px) 100vw, 80vw" loading="lazy" decoding="async">
+        {% include 'partials/banner_media.html' with card=spotlight video_class='spotlight-image banner-media-video' image_class='spotlight-image' image_sizes='(max-width: 768px) 100vw, 80vw' image_loading='lazy' %}
         {% if spotlight.url %}
         </a>
         {% endif %}

@@ -222,24 +222,6 @@
             color: #28403d;
             margin-bottom: 4px;
         }
-        .warranty-items {
-            width: 100%;
-            margin: 0 0 16px;
-            border: 1px solid #c4bc96;
-        }
-        .warranty-items th,
-        .warranty-items td {
-            padding: 8px 10px;
-            font-size: 11px;
-            border: 1px solid #c4bc96;
-            text-align: left;
-        }
-        .warranty-items th {
-            background: #d9d9d9;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
         .warranty-order-ref {
             margin: 0 0 14px;
             padding: 12px 14px;
@@ -468,32 +450,10 @@
                 </tr>
             </table>
 
-            <table class="warranty-items" role="presentation" cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th style="width: 70%;">Artikal</th>
-                        <th style="width: 15%;">Šifra</th>
-                        <th style="width: 15%;">Količina</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in order.stavke.all %}
-                    <tr>
-                        <td>
-                            {{ item.product_naziv|default:item.naziv }}
-                            {% if item.varijacija_naziv %} — {{ item.varijacija_naziv }}{% endif %}
-                        </td>
-                        <td>{{ item.sifra|default:"—" }}</td>
-                        <td>{{ item.kolicina }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
             <p class="warranty-order-ref">
                 <strong>Potvrda garancije za narudžbu #{{ order.broj }}</strong>
                 Ovaj garantni list izdaje se za narudžbu broj {{ order.broj }}, kreiranu {{ datum }} u {{ vrijeme }},
-                i odnosi se na sve artikle navedene u gornjoj tabeli. Garancija je važeća uz originalnu potvrdu narudžbe.
+                i odnosi se na sve artikle iz te narudžbe. Garancija je važeća uz originalnu potvrdu narudžbe.
             </p>
 
             <div class="warranty-terms">

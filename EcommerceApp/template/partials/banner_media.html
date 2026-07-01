@@ -1,0 +1,28 @@
+{% if card.has_video %}
+<video
+    class="{{ video_class }}"
+    src="{{ card.video }}"
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="metadata"
+    {% if card.image %}poster="{{ card.image }}"{% endif %}
+    width="{{ card.image_width }}"
+    height="{{ card.image_height }}"
+    aria-label="{{ card.title|default:'Banner' }}"
+></video>
+{% elif card.image %}
+<img
+    src="{{ card.image }}"
+    {% if card.image_srcset %}srcset="{{ card.image_srcset }}"{% endif %}
+    alt="{{ card.title|default:'Banner' }}"
+    class="{{ image_class }}"
+    width="{{ card.image_width }}"
+    height="{{ card.image_height }}"
+    {% if image_sizes %}sizes="{{ image_sizes }}"{% endif %}
+    {% if image_loading %}loading="{{ image_loading }}"{% endif %}
+    {% if image_fetchpriority %}fetchpriority="{{ image_fetchpriority }}"{% endif %}
+    decoding="async"
+>
+{% endif %}

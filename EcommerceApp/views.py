@@ -94,12 +94,21 @@ def _parse_decimal(value):
 
 
 _SIZE_EXACT = re.compile(r'^#\d+(?:/\d+)?$', re.I)
-_SIZE_TRAILING = re.compile(r'(#\d+(?:/\d+)?)\s*$', re.I)
+_SIZE_HASH = re.compile(r'(#\d+(?:/\d+)?)', re.I)
 _SIZE_PLAIN = re.compile(r'^\d+$')
+_SIZE_CM = re.compile(r'(\d+(?:[.,]\d+)?)\s*cm\b', re.I)
+_SIZE_GRAM = re.compile(r'(\d+(?:[.,]\d+)?)\s*(?:g|gr|gram|grama)\b', re.I)
+
+
+def _normalize_size_number(value):
+    normalized = (value or '').strip().replace(',', '.')
+    if '.' in normalized:
+        normalized = normalized.rstrip('0').rstrip('.')
+    return normalized
 
 
 def _variation_size_label(naziv):
-    """Vraća veličinu iz naziva varijacije (#broj), ako postoji."""
+    """Vraća veličinu iz naziva varijacije (#broj, cm ili g), ako postoji."""
     naziv = (naziv or '').strip()
     if not naziv:
         return None
@@ -107,15 +116,28 @@ def _variation_size_label(naziv):
         return naziv
     if _SIZE_PLAIN.match(naziv):
         return f'#{naziv}'
-    match = _SIZE_TRAILING.search(naziv)
-    if match:
-        return match.group(1)
+    hash_match = _SIZE_HASH.search(naziv)
+    if hash_match:
+        return hash_match.group(1)
+    cm_match = _SIZE_CM.search(naziv)
+    if cm_match:
+        return f'{_normalize_size_number(cm_match.group(1))} cm'
+    gram_match = _SIZE_GRAM.search(naziv)
+    if gram_match:
+        return f'{_normalize_size_number(gram_match.group(1))} g'
     return None
 
 
 def _size_sort_key(label):
-    match = re.search(r'#(\d+)', label or '')
-    return (int(match.group(1)) if match else 0, label or '')
+    label = label or ''
+    hook_match = re.search(r'#(\d+)', label)
+    if hook_match:
+        return (0, int(hook_match.group(1)), label)
+    unit_match = re.match(r'^(\d+(?:\.\d+)?)\s*(cm|g)$', label, re.I)
+    if unit_match:
+        unit_rank = 1 if unit_match.group(2).lower() == 'cm' else 2
+        return (unit_rank, float(unit_match.group(1)), label)
+    return (9, 0, label)
 
 
 def _available_sizes(products_qs):
@@ -349,50 +371,62 @@ def _banner_actions(banner):
     return actions
 
 
-def _banner_to_hero_slide(banner):
+def _banner_media_meta(banner, *, tip='hero', default=(1920, 560)):
     from .utils.images import banner_image_responsive_meta
 
-    image_meta = banner_image_responsive_meta(
-        banner.slika,
-        tip='hero',
-        default=(1920, 560),
-    )
+    image_meta = {
+        'src': '',
+        'srcset': '',
+        'width': default[0],
+        'height': default[1],
+    }
+    if banner.slika:
+        image_meta = banner_image_responsive_meta(
+            banner.slika,
+            tip=tip,
+            default=default,
+        )
+    video_url = banner.video.url if banner.video else None
     return {
-        'title': banner.naslov,
-        'subtitle': banner.podnaslov,
         'image': image_meta['src'],
         'image_srcset': image_meta['srcset'],
         'image_width': image_meta['width'],
         'image_height': image_meta['height'],
+        'video': video_url,
+        'has_video': bool(video_url),
+    }
+
+
+def _banner_to_hero_slide(banner):
+    media = _banner_media_meta(banner, tip='hero', default=(1920, 560))
+    return {
+        'title': banner.naslov,
+        'subtitle': banner.podnaslov,
         'url': banner.get_link_href(),
         'actions': _banner_actions(banner),
+        **media,
     }
 
 
 def _banner_to_card(banner):
-    from .utils.images import banner_image_responsive_meta
-
     default_dims = (360, 360) if banner.tip == Banner.BannerType.GRID else (1200, 800)
-    image_meta = banner_image_responsive_meta(
-        banner.slika,
-        tip=banner.tip,
-        default=default_dims,
-    )
+    media = _banner_media_meta(banner, tip=banner.tip, default=default_dims)
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
-        'image': image_meta['src'],
-        'image_srcset': image_meta['srcset'],
-        'image_width': image_meta['width'],
-        'image_height': image_meta['height'],
         'url': banner.get_link_href(),
         'actions': _banner_actions(banner),
         'wide': banner.siroka_kartica,
+        **media,
     }
 
 
-def _banners_with_image(qs):
-    return qs.exclude(slika__isnull=True).exclude(slika='')
+def _banners_with_media(qs):
+    from django.db.models import Q
+    return qs.filter(
+        Q(slika__isnull=False) & ~Q(slika='')
+        | Q(video__isnull=False) & ~Q(video=''),
+    )
 
 
 HOME_SECTION_PRODUCT_LIMIT = 10
@@ -484,16 +518,16 @@ def _vlog_seo_description(sadrzaj, max_len=160):
 
 
 def home(request):
-    hero_banners = _banners_with_image(Banner.objects.filter(
+    hero_banners = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.HERO, aktivan=True,
     ).order_by('redoslijed', '-id'))
-    grid_banners = _banners_with_image(Banner.objects.filter(
+    grid_banners = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.GRID, aktivan=True,
     ).order_by('redoslijed', '-id'))[:8]
-    featured_banners = _banners_with_image(Banner.objects.filter(
+    featured_banners = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.FEATURED, aktivan=True,
     ).order_by('redoslijed', '-id'))
-    spotlight_banner = _banners_with_image(Banner.objects.filter(
+    spotlight_banner = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.SPOTLIGHT, aktivan=True,
     ).order_by('redoslijed', '-id')).first()
 
@@ -567,22 +601,17 @@ def home(request):
 
     spotlight = None
     if spotlight_banner:
-        from .utils.images import banner_image_responsive_meta
-
-        spotlight_image = banner_image_responsive_meta(
-            spotlight_banner.slika,
+        spotlight_media = _banner_media_meta(
+            spotlight_banner,
             tip='spotlight',
             default=(1200, 800),
         )
         spotlight = {
             'title': spotlight_banner.naslov,
             'description': spotlight_banner.podnaslov,
-            'image': spotlight_image['src'],
-            'image_srcset': spotlight_image['srcset'],
-            'image_width': spotlight_image['width'],
-            'image_height': spotlight_image['height'],
             'cta': spotlight_banner.tekst_dugmeta,
             'url': spotlight_banner.get_link_href(),
+            **spotlight_media,
         }
 
     context = {

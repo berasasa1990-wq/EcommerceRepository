@@ -391,11 +391,25 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentIndex = 0;
         let autoplayTimer;
 
+        function syncSlideVideos() {
+            slides.forEach((slide, i) => {
+                const video = slide.querySelector('video');
+                if (!video) return;
+                if (i === currentIndex) {
+                    video.currentTime = 0;
+                    video.play().catch(() => {});
+                } else {
+                    video.pause();
+                }
+            });
+        }
+
         function goToSlide(index) {
             const total = slides.length;
             currentIndex = ((index % total) + total) % total;
             slides.forEach((slide, i) => slide.classList.toggle('active', i === currentIndex));
             dots.forEach((dot, i) => dot.classList.toggle('active', i === currentIndex));
+            syncSlideVideos();
         }
 
         function startAutoplay() {
@@ -437,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, { passive: true });
 
+        syncSlideVideos();
         startAutoplay();
     }
 

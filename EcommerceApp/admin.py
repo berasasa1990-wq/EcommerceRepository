@@ -387,14 +387,16 @@ class BannerAdmin(admin.ModelAdmin):
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naslov', 'podnaslov')
-    readonly_fields = ('pregled_slike_velika',)
+    readonly_fields = ('pregled_slike_velika', 'pregled_videa')
     fieldsets = (
         ('Sadržaj', {
-            'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika'),
+            'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika', 'video', 'pregled_videa'),
             'description': (
-                'Sva polja su opcionalna. Klik na banner vodi na Link (cijeli banner je klikabilan). '
+                'Klik na banner vodi na Link (cijeli banner je klikabilan). '
+                'Obavezna je slika ili video. '
                 'Upload slike: Hero → JPEG 1920×560 (24:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
-                'Preporučen format: JPG ili PNG. '
+                'Video: MP4/WebM/MOV, najviše 6 sekundi (max 20 MB). Ako je video postavljen, prikazuje se umjesto slike; '
+                'slika može služiti kao poster kad je video aktivan. '
                 'Tip „Hero Carousel” za karusel, „Grid Kartica” za 8 kartica ispod (4×2 desktop, 6 mobilni).'
             ),
         }),
@@ -424,6 +426,15 @@ class BannerAdmin(admin.ModelAdmin):
                 obj.slika.url,
             )
         return 'Nema slike'
+
+    @admin.display(description='Pregled videa')
+    def pregled_videa(self, obj):
+        if obj and obj.video:
+            return format_html(
+                '<video src="{}" style="max-height:200px;border-radius:8px;" controls muted playsinline></video>',
+                obj.video.url,
+            )
+        return 'Nema videa'
 
 
 @admin.register(Product)
