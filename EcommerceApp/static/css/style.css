@@ -663,22 +663,20 @@ main {
     color: #111 !important;
 }
 
-/* Hero Carousel */
+/* Hero Carousel — fiksni omjer 4:1 kao upload banner (1920×480) */
 .hero-carousel {
     position: relative;
     width: 100%;
     max-width: 100vw;
-    height: clamp(280px, 36vw, 480px);
-    min-height: 0;
-    max-height: 480px;
     overflow: hidden;
     background: #111;
 }
 
 .carousel-track {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 4 / 1;
     position: relative;
+    height: auto;
 }
 
 .carousel-slide {
@@ -724,7 +722,7 @@ main {
     width: 100%;
     height: 100%;
     max-width: none;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center center;
 }
 
@@ -3690,17 +3688,13 @@ body.search-results-active main {
     }
 
     .hero-carousel {
-        height: auto;
-        min-height: 0;
-        max-height: none;
-        background: var(--white);
+        background: #111;
     }
 
     .carousel-track {
-        position: relative;
-        width: 100%;
-        height: 0;
-        padding-bottom: 56.25%;
+        aspect-ratio: 4 / 1;
+        height: auto;
+        padding-bottom: 0;
     }
 
     .carousel-slide {
@@ -3726,7 +3720,7 @@ body.search-results-active main {
         width: 100%;
         height: 100%;
         max-width: none;
-        object-fit: cover;
+        object-fit: contain;
         object-position: center center;
     }
 
@@ -4625,7 +4619,7 @@ body.search-results-active main {
         width: 100%;
         max-width: none;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         object-position: center center;
     }
 
@@ -4653,7 +4647,9 @@ body.search-results-active main {
     }
 
     .hero-carousel .carousel-track {
-        padding-bottom: 56.25%;
+        aspect-ratio: 4 / 1;
+        padding-bottom: 0;
+        height: auto;
     }
 
     .product-info h4 {
