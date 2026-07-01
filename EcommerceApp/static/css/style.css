@@ -3119,7 +3119,12 @@ body.search-results-active main {
 
 @media (min-width: 1024px) {
     .product-detail-grid {
-        gap: 56px;
+        grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+        gap: 48px;
+    }
+
+    .product-gallery {
+        max-width: 460px;
     }
 
     .product-detail-section-title {
