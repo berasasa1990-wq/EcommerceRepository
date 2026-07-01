@@ -3950,13 +3950,42 @@ body.search-results-active main {
         display: none;
     }
 
-    .home-product-carousel {
-        padding: 0 calc(var(--home-product-inset) + 28px);
+    .home-products--novo .home-product-carousel,
+    .home-products--izdvojeno .home-product-carousel {
+        padding: 0;
+        width: 100%;
+    }
+
+    .home-products--novo .home-products-header,
+    .home-products--izdvojeno .home-products-header {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .home-products--novo .home-product-carousel__track,
+    .home-products--izdvojeno .home-product-carousel__track {
+        gap: 6px;
+    }
+
+    .home-products--novo .product-card--home-carousel,
+    .home-products--izdvojeno .product-card--home-carousel {
+        padding: 6px 4px 10px;
     }
 
     .home-product-carousel__btn {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+    }
+
+    .home-products--novo .home-product-carousel__btn--prev,
+    .home-products--izdvojeno .home-product-carousel__btn--prev {
+        left: 4px;
+    }
+
+    .home-products--novo .home-product-carousel__btn--next,
+    .home-products--izdvojeno .home-product-carousel__btn--next {
+        right: 4px;
     }
 
     .home-product-carousel__btn svg {
@@ -4790,6 +4819,12 @@ body.search-results-active main {
     .home-search-results,
     .home-vlog {
         padding: 32px 16px;
+    }
+
+    .home-products.home-products--novo,
+    .home-products.home-products--izdvojeno {
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .home-vlog {

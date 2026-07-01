@@ -220,12 +220,14 @@ def _fit_banner_dimensions(img, *, max_width, max_height=None, crop=False):
     rgb = _image_to_rgb(img)
     if max_height is not None:
         if crop:
-            return ImageOps.fit(
-                rgb,
-                (max_width, max_height),
-                method=Image.Resampling.LANCZOS,
-                centering=(0.5, 0.5),
-            )
+            if rgb.width > max_width or rgb.height > max_height:
+                return ImageOps.fit(
+                    rgb,
+                    (max_width, max_height),
+                    method=Image.Resampling.LANCZOS,
+                    centering=(0.5, 0.5),
+                )
+            return rgb
         return ImageOps.contain(
             rgb,
             (max_width, max_height),
@@ -238,6 +240,79 @@ def _fit_banner_dimensions(img, *, max_width, max_height=None, crop=False):
             Image.Resampling.LANCZOS,
         )
     return rgb
+
+
+def _upload_basename(filename):
+    return filename.rsplit('/', 1)[-1] if filename else 'upload.jpg'
+
+
+def _original_content_file(raw_bytes, filename):
+    return ContentFile(raw_bytes, name=_upload_basename(filename))
+
+
+def _banner_needs_resize(rgb_img, *, max_width, max_height=None, crop=False):
+    width, height = rgb_img.size
+    if max_height is not None:
+        return width > max_width or height > max_height
+    return width > max_width
+
+
+def _cap_byte_budget(configured_max, upload_cap):
+    if upload_cap is None:
+        return configured_max
+    return min(configured_max, upload_cap)
+
+
+def _read_processed_bytes(processed):
+    if hasattr(processed, 'read'):
+        processed.seek(0)
+        data = processed.read()
+        name = getattr(processed, 'name', 'banner.jpg')
+        processed.seek(0)
+        return data, name
+    return processed, 'banner.jpg'
+
+
+def _finalize_banner_upload(processed, raw_original, original_filename, *, needs_resize):
+    data, name = _read_processed_bytes(processed)
+    original_size = len(raw_original)
+    if not needs_resize and len(data) >= original_size:
+        logger.debug(
+            'Banner: čuvam original (%d B) umjesto obrade (%d B).',
+            original_size,
+            len(data),
+        )
+        return _original_content_file(raw_original, original_filename)
+    if needs_resize and len(data) > original_size:
+        logger.debug(
+            'Banner nakon resize: %d B (original %d B).',
+            len(data),
+            original_size,
+        )
+    return ContentFile(data, name=name)
+
+
+def _finalize_banner_result(result, raw_original, original_filename, *, needs_resize):
+    if isinstance(result, dict) and 'main' in result:
+        result['main'] = _finalize_banner_upload(
+            result['main'],
+            raw_original,
+            original_filename,
+            needs_resize=needs_resize,
+        )
+        return result
+    return _finalize_banner_upload(
+        result,
+        raw_original,
+        original_filename,
+        needs_resize=needs_resize,
+    )
+
+
+def _load_banner_rgb_from_raw(raw_bytes):
+    with Image.open(BytesIO(raw_bytes)) as img:
+        img.load()
+        return _image_to_rgb(img)
 
 
 def _encode_avif_under_budget(
@@ -585,8 +660,19 @@ def _encode_product_avif(rgb_img, filename):
     )
 
 
-def _processed_image_result(rgb_img, filename, *, widths, max_bytes_map, main_max_dimension, fit_banner=False, banner_settings=None):
+def _processed_image_result(
+    rgb_img,
+    filename,
+    *,
+    widths,
+    max_bytes_map,
+    main_max_dimension,
+    fit_banner=False,
+    banner_settings=None,
+    upload_byte_cap=None,
+):
     main_bytes = max_bytes_map.get(main_max_dimension, MAX_PRODUCT_AVIF_BYTES)
+    main_bytes = _cap_byte_budget(main_bytes, upload_byte_cap)
     try:
         if _avif_supported():
             main = _encode_avif_variant(
@@ -716,6 +802,7 @@ def _encode_banner_jpeg_fallback(
     max_height=None,
     crop=False,
     quality=88,
+    max_bytes=None,
 ):
     """Pouzdan JPEG format za banere (posebno Hero)."""
     working = _fit_banner_dimensions(
@@ -724,9 +811,22 @@ def _encode_banner_jpeg_fallback(
         max_height=max_height,
         crop=crop,
     )
-    buffer = BytesIO()
-    working.save(buffer, format='JPEG', quality=quality, optimize=True, progressive=True)
-    return ContentFile(buffer.getvalue(), name=_jpeg_filename(filename))
+    qualities = []
+    for q in (quality, 85, 78, 70, 62, 54, 48, 42, 36):
+        if q not in qualities:
+            qualities.append(q)
+
+    best_data = None
+    for q in qualities:
+        buffer = BytesIO()
+        working.save(buffer, format='JPEG', quality=q, optimize=True, progressive=True)
+        data = buffer.getvalue()
+        if max_bytes is not None and len(data) <= max_bytes:
+            return ContentFile(data, name=_jpeg_filename(filename))
+        if best_data is None or len(data) < len(best_data):
+            best_data = data
+
+    return ContentFile(best_data, name=_jpeg_filename(filename))
 
 
 def _load_banner_source(image_field):
@@ -833,60 +933,40 @@ def process_banner_image(image_field, tip='hero'):
 
 
 def process_banner_image_for_admin(image_field, tip='hero'):
-    """Upload sa PageSpeed optimizacijom: responsive varijante + agresivna kompresija."""
+    """Upload: optimizacija uz ograničenje da glavni fajl ne bude veći od originala."""
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     settings = BANNER_AVIF_SETTINGS.get(tip, {
         'max_bytes': MAX_DEFAULT_BANNER_AVIF_BYTES,
         'max_width': BANNER_MAX_WIDTH,
     })
     try:
-        source = _load_banner_source(image_field)
+        raw_original, filename = _read_image_source(image_field, filename=filename)
+        source = _load_banner_rgb_from_raw(raw_original)
     except Exception as exc:
         raise ValueError(
             f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG.',
         ) from exc
 
-    if tip == 'hero':
-        main = _encode_banner_jpeg_fallback(
-            source,
-            filename,
-            max_width=settings['max_width'],
-            max_height=settings.get('max_height'),
-            crop=settings.get('crop', False),
-            quality=90,
-        )
-        try:
-            variants = _build_hero_jpeg_variants(source, main.name)
-            return {'main': main, 'variants': variants}
-        except Exception:
-            logger.warning('Hero responsive varijante nisu kreirane.', exc_info=True)
-            return main
+    upload_byte_cap = len(raw_original)
+    needs_resize = _banner_needs_resize(
+        source,
+        max_width=settings['max_width'],
+        max_height=settings.get('max_height'),
+        crop=settings.get('crop', False),
+    )
+    settings = dict(settings)
+    settings['max_bytes'] = _cap_byte_budget(settings['max_bytes'], upload_byte_cap)
 
-    if tip == 'grid':
-        try:
-            return _processed_image_result(
-                source,
-                filename,
-                widths=BANNER_GRID_RESPONSIVE_WIDTHS,
-                max_bytes_map=BANNER_GRID_VARIANT_MAX_BYTES,
-                main_max_dimension=GRID_BANNER_MAX_DIMENSION,
-                fit_banner=True,
-                banner_settings={
-                    'max_width': GRID_BANNER_MAX_DIMENSION,
-                    'max_height': GRID_BANNER_MAX_DIMENSION,
-                    'crop': False,
-                },
-            )
-        except Exception as exc:
-            logger.warning('Grid AVIF obrada nije uspjela (%s), koristim JPEG.', exc)
-            main = _encode_banner_jpeg_fallback(
-                source,
-                filename,
-                max_width=GRID_BANNER_MAX_DIMENSION,
-                max_height=GRID_BANNER_MAX_DIMENSION,
-                crop=False,
-                quality=78,
-            )
+    if not needs_resize:
+        main = _original_content_file(raw_original, filename)
+        if tip == 'hero':
+            try:
+                variants = _build_hero_jpeg_variants(source, main.name)
+                return {'main': main, 'variants': variants}
+            except Exception:
+                logger.warning('Hero responsive varijante nisu kreirane.', exc_info=True)
+                return main
+        if tip == 'grid':
             try:
                 variants = _build_responsive_variants(
                     source,
@@ -903,15 +983,125 @@ def process_banner_image_for_admin(image_field, tip='hero'):
                 )
                 return {'main': main, 'variants': variants}
             except Exception:
-                logger.warning('Grid JPEG varijante nisu kreirane.', exc_info=True)
+                logger.warning('Grid responsive varijante nisu kreirane.', exc_info=True)
                 return main
+        if tip in ('featured', 'spotlight'):
+            widths = (
+                SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS
+                if tip == 'spotlight'
+                else FEATURED_BANNER_RESPONSIVE_WIDTHS
+            )
+            max_bytes_map = dict(BANNER_WIDE_VARIANT_MAX_BYTES)
+            if tip == 'spotlight':
+                max_bytes_map[1200] = MAX_SPOTLIGHT_BANNER_AVIF_BYTES
+            try:
+                variants = _build_responsive_variants(
+                    source,
+                    main.name,
+                    widths=widths,
+                    max_bytes_map=max_bytes_map,
+                    main_max_dimension=BANNER_MAX_WIDTH,
+                    fit_banner=True,
+                    banner_settings={
+                        'max_width': BANNER_MAX_WIDTH,
+                        'crop': False,
+                    },
+                )
+                return {'main': main, 'variants': variants}
+            except Exception:
+                logger.warning('%s responsive varijante nisu kreirane.', tip, exc_info=True)
+                return main
+
+    if tip == 'hero':
+        main = _encode_banner_jpeg_fallback(
+            source,
+            filename,
+            max_width=settings['max_width'],
+            max_height=settings.get('max_height'),
+            crop=settings.get('crop', False),
+            quality=85,
+            max_bytes=upload_byte_cap,
+        )
+        result = {'main': main, 'variants': {}}
+        try:
+            result['variants'] = _build_hero_jpeg_variants(source, main.name)
+        except Exception:
+            logger.warning('Hero responsive varijante nisu kreirane.', exc_info=True)
+        return _finalize_banner_result(
+            result,
+            raw_original,
+            filename,
+            needs_resize=needs_resize,
+        )
+
+    if tip == 'grid':
+        try:
+            result = _processed_image_result(
+                source,
+                filename,
+                widths=BANNER_GRID_RESPONSIVE_WIDTHS,
+                max_bytes_map=BANNER_GRID_VARIANT_MAX_BYTES,
+                main_max_dimension=GRID_BANNER_MAX_DIMENSION,
+                fit_banner=True,
+                banner_settings={
+                    'max_width': GRID_BANNER_MAX_DIMENSION,
+                    'max_height': GRID_BANNER_MAX_DIMENSION,
+                    'crop': False,
+                },
+                upload_byte_cap=upload_byte_cap,
+            )
+            return _finalize_banner_result(
+                result,
+                raw_original,
+                filename,
+                needs_resize=needs_resize,
+            )
+        except Exception as exc:
+            logger.warning('Grid AVIF obrada nije uspjela (%s), koristim JPEG.', exc)
+            main = _encode_banner_jpeg_fallback(
+                source,
+                filename,
+                max_width=GRID_BANNER_MAX_DIMENSION,
+                max_height=GRID_BANNER_MAX_DIMENSION,
+                crop=False,
+                quality=78,
+                max_bytes=upload_byte_cap,
+            )
+            try:
+                variants = _build_responsive_variants(
+                    source,
+                    main.name,
+                    widths=BANNER_GRID_RESPONSIVE_WIDTHS,
+                    max_bytes_map=BANNER_GRID_VARIANT_MAX_BYTES,
+                    main_max_dimension=GRID_BANNER_MAX_DIMENSION,
+                    fit_banner=True,
+                    banner_settings={
+                        'max_width': GRID_BANNER_MAX_DIMENSION,
+                        'max_height': GRID_BANNER_MAX_DIMENSION,
+                        'crop': False,
+                    },
+                )
+                return _finalize_banner_result(
+                    {'main': main, 'variants': variants},
+                    raw_original,
+                    filename,
+                    needs_resize=needs_resize,
+                )
+            except Exception:
+                logger.warning('Grid JPEG varijante nisu kreirane.', exc_info=True)
+                return _finalize_banner_result(
+                    main,
+                    raw_original,
+                    filename,
+                    needs_resize=needs_resize,
+                )
 
     if tip in ('featured', 'spotlight'):
         max_bytes_map = dict(BANNER_WIDE_VARIANT_MAX_BYTES)
         if tip == 'spotlight':
             max_bytes_map[1200] = MAX_SPOTLIGHT_BANNER_AVIF_BYTES
         try:
-            return _processed_image_result(
+            result = _processed_image_result(
                 source,
                 filename,
                 widths=SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS if tip == 'spotlight' else FEATURED_BANNER_RESPONSIVE_WIDTHS,
@@ -922,12 +1112,39 @@ def process_banner_image_for_admin(image_field, tip='hero'):
                     'max_width': BANNER_MAX_WIDTH,
                     'crop': False,
                 },
+                upload_byte_cap=upload_byte_cap,
+            )
+            return _finalize_banner_result(
+                result,
+                raw_original,
+                filename,
+                needs_resize=needs_resize,
             )
         except Exception as exc:
-            logger.warning('%s banner obrada nije uspjela (%s), koristim jednostavan upload.', tip, exc)
-            return process_banner_image(image_field, tip=tip)
+            logger.warning('%s banner obrada nije uspjela (%s), čuvam original ili JPEG.', tip, exc)
+            main = _encode_banner_jpeg_fallback(
+                source,
+                filename,
+                max_width=settings['max_width'],
+                max_height=settings.get('max_height'),
+                crop=settings.get('crop', False),
+                quality=85,
+                max_bytes=upload_byte_cap,
+            )
+            return _finalize_banner_result(
+                main,
+                raw_original,
+                filename,
+                needs_resize=needs_resize,
+            )
 
-    return process_banner_image(image_field, tip=tip)
+    result = process_banner_image(image_field, tip=tip)
+    return _finalize_banner_result(
+        result,
+        raw_original,
+        filename,
+        needs_resize=needs_resize,
+    )
 
 
 def reprocess_existing_banner_file(image_field, *, tip='hero'):
