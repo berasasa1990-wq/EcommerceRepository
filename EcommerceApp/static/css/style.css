@@ -18,6 +18,7 @@
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --home-product-inset: 12px;
+    --product-detail-side-inset: calc(var(--home-product-inset) + 40px);
     --home-mobile-side-inset: clamp(8px, 5.12vw, 20px);
     --home-mobile-card-gap: 4px;
 }
@@ -1177,6 +1178,20 @@ main {
 
 .product-detail:has(+ .product-detail-related) {
     padding-bottom: 40px;
+}
+
+@media (min-width: 769px) {
+    .product-detail {
+        max-width: none;
+        width: 100%;
+        padding-left: var(--product-detail-side-inset);
+        padding-right: var(--product-detail-side-inset);
+    }
+
+    .product-detail-related .home-product-catalog .home-products-header {
+        padding-left: var(--product-detail-side-inset);
+        padding-right: var(--product-detail-side-inset);
+    }
 }
 
 .home-products-header--izdvojeno h2 {
@@ -3101,11 +3116,6 @@ body.search-results-active main {
 }
 
 @media (min-width: 1024px) {
-    .product-detail {
-        padding-left: 32px;
-        padding-right: 32px;
-    }
-
     .product-detail-grid {
         gap: 56px;
     }
