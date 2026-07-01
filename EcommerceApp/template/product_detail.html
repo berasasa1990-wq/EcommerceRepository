@@ -57,7 +57,7 @@
             <p class="product-detail-category">{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}</p>
 
             {% if not product.varijacije.count %}
-            <div class="product-detail-price" id="detailPrice">
+            <div class="product-detail-price product-price--detail" id="detailPrice">
                 {% include 'partials/product_price.html' with item=product %}
             </div>
 

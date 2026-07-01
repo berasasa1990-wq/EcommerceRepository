@@ -1,7 +1,7 @@
 {% for var in product.varijacije.all %}
 <div class="product-detail-variation-row"{% if var.slika %} data-image="{{ var.slika.url }}"{% endif %}>
     <span class="product-detail-variation-name">{{ var.naziv }}</span>
-    <span class="product-detail-variation-price">
+    <span class="product-detail-variation-price product-price--detail">
         {% include 'partials/product_price.html' with item=var %}
     </span>
     {% if var.na_stanju %}
