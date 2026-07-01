@@ -1106,12 +1106,20 @@ main {
 }
 
 .home-product-catalog .product-image {
-    max-height: 196px;
+    max-height: none;
+    width: 100%;
+    aspect-ratio: 1;
 }
 
 @media (min-width: 769px) {
-    .home-product-catalog .product-grid {
+    .home-product-catalog.product-catalog--compact .catalog-products .product-grid {
         grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .home-product-catalog .product-image {
+        max-height: 173px;
+        aspect-ratio: auto;
     }
 }
 
