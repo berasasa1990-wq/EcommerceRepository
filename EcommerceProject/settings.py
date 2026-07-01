@@ -296,19 +296,19 @@ except (PermissionError, OSError):
               "Attach the disk in Render and redeploy.")
     pass
 
-# Email — unesite Gmail App Password u .env datoteku (EMAIL_APP_PASSWORD)
+# Email — ProtonMail SMTP (EMAIL_APP_PASSWORD = SMTP token iz Proton postavki)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = _env('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_HOST = _env('EMAIL_HOST', 'smtp.protonmail.ch')
 EMAIL_PORT = int(_env('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = _env('EMAIL_USE_TLS', 'true').lower() == 'true'
-EMAIL_HOST_USER = _env('EMAIL_HOST_USER', 'sasabera1990@gmail.com')
+EMAIL_HOST_USER = _env('EMAIL_HOST_USER', 'narudzbe@opremazaribolov.ba')
 EMAIL_HOST_PASSWORD = _env('EMAIL_APP_PASSWORD').replace(' ', '')
-DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'sasabera1990@gmail.com')
+DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'narudzbe@opremazaribolov.ba')
 ORDER_NOTIFICATION_EMAIL = _env('ORDER_NOTIFICATION_EMAIL', 'narudzbe@opremazaribolov.ba')
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
 SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')
-STORE_EMAIL = _env('STORE_EMAIL', 'sasabera1990@gmail.com')
+STORE_EMAIL = _env('STORE_EMAIL', 'narudzbe@opremazaribolov.ba')
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'account'

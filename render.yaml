@@ -37,11 +37,21 @@ services:
       - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
       # Kopiraj ostale iz .env:
+      - key: EMAIL_HOST
+        sync: false  # smtp.protonmail.ch
+      - key: EMAIL_PORT
+        sync: false  # 587
+      - key: EMAIL_USE_TLS
+        sync: false  # true
       - key: EMAIL_APP_PASSWORD
-        sync: false
+        sync: false  # Proton SMTP token
       - key: EMAIL_HOST_USER
-        sync: false
+        sync: false  # narudzbe@opremazaribolov.ba
+      - key: DEFAULT_FROM_EMAIL
+        sync: false  # narudzbe@opremazaribolov.ba
       - key: ORDER_NOTIFICATION_EMAIL
+        sync: false  # narudzbe@opremazaribolov.ba
+      - key: STORE_EMAIL
         sync: false  # narudzbe@opremazaribolov.ba
       - key: SYNC_REMOTE_URL
         sync: false
