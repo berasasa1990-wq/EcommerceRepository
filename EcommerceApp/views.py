@@ -31,7 +31,7 @@ from .loyalty import (
 from .pricing import izracunaj_sazetak, sazetak_iz_narudzbe
 from .emails import EmailNotConfiguredError, send_order_emails
 from .render_sync import sync_korisnik, sync_narudzba
-from .utils.images import image_field_dimensions
+from .utils.images import build_hero_responsive_sources, image_field_dimensions
 
 logger = logging.getLogger(__name__)
 from .forms import CheckoutForm, CouponForm, LoginForm, ProfileForm, RegisterForm
@@ -349,8 +349,28 @@ def _banner_actions(banner):
     return actions
 
 
-def _banner_to_hero_slide(banner):
-    image_width, image_height = image_field_dimensions(banner.slika, default=(1920, 1080))
+def _banner_to_hero_slide(banner, request=None):
+    sources = build_hero_responsive_sources(banner.slika, request)
+    if sources:
+        slide = {
+            'title': banner.naslov,
+            'subtitle': banner.podnaslov,
+            'image': sources['fallback_url'],
+            'image_width': sources['display_width'],
+            'image_height': sources['display_height'],
+            'url': banner.get_link_href(),
+            'actions': _banner_actions(banner),
+        }
+        if sources.get('srcset_avif'):
+            slide['image_srcset_avif'] = sources['srcset_avif']
+        if sources.get('srcset_jpeg'):
+            slide['image_srcset_jpeg'] = sources['srcset_jpeg']
+        return slide
+
+    image_width, image_height = image_field_dimensions(
+        banner.slika,
+        default=(1920, 640),
+    )
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
@@ -490,10 +510,15 @@ def home(request):
     first_grid_banner = grid_banners.first()
     has_hero_slides = bool(not filters_active and hero_banners.exists())
     lcp_image_url = None
+    lcp_image_srcset = None
     eager_first_novo_image = False
     if not filters_active:
         if first_hero and first_hero.slika:
-            lcp_image_url = request.build_absolute_uri(first_hero.slika.url)
+            hero_sources = build_hero_responsive_sources(first_hero.slika, request)
+            lcp_image_url = hero_sources.get('lcp_preload_url') or request.build_absolute_uri(
+                first_hero.slika.url,
+            )
+            lcp_image_srcset = hero_sources.get('srcset_avif') or hero_sources.get('srcset_jpeg')
         elif first_grid_banner and first_grid_banner.slika:
             lcp_image_url = request.build_absolute_uri(first_grid_banner.slika.url)
         elif latest_products:
@@ -520,9 +545,10 @@ def home(request):
     context = {
         **_base_context(),
         'lcp_image_url': lcp_image_url,
+        'lcp_image_srcset': lcp_image_srcset,
         'has_hero_slides': has_hero_slides,
         'eager_first_novo_image': eager_first_novo_image,
-        'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners],
+        'hero_slides': [_banner_to_hero_slide(b, request) for b in hero_banners],
         'grid_banners': [_banner_to_card(b) for b in grid_banners],
         'featured_cards': [_banner_to_card(b) for b in featured_banners],
         'spotlight': spotlight,
