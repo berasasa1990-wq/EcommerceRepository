@@ -1,10 +1,15 @@
+import logging
+from email.utils import formataddr
+
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import SiteSettings
 from .pricing import sazetak_iz_narudzbe
+
+logger = logging.getLogger(__name__)
 
 
 class EmailNotConfiguredError(Exception):
@@ -14,8 +19,16 @@ class EmailNotConfiguredError(Exception):
 def _ensure_email_configured():
     if not settings.EMAIL_HOST_PASSWORD:
         raise EmailNotConfiguredError(
-            'EMAIL_APP_PASSWORD nije postavljen u .env datoteci.',
+            'EMAIL_APP_PASSWORD (Proton SMTP token) nije postavljen u okruženju.',
         )
+    if not settings.EMAIL_HOST_USER:
+        raise EmailNotConfiguredError('EMAIL_HOST_USER nije postavljen u okruženju.')
+    if not settings.ORDER_NOTIFICATION_EMAIL:
+        raise EmailNotConfiguredError('ORDER_NOTIFICATION_EMAIL nije postavljen u okruženju.')
+
+
+def _from_email():
+    return formataddr(('opremazaribolov.ba', settings.DEFAULT_FROM_EMAIL))
 
 
 def _admin_order_text(order):
@@ -81,17 +94,31 @@ def _render_order_html(order, show_warranty=False):
     )
 
 
-def send_order_emails(order):
+def send_admin_order_notification(order):
+    """Obavijest trgovini — uvijek na ORDER_NOTIFICATION_EMAIL."""
     _ensure_email_configured()
 
+    recipient = settings.ORDER_NOTIFICATION_EMAIL
     admin_mail = EmailMultiAlternatives(
         subject=f'Nova narudžba #{order.broj} — opremazaribolov.ba',
         body=_admin_order_text(order),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[settings.ORDER_NOTIFICATION_EMAIL],
+        from_email=_from_email(),
+        to=[recipient],
+        reply_to=[order.email],
     )
     admin_mail.attach_alternative(_render_order_html(order, show_warranty=True), 'text/html')
     admin_mail.send(fail_silently=False)
+    logger.info(
+        'Admin obavijest za narudžbu #%s poslana na %s (SMTP: %s)',
+        order.broj,
+        recipient,
+        settings.EMAIL_HOST,
+    )
+
+
+def send_customer_order_confirmation(order):
+    """Potvrda kupcu na email iz narudžbe."""
+    _ensure_email_configured()
 
     customer_text = (
         f'Hvala na narudžbi #{order.broj}.\n\n'
@@ -101,8 +128,27 @@ def send_order_emails(order):
     customer_mail = EmailMultiAlternatives(
         subject=f'Potvrda narudžbe #{order.broj} — opremazaribolov.ba',
         body=customer_text,
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=_from_email(),
         to=[order.email],
+        reply_to=[settings.ORDER_NOTIFICATION_EMAIL],
     )
     customer_mail.attach_alternative(_render_order_html(order, show_warranty=False), 'text/html')
     customer_mail.send(fail_silently=False)
+    logger.info(
+        'Potvrda narudžbe #%s poslana kupcu na %s',
+        order.broj,
+        order.email,
+    )
+
+
+def send_order_emails(order):
+    """Prvo obavijest trgovini, zatim potvrda kupcu."""
+    send_admin_order_notification(order)
+    try:
+        send_customer_order_confirmation(order)
+    except Exception:
+        logger.exception(
+            'Potvrda kupcu za narudžbu #%s nije poslana, admin obavijest je poslana.',
+            order.broj,
+        )
+        raise

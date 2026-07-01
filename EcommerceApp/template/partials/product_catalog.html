@@ -1,6 +1,6 @@
 <section class="product-catalog{% if catalog_compact %} product-catalog--compact{% endif %}">
     <div class="catalog-layout">
-        {% include 'partials/product_filter_sidebar.html' with filter_action=filter_action %}
+        {% include 'partials/product_filter_sidebar.html' with filter_action=filter_action filter_size_options=filter_size_options filter_size_clear_url=filter_size_clear_url %}
 
         <div class="catalog-products">
             {% if category %}

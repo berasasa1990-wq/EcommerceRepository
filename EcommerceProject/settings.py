@@ -145,7 +145,7 @@ if not DEBUG:
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
-    'EcommerceApp',
+    'EcommerceApp.apps.EcommerceappConfig',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -296,15 +296,22 @@ except (PermissionError, OSError):
               "Attach the disk in Render and redeploy.")
     pass
 
-# Email — ProtonMail SMTP (EMAIL_APP_PASSWORD = SMTP token iz Proton postavki)
+# Email — ProtonMail SMTP (EMAIL_APP_PASSWORD ili EMAIL_HOST_PASSWORD = SMTP token)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = _env('EMAIL_HOST', 'smtp.protonmail.ch')
 EMAIL_PORT = int(_env('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = _env('EMAIL_USE_TLS', 'true').lower() == 'true'
+EMAIL_USE_SSL = _env('EMAIL_USE_SSL', 'false').lower() == 'true'
 EMAIL_HOST_USER = _env('EMAIL_HOST_USER', 'narudzbe@opremazaribolov.ba')
-EMAIL_HOST_PASSWORD = _env('EMAIL_APP_PASSWORD').replace(' ', '')
+EMAIL_HOST_PASSWORD = (
+    _env('EMAIL_APP_PASSWORD') or _env('EMAIL_HOST_PASSWORD')
+).replace(' ', '')
 DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'narudzbe@opremazaribolov.ba')
-ORDER_NOTIFICATION_EMAIL = _env('ORDER_NOTIFICATION_EMAIL', 'narudzbe@opremazaribolov.ba')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+ORDER_NOTIFICATION_EMAIL = _env(
+    'ORDER_NOTIFICATION_EMAIL',
+    'narudzbe@opremazaribolov.ba',
+).strip().lower()
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
 SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')

@@ -93,11 +93,54 @@ def _parse_decimal(value):
         return None
 
 
+_SIZE_EXACT = re.compile(r'^#\d+(?:/\d+)?$', re.I)
+_SIZE_TRAILING = re.compile(r'(#\d+(?:/\d+)?)\s*$', re.I)
+_SIZE_PLAIN = re.compile(r'^\d+$')
+
+
+def _variation_size_label(naziv):
+    """Vraća veličinu iz naziva varijacije (#broj), ako postoji."""
+    naziv = (naziv or '').strip()
+    if not naziv:
+        return None
+    if _SIZE_EXACT.match(naziv):
+        return naziv
+    if _SIZE_PLAIN.match(naziv):
+        return f'#{naziv}'
+    match = _SIZE_TRAILING.search(naziv)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _size_sort_key(label):
+    match = re.search(r'#(\d+)', label or '')
+    return (int(match.group(1)) if match else 0, label or '')
+
+
+def _available_sizes(products_qs):
+    nazivi = ProductVariation.objects.filter(
+        artikal__in=products_qs,
+        na_stanju=True,
+    ).values_list('naziv', flat=True)
+    sizes = {_variation_size_label(naziv) for naziv in nazivi}
+    sizes.discard(None)
+    return sorted(sizes, key=_size_sort_key)
+
+
+def _product_matches_size(product, size_label):
+    return any(
+        variation.na_stanju and _variation_size_label(variation.naziv) == size_label
+        for variation in product.varijacije.all()
+    )
+
+
 def _get_filter_params(request):
     return {
         'q': request.GET.get('q', '').strip(),
         'kategorija': request.GET.get('kategorija', '').strip(),
         'brend': request.GET.get('brend', '').strip(),
+        'velicina': request.GET.get('velicina', '').strip(),
         'cijena_od': request.GET.get('cijena_od', '').strip(),
         'cijena_do': request.GET.get('cijena_do', '').strip(),
         'sort': request.GET.get('sort', '').strip(),
@@ -189,6 +232,13 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params['akcija']:
         products = [product for product in products if _product_is_on_sale(product)]
 
+    if params['velicina']:
+        size_label = params['velicina']
+        products = [
+            product for product in products
+            if _product_matches_size(product, size_label)
+        ]
+
     if params['sort'] == 'rastuca':
         products.sort(key=_effective_product_price)
     elif params['sort'] == 'opadajuca':
@@ -202,11 +252,34 @@ HOME_PRODUCT_ORDER_KEY = 'home_product_ids'
 HOME_FILTER_KEY = 'home_filter_key'
 
 
-def _catalog_query_string(filter_params, page=None):
+def _catalog_query_string(filter_params, page=None, **overrides):
     params = {key: value for key, value in filter_params.items() if value}
+    for key, value in overrides.items():
+        if value:
+            params[key] = value
+        else:
+            params.pop(key, None)
     if page and page > 1:
         params['page'] = page
     return urlencode(params)
+
+
+def _build_filter_url(filter_action, filter_params, **overrides):
+    query = _catalog_query_string(filter_params, **overrides)
+    if query:
+        return f'{filter_action}?{query}#product-showcase'
+    return f'{filter_action}#product-showcase'
+
+
+def _size_filter_options(filter_action, filter_params, sizes):
+    options = []
+    for size in sizes:
+        options.append({
+            'label': size,
+            'url': _build_filter_url(filter_action, filter_params, velicina=size),
+            'selected': filter_params.get('velicina') == size,
+        })
+    return options
 
 
 def _paginate_home_products(request, products, filter_params):
@@ -556,6 +629,8 @@ def category_detail(request, slug):
     )
     category_ids = category.get_descendant_ids()
     products_qs = _product_queryset().filter(kategorija_id__in=category_ids)
+    filter_sizes = _available_sizes(products_qs)
+    category_url = reverse('category', args=[category.slug])
     products, filter_params = _apply_product_filters(
         products_qs,
         request,
@@ -568,6 +643,8 @@ def category_detail(request, slug):
         'products': products,
         'filter_categories': _filter_categories(),
         'filter_params': filter_params,
+        'filter_size_options': _size_filter_options(category_url, filter_params, filter_sizes),
+        'filter_size_clear_url': _build_filter_url(category_url, filter_params, velicina=''),
         # SEO
         'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
         'seo_description': category.meta_description or f"{category.naziv} — kvalitetna oprema za ribolov po povoljnim cijenama. Brza dostava širom Bosne i Hercegovine.",
@@ -953,44 +1030,48 @@ def checkout(request):
                     kolicina=item['quantity'],
                 )
 
-            # Uvijek sinkronizuj narudžbu na loyalty program (i ažuriraj loyalty bodove)
-            # Email je sekundaran — ne smije blokirati sync
+            cart.clear()
+
+            try:
+                send_order_emails(order)
+            except EmailNotConfiguredError:
+                logger.error(
+                    'Email nije konfigurisan — narudžba #%s nije poslana na %s.',
+                    order.broj,
+                    settings.ORDER_NOTIFICATION_EMAIL,
+                )
+                messages.warning(
+                    request,
+                    'Narudžba je sačuvana, ali email nije poslan. '
+                    'Provjerite Proton SMTP postavke (EMAIL_APP_PASSWORD) na serveru.',
+                )
+            except Exception:
+                logger.exception(
+                    'Slanje emaila za narudžbu #%s nije uspjelo (cilj: %s).',
+                    order.broj,
+                    settings.ORDER_NOTIFICATION_EMAIL,
+                )
+                messages.warning(
+                    request,
+                    'Narudžba je sačuvana, ali email obavijest nije poslana. Kontaktirajte nas.',
+                )
+
+            # Sync loyalty nakon emaila — ne smije blokirati slanje narudžbe na mail
             logger.info("Checkout završen, pripremam sync za narudžbu #%s", order.broj)
             if request.user.is_authenticated:
                 azuriraj_loyalty_nakon_narudzbe(order)
-                # Cim kupac sa karticom poruci, automatski evidentiraj karticu preko korisnik API
                 card = getattr(request.user, 'loyalty_kartica', None)
                 if card:
-                    logger.info("Automatski sync korisnik (kartica) za kupca %s prije narudžbe", request.user.email)
+                    logger.info(
+                        "Automatski sync korisnik (kartica) za kupca %s nakon narudžbe",
+                        request.user.email,
+                    )
                     sync_korisnik(request.user)
             result = sync_narudzba(order)
             if result is None:
                 logger.warning("sync_narudzba vratio None (vjerovatno SYNC nije aktivan)")
             elif isinstance(result, dict) and not result.get('ok', True):
                 logger.error("sync_narudzba nije uspio: %s", result)
-            cart.clear()
-
-            try:
-                send_order_emails(order)
-            except EmailNotConfiguredError:
-                messages.warning(
-                    request,
-                    'Narudžba je sačuvana, ali email nije poslan. '
-                    'Dodajte EMAIL_APP_PASSWORD u .env datoteku i restartujte server.',
-                )
-            except Exception:
-                logger.exception('Slanje emaila za narudžbu #%s nije uspjelo.', order.broj)
-                if settings.DEBUG:
-                    messages.warning(
-                        request,
-                        'Narudžba je sačuvana, ali email nije poslan. '
-                        'Provjerite EMAIL_APP_PASSWORD u .env i restartujte Django server.',
-                    )
-                else:
-                    messages.warning(
-                        request,
-                        'Narudžba je sačuvana, ali potvrda emailom nije poslana. Kontaktirajte nas.',
-                    )
 
             messages.success(request, 'Narudžba je uspješno poslana!')
             return redirect('order_success', broj=order.broj)

@@ -15,6 +15,27 @@
         <input type="hidden" name="brend" value="{{ filter_params.brend }}">
         {% endif %}
 
+        {% if filter_params.velicina %}
+        <input type="hidden" name="velicina" value="{{ filter_params.velicina }}">
+        {% endif %}
+
+        {% if filter_size_options %}
+        <div class="filter-group filter-group--sizes">
+            <span class="filter-label">Veličina</span>
+            {% if filter_params.velicina %}
+            <p class="filter-selected-size">Odabrano: <strong>{{ filter_params.velicina }}</strong></p>
+            {% endif %}
+            <div class="filter-size-list">
+                {% for option in filter_size_options %}
+                <a href="{{ option.url }}" class="filter-size-option{% if option.selected %} is-selected{% endif %}">{{ option.label }}</a>
+                {% endfor %}
+            </div>
+            {% if filter_params.velicina %}
+            <a href="{{ filter_size_clear_url }}" class="filter-size-clear">Prikaži sve veličine</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <div class="filter-group">
             <label class="filter-label" for="filter-kategorija">Kategorija</label>
             <select id="filter-kategorija" name="kategorija" class="filter-input">
