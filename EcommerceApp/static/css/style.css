@@ -667,11 +667,12 @@ main {
 .hero-carousel {
     position: relative;
     width: 100%;
+    max-width: 100vw;
     height: clamp(280px, 36vw, 480px);
     min-height: 0;
     max-height: 480px;
     overflow: hidden;
-    background: var(--white);
+    background: #111;
 }
 
 .carousel-track {
@@ -708,17 +709,12 @@ main {
     inset: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--white);
+    background-color: #111;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .slide-image-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     width: 100%;
     height: 100%;
 }
@@ -727,8 +723,8 @@ main {
     display: block;
     width: 100%;
     height: 100%;
-    max-width: 100%;
-    object-fit: contain;
+    max-width: none;
+    object-fit: cover;
     object-position: center center;
 }
 
@@ -3717,16 +3713,11 @@ body.search-results-active main {
     }
 
     .slide-image {
-        background-color: var(--white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        background-color: #111;
     }
 
     .slide-image-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: block;
         width: 100%;
         height: 100%;
     }
@@ -3735,7 +3726,7 @@ body.search-results-active main {
         width: 100%;
         height: 100%;
         max-width: none;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
     }
 
@@ -4627,13 +4618,14 @@ body.search-results-active main {
     }
 
     .slide-image {
-        background-color: var(--white);
+        background-color: #111;
     }
 
     .slide-image-img {
+        width: 100%;
         max-width: none;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
     }
 
