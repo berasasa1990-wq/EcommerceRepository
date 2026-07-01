@@ -20,18 +20,20 @@
             </svg>
         </button>
 
-        <img src=""
-             data-src="{{ active_popup.slika.url }}"
-             alt="{{ active_popup.naziv }}"
-             class="site-popup-image"
-             width="600"
-             height="600"
-             decoding="async">
+        <div class="site-popup-media">
+            <img src=""
+                 data-src="{{ active_popup.slika.url }}"
+                 alt="{{ active_popup.naziv }}"
+                 class="site-popup-image"
+                 decoding="async">
+        </div>
 
-        <a href="{{ active_popup.get_link_href }}"
-           class="btn btn-primary site-popup-cta">
-            {{ active_popup.tekst_dugmeta }}
-        </a>
+        <div class="site-popup-actions">
+            <a href="{{ active_popup.get_link_href }}"
+               class="btn btn-primary site-popup-cta">
+                {{ active_popup.tekst_dugmeta }}
+            </a>
+        </div>
 
     </div>
 </div>
