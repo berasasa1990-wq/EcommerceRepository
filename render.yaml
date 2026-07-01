@@ -41,6 +41,8 @@ services:
         sync: false
       - key: EMAIL_HOST_USER
         sync: false
+      - key: ORDER_NOTIFICATION_EMAIL
+        sync: false  # narudzbe@opremazaribolov.ba
       - key: SYNC_REMOTE_URL
         sync: false
       - key: SYNC_API_KEY
