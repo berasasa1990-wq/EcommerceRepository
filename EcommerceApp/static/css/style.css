@@ -263,6 +263,30 @@ img.home-vlog-card-image {
     display: block;
 }
 
+@media (min-width: 1025px) {
+    .nav-menu {
+        gap: 0;
+    }
+
+    .nav-item > a {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .nav-item--akcija > a.nav-link-akcija {
+        margin-left: 12px;
+    }
+
+    .mega-menu-panel::before {
+        content: '';
+        position: absolute;
+        top: -16px;
+        left: 0;
+        right: 0;
+        height: 16px;
+    }
+}
+
 .mega-menu {
     display: none;
     width: 100%;

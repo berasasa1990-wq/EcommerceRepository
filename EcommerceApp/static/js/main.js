@@ -81,17 +81,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function scheduleMegaClose() {
         clearTimeout(megaCloseTimer);
-        megaCloseTimer = setTimeout(closeMegaMenu, 120);
+        megaCloseTimer = setTimeout(closeMegaMenu, 180);
     }
 
     if (window.innerWidth > 1024) {
         megaItems.forEach((item) => {
             item.addEventListener('mouseenter', () => openMegaMenu(item));
-            item.addEventListener('mouseleave', scheduleMegaClose);
         });
 
-        megaMenuPanel?.addEventListener('mouseenter', () => clearTimeout(megaCloseTimer));
-        megaMenuPanel?.addEventListener('mouseleave', scheduleMegaClose);
+        document.querySelectorAll('[data-nav-item]:not(.has-mega-menu)').forEach((item) => {
+            item.addEventListener('mouseenter', () => {
+                clearTimeout(megaCloseTimer);
+                closeMegaMenu();
+            });
+        });
+
+        header?.addEventListener('mouseenter', () => clearTimeout(megaCloseTimer));
+        header?.addEventListener('mouseleave', scheduleMegaClose);
 
         window.addEventListener('resize', () => {
             const activeItem = document.querySelector('[data-nav-item].mega-open');
