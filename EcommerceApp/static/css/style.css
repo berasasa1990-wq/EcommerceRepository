@@ -2141,6 +2141,11 @@ body.search-results-active main {
     gap: 20px;
 }
 
+.category-page .product-catalog--compact .catalog-products .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
 .product-catalog--compact .product-image,
 .product-catalog--full .product-image {
     max-height: none;
@@ -2148,9 +2153,12 @@ body.search-results-active main {
     aspect-ratio: 1;
 }
 
-/* Images in category listings */
+/* Category listings: full-width square image area */
 .category-page .product-catalog--compact .product-image {
-    max-height: 196px;
+    aspect-ratio: 1;
+    max-height: none;
+    height: auto;
+    min-height: 0;
 }
 
 /* Smaller product images on homepage (previous setting) */
@@ -3859,8 +3867,7 @@ body.search-results-active main {
         height: 66px;
     }
 
-    .product-showcase .product-catalog--compact .product-image,
-    .category-page .product-catalog--compact .product-image {
+    .product-showcase .product-catalog--compact .product-image {
         position: relative;
         aspect-ratio: unset;
         width: 100%;
@@ -3872,10 +3879,16 @@ body.search-results-active main {
         overflow: hidden;
     }
 
+    .category-page .product-catalog--compact .product-image {
+        aspect-ratio: 1;
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+    }
+
     .product-showcase .product-catalog--compact .product-image img,
-    .product-showcase .product-catalog--compact .product-image .product-image-placeholder,
-    .category-page .product-catalog--compact .product-image img,
-    .category-page .product-catalog--compact .product-image .product-image-placeholder {
+    .product-showcase .product-catalog--compact .product-image .product-image-placeholder {
         position: absolute;
         inset: 4px;
         width: calc(100% - 8px);
@@ -4568,12 +4581,6 @@ body.search-results-active main {
         height: 132px;
         min-height: 132px;
         max-height: 132px;
-    }
-
-    .category-page .product-catalog--compact .product-image {
-        height: 112px;
-        min-height: 112px;
-        max-height: 112px;
     }
 
     .product-card {
