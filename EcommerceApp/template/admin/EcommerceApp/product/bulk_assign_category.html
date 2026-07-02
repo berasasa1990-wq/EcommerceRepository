@@ -37,6 +37,16 @@
         gap: 12px;
         align-items: center;
     }
+    #bulk-category-search {
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    #bulk-category-search:focus {
+        border-color: #417690;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
+    }
 </style>
 {% endblock %}
 
@@ -71,10 +81,12 @@
 
         <div class="form-row">
             <label for="{{ form.kategorija.id_for_label }}">{{ form.kategorija.label }}</label>
+            <input type="text" id="bulk-category-search" placeholder="Pretraži kategorije (npr. štap, mašinica...)" style="width: 100%; max-width: 480px; padding: 6px 8px; margin-bottom: 6px; box-sizing: border-box;">
             {{ form.kategorija }}
             {% if form.kategorija.errors %}
             <p class="errornote">{{ form.kategorija.errors|join:', ' }}</p>
             {% endif %}
+            <p class="help" style="margin-top:4px; color:#666; font-size:12px;">Koristi pretragu iznad da lakše nađeš kategoriju.</p>
         </div>
 
         <div class="bulk-assign-actions">
@@ -83,4 +95,50 @@
         </div>
     </form>
 </div>
+
+<script>
+(function() {
+    var searchInput = document.getElementById('bulk-category-search');
+    var select = document.querySelector('#content-main select.odoo-select, select[name="kategorija"]');
+    if (!searchInput || !select) return;
+
+    // Store original options data (including hierarchy text like "Roditelj → Dijete")
+    var original = Array.prototype.map.call(select.options, function(opt) {
+        return {
+            value: opt.value,
+            text: opt.text,
+            selected: opt.selected
+        };
+    });
+
+    function filterOptions(term) {
+        term = (term || '').toLowerCase().trim();
+        var currentVal = select.value;
+
+        // Clear current options
+        select.innerHTML = '';
+
+        var hasSelection = false;
+
+        original.forEach(function(item) {
+            var matches = !term || item.text.toLowerCase().indexOf(term) !== -1;
+            // Always include currently selected value even if it doesn't match the filter (so submit works)
+            if (matches || item.value === currentVal) {
+                var opt = document.createElement('option');
+                opt.value = item.value;
+                opt.text = item.text;
+                if (item.value === currentVal) {
+                    opt.selected = true;
+                    hasSelection = true;
+                }
+                select.appendChild(opt);
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', function() {
+        filterOptions(this.value);
+    });
+})();
+</script>
 {% endblock %}

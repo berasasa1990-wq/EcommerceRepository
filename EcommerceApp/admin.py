@@ -272,9 +272,16 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('naziv', 'slug')
+    list_display = ('naziv', 'roditelj', 'slug')
+    list_filter = ('roditelj',)
     prepopulated_fields = {'slug': ('naziv',)}
     search_fields = ('naziv', 'slug')
+    autocomplete_fields = ('roditelj',)
+    fieldsets = (
+        (None, {
+            'fields': ('naziv', 'slug', 'roditelj'),
+        }),
+    )
 
 
 @admin.register(Brand)
@@ -844,18 +851,38 @@ class ProductAdmin(admin.ModelAdmin):
             )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
 
+        # Group tags hierarchically for easier bulk assignment (main tag + all descendants)
+        root_tags = Tag.objects.filter(roditelj__isnull=True).order_by('naziv')
+        grouped_tags = []
+        all_covered_pks = set()
+        for parent in root_tags:
+            descendants = list(parent.get_all_descendants(include_self=False))
+            grouped_tags.append({
+                'parent': parent,
+                'children': descendants,
+            })
+            all_covered_pks.add(parent.pk)
+            for d in descendants:
+                all_covered_pks.add(d.pk)
+
+        # Flat tags that are not part of any hierarchy
+        flat_tags = list(
+            Tag.objects.exclude(pk__in=all_covered_pks).order_by('naziv')
+        )
+
         context = {
             **self.admin_site.each_context(request),
             'title': 'Dodjela tagova',
             'form': form,
-            'form_field': form['tagovi'],
+            'grouped_tags': grouped_tags,
+            'flat_tags': flat_tags,
             'queryset': queryset,
             'opts': self.model._meta,
             'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
             'action_name': 'bulk_assign_tags',
             'submit_label': 'Dodaj tagove',
         }
-        return render(request, 'admin/EcommerceApp/product/bulk_assign_field.html', context)
+        return render(request, 'admin/EcommerceApp/product/bulk_assign_tags.html', context)
 
     bulk_assign_tags.short_description = 'Dodaj tagove'
 

@@ -290,11 +290,20 @@ class Category(models.Model):
 class Tag(models.Model):
     naziv = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True, blank=True)
+    roditelj = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='podtagovi',
+        verbose_name='Glavni tag (roditelj)',
+        help_text='Ako je izabran, ovaj tag je podtag glavnog taga (npr. "Masinice" kao glavni, a "Shimano", "Daiwa" pod njim).',
+    )
 
     class Meta:
         verbose_name = 'Tag'
         verbose_name_plural = 'Tagovi'
-        ordering = ['naziv']
+        ordering = ['roditelj__naziv', 'naziv']
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -302,7 +311,19 @@ class Tag(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
+        if self.roditelj:
+            return f'{self.roditelj.naziv} → {self.naziv}'
         return self.naziv
+
+    def get_all_descendants(self, include_self=False):
+        """Return all sub-tags recursively (for bulk/group assignment)."""
+        descendants = set()
+        if include_self:
+            descendants.add(self)
+        for child in self.podtagovi.all():
+            descendants.add(child)
+            descendants.update(child.get_all_descendants(include_self=True))
+        return descendants
 
 
 class Brand(models.Model):

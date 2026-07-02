@@ -1,0 +1,196 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .bulk-assign-form {
+        max-width: 720px;
+        margin-top: 20px;
+    }
+    .bulk-assign-form label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .bulk-assign-list {
+        margin: 20px 0;
+        padding: 14px 16px;
+        background: #f8f8f8;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        max-width: 720px;
+    }
+    .bulk-assign-list ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+    .bulk-assign-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    .tag-group {
+        margin-bottom: 16px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 8px 12px;
+        background: #fff;
+    }
+    .tag-group-header {
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .tag-group-header input[type="checkbox"] {
+        margin-right: 4px;
+    }
+    .tag-children {
+        margin-left: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .tag-child {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .tag-child input[type="checkbox"] {
+        margin-right: 4px;
+    }
+    .flat-tags {
+        margin-top: 16px;
+        border-top: 1px solid #e5e5e5;
+        padding-top: 12px;
+    }
+    .help {
+        color: #666;
+        font-size: 12px;
+        margin: 4px 0 12px;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Dodjela tagova
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Dodjela tagova</h1>
+
+    <div class="bulk-assign-list">
+        <strong>Odabrano artikala: {{ queryset|length }}</strong>
+        <ul>
+            {% for product in queryset %}
+            <li>{{ product.naziv }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post" class="bulk-assign-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for product in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
+        {% endfor %}
+
+        <p class="help">
+            <strong>Glavni tagovi</strong> (npr. "Masinice"): kliknite glavni tag da automatski označite sve podtagove ispod njega.
+            To vam štedi kliktanje jedno po jedno.
+        </p>
+
+        {% for group in grouped_tags %}
+        <div class="tag-group">
+            <div class="tag-group-header">
+                <input type="checkbox" 
+                       id="parent-{{ group.parent.pk }}" 
+                       name="tagovi" 
+                       value="{{ group.parent.pk }}"
+                       class="parent-tag"
+                       data-parent="{{ group.parent.pk }}">
+                <label for="parent-{{ group.parent.pk }}" style="font-weight:600; margin:0; cursor:pointer;">
+                    {{ group.parent.naziv }}
+                </label>
+                {% if group.children %}<span style="color:#999; font-size:12px;">({{ group.children|length }} podtagova)</span>{% endif %}
+            </div>
+            {% if group.children %}
+            <div class="tag-children">
+                {% for child in group.children %}
+                <div class="tag-child">
+                    <input type="checkbox" 
+                           id="child-{{ child.pk }}" 
+                           name="tagovi" 
+                           value="{{ child.pk }}"
+                           class="child-tag"
+                           data-parent="{{ group.parent.pk }}">
+                    <label for="child-{{ child.pk }}" style="margin:0; cursor:pointer;">{{ child.naziv }}</label>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if flat_tags %}
+        <div class="flat-tags">
+            <strong style="display:block; margin-bottom:8px;">Ostali tagovi (bez glavnog):</strong>
+            {% for tag in flat_tags %}
+            <div class="tag-child" style="margin-bottom:4px;">
+                <input type="checkbox" name="tagovi" value="{{ tag.pk }}" id="flat-{{ tag.pk }}">
+                <label for="flat-{{ tag.pk }}" style="margin:0;">{{ tag.naziv }}</label>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bulk-assign-actions">
+            <input type="submit" name="apply" value="{{ submit_label }}" class="default">
+            <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    // When parent checkbox is clicked, check/uncheck all its children
+    document.querySelectorAll('.parent-tag').forEach(function(parentCb) {
+        var parentPk = parentCb.dataset.parent;
+        var children = document.querySelectorAll('.child-tag[data-parent="' + parentPk + '"]');
+
+        parentCb.addEventListener('change', function() {
+            var checked = this.checked;
+            children.forEach(function(child) {
+                child.checked = checked;
+            });
+        });
+
+        // Also, if all children checked, check parent (and vice versa)
+        children.forEach(function(child) {
+            child.addEventListener('change', function() {
+                var allChecked = true;
+                var anyChecked = false;
+                children.forEach(function(c) {
+                    if (c.checked) anyChecked = true;
+                    if (!c.checked) allChecked = false;
+                });
+                parentCb.checked = allChecked;
+                // Optional: if some checked, maybe leave parent unchecked or half, but for simplicity full only if all
+            });
+        });
+    });
+
+    // Bonus: clicking on the label area works naturally
+})();
+</script>
+{% endblock %}
