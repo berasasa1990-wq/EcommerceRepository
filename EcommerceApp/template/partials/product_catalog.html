@@ -7,6 +7,11 @@
             <div class="category-header">
                 <h1>{{ category.naziv }}</h1>
             </div>
+            {% elif catalog_title %}
+            <div class="category-header">
+                <h1>{{ catalog_title }}</h1>
+                {% if catalog_subtitle %}<p>{{ catalog_subtitle }}</p>{% endif %}
+            </div>
             {% endif %}
 
             {% if products %}
@@ -32,7 +37,7 @@
             {% endif %}
 
             {% if page_obj %}
-            {% include 'partials/catalog_pagination.html' with elided_page_range=elided_page_range %}
+            {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query %}
             {% endif %}
         </div>
     </div>

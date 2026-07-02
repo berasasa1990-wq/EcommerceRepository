@@ -574,11 +574,49 @@ def home(request):
     home_vlogs = []
     page_obj = None
     search_products = []
+    catalog_title = None
+    catalog_subtitle = None
+    filter_size_options = []
+    filter_size_clear_url = ''
+    home_url = reverse('home')
 
     if filters_active:
         products, filter_params = _apply_product_filters(_product_queryset(), request)
+        scope_qs = _product_queryset()
+        if filter_params.get('q'):
+            scope_qs = _apply_search_filter(scope_qs, filter_params['q'])
+        filter_sizes = _available_sizes(scope_qs)
+        filter_size_options = _size_filter_options(home_url, filter_params, filter_sizes)
+        filter_size_clear_url = _build_filter_url(home_url, filter_params, velicina='')
         page_obj = _paginate_home_products(request, products, filter_params)
         search_products = page_obj.object_list
+        result_count = page_obj.paginator.count
+        if filter_params.get('q'):
+            catalog_title = 'Rezultati pretrage'
+            if result_count:
+                catalog_subtitle = (
+                    f'Pronađeno {result_count} artikala za „{filter_params["q"]}".'
+                )
+            else:
+                catalog_subtitle = f'Nema artikala za „{filter_params["q"]}".'
+        elif filter_params.get('akcija'):
+            catalog_title = 'Akcija'
+            if result_count:
+                catalog_subtitle = f'{result_count} artikala na sniženoj cijeni.'
+            else:
+                catalog_subtitle = 'Trenutno nema artikala na akciji.'
+        elif filter_params.get('brend'):
+            brand = Brand.objects.filter(slug=filter_params['brend']).first()
+            if brand:
+                catalog_title = brand.naziv
+                if result_count:
+                    catalog_subtitle = f'{result_count} artikala brenda {brand.naziv}.'
+                else:
+                    catalog_subtitle = 'Nema artikala za odabrani brend.'
+        else:
+            catalog_title = 'Rezultati'
+            if result_count:
+                catalog_subtitle = f'{result_count} artikala.'
     else:
         latest_products = _home_latest_products()
         featured_products = _home_featured_products()
@@ -667,6 +705,12 @@ def home(request):
         'search_products': search_products,
         'page_obj': page_obj,
         'filter_params': filter_params,
+        'filter_categories': _filter_categories() if filters_active else [],
+        'filter_size_options': filter_size_options,
+        'filter_size_clear_url': filter_size_clear_url,
+        'filter_action': home_url,
+        'catalog_title': catalog_title,
+        'catalog_subtitle': catalog_subtitle,
         'catalog_query': _catalog_query_string(filter_params) if filters_active else '',
         'elided_page_range': (
             page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []

@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = document.getElementById('header');
     const navToggle = document.getElementById('navToggle');
     const navLinks = document.getElementById('navLinks');
-    const searchBtn = document.querySelector('.search-btn');
-    const searchOverlay = document.getElementById('searchOverlay');
+    const searchBtn = document.getElementById('searchBtnMobile');
+    const headerSearch = document.getElementById('headerSearch');
     const searchClose = document.getElementById('searchClose');
 
     window.addEventListener('scroll', () => {
@@ -34,72 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
     let megaCloseTimer;
 
     function syncMegaPanelHeight() {
-        if (!megaMenuPanel || !megaMenus.length) return;
-
-        if (window.innerWidth <= 1024) {
-            megaMenuPanel.style.removeProperty('min-height');
-            megaMenuPanel.classList.remove('is-height-synced');
-            return;
-        }
-
-        const activeMenu = document.querySelector('[data-mega-menu].active');
-        const panelWasOpen = header?.classList.contains('mega-active');
-        const previousPanelStyles = {
-            display: megaMenuPanel.style.display,
-            visibility: megaMenuPanel.style.visibility,
-            position: megaMenuPanel.style.position,
-            left: megaMenuPanel.style.left,
-            width: megaMenuPanel.style.width,
-        };
-
-        megaMenuPanel.style.display = 'block';
-        megaMenuPanel.style.visibility = 'hidden';
-        megaMenuPanel.style.position = 'absolute';
-        megaMenuPanel.style.left = '-9999px';
-        megaMenuPanel.style.width = `${header?.offsetWidth || megaMenuPanel.offsetWidth}px`;
-
-        let maxContentHeight = 0;
-
-        megaMenus.forEach((menu) => {
-            menu.classList.add('active');
-            const content = menu.querySelector('.mega-menu-subcategories');
-            if (content) {
-                maxContentHeight = Math.max(maxContentHeight, content.getBoundingClientRect().height);
-            }
-            menu.classList.remove('active');
-        });
-
-        if (activeMenu) {
-            activeMenu.classList.add('active');
-        }
-
-        megaMenuPanel.style.display = previousPanelStyles.display;
-        megaMenuPanel.style.visibility = previousPanelStyles.visibility;
-        megaMenuPanel.style.position = previousPanelStyles.position;
-        megaMenuPanel.style.left = previousPanelStyles.left;
-        megaMenuPanel.style.width = previousPanelStyles.width;
-
-        if (!panelWasOpen) {
-            header?.classList.remove('mega-active');
-        }
-
-        const panelStyle = getComputedStyle(megaMenuPanel);
-        const verticalPadding = parseFloat(panelStyle.paddingTop) + parseFloat(panelStyle.paddingBottom);
-        megaMenuPanel.style.minHeight = `${Math.ceil(maxContentHeight + verticalPadding)}px`;
-        megaMenuPanel.classList.add('is-height-synced');
+        if (!megaMenuPanel) return;
+        megaMenuPanel.style.removeProperty('min-height');
+        megaMenuPanel.classList.remove('is-height-synced');
     }
 
     function positionMegaMenu(item, menu) {
-        if (!megaMenuPanel || window.innerWidth <= 1024) return;
-        const inner = menu.querySelector('.mega-menu-inner');
+        if (!megaMenuPanel || !header || window.innerWidth <= 1024) return;
         const link = item.querySelector(':scope > a');
-        if (!inner || !link) return;
+        if (!link) return;
 
-        const panelRect = megaMenuPanel.getBoundingClientRect();
+        const headerRect = header.getBoundingClientRect();
         const linkRect = link.getBoundingClientRect();
-        const offset = Math.max(0, Math.round(linkRect.left - panelRect.left));
-        inner.style.paddingLeft = `${offset}px`;
-        inner.style.left = '';
+        const left = Math.max(12, Math.round(linkRect.left - headerRect.left));
+
+        megaMenuPanel.style.left = `${left}px`;
+        megaMenuPanel.style.right = 'auto';
+        megaMenuPanel.style.width = 'auto';
+        megaMenuPanel.style.minWidth = `${Math.max(Math.round(linkRect.width), 220)}px`;
     }
 
     function closeMegaMenu() {
@@ -111,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function setMobileNavOpen(isOpen) {
         navLinks?.classList.toggle('mobile-open', isOpen);
         document.body.classList.toggle('mobile-nav-open', isOpen);
+        if (isOpen) {
+            closeSearchOverlay();
+        }
         if (!isOpen) {
             closeMegaMenu();
         }
@@ -313,8 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openSearchOverlay() {
-        if (!searchOverlay) return;
-        searchOverlay.classList.add('active');
+        if (window.innerWidth > 1024) {
+            focusSearchInput();
+            return;
+        }
+        header?.classList.add('header-search-open');
+        setMobileNavOpen(false);
         scheduleSearchFocus();
         if (searchInput?.value.trim()) {
             queueSearchSuggestions();
@@ -322,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeSearchOverlay() {
-        searchOverlay?.classList.remove('active');
+        header?.classList.remove('header-search-open');
         clearSearchSuggestions();
         searchFetchController?.abort();
     }

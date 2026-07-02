@@ -73,8 +73,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260702p" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260702p">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260702s" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260702s">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -83,16 +83,16 @@
     </div>
 
     <header class="header" id="header">
-        <nav class="nav">
-            <button class="nav-toggle" id="navToggle" aria-label="Open menu">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            </button>
+        <div class="header-shell">
+            <div class="header-row header-row--primary">
+                <button class="nav-toggle" id="navToggle" aria-label="Otvori meni">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
 
-            <div class="nav-brand-bar">
                 <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
                     {% if site_settings.logo %}
                     <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
@@ -109,6 +109,60 @@
                     {% endif %}
                 </a>
 
+                <div class="header-search" id="headerSearch">
+                    <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu" autocomplete="off" enterkeyhint="search" aria-autocomplete="list" aria-controls="searchSuggestions" aria-expanded="false">
+                        <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </form>
+                    <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
+                </div>
+
+                <div class="nav-actions">
+                    <button class="icon-btn search-btn" id="searchBtnMobile" aria-label="Pretraga">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                    </button>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Moj nalog">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Moj nalog</span>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="nav-action-link account-btn" aria-label="Prijava">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Moj nalog</span>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn" aria-label="Korpa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <path d="M16 10a4 4 0 0 1-8 0"/>
+                        </svg>
+                        <span class="nav-action-label">Korpa</span>
+                        {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+                    </a>
+                </div>
+            </div>
+
+            <nav class="header-row header-row--categories" aria-label="Kategorije">
                 <ul class="nav-menu" id="navLinks">
                     {% for category in nav_categories %}
                     <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
@@ -145,40 +199,8 @@
                         <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJSKA PONUDA</a>
                     </li>
                 </ul>
-            </div>
-
-            <div class="nav-actions">
-                <button class="icon-btn search-btn" aria-label="Search">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                </button>
-                {% if user.is_authenticated %}
-                <a href="{% url 'account' %}" class="icon-btn account-btn" aria-label="Moj nalog">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                </a>
-                {% else %}
-                <a href="{% url 'login' %}" class="icon-btn account-btn" aria-label="Prijava">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                </a>
-                {% endif %}
-                <a href="{% url 'cart' %}" class="icon-btn cart-btn" aria-label="Korpa">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                        <line x1="3" y1="6" x2="21" y2="6"/>
-                        <path d="M16 10a4 4 0 0 1-8 0"/>
-                    </svg>
-                    {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
-                </a>
-            </div>
-        </nav>
+            </nav>
+        </div>
 
         <div class="mega-menu-panel" id="megaMenuPanel">
             {% for category in nav_categories %}
@@ -207,25 +229,6 @@
             </div>
             {% endif %}
             {% endfor %}
-        </div>
-
-        <div class="search-overlay" id="searchOverlay">
-            <div class="search-panel">
-                <form class="search-container" method="get" action="{% url 'home' %}" id="searchForm">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="11" cy="11" r="8"/>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu" autocomplete="off" enterkeyhint="search" aria-autocomplete="list" aria-controls="searchSuggestions" aria-expanded="false">
-                    <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"/>
-                            <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                    </button>
-                </form>
-                <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
-            </div>
         </div>
     </header>
 
@@ -262,7 +265,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260702p" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260702s" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
