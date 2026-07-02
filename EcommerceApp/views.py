@@ -1370,10 +1370,10 @@ def checkout(request):
         'upsell_checkout_offers': get_checkout_upsell_offers(cart),
     }
 
-    # Remove deal messages from checkout view (don't show "Ako poručite..." texts in checkout)
+    # Remove all X+1 deal info from checkout (it only works/shows in product detail)
     for item in context.get('cart_items', []):
-        if item.get('deal_info'):
-            item['deal_info'] = {k: v for k, v in item['deal_info'].items() if k != 'message'}
+        if 'deal_info' in item:
+            del item['deal_info']
 
     return render(request, 'checkout.html', context)
 
