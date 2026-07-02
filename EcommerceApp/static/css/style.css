@@ -4323,6 +4323,17 @@ body.search-results-active main {
         margin-left: auto;
     }
 
+    /* Make cart badge smaller and better positioned on mobile (with 22px icon) */
+    .cart-badge {
+        top: 0;
+        right: 0;
+        min-width: 16px;
+        height: 16px;
+        font-size: 10px;
+        line-height: 16px;
+        padding: 0 4px;
+    }
+
     .nav-action-label {
         display: none;
     }
@@ -4332,6 +4343,14 @@ body.search-results-active main {
         align-items: center;
         justify-content: center;
         position: relative;
+        padding: 6px;
+    }
+
+    .nav-action-link svg {
+        width: 22px;
+        height: 22px;
+        stroke: var(--black);
+        flex-shrink: 0;
     }
 
     .logo-image {
