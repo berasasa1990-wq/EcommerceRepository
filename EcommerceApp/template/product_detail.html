@@ -96,13 +96,14 @@
                 </div>
 
                 {% if deal_promo %}
-                <div class="deal-promo" style="margin-top: 10px; padding: 10px 14px; text-align: center;">
-                    <div style="font-size: 15px; margin-bottom: 4px;">
+                <div class="deal-promo">
+                    <div class="deal-promo-main">
                         {{ deal_promo.promo_text }}
                     </div>
-                    <div style="font-size: 13px;">
+                    <div class="deal-promo-sub">
                         <del>{{ deal_promo.regular_str }} KM</del>
-                        <span class="pct-badge">- {{ deal_promo.pct_str }}</span>
+                        <span class="deal-discount">-{{ deal_promo.pct_str }} na 
+                        {% if deal_promo.buy == 1 %}drugi{% elif deal_promo.buy == 2 %}treći{% else %}{{ deal_promo.buy|add:1 }}.{% endif %} artikal</span>
                     </div>
                 </div>
                 {% endif %}
