@@ -1352,7 +1352,7 @@ main {
 }
 
 .home-products-header--novo h2 {
-    color: #15803d;
+    color: #000000;
     font-size: 2.25rem;
     font-style: italic;
     font-weight: 800;
@@ -1596,7 +1596,7 @@ main {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    color: #15803d;
+    color: #000000;
 }
 
 .home-products--izdvojeno .product-info--home .product-info__name {
@@ -3282,7 +3282,7 @@ body.search-results-active main {
     font-weight: 600;
     line-height: 1.3;
     margin: 0 0 8px;
-    color: #15803d;
+    color: #000000;
 }
 
 .product-detail-info .product-origin {
