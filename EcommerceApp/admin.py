@@ -418,7 +418,7 @@ class HomeVlogAdmin(admin.ModelAdmin):
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
     form = BannerAdminForm
-    list_display = ('naslov', 'tip', 'aktivan', 'redoslijed', 'pregled_slike')
+    list_display = ('naslov', 'tip', 'filter_cijena_do', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naslov', 'podnaslov')
@@ -436,8 +436,14 @@ class BannerAdmin(admin.ModelAdmin):
             ),
         }),
         ('Link i dugmad', {
-            'fields': ('link', 'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link'),
-            'description': 'Link — obavezno za klikabilan banner. Tekst dugmeta je samo vizuelni natpis.',
+            'fields': (
+                'link', 'filter_cijena_do', 'filter_cijena_od',
+                'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link',
+            ),
+            'description': (
+                'Link vodi na kategoriju ili početnu. Maks. cijena npr. 50 = samo artikli ≤ 50 KM '
+                '(mašinice < 50 KM ako je link /kategorija/masinice/). Tekst dugmeta je vizuelni natpis.'
+            ),
         }),
         ('Podešavanja', {
             'fields': ('tip', 'siroka_kartica', 'redoslijed', 'aktivan'),

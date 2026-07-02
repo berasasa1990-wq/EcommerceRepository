@@ -345,7 +345,23 @@ class Banner(models.Model):
     link = models.CharField(
         max_length=300, blank=True,
         verbose_name='Link',
-        help_text='Npr. /kategorija/ ili https://... Klik na banner vodi na ovaj link.',
+        help_text='Npr. /kategorija/masinice/ ili /?kategorija=masinice. Klik na banner vodi na ovaj link.',
+    )
+    filter_cijena_do = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Filter: maks. cijena (KM)',
+        help_text='Opcionalno. Npr. 50 prikazuje samo artikle ≤ 50 KM (uz kategoriju iz linka).',
+    )
+    filter_cijena_od = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Filter: min. cijena (KM)',
+        help_text='Opcionalno. Npr. 10 prikazuje samo artikle ≥ 10 KM.',
     )
     tekst_dugmeta = models.CharField(max_length=50, blank=True, default='')
     sekundarno_dugme = models.CharField(max_length=50, blank=True)
@@ -386,8 +402,51 @@ class Banner(models.Model):
         if not self.link:
             return None
         if self.link.startswith(('http://', 'https://', '/')):
-            return self.link
-        return f'/{self.link.strip("/")}/'
+            href = self.link
+        else:
+            href = f'/{self.link.strip("/")}/'
+        return self._append_price_filter_to_href(href)
+
+    @staticmethod
+    def _decimal_query_value(value):
+        if value is None:
+            return None
+        normalized = format(value, 'f')
+        if '.' in normalized:
+            normalized = normalized.rstrip('0').rstrip('.')
+        return normalized or '0'
+
+    def _append_price_filter_to_href(self, href):
+        if href.startswith(('http://', 'https://')):
+            return href
+
+        from urllib.parse import parse_qsl, urlencode
+
+        filter_params = {}
+        cijena_do = self._decimal_query_value(self.filter_cijena_do)
+        cijena_od = self._decimal_query_value(self.filter_cijena_od)
+        if cijena_do is not None:
+            filter_params['cijena_do'] = cijena_do
+        if cijena_od is not None:
+            filter_params['cijena_od'] = cijena_od
+        if not filter_params:
+            return href
+
+        base, fragment = (href.split('#', 1) + [''])[:2]
+        path, _, existing_query = base.partition('?')
+        params = dict(parse_qsl(existing_query, keep_blank_values=True))
+        params.update(filter_params)
+
+        result = path
+        query = urlencode(params)
+        if query:
+            result = f'{result}?{query}'
+
+        if not fragment and path.rstrip('/') in ('', '/'):
+            fragment = 'product-showcase'
+        if fragment:
+            result = f'{result}#{fragment}'
+        return result
 
     def __str__(self):
         label = self.naslov or f'Banner #{self.pk}' if self.pk else 'Banner'

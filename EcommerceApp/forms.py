@@ -53,6 +53,13 @@ class BannerAdminForm(forms.ModelForm):
         has_video = bool(video) or bool(getattr(self.instance, 'video', None))
         if not has_slika and not has_video:
             raise forms.ValidationError('Banner mora imati sliku ili video.')
+
+        cijena_od = cleaned_data.get('filter_cijena_od')
+        cijena_do = cleaned_data.get('filter_cijena_do')
+        if cijena_od is not None and cijena_do is not None and cijena_od > cijena_do:
+            raise forms.ValidationError('Min. cijena ne može biti veća od maks. cijene.')
+        if (cijena_od is not None or cijena_do is not None) and not cleaned_data.get('link'):
+            raise forms.ValidationError('Za filter cijene morate unijeti link na kategoriju ili početnu.')
         return cleaned_data
 
     def save(self, commit=True):

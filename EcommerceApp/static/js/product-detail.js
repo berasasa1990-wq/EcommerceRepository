@@ -98,4 +98,46 @@ document.addEventListener('DOMContentLoaded', () => {
             submitAddToCartForm(form);
         });
     });
+
+    document.querySelectorAll('.product-qty-selector').forEach((selector) => {
+        const input = selector.querySelector('.product-qty-input');
+        const minusBtn = selector.querySelector('.product-qty-btn--minus');
+        const plusBtn = selector.querySelector('.product-qty-btn--plus');
+        if (!input || !minusBtn || !plusBtn) return;
+
+        const min = Number.parseInt(input.min, 10) || 1;
+        const max = Number.parseInt(input.max, 10) || 99;
+
+        const syncButtons = () => {
+            const value = Number.parseInt(input.value, 10) || min;
+            minusBtn.disabled = value <= min;
+            plusBtn.disabled = value >= max;
+        };
+
+        minusBtn.addEventListener('click', () => {
+            const value = Number.parseInt(input.value, 10) || min;
+            if (value > min) {
+                input.value = String(value - 1);
+                syncButtons();
+            }
+        });
+
+        plusBtn.addEventListener('click', () => {
+            const value = Number.parseInt(input.value, 10) || min;
+            if (value < max) {
+                input.value = String(value + 1);
+                syncButtons();
+            }
+        });
+
+        input.addEventListener('change', () => {
+            let value = Number.parseInt(input.value, 10);
+            if (!Number.isFinite(value) || value < min) value = min;
+            if (value > max) value = max;
+            input.value = String(value);
+            syncButtons();
+        });
+
+        syncButtons();
+    });
 });

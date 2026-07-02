@@ -70,8 +70,10 @@
             {% if product.na_stanju %}
             <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form">
                 {% csrf_token %}
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
+                <div class="product-detail-purchase">
+                    {% include 'partials/product_qty_selector.html' %}
+                    <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
+                </div>
             </form>
             {% else %}
             <div class="add-to-cart-form">
@@ -142,7 +144,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260702g" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260702o" defer></script>
 {% endblock %}
 
 {% block structured_data %}
