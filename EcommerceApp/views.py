@@ -1369,6 +1369,12 @@ def checkout(request):
         'form': form,
         'upsell_checkout_offers': get_checkout_upsell_offers(cart),
     }
+
+    # Remove deal messages from checkout view (don't show "Ako poručite..." texts in checkout)
+    for item in context.get('cart_items', []):
+        if item.get('deal_info'):
+            item['deal_info'] = {k: v for k, v in item['deal_info'].items() if k != 'message'}
+
     return render(request, 'checkout.html', context)
 
 
