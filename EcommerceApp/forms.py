@@ -58,8 +58,9 @@ class BannerAdminForm(forms.ModelForm):
         cijena_do = cleaned_data.get('filter_cijena_do')
         if cijena_od is not None and cijena_do is not None and cijena_od > cijena_do:
             raise forms.ValidationError('Min. cijena ne može biti veća od maks. cijene.')
-        if (cijena_od is not None or cijena_do is not None) and not cleaned_data.get('link'):
-            raise forms.ValidationError('Za filter cijene morate unijeti link na kategoriju ili početnu.')
+        has_destination = bool((cleaned_data.get('link') or '').strip()) or bool(cleaned_data.get('kategorija'))
+        if (cijena_od is not None or cijena_do is not None) and not has_destination:
+            raise forms.ValidationError('Za filter cijene odaberite kategoriju ili unesite link.')
         return cleaned_data
 
     def save(self, commit=True):

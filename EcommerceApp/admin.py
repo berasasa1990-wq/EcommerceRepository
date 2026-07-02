@@ -418,16 +418,17 @@ class HomeVlogAdmin(admin.ModelAdmin):
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
     form = BannerAdminForm
-    list_display = ('naslov', 'tip', 'filter_cijena_do', 'aktivan', 'redoslijed', 'pregled_slike')
+    list_display = ('naslov', 'tip', 'kategorija', 'filter_cijena_do', 'filter_cijena_od', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naslov', 'podnaslov')
+    autocomplete_fields = ('kategorija',)
     readonly_fields = ('pregled_slike_velika', 'pregled_videa')
     fieldsets = (
         ('Sadržaj', {
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika', 'video', 'pregled_videa'),
             'description': (
-                'Klik na banner vodi na Link (cijeli banner je klikabilan). '
+                'Klik na banner vodi na kategoriju ili link (ako su postavljeni). '
                 'Obavezna je slika ili video. '
                 'Upload slike: Hero → JPEG 1920×560 (24:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
                 'Video: MP4/WebM/MOV, najviše 6 sekundi (max 20 MB). Ako je video postavljen, prikazuje se umjesto slike; '
@@ -435,14 +436,15 @@ class BannerAdmin(admin.ModelAdmin):
                 'Tip „Hero Carousel” za karusel, „Grid Kartica” za 8 kartica ispod (4×2 desktop, 6 mobilni).'
             ),
         }),
-        ('Link i dugmad', {
+        ('Odredište i filter', {
             'fields': (
-                'link', 'filter_cijena_do', 'filter_cijena_od',
+                'kategorija', 'link', 'filter_cijena_do', 'filter_cijena_od',
                 'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link',
             ),
             'description': (
-                'Link vodi na kategoriju ili početnu. Maks. cijena npr. 50 = samo artikli ≤ 50 KM '
-                '(mašinice < 50 KM ako je link /kategorija/masinice/). Tekst dugmeta je vizuelni natpis.'
+                'Link nije obavezan — možete samo odabrati kategoriju. '
+                'Do cijene 50 = artikli ≤ 50 KM; od cijene 50 = artikli ≥ 50 KM. '
+                'Primjer: kategorija Mašinice + do 50 = sve mašinice ispod 50 KM.'
             ),
         }),
         ('Podešavanja', {

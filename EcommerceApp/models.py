@@ -342,26 +342,36 @@ class Banner(models.Model):
         verbose_name='Video (max 6 s)',
         help_text='Opcionalno. MP4/WebM/MOV, najviše 6 sekundi. Ako je postavljen, prikazuje se umjesto slike.',
     )
+    kategorija = models.ForeignKey(
+        'Category',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='banneri',
+        verbose_name='Kategorija',
+        help_text='Opcionalno. Ako nema linka, klik vodi na ovu kategoriju (uz filter cijene).',
+        limit_choices_to={'aktivan': True},
+    )
     link = models.CharField(
         max_length=300, blank=True,
         verbose_name='Link',
-        help_text='Npr. /kategorija/masinice/ ili /?kategorija=masinice. Klik na banner vodi na ovaj link.',
+        help_text='Opcionalno. Puni URL ili putanja. Ako je prazno, koristi se kategorija iznad.',
     )
     filter_cijena_do = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        verbose_name='Filter: maks. cijena (KM)',
-        help_text='Opcionalno. Npr. 50 prikazuje samo artikle ≤ 50 KM (uz kategoriju iz linka).',
+        verbose_name='Filter: do cijene (KM)',
+        help_text='Opcionalno. Npr. 50 = samo artikli ≤ 50 KM iz odabrane kategorije.',
     )
     filter_cijena_od = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        verbose_name='Filter: min. cijena (KM)',
-        help_text='Opcionalno. Npr. 10 prikazuje samo artikle ≥ 10 KM.',
+        verbose_name='Filter: od cijene (KM)',
+        help_text='Opcionalno. Npr. 50 = samo artikli ≥ 50 KM iz odabrane kategorije.',
     )
     tekst_dugmeta = models.CharField(max_length=50, blank=True, default='')
     sekundarno_dugme = models.CharField(max_length=50, blank=True)
@@ -399,12 +409,16 @@ class Banner(models.Model):
         super().save(*args, **kwargs)
 
     def get_link_href(self):
-        if not self.link:
+        href = None
+        if self.link:
+            if self.link.startswith(('http://', 'https://', '/')):
+                href = self.link
+            else:
+                href = f'/{self.link.strip("/")}/'
+        elif self.kategorija_id:
+            href = self.kategorija.get_absolute_url()
+        if not href:
             return None
-        if self.link.startswith(('http://', 'https://', '/')):
-            href = self.link
-        else:
-            href = f'/{self.link.strip("/")}/'
         return self._append_price_filter_to_href(href)
 
     @staticmethod
