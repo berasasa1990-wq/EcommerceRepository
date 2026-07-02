@@ -974,6 +974,13 @@ def product_detail(request, slug):
         ),
         'product_back_url': _product_back_url(request, product),
     }
+
+    # X+1 deal message for product detail
+    from .upsell import get_deal_message, get_quantity_deal
+    deal = get_quantity_deal(product)
+    if deal:
+        context['deal_message'] = get_deal_message(deal)
+
     return render(request, 'product_detail.html', context)
 
 
@@ -1288,6 +1295,14 @@ def checkout(request):
                     messages.error(request, 'Neki artikli više nisu dostupni. Osvježite korpu.')
                     order.delete()
                     return redirect('cart')
+                # Apply X+1 deal if present
+                line_price = item['cijena_decimal']
+                deal_info = item.get('deal_info')
+                if deal_info and deal_info.get('has_discount'):
+                    # Use effective per unit based on deal total
+                    if item['quantity'] > 0:
+                        line_price = (deal_info['deal_total'] / item['quantity']).quantize(Decimal('0.01'))
+
                 OrderItem.objects.create(
                     narudzba=order,
                     artikal=product,
@@ -1296,7 +1311,7 @@ def checkout(request):
                     product_naziv=item['product_naziv'],
                     varijacija_naziv=item.get('varijacija_naziv', ''),
                     sifra=item['sifra'],
-                    cijena=item['cijena_decimal'],
+                    cijena=line_price,
                     kolicina=item['quantity'],
                 )
 

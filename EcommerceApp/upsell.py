@@ -152,3 +152,102 @@ def get_checkout_upsell_offers(cart):
         cart=cart,
         exclude_in_cart=True,
     )
+
+# ====================== X+1 Quantity Deal helpers ======================
+
+def get_quantity_deal(product):
+    """Vrati aktivni X+1 deal za dati artikal, ako postoji."""
+    if not product:
+        return None
+    return UpsellOffer.objects.filter(
+        aktivan=True,
+        deal_artikal=product,
+        deal_vrsta__isnull=False,
+        deal_popust__isnull=False,
+    ).first()
+
+
+def parse_deal_vrsta(deal):
+    """Vrati (buy, get) iz '2+1' itd."""
+    if not deal or not deal.deal_vrsta:
+        return None, None
+    try:
+        buy, get = [int(x) for x in deal.deal_vrsta.split('+')]
+        return buy, get
+    except Exception:
+        return None, None
+
+
+def get_deal_message(deal):
+    """Vrati tekst poruke za prikaz ispod količine (crveno)."""
+    if not deal or not deal.deal_vrsta or deal.deal_popust is None:
+        return None
+    buy, get = parse_deal_vrsta(deal)
+    if not buy or not get:
+        return None
+
+    pct = int(deal.deal_popust) if deal.deal_popust == int(deal.deal_popust) else deal.deal_popust
+
+    if pct >= 100:
+        return f"Ako poručite {buy} ova artikla {buy + get}-ći vam je GRATIS."
+    else:
+        return f"Ako poručite {buy} ova artikla {buy + get}-ći vam snižen za {pct}%."
+
+
+def calculate_deal_adjusted_total(base_unit_price, quantity, deal):
+    """
+    Vrati (total_sa_dealom, original_total)
+    Primjenjuje popust na 'get' stavke u grupama.
+    """
+    if not deal or not deal.deal_vrsta or deal.deal_popust is None or quantity <= 0:
+        total = (base_unit_price * quantity).quantize(Decimal('0.01'))
+        return total, total
+
+    buy, get = parse_deal_vrsta(deal)
+    if not buy or not get:
+        total = (base_unit_price * quantity).quantize(Decimal('0.01'))
+        return total, total
+
+    discount_rate = (Decimal('100') - Decimal(str(deal.deal_popust))) / Decimal('100')
+    if discount_rate < 0:
+        discount_rate = Decimal('0')
+
+    discounted_price = (base_unit_price * discount_rate).quantize(Decimal('0.01'))
+
+    group_size = buy + get
+    num_groups = quantity // group_size
+    remainder = quantity % group_size
+
+    discounted_count = num_groups * get
+    if remainder > buy:
+        discounted_count += (remainder - buy)
+
+    full_price_count = quantity - discounted_count
+
+    total = (full_price_count * base_unit_price + discounted_count * discounted_price).quantize(Decimal('0.01'))
+    original_total = (base_unit_price * quantity).quantize(Decimal('0.01'))
+
+    return total, original_total
+
+
+def get_deal_info_for_cart_item(item, product):
+    """Vrati dict sa informacijama o dealu za prikaz u korpi."""
+    deal = get_quantity_deal(product)
+    if not deal:
+        return None
+
+    base_price = Decimal(item.get('cijena', '0'))
+    qty = int(item.get('quantity', 0))
+
+    deal_total, original_total = calculate_deal_adjusted_total(base_price, qty, deal)
+    message = get_deal_message(deal)
+
+    has_deal = deal_total < original_total
+
+    return {
+        'message': message,
+        'deal_total': deal_total,
+        'original_total': original_total,
+        'has_discount': has_deal,
+        'pct': deal.deal_popust,
+    }

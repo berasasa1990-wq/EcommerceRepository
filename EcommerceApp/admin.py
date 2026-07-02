@@ -365,12 +365,12 @@ class PopupAdmin(admin.ModelAdmin):
 
 @admin.register(UpsellOffer)
 class UpsellOfferAdmin(admin.ModelAdmin):
-    list_display = ('naziv', 'prikaz', 'get_trigger_display', 'popust_postotak', 'aktivan', 'redoslijed')
+    list_display = ('naziv', 'prikaz', 'get_trigger_display', 'get_deal_display', 'popust_postotak', 'aktivan', 'redoslijed')
     list_filter = ('aktivan', 'prikaz')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naziv',)
     filter_horizontal = ('ponuda_artikli',)
-    autocomplete_fields = ('trigger_artikal', 'trigger_kategorija')
+    autocomplete_fields = ('trigger_artikal', 'trigger_kategorija', 'deal_artikal')
     fieldsets = (
         ('Prikaz i ponuda', {
             'fields': (
@@ -382,11 +382,18 @@ class UpsellOfferAdmin(admin.ModelAdmin):
                 'popust_km',
             ),
             'description': (
-                'Sva polja su opcionalna. '
-                'Baner iznad artikala — iznad stavki u korpi. '
-                'Baner ispod Nastavi na narudžbu — u korpi ispod checkout dugmeta. '
-                'Checkout — poslednja šansa — ispod „Ukupno za plaćanje” na checkout stranici.'
+                'Sva polja su opcionalna za klasične upsell ponude (popup/baner).'
             ),
+        }),
+        ('X+1 Količinski deal (1+1 / 2+1 / 3+1)', {
+            'fields': ('deal_artikal', 'deal_vrsta', 'deal_popust'),
+            'description': (
+                'Odaberite artikal. Izaberite vrstu (npr. 2+1). Unesite % popusta na +1 artikal (100=GRATIS). '
+                'Kada kupac doda artikal u korpu, ispod količine će se pojaviti crvena poruka. '
+                'Ako dostigne količinu,  +1 artikal će biti snižen za taj %. '
+                'Npr. 2+1 + 50% → kada uzme 3, treći plaća 50% cijene.'
+            ),
+            'classes': ('collapse',),
         }),
         ('Tekstovi i trigger (opcionalno)', {
             'fields': ('naslov_ponude', 'opis_ponude', 'trigger_artikal', 'trigger_kategorija'),
@@ -404,6 +411,13 @@ class UpsellOfferAdmin(admin.ModelAdmin):
     def get_trigger_display(self, obj):
         return obj.get_trigger_display()
     get_trigger_display.short_description = 'Trigger'
+
+    def get_deal_display(self, obj):
+        if obj.deal_artikal and obj.deal_vrsta:
+            pct = f"{obj.deal_popust}%" if obj.deal_popust is not None else ""
+            return f"{obj.deal_artikal.naziv} — {obj.deal_vrsta} ({pct})"
+        return "—"
+    get_deal_display.short_description = 'X+1 Deal'
 
 
 @admin.register(HomeVlog)

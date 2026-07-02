@@ -94,6 +94,11 @@
                     {% include 'partials/product_qty_selector.html' %}
                     <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
                 </div>
+                {% if deal_message %}
+                <p style="color: #c0392b; font-size: 13px; margin-top: 6px; font-weight: 500;">
+                    {{ deal_message }}
+                </p>
+                {% endif %}
             </form>
             {% else %}
             <div class="add-to-cart-form">

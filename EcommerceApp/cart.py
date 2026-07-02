@@ -1,6 +1,7 @@
 from decimal import ROUND_HALF_UP, Decimal
 
 from .models import Product, ProductVariation
+from .upsell import get_deal_info_for_cart_item, get_quantity_deal, calculate_deal_adjusted_total
 
 PDV_STOPA = Decimal('0.17')
 
@@ -134,7 +135,24 @@ class Cart:
                 item['product_naziv'] = item.get('naziv', '')
             item['cijena_decimal'] = Decimal(item['cijena'])
             item['bazna_cijena_decimal'] = Decimal(item['bazna_cijena'])
-            item['ukupno_stavka'] = item['cijena_decimal'] * item['quantity']
+
+            # Compute deal if exists
+            deal_info = None
+            try:
+                from .models import Product
+                product = Product.objects.filter(pk=item['product_id']).first()
+                if product:
+                    deal_info = get_deal_info_for_cart_item(item, product)
+            except Exception:
+                pass
+
+            if deal_info and deal_info.get('has_discount'):
+                item['ukupno_stavka'] = deal_info['deal_total']
+                item['deal_info'] = deal_info
+            else:
+                item['ukupno_stavka'] = item['cijena_decimal'] * item['quantity']
+                item['deal_info'] = None
+
             yield item
 
     def __len__(self):
@@ -146,10 +164,10 @@ class Cart:
 
     @property
     def ukupno(self):
-        return sum(
-            Decimal(item['cijena']) * item['quantity']
-            for item in self.cart.values()
-        )
+        total = Decimal('0')
+        for item in self:
+            total += Decimal(str(item.get('ukupno_stavka', 0)))
+        return total.quantize(Decimal('0.01'))
 
     @property
     def pdv_pregled(self):

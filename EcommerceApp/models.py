@@ -1093,6 +1093,37 @@ class UpsellOffer(models.Model):
         verbose_name='Trigger kategorija',
         help_text='Ako se artikal iz ove kategorije doda u korpu, pokreni ponudu.',
     )
+
+    # === X+1 Quantity Deal (1+1 / 2+1 / 3+1) ===
+    deal_artikal = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quantity_deals',
+        verbose_name='Artikal za X+1 deal',
+        help_text='Artikal na koji se odnosi 1+1 / 2+1 / 3+1 ponuda.',
+    )
+    deal_vrsta = models.CharField(
+        max_length=10,
+        choices=[
+            ('1+1', '1+1 (kupi 1, drugi snižen)'),
+            ('2+1', '2+1 (kupi 2, treći snižen)'),
+            ('3+1', '3+1 (kupi 3, četvrti snižen)'),
+        ],
+        blank=True,
+        null=True,
+        verbose_name='Vrsta prodaje',
+    )
+    deal_popust = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust % na +1 artikal',
+        help_text='npr. 50 = 50% popusta na 3. artikal. 100 = GRATIS.',
+    )
+
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
     naslov_ponude = models.CharField(
