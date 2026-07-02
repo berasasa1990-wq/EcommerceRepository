@@ -6,7 +6,7 @@
             {% if category %}
             <div class="category-header">
                 <h1>{{ category.naziv }}</h1>
-                {% if category.podkategorije.all %}
+                {% if category.podkategorije.all and not category.roditelj_id %}
                 <div class="category-subnav">
                     {% for sub in category.podkategorije.all %}
                     <div class="category-subnav-group">

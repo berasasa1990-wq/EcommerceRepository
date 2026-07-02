@@ -36,6 +36,7 @@
         </div>
         {% endif %}
 
+        {% if not hide_category_filter %}
         <div class="filter-group">
             <label class="filter-label" for="filter-kategorija">Kategorija</label>
             <select id="filter-kategorija" name="kategorija" class="filter-input">
@@ -47,6 +48,7 @@
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
 
         <div class="filter-group">
             <span class="filter-label">Cijena (KM)</span>

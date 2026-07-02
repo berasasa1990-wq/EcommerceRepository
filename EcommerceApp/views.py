@@ -748,7 +748,7 @@ def vlog_list(request):
 
 def category_detail(request, slug):
     category = get_object_or_404(
-        Category.objects.prefetch_related('podkategorije__podkategorije'),
+        Category.objects.select_related('roditelj').prefetch_related('podkategorije__podkategorije'),
         slug=slug, aktivan=True,
     )
     category_ids = category.get_descendant_ids()
