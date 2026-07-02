@@ -149,10 +149,13 @@ def _available_sizes(products_qs):
     ).values_list('naziv', flat=True)
     sizes = {_variation_size_label(naziv) for naziv in nazivi}
 
-    for product in products_qs.filter(na_stanju=True).annotate(
+    for naziv in Product.objects.filter(
+        pk__in=products_qs.values('pk'),
+        na_stanju=True,
+    ).annotate(
         variation_count=Count('varijacije'),
-    ).filter(variation_count=0).only('naziv'):
-        label = _variation_size_label(product.naziv)
+    ).filter(variation_count=0).values_list('naziv', flat=True):
+        label = _variation_size_label(naziv)
         if label:
             sizes.add(label)
 
