@@ -27,9 +27,9 @@ HERO_BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_HEIGHT = 560
 HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280)
 HERO_JPEG_VARIANT_MAX_BYTES = {
-    640: 28 * 1024,
-    960: 48 * 1024,
-    1280: 85 * 1024,
+    640: 40 * 1024,
+    960: 72 * 1024,
+    1280: 120 * 1024,
 }
 MAX_GRID_BANNER_AVIF_BYTES = 22 * 1024
 GRID_BANNER_MAX_DIMENSION = 360
@@ -819,9 +819,17 @@ def _encode_banner_jpeg_fallback(
             qualities.append(q)
 
     best_data = None
+    save_kwargs = {'subsampling': 0} if crop and max_height is not None else {}
     for q in qualities:
         buffer = BytesIO()
-        working.save(buffer, format='JPEG', quality=q, optimize=True, progressive=True)
+        working.save(
+            buffer,
+            format='JPEG',
+            quality=q,
+            optimize=True,
+            progressive=True,
+            **save_kwargs,
+        )
         data = buffer.getvalue()
         if max_bytes is not None and len(data) <= max_bytes:
             return ContentFile(data, name=_jpeg_filename(filename))
@@ -850,9 +858,16 @@ def _encode_hero_jpeg_variant(rgb_img, variant_name, *, width, max_bytes):
         crop=True,
     )
     best_data = None
-    for quality in (85, 78, 70, 62, 54):
+    for quality in (92, 88, 85, 82, 78):
         buffer = BytesIO()
-        working.save(buffer, format='JPEG', quality=quality, optimize=True, progressive=True)
+        working.save(
+            buffer,
+            format='JPEG',
+            quality=quality,
+            optimize=True,
+            progressive=True,
+            subsampling=0,
+        )
         data = buffer.getvalue()
         if len(data) <= max_bytes:
             return ContentFile(data, name=variant_name)

@@ -10,7 +10,7 @@ from .models import SiteSettings
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError
 from django.db.models import Count, Prefetch, Q
@@ -29,7 +29,7 @@ from .loyalty import (
     validiraj_kupon,
 )
 from .pricing import izracunaj_sazetak, sazetak_iz_narudzbe
-from .emails import EmailNotConfiguredError, send_order_emails
+from .emails import EmailNotConfiguredError, get_order_email_context, send_order_emails
 from .render_sync import sync_korisnik, sync_narudzba
 from .utils.images import image_field_dimensions
 
@@ -1490,3 +1490,64 @@ def account_order_detail(request, broj):
         'pricing': order.pdv_pregled,
     }
     return render(request, 'account/order_detail.html', context)
+
+
+def _superuser_required(user):
+    return user.is_authenticated and user.is_superuser
+
+
+def _normalize_phone_query(value):
+    return re.sub(r'\D', '', value or '')
+
+
+def _search_staff_orders(query):
+    query = (query or '').strip()
+    if not query:
+        return Order.objects.none()
+
+    qs = Order.objects.prefetch_related('stavke').order_by('-kreirana')
+    broj = query.lstrip('#').strip()
+    filters = Q(broj=broj) | Q(email__iexact=query)
+
+    digits = _normalize_phone_query(query)
+    filters |= Q(telefon__icontains=query)
+    if digits and digits != query:
+        filters |= Q(telefon__icontains=digits)
+
+    return qs.filter(filters).distinct()
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_order_lookup(request):
+    query = request.GET.get('q', '').strip()
+
+    orders = []
+    searched = False
+    if query:
+        searched = True
+        orders = list(_search_staff_orders(query))
+        if len(orders) == 1:
+            return redirect('staff_order_detail', broj=orders[0].broj)
+
+    context = {
+        **_base_context(),
+        'search_query': query,
+        'orders': orders,
+        'searched': searched,
+    }
+    return render(request, 'staff/order_lookup.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_order_detail(request, broj):
+    order = get_object_or_404(
+        Order.objects.prefetch_related('stavke'),
+        broj=broj,
+    )
+    context = {
+        **_base_context(),
+        **get_order_email_context(order),
+    }
+    return render(request, 'staff/order_detail.html', context)

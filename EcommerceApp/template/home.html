@@ -12,7 +12,7 @@
 <section class="hero-carousel" id="heroCarousel">
     <div class="carousel-track">
         {% for slide in hero_slides %}
-        <div class="carousel-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
+        <div class="carousel-slide {% if forloop.first %}active{% endif %}{% if slide.title or slide.subtitle or slide.actions %} carousel-slide--has-content{% endif %}" data-index="{{ forloop.counter0 }}">
             <div class="slide-image">
                 {% if slide.url %}
                 <a href="{{ slide.url }}" class="slide-image-link" aria-label="{{ slide.title|default:'Banner' }}">

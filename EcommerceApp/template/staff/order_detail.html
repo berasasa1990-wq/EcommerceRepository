@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Narudžba #{{ order.broj }} — provjera — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+{% include 'partials/order_invoice_embed_styles.html' %}
+<section class="staff-order-detail-page">
+    <div class="staff-order-detail-toolbar">
+        <a href="{% url 'staff_order_lookup' %}" class="account-back-link">← Nazad na pretragu</a>
+        <div class="staff-order-detail-actions">
+            <a href="{% url 'staff_order_lookup' %}?q={{ order.email|urlencode }}" class="btn btn-secondary btn-sm">Sve narudžbe: {{ order.email }}</a>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">Štampaj račun</button>
+        </div>
+    </div>
+
+    <p class="staff-order-detail-meta">
+        Status: <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+        · Kreirana {{ order.kreirana|date:"d.m.Y. H:i" }}
+    </p>
+
+    <div class="staff-order-invoice">
+        {% include 'partials/order_invoice_document.html' %}
+    </div>
+</section>
+{% endblock %}

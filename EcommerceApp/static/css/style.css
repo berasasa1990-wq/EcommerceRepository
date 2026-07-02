@@ -438,7 +438,7 @@ img.home-vlog-card-image {
     }
 
     .header-row--categories .nav-menu a {
-        font-size: 13px;
+        font-size: 14px;
         line-height: 1.25;
         letter-spacing: -0.01em;
         padding-top: 5px;
@@ -908,7 +908,7 @@ main {
     opacity: 1;
 }
 
-.carousel-slide::after {
+.carousel-slide--has-content::after {
     content: '';
     position: absolute;
     left: 0;
@@ -926,6 +926,7 @@ main {
     width: 100%;
     height: 100%;
     overflow: hidden;
+    background: #ffffff;
 }
 
 .slide-image-link {
@@ -945,8 +946,9 @@ main {
     width: 100%;
     height: 100%;
     max-width: none;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center center;
+    background: #ffffff;
 }
 
 .slide-image-video,
@@ -1629,12 +1631,12 @@ main {
 }
 
 .home-vlog-header--blog h2 {
-    font-size: 2.25rem;
+    font-size: 1.5rem;
     font-style: italic;
-    font-weight: 800;
-    letter-spacing: 0.06em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    line-height: 1.1;
+    line-height: 1.2;
     margin: 0;
     color: var(--black);
 }
@@ -4595,8 +4597,9 @@ body.search-results-active main {
         width: 100%;
         height: 100%;
         max-width: none;
-        object-fit: cover;
+        object-fit: contain;
         object-position: center center;
+        background: #ffffff;
     }
 
     .carousel-dots {
@@ -4718,7 +4721,7 @@ body.search-results-active main {
     .home-products-header--izdvojeno h2,
     .home-search-results--akcija .home-products-header h2,
     .home-vlog-header--blog h2 {
-        font-size: 1.9rem;
+        font-size: 1.35rem;
     }
 
     .home-vlog-grid,
@@ -5073,8 +5076,12 @@ body.search-results-active main {
     .account-order-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 14px;
+        gap: 18px;
         margin-bottom: 20px;
+    }
+
+    .account-header-actions {
+        margin-top: 4px;
     }
 
     .account-header h1,
@@ -5483,7 +5490,7 @@ body.search-results-active main {
     .home-products-header--izdvojeno h2,
     .home-search-results--akcija .home-products-header h2,
     .home-vlog-header--blog h2 {
-        font-size: 1.65rem;
+        font-size: 1.25rem;
     }
 
     .home-products--novo .home-products-header--novo h2,
@@ -5586,8 +5593,9 @@ body.search-results-active main {
         width: 100%;
         max-width: none;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         object-position: center center;
+        background: #ffffff;
     }
 
     .vlog-article-image {
@@ -5846,6 +5854,117 @@ body.search-results-active main {
     text-decoration: underline;
 }
 
+/* Staff order lookup */
+.staff-orders-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+}
+
+.staff-orders-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px;
+}
+
+.staff-orders-subtitle {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 14px;
+}
+
+.staff-orders-search {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 28px 0 32px;
+    padding: 20px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+}
+
+.staff-orders-search-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.staff-orders-search-row--input {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.staff-orders-search-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.staff-orders-select,
+.staff-orders-search input[type="search"] {
+    width: 100%;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    padding: 11px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--white);
+}
+
+.staff-orders-results h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 16px;
+}
+
+.staff-order-customer {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+.staff-orders-empty {
+    margin: 0;
+    padding: 20px;
+    background: var(--gray-100);
+    border-radius: 8px;
+    color: var(--gray-600);
+}
+
+.staff-order-detail-page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+}
+
+.staff-order-detail-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    margin-bottom: 12px;
+}
+
+.staff-order-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.staff-order-detail-meta {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
+.nav-action-link.staff-orders-btn svg {
+    stroke: #1a6b4a;
+}
+
 /* Account */
 .account-page {
     width: 100%;
@@ -5864,9 +5983,17 @@ body.search-results-active main {
 .account-order-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 16px;
     margin-bottom: 32px;
+}
+
+.account-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding-bottom: 2px;
 }
 
 .account-header h1,

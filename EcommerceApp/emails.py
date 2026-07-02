@@ -67,6 +67,11 @@ def _admin_order_text(order):
     return '\n'.join(lines)
 
 
+def get_order_email_context(order):
+    """Kontekst za prikaz potvrde narudžbe (email ili staff pregled)."""
+    return _email_context(order)
+
+
 def _email_context(order):
     site_settings = SiteSettings.load()
     logo_url = None

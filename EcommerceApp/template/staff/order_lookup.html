@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Provjera narudžbi — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-orders-page">
+    <div class="staff-orders-header">
+        <div>
+            <a href="{% url 'account' %}" class="account-back-link">← Nazad na nalog</a>
+            <h1>Provjera narudžbi</h1>
+            <p class="staff-orders-subtitle">Unesite broj narudžbe, email ili telefon kupca — sve prolazi u jednom polju.</p>
+        </div>
+    </div>
+
+    <form class="staff-orders-search" method="get" action="{% url 'staff_order_lookup' %}">
+        <div class="staff-orders-search-row staff-orders-search-row--input">
+            <input type="search" name="q" id="staffOrderQuery" value="{{ search_query }}" placeholder="npr. 202607020001, kupac@email.com ili +387 61 123 456" autocomplete="off" required>
+            <button type="submit" class="btn btn-primary">Pretraži</button>
+        </div>
+    </form>
+
+    {% if searched %}
+        {% if orders %}
+        <div class="staff-orders-results">
+            <h2>{{ orders|length }} narudžb{% if orders|length == 1 %}a{% else %}e{% endif %}</h2>
+            <div class="orders-list">
+                {% for order in orders %}
+                <article class="order-card">
+                    <div class="order-card-head">
+                        <div>
+                            <h3>Narudžba #{{ order.broj }}</h3>
+                            <p class="order-card-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</p>
+                            <p class="staff-order-customer">{{ order.ime_prezime }} · {{ order.email }} · {{ order.telefon }}</p>
+                        </div>
+                        <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+                    </div>
+                    <ul class="order-card-items">
+                        {% for item in order.stavke.all %}
+                        <li>
+                            <span>{{ item.puni_naziv }} × {{ item.kolicina }}</span>
+                            <span>{{ item.ukupno }} KM</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="order-card-footer">
+                        <strong>{{ order.ukupno }} KM</strong>
+                        <a href="{% url 'staff_order_detail' broj=order.broj %}" class="order-card-link">Pregled računa</a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <p class="staff-orders-empty">Nema narudžbi za unesene podatke.</p>
+        {% endif %}
+    {% endif %}
+</section>
+{% endblock %}
