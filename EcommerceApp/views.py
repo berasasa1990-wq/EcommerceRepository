@@ -108,7 +108,7 @@ def _normalize_size_number(value):
 
 
 def _variation_size_label(naziv):
-    """Vraća veličinu iz naziva varijacije (#broj, cm ili g), ako postoji."""
+    """Vraća veličinu iz naziva (#broj, cm ili g), ako postoji."""
     naziv = (naziv or '').strip()
     if not naziv:
         return None
@@ -140,21 +140,31 @@ def _size_sort_key(label):
     return (9, 0, label)
 
 
+def _product_size_labels(product):
+    """Veličine iz naziva varijacija i glavnog naziva artikla (npr. 50 cm)."""
+    labels = set()
+    for variation in product.varijacije.all():
+        label = _variation_size_label(variation.naziv)
+        if label:
+            labels.add(label)
+    main_label = _variation_size_label(product.naziv)
+    if main_label:
+        labels.add(main_label)
+    return labels
+
+
 def _available_sizes(products_qs):
-    nazivi = ProductVariation.objects.filter(
-        artikal__in=products_qs,
-        na_stanju=True,
-    ).values_list('naziv', flat=True)
-    sizes = {_variation_size_label(naziv) for naziv in nazivi}
+    sizes = set()
+    for product in _prefetch_product_cards(products_qs.filter(na_stanju=True)):
+        sizes.update(_product_size_labels(product))
     sizes.discard(None)
     return sorted(sizes, key=_size_sort_key)
 
 
 def _product_matches_size(product, size_label):
-    return any(
-        variation.na_stanju and _variation_size_label(variation.naziv) == size_label
-        for variation in product.varijacije.all()
-    )
+    if not product.na_stanju:
+        return False
+    return size_label in _product_size_labels(product)
 
 
 def _get_filter_params(request):
