@@ -139,12 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
         link?.addEventListener('click', (e) => {
             if (window.innerWidth <= 1024 && navLinks?.classList.contains('mobile-open') && submenu) {
                 e.preventDefault();
-                const isOpen = item.classList.contains('mega-open');
+                const wasOpen = item.classList.contains('mega-open');
                 megaItems.forEach((el) => el.classList.remove('mega-open'));
-                if (!isOpen) {
+                if (!wasOpen) {
                     item.classList.add('mega-open');
+                    syncMobileNavExpanded();
+                    // On mobile: always scroll so subcategories are shown from the very beginning
+                    requestAnimationFrame(() => {
+                        if (navLinks) {
+                            navLinks.scrollTo({
+                                top: item.offsetTop,
+                                behavior: 'smooth'
+                            });
+                        }
+                    });
+                } else {
+                    syncMobileNavExpanded();
                 }
-                syncMobileNavExpanded();
             }
         });
     });

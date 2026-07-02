@@ -466,6 +466,34 @@ img.home-vlog-card-image {
         letter-spacing: 0.04em;
     }
 
+    /* Desktop categories bar: black background, white text + hover anim on main cats */
+    .header-row--categories {
+        background: #000;
+        border-top-color: #111;
+        border-bottom-color: #111;
+    }
+
+    .header-row--categories .nav-menu a {
+        color: #fff;
+    }
+
+    .header-row--categories .nav-menu a::after {
+        background: #fff;
+    }
+
+    .header-row--categories .nav-item:not(.nav-item--akcija) > a {
+        transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .header-row--categories .nav-item:not(.nav-item--akcija):hover > a {
+        transform: translateY(-1px);
+        color: #e5e5e5;
+    }
+
+    .header-row--categories .nav-item:not(.nav-item--akcija).mega-open > a {
+        color: #f5f5f5;
+    }
+
     .nav-toggle {
         display: none !important;
     }
@@ -518,6 +546,11 @@ img.home-vlog-card-image {
 
     .nav-action-link.cart-btn {
         position: relative;
+    }
+
+    /* Desktop: flatten wrapper so layout unchanged (search-btn is hidden) */
+    .nav-right-cluster {
+        display: contents;
     }
 }
 
@@ -4300,6 +4333,17 @@ body.search-results-active main {
         grid-area: actions;
         justify-self: end;
         gap: 4px;
+    }
+
+    /* Mobile: cluster search + cart tightly together on the far right, cart in upper-right corner */
+    .header-row--primary .nav-right-cluster {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .header-row--primary .nav-actions .search-btn {
+        padding: 6px;
     }
 
     .nav-action-label {
