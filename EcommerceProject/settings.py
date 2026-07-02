@@ -316,6 +316,7 @@ ORDER_NOTIFICATION_EMAIL = _env(
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
 SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')
+MESSENGER_PAGE = _env('MESSENGER_PAGE', 'opremazaribolov.ba')
 STORE_EMAIL = _env('STORE_EMAIL', 'narudzbe@opremazaribolov.ba')
 
 LOGIN_URL = 'login'

@@ -2322,15 +2322,21 @@ body.search-results-active main {
     color: var(--black);
 }
 
-.contact-float {
+.contact-float-group {
     position: fixed;
     right: max(20px, env(safe-area-inset-right, 0px));
     bottom: max(20px, env(safe-area-inset-bottom, 0px));
     z-index: 1050;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 10px;
+}
+
+.contact-float {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: #25d366;
     color: var(--white);
     display: flex;
     align-items: center;
@@ -2341,14 +2347,43 @@ body.search-results-active main {
 }
 
 .contact-float:hover {
-    background: #1ebe57;
     transform: translateY(-2px) scale(1.04);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
 }
 
+.contact-float--whatsapp {
+    background: #25d366;
+}
+
+.contact-float--whatsapp:hover {
+    background: #1ebe57;
+}
+
+.contact-float--viber {
+    background: #665cac;
+}
+
+.contact-float--viber:hover {
+    background: #554a94;
+}
+
+.contact-float--messenger {
+    background: #0084ff;
+}
+
+.contact-float--messenger:hover {
+    background: #006fd6;
+}
+
+.contact-float img,
 .contact-float svg {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
+    display: block;
+    object-fit: contain;
+}
+
+.contact-float svg {
     fill: currentColor;
 }
 

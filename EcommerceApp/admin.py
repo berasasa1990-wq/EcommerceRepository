@@ -33,6 +33,8 @@ from .models import (
     Banner,
     Brand,
     Category,
+    ChatConversation,
+    ChatMessage,
     Coupon,
     HomeFeaturedProduct,
     HomeVlog,
@@ -142,8 +144,8 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'description': 'Logo u headeru i ikona u tabu preglednika (favicon).',
         }),
         ('Kontakt', {
-            'fields': ('kontakt_telefon',),
-            'description': 'Telefon za plutajuću WhatsApp ikonu u donjem desnom uglu sajta.',
+            'fields': ('kontakt_telefon', 'kontakt_messenger'),
+            'description': 'Telefon za WhatsApp/Viber i Facebook stranica za Messenger u donjem desnom uglu.',
         }),
         ('Dostava', {
             'fields': ('dostava_naziv', 'dostava_cijena', 'besplatna_dostava_od'),
@@ -959,3 +961,31 @@ class ProductAdmin(admin.ModelAdmin):
             except Exception:
                 return '—'
         return '—'
+
+
+class ChatMessageInline(admin.TabularInline):
+    model = ChatMessage
+    extra = 0
+    readonly_fields = ('sender_type', 'staff_user', 'body', 'created_at', 'read_by_staff', 'read_by_customer')
+    can_delete = False
+
+
+@admin.register(ChatConversation)
+class ChatConversationAdmin(admin.ModelAdmin):
+    list_display = ('display_name', 'display_email', 'is_registered', 'staff_unread_count', 'status', 'last_message_at')
+    list_filter = ('status', 'staff_unread_count')
+    search_fields = ('guest_name', 'guest_email', 'user__email', 'user__first_name', 'user__last_name')
+    readonly_fields = ('session_key', 'created_at', 'last_message_at', 'staff_unread_count', 'customer_unread_count')
+    inlines = [ChatMessageInline]
+
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ('conversation', 'sender_type', 'body_preview', 'created_at', 'read_by_staff', 'read_by_customer')
+    list_filter = ('sender_type', 'read_by_staff', 'read_by_customer')
+    search_fields = ('body', 'conversation__guest_email', 'conversation__guest_name')
+    readonly_fields = ('conversation', 'sender_type', 'staff_user', 'body', 'created_at', 'read_by_staff', 'read_by_customer')
+
+    @admin.display(description='Poruka')
+    def body_preview(self, obj):
+        return obj.body[:80]

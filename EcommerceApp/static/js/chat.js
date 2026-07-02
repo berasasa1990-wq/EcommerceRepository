@@ -1,0 +1,409 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const configEl = document.getElementById('chatConfig');
+    if (!configEl) return;
+
+    const config = JSON.parse(configEl.textContent || '{}');
+    const siteChat = document.getElementById('siteChat');
+    const customerPanel = document.getElementById('customerChatPanel');
+    const customerBtn = document.getElementById('customerChatBtn');
+    const customerClose = document.getElementById('customerChatClose');
+    const customerMessages = document.getElementById('customerChatMessages');
+    const customerForm = document.getElementById('customerChatForm');
+    const customerInput = document.getElementById('customerChatInput');
+    const guestForm = document.getElementById('chatGuestForm');
+    const guestName = document.getElementById('chatGuestName');
+    const guestEmail = document.getElementById('chatGuestEmail');
+    const customerBadge = document.getElementById('customerChatBadge');
+
+    const staffBtn = document.getElementById('staffChatBtn');
+    const staffPanel = document.getElementById('staffChatPanel');
+    const staffClose = document.getElementById('staffChatClose');
+    const staffInbox = document.getElementById('staffChatInbox');
+    const staffInboxEmpty = document.getElementById('staffInboxEmpty');
+    const staffThread = document.getElementById('staffChatThread');
+    const staffMessages = document.getElementById('staffChatMessages');
+    const staffForm = document.getElementById('staffChatForm');
+    const staffInput = document.getElementById('staffChatInput');
+    const staffThreadMeta = document.getElementById('staffThreadMeta');
+    const staffBadge = document.getElementById('staffChatBadge');
+
+    let customerOpen = false;
+    let staffOpen = false;
+    let lastMessageId = 0;
+    let customerPollTimer = null;
+    let staffPollTimer = null;
+    let staffPingTimer = null;
+    let activeStaffConversationId = null;
+    let needsGuestInfo = false;
+
+    function getCsrfToken() {
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    async function apiFetch(url, options = {}) {
+        const headers = {
+            'X-CSRFToken': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(options.headers || {}),
+        };
+        if (options.body && !headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
+        const response = await fetch(url, { ...options, headers });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.error || 'Zahtjev nije uspio.');
+        }
+        return data;
+    }
+
+    function formatTime(iso) {
+        if (!iso) return '';
+        const date = new Date(iso);
+        return date.toLocaleString('bs-BA', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    }
+
+    function renderMessage(message, container) {
+        const item = document.createElement('div');
+        item.className = `site-chat-message site-chat-message--${message.sender_type}`;
+        item.dataset.messageId = String(message.id);
+
+        const meta = document.createElement('div');
+        meta.className = 'site-chat-message-meta';
+        if (message.sender_type === 'staff') {
+            meta.textContent = message.staff_name || 'Podrška';
+        } else {
+            meta.textContent = 'Vi';
+        }
+
+        const body = document.createElement('div');
+        body.className = 'site-chat-message-body';
+        body.textContent = message.body;
+
+        const time = document.createElement('div');
+        time.className = 'site-chat-message-time';
+        time.textContent = formatTime(message.created_at);
+
+        item.append(meta, body, time);
+        container.appendChild(item);
+        container.scrollTop = container.scrollHeight;
+        lastMessageId = Math.max(lastMessageId, message.id);
+    }
+
+    function setBadge(el, count) {
+        if (!el) return;
+        if (count > 0) {
+            el.textContent = count > 9 ? '9+' : String(count);
+            el.hidden = false;
+        } else {
+            el.hidden = true;
+        }
+    }
+
+    function togglePanel(panel, open) {
+        if (!panel) return;
+        panel.hidden = !open;
+        siteChat.hidden = !(customerOpen || staffOpen);
+    }
+
+    function setGuestFormVisible(visible) {
+        if (!guestForm) return;
+        guestForm.hidden = !visible;
+        customerForm.hidden = visible;
+        customerMessages.hidden = visible;
+    }
+
+    async function loadCustomerChat() {
+        const data = await apiFetch('/api/chat/?mark_read=1');
+        customerMessages.innerHTML = '';
+        lastMessageId = 0;
+        needsGuestInfo = data.needs_guest_info;
+        setGuestFormVisible(needsGuestInfo);
+
+        if (needsGuestInfo && config.isAuthenticated) {
+            needsGuestInfo = false;
+            setGuestFormVisible(false);
+        }
+
+        if (!needsGuestInfo && config.userName && guestName && !guestName.value) {
+            guestName.value = config.userName;
+        }
+        if (!needsGuestInfo && config.userEmail && guestEmail && !guestEmail.value) {
+            guestEmail.value = config.userEmail;
+        }
+
+        data.messages.forEach((message) => renderMessage(message, customerMessages));
+    }
+
+    async function pollCustomerChat() {
+        if (!customerOpen || needsGuestInfo) return;
+        try {
+            const data = await apiFetch(`/api/chat/poll/?after_id=${lastMessageId}&open=1`);
+            data.messages.forEach((message) => {
+                if (!customerMessages.querySelector(`[data-message-id="${message.id}"]`)) {
+                    renderMessage(message, customerMessages);
+                }
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function startCustomerPolling() {
+        clearInterval(customerPollTimer);
+        customerPollTimer = setInterval(pollCustomerChat, 3000);
+    }
+
+    function stopCustomerPolling() {
+        clearInterval(customerPollTimer);
+    }
+
+    customerBtn?.addEventListener('click', async () => {
+        customerOpen = !customerOpen;
+        if (staffOpen) {
+            staffOpen = false;
+            togglePanel(staffPanel, false);
+        }
+        togglePanel(customerPanel, customerOpen);
+        if (customerOpen) {
+            try {
+                await loadCustomerChat();
+                startCustomerPolling();
+            } catch (error) {
+                console.error(error);
+            }
+        } else {
+            stopCustomerPolling();
+        }
+    });
+
+    customerClose?.addEventListener('click', () => {
+        customerOpen = false;
+        togglePanel(customerPanel, false);
+        stopCustomerPolling();
+    });
+
+    guestForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+            await apiFetch('/api/chat/guest/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: guestName.value.trim(),
+                    email: guestEmail.value.trim(),
+                }),
+            });
+            needsGuestInfo = false;
+            setGuestFormVisible(false);
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+
+    customerForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const body = customerInput.value.trim();
+        if (!body) return;
+        try {
+            const data = await apiFetch('/api/chat/send/', {
+                method: 'POST',
+                body: JSON.stringify({ body }),
+            });
+            renderMessage(data.message, customerMessages);
+            customerInput.value = '';
+        } catch (error) {
+            if (error.message.includes('ime i email')) {
+                needsGuestInfo = true;
+                setGuestFormVisible(true);
+            } else {
+                alert(error.message);
+            }
+        }
+    });
+
+    function renderInboxItem(conversation) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'site-chat-inbox-item';
+        if (conversation.staff_unread_count > 0) {
+            button.classList.add('is-unread');
+        }
+        if (conversation.id === activeStaffConversationId) {
+            button.classList.add('is-active');
+        }
+
+        const title = document.createElement('strong');
+        title.textContent = conversation.display_name;
+
+        const email = document.createElement('span');
+        email.className = 'site-chat-inbox-email';
+        email.textContent = conversation.is_registered
+            ? `Registrovan: ${conversation.display_email}`
+            : (conversation.display_email || 'Gost');
+
+        const preview = document.createElement('span');
+        preview.className = 'site-chat-inbox-preview';
+        preview.textContent = conversation.preview || '—';
+
+        const badge = document.createElement('span');
+        badge.className = 'site-chat-inbox-badge';
+        badge.textContent = conversation.staff_unread_count > 0 ? 'Nova' : '';
+
+        button.append(title, email, preview, badge);
+        button.addEventListener('click', () => openStaffConversation(conversation.id));
+        return button;
+    }
+
+    async function loadStaffInbox() {
+        const data = await apiFetch('/api/chat/staff/inbox/');
+        setBadge(staffBadge, data.unread_conversations);
+        if (staffBtn) staffBtn.hidden = false;
+
+        const items = staffInbox.querySelectorAll('.site-chat-inbox-item');
+        items.forEach((item) => item.remove());
+
+        if (!data.conversations.length) {
+            staffInboxEmpty.hidden = false;
+            staffThread.hidden = true;
+            return;
+        }
+
+        staffInboxEmpty.hidden = true;
+        data.conversations.forEach((conversation) => {
+            staffInbox.appendChild(renderInboxItem(conversation));
+        });
+    }
+
+    async function openStaffConversation(conversationId) {
+        activeStaffConversationId = conversationId;
+        const data = await apiFetch(`/api/chat/staff/${conversationId}/`);
+        const conversation = data.conversation;
+
+        staffThread.hidden = false;
+        staffMessages.innerHTML = '';
+        data.messages.forEach((message) => renderMessage(message, staffMessages));
+
+        const registeredLabel = conversation.is_registered ? 'Registrovan korisnik' : 'Gost';
+        staffThreadMeta.innerHTML = `
+            <strong>${conversation.display_name}</strong>
+            <span>${registeredLabel}</span>
+            <span>${conversation.display_email || '—'}</span>
+        `;
+
+        staffInbox.querySelectorAll('.site-chat-inbox-item').forEach((item) => {
+            item.classList.remove('is-active');
+        });
+        await loadStaffInbox();
+    }
+
+    async function pollStaffInbox() {
+        if (!config.isStaff) return;
+        try {
+            if (staffOpen) {
+                await loadStaffInbox();
+                if (activeStaffConversationId) {
+                    const data = await apiFetch(`/api/chat/staff/${activeStaffConversationId}/`);
+                    data.messages.forEach((message) => {
+                        if (!staffMessages.querySelector(`[data-message-id="${message.id}"]`)) {
+                            renderMessage(message, staffMessages);
+                        }
+                    });
+                }
+            } else {
+                const data = await apiFetch('/api/chat/staff/ping/', { method: 'POST', body: '{}' });
+                setBadge(staffBadge, data.unread_conversations);
+                if (staffBtn) staffBtn.hidden = false;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function startStaffTimers() {
+        clearInterval(staffPollTimer);
+        clearInterval(staffPingTimer);
+        staffPollTimer = setInterval(pollStaffInbox, staffOpen ? 4000 : 15000);
+        staffPingTimer = setInterval(async () => {
+            if (!config.isStaff) return;
+            try {
+                const data = await apiFetch('/api/chat/staff/ping/', { method: 'POST', body: '{}' });
+                setBadge(staffBadge, data.unread_conversations);
+            } catch (error) {
+                console.error(error);
+            }
+        }, 60000);
+    }
+
+    staffBtn?.addEventListener('click', async () => {
+        staffOpen = !staffOpen;
+        if (customerOpen) {
+            customerOpen = false;
+            togglePanel(customerPanel, false);
+            stopCustomerPolling();
+        }
+        togglePanel(staffPanel, staffOpen);
+        if (staffOpen) {
+            try {
+                await loadStaffInbox();
+                startStaffTimers();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    });
+
+    staffClose?.addEventListener('click', () => {
+        staffOpen = false;
+        togglePanel(staffPanel, false);
+        siteChat.hidden = !customerOpen;
+    });
+
+    staffForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!activeStaffConversationId) return;
+        const body = staffInput.value.trim();
+        if (!body) return;
+        try {
+            const data = await apiFetch(`/api/chat/staff/${activeStaffConversationId}/send/`, {
+                method: 'POST',
+                body: JSON.stringify({ body }),
+            });
+            renderMessage(data.message, staffMessages);
+            staffInput.value = '';
+            setBadge(staffBadge, data.unread_conversations);
+            await loadStaffInbox();
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+
+    async function pollCustomerUnread() {
+        if (customerOpen) return;
+        try {
+            const data = await apiFetch('/api/chat/badge/');
+            setBadge(customerBadge, data.customer_unread_count);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    pollCustomerUnread();
+    setInterval(pollCustomerUnread, 20000);
+
+    if (config.isStaff) {
+        startStaffTimers();
+        pollStaffInbox();
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && config.isStaff) {
+            pollStaffInbox();
+        }
+    });
+});

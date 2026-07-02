@@ -145,6 +145,52 @@ def send_customer_order_confirmation(order):
     )
 
 
+def send_chat_notification(conversation, message):
+    """Obavijest trgovini o novoj chat poruci kad niko od osoblja nije na sajtu."""
+    _ensure_email_configured()
+
+    recipient = settings.ORDER_NOTIFICATION_EMAIL
+    name = conversation.display_name
+    email = conversation.display_email or '—'
+    registered = 'Da (registrovan korisnik)' if conversation.is_registered else 'Ne (gost)'
+    created = timezone.localtime(message.created_at)
+
+    body_lines = [
+        'Nova poruka u chatu na opremazaribolov.ba',
+        '',
+        f'Ime: {name}',
+        f'Email: {email}',
+        f'Registrovan: {registered}',
+        f'Vrijeme: {created.strftime("%d.%m.%Y. %H:%M")}',
+        '',
+        'Poruka:',
+        message.body,
+        '',
+        f'Prijavite se na sajt kao administrator da odgovorite: {settings.SITE_URL}/',
+    ]
+    reply_to = [email] if email and email != '—' and '@' in email else None
+
+    mail = EmailMultiAlternatives(
+        subject=f'Chat poruka — {name}',
+        body='\n'.join(body_lines),
+        from_email=_from_email(),
+        to=[recipient],
+        reply_to=reply_to,
+    )
+    html_body = render_to_string('emails/chat_notification.html', {
+        'conversation': conversation,
+        'message': message,
+        'name': name,
+        'email': email,
+        'registered': registered,
+        'created': created,
+        'site_url': settings.SITE_URL,
+    })
+    mail.attach_alternative(html_body, 'text/html')
+    mail.send(fail_silently=False)
+    logger.info('Chat obavijest poslana za razgovor #%s (%s)', conversation.pk, email)
+
+
 def send_order_emails(order):
     """Prvo obavijest trgovini, zatim potvrda kupcu."""
     send_admin_order_notification(order)

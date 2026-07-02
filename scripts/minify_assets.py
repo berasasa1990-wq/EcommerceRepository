@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / 'EcommerceApp' / 'static'
 PAIRS = [
     (STATIC / 'js' / 'main.js', STATIC / 'js' / 'main.min.js'),
+
     (STATIC / 'js' / 'product-detail.js', STATIC / 'js' / 'product-detail.min.js'),
     (STATIC / 'js' / 'cart-qty.js', STATIC / 'js' / 'cart-qty.min.js'),
 ]

@@ -169,8 +169,13 @@ class SiteSettings(models.Model):
     )
     kontakt_telefon = models.CharField(
         max_length=30, blank=True,
-        verbose_name='Kontakt telefon (WhatsApp)',
-        help_text='Broj za plutajuću ikonu poruke (npr. +387 61 123 456). Prazno = koristi STORE_PHONE iz okruženja.',
+        verbose_name='Kontakt telefon (WhatsApp / Viber)',
+        help_text='Broj za WhatsApp i Viber ikone (npr. +387 61 123 456). Prazno = koristi STORE_PHONE iz okruženja.',
+    )
+    kontakt_messenger = models.CharField(
+        max_length=120, blank=True,
+        verbose_name='Facebook Messenger',
+        help_text='Korisničko ime Facebook stranice za Messenger, npr. opremazaribolov.ba',
     )
 
     class Meta:
@@ -1259,3 +1264,86 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f'{self.puni_naziv} × {self.kolicina}'
+
+
+class ChatConversation(models.Model):
+    class Status(models.TextChoices):
+        OPEN = 'open', 'Otvoren'
+        CLOSED = 'closed', 'Zatvoren'
+
+    session_key = models.CharField(max_length=40, db_index=True, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='chat_conversations',
+    )
+    guest_name = models.CharField(max_length=120, blank=True)
+    guest_email = models.EmailField(blank=True)
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.OPEN,
+    )
+    staff_unread_count = models.PositiveIntegerField(default=0)
+    customer_unread_count = models.PositiveIntegerField(default=0)
+    last_message_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Chat razgovor'
+        verbose_name_plural = 'Chat razgovori'
+        ordering = ['-last_message_at']
+
+    @property
+    def display_name(self):
+        if self.user_id:
+            full_name = self.user.get_full_name().strip()
+            return full_name or self.user.email
+        return self.guest_name.strip() or 'Gost'
+
+    @property
+    def display_email(self):
+        if self.user_id:
+            return self.user.email
+        return self.guest_email
+
+    @property
+    def is_registered(self):
+        return bool(self.user_id)
+
+    def __str__(self):
+        return f'Chat — {self.display_name}'
+
+
+class ChatMessage(models.Model):
+    class Sender(models.TextChoices):
+        CUSTOMER = 'customer', 'Kupac'
+        STAFF = 'staff', 'Podrška'
+
+    conversation = models.ForeignKey(
+        ChatConversation,
+        on_delete=models.CASCADE,
+        related_name='messages',
+    )
+    sender_type = models.CharField(max_length=10, choices=Sender.choices)
+    staff_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='chat_replies',
+    )
+    body = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_by_staff = models.BooleanField(default=False)
+    read_by_customer = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Chat poruka'
+        verbose_name_plural = 'Chat poruke'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'{self.get_sender_type_display()}: {self.body[:40]}'
