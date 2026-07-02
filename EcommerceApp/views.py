@@ -99,6 +99,7 @@ _SIZE_EXACT = re.compile(r'^#\d+(?:/\d+)?$', re.I)
 _SIZE_HASH = re.compile(r'(#\d+(?:/\d+)?)', re.I)
 _SIZE_PLAIN = re.compile(r'^\d+$')
 _SIZE_CM = re.compile(r'(\d+(?:[.,]\d+)?)\s*cm\b', re.I)
+_SIZE_MM = re.compile(r'(\d+(?:[.,]\d+)?)\s*mm\b', re.I)
 _SIZE_GRAM = re.compile(r'(\d+(?:[.,]\d+)?)\s*(?:g|gr|gram|grama)\b', re.I)
 _REEL_SIZES = frozenset({
     '1000', '1500', '2000', '2500', '3000', '4000', '4500', '5000', '5500',
@@ -118,7 +119,7 @@ def _normalize_size_number(value):
 
 
 def _variation_size_label(naziv):
-    """Vraća veličinu iz naziva (#broj, cm, g ili veličina mašinice), ako postoji."""
+    """Vraća veličinu iz naziva (#broj, cm, mm, g ili veličina mašinice), ako postoji."""
     naziv = (naziv or '').strip()
     if not naziv:
         return None
@@ -137,6 +138,9 @@ def _variation_size_label(naziv):
     gram_match = _SIZE_GRAM.search(naziv)
     if gram_match:
         return f'{_normalize_size_number(gram_match.group(1))} g'
+    mm_match = _SIZE_MM.search(naziv)
+    if mm_match:
+        return f'{_normalize_size_number(mm_match.group(1))} mm'
     reel_match = _REEL_SIZE_PATTERN.search(naziv)
     if reel_match:
         return reel_match.group(1)
@@ -148,9 +152,10 @@ def _size_sort_key(label):
     hook_match = re.search(r'#(\d+)', label)
     if hook_match:
         return (0, int(hook_match.group(1)), label)
-    unit_match = re.match(r'^(\d+(?:\.\d+)?)\s*(cm|g)$', label, re.I)
+    unit_match = re.match(r'^(\d+(?:\.\d+)?)\s*(cm|mm|g)$', label, re.I)
     if unit_match:
-        unit_rank = 1 if unit_match.group(2).lower() == 'cm' else 2
+        unit = unit_match.group(2).lower()
+        unit_rank = {'cm': 1, 'mm': 2, 'g': 3}.get(unit, 9)
         return (unit_rank, float(unit_match.group(1)), label)
     if label.isdigit():
         return (3, int(label), label)
@@ -159,6 +164,7 @@ def _size_sort_key(label):
 
 _SIZE_FILTER_GROUPS = (
     ('duzina', 'Dužina', 'Prikaži sve dužine'),
+    ('debljina', 'Debljina', 'Prikaži sve debljine'),
     ('gramaza', 'Gramaža', 'Prikaži sve gramaže'),
     ('velicina', 'Veličina', 'Prikaži sve veličine'),
 )
@@ -168,6 +174,8 @@ def _size_filter_group_key(label):
     label = (label or '').strip()
     if re.match(r'^\d+(?:\.\d+)?\s*cm$', label, re.I):
         return 'duzina'
+    if re.match(r'^\d+(?:\.\d+)?\s*mm$', label, re.I):
+        return 'debljina'
     if re.match(r'^\d+(?:\.\d+)?\s*g$', label, re.I):
         return 'gramaza'
     if label.startswith('#') or label in _REEL_SIZES or label.isdigit():
