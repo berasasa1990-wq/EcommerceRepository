@@ -19,6 +19,7 @@
 
 {% block content %}
 <section class="product-detail">
+    {% include 'partials/product_detail_badge.html' %}
     <a href="{{ product_back_url }}" class="product-detail-back" id="productDetailBack" aria-label="Nazad na prethodnu stranicu">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M15 18l-6-6 6-6"/>
@@ -30,7 +31,6 @@
             <div class="product-gallery-main" id="mainProductImageWrap">
                 {% include 'partials/product_sale_ribbon.html' with product=product %}
                 {% include 'partials/product_discount_badge.html' with product=product %}
-                {% include 'partials/product_detail_badge.html' %}
                 {% if product.prikazna_slika %}
                 {% with img=product.prikazna_slika_responsive %}
                 <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">

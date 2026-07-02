@@ -467,16 +467,49 @@ class HomeVlog(models.Model):
 
 
 class Popup(models.Model):
+    class Tip(models.TextChoices):
+        SLIKA = 'slika', 'Slika + dugme'
+        AKCIJA = 'akcija', 'Akcijski pop-up (tajmer + artikal)'
+
     naziv = models.CharField(
         max_length=100,
         verbose_name='Interni naziv',
         help_text='Samo za prepoznavanje u adminu.',
     )
+    tip = models.CharField(
+        max_length=10,
+        choices=Tip.choices,
+        default=Tip.SLIKA,
+        verbose_name='Tip pop-upa',
+    )
     slika = models.ImageField(
         upload_to='popups/',
+        blank=True,
+        null=True,
         verbose_name='Slika',
-        help_text='Glavna slika pop-upa. Dugme će biti ispod slike.',
-    )  # required by default (no blank=True)
+        help_text='Glavna slika pop-upa. Dugme će biti ispod slike. Obavezno za tip „Slika + dugme”.',
+    )
+    akcija_sati = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        verbose_name='Trajanje akcije (sati)',
+        help_text='Koliko sati traje odbrojavanje od početka akcije.',
+    )
+    akcija_pocetak = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name='Početak akcije',
+        help_text='Od kada se računa odbrojavanje (početak + sati = kraj akcije).',
+    )
+    akcija_artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='akcija_popupi',
+        verbose_name='Artikal u akciji',
+        help_text='Prikazuje se ispod tajmera u akcijskom pop-upu.',
+    )
     tekst_dugmeta = models.CharField(
         max_length=50,
         default='Saznaj više',
@@ -510,14 +543,42 @@ class Popup(models.Model):
         verbose_name_plural = 'Pop-upi'
         ordering = ['redoslijed', '-id']
 
+    @property
+    def akcija_zavrsava(self):
+        if self.tip != self.Tip.AKCIJA or not self.akcija_pocetak or not self.akcija_sati:
+            return None
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        pocetak = self.akcija_pocetak
+        if timezone.is_naive(pocetak):
+            pocetak = timezone.make_aware(pocetak, timezone.get_current_timezone())
+        return pocetak + timedelta(hours=self.akcija_sati)
+
+    def akcija_jos_traje(self):
+        from django.utils import timezone
+
+        kraj = self.akcija_zavrsava
+        if not kraj:
+            return False
+        return timezone.now() < kraj
+
     def prikazi_korisniku(self, user):
         if not self.aktivan:
+            return False
+        if self.tip == self.Tip.AKCIJA:
+            if not self.akcija_artikal_id or not self.akcija_jos_traje():
+                return False
+        elif not self.slika:
             return False
         if user.is_authenticated:
             return self.za_prijavljene
         return self.za_neprijavljene
 
     def get_link_href(self):
+        if self.tip == self.Tip.AKCIJA and self.akcija_artikal_id:
+            return self.akcija_artikal.get_absolute_url()
         if self.link_dugmeta:
             if self.link_dugmeta.startswith(('http://', 'https://', '/')):
                 return self.link_dugmeta

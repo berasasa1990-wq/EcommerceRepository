@@ -705,6 +705,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastShownKey = `site_popup_last_shown_${popupId}`;
         const sessionShownKey = `site_popup_shown_session_${popupId}`;
         const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+        let countdownInterval = null;
+
+        function formatCountdown(ms) {
+            const totalSec = Math.max(0, Math.floor(ms / 1000));
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function startCountdown() {
+            const countdownEl = document.getElementById('sitePopupCountdown');
+            const endValue = sitePopupOverlay.dataset.countdownEnd;
+            if (!countdownEl || !endValue) return;
+
+            const endMs = Date.parse(endValue);
+            if (!Number.isFinite(endMs)) return;
+
+            const tick = () => {
+                const diff = endMs - Date.now();
+                if (diff <= 0) {
+                    countdownEl.textContent = '00:00:00';
+                    stopCountdown();
+                    closePopup();
+                    return;
+                }
+                countdownEl.textContent = formatCountdown(diff);
+            };
+
+            tick();
+            stopCountdown();
+            countdownInterval = setInterval(tick, 1000);
+        }
 
         function shouldShowPopup() {
             const last = parseInt(localStorage.getItem(lastShownKey) || '0', 10);
@@ -720,6 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function closePopup() {
+            stopCountdown();
             sitePopupOverlay.classList.remove('is-visible');
             sitePopupOverlay.hidden = true;
             document.body.classList.remove('popup-open');
@@ -740,6 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sitePopupOverlay.classList.add('is-visible');
             });
             document.body.classList.add('popup-open');
+            startCountdown();
             // Mark shown for this session
             sessionStorage.setItem(sessionShownKey, '1');
         }

@@ -1,7 +1,8 @@
 {% if active_popup %}
 <div class="site-popup-overlay" id="sitePopupOverlay" hidden
-     data-popup-id="{{ active_popup.id }}">
-    <div class="site-popup"
+     data-popup-id="{{ active_popup.id }}"
+     {% if active_popup.tip == 'akcija' and active_popup.akcija_zavrsava %}data-countdown-end="{{ active_popup.akcija_zavrsava|date:'c' }}"{% endif %}>
+    <div class="site-popup{% if active_popup.tip == 'akcija' %} site-popup--akcija{% endif %}"
          role="dialog"
          aria-modal="true"
          aria-labelledby="popup-title">
@@ -20,6 +21,44 @@
             </svg>
         </button>
 
+        {% if active_popup.tip == 'akcija' and active_popup.akcija_artikal %}
+        <div class="site-popup-akcija">
+            <p class="site-popup-akcija-label">Akcija ističe za</p>
+            <div class="site-popup-countdown" id="sitePopupCountdown" aria-live="polite">--:--:--</div>
+            <a href="{{ active_popup.akcija_artikal.get_absolute_url }}" class="site-popup-product">
+                <span class="site-popup-product-image">
+                    {% if active_popup.akcija_artikal.prikazna_slika %}
+                    <img src="{{ active_popup.akcija_artikal.prikazna_slika.url }}"
+                         alt="{{ active_popup.akcija_artikal.naziv }}"
+                         width="120"
+                         height="120"
+                         loading="lazy"
+                         decoding="async">
+                    {% else %}
+                    <span class="site-popup-product-placeholder" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <path d="M21 15l-5-5L5 21"/>
+                        </svg>
+                    </span>
+                    {% endif %}
+                </span>
+                <span class="site-popup-product-info">
+                    <span class="site-popup-product-name">{{ active_popup.akcija_artikal.naziv }}</span>
+                    <span class="site-popup-product-price product-price">
+                        {% include 'partials/product_price.html' with item=active_popup.akcija_artikal %}
+                    </span>
+                </span>
+            </a>
+            <div class="site-popup-actions">
+                <a href="{{ active_popup.get_link_href }}"
+                   class="btn btn-primary site-popup-cta">
+                    {{ active_popup.tekst_dugmeta|default:"Pogledaj artikal" }}
+                </a>
+            </div>
+        </div>
+        {% else %}
         <div class="site-popup-media">
             <img src=""
                  data-src="{{ active_popup.slika.url }}"
@@ -34,6 +73,7 @@
                 {{ active_popup.tekst_dugmeta }}
             </a>
         </div>
+        {% endif %}
 
     </div>
 </div>

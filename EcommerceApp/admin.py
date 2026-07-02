@@ -15,6 +15,7 @@ from .forms import (
     BulkAssignTagsForm,
     MergeProductsForm,
     OdooImportForm,
+    PopupAdminForm,
 )
 from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
 from .odoo_import import (
@@ -280,18 +281,31 @@ class BrandAdmin(admin.ModelAdmin):
 
 @admin.register(Popup)
 class PopupAdmin(admin.ModelAdmin):
-    list_display = ('naziv', 'aktivan', 'za_prijavljene', 'za_neprijavljene', 'redoslijed')
-    list_filter = ('aktivan', 'za_prijavljene', 'za_neprijavljene')
+    form = PopupAdminForm
+    list_display = ('naziv', 'tip', 'aktivan', 'za_prijavljene', 'za_neprijavljene', 'redoslijed')
+    list_filter = ('tip', 'aktivan', 'za_prijavljene', 'za_neprijavljene')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naziv',)
+    autocomplete_fields = ('akcija_artikal',)
+
     def get_fieldsets(self, request, obj=None):
-        fieldsets = [
+        sadrzaj_fields = [
+            'slika',
+            'akcija_pocetak', 'akcija_sati', 'akcija_artikal',
+            'tekst_dugmeta', 'link_dugmeta',
+        ]
+        if obj:
+            sadrzaj_fields = ['slika', 'preview_slika', *sadrzaj_fields[1:]]
+        return [
             (None, {
-                'fields': ('naziv', 'slika'),
-                'description': 'Unesite interni naziv i dodajte sliku. Dugme će biti ispod slike.',
+                'fields': ('naziv', 'tip'),
             }),
-            ('Dugme ispod slike', {
-                'fields': ('tekst_dugmeta', 'link_dugmeta'),
+            ('Sadržaj pop-upa', {
+                'fields': tuple(sadrzaj_fields),
+                'description': (
+                    'Slika + dugme: upload slike i link dugmeta. '
+                    'Akcijski pop-up: početak akcije, trajanje u satima i artikal ispod tajmera.'
+                ),
             }),
             ('Prikaz i ponašanje', {
                 'fields': (
@@ -301,22 +315,20 @@ class PopupAdmin(admin.ModelAdmin):
                 'classes': ('collapse',),
             }),
         ]
-        if obj:
-            # Add preview only when editing existing
-            fieldsets[0][1]['fields'] = ('naziv', 'slika', 'preview_slika')
-        return fieldsets
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return ['preview_slika']
         return []
 
+    @admin.display(description='Pregled slike')
     def preview_slika(self, obj):
-        from django.utils.html import format_html
         if obj and obj.slika:
-            return format_html('<img src="{}" style="max-height:120px; border-radius:6px; margin-top:8px;" />', obj.slika.url)
+            return format_html(
+                '<img src="{}" style="max-height:120px; border-radius:6px; margin-top:8px;" />',
+                obj.slika.url,
+            )
         return ''
-    preview_slika.short_description = 'Pregled'
 
 
 @admin.register(UpsellOffer)

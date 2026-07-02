@@ -2,7 +2,30 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
-from .models import Banner, Brand, Category, Product, Tag
+from .models import Banner, Brand, Category, Popup, Product, Tag
+
+
+class PopupAdminForm(forms.ModelForm):
+    class Meta:
+        model = Popup
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tip = cleaned_data.get('tip')
+        if tip == Popup.Tip.AKCIJA:
+            for field, label in (
+                ('akcija_sati', 'Trajanje akcije (sati)'),
+                ('akcija_pocetak', 'Početak akcije'),
+                ('akcija_artikal', 'Artikal u akciji'),
+            ):
+                if not cleaned_data.get(field):
+                    self.add_error(field, f'Obavezno za akcijski pop-up ({label}).')
+        elif tip == Popup.Tip.SLIKA:
+            has_slika = bool(cleaned_data.get('slika')) or bool(getattr(self.instance, 'slika', None))
+            if not has_slika:
+                self.add_error('slika', 'Obavezno za pop-up sa slikom.')
+        return cleaned_data
 
 
 class BannerAdminForm(forms.ModelForm):

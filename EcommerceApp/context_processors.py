@@ -25,7 +25,9 @@ def nav_categories(request):
 
     cart = Cart(request)
     active_popup = None
-    for popup in Popup.objects.filter(aktivan=True).order_by('redoslijed', '-id'):
+    for popup in Popup.objects.filter(aktivan=True).select_related(
+        'akcija_artikal', 'akcija_artikal__brend',
+    ).order_by('redoslijed', '-id'):
         if popup.prikazi_korisniku(request.user):
             active_popup = popup
             break
