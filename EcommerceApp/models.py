@@ -167,6 +167,11 @@ class SiteSettings(models.Model):
         max_length=200, default='Blogovi — Klik na željeni',
         verbose_name='Blog — naslov',
     )
+    kontakt_telefon = models.CharField(
+        max_length=30, blank=True,
+        verbose_name='Kontakt telefon (WhatsApp)',
+        help_text='Broj za plutajuću ikonu poruke (npr. +387 61 123 456). Prazno = koristi STORE_PHONE iz okruženja.',
+    )
 
     class Meta:
         verbose_name = 'Podešavanja'

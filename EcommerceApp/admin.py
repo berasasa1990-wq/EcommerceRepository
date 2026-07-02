@@ -141,6 +141,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('logo', 'pregled_loga', 'favicon', 'pregled_favicona'),
             'description': 'Logo u headeru i ikona u tabu preglednika (favicon).',
         }),
+        ('Kontakt', {
+            'fields': ('kontakt_telefon',),
+            'description': 'Telefon za plutajuću WhatsApp ikonu u donjem desnom uglu sajta.',
+        }),
         ('Dostava', {
             'fields': ('dostava_naziv', 'dostava_cijena', 'besplatna_dostava_od'),
             'description': 'Postavke dostave prikazane u korpi i na checkoutu.',
