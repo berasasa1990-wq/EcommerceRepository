@@ -9,6 +9,7 @@
 
         {% if filter_params.akcija %}
         <input type="hidden" name="akcija" value="{{ filter_params.akcija }}">
+        <p class="filter-search-hint">Akcija: <strong>sniženi artikli</strong></p>
         {% endif %}
 
         {% if filter_params.brend %}
@@ -71,7 +72,7 @@
 
         <div class="filter-actions">
             <button type="submit" class="btn btn-primary btn-filter">Primijeni</button>
-            <a href="{{ filter_action }}#product-showcase" class="btn btn-secondary btn-filter">Poništi</a>
+            <a href="{% if filter_reset_url %}{{ filter_reset_url }}{% else %}{{ filter_action }}#product-showcase{% endif %}" class="btn btn-secondary btn-filter">Poništi</a>
         </div>
     </form>
 </aside>

@@ -34,6 +34,6 @@
 {% block content %}
 <section class="category-page">
     {% url 'category' category.slug as category_url %}
-    {% include 'partials/product_catalog.html' with filter_action=category_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija category=category hide_category_filter=True filter_size_groups=filter_size_groups %}
+    {% include 'partials/product_catalog.html' with filter_action=category_url filter_categories=filter_categories filter_reset_url=filter_reset_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija category=category hide_category_filter=True filter_size_groups=filter_size_groups %}
 </section>
 {% endblock %}

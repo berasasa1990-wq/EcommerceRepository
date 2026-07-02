@@ -85,6 +85,40 @@ def _product_is_on_sale(product):
     return product.na_akciji
 
 
+def _akcija_products_qs(products_qs):
+    sale_ids = [
+        product.pk
+        for product in products_qs
+        if _product_is_on_sale(product)
+    ]
+    if not sale_ids:
+        return products_qs.none()
+    return products_qs.filter(pk__in=sale_ids)
+
+
+def _filter_size_scope_qs(filter_params, base_qs=None):
+    qs = base_qs if base_qs is not None else _product_queryset()
+    if filter_params.get('q'):
+        qs = _apply_search_filter(qs, filter_params['q'])
+    if filter_params.get('akcija'):
+        qs = _akcija_products_qs(qs)
+    return qs
+
+
+def _filter_reset_url(filter_action, filter_params):
+    preserved = {}
+    if filter_params.get('akcija'):
+        preserved['akcija'] = filter_params['akcija']
+    if filter_params.get('q'):
+        preserved['q'] = filter_params['q']
+    if filter_params.get('brend'):
+        preserved['brend'] = filter_params['brend']
+    query = urlencode(preserved)
+    if query:
+        return f'{filter_action}?{query}#product-showcase'
+    return f'{filter_action}#product-showcase'
+
+
 def _parse_decimal(value):
     value = (value or '').strip().replace(',', '.')
     if not value:
@@ -625,9 +659,7 @@ def home(request):
 
     if filters_active:
         products, filter_params = _apply_product_filters(_product_queryset(), request)
-        scope_qs = _product_queryset()
-        if filter_params.get('q'):
-            scope_qs = _apply_search_filter(scope_qs, filter_params['q'])
+        scope_qs = _filter_size_scope_qs(filter_params)
         filter_sizes = _available_sizes(scope_qs)
         filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
         page_obj = _paginate_home_products(request, products, filter_params)
@@ -746,10 +778,14 @@ def home(request):
         'showcase_brands': _showcase_brands() if not filters_active else [],
         'search_products': search_products,
         'page_obj': page_obj,
+        'filters_active': filters_active,
         'filter_params': filter_params,
         'filter_categories': _filter_categories() if filters_active else [],
         'filter_size_groups': filter_size_groups,
         'filter_action': home_url,
+        'filter_reset_url': (
+            _filter_reset_url(home_url, filter_params) if filters_active else ''
+        ),
         'catalog_title': catalog_title,
         'catalog_subtitle': catalog_subtitle,
         'catalog_query': _catalog_query_string(filter_params) if filters_active else '',
@@ -868,6 +904,7 @@ def category_detail(request, slug):
         'filter_categories': _filter_categories(),
         'filter_params': filter_params,
         'filter_size_groups': _size_filter_groups(category_url, filter_params, filter_sizes),
+        'filter_reset_url': _filter_reset_url(category_url, filter_params),
         # SEO
         'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
         'seo_description': category.meta_description or f"{category.naziv} — kvalitetna oprema za ribolov po povoljnim cijenama. Brza dostava širom Bosne i Hercegovine.",
