@@ -199,15 +199,18 @@ def _apply_search_filter(products_qs, query):
     ).distinct()
 
 
-SEARCH_SUGGEST_LIMIT = 8
+SEARCH_SUGGEST_LIMIT = 6
 
 
 def search_suggest(request):
     query = request.GET.get('q', '').strip()
     if not query:
-        return JsonResponse({'results': [], 'query': ''})
+        return JsonResponse({'results': [], 'query': '', 'has_more': False})
 
-    products = _apply_search_filter(_product_queryset(), query)[:SEARCH_SUGGEST_LIMIT]
+    products_qs = _apply_search_filter(_product_queryset(), query)
+    products = list(products_qs[:SEARCH_SUGGEST_LIMIT + 1])
+    has_more = len(products) > SEARCH_SUGGEST_LIMIT
+    products = products[:SEARCH_SUGGEST_LIMIT]
     results = []
     for product in products:
         price = _effective_product_price(product)
@@ -219,7 +222,7 @@ def search_suggest(request):
             'on_sale': _product_is_on_sale(product),
         })
 
-    return JsonResponse({'results': results, 'query': query})
+    return JsonResponse({'results': results, 'query': query, 'has_more': has_more})
 
 
 def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
@@ -792,12 +795,15 @@ def product_detail(request, slug):
         lcp_image_url = request.build_absolute_uri(product.prikazna_slika.url)
 
     related_products = _related_category_products(product)
+    site_settings = SiteSettings.load()
+    kategorija_naziv = product.kategorija.naziv if product.kategorija else ''
 
     context = {
         **_base_context(),
         'product': product,
         'ima_varijacije': product.varijacije.count() > 0,
         'related_products': related_products,
+        'povezani_podnaslov': site_settings.format_povezani_podnaslov(kategorija_naziv),
         'lcp_image_url': lcp_image_url,
         'product_image_width': product_image_width,
         'product_image_height': product_image_height,

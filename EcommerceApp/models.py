@@ -46,6 +46,11 @@ class SiteSettings(models.Model):
         verbose_name='Logo sajta',
         help_text='Prikazuje se u headeru umjesto teksta. Čuva se kao PNG s bijelom pozadinom (max 640×128px).',
     )
+    favicon = models.ImageField(
+        upload_to='site/', blank=True, null=True,
+        verbose_name='Ikona sajta (favicon)',
+        help_text='Prikazuje se u tabu preglednika i kao prečica na mobilnom. Automatski se skalira na 32×32px PNG.',
+    )
     dostava_naziv = models.CharField(
         max_length=100,
         default='xExpress Brza Pošta',
@@ -123,21 +128,40 @@ class SiteSettings(models.Model):
         default='Garancija na kvalitet.',
         verbose_name='Garancija — tekst',
     )
+    badge_product_detail = models.ImageField(
+        upload_to='site/', blank=True, null=True,
+        verbose_name='Badge na slici artikla',
+        help_text='Prikazuje se u gornjem lijevom uglu slike na stranici artikla (npr. garancija). PNG s transparentnom pozadinom.',
+    )
     naslov_novo = models.CharField(
-        max_length=120, default='Novo',
+        max_length=120, default='Novo', blank=True,
         verbose_name='Novo — naslov',
+        help_text='Ostavite prazno da se naslov ne prikazuje.',
     )
     podnaslov_novo = models.CharField(
-        max_length=200, default='Najnoviji artikli na sajtu',
+        max_length=200, default='Najnoviji artikli na sajtu', blank=True,
         verbose_name='Novo — podnaslov',
+        help_text='Ostavite prazno da se podnaslov ne prikazuje.',
     )
     naslov_izdvojeno = models.CharField(
-        max_length=120, default='Izdvojeno',
+        max_length=120, default='Izdvojeno', blank=True,
         verbose_name='Izdvojeno — naslov',
+        help_text='Ostavite prazno da se naslov ne prikazuje.',
     )
     podnaslov_izdvojeno = models.CharField(
-        max_length=200, default='Odabrani artikli za vas',
+        max_length=200, default='Odabrani artikli za vas', blank=True,
         verbose_name='Izdvojeno — podnaslov',
+        help_text='Ostavite prazno da se podnaslov ne prikazuje.',
+    )
+    naslov_povezani = models.CharField(
+        max_length=120, default='Povezani artikli', blank=True,
+        verbose_name='Povezani artikli — naslov',
+        help_text='Na stranici artikla. Ostavite prazno da se naslov ne prikazuje.',
+    )
+    podnaslov_povezani = models.CharField(
+        max_length=200, default='Iz kategorije {kategorija}', blank=True,
+        verbose_name='Povezani artikli — podnaslov',
+        help_text='Koristite {kategorija} za naziv kategorije. Ostavite prazno da se podnaslov ne prikazuje.',
     )
     naslov_blog = models.CharField(
         max_length=200, default='Blogovi — Klik na željeni',
@@ -150,10 +174,25 @@ class SiteSettings(models.Model):
 
     def save(self, *args, **kwargs):
         self.pk = 1
+        from .utils.images import (
+            apply_image_processing,
+            process_product_detail_badge,
+            process_site_favicon,
+            process_site_logo,
+        )
+
         if self.logo:
-            from .utils.images import apply_image_processing, process_site_logo
             apply_image_processing(self, 'logo', post_process=process_site_logo)
+        if self.favicon:
+            apply_image_processing(self, 'favicon', post_process=process_site_favicon)
+        if self.badge_product_detail:
+            apply_image_processing(self, 'badge_product_detail', post_process=process_product_detail_badge)
         super().save(*args, **kwargs)
+
+    def format_povezani_podnaslov(self, kategorija_naziv=''):
+        if not self.podnaslov_povezani:
+            return ''
+        return self.podnaslov_povezani.replace('{kategorija}', kategorija_naziv or '')
 
     def delete(self, *args, **kwargs):
         pass

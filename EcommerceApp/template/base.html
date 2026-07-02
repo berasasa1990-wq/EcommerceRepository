@@ -66,10 +66,15 @@
     {% endblock %}
     {% endwith %}
 
+    {% if site_settings.favicon %}
+    <link rel="icon" href="{{ site_settings.favicon.url }}" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
+    {% endif %}
+
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260702k" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260702k">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260702m" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260702m">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -257,7 +262,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260702k" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260702m" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

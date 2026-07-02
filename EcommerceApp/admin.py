@@ -133,11 +133,12 @@ class HomeFeaturedProductInline(admin.TabularInline):
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
-    readonly_fields = ('pregled_loga',)
+    readonly_fields = ('pregled_loga', 'pregled_favicona', 'pregled_badgea')
     inlines = [HomeFeaturedProductInline]
     fieldsets = (
-        ('Logo', {
-            'fields': ('logo', 'pregled_loga'),
+        ('Logo i ikona', {
+            'fields': ('logo', 'pregled_loga', 'favicon', 'pregled_favicona'),
+            'description': 'Logo u headeru i ikona u tabu preglednika (favicon).',
         }),
         ('Dostava', {
             'fields': ('dostava_naziv', 'dostava_cijena', 'besplatna_dostava_od'),
@@ -162,11 +163,15 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'naslov_izdvojeno', 'podnaslov_izdvojeno',
                 'naslov_blog',
             ),
-            'description': 'Naslovi sekcija Novo, Izdvojeno i Blog na početnoj stranici.',
+            'description': 'Naslovi sekcija Novo, Izdvojeno i Blog. Prazno polje = naslov se ne prikazuje.',
         }),
-        ('Stranica artikla — uslovi', {
-            'fields': ('politika_dostava', 'politika_povrat', 'politika_garancija'),
-            'description': 'Tekstovi ispod dugmeta „Dodaj u korpu” na svakom artiklu.',
+        ('Stranica artikla — povezani artikli', {
+            'fields': ('naslov_povezani', 'podnaslov_povezani'),
+            'description': 'Naslov karusela povezanih artikala. U podnaslovu koristite {kategorija} za naziv kategorije.',
+        }),
+        ('Stranica artikla — badge i uslovi', {
+            'fields': ('badge_product_detail', 'pregled_badgea', 'politika_dostava', 'politika_povrat', 'politika_garancija'),
+            'description': 'Badge se prikazuje u gornjem lijevom uglu slike artikla (npr. garancija). Tekstovi ispod dugmeta „Dodaj u korpu”.',
         }),
     )
 
@@ -184,6 +189,24 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 obj.logo.url,
             )
         return 'Nema loga — prikazuje se tekstualni logo opremazaribolov.ba. Upload skalira logo i dodaje bijelu pozadinu.'
+
+    @admin.display(description='Pregled favicona (32px)')
+    def pregled_favicona(self, obj):
+        if obj and obj.favicon:
+            return format_html(
+                '<img src="{}" style="width:32px;height:32px;object-fit:contain;border:1px solid #eee;border-radius:4px;" />',
+                obj.favicon.url,
+            )
+        return 'Nema ikone — preglednik koristi default ikonu.'
+
+    @admin.display(description='Pregled badgea')
+    def pregled_badgea(self, obj):
+        if obj and obj.badge_product_detail:
+            return format_html(
+                '<img src="{}" style="max-width:128px;max-height:128px;object-fit:contain;border:1px solid #eee;border-radius:4px;background:#f8f8f8;" />',
+                obj.badge_product_detail.url,
+            )
+        return 'Nema badgea — upload PNG s transparentnom pozadinom (npr. garancija).'
 
 
 @admin.register(Category)

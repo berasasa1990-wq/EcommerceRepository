@@ -12,6 +12,8 @@ _BANNER_AVIF_SUPPORTED = None
 BRAND_LOGO_SIZE = (200, 48)
 BRAND_LOGO_FILL_RATIO = 0.80
 SITE_LOGO_SIZE = (640, 128)
+SITE_FAVICON_SIZE = (32, 32)
+PRODUCT_DETAIL_BADGE_MAX = 200
 PRODUCT_WHITE_THRESHOLD = 248
 PRODUCT_MAX_DIMENSION = 400
 PRODUCT_RESPONSIVE_WIDTHS = (120, 200, 320)
@@ -1423,6 +1425,40 @@ def _fit_logo_to_canvas(
 
 def process_site_logo(image_field):
     return _fit_logo_to_canvas(image_field, SITE_LOGO_SIZE, white_background=True)
+
+
+def process_site_favicon(image_field):
+    return _fit_logo_to_canvas(
+        image_field,
+        SITE_FAVICON_SIZE,
+        white_background=False,
+        fill_ratio=0.92,
+        trim_content=True,
+    )
+
+
+def process_product_detail_badge(image_field):
+    img = Image.open(image_field)
+    img = ImageOps.exif_transpose(img)
+
+    if img.mode in ('RGBA', 'LA', 'P'):
+        img = img.convert('RGBA')
+    else:
+        img = img.convert('RGB')
+
+    img.thumbnail(
+        (PRODUCT_DETAIL_BADGE_MAX, PRODUCT_DETAIL_BADGE_MAX),
+        Image.Resampling.LANCZOS,
+    )
+
+    buffer = BytesIO()
+    img.save(buffer, format='PNG', compress_level=6)
+    buffer.seek(0)
+
+    name = _png_filename(
+        image_field.name if hasattr(image_field, 'name') else 'badge.png',
+    )
+    return ContentFile(buffer.read(), name=name)
 
 
 def process_brand_logo(image_field):

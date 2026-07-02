@@ -30,6 +30,7 @@
             <div class="product-gallery-main" id="mainProductImageWrap">
                 {% include 'partials/product_sale_ribbon.html' with product=product %}
                 {% include 'partials/product_discount_badge.html' with product=product %}
+                {% include 'partials/product_detail_badge.html' %}
                 {% if product.prikazna_slika %}
                 {% with img=product.prikazna_slika_responsive %}
                 <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
@@ -126,10 +127,12 @@
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
+                {% if site_settings.naslov_povezani or povezani_podnaslov %}
                 <div class="home-products-header home-products-header--izdvojeno">
-                    <h2>Povezani artikli</h2>
-                    <p>Iz kategorije {{ product.kategorija.naziv }}</p>
+                    {% if site_settings.naslov_povezani %}<h2>{{ site_settings.naslov_povezani }}</h2>{% endif %}
+                    {% if povezani_podnaslov %}<p>{{ povezani_podnaslov }}</p>{% endif %}
                 </div>
+                {% endif %}
                 {% include 'partials/home_product_carousel.html' with products=related_products %}
             </div>
         </div>

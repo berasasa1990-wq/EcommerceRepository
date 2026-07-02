@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setSuggestionsExpanded(false);
     }
 
-    function renderSearchSuggestions(results, query) {
+    function renderSearchSuggestions(results, query, hasMore = false) {
         if (!searchSuggestions) return;
 
         if (!query) {
@@ -259,8 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const base = searchForm?.getAttribute('action') || '/';
         const allResultsUrl = `${base}?q=${encodeURIComponent(query)}#product-showcase`;
+        const footer = hasMore
+            ? `<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">Vidi sve rezultate za „${escapeHtml(query)}"</a></p>`
+            : '';
 
-        searchSuggestions.innerHTML = `${items}<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">Vidi sve rezultate za „${escapeHtml(query)}"</a></p>`;
+        searchSuggestions.innerHTML = `${items}${footer}`;
         searchSuggestions.hidden = false;
         setSuggestionsExpanded(true);
     }
@@ -291,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Search failed');
             const data = await response.json();
             if (searchInput?.value.trim() !== query) return;
-            renderSearchSuggestions(data.results || [], data.query || query);
+            renderSearchSuggestions(data.results || [], data.query || query, Boolean(data.has_more));
         } catch (error) {
             if (error.name === 'AbortError') return;
             searchSuggestions.innerHTML = '<p class="search-suggestions-empty">Pretraga trenutno nije dostupna.</p>';

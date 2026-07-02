@@ -232,10 +232,12 @@
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
+                {% if site_settings.naslov_novo or site_settings.podnaslov_novo %}
                 <div class="home-products-header home-products-header--novo">
-                    <h2>{{ site_settings.naslov_novo }}</h2>
-                    <p>{{ site_settings.podnaslov_novo }}</p>
+                    {% if site_settings.naslov_novo %}<h2>{{ site_settings.naslov_novo }}</h2>{% endif %}
+                    {% if site_settings.podnaslov_novo %}<p>{{ site_settings.podnaslov_novo }}</p>{% endif %}
                 </div>
+                {% endif %}
                 {% include 'partials/home_product_carousel.html' with products=latest_products eager_first_image=eager_first_novo_image home_section_badge='novo' %}
             </div>
         </div>
@@ -248,10 +250,12 @@
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
+                {% if site_settings.naslov_izdvojeno or site_settings.podnaslov_izdvojeno %}
                 <div class="home-products-header home-products-header--izdvojeno">
-                    <h2>{{ site_settings.naslov_izdvojeno }}</h2>
-                    <p>{{ site_settings.podnaslov_izdvojeno }}</p>
+                    {% if site_settings.naslov_izdvojeno %}<h2>{{ site_settings.naslov_izdvojeno }}</h2>{% endif %}
+                    {% if site_settings.podnaslov_izdvojeno %}<p>{{ site_settings.podnaslov_izdvojeno }}</p>{% endif %}
                 </div>
+                {% endif %}
                 {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
             </div>
         </div>
