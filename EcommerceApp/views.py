@@ -157,6 +157,24 @@ def _size_sort_key(label):
     return (9, 0, label)
 
 
+_SIZE_FILTER_GROUPS = (
+    ('duzina', 'Dužina', 'Prikaži sve dužine'),
+    ('gramaza', 'Gramaža', 'Prikaži sve gramaže'),
+    ('velicina', 'Veličina', 'Prikaži sve veličine'),
+)
+
+
+def _size_filter_group_key(label):
+    label = (label or '').strip()
+    if re.match(r'^\d+(?:\.\d+)?\s*cm$', label, re.I):
+        return 'duzina'
+    if re.match(r'^\d+(?:\.\d+)?\s*g$', label, re.I):
+        return 'gramaza'
+    if label.startswith('#') or label in _REEL_SIZES or label.isdigit():
+        return 'velicina'
+    return 'velicina'
+
+
 def _available_sizes(products_qs):
     nazivi = ProductVariation.objects.filter(
         artikal__in=products_qs,
@@ -328,15 +346,33 @@ def _build_filter_url(filter_action, filter_params, **overrides):
     return f'{filter_action}#product-showcase'
 
 
-def _size_filter_options(filter_action, filter_params, sizes):
-    options = []
+def _size_filter_groups(filter_action, filter_params, sizes):
+    grouped = {key: [] for key, _, _ in _SIZE_FILTER_GROUPS}
     for size in sizes:
-        options.append({
+        group_key = _size_filter_group_key(size)
+        grouped[group_key].append({
             'label': size,
             'url': _build_filter_url(filter_action, filter_params, velicina=size),
             'selected': filter_params.get('velicina') == size,
         })
-    return options
+
+    selected = filter_params.get('velicina', '')
+    selected_group = _size_filter_group_key(selected) if selected else ''
+    groups = []
+    for key, title, clear_label in _SIZE_FILTER_GROUPS:
+        options = grouped.get(key, [])
+        if not options:
+            continue
+        groups.append({
+            'label': title,
+            'options': options,
+            'clear_url': (
+                _build_filter_url(filter_action, filter_params, velicina='')
+                if selected_group == key else ''
+            ),
+            'clear_label': clear_label,
+        })
+    return groups
 
 
 def _paginate_home_products(request, products, filter_params):
@@ -576,8 +612,7 @@ def home(request):
     search_products = []
     catalog_title = None
     catalog_subtitle = None
-    filter_size_options = []
-    filter_size_clear_url = ''
+    filter_size_groups = []
     home_url = reverse('home')
 
     if filters_active:
@@ -586,8 +621,7 @@ def home(request):
         if filter_params.get('q'):
             scope_qs = _apply_search_filter(scope_qs, filter_params['q'])
         filter_sizes = _available_sizes(scope_qs)
-        filter_size_options = _size_filter_options(home_url, filter_params, filter_sizes)
-        filter_size_clear_url = _build_filter_url(home_url, filter_params, velicina='')
+        filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
         page_obj = _paginate_home_products(request, products, filter_params)
         search_products = page_obj.object_list
         result_count = page_obj.paginator.count
@@ -706,8 +740,7 @@ def home(request):
         'page_obj': page_obj,
         'filter_params': filter_params,
         'filter_categories': _filter_categories() if filters_active else [],
-        'filter_size_options': filter_size_options,
-        'filter_size_clear_url': filter_size_clear_url,
+        'filter_size_groups': filter_size_groups,
         'filter_action': home_url,
         'catalog_title': catalog_title,
         'catalog_subtitle': catalog_subtitle,
@@ -826,8 +859,7 @@ def category_detail(request, slug):
         'products': products,
         'filter_categories': _filter_categories(),
         'filter_params': filter_params,
-        'filter_size_options': _size_filter_options(category_url, filter_params, filter_sizes),
-        'filter_size_clear_url': _build_filter_url(category_url, filter_params, velicina=''),
+        'filter_size_groups': _size_filter_groups(category_url, filter_params, filter_sizes),
         # SEO
         'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
         'seo_description': category.meta_description or f"{category.naziv} — kvalitetna oprema za ribolov po povoljnim cijenama. Brza dostava širom Bosne i Hercegovine.",

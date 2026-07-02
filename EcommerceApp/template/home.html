@@ -170,7 +170,7 @@
 
 {% if filter_params.q or filter_params.akcija or filter_params.brend or filter_params.kategorija or filter_params.cijena_od or filter_params.cijena_do or filter_params.sort %}
 <section class="category-page home-search-results{% if filter_params.q %} home-search-results--search{% endif %}{% if filter_params.akcija %} home-search-results--akcija{% endif %}" id="product-showcase">
-    {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_options=filter_size_options filter_size_clear_url=filter_size_clear_url %}
+    {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_groups=filter_size_groups %}
 </section>
 {% else %}
 {% if showcase_brands %}

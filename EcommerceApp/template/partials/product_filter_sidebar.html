@@ -19,22 +19,24 @@
         <input type="hidden" name="velicina" value="{{ filter_params.velicina }}">
         {% endif %}
 
-        {% if filter_size_options %}
+        {% for group in filter_size_groups %}
         <div class="filter-group filter-group--sizes">
-            <span class="filter-label">Veličina</span>
-            {% if filter_params.velicina %}
-            <p class="filter-selected-size">Odabrano: <strong>{{ filter_params.velicina }}</strong></p>
-            {% endif %}
+            <span class="filter-label">{{ group.label }}</span>
+            {% for option in group.options %}
+                {% if option.selected %}
+                <p class="filter-selected-size">Odabrano: <strong>{{ option.label }}</strong></p>
+                {% endif %}
+            {% endfor %}
             <div class="filter-size-list">
-                {% for option in filter_size_options %}
+                {% for option in group.options %}
                 <a href="{{ option.url }}" class="filter-size-option{% if option.selected %} is-selected{% endif %}">{{ option.label }}</a>
                 {% endfor %}
             </div>
-            {% if filter_params.velicina %}
-            <a href="{{ filter_size_clear_url }}" class="filter-size-clear">Prikaži sve veličine</a>
+            {% if group.clear_url %}
+            <a href="{{ group.clear_url }}" class="filter-size-clear">{{ group.clear_label }}</a>
             {% endif %}
         </div>
-        {% endif %}
+        {% endfor %}
 
         {% if not hide_category_filter %}
         <div class="filter-group">
