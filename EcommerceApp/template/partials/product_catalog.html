@@ -6,22 +6,6 @@
             {% if category %}
             <div class="category-header">
                 <h1>{{ category.naziv }}</h1>
-                {% if category.podkategorije.all and not category.roditelj_id %}
-                <div class="category-subnav">
-                    {% for sub in category.podkategorije.all %}
-                    <div class="category-subnav-group">
-                        <a href="{{ sub.get_absolute_url }}" class="category-subnav-title">{{ sub.naziv }}</a>
-                        {% if sub.podkategorije.all %}
-                        <div class="category-subnav-children">
-                            {% for subsub in sub.podkategorije.all %}
-                            <a href="{{ subsub.get_absolute_url }}" class="category-subnav-child">{{ subsub.naziv }}</a>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
             </div>
             {% endif %}
 

@@ -100,6 +100,14 @@ _SIZE_HASH = re.compile(r'(#\d+(?:/\d+)?)', re.I)
 _SIZE_PLAIN = re.compile(r'^\d+$')
 _SIZE_CM = re.compile(r'(\d+(?:[.,]\d+)?)\s*cm\b', re.I)
 _SIZE_GRAM = re.compile(r'(\d+(?:[.,]\d+)?)\s*(?:g|gr|gram|grama)\b', re.I)
+_REEL_SIZES = frozenset({
+    '1000', '1500', '2000', '2500', '3000', '4000', '4500', '5000', '5500',
+    '6000', '6500', '7000', '8000', '10000', '12000',
+})
+_REEL_SIZE_PATTERN = re.compile(
+    r'(?<!\d)(' + '|'.join(sorted(_REEL_SIZES, key=len, reverse=True)) + r')(?!\d)',
+    re.I,
+)
 
 
 def _normalize_size_number(value):
@@ -110,13 +118,15 @@ def _normalize_size_number(value):
 
 
 def _variation_size_label(naziv):
-    """Vraća veličinu iz naziva varijacije (#broj, cm ili g), ako postoji."""
+    """Vraća veličinu iz naziva (#broj, cm, g ili veličina mašinice), ako postoji."""
     naziv = (naziv or '').strip()
     if not naziv:
         return None
     if _SIZE_EXACT.match(naziv):
         return naziv
     if _SIZE_PLAIN.match(naziv):
+        if naziv in _REEL_SIZES:
+            return naziv
         return f'#{naziv}'
     hash_match = _SIZE_HASH.search(naziv)
     if hash_match:
@@ -127,6 +137,9 @@ def _variation_size_label(naziv):
     gram_match = _SIZE_GRAM.search(naziv)
     if gram_match:
         return f'{_normalize_size_number(gram_match.group(1))} g'
+    reel_match = _REEL_SIZE_PATTERN.search(naziv)
+    if reel_match:
+        return reel_match.group(1)
     return None
 
 
@@ -139,6 +152,8 @@ def _size_sort_key(label):
     if unit_match:
         unit_rank = 1 if unit_match.group(2).lower() == 'cm' else 2
         return (unit_rank, float(unit_match.group(1)), label)
+    if label.isdigit():
+        return (3, int(label), label)
     return (9, 0, label)
 
 
