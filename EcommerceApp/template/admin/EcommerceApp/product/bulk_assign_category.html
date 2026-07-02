@@ -47,6 +47,26 @@
         outline: none;
         box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
     }
+    #bulk-category-results .cat-result {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        border: 1px solid #ddd;
+        margin-bottom: 4px;
+        background: #fff;
+        border-radius: 3px;
+    }
+    #bulk-category-results .cat-result:hover {
+        background: #f9f9f9;
+    }
+    #bulk-category-results button {
+        padding: 3px 8px;
+        font-size: 12px;
+    }
+    select[name="kategorija"] {
+        display: none;
+    }
 </style>
 {% endblock %}
 
@@ -81,12 +101,16 @@
 
         <div class="form-row">
             <label for="{{ form.kategorija.id_for_label }}">{{ form.kategorija.label }}</label>
-            <input type="text" id="bulk-category-search" placeholder="Pretraži kategorije (npr. štap, mašinica...)" style="width: 100%; max-width: 480px; padding: 6px 8px; margin-bottom: 6px; box-sizing: border-box;">
+            <div style="display: flex; gap: 8px; align-items: center; max-width: 480px;">
+                <input type="text" id="bulk-category-search" placeholder="Pretraži kategorije (npr. štap, mašinica...)" style="flex: 1; padding: 6px 8px; box-sizing: border-box;">
+                <button type="button" id="bulk-category-nadji" style="padding: 6px 12px;">Nadji</button>
+            </div>
+            <div id="bulk-category-results" style="margin-top: 8px; max-width: 480px;"></div>
             {{ form.kategorija }}
             {% if form.kategorija.errors %}
             <p class="errornote">{{ form.kategorija.errors|join:', ' }}</p>
             {% endif %}
-            <p class="help" style="margin-top:4px; color:#666; font-size:12px;">Koristi pretragu iznad da lakše nađeš kategoriju.</p>
+            <p class="help" style="margin-top:4px; color:#666; font-size:12px;">Upiši naziv kategorije i klikni "Nadji". Zatim klikni "Izaberi" pored rezultata da je odabereš za dodjelu.</p>
         </div>
 
         <div class="bulk-assign-actions">
@@ -99,46 +123,112 @@
 <script>
 (function() {
     var searchInput = document.getElementById('bulk-category-search');
-    var select = document.querySelector('#content-main select.odoo-select, select[name="kategorija"]');
-    if (!searchInput || !select) return;
+    var nadjiBtn = document.getElementById('bulk-category-nadji');
+    var resultsDiv = document.getElementById('bulk-category-results');
+    var select = document.querySelector('select[name="kategorija"]');
+    if (!searchInput || !nadjiBtn || !resultsDiv || !select) return;
 
-    // Store original options data (including hierarchy text like "Roditelj → Dijete")
-    var original = Array.prototype.map.call(select.options, function(opt) {
+    // Store original options (all categories with hierarchy)
+    var originalCategories = Array.prototype.map.call(select.options, function(opt) {
         return {
             value: opt.value,
-            text: opt.text,
-            selected: opt.selected
+            text: opt.text
         };
     });
 
-    function filterOptions(term) {
-        term = (term || '').toLowerCase().trim();
-        var currentVal = select.value;
+    // Hide original select (we use search UI instead)
+    select.style.display = 'none';
 
-        // Clear current options
-        select.innerHTML = '';
+    function showResults(matches) {
+        resultsDiv.innerHTML = '';
+        if (matches.length === 0) {
+            var noRes = document.createElement('div');
+            noRes.style.color = '#666';
+            noRes.style.fontSize = '13px';
+            noRes.textContent = 'Nema rezultata za pretragu.';
+            resultsDiv.appendChild(noRes);
+            return;
+        }
+        matches.forEach(function(cat) {
+            var row = document.createElement('div');
+            row.className = 'cat-result';
 
-        var hasSelection = false;
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = cat.text;
+            nameSpan.style.flex = '1';
 
-        original.forEach(function(item) {
-            var matches = !term || item.text.toLowerCase().indexOf(term) !== -1;
-            // Always include currently selected value even if it doesn't match the filter (so submit works)
-            if (matches || item.value === currentVal) {
-                var opt = document.createElement('option');
-                opt.value = item.value;
-                opt.text = item.text;
-                if (item.value === currentVal) {
-                    opt.selected = true;
-                    hasSelection = true;
-                }
-                select.appendChild(opt);
-            }
+            var chooseBtn = document.createElement('button');
+            chooseBtn.type = 'button';
+            chooseBtn.textContent = 'Izaberi';
+            chooseBtn.onclick = function() {
+                // Select this category in the form (hidden select)
+                select.value = cat.value;
+                // Show confirmation, clear results
+                resultsDiv.innerHTML = '';
+                var chosen = document.createElement('div');
+                chosen.style.padding = '6px 8px';
+                chosen.style.background = '#e8f5e9';
+                chosen.style.border = '1px solid #4caf50';
+                chosen.style.borderRadius = '3px';
+                chosen.style.fontSize = '13px';
+                chosen.innerHTML = 'Odabrana kategorija: <strong>' + cat.text + '</strong> <button type="button" style="margin-left:10px;padding:2px 6px;font-size:11px;">Promijeni</button>';
+                var changeBtn = chosen.querySelector('button');
+                changeBtn.onclick = function() {
+                    resultsDiv.innerHTML = '';
+                    searchInput.value = '';
+                    select.value = '';
+                    searchInput.focus();
+                };
+                resultsDiv.appendChild(chosen);
+            };
+
+            row.appendChild(nameSpan);
+            row.appendChild(chooseBtn);
+            resultsDiv.appendChild(row);
         });
     }
 
-    searchInput.addEventListener('input', function() {
-        filterOptions(this.value);
+    nadjiBtn.onclick = function() {
+        var term = (searchInput.value || '').toLowerCase().trim();
+        if (!term) {
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        var matches = originalCategories.filter(function(cat) {
+            return cat.text.toLowerCase().indexOf(term) !== -1;
+        });
+        showResults(matches);
+    };
+
+    // Enter key triggers Nadji (but no auto results on typing)
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            nadjiBtn.click();
+        }
     });
+
+    // If form already has a selected value (e.g. from previous state), show it
+    if (select.value && select.value !== '') {
+        var currentOpt = originalCategories.find(function(c) { return c.value === select.value; });
+        if (currentOpt) {
+            var chosen = document.createElement('div');
+            chosen.style.padding = '6px 8px';
+            chosen.style.background = '#e8f5e9';
+            chosen.style.border = '1px solid #4caf50';
+            chosen.style.borderRadius = '3px';
+            chosen.style.fontSize = '13px';
+            chosen.innerHTML = 'Odabrana kategorija: <strong>' + currentOpt.text + '</strong> <button type="button" style="margin-left:10px;padding:2px 6px;font-size:11px;">Promijeni</button>';
+            var changeBtn = chosen.querySelector('button');
+            changeBtn.onclick = function() {
+                resultsDiv.innerHTML = '';
+                select.value = '';
+                searchInput.value = '';
+                searchInput.focus();
+            };
+            resultsDiv.appendChild(chosen);
+        }
+    }
 })();
 </script>
 {% endblock %}
