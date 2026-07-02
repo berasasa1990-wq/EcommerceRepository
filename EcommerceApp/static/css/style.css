@@ -466,34 +466,6 @@ img.home-vlog-card-image {
         letter-spacing: 0.04em;
     }
 
-    /* Desktop categories bar: black background, white text + hover anim on main cats */
-    .header-row--categories {
-        background: #000;
-        border-top-color: #111;
-        border-bottom-color: #111;
-    }
-
-    .header-row--categories .nav-menu a {
-        color: #fff;
-    }
-
-    .header-row--categories .nav-menu a::after {
-        background: #fff;
-    }
-
-    .header-row--categories .nav-item:not(.nav-item--akcija) > a {
-        transition: color 0.2s ease, transform 0.2s ease;
-    }
-
-    .header-row--categories .nav-item:not(.nav-item--akcija):hover > a {
-        transform: translateY(-1px);
-        color: #e5e5e5;
-    }
-
-    .header-row--categories .nav-item:not(.nav-item--akcija).mega-open > a {
-        color: #f5f5f5;
-    }
-
     .nav-toggle {
         display: none !important;
     }
@@ -4344,6 +4316,11 @@ body.search-results-active main {
 
     .header-row--primary .nav-actions .search-btn {
         padding: 6px;
+    }
+
+    /* Push search+cart cluster to the upper right corner of the header (next to each other) */
+    .header-row--primary .nav-actions .nav-right-cluster {
+        margin-left: auto;
     }
 
     .nav-action-label {
