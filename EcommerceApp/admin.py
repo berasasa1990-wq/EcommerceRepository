@@ -529,7 +529,11 @@ class ProductAdmin(admin.ModelAdmin):
         'kategorija', 'brend', 'tagovi',
     )
     list_editable = ('prikazi_na_pocetnoj', 'aktivan', 'na_stanju')
-    search_fields = ('naziv', 'sifra', 'barkod', 'tagovi__naziv', 'odoo_template_id', 'meta_title', 'meta_description')
+    search_fields = (
+        'naziv', 'sifra', 'barkod', 'tagovi__naziv',
+        'kategorija__naziv', 'kategorija__roditelj__naziv',
+        'odoo_template_id', 'meta_title', 'meta_description',
+    )
     prepopulated_fields = {'slug': ('naziv',)}
     readonly_fields = ('pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview')
     inlines = [ProductVariationInline, ProductImageInline]

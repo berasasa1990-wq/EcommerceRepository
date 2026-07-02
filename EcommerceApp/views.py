@@ -288,7 +288,9 @@ def _apply_search_filter(products_qs, query):
         Q(naziv__icontains=query)
         | Q(sifra__icontains=query)
         | Q(tagovi__naziv__icontains=query)
-        | Q(varijacije__sifra__icontains=query),
+        | Q(varijacije__sifra__icontains=query)
+        | Q(kategorija__naziv__icontains=query)
+        | Q(kategorija__roditelj__naziv__icontains=query),
     ).distinct()
 
 
