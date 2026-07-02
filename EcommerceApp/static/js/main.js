@@ -144,14 +144,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!wasOpen) {
                     item.classList.add('mega-open');
                     syncMobileNavExpanded();
-                    // On mobile: always scroll so subcategories are shown from the very beginning
-                    requestAnimationFrame(() => {
-                        if (navLinks) {
+                    // On mobile: ALWAYS scroll clicked category to top so its subcategories are shown from the very beginning
+                    const doScroll = () => {
+                        if (navLinks && item) {
+                            // scroll item to top of the scroll container
                             navLinks.scrollTo({
-                                top: item.offsetTop,
+                                top: Math.max(0, item.offsetTop - 4),
                                 behavior: 'smooth'
                             });
                         }
+                    };
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(doScroll);
                     });
                 } else {
                     syncMobileNavExpanded();

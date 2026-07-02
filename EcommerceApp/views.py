@@ -44,6 +44,7 @@ from .models import (
     Order,
     OrderItem,
     Product,
+    ProductImage,
     ProductVariation,
     SiteSettings,
     UpsellOffer,
@@ -936,6 +937,7 @@ def product_detail(request, slug):
         .select_related('kategorija', 'brend')
         .prefetch_related(
             Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id')),
+            Prefetch('dodatne_slike', queryset=ProductImage.objects.order_by('redoslijed', 'id')),
         ),
         slug=slug,
     )

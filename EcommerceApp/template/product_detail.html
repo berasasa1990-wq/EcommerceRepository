@@ -45,6 +45,26 @@
                 </div>
                 {% endif %}
             </div>
+            {% if product.dodatne_slike.exists %}
+            <div class="product-thumbnails" id="productThumbnails">
+                {% for img in product.dodatne_slike.all %}
+                {% with r=img.prikazna_slika_responsive %}
+                <button type="button" class="product-thumbnail"
+                    data-src="{% if r %}{{ r.src }}{% else %}{{ img.slika.url }}{% endif %}"
+                    {% if r.srcset %}data-srcset="{{ r.srcset }}"{% endif %}
+                    data-width="{{ r.width|default:400 }}"
+                    data-height="{{ r.height|default:400 }}"
+                    aria-label="Prikaži sliku {{ forloop.counter }} kao glavnu">
+                    <img 
+                        src="{% if r %}{{ r.src }}{% else %}{{ img.slika.url }}{% endif %}" 
+                        alt="{{ product.naziv }} - dodatna slika {{ forloop.counter }}"
+                        width="64" height="64"
+                        loading="lazy">
+                </button>
+                {% endwith %}
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
         <div class="product-detail-info" id="productDetailInfo"{% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
@@ -144,7 +164,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260702o" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260702ah" defer></script>
 {% endblock %}
 
 {% block structured_data %}

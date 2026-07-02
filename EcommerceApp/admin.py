@@ -43,6 +43,7 @@ from .models import (
     OrderItem,
     Popup,
     Product,
+    ProductImage,
     ProductVariation,
     SiteSettings,
     Tag,
@@ -105,6 +106,24 @@ class ProductVariationInline(admin.TabularInline):
         'na_stanju', 'stanje', 'redoslijed', 'odoo_template_id', 'pregled_slike',
     )
     readonly_fields = ('odoo_template_id', 'pregled_slike')
+
+    @admin.display(description='Pregled')
+    def pregled_slike(self, obj):
+        if obj and obj.slika:
+            return format_html(
+                '<img src="{}" style="height:50px;border-radius:4px;" />',
+                obj.slika.url,
+            )
+        return '—'
+
+
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 3
+    fields = ('slika', 'redoslijed', 'pregled_slike')
+    readonly_fields = ('pregled_slike',)
+    verbose_name = 'Dodatna slika'
+    verbose_name_plural = 'Dodatne slike (prikazuju se ispod glavne na stranici artikla)'
 
     @admin.display(description='Pregled')
     def pregled_slike(self, obj):
@@ -506,7 +525,7 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('naziv', 'sifra', 'barkod', 'tagovi__naziv', 'odoo_template_id', 'meta_title', 'meta_description')
     prepopulated_fields = {'slug': ('naziv',)}
     readonly_fields = ('pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview')
-    inlines = [ProductVariationInline]
+    inlines = [ProductVariationInline, ProductImageInline]
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)

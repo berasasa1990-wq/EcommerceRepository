@@ -893,6 +893,48 @@ class Product(models.Model):
         return self.naziv
 
 
+class ProductImage(models.Model):
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='dodatne_slike',
+        verbose_name='Artikal',
+    )
+    slika = models.ImageField(
+        upload_to='products/',
+        verbose_name='Dodatna slika',
+    )
+    redoslijed = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Redoslijed (manji broj = prije)',
+    )
+
+    class Meta:
+        verbose_name = 'Dodatna slika artikla'
+        verbose_name_plural = 'Dodatne slike artikla'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return f"Dodatna slika za {self.product.naziv}"
+
+    def save(self, *args, **kwargs):
+        if self.slika:
+            from .utils.images import apply_image_processing, process_product_image_manual
+            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+        super().save(*args, **kwargs)
+
+    @property
+    def prikazna_slika(self):
+        return self.slika
+
+    @property
+    def prikazna_slika_responsive(self):
+        from .utils.images import product_image_responsive_meta
+        if not self.slika:
+            return None
+        return product_image_responsive_meta(self.slika)
+
+
 class ProductVariation(models.Model):
     artikal = models.ForeignKey(
         Product, on_delete=models.CASCADE, related_name='varijacije',
