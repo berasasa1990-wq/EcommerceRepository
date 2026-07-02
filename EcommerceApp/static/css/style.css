@@ -4399,8 +4399,40 @@ body.search-results-active main {
 
     .nav-menu.mobile-open .nav-item.mega-open > .nav-submenu {
         display: block;
-        padding: 0 0 8px;
+        padding: 0 0 12px;
         margin-top: -4px;
+    }
+
+    .nav-menu.mobile-open > .nav-item {
+        transition: opacity 0.22s ease, background 0.22s ease;
+    }
+
+    .nav-menu.mobile-open.mobile-nav-has-open > .nav-item:not(.mega-open) {
+        opacity: 0.38;
+    }
+
+    .nav-menu.mobile-open.mobile-nav-has-open > .nav-item:not(.mega-open) > a {
+        color: var(--gray-400);
+        font-weight: 500;
+    }
+
+    .nav-menu.mobile-open > .nav-item.mega-open {
+        background: var(--gray-100);
+        margin: 0 -16px;
+        padding: 0 16px;
+        border-left: 3px solid #28403d;
+        border-bottom-color: var(--gray-300);
+    }
+
+    .nav-menu.mobile-open > .nav-item.mega-open > a {
+        color: var(--black);
+        font-weight: 700;
+    }
+
+    .nav-menu.mobile-open > .nav-item.mega-open .nav-submenu-all a,
+    .nav-menu.mobile-open > .nav-item.mega-open .nav-submenu-title {
+        color: var(--black);
+        font-weight: 600;
     }
 
     .nav-submenu a {

@@ -58,6 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
         header?.classList.remove('mega-active');
         megaItems.forEach((el) => el.classList.remove('mega-open'));
         megaMenus.forEach((menu) => menu.classList.remove('active'));
+        syncMobileNavExpanded();
+    }
+
+    function syncMobileNavExpanded() {
+        if (!navLinks) return;
+        const hasOpen = navLinks.querySelector(':scope > .nav-item.mega-open');
+        navLinks.classList.toggle('mobile-nav-has-open', Boolean(hasOpen));
     }
 
     function setMobileNavOpen(isOpen) {
@@ -69,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isOpen) {
             closeMegaMenu();
         }
+        syncMobileNavExpanded();
     }
 
     navToggle?.addEventListener('click', () => {
@@ -136,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!isOpen) {
                     item.classList.add('mega-open');
                 }
+                syncMobileNavExpanded();
             }
         });
     });
