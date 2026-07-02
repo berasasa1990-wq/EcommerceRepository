@@ -13,7 +13,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -58,7 +58,9 @@ def _in_stock_variations_qs():
 
 
 def _prefetch_product_cards(qs):
-    return qs.select_related('kategorija', 'brend').prefetch_related(
+    return qs.select_related('kategorija', 'brend').annotate(
+        variation_count=Count('varijacije'),
+    ).prefetch_related(
         Prefetch('varijacije', queryset=_in_stock_variations_qs()),
     )
 
@@ -146,15 +148,27 @@ def _available_sizes(products_qs):
         na_stanju=True,
     ).values_list('naziv', flat=True)
     sizes = {_variation_size_label(naziv) for naziv in nazivi}
+
+    for product in products_qs.filter(na_stanju=True).annotate(
+        variation_count=Count('varijacije'),
+    ).filter(variation_count=0).only('naziv'):
+        label = _variation_size_label(product.naziv)
+        if label:
+            sizes.add(label)
+
     sizes.discard(None)
     return sorted(sizes, key=_size_sort_key)
 
 
 def _product_matches_size(product, size_label):
-    return any(
+    if any(
         variation.na_stanju and _variation_size_label(variation.naziv) == size_label
         for variation in product.varijacije.all()
-    )
+    ):
+        return True
+    if getattr(product, 'variation_count', 0) == 0:
+        return product.na_stanju and _variation_size_label(product.naziv) == size_label
+    return False
 
 
 def _get_filter_params(request):
