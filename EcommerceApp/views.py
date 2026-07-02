@@ -975,11 +975,11 @@ def product_detail(request, slug):
         'product_back_url': _product_back_url(request, product),
     }
 
-    # X+1 deal message for product detail
-    from .upsell import get_deal_message, get_quantity_deal
-    deal = get_quantity_deal(product)
-    if deal:
-        context['deal_message'] = get_deal_message(deal)
+    # X+1 deal promo for product detail (pulsating red box)
+    from .upsell import get_deal_promo_data
+    deal_promo = get_deal_promo_data(product)
+    if deal_promo:
+        context['deal_promo'] = deal_promo
 
     return render(request, 'product_detail.html', context)
 

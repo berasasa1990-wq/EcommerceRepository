@@ -94,10 +94,17 @@
                     {% include 'partials/product_qty_selector.html' %}
                     <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
                 </div>
-                {% if deal_message %}
-                <p style="color: #c0392b; font-size: 13px; margin-top: 6px; font-weight: 500;">
-                    {{ deal_message }}
-                </p>
+
+                {% if deal_promo %}
+                <div class="deal-promo" style="margin-top: 10px; padding: 10px 14px; text-align: center;">
+                    <div style="font-size: 15px; margin-bottom: 4px;">
+                        {{ deal_promo.promo_text }}
+                    </div>
+                    <div style="font-size: 13px;">
+                        <del>{{ deal_promo.regular_str }} KM</del>
+                        <span class="pct-badge">- {{ deal_promo.pct_str }}</span>
+                    </div>
+                </div>
                 {% endif %}
             </form>
             {% else %}

@@ -251,3 +251,51 @@ def get_deal_info_for_cart_item(item, product):
         'has_discount': has_deal,
         'pct': deal.deal_popust,
     }
+
+def get_deal_promo_data(product):
+    """Return data for the pulsating promo box on product detail page for X+1 deals."""
+    if not product:
+        return None
+    deal = get_quantity_deal(product)
+    if not deal or not deal.deal_vrsta or deal.deal_popust is None:
+        return None
+
+    buy, get = parse_deal_vrsta(deal)
+    if not buy or not get:
+        return None
+
+    base_price = product.prikazna_cijena
+    if not base_price:
+        return None
+
+    promote_qty = buy + 1
+    regular_total = (base_price * promote_qty).quantize(Decimal('0.01'))
+    deal_total, _ = calculate_deal_adjusted_total(base_price, promote_qty, deal)
+
+    pct = deal.deal_popust
+    is_free = pct >= 100
+
+    # Format with comma for decimal as in region
+    def fmt(val):
+        s = f"{val:.2f}".replace('.', ',')
+        return s
+
+    if is_free:
+        promo_text = f"Poruči {promote_qty} ova artikla za samo {fmt(deal_total)} KM (GRATIS!)"
+    else:
+        promo_text = f"Poruči {promote_qty} ova artikla za samo {fmt(deal_total)} KM"
+
+    regular_str = fmt(regular_total)
+    deal_str = fmt(deal_total)
+    pct_str = f"{int(pct) if pct == int(pct) else pct}%"
+
+    return {
+        'promo_text': promo_text,
+        'regular_str': regular_str,
+        'deal_str': deal_str,
+        'pct_str': pct_str,
+        'is_free': is_free,
+        'promote_qty': promote_qty,
+        'buy': buy,
+        'get': get,
+    }

@@ -3203,6 +3203,30 @@ body.search-results-active main {
     margin: 0;
 }
 
+/* Pulsating deal promo box for X+1 deals on product page */
+.deal-promo {
+    background: #c0392b;
+    color: white;
+    font-weight: 600;
+    border-radius: 8px;
+    animation: deal-pulse 1.5s infinite ease-in-out;
+    box-shadow: 0 2px 8px rgba(192, 57, 43, 0.4);
+}
+@keyframes deal-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+.deal-promo del {
+    opacity: 0.85;
+}
+.deal-promo .pct-badge {
+    background: rgba(255,255,255,0.25);
+    padding: 1px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-size: 0.9em;
+}
+
 .product-detail-variations-block {
     margin-top: 24px;
 }
