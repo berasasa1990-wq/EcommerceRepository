@@ -73,8 +73,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260702x" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260702x">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260702y" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260702y">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -195,11 +195,17 @@
                         {% endif %}
                     </li>
                     {% endfor %}
-                    <li class="nav-item nav-item--akcija">
+                    <li class="nav-item nav-item--akcija nav-item--akcija-mobile">
                         <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJSKA PONUDA</a>
                     </li>
                 </ul>
             </nav>
+
+            <a href="{% url 'home' %}?akcija=1#product-showcase" class="header-akcija-cta" id="headerAkcijaCta">
+                <span class="header-akcija-cta__ring" aria-hidden="true"></span>
+                <span class="header-akcija-cta__tag" aria-hidden="true">SNIŽENO</span>
+                <span class="header-akcija-cta__text">AKCIJSKA PONUDA</span>
+            </a>
         </div>
 
         <div class="mega-menu-panel" id="megaMenuPanel">
@@ -266,7 +272,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260702x" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260702y" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
