@@ -96,12 +96,14 @@
                 </div>
 
                 {% if deal_promo %}
-                <p class="deal-promo">
-                    {{ deal_promo.promo_text }} 
-                    <del>{{ deal_promo.regular_str }} KM</del>
-                    <span class="deal-discount">-{{ deal_promo.pct_str }} na 
-                    {% if deal_promo.buy == 1 %}drugi{% elif deal_promo.buy == 2 %}treći{% else %}{{ deal_promo.buy|add:1 }}.{% endif %} artikal</span>
-                </p>
+                <div class="deal-promo">
+                    <div class="deal-promo-line1">{{ deal_promo.promo_text }}</div>
+                    <div class="deal-promo-line2">
+                        <del>{{ deal_promo.regular_str }} KM</del>
+                        <span class="deal-discount">-{{ deal_promo.pct_str }} na 
+                        {% if deal_promo.buy == 1 %}drugi{% elif deal_promo.buy == 2 %}treći{% else %}{{ deal_promo.buy|add:1 }}.{% endif %} artikal</span>
+                    </div>
+                </div>
                 {% endif %}
             </form>
             {% else %}
