@@ -3728,19 +3728,29 @@ body.search-results-active main {
     margin: 0 0 12px;
     line-height: 1.1;
     color: var(--black);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .subcategory-subtitle {
     font-size: 1.1rem;
     color: var(--gray-600);
     margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .subcategory-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
+    grid-template-rows: repeat(2, auto);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(210px, 1fr);
+    gap: 18px;
     margin-bottom: 50px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    padding-bottom: 8px;
 }
 
 .subcategory-card {
@@ -3778,6 +3788,8 @@ body.search-results-active main {
     margin: 0;
     color: var(--black);
     text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
 }
 
 .subcategory-footer-action {
@@ -3817,13 +3829,19 @@ body.search-results-active main {
         padding: 40px 16px 60px;
     }
 
+    .subcategory-grid {
+        grid-auto-columns: minmax(170px, 1fr);
+        gap: 14px;
+    }
+
     .subcategory-card-inner {
-        padding: 32px 22px;
-        min-height: 92px;
+        padding: 28px 18px;
+        min-height: 85px;
     }
 
     .subcategory-name {
-        font-size: 1.35rem;
+        font-size: 1.15rem;
+        letter-spacing: 0.5px;
     }
 }
 
