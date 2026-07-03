@@ -2690,9 +2690,11 @@ body.search-results-active main {
     aspect-ratio: 1;
 }
 
-/* Images in category listings */
-.category-page .product-catalog--compact .product-image {
-    max-height: 196px;
+/* Images in category listings now use consistent size from general .product-image (aspect-ratio + max-height) for uniform larger display */
+
+.category-page .product-catalog--compact .product-image img {
+    object-fit: cover;
+    object-position: center;
 }
 
 /* Smaller product images on homepage (previous setting) */
@@ -5093,9 +5095,9 @@ body.search-results-active main {
         position: relative;
         aspect-ratio: unset;
         width: 100%;
-        height: 148px;
-        min-height: 148px;
-        max-height: 148px;
+        height: 200px;  /* increased for larger uniform size */
+        min-height: 200px;
+        max-height: 200px;
         padding: 0;
         flex-shrink: 0;
         overflow: hidden;
@@ -5111,7 +5113,7 @@ body.search-results-active main {
         height: calc(100% - 8px);
         max-width: none;
         max-height: none;
-        object-fit: contain;
+        object-fit: cover;  /* fill the box uniformly for same visual size */
         object-position: center;
         transition: none;
     }
