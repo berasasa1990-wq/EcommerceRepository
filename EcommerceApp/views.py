@@ -120,6 +120,8 @@ def _filter_reset_url(filter_action, filter_params):
         preserved['q'] = filter_params['q']
     if filter_params.get('brend'):
         preserved['brend'] = filter_params['brend']
+    if filter_params.get('kategorija'):
+        preserved['kategorija'] = filter_params['kategorija']
     query = urlencode(preserved)
     if query:
         return f'{filter_action}?{query}#product-showcase'

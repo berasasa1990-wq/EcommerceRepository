@@ -14,7 +14,7 @@
     --gray-400: #757575;
     --gray-600: #707072;
     --footer-muted: #a3a3a3;
-    --header-top-height: 68px;
+    --header-top-height: 76px;
     --header-nav-height: 44px;
     --header-height: calc(var(--header-top-height) + var(--header-nav-height));
     --promo-height: 36px;
@@ -113,7 +113,7 @@ img.home-vlog-card-image {
     grid-template-areas: "logo search actions";
     align-items: center;
     gap: 20px;
-    padding: 10px 24px;
+    padding: 6px 24px;
     min-height: var(--header-top-height);
 }
 
@@ -276,9 +276,9 @@ img.home-vlog-card-image {
 }
 
 .logo-image {
-    height: 56px;
+    height: 64px;
     width: auto;
-    max-width: 320px;
+    max-width: 380px;
     object-fit: contain;
     object-position: left center;
     background: transparent;
@@ -522,8 +522,8 @@ img.home-vlog-card-image {
     }
 
     .logo-image {
-        height: 52px;
-        max-width: 280px;
+        height: 56px;
+        max-width: 300px;
     }
 
     .header-row--categories .nav-chevron {
@@ -4677,7 +4677,7 @@ body.search-results-active main {
 /* Responsive */
 @media (max-width: 1024px) {
     :root {
-        --header-top-height: 64px;
+        --header-top-height: 72px;
         --header-nav-height: 0px;
         --header-height: var(--header-top-height);
     }
@@ -4822,7 +4822,7 @@ body.search-results-active main {
     }
 
     .logo-image {
-        height: 56px;
+        height: 58px;
         max-width: 100%;
         width: auto;
         object-fit: contain;

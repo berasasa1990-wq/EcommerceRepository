@@ -477,7 +477,8 @@ class BannerAdmin(admin.ModelAdmin):
         ('Sadržaj', {
             'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika', 'video', 'pregled_videa'),
             'description': (
-                'Klik na banner vodi na kategoriju ili link (ako su postavljeni). '
+                'Klik na banner vodi na kategoriju(e) ili link (ako su postavljeni). '
+                'Možete odabrati više kategorija u Odredištu. '
                 'Obavezna je slika ili video. '
                 'Upload slike: Hero → JPEG 1920×560 (24:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
                 'Video: MP4/WebM/MOV, najviše 6 sekundi (max 20 MB). Ako je video postavljen, prikazuje se umjesto slike; '
@@ -536,6 +537,47 @@ class BannerAdmin(admin.ModelAdmin):
         return ', '.join(cats) if cats else '—'
 
 
+class NaStanjuFilter(admin.SimpleListFilter):
+    """Custom filter for 'na_stanju' that defaults to 'Yes' (in stock) selected."""
+    title = 'Na stanju'
+    parameter_name = 'na_stanju'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('1', 'Da'),
+            ('0', 'Ne'),
+        )
+
+    def value(self):
+        # Default to 'Yes' (1) if no value provided in query
+        val = super().value()
+        if val is None:
+            return '1'
+        return val
+
+    def queryset(self, request, queryset):
+        val = self.value()
+        if val == '1':
+            return queryset.filter(na_stanju=True)
+        if val == '0':
+            return queryset.filter(na_stanju=False)
+        return queryset
+
+    def choices(self, changelist):
+        # All option (removes the filter param)
+        yield {
+            'selected': self.value() not in ('0', '1'),
+            'query_string': changelist.get_query_string({}, [self.parameter_name]),
+            'display': 'Sve',
+        }
+        for lookup, title in self.lookup_choices:
+            yield {
+                'selected': self.value() == lookup,
+                'query_string': changelist.get_query_string({self.parameter_name: lookup}),
+                'display': title,
+            }
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     change_list_template = 'admin/EcommerceApp/product/change_list.html'
@@ -549,7 +591,7 @@ class ProductAdmin(admin.ModelAdmin):
         'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'aktivan', 'pregled_slike',
     )
     list_filter = (
-        'aktivan', 'na_stanju', 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
+        'aktivan', NaStanjuFilter, 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
         'kategorija', 'brend', 'tagovi',
     )
     list_editable = ('prikazi_na_pocetnoj', 'aktivan', 'na_stanju')

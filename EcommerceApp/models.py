@@ -392,7 +392,7 @@ class Banner(models.Model):
         null=True,
         blank=True,
         verbose_name='Filter: do cijene (KM)',
-        help_text='Opcionalno. Npr. 50 = samo artikli ≤ 50 KM iz odabrane kategorije.',
+        help_text='Opcionalno. Npr. 50 = samo artikli ≤ 50 KM iz odabranih kategorija.',
     )
     filter_cijena_od = models.DecimalField(
         max_digits=10,
@@ -400,7 +400,7 @@ class Banner(models.Model):
         null=True,
         blank=True,
         verbose_name='Filter: od cijene (KM)',
-        help_text='Opcionalno. Npr. 50 = samo artikli ≥ 50 KM iz odabrane kategorije.',
+        help_text='Opcionalno. Npr. 50 = samo artikli ≥ 50 KM iz odabranih kategorija.',
     )
     tekst_dugmeta = models.CharField(max_length=50, blank=True, default='')
     sekundarno_dugme = models.CharField(max_length=50, blank=True)
