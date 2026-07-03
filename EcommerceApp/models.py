@@ -669,6 +669,11 @@ class Popup(models.Model):
         verbose_name='Ponovo prikaži poslije (dana)',
         help_text='Koliko dana ne prikazivati nakon što korisnik zatvori pop-up.',
     )
+    popup_delay_seconds = models.PositiveSmallIntegerField(
+        default=5,
+        verbose_name='Prikaži pop-up nakon (sekundi)',
+        help_text='Koliko sekundi nakon učitavanja stranice da se prikaže pop-up (0 = odmah).',
+    )
 
     class Meta:
         verbose_name = 'Pop-up'

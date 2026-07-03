@@ -773,10 +773,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (shouldShowPopup()) {
-            setTimeout(openPopup, 600);
+            const delaySec = parseInt(sitePopupOverlay.dataset.popupDelay || '5', 10);
+            const delayMs = Math.max(0, delaySec * 1000);
+            setTimeout(openPopup, delayMs);
         }
 
         document.getElementById('sitePopupClose')?.addEventListener('click', closePopup);
+
+        // Mark session if user clicks the CTA button (so doesn't re-show in session)
+        const cta = sitePopupOverlay.querySelector('.site-popup-cta');
+        if (cta) {
+            cta.addEventListener('click', () => {
+                sessionStorage.setItem(sessionShownKey, '1');
+            }, { once: true });
+        }
         sitePopupOverlay.addEventListener('click', (e) => {
             if (e.target === sitePopupOverlay) closePopup();
         });

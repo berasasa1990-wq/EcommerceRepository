@@ -345,7 +345,7 @@ class PopupAdmin(admin.ModelAdmin):
             ('Prikaz i ponašanje', {
                 'fields': (
                     'aktivan', 'za_prijavljene', 'za_neprijavljene',
-                    'redoslijed', 'ponovo_poslije_dana',
+                    'redoslijed', 'ponovo_poslije_dana', 'popup_delay_seconds',
                 ),
                 'classes': ('collapse',),
             }),

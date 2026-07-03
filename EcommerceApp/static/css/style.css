@@ -7138,6 +7138,24 @@ body.search-results-active main {
     color: #5BB805;
 }
 
+.site-popup-akcija-promo {
+    background: linear-gradient(135deg, #f0f9e8 0%, #e8f5d8 100%);
+    border: 2px solid #5BB805;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 8px 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2e7d32;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.15);
+}
+
+.site-popup-akcija-promo strong {
+    color: #1b5e20;
+    font-size: 15px;
+}
+
 .site-popup-countdown {
     font-size: clamp(2rem, 8vw, 2.75rem);
     font-weight: 800;
