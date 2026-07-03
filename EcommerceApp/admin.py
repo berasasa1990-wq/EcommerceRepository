@@ -325,6 +325,7 @@ class PopupAdmin(admin.ModelAdmin):
             'slika',
             'akcija_pocetak', 'akcija_sati', 'akcija_artikal',
             'tekst_dugmeta', 'link_dugmeta',
+            'boja_dugmeta', 'boja_akcija_istice',
         ]
         if obj:
             sadrzaj_fields = ['slika', 'preview_slika', *sadrzaj_fields[1:]]

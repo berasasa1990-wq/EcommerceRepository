@@ -626,6 +626,18 @@ class Popup(models.Model):
         verbose_name='Link dugmeta',
         help_text='Npr. /registracija/ ili puni URL. Prazno = /registracija/.',
     )
+    boja_dugmeta = models.CharField(
+        max_length=7,
+        default='#5BB805',
+        verbose_name='Boja dugmeta',
+        help_text='Hex boja za pozadinu dugmeta u pop-upu (npr. #5BB805).',
+    )
+    boja_akcija_istice = models.CharField(
+        max_length=7,
+        default='#5BB805',
+        verbose_name='Boja "Akcija ističe za"',
+        help_text='Hex boja za labelu "Akcija ističe za" i slične elemente u akcijskom pop-upu.',
+    )
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
     za_prijavljene = models.BooleanField(
         default=False,

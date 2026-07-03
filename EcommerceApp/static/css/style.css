@@ -7097,13 +7097,13 @@ body.search-results-active main {
 .site-popup .site-popup-cta {
     width: 100%;
     min-width: 0;
-    background: #ff6b00;
+    background: var(--popup-btn-bg, #5BB805);
     color: var(--white);
     border: none;
 }
 
 .site-popup .site-popup-cta:hover {
-    background: #e65c00;
+    filter: brightness(0.85);
     color: var(--white);
 }
 
@@ -7135,7 +7135,7 @@ body.search-results-active main {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #ff6b00;
+    color: #5BB805;
 }
 
 .site-popup-countdown {
@@ -7162,8 +7162,8 @@ body.search-results-active main {
 }
 
 .site-popup-product:hover {
-    border-color: #ffc78a;
-    background: #fff8f0;
+    border-color: #7dd03f;
+    background: #f0f9e8;
 }
 
 .site-popup-product-image {

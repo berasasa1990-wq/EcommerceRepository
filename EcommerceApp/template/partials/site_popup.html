@@ -23,7 +23,7 @@
 
         {% if active_popup.tip == 'akcija' and active_popup.akcija_artikal %}
         <div class="site-popup-akcija">
-            <p class="site-popup-akcija-label">Akcija ističe za</p>
+            <p class="site-popup-akcija-label" style="color: {{ active_popup.boja_akcija_istice }};">Akcija ističe za</p>
             <div class="site-popup-countdown" id="sitePopupCountdown" aria-live="polite">--:--:--</div>
             <a href="{{ active_popup.akcija_artikal.get_absolute_url }}" class="site-popup-product">
                 <span class="site-popup-product-image">
@@ -53,7 +53,8 @@
             </a>
             <div class="site-popup-actions">
                 <a href="{{ active_popup.get_link_href }}"
-                   class="btn btn-primary site-popup-cta">
+                   class="btn btn-primary site-popup-cta"
+                   style="--popup-btn-bg: {{ active_popup.boja_dugmeta }};">
                     {{ active_popup.tekst_dugmeta|default:"Pogledaj artikal" }}
                 </a>
             </div>
@@ -69,7 +70,8 @@
 
         <div class="site-popup-actions">
             <a href="{{ active_popup.get_link_href }}"
-               class="btn btn-primary site-popup-cta">
+               class="btn btn-primary site-popup-cta"
+               style="--popup-btn-bg: {{ active_popup.boja_dugmeta }};">
                 {{ active_popup.tekst_dugmeta }}
             </a>
         </div>
