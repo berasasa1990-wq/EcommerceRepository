@@ -336,12 +336,16 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = [product for product in products if product.kategorija_id in allowed]
 
     if params['kategorija']:
-        category = Category.objects.filter(slug=params['kategorija'], aktivan=True).first()
-        if category:
-            category_ids = set(category.get_descendant_ids())
-            if allowed_category_ids is not None:
-                category_ids &= set(allowed_category_ids)
-            products = [product for product in products if product.kategorija_id in category_ids]
+        slugs = [s.strip() for s in params['kategorija'].split(',') if s.strip()]
+        if slugs:
+            cats = list(Category.objects.filter(slug__in=slugs, aktivan=True))
+            if cats:
+                category_ids = set()
+                for cat in cats:
+                    category_ids |= set(cat.get_descendant_ids())
+                if allowed_category_ids is not None:
+                    category_ids &= set(allowed_category_ids)
+                products = [product for product in products if product.kategorija_id in category_ids]
 
     if params['brend']:
         brand = Brand.objects.filter(slug=params['brend']).first()

@@ -467,11 +467,11 @@ class HomeVlogAdmin(admin.ModelAdmin):
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
     form = BannerAdminForm
-    list_display = ('naslov', 'tip', 'kategorija', 'filter_cijena_do', 'filter_cijena_od', 'aktivan', 'redoslijed', 'pregled_slike')
+    list_display = ('naslov', 'tip', 'kategorije_display', 'filter_cijena_do', 'filter_cijena_od', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naslov', 'podnaslov')
-    autocomplete_fields = ('kategorija',)
+    autocomplete_fields = ('kategorije',)
     readonly_fields = ('pregled_slike_velika', 'pregled_videa')
     fieldsets = (
         ('Sadržaj', {
@@ -487,13 +487,13 @@ class BannerAdmin(admin.ModelAdmin):
         }),
         ('Odredište i filter', {
             'fields': (
-                'kategorija', 'link', 'filter_cijena_do', 'filter_cijena_od',
+                'kategorije', 'link', 'filter_cijena_do', 'filter_cijena_od',
                 'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link',
             ),
             'description': (
-                'Link nije obavezan — možete samo odabrati kategoriju. '
+                'Možete odabrati više kategorija. Ako nema linka, klik vodi na početnu stranicu sa filterom za odabrane kategorije + cijene. '
                 'Do cijene 50 = artikli ≤ 50 KM; od cijene 50 = artikli ≥ 50 KM. '
-                'Primjer: kategorija Mašinice + do 50 = sve mašinice ispod 50 KM.'
+                'Primjer: odaberite Mašinice i Stapovi + do 50 = artikli iz tih kategorija ispod 50 KM.'
             ),
         }),
         ('Podešavanja', {
@@ -527,6 +527,13 @@ class BannerAdmin(admin.ModelAdmin):
                 obj.video.url,
             )
         return 'Nema videa'
+
+    @admin.display(description='Kategorije')
+    def kategorije_display(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        cats = list(obj.kategorije.values_list('naziv', flat=True))
+        return ', '.join(cats) if cats else '—'
 
 
 @admin.register(Product)
