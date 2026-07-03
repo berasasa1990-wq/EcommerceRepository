@@ -41,6 +41,7 @@ from .models import (
     Category,
     HomeFeaturedProduct,
     HomeVlog,
+    LoyaltyCard,
     Order,
     OrderItem,
     Product,
@@ -1645,8 +1646,8 @@ def staff_admin_panel(request):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_loyalty_system(request):
-    from django.db.models import Q
-    from .loyalty import loyalty_kontekst, osiguraj_loyalty_karticu
+    from decimal import InvalidOperation
+    from .loyalty import azuriraj_loyalty_karticu, loyalty_kontekst, osiguraj_loyalty_karticu
 
     q = (request.GET.get('q') or '').strip()
     cards = []
@@ -1676,28 +1677,61 @@ def staff_loyalty_system(request):
 
             user_orders = Order.objects.filter(korisnik=selected_card.user).prefetch_related('stavke').order_by('-kreirana')[:50]
 
-            if request.method == 'POST' and request.POST.get('action') == 'update_profile':
-                from .forms import UserProfileForm
-                profil = getattr(selected_card.user, 'profil', None)
-                if profil:
-                    edit_form = UserProfileForm(request.POST, instance=profil)
-                    if edit_form.is_valid():
-                        edit_form.save()
-                        u = selected_card.user
-                        u.first_name = request.POST.get('first_name', u.first_name)
-                        u.last_name = request.POST.get('last_name', u.last_name)
-                        u.email = request.POST.get('email', u.email)
-                        u.save()
-                        messages.success(request, 'Podaci su ažurirani.')
+            profil = getattr(selected_card.user, 'profil', None)
+
+            # Evidentiraj kupovinu (manual purchase)
+            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu':
+                try:
+                    iznos = Decimal(request.POST.get('iznos', '0'))
+                    if iznos > 0:
+                        selected_card.ukupna_potrosnja += iznos
+                        selected_card.save(update_fields=['ukupna_potrosnja'])
+                        azuriraj_loyalty_karticu(selected_card)
+                        selected_card = osiguraj_loyalty_karticu(selected_card.user)
+                        loyalty_ctx = loyalty_kontekst(selected_card)
+                        messages.success(request, f'Kupovina od {iznos} KM evidentirana.')
                         return redirect(f"{request.path}?q={q}")
                     else:
-                        messages.error(request, 'Greška pri ažuriranju.')
+                        messages.error(request, 'Iznos mora biti veći od 0.')
+                except (InvalidOperation, ValueError):
+                    messages.error(request, 'Neispravan iznos.')
+
+            if request.method == 'POST' and request.POST.get('action') == 'update_profile':
+                edit_form = ProfileForm(request.POST)
+                if edit_form.is_valid():
+                    u = selected_card.user
+                    ime_prezime = edit_form.cleaned_data.get('ime_prezime', '').strip()
+                    if ime_prezime:
+                        parts = ime_prezime.split(maxsplit=1)
+                        u.first_name = parts[0]
+                        u.last_name = parts[1] if len(parts) > 1 else ''
+                    u.email = edit_form.cleaned_data.get('email', u.email).strip().lower()
+                    u.save(update_fields=['first_name', 'last_name', 'email'])
+
+                    if profil:
+                        profil.telefon = edit_form.cleaned_data.get('telefon', '')
+                        profil.adresa = edit_form.cleaned_data.get('adresa', '')
+                        profil.grad = edit_form.cleaned_data.get('grad', '')
+                        profil.postanski_broj = edit_form.cleaned_data.get('postanski_broj', '')
+                        profil.save()
+
+                    messages.success(request, 'Podaci su ažurirani.')
+                    return redirect(f"{request.path}?q={q}")
                 else:
-                    messages.error(request, 'Korisnik nema profil.')
+                    messages.error(request, 'Greška pri ažuriranju.')
             else:
-                from .forms import UserProfileForm
-                profil = getattr(selected_card.user, 'profil', None)
-                edit_form = UserProfileForm(instance=profil) if profil else None
+                initial = {
+                    'ime_prezime': selected_card.user.get_full_name() or selected_card.user.first_name,
+                    'email': selected_card.user.email,
+                }
+                if profil:
+                    initial.update({
+                        'telefon': profil.telefon,
+                        'adresa': profil.adresa,
+                        'grad': profil.grad,
+                        'postanski_broj': profil.postanski_broj,
+                    })
+                edit_form = ProfileForm(initial=initial)
 
     context = {
         **_base_context(),
