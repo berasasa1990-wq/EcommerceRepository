@@ -3557,6 +3557,43 @@ body.search-results-active main {
     border-radius: 6px;
 }
 
+/* Order sending loading animation */
+.order-loading {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f9f9f9;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.fish-animation {
+    font-size: 48px;
+    display: inline-block;
+    animation: fish-swim 1.5s infinite ease-in-out;
+}
+
+@keyframes fish-swim {
+    0%, 100% { transform: translateX(0) rotate(-10deg); }
+    50% { transform: translateX(30px) rotate(10deg); }
+}
+
+.rod-animation {
+    font-size: 40px;
+    display: inline-block;
+    animation: rod-swing 1s infinite ease-in-out;
+}
+
+@keyframes rod-swing {
+    0%, 100% { transform: rotate(-15deg); }
+    50% { transform: rotate(15deg); }
+}
+
+.loading-text {
+    margin-top: 12px;
+    font-size: 16px;
+    color: #555;
+}
+
 .btn-add-to-bag:hover:not(:disabled) {
     background: #333;
 }
@@ -4202,6 +4239,17 @@ body.search-results-active main {
 .cart-item-price {
     font-size: 14px;
     margin-top: 4px;
+}
+
+.cart-item-price .price-original {
+    color: var(--gray-600);
+    text-decoration: line-through;
+    margin-right: 4px;
+}
+
+.cart-item-price .price-discounted {
+    color: #5BB805;
+    font-weight: 600;
 }
 
 .cart-item-akcija-promo {

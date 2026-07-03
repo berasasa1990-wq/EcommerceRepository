@@ -39,7 +39,14 @@
                         </div>
                         {% endif %}
                         {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}
-                        <p class="cart-item-price">{{ item.cijena_decimal }} KM</p>
+                        <p class="cart-item-price">
+                            {% if item.discounted_unit_price %}
+                                <span class="price-original">{{ item.cijena_decimal }} KM</span>
+                                <span class="price-discounted">{{ item.discounted_unit_price }} KM</span>
+                            {% else %}
+                                {{ item.cijena_decimal }} KM
+                            {% endif %}
+                        </p>
                     </div>
                     <div class="cart-item-qty">
                         <label for="qty-{{ item.key }}">Kol.</label>

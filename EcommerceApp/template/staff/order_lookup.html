@@ -39,9 +39,9 @@
                         <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
                     </div>
                     <ul class="order-card-items">
-                        {% for item in order.stavke.all %}
+                        {% for item in order.display_stavke %}
                         <li>
-                            <span>{{ item.puni_naziv }} × {{ item.kolicina }}</span>
+                            <span>{{ item.product_naziv }}{% if item.varijacija_naziv %} — {{ item.varijacija_naziv }}{% endif %} × {{ item.kolicina }}</span>
                             <span>{{ item.ukupno }} KM</span>
                         </li>
                         {% endfor %}

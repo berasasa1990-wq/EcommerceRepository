@@ -49,7 +49,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in order.stavke.all %}
+            {% for item in stavke %}
             <tr>
                 <td class="col-name">
                     <span class="item-name">{{ item.product_naziv|default:item.naziv }}</span>
@@ -58,7 +58,14 @@
                     {% endif %}
                 </td>
                 <td class="col-qty">{{ item.kolicina }}</td>
-                <td class="col-price">{{ item.cijena }} KM</td>
+                <td class="col-price">
+                    {% if item.is_akcija_promo and item.discounted_unit_price %}
+                        <span style="text-decoration: line-through; color: #999;">{{ item.cijena }} KM</span>
+                        <span style="color: #5BB805; font-weight: bold;"> sniženo na {{ item.discounted_unit_price }} KM za 1 kom.</span>
+                    {% else %}
+                        {{ item.cijena }} KM
+                    {% endif %}
+                </td>
                 <td class="col-total">{{ item.ukupno }} KM</td>
             </tr>
             {% endfor %}

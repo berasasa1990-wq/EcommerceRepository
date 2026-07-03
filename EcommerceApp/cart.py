@@ -177,12 +177,18 @@ class Cart:
                         'threshold': float(threshold),
                         'popup_id': popup.id,
                     }
-                    # Check threshold WITHOUT this article's contribution
+                    # Threshold check for AKCIJA popup discount (only 1 unit ever discounted):
+                    # - If other items in cart: other_total (cart without this article) must >= threshold.
+                    # - If ONLY this article in cart: this article's full value (qty * price) counts toward threshold.
+                    #   Example: 33 KM item + threshold 100 KM → 3 pcs = 99 < 100 (no discount);
+                    #   4 pcs = 132 >= 100 → apply: ukupno_stavka = (33 * 3) + discounted_price_of_one
                     this_contrib = Decimal(self.cart[key]['cijena']) * Decimal(self.cart[key].get('quantity', 1))
                     other_total = base_total - this_contrib
-                    if other_total >= threshold and pct > 0:
+                    qualifying_total = this_contrib if other_total <= Decimal('0') else other_total
+                    if qualifying_total >= threshold and pct > 0:
                         disc_price = (item['cijena_decimal'] * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
                         item['ukupno_stavka'] = item['cijena_decimal'] * (item['quantity'] - 1) + disc_price
+                        item['discounted_unit_price'] = disc_price
             except Exception:
                 pass
 

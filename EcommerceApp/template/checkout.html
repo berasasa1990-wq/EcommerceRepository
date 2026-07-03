@@ -13,8 +13,8 @@
         ili <a href="{% url 'register' %}">registrujte</a> da pratite narudžbe na svom nalogu.
     </p>
     {% endif %}
-    <div class="checkout-grid">
-        <form method="post" class="checkout-form">
+    <div class="checkout-grid" id="checkout-grid">
+        <form method="post" class="checkout-form" id="checkout-form">
             {% csrf_token %}
             <h2>Podaci za dostavu</h2>
             {% for field in form %}
@@ -46,5 +46,26 @@
             {% include 'partials/upsell_checkout.html' with upsell_offers=upsell_checkout_offers %}
         </aside>
     </div>
+
+    <div id="order-loading" class="order-loading" style="display:none;">
+        <div class="fish-animation">🐟</div>
+        <div class="rod-animation">🎣</div>
+        <div class="loading-text">Slanje narudžbe... Molimo sačekajte.</div>
+    </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('checkout-form');
+    const grid = document.getElementById('checkout-grid');
+    const loading = document.getElementById('order-loading');
+
+    if (form && grid && loading) {
+        form.addEventListener('submit', function() {
+            grid.style.display = 'none';
+            loading.style.display = 'block';
+        });
+    }
+});
+</script>
 {% endblock %}

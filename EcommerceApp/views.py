@@ -33,7 +33,7 @@ from .loyalty import (
     osiguraj_loyalty_karticu,
     validiraj_kupon,
 )
-from .pricing import izracunaj_sazetak, sazetak_iz_narudzbe
+from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import EmailNotConfiguredError, get_order_email_context, send_order_emails
 from .render_sync import sync_korisnik, sync_narudzba
 from .utils.images import image_field_dimensions
@@ -1327,13 +1327,30 @@ def checkout(request):
                     if item['quantity'] > 0:
                         line_price = (deal_info['deal_total'] / item['quantity']).quantize(Decimal('0.01'))
 
+                # For AKCIJA popup discount item: only record the note (and that discount happened)
+                # if the condition was met in cart (i.e. discounted_unit_price present).
+                # Keep original in cijena field; actual reduction is in order totals.
+                akcija_info = item.get('akcija_popup_discount')
+                discounted_unit = item.get('discounted_unit_price')
+                if akcija_info and discounted_unit is not None:
+                    pct = Decimal(str(akcija_info['percent']))
+                    disc_for_one = discounted_unit
+                    extra_note = f" (popust iz akcije {pct}% na 1 kom. - sniženo na {disc_for_one} KM)"
+                    naziv = item['product_naziv'] + extra_note
+                    product_naziv = item['product_naziv'] + extra_note
+                    varijacija_naziv = (item.get('varijacija_naziv', '') + extra_note).strip()
+                else:
+                    naziv = item['product_naziv']
+                    product_naziv = item['product_naziv']
+                    varijacija_naziv = item.get('varijacija_naziv', '')
+
                 OrderItem.objects.create(
                     narudzba=order,
                     artikal=product,
                     varijacija=variation,
-                    naziv=item['product_naziv'],
-                    product_naziv=item['product_naziv'],
-                    varijacija_naziv=item.get('varijacija_naziv', ''),
+                    naziv=naziv,
+                    product_naziv=product_naziv,
+                    varijacija_naziv=varijacija_naziv,
                     sifra=item['sifra'],
                     cijena=line_price,
                     kolicina=item['quantity'],
@@ -1616,6 +1633,7 @@ def account_order_detail(request, broj):
         **_base_context(),
         'order': order,
         'summary': sazetak_iz_narudzbe(order),
+        'stavke': pripremi_stavke_za_racun(order),
         'pricing': order.pdv_pregled,
     }
     return render(request, 'account/order_detail.html', context)
@@ -1658,6 +1676,8 @@ def staff_order_lookup(request):
         orders = list(_search_staff_orders(query))
         if len(orders) == 1:
             return redirect('staff_order_detail', broj=orders[0].broj)
+        for o in orders:
+            o.display_stavke = pripremi_stavke_za_racun(o)
 
     context = {
         **_base_context(),

@@ -117,3 +117,42 @@ def sazetak_iz_narudzbe(order):
         'pdv': order.pdv_pregled,
         'kupon_kod': order.kupon_kod,
     }
+
+
+def pripremi_stavke_za_racun(order):
+    """Pripremi listu dictova za prikaz stavki na računu (email, staff, nalog).
+    Osigurava da se za AKCIJA popust prikaže stvarni iznos (sniženo na 1 kom.)
+    i da linijski ukupno bude tačan (popust samo na 1 komad).
+    """
+    from decimal import Decimal
+    import re
+
+    stavke = []
+    for oi in order.stavke.all():
+        naziv = oi.naziv or ''
+        is_akcija = 'popust iz akcije' in naziv.lower()
+        orig = oi.cijena
+        disc = None
+        charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
+        if is_akcija:
+            m = re.search(r'sniženo na ([\d.,]+)\s*KM', naziv)
+            if m:
+                try:
+                    dstr = m.group(1).replace(',', '.')
+                    disc = Decimal(dstr).quantize(Decimal('0.01'))
+                    charged = (orig * (oi.kolicina - 1) + disc).quantize(Decimal('0.01'))
+                except Exception:
+                    disc = None
+                    charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
+        stavke.append({
+            'naziv': naziv,
+            'product_naziv': oi.product_naziv or oi.naziv or '',
+            'varijacija_naziv': oi.varijacija_naziv,
+            'sifra': oi.sifra,
+            'kolicina': oi.kolicina,
+            'cijena': orig,
+            'ukupno': charged,
+            'is_akcija_promo': is_akcija,
+            'discounted_unit_price': disc,
+        })
+    return stavke

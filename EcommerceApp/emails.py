@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import SiteSettings
-from .pricing import sazetak_iz_narudzbe
+from .pricing import pripremi_stavke_za_racun, sazetak_iz_narudzbe
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +83,7 @@ def _email_context(order):
     return {
         'order': order,
         'summary': sazetak_iz_narudzbe(order),
+        'stavke': pripremi_stavke_za_racun(order),
         'datum': created.strftime('%d.%m.%Y.'),
         'datum_kratko': f'{created.day}. {created.month}. {created.year}.',
         'vrijeme': created.strftime('%H:%M'),

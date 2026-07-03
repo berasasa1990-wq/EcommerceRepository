@@ -21,14 +21,24 @@
         <div class="account-order-panel">
             <h2>Stavke</h2>
             <ul class="account-order-items">
-                {% for item in order.stavke.all %}
+                {% for item in stavke %}
                 <li class="account-order-item">
                     <div>
                         <strong>{{ item.product_naziv|default:item.naziv }}</strong>
                         {% if item.varijacija_naziv %}
                         <p class="account-order-item-variation">Varijacija: {{ item.varijacija_naziv }}</p>
                         {% endif %}
-                        <p class="account-order-item-meta">Šifra: {{ item.sifra|default:"—" }} · {{ item.kolicina }} kom × {{ item.cijena }} KM</p>
+                        <p class="account-order-item-meta">
+                            Šifra: {{ item.sifra|default:"—" }} ·
+                            {{ item.kolicina }} kom ×
+                            {% if item.is_akcija_promo and item.discounted_unit_price %}
+                                <span style="text-decoration: line-through; color:#999;">{{ item.cijena }} KM</span>
+                                <span style="color:#5BB805; font-weight:bold;">{{ item.discounted_unit_price }} KM</span>
+                                <span style="font-size:0.85em;">(sniženo na 1 kom.)</span>
+                            {% else %}
+                                {{ item.cijena }} KM
+                            {% endif %}
+                        </p>
                     </div>
                     <span>{{ item.ukupno }} KM</span>
                 </li>
