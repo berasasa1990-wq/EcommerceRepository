@@ -795,6 +795,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 closePopup();
             }
         });
+
+        // AKCIJA popup: add to cart via AJAX + stay=1 so we remain on the current page
+        // (instead of redirecting to cart). Re-uses toast + badge helpers.
+        const akcijaForm = sitePopupOverlay.querySelector('.akcija-popup-add-form');
+        if (akcijaForm) {
+            akcijaForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = akcijaForm.querySelector('button[type="submit"], .site-popup-cta');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    const formData = new FormData(akcijaForm);
+                    formData.set('stay', '1');
+                    const response = await fetch(akcijaForm.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: new URLSearchParams(formData).toString(),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.ok) {
+                        throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+                    }
+                    updateCartBadge(data.cart_count || 0);
+                    showCartToast(data.message || 'Artikal je dodan u korpu.');
+                    // Close popup and stay on the page where it appeared
+                    if (typeof closePopup === 'function') {
+                        closePopup();
+                    } else {
+                        sitePopupOverlay.classList.remove('is-visible');
+                        sitePopupOverlay.hidden = true;
+                        document.body.classList.remove('popup-open');
+                    }
+                } catch (err) {
+                    showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            });
+        }
     }
 
     // Upsell popup — server šalje overlay samo jednom nakon triggera (dodavanje u korpu).
