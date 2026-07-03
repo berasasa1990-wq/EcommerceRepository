@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{{ seo_title }} — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description }}">
+{% endblock %}
+
+{% block content %}
+<section class="subcategory-page">
+    <div class="subcategory-container">
+        <div class="subcategory-header">
+            <h1 class="subcategory-main-title">{{ category.naziv }}</h1>
+            <p class="subcategory-subtitle">Odaberite podkategoriju</p>
+        </div>
+
+        <div class="subcategory-grid">
+            {% for sub in subcategories %}
+            <a href="{{ sub.get_absolute_url }}" class="subcategory-card">
+                <div class="subcategory-card-inner">
+                    <h2 class="subcategory-name">{{ sub.naziv }}</h2>
+                </div>
+            </a>
+            {% empty %}
+            <p class="no-subcategories">Trenutno nema podkategorija.</p>
+            {% endfor %}
+        </div>
+
+        <div class="subcategory-footer-action">
+            <a href="{{ category.get_absolute_url }}?all=1" class="btn-view-all">
+                Prikaži sve artikle u {{ category.naziv }}
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

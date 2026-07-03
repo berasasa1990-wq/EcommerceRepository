@@ -890,6 +890,24 @@ def category_detail(request, slug):
         Category.objects.select_related('roditelj').prefetch_related('podkategorije__podkategorije'),
         slug=slug, aktivan=True,
     )
+
+    # Ako ima direktnih podkategorija i nije zatraženo "sve" (all=1),
+    # prikaži lijepu stranicu sa podkategorijama (umjesto proizvoda)
+    direct_subs = list(category.podkategorije.filter(aktivan=True).order_by('redoslijed', 'naziv'))
+    show_all = request.GET.get('all') == '1'
+
+    if direct_subs and not show_all:
+        context = {
+            **_base_context(),
+            'category': category,
+            'subcategories': direct_subs,
+            'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
+            'seo_description': category.meta_description or f"Izaberite podkategoriju unutar {category.naziv}.",
+            'canonical_url': settings.SITE_URL.rstrip('/') + category.get_absolute_url(),
+        }
+        return render(request, 'category_subcategories.html', context)
+
+    # Normalan prikaz proizvoda (ili "Sve u kategoriji")
     category_ids = category.get_descendant_ids()
     products_qs = _product_queryset().filter(kategorija_id__in=category_ids)
     filter_sizes = _available_sizes(products_qs)
