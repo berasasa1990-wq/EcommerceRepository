@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!results.length) {
-            searchSuggestions.innerHTML = `<p class="search-suggestions-empty">Nema artikala za „${escapeHtml(query)}".</p>`;
+            searchSuggestions.innerHTML = `<div role="status" class="search-suggestions-empty">Nema artikala za „${escapeHtml(query)}".</div>`;
             searchSuggestions.hidden = false;
             setSuggestionsExpanded(true);
             return;
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
                 : placeholderThumbSvg;
             const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
-            return `<a href="${escapeHtml(item.url)}" class="search-suggestion">
+            return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
                 <span class="search-suggestion-thumb">${thumb}</span>
                 <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
                 <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>
@@ -242,7 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">Vidi sve rezultate za „${escapeHtml(query)}"</a></p>`
             : '';
 
-        searchSuggestions.innerHTML = `${items}${footer}`;
+        // Put option items first (direct children of listbox), footer after as additional content
+        searchSuggestions.innerHTML = items + footer;
         searchSuggestions.hidden = false;
         setSuggestionsExpanded(true);
     }
@@ -261,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchFetchController?.abort();
         searchFetchController = new AbortController();
 
-        searchSuggestions.innerHTML = '<p class="search-suggestions-loading">Pretraga…</p>';
+        searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretraga…</div>';
         searchSuggestions.hidden = false;
         setSuggestionsExpanded(true);
 
@@ -276,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSearchSuggestions(data.results || [], data.query || query, Boolean(data.has_more));
         } catch (error) {
             if (error.name === 'AbortError') return;
-            searchSuggestions.innerHTML = '<p class="search-suggestions-empty">Pretraga trenutno nije dostupna.</p>';
+            searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
             searchSuggestions.hidden = false;
         }
     }

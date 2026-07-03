@@ -1504,13 +1504,14 @@ main {
     width: 100%;
     padding: 0 calc(var(--home-product-inset) + 40px);
     box-sizing: border-box;
-    /* Reserve space to reduce CLS from late JS width calc + image load */
-    min-height: 240px;
+    /* Reserve space to reduce CLS from late JS width calc + image load.
+       Use a generous value based on expected final card height. */
+    min-height: 280px;
 }
 
 @media (min-width: 768px) {
     .home-product-carousel {
-        min-height: 260px;
+        min-height: 290px;
     }
 }
 
@@ -1533,16 +1534,29 @@ main {
     min-width: 0;
 }
 
-/* Provide better initial widths to reduce CLS from JS recalc (approximations) */
+/* Provide better initial widths to reduce CLS from JS recalc.
+   These approximate common viewport sizes for 6 visible items. */
+@media (min-width: 768px) {
+    .home-product-carousel {
+        --carousel-slide-width: 135px;
+    }
+}
+
 @media (min-width: 1024px) {
     .home-product-carousel {
-        --carousel-slide-width: 148px;
+        --carousel-slide-width: 155px;
     }
 }
 
 @media (min-width: 1280px) {
     .home-product-carousel {
-        --carousel-slide-width: 155px;
+        --carousel-slide-width: 172px;
+    }
+}
+
+@media (min-width: 1440px) {
+    .home-product-carousel {
+        --carousel-slide-width: 190px;
     }
 }
 
