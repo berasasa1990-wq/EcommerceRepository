@@ -373,18 +373,20 @@ class Banner(models.Model):
         verbose_name='Video (max 6 s)',
         help_text='Opcionalno. MP4/WebM/MOV, najviše 6 sekundi. Ako je postavljen, prikazuje se umjesto slike.',
     )
-    kategorije = models.ManyToManyField(
+    kategorija = models.ForeignKey(
         'Category',
+        on_delete=models.SET_NULL,
         blank=True,
+        null=True,
         related_name='banneri',
-        verbose_name='Kategorije',
-        help_text='Opcionalno. Ako nema linka, klik vodi na filtrirane kategorije (uz filter cijene). Možete odabrati više kategorija.',
+        verbose_name='Kategorija',
+        help_text='Opcionalno. Ako nema linka, klik vodi na ovu kategoriju (uz filter cijene).',
         limit_choices_to={'aktivan': True},
     )
     link = models.CharField(
         max_length=300, blank=True,
         verbose_name='Link',
-        help_text='Opcionalno. Puni URL ili putanja. Ako je prazno, koristi se kategorija(e) iznad.',
+        help_text='Opcionalno. Puni URL ili putanja. Ako je prazno, koristi se kategorija iznad.',
     )
     filter_cijena_do = models.DecimalField(
         max_digits=10,
@@ -392,7 +394,7 @@ class Banner(models.Model):
         null=True,
         blank=True,
         verbose_name='Filter: do cijene (KM)',
-        help_text='Opcionalno. Npr. 50 = samo artikli ≤ 50 KM iz odabranih kategorija.',
+        help_text='Opcionalno. Npr. 50 = samo artikli ≤ 50 KM iz odabrane kategorije.',
     )
     filter_cijena_od = models.DecimalField(
         max_digits=10,
@@ -400,7 +402,7 @@ class Banner(models.Model):
         null=True,
         blank=True,
         verbose_name='Filter: od cijene (KM)',
-        help_text='Opcionalno. Npr. 50 = samo artikli ≥ 50 KM iz odabranih kategorija.',
+        help_text='Opcionalno. Npr. 50 = samo artikli ≥ 50 KM iz odabrane kategorije.',
     )
     tekst_dugmeta = models.CharField(max_length=50, blank=True, default='')
     sekundarno_dugme = models.CharField(max_length=50, blank=True)
@@ -444,13 +446,8 @@ class Banner(models.Model):
                 href = self.link
             else:
                 href = f'/{self.link.strip("/")}/'
-        elif self.kategorije.exists():
-            cats = list(self.kategorije.all())
-            if len(cats) == 1:
-                href = cats[0].get_absolute_url()
-            else:
-                slugs = ','.join(c.slug for c in sorted(cats, key=lambda c: c.naziv))
-                href = f'/?kategorija={slugs}'
+        elif self.kategorija_id:
+            href = self.kategorija.get_absolute_url()
         if not href:
             return None
         return self._append_price_filter_to_href(href)

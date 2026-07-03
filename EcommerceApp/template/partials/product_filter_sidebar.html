@@ -45,7 +45,7 @@
             <select id="filter-kategorija" name="kategorija" class="filter-input">
                 <option value="">Sve kategorije</option>
                 {% for cat in filter_categories %}
-                <option value="{{ cat.slug }}"{% if cat.slug in (filter_params.kategorija or '').split(',') %} selected{% endif %}>
+                <option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>
                     {% if cat.nivo == 1 %}— {% elif cat.nivo == 2 %}—— {% endif %}{{ cat.naziv }}
                 </option>
                 {% endfor %}
