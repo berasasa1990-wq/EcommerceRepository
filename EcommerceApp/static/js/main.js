@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
                 : placeholderThumbSvg;
             const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
-            return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
+            return `<a href="${escapeHtml(item.url)}" class="search-suggestion">
                 <span class="search-suggestion-thumb">${thumb}</span>
                 <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
                 <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>

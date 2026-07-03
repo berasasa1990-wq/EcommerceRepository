@@ -1085,8 +1085,7 @@ main {
     transition: all var(--transition);
 }
 
-.dot::after {
-    content: '';
+.dot .dot-inner {
     width: 10px;
     height: 10px;
     border-radius: 50%;
@@ -1094,7 +1093,7 @@ main {
     transition: all var(--transition);
 }
 
-.dot.active::after {
+.dot.active .dot-inner {
     background: var(--white);
     width: 12px;
     height: 12px;
@@ -1505,6 +1504,14 @@ main {
     width: 100%;
     padding: 0 calc(var(--home-product-inset) + 40px);
     box-sizing: border-box;
+    /* Reserve space to reduce CLS from late JS width calc + image load */
+    min-height: 240px;
+}
+
+@media (min-width: 768px) {
+    .home-product-carousel {
+        min-height: 260px;
+    }
 }
 
 .home-product-carousel__viewport {
@@ -1521,9 +1528,22 @@ main {
 }
 
 .home-product-carousel__slide {
-    flex: 0 0 var(--carousel-slide-width, 180px);
-    width: var(--carousel-slide-width, 180px);
+    flex: 0 0 var(--carousel-slide-width, 160px);
+    width: var(--carousel-slide-width, 160px);
     min-width: 0;
+}
+
+/* Provide better initial widths to reduce CLS from JS recalc (approximations) */
+@media (min-width: 1024px) {
+    .home-product-carousel {
+        --carousel-slide-width: 148px;
+    }
+}
+
+@media (min-width: 1280px) {
+    .home-product-carousel {
+        --carousel-slide-width: 155px;
+    }
 }
 
 .home-product-carousel__slide .product-card--home-carousel {

@@ -10,7 +10,6 @@
     {% if card.image %}poster="{{ card.image }}"{% endif %}
     width="{{ card.image_width }}"
     height="{{ card.image_height }}"
-    aria-label="{{ card.title|default:'Banner' }}"
 ></video>
 {% elif card.image %}
 <img

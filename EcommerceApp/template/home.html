@@ -18,7 +18,7 @@
                 <a href="{{ slide.url }}" class="slide-image-link" aria-label="{{ slide.title|default:'Banner' }}">
                 {% endif %}
                 {% if slide.has_video %}
-                <video class="slide-image-img slide-image-video" src="{{ slide.video }}" autoplay muted loop playsinline preload="metadata"{% if slide.image %} poster="{{ slide.image }}"{% endif %} width="{{ slide.image_width }}" height="{{ slide.image_height }}" aria-label="{{ slide.title|default:'Banner' }}"></video>
+                <video class="slide-image-img slide-image-video" src="{{ slide.video }}" autoplay muted loop playsinline preload="metadata"{% if slide.image %} poster="{{ slide.image }}"{% endif %} width="{{ slide.image_width }}" height="{{ slide.image_height }}"></video>
                 {% else %}
                 <img src="{{ slide.image }}"{% if slide.image_srcset %} srcset="{{ slide.image_srcset }}"{% endif %} alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
                 {% endif %}
@@ -64,7 +64,9 @@
     </button>
     <div class="carousel-dots" id="carouselDots">
         {% for slide in hero_slides %}
-        <button class="dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" aria-label="Go to slide {{ forloop.counter }}"></button>
+        <button class="dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" aria-label="Go to slide {{ forloop.counter }}">
+            <span class="dot-inner" aria-hidden="true"></span>
+        </button>
         {% endfor %}
     </div>
 </section>
