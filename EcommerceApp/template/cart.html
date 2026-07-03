@@ -39,11 +39,6 @@
                     <div class="cart-item-qty">
                         <label for="qty-{{ item.key }}">Kol.</label>
                         <input type="number" id="qty-{{ item.key }}" name="quantity_{{ item.key }}" value="{{ item.quantity }}" min="1" max="99" class="form-input form-input--qty">
-                        {% if item.deal_info and item.deal_info.message %}
-                        <p style="color: #c0392b; font-size: 12px; margin: 4px 0 0; font-weight: 500; line-height: 1.3;">
-                            {{ item.deal_info.message }}
-                        </p>
-                        {% endif %}
                     </div>
                     <div class="cart-item-total">
                         <p>{{ item.ukupno_stavka }} KM</p>
