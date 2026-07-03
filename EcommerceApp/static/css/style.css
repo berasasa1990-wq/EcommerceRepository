@@ -3713,8 +3713,9 @@ body.search-results-active main {
 }
 
 .subcategory-container {
-    max-width: 1200px;
+    max-width: 1440px;
     margin: 0 auto;
+    padding: 0 48px;
 }
 
 .subcategory-header {
@@ -3827,6 +3828,10 @@ body.search-results-active main {
 @media (max-width: 640px) {
     .subcategory-page {
         padding: 40px 16px 60px;
+    }
+
+    .subcategory-container {
+        padding: 0 16px;
     }
 
     .subcategory-grid {
