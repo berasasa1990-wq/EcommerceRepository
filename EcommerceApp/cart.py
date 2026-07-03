@@ -122,6 +122,12 @@ class Cart:
         return bool(self.request.session.pop(self.COUPON_KEEP_KEY, False))
 
     def __iter__(self):
+        # Compute base total once (using raw prices from cart) for threshold-based discounts
+        base_total = sum(
+            Decimal(it['cijena']) * it['quantity']
+            for it in self.cart.values()
+        )
+
         for key, item in self.cart.items():
             item = item.copy()
             item['key'] = key
@@ -153,7 +159,7 @@ class Cart:
                 item['ukupno_stavka'] = item['cijena_decimal'] * item['quantity']
                 item['deal_info'] = None
 
-            # AKCIJA popup: apply % discount on the popup's article if cart base total >= threshold
+            # AKCIJA popup: show promo text for the article, and apply % discount ONLY to ONE unit if cart base total >= threshold
             try:
                 from .models import Popup
                 popup = Popup.objects.filter(
@@ -164,20 +170,19 @@ class Cart:
                     akcija_prag_iznos__isnull=False,
                 ).first()
                 if popup and popup.akcija_jos_traje():
-                    base_total = sum(
-                        Decimal(it['cijena']) * it['quantity']
-                        for it in self.cart.values()
-                    )
-                    if base_total >= popup.akcija_prag_iznos:
-                        pct = popup.akcija_popust_postotak
-                        if pct > 0:
-                            disc_price = (item['cijena_decimal'] * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
-                            item['ukupno_stavka'] = disc_price * item['quantity']
-                            item['akcija_popup_discount'] = {
-                                'percent': float(pct),
-                                'threshold': float(popup.akcija_prag_iznos),
-                                'popup_id': popup.id,
-                            }
+                    pct = popup.akcija_popust_postotak
+                    threshold = popup.akcija_prag_iznos
+                    item['akcija_popup_discount'] = {
+                        'percent': float(pct),
+                        'threshold': float(threshold),
+                        'popup_id': popup.id,
+                    }
+                    # Check threshold WITHOUT this article's contribution
+                    this_contrib = Decimal(self.cart[key]['cijena']) * Decimal(self.cart[key].get('quantity', 1))
+                    other_total = base_total - this_contrib
+                    if other_total >= threshold and pct > 0:
+                        disc_price = (item['cijena_decimal'] * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
+                        item['ukupno_stavka'] = item['cijena_decimal'] * (item['quantity'] - 1) + disc_price
             except Exception:
                 pass
 

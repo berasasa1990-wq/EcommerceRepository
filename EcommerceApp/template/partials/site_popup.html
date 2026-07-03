@@ -60,11 +60,17 @@
                 </span>
             </a>
             <div class="site-popup-actions">
-                <a href="{{ active_popup.get_link_href }}"
-                   class="btn btn-primary site-popup-cta"
-                   style="--popup-btn-bg: {{ active_popup.boja_dugmeta }};">
-                    {{ active_popup.tekst_dugmeta|default:"Pogledaj artikal" }}
-                </a>
+                <form method="post" action="{% url 'add_to_cart' active_popup.akcija_artikal.slug %}" style="width:100%;">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="1">
+                    <input type="hidden" name="redirect_to" value="cart">
+                    <button type="submit"
+                            class="btn btn-primary site-popup-cta"
+                            style="--popup-btn-bg: {{ active_popup.boja_dugmeta }}; width:100%;"
+                            onclick="this.closest('.site-popup-overlay').classList.remove('is-visible');">
+                        {{ active_popup.tekst_dugmeta|default:"Dodaj u korpu" }}
+                    </button>
+                </form>
             </div>
         </div>
         {% else %}

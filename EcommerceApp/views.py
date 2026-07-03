@@ -1327,12 +1327,6 @@ def checkout(request):
                     if item['quantity'] > 0:
                         line_price = (deal_info['deal_total'] / item['quantity']).quantize(Decimal('0.01'))
 
-                # Apply AKCIJA popup discount if present
-                akcija_info = item.get('akcija_popup_discount')
-                if akcija_info and akcija_info.get('percent'):
-                    pct = Decimal(str(akcija_info['percent']))
-                    line_price = (item['cijena_decimal'] * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
-
                 OrderItem.objects.create(
                     narudzba=order,
                     artikal=product,
