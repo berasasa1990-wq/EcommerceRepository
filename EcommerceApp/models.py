@@ -614,6 +614,22 @@ class Popup(models.Model):
         verbose_name='Artikal u akciji',
         help_text='Prikazuje se ispod tajmera u akcijskom pop-upu.',
     )
+    akcija_popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='% popusta na artikal',
+        help_text='Popust koji se primjenjuje na artikal ako je ukupno u korpi preko praga (samo za tip AKCIJA).',
+    )
+    akcija_prag_iznos = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Prag ukupne kupovine (KM)',
+        help_text='Minimalni iznos u korpi da bi se popust na artikal primijenio. Npr. 50. (samo za tip AKCIJA)',
+    )
     tekst_dugmeta = models.CharField(
         max_length=50,
         default='Saznaj više',

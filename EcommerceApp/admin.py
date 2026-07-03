@@ -324,6 +324,7 @@ class PopupAdmin(admin.ModelAdmin):
         sadrzaj_fields = [
             'slika',
             'akcija_pocetak', 'akcija_sati', 'akcija_artikal',
+            'akcija_popust_postotak', 'akcija_prag_iznos',
             'tekst_dugmeta', 'link_dugmeta',
             'boja_dugmeta', 'boja_akcija_istice',
         ]
@@ -337,7 +338,8 @@ class PopupAdmin(admin.ModelAdmin):
                 'fields': tuple(sadrzaj_fields),
                 'description': (
                     'Slika + dugme: upload slike i link dugmeta. '
-                    'Akcijski pop-up: početak akcije, trajanje u satima i artikal ispod tajmera.'
+                    'Akcijski pop-up: početak akcije, trajanje u satima i artikal ispod tajmera. '
+                    'Za uslovni popust: unesite % popusta na artikal i prag iznosa u korpi (npr. 50 KM) da bi se popust primijenio na taj artikal.'
                 ),
             }),
             ('Prikaz i ponašanje', {

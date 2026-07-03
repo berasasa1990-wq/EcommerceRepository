@@ -25,6 +25,11 @@
         <div class="site-popup-akcija">
             <p class="site-popup-akcija-label" style="color: {{ active_popup.boja_akcija_istice }};">Akcija ističe za</p>
             <div class="site-popup-countdown" id="sitePopupCountdown" aria-live="polite">--:--:--</div>
+            {% if active_popup.akcija_popust_postotak and active_popup.akcija_prag_iznos %}
+            <p style="font-size: 13px; color: #555; margin: 4px 0 12px;">
+                {{ active_popup.akcija_popust_postotak|floatformat:0 }}% popusta na ovaj artikal ako je ukupno u korpi preko {{ active_popup.akcija_prag_iznos }} KM
+            </p>
+            {% endif %}
             <a href="{{ active_popup.akcija_artikal.get_absolute_url }}" class="site-popup-product">
                 <span class="site-popup-product-image">
                     {% if active_popup.akcija_artikal.prikazna_slika %}

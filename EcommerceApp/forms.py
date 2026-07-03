@@ -21,6 +21,11 @@ class PopupAdminForm(forms.ModelForm):
             ):
                 if not cleaned_data.get(field):
                     self.add_error(field, f'Obavezno za akcijski pop-up ({label}).')
+            # New conditional discount fields are optional but recommended together
+            popust = cleaned_data.get('akcija_popust_postotak')
+            prag = cleaned_data.get('akcija_prag_iznos')
+            if (popust is not None and prag is None) or (popust is None and prag is not None):
+                self.add_error(None, 'Za uslovni popust morate unijeti i % popusta i prag iznosa.')
         elif tip == Popup.Tip.SLIKA:
             has_slika = bool(cleaned_data.get('slika')) or bool(getattr(self.instance, 'slika', None))
             if not has_slika:

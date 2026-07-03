@@ -35,6 +35,11 @@
                         </h3>
                         {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}
                         <p class="cart-item-price">{{ item.cijena_decimal }} KM</p>
+                        {% if item.akcija_popup_discount %}
+                        <p style="color: #5BB805; font-size: 11px; margin: 2px 0 0;">
+                            -{{ item.akcija_popup_discount.percent }}% iz pop-upa (preko {{ item.akcija_popup_discount.threshold }} KM)
+                        </p>
+                        {% endif %}
                     </div>
                     <div class="cart-item-qty">
                         <label for="qty-{{ item.key }}">Kol.</label>

@@ -1327,6 +1327,12 @@ def checkout(request):
                     if item['quantity'] > 0:
                         line_price = (deal_info['deal_total'] / item['quantity']).quantize(Decimal('0.01'))
 
+                # Apply AKCIJA popup discount if present
+                akcija_info = item.get('akcija_popup_discount')
+                if akcija_info and akcija_info.get('percent'):
+                    pct = Decimal(str(akcija_info['percent']))
+                    line_price = (item['cijena_decimal'] * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
+
                 OrderItem.objects.create(
                     narudzba=order,
                     artikal=product,
@@ -1394,10 +1400,12 @@ def checkout(request):
         'upsell_checkout_offers': get_checkout_upsell_offers(cart),
     }
 
-    # Remove all X+1 deal info from checkout (it only works/shows in product detail)
+    # Remove deal and popup discount info from checkout (they only work/shows in cart/product detail)
     for item in context.get('cart_items', []):
         if 'deal_info' in item:
             del item['deal_info']
+        if 'akcija_popup_discount' in item:
+            del item['akcija_popup_discount']
 
     return render(request, 'checkout.html', context)
 
