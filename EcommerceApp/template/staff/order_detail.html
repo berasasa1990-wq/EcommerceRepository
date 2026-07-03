@@ -10,7 +10,7 @@
 {% include 'partials/order_invoice_embed_styles.html' %}
 <section class="staff-order-detail-page">
     <div class="staff-order-detail-toolbar">
-        <a href="{% url 'staff_order_lookup' %}" class="account-back-link">← Nazad na pretragu</a>
+        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <div class="staff-order-detail-actions">
             <a href="{% url 'staff_order_lookup' %}?q={{ order.email|urlencode }}" class="btn btn-secondary btn-sm">Sve narudžbe: {{ order.email }}</a>
             <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">Štampaj račun</button>

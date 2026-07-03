@@ -18,6 +18,11 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.html import escape, mark_safe, strip_tags
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
 from .cart import Cart
@@ -1445,6 +1450,7 @@ def register(request):
                     email=email,
                     password=form.cleaned_data['lozinka'],
                     first_name=form.cleaned_data['ime_prezime'],
+                    is_active=False,
                 )
                 UserProfile.objects.create(
                     user=user,
@@ -1454,9 +1460,31 @@ def register(request):
                 kreiraj_loyalty_karticu(user)
                 logger.info("Register: sync_korisnik za novog korisnika %s", email)
                 sync_korisnik(user)
-                login(request, user)
-                messages.success(request, 'Dobrodošli! Vaš nalog je kreiran.')
-                return redirect('account')
+
+                # Send activation email
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                activation_link = request.build_absolute_uri(
+                    reverse('activate', kwargs={'uidb64': uid, 'token': token})
+                )
+                subject = 'Aktivirajte vaš nalog | opremazaribolov.ba'
+                html_message = render_to_string('emails/activation_email.html', {
+                    'user': user,
+                    'activation_link': activation_link,
+                    'site_name': 'opremazaribolov.ba',
+                })
+                plain_message = strip_tags(html_message)
+                send_mail(
+                    subject,
+                    plain_message,
+                    getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@opremazaribolov.ba'),
+                    [user.email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+
+                messages.success(request, 'Nalog je uspješno kreiran. Provjerite vaš email za aktivacioni link.')
+                return redirect('login')
 
     context = {
         **_base_context(),
@@ -1464,6 +1492,24 @@ def register(request):
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
     }
     return render(request, 'auth/register.html', context)
+
+
+def activate(request, uidb64, token):
+    UserModel = User
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = UserModel.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, 'Vaš nalog je aktiviran! Sada se možete prijaviti.')
+        return redirect('login')
+    else:
+        messages.error(request, 'Aktivacioni link je nevažeći ili je istekao.')
+        return redirect('register')
 
 
 def login_view(request):

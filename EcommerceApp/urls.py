@@ -28,6 +28,7 @@ urlpatterns = [
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),
     path('registracija/', views.register, name='register'),
+    path('activate/<uidb64>/<token>/', views.activate, name='activate'),
     path('odjava/', views.logout_view, name='logout'),
     path('nalog/', views.account, name='account'),
     path('nalog/narudzba/<str:broj>/', views.account_order_detail, name='account_order_detail'),
