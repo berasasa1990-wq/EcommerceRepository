@@ -73,8 +73,9 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260702aj" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260702aj">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260703a" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260703a" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260703a"></noscript>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -228,9 +229,9 @@
                     <div class="mega-menu-subcategories">
                         {% for sub in category.podkategorije.all %}
                         <div class="mega-menu-group">
-                            <h4>
+                            <p class="mega-menu-group-title">
                                 <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
-                            </h4>
+                            </p>
                             {% if sub.podkategorije.all %}
                             <ul>
                                 {% for subsub in sub.podkategorije.all %}
@@ -284,7 +285,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260702aj" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260703a" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

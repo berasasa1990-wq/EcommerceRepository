@@ -13,6 +13,7 @@
     --gray-200: #e5e5e5;
     --gray-400: #757575;
     --gray-600: #707072;
+    --footer-muted: #a3a3a3;
     --header-top-height: 68px;
     --header-nav-height: 44px;
     --header-height: calc(var(--header-top-height) + var(--header-nav-height));
@@ -570,7 +571,7 @@ img.home-vlog-card-image {
     gap: 4px;
 }
 
-.mega-menu-group h4 {
+.mega-menu-group-title {
     font-size: 14px;
     font-weight: 600;
     margin: 0;
@@ -578,18 +579,18 @@ img.home-vlog-card-image {
     letter-spacing: 0;
 }
 
-.mega-menu-group h4 a {
+.mega-menu-group-title a {
     color: var(--black);
     display: inline-block;
     padding: 2px 0;
     transition: color var(--transition), opacity var(--transition);
 }
 
-.mega-menu-group h4 a::after {
+.mega-menu-group-title a::after {
     display: none;
 }
 
-.mega-menu-group h4 a:hover {
+.mega-menu-group-title a:hover {
     color: var(--black);
     opacity: 0.7;
 }
@@ -1071,18 +1072,32 @@ main {
 }
 
 .dot {
-    width: 10px;
-    height: 10px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 255, 255, 0.5);
+    background: transparent;
     cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all var(--transition);
 }
 
-.dot.active {
+.dot::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transition: all var(--transition);
+}
+
+.dot.active::after {
     background: var(--white);
-    transform: scale(1.2);
+    width: 12px;
+    height: 12px;
 }
 
 /* Grid Banners — desktop 4×2 (8), mobilni 2×3 (6) */
@@ -2730,7 +2745,7 @@ body.search-results-active main {
 }
 
 .product-home-ribbon--novo {
-    background: #16a34a;
+    background: #15803d;
 }
 
 .product-home-ribbon--hit {
@@ -2777,7 +2792,7 @@ body.search-results-active main {
     width: 100%;
 }
 
-.product-info h4 {
+.product-info h2 {
     font-size: 16px;
     font-weight: 500;
     line-height: 1.5;
@@ -3667,19 +3682,11 @@ body.search-results-active main {
     margin: 0 auto 48px;
 }
 
-.footer-column h4 {
-    font-size: 12px;
+.footer-contact-title {
+    font-size: 13px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     margin-bottom: 16px;
     color: var(--white);
-}
-
-.footer-column--contact h4 {
-    text-transform: none;
-    letter-spacing: 0;
-    font-size: 13px;
 }
 
 .footer-nav-list {
@@ -3691,7 +3698,7 @@ body.search-results-active main {
 .footer-nav-list a {
     font-size: 13px;
     font-weight: 600;
-    color: var(--gray-400);
+    color: var(--footer-muted);
     line-height: 2;
     transition: color var(--transition);
 }
@@ -3717,12 +3724,12 @@ body.search-results-active main {
 .footer-support-email {
     margin: 0;
     font-size: 12px;
-    color: var(--gray-400);
+    color: var(--footer-muted);
     line-height: 1.6;
 }
 
 .footer-support-email a {
-    color: var(--gray-400);
+    color: var(--footer-muted);
 }
 
 .footer-support-email a:hover {
@@ -3731,7 +3738,7 @@ body.search-results-active main {
 
 .footer-column a {
     font-size: 12px;
-    color: var(--gray-400);
+    color: var(--footer-muted);
     line-height: 2;
     transition: color var(--transition);
 }
@@ -3785,7 +3792,7 @@ body.search-results-active main {
 
 .footer-bottom p {
     font-size: 12px;
-    color: var(--gray-400);
+    color: var(--footer-muted);
 }
 
 .footer-legal {
@@ -3795,7 +3802,7 @@ body.search-results-active main {
 
 .footer-legal a {
     font-size: 12px;
-    color: var(--gray-400);
+    color: var(--footer-muted);
     transition: color var(--transition);
 }
 
@@ -5826,7 +5833,7 @@ body.search-results-active main {
         height: auto;
     }
 
-    .product-info h4 {
+    .product-info h2 {
         font-size: 14px;
         min-height: 42px;
         line-height: 1.4;
