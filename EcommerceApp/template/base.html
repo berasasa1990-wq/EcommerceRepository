@@ -73,8 +73,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260703e" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260703e">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260703f" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260703f">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -115,7 +115,9 @@
                             <circle cx="11" cy="11" r="8"/>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu" autocomplete="off" enterkeyhint="search" role="combobox" aria-autocomplete="list" aria-controls="searchSuggestions" aria-expanded="false" aria-haspopup="listbox">
+                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu" autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                        </div>
                         <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -284,7 +286,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260703e" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260703f" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -323,6 +323,14 @@ img.home-vlog-card-image {
     font-family: inherit;
     background: transparent;
     color: var(--black);
+    width: 100%;
+}
+
+.header-search-form .search-combobox {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
 }
 
 .header-search .search-suggestions {

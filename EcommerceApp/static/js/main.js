@@ -172,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
+    const searchCombobox = document.querySelector('.search-combobox');
     const searchSuggestions = document.getElementById('searchSuggestions');
     const searchSuggestUrl = '/api/pretraga/';
     let searchDebounceTimer;
@@ -198,8 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setSuggestionsExpanded(expanded) {
-        if (!searchInput) return;
-        searchInput.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        const target = searchCombobox || searchInput;
+        if (!target) return;
+        target.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     }
 
     function clearSearchSuggestions() {
