@@ -1631,3 +1631,82 @@ def staff_order_detail(request, broj):
         **get_order_email_context(order),
     }
     return render(request, 'staff/order_detail.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_admin_panel(request):
+    context = {
+        **_base_context(),
+    }
+    return render(request, 'staff/admin_panel.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_loyalty_system(request):
+    from django.db.models import Q
+    from .loyalty import loyalty_kontekst, osiguraj_loyalty_karticu
+
+    q = (request.GET.get('q') or '').strip()
+    cards = []
+    selected_card = None
+    user_orders = []
+    loyalty_ctx = None
+    edit_form = None
+    searched = bool(q)
+
+    if q:
+        # Search LoyaltyCard by kod/barkod or user fields
+        cards_qs = LoyaltyCard.objects.select_related('user', 'user__profil').filter(
+            Q(kod__icontains=q) |
+            Q(barkod__icontains=q) |
+            Q(user__email__icontains=q) |
+            Q(user__first_name__icontains=q) |
+            Q(user__last_name__icontains=q) |
+            Q(user__profil__telefon__icontains=q)
+        ).order_by('-azurirana')[:30]
+
+        cards = list(cards_qs)
+
+        if cards:
+            selected_card = cards[0]
+            selected_card = osiguraj_loyalty_karticu(selected_card.user)
+            loyalty_ctx = loyalty_kontekst(selected_card)
+
+            user_orders = Order.objects.filter(korisnik=selected_card.user).prefetch_related('stavke').order_by('-kreirana')[:50]
+
+            if request.method == 'POST' and request.POST.get('action') == 'update_profile':
+                from .forms import UserProfileForm
+                profil = getattr(selected_card.user, 'profil', None)
+                if profil:
+                    edit_form = UserProfileForm(request.POST, instance=profil)
+                    if edit_form.is_valid():
+                        edit_form.save()
+                        u = selected_card.user
+                        u.first_name = request.POST.get('first_name', u.first_name)
+                        u.last_name = request.POST.get('last_name', u.last_name)
+                        u.email = request.POST.get('email', u.email)
+                        u.save()
+                        messages.success(request, 'Podaci su ažurirani.')
+                        return redirect(f"{request.path}?q={q}")
+                    else:
+                        messages.error(request, 'Greška pri ažuriranju.')
+                else:
+                    messages.error(request, 'Korisnik nema profil.')
+            else:
+                from .forms import UserProfileForm
+                profil = getattr(selected_card.user, 'profil', None)
+                edit_form = UserProfileForm(instance=profil) if profil else None
+
+    context = {
+        **_base_context(),
+        'search_query': q,
+        'searched': searched,
+        'cards': cards,
+        'selected_card': selected_card,
+        'user_orders': user_orders,
+        'loyalty': loyalty_ctx,
+        'edit_form': edit_form,
+    }
+    return render(request, 'staff/loyalty_system.html', context)

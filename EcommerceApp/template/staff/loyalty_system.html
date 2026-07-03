@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Loyalty System — Admin — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-loyalty-page">
+    <div class="staff-loyalty-header">
+        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+        <h1>Loyalty System</h1>
+        <p class="staff-loyalty-subtitle">Pretraga kupaca po broju kartice, telefonu, emailu ili imenu</p>
+    </div>
+
+    <form class="staff-loyalty-search" method="get" action="{% url 'staff_loyalty_system' %}">
+        <div class="search-row">
+            <input type="search" name="q" value="{{ search_query }}" placeholder="Broj kartice / telefon / email / ime i prezime..." autocomplete="off" required>
+            <button type="submit" class="btn btn-primary">Pretraži</button>
+        </div>
+    </form>
+
+    {% if searched %}
+        {% if cards %}
+            {% if cards|length > 1 %}
+            <div class="staff-loyalty-results">
+                <h3>Pronađeno više rezultata ({{ cards|length }})</h3>
+                <div class="quick-results">
+                    {% for c in cards %}
+                    <a href="{% url 'staff_loyalty_system' %}?q={{ c.kod|urlencode }}" class="quick-result">
+                        {{ c.user.get_full_name|default:c.user.email }} — {{ c.nivo|title }} ({{ c.kod }})
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if selected_card %}
+            <div class="loyalty-customer-view">
+                <!-- Loyalty Card Info -->
+                <div class="loyalty-section">
+                    <h2>Loyalty kartica</h2>
+                    {% if loyalty %}
+                        <div class="loyalty-card-summary">
+                            <div>
+                                <strong>Nivo:</strong> {{ loyalty.tier.label }}
+                            </div>
+                            <div>
+                                <strong>Potrošeno:</strong> {{ selected_card.ukupna_potrosnja }} KM
+                            </div>
+                            {% if loyalty.preostalo_do_sljedeceg %}
+                            <div>
+                                <strong>Do sljedećeg nivoa:</strong> {{ loyalty.preostalo_do_sljedeceg }} KM
+                            </div>
+                            {% else %}
+                            <div><strong>Maksimalni nivo dostignut</strong></div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Barcode -->
+                        <div class="loyalty-barcode-section">
+                            <h4>Barkod (broj kartice)</h4>
+                            <div class="loyalty-barcode-display">
+                                {% for width in loyalty.barkod_trake %}
+                                    <span class="bar" style="width: {{ width }}px; height: 48px;"></span>
+                                {% endfor %}
+                            </div>
+                            <div class="barcode-number">{{ selected_card.barkod }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Orders -->
+                <div class="loyalty-orders-section">
+                    <h2>Narudžbe ({{ user_orders|length }})</h2>
+                    {% if user_orders %}
+                    <div class="orders-grid">
+                        {% for order in user_orders %}
+                        <div class="order-preview">
+                            <div class="order-head">
+                                <strong>#{{ order.broj }}</strong>
+                                <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+                            </div>
+                            <p class="order-meta">{{ order.kreirana|date:"d.m.Y. H:i" }} — {{ order.ukupno }} KM</p>
+
+                            <a href="{% url 'staff_order_detail' broj=order.broj %}" class="btn btn-sm" target="_blank" style="margin-top:8px;">Brzi pregled računa (bez garancije)</a>
+
+                            <a href="{% url 'staff_order_detail' broj=order.broj %}" class="btn btn-sm" target="_blank">Puni pregled</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p>Nema narudžbi.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Personal Data - Editable -->
+                <div class="loyalty-personal-section">
+                    <h2>Licni podaci</h2>
+                    {% if edit_form %}
+                    <form method="post" action="{% url 'staff_loyalty_system' %}?q={{ search_query }}" class="loyalty-edit-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+
+                        <div class="form-row">
+                            <div>
+                                <label>Ime</label>
+                                <input type="text" name="first_name" value="{{ selected_card.user.first_name }}">
+                            </div>
+                            <div>
+                                <label>Prezime</label>
+                                <input type="text" name="last_name" value="{{ selected_card.user.last_name }}">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div>
+                                <label>Email</label>
+                                <input type="email" name="email" value="{{ selected_card.user.email }}">
+                            </div>
+                        </div>
+
+                        {% for field in edit_form %}
+                            <div class="form-group">
+                                <label>{{ field.label }}</label>
+                                {{ field }}
+                            </div>
+                        {% endfor %}
+
+                        <button type="submit" class="btn btn-primary">Sačuvaj promjene</button>
+                    </form>
+                    {% else %}
+                    <p>Podaci nisu dostupni za uređivanje.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        {% else %}
+            <p class="staff-loyalty-empty">Nema rezultata za pretragu.</p>
+        {% endif %}
+    {% endif %}
+</section>
+
+<style>
+/* Basic styles for loyalty staff page */
+.staff-loyalty-page { max-width: 1100px; margin: 0 auto; padding: 20px; }
+.loyalty-barcode-display { display: flex; align-items: flex-end; gap: 1px; background: white; padding: 10px; border: 1px solid #ccc; }
+.loyalty-barcode-display .bar { background: #111; display: inline-block; }
+.barcode-number { font-family: monospace; font-size: 18px; letter-spacing: 4px; margin-top: 8px; }
+.loyalty-card-summary { display: flex; gap: 24px; margin: 16px 0; flex-wrap: wrap; }
+.order-preview { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 6px; }
+.invoice-preview { margin-top: 12px; padding: 12px; background: #fafafa; font-size: 13px; }
+.staff-loyalty-search input { width: 100%; max-width: 500px; padding: 10px; font-size: 16px; }
+.admin-buttons { display: flex; gap: 20px; flex-wrap: wrap; }
+.admin-btn { display: flex; align-items: center; padding: 20px; border: 2px solid #ddd; border-radius: 8px; text-decoration: none; color: #111; width: 280px; transition: all .2s; }
+.admin-btn:hover { border-color: #000; background: #f9f9f9; }
+.admin-btn-icon { font-size: 32px; margin-right: 16px; }
+</style>
+{% endblock %}

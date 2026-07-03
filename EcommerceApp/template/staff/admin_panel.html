@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Admin panel — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-admin-page">
+    <div class="staff-admin-header">
+        <a href="{% url 'account' %}" class="account-back-link">← Nazad na nalog</a>
+        <h1>Admin panel</h1>
+        <p class="staff-admin-subtitle">Odaberite sekciju</p>
+    </div>
+
+    <div class="admin-buttons">
+        <a href="{% url 'staff_order_lookup' %}" class="admin-btn">
+            <div class="admin-btn-icon">📋</div>
+            <div class="admin-btn-text">
+                <strong>Provjera narudžbi</strong>
+                <span>Pretraga i pregled narudžbi</span>
+            </div>
+        </a>
+
+        <a href="{% url 'staff_loyalty_system' %}" class="admin-btn">
+            <div class="admin-btn-icon">⭐</div>
+            <div class="admin-btn-text">
+                <strong>Loyalty System</strong>
+                <span>Pretraga kupaca i loyalty kartica</span>
+            </div>
+        </a>
+    </div>
+</section>
+{% endblock %}

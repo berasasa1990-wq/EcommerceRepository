@@ -33,4 +33,6 @@ urlpatterns = [
     path('nalog/narudzba/<str:broj>/', views.account_order_detail, name='account_order_detail'),
     path('nalog/provjera-narudzbi/', views.staff_order_lookup, name='staff_order_lookup'),
     path('nalog/provjera-narudzbi/<str:broj>/', views.staff_order_detail, name='staff_order_detail'),
+    path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
 ]

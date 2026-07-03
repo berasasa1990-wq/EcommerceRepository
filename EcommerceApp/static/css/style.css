@@ -3705,6 +3705,86 @@ body.search-results-active main {
 }
 
 /* ========================================
+   STAFF ADMIN PANEL
+   ======================================== */
+.staff-admin-page {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+}
+.staff-admin-header {
+    margin-bottom: 40px;
+}
+.admin-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+.admin-btn {
+    display: flex;
+    align-items: center;
+    padding: 24px;
+    border: 2px solid #e5e5e5;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #111;
+    transition: all 0.2s ease;
+    background: white;
+}
+.admin-btn:hover {
+    border-color: #111;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+.admin-btn-icon {
+    font-size: 42px;
+    margin-right: 20px;
+}
+.admin-btn-text strong {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+.admin-btn-text span {
+    font-size: 13px;
+    color: #666;
+}
+
+/* Staff Loyalty */
+.staff-loyalty-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.staff-loyalty-header h1 { margin: 8px 0; }
+.staff-loyalty-search input {
+    padding: 12px 16px;
+    font-size: 16px;
+    width: 100%;
+    max-width: 520px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+.loyalty-section, .loyalty-orders-section, .loyalty-personal-section {
+    margin: 32px 0;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+.loyalty-barcode-section {
+    margin-top: 16px;
+}
+.loyalty-barcode-display {
+    display: flex; align-items: flex-end; gap: 1px; background: white; padding: 8px 12px; border: 1px solid #ddd;
+}
+.loyalty-barcode-display .bar { background:#111; display:inline-block; }
+.barcode-number { font-family: monospace; font-size: 20px; letter-spacing: 3px; margin-top: 6px; display: block; }
+.orders-grid { display: grid; gap: 16px; }
+.order-preview { background: white; padding: 14px; border: 1px solid #ddd; border-radius: 6px; }
+.order-preview summary { cursor: pointer; font-weight: 600; }
+.invoice-preview { margin-top: 12px; font-size: 13px; }
+
+/* ========================================
    SUBCATEGORY BROWSER PAGE (large cards)
    ======================================== */
 .subcategory-page {
