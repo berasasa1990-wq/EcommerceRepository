@@ -772,13 +772,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<span class="price-current">${formatted} KM</span>`;
     }
 
-    const sitePopupOverlay = document.getElementById('sitePopupOverlay');
-    if (sitePopupOverlay) {
-        const popupId = sitePopupOverlay.dataset.popupId || 'default';
-        const lastShownKey = `site_popup_last_shown_${popupId}`;
-        const sessionShownKey = `site_popup_shown_session_${popupId}`;
+    const sitePopupOverlays = Array.from(document.querySelectorAll('.site-popup-overlay'));
+    if (sitePopupOverlays.length) {
         const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
-        let countdownInterval = null;
+        let activeOverlay = null;
+        let activeCountdownInterval = null;
 
         function formatCountdown(ms) {
             const totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -788,16 +786,55 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
 
+        function popupStorageKeys(overlay) {
+            const popupId = overlay.dataset.popupId || 'default';
+            return {
+                lastShownKey: `site_popup_last_shown_${popupId}`,
+                sessionShownKey: `site_popup_shown_session_${popupId}`,
+            };
+        }
+
         function stopCountdown() {
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
+            if (activeCountdownInterval) {
+                clearInterval(activeCountdownInterval);
+                activeCountdownInterval = null;
             }
         }
 
-        function startCountdown() {
-            const countdownEl = document.getElementById('sitePopupCountdown');
-            const endValue = sitePopupOverlay.dataset.countdownEnd;
+        function shouldShowPopup(overlay) {
+            const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
+            const last = parseInt(localStorage.getItem(lastShownKey) || '0', 10);
+            const cooldownPassed = !last || (Date.now() - last > COOLDOWN_MS);
+            const shownInSession = sessionStorage.getItem(sessionShownKey);
+            return cooldownPassed || !shownInSession;
+        }
+
+        function closePopup(overlay, recordShown = true) {
+            if (!overlay) return;
+            stopCountdown();
+            overlay.classList.remove('is-visible');
+            overlay.hidden = true;
+            if (activeOverlay === overlay) {
+                activeOverlay = null;
+                document.body.classList.remove('popup-open');
+            }
+
+            if (recordShown) {
+                const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
+                localStorage.setItem(lastShownKey, Date.now().toString());
+                sessionStorage.setItem(sessionShownKey, '1');
+            }
+        }
+
+        function closeActivePopup(recordShown = true) {
+            if (activeOverlay) {
+                closePopup(activeOverlay, recordShown);
+            }
+        }
+
+        function startCountdown(overlay) {
+            const countdownEl = overlay.querySelector('[data-popup-countdown]');
+            const endValue = overlay.dataset.countdownEnd;
             if (!countdownEl || !endValue) return;
 
             const endMs = Date.parse(endValue);
@@ -808,7 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (diff <= 0) {
                     countdownEl.textContent = '00:00:00';
                     stopCountdown();
-                    closePopup();
+                    closePopup(overlay);
                     return;
                 }
                 countdownEl.textContent = formatCountdown(diff);
@@ -816,117 +853,109 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tick();
             stopCountdown();
-            countdownInterval = setInterval(tick, 1000);
+            activeCountdownInterval = setInterval(tick, 1000);
         }
 
-        function shouldShowPopup() {
-            const last = parseInt(localStorage.getItem(lastShownKey) || '0', 10);
-            const cooldownPassed = !last || (Date.now() - last > COOLDOWN_MS);
+        function openPopup(overlay) {
+            closeActivePopup(false);
 
-            const shownInSession = sessionStorage.getItem(sessionShownKey);
-
-            // Show if cooldown (30min) passed OR this is a new visit (no session mark = after closing site)
-            if (cooldownPassed || !shownInSession) {
-                return true;
-            }
-            return false;
-        }
-
-        function closePopup() {
-            stopCountdown();
-            sitePopupOverlay.classList.remove('is-visible');
-            sitePopupOverlay.hidden = true;
-            document.body.classList.remove('popup-open');
-
-            // Record for 30min cooldown
-            localStorage.setItem(lastShownKey, Date.now().toString());
-            // Mark session so refresh doesn't immediately re-show
-            sessionStorage.setItem(sessionShownKey, '1');
-        }
-
-        function openPopup() {
-            const popupImage = sitePopupOverlay.querySelector('.site-popup-image');
+            const popupImage = overlay.querySelector('.site-popup-image');
             if (popupImage && popupImage.dataset.src && !popupImage.getAttribute('src')) {
                 popupImage.setAttribute('src', popupImage.dataset.src);
             }
-            sitePopupOverlay.hidden = false;
+            overlay.hidden = false;
             requestAnimationFrame(() => {
-                sitePopupOverlay.classList.add('is-visible');
+                overlay.classList.add('is-visible');
             });
             document.body.classList.add('popup-open');
-            startCountdown();
-            // Mark shown for this session
+            activeOverlay = overlay;
+            startCountdown(overlay);
+
+            const { sessionShownKey } = popupStorageKeys(overlay);
             sessionStorage.setItem(sessionShownKey, '1');
         }
 
-        if (shouldShowPopup()) {
-            const delaySec = parseInt(sitePopupOverlay.dataset.popupDelay || '5', 10);
-            const delayMs = Math.max(0, delaySec * 1000);
-            setTimeout(openPopup, delayMs);
-        }
+        sitePopupOverlays
+            .slice()
+            .sort((a, b) => {
+                const delayA = parseInt(a.dataset.popupDelay || '5', 10);
+                const delayB = parseInt(b.dataset.popupDelay || '5', 10);
+                return delayA - delayB;
+            })
+            .forEach((overlay) => {
+                if (!shouldShowPopup(overlay)) return;
 
-        document.getElementById('sitePopupClose')?.addEventListener('click', closePopup);
+                const delaySec = parseInt(overlay.dataset.popupDelay || '5', 10);
+                const delayMs = Math.max(0, delaySec * 1000);
+                setTimeout(() => openPopup(overlay), delayMs);
+            });
 
-        // Mark session if user clicks the CTA button (so doesn't re-show in session)
-        const cta = sitePopupOverlay.querySelector('.site-popup-cta');
-        if (cta) {
-            cta.addEventListener('click', () => {
-                sessionStorage.setItem(sessionShownKey, '1');
-            }, { once: true });
-        }
-        sitePopupOverlay.addEventListener('click', (e) => {
-            if (e.target === sitePopupOverlay) closePopup();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && sitePopupOverlay.classList.contains('is-visible')) {
-                closePopup();
+        sitePopupOverlays.forEach((overlay) => {
+            overlay.querySelector('[data-popup-close]')?.addEventListener('click', () => {
+                closePopup(overlay);
+            });
+
+            const cta = overlay.querySelector('.site-popup-cta');
+            if (cta) {
+                cta.addEventListener('click', () => {
+                    const { sessionShownKey } = popupStorageKeys(overlay);
+                    sessionStorage.setItem(sessionShownKey, '1');
+                }, { once: true });
+            }
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closePopup(overlay);
+            });
+
+            const akcijaForm = overlay.querySelector('.akcija-popup-add-form');
+            if (akcijaForm) {
+                akcijaForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const submitBtn = akcijaForm.querySelector('button[type="submit"], .site-popup-cta');
+                    if (submitBtn) submitBtn.disabled = true;
+                    try {
+                        const formData = new FormData(akcijaForm);
+                        formData.set('stay', '1');
+                        if (
+                            overlay.dataset.akcijaTip === 'timer'
+                            && overlay.dataset.akcijaId
+                            && !formData.get('akcija_id')
+                        ) {
+                            formData.set('akcija_id', overlay.dataset.akcijaId);
+                        }
+                        const response = await fetch(akcijaForm.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRFToken': getCsrfToken(),
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: new URLSearchParams(formData).toString(),
+                        });
+                        const data = await response.json();
+                        if (!response.ok || !data.ok) {
+                            throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+                        }
+                        updateCartBadge(data.cart_count || 0);
+                        showCartToast(data.message || 'Artikal je dodan u korpu.');
+                        if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
+                            window.trackMetaAddToCart(data.meta_add_to_cart);
+                        }
+                        closePopup(overlay);
+                    } catch (err) {
+                        showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
+                    } finally {
+                        if (submitBtn) submitBtn.disabled = false;
+                    }
+                });
             }
         });
 
-        // AKCIJA popup: add to cart via AJAX + stay=1 so we remain on the current page
-        // (instead of redirecting to cart). Re-uses toast + badge helpers.
-        const akcijaForm = sitePopupOverlay.querySelector('.akcija-popup-add-form');
-        if (akcijaForm) {
-            akcijaForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const submitBtn = akcijaForm.querySelector('button[type="submit"], .site-popup-cta');
-                if (submitBtn) submitBtn.disabled = true;
-                try {
-                    const formData = new FormData(akcijaForm);
-                    formData.set('stay', '1');
-                    const response = await fetch(akcijaForm.action, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-CSRFToken': getCsrfToken(),
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                        body: new URLSearchParams(formData).toString(),
-                    });
-                    const data = await response.json();
-                    if (!response.ok || !data.ok) {
-                        throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
-                    }
-                    updateCartBadge(data.cart_count || 0);
-                    showCartToast(data.message || 'Artikal je dodan u korpu.');
-                    if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
-                        window.trackMetaAddToCart(data.meta_add_to_cart);
-                    }
-                    // Close popup and stay on the page where it appeared
-                    if (typeof closePopup === 'function') {
-                        closePopup();
-                    } else {
-                        sitePopupOverlay.classList.remove('is-visible');
-                        sitePopupOverlay.hidden = true;
-                        document.body.classList.remove('popup-open');
-                    }
-                } catch (err) {
-                    showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
-                } finally {
-                    if (submitBtn) submitBtn.disabled = false;
-                }
-            });
-        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && activeOverlay?.classList.contains('is-visible')) {
+                closePopup(activeOverlay);
+            }
+        });
     }
 
     // Upsell popup — server šalje overlay samo jednom nakon triggera (dodavanje u korpu).

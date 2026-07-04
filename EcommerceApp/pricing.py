@@ -127,32 +127,67 @@ def pripremi_stavke_za_racun(order):
     from decimal import Decimal
     import re
 
+    deal_pattern = re.compile(
+        r'\((\d+\+\d+):\s*(\d+)\s*kom\.\s*sniženo za ([\d.]+)%\s*-\s*sniženo na ([\d.,]+)\s*KM\)',
+        re.I,
+    )
+    akcija_pattern = re.compile(r'sniženo na ([\d.,]+)\s*KM', re.I)
+
     stavke = []
     for oi in order.stavke.all():
         naziv = oi.naziv or ''
         is_akcija = 'popust iz akcije' in naziv.lower()
+        is_deal = bool(deal_pattern.search(naziv))
         orig = oi.cijena
         disc = None
+        disc_qty = 0
+        deal_pct = None
+        deal_vrsta = None
         charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
-        if is_akcija:
-            m = re.search(r'sniženo na ([\d.,]+)\s*KM', naziv)
+
+        deal_match = deal_pattern.search(naziv)
+        if deal_match:
+            try:
+                deal_vrsta = deal_match.group(1)
+                disc_qty = int(deal_match.group(2))
+                deal_pct = deal_match.group(3)
+                disc = Decimal(deal_match.group(4).replace(',', '.')).quantize(Decimal('0.01'))
+                full_qty = max(0, oi.kolicina - disc_qty)
+                charged = (orig * full_qty + disc * disc_qty).quantize(Decimal('0.01'))
+            except (ValueError, ArithmeticError):
+                disc = None
+                disc_qty = 0
+                charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
+        elif is_akcija:
+            m = akcija_pattern.search(naziv)
             if m:
                 try:
-                    dstr = m.group(1).replace(',', '.')
-                    disc = Decimal(dstr).quantize(Decimal('0.01'))
+                    disc = Decimal(m.group(1).replace(',', '.')).quantize(Decimal('0.01'))
                     charged = (orig * (oi.kolicina - 1) + disc).quantize(Decimal('0.01'))
-                except Exception:
+                    disc_qty = 1
+                except (ValueError, ArithmeticError):
                     disc = None
                     charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
+
+        display_naziv = re.sub(
+            r'\s*\([^)]*(?:\d+\+\d+|popust iz akcije)[^)]*\)\s*$',
+            '',
+            oi.product_naziv or naziv or '',
+        ).strip()
+
         stavke.append({
             'naziv': naziv,
-            'product_naziv': oi.product_naziv or oi.naziv or '',
+            'product_naziv': display_naziv or oi.product_naziv or oi.naziv or '',
             'varijacija_naziv': oi.varijacija_naziv,
             'sifra': oi.sifra,
             'kolicina': oi.kolicina,
             'cijena': orig,
             'ukupno': charged,
             'is_akcija_promo': is_akcija,
+            'is_deal_promo': is_deal,
             'discounted_unit_price': disc,
+            'discounted_qty': disc_qty,
+            'deal_pct': deal_pct,
+            'deal_vrsta': deal_vrsta,
         })
     return stavke

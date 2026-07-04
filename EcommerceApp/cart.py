@@ -39,14 +39,17 @@ class Cart:
     def _line_key(self, product_id, variation_id=None):
         return f'{product_id}:{variation_id or 0}'
 
-    def add(self, product, variation=None, quantity=1, custom_price=None):
+    def add(self, product, variation=None, quantity=1, custom_price=None, *, promo_bazna=None):
         key = self._line_key(product.pk, variation.pk if variation else None)
+        prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
         if custom_price is not None:
             price = Decimal(str(custom_price))
+            bazna = Decimal(str(promo_bazna)) if promo_bazna is not None else prikazna
+            na_akciji = price < bazna
         else:
-            price = variation.prikazna_cijena if variation else product.prikazna_cijena
-        bazna = variation.bazna_cijena if variation else product.bazna_cijena
-        na_akciji = variation.na_akciji if variation else product.na_akciji
+            price = prikazna
+            bazna = variation.bazna_cijena if variation else product.bazna_cijena
+            na_akciji = variation.na_akciji if variation else product.na_akciji
         varijacija_naziv = variation.naziv if variation else ''
         naziv = product.naziv
         sifra = variation.sifra if variation and variation.sifra else (product.sifra or '')
@@ -58,6 +61,11 @@ class Cart:
 
         if key in self.cart:
             self.cart[key]['quantity'] += quantity
+            if custom_price is not None:
+                self.cart[key]['cijena'] = str(price)
+                self.cart[key]['bazna_cijena'] = str(bazna)
+                self.cart[key]['na_akciji'] = na_akciji
+                self.cart[key]['timer_akcija'] = True
         else:
             self.cart[key] = {
                 'product_id': product.pk,
@@ -72,7 +80,8 @@ class Cart:
                 'na_akciji': na_akciji,
                 'slika': slika,
                 'quantity': quantity,
-                'upsell': bool(custom_price),  # mark as from upsell if custom price used
+                'upsell': bool(custom_price),
+                'timer_akcija': bool(custom_price),
             }
         self.save()
 
@@ -177,14 +186,12 @@ class Cart:
                         'threshold': float(threshold),
                         'akcija_id': uslov.id,
                     }
-                    # Threshold check for AKCIJA popup discount (only 1 unit ever discounted):
-                    # - If other items in cart: other_total (cart without this article) must >= threshold.
-                    # - If ONLY this article in cart: this article's full value (qty * price) counts toward threshold.
-                    #   Example: 33 KM item + threshold 100 KM → 3 pcs = 99 < 100 (no discount);
-                    #   4 pcs = 132 >= 100 → apply: ukupno_stavka = (33 * 3) + discounted_price_of_one
-                    this_contrib = Decimal(self.cart[key]['cijena']) * Decimal(self.cart[key].get('quantity', 1))
-                    other_total = base_total - this_contrib
-                    qualifying_total = this_contrib if other_total <= Decimal('0') else other_total
+                    # Uslov prodaja: tačno 1 komad ovog artikla se NE računa u prag;
+                    # ostatak korpe (ostali artikli + preostali komadi ovog) ide u prag.
+                    # Primjer: 20 KM/kom, prag 50 KM, samo ovaj artikal:
+                    #   3 kom → prag 40 KM (2×20), bez popusta;
+                    #   4 kom → prag 60 KM (3×20), popust na 1 komad (4.).
+                    qualifying_total = base_total - item['cijena_decimal']
                     if qualifying_total >= threshold and pct > 0:
                         disc_price = (item['cijena_decimal'] * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
                         item['ukupno_stavka'] = item['cijena_decimal'] * (item['quantity'] - 1) + disc_price

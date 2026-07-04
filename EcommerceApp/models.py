@@ -617,7 +617,7 @@ class Akcija(models.Model):
         null=True,
         blank=True,
         verbose_name='Uslov: iznos u korpi (KM)',
-        help_text='Minimalni iznos u korpi (bez ovog artikla) za uslovnu prodaju.',
+        help_text='Prag u KM — u iznos se računa cijela korpa minus tačno 1 komad ovog artikla.',
     )
     deal_vrsta = models.CharField(
         max_length=10,
@@ -722,6 +722,36 @@ class Akcija(models.Model):
         if user.is_authenticated:
             return self.za_prijavljene
         return self.za_neprijavljene
+
+    def timer_snizena_cijena(self, product, variation=None):
+        """Snižena cijena za Akcija + tajmer (% od trenutne prikazne cijene)."""
+        if (
+            self.tip != self.Tip.TIMER
+            or not self.popust_postotak
+            or not self.jos_traje()
+            or not self.artikal_id
+            or product.pk != self.artikal_id
+        ):
+            return None
+        bazna = variation.prikazna_cijena if variation else product.prikazna_cijena
+        return _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
+
+    def timer_cijene_za_prikaz(self):
+        """Originalna i snižena cijena za pop-up tajmera."""
+        if self.tip != self.Tip.TIMER or not self.artikal_id or not self.popust_postotak:
+            return None
+        artikal = self.artikal
+        if artikal is None:
+            return None
+        bazna = artikal.prikazna_cijena
+        snizena = _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
+        if snizena is None or snizena >= bazna:
+            return None
+        return {
+            'bazna': bazna,
+            'snizena': snizena,
+            'pct': self.popust_postotak,
+        }
 
     def get_link_href(self):
         if self.artikal_id and self.tip in {self.Tip.TIMER, self.Tip.USLOV}:

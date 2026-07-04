@@ -4540,6 +4540,20 @@ body.search-results-active main {
     font-weight: 600;
 }
 
+.cart-item-price .price-deal,
+.cart-item-total .price-deal {
+    color: #c62828;
+    font-weight: 700;
+}
+
+.cart-item-total .price-original {
+    display: block;
+    font-size: 12px;
+    color: var(--gray-600);
+    text-decoration: line-through;
+    font-weight: 400;
+}
+
 .cart-item-deal-promo {
     font-size: 12px;
     color: #fff;
@@ -7601,7 +7615,7 @@ body.search-results-active main {
     inset: 0;
     background: linear-gradient(
         135deg,
-        rgba(255, 107, 0, 0.18) 0%,
+        rgba(91, 184, 5, 0.14) 0%,
         rgba(0, 0, 0, 0.48) 100%
     );
     backdrop-filter: blur(4px);
@@ -7624,11 +7638,17 @@ body.search-results-active main {
     position: relative;
     width: 100%;
     max-width: 380px;
-    background: var(--white);
-    border: 1px solid #ffe8cc;
+    background-color: #ffffff;
+    background-image:
+        radial-gradient(ellipse 130px 90px at 12% 22%, rgba(91, 184, 5, 0.2) 0%, transparent 72%),
+        radial-gradient(ellipse 110px 110px at 88% 18%, rgba(91, 184, 5, 0.16) 0%, transparent 68%),
+        radial-gradient(ellipse 150px 95px at 78% 82%, rgba(91, 184, 5, 0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 90px 130px at 22% 78%, rgba(91, 184, 5, 0.14) 0%, transparent 65%),
+        radial-gradient(ellipse 70px 70px at 52% 48%, rgba(91, 184, 5, 0.08) 0%, transparent 58%);
+    border: 1px solid rgba(91, 184, 5, 0.28);
     border-radius: 10px;
     padding: 0;
-    box-shadow: 0 20px 40px rgba(255, 107, 0, 0.12), 0 24px 48px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 40px rgba(91, 184, 5, 0.12), 0 24px 48px rgba(0, 0, 0, 0.12);
     text-align: center;
     transform: translateY(12px) scale(0.98);
     transition: transform var(--transition);
@@ -7642,7 +7662,8 @@ body.search-results-active main {
     left: 0;
     right: 0;
     height: 5px;
-    background: linear-gradient(90deg, #ff6b00, #ffa500);
+    background: linear-gradient(90deg, #5BB805, #7dd03f);
+    z-index: 2;
 }
 
 .site-popup-overlay.is-visible .site-popup {
@@ -7656,19 +7677,19 @@ body.search-results-active main {
     width: 36px;
     height: 36px;
     border: none;
-    background: #fff4e6;
+    background: #f0f9e8;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #ff6b00;
+    color: #5BB805;
     transition: background var(--transition), color var(--transition);
     z-index: 10;
 }
 
 .site-popup-close:hover {
-    background: #ff6b00;
+    background: #5BB805;
     color: var(--white);
 }
 
@@ -7713,6 +7734,8 @@ body.search-results-active main {
 
 .site-popup-actions {
     padding: 12px 14px 14px;
+    position: relative;
+    z-index: 1;
 }
 
 .site-popup .site-popup-cta {
@@ -7748,6 +7771,8 @@ body.search-results-active main {
 
 .site-popup-akcija {
     padding: 28px 20px 16px;
+    position: relative;
+    z-index: 1;
 }
 
 .site-popup-akcija-label {
@@ -7873,20 +7898,57 @@ body.search-results-active main {
 }
 
 /* Upsell Popup */
+#upsellPopupOverlay {
+    background: linear-gradient(
+        135deg,
+        rgba(91, 184, 5, 0.14) 0%,
+        rgba(0, 0, 0, 0.48) 100%
+    );
+}
+
 .upsell-popup {
     max-width: 680px;
     text-align: left;
 }
 
+.upsell-popup.site-popup {
+    background-color: #ffffff;
+    background-image:
+        radial-gradient(ellipse 130px 90px at 12% 22%, rgba(91, 184, 5, 0.2) 0%, transparent 72%),
+        radial-gradient(ellipse 110px 110px at 88% 18%, rgba(91, 184, 5, 0.16) 0%, transparent 68%),
+        radial-gradient(ellipse 150px 95px at 78% 82%, rgba(91, 184, 5, 0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 90px 130px at 22% 78%, rgba(91, 184, 5, 0.14) 0%, transparent 65%),
+        radial-gradient(ellipse 70px 70px at 52% 48%, rgba(91, 184, 5, 0.08) 0%, transparent 58%);
+    border: 1px solid rgba(91, 184, 5, 0.28);
+    box-shadow: 0 20px 40px rgba(91, 184, 5, 0.12), 0 24px 48px rgba(0, 0, 0, 0.12);
+}
+
+.upsell-popup.site-popup::before {
+    background: linear-gradient(90deg, #5BB805, #7dd03f);
+}
+
+.upsell-popup .site-popup-close {
+    background: #f0f9e8;
+    color: #5BB805;
+}
+
+.upsell-popup .site-popup-close:hover {
+    background: #5BB805;
+    color: var(--white);
+}
+
 .upsell-header {
     text-align: center;
     margin-bottom: 16px;
+    padding: 20px 20px 0;
+    position: relative;
+    z-index: 1;
 }
 
 .upsell-header h3 {
     font-size: 20px;
     margin: 0 0 4px;
-    color: #ff6b00;
+    color: #5BB805;
 }
 
 .upsell-header p {
@@ -7900,6 +7962,9 @@ body.search-results-active main {
     flex-direction: column;
     gap: 12px;
     margin-bottom: 12px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
 }
 
 .upsell-product {
@@ -7954,7 +8019,7 @@ body.search-results-active main {
 }
 
 .upsell-prices .discounted {
-    color: #ff6b00;
+    color: #5BB805;
     font-weight: 700;
 }
 
@@ -7978,11 +8043,21 @@ body.search-results-active main {
     padding: 8px 14px;
     width: auto;
     align-self: flex-start;
+    background: #5BB805;
+    border-color: #5BB805;
+}
+
+.upsell-right .btn-small:hover {
+    background: #4a9a04;
+    border-color: #4a9a04;
 }
 
 .upsell-note {
     text-align: center;
     margin-top: 8px;
+    padding: 0 20px 16px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Upsell cart banners */

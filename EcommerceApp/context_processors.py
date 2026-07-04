@@ -74,13 +74,17 @@ def nav_categories(request):
     )
 
     cart = Cart(request)
-    active_akcija = None
+    popup_queue = []
     for akcija in Akcija.objects.filter(aktivan=True).select_related(
         'artikal', 'artikal__brend',
     ).order_by('redoslijed', '-id'):
         if akcija.je_popup() and akcija.prikazi_korisniku(request.user):
-            active_akcija = akcija
-            break
+            popup_queue.append(akcija)
+
+    popup_queue.sort(
+        key=lambda a: (a.popup_delay_seconds or 0, a.redoslijed, -a.id),
+    )
+    active_akcija = popup_queue[0] if popup_queue else None
 
     site_settings = SiteSettings.load()
     contact_phone = (site_settings.kontakt_telefon or settings.STORE_PHONE or '').strip()
@@ -97,6 +101,7 @@ def nav_categories(request):
         'cart_count': len(cart),
         'active_akcija': active_akcija,
         'active_popup': active_akcija,
+        'popup_queue': popup_queue,
         'active_upsell_offer': get_active_upsell_offer(request),
         'search_query': request.GET.get('q', '').strip(),
         'contact_phone': contact_phone,

@@ -59,7 +59,13 @@
                 </td>
                 <td class="col-qty">{{ item.kolicina }}</td>
                 <td class="col-price">
-                    {% if item.is_akcija_promo and item.discounted_unit_price %}
+                    {% if item.is_deal_promo and item.discounted_unit_price %}
+                        <span style="text-decoration: line-through; color: #999;">{{ item.cijena }} KM</span>
+                        <span style="color: #c62828; font-weight: bold;">
+                            {{ item.deal_vrsta }}: {{ item.discounted_qty }} kom. po {{ item.discounted_unit_price }} KM
+                            {% if item.deal_pct %}({{ item.deal_pct }}% popust){% endif %}
+                        </span>
+                    {% elif item.is_akcija_promo and item.discounted_unit_price %}
                         <span style="text-decoration: line-through; color: #999;">{{ item.cijena }} KM</span>
                         <span style="color: #5BB805; font-weight: bold;"> sniženo na {{ item.discounted_unit_price }} KM za 1 kom.</span>
                     {% else %}

@@ -251,27 +251,46 @@ def get_deal_message(deal):
     return f"Ako poručite {buy} ova artikla {buy + get}-ći vam snižen za {pct}%."
 
 
-def calculate_deal_adjusted_total(base_unit_price, quantity, deal):
-    """
-    Vrati (total_sa_dealom, original_total)
-    Primjenjuje popust na 'get' stavke u grupama.
-    """
+def calculate_deal_breakdown(base_unit_price, quantity, deal):
+    """Raspodjela cijena za X+1 deal (puna vs snižena količina)."""
     popust = _deal_popust_value(deal)
-    if not deal or not _deal_vrsta_value(deal) or popust is None or quantity <= 0:
-        total = (base_unit_price * quantity).quantize(Decimal('0.01'))
-        return total, total
+    vrsta = _deal_vrsta_value(deal)
+    base_unit_price = Decimal(str(base_unit_price))
+    quantity = int(quantity or 0)
+    original_total = (base_unit_price * quantity).quantize(Decimal('0.01'))
+
+    if not deal or not vrsta or popust is None or quantity <= 0:
+        return {
+            'deal_total': original_total,
+            'original_total': original_total,
+            'has_discount': False,
+            'full_price_count': quantity,
+            'discounted_count': 0,
+            'discounted_unit_price': None,
+            'full_unit_price': base_unit_price,
+            'pct': popust,
+            'deal_vrsta': vrsta,
+        }
 
     buy, get = parse_deal_vrsta(deal)
     if not buy or not get:
-        total = (base_unit_price * quantity).quantize(Decimal('0.01'))
-        return total, total
+        return {
+            'deal_total': original_total,
+            'original_total': original_total,
+            'has_discount': False,
+            'full_price_count': quantity,
+            'discounted_count': 0,
+            'discounted_unit_price': None,
+            'full_unit_price': base_unit_price,
+            'pct': popust,
+            'deal_vrsta': vrsta,
+        }
 
     discount_rate = (Decimal('100') - Decimal(str(popust))) / Decimal('100')
     if discount_rate < 0:
         discount_rate = Decimal('0')
 
     discounted_price = (base_unit_price * discount_rate).quantize(Decimal('0.01'))
-
     group_size = buy + get
     num_groups = quantity // group_size
     remainder = quantity % group_size
@@ -281,11 +300,42 @@ def calculate_deal_adjusted_total(base_unit_price, quantity, deal):
         discounted_count += (remainder - buy)
 
     full_price_count = quantity - discounted_count
+    deal_total = (
+        full_price_count * base_unit_price + discounted_count * discounted_price
+    ).quantize(Decimal('0.01'))
 
-    total = (full_price_count * base_unit_price + discounted_count * discounted_price).quantize(Decimal('0.01'))
-    original_total = (base_unit_price * quantity).quantize(Decimal('0.01'))
+    return {
+        'deal_total': deal_total,
+        'original_total': original_total,
+        'has_discount': deal_total < original_total,
+        'full_price_count': full_price_count,
+        'discounted_count': discounted_count,
+        'discounted_unit_price': discounted_price if discounted_count else None,
+        'full_unit_price': base_unit_price,
+        'pct': popust,
+        'deal_vrsta': vrsta,
+    }
 
-    return total, original_total
+
+def calculate_deal_adjusted_total(base_unit_price, quantity, deal):
+    breakdown = calculate_deal_breakdown(base_unit_price, quantity, deal)
+    return breakdown['deal_total'], breakdown['original_total']
+
+
+def format_deal_order_note(deal_info):
+    """Tekst u nazivu stavke narudžbe za račun/email."""
+    if not deal_info or not deal_info.get('has_discount'):
+        return ''
+    vrsta = deal_info.get('deal_vrsta') or ''
+    disc_qty = deal_info.get('discounted_count') or 0
+    disc_unit = deal_info.get('discounted_unit_price')
+    pct = _format_deal_pct(deal_info.get('pct'))
+    if not vrsta or not disc_qty or disc_unit is None or pct is None:
+        return ''
+    return (
+        f' ({vrsta}: {disc_qty} kom. sniženo za {pct}%'
+        f' - sniženo na {disc_unit} KM)'
+    )
 
 
 def get_deal_info_for_cart_item(item, product):
@@ -296,20 +346,21 @@ def get_deal_info_for_cart_item(item, product):
 
     base_price = Decimal(item.get('cijena', '0'))
     qty = int(item.get('quantity', 0))
-
-    deal_total, original_total = calculate_deal_adjusted_total(base_price, qty, deal)
-    nudge = get_deal_cart_nudge(deal, qty)
-    message = nudge or get_deal_message(deal)
-
-    has_deal = deal_total < original_total
+    breakdown = calculate_deal_breakdown(base_price, qty, deal)
+    has_deal = breakdown['has_discount']
+    message = get_deal_cart_nudge(deal, qty) if not has_deal else None
 
     return {
         'message': message,
-        'nudge': nudge,
-        'deal_total': deal_total,
-        'original_total': original_total,
+        'nudge': message,
+        'deal_total': breakdown['deal_total'],
+        'original_total': breakdown['original_total'],
         'has_discount': has_deal,
-        'pct': _deal_popust_value(deal),
+        'discounted_unit_price': breakdown['discounted_unit_price'],
+        'discounted_count': breakdown['discounted_count'],
+        'full_unit_price': breakdown['full_unit_price'],
+        'pct': breakdown['pct'],
+        'deal_vrsta': breakdown['deal_vrsta'],
     }
 
 def get_deal_promo_data(product):

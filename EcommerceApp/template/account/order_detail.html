@@ -31,7 +31,11 @@
                         <p class="account-order-item-meta">
                             Šifra: {{ item.sifra|default:"—" }} ·
                             {{ item.kolicina }} kom ×
-                            {% if item.is_akcija_promo and item.discounted_unit_price %}
+                            {% if item.is_deal_promo and item.discounted_unit_price %}
+                                <span style="text-decoration: line-through; color:#999;">{{ item.cijena }} KM</span>
+                                <span style="color:#c62828; font-weight:bold;">{{ item.discounted_unit_price }} KM</span>
+                                <span style="font-size:0.85em;">({{ item.deal_vrsta }}: {{ item.discounted_qty }} kom. sniženo{% if item.deal_pct %} {{ item.deal_pct }}%{% endif %})</span>
+                            {% elif item.is_akcija_promo and item.discounted_unit_price %}
                                 <span style="text-decoration: line-through; color:#999;">{{ item.cijena }} KM</span>
                                 <span style="color:#5BB805; font-weight:bold;">{{ item.discounted_unit_price }} KM</span>
                                 <span style="font-size:0.85em;">(sniženo na 1 kom.)</span>

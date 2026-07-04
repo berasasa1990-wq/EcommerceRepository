@@ -1127,15 +1127,22 @@ def add_to_cart(request, slug):
         messages.error(request, msg)
         return redirect('product_detail', slug=slug)
 
-    if product.varijacije.count() > 0:
-        if not variation_id:
-            if stay_on_page:
+    timer_akcija_from_popup = request.POST.get('akcija_id', '').strip()
+
+    if product.varijacije.exists():
+        if variation_id:
+            variation = get_object_or_404(
+                ProductVariation, pk=variation_id, artikal=product, na_stanju=True,
+            )
+        else:
+            in_stock = product.varijacije.filter(na_stanju=True).order_by('redoslijed', 'id')
+            if timer_akcija_from_popup and in_stock.count() == 1:
+                variation = in_stock.first()
+            elif stay_on_page:
                 return JsonResponse({'ok': False, 'message': 'Odaberite varijantu.'}, status=400)
-            messages.error(request, 'Odaberite varijantu prije dodavanja u korpu.')
-            return redirect('product_detail', slug=slug)
-        variation = get_object_or_404(
-            ProductVariation, pk=variation_id, artikal=product, na_stanju=True,
-        )
+            else:
+                messages.error(request, 'Odaberite varijantu prije dodavanja u korpu.')
+                return redirect('product_detail', slug=slug)
     elif variation_id:
         variation = get_object_or_404(
             ProductVariation, pk=variation_id, artikal=product, na_stanju=True,
@@ -1155,10 +1162,46 @@ def add_to_cart(request, slug):
         messages.error(request, msg)
         return redirect('product_detail', slug=slug)
 
-    cart.add(product, variation=variation, quantity=quantity)
+    custom_price = None
+    promo_bazna = None
+    timer_akcija = None
+    from .models import Akcija
+
+    akcija_id = request.POST.get('akcija_id', '').strip()
+    if akcija_id:
+        timer_akcija = Akcija.objects.filter(
+            pk=akcija_id,
+            aktivan=True,
+            tip=Akcija.Tip.TIMER,
+            artikal_id=product.pk,
+        ).first()
+    if not timer_akcija and stay_on_page:
+        timer_akcija = Akcija.objects.filter(
+            aktivan=True,
+            tip=Akcija.Tip.TIMER,
+            artikal_id=product.pk,
+            popust_postotak__isnull=False,
+        ).order_by('redoslijed', '-id').first()
+    if timer_akcija and timer_akcija.jos_traje():
+        prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
+        snizena = timer_akcija.timer_snizena_cijena(product, variation=variation)
+        if snizena is not None:
+            custom_price = snizena
+            promo_bazna = prikazna
+
+    cart.add(
+        product,
+        variation=variation,
+        quantity=quantity,
+        custom_price=custom_price,
+        promo_bazna=promo_bazna,
+    )
     cart.clear_coupon()
     label = variation.naziv if variation else product.naziv
     message = f'"{label}" je dodano u korpu.'
+    if custom_price is not None and timer_akcija.popust_postotak:
+        pct = int(timer_akcija.popust_postotak) if timer_akcija.popust_postotak == int(timer_akcija.popust_postotak) else timer_akcija.popust_postotak
+        message = f'"{label}" je dodano u korpu sa {pct}% popusta (tajmer akcija).'
 
     add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
     content_id = (
@@ -1166,7 +1209,9 @@ def add_to_cart(request, slug):
         or product.sifra
         or str(product.pk)
     )
-    line_price = variation.prikazna_cijena if variation else product.prikazna_cijena
+    line_price = custom_price if custom_price is not None else (
+        variation.prikazna_cijena if variation else product.prikazna_cijena
+    )
     cart_label = product.naziv
     if variation:
         cart_label = f'{product.naziv} — {variation.naziv}'
@@ -1445,20 +1490,18 @@ def checkout(request):
                     messages.error(request, 'Neki artikli više nisu dostupni. Osvježite korpu.')
                     order.delete()
                     return redirect('cart')
-                # Apply X+1 deal if present
                 line_price = item['cijena_decimal']
                 deal_info = item.get('deal_info')
-                if deal_info and deal_info.get('has_discount'):
-                    # Use effective per unit based on deal total
-                    if item['quantity'] > 0:
-                        line_price = (deal_info['deal_total'] / item['quantity']).quantize(Decimal('0.01'))
+                from .upsell import format_deal_order_note
 
-                # For AKCIJA popup discount item: only record the note (and that discount happened)
-                # if the condition was met in cart (i.e. discounted_unit_price present).
-                # Keep original in cijena field; actual reduction is in order totals.
+                deal_note = format_deal_order_note(deal_info)
                 akcija_info = item.get('akcija_popup_discount')
                 discounted_unit = item.get('discounted_unit_price')
-                if akcija_info and discounted_unit is not None:
+                if deal_note:
+                    naziv = item['product_naziv'] + deal_note
+                    product_naziv = item['product_naziv'] + deal_note
+                    varijacija_naziv = (item.get('varijacija_naziv', '') + deal_note).strip()
+                elif akcija_info and discounted_unit is not None:
                     pct = Decimal(str(akcija_info['percent']))
                     disc_for_one = discounted_unit
                     extra_note = f" (popust iz akcije {pct}% na 1 kom. - sniženo na {disc_for_one} KM)"
