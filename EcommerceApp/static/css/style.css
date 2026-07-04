@@ -3901,20 +3901,23 @@ body.search-results-active main {
     }
 
     .product-detail-variation-row {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: flex-start;
         align-items: center;
-        gap: 10px 12px;
+        gap: 12px;
     }
 
     .product-detail-variation-name {
-        flex: 0 0 100%;
-        max-width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
     }
 
     .product-detail-variation-price {
         text-align: left;
-        min-width: 0;
+        min-width: 72px;
+        flex-shrink: 0;
+        margin-left: 16px;
     }
 
     .product-detail-variation-price.product-price--detail {
@@ -3923,6 +3926,7 @@ body.search-results-active main {
 
     .product-detail-variation-form {
         justify-content: flex-start;
+        flex-shrink: 0;
     }
 
     .product-detail-variation-form .product-qty-selector {

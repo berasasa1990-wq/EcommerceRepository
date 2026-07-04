@@ -764,7 +764,7 @@ def home(request):
         home_vlogs = _home_vlogs()
 
     first_hero = hero_banners.first()
-    first_grid_banner = grid_banners.first()
+    first_grid_banner = grid_banners[0] if grid_banners else None
     has_hero_slides = bool(not filters_active and hero_banners.exists())
     lcp_image_url = None
     lcp_image_srcset = None
