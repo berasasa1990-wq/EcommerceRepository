@@ -161,15 +161,15 @@ def get_quantity_deal(product):
         return None
     from .models import Akcija
 
-    akcija = Akcija.objects.filter(
+    for akcija in Akcija.objects.filter(
         aktivan=True,
         tip=Akcija.Tip.X_PLUS_1,
         artikal=product,
         deal_vrsta__isnull=False,
         popust_postotak__isnull=False,
-    ).order_by('redoslijed', '-id').first()
-    if akcija:
-        return akcija
+    ).order_by('redoslijed', '-id'):
+        if akcija.jos_traje():
+            return akcija
     return UpsellOffer.objects.filter(
         aktivan=True,
         deal_artikal=product,

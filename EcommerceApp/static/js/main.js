@@ -772,7 +772,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<span class="price-current">${formatted} KM</span>`;
     }
 
-    const sitePopupOverlays = Array.from(document.querySelectorAll('.site-popup-overlay'));
+    const sitePopupOverlays = Array.from(
+        document.querySelectorAll('.site-popup-overlay[data-popup-id]'),
+    );
     if (sitePopupOverlays.length) {
         const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
         let activeOverlay = null;
@@ -804,9 +806,10 @@ document.addEventListener('DOMContentLoaded', () => {
         function shouldShowPopup(overlay) {
             const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
             const last = parseInt(localStorage.getItem(lastShownKey) || '0', 10);
-            const cooldownPassed = !last || (Date.now() - last > COOLDOWN_MS);
-            const shownInSession = sessionStorage.getItem(sessionShownKey);
-            return cooldownPassed || !shownInSession;
+            if (last && (Date.now() - last <= COOLDOWN_MS)) {
+                return false;
+            }
+            return !sessionStorage.getItem(sessionShownKey);
         }
 
         function closePopup(overlay, recordShown = true) {
@@ -845,7 +848,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (diff <= 0) {
                     countdownEl.textContent = '00:00:00';
                     stopCountdown();
-                    closePopup(overlay);
                     return;
                 }
                 countdownEl.textContent = formatCountdown(diff);

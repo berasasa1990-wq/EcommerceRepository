@@ -674,7 +674,7 @@ class Akcija(models.Model):
     )
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
     za_prijavljene = models.BooleanField(
-        default=False,
+        default=True,
         verbose_name='Prikaži prijavljenim korisnicima',
     )
     za_neprijavljene = models.BooleanField(
@@ -710,18 +710,28 @@ class Akcija(models.Model):
         return pocetak + timedelta(hours=self.trajanje_sati)
 
     def jos_traje(self):
-        if self.tip in {self.Tip.X_PLUS_1, self.Tip.SLIKA, self.Tip.KORPA_NUDJENJE}:
-            return self.aktivan
+        if not self.aktivan:
+            return False
+        if self.tip in {self.Tip.SLIKA, self.Tip.KORPA_NUDJENJE}:
+            return True
+        if not self.pocetak or not self.trajanje_sati:
+            return True
+        pocetak = self.pocetak
+        if timezone.is_naive(pocetak):
+            pocetak = timezone.make_aware(pocetak, timezone.get_current_timezone())
+        now = timezone.now()
+        if now < pocetak:
+            return False
         kraj = self.zavrsava
         if not kraj:
             return False
-        return timezone.now() < kraj
+        return now < kraj
 
     def je_popup(self):
         return self.tip in {self.Tip.SLIKA, self.Tip.TIMER, self.Tip.USLOV}
 
     def prikazi_korisniku(self, user):
-        if not self.aktivan or not self.jos_traje():
+        if not self.jos_traje():
             return False
         if self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE}:
             return False
@@ -730,8 +740,8 @@ class Akcija(models.Model):
         if self.tip in {self.Tip.TIMER, self.Tip.USLOV} and not self.artikal_id:
             return False
         if user.is_authenticated:
-            return self.za_prijavljene
-        return self.za_neprijavljene
+            return bool(self.za_prijavljene)
+        return bool(self.za_neprijavljene)
 
     def korpa_nudjenje_snizena_cijena(self, product, variation=None):
         """Snižena cijena za Korpa nudjenje (% od trenutne prikazne cijene)."""

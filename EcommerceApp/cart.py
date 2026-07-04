@@ -174,14 +174,18 @@ class Cart:
             # Uslov prodaja: popust na jednu jedinicu kad ostatak korpe dostigne prag
             try:
                 from .models import Akcija
-                uslov = Akcija.objects.filter(
+                uslov = None
+                for candidate in Akcija.objects.filter(
                     tip=Akcija.Tip.USLOV,
                     aktivan=True,
                     artikal_id=item['product_id'],
                     popust_postotak__isnull=False,
                     prag_korpe_km__isnull=False,
-                ).order_by('redoslijed', '-id').first()
-                if uslov and uslov.jos_traje():
+                ).order_by('redoslijed', '-id'):
+                    if candidate.jos_traje():
+                        uslov = candidate
+                        break
+                if uslov:
                     pct = uslov.popust_postotak
                     threshold = uslov.prag_korpe_km
                     item['akcija_popup_discount'] = {

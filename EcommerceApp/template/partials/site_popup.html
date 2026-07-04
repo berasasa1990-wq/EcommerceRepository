@@ -38,15 +38,15 @@
 
         {% elif akcija.artikal %}
         <div class="site-popup-akcija">
-            <p class="site-popup-akcija-label" style="color: '{{ akcija.boja_opisa }}';">Akcija ističe za</p>
+            <p class="site-popup-akcija-label" style="color: {{ akcija.boja_opisa }};">Akcija ističe za</p>
             <div class="site-popup-countdown" data-popup-countdown aria-live="polite">--:--:--</div>
 
             {% if akcija.tip == 'timer' and akcija.popust_postotak %}
-            <div class="site-popup-akcija-promo" style="color: '{{ akcija.boja_opisa }}';">
+            <div class="site-popup-akcija-promo" style="color: {{ akcija.boja_opisa }};">
                 <strong>{{ akcija.popust_postotak|floatformat:0 }}% popusta</strong> — dodaj u korpu po akcijskoj cijeni
             </div>
             {% elif akcija.tip == 'uslov' and akcija.popust_postotak and akcija.prag_korpe_km %}
-            <div class="site-popup-akcija-promo" style="color: '{{ akcija.boja_opisa }}';">
+            <div class="site-popup-akcija-promo" style="color: {{ akcija.boja_opisa }};">
                 <strong>{{ akcija.popust_postotak|floatformat:0 }}% POPUSTA</strong> NA OVAJ ARTIKAL<br>
                 KAD UKUPNO U KORPI PREDJE IZNOS OD <strong>{{ akcija.prag_korpe_km }} KM</strong>
             </div>

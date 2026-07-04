@@ -346,6 +346,10 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'popup_delay_seconds', 'za_prijavljene', 'za_neprijavljene',
                 'ponovo_poslije_dana',
             ),
+            'description': (
+                'Za prikaz pop-upa uključite obje opcije publike ako želite da svi vide akciju. '
+                'Bez početka/trajanja (tajmer, uslov, X+1) akcija vrijedi dok je uključena.'
+            ),
             'classes': ('collapse',),
         }),
     )
