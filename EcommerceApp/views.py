@@ -1073,6 +1073,15 @@ def add_to_cart(request, slug):
     message = f'"{label}" je dodano u korpu.'
 
     add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
+    content_id = (
+        (variation.sifra if variation and variation.sifra else None)
+        or product.sifra
+        or str(product.pk)
+    )
+    line_price = variation.prikazna_cijena if variation else product.prikazna_cijena
+    cart_label = product.naziv
+    if variation:
+        cart_label = f'{product.naziv} — {variation.naziv}'
     track_add_to_cart(
         request,
         product,
@@ -1089,7 +1098,13 @@ def add_to_cart(request, slug):
             'ok': True,
             'message': message,
             'cart_count': len(cart),
-            'meta_event_id': add_to_cart_event_id,
+            'meta_add_to_cart': {
+                'event_id': add_to_cart_event_id,
+                'content_id': content_id,
+                'content_name': cart_label,
+                'value': float(line_price * quantity),
+                'quantity': quantity,
+            },
         })
     messages.success(request, message)
     if request.POST.get('redirect_to') == 'cart':
@@ -1458,11 +1473,15 @@ def order_success(request, broj):
         broj=broj,
     )
     purchase_event_id = request.session.pop('meta_purchase_event_id', f'purchase-{order.broj}')
+    stavke = list(order.stavke.all())
     context = {
         **_base_context(),
         'order': order,
         'meta_purchase_event_id': purchase_event_id,
-        'meta_purchase_num_items': sum(stavka.kolicina for stavka in order.stavke.all()),
+        'meta_purchase_num_items': sum(stavka.kolicina for stavka in stavke),
+        'meta_purchase_content_ids': ','.join(
+            stavka.sifra or str(stavka.artikal_id or stavka.pk) for stavka in stavke
+        ),
     }
     return render(request, 'order_success.html', context)
 

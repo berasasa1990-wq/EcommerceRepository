@@ -5,7 +5,7 @@
 {% block title %}Narudžba primljena — opremazaribolov.ba{% endblock %}
 
 {% block content %}
-<section class="order-success-page">
+<section class="order-success-page"{% if meta_pixel_id and meta_purchase_event_id %} data-meta-purchase data-event-id="{{ meta_purchase_event_id }}" data-value="{{ order.ukupno }}" data-num-items="{{ meta_purchase_num_items }}" data-content-ids="{{ meta_purchase_content_ids }}"{% endif %}>
     <h1>Hvala na narudžbi!</h1>
     <p>Vaša narudžba <strong>#{{ order.broj }}</strong> je uspješno primljena.</p>
     <p>Kontaktiraćemo vas uskoro na <strong>{{ order.email }}</strong> ili <strong>{{ order.telefon }}</strong>.</p>
@@ -26,19 +26,18 @@
 
 {% block extra_js %}
 {% if meta_pixel_id and meta_purchase_event_id %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof fbq !== 'function') return;
+<script data-cfasync="false">
+(function () {
+    var el = document.querySelector('[data-meta-purchase]');
+    if (!el || typeof fbq !== 'function') return;
     fbq('track', 'Purchase', {
-        value: {{ order.ukupno }},
+        value: parseFloat(el.dataset.value, 10),
         currency: 'BAM',
-        content_ids: [
-            {% for stavka in order.stavke.all %}'{{ stavka.sifra|default:stavka.artikal_id|default:stavka.pk }}'{% if not forloop.last %}, {% endif %}{% endfor %}
-        ],
+        content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean),
         content_type: 'product',
-        num_items: {{ meta_purchase_num_items }}
-    }, {eventID: '{{ meta_purchase_event_id }}'});
-});
+        num_items: parseInt(el.dataset.numItems, 10) || 0
+    }, { eventID: el.dataset.eventId });
+})();
 </script>
 {% endif %}
 {% endblock %}

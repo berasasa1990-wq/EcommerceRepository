@@ -106,6 +106,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             updateCartBadge(data.cart_count);
             showCartToast(data.message);
+            if (data.meta_add_to_cart && typeof fbq === 'function') {
+                const meta = data.meta_add_to_cart;
+                fbq('track', 'AddToCart', {
+                    content_ids: [meta.content_id],
+                    content_type: 'product',
+                    content_name: meta.content_name,
+                    value: meta.value,
+                    currency: 'BAM',
+                }, { eventID: meta.event_id });
+            }
         } catch (err) {
             showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
         } finally {

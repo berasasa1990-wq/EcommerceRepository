@@ -5,7 +5,7 @@
 {% block page_title %}<title>Narudžba — opremazaribolov.ba</title>{% endblock %}
 
 {% block content %}
-<section class="checkout-page">
+<section class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ cart_count|default:0 }}" data-value="{{ cart_total }}"{% endif %}>
     <h1>Narudžba</h1>
     {% if not user.is_authenticated %}
     <p class="checkout-auth-note">
@@ -54,19 +54,7 @@
     </div>
 </section>
 
-{% if meta_pixel_id and meta_initiate_checkout_event_id %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof fbq === 'function') {
-        fbq('track', 'InitiateCheckout', {
-            currency: 'BAM',
-            num_items: {{ cart_count|default:0 }}
-        }, {eventID: '{{ meta_initiate_checkout_event_id }}'});
-    }
-});
-</script>
-{% endif %}
-<script>
+<script data-cfasync="false">
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('checkout-form');
     const grid = document.getElementById('checkout-grid');
@@ -80,4 +68,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+{% endblock %}
+
+{% block extra_js %}
+{% if meta_pixel_id and meta_initiate_checkout_event_id %}
+<script data-cfasync="false">
+(function () {
+    var el = document.querySelector('[data-meta-initiate-checkout]');
+    if (!el || typeof fbq !== 'function') return;
+    fbq('track', 'InitiateCheckout', {
+        currency: 'BAM',
+        value: parseFloat(el.dataset.value, 10),
+        num_items: parseInt(el.dataset.numItems, 10) || 0
+    }, { eventID: el.dataset.eventId });
+})();
+</script>
+{% endif %}
 {% endblock %}
