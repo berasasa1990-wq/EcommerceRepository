@@ -1,6 +1,7 @@
 import logging
 import random
 import re
+import uuid
 import requests
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode, urlparse
@@ -36,6 +37,12 @@ from .loyalty import (
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import EmailNotConfiguredError, get_order_email_context, send_order_emails
 from .render_sync import sync_korisnik, sync_narudzba
+from .meta_conversions import (
+    track_add_to_cart,
+    track_initiate_checkout,
+    track_purchase,
+    track_view_content,
+)
 from .utils.images import image_field_dimensions
 
 logger = logging.getLogger(__name__)
@@ -1007,6 +1014,10 @@ def product_detail(request, slug):
     if deal_promo:
         context['deal_promo'] = deal_promo
 
+    view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
+    context['meta_view_content_event_id'] = view_content_event_id
+    track_view_content(request, product, event_id=view_content_event_id)
+
     return render(request, 'product_detail.html', context)
 
 
@@ -1061,6 +1072,15 @@ def add_to_cart(request, slug):
     label = variation.naziv if variation else product.naziv
     message = f'"{label}" je dodano u korpu.'
 
+    add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
+    track_add_to_cart(
+        request,
+        product,
+        variation=variation,
+        quantity=quantity,
+        event_id=add_to_cart_event_id,
+    )
+
     # Trigger upsell check
     _check_and_set_pending_upsell(request, product)
 
@@ -1069,6 +1089,7 @@ def add_to_cart(request, slug):
             'ok': True,
             'message': message,
             'cart_count': len(cart),
+            'meta_event_id': add_to_cart_event_id,
         })
     messages.success(request, message)
     if request.POST.get('redirect_to') == 'cart':
@@ -1401,6 +1422,10 @@ def checkout(request):
             elif isinstance(result, dict) and not result.get('ok', True):
                 logger.error("sync_narudzba nije uspio: %s", result)
 
+            purchase_event_id = f'purchase-{order.broj}'
+            track_purchase(request, order, event_id=purchase_event_id)
+            request.session['meta_purchase_event_id'] = purchase_event_id
+
             messages.success(request, 'Narudžba je uspješno poslana!')
             return redirect('order_success', broj=order.broj)
 
@@ -1412,6 +1437,10 @@ def checkout(request):
         'form': form,
         'upsell_checkout_offers': get_checkout_upsell_offers(cart),
     }
+    if request.method == 'GET':
+        initiate_checkout_event_id = f'initiatecheckout-{uuid.uuid4().hex}'
+        track_initiate_checkout(request, cart, event_id=initiate_checkout_event_id)
+        context['meta_initiate_checkout_event_id'] = initiate_checkout_event_id
 
     # Remove deal and popup discount info from checkout (they only work/shows in cart/product detail)
     for item in context.get('cart_items', []):
@@ -1424,10 +1453,16 @@ def checkout(request):
 
 
 def order_success(request, broj):
-    order = get_object_or_404(Order, broj=broj)
+    order = get_object_or_404(
+        Order.objects.prefetch_related('stavke'),
+        broj=broj,
+    )
+    purchase_event_id = request.session.pop('meta_purchase_event_id', f'purchase-{order.broj}')
     context = {
         **_base_context(),
         'order': order,
+        'meta_purchase_event_id': purchase_event_id,
+        'meta_purchase_num_items': sum(stavka.kolicina for stavka in order.stavke.all()),
     }
     return render(request, 'order_success.html', context)
 

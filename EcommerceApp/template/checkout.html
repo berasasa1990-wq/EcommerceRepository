@@ -54,6 +54,18 @@
     </div>
 </section>
 
+{% if meta_pixel_id and meta_initiate_checkout_event_id %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof fbq === 'function') {
+        fbq('track', 'InitiateCheckout', {
+            currency: 'BAM',
+            num_items: {{ cart_count|default:0 }}
+        }, {eventID: '{{ meta_initiate_checkout_event_id }}'});
+    }
+});
+</script>
+{% endif %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('checkout-form');

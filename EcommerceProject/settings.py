@@ -162,6 +162,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'EcommerceApp.middleware.site_prep_lock.SitePrepLockMiddleware',
+    'EcommerceApp.middleware.meta_page_view.MetaPageViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -179,6 +180,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'EcommerceApp.context_processors.nav_categories',
+                'EcommerceApp.context_processors.meta_pixel',
             ],
         },
     },
@@ -318,6 +320,10 @@ SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')
 MESSENGER_PAGE = _env('MESSENGER_PAGE', 'opremazaribolov.ba')
 STORE_EMAIL = _env('STORE_EMAIL', 'narudzbe@opremazaribolov.ba')
+
+# Meta (Facebook / Instagram) Pixel + Conversions API
+META_PIXEL_ID = _env('META_PIXEL_ID', '27729172960012475')
+META_ACCESS_TOKEN = _env('META_ACCESS_TOKEN', '')
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'account'

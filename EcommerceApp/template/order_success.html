@@ -23,3 +23,22 @@
     </div>
 </section>
 {% endblock %}
+
+{% block extra_js %}
+{% if meta_pixel_id and meta_purchase_event_id %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof fbq !== 'function') return;
+    fbq('track', 'Purchase', {
+        value: {{ order.ukupno }},
+        currency: 'BAM',
+        content_ids: [
+            {% for stavka in order.stavke.all %}'{{ stavka.sifra|default:stavka.artikal_id|default:stavka.pk }}'{% if not forloop.last %}, {% endif %}{% endfor %}
+        ],
+        content_type: 'product',
+        num_items: {{ meta_purchase_num_items }}
+    }, {eventID: '{{ meta_purchase_event_id }}'});
+});
+</script>
+{% endif %}
+{% endblock %}

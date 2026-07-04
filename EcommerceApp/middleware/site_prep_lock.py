@@ -45,4 +45,6 @@ class SitePrepLockMiddleware:
             return True
         if path.startswith('/admin/'):
             return True
+        if path == '/facebook-feed.xml':
+            return True
         return False

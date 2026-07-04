@@ -8,6 +8,7 @@
     <title>Sajt u pripremi — opremazaribolov.ba</title>
     <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260703s">
 
+    {% if meta_pixel_id %}
     <!-- Meta Pixel Code -->
     <script>
     !function(f,b,e,v,n,t,s)
@@ -18,13 +19,14 @@
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '27729172960012475');
+    fbq('init', '{{ meta_pixel_id }}');
     fbq('track', 'PageView');
     </script>
     <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=27729172960012475&ev=PageView&noscript=1"
+    src="https://www.facebook.com/tr?id={{ meta_pixel_id }}&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Meta Pixel Code -->
+    {% endif %}
 </head>
 <body>
     <section class="auth-page site-prep-page">

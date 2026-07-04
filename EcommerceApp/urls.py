@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import views_feed
 from . import views_site_prep
 from . import views_sync
 
@@ -8,6 +9,7 @@ urlpatterns = [
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
+    path('facebook-feed.xml', views_feed.facebook_feed, name='facebook_feed'),
 
     path('priprema-pristup/', views_site_prep.site_prep_unlock, name='site_prep_unlock'),
     path('', views.home, name='home'),

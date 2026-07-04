@@ -176,6 +176,20 @@
 
 {% block extra_js %}
 <script src="{% static 'js/product-detail.min.js' %}?v=20260703s" defer></script>
+{% if meta_pixel_id and meta_view_content_event_id %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof fbq !== 'function') return;
+    fbq('track', 'ViewContent', {
+        content_ids: ['{{ product.sifra|default:product.pk }}'],
+        content_type: 'product',
+        content_name: '{{ product.naziv|escapejs }}',
+        value: {{ product.prikazna_cijena }},
+        currency: 'BAM'
+    }, {eventID: '{{ meta_view_content_event_id }}'});
+});
+</script>
+{% endif %}
 {% endblock %}
 
 {% block structured_data %}

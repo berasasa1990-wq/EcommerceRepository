@@ -41,6 +41,13 @@ def _messenger_contact_url(page_slug):
     return f'https://m.me/{slug}'
 
 
+def meta_pixel(request):
+    return {
+        'meta_pixel_id': getattr(settings, 'META_PIXEL_ID', ''),
+        'meta_page_view_event_id': getattr(request, 'meta_page_view_event_id', None),
+    }
+
+
 def nav_categories(request):
     sub_subcategories = Category.objects.filter(
         aktivan=True, prikazi_u_meniju=True,
