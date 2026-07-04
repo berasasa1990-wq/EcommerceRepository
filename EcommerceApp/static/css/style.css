@@ -6149,22 +6149,50 @@ body.search-results-active main {
         order: 3;
     }
 
-    .product-detail-brand {
+    .product-detail-info {
         text-align: left;
+        width: 100%;
+    }
+
+    .product-detail-brand {
+        margin: 0 0 10px;
+        padding: 0;
+        text-align: left;
+        width: 100%;
     }
 
     .product-detail-brand .product-brand {
-        justify-content: flex-start;
+        display: block;
+        margin: 0;
+        width: 100%;
     }
 
     .product-detail-brand .brand-logo {
-        width: 140px;
-        height: 34px;
+        display: block;
+        width: 120px;
+        height: 30px;
+        margin: 0;
+        object-fit: contain;
         object-position: left center;
     }
 
+    .product-detail-brand .brand-name {
+        display: block;
+        text-align: left;
+    }
+
     .product-detail-info h1 {
-        font-size: clamp(20px, 5.2vw, 24px);
+        font-size: clamp(17px, 4.4vw, 20px);
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        overflow: hidden;
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        max-width: 100%;
     }
 
     .product-detail-related .home-products-header--izdvojeno h2 {
