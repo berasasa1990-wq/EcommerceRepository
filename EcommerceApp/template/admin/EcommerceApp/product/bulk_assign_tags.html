@@ -4,40 +4,55 @@
 {{ block.super }}
 <style>
     .bulk-assign-form {
-        max-width: 720px;
+        max-width: 960px;
         margin-top: 20px;
     }
-    .bulk-assign-form label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 6px;
+    .help-intro {
+        color: #666;
+        font-size: 13px;
+        margin: 8px 0 16px;
+        max-width: 960px;
     }
-    .bulk-assign-list {
-        margin: 20px 0;
-        padding: 14px 16px;
-        background: #f8f8f8;
+    .product-tag-block {
+        margin-bottom: 12px;
         border: 1px solid #e5e5e5;
         border-radius: 6px;
-        max-width: 720px;
+        background: #fff;
+        overflow: hidden;
     }
-    .bulk-assign-list ul {
-        margin: 8px 0 0;
-        padding-left: 18px;
-        max-height: 240px;
-        overflow-y: auto;
+    .product-tag-block summary {
+        cursor: pointer;
+        padding: 12px 14px;
+        font-weight: 600;
+        background: #f8f8f8;
+        list-style: none;
     }
-    .bulk-assign-actions {
-        margin-top: 20px;
-        display: flex;
-        gap: 12px;
-        align-items: center;
+    .product-tag-block summary::-webkit-details-marker {
+        display: none;
+    }
+    .product-tag-block summary::before {
+        content: '▸ ';
+        color: #666;
+    }
+    .product-tag-block[open] summary::before {
+        content: '▾ ';
+    }
+    .product-tag-body {
+        padding: 12px 14px 14px;
+        border-top: 1px solid #eee;
+    }
+    .product-current-tags {
+        color: #666;
+        font-size: 12px;
+        font-weight: 400;
+        margin-top: 4px;
     }
     .tag-group {
-        margin-bottom: 16px;
+        margin-bottom: 12px;
         border: 1px solid #e5e5e5;
         border-radius: 6px;
         padding: 8px 12px;
-        background: #fff;
+        background: #fafafa;
     }
     .tag-group-header {
         font-weight: 600;
@@ -64,14 +79,15 @@
         margin-right: 4px;
     }
     .flat-tags {
-        margin-top: 16px;
+        margin-top: 8px;
         border-top: 1px solid #e5e5e5;
-        padding-top: 12px;
+        padding-top: 10px;
     }
-    .help {
-        color: #666;
-        font-size: 12px;
-        margin: 4px 0 12px;
+    .bulk-assign-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
     }
 </style>
 {% endblock %}
@@ -88,15 +104,9 @@
 {% block content %}
 <div id="content-main">
     <h1>Dodjela tagova</h1>
-
-    <div class="bulk-assign-list">
-        <strong>Odabrano artikala: {{ queryset|length }}</strong>
-        <ul>
-            {% for product in queryset %}
-            <li>{{ product.naziv }}</li>
-            {% endfor %}
-        </ul>
-    </div>
+    <p class="help-intro">
+        Za svaki artikal posebno označite tagove koje želite dodati. Kliknite <strong>{{ submit_label }}</strong> da svakom artiklu dodate samo tagove koje ste mu odabrali. Postojeći tagovi se ne brišu. Artikli bez odabranih tagova se preskaču.
+    </p>
 
     <form method="post" class="bulk-assign-form">
         {% csrf_token %}
@@ -105,54 +115,67 @@
         <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
         {% endfor %}
 
-        <p class="help">
-            <strong>Glavni tagovi</strong> (npr. "Masinice"): kliknite glavni tag da automatski označite sve podtagove ispod njega.
-            To vam štedi kliktanje jedno po jedno.
-        </p>
+        {% for product in queryset %}
+        <details class="product-tag-block"{% if forloop.first %} open{% endif %}>
+            <summary>
+                {{ product.naziv }}
+                {% if product.tagovi.all %}
+                <div class="product-current-tags">
+                    Trenutni tagovi: {% for tag in product.tagovi.all %}{{ tag.naziv }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                </div>
+                {% endif %}
+            </summary>
+            <div class="product-tag-body" data-product-tag-block="{{ product.pk }}">
+                <p style="color:#666;font-size:12px;margin:0 0 10px;">
+                    Glavni tag označava sve podtagove ispod njega.
+                </p>
 
-        {% for group in grouped_tags %}
-        <div class="tag-group">
-            <div class="tag-group-header">
-                <input type="checkbox" 
-                       id="parent-{{ group.parent.pk }}" 
-                       name="tagovi" 
-                       value="{{ group.parent.pk }}"
-                       class="parent-tag"
-                       data-parent="{{ group.parent.pk }}">
-                <label for="parent-{{ group.parent.pk }}" style="font-weight:600; margin:0; cursor:pointer;">
-                    {{ group.parent.naziv }}
-                </label>
-                {% if group.children %}<span style="color:#999; font-size:12px;">({{ group.children|length }} podtagova)</span>{% endif %}
-            </div>
-            {% if group.children %}
-            <div class="tag-children">
-                {% for child in group.children %}
-                <div class="tag-child">
-                    <input type="checkbox" 
-                           id="child-{{ child.pk }}" 
-                           name="tagovi" 
-                           value="{{ child.pk }}"
-                           class="child-tag"
-                           data-parent="{{ group.parent.pk }}">
-                    <label for="child-{{ child.pk }}" style="margin:0; cursor:pointer;">{{ child.naziv }}</label>
+                {% for group in grouped_tags %}
+                <div class="tag-group">
+                    <div class="tag-group-header">
+                        <input type="checkbox"
+                               id="parent-{{ product.pk }}-{{ group.parent.pk }}"
+                               name="tagovi_{{ product.pk }}"
+                               value="{{ group.parent.pk }}"
+                               class="parent-tag"
+                               data-parent="{{ group.parent.pk }}">
+                        <label for="parent-{{ product.pk }}-{{ group.parent.pk }}" style="font-weight:600;margin:0;cursor:pointer;">
+                            {{ group.parent.naziv }}
+                        </label>
+                        {% if group.children %}<span style="color:#999;font-size:12px;">({{ group.children|length }} podtagova)</span>{% endif %}
+                    </div>
+                    {% if group.children %}
+                    <div class="tag-children">
+                        {% for child in group.children %}
+                        <div class="tag-child">
+                            <input type="checkbox"
+                                   id="child-{{ product.pk }}-{{ child.pk }}"
+                                   name="tagovi_{{ product.pk }}"
+                                   value="{{ child.pk }}"
+                                   class="child-tag"
+                                   data-parent="{{ group.parent.pk }}">
+                            <label for="child-{{ product.pk }}-{{ child.pk }}" style="margin:0;cursor:pointer;">{{ child.naziv }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        {% endfor %}
 
-        {% if flat_tags %}
-        <div class="flat-tags">
-            <strong style="display:block; margin-bottom:8px;">Ostali tagovi (bez glavnog):</strong>
-            {% for tag in flat_tags %}
-            <div class="tag-child" style="margin-bottom:4px;">
-                <input type="checkbox" name="tagovi" value="{{ tag.pk }}" id="flat-{{ tag.pk }}">
-                <label for="flat-{{ tag.pk }}" style="margin:0;">{{ tag.naziv }}</label>
+                {% if flat_tags %}
+                <div class="flat-tags">
+                    <strong style="display:block;margin-bottom:8px;">Ostali tagovi (bez glavnog):</strong>
+                    {% for tag in flat_tags %}
+                    <div class="tag-child" style="margin-bottom:4px;">
+                        <input type="checkbox" name="tagovi_{{ product.pk }}" value="{{ tag.pk }}" id="flat-{{ product.pk }}-{{ tag.pk }}">
+                        <label for="flat-{{ product.pk }}-{{ tag.pk }}" style="margin:0;">{{ tag.naziv }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
-            {% endfor %}
-        </div>
-        {% endif %}
+        </details>
+        {% endfor %}
 
         <div class="bulk-assign-actions">
             <input type="submit" name="apply" value="{{ submit_label }}" class="default">
@@ -163,34 +186,29 @@
 
 <script>
 (function() {
-    // When parent checkbox is clicked, check/uncheck all its children
-    document.querySelectorAll('.parent-tag').forEach(function(parentCb) {
-        var parentPk = parentCb.dataset.parent;
-        var children = document.querySelectorAll('.child-tag[data-parent="' + parentPk + '"]');
+    document.querySelectorAll('[data-product-tag-block]').forEach(function(block) {
+        block.querySelectorAll('.parent-tag').forEach(function(parentCb) {
+            var parentPk = parentCb.dataset.parent;
+            var children = block.querySelectorAll('.child-tag[data-parent="' + parentPk + '"]');
 
-        parentCb.addEventListener('change', function() {
-            var checked = this.checked;
-            children.forEach(function(child) {
-                child.checked = checked;
-            });
-        });
-
-        // Also, if all children checked, check parent (and vice versa)
-        children.forEach(function(child) {
-            child.addEventListener('change', function() {
-                var allChecked = true;
-                var anyChecked = false;
-                children.forEach(function(c) {
-                    if (c.checked) anyChecked = true;
-                    if (!c.checked) allChecked = false;
+            parentCb.addEventListener('change', function() {
+                var checked = this.checked;
+                children.forEach(function(child) {
+                    child.checked = checked;
                 });
-                parentCb.checked = allChecked;
-                // Optional: if some checked, maybe leave parent unchecked or half, but for simplicity full only if all
+            });
+
+            children.forEach(function(child) {
+                child.addEventListener('change', function() {
+                    var allChecked = true;
+                    children.forEach(function(c) {
+                        if (!c.checked) allChecked = false;
+                    });
+                    parentCb.checked = allChecked;
+                });
             });
         });
     });
-
-    // Bonus: clicking on the label area works naturally
 })();
 </script>
 {% endblock %}

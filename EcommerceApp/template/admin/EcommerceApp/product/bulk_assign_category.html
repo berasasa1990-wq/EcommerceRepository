@@ -4,32 +4,81 @@
 {{ block.super }}
 <style>
     .bulk-assign-form {
-        max-width: 720px;
+        max-width: 960px;
         margin-top: 20px;
     }
-    .bulk-assign-form label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 6px;
-    }
-    .bulk-assign-form select {
+    .bulk-per-product-table {
         width: 100%;
-        max-width: 480px;
-        padding: 8px 10px;
-    }
-    .bulk-assign-list {
-        margin: 20px 0;
-        padding: 14px 16px;
-        background: #f8f8f8;
+        border-collapse: collapse;
+        margin: 16px 0;
+        background: #fff;
         border: 1px solid #e5e5e5;
         border-radius: 6px;
-        max-width: 720px;
+        overflow: hidden;
     }
-    .bulk-assign-list ul {
-        margin: 8px 0 0;
-        padding-left: 18px;
-        max-height: 240px;
-        overflow-y: auto;
+    .bulk-per-product-table th,
+    .bulk-per-product-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #eee;
+        vertical-align: top;
+        text-align: left;
+    }
+    .bulk-per-product-table th {
+        background: #f5f5f5;
+        font-weight: 600;
+    }
+    .bulk-per-product-table tr:last-child td {
+        border-bottom: none;
+    }
+    .product-current-meta {
+        color: #666;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+    .cat-picker-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        max-width: 420px;
+    }
+    .cat-picker-row input[type="text"] {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    .cat-picker-row input[type="text"]:focus {
+        border-color: #417690;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
+    }
+    .cat-results .cat-result {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        border: 1px solid #ddd;
+        margin-top: 4px;
+        background: #fff;
+        border-radius: 3px;
+    }
+    .cat-results .cat-result:hover {
+        background: #f9f9f9;
+    }
+    .cat-results .cat-result button {
+        padding: 3px 8px;
+        font-size: 12px;
+    }
+    .cat-chosen {
+        margin-top: 6px;
+        padding: 6px 8px;
+        background: #e8f5e9;
+        border: 1px solid #4caf50;
+        border-radius: 3px;
+        font-size: 13px;
+        max-width: 420px;
     }
     .bulk-assign-actions {
         margin-top: 20px;
@@ -37,35 +86,11 @@
         gap: 12px;
         align-items: center;
     }
-    #bulk-category-search {
-        font-size: 14px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-    #bulk-category-search:focus {
-        border-color: #417690;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
-    }
-    #bulk-category-results .cat-result {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 6px 8px;
-        border: 1px solid #ddd;
-        margin-bottom: 4px;
-        background: #fff;
-        border-radius: 3px;
-    }
-    #bulk-category-results .cat-result:hover {
-        background: #f9f9f9;
-    }
-    #bulk-category-results button {
-        padding: 3px 8px;
-        font-size: 12px;
-    }
-    select[name="kategorija"] {
-        display: none;
+    .help-intro {
+        color: #666;
+        font-size: 13px;
+        margin: 8px 0 0;
+        max-width: 960px;
     }
 </style>
 {% endblock %}
@@ -82,15 +107,9 @@
 {% block content %}
 <div id="content-main">
     <h1>Dodjela kategorije</h1>
-
-    <div class="bulk-assign-list">
-        <strong>Odabrano artikala: {{ queryset|length }}</strong>
-        <ul>
-            {% for product in queryset %}
-            <li>{{ product.naziv }}{% if product.kategorija %} <span style="color:#666;">(trenutno: {{ product.kategorija }})</span>{% endif %}</li>
-            {% endfor %}
-        </ul>
-    </div>
+    <p class="help-intro">
+        Za svaki artikal posebno pretražite i odaberite kategoriju. Kliknite <strong>Primjeni</strong> da svakom artiklu dodijelite onu kategoriju koju ste mu odabrali. Artikli bez odabrane kategorije se preskaču.
+    </p>
 
     <form method="post" class="bulk-assign-form">
         {% csrf_token %}
@@ -99,136 +118,129 @@
         <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
         {% endfor %}
 
-        <div class="form-row">
-            <label for="{{ form.kategorija.id_for_label }}">{{ form.kategorija.label }}</label>
-            <div style="display: flex; gap: 8px; align-items: center; max-width: 480px;">
-                <input type="text" id="bulk-category-search" placeholder="Pretraži kategorije (npr. štap, mašinica...)" style="flex: 1; padding: 6px 8px; box-sizing: border-box;">
-                <button type="button" id="bulk-category-nadji" style="padding: 6px 12px;">Nadji</button>
-            </div>
-            <div id="bulk-category-results" style="margin-top: 8px; max-width: 480px;"></div>
-            {{ form.kategorija }}
-            {% if form.kategorija.errors %}
-            <p class="errornote">{{ form.kategorija.errors|join:', ' }}</p>
-            {% endif %}
-            <p class="help" style="margin-top:4px; color:#666; font-size:12px;">Upiši naziv kategorije i klikni "Nadji". Zatim klikni "Izaberi" pored rezultata da je odabereš za dodjelu.</p>
-        </div>
+        <table class="bulk-per-product-table">
+            <thead>
+                <tr>
+                    <th style="width:42%;">Artikal</th>
+                    <th>Kategorija</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in queryset %}
+                <tr>
+                    <td>
+                        <strong>{{ product.naziv }}</strong>
+                        {% if product.kategorija %}
+                        <div class="product-current-meta">Trenutno: {{ product.kategorija }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="hidden" name="kategorija_{{ product.pk }}" value="" class="cat-hidden-input" data-product-id="{{ product.pk }}">
+                        <div class="cat-picker" data-product-id="{{ product.pk }}">
+                            <div class="cat-picker-row">
+                                <input type="text" class="cat-search" placeholder="Pretraži kategorije (npr. štap, mašinica...)">
+                                <button type="button" class="cat-search-btn">Nadji</button>
+                            </div>
+                            <div class="cat-results"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
         <div class="bulk-assign-actions">
-            <input type="submit" name="apply" value="Dodijeli kategoriju" class="default">
+            <input type="submit" name="apply" value="Primjeni" class="default">
             <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
         </div>
     </form>
 </div>
 
+{{ categories|json_script:"bulk-categories-data" }}
+
 <script>
 (function() {
-    var searchInput = document.getElementById('bulk-category-search');
-    var nadjiBtn = document.getElementById('bulk-category-nadji');
-    var resultsDiv = document.getElementById('bulk-category-results');
-    var select = document.querySelector('select[name="kategorija"]');
-    if (!searchInput || !nadjiBtn || !resultsDiv || !select) return;
+    var dataEl = document.getElementById('bulk-categories-data');
+    if (!dataEl) return;
+    var categories = JSON.parse(dataEl.textContent);
 
-    // Store original options (all categories with hierarchy)
-    var originalCategories = Array.prototype.map.call(select.options, function(opt) {
-        return {
-            value: opt.value,
-            text: opt.text
-        };
-    });
-
-    // Hide original select (we use search UI instead)
-    select.style.display = 'none';
-
-    function showResults(matches) {
+    function showChosen(picker, hiddenInput, label) {
+        var resultsDiv = picker.querySelector('.cat-results');
         resultsDiv.innerHTML = '';
-        if (matches.length === 0) {
-            var noRes = document.createElement('div');
-            noRes.style.color = '#666';
-            noRes.style.fontSize = '13px';
-            noRes.textContent = 'Nema rezultata za pretragu.';
-            resultsDiv.appendChild(noRes);
-            return;
-        }
-        matches.forEach(function(cat) {
-            var row = document.createElement('div');
-            row.className = 'cat-result';
-
-            var nameSpan = document.createElement('span');
-            nameSpan.textContent = cat.text;
-            nameSpan.style.flex = '1';
-
-            var chooseBtn = document.createElement('button');
-            chooseBtn.type = 'button';
-            chooseBtn.textContent = 'Izaberi';
-            chooseBtn.onclick = function() {
-                // Select this category in the form (hidden select)
-                select.value = cat.value;
-                // Show confirmation, clear results
-                resultsDiv.innerHTML = '';
-                var chosen = document.createElement('div');
-                chosen.style.padding = '6px 8px';
-                chosen.style.background = '#e8f5e9';
-                chosen.style.border = '1px solid #4caf50';
-                chosen.style.borderRadius = '3px';
-                chosen.style.fontSize = '13px';
-                chosen.innerHTML = 'Odabrana kategorija: <strong>' + cat.text + '</strong> <button type="button" style="margin-left:10px;padding:2px 6px;font-size:11px;">Promijeni</button>';
-                var changeBtn = chosen.querySelector('button');
-                changeBtn.onclick = function() {
-                    resultsDiv.innerHTML = '';
-                    searchInput.value = '';
-                    select.value = '';
-                    searchInput.focus();
-                };
-                resultsDiv.appendChild(chosen);
-            };
-
-            row.appendChild(nameSpan);
-            row.appendChild(chooseBtn);
-            resultsDiv.appendChild(row);
-        });
-    }
-
-    nadjiBtn.onclick = function() {
-        var term = (searchInput.value || '').toLowerCase().trim();
-        if (!term) {
+        var chosen = document.createElement('div');
+        chosen.className = 'cat-chosen';
+        chosen.innerHTML = 'Odabrano: <strong></strong> <button type="button" style="margin-left:10px;padding:2px 6px;font-size:11px;">Promijeni</button>';
+        chosen.querySelector('strong').textContent = label;
+        chosen.querySelector('button').onclick = function() {
+            hiddenInput.value = '';
             resultsDiv.innerHTML = '';
-            return;
-        }
-        var matches = originalCategories.filter(function(cat) {
-            return cat.text.toLowerCase().indexOf(term) !== -1;
-        });
-        showResults(matches);
-    };
-
-    // Enter key triggers Nadji (but no auto results on typing)
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            nadjiBtn.click();
-        }
-    });
-
-    // If form already has a selected value (e.g. from previous state), show it
-    if (select.value && select.value !== '') {
-        var currentOpt = originalCategories.find(function(c) { return c.value === select.value; });
-        if (currentOpt) {
-            var chosen = document.createElement('div');
-            chosen.style.padding = '6px 8px';
-            chosen.style.background = '#e8f5e9';
-            chosen.style.border = '1px solid #4caf50';
-            chosen.style.borderRadius = '3px';
-            chosen.style.fontSize = '13px';
-            chosen.innerHTML = 'Odabrana kategorija: <strong>' + currentOpt.text + '</strong> <button type="button" style="margin-left:10px;padding:2px 6px;font-size:11px;">Promijeni</button>';
-            var changeBtn = chosen.querySelector('button');
-            changeBtn.onclick = function() {
-                resultsDiv.innerHTML = '';
-                select.value = '';
-                searchInput.value = '';
-                searchInput.focus();
-            };
-            resultsDiv.appendChild(chosen);
-        }
+            var searchInput = picker.querySelector('.cat-search');
+            searchInput.value = '';
+            searchInput.focus();
+        };
+        resultsDiv.appendChild(chosen);
     }
+
+    document.querySelectorAll('.cat-picker').forEach(function(picker) {
+        var productId = picker.dataset.productId;
+        var hiddenInput = document.querySelector('.cat-hidden-input[data-product-id="' + productId + '"]');
+        var searchInput = picker.querySelector('.cat-search');
+        var searchBtn = picker.querySelector('.cat-search-btn');
+        var resultsDiv = picker.querySelector('.cat-results');
+        if (!hiddenInput || !searchInput || !searchBtn || !resultsDiv) return;
+
+        function showResults(matches) {
+            resultsDiv.innerHTML = '';
+            if (!matches.length) {
+                var noRes = document.createElement('div');
+                noRes.style.color = '#666';
+                noRes.style.fontSize = '13px';
+                noRes.style.marginTop = '6px';
+                noRes.textContent = 'Nema rezultata za pretragu.';
+                resultsDiv.appendChild(noRes);
+                return;
+            }
+            matches.forEach(function(cat) {
+                var row = document.createElement('div');
+                row.className = 'cat-result';
+
+                var nameSpan = document.createElement('span');
+                nameSpan.textContent = cat.label;
+                nameSpan.style.flex = '1';
+
+                var chooseBtn = document.createElement('button');
+                chooseBtn.type = 'button';
+                chooseBtn.textContent = 'Izaberi';
+                chooseBtn.onclick = function() {
+                    hiddenInput.value = String(cat.id);
+                    showChosen(picker, hiddenInput, cat.label);
+                };
+
+                row.appendChild(nameSpan);
+                row.appendChild(chooseBtn);
+                resultsDiv.appendChild(row);
+            });
+        }
+
+        searchBtn.onclick = function() {
+            var term = (searchInput.value || '').toLowerCase().trim();
+            if (!term) {
+                resultsDiv.innerHTML = '';
+                return;
+            }
+            var matches = categories.filter(function(cat) {
+                return cat.label.toLowerCase().indexOf(term) !== -1;
+            });
+            showResults(matches);
+        };
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchBtn.click();
+            }
+        });
+    });
 })();
 </script>
 {% endblock %}

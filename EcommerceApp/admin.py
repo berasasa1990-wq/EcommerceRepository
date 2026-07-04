@@ -11,8 +11,6 @@ from django.middleware.csrf import get_token
 from .forms import (
     BannerAdminForm,
     BulkAssignBrandForm,
-    BulkAssignCategoryForm,
-    BulkAssignTagsForm,
     MergeProductsForm,
     OdooImportForm,
     PopupAdminForm,
@@ -836,28 +834,80 @@ class ProductAdmin(admin.ModelAdmin):
         }
         return render(request, 'admin/EcommerceApp/product/odoo_import.html', context)
 
+    def _bulk_tag_groups(self):
+        root_tags = Tag.objects.filter(roditelj__isnull=True).order_by('naziv')
+        grouped_tags = []
+        all_covered_pks = set()
+        for parent in root_tags:
+            descendants = list(parent.get_all_descendants(include_self=False))
+            grouped_tags.append({
+                'parent': parent,
+                'children': descendants,
+            })
+            all_covered_pks.add(parent.pk)
+            for descendant in descendants:
+                all_covered_pks.add(descendant.pk)
+        flat_tags = list(Tag.objects.exclude(pk__in=all_covered_pks).order_by('naziv'))
+        return grouped_tags, flat_tags
+
     def bulk_assign_category(self, request, queryset):
+        queryset = queryset.select_related('kategorija')
+        categories = [
+            {'id': category.pk, 'label': str(category)}
+            for category in Category.objects.filter(aktivan=True).select_related(
+                'roditelj', 'roditelj__roditelj',
+            ).order_by('redoslijed', 'naziv')
+        ]
+
         if 'apply' in request.POST:
-            form = BulkAssignCategoryForm(request.POST)
-            if form.is_valid():
-                selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
-                products = Product.objects.filter(pk__in=selected_ids)
-                category = form.cleaned_data['kategorija']
-                count = products.update(kategorija=category)
+            selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
+            count = 0
+            skipped = 0
+            for pk_str in selected_ids:
+                try:
+                    pk = int(pk_str)
+                except (TypeError, ValueError):
+                    skipped += 1
+                    continue
+                category_id = (request.POST.get(f'kategorija_{pk}') or '').strip()
+                if not category_id:
+                    skipped += 1
+                    continue
+                try:
+                    category = Category.objects.get(pk=int(category_id), aktivan=True)
+                except (Category.DoesNotExist, TypeError, ValueError):
+                    skipped += 1
+                    continue
+                if Product.objects.filter(pk=pk).update(kategorija=category):
+                    count += 1
+                else:
+                    skipped += 1
+
+            if count:
                 self.message_user(
                     request,
-                    f'{count} artikal/a dodijeljeno kategoriji „{category}”.',
+                    f'Kategorija dodijeljena na {count} artikal/a.',
                     messages.SUCCESS,
                 )
-                return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
-        else:
-            form = BulkAssignCategoryForm()
+            if skipped:
+                self.message_user(
+                    request,
+                    f'{skipped} artikal/a preskočeno (nije odabrana kategorija).',
+                    messages.WARNING,
+                )
+            if not count and not skipped:
+                self.message_user(
+                    request,
+                    'Nije odabrana nijedna kategorija.',
+                    messages.ERROR,
+                )
+            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
             'title': 'Dodjela kategorije',
-            'form': form,
             'queryset': queryset,
+            'categories': categories,
             'opts': self.model._meta,
             'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
             'action_name': 'bulk_assign_category',
@@ -896,53 +946,69 @@ class ProductAdmin(admin.ModelAdmin):
     bulk_assign_brand.short_description = 'Dodijeli brend'
 
     def bulk_assign_tags(self, request, queryset):
-        form = BulkAssignTagsForm(request.POST or None)
-        if request.method == 'POST' and 'apply' in request.POST and form.is_valid():
+        queryset = queryset.prefetch_related('tagovi')
+        grouped_tags, flat_tags = self._bulk_tag_groups()
+
+        if request.method == 'POST' and 'apply' in request.POST:
             selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
-            products = Product.objects.filter(pk__in=selected_ids)
-            tags = form.cleaned_data['tagovi']
             count = 0
-            for product in products:
+            skipped = 0
+            for pk_str in selected_ids:
+                try:
+                    pk = int(pk_str)
+                except (TypeError, ValueError):
+                    skipped += 1
+                    continue
+                tag_ids = [
+                    int(tag_id)
+                    for tag_id in request.POST.getlist(f'tagovi_{pk}')
+                    if str(tag_id).isdigit()
+                ]
+                if not tag_ids:
+                    skipped += 1
+                    continue
+                try:
+                    product = Product.objects.get(pk=pk)
+                except Product.DoesNotExist:
+                    skipped += 1
+                    continue
+                tags = list(Tag.objects.filter(pk__in=tag_ids))
+                if not tags:
+                    skipped += 1
+                    continue
                 product.tagovi.add(*tags)
                 count += 1
-            tag_names = ', '.join(tag.naziv for tag in tags)
-            self.message_user(
-                request,
-                f'Tagovi ({tag_names}) dodani na {count} artikal/a.',
-                messages.SUCCESS,
-            )
+
+            if count:
+                self.message_user(
+                    request,
+                    f'Tagovi dodani na {count} artikal/a.',
+                    messages.SUCCESS,
+                )
+            if skipped:
+                self.message_user(
+                    request,
+                    f'{skipped} artikal/a preskočeno (nije odabran nijedan tag).',
+                    messages.WARNING,
+                )
+            if not count and not skipped:
+                self.message_user(
+                    request,
+                    'Nije odabran nijedan tag.',
+                    messages.ERROR,
+                )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
-
-        # Group tags hierarchically for easier bulk assignment (main tag + all descendants)
-        root_tags = Tag.objects.filter(roditelj__isnull=True).order_by('naziv')
-        grouped_tags = []
-        all_covered_pks = set()
-        for parent in root_tags:
-            descendants = list(parent.get_all_descendants(include_self=False))
-            grouped_tags.append({
-                'parent': parent,
-                'children': descendants,
-            })
-            all_covered_pks.add(parent.pk)
-            for d in descendants:
-                all_covered_pks.add(d.pk)
-
-        # Flat tags that are not part of any hierarchy
-        flat_tags = list(
-            Tag.objects.exclude(pk__in=all_covered_pks).order_by('naziv')
-        )
 
         context = {
             **self.admin_site.each_context(request),
             'title': 'Dodjela tagova',
-            'form': form,
             'grouped_tags': grouped_tags,
             'flat_tags': flat_tags,
             'queryset': queryset,
             'opts': self.model._meta,
             'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
             'action_name': 'bulk_assign_tags',
-            'submit_label': 'Dodaj tagove',
+            'submit_label': 'Primjeni tagove',
         }
         return render(request, 'admin/EcommerceApp/product/bulk_assign_tags.html', context)
 
