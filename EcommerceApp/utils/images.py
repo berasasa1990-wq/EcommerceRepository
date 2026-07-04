@@ -15,8 +15,8 @@ SITE_LOGO_SIZE = (640, 128)
 SITE_FAVICON_SIZE = (32, 32)
 PRODUCT_DETAIL_BADGE_MAX = 200
 PRODUCT_WHITE_THRESHOLD = 248
-PRODUCT_MAX_DIMENSION = 400
-PRODUCT_RESPONSIVE_WIDTHS = (120, 200, 320)
+PRODUCT_MAX_DIMENSION = 600
+PRODUCT_RESPONSIVE_WIDTHS = (120, 200, 320, 480)
 AVIF_SPEED = 6
 BANNER_AVIF_SPEED = 4
 MAX_VLOG_AVIF_BYTES = 18 * 1024
@@ -26,31 +26,33 @@ BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_HEIGHT = 560
 HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280)
+MAX_BANNER_UPLOAD_BYTES = 40 * 1024
 HERO_JPEG_VARIANT_MAX_BYTES = {
-    640: 40 * 1024,
-    960: 72 * 1024,
-    1280: 120 * 1024,
+    640: 28 * 1024,
+    960: 36 * 1024,
+    1280: MAX_BANNER_UPLOAD_BYTES,
 }
-MAX_GRID_BANNER_AVIF_BYTES = 22 * 1024
+MAX_GRID_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
 GRID_BANNER_MAX_DIMENSION = 360
 BANNER_GRID_RESPONSIVE_WIDTHS = (280,)
-MAX_HERO_BANNER_AVIF_BYTES = 220 * 1024
-MAX_FEATURED_BANNER_AVIF_BYTES = 200 * 1024
-MAX_SPOTLIGHT_BANNER_AVIF_BYTES = 200 * 1024
-MAX_DEFAULT_BANNER_AVIF_BYTES = 200 * 1024
+MAX_HERO_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
+MAX_FEATURED_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
+MAX_SPOTLIGHT_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
+MAX_DEFAULT_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
 FEATURED_BANNER_RESPONSIVE_WIDTHS = (400, 800, 1200)
 SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS = (400, 800, 1200)
 BANNER_AVIF_MAX_QUALITY = 82
 BANNER_AVIF_MIN_QUALITY = 68
 BANNER_AVIF_QUALITY_STEP = 2
-MAX_PRODUCT_AVIF_BYTES = 15 * 1024
+MAX_PRODUCT_AVIF_BYTES = 20 * 1024
 MAIN_SCALE_STEPS = (1.0, 0.85, 0.7, 0.55, 0.4, 0.3)
 FAST_VARIANT_QUALITIES = (68, 58, 48, 38, 28)
 PRODUCT_VARIANT_MAX_BYTES = {
-    120: 4 * 1024,
+    120: 5 * 1024,
     200: 8 * 1024,
     320: 12 * 1024,
-    400: MAX_PRODUCT_AVIF_BYTES,
+    480: 16 * 1024,
+    600: MAX_PRODUCT_AVIF_BYTES,
 }
 VLOG_VARIANT_MAX_BYTES = {
     200: 6 * 1024,
@@ -59,13 +61,13 @@ VLOG_VARIANT_MAX_BYTES = {
     360: MAX_VLOG_AVIF_BYTES,
 }
 BANNER_GRID_VARIANT_MAX_BYTES = {
-    280: 12 * 1024,
+    280: 24 * 1024,
     360: MAX_GRID_BANNER_AVIF_BYTES,
 }
 BANNER_WIDE_VARIANT_MAX_BYTES = {
-    400: 18 * 1024,
+    400: 20 * 1024,
     800: 32 * 1024,
-    1200: MAX_FEATURED_BANNER_AVIF_BYTES,
+    1200: MAX_BANNER_UPLOAD_BYTES,
 }
 
 BANNER_AVIF_SETTINGS = {
@@ -213,9 +215,20 @@ def _image_to_rgb(img):
 
 
 def _fit_product_dimensions(img, max_dimension=PRODUCT_MAX_DIMENSION):
-    if max(img.size) <= max_dimension:
-        return img
-    return ImageOps.contain(img, (max_dimension, max_dimension), method=Image.Resampling.LANCZOS)
+    rgb = _image_to_rgb(img)
+    fitted = ImageOps.contain(
+        rgb,
+        (max_dimension, max_dimension),
+        method=Image.Resampling.LANCZOS,
+    )
+    if fitted.size == (max_dimension, max_dimension):
+        return fitted
+    canvas = Image.new('RGB', (max_dimension, max_dimension), (255, 255, 255))
+    canvas.paste(
+        fitted,
+        ((max_dimension - fitted.width) // 2, (max_dimension - fitted.height) // 2),
+    )
+    return canvas
 
 
 def _fit_banner_dimensions(img, *, max_width, max_height=None, crop=False):
@@ -612,7 +625,7 @@ def image_responsive_meta(
     }
 
 
-def product_image_responsive_meta(image_field, *, default=(400, 400)):
+def product_image_responsive_meta(image_field, *, default=(600, 600)):
     return image_responsive_meta(
         image_field,
         widths=PRODUCT_RESPONSIVE_WIDTHS,
@@ -922,6 +935,7 @@ def process_banner_image(image_field, tip='hero'):
     jpeg_quality = 90 if tip == 'hero' else 88
     use_jpeg = tip == 'hero' or not _avif_supported()
     crop = settings.get('crop', False)
+    max_bytes = settings.get('max_bytes', MAX_BANNER_UPLOAD_BYTES)
     if use_jpeg:
         return _encode_banner_jpeg_fallback(
             source,
@@ -930,6 +944,7 @@ def process_banner_image(image_field, tip='hero'):
             max_height=settings.get('max_height'),
             crop=crop,
             quality=jpeg_quality,
+            max_bytes=max_bytes,
         )
 
     try:
@@ -946,6 +961,7 @@ def process_banner_image(image_field, tip='hero'):
             max_height=settings.get('max_height'),
             crop=crop,
             quality=jpeg_quality,
+            max_bytes=max_bytes,
         )
 
 
@@ -1181,7 +1197,7 @@ def reprocess_existing_banner_file(image_field, *, tip='hero'):
 
 
 def process_product_image(image_source, *, filename='image.jpg'):
-    """Artikal/varijacija: AVIF max 15KB + responsive 120/200/320w."""
+    """Artikal/varijacija: 600x600, AVIF max 20KB + responsive 120/200/320/480w."""
     raw, filename = _read_image_source(image_source, filename=filename)
     img = Image.open(BytesIO(raw))
     rgb = _image_to_rgb(img)
