@@ -83,7 +83,7 @@
                 {% if card.has_video %}
                 <video class="card-image card-image--grid banner-media-video" src="{{ card.video }}" autoplay muted loop playsinline preload="metadata"{% if card.image %} poster="{{ card.image }}"{% endif %} width="{{ card.image_width }}" height="{{ card.image_height }}" aria-label="{{ card.title|default:'Banner' }}"></video>
                 {% else %}
-                <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="(max-width: 768px) 50vw, 25vw"{% if forloop.first and not has_hero_slides %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% if forloop.first %} fetchpriority="low"{% endif %}{% endif %} decoding="async">
+                <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="(max-width: 768px) 50vw, 360px"{% if forloop.first and not has_hero_slides %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% if forloop.first %} fetchpriority="low"{% endif %}{% endif %} decoding="async">
                 {% endif %}
         {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
