@@ -570,6 +570,173 @@ class HomeVlog(models.Model):
         return self.naslov
 
 
+class Akcija(models.Model):
+    class Tip(models.TextChoices):
+        SLIKA = 'slika', 'Pop-up + akcija + slika'
+        TIMER = 'timer', 'Akcija + tajmer'
+        X_PLUS_1 = 'x_plus_1', 'X+1 prodaja (samo korpa)'
+        USLOV = 'uslov', 'Uslov prodaja'
+
+    naziv = models.CharField(
+        max_length=100,
+        verbose_name='Interni naziv',
+        help_text='Samo za prepoznavanje u adminu.',
+    )
+    tip = models.CharField(
+        max_length=12,
+        choices=Tip.choices,
+        default=Tip.SLIKA,
+        verbose_name='Tip akcije',
+    )
+    slika = models.ImageField(
+        upload_to='akcije/',
+        blank=True,
+        null=True,
+        verbose_name='Slika',
+        help_text='Obavezno za tip „Pop-up + akcija + slika”.',
+    )
+    artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='akcije',
+        verbose_name='Artikal',
+        help_text='Aktivan artikal sa sajta (tajmer, uslov, X+1).',
+    )
+    popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust (%)',
+    )
+    prag_korpe_km = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Uslov: iznos u korpi (KM)',
+        help_text='Minimalni iznos u korpi (bez ovog artikla) za uslovnu prodaju.',
+    )
+    deal_vrsta = models.CharField(
+        max_length=10,
+        choices=[
+            ('1+1', '1+1 (kupi 1, drugi snižen)'),
+            ('2+1', '2+1 (kupi 2, treći snižen)'),
+            ('3+1', '3+1 (kupi 3, četvrti snižen)'),
+        ],
+        blank=True,
+        null=True,
+        verbose_name='Vrsta X+1',
+    )
+    pocetak = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name='Početak akcije',
+    )
+    trajanje_sati = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        verbose_name='Trajanje akcije (sati)',
+    )
+    tekst_dugmeta = models.CharField(
+        max_length=50,
+        default='Saznaj više',
+        verbose_name='Tekst dugmeta',
+    )
+    link_dugmeta = models.CharField(
+        max_length=300,
+        blank=True,
+        verbose_name='Link dugmeta',
+        help_text='Prazno = stranica artikla ili /registracija/.',
+    )
+    boja_dugmeta = models.CharField(
+        max_length=7,
+        default='#5BB805',
+        verbose_name='Boja dugmeta',
+    )
+    boja_opisa = models.CharField(
+        max_length=7,
+        default='#5BB805',
+        verbose_name='Boja opisa',
+        help_text='Boja teksta opisa / tajmera / poruke.',
+    )
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+    za_prijavljene = models.BooleanField(
+        default=False,
+        verbose_name='Prikaži prijavljenim korisnicima',
+    )
+    za_neprijavljene = models.BooleanField(
+        default=True,
+        verbose_name='Prikaži neprijavljenim korisnicima',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    ponovo_poslije_dana = models.PositiveSmallIntegerField(
+        default=7,
+        verbose_name='Ponovo prikaži poslije (dana)',
+        help_text='Koliko dana ne prikazivati pop-up nakon zatvaranja.',
+    )
+    popup_delay_seconds = models.PositiveSmallIntegerField(
+        default=5,
+        verbose_name='Prikaži pop-up nakon (sekundi)',
+        help_text='0 = odmah. Ne vrijedi za X+1 (samo korpa).',
+    )
+
+    class Meta:
+        verbose_name = 'Akcija'
+        verbose_name_plural = 'Akcije'
+        ordering = ['redoslijed', '-id']
+
+    @property
+    def zavrsava(self):
+        if not self.pocetak or not self.trajanje_sati:
+            return None
+        from datetime import timedelta
+
+        pocetak = self.pocetak
+        if timezone.is_naive(pocetak):
+            pocetak = timezone.make_aware(pocetak, timezone.get_current_timezone())
+        return pocetak + timedelta(hours=self.trajanje_sati)
+
+    def jos_traje(self):
+        if self.tip == self.Tip.X_PLUS_1:
+            return self.aktivan
+        kraj = self.zavrsava
+        if not kraj:
+            return False
+        return timezone.now() < kraj
+
+    def je_popup(self):
+        return self.tip in {self.Tip.SLIKA, self.Tip.TIMER, self.Tip.USLOV}
+
+    def prikazi_korisniku(self, user):
+        if not self.aktivan or not self.jos_traje():
+            return False
+        if self.tip == self.Tip.X_PLUS_1:
+            return False
+        if self.tip == self.Tip.SLIKA and not self.slika:
+            return False
+        if self.tip in {self.Tip.TIMER, self.Tip.USLOV} and not self.artikal_id:
+            return False
+        if user.is_authenticated:
+            return self.za_prijavljene
+        return self.za_neprijavljene
+
+    def get_link_href(self):
+        if self.artikal_id and self.tip in {self.Tip.TIMER, self.Tip.USLOV}:
+            return self.artikal.get_absolute_url()
+        if self.link_dugmeta:
+            if self.link_dugmeta.startswith(('http://', 'https://', '/')):
+                return self.link_dugmeta
+            return f'/{self.link_dugmeta.strip("/")}/'
+        return reverse('register')
+
+    def __str__(self):
+        status = 'aktivan' if self.aktivan else 'neaktivan'
+        return f'{self.naziv} ({self.get_tip_display()}, {status})'
+
+
 class Popup(models.Model):
     class Tip(models.TextChoices):
         SLIKA = 'slika', 'Slika + dugme'

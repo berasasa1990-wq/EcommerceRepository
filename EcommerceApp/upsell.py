@@ -159,6 +159,17 @@ def get_quantity_deal(product):
     """Vrati aktivni X+1 deal za dati artikal, ako postoji."""
     if not product:
         return None
+    from .models import Akcija
+
+    akcija = Akcija.objects.filter(
+        aktivan=True,
+        tip=Akcija.Tip.X_PLUS_1,
+        artikal=product,
+        deal_vrsta__isnull=False,
+        popust_postotak__isnull=False,
+    ).order_by('redoslijed', '-id').first()
+    if akcija:
+        return akcija
     return UpsellOffer.objects.filter(
         aktivan=True,
         deal_artikal=product,
@@ -167,31 +178,77 @@ def get_quantity_deal(product):
     ).first()
 
 
+def _deal_vrsta_value(deal):
+    if hasattr(deal, 'deal_vrsta'):
+        return deal.deal_vrsta
+    return None
+
+
+def _deal_popust_value(deal):
+    if hasattr(deal, 'popust_postotak') and deal.popust_postotak is not None:
+        return deal.popust_postotak
+    return getattr(deal, 'deal_popust', None)
+
+
 def parse_deal_vrsta(deal):
     """Vrati (buy, get) iz '2+1' itd."""
-    if not deal or not deal.deal_vrsta:
+    vrsta = _deal_vrsta_value(deal)
+    if not deal or not vrsta:
         return None, None
     try:
-        buy, get = [int(x) for x in deal.deal_vrsta.split('+')]
+        buy, get = [int(x) for x in vrsta.split('+')]
         return buy, get
     except Exception:
         return None, None
 
 
-def get_deal_message(deal):
-    """Vrati tekst poruke za prikaz ispod količine (crveno)."""
-    if not deal or not deal.deal_vrsta or deal.deal_popust is None:
+def _format_deal_pct(popust):
+    if popust is None:
+        return None
+    return int(popust) if popust == int(popust) else popust
+
+
+def get_deal_cart_nudge(deal, quantity):
+    """Crvena poruka u korpi ispod cijene — potakni još jednu količinu."""
+    popust = _deal_popust_value(deal)
+    if not deal or not _deal_vrsta_value(deal) or popust is None:
         return None
     buy, get = parse_deal_vrsta(deal)
     if not buy or not get:
         return None
 
-    pct = int(deal.deal_popust) if deal.deal_popust == int(deal.deal_popust) else deal.deal_popust
+    group = buy + get
+    remainder = quantity % group
+    if remainder == 0:
+        return None
+
+    pct = _format_deal_pct(popust)
+    until_discount = group - remainder
+    if until_discount == 1:
+        if pct >= 100:
+            return 'Poručite još jedan — sljedeći artikal je GRATIS.'
+        return f'Poručite još jedan sa popustom od {pct}%.'
+    if until_discount > 1:
+        if pct >= 100:
+            return f'Poručite još {until_discount} da ostvarite GRATIS artikal.'
+        return f'Poručite još {until_discount} da ostvarite popust od {pct}%.'
+    return None
+
+
+def get_deal_message(deal):
+    """Vrati tekst poruke za prikaz ispod količine (crveno)."""
+    popust = _deal_popust_value(deal)
+    if not deal or not _deal_vrsta_value(deal) or popust is None:
+        return None
+    buy, get = parse_deal_vrsta(deal)
+    if not buy or not get:
+        return None
+
+    pct = _format_deal_pct(popust)
 
     if pct >= 100:
         return f"Ako poručite {buy} ova artikla {buy + get}-ći vam je GRATIS."
-    else:
-        return f"Ako poručite {buy} ova artikla {buy + get}-ći vam snižen za {pct}%."
+    return f"Ako poručite {buy} ova artikla {buy + get}-ći vam snižen za {pct}%."
 
 
 def calculate_deal_adjusted_total(base_unit_price, quantity, deal):
@@ -199,7 +256,8 @@ def calculate_deal_adjusted_total(base_unit_price, quantity, deal):
     Vrati (total_sa_dealom, original_total)
     Primjenjuje popust na 'get' stavke u grupama.
     """
-    if not deal or not deal.deal_vrsta or deal.deal_popust is None or quantity <= 0:
+    popust = _deal_popust_value(deal)
+    if not deal or not _deal_vrsta_value(deal) or popust is None or quantity <= 0:
         total = (base_unit_price * quantity).quantize(Decimal('0.01'))
         return total, total
 
@@ -208,7 +266,7 @@ def calculate_deal_adjusted_total(base_unit_price, quantity, deal):
         total = (base_unit_price * quantity).quantize(Decimal('0.01'))
         return total, total
 
-    discount_rate = (Decimal('100') - Decimal(str(deal.deal_popust))) / Decimal('100')
+    discount_rate = (Decimal('100') - Decimal(str(popust))) / Decimal('100')
     if discount_rate < 0:
         discount_rate = Decimal('0')
 
@@ -240,16 +298,18 @@ def get_deal_info_for_cart_item(item, product):
     qty = int(item.get('quantity', 0))
 
     deal_total, original_total = calculate_deal_adjusted_total(base_price, qty, deal)
-    message = get_deal_message(deal)
+    nudge = get_deal_cart_nudge(deal, qty)
+    message = nudge or get_deal_message(deal)
 
     has_deal = deal_total < original_total
 
     return {
         'message': message,
+        'nudge': nudge,
         'deal_total': deal_total,
         'original_total': original_total,
         'has_discount': has_deal,
-        'pct': deal.deal_popust,
+        'pct': _deal_popust_value(deal),
     }
 
 def get_deal_promo_data(product):
@@ -257,7 +317,8 @@ def get_deal_promo_data(product):
     if not product:
         return None
     deal = get_quantity_deal(product)
-    if not deal or not deal.deal_vrsta or deal.deal_popust is None:
+    popust = _deal_popust_value(deal)
+    if not deal or not _deal_vrsta_value(deal) or popust is None:
         return None
 
     buy, get = parse_deal_vrsta(deal)
@@ -272,7 +333,7 @@ def get_deal_promo_data(product):
     regular_total = (base_price * promote_qty).quantize(Decimal('0.01'))
     deal_total, _ = calculate_deal_adjusted_total(base_price, promote_qty, deal)
 
-    pct = deal.deal_popust
+    pct = popust
     is_free = pct >= 100
 
     # Format with comma for decimal as in region

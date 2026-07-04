@@ -157,25 +157,25 @@ class Cart:
                 item['deal_info'] = deal_info
             else:
                 item['ukupno_stavka'] = item['cijena_decimal'] * item['quantity']
-                item['deal_info'] = None
+                item['deal_info'] = deal_info if deal_info and deal_info.get('message') else None
 
-            # AKCIJA popup: show promo text for the article, and apply % discount ONLY to ONE unit if cart base total >= threshold
+            # Uslov prodaja: popust na jednu jedinicu kad ostatak korpe dostigne prag
             try:
-                from .models import Popup
-                popup = Popup.objects.filter(
-                    tip=Popup.Tip.AKCIJA,
+                from .models import Akcija
+                uslov = Akcija.objects.filter(
+                    tip=Akcija.Tip.USLOV,
                     aktivan=True,
-                    akcija_artikal_id=item['product_id'],
-                    akcija_popust_postotak__isnull=False,
-                    akcija_prag_iznos__isnull=False,
-                ).first()
-                if popup and popup.akcija_jos_traje():
-                    pct = popup.akcija_popust_postotak
-                    threshold = popup.akcija_prag_iznos
+                    artikal_id=item['product_id'],
+                    popust_postotak__isnull=False,
+                    prag_korpe_km__isnull=False,
+                ).order_by('redoslijed', '-id').first()
+                if uslov and uslov.jos_traje():
+                    pct = uslov.popust_postotak
+                    threshold = uslov.prag_korpe_km
                     item['akcija_popup_discount'] = {
                         'percent': float(pct),
                         'threshold': float(threshold),
-                        'popup_id': popup.id,
+                        'akcija_id': uslov.id,
                     }
                     # Threshold check for AKCIJA popup discount (only 1 unit ever discounted):
                     # - If other items in cart: other_total (cart without this article) must >= threshold.

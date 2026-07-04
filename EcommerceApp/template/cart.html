@@ -33,9 +33,12 @@
                         <h3 class="cart-item-title">
                             {% include 'partials/cart_item_name.html' with item=item %}
                         </h3>
+                        {% if item.deal_info and item.deal_info.message %}
+                        <div class="cart-item-deal-promo">{{ item.deal_info.message }}</div>
+                        {% endif %}
                         {% if item.akcija_popup_discount %}
                         <div class="cart-item-akcija-promo">
-                            <strong>{{ item.akcija_popup_discount.percent|floatformat:0 }}% popusta</strong> na ovaj artikal ako je ukupno u korpi preko <strong>{{ item.akcija_popup_discount.threshold|floatformat:2 }} KM</strong>
+                            <strong>{{ item.akcija_popup_discount.percent|floatformat:0 }}% popusta</strong> na ovaj artikal kad ostatak korpe dostigne <strong>{{ item.akcija_popup_discount.threshold|floatformat:2 }} KM</strong> (bez ovog artikla)
                         </div>
                         {% endif %}
                         {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}

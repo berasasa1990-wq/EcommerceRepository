@@ -1,47 +1,70 @@
-{% if active_popup %}
+{% if active_akcija %}
 <div class="site-popup-overlay" id="sitePopupOverlay" hidden
-     data-popup-id="{{ active_popup.id }}"
-     data-popup-delay="{{ active_popup.popup_delay_seconds|default:5 }}"
-     {% if active_popup.tip == 'akcija' and active_popup.akcija_zavrsava %}data-countdown-end="{{ active_popup.akcija_zavrsava|date:'c' }}"{% endif %}>
-    <div class="site-popup{% if active_popup.tip == 'akcija' %} site-popup--akcija{% endif %}"
+     data-popup-id="{{ active_akcija.id }}"
+     data-popup-delay="{{ active_akcija.popup_delay_seconds|default:5 }}"
+     {% if active_akcija.zavrsava %}data-countdown-end="{{ active_akcija.zavrsava|date:'c' }}"{% endif %}>
+    <div class="site-popup{% if active_akcija.tip != 'slika' %} site-popup--akcija{% endif %}{% if active_akcija.tip == 'uslov' %} site-popup--uslov{% endif %}"
          role="dialog"
          aria-modal="true"
          aria-labelledby="popup-title">
 
-        <h2 id="popup-title" class="visually-hidden">
-            {{ active_popup.naziv }}
-        </h2>
+        <h2 id="popup-title" class="visually-hidden">{{ active_akcija.naziv }}</h2>
 
-        <button type="button"
-                class="site-popup-close"
-                id="sitePopupClose"
-                aria-label="Zatvori popup">
+        <button type="button" class="site-popup-close" id="sitePopupClose" aria-label="Zatvori popup">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
         </button>
 
-        {% if active_popup.tip == 'akcija' and active_popup.akcija_artikal %}
+        {% if active_akcija.tip == 'slika' and active_akcija.slika %}
+        <div class="site-popup-media site-popup-media--akcija">
+            <img src=""
+                 data-src="{{ active_akcija.slika.url }}"
+                 alt="{{ active_akcija.naziv }}"
+                 class="site-popup-image"
+                 decoding="async">
+            {% if active_akcija.popust_postotak %}
+            <span class="site-popup-discount-badge" style="background: {{ active_akcija.boja_opisa }};">
+                -{{ active_akcija.popust_postotak|floatformat:0 }}%
+            </span>
+            {% endif %}
+        </div>
+        {% if active_akcija.zavrsava %}
+        <p class="site-popup-akcija-label" style="color: {{ active_akcija.boja_opisa }};">Akcija ističe za</p>
+        <div class="site-popup-countdown" id="sitePopupCountdown" aria-live="polite">--:--:--</div>
+        {% endif %}
+        <div class="site-popup-actions">
+            <a href="{{ active_akcija.get_link_href }}"
+               class="btn btn-primary site-popup-cta"
+               style="--popup-btn-bg: {{ active_akcija.boja_dugmeta }};">
+                {{ active_akcija.tekst_dugmeta }}
+            </a>
+        </div>
+
+        {% elif active_akcija.artikal %}
         <div class="site-popup-akcija">
-            <p class="site-popup-akcija-label" style="color: {{ active_popup.boja_akcija_istice }};">Akcija ističe za</p>
+            <p class="site-popup-akcija-label" style="color: {{ active_akcija.boja_opisa }};">Akcija ističe za</p>
             <div class="site-popup-countdown" id="sitePopupCountdown" aria-live="polite">--:--:--</div>
-            {% if active_popup.akcija_popust_postotak and active_popup.akcija_prag_iznos %}
-            <div class="site-popup-akcija-promo">
-                <strong>{{ active_popup.akcija_popust_postotak|floatformat:0 }}% popusta</strong><br>
-                na ovaj artikal ako je ukupno u korpi<br>
-                preko <strong>{{ active_popup.akcija_prag_iznos }} KM</strong>
+
+            {% if active_akcija.tip == 'timer' and active_akcija.popust_postotak %}
+            <div class="site-popup-akcija-promo" style="color: {{ active_akcija.boja_opisa }};">
+                <strong>{{ active_akcija.popust_postotak|floatformat:0 }}% popusta</strong> na odabrani artikal
+            </div>
+            {% elif active_akcija.tip == 'uslov' and active_akcija.popust_postotak and active_akcija.prag_korpe_km %}
+            <div class="site-popup-akcija-promo" style="color: {{ active_akcija.boja_opisa }};">
+                <strong>{{ active_akcija.popust_postotak|floatformat:0 }}% popusta</strong> na ovaj artikal<br>
+                ako u korpi poručite još za <strong>{{ active_akcija.prag_korpe_km }} KM</strong>
+                (bez ovog artikla)
             </div>
             {% endif %}
-            <a href="{{ active_popup.akcija_artikal.get_absolute_url }}" class="site-popup-product">
+
+            <a href="{{ active_akcija.artikal.get_absolute_url }}" class="site-popup-product">
                 <span class="site-popup-product-image">
-                    {% if active_popup.akcija_artikal.prikazna_slika %}
-                    <img src="{{ active_popup.akcija_artikal.prikazna_slika.url }}"
-                         alt="{{ active_popup.akcija_artikal.naziv }}"
-                         width="120"
-                         height="120"
-                         loading="lazy"
-                         decoding="async">
+                    {% if active_akcija.artikal.prikazna_slika %}
+                    <img src="{{ active_akcija.artikal.prikazna_slika.url }}"
+                         alt="{{ active_akcija.artikal.naziv }}"
+                         width="120" height="120" loading="lazy" decoding="async">
                     {% else %}
                     <span class="site-popup-product-placeholder" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -53,40 +76,24 @@
                     {% endif %}
                 </span>
                 <span class="site-popup-product-info">
-                    <span class="site-popup-product-name">{{ active_popup.akcija_artikal.naziv }}</span>
+                    <span class="site-popup-product-name">{{ active_akcija.artikal.naziv }}</span>
                     <span class="site-popup-product-price product-price">
-                        {% include 'partials/product_price.html' with item=active_popup.akcija_artikal %}
+                        {% include 'partials/product_price.html' with item=active_akcija.artikal %}
                     </span>
                 </span>
             </a>
             <div class="site-popup-actions">
-                <form method="post" action="{% url 'add_to_cart' active_popup.akcija_artikal.slug %}" class="akcija-popup-add-form" style="width:100%;">
+                <form method="post" action="{% url 'add_to_cart' active_akcija.artikal.slug %}" class="akcija-popup-add-form" style="width:100%;">
                     {% csrf_token %}
                     <input type="hidden" name="quantity" value="1">
                     <input type="hidden" name="stay" value="1">
                     <button type="submit"
                             class="btn btn-primary site-popup-cta"
-                            style="--popup-btn-bg: {{ active_popup.boja_dugmeta }}; width:100%;">
-                        {{ active_popup.tekst_dugmeta|default:"Dodaj u korpu" }}
+                            style="--popup-btn-bg: {{ active_akcija.boja_dugmeta }}; width:100%;">
+                        {{ active_akcija.tekst_dugmeta|default:"Dodaj u korpu" }}
                     </button>
                 </form>
             </div>
-        </div>
-        {% else %}
-        <div class="site-popup-media">
-            <img src=""
-                 data-src="{{ active_popup.slika.url }}"
-                 alt="{{ active_popup.naziv }}"
-                 class="site-popup-image"
-                 decoding="async">
-        </div>
-
-        <div class="site-popup-actions">
-            <a href="{{ active_popup.get_link_href }}"
-               class="btn btn-primary site-popup-cta"
-               style="--popup-btn-bg: {{ active_popup.boja_dugmeta }};">
-                {{ active_popup.tekst_dugmeta }}
-            </a>
         </div>
         {% endif %}
 

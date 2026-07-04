@@ -9,6 +9,7 @@ from django.utils.html import format_html
 from django.middleware.csrf import get_token
 
 from .forms import (
+    AkcijaAdminForm,
     BannerAdminForm,
     BulkAssignBrandForm,
     MergeProductsForm,
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
+    Akcija,
     Banner,
     Brand,
     Category,
@@ -309,50 +311,43 @@ class BrandAdmin(admin.ModelAdmin):
         return 'Nema loga — prikazuje se naziv brenda'
 
 
-@admin.register(Popup)
-class PopupAdmin(admin.ModelAdmin):
-    form = PopupAdminForm
-    list_display = ('naziv', 'tip', 'aktivan', 'za_prijavljene', 'za_neprijavljene', 'redoslijed')
-    list_filter = ('tip', 'aktivan', 'za_prijavljene', 'za_neprijavljene')
+@admin.register(Akcija)
+class AkcijaAdmin(admin.ModelAdmin):
+    form = AkcijaAdminForm
+    list_display = ('naziv', 'tip', 'artikal', 'popust_postotak', 'aktivan', 'redoslijed')
+    list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
-    search_fields = ('naziv',)
-    autocomplete_fields = ('akcija_artikal',)
+    search_fields = ('naziv', 'artikal__naziv')
+    autocomplete_fields = ('artikal',)
+    readonly_fields = ('preview_slika',)
 
-    def get_fieldsets(self, request, obj=None):
-        sadrzaj_fields = [
-            'slika',
-            'akcija_pocetak', 'akcija_sati', 'akcija_artikal',
-            'akcija_popust_postotak', 'akcija_prag_iznos',
-            'tekst_dugmeta', 'link_dugmeta',
-            'boja_dugmeta', 'boja_akcija_istice',
-        ]
-        if obj:
-            sadrzaj_fields = ['slika', 'preview_slika', *sadrzaj_fields[1:]]
-        return [
-            (None, {
-                'fields': ('naziv', 'tip'),
-            }),
-            ('Sadržaj pop-upa', {
-                'fields': tuple(sadrzaj_fields),
-                'description': (
-                    'Slika + dugme: upload slike i link dugmeta. '
-                    'Akcijski pop-up: početak akcije, trajanje u satima i artikal ispod tajmera. '
-                    'Za uslovni popust: unesite % popusta na artikal i prag iznosa u korpi (npr. 50 KM) da bi se popust primijenio na taj artikal.'
-                ),
-            }),
-            ('Prikaz i ponašanje', {
-                'fields': (
-                    'aktivan', 'za_prijavljene', 'za_neprijavljene',
-                    'redoslijed', 'ponovo_poslije_dana', 'popup_delay_seconds',
-                ),
-                'classes': ('collapse',),
-            }),
-        ]
-
-    def get_readonly_fields(self, request, obj=None):
-        if obj:
-            return ['preview_slika']
-        return []
+    fieldsets = (
+        (None, {
+            'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
+            'description': (
+                '1) Pop-up + slika — upload slike, % sniženja, početak/trajanje, boje, kašnjenje u sekundama. '
+                '2) Akcija + tajmer — artikal, % sniženja, odbrojavanje. '
+                '3) X+1 — samo u korpi (1+1 / 2+1 / 3+1). '
+                '4) Uslov prodaja — artikal se snižava tek kad ostatak korpe dostigne prag (KM).'
+            ),
+        }),
+        ('Sadržaj', {
+            'fields': (
+                'slika', 'preview_slika',
+                'artikal', 'popust_postotak', 'prag_korpe_km', 'deal_vrsta',
+                'pocetak', 'trajanje_sati',
+                'tekst_dugmeta', 'link_dugmeta',
+                'boja_dugmeta', 'boja_opisa',
+            ),
+        }),
+        ('Pop-up ponašanje', {
+            'fields': (
+                'popup_delay_seconds', 'za_prijavljene', 'za_neprijavljene',
+                'ponovo_poslije_dana',
+            ),
+            'classes': ('collapse',),
+        }),
+    )
 
     @admin.display(description='Pregled slike')
     def preview_slika(self, obj):
@@ -386,14 +381,9 @@ class UpsellOfferAdmin(admin.ModelAdmin):
                 'Sva polja su opcionalna za klasične upsell ponude (popup/baner).'
             ),
         }),
-        ('X+1 Količinski deal (1+1 / 2+1 / 3+1)', {
+        ('X+1 deal (zastarjelo)', {
             'fields': ('deal_artikal', 'deal_vrsta', 'deal_popust'),
-            'description': (
-                'Odaberite artikal. Izaberite vrstu (npr. 2+1). Unesite % popusta na +1 artikal (100=GRATIS). '
-                'Kada kupac doda artikal u korpu, ispod količine će se pojaviti crvena poruka. '
-                'Ako dostigne količinu,  +1 artikal će biti snižen za taj %. '
-                'Npr. 2+1 + 50% → kada uzme 3, treći plaća 50% cijene.'
-            ),
+            'description': 'Koristite meni Akcije → X+1 prodaja umjesto ovog polja.',
             'classes': ('collapse',),
         }),
         ('Tekstovi i trigger (opcionalno)', {

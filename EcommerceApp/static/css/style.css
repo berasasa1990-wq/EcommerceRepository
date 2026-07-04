@@ -4540,6 +4540,18 @@ body.search-results-active main {
     font-weight: 600;
 }
 
+.cart-item-deal-promo {
+    font-size: 12px;
+    color: #fff;
+    background: #c62828;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-top: 6px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
 .cart-item-akcija-promo {
     font-size: 12px;
     color: #2e7d32;
@@ -7671,6 +7683,23 @@ body.search-results-active main {
     line-height: 0;
     overflow: hidden;
     border-radius: 10px 10px 0 0;
+}
+
+.site-popup-media--akcija {
+    position: relative;
+}
+
+.site-popup-discount-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.1rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .site-popup-image {

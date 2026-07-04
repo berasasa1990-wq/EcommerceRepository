@@ -6,7 +6,7 @@ from django.db.models import Prefetch
 
 from .cart import Cart
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
-from .models import Category, Popup, SiteSettings
+from .models import Akcija, Category, SiteSettings
 from .upsell import get_active_upsell_offer
 
 _CONTACT_MESSAGE = 'Zdravo, imam pitanje sa opremazaribolov.ba'
@@ -74,12 +74,12 @@ def nav_categories(request):
     )
 
     cart = Cart(request)
-    active_popup = None
-    for popup in Popup.objects.filter(aktivan=True).select_related(
-        'akcija_artikal', 'akcija_artikal__brend',
+    active_akcija = None
+    for akcija in Akcija.objects.filter(aktivan=True).select_related(
+        'artikal', 'artikal__brend',
     ).order_by('redoslijed', '-id'):
-        if popup.prikazi_korisniku(request.user):
-            active_popup = popup
+        if akcija.je_popup() and akcija.prikazi_korisniku(request.user):
+            active_akcija = akcija
             break
 
     site_settings = SiteSettings.load()
@@ -95,7 +95,8 @@ def nav_categories(request):
         'nav_categories': categories,
         'site_settings': site_settings,
         'cart_count': len(cart),
-        'active_popup': active_popup,
+        'active_akcija': active_akcija,
+        'active_popup': active_akcija,
         'active_upsell_offer': get_active_upsell_offer(request),
         'search_query': request.GET.get('q', '').strip(),
         'contact_phone': contact_phone,

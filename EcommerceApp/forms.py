@@ -2,7 +2,68 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
-from .models import Banner, Brand, Category, Popup, Product, Tag
+from .models import Akcija, Banner, Brand, Category, Popup, Product, Tag
+
+
+class AkcijaAdminForm(forms.ModelForm):
+    class Meta:
+        model = Akcija
+        fields = '__all__'
+
+    def clean_artikal(self):
+        artikal = self.cleaned_data.get('artikal')
+        tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
+        if tip in {Akcija.Tip.TIMER, Akcija.Tip.USLOV, Akcija.Tip.X_PLUS_1} and not artikal:
+            raise forms.ValidationError('Odaberite artikal.')
+        if artikal and not artikal.aktivan:
+            raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
+        return artikal
+
+    def clean(self):
+        cleaned = super().clean()
+        tip = cleaned.get('tip') or getattr(self.instance, 'tip', None)
+        if not tip:
+            return cleaned
+
+        if tip == Akcija.Tip.SLIKA:
+            has_slika = bool(cleaned.get('slika')) or bool(getattr(self.instance, 'slika', None))
+            if not has_slika:
+                self.add_error('slika', 'Obavezna slika za pop-up akciju.')
+            if cleaned.get('popust_postotak') is None:
+                self.add_error('popust_postotak', 'Unesite % sniženja.')
+            for field, label in (
+                ('pocetak', 'Početak akcije'),
+                ('trajanje_sati', 'Trajanje akcije'),
+            ):
+                if not cleaned.get(field):
+                    self.add_error(field, f'Obavezno ({label}).')
+
+        elif tip == Akcija.Tip.TIMER:
+            for field, label in (
+                ('pocetak', 'Početak akcije'),
+                ('trajanje_sati', 'Trajanje akcije'),
+                ('popust_postotak', 'Popust (%)'),
+            ):
+                if cleaned.get(field) in (None, ''):
+                    self.add_error(field, f'Obavezno ({label}).')
+
+        elif tip == Akcija.Tip.USLOV:
+            for field, label in (
+                ('pocetak', 'Početak akcije'),
+                ('trajanje_sati', 'Trajanje akcije'),
+                ('popust_postotak', 'Popust (%)'),
+                ('prag_korpe_km', 'Uslov iznosa u korpi'),
+            ):
+                if cleaned.get(field) in (None, ''):
+                    self.add_error(field, f'Obavezno ({label}).')
+
+        elif tip == Akcija.Tip.X_PLUS_1:
+            if not cleaned.get('deal_vrsta'):
+                self.add_error('deal_vrsta', 'Odaberite vrstu (1+1, 2+1 ili 3+1).')
+            if cleaned.get('popust_postotak') is None:
+                self.add_error('popust_postotak', 'Unesite % popusta na dodatni artikal.')
+
+        return cleaned
 
 
 class PopupAdminForm(forms.ModelForm):
