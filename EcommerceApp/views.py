@@ -1164,27 +1164,30 @@ def add_to_cart(request, slug):
 
     custom_price = None
     promo_bazna = None
-    timer_akcija = None
+    promo_akcija = None
     from .models import Akcija
 
     akcija_id = request.POST.get('akcija_id', '').strip()
     if akcija_id:
-        timer_akcija = Akcija.objects.filter(
+        promo_akcija = Akcija.objects.filter(
             pk=akcija_id,
             aktivan=True,
-            tip=Akcija.Tip.TIMER,
             artikal_id=product.pk,
+            tip__in=[Akcija.Tip.TIMER, Akcija.Tip.KORPA_NUDJENJE],
         ).first()
-    if not timer_akcija and stay_on_page:
-        timer_akcija = Akcija.objects.filter(
+    if not promo_akcija and stay_on_page:
+        promo_akcija = Akcija.objects.filter(
             aktivan=True,
             tip=Akcija.Tip.TIMER,
             artikal_id=product.pk,
             popust_postotak__isnull=False,
         ).order_by('redoslijed', '-id').first()
-    if timer_akcija and timer_akcija.jos_traje():
+    if promo_akcija and promo_akcija.jos_traje():
         prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
-        snizena = timer_akcija.timer_snizena_cijena(product, variation=variation)
+        if promo_akcija.tip == Akcija.Tip.TIMER:
+            snizena = promo_akcija.timer_snizena_cijena(product, variation=variation)
+        else:
+            snizena = promo_akcija.korpa_nudjenje_snizena_cijena(product, variation=variation)
         if snizena is not None:
             custom_price = snizena
             promo_bazna = prikazna
@@ -1199,9 +1202,12 @@ def add_to_cart(request, slug):
     cart.clear_coupon()
     label = variation.naziv if variation else product.naziv
     message = f'"{label}" je dodano u korpu.'
-    if custom_price is not None and timer_akcija.popust_postotak:
-        pct = int(timer_akcija.popust_postotak) if timer_akcija.popust_postotak == int(timer_akcija.popust_postotak) else timer_akcija.popust_postotak
-        message = f'"{label}" je dodano u korpu sa {pct}% popusta (tajmer akcija).'
+    if custom_price is not None and promo_akcija and promo_akcija.popust_postotak:
+        pct = int(promo_akcija.popust_postotak) if promo_akcija.popust_postotak == int(promo_akcija.popust_postotak) else promo_akcija.popust_postotak
+        if promo_akcija.tip == Akcija.Tip.KORPA_NUDJENJE:
+            message = f'"{label}" je dodano u korpu sa {pct}% popusta.'
+        else:
+            message = f'"{label}" je dodano u korpu sa {pct}% popusta (tajmer akcija).'
 
     add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
     content_id = (

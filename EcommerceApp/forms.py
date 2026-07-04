@@ -13,7 +13,12 @@ class AkcijaAdminForm(forms.ModelForm):
     def clean_artikal(self):
         artikal = self.cleaned_data.get('artikal')
         tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
-        if tip in {Akcija.Tip.TIMER, Akcija.Tip.USLOV, Akcija.Tip.X_PLUS_1} and not artikal:
+        if tip in {
+            Akcija.Tip.TIMER,
+            Akcija.Tip.USLOV,
+            Akcija.Tip.X_PLUS_1,
+            Akcija.Tip.KORPA_NUDJENJE,
+        } and not artikal:
             raise forms.ValidationError('Odaberite artikal.')
         if artikal and not artikal.aktivan:
             raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
@@ -54,6 +59,14 @@ class AkcijaAdminForm(forms.ModelForm):
                 self.add_error('deal_vrsta', 'Odaberite vrstu (1+1, 2+1 ili 3+1).')
             if cleaned.get('popust_postotak') is None:
                 self.add_error('popust_postotak', 'Unesite % popusta na dodatni artikal.')
+
+        elif tip == Akcija.Tip.KORPA_NUDJENJE:
+            for field, label in (
+                ('popust_postotak', 'Popust (%)'),
+                ('kategorija', 'Kategorija (trigger)'),
+            ):
+                if cleaned.get(field) in (None, ''):
+                    self.add_error(field, f'Obavezno ({label}).')
 
         return cleaned
 

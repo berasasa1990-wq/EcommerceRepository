@@ -576,6 +576,7 @@ class Akcija(models.Model):
         TIMER = 'timer', 'Akcija + tajmer'
         X_PLUS_1 = 'x_plus_1', 'X+1 prodaja (samo korpa)'
         USLOV = 'uslov', 'Uslov prodaja'
+        KORPA_NUDJENJE = 'korpa_nudjenje', 'Korpa nudjenje'
 
     naziv = models.CharField(
         max_length=100,
@@ -583,7 +584,7 @@ class Akcija(models.Model):
         help_text='Samo za prepoznavanje u adminu.',
     )
     tip = models.CharField(
-        max_length=12,
+        max_length=16,
         choices=Tip.choices,
         default=Tip.SLIKA,
         verbose_name='Tip akcije',
@@ -602,7 +603,16 @@ class Akcija(models.Model):
         null=True,
         related_name='akcije',
         verbose_name='Artikal',
-        help_text='Aktivan artikal sa sajta (tajmer, uslov, X+1).',
+        help_text='Aktivan artikal sa sajta (tajmer, uslov, X+1, korpa nudjenje).',
+    )
+    kategorija = models.ForeignKey(
+        'Category',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='akcije_korpa_nudjenje',
+        verbose_name='Kategorija (trigger)',
+        help_text='Za korpa nudjenje: artikli iz ove kategorije (i podkategorija) vide ponudu.',
     )
     popust_postotak = models.DecimalField(
         max_digits=5,
@@ -700,7 +710,7 @@ class Akcija(models.Model):
         return pocetak + timedelta(hours=self.trajanje_sati)
 
     def jos_traje(self):
-        if self.tip in {self.Tip.X_PLUS_1, self.Tip.SLIKA}:
+        if self.tip in {self.Tip.X_PLUS_1, self.Tip.SLIKA, self.Tip.KORPA_NUDJENJE}:
             return self.aktivan
         kraj = self.zavrsava
         if not kraj:
@@ -713,7 +723,7 @@ class Akcija(models.Model):
     def prikazi_korisniku(self, user):
         if not self.aktivan or not self.jos_traje():
             return False
-        if self.tip == self.Tip.X_PLUS_1:
+        if self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE}:
             return False
         if self.tip == self.Tip.SLIKA and not self.slika:
             return False
@@ -722,6 +732,19 @@ class Akcija(models.Model):
         if user.is_authenticated:
             return self.za_prijavljene
         return self.za_neprijavljene
+
+    def korpa_nudjenje_snizena_cijena(self, product, variation=None):
+        """Snižena cijena za Korpa nudjenje (% od trenutne prikazne cijene)."""
+        if (
+            self.tip != self.Tip.KORPA_NUDJENJE
+            or not self.popust_postotak
+            or not self.jos_traje()
+            or not self.artikal_id
+            or product.pk != self.artikal_id
+        ):
+            return None
+        bazna = variation.prikazna_cijena if variation else product.prikazna_cijena
+        return _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
 
     def timer_snizena_cijena(self, product, variation=None):
         """Snižena cijena za Akcija + tajmer (% od trenutne prikazne cijene)."""

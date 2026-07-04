@@ -131,11 +131,14 @@ class Cart:
         return bool(self.request.session.pop(self.COUPON_KEEP_KEY, False))
 
     def __iter__(self):
+        from .korpa_nudjenje import build_korpa_nudjenje_map
+
         # Compute base total once (using raw prices from cart) for threshold-based discounts
         base_total = sum(
             Decimal(it['cijena']) * it['quantity']
             for it in self.cart.values()
         )
+        korpa_nudjenje_map = build_korpa_nudjenje_map(self)
 
         for key, item in self.cart.items():
             item = item.copy()
@@ -198,6 +201,10 @@ class Cart:
                         item['discounted_unit_price'] = disc_price
             except Exception:
                 pass
+
+            nudjenje = korpa_nudjenje_map.get(item['product_id'])
+            if nudjenje:
+                item['korpa_nudjenje'] = nudjenje
 
             yield item
 
