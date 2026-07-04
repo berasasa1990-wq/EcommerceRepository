@@ -329,7 +329,8 @@ class AkcijaAdmin(admin.ModelAdmin):
                 '2) Akcija + tajmer — artikal, % sniženja, odbrojavanje. '
                 '3) X+1 — samo u korpi (1+1 / 2+1 / 3+1). '
                 '4) Uslov prodaja — prag se računa od cijele korpe minus 1 komad ovog artikla; popust na 1 komad. '
-                '5) Korpa nudjenje — artikal + % + kategorija; pored stavki iz kategorije u korpi.'
+                '5) Korpa nudjenje — artikal + % + kategorija; pored stavki iz kategorije u korpi. '
+                'Sve akcije rade dok je „Aktivan” uključen.'
             ),
         }),
         ('Sadržaj', {
@@ -348,7 +349,8 @@ class AkcijaAdmin(admin.ModelAdmin):
             ),
             'description': (
                 'Za prikaz pop-upa uključite obje opcije publike ako želite da svi vide akciju. '
-                'Bez početka/trajanja (tajmer, uslov, X+1) akcija vrijedi dok je uključena.'
+                'Akcija radi dok je „Aktivan” uključen. Početak/trajanje služi samo za odbrojavanje u pop-upu. '
+                '„Ponovo prikaži poslije (dana)” = pauza nakon zatvaranja pop-upa.'
             ),
             'classes': ('collapse',),
         }),

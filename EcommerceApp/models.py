@@ -710,22 +710,8 @@ class Akcija(models.Model):
         return pocetak + timedelta(hours=self.trajanje_sati)
 
     def jos_traje(self):
-        if not self.aktivan:
-            return False
-        if self.tip in {self.Tip.SLIKA, self.Tip.KORPA_NUDJENJE}:
-            return True
-        if not self.pocetak or not self.trajanje_sati:
-            return True
-        pocetak = self.pocetak
-        if timezone.is_naive(pocetak):
-            pocetak = timezone.make_aware(pocetak, timezone.get_current_timezone())
-        now = timezone.now()
-        if now < pocetak:
-            return False
-        kraj = self.zavrsava
-        if not kraj:
-            return False
-        return now < kraj
+        """Akcija vrijedi dok je uključena u adminu (Aktivan = da)."""
+        return self.aktivan
 
     def je_popup(self):
         return self.tip in {self.Tip.SLIKA, self.Tip.TIMER, self.Tip.USLOV}
