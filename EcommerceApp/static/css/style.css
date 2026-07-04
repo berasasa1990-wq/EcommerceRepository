@@ -617,12 +617,12 @@ img.home-vlog-card-image {
 }
 
 .mega-menu-group ul a {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--gray-600);
     line-height: 1.5;
     display: inline-block;
     padding: 2px 0;
-    transition: color var(--transition);
+    transition: color 0.22s ease, transform 0.22s ease;
 }
 
 .mega-menu-group ul a::after {
@@ -631,6 +631,7 @@ img.home-vlog-card-image {
 
 .mega-menu-group ul a:hover {
     color: var(--black);
+    transform: translateX(3px);
 }
 
 @media (min-width: 1025px) {
@@ -3936,15 +3937,17 @@ body.search-results-active main {
 }
 
 .category-subnav-child {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--gray-600);
     line-height: 1.5;
-    transition: color var(--transition);
+    display: inline-block;
+    transition: color 0.22s ease, transform 0.22s ease;
 }
 
 .category-subnav-child:hover {
     color: var(--black);
+    transform: translateX(3px);
 }
 
 .category-subnav-link {
@@ -4102,8 +4105,8 @@ body.search-results-active main {
 }
 
 .subcategory-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.07);
     border-color: #d4d4d4;
 }
 
@@ -4117,14 +4120,20 @@ body.search-results-active main {
 }
 
 .subcategory-name {
-    font-size: clamp(1.35rem, 4.2vw, 1.85rem);
+    font-size: clamp(1.1rem, 3.4vw, 1.5rem);
     font-weight: 600;
     line-height: 1.25;
     margin: 0;
     color: var(--black);
     text-align: center;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.6px;
+    transition: color 0.22s ease, transform 0.22s ease;
+}
+
+.subcategory-card:hover .subcategory-name {
+    color: #1a6b4a;
+    transform: translateY(-1px);
 }
 
 .subcategory-footer-action {
@@ -4179,8 +4188,8 @@ body.search-results-active main {
     }
 
     .subcategory-name {
-        font-size: 1.15rem;
-        letter-spacing: 0.5px;
+        font-size: 1.05rem;
+        letter-spacing: 0.4px;
     }
 }
 
@@ -5183,7 +5192,13 @@ body.search-results-active main {
 
     .nav-submenu-nested a {
         padding: 8px 0 8px 10px;
-        font-size: 14px;
+        font-size: 13px;
+        transition: color 0.22s ease, transform 0.22s ease;
+    }
+
+    .nav-submenu-nested a:hover {
+        color: var(--black);
+        transform: translateX(3px);
     }
 
     body.mobile-nav-open {
@@ -5508,7 +5523,7 @@ body.search-results-active main {
     }
 
     .category-subnav-child {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .home-products,
