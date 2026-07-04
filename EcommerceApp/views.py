@@ -566,7 +566,7 @@ def _banner_to_hero_slide(banner):
 
 
 def _banner_to_card(banner):
-    default_dims = (360, 360) if banner.tip == Banner.BannerType.GRID else (1200, 800)
+    default_dims = (600, 600) if banner.tip == Banner.BannerType.GRID else (1200, 800)
     media = _banner_media_meta(banner, tip=banner.tip, default=default_dims)
     return {
         'title': banner.naslov,
@@ -790,13 +790,13 @@ def home(request):
             grid_lcp = banner_image_responsive_meta(
                 first_grid_banner.slika,
                 tip='grid',
-                default=(360, 360),
+                default=(600, 600),
             )
             lcp_image_url = request.build_absolute_uri(
                 grid_lcp.get('preload_src') or grid_lcp['src'],
             )
             lcp_image_srcset = grid_lcp.get('srcset') or None
-            lcp_image_sizes = '(max-width: 768px) 50vw, 360px'
+            lcp_image_sizes = '(max-width: 768px) 50vw, 25vw'
         elif latest_products:
             first_product = latest_products[0]
             if first_product.prikazna_slika:

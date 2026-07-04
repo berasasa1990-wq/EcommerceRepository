@@ -477,7 +477,7 @@ class BannerAdmin(admin.ModelAdmin):
             'description': (
                 'Klik na banner vodi na kategoriju ili link (ako su postavljeni). '
                 'Obavezna je slika ili video. '
-                'Upload slike: Hero → JPEG 1920×560 (24:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
+                'Upload slike: Hero → JPEG 1920×560 (24:7), Grid → 600×600 (AVIF ili JPEG), Featured/Spotlight → AVIF ili JPEG. '
                 'Video: MP4/WebM/MOV, najviše 6 sekundi (max 20 MB). Ako je video postavljen, prikazuje se umjesto slike; '
                 'slika može služiti kao poster kad je video aktivan. '
                 'Tip „Hero Carousel” za karusel, „Grid Kartica” za 8 kartica ispod (4×2 desktop, 6 mobilni).'
