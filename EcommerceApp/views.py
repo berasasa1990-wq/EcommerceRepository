@@ -214,10 +214,10 @@ def _size_sort_key(label):
 
 
 _SIZE_FILTER_GROUPS = (
-    ('duzina', 'Dužina', 'Prikaži sve dužine'),
-    ('debljina', 'Debljina', 'Prikaži sve debljine'),
-    ('gramaza', 'Gramaža', 'Prikaži sve gramaže'),
-    ('velicina', 'Veličina', 'Prikaži sve veličine'),
+    ('duzina', 'Dužina', 'Prikaži sve artikle (ukloni dužinu)'),
+    ('debljina', 'Debljina', 'Prikaži sve artikle (ukloni debljinu)'),
+    ('gramaza', 'Gramaža', 'Prikaži sve artikle (ukloni gramažu)'),
+    ('velicina', 'Veličina', 'Prikaži sve artikle (ukloni veličinu)'),
 )
 
 
@@ -708,10 +708,31 @@ def home(request):
                     catalog_subtitle = f'{result_count} artikala brenda {brand.naziv}.'
                 else:
                     catalog_subtitle = 'Nema artikala za odabrani brend.'
+                if filter_params.get('velicina'):
+                    catalog_subtitle = (
+                        f'{catalog_subtitle} Filter: {filter_params["velicina"]}.'
+                    )
         else:
             catalog_title = 'Rezultati'
             if result_count:
                 catalog_subtitle = f'{result_count} artikala.'
+        if (
+            filter_params.get('velicina')
+            and not filter_params.get('brend')
+            and not filter_params.get('q')
+            and not filter_params.get('akcija')
+        ):
+            size_label = filter_params['velicina']
+            group_key = _size_filter_group_key(size_label)
+            group_name = next(
+                (title for key, title, _ in _SIZE_FILTER_GROUPS if key == group_key),
+                'Filter',
+            )
+            catalog_title = group_name
+            if result_count:
+                catalog_subtitle = f'{result_count} artikala — {size_label}.'
+            else:
+                catalog_subtitle = f'Nema artikala za {size_label}.'
     else:
         latest_products = _home_latest_products()
         featured_products = _home_featured_products()

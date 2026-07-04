@@ -14,6 +14,17 @@
             </div>
             {% endif %}
 
+            {% if filter_params.velicina %}
+            <p class="catalog-filter-active-hint">
+                Filter <strong>{{ filter_params.velicina }}</strong> —
+                {% if page_obj %}
+                prikazano <strong>{{ page_obj.paginator.count }}</strong> artikala
+                {% else %}
+                prikazano <strong>{{ products|length }}</strong> artikala
+                {% endif %}
+            </p>
+            {% endif %}
+
             {% if products %}
             <div class="product-grid">
                 {% for product in products %}

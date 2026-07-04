@@ -345,32 +345,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeSearchQuery = urlParams.get('q')?.trim();
     const hasListingFilters = urlParams.has('akcija') ||
         urlParams.has('kategorija') ||
-                              urlParams.has('cijena_od') ||
-                              urlParams.has('cijena_do') ||
-                              urlParams.has('sort') ||
-                              urlParams.has('page');
+        urlParams.has('brend') ||
+        urlParams.has('velicina') ||
+        urlParams.has('cijena_od') ||
+        urlParams.has('cijena_do') ||
+        urlParams.has('sort') ||
+        urlParams.has('page');
+
+    const scrollToProductShowcase = () => {
+        const showcase = document.getElementById('product-showcase');
+        if (showcase) {
+            requestAnimationFrame(() => {
+                showcase.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            });
+        }
+    };
 
     if (activeSearchQuery) {
         document.body.classList.add('search-results-active');
     }
 
-    if (activeSearchQuery || hasListingFilters) {
-        const showcase = document.getElementById('product-showcase');
-        if (showcase) {
-            requestAnimationFrame(() => {
-                showcase.scrollIntoView({ block: 'start' });
-            });
-        }
+    if (activeSearchQuery || hasListingFilters || window.location.hash === '#product-showcase') {
+        scrollToProductShowcase();
     }
+
+    const closeFilterSizeGroup = (group) => {
+        if (!group) return;
+        group.classList.remove('is-open');
+        const toggle = group.querySelector('.filter-size-toggle');
+        const panel = group.querySelector('.filter-size-panel');
+        toggle?.setAttribute('aria-expanded', 'false');
+        if (panel) panel.hidden = true;
+    };
+
+    const openFilterSizeGroup = (group) => {
+        if (!group) return;
+        document.querySelectorAll('.filter-group--collapsible').forEach((other) => {
+            if (other !== group) closeFilterSizeGroup(other);
+        });
+        group.classList.add('is-open');
+        const toggle = group.querySelector('.filter-size-toggle');
+        const panel = group.querySelector('.filter-size-panel');
+        toggle?.setAttribute('aria-expanded', 'true');
+        if (panel) panel.hidden = false;
+    };
 
     document.querySelectorAll('.filter-size-toggle').forEach((toggle) => {
         toggle.addEventListener('click', () => {
             const group = toggle.closest('.filter-group--collapsible');
-            const panel = group?.querySelector('.filter-size-panel');
-            if (!group || !panel) return;
-            const isOpen = group.classList.toggle('is-open');
-            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            panel.hidden = !isOpen;
+            if (!group) return;
+            if (group.classList.contains('is-open')) {
+                closeFilterSizeGroup(group);
+            } else {
+                openFilterSizeGroup(group);
+            }
+        });
+    });
+
+    document.querySelectorAll('.filter-size-option').forEach((option) => {
+        option.addEventListener('click', () => {
+            scrollToProductShowcase();
         });
     });
 
