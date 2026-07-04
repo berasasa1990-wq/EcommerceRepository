@@ -822,6 +822,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     updateCartBadge(data.cart_count || 0);
                     showCartToast(data.message || 'Artikal je dodan u korpu.');
+                    if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
+                        window.trackMetaAddToCart(data.meta_add_to_cart);
+                    }
                     // Close popup and stay on the page where it appeared
                     if (typeof closePopup === 'function') {
                         closePopup();

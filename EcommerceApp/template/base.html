@@ -94,6 +94,17 @@
     {% else %}
     fbq('track', 'PageView');
     {% endif %}
+    window.trackMetaAddToCart = function (meta) {
+        if (!meta || typeof fbq !== 'function') return;
+        fbq('track', 'AddToCart', {
+            content_ids: [String(meta.content_id)],
+            content_type: 'product',
+            content_name: meta.content_name,
+            contents: [{ id: String(meta.content_id), quantity: meta.quantity || 1 }],
+            value: meta.value,
+            currency: 'BAM'
+        }, meta.event_id ? { eventID: meta.event_id } : {});
+    };
     </script>
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id={{ meta_pixel_id }}&ev=PageView&noscript=1"
@@ -305,7 +316,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260703t" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260704m" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
