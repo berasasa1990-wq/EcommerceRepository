@@ -28,15 +28,7 @@ class AkcijaAdminForm(forms.ModelForm):
         if tip == Akcija.Tip.SLIKA:
             has_slika = bool(cleaned.get('slika')) or bool(getattr(self.instance, 'slika', None))
             if not has_slika:
-                self.add_error('slika', 'Obavezna slika za pop-up akciju.')
-            if cleaned.get('popust_postotak') is None:
-                self.add_error('popust_postotak', 'Unesite % sniženja.')
-            for field, label in (
-                ('pocetak', 'Početak akcije'),
-                ('trajanje_sati', 'Trajanje akcije'),
-            ):
-                if not cleaned.get(field):
-                    self.add_error(field, f'Obavezno ({label}).')
+                self.add_error('slika', 'Obavezna slika za pop-up.')
 
         elif tip == Akcija.Tip.TIMER:
             for field, label in (

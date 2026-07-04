@@ -325,7 +325,7 @@ class AkcijaAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
-                '1) Pop-up + slika — upload slike, % sniženja, početak/trajanje, boje, kašnjenje u sekundama. '
+                '1) Pop-up + slika — upload slike, tekst/link dugmeta, boje, kašnjenje; prikazuje se dok je uključeno (bez trajanja i %). '
                 '2) Akcija + tajmer — artikal, % sniženja, odbrojavanje. '
                 '3) X+1 — samo u korpi (1+1 / 2+1 / 3+1). '
                 '4) Uslov prodaja — prag se računa od cijele korpe minus 1 komad ovog artikla; popust na 1 komad.'

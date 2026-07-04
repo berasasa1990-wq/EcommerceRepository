@@ -572,7 +572,7 @@ class HomeVlog(models.Model):
 
 class Akcija(models.Model):
     class Tip(models.TextChoices):
-        SLIKA = 'slika', 'Pop-up + akcija + slika'
+        SLIKA = 'slika', 'Pop-up + slika'
         TIMER = 'timer', 'Akcija + tajmer'
         X_PLUS_1 = 'x_plus_1', 'X+1 prodaja (samo korpa)'
         USLOV = 'uslov', 'Uslov prodaja'
@@ -700,7 +700,7 @@ class Akcija(models.Model):
         return pocetak + timedelta(hours=self.trajanje_sati)
 
     def jos_traje(self):
-        if self.tip == self.Tip.X_PLUS_1:
+        if self.tip in {self.Tip.X_PLUS_1, self.Tip.SLIKA}:
             return self.aktivan
         kraj = self.zavrsava
         if not kraj:
