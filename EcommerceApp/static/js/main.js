@@ -777,6 +777,8 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     if (sitePopupOverlays.length) {
         const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+        const pageStartedAt = Date.now();
+        const presentedThisVisit = new Set();
         let activeOverlay = null;
         let activeCountdownInterval = null;
 
@@ -804,6 +806,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function shouldShowPopup(overlay) {
+            const popupId = overlay.dataset.popupId || 'default';
+            if (presentedThisVisit.has(popupId)) {
+                return false;
+            }
             const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
             const last = parseInt(localStorage.getItem(lastShownKey) || '0', 10);
             if (last && (Date.now() - last <= COOLDOWN_MS)) {
@@ -812,26 +818,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return !sessionStorage.getItem(sessionShownKey);
         }
 
-        function closePopup(overlay, recordShown = true) {
+        function markPopupSeen(overlay) {
+            const popupId = overlay.dataset.popupId || 'default';
+            presentedThisVisit.add(popupId);
+            const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
+            localStorage.setItem(lastShownKey, Date.now().toString());
+            sessionStorage.setItem(sessionShownKey, '1');
+        }
+
+        function hidePopup(overlay) {
             if (!overlay) return;
-            stopCountdown();
             overlay.classList.remove('is-visible');
             overlay.hidden = true;
             if (activeOverlay === overlay) {
                 activeOverlay = null;
                 document.body.classList.remove('popup-open');
             }
-
-            if (recordShown) {
-                const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
-                localStorage.setItem(lastShownKey, Date.now().toString());
-                sessionStorage.setItem(sessionShownKey, '1');
-            }
         }
 
-        function closeActivePopup(recordShown = true) {
-            if (activeOverlay) {
-                closePopup(activeOverlay, recordShown);
+        function closePopup(overlay, recordSeen = true) {
+            if (!overlay) return;
+            stopCountdown();
+            hidePopup(overlay);
+            if (recordSeen) {
+                markPopupSeen(overlay);
             }
         }
 
@@ -859,12 +869,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function openPopup(overlay) {
-            closeActivePopup(false);
+            if (!overlay || !shouldShowPopup(overlay)) {
+                return;
+            }
+
+            if (activeOverlay && activeOverlay !== overlay) {
+                closePopup(activeOverlay, true);
+            }
 
             const popupImage = overlay.querySelector('.site-popup-image');
             if (popupImage && popupImage.dataset.src && !popupImage.getAttribute('src')) {
                 popupImage.setAttribute('src', popupImage.dataset.src);
             }
+
+            sitePopupOverlays.forEach((item) => {
+                if (item !== overlay) {
+                    item.classList.remove('is-visible');
+                    item.hidden = true;
+                }
+            });
+
             overlay.hidden = false;
             requestAnimationFrame(() => {
                 overlay.classList.add('is-visible');
@@ -872,41 +896,45 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('popup-open');
             activeOverlay = overlay;
             startCountdown(overlay);
-
-            const { sessionShownKey } = popupStorageKeys(overlay);
-            sessionStorage.setItem(sessionShownKey, '1');
         }
 
-        sitePopupOverlays
-            .slice()
+        const popupQueue = sitePopupOverlays
+            .filter((overlay) => shouldShowPopup(overlay))
             .sort((a, b) => {
-                const delayA = parseInt(a.dataset.popupDelay || '5', 10);
-                const delayB = parseInt(b.dataset.popupDelay || '5', 10);
-                return delayA - delayB;
-            })
-            .forEach((overlay) => {
-                if (!shouldShowPopup(overlay)) return;
-
-                const delaySec = parseInt(overlay.dataset.popupDelay || '5', 10);
-                const delayMs = Math.max(0, delaySec * 1000);
-                setTimeout(() => openPopup(overlay), delayMs);
+                const delayA = parseInt(a.dataset.popupDelay || '0', 10);
+                const delayB = parseInt(b.dataset.popupDelay || '0', 10);
+                if (delayA !== delayB) {
+                    return delayA - delayB;
+                }
+                return parseInt(a.dataset.popupId || '0', 10) - parseInt(b.dataset.popupId || '0', 10);
             });
+
+        popupQueue.forEach((overlay) => {
+            const delaySec = parseInt(overlay.dataset.popupDelay || '0', 10);
+            const showAt = pageStartedAt + Math.max(0, delaySec) * 1000;
+            const waitMs = Math.max(0, showAt - Date.now());
+
+            window.setTimeout(() => {
+                openPopup(overlay);
+            }, waitMs);
+        });
 
         sitePopupOverlays.forEach((overlay) => {
             overlay.querySelector('[data-popup-close]')?.addEventListener('click', () => {
-                closePopup(overlay);
+                closePopup(overlay, true);
             });
 
             const cta = overlay.querySelector('.site-popup-cta');
-            if (cta) {
+            if (cta && cta.tagName === 'A') {
                 cta.addEventListener('click', () => {
-                    const { sessionShownKey } = popupStorageKeys(overlay);
-                    sessionStorage.setItem(sessionShownKey, '1');
+                    markPopupSeen(overlay);
                 }, { once: true });
             }
 
             overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) closePopup(overlay);
+                if (e.target === overlay) {
+                    closePopup(overlay, true);
+                }
             });
 
             const akcijaForm = overlay.querySelector('.akcija-popup-add-form');
@@ -943,7 +971,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
                             window.trackMetaAddToCart(data.meta_add_to_cart);
                         }
-                        closePopup(overlay);
+                        closePopup(overlay, true);
                     } catch (err) {
                         showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
                     } finally {
@@ -955,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && activeOverlay?.classList.contains('is-visible')) {
-                closePopup(activeOverlay);
+                closePopup(activeOverlay, true);
             }
         });
     }
