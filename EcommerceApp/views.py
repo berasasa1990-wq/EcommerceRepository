@@ -425,8 +425,10 @@ def _size_filter_groups(filter_action, filter_params, sizes):
         if not options:
             continue
         groups.append({
+            'key': key,
             'label': title,
             'options': options,
+            'has_selection': any(option['selected'] for option in options),
             'clear_url': (
                 _build_filter_url(filter_action, filter_params, velicina='')
                 if selected_group == key else ''

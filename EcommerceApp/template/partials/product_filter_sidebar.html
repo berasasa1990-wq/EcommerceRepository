@@ -14,33 +14,17 @@
 
         {% if filter_params.brend %}
         <input type="hidden" name="brend" value="{{ filter_params.brend }}">
+        {% if selected_brand %}
+        <p class="filter-search-hint">Brend: <strong>{{ selected_brand.naziv }}</strong></p>
+        {% endif %}
         {% endif %}
 
         {% if filter_params.velicina %}
         <input type="hidden" name="velicina" value="{{ filter_params.velicina }}">
         {% endif %}
 
-        {% for group in filter_size_groups %}
-        <div class="filter-group filter-group--sizes">
-            <span class="filter-label">{{ group.label }}</span>
-            {% for option in group.options %}
-                {% if option.selected %}
-                <p class="filter-selected-size">Odabrano: <strong>{{ option.label }}</strong></p>
-                {% endif %}
-            {% endfor %}
-            <div class="filter-size-list">
-                {% for option in group.options %}
-                <a href="{{ option.url }}" class="filter-size-option{% if option.selected %} is-selected{% endif %}">{{ option.label }}</a>
-                {% endfor %}
-            </div>
-            {% if group.clear_url %}
-            <a href="{{ group.clear_url }}" class="filter-size-clear">{{ group.clear_label }}</a>
-            {% endif %}
-        </div>
-        {% endfor %}
-
         {% if not hide_category_filter %}
-        <div class="filter-group">
+        <div class="filter-group filter-group--categories">
             <label class="filter-label" for="filter-kategorija">Kategorija</label>
             <select id="filter-kategorija" name="kategorija" class="filter-input">
                 <option value="">Sve kategorije</option>
@@ -52,6 +36,35 @@
             </select>
         </div>
         {% endif %}
+
+        {% for group in filter_size_groups %}
+        <div class="filter-group filter-group--sizes filter-group--collapsible{% if group.has_selection %} is-open{% endif %}" data-filter-size-group="{{ group.key }}">
+            <button type="button" class="filter-size-toggle" aria-expanded="{% if group.has_selection %}true{% else %}false{% endif %}" aria-controls="filter-size-panel-{{ group.key }}">
+                <span class="filter-size-toggle-label">{{ group.label }}</span>
+                <span class="filter-size-toggle-meta">
+                    <span class="filter-size-toggle-count">{{ group.options|length }}</span>
+                    <svg class="filter-size-toggle-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </span>
+            </button>
+            <div class="filter-size-panel" id="filter-size-panel-{{ group.key }}"{% if not group.has_selection %} hidden{% endif %}>
+                {% for option in group.options %}
+                    {% if option.selected %}
+                    <p class="filter-selected-size">Odabrano: <strong>{{ option.label }}</strong></p>
+                    {% endif %}
+                {% endfor %}
+                <div class="filter-size-list">
+                    {% for option in group.options %}
+                    <a href="{{ option.url }}" class="filter-size-option{% if option.selected %} is-selected{% endif %}">{{ option.label }}</a>
+                    {% endfor %}
+                </div>
+                {% if group.clear_url %}
+                <a href="{{ group.clear_url }}" class="filter-size-clear">{{ group.clear_label }}</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
 
         <div class="filter-group">
             <span class="filter-label">Cijena (KM)</span>

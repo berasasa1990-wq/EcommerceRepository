@@ -363,6 +363,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    document.querySelectorAll('.filter-size-toggle').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const group = toggle.closest('.filter-group--collapsible');
+            const panel = group?.querySelector('.filter-size-panel');
+            if (!group || !panel) return;
+            const isOpen = group.classList.toggle('is-open');
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            panel.hidden = !isOpen;
+        });
+    });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeSearchOverlay();
