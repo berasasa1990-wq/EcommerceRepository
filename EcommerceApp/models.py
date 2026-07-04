@@ -683,9 +683,9 @@ class Akcija(models.Model):
     )
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
     ponovo_poslije_dana = models.PositiveSmallIntegerField(
-        default=7,
+        default=0,
         verbose_name='Ponovo prikaži poslije (dana)',
-        help_text='Koliko dana ne prikazivati pop-up nakon zatvaranja.',
+        help_text='0 = ponovo u svakoj novoj posjeti (novi prozor). Npr. 7 = ne prikazuj 7 dana nakon zatvaranja.',
     )
     popup_delay_seconds = models.PositiveSmallIntegerField(
         default=5,

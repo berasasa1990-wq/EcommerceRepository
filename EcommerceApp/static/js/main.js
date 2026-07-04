@@ -790,15 +790,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function popupCooldownMs(overlay) {
-            const days = parseInt(overlay.dataset.popupCooldownDays || '7', 10);
-            const safeDays = Number.isFinite(days) && days > 0 ? days : 7;
-            return safeDays * 24 * 60 * 60 * 1000;
+            const days = parseInt(overlay.dataset.popupCooldownDays || '0', 10);
+            if (!Number.isFinite(days) || days <= 0) {
+                return 0;
+            }
+            return days * 24 * 60 * 60 * 1000;
         }
 
         function popupStorageKeys(overlay) {
             const popupId = overlay.dataset.popupId || 'default';
             return {
                 lastShownKey: `site_popup_last_shown_${popupId}`,
+                sessionShownKey: `site_popup_shown_session_${popupId}`,
             };
         }
 
@@ -814,10 +817,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (presentedThisVisit.has(popupId)) {
                 return false;
             }
-            const { lastShownKey } = popupStorageKeys(overlay);
-            const last = parseInt(localStorage.getItem(lastShownKey) || '0', 10);
-            if (last && (Date.now() - last <= popupCooldownMs(overlay))) {
+            const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
+            if (sessionStorage.getItem(sessionShownKey)) {
                 return false;
+            }
+            const cooldownMs = popupCooldownMs(overlay);
+            if (cooldownMs > 0) {
+                const last = parseInt(localStorage.getItem(lastShownKey) || '0', 10);
+                if (last && (Date.now() - last <= cooldownMs)) {
+                    return false;
+                }
             }
             return true;
         }
@@ -825,8 +834,11 @@ document.addEventListener('DOMContentLoaded', () => {
         function markPopupSeen(overlay) {
             const popupId = overlay.dataset.popupId || 'default';
             presentedThisVisit.add(popupId);
-            const { lastShownKey } = popupStorageKeys(overlay);
-            localStorage.setItem(lastShownKey, Date.now().toString());
+            const { lastShownKey, sessionShownKey } = popupStorageKeys(overlay);
+            sessionStorage.setItem(sessionShownKey, '1');
+            if (popupCooldownMs(overlay) > 0) {
+                localStorage.setItem(lastShownKey, Date.now().toString());
+            }
         }
 
         function hidePopup(overlay) {

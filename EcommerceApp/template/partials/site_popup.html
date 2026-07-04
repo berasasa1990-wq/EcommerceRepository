@@ -3,7 +3,7 @@
 <div class="site-popup-overlay" id="sitePopupOverlay-{{ akcija.id }}" hidden
      data-popup-id="{{ akcija.id }}"
      data-popup-delay="{{ akcija.popup_delay_seconds|default:5 }}"
-     data-popup-cooldown-days="{{ akcija.ponovo_poslije_dana|default:7 }}"
+     data-popup-cooldown-days="{{ akcija.ponovo_poslije_dana|default:0 }}"
      data-akcija-id="{{ akcija.id }}"
      data-akcija-tip="{{ akcija.tip }}"
      {% if akcija.tip != 'slika' and akcija.zavrsava %}data-countdown-end="{{ akcija.zavrsava|date:'c' }}"{% endif %}>

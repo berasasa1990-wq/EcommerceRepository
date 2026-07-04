@@ -350,7 +350,7 @@ class AkcijaAdmin(admin.ModelAdmin):
             'description': (
                 'Za prikaz pop-upa uključite obje opcije publike ako želite da svi vide akciju. '
                 'Akcija radi dok je „Aktivan” uključen. Početak/trajanje služi samo za odbrojavanje u pop-upu. '
-                '„Ponovo prikaži poslije (dana)” = pauza nakon zatvaranja pop-upa.'
+                '„Ponovo prikaži poslije (dana)” = 0 znači ponovo u svakoj novoj posjeti; 7 = pauza 7 dana nakon zatvaranja.'
             ),
             'classes': ('collapse',),
         }),
