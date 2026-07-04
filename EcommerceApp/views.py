@@ -151,6 +151,8 @@ def _parse_decimal(value):
 
 _SIZE_EXACT = re.compile(r'^#\d+(?:/\d+)?$', re.I)
 _SIZE_HASH = re.compile(r'(#\d+(?:/\d+)?)', re.I)
+_SIZE_HASH_SUFFIX = re.compile(r'(?<![#/])\b(\d+(?:/\d+)?)#(?!\d)', re.I)
+_SIZE_DIAMETER = re.compile(r'[Øø]\s*(\d+(?:[.,]\d+)?)', re.I)
 _SIZE_PLAIN = re.compile(r'^\d+$')
 _SIZE_CM = re.compile(r'(\d+(?:[.,]\d+)?)\s*cm\b', re.I)
 _SIZE_MM = re.compile(r'(\d+(?:[.,]\d+)?)\s*mm\b', re.I)
@@ -172,33 +174,60 @@ def _normalize_size_number(value):
     return normalized
 
 
-def _variation_size_label(naziv):
-    """Vraća veličinu iz naziva (#broj, cm, mm, g ili veličina mašinice), ako postoji."""
+def _variation_size_labels(naziv):
+    """Vraća sve veličine iz naziva (#broj, cm, mm, g ili veličina mašinice)."""
     naziv = (naziv or '').strip()
     if not naziv:
-        return None
+        return []
+
+    labels = []
+    seen = set()
+
+    def add(label):
+        normalized = (label or '').strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            labels.append(normalized)
+
     if _SIZE_EXACT.match(naziv):
-        return naziv
+        add(naziv)
+        return labels
+
     if _SIZE_PLAIN.match(naziv):
-        if naziv in _REEL_SIZES:
-            return naziv
-        return f'#{naziv}'
-    hash_match = _SIZE_HASH.search(naziv)
-    if hash_match:
-        return hash_match.group(1)
-    cm_match = _SIZE_CM.search(naziv)
-    if cm_match:
-        return f'{_normalize_size_number(cm_match.group(1))} cm'
-    gram_match = _SIZE_GRAM.search(naziv)
-    if gram_match:
-        return f'{_normalize_size_number(gram_match.group(1))} g'
-    mm_match = _SIZE_MM.search(naziv)
-    if mm_match:
-        return f'{_normalize_size_number(mm_match.group(1))} mm'
-    reel_match = _REEL_SIZE_PATTERN.search(naziv)
-    if reel_match:
-        return reel_match.group(1)
-    return None
+        add(naziv if naziv in _REEL_SIZES else f'#{naziv}')
+        return labels
+
+    for match in _SIZE_HASH.finditer(naziv):
+        add(match.group(1))
+    for match in _SIZE_HASH_SUFFIX.finditer(naziv):
+        add(f'#{match.group(1)}')
+
+    for match in _SIZE_CM.finditer(naziv):
+        add(f'{_normalize_size_number(match.group(1))} cm')
+    for match in _SIZE_GRAM.finditer(naziv):
+        add(f'{_normalize_size_number(match.group(1))} g')
+    for match in _SIZE_MM.finditer(naziv):
+        add(f'{_normalize_size_number(match.group(1))} mm')
+
+    for match in _SIZE_DIAMETER.finditer(naziv):
+        value = _normalize_size_number(match.group(1))
+        try:
+            if float(value) < 10:
+                add(f'{value} mm')
+        except ValueError:
+            continue
+
+    if not labels:
+        reel_match = _REEL_SIZE_PATTERN.search(naziv)
+        if reel_match:
+            add(reel_match.group(1))
+
+    return labels
+
+
+def _variation_size_label(naziv):
+    labels = _variation_size_labels(naziv)
+    return labels[0] if labels else None
 
 
 def _size_sort_key(label):
@@ -217,10 +246,10 @@ def _size_sort_key(label):
 
 
 _SIZE_FILTER_GROUPS = (
-    ('duzina', 'Dužina', 'Prikaži sve artikle (ukloni dužinu)'),
-    ('debljina', 'Debljina', 'Prikaži sve artikle (ukloni debljinu)'),
-    ('gramaza', 'Gramaža', 'Prikaži sve artikle (ukloni gramažu)'),
-    ('velicina', 'Veličina', 'Prikaži sve artikle (ukloni veličinu)'),
+    ('duzina', 'Dužina (cm)', 'Prikaži sve artikle (ukloni dužinu)'),
+    ('debljina', 'Debljina (mm)', 'Prikaži sve artikle (ukloni debljinu)'),
+    ('gramaza', 'Gramaža (g)', 'Prikaži sve artikle (ukloni gramažu)'),
+    ('velicina', 'Veličina (#)', 'Prikaži sve artikle (ukloni veličinu)'),
 )
 
 
@@ -238,11 +267,13 @@ def _size_filter_group_key(label):
 
 
 def _available_sizes(products_qs):
+    sizes = set()
     nazivi = ProductVariation.objects.filter(
         artikal__in=products_qs,
         na_stanju=True,
     ).values_list('naziv', flat=True)
-    sizes = {_variation_size_label(naziv) for naziv in nazivi}
+    for naziv in nazivi:
+        sizes.update(_variation_size_labels(naziv))
 
     for naziv in Product.objects.filter(
         pk__in=products_qs.values('pk'),
@@ -250,22 +281,19 @@ def _available_sizes(products_qs):
     ).annotate(
         variation_count=Count('varijacije'),
     ).filter(variation_count=0).values_list('naziv', flat=True):
-        label = _variation_size_label(naziv)
-        if label:
-            sizes.add(label)
+        sizes.update(_variation_size_labels(naziv))
 
-    sizes.discard(None)
     return sorted(sizes, key=_size_sort_key)
 
 
 def _product_matches_size(product, size_label):
     if any(
-        variation.na_stanju and _variation_size_label(variation.naziv) == size_label
+        variation.na_stanju and size_label in _variation_size_labels(variation.naziv)
         for variation in product.varijacije.all()
     ):
         return True
     if getattr(product, 'variation_count', 0) == 0:
-        return product.na_stanju and _variation_size_label(product.naziv) == size_label
+        return product.na_stanju and size_label in _variation_size_labels(product.naziv)
     return False
 
 
