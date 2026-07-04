@@ -28,6 +28,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
 from .cart import Cart
+from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .loyalty import (
     azuriraj_loyalty_nakon_narudzbe,
     kreiraj_loyalty_karticu,
@@ -296,9 +297,19 @@ def _category_catalog_url_params(filter_params, *, keep_all_products):
 
 
 def _filter_categories():
-    return Category.objects.filter(aktivan=True).select_related(
-        'roditelj', 'roditelj__roditelj',
+    return filter_categories_with_products(
+        Category.objects.filter(aktivan=True).select_related(
+            'roditelj', 'roditelj__roditelj',
+        ),
     ).order_by('redoslijed', 'naziv')
+
+
+def _filter_banners_for_empty_categories(banners, populated_ids=None):
+    populated_ids = populated_ids or get_category_ids_with_products()
+    return [
+        banner for banner in banners
+        if not banner.kategorija_id or banner.kategorija_id in populated_ids
+    ]
 
 
 def _showcase_brands():
@@ -667,9 +678,11 @@ def home(request):
     hero_banners = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.HERO, aktivan=True,
     ).order_by('redoslijed', '-id'))
-    grid_banners = _banners_with_media(Banner.objects.filter(
-        tip=Banner.BannerType.GRID, aktivan=True,
-    ).order_by('redoslijed', '-id'))[:8]
+    grid_banners = _filter_banners_for_empty_categories(
+        _banners_with_media(Banner.objects.filter(
+            tip=Banner.BannerType.GRID, aktivan=True,
+        ).select_related('kategorija').order_by('redoslijed', '-id'))[:8]
+    )
     featured_banners = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.FEATURED, aktivan=True,
     ).order_by('redoslijed', '-id'))
@@ -944,7 +957,13 @@ def category_detail(request, slug):
 
     # Ako ima direktnih podkategorija i nije zatraženo "sve" (all=1),
     # prikaži lijepu stranicu sa podkategorijama (umjesto proizvoda)
-    direct_subs = list(category.podkategorije.filter(aktivan=True).order_by('redoslijed', 'naziv'))
+    populated_category_ids = get_category_ids_with_products()
+    direct_subs = list(
+        filter_categories_with_products(
+            category.podkategorije.filter(aktivan=True),
+            populated_category_ids,
+        ).order_by('redoslijed', 'naziv')
+    )
     filter_params = _get_filter_params(request)
     show_all = request.GET.get('all') == '1'
     show_products = show_all or _filters_active(filter_params)
@@ -1006,9 +1025,6 @@ def _product_back_url(request, product):
 
 
 def product_detail(request, slug):
-    # Allow sold-out products (na_stanju=False) to be shown on product page
-    # but only active ones. We prefetch ALL variations (not just in-stock) so we
-    # can display "Rasprodato" for out-of-stock variations.
     product = get_object_or_404(
         Product.objects.filter(aktivan=True)
         .select_related('kategorija', 'brend')
@@ -1018,6 +1034,7 @@ def product_detail(request, slug):
         ),
         slug=slug,
     )
+    in_stock_variations = [v for v in product.varijacije.all() if v.na_stanju]
     lcp_image_url = None
     product_image_width, product_image_height = 800, 800
     if product.prikazna_slika:
@@ -1033,7 +1050,8 @@ def product_detail(request, slug):
     context = {
         **_base_context(),
         'product': product,
-        'ima_varijacije': product.varijacije.count() > 0,
+        'in_stock_variations': in_stock_variations,
+        'ima_varijacije': bool(in_stock_variations),
         'related_products': related_products,
         'povezani_podnaslov': site_settings.format_povezani_podnaslov(kategorija_naziv),
         'lcp_image_url': lcp_image_url,

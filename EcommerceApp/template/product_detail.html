@@ -113,12 +113,16 @@
             {% endif %}
             {% endif %}
 
-            {% if product.varijacije.count %}
+            {% if in_stock_variations %}
             <div class="product-detail-variations-block">
                 <h2 class="product-detail-section-title">IZABERI OPCIJU</h2>
                 <div class="product-detail-variations" id="detailVariations">
-                    {% include 'partials/product_detail_variation_rows.html' with product=product %}
+                    {% include 'partials/product_detail_variation_rows.html' with product=product in_stock_variations=in_stock_variations %}
                 </div>
+            </div>
+            {% elif product.varijacije.count %}
+            <div class="add-to-cart-form">
+                <span class="sold-out-text">Rasprodato</span>
             </div>
             {% endif %}
 

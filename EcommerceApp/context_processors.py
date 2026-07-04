@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db.models import Prefetch
 
 from .cart import Cart
+from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .models import Category, Popup, SiteSettings
 from .upsell import get_active_upsell_offer
 
@@ -49,18 +50,25 @@ def meta_pixel(request):
 
 
 def nav_categories(request):
-    sub_subcategories = Category.objects.filter(
-        aktivan=True, prikazi_u_meniju=True,
+    populated_category_ids = get_category_ids_with_products()
+
+    sub_subcategories = filter_categories_with_products(
+        Category.objects.filter(aktivan=True, prikazi_u_meniju=True),
+        populated_category_ids,
     ).order_by('redoslijed', 'naziv')
 
-    subcategories = Category.objects.filter(
-        aktivan=True, prikazi_u_meniju=True,
+    subcategories = filter_categories_with_products(
+        Category.objects.filter(aktivan=True, prikazi_u_meniju=True),
+        populated_category_ids,
     ).order_by('redoslijed', 'naziv').prefetch_related(
         Prefetch('podkategorije', queryset=sub_subcategories),
     )
 
-    categories = Category.objects.filter(
-        roditelj__isnull=True, aktivan=True, prikazi_u_meniju=True,
+    categories = filter_categories_with_products(
+        Category.objects.filter(
+            roditelj__isnull=True, aktivan=True, prikazi_u_meniju=True,
+        ),
+        populated_category_ids,
     ).order_by('redoslijed', 'naziv').prefetch_related(
         Prefetch('podkategorije', queryset=subcategories),
     )

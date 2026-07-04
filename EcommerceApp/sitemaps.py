@@ -2,6 +2,7 @@ from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.utils import timezone
 
+from .category_visibility import filter_categories_with_products
 from .models import Category, HomeVlog, Product
 
 
@@ -21,7 +22,7 @@ class CategorySitemap(Sitemap):
     priority = 0.8
 
     def items(self):
-        return Category.objects.filter(aktivan=True)
+        return filter_categories_with_products(Category.objects.filter(aktivan=True))
 
     def lastmod(self, obj):
         return getattr(obj, 'azuriran', None) or timezone.now()
