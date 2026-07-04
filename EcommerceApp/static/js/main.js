@@ -343,14 +343,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeSearchQuery = urlParams.get('q')?.trim();
-    const hasListingFilters = urlParams.has('akcija') ||
-        urlParams.has('kategorija') ||
-        urlParams.has('brend') ||
-        urlParams.has('velicina') ||
-        urlParams.has('cijena_od') ||
-        urlParams.has('cijena_do') ||
-        urlParams.has('sort') ||
-        urlParams.has('page');
+    const CATALOG_SCROLL_KEY = 'catalogFilterScrollY';
+
+    const saveCatalogScroll = () => {
+        sessionStorage.setItem(CATALOG_SCROLL_KEY, String(window.scrollY));
+    };
+
+    const restoreCatalogScroll = () => {
+        const saved = sessionStorage.getItem(CATALOG_SCROLL_KEY);
+        if (saved === null) return false;
+        sessionStorage.removeItem(CATALOG_SCROLL_KEY);
+        const y = Number.parseInt(saved, 10);
+        if (!Number.isNaN(y)) {
+            window.scrollTo(0, y);
+            return true;
+        }
+        return false;
+    };
 
     const scrollToProductShowcase = () => {
         const showcase = document.getElementById('product-showcase');
@@ -361,34 +370,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const isCatalogFilterRefinement = urlParams.has('velicina') ||
+        urlParams.has('cijena_od') ||
+        urlParams.has('cijena_do') ||
+        urlParams.has('sort') ||
+        urlParams.has('page');
+
     if (activeSearchQuery) {
         document.body.classList.add('search-results-active');
     }
 
-    if (activeSearchQuery || hasListingFilters || window.location.hash === '#product-showcase') {
-        scrollToProductShowcase();
+    const restoredCatalogScroll = restoreCatalogScroll();
+    if (!restoredCatalogScroll && !isCatalogFilterRefinement) {
+        if (activeSearchQuery || urlParams.has('akcija') || urlParams.has('brend') || urlParams.has('kategorija') ||
+            window.location.hash === '#product-showcase') {
+            scrollToProductShowcase();
+        }
     }
 
-    const closeFilterSizeGroup = (group) => {
+    const catalogFilterForm = document.querySelector('.catalog-filter');
+    const catalogSidebar = document.querySelector('.catalog-sidebar');
+
+    const syncFilterExpanded = () => {
+        const openGroup = catalogFilterForm?.querySelector('.filter-group--collapsible.is-open');
+        const isOpen = !!openGroup;
+
+        catalogFilterForm?.querySelectorAll('.filter-below-hidden').forEach((el) => {
+            el.classList.remove('filter-below-hidden');
+        });
+
+        catalogFilterForm?.classList.toggle('is-filter-expanded', isOpen);
+        catalogSidebar?.classList.toggle('is-filter-expanded', isOpen);
+
+        if (!openGroup || !catalogFilterForm) return;
+
+        let hideBelow = false;
+        Array.from(catalogFilterForm.children).forEach((child) => {
+            if (child === openGroup) {
+                hideBelow = true;
+                return;
+            }
+            if (hideBelow) {
+                child.classList.add('filter-below-hidden');
+            }
+        });
+    };
+
+    const closeFilterSizeGroup = (group, { skipSync = false } = {}) => {
         if (!group) return;
         group.classList.remove('is-open');
         const toggle = group.querySelector('.filter-size-toggle');
-        const panel = group.querySelector('.filter-size-panel');
         toggle?.setAttribute('aria-expanded', 'false');
-        if (panel) panel.hidden = true;
+        if (!skipSync) syncFilterExpanded();
     };
 
     const openFilterSizeGroup = (group) => {
         if (!group) return;
         document.querySelectorAll('.filter-group--collapsible').forEach((other) => {
-            if (other !== group) closeFilterSizeGroup(other);
+            if (other !== group) closeFilterSizeGroup(other, { skipSync: true });
         });
         group.classList.add('is-open');
         const toggle = group.querySelector('.filter-size-toggle');
-        const panel = group.querySelector('.filter-size-panel');
         toggle?.setAttribute('aria-expanded', 'true');
-        if (panel) panel.hidden = false;
+        syncFilterExpanded();
     };
+
+    syncFilterExpanded();
 
     document.querySelectorAll('.filter-size-toggle').forEach((toggle) => {
         toggle.addEventListener('click', () => {
@@ -402,11 +449,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.querySelectorAll('.filter-size-option').forEach((option) => {
-        option.addEventListener('click', () => {
-            scrollToProductShowcase();
-        });
+    document.querySelectorAll('.filter-size-option, .filter-size-clear').forEach((link) => {
+        link.addEventListener('click', saveCatalogScroll);
     });
+
+    catalogFilterForm?.addEventListener('submit', saveCatalogScroll);
+    catalogFilterForm?.querySelector('.btn-filter.btn-secondary')?.addEventListener('click', saveCatalogScroll);
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {

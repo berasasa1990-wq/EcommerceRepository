@@ -1,5 +1,5 @@
 <aside class="catalog-sidebar">
-    <form class="catalog-filter" method="get" action="{{ filter_action }}#product-showcase">
+    <form class="catalog-filter" method="get" action="{{ filter_action }}">
         <h2 class="catalog-filter-title">Filter</h2>
 
         {% if filter_params.q %}
@@ -48,7 +48,7 @@
                     </svg>
                 </span>
             </button>
-            <div class="filter-size-panel" id="filter-size-panel-{{ group.key }}"{% if not group.has_selection %} hidden{% endif %}>
+            <div class="filter-size-panel" id="filter-size-panel-{{ group.key }}">
                 {% for option in group.options %}
                     {% if option.selected %}
                     <p class="filter-selected-size">Odabrano: <strong>{{ option.label }}</strong></p>
@@ -85,7 +85,7 @@
 
         <div class="filter-actions">
             <button type="submit" class="btn btn-primary btn-filter">Primijeni</button>
-            <a href="{% if filter_reset_url %}{{ filter_reset_url }}{% else %}{{ filter_action }}#product-showcase{% endif %}" class="btn btn-secondary btn-filter">Poništi</a>
+            <a href="{% if filter_reset_url %}{{ filter_reset_url }}{% else %}{{ filter_action }}{% endif %}" class="btn btn-secondary btn-filter">Poništi</a>
         </div>
     </form>
 </aside>

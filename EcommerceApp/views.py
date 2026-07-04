@@ -130,10 +130,12 @@ def _filter_reset_url(filter_action, filter_params):
         preserved['brend'] = filter_params['brend']
     if filter_params.get('kategorija'):
         preserved['kategorija'] = filter_params['kategorija']
+    if filter_params.get('all'):
+        preserved['all'] = filter_params['all']
     query = urlencode(preserved)
     if query:
-        return f'{filter_action}?{query}#product-showcase'
-    return f'{filter_action}#product-showcase'
+        return f'{filter_action}?{query}'
+    return filter_action
 
 
 def _parse_decimal(value):
@@ -279,8 +281,18 @@ def _get_filter_params(request):
     }
 
 
+_CATALOG_SCOPE_KEYS = frozenset({'all'})
+
+
 def _filters_active(params):
-    return any(params.values())
+    return any(value for key, value in params.items() if key not in _CATALOG_SCOPE_KEYS and value)
+
+
+def _category_catalog_url_params(filter_params, *, keep_all_products):
+    params = dict(filter_params)
+    if keep_all_products:
+        params['all'] = '1'
+    return params
 
 
 def _filter_categories():
@@ -403,8 +415,8 @@ def _catalog_query_string(filter_params, page=None, **overrides):
 def _build_filter_url(filter_action, filter_params, **overrides):
     query = _catalog_query_string(filter_params, **overrides)
     if query:
-        return f'{filter_action}?{query}#product-showcase'
-    return f'{filter_action}#product-showcase'
+        return f'{filter_action}?{query}'
+    return filter_action
 
 
 def _size_filter_groups(filter_action, filter_params, sizes):
@@ -933,9 +945,11 @@ def category_detail(request, slug):
     # Ako ima direktnih podkategorija i nije zatraženo "sve" (all=1),
     # prikaži lijepu stranicu sa podkategorijama (umjesto proizvoda)
     direct_subs = list(category.podkategorije.filter(aktivan=True).order_by('redoslijed', 'naziv'))
+    filter_params = _get_filter_params(request)
     show_all = request.GET.get('all') == '1'
+    show_products = show_all or _filters_active(filter_params)
 
-    if direct_subs and not show_all:
+    if direct_subs and not show_products:
         context = {
             **_base_context(),
             'category': category,
@@ -956,6 +970,10 @@ def category_detail(request, slug):
         request,
         allowed_category_ids=category_ids,
     )
+    catalog_url_params = _category_catalog_url_params(
+        filter_params,
+        keep_all_products=bool(direct_subs),
+    )
 
     context = {
         **_base_context(),
@@ -963,8 +981,8 @@ def category_detail(request, slug):
         'products': products,
         'filter_categories': _filter_categories(),
         'filter_params': filter_params,
-        'filter_size_groups': _size_filter_groups(category_url, filter_params, filter_sizes),
-        'filter_reset_url': _filter_reset_url(category_url, filter_params),
+        'filter_size_groups': _size_filter_groups(category_url, catalog_url_params, filter_sizes),
+        'filter_reset_url': _filter_reset_url(category_url, catalog_url_params),
         # SEO
         'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
         'seo_description': category.meta_description or f"{category.naziv} — kvalitetna oprema za ribolov po povoljnim cijenama. Brza dostava širom Bosne i Hercegovine.",
