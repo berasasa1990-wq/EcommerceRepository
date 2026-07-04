@@ -177,15 +177,7 @@
 {% else %}
 {% if showcase_brands %}
 <section class="home-brand-strip-section">
-    <nav class="showcase-brand-strip home-brand-strip" aria-label="Brendovi">
-        {% for brand in showcase_brands %}
-        <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase"
-           class="showcase-brand-link"
-           title="{{ brand.naziv }}">
-            <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" width="200" height="48" loading="lazy" decoding="async">
-        </a>
-        {% endfor %}
-    </nav>
+    {% include 'partials/home_brand_carousel.html' with brands=showcase_brands %}
 </section>
 {% endif %}
 

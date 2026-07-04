@@ -73,8 +73,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260705e" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260705e">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260705f" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260705f">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -206,23 +206,15 @@
                         <span class="nav-action-label">Moj nalog</span>
                     </a>
                     {% endif %}
-                    <div class="nav-right-cluster">
-                        <button class="icon-btn search-btn" id="searchBtnMobile" aria-label="Pretraga">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                            </svg>
-                        </button>
-                        <a href="{% url 'cart' %}" class="nav-action-link cart-btn" aria-label="Korpa">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                                <line x1="3" y1="6" x2="21" y2="6"/>
-                                <path d="M16 10a4 4 0 0 1-8 0"/>
-                            </svg>
-                            <span class="nav-action-label">Korpa</span>
-                            {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
-                        </a>
-                    </div>
+                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn" aria-label="Korpa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <path d="M16 10a4 4 0 0 1-8 0"/>
+                        </svg>
+                        <span class="nav-action-label">Korpa</span>
+                        {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+                    </a>
                 </div>
             </div>
 
@@ -336,7 +328,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260705e" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260705f" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = document.getElementById('header');
     const navToggle = document.getElementById('navToggle');
     const navLinks = document.getElementById('navLinks');
-    const searchBtn = document.getElementById('searchBtnMobile');
     const headerSearch = document.getElementById('headerSearch');
     const searchClose = document.getElementById('searchClose');
 
@@ -326,11 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.location.assign(target);
     }
-
-    searchBtn?.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-    });
-    searchBtn?.addEventListener('click', openSearchOverlay);
 
     searchClose?.addEventListener('click', closeSearchOverlay);
 
