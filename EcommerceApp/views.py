@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 import re
@@ -1440,6 +1441,7 @@ def checkout(request):
             purchase_event_id = f'purchase-{order.broj}'
             track_purchase(request, order, event_id=purchase_event_id)
             request.session['meta_purchase_event_id'] = purchase_event_id
+            request.session.modified = True
 
             messages.success(request, 'Narudžba je uspješno poslana!')
             return redirect('order_success', broj=order.broj)
@@ -1474,14 +1476,21 @@ def order_success(request, broj):
     )
     purchase_event_id = request.session.pop('meta_purchase_event_id', f'purchase-{order.broj}')
     stavke = list(order.stavke.all())
+    purchase_contents = [
+        {
+            'id': stavka.sifra or str(stavka.artikal_id or stavka.pk),
+            'quantity': stavka.kolicina,
+            'item_price': float(stavka.cijena),
+        }
+        for stavka in stavke
+    ]
     context = {
         **_base_context(),
         'order': order,
         'meta_purchase_event_id': purchase_event_id,
         'meta_purchase_num_items': sum(stavka.kolicina for stavka in stavke),
-        'meta_purchase_content_ids': ','.join(
-            stavka.sifra or str(stavka.artikal_id or stavka.pk) for stavka in stavke
-        ),
+        'meta_purchase_content_ids': ','.join(item['id'] for item in purchase_contents),
+        'meta_purchase_contents': json.dumps(purchase_contents, ensure_ascii=False),
     }
     return render(request, 'order_success.html', context)
 

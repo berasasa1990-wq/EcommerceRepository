@@ -105,6 +105,25 @@
             currency: 'BAM'
         }, meta.event_id ? { eventID: meta.event_id } : {});
     };
+    window.trackMetaPurchase = function (el) {
+        if (!el || typeof fbq !== 'function') return;
+        var payload = {
+            value: parseFloat(el.dataset.value, 10),
+            currency: 'BAM',
+            content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean),
+            content_type: 'product',
+            num_items: parseInt(el.dataset.numItems, 10) || 0
+        };
+        if (el.dataset.orderId) {
+            payload.order_id = el.dataset.orderId;
+        }
+        if (el.dataset.contents) {
+            try {
+                payload.contents = JSON.parse(el.dataset.contents);
+            } catch (e) {}
+        }
+        fbq('track', 'Purchase', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
+    };
     </script>
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id={{ meta_pixel_id }}&ev=PageView&noscript=1"

@@ -2,10 +2,10 @@
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
-{% block title %}Narudžba primljena — opremazaribolov.ba{% endblock %}
+{% block page_title %}<title>Narudžba primljena — opremazaribolov.ba</title>{% endblock %}
 
 {% block content %}
-<section class="order-success-page"{% if meta_pixel_id and meta_purchase_event_id %} data-meta-purchase data-event-id="{{ meta_purchase_event_id }}" data-value="{{ order.ukupno }}" data-num-items="{{ meta_purchase_num_items }}" data-content-ids="{{ meta_purchase_content_ids }}"{% endif %}>
+<section class="order-success-page"{% if meta_pixel_id and meta_purchase_event_id %} data-meta-purchase data-event-id="{{ meta_purchase_event_id }}" data-order-id="{{ order.broj }}" data-value="{{ order.ukupno }}" data-num-items="{{ meta_purchase_num_items }}" data-content-ids="{{ meta_purchase_content_ids }}" data-contents="{{ meta_purchase_contents }}"{% endif %}>
     <h1>Hvala na narudžbi!</h1>
     <p>Vaša narudžba <strong>#{{ order.broj }}</strong> je uspješno primljena.</p>
     <p>Kontaktiraćemo vas uskoro na <strong>{{ order.email }}</strong> ili <strong>{{ order.telefon }}</strong>.</p>
@@ -22,21 +22,13 @@
         <a href="{% url 'home' %}" class="btn btn-secondary">Nastavi kupovinu</a>
     </div>
 </section>
-{% endblock %}
-
-{% block extra_js %}
 {% if meta_pixel_id and meta_purchase_event_id %}
 <script data-cfasync="false">
 (function () {
     var el = document.querySelector('[data-meta-purchase]');
-    if (!el || typeof fbq !== 'function') return;
-    fbq('track', 'Purchase', {
-        value: parseFloat(el.dataset.value, 10),
-        currency: 'BAM',
-        content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean),
-        content_type: 'product',
-        num_items: parseInt(el.dataset.numItems, 10) || 0
-    }, { eventID: el.dataset.eventId });
+    if (el && typeof window.trackMetaPurchase === 'function') {
+        window.trackMetaPurchase(el);
+    }
 })();
 </script>
 {% endif %}
