@@ -3508,6 +3508,8 @@ body.search-results-active main {
 
 .site-popup--gratis-offer {
     max-width: min(92vw, 400px);
+    display: flex;
+    flex-direction: column;
 }
 
 .gratis-offer-akcija {
@@ -3516,18 +3518,21 @@ body.search-results-active main {
     align-items: center;
     text-align: center;
     width: 100%;
+    min-height: 100%;
+    padding: 20px 16px 14px !important;
 }
 
 .gratis-offer-product {
     width: 100%;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
+    flex-shrink: 0;
 }
 
 .gratis-offer-product-image {
     position: relative;
-    width: 168px;
-    height: 168px;
-    margin: 0 auto 8px;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 6px;
     border-radius: 10px;
     overflow: hidden;
     background: var(--white);
@@ -3609,7 +3614,7 @@ body.search-results-active main {
     justify-content: center;
     flex-wrap: wrap;
     gap: 6px 10px;
-    margin: 0 0 12px;
+    margin: 0;
     width: 100%;
 }
 
@@ -3628,22 +3633,28 @@ body.search-results-active main {
 
 .gratis-offer-actions {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     width: 100%;
-    padding: 0 !important;
+    margin-top: auto;
+    padding: 10px 4px 0 !important;
 }
 
 .gratis-offer-actions .gratis-offer-btn {
-    flex: 1;
-    min-height: 42px;
-    padding: 10px 12px;
-    font-size: 14px;
+    flex: 0 0 auto;
+    width: auto !important;
+    min-width: 0;
+    min-height: 0;
+    padding: 6px 14px;
+    font-size: 13px;
     font-weight: 700;
-    border-radius: 8px;
+    line-height: 1.2;
+    border-radius: 6px;
     background: #5BB805 !important;
     color: #fff !important;
     border: none !important;
-    box-shadow: 0 3px 10px rgba(91, 184, 5, 0.28);
+    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.25);
     transition: filter 0.15s ease, transform 0.15s ease;
 }
 
@@ -3654,9 +3665,13 @@ body.search-results-active main {
 }
 
 @media (max-width: 480px) {
+    .gratis-offer-akcija {
+        padding: 16px 12px 12px !important;
+    }
+
     .gratis-offer-product-image {
-        width: 152px;
-        height: 152px;
+        width: 180px;
+        height: 180px;
     }
 
     .gratis-offer-name {
@@ -3672,10 +3687,14 @@ body.search-results-active main {
         font-size: 16px;
     }
 
+    .gratis-offer-actions {
+        gap: 10px;
+        padding-top: 8px !important;
+    }
+
     .gratis-offer-actions .gratis-offer-btn {
-        min-height: 40px;
-        font-size: 13px;
-        padding: 9px 10px;
+        font-size: 12px;
+        padding: 5px 12px;
     }
 }
 
