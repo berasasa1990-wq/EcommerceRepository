@@ -5,35 +5,30 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5GVT50WMXB"></script>
     <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-5GVT50WMXB');
+      gtag('config', 'AW-18301637370');
       window.trackGooglePurchase = function (data) {
-
-    console.log("TRACK PURCHASE", data);
-
-    if (!data || typeof gtag !== 'function') return false;
-
-    var transactionId = String(data.transaction_id || '');
-    if (!transactionId) return false;
-
-    try {
-        console.log(JSON.stringify(data.items, null, 2));
-    gtag('event', 'purchase', {
-        transaction_id: transactionId,
-        value: Number(data.value),
-        currency: 'BAM',
-        shipping: Number(data.shipping || 0),
-        items: data.items || []
-    });
-
-    console.log("PURCHASE SENT");
-
-} catch (e) {
-    console.error("GTAG ERROR:", e);
-}
-
-    console.log("PURCHASE EVENT SENT");
-
-    return true;
-};
+        if (!data || typeof gtag !== 'function') return false;
+        var transactionId = String(data.transaction_id || '');
+        if (!transactionId) return false;
+        var dedupeKey = 'gtag_purchase_' + transactionId;
+        try {
+          if (localStorage.getItem(dedupeKey)) return false;
+          localStorage.setItem(dedupeKey, '1');
+        } catch (e) {}
+        gtag('event', 'purchase', {
+          transaction_id: transactionId,
+          value: data.value,
+          currency: data.currency || 'BAM',
+          shipping: data.shipping,
+          items: data.items || []
+        });
+        return true;
+      };
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
