@@ -3503,48 +3503,119 @@ body.search-results-active main {
 
 /* Gratis promo on product detail */
 .gratis-promo {
-    display: block;
-    background: #c0392b;
-    color: #fff;
-    font-weight: 600;
-    font-size: 13px;
-    line-height: 1.35;
-    padding: 8px 12px;
-    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 12px;
     margin-top: 10px;
-    text-align: left;
+    padding: 10px 12px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    animation: deal-pulse 1.5s infinite ease-in-out;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background:
+        radial-gradient(ellipse 120px 80px at 0% 50%, rgba(255, 255, 255, 0.16) 0%, transparent 70%),
+        radial-gradient(ellipse 100px 70px at 100% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 65%),
+        linear-gradient(135deg, #5BB805 0%, #4a9a04 55%, #3d8203 100%);
+    color: #fff;
+    box-shadow: 0 3px 14px rgba(91, 184, 5, 0.32);
+    animation: gratis-promo-pulse 2.2s infinite ease-in-out;
 }
 
-.gratis-promo strong {
+@keyframes gratis-promo-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 3px 14px rgba(91, 184, 5, 0.32);
+    }
+    50% {
+        transform: scale(1.015);
+        box-shadow: 0 6px 20px rgba(91, 184, 5, 0.48);
+    }
+}
+
+.gratis-promo-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.gratis-promo-tag {
+    display: inline-block;
+    width: fit-content;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     color: #fff;
+}
+
+.gratis-promo-text {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #fff;
+}
+
+.gratis-promo-text strong {
+    color: #fff;
+    font-weight: 800;
 }
 
 .gratis-promo-discount {
-    font-size: 14px;
-    font-weight: 800;
-    color: #fff;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #3d8203;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     white-space: nowrap;
 }
 
 .product-detail-variation-form .gratis-promo {
     margin-top: 8px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     width: 100%;
 }
 
 @media (max-width: 768px) {
     .gratis-promo {
-        font-size: 12px;
-        padding: 6px 10px;
+        flex-wrap: wrap;
+        padding: 9px 10px;
         margin-top: 8px;
+        gap: 8px;
+    }
+
+    .gratis-promo-text {
+        font-size: 12px;
     }
 
     .gratis-promo-discount {
-        font-size: 13px;
+        font-size: 14px;
+        min-width: 48px;
+        padding: 5px 9px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gratis-promo {
+        animation: none;
     }
 }
 
@@ -8130,11 +8201,15 @@ body.search-results-active main {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #c0392b;
-    font-size: 13px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #5BB805;
+    color: #fff;
+    font-size: 12px;
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.02em;
+    box-shadow: 0 1px 4px rgba(91, 184, 5, 0.35);
 }
 
 @media (max-width: 480px) {
