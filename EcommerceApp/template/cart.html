@@ -68,6 +68,8 @@
                             <span class="price-original">{{ item.deal_info.original_total }} KM</span>
                             <span class="price-deal">{{ item.ukupno_stavka }} KM</span>
                         </p>
+                        {% elif item.na_akciji and item.bazna_cijena_decimal > item.cijena_decimal %}
+                        <p><span class="price-discounted">{{ item.ukupno_stavka }} KM</span></p>
                         {% else %}
                         <p>{{ item.ukupno_stavka }} KM</p>
                         {% endif %}

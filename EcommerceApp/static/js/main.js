@@ -1157,6 +1157,62 @@ document.addEventListener('DOMContentLoaded', () => {
         initUpsellPopup(upsellOverlay);
     }
 
+    function bindCheckoutUpsellForms(root = document) {
+        root.querySelectorAll('.checkout-upsell-add-form').forEach((form) => {
+            if (form.dataset.checkoutUpsellBound === '1') return;
+            form.dataset.checkoutUpsellBound = '1';
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    const formData = new FormData(form);
+                    formData.set('stay', '1');
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: new URLSearchParams(formData).toString(),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.ok) {
+                        throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+                    }
+                    updateCartBadge(data.cart_count || 0);
+                    showCartToast(data.message || 'Artikal je dodan u korpu.');
+                    if (data.checkout_items_html) {
+                        const list = document.getElementById('checkoutItemsList');
+                        if (list) list.innerHTML = data.checkout_items_html;
+                    }
+                    if (data.checkout_totals_html) {
+                        const totals = document.getElementById('checkoutOrderTotals');
+                        if (totals) totals.innerHTML = data.checkout_totals_html;
+                    }
+                    if (data.checkout_upsell_html !== undefined) {
+                        const upsellSection = document.getElementById('checkoutUpsellSection');
+                        if (upsellSection) {
+                            upsellSection.innerHTML = data.checkout_upsell_html;
+                            bindCheckoutUpsellForms(upsellSection);
+                        }
+                    }
+                    const checkoutPage = document.querySelector('.checkout-page[data-meta-initiate-checkout]');
+                    if (checkoutPage && data.cart_total) {
+                        checkoutPage.dataset.value = data.cart_total;
+                    }
+                } catch (err) {
+                    showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            });
+        });
+    }
+
+    bindCheckoutUpsellForms();
+
     document.querySelectorAll('[data-product-card]').forEach((card) => {
         const mainImage = card.querySelector('[data-main-image]');
         const nameEl = card.querySelector('[data-product-name]');

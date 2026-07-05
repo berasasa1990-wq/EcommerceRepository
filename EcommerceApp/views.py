@@ -1264,28 +1264,82 @@ def add_to_cart(request, slug):
     return redirect('product_detail', slug=slug)
 
 
+def _upsell_stay_on_page(request):
+    return (
+        request.POST.get('stay') == '1'
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    )
+
+
+def _upsell_redirect_target(request):
+    return 'checkout' if request.POST.get('next') == 'checkout' else 'cart'
+
+
+def _upsell_add_error_response(request, message):
+    if _upsell_stay_on_page(request):
+        return JsonResponse({'ok': False, 'message': message}, status=400)
+    messages.error(request, message)
+    return redirect(_upsell_redirect_target(request))
+
+
+def _checkout_summary_payload(request, cart):
+    from .upsell import get_checkout_upsell_offers
+
+    applied_code = cart.get_coupon_code()
+    summary = izracunaj_sazetak(
+        cart.ukupno,
+        user=request.user,
+        coupon_code=applied_code,
+    )
+    cart_items = list(cart)
+    for item in cart_items:
+        item.pop('deal_info', None)
+        item.pop('akcija_popup_discount', None)
+
+    return {
+        'checkout_items_html': render_to_string(
+            'partials/checkout_items.html',
+            {'cart_items': cart_items},
+            request=request,
+        ),
+        'checkout_totals_html': render_to_string(
+            'partials/order_totals_checkout.html',
+            {'summary': summary},
+            request=request,
+        ),
+        'checkout_upsell_html': render_to_string(
+            'partials/upsell_checkout.html',
+            {'upsell_offers': get_checkout_upsell_offers(cart)},
+            request=request,
+        ),
+        'cart_total': str(summary['ukupno']),
+    }
+
+
 @require_POST
 def add_upsell_to_cart(request, offer_id, product_id):
-    offer = get_object_or_404(UpsellOffer, pk=offer_id, aktivan=True)
-    product = get_object_or_404(Product.objects.filter(aktivan=True, na_stanju=True), pk=product_id)
+    offer = UpsellOffer.objects.filter(pk=offer_id, aktivan=True).first()
+    if not offer:
+        return _upsell_add_error_response(request, 'Ponuda više nije dostupna.')
 
-    # Validate product is in the offer
+    product = Product.objects.filter(aktivan=True, na_stanju=True, pk=product_id).first()
+    if not product:
+        return _upsell_add_error_response(request, 'Artikal nije dostupan.')
+
     if not offer.ponuda_artikli.filter(pk=product.pk).exists():
-        messages.error(request, 'Ovaj artikal nije dio ponude.')
-        return redirect('checkout' if request.POST.get('next') == 'checkout' else 'cart')
+        return _upsell_add_error_response(request, 'Ovaj artikal nije dio ponude.')
 
+    in_stock_variations = product.varijacije.filter(na_stanju=True)
     variation = None
-    var_id = request.POST.get('variation_id')
+    var_id = (request.POST.get('variation_id') or '').strip()
     if var_id:
         try:
-            variation = ProductVariation.objects.get(
-                pk=int(var_id), artikal=product, na_stanju=True
-            )
+            variation = in_stock_variations.get(pk=int(var_id))
         except (ProductVariation.DoesNotExist, ValueError):
-            messages.error(request, 'Nevažeća varijacija.')
-            return redirect('checkout' if request.POST.get('next') == 'checkout' else 'cart')
+            return _upsell_add_error_response(request, 'Nevažeća varijacija.')
+    elif in_stock_variations.exists():
+        return _upsell_add_error_response(request, 'Izaberite varijaciju.')
 
-    # Compute price with discount
     base_price = variation.prikazna_cijena if variation else product.prikazna_cijena
     final_price = base_price
     if offer.popust_postotak:
@@ -1296,10 +1350,7 @@ def add_upsell_to_cart(request, offer_id, product_id):
     cart = Cart(request)
     cart.add(product, variation=variation, quantity=1, custom_price=final_price)
 
-    stay_on_page = (
-        request.POST.get('stay') == '1'
-        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    )
+    stay_on_page = _upsell_stay_on_page(request)
     if offer.prikaz == UpsellOffer.PrikazTip.POPUP:
         from .upsell import mark_upsell_popup_consumed
         mark_upsell_popup_consumed(request)
@@ -1307,15 +1358,16 @@ def add_upsell_to_cart(request, offer_id, product_id):
     label = variation.naziv if variation else product.naziv
     success_message = f'"{product.naziv} - {label}" je dodato u korpu sa specijalnom ponudom!'
     if stay_on_page:
-        return JsonResponse({
+        payload = {
             'ok': True,
             'message': success_message,
             'cart_count': len(cart),
-        })
+        }
+        if request.POST.get('next') == 'checkout':
+            payload.update(_checkout_summary_payload(request, cart))
+        return JsonResponse(payload)
     messages.success(request, success_message)
-    if request.POST.get('next') == 'checkout':
-        return redirect('checkout')
-    return redirect('cart')
+    return redirect(_upsell_redirect_target(request))
 
 
 @require_POST

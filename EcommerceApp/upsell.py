@@ -55,7 +55,7 @@ def _discounted_price(base_price, offer):
 
 def build_upsell_offer_context(offer):
     offered_products = []
-    for product in offer.ponuda_artikli.filter(aktivan=True):
+    for product in offer.ponuda_artikli.filter(aktivan=True, na_stanju=True):
         original = product.prikazna_cijena
         discounted = _discounted_price(original, offer)
 
@@ -70,6 +70,9 @@ def build_upsell_offer_context(offer):
                 'original_price': variation_original,
                 'price': variation_discounted,
             })
+
+        if product.varijacije.exists() and not variations:
+            continue
 
         if variations:
             display_orig = min(item['original_price'] for item in variations)

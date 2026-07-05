@@ -31,19 +31,15 @@
 
         <aside class="checkout-summary">
             <h2>Pregled korpe</h2>
-            <ul class="checkout-items">
-                {% for item in cart_items %}
-                <li>
-                    <span class="checkout-item-label">
-                        {% include 'partials/cart_item_name.html' with item=item %}
-                        <span class="checkout-item-qty">× {{ item.quantity }}</span>
-                    </span>
-                    <span>{{ item.ukupno_stavka }} KM</span>
-                </li>
-                {% endfor %}
+            <ul class="checkout-items" id="checkoutItemsList">
+                {% include 'partials/checkout_items.html' with cart_items=cart_items %}
             </ul>
-            {% include 'partials/order_totals_checkout.html' with summary=summary %}
-            {% include 'partials/upsell_checkout.html' with upsell_offers=upsell_checkout_offers %}
+            <div id="checkoutOrderTotals">
+                {% include 'partials/order_totals_checkout.html' with summary=summary %}
+            </div>
+            <div id="checkoutUpsellSection">
+                {% include 'partials/upsell_checkout.html' with upsell_offers=upsell_checkout_offers %}
+            </div>
         </aside>
     </div>
 
