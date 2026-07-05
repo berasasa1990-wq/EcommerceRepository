@@ -3849,6 +3849,35 @@ body.search-results-active main {
     }
 }
 
+/* Gratis akcija hint on product detail */
+.gratis-akcija-hint {
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    margin: 10px 0 0;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    background: #c62828;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+    border-radius: 6px;
+}
+
+.product-detail-variations-block .gratis-akcija-hint {
+    margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    .gratis-akcija-hint {
+        font-size: 12px;
+        padding: 7px 10px;
+        margin-top: 8px;
+    }
+}
+
 /* Deal promo button */
 .deal-promo {
     display: inline-block;

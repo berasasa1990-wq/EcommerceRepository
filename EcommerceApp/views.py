@@ -1098,10 +1098,15 @@ def product_detail(request, slug):
 
     # X+1 deal promo for product detail (pulsating red box)
     from .upsell import get_deal_promo_data
+    from .gratis import build_gratis_offer_response, get_active_gratis_akcija_for_product
 
     deal_promo = get_deal_promo_data(product)
     if deal_promo:
         context['deal_promo'] = deal_promo
+
+    gratis_akcija = get_active_gratis_akcija_for_product(product)
+    if gratis_akcija and build_gratis_offer_response(gratis_akcija):
+        context['gratis_akcija_hint'] = True
 
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
     context['meta_view_content_event_id'] = view_content_event_id
