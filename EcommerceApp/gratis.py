@@ -24,6 +24,38 @@ def _product_is_available(product, variation=None):
     return product.na_stanju
 
 
+def get_active_gratis_akcija_for_product(product):
+    """Aktivna + Gratis akcija za trigger artikal (popup ili automatski)."""
+    if not product:
+        return None
+    for akcija in Akcija.objects.filter(
+        aktivan=True,
+        tip=Akcija.Tip.GRATIS,
+        artikal=product,
+        gratis_artikal__isnull=False,
+        popust_postotak__isnull=False,
+    ).select_related('gratis_artikal').order_by('redoslijed', '-id'):
+        if akcija.jos_traje() and akcija.gratis_artikal and akcija.gratis_artikal.aktivan:
+            return akcija
+    return None
+
+
+def get_gratis_promo_for_product(product):
+    """Podaci za promo baner na stranici artikla."""
+    akcija = get_active_gratis_akcija_for_product(product)
+    if not akcija:
+        return None
+
+    gratis = akcija.gratis_artikal
+    pct = format_gratis_pct(akcija)
+    is_full = Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100')
+    return {
+        'gratis_naziv': gratis.naziv,
+        'pct': pct,
+        'is_full_discount': is_full,
+    }
+
+
 def get_gratis_akcija_for_product(product):
     """Aktivna + Gratis akcija za automatsko dodavanje (bez pop-upa)."""
     if not product:

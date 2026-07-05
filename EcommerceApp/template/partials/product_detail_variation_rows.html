@@ -8,6 +8,7 @@
         {% csrf_token %}
         <input type="hidden" name="variation_id" value="{{ var.pk }}">
         {% include 'partials/product_qty_selector.html' %}
+        {% include 'partials/gratis_promo.html' %}
         <button type="submit" class="btn btn-detail-variation-add">Dodaj u korpu</button>
     </form>
 </div>

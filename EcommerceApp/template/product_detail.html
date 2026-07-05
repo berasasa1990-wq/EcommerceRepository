@@ -95,6 +95,8 @@
                     <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
                 </div>
 
+                {% include 'partials/gratis_promo.html' %}
+
                 {% if deal_promo %}
                 <div class="deal-promo">
                     <div class="deal-promo-line1">{{ deal_promo.promo_text }}</div>

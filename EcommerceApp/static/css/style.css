@@ -3501,6 +3501,53 @@ body.search-results-active main {
     margin: 0;
 }
 
+/* Gratis promo on product detail */
+.gratis-promo {
+    display: block;
+    background: #c0392b;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.35;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    text-align: left;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    animation: deal-pulse 1.5s infinite ease-in-out;
+}
+
+.gratis-promo strong {
+    color: #fff;
+}
+
+.gratis-promo-discount {
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.product-detail-variation-form .gratis-promo {
+    margin-top: 8px;
+    margin-bottom: 4px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .gratis-promo {
+        font-size: 12px;
+        padding: 6px 10px;
+        margin-top: 8px;
+    }
+
+    .gratis-promo-discount {
+        font-size: 13px;
+    }
+}
+
 /* Deal promo button */
 .deal-promo {
     display: inline-block;
@@ -8073,6 +8120,21 @@ body.search-results-active main {
 
 .site-popup-product--gratis .site-popup-product-label {
     color: var(--color-primary, #5BB805);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.site-popup-gratis-discount-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #c0392b;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
 }
 
 @media (max-width: 480px) {

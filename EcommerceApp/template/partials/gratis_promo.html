@@ -1,0 +1,10 @@
+{% if gratis_promo %}
+<div class="gratis-promo" role="note">
+    Ako dodate u korpu, dobijate <strong>{{ gratis_promo.gratis_naziv }}</strong>
+    {% if gratis_promo.is_full_discount %}
+    <span class="gratis-promo-discount">GRATIS</span>
+    {% else %}
+    na <span class="gratis-promo-discount">-{{ gratis_promo.pct }}%</span>
+    {% endif %}
+</div>
+{% endif %}

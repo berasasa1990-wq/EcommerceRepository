@@ -1098,9 +1098,15 @@ def product_detail(request, slug):
 
     # X+1 deal promo for product detail (pulsating red box)
     from .upsell import get_deal_promo_data
+    from .gratis import get_gratis_promo_for_product
+
     deal_promo = get_deal_promo_data(product)
     if deal_promo:
         context['deal_promo'] = deal_promo
+
+    gratis_promo = get_gratis_promo_for_product(product)
+    if gratis_promo:
+        context['gratis_promo'] = gratis_promo
 
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
     context['meta_view_content_event_id'] = view_content_event_id

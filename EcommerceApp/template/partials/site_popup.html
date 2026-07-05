@@ -40,7 +40,7 @@
         {% elif akcija.tip == 'gratis' and akcija.artikal and akcija.gratis_artikal %}
         <div class="site-popup-akcija">
             {% if akcija.popust_postotak %}
-            <div class="site-popup-akcija-promo" style="color: {{ akcija.boja_opisa }};">
+            <div class="site-popup-akcija-promo" style="color: '{{ akcija.boja_opisa }}';">
                 {% if akcija.popust_postotak >= 100 %}
                 <strong>GRATIS</strong> drugi artikal — dodaj oba u korpu
                 {% else %}
@@ -59,7 +59,7 @@
                         {% endif %}
                     </span>
                     <span class="site-popup-product-info">
-                        <span class="site-popup-product-label">Kupujete</span>
+                        <span class="site-popup-product-label">KUPUJETE</span>
                         <span class="site-popup-product-name">{{ akcija.artikal.naziv }}</span>
                         <span class="site-popup-product-price product-price">
                             {% include 'partials/product_price.html' with item=akcija.artikal %}
@@ -78,7 +78,14 @@
                         {% endif %}
                     </span>
                     <span class="site-popup-product-info">
-                        <span class="site-popup-product-label">Dobijate</span>
+                        <span class="site-popup-product-label">
+                            DOBIJATE
+                            {% if akcija.popust_postotak %}
+                            <span class="site-popup-gratis-discount-badge">
+                                {% if akcija.popust_postotak >= 100 %}-100%{% else %}-{{ akcija.popust_postotak|floatformat:0 }}%{% endif %}
+                            </span>
+                            {% endif %}
+                        </span>
                         <span class="site-popup-product-name">{{ akcija.gratis_artikal.naziv }}</span>
                         <span class="site-popup-product-price product-price">
                             {% with cijene=akcija.gratis_cijene_za_prikaz %}
