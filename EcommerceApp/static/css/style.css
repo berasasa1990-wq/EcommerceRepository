@@ -3633,27 +3633,33 @@ body.search-results-active main {
 
 .gratis-offer-actions {
     display: flex;
-    justify-content: space-between;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
     margin-top: auto;
     padding: 10px 4px 0 !important;
 }
 
 .gratis-offer-actions .gratis-offer-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 auto;
-    width: auto !important;
+    width: auto;
     min-width: 0;
     min-height: 0;
-    padding: 6px 14px;
+    padding: 5px 14px;
     font-size: 13px;
     font-weight: 700;
     line-height: 1.2;
     border-radius: 6px;
-    background: #5BB805 !important;
-    color: #fff !important;
-    border: none !important;
+    background: #5BB805;
+    color: #fff;
+    border: none;
+    cursor: pointer;
     box-shadow: 0 2px 8px rgba(91, 184, 5, 0.25);
     transition: filter 0.15s ease, transform 0.15s ease;
 }
@@ -3688,13 +3694,14 @@ body.search-results-active main {
     }
 
     .gratis-offer-actions {
-        gap: 10px;
+        gap: 8px;
         padding-top: 8px !important;
     }
 
     .gratis-offer-actions .gratis-offer-btn {
+        min-height: 0;
         font-size: 12px;
-        padding: 5px 12px;
+        padding: 4px 12px;
     }
 }
 
@@ -7159,6 +7166,10 @@ body.search-results-active main {
         font-size: 15px;
     }
 
+    .gratis-offer-actions .gratis-offer-btn {
+        min-height: 0;
+    }
+
     .form-input, .filter-input {
         font-size: 16px; /* prevent zoom on iOS */
         padding: 10px 12px;
@@ -8236,6 +8247,12 @@ body.search-results-active main {
 .site-popup .site-popup-cta:hover {
     filter: brightness(0.85);
     color: var(--white);
+}
+
+.site-popup--gratis-offer .gratis-offer-actions .gratis-offer-btn {
+    width: auto;
+    min-width: 0;
+    min-height: 0;
 }
 
 @media (max-width: 480px) {
