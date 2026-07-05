@@ -5,16 +5,16 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5GVT50WMXB"></script>
     <script>
-      window.trackGooglePurchase = function (data) {
-    console.log("trackGooglePurchase called", data);
+     window.trackGooglePurchase = function (data) {
+    console.log("STEP 1");
 
-    if (!data || typeof gtag !== 'function') return false;
-
-    var transactionId = String(data.transaction_id || '');
-    if (!transactionId) {
-        console.log("Missing transaction_id");
+    if (!data || typeof gtag !== 'function') {
+        console.log("STEP 2");
         return false;
     }
+
+    var transactionId = String(data.transaction_id || '');
+    console.log("STEP 3", transactionId);
 
     gtag('event', 'purchase', {
         transaction_id: transactionId,
@@ -24,7 +24,7 @@
         items: data.items || []
     });
 
-    console.log("Purchase event sent");
+    console.log("STEP 4");
 
     return true;
 };
