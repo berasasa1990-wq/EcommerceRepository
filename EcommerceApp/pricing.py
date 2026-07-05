@@ -13,13 +13,58 @@ def _postotni_popust(osnovica, postotak):
     return _kvantiziraj(osnovica * postotak / Decimal('100'))
 
 
+def _stavka_snizena_za_loyalty(item):
+    """Loyalty popust ne vrijedi na snižene artikle ni na stavke sa % umanjenjem."""
+    cijena = item.get('cijena_decimal')
+    if cijena is None:
+        cijena = Decimal(str(item.get('cijena', '0')))
+    bazna = item.get('bazna_cijena_decimal')
+    if bazna is None:
+        bazna = Decimal(str(item.get('bazna_cijena', '0')))
+
+    if item.get('na_akciji') or item.get('upsell') or item.get('timer_akcija'):
+        return True
+    return cijena < bazna
+
+
+def _loyalty_osnovica_iz_korpe(cart_items):
+    """Zbroj stavki po punoj cijeni — isključuje akcije, upsell i deal sniženja."""
+    if not cart_items:
+        return Decimal('0.00')
+
+    eligible = Decimal('0.00')
+    for item in cart_items:
+        cijena = item.get('cijena_decimal')
+        if cijena is None:
+            cijena = Decimal(str(item.get('cijena', '0')))
+        qty = int(item.get('quantity', 0))
+        if qty <= 0 or _stavka_snizena_za_loyalty(item):
+            continue
+
+        deal_info = item.get('deal_info')
+        if deal_info and deal_info.get('has_discount'):
+            full_count = int(deal_info.get('full_price_count', qty))
+            eligible += _kvantiziraj(cijena * full_count)
+            continue
+
+        if item.get('discounted_unit_price') is not None:
+            if qty <= 1:
+                continue
+            eligible += _kvantiziraj(cijena * (qty - 1))
+            continue
+
+        eligible += _kvantiziraj(cijena * qty)
+
+    return eligible
+
+
 def korisnik_ima_pogodnosti(user):
     if not user or not user.is_authenticated:
         return False
     return not Order.objects.filter(korisnik=user).exists()
 
 
-def izracunaj_sazetak(medjuzbir, user=None, coupon_code=''):
+def izracunaj_sazetak(medjuzbir, user=None, coupon_code='', cart_items=None):
     postavke = SiteSettings.load()
     medjuzbir = _kvantiziraj(medjuzbir)
 
@@ -57,7 +102,11 @@ def izracunaj_sazetak(medjuzbir, user=None, coupon_code=''):
     if coupon_code:
         kupon, _ = validiraj_kupon(coupon_code, user)
         if kupon:
-            kupon_popust = _postotni_popust(ukupno_sa_pdvom, kupon.postotak)
+            if kupon.automatski:
+                loyalty_osnovica = _loyalty_osnovica_iz_korpe(cart_items)
+                kupon_popust = _postotni_popust(loyalty_osnovica, kupon.postotak)
+            else:
+                kupon_popust = _postotni_popust(ukupno_sa_pdvom, kupon.postotak)
             popust += kupon_popust
             pogodnosti.append(f'Loyalty kupon {kupon.postotak}% ({kupon.kod})')
 

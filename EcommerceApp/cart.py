@@ -236,6 +236,7 @@ class Cart:
             self.ukupno,
             user=user,
             coupon_code=self.get_coupon_code(),
+            cart_items=list(self),
         )
 
     def get_product_and_variation(self, item):

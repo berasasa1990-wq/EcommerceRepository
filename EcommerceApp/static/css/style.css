@@ -8806,22 +8806,40 @@ body.search-results-active main {
         padding: 10px 16px;
     }
 
-    /* Upsell pozadina — ista na mobilnom kao na desktop baneru */
+    /* Upsell baneri — mobilni splash; popup ostaje bijel sa mrljama na uglovima */
     .upsell-cart-banners,
-    .checkout-upsell,
-    .upsell-popup {
+    .checkout-upsell {
         --upsell-splash-image: url('../img/upsell-splash-pattern-mobile.webp');
         --upsell-splash-size: 100% 100%;
         --upsell-splash-position: center;
     }
 
     .upsell-cart-banner,
-    .upsell-popup.site-popup,
-    .upsell-product,
     .checkout-upsell-card,
     .upsell-cart-banner-bg::after {
         background-image: var(--upsell-splash-image);
         background-size: 100% 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    #upsellPopupOverlay {
+        background: linear-gradient(
+            135deg,
+            rgba(91, 184, 5, 0.06) 0%,
+            rgba(0, 0, 0, 0.48) 100%
+        );
+    }
+
+    .upsell-popup.site-popup,
+    .upsell-product {
+        background-color: #ffffff;
+        background-image:
+            radial-gradient(ellipse 72px 52px at 0% 0%, rgba(91, 184, 5, 0.2) 0%, transparent 72%),
+            radial-gradient(ellipse 64px 48px at 100% 0%, rgba(91, 184, 5, 0.16) 0%, transparent 70%),
+            radial-gradient(ellipse 68px 52px at 100% 100%, rgba(91, 184, 5, 0.18) 0%, transparent 72%),
+            radial-gradient(ellipse 60px 48px at 0% 100%, rgba(91, 184, 5, 0.14) 0%, transparent 68%);
+        background-size: auto;
         background-position: center;
         background-repeat: no-repeat;
     }
@@ -8841,8 +8859,7 @@ body.search-results-active main {
     }
 
     .upsell-cart-banners,
-    .checkout-upsell,
-    .upsell-popup {
+    .checkout-upsell {
         --upsell-splash-image: url('../img/upsell-splash-pattern-compact.webp');
     }
 

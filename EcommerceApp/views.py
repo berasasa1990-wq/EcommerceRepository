@@ -1285,13 +1285,14 @@ def _upsell_add_error_response(request, message):
 def _checkout_summary_payload(request, cart):
     from .upsell import get_checkout_upsell_offers
 
+    cart_items = list(cart)
     applied_code = cart.get_coupon_code()
     summary = izracunaj_sazetak(
         cart.ukupno,
         user=request.user,
         coupon_code=applied_code,
+        cart_items=cart_items,
     )
-    cart_items = list(cart)
     for item in cart_items:
         item.pop('deal_info', None)
         item.pop('akcija_popup_discount', None)
@@ -1423,13 +1424,14 @@ def _loyalty_za_kupon(request):
 
 def _cart_context(request, cart):
     loyalty_card = _loyalty_za_kupon(request)
+    cart_items = list(cart)
     applied_code = cart.get_coupon_code()
     summary = izracunaj_sazetak(
         cart.ukupno,
         user=request.user,
         coupon_code=applied_code,
+        cart_items=cart_items,
     )
-    cart_items = list(cart)
     if cart_items:
         slug_map = dict(
             Product.objects.filter(
