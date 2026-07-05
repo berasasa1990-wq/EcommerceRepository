@@ -8130,7 +8130,8 @@ body.search-results-active main {
 }
 
 .upsell-product {
-    border: 1px solid rgba(91, 184, 5, 0.22);
+    border: 1px solid rgba(211, 47, 47, 0.16);
+    border-left: 4px solid var(--upsell-red);
     border-radius: 8px;
     padding: 10px;
     display: flex;
@@ -8141,6 +8142,7 @@ body.search-results-active main {
     background-size: var(--upsell-splash-size);
     background-position: var(--upsell-splash-position);
     background-repeat: no-repeat;
+    box-shadow: 0 3px 14px var(--upsell-red-glow);
 }
 
 .upsell-image-wrap {
@@ -8168,25 +8170,37 @@ body.search-results-active main {
 
 .upsell-name {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.3;
-    color: #d32f2f;
+    color: var(--black);
 }
 
 .upsell-prices {
     font-size: 14px;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .upsell-prices .original {
     text-decoration: line-through;
-    color: var(--gray-400);
-    font-size: 12px;
-    margin-right: 6px;
+    color: var(--black);
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0.55;
 }
 
 .upsell-prices .discounted {
-    color: #d32f2f;
+    color: var(--upsell-red);
+    font-weight: 800;
+    font-size: 16px;
+}
+
+.upsell-prices:not(:has(.original)) .discounted {
+    color: var(--black);
     font-weight: 700;
+    font-size: 15px;
 }
 
 .upsell-prices .var-note {
@@ -8206,16 +8220,21 @@ body.search-results-active main {
 .upsell-right .btn-small {
     margin-top: 6px;
     font-size: 13px;
-    padding: 8px 14px;
+    padding: 9px 16px;
     width: auto;
     align-self: flex-start;
-    background: #5BB805;
-    border-color: #5BB805;
+    background: linear-gradient(180deg, #e53935 0%, var(--upsell-red-dark) 100%);
+    border: none;
+    color: #fff !important;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(198, 40, 40, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .upsell-right .btn-small:hover {
-    background: #4a9a04;
-    border-color: #4a9a04;
+    background: linear-gradient(180deg, #ef5350 0%, #a31515 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(198, 40, 40, 0.42);
 }
 
 .upsell-note {
@@ -8233,6 +8252,9 @@ body.search-results-active main {
     --upsell-splash-image: url('../img/upsell-splash-pattern-sm.webp');
     --upsell-splash-size: cover;
     --upsell-splash-position: center;
+    --upsell-red: #d32f2f;
+    --upsell-red-dark: #b71c1c;
+    --upsell-red-glow: rgba(211, 47, 47, 0.18);
 }
 
 /* Upsell cart banners */
@@ -8258,10 +8280,13 @@ body.search-results-active main {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
-    border: 1px solid rgba(91, 184, 5, 0.28);
-    box-shadow: 0 2px 10px rgba(91, 184, 5, 0.1);
+    border: 1px solid rgba(211, 47, 47, 0.2);
+    border-left: 4px solid var(--upsell-red);
+    box-shadow:
+        0 4px 18px var(--upsell-red-glow),
+        0 2px 8px rgba(91, 184, 5, 0.08);
     box-sizing: border-box;
     background-color: #ffffff;
     background-image: var(--upsell-splash-image);
@@ -8331,7 +8356,7 @@ body.search-results-active main {
     min-width: 0;
     margin: 0;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.25;
     color: var(--black);
     overflow: hidden;
@@ -8351,12 +8376,19 @@ body.search-results-active main {
 
 .upsell-cart-banner-prices .original {
     text-decoration: line-through;
-    color: var(--gray-400);
+    color: var(--black);
     font-size: 11px;
+    font-weight: 700;
+    opacity: 0.55;
 }
 
 .upsell-cart-banner-prices .discounted {
-    color: #5BB805;
+    color: var(--upsell-red);
+    font-weight: 800;
+}
+
+.upsell-cart-banner-prices:not(:has(.original)) .discounted {
+    color: var(--black);
     font-weight: 700;
 }
 
@@ -8370,11 +8402,12 @@ body.search-results-active main {
 
 .upsell-cart-banner-discount-large {
     font-size: 20px;
-    font-weight: 800;
+    font-weight: 900;
     line-height: 1;
-    color: #5BB805;
+    color: var(--upsell-red);
     letter-spacing: -0.02em;
     flex-shrink: 0;
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .upsell-cart-banner-discount-large--empty {
@@ -8411,15 +8444,20 @@ body.search-results-active main {
 
 .upsell-cart-banners .btn-banner,
 .checkout-upsell .btn-banner {
-    background: #5BB805;
+    background: linear-gradient(180deg, #e53935 0%, var(--upsell-red-dark) 100%);
     color: #fff !important;
     border: none;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(198, 40, 40, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .upsell-cart-banners .btn-banner:hover,
 .checkout-upsell .btn-banner:hover {
-    background: #4a9a04;
+    background: linear-gradient(180deg, #ef5350 0%, #a31515 100%);
     color: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(198, 40, 40, 0.42);
 }
 
 /* Iznad artikala — jedan red: slika | naziv+cijena | dugme + % u sredini */
@@ -8433,16 +8471,17 @@ body.search-results-active main {
     left: 50%;
     top: 50%;
     z-index: 2;
-    transform: translate(-50%, -50%) skewX(-14deg) rotate(-8deg);
+    transform: translate(-50%, -50%) skewX(-12deg) rotate(-8deg);
     font-size: 44px;
     font-weight: 900;
     line-height: 1;
-    color: #5BB805;
+    color: var(--upsell-red);
     letter-spacing: -0.04em;
     pointer-events: none;
     text-shadow:
-        2px 2px 0 rgba(255, 255, 255, 0.95),
-        -1px -1px 0 rgba(255, 255, 255, 0.8);
+        3px 3px 0 rgba(255, 255, 255, 0.98),
+        -1px -1px 0 rgba(255, 255, 255, 0.85),
+        0 0 20px rgba(211, 47, 47, 0.25);
     white-space: nowrap;
 }
 
@@ -8465,6 +8504,8 @@ body.search-results-active main {
     border-radius: 8px;
     overflow: hidden;
     align-self: stretch;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .upsell-cart-banner-thumb--fill {
@@ -8582,9 +8623,12 @@ body.search-results-active main {
 .upsell-cart-banner-discount-large--beside-name {
     flex-shrink: 0;
     font-size: 22px;
-    font-weight: 800;
-    color: #5BB805;
+    font-weight: 900;
+    color: var(--upsell-red);
     line-height: 1;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(211, 47, 47, 0.08);
 }
 
 .upsell-cart-banner--banner_ispod .upsell-cart-banner-prices--inline {
@@ -8848,9 +8892,10 @@ body.search-results-active main {
 
 .checkout-upsell-title {
     margin: 0 0 4px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #5BB805;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--upsell-red);
+    letter-spacing: -0.01em;
 }
 
 .checkout-upsell-subtitle {
@@ -8862,15 +8907,18 @@ body.search-results-active main {
 
 .checkout-upsell-card {
     position: relative;
-    border: 1px solid rgba(91, 184, 5, 0.28);
-    border-radius: 8px;
+    border: 1px solid rgba(211, 47, 47, 0.2);
+    border-left: 4px solid var(--upsell-red);
+    border-radius: 10px;
     overflow: hidden;
     background-color: #ffffff;
     background-image: var(--upsell-splash-image);
     background-size: var(--upsell-splash-size);
     background-position: var(--upsell-splash-position);
     background-repeat: no-repeat;
-    box-shadow: 0 2px 10px rgba(91, 184, 5, 0.08);
+    box-shadow:
+        0 4px 18px var(--upsell-red-glow),
+        0 2px 8px rgba(91, 184, 5, 0.08);
     margin-bottom: 10px;
 }
 
@@ -8910,6 +8958,8 @@ body.search-results-active main {
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .checkout-upsell-thumb {
@@ -8944,35 +8994,47 @@ body.search-results-active main {
     flex: 1;
     min-width: 0;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.3;
     color: var(--black);
 }
 
 .checkout-upsell-discount {
     flex-shrink: 0;
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 15px;
+    font-weight: 900;
     line-height: 1;
-    color: #5BB805;
+    color: #fff;
+    background: var(--upsell-red);
+    padding: 5px 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.35);
 }
 
 .checkout-upsell-prices {
     margin: 0;
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 8px;
     font-size: 14px;
 }
 
 .checkout-upsell-prices .original {
     text-decoration: line-through;
-    color: var(--gray-400);
-    font-size: 12px;
+    color: var(--black);
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0.55;
 }
 
 .checkout-upsell-prices .discounted {
-    color: #5BB805;
+    color: var(--upsell-red);
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.checkout-upsell-prices:not(:has(.original)) .discounted {
+    color: var(--black);
     font-weight: 700;
     font-size: 16px;
 }
