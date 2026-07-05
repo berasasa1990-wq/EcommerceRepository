@@ -49,10 +49,14 @@ def get_gratis_promo_for_product(product):
     gratis = akcija.gratis_artikal
     pct = format_gratis_pct(akcija)
     is_full = Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100')
+    slika_url = None
+    if gratis.prikazna_slika:
+        slika_url = gratis.prikazna_slika.url
     return {
         'gratis_naziv': gratis.naziv,
         'pct': pct,
         'is_full_discount': is_full,
+        'slika_url': slika_url,
     }
 
 
