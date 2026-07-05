@@ -118,11 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gratisBadge) gratisBadge.textContent = pctLabel;
         if (gratisTitle) gratisTitle.textContent = offer.gratis_naziv;
         if (gratisText) {
-            if (offer.is_full_discount) {
-                gratisText.textContent = 'Želite li i ovaj artikal gratis uz vašu kupovinu?';
-            } else {
-                gratisText.textContent = `Želite li i ovaj artikal po akcijskoj cijeni od -${offer.pct}%?`;
-            }
+            const pctHtml = offer.is_full_discount
+                ? '<strong class="gratis-offer-pct">GRATIS</strong>'
+                : `<strong class="gratis-offer-pct">-${offer.pct}%</strong>`;
+            gratisText.innerHTML = `Želite li ovaj artikal po <strong>AKCIJSKOJ</strong> cijeni ${pctHtml}?`;
         }
 
         if (offer.slika_url && gratisImage) {
@@ -138,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gratisPrices && gratisOriginal && gratisDiscounted) {
             gratisOriginal.textContent = `${offer.original_price} KM`;
             gratisDiscounted.textContent = `${offer.discounted_price} KM`;
-            gratisPrices.hidden = offer.is_full_discount;
+            gratisPrices.hidden = false;
         }
 
         gratisOverlay.hidden = false;
