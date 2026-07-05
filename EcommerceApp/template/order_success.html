@@ -5,7 +5,7 @@
 {% block page_title %}<title>Narudžba primljena — opremazaribolov.ba</title>{% endblock %}
 
 {% block content %}
-<section class="order-success-page"{% if track_purchase and meta_pixel_id and meta_purchase_event_id %} data-meta-purchase data-event-id="{{ meta_purchase_event_id }}" data-order-id="{{ order.broj }}" data-value="{{ order.ukupno }}" data-num-items="{{ meta_purchase_num_items }}" data-content-ids="{{ meta_purchase_content_ids }}" data-contents="{{ meta_purchase_contents }}"{% endif %}>
+<section class="order-success-page"{% if meta_pixel_id and meta_purchase_event_id %} data-meta-purchase data-event-id="{{ meta_purchase_event_id }}" data-order-id="{{ order.broj }}" data-value="{{ order.ukupno }}" data-num-items="{{ meta_purchase_num_items }}" data-content-ids="{{ meta_purchase_content_ids }}" data-contents="{{ meta_purchase_contents }}"{% endif %}>
     <h1>Hvala na narudžbi!</h1>
     <p>Vaša narudžba <strong>#{{ order.broj }}</strong> je uspješno primljena.</p>
     <p>Kontaktiraćemo vas uskoro na <strong>{{ order.email }}</strong> ili <strong>{{ order.telefon }}</strong>.</p>
@@ -22,20 +22,12 @@
         <a href="{% url 'home' %}" class="btn btn-secondary">Nastavi kupovinu</a>
     </div>
 </section>
-{% if track_purchase %}
-{{ google_purchase_data|json_script:"google-purchase-data" }}
+{% if meta_pixel_id and meta_purchase_event_id %}
 <script data-cfasync="false">
 (function () {
-    var purchaseEl = document.getElementById('google-purchase-data');
-    if (purchaseEl && typeof window.trackGooglePurchase === 'function') {
-        try {
-            window.trackGooglePurchase(JSON.parse(purchaseEl.textContent));
-        } catch (e) {}
-    }
-
-    var metaEl = document.querySelector('[data-meta-purchase]');
-    if (metaEl && typeof window.trackMetaPurchase === 'function') {
-        window.trackMetaPurchase(metaEl);
+    var el = document.querySelector('[data-meta-purchase]');
+    if (el && typeof window.trackMetaPurchase === 'function') {
+        window.trackMetaPurchase(el);
     }
 })();
 </script>

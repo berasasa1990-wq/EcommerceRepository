@@ -1847,8 +1847,7 @@ def order_success(request, broj):
         Order.objects.prefetch_related('stavke'),
         broj=broj,
     )
-    purchase_event_id = request.session.pop('meta_purchase_event_id', None)
-    track_purchase = purchase_event_id is not None
+    purchase_event_id = request.session.pop('meta_purchase_event_id', f'purchase-{order.broj}')
     stavke = list(order.stavke.all())
     purchase_contents = [
         {
@@ -1858,30 +1857,13 @@ def order_success(request, broj):
         }
         for stavka in stavke
     ]
-    google_purchase_items = [
-        {
-            'item_id': stavka.sifra or str(stavka.artikal_id or stavka.pk),
-            'item_name': stavka.puni_naziv,
-            'price': float(stavka.cijena),
-            'quantity': stavka.kolicina,
-        }
-        for stavka in stavke
-    ]
     context = {
         **_base_context(),
         'order': order,
-        'track_purchase': track_purchase,
         'meta_purchase_event_id': purchase_event_id,
         'meta_purchase_num_items': sum(stavka.kolicina for stavka in stavke),
         'meta_purchase_content_ids': ','.join(item['id'] for item in purchase_contents),
         'meta_purchase_contents': json.dumps(purchase_contents, ensure_ascii=False),
-        'google_purchase_data': {
-            'transaction_id': order.broj,
-            'value': float(order.ukupno),
-            'currency': 'BAM',
-            'shipping': float(order.dostava),
-            'items': google_purchase_items,
-        },
     }
     return render(request, 'order_success.html', context)
 
