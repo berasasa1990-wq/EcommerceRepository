@@ -14,6 +14,8 @@
     var transactionId = String(data.transaction_id || '');
     if (!transactionId) return false;
 
+    try {
+        console.log(JSON.stringify(data.items, null, 2));
     gtag('event', 'purchase', {
         transaction_id: transactionId,
         value: Number(data.value),
@@ -21,6 +23,12 @@
         shipping: Number(data.shipping || 0),
         items: data.items || []
     });
+
+    console.log("PURCHASE SENT");
+
+} catch (e) {
+    console.error("GTAG ERROR:", e);
+}
 
     console.log("PURCHASE EVENT SENT");
 
