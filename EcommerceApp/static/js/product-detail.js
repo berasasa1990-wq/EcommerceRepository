@@ -106,6 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             updateCartBadge(data.cart_count);
             showCartToast(data.message);
+            if (data.upsell_html && typeof window.handleUpsellResponse === 'function') {
+                window.handleUpsellResponse(data.upsell_html);
+            }
             if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
                 window.trackMetaAddToCart(data.meta_add_to_cart);
             }

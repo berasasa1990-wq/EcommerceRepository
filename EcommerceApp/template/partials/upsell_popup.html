@@ -1,6 +1,7 @@
 {% if active_upsell_offer and active_upsell_offer.prikaz == 'popup' %}
 <div class="site-popup-overlay" id="upsellPopupOverlay" hidden
-     data-upsell-id="{{ active_upsell_offer.id }}">
+     data-upsell-id="{{ active_upsell_offer.id }}"
+     data-countdown-minutes="{{ active_upsell_offer.timer_minutes|default:15 }}">
     <div class="site-popup upsell-popup" role="dialog" aria-modal="true">
         <button type="button" class="site-popup-close" id="upsellPopupClose" aria-label="Zatvori">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -12,6 +13,10 @@
         <div class="upsell-header">
             <h3>{{ active_upsell_offer.naslov_ponude|default:"Specijalna ponuda za vas!" }}</h3>
             <p>{{ active_upsell_offer.opis_ponude|default:"Dodajte u korpu sa dodatnim popustom" }}</p>
+            <div class="upsell-timer">
+                <p class="upsell-timer-label">Akcija ističe za</p>
+                <div class="upsell-timer-countdown" data-upsell-countdown aria-live="polite">--:--:--</div>
+            </div>
         </div>
 
         <div class="upsell-products">
@@ -24,7 +29,7 @@
                     <div class="upsell-image-placeholder"></div>
                     {% endif %}
                 </div>
-                <form method="post" action="{% url 'add_upsell_to_cart' active_upsell_offer.id prod.id %}" class="upsell-right">
+                <form method="post" action="{% url 'add_upsell_to_cart' active_upsell_offer.id prod.id %}" class="upsell-right upsell-add-form">
                     {% csrf_token %}
                     <div class="upsell-name">{{ prod.naziv }}</div>
                     {% if prod.has_discount %}
@@ -51,14 +56,15 @@
                     <input type="hidden" name="variation_id" value="">
                     {% endif %}
 
-                    <button type="submit" class="btn btn-primary btn-small">Dodaj u korpu</button>
+                    <input type="hidden" name="stay" value="1">
+                    <button type="submit" class="btn btn-primary btn-small">{{ active_upsell_offer.tekst_dugmeta|default:"Dodaj u korpu" }}</button>
                 </form>
             </div>
             {% endfor %}
         </div>
 
         <div class="upsell-note">
-            <small>Ponuda važi samo za ovu sesiju.</small>
+            <small>Ponuda važi samo za ovu posjetu.</small>
         </div>
     </div>
 </div>

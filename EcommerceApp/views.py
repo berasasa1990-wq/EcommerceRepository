@@ -1233,10 +1233,23 @@ def add_to_cart(request, slug):
     _check_and_set_pending_upsell(request, product)
 
     if stay_on_page:
+        from django.template.loader import render_to_string
+
+        from .upsell import get_active_upsell_offer
+
+        upsell_html = ''
+        upsell_offer = get_active_upsell_offer(request)
+        if upsell_offer and upsell_offer.get('prikaz') == UpsellOffer.PrikazTip.POPUP:
+            upsell_html = render_to_string(
+                'partials/upsell_popup.html',
+                {'active_upsell_offer': upsell_offer},
+                request=request,
+            )
         return JsonResponse({
             'ok': True,
             'message': message,
             'cart_count': len(cart),
+            'upsell_html': upsell_html,
             'meta_add_to_cart': {
                 'event_id': add_to_cart_event_id,
                 'content_id': content_id,
@@ -1283,22 +1296,44 @@ def add_upsell_to_cart(request, offer_id, product_id):
     cart = Cart(request)
     cart.add(product, variation=variation, quantity=1, custom_price=final_price)
 
+    stay_on_page = (
+        request.POST.get('stay') == '1'
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    )
     if offer.prikaz == UpsellOffer.PrikazTip.POPUP:
-        from .upsell import clear_upsell_offer_session
-        clear_upsell_offer_session(request)
+        from .upsell import mark_upsell_popup_consumed
+        mark_upsell_popup_consumed(request)
 
     label = variation.naziv if variation else product.naziv
-    messages.success(request, f'"{product.naziv} - {label}" je dodato u korpu sa specijalnom ponudom!')
+    success_message = f'"{product.naziv} - {label}" je dodato u korpu sa specijalnom ponudom!'
+    if stay_on_page:
+        return JsonResponse({
+            'ok': True,
+            'message': success_message,
+            'cart_count': len(cart),
+        })
+    messages.success(request, success_message)
     if request.POST.get('next') == 'checkout':
         return redirect('checkout')
     return redirect('cart')
+
+
+@require_POST
+def dismiss_upsell_popup(request):
+    from .upsell import mark_upsell_popup_consumed
+
+    mark_upsell_popup_consumed(request)
+    return JsonResponse({'ok': True})
 
 
 def _check_and_set_pending_upsell(request, added_product):
     """Pokreni popup upsell samo kad se u korpu doda trigger artikal ili artikal iz trigger kategorije."""
     from django.db.models import Q
 
-    from .upsell import set_upsell_offer_session
+    from .upsell import is_upsell_popup_consumed, set_upsell_offer_session
+
+    if is_upsell_popup_consumed(request):
+        return
 
     try:
         offers = (

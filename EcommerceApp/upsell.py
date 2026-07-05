@@ -4,6 +4,8 @@ from .models import UpsellOffer
 
 UPSELL_SESSION_KEY = 'upsell_offer_id'
 LEGACY_UPSELL_SESSION_KEY = 'pending_upsell_offer_id'
+UPSELL_CONSUMED_SESSION_KEY = 'upsell_popup_consumed'
+UPSELL_TIMER_MINUTES = 15
 
 
 def set_upsell_offer_session(request, offer_id):
@@ -15,6 +17,16 @@ def set_upsell_offer_session(request, offer_id):
 def clear_upsell_offer_session(request):
     request.session.pop(UPSELL_SESSION_KEY, None)
     request.session.pop(LEGACY_UPSELL_SESSION_KEY, None)
+    request.session.modified = True
+
+
+def is_upsell_popup_consumed(request):
+    return bool(request.session.get(UPSELL_CONSUMED_SESSION_KEY))
+
+
+def mark_upsell_popup_consumed(request):
+    request.session[UPSELL_CONSUMED_SESSION_KEY] = True
+    clear_upsell_offer_session(request)
     request.session.modified = True
 
 
@@ -89,12 +101,16 @@ def build_upsell_offer_context(offer):
         'baner_url': offer.baner_slika.url if offer.baner_slika else None,
         'tekst_dugmeta': offer.tekst_dugmeta,
         'popust_postotak': offer.popust_postotak,
+        'timer_minutes': UPSELL_TIMER_MINUTES,
         'products': offered_products,
     }
 
 
 def get_active_upsell_offer(request):
     """Popup ponuda — jednom nakon triggera (dodavanje artikla u korpu)."""
+    if is_upsell_popup_consumed(request):
+        clear_upsell_offer_session(request)
+        return None
     offer_id = get_upsell_offer_id(request)
     if not offer_id:
         return None

@@ -744,6 +744,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateCartBadge(data.cart_count);
         showCartToast(data.message);
+        if (data.upsell_html) {
+            handleUpsellResponse(data.upsell_html);
+        }
         return data;
     }
 
@@ -1003,34 +1006,155 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Upsell popup — server šalje overlay samo jednom nakon triggera (dodavanje u korpu).
-    const upsellOverlay = document.getElementById('upsellPopupOverlay');
-    if (upsellOverlay) {
-        function closeUpsell() {
-            upsellOverlay.classList.remove('is-visible');
-            upsellOverlay.hidden = true;
+    const UPSELL_SESSION_KEY = 'upsell_popup_consumed_session';
+
+    function isUpsellConsumed() {
+        return sessionStorage.getItem(UPSELL_SESSION_KEY) === '1';
+    }
+
+    function markUpsellConsumed() {
+        sessionStorage.setItem(UPSELL_SESSION_KEY, '1');
+        fetch('/upsell/odbaci/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        }).catch(() => {});
+    }
+
+    function formatUpsellCountdown(ms) {
+        const totalSec = Math.max(0, Math.floor(ms / 1000));
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function initUpsellPopup(overlay) {
+        if (!overlay) return;
+        if (isUpsellConsumed()) {
+            overlay.remove();
+            return;
+        }
+
+        let countdownInterval = null;
+
+        function stopUpsellCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function startUpsellCountdown() {
+            const countdownEl = overlay.querySelector('[data-upsell-countdown]');
+            const minutes = parseInt(overlay.dataset.countdownMinutes || '15', 10);
+            if (!countdownEl || !Number.isFinite(minutes) || minutes <= 0) return;
+
+            const endMs = Date.now() + minutes * 60 * 1000;
+            const tick = () => {
+                const diff = endMs - Date.now();
+                if (diff <= 0) {
+                    countdownEl.textContent = '00:00:00';
+                    stopUpsellCountdown();
+                    return;
+                }
+                countdownEl.textContent = formatUpsellCountdown(diff);
+            };
+
+            tick();
+            stopUpsellCountdown();
+            countdownInterval = setInterval(tick, 1000);
+        }
+
+        function closeUpsell(recordConsumed = true) {
+            stopUpsellCountdown();
+            overlay.classList.remove('is-visible');
+            overlay.hidden = true;
             document.body.classList.remove('popup-open');
+            if (recordConsumed) {
+                markUpsellConsumed();
+            }
         }
 
         function openUpsell() {
-            upsellOverlay.hidden = false;
+            if (isUpsellConsumed()) {
+                overlay.remove();
+                return;
+            }
+            overlay.hidden = false;
             requestAnimationFrame(() => {
-                upsellOverlay.classList.add('is-visible');
+                overlay.classList.add('is-visible');
             });
             document.body.classList.add('popup-open');
+            startUpsellCountdown();
         }
 
-        setTimeout(openUpsell, 900);
+        openUpsell();
 
-        document.getElementById('upsellPopupClose')?.addEventListener('click', closeUpsell);
-        upsellOverlay.addEventListener('click', (e) => {
-            if (e.target === upsellOverlay) closeUpsell();
+        overlay.querySelector('#upsellPopupClose')?.addEventListener('click', () => {
+            closeUpsell(true);
         });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && upsellOverlay.classList.contains('is-visible')) {
-                closeUpsell();
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closeUpsell(true);
             }
         });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay.classList.contains('is-visible')) {
+                closeUpsell(true);
+            }
+        });
+
+        overlay.querySelectorAll('.upsell-add-form').forEach((form) => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    const formData = new FormData(form);
+                    formData.set('stay', '1');
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: new URLSearchParams(formData).toString(),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.ok) {
+                        throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+                    }
+                    updateCartBadge(data.cart_count || 0);
+                    showCartToast(data.message || 'Artikal je dodan u korpu.');
+                    closeUpsell(true);
+                } catch (err) {
+                    showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            });
+        });
+    }
+
+    function handleUpsellResponse(html) {
+        if (!html || isUpsellConsumed()) return;
+        document.getElementById('upsellPopupOverlay')?.remove();
+        document.body.insertAdjacentHTML('beforeend', html);
+        const overlay = document.getElementById('upsellPopupOverlay');
+        if (overlay) {
+            initUpsellPopup(overlay);
+        }
+    }
+
+    window.handleUpsellResponse = handleUpsellResponse;
+
+    const upsellOverlay = document.getElementById('upsellPopupOverlay');
+    if (upsellOverlay) {
+        initUpsellPopup(upsellOverlay);
     }
 
     document.querySelectorAll('[data-product-card]').forEach((card) => {

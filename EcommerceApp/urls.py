@@ -21,6 +21,7 @@ urlpatterns = [
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
     path('artikal/<slug:slug>/dodaj/', views.add_to_cart, name='add_to_cart'),
     path('upsell/<int:offer_id>/<int:product_id>/dodaj/', views.add_upsell_to_cart, name='add_upsell_to_cart'),
+    path('upsell/odbaci/', views.dismiss_upsell_popup, name='dismiss_upsell_popup'),
     path('korpa/', views.cart_view, name='cart'),
     path('korpa/azuriraj/', views.update_cart, name='update_cart'),
     path('korpa/kupon/', views.apply_coupon, name='apply_coupon'),
