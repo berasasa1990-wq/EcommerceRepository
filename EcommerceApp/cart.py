@@ -39,7 +39,7 @@ class Cart:
     def _line_key(self, product_id, variation_id=None):
         return f'{product_id}:{variation_id or 0}'
 
-    def add(self, product, variation=None, quantity=1, custom_price=None, *, promo_bazna=None):
+    def add(self, product, variation=None, quantity=1, custom_price=None, *, promo_bazna=None, gratis_akcija_id=None):
         key = self._line_key(product.pk, variation.pk if variation else None)
         prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
         if custom_price is not None:
@@ -66,6 +66,9 @@ class Cart:
                 self.cart[key]['bazna_cijena'] = str(bazna)
                 self.cart[key]['na_akciji'] = na_akciji
                 self.cart[key]['timer_akcija'] = True
+            if gratis_akcija_id is not None:
+                self.cart[key]['gratis_akcija_id'] = gratis_akcija_id
+                self.cart[key]['gratis_promo'] = True
         else:
             self.cart[key] = {
                 'product_id': product.pk,
@@ -83,6 +86,9 @@ class Cart:
                 'upsell': bool(custom_price),
                 'timer_akcija': bool(custom_price),
             }
+            if gratis_akcija_id is not None:
+                self.cart[key]['gratis_akcija_id'] = gratis_akcija_id
+                self.cart[key]['gratis_promo'] = True
         self.save()
 
     def remove(self, key):

@@ -577,6 +577,7 @@ class Akcija(models.Model):
         X_PLUS_1 = 'x_plus_1', 'X+1 prodaja (samo korpa)'
         USLOV = 'uslov', 'Uslov prodaja'
         KORPA_NUDJENJE = 'korpa_nudjenje', 'Korpa nudjenje'
+        GRATIS = 'gratis', '+ Gratis'
 
     naziv = models.CharField(
         max_length=100,
@@ -603,7 +604,16 @@ class Akcija(models.Model):
         null=True,
         related_name='akcije',
         verbose_name='Artikal',
-        help_text='Aktivan artikal sa sajta (tajmer, uslov, X+1, korpa nudjenje).',
+        help_text='Aktivan artikal sa sajta (tajmer, uslov, X+1, korpa nudjenje, + Gratis trigger).',
+    )
+    gratis_artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='akcije_gratis',
+        verbose_name='Gratis artikal',
+        help_text='Za + Gratis: artikal koji se automatski dodaje u korpu sa 100% popusta.',
     )
     kategorija = models.ForeignKey(
         'Category',
@@ -719,7 +729,7 @@ class Akcija(models.Model):
     def prikazi_korisniku(self, user):
         if not self.jos_traje():
             return False
-        if self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE}:
+        if self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE, self.Tip.GRATIS}:
             return False
         if self.tip == self.Tip.SLIKA and not self.slika:
             return False

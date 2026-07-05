@@ -18,11 +18,23 @@ class AkcijaAdminForm(forms.ModelForm):
             Akcija.Tip.USLOV,
             Akcija.Tip.X_PLUS_1,
             Akcija.Tip.KORPA_NUDJENJE,
+            Akcija.Tip.GRATIS,
         } and not artikal:
             raise forms.ValidationError('Odaberite artikal.')
         if artikal and not artikal.aktivan:
             raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
         return artikal
+
+    def clean_gratis_artikal(self):
+        gratis_artikal = self.cleaned_data.get('gratis_artikal')
+        tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
+        if tip != Akcija.Tip.GRATIS:
+            return gratis_artikal
+        if not gratis_artikal:
+            raise forms.ValidationError('Odaberite gratis artikal.')
+        if not gratis_artikal.aktivan:
+            raise forms.ValidationError('Gratis artikal mora biti aktivan na sajtu.')
+        return gratis_artikal
 
     def clean(self):
         cleaned = super().clean()
@@ -67,6 +79,12 @@ class AkcijaAdminForm(forms.ModelForm):
             ):
                 if cleaned.get(field) in (None, ''):
                     self.add_error(field, f'Obavezno ({label}).')
+
+        elif tip == Akcija.Tip.GRATIS:
+            artikal = cleaned.get('artikal')
+            gratis_artikal = cleaned.get('gratis_artikal')
+            if artikal and gratis_artikal and artikal.pk == gratis_artikal.pk:
+                self.add_error('gratis_artikal', 'Gratis artikal mora biti različit od trigger artikla.')
 
         return cleaned
 

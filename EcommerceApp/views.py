@@ -1199,9 +1199,15 @@ def add_to_cart(request, slug):
         custom_price=custom_price,
         promo_bazna=promo_bazna,
     )
+    from .gratis import apply_gratis_for_cart_add
+
+    gratis_akcija = apply_gratis_for_cart_add(cart, product, quantity=quantity)
     cart.clear_coupon()
     label = variation.naziv if variation else product.naziv
     message = f'"{label}" je dodano u korpu.'
+    if gratis_akcija and gratis_akcija.gratis_artikal:
+        gratis_label = gratis_akcija.gratis_artikal.naziv
+        message += f' Gratis: "{gratis_label}" je automatski dodano u korpu.'
     if custom_price is not None and promo_akcija and promo_akcija.popust_postotak:
         pct = int(promo_akcija.popust_postotak) if promo_akcija.popust_postotak == int(promo_akcija.popust_postotak) else promo_akcija.popust_postotak
         if promo_akcija.tip == Akcija.Tip.KORPA_NUDJENJE:
