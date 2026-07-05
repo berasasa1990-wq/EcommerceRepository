@@ -11,6 +11,10 @@
 
       gtag('config', 'G-5GVT50WMXB');
       gtag('config', 'AW-18301637370');
+      window.trackGooglePurchase = function (data) {
+        if (!data || typeof gtag !== 'function') return;
+        gtag('event', 'purchase', data);
+      };
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
