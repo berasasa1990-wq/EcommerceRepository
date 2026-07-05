@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Additional images thumbnails: click to swap as current main image (until page refresh)
     const thumbnails = document.querySelectorAll('.product-thumbnail');
     thumbnails.forEach((thumb) => {
         thumb.addEventListener('click', () => {
@@ -84,10 +83,98 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2200);
     }
 
-    async function submitAddToCartForm(form) {
+    const gratisOverlay = document.getElementById('gratisOfferOverlay');
+    const gratisImage = document.getElementById('gratisOfferImage');
+    const gratisPlaceholder = document.getElementById('gratisOfferPlaceholder');
+    const gratisBadge = document.getElementById('gratisOfferBadge');
+    const gratisTitle = document.getElementById('gratisOfferTitle');
+    const gratisText = document.getElementById('gratisOfferText');
+    const gratisPrices = document.getElementById('gratisOfferPrices');
+    const gratisOriginal = document.getElementById('gratisOfferOriginal');
+    const gratisDiscounted = document.getElementById('gratisOfferDiscounted');
+    const gratisAccept = document.getElementById('gratisOfferAccept');
+    const gratisDecline = document.getElementById('gratisOfferDecline');
+    const gratisClose = document.getElementById('gratisOfferClose');
+
+    let pendingGratisForm = null;
+    let pendingGratisOffer = null;
+
+    function closeGratisOfferModal() {
+        if (!gratisOverlay) return;
+        gratisOverlay.classList.remove('is-visible');
+        gratisOverlay.hidden = true;
+        document.body.classList.remove('popup-open');
+        pendingGratisForm = null;
+        pendingGratisOffer = null;
+    }
+
+    function openGratisOfferModal(offer, form) {
+        if (!gratisOverlay || !offer || !form) return;
+
+        pendingGratisForm = form;
+        pendingGratisOffer = offer;
+
+        const pctLabel = offer.is_full_discount ? 'GRATIS' : `-${offer.pct}%`;
+        if (gratisBadge) gratisBadge.textContent = pctLabel;
+        if (gratisTitle) gratisTitle.textContent = offer.gratis_naziv;
+        if (gratisText) {
+            if (offer.is_full_discount) {
+                gratisText.textContent = 'Želite li i ovaj artikal gratis uz vašu kupovinu?';
+            } else {
+                gratisText.textContent = `Želite li i ovaj artikal po akcijskoj cijeni od -${offer.pct}%?`;
+            }
+        }
+
+        if (offer.slika_url && gratisImage) {
+            gratisImage.src = offer.slika_url;
+            gratisImage.alt = offer.gratis_naziv;
+            gratisImage.hidden = false;
+            if (gratisPlaceholder) gratisPlaceholder.hidden = true;
+        } else {
+            if (gratisImage) gratisImage.hidden = true;
+            if (gratisPlaceholder) gratisPlaceholder.hidden = false;
+        }
+
+        if (gratisPrices && gratisOriginal && gratisDiscounted) {
+            gratisOriginal.textContent = `${offer.original_price} KM`;
+            gratisDiscounted.textContent = `${offer.discounted_price} KM`;
+            gratisPrices.hidden = offer.is_full_discount;
+        }
+
+        gratisOverlay.hidden = false;
+        requestAnimationFrame(() => {
+            gratisOverlay.classList.add('is-visible');
+        });
+        document.body.classList.add('popup-open');
+    }
+
+    async function submitGratisChoice(choice) {
+        if (!pendingGratisForm || !pendingGratisOffer) return;
+        const form = pendingGratisForm;
+        const offer = pendingGratisOffer;
+        closeGratisOfferModal();
+        await submitAddToCartForm(form, {
+            gratis_choice: choice,
+            gratis_akcija_id: String(offer.akcija_id),
+        });
+    }
+
+    gratisAccept?.addEventListener('click', () => submitGratisChoice('yes'));
+    gratisDecline?.addEventListener('click', () => submitGratisChoice('no'));
+    gratisClose?.addEventListener('click', closeGratisOfferModal);
+    gratisOverlay?.addEventListener('click', (event) => {
+        if (event.target === gratisOverlay) {
+            closeGratisOfferModal();
+        }
+    });
+
+    async function submitAddToCartForm(form, extraFields = {}) {
         const submitBtn = form.querySelector('[type="submit"]');
         const body = new URLSearchParams(new FormData(form));
         body.set('stay', '1');
+        Object.entries(extraFields).forEach(([key, value]) => {
+            body.set(key, value);
+        });
 
         if (submitBtn) submitBtn.disabled = true;
         try {
@@ -103,6 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (!response.ok || !data.ok) {
                 throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+            }
+            if (data.requires_gratis_choice && data.gratis_offer) {
+                openGratisOfferModal(data.gratis_offer, form);
+                return;
             }
             updateCartBadge(data.cart_count);
             showCartToast(data.message);

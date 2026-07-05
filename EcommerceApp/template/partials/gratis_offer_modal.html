@@ -1,0 +1,31 @@
+<div class="site-popup-overlay gratis-offer-overlay" id="gratisOfferOverlay" hidden>
+    <div class="site-popup gratis-offer-popup" role="dialog" aria-modal="true" aria-labelledby="gratisOfferTitle">
+        <button type="button" class="site-popup-close" id="gratisOfferClose" aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <div class="gratis-offer-body">
+            <div class="gratis-offer-media">
+                <img id="gratisOfferImage" src="" alt="" width="96" height="96" loading="lazy" decoding="async" hidden>
+                <span class="gratis-offer-image-placeholder" id="gratisOfferPlaceholder" hidden aria-hidden="true"></span>
+                <span class="gratis-offer-badge" id="gratisOfferBadge"></span>
+            </div>
+            <div class="gratis-offer-info">
+                <h3 class="gratis-offer-title" id="gratisOfferTitle">Specijalna ponuda</h3>
+                <p class="gratis-offer-text" id="gratisOfferText"></p>
+                <div class="gratis-offer-prices" id="gratisOfferPrices" hidden>
+                    <span class="original" id="gratisOfferOriginal"></span>
+                    <span class="discounted" id="gratisOfferDiscounted"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="gratis-offer-actions">
+            <button type="button" class="btn btn-primary" id="gratisOfferAccept">Želim</button>
+            <button type="button" class="btn btn-secondary" id="gratisOfferDecline">Ne želim</button>
+        </div>
+    </div>
+</div>

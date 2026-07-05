@@ -1098,15 +1098,10 @@ def product_detail(request, slug):
 
     # X+1 deal promo for product detail (pulsating red box)
     from .upsell import get_deal_promo_data
-    from .gratis import get_gratis_promo_for_product
 
     deal_promo = get_deal_promo_data(product)
     if deal_promo:
         context['deal_promo'] = deal_promo
-
-    gratis_promo = get_gratis_promo_for_product(product)
-    if gratis_promo:
-        context['gratis_promo'] = gratis_promo
 
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
     context['meta_view_content_event_id'] = view_content_event_id
@@ -1186,11 +1181,16 @@ def add_to_cart(request, slug):
     promo_bazna = None
     promo_akcija = None
     from .gratis import (
+        _add_discounted_gratis_line,
         apply_gratis_bundle_from_popup,
-        apply_gratis_for_cart_add,
-        build_auto_gratis_message,
+        build_gratis_choice_message,
+        build_gratis_offer_response,
         build_gratis_popup_message,
+        get_active_gratis_akcija_for_product,
     )
+
+    gratis_choice = request.POST.get('gratis_choice', '').strip()
+    gratis_akcija_id = request.POST.get('gratis_akcija_id', '').strip()
 
     akcija_id = request.POST.get('akcija_id', '').strip()
     if akcija_id:
@@ -1265,6 +1265,76 @@ def add_to_cart(request, slug):
             custom_price = snizena
             promo_bazna = prikazna
 
+    if gratis_choice in ('yes', 'no') and gratis_akcija_id:
+        choice_akcija = Akcija.objects.filter(
+            pk=gratis_akcija_id,
+            aktivan=True,
+            tip=Akcija.Tip.GRATIS,
+            artikal_id=product.pk,
+            gratis_artikal__isnull=False,
+            popust_postotak__isnull=False,
+        ).select_related('gratis_artikal').first()
+        if choice_akcija and choice_akcija.jos_traje():
+            cart.add(
+                product,
+                variation=variation,
+                quantity=quantity,
+                custom_price=custom_price,
+                promo_bazna=promo_bazna,
+            )
+            if gratis_choice == 'yes':
+                _add_discounted_gratis_line(
+                    cart, choice_akcija, choice_akcija.gratis_artikal, quantity=quantity,
+                )
+            cart.clear_coupon()
+            label = variation.naziv if variation else product.naziv
+            message = build_gratis_choice_message(
+                choice_akcija,
+                accepted=(gratis_choice == 'yes'),
+                trigger_label=label,
+            )
+            add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
+            track_add_to_cart(
+                request,
+                product,
+                variation=variation,
+                quantity=quantity,
+                event_id=add_to_cart_event_id,
+            )
+            _check_and_set_pending_upsell(request, product)
+            if stay_on_page:
+                return JsonResponse({
+                    'ok': True,
+                    'message': message,
+                    'cart_count': len(cart),
+                    'upsell_html': '',
+                    'meta_add_to_cart': {
+                        'event_id': add_to_cart_event_id,
+                        'content_id': product.sifra or str(product.pk),
+                        'content_name': product.naziv,
+                        'value': float(
+                            (variation.prikazna_cijena if variation else product.prikazna_cijena)
+                            * quantity
+                        ),
+                        'quantity': quantity,
+                    },
+                })
+            messages.success(request, message)
+            if request.POST.get('redirect_to') == 'cart':
+                return redirect('cart')
+            return redirect('product_detail', slug=slug)
+
+    if stay_on_page and not gratis_choice and not akcija_id:
+        offer_akcija = get_active_gratis_akcija_for_product(product)
+        if offer_akcija:
+            offer = build_gratis_offer_response(offer_akcija)
+            if offer:
+                return JsonResponse({
+                    'ok': True,
+                    'requires_gratis_choice': True,
+                    'gratis_offer': offer,
+                })
+
     cart.add(
         product,
         variation=variation,
@@ -1272,12 +1342,9 @@ def add_to_cart(request, slug):
         custom_price=custom_price,
         promo_bazna=promo_bazna,
     )
-    gratis_akcija = apply_gratis_for_cart_add(cart, product, quantity=quantity)
     cart.clear_coupon()
     label = variation.naziv if variation else product.naziv
     message = f'"{label}" je dodano u korpu.'
-    if gratis_akcija:
-        message += build_auto_gratis_message(gratis_akcija)
     if custom_price is not None and promo_akcija and promo_akcija.popust_postotak:
         pct = int(promo_akcija.popust_postotak) if promo_akcija.popust_postotak == int(promo_akcija.popust_postotak) else promo_akcija.popust_postotak
         if promo_akcija.tip == Akcija.Tip.KORPA_NUDJENJE:

@@ -95,8 +95,6 @@
                     <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
                 </div>
 
-                {% include 'partials/gratis_promo.html' %}
-
                 {% if deal_promo %}
                 <div class="deal-promo">
                     <div class="deal-promo-line1">{{ deal_promo.promo_text }}</div>
@@ -178,10 +176,11 @@
     </div>
 </section>
 {% endif %}
+{% include 'partials/gratis_offer_modal.html' %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260705y" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260705gratis" defer></script>
 {% if meta_pixel_id and meta_view_content_event_id %}
 <script data-cfasync="false">
 (function () {

@@ -25,7 +25,7 @@ def _product_is_available(product, variation=None):
 
 
 def get_active_gratis_akcija_for_product(product):
-    """Aktivna + Gratis akcija za trigger artikal (popup ili automatski)."""
+    """Aktivna + Gratis akcija za trigger artikal."""
     if not product:
         return None
     for akcija in Akcija.objects.filter(
@@ -40,41 +40,34 @@ def get_active_gratis_akcija_for_product(product):
     return None
 
 
-def get_gratis_promo_for_product(product):
-    """Podaci za promo baner na stranici artikla."""
-    akcija = get_active_gratis_akcija_for_product(product)
-    if not akcija:
+def build_gratis_offer_response(akcija):
+    """Podaci za modal ponude na stranici artikla."""
+    gratis = akcija.gratis_artikal
+    if not gratis:
         return None
 
-    gratis = akcija.gratis_artikal
+    gratis_variation = _resolve_product_variation(gratis)
+    if not _product_is_available(gratis, gratis_variation):
+        return None
+
+    prikazna = gratis_variation.prikazna_cijena if gratis_variation else gratis.prikazna_cijena
+    snizena = _gratis_discounted_price(akcija, gratis, gratis_variation)
+    if snizena is None:
+        return None
+
     pct = format_gratis_pct(akcija)
     is_full = Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100')
-    slika_url = None
-    if gratis.prikazna_slika:
-        slika_url = gratis.prikazna_slika.url
+    slika_url = gratis.prikazna_slika.url if gratis.prikazna_slika else None
+
     return {
+        'akcija_id': akcija.id,
         'gratis_naziv': gratis.naziv,
         'pct': pct,
         'is_full_discount': is_full,
         'slika_url': slika_url,
+        'original_price': str(prikazna),
+        'discounted_price': str(snizena),
     }
-
-
-def get_gratis_akcija_for_product(product):
-    """Aktivna + Gratis akcija za automatsko dodavanje (bez pop-upa)."""
-    if not product:
-        return None
-    for akcija in Akcija.objects.filter(
-        aktivan=True,
-        tip=Akcija.Tip.GRATIS,
-        gratis_popup=False,
-        artikal=product,
-        gratis_artikal__isnull=False,
-        popust_postotak__isnull=False,
-    ).select_related('gratis_artikal').order_by('redoslijed', '-id'):
-        if akcija.jos_traje():
-            return akcija
-    return None
 
 
 def _add_discounted_gratis_line(cart, akcija, gratis_product, *, quantity=1):
@@ -95,23 +88,8 @@ def _add_discounted_gratis_line(cart, akcija, gratis_product, *, quantity=1):
     return True
 
 
-def apply_gratis_for_cart_add(cart, trigger_product, *, quantity=1):
-    """Dodaj drugi artikal sa popustom kad se trigger doda u korpu."""
-    akcija = get_gratis_akcija_for_product(trigger_product)
-    if not akcija:
-        return None
-
-    gratis_product = akcija.gratis_artikal
-    if not gratis_product or not gratis_product.aktivan:
-        return None
-
-    if _add_discounted_gratis_line(cart, akcija, gratis_product, quantity=quantity):
-        return akcija
-    return None
-
-
 def apply_gratis_bundle_from_popup(cart, akcija, *, quantity=1):
-    """Dodaj trigger i gratis artikal iz pop-up ponude."""
+    """Dodaj trigger i gratis artikal iz site pop-up ponude."""
     if (
         akcija.tip != Akcija.Tip.GRATIS
         or not akcija.gratis_popup
@@ -158,11 +136,11 @@ def build_gratis_popup_message(akcija):
     )
 
 
-def build_auto_gratis_message(akcija):
+def build_gratis_choice_message(akcija, *, accepted, trigger_label):
     gratis = akcija.gratis_artikal
-    if not gratis:
-        return ''
-    pct = format_gratis_pct(akcija)
-    if Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100'):
-        return f' Gratis: "{gratis.naziv}" je automatski dodano u korpu.'
-    return f' "{gratis.naziv}" je automatski dodano u korpu sa {pct}% popusta.'
+    if accepted and gratis:
+        pct = format_gratis_pct(akcija)
+        if Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100'):
+            return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu.'
+        return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu ({pct}% popusta na drugi artikal).'
+    return f'"{trigger_label}" je dodano u korpu.'
