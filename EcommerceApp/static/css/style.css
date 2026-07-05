@@ -3533,11 +3533,10 @@ body.search-results-active main {
     width: 200px;
     height: 200px;
     margin: 0 auto 6px;
-    border-radius: 10px;
-    overflow: hidden;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    overflow: visible;
+    background: transparent;
+    border: none;
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3546,11 +3545,17 @@ body.search-results-active main {
 .gratis-offer-product-image img {
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
+    object-position: center;
     display: block;
-    border-radius: 9px;
-    padding: 6px;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
     box-sizing: border-box;
+    background: transparent;
 }
 
 .gratis-offer-image-placeholder {
@@ -3559,8 +3564,9 @@ body.search-results-active main {
     justify-content: center;
     width: 100%;
     height: 100%;
-    border-radius: 9px;
-    background: var(--gray-100);
+    border: none;
+    border-radius: 8px;
+    background: rgba(240, 249, 232, 0.55);
     color: var(--gray-400);
 }
 
