@@ -24,6 +24,7 @@
     --product-detail-side-inset: var(--home-product-inset);
     --home-mobile-side-inset: clamp(8px, 5.12vw, 20px);
     --home-mobile-card-gap: 4px;
+    --contact-float-clearance: 64px;
 }
 
 html {
@@ -4009,7 +4010,7 @@ body.search-results-active main {
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
-    margin: 0;
+    margin: 0 var(--contact-float-clearance) 0 0;
     min-width: 0;
 }
 
@@ -5417,6 +5418,7 @@ body.search-results-active main {
     gap: 12px;
     flex-wrap: wrap;
     max-width: 360px;
+    margin-right: var(--contact-float-clearance);
 }
 
 .product-qty-selector {
@@ -7301,6 +7303,7 @@ body.search-results-active main {
         flex: 0 0 auto;
         margin-left: auto;
     }
+
     .btn-detail-variation-add {
         padding: 6px 10px;
         font-size: 13px;
