@@ -3520,16 +3520,16 @@ body.search-results-active main {
 
 .gratis-offer-product {
     width: 100%;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .gratis-offer-product-image {
     position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 12px;
+    width: 168px;
+    height: 168px;
+    margin: 0 auto 8px;
     border-radius: 10px;
-    overflow: visible;
+    overflow: hidden;
     background: var(--white);
     border: 1px solid var(--gray-200);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
@@ -3564,58 +3564,42 @@ body.search-results-active main {
     height: 40px;
 }
 
-.gratis-offer-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    background: #5BB805;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 900;
-    line-height: 1;
-    padding: 4px 7px;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.35);
-    white-space: nowrap;
-    z-index: 2;
-}
-
 .gratis-offer-name {
     margin: 0;
-    padding: 0 8px;
-    font-size: 16px;
+    padding: 0 6px;
+    font-size: 13px;
     font-weight: 700;
-    line-height: 1.35;
+    line-height: 1.3;
     color: var(--black);
     display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
 .gratis-offer-question {
-    margin: 0 0 12px;
-    padding: 10px 12px;
+    margin: 0 0 8px;
+    padding: 7px 10px;
     width: 100%;
     box-sizing: border-box;
-    font-size: 14px;
-    line-height: 1.45;
+    font-size: 12px;
+    line-height: 1.4;
     font-weight: 500;
     color: #2e7d32;
     background: linear-gradient(135deg, #f0f9e8 0%, #e8f5d8 100%);
-    border: 2px solid #5BB805;
+    border: 1px solid #5BB805;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.12);
+    box-shadow: 0 2px 6px rgba(91, 184, 5, 0.1);
 }
 
 .gratis-offer-question strong {
-    font-weight: 800;
+    font-weight: 700;
     color: #1b5e20;
 }
 
 .gratis-offer-pct {
-    color: #c62828 !important;
+    color: #e60000 !important;
     font-weight: 900 !important;
 }
 
@@ -3624,13 +3608,13 @@ body.search-results-active main {
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 8px 12px;
-    margin: 0 0 16px;
+    gap: 6px 10px;
+    margin: 0 0 12px;
     width: 100%;
 }
 
 .gratis-offer-prices .price-original {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--gray-600);
 }
@@ -3638,7 +3622,7 @@ body.search-results-active main {
 .gratis-offer-prices .price-sale {
     color: #e60000;
     font-weight: 800;
-    font-size: 22px;
+    font-size: 17px;
     margin-right: 0;
 }
 
@@ -3651,9 +3635,9 @@ body.search-results-active main {
 
 .gratis-offer-actions .gratis-offer-btn {
     flex: 1;
-    min-height: 46px;
-    padding: 12px 14px;
-    font-size: 15px;
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 14px;
     font-weight: 700;
     border-radius: 8px;
     background: #5BB805 !important;
@@ -3671,32 +3655,27 @@ body.search-results-active main {
 
 @media (max-width: 480px) {
     .gratis-offer-product-image {
-        width: 104px;
-        height: 104px;
+        width: 152px;
+        height: 152px;
     }
 
     .gratis-offer-name {
-        font-size: 15px;
+        font-size: 12px;
     }
 
     .gratis-offer-question {
-        font-size: 13px;
-        padding: 9px 10px;
+        font-size: 11px;
+        padding: 6px 8px;
     }
 
     .gratis-offer-prices .price-sale {
-        font-size: 20px;
-    }
-
-    .gratis-offer-actions {
-        flex-direction: column;
-        gap: 8px;
+        font-size: 16px;
     }
 
     .gratis-offer-actions .gratis-offer-btn {
-        width: 100%;
-        min-height: 44px;
-        font-size: 14px;
+        min-height: 40px;
+        font-size: 13px;
+        padding: 9px 10px;
     }
 }
 

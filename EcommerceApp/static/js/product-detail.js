@@ -86,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const gratisOverlay = document.getElementById('gratisOfferOverlay');
     const gratisImage = document.getElementById('gratisOfferImage');
     const gratisPlaceholder = document.getElementById('gratisOfferPlaceholder');
-    const gratisBadge = document.getElementById('gratisOfferBadge');
     const gratisTitle = document.getElementById('gratisOfferTitle');
     const gratisText = document.getElementById('gratisOfferText');
     const gratisPrices = document.getElementById('gratisOfferPrices');
@@ -114,8 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         pendingGratisForm = form;
         pendingGratisOffer = offer;
 
-        const pctLabel = offer.is_full_discount ? 'GRATIS' : `-${offer.pct}%`;
-        if (gratisBadge) gratisBadge.textContent = pctLabel;
         if (gratisTitle) gratisTitle.textContent = offer.gratis_naziv;
         if (gratisText) {
             const pctHtml = offer.is_full_discount
