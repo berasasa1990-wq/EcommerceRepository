@@ -22,6 +22,9 @@
         <a href="{% url 'home' %}" class="btn btn-secondary">Nastavi kupovinu</a>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
 {% if track_purchase %}
 {{ google_purchase_data|json_script:"google-purchase-data" }}
 <script data-cfasync="false">
@@ -29,7 +32,9 @@
     var purchaseEl = document.getElementById('google-purchase-data');
     if (purchaseEl && typeof window.trackGooglePurchase === 'function') {
         try {
-            window.trackGooglePurchase(JSON.parse(purchaseEl.textContent));
+            if (window.trackGooglePurchase(JSON.parse(purchaseEl.textContent))) {
+                window.history.replaceState(null, '', window.location.pathname);
+            }
         } catch (e) {}
     }
 

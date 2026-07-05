@@ -1817,7 +1817,8 @@ def checkout(request):
             request.session.modified = True
 
             messages.success(request, 'Narudžba je uspješno poslana!')
-            return redirect('order_success', broj=order.broj)
+            success_url = reverse('order_success', kwargs={'broj': order.broj})
+            return redirect(f'{success_url}?purchase=1')
 
     from .upsell import get_checkout_upsell_offers
 
@@ -1848,7 +1849,9 @@ def order_success(request, broj):
         broj=broj,
     )
     purchase_event_id = request.session.pop('meta_purchase_event_id', None)
-    track_purchase = purchase_event_id is not None
+    track_purchase = request.GET.get('purchase') == '1'
+    if track_purchase and not purchase_event_id:
+        purchase_event_id = f'purchase-{order.broj}'
     stavke = list(order.stavke.all())
     purchase_contents = [
         {

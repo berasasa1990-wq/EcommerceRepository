@@ -12,8 +12,22 @@
       gtag('config', 'G-5GVT50WMXB');
       gtag('config', 'AW-18301637370');
       window.trackGooglePurchase = function (data) {
-        if (!data || typeof gtag !== 'function') return;
-        gtag('event', 'purchase', data);
+        if (!data || typeof gtag !== 'function') return false;
+        var transactionId = String(data.transaction_id || '');
+        if (!transactionId) return false;
+        var dedupeKey = 'gtag_purchase_' + transactionId;
+        try {
+          if (localStorage.getItem(dedupeKey)) return false;
+          localStorage.setItem(dedupeKey, '1');
+        } catch (e) {}
+        gtag('event', 'purchase', {
+          transaction_id: transactionId,
+          value: data.value,
+          currency: data.currency || 'BAM',
+          shipping: data.shipping,
+          items: data.items || []
+        });
+        return true;
       };
     </script>
     <meta charset="UTF-8">
