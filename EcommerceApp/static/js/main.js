@@ -965,7 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const formData = new FormData(akcijaForm);
                         formData.set('stay', '1');
                         if (
-                            overlay.dataset.akcijaTip === 'timer'
+                            (overlay.dataset.akcijaTip === 'timer' || overlay.dataset.akcijaTip === 'gratis')
                             && overlay.dataset.akcijaId
                             && !formData.get('akcija_id')
                         ) {

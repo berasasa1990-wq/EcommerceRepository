@@ -83,6 +83,8 @@ class AkcijaAdminForm(forms.ModelForm):
         elif tip == Akcija.Tip.GRATIS:
             artikal = cleaned.get('artikal')
             gratis_artikal = cleaned.get('gratis_artikal')
+            if cleaned.get('popust_postotak') in (None, ''):
+                self.add_error('popust_postotak', 'Unesite % popusta na drugi artikal.')
             if artikal and gratis_artikal and artikal.pk == gratis_artikal.pk:
                 self.add_error('gratis_artikal', 'Gratis artikal mora biti različit od trigger artikla.')
 

@@ -314,7 +314,7 @@ class BrandAdmin(admin.ModelAdmin):
 @admin.register(Akcija)
 class AkcijaAdmin(admin.ModelAdmin):
     form = AkcijaAdminForm
-    list_display = ('naziv', 'tip', 'artikal', 'gratis_artikal', 'kategorija', 'popust_postotak', 'aktivan', 'redoslijed')
+    list_display = ('naziv', 'tip', 'artikal', 'gratis_artikal', 'popust_postotak', 'gratis_popup', 'aktivan', 'redoslijed')
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naziv', 'artikal__naziv', 'gratis_artikal__naziv', 'kategorija__naziv')
@@ -333,14 +333,15 @@ class AkcijaAdmin(admin.ModelAdmin):
                 '3) X+1 — samo u korpi (1+1 / 2+1 / 3+1). '
                 '4) Uslov prodaja — prag se računa od cijele korpe minus 1 komad ovog artikla; popust na 1 komad. '
                 '5) Korpa nudjenje — artikal + % + kategorija; pored stavki iz kategorije u korpi. '
-                '6) + Gratis — trigger artikal + gratis artikal (100% popust, samo korpa). '
+                '6) + Gratis — trigger + drugi artikal sa % popusta; opcionalno pop-up (oba u korpu na klik). '
                 'Sve akcije rade dok je „Aktivan” uključen.'
             ),
         }),
         ('Sadržaj', {
             'fields': (
                 'slika', 'preview_slika',
-                'artikal', 'gratis_artikal', 'kategorija', 'popust_postotak', 'prag_korpe_km', 'deal_vrsta',
+                'artikal', 'gratis_artikal', 'popust_postotak', 'gratis_popup',
+                'kategorija', 'prag_korpe_km', 'deal_vrsta',
                 'pocetak', 'trajanje_sati',
                 'tekst_dugmeta', 'link_dugmeta',
                 'boja_dugmeta', 'boja_opisa',

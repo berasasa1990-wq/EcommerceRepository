@@ -613,7 +613,12 @@ class Akcija(models.Model):
         null=True,
         related_name='akcije_gratis',
         verbose_name='Gratis artikal',
-        help_text='Za + Gratis: artikal koji se automatski dodaje u korpu sa 100% popusta.',
+        help_text='Za + Gratis: drugi artikal koji dobija popust (%).',
+    )
+    gratis_popup = models.BooleanField(
+        default=False,
+        verbose_name='Prikaži kao pop-up',
+        help_text='Uključeno = ponuda u pop-upu (oba artikla na klik). Isključeno = automatski u korpi pri dodavanju trigger artikla.',
     )
     kategorija = models.ForeignKey(
         'Category',
@@ -724,12 +729,19 @@ class Akcija(models.Model):
         return self.aktivan
 
     def je_popup(self):
+        if self.tip == self.Tip.GRATIS:
+            return bool(self.gratis_popup)
         return self.tip in {self.Tip.SLIKA, self.Tip.TIMER, self.Tip.USLOV}
 
     def prikazi_korisniku(self, user):
         if not self.jos_traje():
             return False
-        if self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE, self.Tip.GRATIS}:
+        if self.tip == self.Tip.GRATIS:
+            if not self.gratis_popup:
+                return False
+            if not self.artikal_id or not self.gratis_artikal_id or self.popust_postotak is None:
+                return False
+        elif self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE}:
             return False
         if self.tip == self.Tip.SLIKA and not self.slika:
             return False
@@ -764,6 +776,36 @@ class Akcija(models.Model):
             return None
         bazna = variation.prikazna_cijena if variation else product.prikazna_cijena
         return _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
+
+    def gratis_snizena_cijena(self, product, variation=None):
+        """Snižena cijena za + Gratis (% od trenutne prikazne cijene drugog artikla)."""
+        if (
+            self.tip != self.Tip.GRATIS
+            or self.popust_postotak is None
+            or not self.jos_traje()
+            or not self.gratis_artikal_id
+            or product.pk != self.gratis_artikal_id
+        ):
+            return None
+        bazna = variation.prikazna_cijena if variation else product.prikazna_cijena
+        return _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
+
+    def gratis_cijene_za_prikaz(self):
+        """Originalna i snižena cijena gratis artikla za pop-up."""
+        if self.tip != self.Tip.GRATIS or not self.gratis_artikal_id or self.popust_postotak is None:
+            return None
+        artikal = self.gratis_artikal
+        if artikal is None:
+            return None
+        bazna = artikal.prikazna_cijena
+        snizena = _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
+        if snizena is None:
+            return None
+        return {
+            'bazna': bazna,
+            'snizena': snizena,
+            'pct': self.popust_postotak,
+        }
 
     def timer_cijene_za_prikaz(self):
         """Originalna i snižena cijena za pop-up tajmera."""
