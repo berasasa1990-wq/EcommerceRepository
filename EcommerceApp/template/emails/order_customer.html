@@ -16,9 +16,13 @@
         }
         table { border-collapse: collapse; }
         img { border: 0; display: block; max-width: 100%; }
+        .invoice-section {
+            page-break-after: always;
+            break-after: page;
+        }
         .doc {
             max-width: 820px;
-            margin: 0 auto 32px;
+            margin: 0 auto;
             background: #ffffff;
         }
         .doc-header-table { width: 100%; }
@@ -147,21 +151,37 @@
         }
         .order-footer a { color: #28403d; }
 
+        .page-separator {
+            max-width: 820px;
+            margin: 40px auto;
+            padding: 16px 0;
+            border-top: 3px dashed #c4bc96;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #28403d;
+        }
+
         .warranty-section {
-            max-width: 210mm;
-            margin: 48px auto 0;
+            width: 210mm;
+            max-width: 100%;
+            margin: 0 auto;
             page-break-before: always;
+            break-before: page;
         }
         .warranty-a4 {
             width: 210mm;
             max-width: 100%;
-            min-height: 297mm;
+            min-height: 277mm;
             margin: 0 auto;
-            padding: 14mm 16mm;
+            padding: 10mm 14mm;
             background: #ffffff;
             border: 2px solid #28403d;
             box-sizing: border-box;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         .warranty-a4-head {
             display: table;
@@ -280,7 +300,7 @@
         }
 
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 10mm;
         }
 
@@ -289,106 +309,45 @@
                 background: #ffffff;
                 padding: 0;
             }
+            .page-separator {
+                display: none;
+            }
+            .invoice-section {
+                page-break-after: always;
+                break-after: page;
+            }
             .doc {
                 max-width: none;
-                margin-bottom: 0;
+                margin: 0;
             }
             .warranty-section {
                 page-break-before: always;
+                break-before: page;
+                width: auto;
                 max-width: none;
-                margin-top: 0;
+                margin: 0;
             }
             .warranty-a4 {
                 border: 1px solid #28403d;
                 margin: 0;
                 width: auto;
+                max-width: none;
                 min-height: auto;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
     </style>
 </head>
 <body>
 
-    {% include 'partials/order_invoice_document.html' %}
-
-    <div class="warranty-section">
-        <div class="warranty-a4">
-            <div class="warranty-a4-head">
-                <div class="warranty-a4-head-left">
-                    <h2 class="warranty-a4-title">Garancija</h2>
-                    <p class="warranty-a4-subtitle">Garantni list vezan za narudžbu</p>
-                </div>
-                <div class="warranty-a4-head-right">
-                    <p class="warranty-a4-order">Narudžba #{{ order.broj }}</p>
-                    <p class="warranty-a4-meta">
-                        Datum izdavanja: {{ datum }}<br>
-                        Vrijeme: {{ vrijeme }}
-                    </p>
-                </div>
-            </div>
-
-            <table class="warranty-a4-customer" role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td>
-                        <strong>Prodavac</strong>
-                        {{ site_name }}
-                    </td>
-                    <td>
-                        <strong>Kupac</strong>
-                        {{ order.ime_prezime }}
-                    </td>
-                    <td>
-                        <strong>Kontakt kupca</strong>
-                        {{ order.telefon }}<br>{{ order.email }}
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="padding-top: 10px;">
-                        <strong>Adresa kupca</strong>
-                        {{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}
-                    </td>
-                </tr>
-            </table>
-
-            <p class="warranty-order-ref">
-                <strong>Potvrda garancije za narudžbu #{{ order.broj }}</strong>
-                Ovaj garantni list izdaje se za narudžbu broj {{ order.broj }}, kreiranu {{ datum }} u {{ vrijeme }},
-                i odnosi se na sve artikle iz te narudžbe. Garancija je važeća uz originalnu potvrdu narudžbe.
-            </p>
-
-            <div class="warranty-terms">
-                <strong>Uslovi garancije u Bosni i Hercegovini</strong>
-                <p>
-                    Proizvodi iz ove narudžbe pokriveni su garancijom u skladu s važećim zakonima Bosne i Hercegovine,
-                    uključujući propise o zaštiti potrošača na nivou entiteta i Brčko distrikta, kao i uslovima
-                    proizvođača navedenim uz pojedinačne artikle.
-                </p>
-                <p>
-                    Potrošač ima pravo na reklamaciju u slučaju materijalnog nedostatka proizvoda, neusklađenosti
-                    isporučenog artikla s ugovorenim, oštećenja nastalog pri transportu koje nije uzrokovano kupcem,
-                    te u drugim slučajevima predviđenim zakonom. Za ostvarivanje prava iz garancije potrebno je
-                    priložiti ovaj garantni list zajedno s potvrdom narudžbe #{{ order.broj }}.
-                </p>
-                <p>
-                    Reklamacije se podnose putem {{ site_name }}{% if store_email %} na {{ store_email }}{% endif %}{% if store_phone %}, telefonom {{ store_phone }}{% endif %}.
-                    Rok za prijavu reklamacije i način rješavanja određeni su važećim propisima i uslovima proizvođača.
-                    Garancija ne pokriva oštećenja nastala nepravilnom upotrebom, neovlaštenim popravkama ili
-                    intervencijama, fizičkim oštećenjem nakon preuzimanja proizvoda, normalnim habanjem i trošenjem,
-                    te oštećenja nastala nepridržavanjem uputstava proizvođača.
-                </p>
-                {% if politika_garancija %}
-                <p>{{ politika_garancija }}</p>
-                {% endif %}
-            </div>
-
-            <table class="warranty-signatures" role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td><div class="signature-line">Potpis / pečat prodavca</div></td>
-                    <td><div class="signature-line">Datum izdavanja — {{ datum }}</div></td>
-                </tr>
-            </table>
-        </div>
+    <div class="invoice-section">
+        {% include 'partials/order_invoice_document.html' %}
     </div>
+
+    <p class="page-separator">Garantni list — posebna A4 stranica za štampu</p>
+
+    {% include 'partials/order_warranty_document.html' %}
 
 </body>
 </html>

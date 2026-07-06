@@ -15,19 +15,19 @@
     </div>
 
     <div class="admin-buttons">
-        <a href="{% url 'staff_order_lookup' %}" class="admin-btn">
-            <div class="admin-btn-icon">📋</div>
-            <div class="admin-btn-text">
-                <strong>Provjera narudžbi</strong>
-                <span>Pretraga i pregled narudžbi</span>
-            </div>
-        </a>
-
         <a href="{% url 'staff_loyalty_system' %}" class="admin-btn">
             <div class="admin-btn-icon">⭐</div>
             <div class="admin-btn-text">
                 <strong>Loyalty System</strong>
                 <span>Pretraga kupaca i loyalty kartica</span>
+            </div>
+        </a>
+
+        <a href="{% url 'staff_online_orders' %}" class="admin-btn">
+            <div class="admin-btn-icon">🛒</div>
+            <div class="admin-btn-text">
+                <strong>Online narudžbe</strong>
+                <span>Pregled novih narudžbi sa sajta</span>
             </div>
         </a>
     </div>

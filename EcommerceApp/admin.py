@@ -576,6 +576,7 @@ class ProductAdmin(admin.ModelAdmin):
     actions = [
         'bulk_assign_category', 'bulk_assign_brand', 'bulk_assign_tags',
         'bulk_proizvedeno_u_japanu', 'bulk_ukloni_japan', 'bulk_merge_products',
+        'bulk_objavi_na_olx_pik',
     ]
     filter_horizontal = ('tagovi',)
     list_display = (
@@ -593,7 +594,10 @@ class ProductAdmin(admin.ModelAdmin):
         'odoo_template_id', 'meta_title', 'meta_description',
     )
     prepopulated_fields = {'slug': ('naziv',)}
-    readonly_fields = ('pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview')
+    readonly_fields = (
+        'pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview',
+        'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
+    )
     inlines = [ProductVariationInline, ProductImageInline]
 
     def get_form(self, request, obj=None, **kwargs):
@@ -645,6 +649,10 @@ class ProductAdmin(admin.ModelAdmin):
             ),
             'description': 'Polja ispod služe samo za <strong>ručno preklapanje</strong>. '
                            'Ako ih ostaviš prazna, sistem automatski koristi naziv artikla + opis ispod.',
+        }),
+        ('OLX / Pik', {
+            'fields': ('olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen'),
+            'classes': ('collapse',),
         }),
         ('Odoo', {
             'fields': ('odoo_template_id',),
@@ -1035,6 +1043,54 @@ class ProductAdmin(admin.ModelAdmin):
         )
 
     bulk_ukloni_japan.short_description = 'Ukloni oznaku Japan'
+
+    def bulk_objavi_na_olx_pik(self, request, queryset):
+        from django.conf import settings
+        from django.utils import timezone
+
+        from .olx_api import OlxApiError, publish_product_to_olx
+
+        if not settings.OLX_API_TOKEN:
+            self.message_user(
+                request,
+                'OLX_API_TOKEN nije postavljen u okruženju.',
+                messages.ERROR,
+            )
+            return
+
+        success = 0
+        inactive = 0
+        errors = 0
+        for product in queryset.select_related('brend', 'kategorija').prefetch_related('dodatne_slike'):
+            try:
+                result = publish_product_to_olx(product)
+                product.olx_listing_id = result['id']
+                product.olx_listing_slug = result.get('slug', '') or ''
+                product.olx_listing_url = result.get('url', '') or ''
+                product.olx_objavljen = timezone.now()
+                product.save(update_fields=[
+                    'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
+                ])
+                if result.get('status') == 'active':
+                    success += 1
+                else:
+                    inactive += 1
+            except OlxApiError as exc:
+                errors += 1
+                logger.warning('OLX objava %s nije uspjela: %s', product.slug, exc)
+
+        if success:
+            self.message_user(request, f'{success} artikal/a aktivno na OLX/Pik.', messages.SUCCESS)
+        if inactive:
+            self.message_user(
+                request,
+                f'{inactive} artikal/a kreirano kao NEAKTIVNO — aktiviraj u OLX/Pik profilu (Neaktivni oglasi).',
+                messages.WARNING,
+            )
+        if errors:
+            self.message_user(request, f'{errors} artikal/a nije objavljeno (greška API-ja).', messages.ERROR)
+
+    bulk_objavi_na_olx_pik.short_description = 'Objavi na OLX / Pik'
 
     def bulk_merge_products(self, request, queryset):
         selected = queryset.distinct()

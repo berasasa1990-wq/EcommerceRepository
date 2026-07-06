@@ -19,6 +19,7 @@ urlpatterns = [
     path('vlog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
     path('kategorija/<slug:slug>/', views.category_detail, name='category'),
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
+    path('artikal/<slug:slug>/olx-objavi/', views.staff_post_product_olx, name='staff_post_product_olx'),
     path('artikal/<slug:slug>/dodaj/', views.add_to_cart, name='add_to_cart'),
     path('upsell/<int:offer_id>/<int:product_id>/dodaj/', views.add_upsell_to_cart, name='add_upsell_to_cart'),
     path('upsell/odbaci/', views.dismiss_upsell_popup, name='dismiss_upsell_popup'),
@@ -39,4 +40,5 @@ urlpatterns = [
     path('nalog/provjera-narudzbi/<str:broj>/', views.staff_order_detail, name='staff_order_detail'),
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
+    path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
 ]

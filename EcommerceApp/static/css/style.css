@@ -7564,6 +7564,190 @@ body.search-results-active main {
     color: var(--gray-600);
 }
 
+.staff-online-orders-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.staff-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid var(--gray-300);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--gray-700);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.staff-filter-btn:hover {
+    border-color: var(--gray-500);
+    color: #111;
+}
+
+.staff-filter-btn.is-active {
+    border-color: #28403d;
+    background: #28403d;
+    color: #fff;
+}
+
+.staff-filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.08);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.staff-filter-btn.is-active .staff-filter-count {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.order-card-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.order-card-title-row h3 {
+    margin: 0;
+}
+
+.staff-badge-nova {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #1f8a4c;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.order-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.staff-complete-form {
+    margin: 0;
+}
+
+.staff-complete-btn {
+    white-space: nowrap;
+    color: #000000;
+}
+
+.staff-online-orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.staff-online-order-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    padding: 14px 16px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+}
+
+.staff-online-order-id {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.staff-online-order-number {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111;
+}
+
+.staff-online-order-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.staff-online-search-meta {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
+.staff-online-search-clear {
+    margin-left: 10px;
+    font-weight: 600;
+    color: #28403d;
+}
+
+.staff-olx-hint {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+.staff-olx-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 4px;
+    padding: 12px 14px;
+    border: 1px dashed var(--gray-300);
+    border-radius: 8px;
+    background: var(--gray-100);
+}
+
+.staff-olx-form {
+    margin: 0;
+}
+
+.staff-olx-link {
+    font-size: 14px;
+    font-weight: 600;
+    color: #28403d;
+    text-decoration: none;
+}
+
+.staff-olx-link:hover {
+    text-decoration: underline;
+}
+
+.staff-olx-btn {
+    background: #111;
+    color: #fff;
+    border: 1.5px solid #111;
+}
+
+.staff-olx-btn:hover {
+    background: #333;
+    border-color: #333;
+    color: #fff;
+}
+
 .staff-order-detail-page {
     max-width: 920px;
     margin: 0 auto;

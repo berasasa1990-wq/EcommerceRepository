@@ -1071,6 +1071,22 @@ class Product(models.Model):
         verbose_name='Meta opis',
         help_text='Opcionalno — ostavi prazno za automatski opis koji počinje nazivom artikla.',
     )
+    olx_listing_id = models.PositiveIntegerField(
+        blank=True, null=True, unique=True,
+        verbose_name='OLX/Pik ID oglasa',
+    )
+    olx_listing_slug = models.CharField(
+        max_length=220, blank=True,
+        verbose_name='OLX/Pik slug',
+    )
+    olx_listing_url = models.URLField(
+        blank=True,
+        verbose_name='OLX/Pik link',
+    )
+    olx_objavljen = models.DateTimeField(
+        blank=True, null=True,
+        verbose_name='Objavljeno na OLX/Pik',
+    )
     kreiran = models.DateTimeField(auto_now_add=True)
     azuriran = models.DateTimeField(auto_now=True)
 

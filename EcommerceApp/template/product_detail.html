@@ -72,6 +72,25 @@
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>
             <h1>{{ product.naziv }}</h1>
+
+            {% if user.is_superuser and olx_configured %}
+            <p class="staff-olx-hint">Dodavanje artikla na sajt ga ne šalje automatski na Pik — klikni dugme ispod.</p>
+            <div class="staff-olx-bar">
+                {% if product.olx_listing_url %}
+                <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
+                <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary btn-sm staff-olx-btn">Ažuriraj na OLX / Pik</button>
+                </form>
+                {% else %}
+                <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary btn-sm staff-olx-btn staff-olx-btn--publish">Objavi na OLX / Pik</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+
             {% if product.proizvedeno_u_japanu %}
             <p class="product-origin">Made in Japan</p>
             {% endif %}
@@ -256,4 +275,21 @@
   ]
 }
 </script>
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_superuser and olx_configured %}
+<script>
+document.querySelectorAll('.staff-olx-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var msg = form.querySelector('.staff-olx-btn--publish')
+            ? 'Objaviti ovaj artikal na OLX / Pik profilu CarpologijaBH?'
+            : 'Ažurirati ovaj artikal na OLX / Pik?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

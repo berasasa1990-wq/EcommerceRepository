@@ -15,7 +15,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Case, Count, Prefetch, Q, When
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -38,6 +38,7 @@ from .loyalty import (
 )
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import EmailNotConfiguredError, get_order_email_context, send_order_emails
+from .olx_api import OlxApiError, publish_product_to_olx
 from .render_sync import sync_korisnik, sync_narudzba
 from .meta_conversions import (
     track_add_to_cart,
@@ -1112,6 +1113,8 @@ def product_detail(request, slug):
     context['meta_view_content_event_id'] = view_content_event_id
     track_view_content(request, product, event_id=view_content_event_id)
 
+    context['olx_configured'] = bool(settings.OLX_API_TOKEN)
+
     return render(request, 'product_detail.html', context)
 
 
@@ -2123,28 +2126,25 @@ def _search_staff_orders(query):
     return qs.filter(filters).distinct()
 
 
+def _mark_order_completed(request, broj):
+    order = get_object_or_404(Order, broj=broj)
+    if order.status == Order.Status.NOVA:
+        order.status = Order.Status.ZAVRSENA
+        order.save(update_fields=['status'])
+        messages.success(request, f'Narudžba #{broj} označena kao završena.')
+        return True
+    messages.info(request, f'Narudžba #{broj} više nije nova.')
+    return False
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_order_lookup(request):
     query = request.GET.get('q', '').strip()
-
-    orders = []
-    searched = False
+    url = reverse('staff_online_orders')
     if query:
-        searched = True
-        orders = list(_search_staff_orders(query))
-        if len(orders) == 1:
-            return redirect('staff_order_detail', broj=orders[0].broj)
-        for o in orders:
-            o.display_stavke = pripremi_stavke_za_racun(o)
-
-    context = {
-        **_base_context(),
-        'search_query': query,
-        'orders': orders,
-        'searched': searched,
-    }
-    return render(request, 'staff/order_lookup.html', context)
+        url = f'{url}?{urlencode({"q": query})}'
+    return redirect(url)
 
 
 @login_required(login_url='login')
@@ -2154,6 +2154,11 @@ def staff_order_detail(request, broj):
         Order.objects.prefetch_related('stavke'),
         broj=broj,
     )
+
+    if request.method == 'POST' and request.POST.get('action') == 'zavrsi':
+        _mark_order_completed(request, broj)
+        return redirect('staff_online_orders')
+
     context = {
         **_base_context(),
         **get_order_email_context(order),
@@ -2168,6 +2173,111 @@ def staff_admin_panel(request):
         **_base_context(),
     }
     return render(request, 'staff/admin_panel.html', context)
+
+
+def _staff_online_orders_filter(request):
+    raw = (request.GET.get('filter') or 'nove').strip().lower()
+    if raw in ('zavrsene', 'zavrsena'):
+        return 'zavrsene'
+    if raw == 'sve':
+        return 'sve'
+    return 'nove'
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_online_orders(request):
+    filter_status = _staff_online_orders_filter(request)
+    query = (request.GET.get('q') or '').strip()
+    searched = bool(query)
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        broj = (request.POST.get('broj') or '').strip()
+        if action == 'zavrsi' and broj:
+            _mark_order_completed(request, broj)
+        params = {}
+        if filter_status != 'nove':
+            params['filter'] = filter_status
+        if query:
+            params['q'] = query
+        redirect_url = reverse('staff_online_orders')
+        if params:
+            redirect_url = f'{redirect_url}?{urlencode(params)}'
+        return redirect(redirect_url)
+
+    if query:
+        orders = list(_search_staff_orders(query))
+        if len(orders) == 1:
+            return redirect('staff_order_detail', broj=orders[0].broj)
+    elif filter_status == 'nove':
+        orders = list(
+            Order.objects.filter(status=Order.Status.NOVA).order_by('-kreirana'),
+        )
+    elif filter_status == 'zavrsene':
+        orders = list(
+            Order.objects.filter(status=Order.Status.ZAVRSENA).order_by('-kreirana'),
+        )
+    else:
+        orders = list(
+            Order.objects.order_by(
+                Case(
+                    When(status=Order.Status.NOVA, then=0),
+                    default=1,
+                ),
+                '-kreirana',
+            ),
+        )
+
+    context = {
+        **_base_context(),
+        'orders': orders,
+        'filter_status': filter_status,
+        'search_query': query,
+        'searched': searched,
+        'nova_count': Order.objects.filter(status=Order.Status.NOVA).count(),
+        'zavrsena_count': Order.objects.filter(status=Order.Status.ZAVRSENA).count(),
+    }
+    return render(request, 'staff/online_orders.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_post_product_olx(request, slug):
+    from django.utils import timezone
+
+    product = get_object_or_404(
+        Product.objects.select_related('brend').prefetch_related('dodatne_slike'),
+        slug=slug,
+    )
+    try:
+        result = publish_product_to_olx(product)
+        product.olx_listing_id = result['id']
+        product.olx_listing_slug = result.get('slug', '') or ''
+        product.olx_listing_url = result.get('url', '') or ''
+        product.olx_objavljen = timezone.now()
+        product.save(update_fields=[
+            'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
+        ])
+        if result.get('status') == 'active':
+            messages.success(
+                request,
+                f'Artikal je aktivan na OLX/Pik profilu CarpologijaBH. {result.get("url", "")}',
+            )
+        else:
+            messages.warning(
+                request,
+                'Oglas je poslan na OLX/Pik, ali nije postao aktivan. '
+                'Provjeri Neaktivne oglase u Pik/OLX aplikaciji ili kontaktiraj podršku. '
+                f'Link: {result.get("url", "")}',
+            )
+    except OlxApiError as exc:
+        messages.error(request, f'OLX/Pik objava nije uspjela: {exc}')
+    except Exception:
+        logger.exception('OLX objava artikla %s', slug)
+        messages.error(request, 'OLX/Pik objava nije uspjela zbog neočekivane greške.')
+    return redirect('product_detail', slug=slug)
 
 
 @login_required(login_url='login')
