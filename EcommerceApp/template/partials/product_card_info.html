@@ -1,4 +1,7 @@
 <div class="product-info">
+    {% if user.is_superuser and not product.na_stanju %}
+    <span class="staff-stock-badge">Nije na stanju</span>
+    {% endif %}
     <h2 data-product-name>{{ product.naziv }}</h2>
     {% if product.proizvedeno_u_japanu %}
     <p class="product-origin">Made in Japan</p>

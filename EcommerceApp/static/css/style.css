@@ -7996,43 +7996,128 @@ body.search-results-active main {
     color: var(--gray-600);
 }
 
-.staff-olx-bar {
+.staff-product-bar {
+    margin: 14px 0 10px;
+    padding: 14px 16px;
+    border: 1px solid #d8dee6;
+    border-radius: 10px;
+    background: #f8f9fb;
+}
+
+.staff-product-bar-head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
-    margin: 12px 0 4px;
-    padding: 12px 14px;
-    border: 1px dashed var(--gray-300);
-    border-radius: 8px;
-    background: var(--gray-100);
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
+.staff-product-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.staff-product-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+.staff-product-badge--in {
+    background: #e8f5f1;
+    color: #1f5f52;
+}
+
+.staff-product-badge--out {
+    background: #fdecea;
+    color: #9b2c2c;
+}
+
+.staff-product-badge--warn {
+    background: #fff4db;
+    color: #8a5a00;
+}
+
+.staff-product-bar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+}
+
+.staff-product-form,
 .staff-olx-form {
     margin: 0;
+}
+
+.staff-product-price-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
+    margin: 0;
+}
+
+.staff-product-price-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.staff-product-price-input {
+    width: 110px;
+    padding: 8px 10px;
+    border: 1px solid #cfd6df;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+}
+
+.staff-product-btn,
+.staff-olx-btn {
+    background: #111 !important;
+    color: #fff !important;
+    border: 1.5px solid #111 !important;
+}
+
+.staff-product-btn:hover,
+.staff-olx-btn:hover {
+    background: #333 !important;
+    border-color: #333 !important;
+    color: #fff !important;
 }
 
 .staff-olx-link {
     font-size: 14px;
     font-weight: 600;
-    color: #28403d;
-    text-decoration: none;
+    color: #111;
+    text-decoration: underline;
+    align-self: center;
+    padding: 8px 0;
 }
 
 .staff-olx-link:hover {
-    text-decoration: underline;
+    color: #333;
 }
 
-.staff-olx-btn {
-    background: #111;
-    color: #fff;
-    border: 1.5px solid #111;
-}
-
-.staff-olx-btn:hover {
-    background: #333;
-    border-color: #333;
-    color: #fff;
+.staff-stock-badge {
+    display: inline-block;
+    margin-bottom: 6px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #fdecea;
+    color: #9b2c2c;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .staff-order-detail-page {

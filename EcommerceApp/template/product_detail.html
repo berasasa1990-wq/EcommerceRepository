@@ -73,20 +73,51 @@
             </div>
             <h1>{{ product.naziv }}</h1>
 
-            {% if user.is_superuser and olx_configured %}
-            <div class="staff-olx-bar">
-                {% if product.olx_listing_url %}
-                <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
-                <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary btn-sm staff-olx-btn">Ažuriraj na OLX / Pik</button>
-                </form>
-                {% else %}
-                <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary btn-sm staff-olx-btn staff-olx-btn--publish">Objavi na OLX / Pik</button>
-                </form>
-                {% endif %}
+            {% if staff_product_tools %}
+            <div class="staff-product-bar">
+                <div class="staff-product-bar-head">
+                    <span class="staff-product-label">Admin alati</span>
+                    {% if not product.aktivan %}
+                    <span class="staff-product-badge staff-product-badge--warn">Neaktivan artikal</span>
+                    {% endif %}
+                    {% if product.na_stanju %}
+                    <span class="staff-product-badge staff-product-badge--in">Na stanju</span>
+                    {% else %}
+                    <span class="staff-product-badge staff-product-badge--out">Nije na stanju</span>
+                    {% endif %}
+                </div>
+                <div class="staff-product-bar-actions">
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_stock">
+                        <button type="submit" class="btn btn-sm staff-product-btn">
+                            {% if product.na_stanju %}Skini sa stanja{% else %}Vrati na stanje{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-price-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="set_price">
+                        <label class="staff-product-price-label">
+                            <span>Cijena (KM)</span>
+                            <input type="text" name="cijena" value="{{ product.cijena }}" inputmode="decimal" class="staff-product-price-input">
+                        </label>
+                        <button type="submit" class="btn btn-sm staff-product-btn">Spremi cijenu</button>
+                    </form>
+                    {% if olx_configured %}
+                    {% if product.olx_listing_url %}
+                    <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
+                    <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm staff-product-btn staff-olx-btn">Ažuriraj na OLX / Pik</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm staff-product-btn staff-olx-btn staff-olx-btn--publish">Objavi na OLX / Pik</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
 
@@ -217,13 +248,24 @@
 })();
 </script>
 {% endif %}
-{% if user.is_superuser and olx_configured %}
+{% if staff_product_tools %}
 <script>
 document.querySelectorAll('.staff-olx-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
         var msg = form.querySelector('.staff-olx-btn--publish')
             ? 'Objaviti ovaj artikal na OLX / Pik profilu CarpologijaBH?'
             : 'Ažurirati ovaj artikal na OLX / Pik?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('.staff-product-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var onStock = form.querySelector('button') && form.querySelector('button').textContent.indexOf('Skini') !== -1;
+        var msg = onStock
+            ? 'Skiniti artikal sa stanja?'
+            : 'Vratiti artikal na stanje?';
         if (!window.confirm(msg)) {
             event.preventDefault();
         }

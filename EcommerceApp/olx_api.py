@@ -1,42 +1,29 @@
 import io
 import logging
+import mimetypes
 import re
 import unicodedata
 from decimal import Decimal
 from pathlib import Path
 
 import requests
-from PIL import Image, ImageOps
+from PIL import Image
 from django.conf import settings
 from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
 
 OLX_API_BASE = 'https://api.olx.ba'
-OLX_IMAGE_SIZE = (300, 225)  # OLX / Pik format oglasa (4:3)
+OLX_JPEG_QUALITY = 92
 DEFAULT_OLX_CATEGORY_ID = 1260  # Ostali ribolovni pribor
 DEFAULT_OLX_COUNTRY_ID = 49
 DEFAULT_OLX_CITY_ID = 77  # Bijeljina (CarpologijaBH profil)
 
 
-def _resize_for_olx(image):
-    """Uklapa cijelu sliku u 300×225 px (OLX/Pik format), bez rezanja."""
-    image = image.convert('RGB')
-    fitted = ImageOps.contain(
-        image,
-        OLX_IMAGE_SIZE,
-        method=Image.Resampling.LANCZOS,
-    )
-    canvas = Image.new('RGB', OLX_IMAGE_SIZE, (255, 255, 255))
-    offset_x = (OLX_IMAGE_SIZE[0] - fitted.width) // 2
-    offset_y = (OLX_IMAGE_SIZE[1] - fitted.height) // 2
-    canvas.paste(fitted, (offset_x, offset_y))
-    return canvas
-
-
 def _olx_jpeg_buffer(image, *, stem='olx-image'):
+    """Puna rezolucija — samo AVIF/WEBP konvertujemo u JPEG bez skaliranja."""
     buffer = io.BytesIO()
-    _resize_for_olx(image).save(buffer, format='JPEG', quality=88, optimize=True)
+    image.convert('RGB').save(buffer, format='JPEG', quality=OLX_JPEG_QUALITY, optimize=True)
     buffer.seek(0)
     return f'{stem}.jpg', buffer, 'image/jpeg'
 
@@ -148,6 +135,10 @@ class OlxClient:
         file_path = Path(file_path)
         if not file_path.is_file():
             return None
+        suffix = file_path.suffix.lower()
+        if suffix in {'.jpg', '.jpeg', '.png', '.webp'}:
+            mime, _ = mimetypes.guess_type(file_path.name)
+            return file_path.name, file_path.open('rb'), mime or 'image/jpeg'
         try:
             with Image.open(file_path) as image:
                 return _olx_jpeg_buffer(image, stem=file_path.stem)
@@ -181,14 +172,17 @@ class OlxClient:
 
     def upload_image_url(self, listing_id, image_url):
         try:
-            response = self.session.get(image_url, timeout=60)
-            response.raise_for_status()
-            with Image.open(io.BytesIO(response.content)) as image:
-                upload_name, handle, mime = _olx_jpeg_buffer(image, stem='olx-url')
-        except (OSError, requests.RequestException, ValueError) as exc:
-            logger.warning('OLX priprema slike preko URL-a nije uspjela (%s): %s', image_url, exc)
+            batch = self._request(
+                'POST',
+                f'/listings/{listing_id}/image-upload',
+                json={'image_url': image_url},
+            )
+        except OlxApiError:
+            logger.warning('OLX upload slike preko URL-a nije uspio: %s', image_url)
             return []
-        return self._upload_image_file(listing_id, upload_name, handle, mime)
+        if isinstance(batch, list):
+            return batch
+        return []
 
     def upload_images(self, listing_id, image_paths, *, image_urls=None):
         uploaded = []

@@ -19,6 +19,7 @@ urlpatterns = [
     path('vlog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
     path('kategorija/<slug:slug>/', views.category_detail, name='category'),
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
+    path('artikal/<slug:slug>/brza-izmjena/', views.staff_product_quick_edit, name='staff_product_quick_edit'),
     path('artikal/<slug:slug>/olx-objavi/', views.staff_post_product_olx, name='staff_post_product_olx'),
     path('artikal/<slug:slug>/dodaj/', views.add_to_cart, name='add_to_cart'),
     path('upsell/<int:offer_id>/<int:product_id>/dodaj/', views.add_upsell_to_cart, name='add_upsell_to_cart'),

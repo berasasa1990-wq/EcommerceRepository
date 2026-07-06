@@ -88,10 +88,20 @@ def _prefetch_product_cards(qs):
     )
 
 
-def _product_queryset():
-    return _prefetch_product_cards(
-        Product.objects.filter(aktivan=True, na_stanju=True),
+def _request_is_superuser(request):
+    return bool(
+        request
+        and getattr(request, 'user', None)
+        and request.user.is_authenticated
+        and request.user.is_superuser
     )
+
+
+def _product_queryset(request=None):
+    qs = Product.objects.filter(aktivan=True)
+    if not _request_is_superuser(request):
+        qs = qs.filter(na_stanju=True)
+    return _prefetch_product_cards(qs)
 
 
 def _effective_product_price(product):
@@ -119,8 +129,8 @@ def _akcija_products_qs(products_qs):
     return products_qs.filter(pk__in=sale_ids)
 
 
-def _filter_size_scope_qs(filter_params, base_qs=None):
-    qs = base_qs if base_qs is not None else _product_queryset()
+def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
+    qs = base_qs if base_qs is not None else _product_queryset(request)
     if filter_params.get('q'):
         qs = _apply_search_filter(qs, filter_params['q'])
     if filter_params.get('akcija'):
@@ -376,7 +386,7 @@ def search_suggest(request):
     if not query:
         return JsonResponse({'results': [], 'query': '', 'has_more': False})
 
-    products_qs = _apply_search_filter(_product_queryset(), query)
+    products_qs = _apply_search_filter(_product_queryset(request), query)
     products = list(products_qs[:SEARCH_SUGGEST_LIMIT + 1])
     has_more = len(products) > SEARCH_SUGGEST_LIMIT
     products = products[:SEARCH_SUGGEST_LIMIT]
@@ -627,18 +637,20 @@ HOME_SECTION_PRODUCT_VISIBLE_MOBILE = 2
 HOME_VLOG_LIMIT = 3
 
 
-def _home_latest_products():
+def _home_latest_products(request=None):
     return list(
-        _product_queryset().order_by('-kreiran')[:HOME_SECTION_PRODUCT_LIMIT],
+        _product_queryset(request).order_by('-kreiran')[:HOME_SECTION_PRODUCT_LIMIT],
     )
 
 
-def _home_featured_products():
-    entries = HomeFeaturedProduct.objects.filter(
+def _home_featured_products(request=None):
+    entries_qs = HomeFeaturedProduct.objects.filter(
         aktivan=True,
         artikal__aktivan=True,
-        artikal__na_stanju=True,
-    ).select_related(
+    )
+    if not _request_is_superuser(request):
+        entries_qs = entries_qs.filter(artikal__na_stanju=True)
+    entries = entries_qs.select_related(
         'artikal', 'artikal__kategorija', 'artikal__brend',
     ).prefetch_related(
         Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
@@ -646,11 +658,11 @@ def _home_featured_products():
     return [entry.artikal for entry in entries]
 
 
-def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT):
+def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT, request=None):
     if not product.kategorija_id:
         return []
     return list(
-        _product_queryset()
+        _product_queryset(request)
         .filter(kategorija_id=product.kategorija_id)
         .exclude(pk=product.pk)
         .order_by('-kreiran')[:limit],
@@ -739,8 +751,8 @@ def home(request):
     home_url = reverse('home')
 
     if filters_active:
-        products, filter_params = _apply_product_filters(_product_queryset(), request)
-        scope_qs = _filter_size_scope_qs(filter_params)
+        products, filter_params = _apply_product_filters(_product_queryset(request), request)
+        scope_qs = _filter_size_scope_qs(filter_params, request=request)
         filter_sizes = _available_sizes(scope_qs)
         filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
         page_obj = _paginate_home_products(request, products, filter_params)
@@ -794,8 +806,8 @@ def home(request):
             else:
                 catalog_subtitle = f'Nema artikala za {size_label}.'
     else:
-        latest_products = _home_latest_products()
-        featured_products = _home_featured_products()
+        latest_products = _home_latest_products(request)
+        featured_products = _home_featured_products(request)
         home_vlogs = _home_vlogs()
 
     first_hero = hero_banners.first()
@@ -1016,7 +1028,7 @@ def category_detail(request, slug):
 
     # Normalan prikaz proizvoda (ili "Sve u kategoriji")
     category_ids = category.get_descendant_ids()
-    products_qs = _product_queryset().filter(kategorija_id__in=category_ids)
+    products_qs = _product_queryset(request).filter(kategorija_id__in=category_ids)
     filter_sizes = _available_sizes(products_qs)
     category_url = reverse('category', args=[category.slug])
     products, filter_params = _apply_product_filters(
@@ -1060,8 +1072,9 @@ def _product_back_url(request, product):
 
 
 def product_detail(request, slug):
+    product_qs = Product.objects.all() if _request_is_superuser(request) else Product.objects.filter(aktivan=True)
     product = get_object_or_404(
-        Product.objects.filter(aktivan=True)
+        product_qs
         .select_related('kategorija', 'brend')
         .prefetch_related(
             Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id')),
@@ -1078,7 +1091,7 @@ def product_detail(request, slug):
         )
         lcp_image_url = request.build_absolute_uri(product.prikazna_slika.url)
 
-    related_products = _related_category_products(product)
+    related_products = _related_category_products(product, request=request)
     site_settings = SiteSettings.load()
     kategorija_naziv = product.kategorija.naziv if product.kategorija else ''
 
@@ -1120,6 +1133,7 @@ def product_detail(request, slug):
     track_view_content(request, product, event_id=view_content_event_id)
 
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
+    context['staff_product_tools'] = _request_is_superuser(request)
 
     return render(request, 'product_detail.html', context)
 
@@ -2316,6 +2330,38 @@ def staff_online_orders(request):
         'zavrsena_count': Order.objects.filter(status=Order.Status.ZAVRSENA).count(),
     }
     return render(request, 'staff/online_orders.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_product_quick_edit(request, slug):
+    product = get_object_or_404(Product, slug=slug)
+    action = (request.POST.get('action') or '').strip()
+
+    if action == 'toggle_stock':
+        product.na_stanju = not product.na_stanju
+        product.save(update_fields=['na_stanju'])
+        status = 'na stanju' if product.na_stanju else 'nije na stanju'
+        messages.success(request, f'Artikal „{product.naziv}” sada je {status}.')
+    elif action == 'set_price':
+        raw_price = (request.POST.get('cijena') or '').strip().replace(',', '.')
+        try:
+            new_price = Decimal(raw_price)
+        except (InvalidOperation, ValueError):
+            messages.error(request, 'Unesite ispravnu cijenu (npr. 45.00).')
+            return redirect('product_detail', slug=slug)
+        if new_price <= 0:
+            messages.error(request, 'Cijena mora biti veća od 0.')
+            return redirect('product_detail', slug=slug)
+        product.cijena = new_price
+        if product.akcija_postotak:
+            product.akcijska_cijena = None
+        product.save()
+        messages.success(request, f'Cijena ažurirana na {new_price} KM.')
+    else:
+        messages.error(request, 'Nepoznata akcija.')
+    return redirect('product_detail', slug=slug)
 
 
 @login_required(login_url='login')
