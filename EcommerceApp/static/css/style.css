@@ -7703,6 +7703,209 @@ body.search-results-active main {
     color: #28403d;
 }
 
+/* Staff OLX / Pik messages */
+.staff-olx-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.staff-olx-header {
+    margin-bottom: 20px;
+}
+.staff-olx-subtitle {
+    margin: 6px 0 0;
+    color: var(--gray-600);
+    font-size: 14px;
+}
+.staff-olx-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.staff-olx-error {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #fdecea;
+    color: #8a1f17;
+    font-size: 14px;
+}
+.staff-olx-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+    gap: 20px;
+    min-height: 520px;
+}
+.staff-olx-inbox,
+.staff-olx-thread {
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    background: #fff;
+}
+.staff-olx-inbox-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.staff-olx-inbox-item {
+    display: block;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease;
+}
+.staff-olx-inbox-item:hover,
+.staff-olx-inbox-item.is-active {
+    background: var(--gray-100);
+}
+.staff-olx-inbox-item.is-unread {
+    background: #f4faf8;
+}
+.staff-olx-inbox-item.is-unread strong {
+    color: #1f4d45;
+}
+.staff-olx-inbox-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+.staff-olx-inbox-top time {
+    font-size: 12px;
+    color: var(--gray-500);
+    white-space: nowrap;
+}
+.staff-olx-inbox-listing {
+    font-size: 12px;
+    color: #28403d;
+    margin-bottom: 4px;
+}
+.staff-olx-inbox-preview {
+    margin: 0;
+    font-size: 13px;
+    color: var(--gray-600);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.staff-olx-thread {
+    display: flex;
+    flex-direction: column;
+    min-height: 520px;
+}
+.staff-olx-thread-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--gray-100);
+}
+.staff-olx-thread-header h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+}
+.staff-olx-thread-listing {
+    margin: 0;
+    font-size: 13px;
+    color: var(--gray-600);
+}
+.staff-olx-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.staff-olx-message {
+    max-width: 85%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--gray-100);
+}
+.staff-olx-message.is-mine {
+    align-self: flex-end;
+    background: #e8f3f1;
+}
+.staff-olx-message.is-system {
+    align-self: center;
+    max-width: 95%;
+    background: #fff8e8;
+}
+.staff-olx-message-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--gray-600);
+}
+.staff-olx-message-body {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.staff-olx-listing-card {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+}
+.staff-olx-listing-card img {
+    width: 56px;
+    height: 42px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: #fff;
+}
+.staff-olx-listing-title {
+    font-size: 13px;
+    font-weight: 600;
+}
+.staff-olx-listing-price {
+    font-size: 12px;
+    color: var(--gray-600);
+}
+.staff-olx-thread-placeholder,
+.staff-olx-empty {
+    margin: 0;
+    padding: 28px 18px;
+    color: var(--gray-600);
+    font-size: 14px;
+}
+.staff-olx-thread-placeholder {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 420px;
+    gap: 8px;
+}
+@media (max-width: 900px) {
+    .staff-olx-layout {
+        grid-template-columns: 1fr;
+    }
+    .staff-olx-layout:not(.has-thread) .staff-olx-thread {
+        display: none;
+    }
+    .staff-olx-layout.has-thread .staff-olx-inbox {
+        display: none;
+    }
+}
+
 .staff-olx-hint {
     margin: 10px 0 0;
     font-size: 13px;

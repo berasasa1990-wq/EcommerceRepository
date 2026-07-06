@@ -38,7 +38,13 @@ from .loyalty import (
 )
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import EmailNotConfiguredError, get_order_email_context, send_order_emails
-from .olx_api import OlxApiError, publish_product_to_olx
+from .olx_api import (
+    OlxApiError,
+    fetch_olx_conversation_thread,
+    fetch_olx_conversations,
+    olx_chat_configured,
+    publish_product_to_olx,
+)
 from .render_sync import sync_korisnik, sync_narudzba
 from .meta_conversions import (
     track_add_to_cart,
@@ -2171,8 +2177,74 @@ def staff_order_detail(request, broj):
 def staff_admin_panel(request):
     context = {
         **_base_context(),
+        'olx_chat_configured': olx_chat_configured(),
     }
     return render(request, 'staff/admin_panel.html', context)
+
+
+def _staff_olx_messages_filter(request):
+    raw = (request.GET.get('filter') or 'kupci').strip().lower()
+    if raw == 'sve':
+        return 'sve'
+    return 'kupci'
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_olx_messages(request):
+    if not olx_chat_configured():
+        messages.error(
+            request,
+            'OLX_API_TOKEN nije postavljen — poruke sa Pik/OLX nisu dostupne.',
+        )
+        return redirect('staff_admin_panel')
+
+    filter_status = _staff_olx_messages_filter(request)
+    customers_only = filter_status != 'sve'
+    selected_id = None
+    raw_conv = (request.GET.get('conv') or '').strip()
+    if raw_conv.isdigit():
+        selected_id = int(raw_conv)
+
+    conversations = []
+    unread_count = 0
+    thread_messages = []
+    selected_conversation = None
+    olx_error = None
+
+    try:
+        inbox = fetch_olx_conversations(customers_only=customers_only)
+        conversations = inbox['conversations']
+        unread_count = inbox['unread_count']
+        if selected_id:
+            selected_conversation = next(
+                (item for item in conversations if item['id'] == selected_id),
+                None,
+            )
+            thread = fetch_olx_conversation_thread(selected_id, mark_seen=True)
+            thread_messages = thread['messages']
+            if selected_conversation and selected_conversation['unread']:
+                selected_conversation = {**selected_conversation, 'unread': False}
+                conversations = [
+                    {**item, 'unread': False} if item['id'] == selected_id else item
+                    for item in conversations
+                ]
+                unread_count = sum(1 for item in conversations if item['unread'])
+    except OlxApiError as exc:
+        olx_error = str(exc)
+        messages.error(request, f'OLX/Pik poruke nisu učitane: {exc}')
+
+    context = {
+        **_base_context(),
+        'conversations': conversations,
+        'thread_messages': thread_messages,
+        'selected_conversation': selected_conversation,
+        'selected_id': selected_id,
+        'filter_status': filter_status,
+        'unread_count': unread_count,
+        'olx_error': olx_error,
+    }
+    return render(request, 'staff/olx_messages.html', context)
 
 
 def _staff_online_orders_filter(request):

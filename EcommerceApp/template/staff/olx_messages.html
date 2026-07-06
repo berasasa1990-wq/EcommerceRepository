@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>OLX / Pik poruke — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-olx-page">
+    <div class="staff-olx-header">
+        <div>
+            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+            <h1>OLX / Pik poruke</h1>
+            <p class="staff-olx-subtitle">Pregled poruka sa CarpologijaBH profila na Pik/OLX.</p>
+        </div>
+    </div>
+
+    <div class="staff-olx-filter">
+        <a href="{% url 'staff_olx_messages' %}{% if selected_id %}?conv={{ selected_id }}{% endif %}"
+           class="staff-filter-btn{% if filter_status == 'kupci' %} is-active{% endif %}">
+            Kupci
+            {% if unread_count and filter_status == 'kupci' %}<span class="staff-filter-count">{{ unread_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'staff_olx_messages' %}?filter=sve{% if selected_id %}&conv={{ selected_id }}{% endif %}"
+           class="staff-filter-btn{% if filter_status == 'sve' %} is-active{% endif %}">
+            Sve poruke
+        </a>
+    </div>
+
+    {% if olx_error %}
+    <p class="staff-olx-error">{{ olx_error }}</p>
+    {% endif %}
+
+    <div class="staff-olx-layout{% if selected_id %} has-thread{% endif %}">
+        <aside class="staff-olx-inbox">
+            {% if conversations %}
+            <ul class="staff-olx-inbox-list">
+                {% for conversation in conversations %}
+                <li>
+                    <a href="{% url 'staff_olx_messages' %}?{% if filter_status == 'sve' %}filter=sve&amp;{% endif %}conv={{ conversation.id }}"
+                       class="staff-olx-inbox-item{% if selected_id == conversation.id %} is-active{% endif %}{% if conversation.unread %} is-unread{% endif %}">
+                        <div class="staff-olx-inbox-top">
+                            <strong>{{ conversation.username }}</strong>
+                            {% if conversation.updated_at %}
+                            <time datetime="{{ conversation.updated_at|date:'c' }}">{{ conversation.updated_at|date:'d.m.Y H:i' }}</time>
+                            {% endif %}
+                        </div>
+                        {% if conversation.listing_title %}
+                        <div class="staff-olx-inbox-listing">{{ conversation.listing_title }}</div>
+                        {% endif %}
+                        <p class="staff-olx-inbox-preview">{{ conversation.preview|default:'—' }}</p>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="staff-olx-empty">Nema poruka{% if filter_status == 'kupci' %} od kupaca{% endif %}.</p>
+            {% endif %}
+        </aside>
+
+        <div class="staff-olx-thread">
+            {% if selected_conversation %}
+            <div class="staff-olx-thread-header">
+                <div>
+                    <h2>{{ selected_conversation.username }}</h2>
+                    {% if selected_conversation.listing_title %}
+                    <p class="staff-olx-thread-listing">
+                        Oglas:
+                        {% if selected_conversation.listing_url %}
+                        <a href="{{ selected_conversation.listing_url }}" target="_blank" rel="noopener">{{ selected_conversation.listing_title }}</a>
+                        {% else %}
+                        {{ selected_conversation.listing_title }}
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+                <a href="https://pik.ba/poruke" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Otvori u Pik aplikaciji</a>
+            </div>
+
+            <div class="staff-olx-messages">
+                {% for message in thread_messages %}
+                <article class="staff-olx-message{% if message.is_mine %} is-mine{% elif message.is_system %} is-system{% endif %}">
+                    <div class="staff-olx-message-meta">
+                        <strong>{{ message.username }}</strong>
+                        {% if message.created_at %}
+                        <time datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:'d.m.Y H:i' }}</time>
+                        {% endif %}
+                    </div>
+                    {% if message.type == 'listing' and message.listing_title %}
+                    <div class="staff-olx-listing-card">
+                        {% if message.listing_image %}
+                        <img src="{{ message.listing_image }}" alt="" loading="lazy">
+                        {% endif %}
+                        <div>
+                            <div class="staff-olx-listing-title">{{ message.listing_title }}</div>
+                            {% if message.listing_price %}
+                            <div class="staff-olx-listing-price">{{ message.listing_price }} KM</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if message.content %}
+                    <p class="staff-olx-message-body">{{ message.content }}</p>
+                    {% endif %}
+                </article>
+                {% empty %}
+                <p class="staff-olx-empty">Nema poruka u ovoj konverzaciji.</p>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="staff-olx-thread-placeholder">
+                <p>Odaberite konverzaciju sa lijeve strane da vidite poruke.</p>
+                <p class="staff-olx-hint">Za odgovor kupcu koristi Pik/OLX aplikaciju — ovdje je pregled poruka.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -20,12 +20,18 @@ DEFAULT_OLX_CITY_ID = 77  # Bijeljina (CarpologijaBH profil)
 
 
 def _resize_for_olx(image):
-    """Skalira i centrirano reže na 300×225 px (OLX/Pik format)."""
-    return ImageOps.fit(
-        image.convert('RGB'),
+    """Uklapa cijelu sliku u 300×225 px (OLX/Pik format), bez rezanja."""
+    image = image.convert('RGB')
+    fitted = ImageOps.contain(
+        image,
         OLX_IMAGE_SIZE,
         method=Image.Resampling.LANCZOS,
     )
+    canvas = Image.new('RGB', OLX_IMAGE_SIZE, (255, 255, 255))
+    offset_x = (OLX_IMAGE_SIZE[0] - fitted.width) // 2
+    offset_y = (OLX_IMAGE_SIZE[1] - fitted.height) // 2
+    canvas.paste(fitted, (offset_x, offset_y))
+    return canvas
 
 
 def _olx_jpeg_buffer(image, *, stem='olx-image'):
@@ -215,6 +221,19 @@ class OlxClient:
     def listing_public_url(self, listing_id, slug):
         slug = (slug or '').strip('/') or 'artikal'
         return f'https://olx.ba/artikal/{slug}/{listing_id}'
+
+    def list_conversations(self, *, page=1):
+        return self._request('GET', '/conversations', params={'page': page})
+
+    def get_conversation_messages(self, conversation_id, *, page=1):
+        return self._request(
+            'GET',
+            f'/conversations/{conversation_id}/messages',
+            params={'page': page},
+        )
+
+    def mark_conversation_seen(self, conversation_id):
+        return self._request('POST', f'/conversations/{conversation_id}/seen', json={})
 
 
 def _olx_safe_title(text):
@@ -420,3 +439,106 @@ def publish_product_to_olx(product):
         'status': status,
         'activated': bool(activate_result.get('success')),
     }
+
+
+def olx_chat_configured():
+    return bool(getattr(settings, 'OLX_API_TOKEN', ''))
+
+
+def _olx_listing_url(listing):
+    if not listing:
+        return ''
+    listing_id = listing.get('id')
+    slug = (listing.get('slug') or '').strip('/')
+    if listing_id and slug:
+        return f'https://olx.ba/artikal/{slug}/{listing_id}'
+    return ''
+
+
+def _olx_plain_text(value):
+    text = strip_tags(value or '')
+    return re.sub(r'\s+', ' ', text.replace('\r', ' ')).strip()
+
+
+def _olx_timestamp(value):
+    if not value:
+        return None
+    from django.utils import timezone as dj_timezone
+
+    return dj_timezone.datetime.fromtimestamp(int(value), tz=dj_timezone.get_current_timezone())
+
+
+def serialize_olx_conversation(conversation):
+    sender = conversation.get('sender') or {}
+    listing = conversation.get('listing') or {}
+    last_message = conversation.get('last_message') or {}
+    username = sender.get('username') or '—'
+    is_pik_system = username == 'PIK' or sender.get('id') in (0, None)
+    return {
+        'id': conversation.get('id'),
+        'username': username,
+        'avatar': sender.get('avatar') or '',
+        'is_pik_system': is_pik_system,
+        'unread': bool(conversation.get('unread_messages')) or not conversation.get('seen', True),
+        'listing_title': listing.get('title') or '',
+        'listing_url': _olx_listing_url(listing),
+        'preview': _olx_plain_text(last_message.get('content'))[:140],
+        'updated_at': _olx_timestamp(conversation.get('updated_at')),
+    }
+
+
+def serialize_olx_message(message, *, shop_username='CarpologijaBH'):
+    sender = message.get('sender') or {}
+    username = sender.get('username') or '—'
+    listing_data = message.get('data') or {}
+    listing_url = ''
+    if message.get('type') == 'listing' and listing_data.get('title'):
+        listing_url = listing_data.get('url') or ''
+    return {
+        'id': message.get('id'),
+        'type': message.get('type') or 'text',
+        'content': _olx_plain_text(message.get('content')),
+        'html_content': message.get('content') or '',
+        'username': username,
+        'avatar': sender.get('avatar') or '',
+        'is_mine': username == shop_username,
+        'is_system': username == 'PIK',
+        'listing_title': listing_data.get('title') or '',
+        'listing_price': listing_data.get('price'),
+        'listing_image': listing_data.get('image') or '',
+        'listing_url': listing_url,
+        'created_at': _olx_timestamp(message.get('created_at')),
+    }
+
+
+def fetch_olx_conversations(*, page=1, customers_only=False):
+    client = OlxClient.from_settings()
+    payload = client.list_conversations(page=page)
+    conversations = [
+        serialize_olx_conversation(item)
+        for item in (payload.get('data') or [])
+    ]
+    if customers_only:
+        conversations = [item for item in conversations if not item['is_pik_system']]
+    unread_count = sum(1 for item in conversations if item['unread'])
+    return {
+        'conversations': conversations,
+        'unread_count': unread_count,
+    }
+
+
+def fetch_olx_conversation_thread(conversation_id, *, mark_seen=True):
+    client = OlxClient.from_settings()
+    if mark_seen:
+        try:
+            client.mark_conversation_seen(conversation_id)
+        except OlxApiError:
+            logger.warning('OLX mark seen nije uspio za konverzaciju %s', conversation_id)
+
+    messages_payload = client.get_conversation_messages(conversation_id)
+    messages = [
+        serialize_olx_message(item)
+        for item in (messages_payload.get('data') or [])
+    ]
+    messages.sort(key=lambda item: item.get('created_at') or 0)
+    return {'messages': messages}

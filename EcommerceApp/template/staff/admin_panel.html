@@ -30,6 +30,16 @@
                 <span>Pregled novih narudžbi sa sajta</span>
             </div>
         </a>
+
+        {% if olx_chat_configured %}
+        <a href="{% url 'staff_olx_messages' %}" class="admin-btn">
+            <div class="admin-btn-icon">💬</div>
+            <div class="admin-btn-text">
+                <strong>OLX / Pik poruke</strong>
+                <span>Pregled chata sa kupcima na Pik/OLX</span>
+            </div>
+        </a>
+        {% endif %}
     </div>
 </section>
 {% endblock %}
