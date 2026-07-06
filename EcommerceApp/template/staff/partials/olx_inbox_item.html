@@ -1,29 +1,13 @@
 <a href="{% url 'staff_olx_messages' %}?{% if filter_status == 'sve' %}filter=sve&amp;{% endif %}conv={{ conversation.id }}"
    class="staff-olx-inbox-item{% if selected_id == conversation.id %} is-active{% endif %}{% if conversation.unread %} is-unread{% endif %}">
-    <div class="staff-olx-inbox-avatar{% if conversation.is_pik_system %} is-pik{% endif %}">
-        {% if conversation.avatar %}
-        <img src="{{ conversation.avatar }}" alt="" loading="lazy">
-        {% else %}
-        <span>{{ conversation.initial }}</span>
-        {% endif %}
+    <div class="staff-olx-inbox-lines">
+        <div class="staff-olx-inbox-sender">{{ conversation.username }}</div>
+        <div class="staff-olx-inbox-artikal" title="{{ conversation.subject }}">{{ conversation.subject }}</div>
+        <div class="staff-olx-inbox-text">{{ conversation.preview|default:'—' }}</div>
     </div>
-    <div class="staff-olx-inbox-content">
-        <div class="staff-olx-inbox-meta">
-            <span class="staff-olx-label">Pošiljalac</span>
-            <strong class="staff-olx-sender">{{ conversation.username }}</strong>
-            {% if conversation.updated_at %}
-            <time datetime="{{ conversation.updated_at|date:'c' }}">{{ conversation.updated_at|date:'d.m. H:i' }}</time>
-            {% endif %}
-        </div>
-        <div class="staff-olx-subject">
-            <span class="staff-olx-label">{{ conversation.subject_kind }}</span>
-            <span class="staff-olx-subject-text" title="{{ conversation.subject }}">{{ conversation.subject }}</span>
-        </div>
-        <div class="staff-olx-preview-wrap">
-            <span class="staff-olx-label">Poruka</span>
-            <p class="staff-olx-preview">{{ conversation.preview|default:'—' }}</p>
-        </div>
-    </div>
+    {% if conversation.updated_at %}
+    <time class="staff-olx-inbox-time" datetime="{{ conversation.updated_at|date:'c' }}">{{ conversation.updated_at|date:'d.m.' }}</time>
+    {% endif %}
     {% if conversation.unread %}
     <span class="staff-olx-unread-dot" aria-label="Nepročitano"></span>
     {% endif %}

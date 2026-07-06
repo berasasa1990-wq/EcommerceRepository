@@ -8,47 +8,27 @@
 
 {% block content %}
 <section class="staff-olx-page">
-    <div class="staff-olx-header">
-        <div>
-            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
-            <h1>OLX / Pik poruke</h1>
-            <p class="staff-olx-subtitle">Pregled i odgovor na poruke kupaca sa CarpologijaBH profila.</p>
-        </div>
-        {% if conversations %}
-        <div class="staff-olx-stats">
-            <span>{{ conversations|length }} konverzacija</span>
-            {% if unread_count %}<span class="staff-olx-stats-unread">{{ unread_count }} nepročitanih</span>{% endif %}
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="staff-olx-toolbar">
+    <div class="staff-olx-topbar">
+        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Admin panel</a>
+        <h1>OLX / Pik poruke</h1>
         <div class="staff-olx-filter">
             <a href="{% url 'staff_olx_messages' %}{% if selected_id %}?conv={{ selected_id }}{% endif %}"
                class="staff-filter-btn{% if filter_status == 'kupci' %} is-active{% endif %}">
-                Kupci
-                {% if unread_count and filter_status == 'kupci' %}<span class="staff-filter-count">{{ unread_count }}</span>{% endif %}
+                Kupci{% if unread_count and filter_status == 'kupci' %} <span class="staff-filter-count">{{ unread_count }}</span>{% endif %}
             </a>
             <a href="{% url 'staff_olx_messages' %}?filter=sve{% if selected_id %}&conv={{ selected_id }}{% endif %}"
-               class="staff-filter-btn{% if filter_status == 'sve' %} is-active{% endif %}">
-                Sve poruke
-            </a>
+               class="staff-filter-btn{% if filter_status == 'sve' %} is-active{% endif %}">Sve</a>
         </div>
-        <a href="https://pik.ba/poruke" target="_blank" rel="noopener" class="btn btn-secondary btn-sm staff-olx-external-btn">Otvori Pik aplikaciju</a>
     </div>
 
     {% if olx_error %}
     <p class="staff-olx-error">{{ olx_error }}</p>
     {% endif %}
 
-    <div class="staff-olx-layout{% if selected_id %} has-thread{% endif %}">
-        <aside class="staff-olx-inbox" aria-label="Lista poruka">
-            <div class="staff-olx-panel-head">
-                <h2>Inbox</h2>
-                <span class="staff-olx-panel-hint">Klikni za cijeli chat</span>
-            </div>
+    <div class="staff-olx-messenger{% if selected_id %} has-chat{% endif %}">
+        <aside class="staff-olx-sidebar">
             {% if conversations %}
-            <div class="staff-olx-inbox-list">
+            <div class="staff-olx-sidebar-list">
                 {% for conversation in conversations %}
                 {% include 'staff/partials/olx_inbox_item.html' %}
                 {% endfor %}
@@ -58,66 +38,30 @@
             {% endif %}
         </aside>
 
-        <div class="staff-olx-thread" aria-label="Konverzacija">
+        <div class="staff-olx-chatpane">
             {% if selected_conversation %}
-            <div class="staff-olx-thread-top">
+            <div class="staff-olx-chat-head">
                 <a href="{% url 'staff_olx_messages' %}{% if filter_status == 'sve' %}?filter=sve{% endif %}"
-                   class="staff-olx-back-mobile">← Svi razgovori</a>
-                <div class="staff-olx-thread-user">
-                    <div class="staff-olx-thread-avatar{% if selected_conversation.is_pik_system %} is-pik{% endif %}">
-                        {% if selected_conversation.avatar %}
-                        <img src="{{ selected_conversation.avatar }}" alt="" loading="lazy">
-                        {% else %}
-                        <span>{{ selected_conversation.initial }}</span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <span class="staff-olx-label">Pošiljalac</span>
-                        <h2>{{ selected_conversation.username }}</h2>
-                    </div>
-                </div>
-                <a href="https://pik.ba/poruke" target="_blank" rel="noopener" class="btn btn-secondary btn-sm staff-olx-reply-btn">Odgovori u Pik</a>
-            </div>
-
-            {% if selected_conversation.listing_title %}
-            <div class="staff-olx-thread-context">
-                <span class="staff-olx-label">Pitanje o oglasu</span>
-                <div class="staff-olx-context-card">
-                    {% if selected_conversation.listing_image %}
-                    <img src="{{ selected_conversation.listing_image }}" alt="" loading="lazy">
+                   class="staff-olx-back-mobile">←</a>
+                <div class="staff-olx-chat-head-info">
+                    <strong>{{ selected_conversation.username }}</strong>
+                    {% if selected_conversation.listing_title %}
+                    <span>{{ selected_conversation.listing_title }}</span>
                     {% endif %}
-                    <div class="staff-olx-context-info">
-                        {% if selected_conversation.listing_url %}
-                        <a href="{{ selected_conversation.listing_url }}" target="_blank" rel="noopener" class="staff-olx-context-title">{{ selected_conversation.listing_title }}</a>
-                        {% else %}
-                        <span class="staff-olx-context-title">{{ selected_conversation.listing_title }}</span>
-                        {% endif %}
-                        {% if selected_conversation.listing_price %}
-                        <span class="staff-olx-context-price">{{ selected_conversation.listing_price }}</span>
-                        {% endif %}
-                    </div>
                 </div>
+                <a href="https://pik.ba/poruke" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Odgovori u Pik</a>
             </div>
-            {% elif selected_conversation.is_pik_system %}
-            <div class="staff-olx-thread-context is-system">
-                <span class="staff-olx-label">Tema</span>
-                <p>Sistemska obavijest od PIK / OLX</p>
-            </div>
-            {% endif %}
 
-            <div class="staff-olx-messages">
+            <div class="staff-olx-chat-body">
                 {% for message in thread_messages %}
                 {% include 'staff/partials/olx_message.html' %}
                 {% empty %}
-                <p class="staff-olx-empty">Nema poruka u ovoj konverzaciji.</p>
+                <p class="staff-olx-empty">Nema poruka.</p>
                 {% endfor %}
             </div>
             {% else %}
-            <div class="staff-olx-thread-placeholder">
-                <div class="staff-olx-placeholder-icon" aria-hidden="true">💬</div>
-                <h2>Odaberite konverzaciju</h2>
-                <p>Kliknite na poruku u inboxu da otvorite cijeli razgovor.</p>
-                <p class="staff-olx-hint">Za odgovor kupcu koristite dugme „Odgovori u Pik”.</p>
+            <div class="staff-olx-chat-empty">
+                <p>Odaberite poruku lijevo da otvorite razgovor.</p>
             </div>
             {% endif %}
         </div>
