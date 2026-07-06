@@ -43,4 +43,6 @@ urlpatterns = [
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
     path('nalog/olx-poruke/', views.staff_olx_messages, name='staff_olx_messages'),
+    path('nalog/pretraga-kategorija/', views.staff_category_search, name='staff_category_search'),
+    path('nalog/pretraga-brendova/', views.staff_brand_search, name='staff_brand_search'),
 ]

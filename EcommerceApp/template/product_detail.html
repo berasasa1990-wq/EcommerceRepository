@@ -103,6 +103,36 @@
                         </label>
                         <button type="submit" class="btn btn-sm staff-product-btn">Spremi cijenu</button>
                     </form>
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-meta-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="set_category">
+                        <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_category_search' %}">
+                            <label class="staff-product-price-label">
+                                <span>Kategorija</span>
+                                <div class="staff-lookup-field">
+                                    <input type="hidden" name="kategorija_id" value="{% if product.kategorija_id %}{{ product.kategorija_id }}{% endif %}" data-lookup-id>
+                                    <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.kategorija %}{{ product.kategorija }}{% endif %}" placeholder="Pretraži kategoriju…" autocomplete="off" inputmode="search">
+                                    <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-sm staff-product-btn">Spremi kategoriju</button>
+                    </form>
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-meta-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="set_brand">
+                        <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_brand_search' %}">
+                            <label class="staff-product-price-label">
+                                <span>Brend</span>
+                                <div class="staff-lookup-field">
+                                    <input type="hidden" name="brend_id" value="{% if product.brend_id %}{{ product.brend_id }}{% endif %}" data-lookup-id>
+                                    <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.brend %}{{ product.brend.naziv }}{% endif %}" placeholder="Pretraži brend…" autocomplete="off" inputmode="search">
+                                    <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-sm staff-product-btn">Spremi brend</button>
+                    </form>
                     {% if olx_configured %}
                     {% if product.olx_listing_url %}
                     <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
@@ -271,6 +301,104 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
         }
     });
 });
+
+(function () {
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function initStaffLookup(root) {
+        var input = root.querySelector('[data-lookup-input]');
+        var hidden = root.querySelector('[data-lookup-id]');
+        var list = root.querySelector('[data-lookup-list]');
+        var searchUrl = root.getAttribute('data-search-url');
+        var debounceTimer = null;
+        var fetchController = null;
+        if (!input || !hidden || !list || !searchUrl) return;
+
+        function closeList() {
+            list.hidden = true;
+            list.innerHTML = '';
+        }
+
+        function selectItem(id, label) {
+            hidden.value = String(id);
+            input.value = label;
+            closeList();
+        }
+
+        function renderResults(results) {
+            if (!results.length) {
+                list.innerHTML = '<div class="staff-lookup-empty" role="status">Nema rezultata.</div>';
+                list.hidden = false;
+                return;
+            }
+            list.innerHTML = results.map(function (item) {
+                return '<button type="button" class="staff-lookup-option" role="option" data-id="' +
+                    escapeHtml(item.id) + '" data-label="' + escapeHtml(item.label) + '">' +
+                    escapeHtml(item.label) + '</button>';
+            }).join('');
+            list.hidden = false;
+        }
+
+        function fetchResults(query) {
+            fetchController && fetchController.abort();
+            fetchController = new AbortController();
+            list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga…</div>';
+            list.hidden = false;
+            fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: fetchController.signal,
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('search failed');
+                    return response.json();
+                })
+                .then(function (data) {
+                    renderResults(data.results || []);
+                })
+                .catch(function (error) {
+                    if (error && error.name === 'AbortError') return;
+                    list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga nije dostupna.</div>';
+                    list.hidden = false;
+                });
+        }
+
+        function scheduleSearch() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                fetchResults(input.value.trim());
+            }, 220);
+        }
+
+        input.addEventListener('focus', function () {
+            fetchResults(input.value.trim());
+        });
+
+        input.addEventListener('input', function () {
+            hidden.value = '';
+            scheduleSearch();
+        });
+
+        list.addEventListener('click', function (event) {
+            var option = event.target.closest('.staff-lookup-option');
+            if (!option) return;
+            selectItem(option.getAttribute('data-id'), option.getAttribute('data-label'));
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!root.contains(event.target)) {
+                closeList();
+            }
+        });
+    }
+
+    document.querySelectorAll('[data-staff-lookup]').forEach(initStaffLookup);
+})();
 </script>
 {% endif %}
 {% endblock %}

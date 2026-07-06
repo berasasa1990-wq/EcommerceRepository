@@ -25,7 +25,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from .cart import Cart
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
@@ -379,6 +379,7 @@ def _apply_search_filter(products_qs, query):
 
 
 SEARCH_SUGGEST_LIMIT = 6
+STAFF_LOOKUP_LIMIT = 25
 
 
 def search_suggest(request):
@@ -2359,9 +2360,85 @@ def staff_product_quick_edit(request, slug):
             product.akcijska_cijena = None
         product.save()
         messages.success(request, f'Cijena ažurirana na {new_price} KM.')
+    elif action == 'set_category':
+        raw_id = (request.POST.get('kategorija_id') or '').strip()
+        if not raw_id:
+            product.kategorija = None
+            product.save(update_fields=['kategorija'])
+            messages.success(request, 'Kategorija uklonjena sa artikla.')
+        else:
+            try:
+                category_id = int(raw_id)
+            except (TypeError, ValueError):
+                messages.error(request, 'Odaberite ispravnu kategoriju.')
+                return redirect('product_detail', slug=slug)
+            category = Category.objects.filter(pk=category_id).first()
+            if not category:
+                messages.error(request, 'Kategorija nije pronađena.')
+                return redirect('product_detail', slug=slug)
+            product.kategorija = category
+            product.save(update_fields=['kategorija'])
+            messages.success(request, f'Kategorija postavljena na „{category}”.')
+    elif action == 'set_brand':
+        raw_id = (request.POST.get('brend_id') or '').strip()
+        if not raw_id:
+            product.brend = None
+            product.save(update_fields=['brend'])
+            messages.success(request, 'Brend uklonjen sa artikla.')
+        else:
+            try:
+                brand_id = int(raw_id)
+            except (TypeError, ValueError):
+                messages.error(request, 'Odaberite ispravan brend.')
+                return redirect('product_detail', slug=slug)
+            brand = Brand.objects.filter(pk=brand_id).first()
+            if not brand:
+                messages.error(request, 'Brend nije pronađen.')
+                return redirect('product_detail', slug=slug)
+            product.brend = brand
+            product.save(update_fields=['brend'])
+            messages.success(request, f'Brend postavljen na „{brand.naziv}”.')
     else:
         messages.error(request, 'Nepoznata akcija.')
     return redirect('product_detail', slug=slug)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_category_search(request):
+    query = request.GET.get('q', '').strip()
+    categories_qs = Category.objects.select_related('roditelj')
+    if query:
+        categories_qs = categories_qs.filter(
+            Q(naziv__icontains=query)
+            | Q(slug__icontains=query)
+            | Q(roditelj__naziv__icontains=query),
+        )
+    categories = list(
+        categories_qs.order_by('roditelj__naziv', 'naziv')[:STAFF_LOOKUP_LIMIT],
+    )
+    return JsonResponse({
+        'results': [{'id': category.pk, 'label': str(category)} for category in categories],
+        'query': query,
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_brand_search(request):
+    query = request.GET.get('q', '').strip()
+    brands_qs = Brand.objects.all()
+    if query:
+        brands_qs = brands_qs.filter(
+            Q(naziv__icontains=query) | Q(slug__icontains=query),
+        )
+    brands = list(brands_qs.order_by('naziv')[:STAFF_LOOKUP_LIMIT])
+    return JsonResponse({
+        'results': [{'id': brand.pk, 'label': brand.naziv} for brand in brands],
+        'query': query,
+    })
 
 
 @login_required(login_url='login')
