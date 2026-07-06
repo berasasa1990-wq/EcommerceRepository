@@ -573,6 +573,7 @@ class NaStanjuFilter(admin.SimpleListFilter):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     change_list_template = 'admin/EcommerceApp/product/change_list.html'
+    change_form_template = 'admin/EcommerceApp/product/change_form.html'
     actions = [
         'bulk_assign_category', 'bulk_assign_brand', 'bulk_assign_tags',
         'bulk_proizvedeno_u_japanu', 'bulk_ukloni_japan', 'bulk_merge_products',
@@ -581,7 +582,8 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ('tagovi',)
     list_display = (
         'naziv', 'sifra', 'brend', 'kategorija', 'cijena',
-        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'aktivan', 'pregled_slike',
+        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'aktivan', 'olx_status',
+        'pregled_slike',
     )
     list_filter = (
         'aktivan', NaStanjuFilter, 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
@@ -596,7 +598,7 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('naziv',)}
     readonly_fields = (
         'pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview',
-        'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
+        'olx_objavi_info', 'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
     )
     inlines = [ProductVariationInline, ProductImageInline]
 
@@ -651,8 +653,15 @@ class ProductAdmin(admin.ModelAdmin):
                            'Ako ih ostaviš prazna, sistem automatski koristi naziv artikla + opis ispod.',
         }),
         ('OLX / Pik', {
-            'fields': ('olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen'),
-            'classes': ('collapse',),
+            'fields': (
+                'olx_objavi_info', 'olx_listing_id', 'olx_listing_slug',
+                'olx_listing_url', 'olx_objavljen',
+            ),
+            'description': (
+                'Dugme <strong>Objavi na OLX / Pik</strong> je pored Save (dolje na stranici). '
+                'OLX Shop oglasi se ne vide na javnom profilu — provjeri u Pik/OLX aplikaciji: '
+                '<strong>Moj OLX → Aktivni oglasi</strong>, ili pretraga na olx.ba.'
+            ),
         }),
         ('Odoo', {
             'fields': ('odoo_template_id',),
@@ -664,12 +673,87 @@ class ProductAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path(
+                '<path:object_id>/olx-objavi/',
+                self.admin_site.admin_view(self.olx_publish_view),
+                name='EcommerceApp_product_olx_publish',
+            ),
+            path(
                 'import-odoo/',
                 self.admin_site.admin_view(self.odoo_import_view),
                 name='EcommerceApp_product_odoo_import',
             ),
         ]
         return custom_urls + urls
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        from django.conf import settings
+
+        extra_context = extra_context or {}
+        extra_context['olx_api_configured'] = bool(settings.OLX_API_TOKEN)
+        if object_id:
+            extra_context['olx_publish_url'] = reverse(
+                'admin:EcommerceApp_product_olx_publish',
+                args=[object_id],
+            )
+            obj = self.get_object(request, object_id)
+            if obj and obj.olx_listing_id:
+                extra_context['olx_publish_label'] = 'Ažuriraj na OLX / Pik'
+            else:
+                extra_context['olx_publish_label'] = 'Objavi na OLX / Pik'
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def olx_publish_view(self, request, object_id):
+        from django.conf import settings
+        from django.utils import timezone
+
+        from .olx_api import OlxApiError, publish_product_to_olx
+
+        if request.method != 'POST':
+            return redirect('admin:EcommerceApp_product_change', object_id)
+
+        if not self.has_change_permission(request):
+            messages.error(request, 'Nemate dozvolu za izmjenu artikla.')
+            return redirect('admin:EcommerceApp_product_changelist')
+
+        if not settings.OLX_API_TOKEN:
+            messages.error(request, 'OLX_API_TOKEN nije postavljen u okruženju.')
+            return redirect('admin:EcommerceApp_product_change', object_id)
+
+        product = self.get_object(request, object_id)
+        if product is None:
+            messages.error(request, 'Artikal nije pronađen.')
+            return redirect('admin:EcommerceApp_product_changelist')
+
+        try:
+            result = publish_product_to_olx(product)
+            product.olx_listing_id = result['id']
+            product.olx_listing_slug = result.get('slug', '') or ''
+            product.olx_listing_url = result.get('url', '') or ''
+            product.olx_objavljen = timezone.now()
+            product.save(update_fields=[
+                'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
+            ])
+            if result.get('status') == 'active':
+                messages.success(
+                    request,
+                    'Artikal je aktivan na OLX/Pik. Provjeri u aplikaciji: Moj OLX → Aktivni oglasi. '
+                    f'Link: {result.get("url", "")}',
+                )
+            else:
+                messages.warning(
+                    request,
+                    'Oglas je poslan na OLX/Pik, ali nije postao aktivan. '
+                    'Provjeri Neaktivne oglase u Pik/OLX aplikaciji. '
+                    f'Link: {result.get("url", "")}',
+                )
+        except OlxApiError as exc:
+            messages.error(request, f'OLX/Pik objava nije uspjela: {exc}')
+            logger.warning('OLX admin objava %s nije uspjela: %s', product.slug, exc)
+        except Exception as exc:
+            logger.exception('OLX admin objava artikla %s', product.slug)
+            messages.error(request, f'Neočekivana greška pri objavi: {exc}')
+
+        return redirect('admin:EcommerceApp_product_change', object_id)
 
     def _build_import_job_from_form(self, cleaned, client):
         template_ids = fetch_template_ids_from_odoo(
@@ -1061,6 +1145,7 @@ class ProductAdmin(admin.ModelAdmin):
         success = 0
         inactive = 0
         errors = 0
+        error_details = []
         for product in queryset.select_related('brend', 'kategorija').prefetch_related('dodatne_slike'):
             try:
                 result = publish_product_to_olx(product)
@@ -1077,7 +1162,15 @@ class ProductAdmin(admin.ModelAdmin):
                     inactive += 1
             except OlxApiError as exc:
                 errors += 1
+                detail = f'{product.naziv}: {exc}'
+                if exc.details:
+                    detail += f' ({exc.details})'
+                error_details.append(detail)
                 logger.warning('OLX objava %s nije uspjela: %s', product.slug, exc)
+            except Exception as exc:
+                errors += 1
+                error_details.append(f'{product.naziv}: {exc}')
+                logger.exception('OLX objava %s nije uspjela', product.slug)
 
         if success:
             self.message_user(request, f'{success} artikal/a aktivno na OLX/Pik.', messages.SUCCESS)
@@ -1088,7 +1181,13 @@ class ProductAdmin(admin.ModelAdmin):
                 messages.WARNING,
             )
         if errors:
-            self.message_user(request, f'{errors} artikal/a nije objavljeno (greška API-ja).', messages.ERROR)
+            self.message_user(
+                request,
+                f'{errors} artikal/a nije objavljeno (greška API-ja).',
+                messages.ERROR,
+            )
+            for detail in error_details[:5]:
+                self.message_user(request, detail, messages.ERROR)
 
     bulk_objavi_na_olx_pik.short_description = 'Objavi na OLX / Pik'
 
@@ -1139,6 +1238,38 @@ class ProductAdmin(admin.ModelAdmin):
         return render(request, 'admin/EcommerceApp/product/bulk_merge_products.html', context)
 
     bulk_merge_products.short_description = 'Spoji u jedan artikal (varijante)'
+
+    @admin.display(description='Upute')
+    def olx_objavi_info(self, obj):
+        from django.conf import settings
+
+        if not obj or not obj.pk:
+            return 'Sačuvaj artikal, zatim klikni „Objavi na OLX / Pik” pored dugmeta Save (dolje).'
+        if not settings.OLX_API_TOKEN:
+            return format_html(
+                '<span style="color:#ba2121;">OLX_API_TOKEN nije postavljen u okruženju.</span>',
+            )
+        if obj.olx_listing_id:
+            return format_html(
+                'Objavljen (ID {}). Klikni <strong>Ažuriraj na OLX / Pik</strong> pored Save '
+                'za ponovno slanje cijene i slika.',
+                obj.olx_listing_id,
+            )
+        return format_html(
+            'Nije objavljen. Klikni <strong>Objavi na OLX / Pik</strong> pored Save (dolje na stranici).',
+        )
+
+    @admin.display(description='OLX/Pik')
+    def olx_status(self, obj):
+        if obj.olx_listing_id:
+            if obj.olx_listing_url:
+                return format_html(
+                    '<a href="{}" target="_blank" rel="noopener">{}</a>',
+                    obj.olx_listing_url,
+                    obj.olx_listing_id,
+                )
+            return str(obj.olx_listing_id)
+        return '—'
 
     @admin.display(description='Slika')
     def pregled_slike(self, obj):

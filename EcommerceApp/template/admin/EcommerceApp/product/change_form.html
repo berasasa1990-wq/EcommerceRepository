@@ -1,0 +1,27 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+{{ block.super }}
+{% if original and original.pk %}
+<div class="submit-row olx-publish-row">
+    {% if not olx_api_configured %}
+    <p style="float:left;margin:0;padding:10px 0;color:#ba2121;">
+        OLX_API_TOKEN nije postavljen u okruženju (.env ili Render Environment).
+    </p>
+    {% else %}
+    <form method="post" action="{{ olx_publish_url }}" id="olx-publish-form">
+        {% csrf_token %}
+        <input type="submit"
+               value="{{ olx_publish_label }}"
+               class="default"
+               name="_olx_publish">
+    </form>
+    {% if original.olx_listing_url %}
+    <p style="float:left;margin:0 0 0 12px;padding:10px 0;">
+        <a href="{{ original.olx_listing_url }}" target="_blank" rel="noopener">Otvori oglas na OLX / Pik</a>
+    </p>
+    {% endif %}
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

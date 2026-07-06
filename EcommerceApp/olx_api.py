@@ -142,7 +142,21 @@ class OlxClient:
             logger.warning('OLX slika nije čitljiva: %s', file_path)
             return None
 
-    def upload_images(self, listing_id, image_paths):
+    def upload_image_url(self, listing_id, image_url):
+        try:
+            batch = self._request(
+                'POST',
+                f'/listings/{listing_id}/image-upload',
+                json={'image_url': image_url},
+            )
+        except OlxApiError:
+            logger.warning('OLX upload slike preko URL-a nije uspio: %s', image_url)
+            return []
+        if isinstance(batch, list):
+            return batch
+        return []
+
+    def upload_images(self, listing_id, image_paths, *, image_urls=None):
         uploaded = []
         for path in image_paths:
             prepared = self._uploadable_image(path)
@@ -167,6 +181,8 @@ class OlxClient:
                 continue
             if isinstance(batch, list):
                 uploaded.extend(batch)
+        for image_url in image_urls or []:
+            uploaded.extend(self.upload_image_url(listing_id, image_url))
         return uploaded
 
     def set_main_image(self, listing_id, image_id):
@@ -236,25 +252,53 @@ def _product_description(product):
     return '\n\n'.join(parts)
 
 
-def _product_image_paths(product, *, max_images=8):
+def _absolute_media_url(file_field):
+    if not file_field:
+        return None
+    try:
+        url = file_field.url
+    except (ValueError, OSError):
+        return None
+    if not url:
+        return None
+    if url.startswith(('http://', 'https://')):
+        return url
+    site_url = settings.SITE_URL.rstrip('/')
+    return f'{site_url}{url}'
+
+
+def _product_image_sources(product, *, max_images=8):
     paths = []
+    urls = []
     if product.slika:
         try:
             path = product.slika.path
             if Path(path).is_file():
                 paths.append(path)
+            else:
+                media_url = _absolute_media_url(product.slika)
+                if media_url:
+                    urls.append(media_url)
         except (ValueError, OSError):
-            pass
+            media_url = _absolute_media_url(product.slika)
+            if media_url:
+                urls.append(media_url)
     for extra in product.dodatne_slike.all():
+        added = False
         try:
             path = extra.slika.path
             if Path(path).is_file():
                 paths.append(path)
+                added = True
         except (ValueError, OSError):
-            continue
-        if len(paths) >= max_images:
+            pass
+        if not added:
+            media_url = _absolute_media_url(extra.slika)
+            if media_url:
+                urls.append(media_url)
+        if len(paths) + len(urls) >= max_images:
             break
-    return paths[:max_images]
+    return paths[:max_images], urls[:max_images]
 
 
 def _listing_payload(product, *, category_id, attributes):
@@ -278,60 +322,80 @@ def _listing_payload(product, *, category_id, attributes):
 
 
 def _resolve_olx_category_id(client, product):
-    """Za CarpologijaBH koristimo ribolovnu kategoriju, ne auto-suggest (često pogriješi)."""
-    hints = [product.naziv]
-    if product.kategorija:
-        hints.append(product.kategorija.naziv)
-    for hint in hints:
-        category_id = client.suggest_category_id(hint)
-        if category_id == client.default_category_id:
-            return category_id
-        try:
-            attrs = client.category_attributes(category_id)
-            names = ' '.join(
-                (a.get('name') or '') + ' ' + (a.get('display_name') or '')
-                for a in attrs
-            ).lower()
-            if any(
-                word in names
-                for word in ('ribolov', 'stap', 'masinic', 'varalic', 'pecanje')
-            ) or category_id == client.default_category_id:
-                return category_id
-        except OlxApiError:
-            continue
+    """CarpologijaBH shop — uvijek ribolovna kategorija (suggest često pogriješi, npr. Mobiteli)."""
     return client.default_category_id
+
+
+def _update_listing_payload(product):
+    return {
+        'title': _olx_safe_title(product.naziv),
+        'description': _product_description(product),
+        'short_description': (product.seo_description or product.naziv)[:250],
+        'price': _product_price(product),
+        'available': bool(product.na_stanju),
+    }
+
+
+def _create_listing_for_product(client, product):
+    category_id = _resolve_olx_category_id(client, product)
+    attributes = client.build_attributes(category_id)
+    payload = _listing_payload(product, category_id=category_id, attributes=attributes)
+    try:
+        listing = client.create_listing(payload)
+    except OlxApiError as exc:
+        if exc.status != 422:
+            raise
+        payload = _listing_payload(
+            product,
+            category_id=client.default_category_id,
+            attributes=client.build_attributes(client.default_category_id),
+        )
+        listing = client.create_listing(payload)
+    return int(listing['id'])
+
+
+def _sync_listing_images(client, listing_id, product):
+    image_paths, image_urls = _product_image_sources(product)
+    if not image_paths and not image_urls:
+        return
+    uploaded = client.upload_images(listing_id, image_paths, image_urls=image_urls)
+    if uploaded:
+        main_id = uploaded[0].get('id')
+        if main_id:
+            client.set_main_image(listing_id, main_id)
 
 
 def publish_product_to_olx(product):
     """Kreira ili ažurira oglas na OLX.ba / Pik profilu."""
     client = OlxClient.from_settings()
-    category_id = _resolve_olx_category_id(client, product)
-    attributes = client.build_attributes(category_id)
-    payload = _listing_payload(product, category_id=category_id, attributes=attributes)
+    listing_id = product.olx_listing_id
 
-    if product.olx_listing_id:
-        listing = client.update_listing(product.olx_listing_id, payload)
-        listing_id = product.olx_listing_id
-    else:
+    if listing_id:
         try:
-            listing = client.create_listing(payload)
+            client.update_listing(listing_id, _update_listing_payload(product))
         except OlxApiError as exc:
-            if exc.status == 422:
-                category_id = client.default_category_id
-                attributes = client.build_attributes(category_id)
-                payload = _listing_payload(product, category_id=category_id, attributes=attributes)
-                listing = client.create_listing(payload)
+            if exc.status == 404:
+                logger.warning(
+                    'OLX listing %s ne postoji, kreiram novi za %s',
+                    listing_id,
+                    product.slug,
+                )
+                listing_id = None
+            elif exc.status == 422:
+                logger.warning(
+                    'OLX update %s nije uspio (422), kreiram novi oglas za %s: %s',
+                    listing_id,
+                    product.slug,
+                    exc,
+                )
+                listing_id = None
             else:
                 raise
-        listing_id = int(listing['id'])
 
-    image_paths = _product_image_paths(product)
-    if image_paths:
-        uploaded = client.upload_images(listing_id, image_paths)
-        if uploaded:
-            main_id = uploaded[0].get('id')
-            if main_id:
-                client.set_main_image(listing_id, main_id)
+    if not listing_id:
+        listing_id = _create_listing_for_product(client, product)
+
+    _sync_listing_images(client, listing_id, product)
 
     publish_result = client.publish_listing(listing_id)
     activate_result = client.activate_listing(listing_id)

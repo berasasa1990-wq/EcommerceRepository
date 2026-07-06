@@ -2263,7 +2263,8 @@ def staff_post_product_olx(request, slug):
         if result.get('status') == 'active':
             messages.success(
                 request,
-                f'Artikal je aktivan na OLX/Pik profilu CarpologijaBH. {result.get("url", "")}',
+                'Artikal je aktivan na OLX/Pik. Provjeri u aplikaciji: Moj OLX → Aktivni oglasi. '
+                f'Pretraga: {result.get("url", "")}',
             )
         else:
             messages.warning(
