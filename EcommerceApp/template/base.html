@@ -101,8 +101,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260706staff-media1" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260706staff-media1">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260706cart-real1" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260706cart-real1">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -234,11 +234,11 @@
                         <span class="nav-action-label">Moj nalog</span>
                     </a>
                     {% endif %}
-                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn" aria-label="Korpa">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                            <line x1="3" y1="6" x2="21" y2="6"/>
-                            <path d="M16 10a4 4 0 0 1-8 0"/>
+                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
+                        <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                            <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                            <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
                         </svg>
                         <span class="nav-action-label">Korpa</span>
                         {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
@@ -356,7 +356,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260705z" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260706cart-real1" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
-from .models import Akcija, Banner, Brand, Category, Popup, Product, Tag
+from .models import Akcija, Banner, Brand, Category, MarketingEmailCampaign, Popup, Product, Tag
 
 
 class AkcijaAdminForm(forms.ModelForm):
@@ -460,3 +460,38 @@ class BulkAssignTagsForm(forms.Form):
         required=True,
         help_text='Odabrani tagovi će biti dodani postojećim tagovima artikala (ne zamjenjuju ih).',
     )
+
+
+class MarketingEmailCampaignForm(forms.ModelForm):
+    class Meta:
+        model = MarketingEmailCampaign
+        fields = ('naslov', 'uvod', 'banner', 'cta_link', 'cta_tekst')
+        widgets = {
+            'naslov': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'npr. Akcijska ponuda — do 30% popusta',
+            }),
+            'uvod': forms.Textarea(attrs={
+                'class': 'form-input form-textarea',
+                'rows': 4,
+                'placeholder': 'Kratka poruka za kupce…',
+            }),
+            'cta_link': forms.URLInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'https://www.opremazaribolov.ba/?akcija=1',
+            }),
+            'cta_tekst': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Pogledaj akcijsku ponudu',
+            }),
+            'banner': forms.FileInput(attrs={
+                'class': 'form-input',
+                'accept': 'image/*',
+            }),
+        }
+
+    def clean_banner(self):
+        banner = self.cleaned_data.get('banner')
+        if not banner and not getattr(self.instance, 'banner', None):
+            raise forms.ValidationError('Odaberite banner sliku.')
+        return banner

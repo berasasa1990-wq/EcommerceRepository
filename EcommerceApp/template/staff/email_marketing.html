@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Email marketing — Admin — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-email-marketing-page">
+    <div class="staff-email-marketing-header">
+        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+        <h1>Email marketing</h1>
+        <p class="staff-email-marketing-subtitle">
+            Kreirajte prodajni email sa bannerom i pošaljite svim registrovanim korisnicima ({{ recipient_count }} adresa).
+        </p>
+    </div>
+
+    <div class="staff-email-marketing-layout">
+        <div class="staff-email-marketing-form-panel">
+            <h2>{% if preview_campaign %}Uredi kampanju{% else %}Nova kampanja{% endif %}</h2>
+            <form method="post" enctype="multipart/form-data" class="staff-email-marketing-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="preview">
+                {% if preview_campaign %}
+                <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
+                {% endif %}
+
+                {% for field in form %}
+                <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <p class="form-hint">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                    <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <div class="staff-email-marketing-actions">
+                    <button type="submit" class="btn btn-primary">Pregledaj email</button>
+                    {% if preview_campaign %}
+                    <a href="{% url 'staff_email_marketing' %}" class="btn btn-secondary">Nova kampanja</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        {% if preview_campaign %}
+        <div class="staff-email-marketing-preview-panel">
+            <h2>Pregled emaila</h2>
+            <div class="staff-email-marketing-preview-card">
+                <div class="staff-email-preview-header">
+                    {% if preview_logo_url %}
+                    <img src="{{ preview_logo_url }}" alt="Logo" class="staff-email-preview-logo">
+                    {% else %}
+                    <span>opremazaribolov.ba</span>
+                    {% endif %}
+                </div>
+                {% if preview_banner_url %}
+                <a href="{{ preview_campaign.effective_cta_link }}" class="staff-email-preview-banner" target="_blank" rel="noopener">
+                    <img src="{{ preview_banner_url }}" alt="Banner">
+                </a>
+                {% endif %}
+                <div class="staff-email-preview-body">
+                    <p class="staff-email-preview-greeting">Poštovani [Ime kupca],</p>
+                    <h3>{{ preview_campaign.naslov }}</h3>
+                    {% if preview_campaign.uvod %}
+                    <p>{{ preview_campaign.uvod|linebreaksbr }}</p>
+                    {% else %}
+                    <p>Pogledajte našu aktuelnu ponudu i pronađite opremu po super cijenama.</p>
+                    {% endif %}
+                    <span class="staff-email-preview-cta">{{ preview_campaign.cta_tekst }}</span>
+                </div>
+            </div>
+
+            <div class="staff-email-marketing-send-actions">
+                <form method="post" class="staff-email-marketing-test-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="test">
+                    <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
+                    <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
+                </form>
+                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} registrovanih korisnika?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="send">
+                    <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
+                    <button type="submit" class="btn btn-primary staff-email-send-btn">Pošalji na {{ recipient_count }} emailova</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if recent_campaigns %}
+    <div class="staff-email-marketing-history">
+        <h2>Posljednje kampanje</h2>
+        <ul class="staff-email-history-list">
+            {% for item in recent_campaigns %}
+            <li>
+                <strong>{{ item.naslov }}</strong>
+                <span>
+                    {% if item.poslano %}{{ item.poslano|date:"d.m.Y. H:i" }}{% else %}—{% endif %}
+                    · {{ item.broj_primaoca }} poslano
+                    {% if item.broj_gresaka %} · {{ item.broj_gresaka }} grešaka{% endif %}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

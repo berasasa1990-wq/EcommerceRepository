@@ -31,6 +31,14 @@
             </div>
         </a>
 
+        <a href="{% url 'staff_email_marketing' %}" class="admin-btn">
+            <div class="admin-btn-icon">✉️</div>
+            <div class="admin-btn-text">
+                <strong>Email marketing</strong>
+                <span>Banner + prodajni email svim registrovanim korisnicima</span>
+            </div>
+        </a>
+
         {% if olx_chat_configured %}
         <a href="{% url 'staff_olx_messages' %}" class="admin-btn">
             <div class="admin-btn-icon">💬</div>

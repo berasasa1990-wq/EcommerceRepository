@@ -1,22 +1,29 @@
 {% load static %}
 {% if contact_whatsapp_url or contact_viber_url or contact_messenger_url %}
-<div class="contact-float-group">
-    {% if contact_whatsapp_url %}
-    <a href="{{ contact_whatsapp_url }}" class="contact-float contact-float--whatsapp" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp">
-        <img src="{% static 'img/contact/whatsapp.svg' %}" alt="" width="30" height="30" loading="lazy" decoding="async">
-    </a>
-    {% endif %}
+<div class="contact-float-group" id="contactFloatGroup">
+    <button type="button" class="contact-float contact-float--toggle" data-contact-float-toggle aria-expanded="false" aria-controls="contactFloatMenu" aria-label="Kontakt — odaberi aplikaciju">
+        <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2m0 14H5.17L4 17.17V4h16v12Z"/>
+        </svg>
+    </button>
+    <div class="contact-float-menu" id="contactFloatMenu" data-contact-float-menu>
+        {% if contact_whatsapp_url %}
+        <a href="{{ contact_whatsapp_url }}" class="contact-float contact-float--whatsapp" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp">
+            <img src="{% static 'img/contact/whatsapp.svg' %}" alt="" width="30" height="30" loading="lazy" decoding="async">
+        </a>
+        {% endif %}
 
-    {% if contact_viber_url %}
-    <a href="{{ contact_viber_url }}" class="contact-float contact-float--viber" target="_blank" rel="noopener noreferrer" aria-label="Viber" title="Viber">
-        <img src="{% static 'img/contact/viber.svg' %}" alt="" width="30" height="30" loading="lazy" decoding="async">
-    </a>
-    {% endif %}
+        {% if contact_viber_url %}
+        <a href="{{ contact_viber_url }}" class="contact-float contact-float--viber" target="_blank" rel="noopener noreferrer" aria-label="Viber" title="Viber">
+            <img src="{% static 'img/contact/viber.svg' %}" alt="" width="30" height="30" loading="lazy" decoding="async">
+        </a>
+        {% endif %}
 
-    {% if contact_messenger_url %}
-    <a href="{{ contact_messenger_url }}" class="contact-float contact-float--messenger" target="_blank" rel="noopener noreferrer" aria-label="Messenger" title="Messenger">
-        <img src="{% static 'img/contact/messenger.svg' %}" alt="" width="30" height="30" loading="lazy" decoding="async">
-    </a>
-    {% endif %}
+        {% if contact_messenger_url %}
+        <a href="{{ contact_messenger_url }}" class="contact-float contact-float--messenger" target="_blank" rel="noopener noreferrer" aria-label="Messenger" title="Messenger">
+            <img src="{% static 'img/contact/messenger.svg' %}" alt="" width="30" height="30" loading="lazy" decoding="async">
+        </a>
+        {% endif %}
+    </div>
 </div>
 {% endif %}

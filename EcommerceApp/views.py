@@ -37,7 +37,15 @@ from .loyalty import (
     validiraj_kupon,
 )
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
-from .emails import EmailNotConfiguredError, get_order_email_context, send_order_emails
+from .emails import (
+    EmailNotConfiguredError,
+    get_order_email_context,
+    MARKETING_TEST_EMAIL,
+    marketing_recipient_users,
+    send_marketing_campaign,
+    send_marketing_campaign_test_email,
+    send_order_emails,
+)
 from .olx_api import (
     OlxApiError,
     fetch_olx_conversation_thread,
@@ -55,7 +63,14 @@ from .meta_conversions import (
 from .utils.images import image_field_dimensions
 
 logger = logging.getLogger(__name__)
-from .forms import CheckoutForm, CouponForm, LoginForm, ProfileForm, RegisterForm
+from .forms import (
+    CheckoutForm,
+    CouponForm,
+    LoginForm,
+    MarketingEmailCampaignForm,
+    ProfileForm,
+    RegisterForm,
+)
 from .models import (
     Banner,
     Brand,
@@ -63,6 +78,7 @@ from .models import (
     HomeFeaturedProduct,
     HomeVlog,
     LoyaltyCard,
+    MarketingEmailCampaign,
     Order,
     OrderItem,
     Product,
@@ -2214,6 +2230,107 @@ def staff_admin_panel(request):
         'olx_chat_configured': olx_chat_configured(),
     }
     return render(request, 'staff/admin_panel.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_email_marketing(request):
+    preview_campaign = None
+    kampanja_id = request.GET.get('kampanja') or request.POST.get('kampanja_id')
+    if kampanja_id:
+        preview_campaign = MarketingEmailCampaign.objects.filter(
+            pk=kampanja_id,
+            status=MarketingEmailCampaign.Status.DRAFT,
+        ).first()
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        if action in ('send', 'test'):
+            campaign = get_object_or_404(
+                MarketingEmailCampaign,
+                pk=request.POST.get('kampanja_id'),
+                status=MarketingEmailCampaign.Status.DRAFT,
+            )
+            if action == 'test':
+                try:
+                    send_marketing_campaign_test_email(campaign)
+                    messages.success(
+                        request,
+                        f'Test email poslan na {MARKETING_TEST_EMAIL}.',
+                    )
+                except EmailNotConfiguredError as exc:
+                    messages.error(request, str(exc))
+                except ValueError as exc:
+                    messages.error(request, str(exc))
+                except Exception:
+                    logger.exception('Marketing test email nije poslan')
+                    messages.error(request, 'Test email nije poslan.')
+                return redirect(f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}')
+            try:
+                campaign.poslao = request.user
+                campaign.save(update_fields=['poslao'])
+                sent, failed, total = send_marketing_campaign(campaign)
+                messages.success(
+                    request,
+                    f'Email kampanja poslana na {sent} od {total} registrovanih korisnika.',
+                )
+                if failed:
+                    messages.warning(request, f'{failed} emailova nije uspjelo poslati.')
+                return redirect('staff_email_marketing')
+            except EmailNotConfiguredError as exc:
+                messages.error(request, str(exc))
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            except Exception:
+                logger.exception('Marketing email slanje nije uspjelo')
+                messages.error(request, 'Slanje kampanje nije uspjelo.')
+            preview_campaign = campaign
+            form = MarketingEmailCampaignForm(instance=campaign)
+        else:
+            draft_instance = preview_campaign
+            posted_id = request.POST.get('kampanja_id')
+            if posted_id:
+                draft_instance = MarketingEmailCampaign.objects.filter(
+                    pk=posted_id,
+                    status=MarketingEmailCampaign.Status.DRAFT,
+                ).first() or draft_instance
+            form = MarketingEmailCampaignForm(
+                request.POST,
+                request.FILES,
+                instance=draft_instance,
+            )
+            if form.is_valid():
+                draft = form.save(commit=False)
+                if not draft.poslao_id:
+                    draft.poslao = request.user
+                draft.status = MarketingEmailCampaign.Status.DRAFT
+                draft.save()
+                return redirect(f'{reverse("staff_email_marketing")}?kampanja={draft.pk}')
+            preview_campaign = draft_instance
+    else:
+        form = MarketingEmailCampaignForm(instance=preview_campaign)
+
+    site_settings = SiteSettings.load()
+    preview_logo_url = None
+    preview_banner_url = None
+    if preview_campaign and preview_campaign.banner:
+        preview_banner_url = request.build_absolute_uri(preview_campaign.banner.url)
+    if site_settings.logo:
+        preview_logo_url = request.build_absolute_uri(site_settings.logo.url)
+
+    context = {
+        **_base_context(),
+        'form': form,
+        'preview_campaign': preview_campaign,
+        'recipient_count': len(marketing_recipient_users()),
+        'test_email': MARKETING_TEST_EMAIL,
+        'preview_logo_url': preview_logo_url,
+        'preview_banner_url': preview_banner_url,
+        'recent_campaigns': MarketingEmailCampaign.objects.filter(
+            status=MarketingEmailCampaign.Status.SENT,
+        ).order_by('-poslano')[:8],
+    }
+    return render(request, 'staff/email_marketing.html', context)
 
 
 def _staff_olx_messages_filter(request):

@@ -686,26 +686,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initHomeProductCarousels();
+    initContactFloat();
+
+    function initContactFloat() {
+        const group = document.getElementById('contactFloatGroup');
+        if (!group) return;
+
+        const toggle = group.querySelector('[data-contact-float-toggle]');
+        const menu = group.querySelector('[data-contact-float-menu]');
+        if (!toggle || !menu) return;
+
+        const mq = window.matchMedia('(max-width: 1024px)');
+
+        function applyMode() {
+            if (mq.matches) {
+                group.classList.remove('is-open');
+                toggle.setAttribute('aria-expanded', 'false');
+            } else {
+                group.classList.add('is-open');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        toggle.addEventListener('click', (event) => {
+            if (!mq.matches) return;
+            event.stopPropagation();
+            const open = !group.classList.contains('is-open');
+            group.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!mq.matches || !group.classList.contains('is-open')) return;
+            if (!group.contains(event.target)) {
+                group.classList.remove('is-open');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        mq.addEventListener('change', applyMode);
+        applyMode();
+    }
 
     function getCsrfToken() {
         const match = document.cookie.match(/csrftoken=([^;]+)/);
         return match ? decodeURIComponent(match[1]) : '';
     }
 
+    function triggerCartAddPulse(cartBtn) {
+        cartBtn.classList.remove('cart-btn--pulse-once');
+        void cartBtn.offsetWidth;
+        cartBtn.classList.add('cart-btn--pulse-once');
+        const svg = cartBtn.querySelector('.cart-btn-svg');
+        if (!svg) {
+            cartBtn.classList.remove('cart-btn--pulse-once');
+            return;
+        }
+        const clearPulse = (event) => {
+            if (event.animationName !== 'cart-icon-add-pulse') return;
+            cartBtn.classList.remove('cart-btn--pulse-once');
+            svg.removeEventListener('animationend', clearPulse);
+        };
+        svg.addEventListener('animationend', clearPulse);
+    }
+
     function updateCartBadge(count) {
         const cartBtn = document.querySelector('.cart-btn');
         if (!cartBtn) return;
+        const previousCount = parseInt(cartBtn.dataset.cartCount || '0', 10);
+        const nextCount = Math.max(0, parseInt(count, 10) || 0);
         let badge = cartBtn.querySelector('.cart-badge');
-        if (count > 0) {
+        if (nextCount > 0) {
+            cartBtn.classList.add('cart-btn--has-items');
             if (!badge) {
                 badge = document.createElement('span');
                 badge.className = 'cart-badge';
                 cartBtn.appendChild(badge);
             }
-            badge.textContent = count;
-        } else if (badge) {
-            badge.remove();
+            badge.textContent = nextCount;
+            if (nextCount > previousCount) {
+                triggerCartAddPulse(cartBtn);
+            }
+        } else {
+            cartBtn.classList.remove('cart-btn--has-items', 'cart-btn--pulse-once');
+            if (badge) {
+                badge.remove();
+            }
         }
+        cartBtn.dataset.cartCount = String(nextCount);
     }
 
     function showCartToast(message) {

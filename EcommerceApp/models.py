@@ -1758,3 +1758,63 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f'{self.get_sender_type_display()}: {self.body[:40]}'
+
+
+class MarketingEmailCampaign(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Nacrt'
+        SENT = 'sent', 'Poslano'
+        FAILED = 'failed', 'Greška'
+
+    naslov = models.CharField(max_length=200, verbose_name='Naslov emaila')
+    uvod = models.TextField(
+        blank=True,
+        verbose_name='Uvodni tekst',
+        help_text='Kratka poruka ispod bannera (opcionalno).',
+    )
+    banner = models.ImageField(
+        upload_to='marketing/',
+        verbose_name='Banner slika',
+    )
+    cta_link = models.URLField(
+        blank=True,
+        verbose_name='Link dugmeta',
+        help_text='Gdje vodi klik na banner / dugme. Prazno = akcijska ponuda na početnoj.',
+    )
+    cta_tekst = models.CharField(
+        max_length=120,
+        default='Pogledaj akcijsku ponudu',
+        verbose_name='Tekst dugmeta',
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.DRAFT,
+    )
+    broj_primaoca = models.PositiveIntegerField(default=0)
+    broj_gresaka = models.PositiveIntegerField(default=0)
+    poslano = models.DateTimeField(null=True, blank=True)
+    kreirano = models.DateTimeField(auto_now_add=True)
+    poslao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='marketing_kampanje',
+        verbose_name='Poslao',
+    )
+
+    class Meta:
+        verbose_name = 'Marketing email kampanja'
+        verbose_name_plural = 'Marketing email kampanje'
+        ordering = ['-kreirano']
+
+    def __str__(self):
+        return self.naslov
+
+    @property
+    def effective_cta_link(self):
+        if self.cta_link:
+            return self.cta_link
+        from django.conf import settings as django_settings
+        return f'{django_settings.SITE_URL.rstrip("/")}/?akcija=1#product-showcase'

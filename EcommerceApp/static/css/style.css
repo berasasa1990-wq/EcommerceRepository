@@ -2770,6 +2770,34 @@ body.search-results-active main {
     gap: 10px;
 }
 
+.contact-float-menu {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 10px;
+}
+
+.contact-float--toggle {
+    display: none;
+    border: none;
+    cursor: pointer;
+    background: #1f2937;
+    color: #fff;
+    padding: 0;
+}
+
+.contact-float--toggle:hover {
+    background: #111827;
+}
+
+.contact-float-group.is-open .contact-float--toggle {
+    transform: rotate(0deg);
+}
+
+.contact-float-group.is-open .contact-float--toggle svg {
+    transform: scale(1);
+}
+
 .contact-float {
     width: 56px;
     height: 56px;
@@ -4458,6 +4486,179 @@ body.search-results-active main {
     color: #666;
 }
 
+/* Staff Email Marketing */
+.staff-email-marketing-page {
+    max-width: 1100px;
+    width: 100%;
+    margin: 40px auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.staff-email-marketing-header {
+    margin-bottom: 32px;
+}
+
+.staff-email-marketing-header h1 {
+    margin: 8px 0;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.staff-email-marketing-subtitle {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.staff-email-marketing-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+}
+
+.staff-email-marketing-form-panel,
+.staff-email-marketing-preview-panel {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.staff-email-marketing-form-panel h2,
+.staff-email-marketing-preview-panel h2,
+.staff-email-marketing-history h2 {
+    margin: 0 0 20px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.staff-email-marketing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.staff-email-marketing-preview-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f4f5f7;
+}
+
+.staff-email-preview-header {
+    padding: 16px;
+    text-align: center;
+    background: #111;
+    color: #fff;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.staff-email-preview-logo {
+    max-height: 40px;
+    width: auto;
+    margin: 0 auto;
+    display: block;
+}
+
+.staff-email-preview-banner {
+    display: block;
+    line-height: 0;
+}
+
+.staff-email-preview-banner img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.staff-email-preview-body {
+    padding: 20px;
+    background: #fff;
+}
+
+.staff-email-preview-greeting {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
+.staff-email-preview-body h3 {
+    margin: 0 0 12px;
+    font-size: 22px;
+    line-height: 1.3;
+}
+
+.staff-email-preview-body p {
+    margin: 0 0 16px;
+    color: var(--gray-700);
+    line-height: 1.55;
+}
+
+.staff-email-preview-cta {
+    display: inline-block;
+    padding: 12px 22px;
+    background: #5BB805;
+    color: #fff;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.staff-email-marketing-send-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.staff-email-marketing-test-form,
+.staff-email-marketing-send-form {
+    margin: 0;
+}
+
+.staff-email-test-btn,
+.staff-email-send-btn {
+    width: 100%;
+}
+
+.staff-email-marketing-history {
+    margin-top: 40px;
+    padding: 24px;
+    background: var(--gray-100);
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+}
+
+.staff-email-history-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.staff-email-history-list li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 14px 16px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+}
+
+.staff-email-history-list span {
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
 /* Staff Loyalty */
 .staff-loyalty-page {
     max-width: 1100px;
@@ -4795,6 +4996,49 @@ body.search-results-active main {
 /* Cart badge */
 .cart-btn {
     position: relative;
+}
+
+.cart-btn-svg {
+    transform-origin: center center;
+}
+
+.cart-btn--has-items .cart-btn-svg {
+    animation: cart-icon-idle-pulse 2s ease-in-out infinite;
+}
+
+.cart-btn--pulse-once .cart-btn-svg {
+    animation: cart-icon-add-pulse 0.9s ease-in-out 1;
+}
+
+@keyframes cart-icon-idle-pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+@keyframes cart-icon-add-pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    20%, 60% {
+        transform: scale(1.22);
+    }
+
+    40%, 80% {
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cart-btn--has-items .cart-btn-svg,
+    .cart-btn--pulse-once .cart-btn-svg {
+        animation: none;
+    }
 }
 
 .cart-badge {
@@ -5539,11 +5783,48 @@ body.search-results-active main {
     }
 
     .header-akcija-cta {
-        top: calc(var(--promo-height) + var(--header-top-height) + 8px);
+        top: auto;
+        bottom: max(20px, env(safe-area-inset-bottom, 0px));
         right: max(12px, env(safe-area-inset-right, 0px));
         padding: 8px 14px 10px;
         font-size: 10px;
         border-radius: 8px;
+        z-index: 1050;
+    }
+
+    .contact-float-group {
+        left: max(12px, env(safe-area-inset-left, 0px));
+        right: auto;
+        align-items: flex-start;
+    }
+
+    .contact-float--toggle {
+        display: flex;
+    }
+
+    .contact-float-menu {
+        align-items: flex-start;
+    }
+
+    .contact-float-group:not(.is-open) .contact-float-menu {
+        display: none;
+    }
+
+    .contact-float-group.is-open .contact-float-menu {
+        display: flex;
+        animation: contact-float-menu-in 0.2s ease-out;
+    }
+
+    @keyframes contact-float-menu-in {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .header-akcija-cta__tag {
@@ -6838,6 +7119,39 @@ body.search-results-active main {
 
     .admin-btn-text strong {
         font-size: 16px;
+    }
+
+    .staff-email-marketing-page {
+        margin: 0;
+        padding: 20px var(--home-mobile-side-inset, 16px) 40px;
+    }
+
+    .staff-email-marketing-header h1 {
+        font-size: 26px;
+    }
+
+    .staff-email-marketing-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .staff-email-marketing-form-panel,
+    .staff-email-marketing-preview-panel {
+        padding: 18px 16px;
+    }
+
+    .staff-email-marketing-actions {
+        flex-direction: column;
+    }
+
+    .staff-email-marketing-actions .btn,
+    .staff-email-test-btn,
+    .staff-email-send-btn {
+        width: 100%;
+    }
+
+    .staff-email-history-list li {
+        flex-direction: column;
     }
 
     /* Product detail: slika pa info (mobilno) */

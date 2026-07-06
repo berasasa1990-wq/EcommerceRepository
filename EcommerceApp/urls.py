@@ -40,6 +40,7 @@ urlpatterns = [
     path('nalog/provjera-narudzbi/', views.staff_order_lookup, name='staff_order_lookup'),
     path('nalog/provjera-narudzbi/<str:broj>/', views.staff_order_detail, name='staff_order_detail'),
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('nalog/email-marketing/', views.staff_email_marketing, name='staff_email_marketing'),
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
     path('nalog/olx-poruke/', views.staff_olx_messages, name='staff_olx_messages'),

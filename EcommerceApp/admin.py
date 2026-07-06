@@ -39,6 +39,7 @@ from .models import (
     HomeFeaturedProduct,
     HomeVlog,
     LoyaltyCard,
+    MarketingEmailCampaign,
     Order,
     OrderItem,
     Popup,
@@ -1352,3 +1353,17 @@ class ChatMessageAdmin(admin.ModelAdmin):
     @admin.display(description='Poruka')
     def body_preview(self, obj):
         return obj.body[:80]
+
+
+@admin.register(MarketingEmailCampaign)
+class MarketingEmailCampaignAdmin(admin.ModelAdmin):
+    list_display = ('naslov', 'status', 'broj_primaoca', 'broj_gresaka', 'poslano', 'poslao', 'kreirano')
+    list_filter = ('status',)
+    search_fields = ('naslov', 'uvod', 'poslao__email')
+    readonly_fields = (
+        'status', 'broj_primaoca', 'broj_gresaka', 'poslano', 'kreirano', 'poslao',
+    )
+    fieldsets = (
+        ('Sadržaj', {'fields': ('naslov', 'uvod', 'banner', 'cta_link', 'cta_tekst')}),
+        ('Slanje', {'fields': ('status', 'broj_primaoca', 'broj_gresaka', 'poslano', 'poslao', 'kreirano')}),
+    )

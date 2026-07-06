@@ -52,20 +52,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return match ? decodeURIComponent(match[1]) : '';
     }
 
+    function triggerCartAddPulse(cartBtn) {
+        cartBtn.classList.remove('cart-btn--pulse-once');
+        void cartBtn.offsetWidth;
+        cartBtn.classList.add('cart-btn--pulse-once');
+        const svg = cartBtn.querySelector('.cart-btn-svg');
+        if (!svg) {
+            cartBtn.classList.remove('cart-btn--pulse-once');
+            return;
+        }
+        const clearPulse = (event) => {
+            if (event.animationName !== 'cart-icon-add-pulse') return;
+            cartBtn.classList.remove('cart-btn--pulse-once');
+            svg.removeEventListener('animationend', clearPulse);
+        };
+        svg.addEventListener('animationend', clearPulse);
+    }
+
     function updateCartBadge(count) {
         const cartBtn = document.querySelector('.cart-btn');
         if (!cartBtn) return;
+        const previousCount = parseInt(cartBtn.dataset.cartCount || '0', 10);
+        const nextCount = Math.max(0, parseInt(count, 10) || 0);
         let badge = cartBtn.querySelector('.cart-badge');
-        if (count > 0) {
+        if (nextCount > 0) {
+            cartBtn.classList.add('cart-btn--has-items');
             if (!badge) {
                 badge = document.createElement('span');
                 badge.className = 'cart-badge';
                 cartBtn.appendChild(badge);
             }
-            badge.textContent = count;
-        } else if (badge) {
-            badge.remove();
+            badge.textContent = nextCount;
+            if (nextCount > previousCount) {
+                triggerCartAddPulse(cartBtn);
+            }
+        } else {
+            cartBtn.classList.remove('cart-btn--has-items', 'cart-btn--pulse-once');
+            if (badge) {
+                badge.remove();
+            }
         }
+        cartBtn.dataset.cartCount = String(nextCount);
     }
 
     function showCartToast(message) {

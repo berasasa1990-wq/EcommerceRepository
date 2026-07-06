@@ -1,15 +1,19 @@
 import logging
 from email.utils import formataddr
+from types import SimpleNamespace
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import SiteSettings
+from .models import MarketingEmailCampaign, SiteSettings
 from .pricing import pripremi_stavke_za_racun, sazetak_iz_narudzbe
 
 logger = logging.getLogger(__name__)
+
+MARKETING_TEST_EMAIL = 'narudzbe@opremazaribolov.ba'
 
 
 class EmailNotConfiguredError(Exception):
@@ -195,6 +199,136 @@ def send_chat_notification(conversation, message):
     mail.attach_alternative(html_body, 'text/html')
     mail.send(fail_silently=False)
     logger.info('Chat obavijest poslana za razgovor #%s (%s)', conversation.pk, email)
+
+
+def marketing_recipient_users():
+    seen = set()
+    recipients = []
+    for user in User.objects.filter(is_active=True).exclude(email='').order_by('id'):
+        email = (user.email or '').strip()
+        if not email or '@' not in email:
+            continue
+        key = email.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        recipients.append(user)
+    return recipients
+
+
+def _marketing_email_context(campaign, user):
+    site_settings = SiteSettings.load()
+    logo_url = None
+    if site_settings.logo:
+        logo_url = f'{settings.SITE_URL}{site_settings.logo.url}'
+    banner_url = None
+    if campaign.banner:
+        banner_url = f'{settings.SITE_URL}{campaign.banner.url}'
+    return {
+        'campaign': campaign,
+        'user': user,
+        'site_name': 'opremazaribolov.ba',
+        'site_url': settings.SITE_URL,
+        'logo_url': logo_url,
+        'banner_url': banner_url,
+        'cta_url': campaign.effective_cta_link,
+        'store_email': settings.STORE_EMAIL,
+        'store_phone': settings.STORE_PHONE,
+    }
+
+
+def _render_marketing_html(campaign, user):
+    return render_to_string(
+        'emails/marketing_campaign.html',
+        _marketing_email_context(campaign, user),
+    )
+
+
+def _marketing_plain_text(campaign, user):
+    name = user.first_name or user.email
+    lines = [
+        f'Poštovani {name},',
+        '',
+        campaign.naslov,
+    ]
+    if campaign.uvod:
+        lines.extend(['', campaign.uvod.strip()])
+    lines.extend([
+        '',
+        f'{campaign.cta_tekst}: {campaign.effective_cta_link}',
+        '',
+        f'Pozdrav, tim {settings.SITE_URL.replace("https://", "").replace("http://", "")}',
+    ])
+    return '\n'.join(lines)
+
+
+def send_marketing_campaign_email(campaign, user, *, subject_prefix=''):
+    _ensure_email_configured()
+    mail = EmailMultiAlternatives(
+        subject=f'{subject_prefix}{campaign.naslov} — opremazaribolov.ba',
+        body=_marketing_plain_text(campaign, user),
+        from_email=_from_email(),
+        to=[user.email.strip()],
+        reply_to=[settings.ORDER_NOTIFICATION_EMAIL],
+    )
+    mail.attach_alternative(_render_marketing_html(campaign, user), 'text/html')
+    mail.send(fail_silently=False)
+
+
+def send_marketing_campaign_test_email(campaign):
+    """Pošalji test verziju kampanje na internu adresu prije masovnog slanja."""
+    if not campaign.banner:
+        raise ValueError('Kampanja nema banner sliku.')
+    test_user = SimpleNamespace(
+        first_name='Test',
+        email=MARKETING_TEST_EMAIL,
+    )
+    send_marketing_campaign_email(
+        campaign,
+        test_user,
+        subject_prefix='[TEST] ',
+    )
+    logger.info(
+        'Marketing test email poslan na %s (kampanja #%s)',
+        MARKETING_TEST_EMAIL,
+        campaign.pk,
+    )
+
+
+def send_marketing_campaign(campaign):
+    """Pošalji marketing kampanju svim aktivnim registrovanim korisnicima."""
+    _ensure_email_configured()
+    if not campaign.banner:
+        raise ValueError('Kampanja nema banner sliku.')
+
+    recipients = marketing_recipient_users()
+    if not recipients:
+        raise ValueError('Nema registrovanih korisnika sa email adresom.')
+
+    sent = 0
+    failed = 0
+    for user in recipients:
+        try:
+            send_marketing_campaign_email(campaign, user)
+            sent += 1
+        except Exception:
+            failed += 1
+            logger.exception(
+                'Marketing email nije poslan korisniku %s (kampanja #%s)',
+                user.email,
+                campaign.pk,
+            )
+
+    campaign.broj_primaoca = sent
+    campaign.broj_gresaka = failed
+    campaign.poslano = timezone.now()
+    campaign.status = (
+        MarketingEmailCampaign.Status.SENT if sent else MarketingEmailCampaign.Status.FAILED
+    )
+    campaign.save(update_fields=[
+        'broj_primaoca', 'broj_gresaka', 'poslano', 'status',
+    ])
+    return sent, failed, len(recipients)
 
 
 def send_order_emails(order):
