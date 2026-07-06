@@ -74,11 +74,6 @@
             <h1>{{ product.naziv }}</h1>
 
             {% if user.is_superuser and olx_configured %}
-            <p class="staff-olx-hint">
-                Dodavanje artikla na sajt ga ne šalje automatski na Pik — klikni dugme ispod.
-                OLX Shop oglasi se ne vide na „Profil → Aktivni”, nego u Pik/OLX aplikaciji pod
-                <strong>Moj OLX → Aktivni oglasi</strong> ili u pretrazi na olx.ba.
-            </p>
             <div class="staff-olx-bar">
                 {% if product.olx_listing_url %}
                 <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
