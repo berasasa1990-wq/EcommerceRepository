@@ -5,7 +5,7 @@ from django.contrib.admin import helpers
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
-from django.utils.html import format_html
+from django.utils.html import format_html, mark_safe
 from django.middleware.csrf import get_token
 
 from .forms import (
@@ -1246,7 +1246,7 @@ class ProductAdmin(admin.ModelAdmin):
         if not obj or not obj.pk:
             return 'Sačuvaj artikal, zatim klikni „Objavi na OLX / Pik” pored dugmeta Save (dolje).'
         if not settings.OLX_API_TOKEN:
-            return format_html(
+            return mark_safe(
                 '<span style="color:#ba2121;">OLX_API_TOKEN nije postavljen u okruženju.</span>',
             )
         if obj.olx_listing_id:
@@ -1255,7 +1255,7 @@ class ProductAdmin(admin.ModelAdmin):
                 'za ponovno slanje cijene i slika.',
                 obj.olx_listing_id,
             )
-        return format_html(
+        return mark_safe(
             'Nije objavljen. Klikni <strong>Objavi na OLX / Pik</strong> pored Save (dolje na stranici).',
         )
 
