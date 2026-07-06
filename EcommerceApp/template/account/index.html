@@ -12,6 +12,9 @@
             <p class="account-greeting">Zdravo, {{ user.first_name|default:user.email }}</p>
         </div>
         <div class="account-header-actions">
+            {% if user.is_superuser %}
+            <a href="{% url 'staff_admin_panel' %}" class="btn btn-admin-panel">Admin panel</a>
+            {% endif %}
             <a href="{% url 'logout' %}" class="btn btn-logout">Odjavi se</a>
         </div>
     </div>

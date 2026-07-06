@@ -4414,16 +4414,19 @@ body.search-results-active main {
    ======================================== */
 .staff-admin-page {
     max-width: 900px;
+    width: 100%;
     margin: 40px auto;
     padding: 20px;
+    box-sizing: border-box;
 }
 .staff-admin-header {
     margin-bottom: 40px;
 }
 .admin-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
     gap: 24px;
+    width: 100%;
 }
 .admin-btn {
     display: flex;
@@ -6557,19 +6560,29 @@ body.search-results-active main {
 
     .account-page,
     .account-order-page {
-        padding: 16px 16px 40px;
+        padding: 20px var(--home-mobile-side-inset, 16px) 40px;
     }
 
     .account-header,
     .account-order-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 18px;
+        gap: 14px;
         margin-bottom: 20px;
     }
 
     .account-header-actions {
-        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .account-header-actions .btn {
+        width: 100%;
+        max-width: none;
+        min-height: 48px;
     }
 
     .account-header h1,
@@ -6590,6 +6603,9 @@ body.search-results-active main {
         margin-bottom: 24px;
         padding: 20px 16px;
         border-radius: 10px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .loyalty-card-top {
@@ -6651,6 +6667,7 @@ body.search-results-active main {
     .account-order-grid {
         grid-template-columns: 1fr;
         gap: 20px;
+        width: 100%;
     }
 
     .account-profile,
@@ -6658,6 +6675,16 @@ body.search-results-active main {
     .account-order-panel {
         padding: 18px 16px;
         border-radius: 10px;
+        width: 100%;
+    }
+
+    .account-greeting {
+        word-break: break-word;
+    }
+
+    .order-card-head h3,
+    .order-card-items li span:first-child {
+        overflow-wrap: anywhere;
     }
 
     .account-profile h2,
@@ -6761,6 +6788,38 @@ body.search-results-active main {
         min-height: 44px;
         display: inline-flex;
         align-items: center;
+    }
+
+    .staff-admin-page {
+        margin: 0;
+        padding: 20px var(--home-mobile-side-inset, 16px) 40px;
+    }
+
+    .staff-admin-header {
+        margin-bottom: 24px;
+    }
+
+    .staff-admin-header h1 {
+        font-size: 26px;
+    }
+
+    .admin-buttons {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .admin-btn {
+        padding: 18px 16px;
+    }
+
+    .admin-btn-icon {
+        font-size: 32px;
+        margin-right: 14px;
+        flex-shrink: 0;
+    }
+
+    .admin-btn-text strong {
+        font-size: 16px;
     }
 
     /* Product detail: slika pa info (mobilno) */
@@ -7393,16 +7452,18 @@ body.search-results-active main {
 
     .account-page,
     .account-order-page {
-        padding: 12px 12px 32px;
+        padding: 16px 12px 32px;
     }
 
     .account-header h1,
     .account-order-header h1 {
-        font-size: 24px;
+        font-size: 22px;
+        line-height: 1.25;
     }
 
     .loyalty-card {
-        padding: 16px 14px;
+        padding: 16px 12px;
+        margin-bottom: 20px;
     }
 
     .loyalty-card-tier {
@@ -8072,12 +8133,14 @@ body.search-results-active main {
 }
 
 .staff-product-price-input {
-    width: 110px;
-    padding: 8px 10px;
+    width: 160px;
+    min-height: 48px;
+    padding: 12px 14px;
     border: 1px solid #cfd6df;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
     background: #fff;
+    box-sizing: border-box;
 }
 
 .staff-product-btn,
@@ -8105,6 +8168,88 @@ body.search-results-active main {
 
 .staff-olx-link:hover {
     color: #333;
+}
+
+.staff-product-bar .staff-product-btn,
+.staff-product-bar .staff-olx-btn {
+    background: #111 !important;
+    color: #fff !important;
+    border: 1.5px solid #111 !important;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.staff-product-bar .staff-product-btn:hover,
+.staff-product-bar .staff-olx-btn:hover {
+    background: #333 !important;
+    border-color: #333 !important;
+    color: #fff !important;
+}
+
+@media (max-width: 768px) {
+    .staff-product-bar {
+        width: 100%;
+        max-width: 100%;
+        margin: 16px 0 12px;
+        padding: 14px;
+        box-sizing: border-box;
+    }
+
+    .staff-product-bar-head {
+        margin-bottom: 14px;
+    }
+
+    .staff-product-bar-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .staff-product-form,
+    .staff-product-price-form,
+    .staff-olx-form {
+        width: 100%;
+        margin: 0;
+    }
+
+    .staff-product-price-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .staff-product-price-label {
+        width: 100%;
+    }
+
+    .staff-product-price-input {
+        width: 100%;
+        max-width: none;
+        min-height: 52px;
+        padding: 14px 16px;
+        font-size: 16px;
+    }
+
+    .staff-product-bar .btn,
+    .staff-product-bar .staff-product-btn,
+    .staff-product-bar .staff-olx-btn {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        min-height: 48px;
+        font-size: 15px;
+        background: #111 !important;
+        color: #fff !important;
+        border: 1.5px solid #111 !important;
+    }
+
+    .staff-olx-link {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 10px 0;
+    }
 }
 
 .staff-stock-badge {
@@ -8154,15 +8299,20 @@ body.search-results-active main {
 /* Account */
 .account-page {
     width: 100%;
-    max-width: none;
-    margin: 0;
+    max-width: 100%;
+    margin: 0 auto;
     padding: 48px 48px 80px;
+    box-sizing: border-box;
+    overflow-x: clip;
 }
 
 .account-order-page {
+    width: 100%;
     max-width: 1100px;
     margin: 0 auto;
     padding: 48px 24px 80px;
+    box-sizing: border-box;
+    overflow-x: clip;
 }
 
 .account-header,
@@ -8210,9 +8360,11 @@ body.search-results-active main {
 .account-grid,
 .account-order-grid {
     display: grid;
-    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
     gap: 48px;
     align-items: start;
+    width: 100%;
+    min-width: 0;
 }
 
 .account-profile,
@@ -8221,6 +8373,16 @@ body.search-results-active main {
     background: var(--gray-100);
     border-radius: 4px;
     padding: 24px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.account-form .form-input,
+.account-form .form-textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .account-profile h2,
@@ -8391,7 +8553,8 @@ body.search-results-active main {
     background: var(--gray-100);
 }
 
-.btn-logout {
+.btn-logout,
+.btn-admin-panel {
     background: var(--black);
     color: var(--white) !important;
     border: 1.5px solid var(--black);
@@ -8399,11 +8562,14 @@ body.search-results-active main {
     padding: 12px 24px;
     font-size: 14px;
     font-weight: 500;
+    text-decoration: none;
 }
 
-.btn-logout:hover {
+.btn-logout:hover,
+.btn-admin-panel:hover {
     background: #333;
     border-color: #333;
+    color: var(--white) !important;
 }
 
 .auth-page .btn-primary,
