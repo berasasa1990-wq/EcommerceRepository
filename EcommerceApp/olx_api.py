@@ -1,22 +1,38 @@
 import io
 import logging
-import mimetypes
 import re
 import unicodedata
 from decimal import Decimal
 from pathlib import Path
 
 import requests
-from PIL import Image
+from PIL import Image, ImageOps
 from django.conf import settings
 from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
 
 OLX_API_BASE = 'https://api.olx.ba'
+OLX_IMAGE_SIZE = (300, 225)  # OLX / Pik format oglasa (4:3)
 DEFAULT_OLX_CATEGORY_ID = 1260  # Ostali ribolovni pribor
 DEFAULT_OLX_COUNTRY_ID = 49
 DEFAULT_OLX_CITY_ID = 77  # Bijeljina (CarpologijaBH profil)
+
+
+def _resize_for_olx(image):
+    """Skalira i centrirano reže na 300×225 px (OLX/Pik format)."""
+    return ImageOps.fit(
+        image.convert('RGB'),
+        OLX_IMAGE_SIZE,
+        method=Image.Resampling.LANCZOS,
+    )
+
+
+def _olx_jpeg_buffer(image, *, stem='olx-image'):
+    buffer = io.BytesIO()
+    _resize_for_olx(image).save(buffer, format='JPEG', quality=88, optimize=True)
+    buffer.seek(0)
+    return f'{stem}.jpg', buffer, 'image/jpeg'
 
 
 class OlxApiError(Exception):
@@ -126,35 +142,47 @@ class OlxClient:
         file_path = Path(file_path)
         if not file_path.is_file():
             return None
-        suffix = file_path.suffix.lower()
-        if suffix in {'.jpg', '.jpeg', '.png', '.webp'}:
-            mime, _ = mimetypes.guess_type(file_path.name)
-            return file_path.name, file_path.open('rb'), mime or 'image/jpeg'
         try:
             with Image.open(file_path) as image:
-                converted = image.convert('RGB')
-                buffer = io.BytesIO()
-                converted.save(buffer, format='JPEG', quality=88)
-                buffer.seek(0)
-                upload_name = f'{file_path.stem}.jpg'
-                return upload_name, buffer, 'image/jpeg'
+                return _olx_jpeg_buffer(image, stem=file_path.stem)
         except OSError:
             logger.warning('OLX slika nije čitljiva: %s', file_path)
             return None
 
-    def upload_image_url(self, listing_id, image_url):
+    def _upload_image_file(self, listing_id, upload_name, handle, mime):
         try:
-            batch = self._request(
-                'POST',
-                f'/listings/{listing_id}/image-upload',
-                json={'image_url': image_url},
+            response = self.session.post(
+                f'{OLX_API_BASE}/listings/{listing_id}/image-upload',
+                files={'images[]': (upload_name, handle, mime)},
+                timeout=120,
             )
-        except OlxApiError:
-            logger.warning('OLX upload slike preko URL-a nije uspio: %s', image_url)
+        finally:
+            if hasattr(handle, 'close'):
+                handle.close()
+        if response.status_code >= 400:
+            logger.warning(
+                'OLX upload slike nije uspio: %s',
+                response.text[:300],
+            )
+            return []
+        try:
+            batch = response.json()
+        except ValueError:
             return []
         if isinstance(batch, list):
             return batch
         return []
+
+    def upload_image_url(self, listing_id, image_url):
+        try:
+            response = self.session.get(image_url, timeout=60)
+            response.raise_for_status()
+            with Image.open(io.BytesIO(response.content)) as image:
+                upload_name, handle, mime = _olx_jpeg_buffer(image, stem='olx-url')
+        except (OSError, requests.RequestException, ValueError) as exc:
+            logger.warning('OLX priprema slike preko URL-a nije uspjela (%s): %s', image_url, exc)
+            return []
+        return self._upload_image_file(listing_id, upload_name, handle, mime)
 
     def upload_images(self, listing_id, image_paths, *, image_urls=None):
         uploaded = []
@@ -163,24 +191,7 @@ class OlxClient:
             if not prepared:
                 continue
             upload_name, handle, mime = prepared
-            try:
-                response = self.session.post(
-                    f'{OLX_API_BASE}/listings/{listing_id}/image-upload',
-                    files={'images[]': (upload_name, handle, mime)},
-                    timeout=120,
-                )
-            finally:
-                if hasattr(handle, 'close'):
-                    handle.close()
-            if response.status_code >= 400:
-                logger.warning('OLX upload slike nije uspio za %s: %s', path, response.text[:300])
-                continue
-            try:
-                batch = response.json()
-            except ValueError:
-                continue
-            if isinstance(batch, list):
-                uploaded.extend(batch)
+            uploaded.extend(self._upload_image_file(listing_id, upload_name, handle, mime))
         for image_url in image_urls or []:
             uploaded.extend(self.upload_image_url(listing_id, image_url))
         return uploaded
