@@ -99,7 +99,7 @@
                         <input type="hidden" name="action" value="set_price">
                         <label class="staff-product-price-label">
                             <span>Cijena (KM)</span>
-                            <input type="text" name="cijena" value="{{ product.cijena }}" inputmode="decimal" class="staff-product-price-input">
+                            <input type="text" name="cijena" value="{{ product.cijena }}" inputmode="decimal" pattern="[0-9.,]*" autocomplete="off" class="staff-product-price-input">
                         </label>
                         <button type="submit" class="btn btn-sm staff-product-btn">Spremi cijenu</button>
                     </form>
