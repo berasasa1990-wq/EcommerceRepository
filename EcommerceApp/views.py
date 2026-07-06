@@ -15,7 +15,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Case, Count, Prefetch, Q, When
+from django.db.models import Case, Count, Max, Prefetch, Q, When
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -69,6 +69,7 @@ from .models import (
     ProductImage,
     ProductVariation,
     SiteSettings,
+    Tag,
     UpsellOffer,
     UserProfile,
 )
@@ -1080,6 +1081,7 @@ def product_detail(request, slug):
         .prefetch_related(
             Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id')),
             Prefetch('dodatne_slike', queryset=ProductImage.objects.order_by('redoslijed', 'id')),
+            'tagovi',
         ),
         slug=slug,
     )
@@ -2126,6 +2128,23 @@ def _superuser_required(user):
     return user.is_authenticated and user.is_superuser
 
 
+def _staff_upload_is_image(uploaded_file):
+    content_type = getattr(uploaded_file, 'content_type', '') or ''
+    return content_type.startswith('image/')
+
+
+def _staff_parse_tag_ids(request):
+    tag_ids = []
+    for raw in request.POST.getlist('tag_ids'):
+        try:
+            tag_id = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if tag_id not in tag_ids:
+            tag_ids.append(tag_id)
+    return tag_ids
+
+
 def _normalize_phone_query(value):
     return re.sub(r'\D', '', value or '')
 
@@ -2398,6 +2417,61 @@ def staff_product_quick_edit(request, slug):
             product.brend = brand
             product.save(update_fields=['brend'])
             messages.success(request, f'Brend postavljen na „{brand.naziv}”.')
+    elif action == 'set_opis':
+        product.opis = (request.POST.get('opis') or '').strip()
+        product.save(update_fields=['opis'])
+        messages.success(request, 'Opis artikla je ažuriran.')
+    elif action == 'upload_main_image':
+        uploaded = request.FILES.get('glavna_slika')
+        if not uploaded:
+            messages.error(request, 'Odaberite glavnu sliku.')
+            return redirect('product_detail', slug=slug)
+        if not _staff_upload_is_image(uploaded):
+            messages.error(request, 'Datoteka mora biti slika.')
+            return redirect('product_detail', slug=slug)
+        product.slika = uploaded
+        product.save()
+        messages.success(request, 'Glavna slika je ažurirana.')
+    elif action == 'upload_extra_images':
+        uploads = request.FILES.getlist('dodatne_slike')
+        if not uploads:
+            messages.error(request, 'Odaberite barem jednu dodatnu sliku.')
+            return redirect('product_detail', slug=slug)
+        max_order = (
+            product.dodatne_slike.aggregate(max_red=Max('redoslijed')).get('max_red') or 0
+        )
+        created = 0
+        for index, uploaded in enumerate(uploads, start=1):
+            if not _staff_upload_is_image(uploaded):
+                continue
+            ProductImage.objects.create(
+                product=product,
+                slika=uploaded,
+                redoslijed=max_order + index,
+            )
+            created += 1
+        if not created:
+            messages.error(request, 'Nijedna odabrana datoteka nije validna slika.')
+            return redirect('product_detail', slug=slug)
+        messages.success(request, f'Dodano {created} dodatnih slika.')
+    elif action == 'delete_extra_image':
+        raw_image_id = (request.POST.get('image_id') or '').strip()
+        try:
+            image_id = int(raw_image_id)
+        except (TypeError, ValueError):
+            messages.error(request, 'Slika nije pronađena.')
+            return redirect('product_detail', slug=slug)
+        image = ProductImage.objects.filter(pk=image_id, product=product).first()
+        if not image:
+            messages.error(request, 'Slika nije pronađena.')
+            return redirect('product_detail', slug=slug)
+        image.delete()
+        messages.success(request, 'Dodatna slika je uklonjena.')
+    elif action == 'set_tags':
+        tag_ids = _staff_parse_tag_ids(request)
+        tags = list(Tag.objects.filter(pk__in=tag_ids))
+        product.tagovi.set(tags)
+        messages.success(request, f'Tagovi ažurirani ({len(tags)}).')
     else:
         messages.error(request, 'Nepoznata akcija.')
     return redirect('product_detail', slug=slug)
@@ -2420,6 +2494,25 @@ def staff_category_search(request):
     )
     return JsonResponse({
         'results': [{'id': category.pk, 'label': str(category)} for category in categories],
+        'query': query,
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_tag_search(request):
+    query = request.GET.get('q', '').strip()
+    tags_qs = Tag.objects.select_related('roditelj')
+    if query:
+        tags_qs = tags_qs.filter(
+            Q(naziv__icontains=query)
+            | Q(slug__icontains=query)
+            | Q(roditelj__naziv__icontains=query),
+        )
+    tags = list(tags_qs.order_by('roditelj__naziv', 'naziv')[:STAFF_LOOKUP_LIMIT])
+    return JsonResponse({
+        'results': [{'id': tag.pk, 'label': str(tag)} for tag in tags],
         'query': query,
     })
 

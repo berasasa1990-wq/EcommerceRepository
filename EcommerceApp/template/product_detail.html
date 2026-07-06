@@ -148,6 +148,101 @@
                     {% endif %}
                     {% endif %}
                 </div>
+
+                <div class="staff-product-bar-sections">
+                    <div class="staff-product-bar-section">
+                        <h3 class="staff-product-section-title">Slike</h3>
+                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" enctype="multipart/form-data" class="staff-product-media-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="upload_main_image">
+                            <label class="staff-product-price-label">
+                                <span>Glavna slika</span>
+                                {% if product.prikazna_slika %}
+                                <div class="staff-image-preview staff-image-preview--main">
+                                    <img src="{{ product.prikazna_slika.url }}" alt="Glavna slika" loading="lazy">
+                                </div>
+                                {% endif %}
+                                <input type="file" name="glavna_slika" accept="image/*" class="staff-file-input">
+                            </label>
+                            <button type="submit" class="btn btn-sm staff-product-btn">Zamijeni glavnu sliku</button>
+                        </form>
+
+                        {% if product.dodatne_slike.exists %}
+                        <div class="staff-extra-images">
+                            <span class="staff-product-price-label"><span>Dodatne slike</span></span>
+                            <div class="staff-image-grid">
+                                {% for img in product.dodatne_slike.all %}
+                                <div class="staff-image-thumb-wrap">
+                                    <img src="{{ img.slika.url }}" alt="Dodatna slika {{ forloop.counter }}" class="staff-image-thumb" loading="lazy">
+                                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-image-delete-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_extra_image">
+                                        <input type="hidden" name="image_id" value="{{ img.pk }}">
+                                        <button type="submit" class="staff-image-delete-btn" title="Ukloni sliku" aria-label="Ukloni sliku">×</button>
+                                    </form>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" enctype="multipart/form-data" class="staff-product-media-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="upload_extra_images">
+                            <label class="staff-product-price-label">
+                                <span>Dodaj dodatne slike</span>
+                                <input type="file" name="dodatne_slike" accept="image/*" multiple class="staff-file-input">
+                            </label>
+                            <button type="submit" class="btn btn-sm staff-product-btn">Dodaj slike</button>
+                        </form>
+                    </div>
+
+                    <div class="staff-product-bar-section">
+                        <h3 class="staff-product-section-title">Opis</h3>
+                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-content-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="set_opis">
+                            <label class="staff-product-price-label">
+                                <span>Tekst opisa</span>
+                                <textarea name="opis" rows="6" class="staff-product-textarea" placeholder="Unesite opis artikla…">{{ product.opis }}</textarea>
+                            </label>
+                            <button type="submit" class="btn btn-sm staff-product-btn">Spremi opis</button>
+                        </form>
+                    </div>
+
+                    <div class="staff-product-bar-section">
+                        <h3 class="staff-product-section-title">Tagovi</h3>
+                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-tags-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="set_tags">
+                            <div class="staff-tag-picker" data-staff-tag-picker>
+                                <div class="staff-tag-chips" data-tag-chips>
+                                    {% for tag in product.tagovi.all %}
+                                    <span class="staff-tag-chip" data-tag-id="{{ tag.pk }}">
+                                        <span class="staff-tag-chip-label">{{ tag }}</span>
+                                        <button type="button" class="staff-tag-chip-remove" aria-label="Ukloni tag">×</button>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                <div data-tag-hidden-inputs>
+                                    {% for tag in product.tagovi.all %}
+                                    <input type="hidden" name="tag_ids" value="{{ tag.pk }}">
+                                    {% endfor %}
+                                </div>
+                                <div class="staff-lookup staff-lookup--tags" data-staff-tag-search data-search-url="{% url 'staff_tag_search' %}">
+                                    <label class="staff-product-price-label">
+                                        <span>Dodaj tag</span>
+                                        <div class="staff-lookup-field">
+                                            <input type="text" class="staff-lookup-input" data-tag-search-input placeholder="Pretraži tag…" autocomplete="off" inputmode="search">
+                                            <div class="staff-lookup-list" data-tag-search-list hidden role="listbox"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm staff-product-btn">Spremi tagove</button>
+                        </form>
+                    </div>
+                </div>
             </div>
             {% endif %}
 
@@ -398,6 +493,141 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
     }
 
     document.querySelectorAll('[data-staff-lookup]').forEach(initStaffLookup);
+
+    function initStaffTagPicker(root) {
+        var chipsWrap = root.querySelector('[data-tag-chips]');
+        var hiddenWrap = root.querySelector('[data-tag-hidden-inputs]');
+        var searchRoot = root.querySelector('[data-staff-tag-search]');
+        var input = searchRoot && searchRoot.querySelector('[data-tag-search-input]');
+        var list = searchRoot && searchRoot.querySelector('[data-tag-search-list]');
+        var searchUrl = searchRoot && searchRoot.getAttribute('data-search-url');
+        var debounceTimer = null;
+        var fetchController = null;
+        if (!chipsWrap || !hiddenWrap || !input || !list || !searchUrl) return;
+
+        function hasTag(id) {
+            return !!root.querySelector('.staff-tag-chip[data-tag-id="' + id + '"]');
+        }
+
+        function addTag(id, label) {
+            if (!id || hasTag(id)) return;
+            var chip = document.createElement('span');
+            chip.className = 'staff-tag-chip';
+            chip.setAttribute('data-tag-id', id);
+            chip.innerHTML =
+                '<span class="staff-tag-chip-label">' + escapeHtml(label) + '</span>' +
+                '<button type="button" class="staff-tag-chip-remove" aria-label="Ukloni tag">×</button>';
+            chipsWrap.appendChild(chip);
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'tag_ids';
+            hidden.value = id;
+            hidden.setAttribute('data-tag-id', id);
+            hiddenWrap.appendChild(hidden);
+            input.value = '';
+            closeList();
+        }
+
+        function removeTag(id) {
+            var chip = root.querySelector('.staff-tag-chip[data-tag-id="' + id + '"]');
+            if (chip) chip.remove();
+            var hidden = hiddenWrap.querySelector('input[data-tag-id="' + id + '"]');
+            if (hidden) hidden.remove();
+        }
+
+        function closeList() {
+            list.hidden = true;
+            list.innerHTML = '';
+        }
+
+        function renderResults(results) {
+            if (!results.length) {
+                list.innerHTML = '<div class="staff-lookup-empty" role="status">Nema rezultata.</div>';
+                list.hidden = false;
+                return;
+            }
+            list.innerHTML = results.map(function (item) {
+                return '<button type="button" class="staff-lookup-option" role="option" data-id="' +
+                    escapeHtml(item.id) + '" data-label="' + escapeHtml(item.label) + '">' +
+                    escapeHtml(item.label) + '</button>';
+            }).join('');
+            list.hidden = false;
+        }
+
+        function fetchResults(query) {
+            fetchController && fetchController.abort();
+            fetchController = new AbortController();
+            list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga…</div>';
+            list.hidden = false;
+            fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: fetchController.signal,
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('search failed');
+                    return response.json();
+                })
+                .then(function (data) {
+                    renderResults(data.results || []);
+                })
+                .catch(function (error) {
+                    if (error && error.name === 'AbortError') return;
+                    list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga nije dostupna.</div>';
+                    list.hidden = false;
+                });
+        }
+
+        chipsWrap.addEventListener('click', function (event) {
+            var removeBtn = event.target.closest('.staff-tag-chip-remove');
+            if (!removeBtn) return;
+            var chip = removeBtn.closest('.staff-tag-chip');
+            if (!chip) return;
+            removeTag(chip.getAttribute('data-tag-id'));
+        });
+
+        input.addEventListener('focus', function () {
+            fetchResults(input.value.trim());
+        });
+
+        input.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                fetchResults(input.value.trim());
+            }, 220);
+        });
+
+        list.addEventListener('click', function (event) {
+            var option = event.target.closest('.staff-lookup-option');
+            if (!option) return;
+            addTag(option.getAttribute('data-id'), option.getAttribute('data-label'));
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!searchRoot.contains(event.target)) {
+                closeList();
+            }
+        });
+    }
+
+    document.querySelectorAll('[data-staff-tag-picker]').forEach(initStaffTagPicker);
+
+    document.querySelectorAll('.staff-image-delete-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Ukloniti ovu dodatnu sliku?')) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    document.querySelectorAll('.staff-product-media-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            var fileInput = form.querySelector('input[type="file"]');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                event.preventDefault();
+                window.alert('Odaberite sliku prije slanja.');
+            }
+        });
+    });
 })();
 </script>
 {% endif %}
