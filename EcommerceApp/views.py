@@ -2221,7 +2221,12 @@ def staff_olx_messages(request):
                 (item for item in conversations if item['id'] == selected_id),
                 None,
             )
-            thread = fetch_olx_conversation_thread(selected_id, mark_seen=True)
+            listing_url = (selected_conversation or {}).get('listing_url', '')
+            thread = fetch_olx_conversation_thread(
+                selected_id,
+                mark_seen=True,
+                listing_url=listing_url,
+            )
             thread_messages = thread['messages']
             if selected_conversation and selected_conversation['unread']:
                 selected_conversation = {**selected_conversation, 'unread': False}

@@ -1,0 +1,46 @@
+<article class="staff-olx-bubble{% if message.is_mine %} is-mine{% elif message.is_system %} is-system{% endif %}">
+    <div class="staff-olx-bubble-head">
+        <div class="staff-olx-bubble-avatar{% if message.is_system %} is-pik{% endif %}">
+            {% if message.avatar %}
+            <img src="{{ message.avatar }}" alt="" loading="lazy">
+            {% else %}
+            <span>{{ message.initial }}</span>
+            {% endif %}
+        </div>
+        <div class="staff-olx-bubble-meta">
+            <span class="staff-olx-label">Pošiljalac</span>
+            <strong>{{ message.username }}</strong>
+            {% if message.created_at %}
+            <time datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:'d.m.Y H:i' }}</time>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if message.has_listing_context %}
+    <div class="staff-olx-bubble-subject">
+        <span class="staff-olx-label">Pitanje o</span>
+        <div class="staff-olx-mini-listing">
+            {% if message.listing_image %}
+            <img src="{{ message.listing_image }}" alt="" loading="lazy">
+            {% endif %}
+            <div class="staff-olx-mini-listing-text">
+                {% if message.listing_url %}
+                <a href="{{ message.listing_url }}" target="_blank" rel="noopener">{{ message.listing_title }}</a>
+                {% else %}
+                <span>{{ message.listing_title }}</span>
+                {% endif %}
+                {% if message.listing_price %}
+                <span class="staff-olx-mini-price">{{ message.listing_price }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if message.content %}
+    <div class="staff-olx-bubble-body">
+        <span class="staff-olx-label">Tekst</span>
+        <p>{{ message.content }}</p>
+    </div>
+    {% endif %}
+</article>

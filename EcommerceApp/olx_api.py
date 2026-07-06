@@ -468,45 +468,74 @@ def _olx_timestamp(value):
     return dj_timezone.datetime.fromtimestamp(int(value), tz=dj_timezone.get_current_timezone())
 
 
+def _olx_listing_display_price(listing):
+    if not listing:
+        return ''
+    if listing.get('display_price'):
+        return listing['display_price']
+    price = listing.get('price')
+    if price is not None:
+        return f'{price} KM'
+    return ''
+
+
 def serialize_olx_conversation(conversation):
     sender = conversation.get('sender') or {}
     listing = conversation.get('listing') or {}
     last_message = conversation.get('last_message') or {}
     username = sender.get('username') or '—'
     is_pik_system = username == 'PIK' or sender.get('id') in (0, None)
+    listing_title = listing.get('title') or ''
+    if listing_title:
+        subject = listing_title
+        subject_kind = 'Oglas'
+    elif is_pik_system:
+        subject = 'Sistemska obavijest PIK'
+        subject_kind = 'PIK'
+    else:
+        subject = 'Opća poruka'
+        subject_kind = 'Poruka'
     return {
         'id': conversation.get('id'),
         'username': username,
         'avatar': sender.get('avatar') or '',
+        'initial': (username[:1] or '?').upper(),
         'is_pik_system': is_pik_system,
         'unread': bool(conversation.get('unread_messages')) or not conversation.get('seen', True),
-        'listing_title': listing.get('title') or '',
+        'listing_title': listing_title,
         'listing_url': _olx_listing_url(listing),
-        'preview': _olx_plain_text(last_message.get('content'))[:140],
+        'listing_image': listing.get('image') or '',
+        'listing_price': _olx_listing_display_price(listing),
+        'subject': subject,
+        'subject_kind': subject_kind,
+        'preview': _olx_plain_text(last_message.get('content'))[:160],
         'updated_at': _olx_timestamp(conversation.get('updated_at')),
     }
 
 
-def serialize_olx_message(message, *, shop_username='CarpologijaBH'):
+def serialize_olx_message(message, *, shop_username='CarpologijaBH', listing_url=''):
     sender = message.get('sender') or {}
     username = sender.get('username') or '—'
     listing_data = message.get('data') or {}
-    listing_url = ''
-    if message.get('type') == 'listing' and listing_data.get('title'):
-        listing_url = listing_data.get('url') or ''
+    msg_type = message.get('type') or 'text'
+    listing_title = listing_data.get('title') or ''
+    listing_price = listing_data.get('price')
+    if listing_price is not None and not isinstance(listing_price, str):
+        listing_price = f'{listing_price} KM'
     return {
         'id': message.get('id'),
-        'type': message.get('type') or 'text',
+        'type': msg_type,
         'content': _olx_plain_text(message.get('content')),
-        'html_content': message.get('content') or '',
         'username': username,
         'avatar': sender.get('avatar') or '',
+        'initial': (username[:1] or '?').upper(),
         'is_mine': username == shop_username,
         'is_system': username == 'PIK',
-        'listing_title': listing_data.get('title') or '',
-        'listing_price': listing_data.get('price'),
+        'has_listing_context': msg_type == 'listing' and bool(listing_title),
+        'listing_title': listing_title,
+        'listing_price': listing_price or '',
         'listing_image': listing_data.get('image') or '',
-        'listing_url': listing_url,
+        'listing_url': listing_url if msg_type == 'listing' else '',
         'created_at': _olx_timestamp(message.get('created_at')),
     }
 
@@ -527,7 +556,7 @@ def fetch_olx_conversations(*, page=1, customers_only=False):
     }
 
 
-def fetch_olx_conversation_thread(conversation_id, *, mark_seen=True):
+def fetch_olx_conversation_thread(conversation_id, *, mark_seen=True, listing_url=''):
     client = OlxClient.from_settings()
     if mark_seen:
         try:
@@ -537,7 +566,7 @@ def fetch_olx_conversation_thread(conversation_id, *, mark_seen=True):
 
     messages_payload = client.get_conversation_messages(conversation_id)
     messages = [
-        serialize_olx_message(item)
+        serialize_olx_message(item, listing_url=listing_url)
         for item in (messages_payload.get('data') or [])
     ]
     messages.sort(key=lambda item: item.get('created_at') or 0)

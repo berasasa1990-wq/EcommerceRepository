@@ -7705,117 +7705,304 @@ body.search-results-active main {
 
 /* Staff OLX / Pik messages */
 .staff-olx-page {
-    max-width: 1200px;
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px 20px 40px;
 }
 .staff-olx-header {
-    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
 }
 .staff-olx-subtitle {
     margin: 6px 0 0;
     color: var(--gray-600);
     font-size: 14px;
+    max-width: 520px;
+}
+.staff-olx-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 13px;
+    color: var(--gray-600);
+}
+.staff-olx-stats-unread {
+    color: #1f4d45;
+    font-weight: 600;
+}
+.staff-olx-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
 }
 .staff-olx-filter {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 20px;
+}
+.staff-olx-external-btn {
+    white-space: nowrap;
 }
 .staff-olx-error {
     margin: 0 0 16px;
     padding: 12px 14px;
-    border-radius: 8px;
+    border-radius: 10px;
     background: #fdecea;
     color: #8a1f17;
     font-size: 14px;
 }
 .staff-olx-layout {
     display: grid;
-    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
-    gap: 20px;
-    min-height: 520px;
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+    gap: 18px;
+    min-height: 620px;
+    align-items: stretch;
 }
 .staff-olx-inbox,
 .staff-olx-thread {
     border: 1px solid var(--gray-200);
-    border-radius: 12px;
+    border-radius: 16px;
     background: #fff;
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+    overflow: hidden;
+}
+.staff-olx-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+}
+.staff-olx-panel-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #28403d;
+}
+.staff-olx-panel-hint {
+    font-size: 12px;
+    color: var(--gray-500);
 }
 .staff-olx-inbox-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    max-height: 70vh;
+    max-height: calc(100vh - 280px);
+    min-height: 420px;
     overflow-y: auto;
 }
 .staff-olx-inbox-item {
-    display: block;
-    padding: 14px 16px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px 16px 14px 14px;
     border-bottom: 1px solid var(--gray-100);
     text-decoration: none;
     color: inherit;
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
-.staff-olx-inbox-item:hover,
+.staff-olx-inbox-item:hover {
+    background: #f8faf9;
+}
 .staff-olx-inbox-item.is-active {
-    background: var(--gray-100);
+    background: #edf5f3;
+    border-left: 3px solid #28403d;
+    padding-left: 11px;
 }
 .staff-olx-inbox-item.is-unread {
     background: #f4faf8;
 }
-.staff-olx-inbox-item.is-unread strong {
-    color: #1f4d45;
-}
-.staff-olx-inbox-top {
+.staff-olx-inbox-avatar,
+.staff-olx-thread-avatar,
+.staff-olx-bubble-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #e8f0ee;
+    color: #28403d;
     display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    align-items: baseline;
-    margin-bottom: 4px;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    flex-shrink: 0;
 }
-.staff-olx-inbox-top time {
-    font-size: 12px;
+.staff-olx-inbox-avatar.is-pik,
+.staff-olx-thread-avatar.is-pik,
+.staff-olx-bubble-avatar.is-pik {
+    background: #fff4db;
+    color: #9a6b00;
+}
+.staff-olx-inbox-avatar img,
+.staff-olx-thread-avatar img,
+.staff-olx-bubble-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.staff-olx-inbox-content {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.staff-olx-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    margin-bottom: 2px;
+}
+.staff-olx-inbox-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    align-items: end;
+}
+.staff-olx-inbox-meta .staff-olx-label {
+    grid-column: 1 / -1;
+}
+.staff-olx-sender {
+    font-size: 15px;
+    color: #111;
+    line-height: 1.2;
+}
+.staff-olx-inbox-meta time {
+    font-size: 11px;
     color: var(--gray-500);
     white-space: nowrap;
 }
-.staff-olx-inbox-listing {
-    font-size: 12px;
-    color: #28403d;
-    margin-bottom: 4px;
+.staff-olx-subject,
+.staff-olx-preview-wrap {
+    min-width: 0;
 }
-.staff-olx-inbox-preview {
+.staff-olx-subject-text {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #28403d;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.staff-olx-preview {
     margin: 0;
     font-size: 13px;
     color: var(--gray-600);
-    line-height: 1.4;
+    line-height: 1.45;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+.staff-olx-unread-dot {
+    position: absolute;
+    top: 18px;
+    right: 14px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #1f7a67;
+    box-shadow: 0 0 0 3px rgba(31, 122, 103, 0.15);
+}
 .staff-olx-thread {
     display: flex;
     flex-direction: column;
-    min-height: 520px;
+    min-height: 620px;
 }
-.staff-olx-thread-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
+.staff-olx-thread-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 16px;
+    align-items: center;
     padding: 16px 18px;
     border-bottom: 1px solid var(--gray-100);
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
 }
-.staff-olx-thread-header h2 {
-    margin: 0 0 4px;
-    font-size: 20px;
+.staff-olx-back-mobile {
+    display: none;
+    grid-column: 1 / -1;
+    font-size: 14px;
+    font-weight: 600;
+    color: #28403d;
+    text-decoration: none;
 }
-.staff-olx-thread-listing {
+.staff-olx-thread-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+.staff-olx-thread-user h2 {
     margin: 0;
+    font-size: 18px;
+    line-height: 1.2;
+}
+.staff-olx-reply-btn {
+    white-space: nowrap;
+}
+.staff-olx-thread-context {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--gray-100);
+    background: #f8faf9;
+}
+.staff-olx-thread-context.is-system p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--gray-700);
+}
+.staff-olx-context-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    background: #fff;
+}
+.staff-olx-context-card img {
+    width: 72px;
+    height: 54px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: var(--gray-100);
+    flex-shrink: 0;
+}
+.staff-olx-context-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.staff-olx-context-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111;
+    text-decoration: none;
+    line-height: 1.35;
+}
+a.staff-olx-context-title:hover {
+    color: #28403d;
+    text-decoration: underline;
+}
+.staff-olx-context-price {
     font-size: 13px;
     color: var(--gray-600);
+    font-weight: 600;
 }
 .staff-olx-messages {
     flex: 1;
@@ -7823,86 +8010,163 @@ body.search-results-active main {
     padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
+    background:
+        radial-gradient(circle at top left, rgba(40, 64, 61, 0.03), transparent 42%),
+        #fcfdfd;
 }
-.staff-olx-message {
-    max-width: 85%;
+.staff-olx-bubble {
+    max-width: min(88%, 560px);
     padding: 12px 14px;
-    border-radius: 12px;
+    border-radius: 14px;
+    border: 1px solid var(--gray-200);
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
+}
+.staff-olx-bubble.is-mine {
+    align-self: flex-end;
+    background: #edf7f4;
+    border-color: #cfe5df;
+}
+.staff-olx-bubble.is-system {
+    align-self: center;
+    max-width: 96%;
+    background: #fffaf0;
+    border-color: #f0e2b8;
+}
+.staff-olx-bubble-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.staff-olx-bubble-meta {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+}
+.staff-olx-bubble-meta .staff-olx-label {
+    width: 100%;
+    margin-bottom: 0;
+}
+.staff-olx-bubble-meta strong {
+    font-size: 14px;
+    color: #111;
+}
+.staff-olx-bubble-meta time {
+    font-size: 11px;
+    color: var(--gray-500);
+}
+.staff-olx-bubble-subject {
+    margin-bottom: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--gray-200);
+}
+.staff-olx-mini-listing {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    padding: 8px 10px;
+    border-radius: 10px;
     background: var(--gray-100);
 }
-.staff-olx-message.is-mine {
-    align-self: flex-end;
-    background: #e8f3f1;
-}
-.staff-olx-message.is-system {
-    align-self: center;
-    max-width: 95%;
-    background: #fff8e8;
-}
-.staff-olx-message-meta {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 6px;
-    font-size: 12px;
-    color: var(--gray-600);
-}
-.staff-olx-message-body {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-}
-.staff-olx-listing-card {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 8px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.7);
-}
-.staff-olx-listing-card img {
+.staff-olx-mini-listing img {
     width: 56px;
     height: 42px;
     object-fit: contain;
-    border-radius: 4px;
+    border-radius: 6px;
     background: #fff;
+    flex-shrink: 0;
 }
-.staff-olx-listing-title {
+.staff-olx-mini-listing-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     font-size: 13px;
     font-weight: 600;
+    line-height: 1.35;
 }
-.staff-olx-listing-price {
+.staff-olx-mini-listing-text a {
+    color: #28403d;
+    text-decoration: none;
+}
+.staff-olx-mini-listing-text a:hover {
+    text-decoration: underline;
+}
+.staff-olx-mini-price {
     font-size: 12px;
+    font-weight: 600;
     color: var(--gray-600);
+}
+.staff-olx-bubble-body p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #222;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 .staff-olx-thread-placeholder,
 .staff-olx-empty {
     margin: 0;
-    padding: 28px 18px;
+    padding: 32px 20px;
     color: var(--gray-600);
     font-size: 14px;
+    text-align: center;
 }
 .staff-olx-thread-placeholder {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    text-align: center;
-    min-height: 420px;
-    gap: 8px;
+    min-height: 100%;
+    gap: 10px;
+    padding: 48px 24px;
+}
+.staff-olx-placeholder-icon {
+    font-size: 42px;
+    line-height: 1;
+    opacity: 0.85;
+}
+.staff-olx-thread-placeholder h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #111;
+}
+.staff-olx-thread-placeholder p {
+    margin: 0;
+    max-width: 360px;
+    line-height: 1.5;
 }
 @media (max-width: 900px) {
     .staff-olx-layout {
         grid-template-columns: 1fr;
+        min-height: auto;
+    }
+    .staff-olx-inbox-list {
+        max-height: none;
+        min-height: 360px;
     }
     .staff-olx-layout:not(.has-thread) .staff-olx-thread {
         display: none;
     }
     .staff-olx-layout.has-thread .staff-olx-inbox {
         display: none;
+    }
+    .staff-olx-back-mobile {
+        display: inline-flex;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+    .staff-olx-external-btn {
+        display: none;
+    }
+    .staff-olx-thread {
+        min-height: calc(100vh - 180px);
     }
 }
 
