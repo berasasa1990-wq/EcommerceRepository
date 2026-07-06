@@ -4552,11 +4552,12 @@ body.search-results-active main {
 .staff-email-preview-header {
     padding: 16px;
     text-align: center;
-    background: #111;
-    color: #fff;
+    background: #fff;
+    color: #111;
     font-size: 13px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    border-bottom: 1px solid var(--gray-200);
 }
 
 .staff-email-preview-logo {
@@ -4600,6 +4601,13 @@ body.search-results-active main {
     line-height: 1.55;
 }
 
+.staff-email-preview-cta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
 .staff-email-preview-cta {
     display: inline-block;
     padding: 12px 22px;
@@ -4608,6 +4616,13 @@ body.search-results-active main {
     border-radius: 999px;
     font-weight: 700;
     font-size: 14px;
+    flex-shrink: 0;
+}
+
+.staff-email-preview-warranty {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.4;
 }
 
 .staff-email-marketing-send-actions {

@@ -32,7 +32,8 @@
         .header {
             padding: 22px 28px;
             text-align: center;
-            background: #111111;
+            background: #ffffff;
+            border-bottom: 1px solid #e8ebe8;
         }
         .header img {
             max-height: 48px;
@@ -41,7 +42,7 @@
         }
         .header-title {
             margin: 10px 0 0;
-            color: #ffffff;
+            color: #111111;
             font-size: 13px;
             letter-spacing: 0.12em;
             text-transform: uppercase;
@@ -75,6 +76,9 @@
             text-align: center;
             padding: 8px 0 24px;
         }
+        .cta-row {
+            display: inline-table;
+        }
         .cta {
             display: inline-block;
             padding: 14px 28px;
@@ -85,6 +89,15 @@
             font-size: 16px;
             font-weight: 700;
             letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .cta-note {
+            padding-left: 16px;
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.4;
+            vertical-align: middle;
+            white-space: nowrap;
         }
         .benefits {
             margin: 0;
@@ -143,7 +156,14 @@
                             <p class="intro">Pogledajte našu aktuelnu ponudu i pronađite opremu po super cijenama.</p>
                             {% endif %}
                             <div class="cta-wrap">
-                                <a href="{{ cta_url }}" class="cta" target="_blank" rel="noopener">{{ campaign.cta_tekst }}</a>
+                                <table role="presentation" cellspacing="0" cellpadding="0" class="cta-row" align="center">
+                                    <tr>
+                                        <td>
+                                            <a href="{{ cta_url }}" class="cta" target="_blank" rel="noopener">{{ campaign.cta_tekst }}</a>
+                                        </td>
+                                        <td class="cta-note">Pisana garancija na proizvode</td>
+                                    </tr>
+                                </table>
                             </div>
                         </div>
 
