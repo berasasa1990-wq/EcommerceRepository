@@ -222,6 +222,20 @@
 })();
 </script>
 {% endif %}
+{% if user.is_superuser and olx_configured %}
+<script>
+document.querySelectorAll('.staff-olx-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var msg = form.querySelector('.staff-olx-btn--publish')
+            ? 'Objaviti ovaj artikal na OLX / Pik profilu CarpologijaBH?'
+            : 'Ažurirati ovaj artikal na OLX / Pik?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
 
 {% block structured_data %}
@@ -279,21 +293,4 @@
   ]
 }
 </script>
-{% endblock %}
-
-{% block extra_js %}
-{% if user.is_superuser and olx_configured %}
-<script>
-document.querySelectorAll('.staff-olx-form').forEach(function (form) {
-    form.addEventListener('submit', function (event) {
-        var msg = form.querySelector('.staff-olx-btn--publish')
-            ? 'Objaviti ovaj artikal na OLX / Pik profilu CarpologijaBH?'
-            : 'Ažurirati ovaj artikal na OLX / Pik?';
-        if (!window.confirm(msg)) {
-            event.preventDefault();
-        }
-    });
-});
-</script>
-{% endif %}
 {% endblock %}
