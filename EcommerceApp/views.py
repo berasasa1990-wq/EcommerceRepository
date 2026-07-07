@@ -45,6 +45,7 @@ from .emails import (
     import_marketing_subscribers_from_orders,
     MARKETING_TEST_EMAIL,
     marketing_recipient_counts,
+    marketing_send_progress,
     send_marketing_campaign_batch,
     send_marketing_campaign_test_email,
     start_marketing_campaign_send,
@@ -2335,6 +2336,7 @@ def staff_email_marketing(request):
             status__in=(
                 MarketingEmailCampaign.Status.DRAFT,
                 MarketingEmailCampaign.Status.SENDING,
+                MarketingEmailCampaign.Status.FAILED,
             ),
         ).first()
 
@@ -2390,6 +2392,7 @@ def staff_email_marketing(request):
                 status__in=(
                     MarketingEmailCampaign.Status.DRAFT,
                     MarketingEmailCampaign.Status.SENDING,
+                    MarketingEmailCampaign.Status.FAILED,
                 ),
             )
             if action == 'test':
@@ -2495,6 +2498,9 @@ def staff_email_marketing(request):
         'marketing_send_url': reverse('staff_email_marketing'),
         'marketing_batch_size': settings.MARKETING_EMAIL_BATCH_SIZE,
         'marketing_group_pause_ms': int(settings.MARKETING_EMAIL_GROUP_PAUSE * 1000),
+        'marketing_send_progress': (
+            marketing_send_progress(preview_campaign) if preview_campaign else None
+        ),
     }
     return render(request, 'staff/email_marketing.html', context)
 

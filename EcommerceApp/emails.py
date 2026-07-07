@@ -411,6 +411,66 @@ def send_marketing_campaign_test_email(campaign):
     )
 
 
+def _normalize_marketing_email(email):
+    return (email or '').strip().lower()
+
+
+def _campaign_sent_email_set(campaign):
+    return {
+        _normalize_marketing_email(email)
+        for email in (campaign.slanje_poslati or [])
+        if _normalize_marketing_email(email)
+    }
+
+
+def _sent_emails_for_campaign_title(campaign):
+    """Svi emailovi koji su već primili kampanju s istim naslovom."""
+    sent = _campaign_sent_email_set(campaign)
+    if not campaign.naslov:
+        return sent
+    related = MarketingEmailCampaign.objects.filter(
+        naslov=campaign.naslov,
+    ).exclude(pk=campaign.pk).exclude(
+        status=MarketingEmailCampaign.Status.DRAFT,
+    )
+    for other in related:
+        sent.update(_campaign_sent_email_set(other))
+    return sent
+
+
+def _bootstrap_legacy_sent_emails(campaign):
+    """Prethodna slanja prije slanje_poslati polja — rekonstruiši iz broj_primaoca."""
+    if campaign.slanje_poslati:
+        return [
+            _normalize_marketing_email(email)
+            for email in campaign.slanje_poslati
+            if _normalize_marketing_email(email)
+        ]
+    legacy = []
+    if campaign.broj_primaoca and campaign.slanje_lista:
+        for payload in campaign.slanje_lista[:campaign.broj_primaoca]:
+            email = _normalize_marketing_email(payload.get('email'))
+            if email and email not in legacy:
+                legacy.append(email)
+    return legacy
+
+
+def marketing_send_progress(campaign):
+    already_sent = _sent_emails_for_campaign_title(campaign)
+    if not already_sent:
+        already_sent = set(_bootstrap_legacy_sent_emails(campaign))
+    else:
+        already_sent.update(_bootstrap_legacy_sent_emails(campaign))
+    total = campaign.slanje_ukupno or len(marketing_recipients())
+    sent_count = len(already_sent)
+    return {
+        'already_sent': sent_count,
+        'remaining': max(total - sent_count, 0),
+        'total': total,
+        'can_resume': sent_count > 0 and campaign.status != MarketingEmailCampaign.Status.SENT,
+    }
+
+
 def start_marketing_campaign_send(campaign, *, user=None):
     """Pripremi kampanju za batch slanje (izbjegava HTTP timeout na velikim listama)."""
     _ensure_email_configured()
@@ -421,23 +481,52 @@ def start_marketing_campaign_send(campaign, *, user=None):
     if not recipients:
         raise ValueError('Nema email adresa za slanje kampanje.')
 
+    already_sent = _sent_emails_for_campaign_title(campaign)
+    legacy_sent = _bootstrap_legacy_sent_emails(campaign)
+    if legacy_sent:
+        already_sent.update(legacy_sent)
+        if not campaign.slanje_poslati:
+            campaign.slanje_poslati = legacy_sent
+
+    remaining = [
+        recipient for recipient in recipients
+        if recipient.email.lower() not in already_sent
+    ]
+
+    if not remaining:
+        if already_sent:
+            campaign.slanje_poslati = sorted(already_sent)
+            campaign.broj_primaoca = len(already_sent)
+            campaign.slanje_ukupno = len(recipients)
+            campaign.slanje_lista = []
+            campaign.slanje_offset = 0
+            campaign.poslano = timezone.now()
+            campaign.status = MarketingEmailCampaign.Status.SENT
+            campaign.save(update_fields=[
+                'slanje_poslati', 'broj_primaoca', 'slanje_ukupno',
+                'slanje_lista', 'slanje_offset', 'poslano', 'status',
+            ])
+            return 0
+        raise ValueError('Nema preostalih email adresa za slanje kampanje.')
+
     campaign.slanje_lista = [
         {'email': recipient.email, 'display_name': recipient.display_name}
-        for recipient in recipients
+        for recipient in remaining
     ]
     campaign.slanje_ukupno = len(recipients)
     campaign.slanje_offset = 0
-    campaign.broj_primaoca = 0
+    campaign.broj_primaoca = len(already_sent)
+    campaign.slanje_poslati = sorted(already_sent)
     campaign.broj_gresaka = 0
     campaign.poslano = None
     campaign.status = MarketingEmailCampaign.Status.SENDING
     if user is not None:
         campaign.poslao = user
     campaign.save(update_fields=[
-        'slanje_lista', 'slanje_ukupno', 'slanje_offset',
+        'slanje_lista', 'slanje_ukupno', 'slanje_offset', 'slanje_poslati',
         'broj_primaoca', 'broj_gresaka', 'poslano', 'status', 'poslao',
     ])
-    return len(recipients)
+    return len(remaining)
 
 
 def send_marketing_campaign_batch(campaign):
@@ -447,13 +536,15 @@ def send_marketing_campaign_batch(campaign):
         raise ValueError('Kampanja nije u statusu slanja.')
 
     recipient_payloads = campaign.slanje_lista or []
-    total = campaign.slanje_ukupno or len(recipient_payloads)
+    queue_total = len(recipient_payloads)
+    audience_total = campaign.slanje_ukupno or queue_total
     offset = campaign.slanje_offset
     batch_size = max(1, settings.MARKETING_EMAIL_BATCH_SIZE)
     batch = recipient_payloads[offset:offset + batch_size]
+    sent_registry = list(campaign.slanje_poslati or [])
 
     if not batch:
-        return _finalize_marketing_campaign_send(campaign, total=total)
+        return _finalize_marketing_campaign_send(campaign, total=audience_total)
 
     batch_sent = 0
     batch_failed = 0
@@ -469,6 +560,9 @@ def send_marketing_campaign_batch(campaign):
                 recipient = _marketing_recipient_from_payload(payload)
                 try:
                     send_marketing_campaign_email(campaign, recipient, connection=connection)
+                    normalized = _normalize_marketing_email(recipient.email)
+                    if normalized and normalized not in sent_registry:
+                        sent_registry.append(normalized)
                     batch_sent += 1
                 except Exception:
                     batch_failed += 1
@@ -488,20 +582,23 @@ def send_marketing_campaign_batch(campaign):
             time.sleep(max(0.5, settings.MARKETING_EMAIL_GROUP_PAUSE / 4))
 
     campaign.slanje_offset = offset + len(batch)
-    campaign.broj_primaoca += batch_sent
+    campaign.slanje_poslati = sent_registry
+    campaign.broj_primaoca = len(sent_registry)
     campaign.broj_gresaka += batch_failed
-    campaign.save(update_fields=['slanje_offset', 'broj_primaoca', 'broj_gresaka'])
+    campaign.save(update_fields=[
+        'slanje_offset', 'slanje_poslati', 'broj_primaoca', 'broj_gresaka',
+    ])
 
-    done = campaign.slanje_offset >= total
+    done = campaign.slanje_offset >= queue_total
     if done:
-        return _finalize_marketing_campaign_send(campaign, total=total)
+        return _finalize_marketing_campaign_send(campaign, total=audience_total)
 
     group_number = (campaign.slanje_offset + batch_size - 1) // batch_size
-    group_total = (total + batch_size - 1) // batch_size
+    group_total = (queue_total + batch_size - 1) // batch_size
     return {
         'done': False,
-        'offset': campaign.slanje_offset,
-        'total': total,
+        'offset': campaign.broj_primaoca,
+        'total': audience_total,
         'sent': campaign.broj_primaoca,
         'failed': campaign.broj_gresaka,
         'batch_sent': batch_sent,
@@ -509,6 +606,7 @@ def send_marketing_campaign_batch(campaign):
         'batch_size': batch_size,
         'group_number': group_number,
         'group_total': group_total,
+        'skipped': audience_total - queue_total,
     }
 
 
@@ -520,10 +618,13 @@ def _finalize_marketing_campaign_send(campaign, *, total):
         else MarketingEmailCampaign.Status.FAILED
     )
     campaign.slanje_lista = []
-    campaign.save(update_fields=['poslano', 'status', 'slanje_lista'])
+    campaign.slanje_offset = 0
+    campaign.save(update_fields=[
+        'poslano', 'status', 'slanje_lista', 'slanje_offset',
+    ])
     return {
         'done': True,
-        'offset': total,
+        'offset': campaign.broj_primaoca,
         'total': total,
         'sent': campaign.broj_primaoca,
         'failed': campaign.broj_gresaka,

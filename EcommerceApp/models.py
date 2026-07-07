@@ -1797,6 +1797,11 @@ class MarketingEmailCampaign(models.Model):
     slanje_offset = models.PositiveIntegerField(default=0)
     slanje_ukupno = models.PositiveIntegerField(default=0)
     slanje_lista = models.JSONField(default=list, blank=True)
+    slanje_poslati = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Email adrese kojima je kampanja uspješno poslana (bez duplikata pri nastavku).',
+    )
     poslano = models.DateTimeField(null=True, blank=True)
     kreirano = models.DateTimeField(auto_now_add=True)
     poslao = models.ForeignKey(

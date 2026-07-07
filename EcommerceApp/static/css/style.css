@@ -4682,6 +4682,17 @@ body.search-results-active main {
     line-height: 1.5;
 }
 
+.staff-email-send-resume-note {
+    margin: 0 0 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #fff8e6;
+    border: 1px solid #f0d48a;
+    color: #6b4f00;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
 .staff-email-marketing-history {
     margin-top: 40px;
     padding: 24px;

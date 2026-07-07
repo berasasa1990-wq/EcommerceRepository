@@ -85,13 +85,13 @@
                 <div class="staff-email-send-progress" id="marketingSendProgress">
                     <p class="staff-email-send-progress-title">Slanje u toku…</p>
                     <p class="staff-email-send-progress-status" id="marketingSendStatus">
-                        {{ preview_campaign.slanje_offset }} / {{ preview_campaign.slanje_ukupno }} poslano
+                        {{ preview_campaign.broj_primaoca }} / {{ preview_campaign.slanje_ukupno }} poslano
                     </p>
                     <div class="staff-email-send-progress-bar" aria-hidden="true">
                         <div
                             class="staff-email-send-progress-fill"
                             id="marketingSendProgressFill"
-                            style="width: {% if preview_campaign.slanje_ukupno %}{% widthratio preview_campaign.slanje_offset preview_campaign.slanje_ukupno 100 %}{% else %}0{% endif %}%;"
+                            style="width: {% if preview_campaign.slanje_ukupno %}{% widthratio preview_campaign.broj_primaoca preview_campaign.slanje_ukupno 100 %}{% else %}0{% endif %}%;"
                         ></div>
                     </div>
                     <p class="staff-email-send-progress-hint">
@@ -105,11 +105,24 @@
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
                 </form>
-                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} adresa? Slanje ide u grupama po {{ marketing_batch_size }} — ostavite stranicu otvorenu dok se ne završi.');">
+                {% if marketing_send_progress.can_resume %}
+                <p class="staff-email-send-resume-note">
+                    Već poslano: <strong>{{ marketing_send_progress.already_sent }}</strong>.
+                    Preostalo: <strong>{{ marketing_send_progress.remaining }}</strong>.
+                    Ponovni klik šalje samo preostalima — već primili neće dobiti dupli email.
+                </p>
+                {% endif %}
+                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('{% if marketing_send_progress.can_resume %}Nastaviti slanje? {{ marketing_send_progress.already_sent }} adresa je već primilo email — preskaču se. Šalje se još {{ marketing_send_progress.remaining }} adresa.{% else %}Poslati email na {{ recipient_count }} adresa?{% endif %} Slanje ide u grupama po {{ marketing_batch_size }} — ostavite stranicu otvorenu.');">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="send">
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
-                    <button type="submit" class="btn btn-primary staff-email-send-btn">Pošalji na {{ recipient_count }} emailova</button>
+                    <button type="submit" class="btn btn-primary staff-email-send-btn">
+                        {% if marketing_send_progress.can_resume %}
+                        Nastavi slanje ({{ marketing_send_progress.remaining }} preostalo)
+                        {% else %}
+                        Pošalji na {{ recipient_count }} emailova
+                        {% endif %}
+                    </button>
                 </form>
                 {% endif %}
             </div>
