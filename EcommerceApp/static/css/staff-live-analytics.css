@@ -1,0 +1,207 @@
+/* Uživo analitika — staff panel */
+
+.staff-live-analytics-page {
+    max-width: 1080px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    box-sizing: border-box;
+}
+
+.staff-live-analytics-header {
+    margin-bottom: 28px;
+}
+
+.staff-live-analytics-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 24px;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.staff-live-analytics-header h1 {
+    margin: 8px 0 10px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #111;
+}
+
+.staff-live-analytics-subtitle {
+    margin: 0;
+    max-width: 640px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--gray-600);
+}
+
+.staff-live-analytics-updated {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--gray-600);
+    white-space: nowrap;
+}
+
+.staff-live-analytics-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.staff-live-analytics-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 20px;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.staff-live-analytics-stat--online {
+    border-color: rgba(91, 184, 5, 0.35);
+    background: linear-gradient(180deg, #f8fff2 0%, #fff 100%);
+}
+
+.staff-live-analytics-stat-value {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1;
+    color: #111;
+}
+
+.staff-live-analytics-stat--online .staff-live-analytics-stat-value {
+    color: #3d8f04;
+}
+
+.staff-live-analytics-stat-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+}
+
+.staff-live-analytics-stat-hint {
+    font-size: 12px;
+    color: var(--gray-600);
+}
+
+.staff-live-analytics-panels {
+    display: grid;
+    gap: 20px;
+}
+
+.staff-live-analytics-panel {
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    background: var(--white);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.staff-live-analytics-panel h2 {
+    margin: 0;
+    padding: 16px 18px;
+    font-size: 17px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--gray-200);
+    background: #fafafa;
+}
+
+.staff-live-analytics-table-wrap {
+    overflow-x: auto;
+}
+
+.staff-live-analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.staff-live-analytics-table th,
+.staff-live-analytics-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
+}
+
+.staff-live-analytics-table th {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--gray-600);
+    background: var(--gray-100);
+}
+
+.staff-live-analytics-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.staff-live-analytics-table tbody tr:hover {
+    background: #fcfcfc;
+}
+
+.staff-live-empty-row td {
+    text-align: center;
+    color: var(--gray-600);
+    font-size: 14px;
+    padding: 28px 16px;
+}
+
+.staff-live-muted {
+    color: var(--gray-500);
+}
+
+.staff-live-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.staff-live-badge--online {
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+.staff-live-badge--online::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: #5BB805;
+    box-shadow: 0 0 0 2px rgba(91, 184, 5, 0.25);
+    animation: staff-live-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes staff-live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+@media (max-width: 720px) {
+    .staff-live-analytics-page {
+        padding: 24px var(--home-mobile-side-inset, 16px) 48px;
+    }
+
+    .staff-live-analytics-header h1 {
+        font-size: 26px;
+    }
+
+    .staff-live-analytics-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .staff-live-analytics-title-row {
+        flex-direction: column;
+    }
+}

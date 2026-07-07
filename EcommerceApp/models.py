@@ -1967,6 +1967,36 @@ class ActiveCartItem(models.Model):
         return f'{self.naziv} × {self.kolicina}'
 
 
+class LiveVisitor(models.Model):
+    """Posjetilac sajta — zadnja aktivnost po sesiji."""
+    session_key = models.CharField(max_length=40, unique=True, db_index=True, verbose_name='Sesija')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='live_visits',
+        verbose_name='Korisnik',
+    )
+    ime = models.CharField(max_length=120, blank=True, verbose_name='Ime')
+    email = models.EmailField(blank=True, verbose_name='Email')
+    first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva aktivnost')
+    last_seen = models.DateTimeField(db_index=True, verbose_name='Zadnja aktivnost')
+
+    class Meta:
+        verbose_name = 'Posjetilac (uzivo)'
+        verbose_name_plural = 'Posjetioci (uzivo)'
+        ordering = ['-last_seen']
+        indexes = [
+            models.Index(fields=['-last_seen']),
+            models.Index(fields=['email', '-last_seen']),
+        ]
+
+    def __str__(self):
+        label = self.email or self.ime or self.session_key[:8]
+        return label
+
+
 class CartRecoveryAlert(models.Model):
     """Admin podsjetnik kupcu da završi kupovinu (opcionalno s popustom)."""
     session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')

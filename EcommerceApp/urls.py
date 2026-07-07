@@ -43,6 +43,8 @@ urlpatterns = [
     path('nalog/provjera-narudzbi/<str:broj>/', views.staff_order_detail, name='staff_order_detail'),
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
+    path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
+    path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),

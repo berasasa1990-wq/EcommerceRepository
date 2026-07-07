@@ -30,6 +30,7 @@ ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
     ActiveCartItem,
+    LiveVisitor,
     Akcija,
     Banner,
     Brand,
@@ -1368,6 +1369,15 @@ class ChatMessageAdmin(admin.ModelAdmin):
     @admin.display(description='Poruka')
     def body_preview(self, obj):
         return obj.body[:80]
+
+
+@admin.register(LiveVisitor)
+class LiveVisitorAdmin(admin.ModelAdmin):
+    list_display = ('ime', 'email', 'user', 'last_seen', 'first_seen', 'session_key')
+    list_filter = ('last_seen',)
+    search_fields = ('ime', 'email', 'session_key', 'user__email')
+    readonly_fields = ('first_seen', 'last_seen', 'session_key')
+    ordering = ('-last_seen',)
 
 
 @admin.register(ActiveCartItem)

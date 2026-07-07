@@ -2246,6 +2246,48 @@ def staff_admin_panel(request):
     return render(request, 'staff/admin_panel.html', context)
 
 
+def _live_analytics_context():
+    from .live_visitors import get_live_visitor_snapshot
+
+    snapshot = get_live_visitor_snapshot()
+    generated_at = snapshot['generated_at']
+    return {
+        'online_count': snapshot['online_count'],
+        'window_count': snapshot['window_count'],
+        'online_visitors': snapshot['online_visitors'],
+        'window_visitors': snapshot['window_visitors'],
+        'online_minutes': snapshot['online_minutes'],
+        'window_minutes': snapshot['window_minutes'],
+        'generated_at': generated_at,
+        'generated_at_label': generated_at.strftime('%H:%M:%S'),
+    }
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_live_analytics(request):
+    context = {
+        **_base_context(),
+        **_live_analytics_context(),
+    }
+    return render(request, 'staff/live_analytics.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_live_analytics_data(request):
+    from django.utils import timezone
+
+    payload = _live_analytics_context()
+    payload['generated_at'] = timezone.localtime(payload['generated_at']).isoformat()
+    for key in ('online_visitors', 'window_visitors'):
+        for row in payload[key]:
+            if row.get('last_seen'):
+                row['last_seen'] = timezone.localtime(row['last_seen']).isoformat()
+    return JsonResponse(payload)
+
+
 def _active_cart_groups(queryset):
     from collections import defaultdict
     from decimal import Decimal
