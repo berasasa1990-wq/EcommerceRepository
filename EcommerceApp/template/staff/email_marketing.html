@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -12,8 +13,7 @@
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Email marketing</h1>
         <p class="staff-email-marketing-subtitle">
-            Kreirajte prodajni email sa bannerom i pošaljite svim kupcima:
-            {{ registered_recipient_count }} registrovanih + {{ subscriber_recipient_count }} dodatnih = {{ recipient_count }} ukupno.
+            Kreirajte prodajni email sa bannerom i pošaljite odabranoj marketing grupi.
         </p>
     </div>
 
@@ -75,7 +75,13 @@
                     {% endif %}
                     <div class="staff-email-preview-cta-row">
                         <span class="staff-email-preview-cta">{{ preview_campaign.cta_tekst }}</span>
-                        <span class="staff-email-preview-warranty">Pisana garancija</span>
+                        <img
+                            src="{% static 'img/warranty-seal.svg' %}"
+                            alt="Garancija na proizvode"
+                            class="staff-email-preview-warranty-seal"
+                            width="72"
+                            height="72"
+                        >
                     </div>
                 </div>
             </div>
@@ -105,60 +111,31 @@
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
                 </form>
-                {% if marketing_group_cards %}
-                <div class="staff-email-send-groups">
-                    <h3>Odaberi grupu za slanje</h3>
-                    <p class="staff-email-send-groups-intro">
-                        Šalji jednu grupu po jednom (oko 50 emailova) da Proton ne blokira slanje. Već primili ovaj naslov se preskaču.
-                    </p>
-                    <div class="staff-email-send-groups-grid">
-                        {% for card in marketing_group_cards %}
-                        <div class="staff-email-send-group-card">
-                            <div class="staff-email-send-group-card-head">
-                                <strong>
-                                    {% if card.is_registered %}
-                                    {{ card.label }}
-                                    {% else %}
-                                    {{ card.group.naziv }}
-                                    {% endif %}
-                                </strong>
-                                <span>{{ card.total }} emailova</span>
-                            </div>
-                            <p class="staff-email-send-group-card-meta">
-                                {% if card.sent %}
-                                Poslano: {{ card.sent }} · Preostalo: {{ card.remaining }}
-                                {% else %}
-                                Spremno za slanje
-                                {% endif %}
-                            </p>
-                            {% if card.remaining %}
-                            <form method="post" class="staff-email-send-group-form" onsubmit="return confirm('Poslati na {{ card.remaining }} adresa u ovoj grupi?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="send">
-                                <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
-                                {% if card.is_registered %}
-                                <input type="hidden" name="send_include_registered" value="1">
-                                {% else %}
-                                <input type="hidden" name="send_grupa_id" value="{{ card.group.pk }}">
-                                {% endif %}
-                                <button type="submit" class="btn btn-primary staff-email-send-group-btn">
-                                    {% if card.sent %}
-                                    Nastavi ({{ card.remaining }})
-                                    {% else %}
-                                    Pošalji grupu ({{ card.remaining }})
-                                    {% endif %}
-                                </button>
-                            </form>
-                            {% else %}
-                            <p class="staff-email-send-group-done">Svi u ovoj grupi su već primili email.</p>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
+                {% if marketing_send_groups %}
+                <form
+                    method="post"
+                    class="staff-email-marketing-send-form"
+                    onsubmit="return confirm('Poslati email odabranoj grupi?');"
+                >
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="send">
+                    <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
+                    <div class="form-group">
+                        <label for="send_grupa_id">Izaberi grupu</label>
+                        <select name="send_grupa_id" id="send_grupa_id" class="form-input" required>
+                            <option value="">— Klikni i izaberi grupu —</option>
+                            {% for group in marketing_send_groups %}
+                            <option value="{{ group.pk }}"{% if not group.remaining %} disabled{% endif %}>
+                                {{ group.naziv }} — {{ group.remaining }} za slanje{% if group.sent %} ({{ group.sent }} već poslano){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                </div>
+                    <button type="submit" class="btn btn-primary staff-email-send-btn">Pošalji</button>
+                </form>
                 {% else %}
                 <p class="staff-email-send-groups-empty">
-                    Nema grupa s emailovima. Kreirajte grupe ispod i raspodijelite pretplatnike po 50.
+                    Nema marketing grupa s emailovima. Kreirajte grupe ispod i raspodijelite pretplatnike.
                 </p>
                 {% endif %}
                 {% endif %}
@@ -170,7 +147,7 @@
     <div class="staff-email-marketing-subscribers">
         <h2>Lista emailova</h2>
         <p class="staff-email-marketing-subscribers-intro">
-            Dodajte emailove kupaca koji nisu registrovani na sajtu. Pri slanju kampanje primaju svi — registrovani i ova lista — bez duplikata.
+            Dodajte emailove kupaca i raspodijelite ih u marketing grupe. Kampanja se šalje samo odabranoj grupi.
         </p>
 
         <div class="staff-email-groups-panel">

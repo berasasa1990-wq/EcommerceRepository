@@ -4619,10 +4619,10 @@ body.search-results-active main {
     flex-shrink: 0;
 }
 
-.staff-email-preview-warranty {
-    font-size: 14px;
-    color: var(--gray-600);
-    line-height: 1.4;
+.staff-email-preview-warranty-seal {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
 }
 
 .staff-email-marketing-send-actions {

@@ -91,13 +91,13 @@
             letter-spacing: 0.02em;
             white-space: nowrap;
         }
-        .cta-note {
+        .warranty-seal {
             padding-left: 16px;
-            font-size: 14px;
-            color: #4b5563;
-            line-height: 1.4;
             vertical-align: middle;
-            white-space: nowrap;
+        }
+        .warranty-seal img {
+            width: 72px;
+            height: 72px;
         }
         .benefits {
             margin: 0;
@@ -161,7 +161,9 @@
                                         <td>
                                             <a href="{{ cta_url }}" class="cta" target="_blank" rel="noopener">{{ campaign.cta_tekst }}</a>
                                         </td>
-                                        <td class="cta-note">Pisana garancija na proizvode</td>
+                                        <td class="warranty-seal">
+                                            <img src="{{ warranty_seal_url }}" alt="Garancija na proizvode" width="72" height="72">
+                                        </td>
                                     </tr>
                                 </table>
                             </div>

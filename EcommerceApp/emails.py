@@ -340,44 +340,28 @@ def auto_distribute_subscribers_to_groups(*, group_size=None, added_by=None):
     }
 
 
-def marketing_group_cards(*, campaign=None):
+def marketing_send_groups(*, campaign=None):
+    """Marketing grupe s aktivnim pretplatnicima — za padajući izbor pri slanju."""
     already_sent = set()
     if campaign:
         already_sent = _sent_emails_for_campaign_title(campaign)
         already_sent.update(_bootstrap_legacy_sent_emails(campaign))
 
-    cards = []
+    groups = []
     for group in MarketingSubscriberGroup.objects.order_by('redoslijed', 'id'):
-        recipients = marketing_recipients(group=group, include_registered=False)
+        recipients = marketing_recipients(group=group)
         if not recipients:
             continue
         total = len(recipients)
         sent = sum(1 for recipient in recipients if recipient.email in already_sent)
-        cards.append({
-            'group': group,
+        groups.append({
+            'pk': group.pk,
+            'naziv': group.naziv,
             'total': total,
             'sent': sent,
             'remaining': max(total - sent, 0),
         })
-
-    registered_only = []
-    for user in marketing_recipient_users():
-        email = user.email.strip().lower()
-        registered_only.append(SimpleNamespace(
-            email=email,
-            display_name=_marketing_display_name(email, user.first_name),
-        ))
-    if registered_only:
-        reg_sent = sum(1 for recipient in registered_only if recipient.email in already_sent)
-        cards.insert(0, {
-            'group': None,
-            'label': 'Registrovani korisnici',
-            'total': len(registered_only),
-            'sent': reg_sent,
-            'remaining': max(len(registered_only) - reg_sent, 0),
-            'is_registered': True,
-        })
-    return cards
+    return groups
 
 
 def marketing_recipient_counts():
@@ -461,6 +445,7 @@ def _marketing_email_context(campaign, recipient):
         'site_url': settings.SITE_URL,
         'logo_url': logo_url,
         'banner_url': banner_url,
+        'warranty_seal_url': f'{settings.SITE_URL}{settings.STATIC_URL}img/warranty-seal.svg',
         'cta_url': campaign.effective_cta_link,
         'store_email': settings.STORE_EMAIL,
         'store_phone': settings.STORE_PHONE,
@@ -607,17 +592,16 @@ def start_marketing_campaign_send(
     *,
     user=None,
     group=None,
-    include_registered=False,
 ):
     """Pripremi kampanju za batch slanje (izbjegava HTTP timeout na velikim listama)."""
     _ensure_email_configured()
     if not campaign.banner:
         raise ValueError('Kampanja nema banner sliku.')
 
-    if group is None and not include_registered:
-        raise ValueError('Odaberite grupu pretplatnika ili registrovane korisnike.')
+    if group is None:
+        raise ValueError('Odaberite marketing grupu za slanje.')
 
-    recipients = marketing_recipients(group=group, include_registered=include_registered)
+    recipients = marketing_recipients(group=group)
     if not recipients:
         raise ValueError('Nema email adresa za slanje u odabranoj grupi.')
 
@@ -662,7 +646,7 @@ def start_marketing_campaign_send(
     campaign.broj_gresaka = 0
     campaign.poslano = None
     campaign.slanje_grupa = group
-    campaign.slanje_ukljuci_registrovane = include_registered
+    campaign.slanje_ukljuci_registrovane = False
     campaign.status = MarketingEmailCampaign.Status.SENDING
     if user is not None:
         campaign.poslao = user

@@ -46,7 +46,7 @@ from .emails import (
     get_order_email_context,
     import_marketing_subscribers_from_orders,
     MARKETING_TEST_EMAIL,
-    marketing_group_cards,
+    marketing_send_groups,
     marketing_recipient_counts,
     marketing_send_progress,
     send_marketing_campaign_batch,
@@ -2450,17 +2450,15 @@ def staff_email_marketing(request):
                         f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}&slanje=1',
                     )
                 send_grupa_id = (request.POST.get('send_grupa_id') or '').strip()
-                include_registered = request.POST.get('send_include_registered') == '1'
-                send_group = None
-                if send_grupa_id:
-                    send_group = MarketingSubscriberGroup.objects.filter(pk=send_grupa_id).first()
-                    if not send_group:
-                        raise ValueError('Odabrana grupa ne postoji.')
+                if not send_grupa_id:
+                    raise ValueError('Odaberite marketing grupu za slanje.')
+                send_group = MarketingSubscriberGroup.objects.filter(pk=send_grupa_id).first()
+                if not send_group:
+                    raise ValueError('Odabrana grupa ne postoji.')
                 total = start_marketing_campaign_send(
                     campaign,
                     user=request.user,
                     group=send_group,
-                    include_registered=include_registered,
                 )
                 if total == 0:
                     messages.info(request, 'Svi u odabranoj grupi su već primili ovaj email.')
@@ -2535,8 +2533,8 @@ def staff_email_marketing(request):
         'subscriber_group_form': subscriber_group_form,
         'subscriber_groups': subscriber_groups,
         'unassigned_subscriber_count': unassigned_subscriber_count,
-        'marketing_group_cards': (
-            marketing_group_cards(campaign=preview_campaign) if preview_campaign else []
+        'marketing_send_groups': (
+            marketing_send_groups(campaign=preview_campaign) if preview_campaign else []
         ),
         'marketing_send_percent': marketing_send_percent,
         'preview_campaign': preview_campaign,
