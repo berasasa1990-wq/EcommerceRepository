@@ -40,10 +40,13 @@ from .loyalty import (
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import (
     EmailNotConfiguredError,
+    auto_distribute_subscribers_to_groups,
     bulk_import_marketing_subscribers,
+    create_marketing_subscriber_group,
     get_order_email_context,
     import_marketing_subscribers_from_orders,
     MARKETING_TEST_EMAIL,
+    marketing_group_cards,
     marketing_recipient_counts,
     marketing_send_progress,
     send_marketing_campaign_batch,
@@ -74,6 +77,7 @@ from .forms import (
     LoginForm,
     MarketingEmailCampaignForm,
     MarketingSubscriberBulkForm,
+    MarketingSubscriberGroupForm,
     ProfileForm,
     RegisterForm,
 )
@@ -86,6 +90,7 @@ from .models import (
     LoyaltyCard,
     MarketingEmailCampaign,
     MarketingSubscriber,
+    MarketingSubscriberGroup,
     Order,
     OrderItem,
     Product,
@@ -2243,7 +2248,7 @@ MARKETING_SUBSCRIBERS_PER_PAGE = 25
 
 
 def _marketing_subscriber_queryset(search_query=''):
-    qs = MarketingSubscriber.objects.filter(aktivan=True).order_by('-kreirano', 'email')
+    qs = MarketingSubscriber.objects.filter(aktivan=True).select_related('grupa').order_by('-kreirano', 'email')
     search_query = (search_query or '').strip()
     if search_query:
         qs = qs.filter(
@@ -2275,11 +2280,12 @@ def _marketing_subscribers_csv_response():
     response['Content-Disposition'] = 'attachment; filename="marketing-emailovi.csv"'
     response.write('\ufeff')
     writer = csv.writer(response)
-    writer.writerow(['Email', 'Ime', 'Izvor', 'Dodano', 'Aktivan'])
-    for subscriber in MarketingSubscriber.objects.filter(aktivan=True).order_by('email'):
+    writer.writerow(['Email', 'Ime', 'Grupa', 'Izvor', 'Dodano', 'Aktivan'])
+    for subscriber in MarketingSubscriber.objects.filter(aktivan=True).select_related('grupa').order_by('email'):
         writer.writerow([
             subscriber.email,
             subscriber.ime,
+            subscriber.grupa.naziv if subscriber.grupa_id else '',
             subscriber.get_izvor_display(),
             subscriber.kreirano.strftime('%d.%m.%Y. %H:%M'),
             'Da' if subscriber.aktivan else 'Ne',
@@ -2306,25 +2312,25 @@ def staff_email_marketing(request):
 
     preview_campaign = None
     subscriber_form = MarketingSubscriberBulkForm()
+    subscriber_group_form = MarketingSubscriberGroupForm()
     subscriber_search_query = (request.GET.get('lista_q') or '').strip()
     kampanja_id = request.GET.get('kampanja') or request.POST.get('kampanja_id')
     if request.GET.get('slanje') == 'gotovo' and kampanja_id:
         finished_campaign = MarketingEmailCampaign.objects.filter(pk=kampanja_id).first()
-        if finished_campaign and finished_campaign.status in (
-            MarketingEmailCampaign.Status.SENT,
-            MarketingEmailCampaign.Status.FAILED,
-        ):
-            total = (
-                finished_campaign.slanje_ukupno
-                or finished_campaign.broj_primaoca + finished_campaign.broj_gresaka
-            )
+        if finished_campaign:
+            group_label = ''
+            if finished_campaign.slanje_grupa_id:
+                group_label = f' ({finished_campaign.slanje_grupa.naziv})'
+            elif finished_campaign.slanje_ukljuci_registrovane:
+                group_label = ' (registrovani korisnici)'
+            total = finished_campaign.slanje_ukupno or finished_campaign.broj_primaoca
             if finished_campaign.broj_primaoca:
                 messages.success(
                     request,
-                    f'Email kampanja poslana na {finished_campaign.broj_primaoca} od {total} adresa.',
+                    f'Slanje grupe završeno{group_label}: {finished_campaign.broj_primaoca} od {total} adresa.',
                 )
             else:
-                messages.error(request, 'Kampanja nije poslana — nijedan email nije uspio.')
+                messages.error(request, 'Grupa nije poslana — nijedan email nije uspio.')
             if finished_campaign.broj_gresaka:
                 messages.warning(
                     request,
@@ -2360,6 +2366,34 @@ def staff_email_marketing(request):
         elif action == 'import_from_orders':
             result = import_marketing_subscribers_from_orders(added_by=request.user)
             messages.success(request, _format_subscriber_import_result(result))
+            return redirect('staff_email_marketing')
+        elif action == 'create_group':
+            subscriber_group_form = MarketingSubscriberGroupForm(request.POST)
+            if subscriber_group_form.is_valid():
+                group = subscriber_group_form.save(commit=False)
+                group.dodao = request.user
+                if not group.redoslijed:
+                    last_order = MarketingSubscriberGroup.objects.order_by('-redoslijed').values_list(
+                        'redoslijed', flat=True,
+                    ).first() or 0
+                    group.redoslijed = last_order + 1
+                group.save()
+                messages.success(request, f'Grupa „{group.naziv}” je kreirana.')
+                return redirect('staff_email_marketing')
+            form = MarketingEmailCampaignForm(instance=preview_campaign)
+        elif action == 'auto_distribute_groups':
+            result = auto_distribute_subscribers_to_groups(added_by=request.user)
+            if result['assigned']:
+                messages.success(
+                    request,
+                    (
+                        f'Raspodijeljeno {result["assigned"]} emailova u '
+                        f'{result["groups_used"]} grupa'
+                        f'{" (kreirano " + str(result["groups_created"]) + " novih)" if result["groups_created"] else ""}.'
+                    ),
+                )
+            else:
+                messages.info(request, 'Nema neraspoređenih emailova za grupe.')
             return redirect('staff_email_marketing')
         elif action == 'delete_subscriber':
             subscriber = MarketingSubscriber.objects.filter(
@@ -2415,8 +2449,22 @@ def staff_email_marketing(request):
                     return redirect(
                         f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}&slanje=1',
                     )
-                total = start_marketing_campaign_send(campaign, user=request.user)
-                request.session['marketing_send_total'] = total
+                send_grupa_id = (request.POST.get('send_grupa_id') or '').strip()
+                include_registered = request.POST.get('send_include_registered') == '1'
+                send_group = None
+                if send_grupa_id:
+                    send_group = MarketingSubscriberGroup.objects.filter(pk=send_grupa_id).first()
+                    if not send_group:
+                        raise ValueError('Odabrana grupa ne postoji.')
+                total = start_marketing_campaign_send(
+                    campaign,
+                    user=request.user,
+                    group=send_group,
+                    include_registered=include_registered,
+                )
+                if total == 0:
+                    messages.info(request, 'Svi u odabranoj grupi su već primili ovaj email.')
+                    return redirect(f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}')
                 return redirect(
                     f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}&slanje=1',
                 )
@@ -2462,7 +2510,17 @@ def staff_email_marketing(request):
         preview_logo_url = request.build_absolute_uri(site_settings.logo.url)
 
     recipient_stats = marketing_recipient_counts()
+    marketing_send_percent = 0
+    if preview_campaign and preview_campaign.slanje_ukupno:
+        marketing_send_percent = min(
+            100,
+            round((preview_campaign.broj_primaoca / preview_campaign.slanje_ukupno) * 100),
+        )
     subscriber_page_obj = _paginate_marketing_subscribers(request)
+    subscriber_groups = MarketingSubscriberGroup.objects.order_by('redoslijed', 'id')
+    unassigned_subscriber_count = MarketingSubscriber.objects.filter(
+        aktivan=True, grupa__isnull=True,
+    ).count()
     subscriber_total_count = MarketingSubscriber.objects.filter(aktivan=True).count()
     lista_query = {}
     if subscriber_search_query:
@@ -2474,6 +2532,13 @@ def staff_email_marketing(request):
         **_base_context(),
         'form': form,
         'subscriber_form': subscriber_form,
+        'subscriber_group_form': subscriber_group_form,
+        'subscriber_groups': subscriber_groups,
+        'unassigned_subscriber_count': unassigned_subscriber_count,
+        'marketing_group_cards': (
+            marketing_group_cards(campaign=preview_campaign) if preview_campaign else []
+        ),
+        'marketing_send_percent': marketing_send_percent,
         'preview_campaign': preview_campaign,
         'recipient_count': recipient_stats['total'],
         'registered_recipient_count': recipient_stats['registered'],

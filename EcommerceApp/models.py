@@ -1802,6 +1802,15 @@ class MarketingEmailCampaign(models.Model):
         blank=True,
         help_text='Email adrese kojima je kampanja uspješno poslana (bez duplikata pri nastavku).',
     )
+    slanje_grupa = models.ForeignKey(
+        'MarketingSubscriberGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='kampanje',
+        verbose_name='Posljednja odabrana grupa',
+    )
+    slanje_ukljuci_registrovane = models.BooleanField(default=False)
     poslano = models.DateTimeField(null=True, blank=True)
     kreirano = models.DateTimeField(auto_now_add=True)
     poslao = models.ForeignKey(
@@ -1829,6 +1838,32 @@ class MarketingEmailCampaign(models.Model):
         return f'{django_settings.SITE_URL.rstrip("/")}/?akcija=1#product-showcase'
 
 
+class MarketingSubscriberGroup(models.Model):
+    naziv = models.CharField(max_length=80, verbose_name='Naziv grupe')
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    kreirano = models.DateTimeField(auto_now_add=True)
+    dodao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='marketing_grupe',
+        verbose_name='Kreirao',
+    )
+
+    class Meta:
+        verbose_name = 'Marketing grupa'
+        verbose_name_plural = 'Marketing grupe'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return self.naziv
+
+    @property
+    def active_count(self):
+        return self.pretplatnici.filter(aktivan=True).count()
+
+
 class MarketingSubscriber(models.Model):
     class Source(models.TextChoices):
         MANUAL = 'manual', 'Ručno'
@@ -1837,6 +1872,14 @@ class MarketingSubscriber(models.Model):
 
     email = models.EmailField(unique=True, verbose_name='Email')
     ime = models.CharField(max_length=120, blank=True, verbose_name='Ime')
+    grupa = models.ForeignKey(
+        MarketingSubscriberGroup,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pretplatnici',
+        verbose_name='Grupa',
+    )
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
     izvor = models.CharField(
         max_length=10,

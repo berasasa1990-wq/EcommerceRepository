@@ -91,7 +91,7 @@
                         <div
                             class="staff-email-send-progress-fill"
                             id="marketingSendProgressFill"
-                            style="width: {% if preview_campaign.slanje_ukupno %}{% widthratio preview_campaign.broj_primaoca preview_campaign.slanje_ukupno 100 %}{% else %}0{% endif %}%;"
+                            style="width: {{ marketing_send_percent }}%;"
                         ></div>
                     </div>
                     <p class="staff-email-send-progress-hint">
@@ -105,25 +105,62 @@
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
                 </form>
-                {% if marketing_send_progress.can_resume %}
-                <p class="staff-email-send-resume-note">
-                    Već poslano: <strong>{{ marketing_send_progress.already_sent }}</strong>.
-                    Preostalo: <strong>{{ marketing_send_progress.remaining }}</strong>.
-                    Ponovni klik šalje samo preostalima — već primili neće dobiti dupli email.
+                {% if marketing_group_cards %}
+                <div class="staff-email-send-groups">
+                    <h3>Odaberi grupu za slanje</h3>
+                    <p class="staff-email-send-groups-intro">
+                        Šalji jednu grupu po jednom (oko 50 emailova) da Proton ne blokira slanje. Već primili ovaj naslov se preskaču.
+                    </p>
+                    <div class="staff-email-send-groups-grid">
+                        {% for card in marketing_group_cards %}
+                        <div class="staff-email-send-group-card">
+                            <div class="staff-email-send-group-card-head">
+                                <strong>
+                                    {% if card.is_registered %}
+                                    {{ card.label }}
+                                    {% else %}
+                                    {{ card.group.naziv }}
+                                    {% endif %}
+                                </strong>
+                                <span>{{ card.total }} emailova</span>
+                            </div>
+                            <p class="staff-email-send-group-card-meta">
+                                {% if card.sent %}
+                                Poslano: {{ card.sent }} · Preostalo: {{ card.remaining }}
+                                {% else %}
+                                Spremno za slanje
+                                {% endif %}
+                            </p>
+                            {% if card.remaining %}
+                            <form method="post" class="staff-email-send-group-form" onsubmit="return confirm('Poslati na {{ card.remaining }} adresa u ovoj grupi?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="send">
+                                <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
+                                {% if card.is_registered %}
+                                <input type="hidden" name="send_include_registered" value="1">
+                                {% else %}
+                                <input type="hidden" name="send_grupa_id" value="{{ card.group.pk }}">
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary staff-email-send-group-btn">
+                                    {% if card.sent %}
+                                    Nastavi ({{ card.remaining }})
+                                    {% else %}
+                                    Pošalji grupu ({{ card.remaining }})
+                                    {% endif %}
+                                </button>
+                            </form>
+                            {% else %}
+                            <p class="staff-email-send-group-done">Svi u ovoj grupi su već primili email.</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="staff-email-send-groups-empty">
+                    Nema grupa s emailovima. Kreirajte grupe ispod i raspodijelite pretplatnike po 50.
                 </p>
                 {% endif %}
-                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('{% if marketing_send_progress.can_resume %}Nastaviti slanje? {{ marketing_send_progress.already_sent }} adresa je već primilo email — preskaču se. Šalje se još {{ marketing_send_progress.remaining }} adresa.{% else %}Poslati email na {{ recipient_count }} adresa?{% endif %} Slanje ide u grupama po {{ marketing_batch_size }} — ostavite stranicu otvorenu.');">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="send">
-                    <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
-                    <button type="submit" class="btn btn-primary staff-email-send-btn">
-                        {% if marketing_send_progress.can_resume %}
-                        Nastavi slanje ({{ marketing_send_progress.remaining }} preostalo)
-                        {% else %}
-                        Pošalji na {{ recipient_count }} emailova
-                        {% endif %}
-                    </button>
-                </form>
                 {% endif %}
             </div>
         </div>
@@ -135,6 +172,45 @@
         <p class="staff-email-marketing-subscribers-intro">
             Dodajte emailove kupaca koji nisu registrovani na sajtu. Pri slanju kampanje primaju svi — registrovani i ova lista — bez duplikata.
         </p>
+
+        <div class="staff-email-groups-panel">
+            <h3>Grupe pretplatnika</h3>
+            <p>Raspodijelite emailove u grupe po 50. Svaku grupu šaljete zasebno iz pregleda kampanje.</p>
+            <div class="staff-email-groups-actions">
+                <form method="post" class="staff-email-group-create-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_group">
+                    {% for field in subscriber_group_form %}
+                    <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-secondary">Kreiraj grupu</button>
+                </form>
+                <form method="post" onsubmit="return confirm('Raspodijeliti neraspoređene emailove u grupe po 50?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="auto_distribute_groups">
+                    <button type="submit" class="btn btn-primary">
+                        Raspodijeli u grupe po 50
+                        {% if unassigned_subscriber_count %}({{ unassigned_subscriber_count }} čeka){% endif %}
+                    </button>
+                </form>
+            </div>
+            {% if subscriber_groups %}
+            <ul class="staff-email-groups-list">
+                {% for group in subscriber_groups %}
+                <li>
+                    <strong>{{ group.naziv }}</strong>
+                    <span>{{ group.active_count }} emailova</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
 
         <div class="staff-email-marketing-subscribers-layout">
             <form method="post" class="staff-email-subscriber-form">
@@ -203,6 +279,7 @@
                         <th>#</th>
                         <th>Email</th>
                         <th>Ime</th>
+                        <th>Grupa</th>
                         <th>Izvor</th>
                         <th>Dodano</th>
                         <th></th>
@@ -214,6 +291,7 @@
                         <td>{{ subscriber_page_obj.start_index|add:forloop.counter0 }}</td>
                         <td><code class="staff-email-subscriber-email">{{ subscriber.email }}</code></td>
                         <td>{{ subscriber.ime|default:"—" }}</td>
+                        <td>{{ subscriber.grupa.naziv|default:"—" }}</td>
                         <td>{{ subscriber.get_izvor_display }}</td>
                         <td>{{ subscriber.kreirano|date:"d.m.Y. H:i" }}</td>
                         <td>

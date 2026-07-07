@@ -9,7 +9,13 @@ from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import MarketingEmailCampaign, MarketingSubscriber, Order, SiteSettings
+from .models import (
+    MarketingEmailCampaign,
+    MarketingSubscriber,
+    MarketingSubscriberGroup,
+    Order,
+    SiteSettings,
+)
 from .pricing import pripremi_stavke_za_racun, sazetak_iz_narudzbe
 
 logger = logging.getLogger(__name__)
@@ -237,17 +243,26 @@ def marketing_recipient_users():
     return recipients
 
 
-def marketing_recipients():
+def marketing_recipients(*, group=None, include_registered=False):
     seen = set()
     recipients = []
-    for user in marketing_recipient_users():
-        email = user.email.strip().lower()
-        seen.add(email)
-        recipients.append(SimpleNamespace(
-            email=email,
-            display_name=_marketing_display_name(email, user.first_name),
-        ))
-    for subscriber in MarketingSubscriber.objects.filter(aktivan=True).order_by('id'):
+
+    if include_registered:
+        for user in marketing_recipient_users():
+            email = user.email.strip().lower()
+            seen.add(email)
+            recipients.append(SimpleNamespace(
+                email=email,
+                display_name=_marketing_display_name(email, user.first_name),
+            ))
+
+    subscribers_qs = MarketingSubscriber.objects.filter(aktivan=True).order_by('id')
+    if group is not None:
+        subscribers_qs = subscribers_qs.filter(grupa=group)
+    elif not include_registered:
+        subscribers_qs = subscribers_qs.none()
+
+    for subscriber in subscribers_qs:
         email = subscriber.email.strip().lower()
         if not email or email in seen:
             continue
@@ -257,6 +272,112 @@ def marketing_recipients():
             display_name=_marketing_display_name(email, subscriber.ime),
         ))
     return recipients
+
+
+def _next_subscriber_group_number():
+    existing = MarketingSubscriberGroup.objects.order_by('-redoslijed', '-id').first()
+    if not existing:
+        return 1
+    naziv = (existing.naziv or '').strip()
+    if naziv.lower().startswith('grupa '):
+        try:
+            return int(naziv.split()[-1]) + 1
+        except ValueError:
+            pass
+    return MarketingSubscriberGroup.objects.count() + 1
+
+
+def create_marketing_subscriber_group(*, naziv='', added_by=None):
+    naziv = (naziv or '').strip()
+    if not naziv:
+        naziv = f'Grupa {_next_subscriber_group_number()}'
+    redoslijed = (
+        MarketingSubscriberGroup.objects.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0
+    ) + 1
+    return MarketingSubscriberGroup.objects.create(
+        naziv=naziv,
+        redoslijed=redoslijed,
+        dodao=added_by,
+    )
+
+
+def auto_distribute_subscribers_to_groups(*, group_size=None, added_by=None):
+    group_size = group_size or settings.MARKETING_SUBSCRIBER_GROUP_SIZE
+    unassigned = list(
+        MarketingSubscriber.objects.filter(aktivan=True, grupa__isnull=True).order_by('id'),
+    )
+    if not unassigned:
+        return {'assigned': 0, 'groups_created': 0, 'groups_used': 0}
+
+    groups_created = 0
+    groups_used = set()
+    assigned = 0
+    index = 0
+    while index < len(unassigned):
+        group = None
+        for candidate in MarketingSubscriberGroup.objects.order_by('redoslijed', 'id'):
+            current_count = candidate.pretplatnici.filter(aktivan=True).count()
+            if current_count < group_size:
+                group = candidate
+                break
+        if group is None:
+            group = create_marketing_subscriber_group(added_by=added_by)
+            groups_created += 1
+
+        capacity = group_size - group.pretplatnici.filter(aktivan=True).count()
+        batch = unassigned[index:index + capacity]
+        for subscriber in batch:
+            subscriber.grupa = group
+            subscriber.save(update_fields=['grupa'])
+            assigned += 1
+        groups_used.add(group.pk)
+        index += len(batch)
+
+    return {
+        'assigned': assigned,
+        'groups_created': groups_created,
+        'groups_used': len(groups_used),
+    }
+
+
+def marketing_group_cards(*, campaign=None):
+    already_sent = set()
+    if campaign:
+        already_sent = _sent_emails_for_campaign_title(campaign)
+        already_sent.update(_bootstrap_legacy_sent_emails(campaign))
+
+    cards = []
+    for group in MarketingSubscriberGroup.objects.order_by('redoslijed', 'id'):
+        recipients = marketing_recipients(group=group, include_registered=False)
+        if not recipients:
+            continue
+        total = len(recipients)
+        sent = sum(1 for recipient in recipients if recipient.email in already_sent)
+        cards.append({
+            'group': group,
+            'total': total,
+            'sent': sent,
+            'remaining': max(total - sent, 0),
+        })
+
+    registered_only = []
+    for user in marketing_recipient_users():
+        email = user.email.strip().lower()
+        registered_only.append(SimpleNamespace(
+            email=email,
+            display_name=_marketing_display_name(email, user.first_name),
+        ))
+    if registered_only:
+        reg_sent = sum(1 for recipient in registered_only if recipient.email in already_sent)
+        cards.insert(0, {
+            'group': None,
+            'label': 'Registrovani korisnici',
+            'total': len(registered_only),
+            'sent': reg_sent,
+            'remaining': max(len(registered_only) - reg_sent, 0),
+            'is_registered': True,
+        })
+    return cards
 
 
 def marketing_recipient_counts():
@@ -456,30 +577,49 @@ def _bootstrap_legacy_sent_emails(campaign):
 
 
 def marketing_send_progress(campaign):
+    group = campaign.slanje_grupa
+    include_registered = campaign.slanje_ukljuci_registrovane
+    recipients = marketing_recipients(group=group, include_registered=include_registered)
     already_sent = _sent_emails_for_campaign_title(campaign)
-    if not already_sent:
-        already_sent = set(_bootstrap_legacy_sent_emails(campaign))
-    else:
-        already_sent.update(_bootstrap_legacy_sent_emails(campaign))
-    total = campaign.slanje_ukupno or len(marketing_recipients())
-    sent_count = len(already_sent)
+    already_sent.update(_bootstrap_legacy_sent_emails(campaign))
+    total = len(recipients)
+    sent_in_scope = sum(1 for recipient in recipients if recipient.email in already_sent)
     return {
-        'already_sent': sent_count,
-        'remaining': max(total - sent_count, 0),
+        'already_sent': sent_in_scope,
+        'remaining': max(total - sent_in_scope, 0),
         'total': total,
-        'can_resume': sent_count > 0 and campaign.status != MarketingEmailCampaign.Status.SENT,
+        'can_resume': (
+            sent_in_scope > 0
+            and campaign.status in (
+                MarketingEmailCampaign.Status.DRAFT,
+                MarketingEmailCampaign.Status.SENDING,
+                MarketingEmailCampaign.Status.FAILED,
+            )
+            and sent_in_scope < total
+        ),
+        'group': group,
+        'include_registered': include_registered,
     }
 
 
-def start_marketing_campaign_send(campaign, *, user=None):
+def start_marketing_campaign_send(
+    campaign,
+    *,
+    user=None,
+    group=None,
+    include_registered=False,
+):
     """Pripremi kampanju za batch slanje (izbjegava HTTP timeout na velikim listama)."""
     _ensure_email_configured()
     if not campaign.banner:
         raise ValueError('Kampanja nema banner sliku.')
 
-    recipients = marketing_recipients()
+    if group is None and not include_registered:
+        raise ValueError('Odaberite grupu pretplatnika ili registrovane korisnike.')
+
+    recipients = marketing_recipients(group=group, include_registered=include_registered)
     if not recipients:
-        raise ValueError('Nema email adresa za slanje kampanje.')
+        raise ValueError('Nema email adresa za slanje u odabranoj grupi.')
 
     already_sent = _sent_emails_for_campaign_title(campaign)
     legacy_sent = _bootstrap_legacy_sent_emails(campaign)
@@ -501,13 +641,13 @@ def start_marketing_campaign_send(campaign, *, user=None):
             campaign.slanje_lista = []
             campaign.slanje_offset = 0
             campaign.poslano = timezone.now()
-            campaign.status = MarketingEmailCampaign.Status.SENT
+            campaign.status = MarketingEmailCampaign.Status.DRAFT
             campaign.save(update_fields=[
                 'slanje_poslati', 'broj_primaoca', 'slanje_ukupno',
                 'slanje_lista', 'slanje_offset', 'poslano', 'status',
             ])
             return 0
-        raise ValueError('Nema preostalih email adresa za slanje kampanje.')
+        raise ValueError('Nema preostalih email adresa u odabranoj grupi.')
 
     campaign.slanje_lista = [
         {'email': recipient.email, 'display_name': recipient.display_name}
@@ -515,16 +655,21 @@ def start_marketing_campaign_send(campaign, *, user=None):
     ]
     campaign.slanje_ukupno = len(recipients)
     campaign.slanje_offset = 0
-    campaign.broj_primaoca = len(already_sent)
+    campaign.broj_primaoca = sum(
+        1 for recipient in recipients if recipient.email.lower() in already_sent
+    )
     campaign.slanje_poslati = sorted(already_sent)
     campaign.broj_gresaka = 0
     campaign.poslano = None
+    campaign.slanje_grupa = group
+    campaign.slanje_ukljuci_registrovane = include_registered
     campaign.status = MarketingEmailCampaign.Status.SENDING
     if user is not None:
         campaign.poslao = user
     campaign.save(update_fields=[
         'slanje_lista', 'slanje_ukupno', 'slanje_offset', 'slanje_poslati',
         'broj_primaoca', 'broj_gresaka', 'poslano', 'status', 'poslao',
+        'slanje_grupa', 'slanje_ukljuci_registrovane',
     ])
     return len(remaining)
 
@@ -583,7 +728,7 @@ def send_marketing_campaign_batch(campaign):
 
     campaign.slanje_offset = offset + len(batch)
     campaign.slanje_poslati = sent_registry
-    campaign.broj_primaoca = len(sent_registry)
+    campaign.broj_primaoca += batch_sent
     campaign.broj_gresaka += batch_failed
     campaign.save(update_fields=[
         'slanje_offset', 'slanje_poslati', 'broj_primaoca', 'broj_gresaka',
@@ -612,11 +757,10 @@ def send_marketing_campaign_batch(campaign):
 
 def _finalize_marketing_campaign_send(campaign, *, total):
     campaign.poslano = timezone.now()
-    campaign.status = (
-        MarketingEmailCampaign.Status.SENT
-        if campaign.broj_primaoca
-        else MarketingEmailCampaign.Status.FAILED
-    )
+    if campaign.broj_primaoca:
+        campaign.status = MarketingEmailCampaign.Status.DRAFT
+    else:
+        campaign.status = MarketingEmailCampaign.Status.FAILED
     campaign.slanje_lista = []
     campaign.slanje_offset = 0
     campaign.save(update_fields=[

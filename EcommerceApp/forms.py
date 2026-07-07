@@ -7,7 +7,17 @@ import re
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import EmailValidator
 
-from .models import Akcija, Banner, Brand, Category, MarketingEmailCampaign, Popup, Product, Tag
+from .models import (
+    Akcija,
+    Banner,
+    Brand,
+    Category,
+    MarketingEmailCampaign,
+    MarketingSubscriberGroup,
+    Popup,
+    Product,
+    Tag,
+)
 
 
 class AkcijaAdminForm(forms.ModelForm):
@@ -549,3 +559,21 @@ class MarketingSubscriberBulkForm(forms.Form):
         if not entries:
             raise forms.ValidationError('Nema validnih email adresa u unosu.')
         return entries
+
+
+class MarketingSubscriberGroupForm(forms.ModelForm):
+    class Meta:
+        model = MarketingSubscriberGroup
+        fields = ('naziv',)
+        widgets = {
+            'naziv': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'npr. Grupa 7',
+            }),
+        }
+
+    def clean_naziv(self):
+        naziv = (self.cleaned_data.get('naziv') or '').strip()
+        if not naziv:
+            raise forms.ValidationError('Unesite naziv grupe.')
+        return naziv
