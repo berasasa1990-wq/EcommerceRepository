@@ -31,6 +31,7 @@ from .product_merge import ProductMergeError, merge_products
 from .models import (
     ActiveCartItem,
     LiveVisitor,
+    LiveVisitorOffer,
     Akcija,
     Banner,
     Brand,
@@ -1369,6 +1370,16 @@ class ChatMessageAdmin(admin.ModelAdmin):
     @admin.display(description='Poruka')
     def body_preview(self, obj):
         return obj.body[:80]
+
+
+@admin.register(LiveVisitorOffer)
+class LiveVisitorOfferAdmin(admin.ModelAdmin):
+    list_display = ('product', 'session_key', 'user', 'discount_percent', 'show_popup', 'added_to_cart', 'poslao', 'azurirano')
+    list_filter = ('show_popup', 'added_to_cart', 'azurirano')
+    search_fields = ('session_key', 'user__email', 'product__naziv')
+    readonly_fields = ('kreirano', 'azurirano')
+    ordering = ('-azurirano',)
+    autocomplete_fields = ('product', 'user', 'poslao')
 
 
 @admin.register(LiveVisitor)

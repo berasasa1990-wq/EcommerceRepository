@@ -8423,6 +8423,105 @@ body.search-results-active main {
     border-color: #5BB805 !important;
 }
 
+.live-offer-overlay {
+    z-index: 3200;
+}
+
+.live-offer-popup {
+    max-width: 440px;
+    text-align: left;
+}
+
+.live-offer-header {
+    padding: 20px 20px 0;
+}
+
+.live-offer-promo {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--gray-600);
+}
+
+.live-offer-product {
+    display: grid;
+    gap: 16px;
+    padding: 16px 20px 20px;
+}
+
+.live-offer-image-wrap {
+    display: flex;
+    justify-content: center;
+}
+
+.live-offer-image,
+.live-offer-image-placeholder {
+    width: 140px;
+    height: 140px;
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+    object-fit: contain;
+    background: #fff;
+}
+
+.live-offer-image-placeholder {
+    background: var(--gray-100);
+}
+
+.live-offer-form {
+    display: grid;
+    gap: 12px;
+}
+
+.live-offer-product-name {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #111;
+}
+
+.live-offer-prices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: baseline;
+}
+
+.live-offer-price-original {
+    font-size: 14px;
+    color: var(--gray-500);
+    text-decoration: line-through;
+}
+
+.live-offer-price-final {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1a7f4b;
+}
+
+.live-offer-price-note {
+    width: 100%;
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.live-offer-var-select {
+    width: 100%;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+}
+
+.live-offer-cta {
+    width: 100%;
+    background: #5BB805 !important;
+    border-color: #5BB805 !important;
+}
+
 .staff-online-orders-filter {
     display: flex;
     flex-wrap: wrap;

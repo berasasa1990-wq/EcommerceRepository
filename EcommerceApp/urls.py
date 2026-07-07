@@ -31,6 +31,8 @@ urlpatterns = [
     path('korpa/ukloni/<str:key>/', views.remove_from_cart, name='remove_from_cart'),
     path('korpa/podsjetnik/primijeni/', views.cart_recovery_apply, name='cart_recovery_apply'),
     path('korpa/podsjetnik/zatvori/', views.cart_recovery_dismiss, name='cart_recovery_dismiss'),
+    path('ponuda/dodaj/', views.live_visitor_offer_add, name='live_visitor_offer_add'),
+    path('ponuda/zatvori/', views.live_visitor_offer_dismiss, name='live_visitor_offer_dismiss'),
     path('narudzba/', views.checkout, name='checkout'),
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),
@@ -45,6 +47,8 @@ urlpatterns = [
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
+    path('nalog/uzivo-analitika/ponuda/', views.staff_send_live_offer, name='staff_send_live_offer'),
+    path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),

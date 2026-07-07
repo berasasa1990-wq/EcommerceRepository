@@ -93,6 +93,7 @@ def _visitor_payload(visitor, *, now):
         hours = seconds_ago // 3600
         ago_label = f'prije {hours} h'
     return {
+        'session_key': visitor.session_key,
         'ime': visitor.ime or 'Gost',
         'email': visitor.email or '',
         'is_guest': not visitor.user_id and not visitor.email,

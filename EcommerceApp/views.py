@@ -2276,6 +2276,102 @@ def staff_live_analytics(request):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 @require_GET
+def staff_product_search(request):
+    query = request.GET.get('q', '').strip()
+    products_qs = Product.objects.filter(aktivan=True)
+    if query:
+        products_qs = products_qs.filter(
+            Q(naziv__icontains=query)
+            | Q(sifra__icontains=query)
+            | Q(slug__icontains=query),
+        )
+    products = list(products_qs.order_by('naziv')[:STAFF_LOOKUP_LIMIT])
+    results = []
+    for product in products:
+        price = _effective_product_price(product)
+        results.append({
+            'id': product.pk,
+            'label': product.naziv,
+            'sifra': product.sifra or '',
+            'price': f'{price:.2f}',
+            'image': product.prikazna_slika.url if product.prikazna_slika else '',
+        })
+    return JsonResponse({'results': results, 'query': query})
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_send_live_offer(request):
+    from .live_visitor_offer import send_live_visitor_offer
+    from .models import LiveVisitor
+
+    session_key = (request.POST.get('session_key') or '').strip()
+    try:
+        product_id = int(request.POST.get('product_id') or 0)
+    except (TypeError, ValueError):
+        product_id = 0
+    try:
+        discount_percent = Decimal(
+            (request.POST.get('discount_percent') or '0').replace(',', '.'),
+        )
+    except (InvalidOperation, ValueError):
+        discount_percent = Decimal('0')
+
+    visitor = LiveVisitor.objects.filter(session_key=session_key).select_related('user').first()
+    target_user = visitor.user if visitor else None
+    try:
+        send_live_visitor_offer(
+            session_key,
+            product_id=product_id,
+            discount_percent=discount_percent,
+            staff_user=request.user,
+            target_user=target_user,
+        )
+        if discount_percent > 0:
+            pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
+            messages.success(request, f'Ponuda artikla poslana kupcu s popustom {pct}%.')
+        else:
+            messages.success(request, 'Ponuda artikla poslana kupcu.')
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    return redirect('staff_live_analytics')
+
+
+@require_POST
+def live_visitor_offer_add(request):
+    from .live_visitor_offer import apply_live_visitor_offer
+
+    cart = Cart(request)
+    ok, result = apply_live_visitor_offer(request, cart)
+    stay_on_page = request.POST.get('stay') == '1'
+    if stay_on_page:
+        if ok:
+            return JsonResponse({
+                'ok': True,
+                'message': result,
+                'cart_count': len(cart),
+            })
+        return JsonResponse({'ok': False, 'message': result}, status=400)
+    if ok:
+        messages.success(request, result)
+    else:
+        messages.warning(request, result)
+    return redirect('cart')
+
+
+@require_POST
+def live_visitor_offer_dismiss(request):
+    from .live_visitor_offer import dismiss_live_visitor_offer
+
+    dismiss_live_visitor_offer(request)
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
+    return redirect(next_url)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
 def staff_live_analytics_data(request):
     from django.utils import timezone
 

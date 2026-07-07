@@ -1,4 +1,4 @@
-{% if cart_recovery_alert and cart_count %}
+{% if cart_recovery_alert and cart_count and not live_visitor_offer %}
 <div class="site-popup-overlay cart-recovery-overlay" id="cartRecoveryOverlay" hidden>
     <div class="site-popup site-popup--akcija site-popup--cart-recovery" role="dialog" aria-modal="true" aria-labelledby="cartRecoveryTitle">
         <h2 id="cartRecoveryTitle" class="site-popup-akcija-title">Imate artikle u korpi</h2>

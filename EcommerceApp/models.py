@@ -1997,6 +1997,48 @@ class LiveVisitor(models.Model):
         return label
 
 
+class LiveVisitorOffer(models.Model):
+    """Staff ponuda artikla posjetiocu koji je trenutno na sajtu."""
+    session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='live_visitor_offers_received',
+        verbose_name='Posjetilac',
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='live_visitor_offers',
+        verbose_name='Artikal',
+    )
+    discount_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0, verbose_name='Popust (%)',
+    )
+    show_popup = models.BooleanField(default=True, verbose_name='Prikaži popup')
+    added_to_cart = models.BooleanField(default=False, verbose_name='Dodano u korpu')
+    poslao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='live_visitor_offers_sent',
+        verbose_name='Poslao',
+    )
+    kreirano = models.DateTimeField(auto_now_add=True)
+    azurirano = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Uzivo ponuda posjetiocu'
+        verbose_name_plural = 'Uzivo ponude posjetiocima'
+        ordering = ['-azurirano']
+
+    def __str__(self):
+        return f'{self.product_id} → {self.session_key[:8]}…'
+
+
 class CartRecoveryAlert(models.Model):
     """Admin podsjetnik kupcu da završi kupovinu (opcionalno s popustom)."""
     session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')

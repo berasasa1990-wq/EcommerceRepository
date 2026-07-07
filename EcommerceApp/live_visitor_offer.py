@@ -1,0 +1,220 @@
+from decimal import Decimal, InvalidOperation
+
+from django.contrib.auth.models import User
+from django.db.models import Q
+
+from .cart_tracking import get_cart_session_key
+from .models import LiveVisitorOffer, Product, ProductVariation
+
+
+def _clamp_percent(value):
+    try:
+        percent = Decimal(str(value or 0))
+    except (InvalidOperation, TypeError, ValueError):
+        percent = Decimal('0')
+    if percent < 0:
+        return Decimal('0')
+    if percent > 50:
+        return Decimal('50')
+    return percent.quantize(Decimal('0.01'))
+
+
+def _discounted_price(base_price, percent):
+    base_price = Decimal(str(base_price or 0))
+    percent = _clamp_percent(percent)
+    if percent <= 0:
+        return base_price.quantize(Decimal('0.01'))
+    return (base_price * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
+
+
+def _offer_lookup_q(request):
+    session_key = get_cart_session_key(request)
+    clauses = Q()
+    if session_key:
+        clauses |= Q(session_key=session_key)
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated:
+        clauses |= Q(user=user)
+    return clauses
+
+
+def send_live_visitor_offer(
+    session_key,
+    *,
+    product_id,
+    discount_percent=0,
+    staff_user=None,
+    target_user=None,
+):
+    if not session_key:
+        raise ValueError('Sesija posjetioca nije pronađena.')
+    product = Product.objects.filter(pk=product_id, aktivan=True).first()
+    if not product:
+        raise ValueError('Artikal nije pronađen ili nije aktivan.')
+
+    percent = _clamp_percent(discount_percent)
+    defaults = {
+        'product': product,
+        'discount_percent': percent,
+        'show_popup': True,
+        'added_to_cart': False,
+        'poslao': staff_user if isinstance(staff_user, User) else None,
+        'session_key': session_key,
+    }
+
+    if target_user and not isinstance(target_user, User):
+        target_user = None
+
+    if target_user:
+        defaults['user'] = target_user
+        offer = LiveVisitorOffer.objects.filter(user=target_user).first()
+        if not offer:
+            offer = LiveVisitorOffer.objects.filter(session_key=session_key).first()
+        if offer:
+            for field, value in defaults.items():
+                setattr(offer, field, value)
+            offer.save()
+        else:
+            LiveVisitorOffer.objects.filter(session_key=session_key).delete()
+            offer = LiveVisitorOffer.objects.create(**defaults)
+    else:
+        defaults['user'] = None
+        offer = LiveVisitorOffer.objects.filter(
+            session_key=session_key,
+            user__isnull=True,
+        ).first()
+        if offer:
+            for field, value in defaults.items():
+                setattr(offer, field, value)
+            offer.save()
+        else:
+            LiveVisitorOffer.objects.filter(session_key=session_key, user__isnull=True).delete()
+            offer = LiveVisitorOffer.objects.create(**defaults)
+    return offer
+
+
+def get_active_live_visitor_offer(request):
+    lookup = _offer_lookup_q(request)
+    if not lookup:
+        return None
+    return LiveVisitorOffer.objects.filter(
+        lookup,
+        show_popup=True,
+        added_to_cart=False,
+    ).select_related('product').order_by('-azurirano').first()
+
+
+def build_live_visitor_offer_context(request):
+    offer = get_active_live_visitor_offer(request)
+    if not offer:
+        return None
+
+    product = offer.product
+    discount = offer.discount_percent or Decimal('0')
+    in_stock_variations = list(
+        product.varijacije.filter(na_stanju=True).order_by('redoslijed', 'id'),
+    )
+
+    if not in_stock_variations and not product.na_stanju:
+        return None
+
+    variations = []
+    for variation in in_stock_variations:
+        base_price = variation.prikazna_cijena
+        final_price = _discounted_price(base_price, discount)
+        variations.append({
+            'id': variation.pk,
+            'naziv': variation.naziv,
+            'base_price': base_price,
+            'final_price': final_price,
+            'has_discount': discount > 0 and final_price < base_price,
+        })
+
+    if variations:
+        display_base = variations[0]['base_price']
+        display_final = variations[0]['final_price']
+    else:
+        display_base = product.prikazna_cijena
+        display_final = _discounted_price(display_base, discount)
+
+    return {
+        'offer': offer,
+        'product': product,
+        'product_id': product.pk,
+        'product_name': product.naziv,
+        'product_url': product.get_absolute_url(),
+        'image_url': product.prikazna_slika.url if product.prikazna_slika else '',
+        'discount_percent': discount,
+        'has_discount': discount > 0 and display_final < display_base,
+        'has_variations': bool(variations),
+        'variations': variations,
+        'display_base_price': display_base,
+        'display_final_price': display_final,
+    }
+
+
+def apply_live_visitor_offer(request, cart):
+    lookup = _offer_lookup_q(request)
+    if not lookup:
+        return False, 'Ponuda više nije dostupna.'
+
+    offer = LiveVisitorOffer.objects.filter(
+        lookup,
+        show_popup=True,
+        added_to_cart=False,
+    ).select_related('product').order_by('-azurirano').first()
+    if not offer:
+        return False, 'Ponuda više nije dostupna.'
+
+    product = offer.product
+    if not product.aktivan:
+        return False, 'Artikal više nije dostupan.'
+
+    in_stock_variations = product.varijacije.filter(na_stanju=True)
+    variation = None
+    var_id = (request.POST.get('variation_id') or '').strip()
+    if var_id:
+        try:
+            variation = in_stock_variations.get(pk=int(var_id))
+        except (ProductVariation.DoesNotExist, ValueError):
+            return False, 'Izaberite ispravnu varijaciju.'
+    elif in_stock_variations.exists():
+        return False, 'Izaberite varijaciju.'
+
+    if variation and not variation.na_stanju:
+        return False, 'Varijacija nije na stanju.'
+    if not variation and not product.na_stanju:
+        return False, 'Artikal nije na stanju.'
+
+    discount = offer.discount_percent or Decimal('0')
+    base_price = variation.prikazna_cijena if variation else product.prikazna_cijena
+    if discount > 0:
+        final_price = _discounted_price(base_price, discount)
+        cart.add(
+            product,
+            variation=variation,
+            quantity=1,
+            custom_price=final_price,
+            promo_bazna=base_price,
+        )
+    else:
+        cart.add(product, variation=variation, quantity=1)
+
+    offer.added_to_cart = True
+    offer.show_popup = False
+    offer.save(update_fields=['added_to_cart', 'show_popup', 'azurirano'])
+    label = f'{product.naziv}' + (f' — {variation.naziv}' if variation else '')
+    if discount > 0:
+        pct = int(discount) if discount == int(discount) else discount
+        return True, f'"{label}" je dodato u korpu s popustom od {pct}%.'
+    return True, f'"{label}" je dodato u korpu.'
+
+
+def dismiss_live_visitor_offer(request):
+    lookup = _offer_lookup_q(request)
+    if not lookup:
+        return
+    LiveVisitorOffer.objects.filter(
+        lookup,
+        show_popup=True,
+    ).update(show_popup=False)
