@@ -42,12 +42,16 @@
     if (!overlay) return;
 
     function closeOverlay() {
-        overlay.setAttribute('hidden', '');
+        overlay.classList.remove('is-visible');
+        overlay.hidden = true;
         document.body.classList.remove('popup-open');
     }
 
     function openOverlay() {
-        overlay.removeAttribute('hidden');
+        overlay.hidden = false;
+        requestAnimationFrame(function () {
+            overlay.classList.add('is-visible');
+        });
         document.body.classList.add('popup-open');
     }
 
@@ -74,7 +78,19 @@
         form.submit();
     });
 
-    window.setTimeout(openOverlay, 1200);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) {
+            overlay.querySelector('[data-cart-recovery-close]')?.click();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('is-visible')) {
+            overlay.querySelector('[data-cart-recovery-close]')?.click();
+        }
+    });
+
+    window.setTimeout(openOverlay, 800);
 })();
 </script>
 {% endif %}

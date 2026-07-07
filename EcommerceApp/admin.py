@@ -12,7 +12,6 @@ from .forms import (
     AkcijaAdminForm,
     BannerAdminForm,
     BulkAssignBrandForm,
-    BulkAssignSubscriberGroupForm,
     MergeProductsForm,
     OdooImportForm,
     PopupAdminForm,
@@ -41,9 +40,6 @@ from .models import (
     HomeFeaturedProduct,
     HomeVlog,
     LoyaltyCard,
-    MarketingEmailCampaign,
-    MarketingSubscriber,
-    MarketingSubscriberGroup,
     Order,
     OrderItem,
     Popup,
@@ -1374,69 +1370,6 @@ class ChatMessageAdmin(admin.ModelAdmin):
         return obj.body[:80]
 
 
-@admin.register(MarketingSubscriberGroup)
-class MarketingSubscriberGroupAdmin(admin.ModelAdmin):
-    list_display = ('naziv', 'redoslijed', 'active_count_display', 'dodao', 'kreirano')
-    search_fields = ('naziv',)
-    readonly_fields = ('kreirano',)
-    ordering = ('redoslijed', 'id')
-
-    @admin.display(description='Aktivnih')
-    def active_count_display(self, obj):
-        return obj.active_count
-
-
-@admin.register(MarketingSubscriber)
-class MarketingSubscriberAdmin(admin.ModelAdmin):
-    list_display = ('email', 'ime', 'grupa', 'izvor', 'aktivan', 'dodao', 'kreirano')
-    list_filter = ('aktivan', 'izvor', 'grupa', 'kreirano')
-    search_fields = ('email', 'ime', 'grupa__naziv')
-    readonly_fields = ('kreirano',)
-    ordering = ('-kreirano', 'email')
-    autocomplete_fields = ('grupa',)
-    actions = ['bulk_assign_group', 'bulk_remove_from_group']
-
-    def bulk_assign_group(self, request, queryset):
-        form = BulkAssignSubscriberGroupForm(request.POST or None)
-        if request.method == 'POST' and 'apply' in request.POST and form.is_valid():
-            selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
-            subscribers = MarketingSubscriber.objects.filter(pk__in=selected_ids)
-            group = form.cleaned_data['grupa']
-            count = subscribers.update(grupa=group)
-            self.message_user(
-                request,
-                f'{count} pretplatnika dodijeljeno grupi „{group.naziv}”.',
-                messages.SUCCESS,
-            )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_marketingsubscriber_changelist'))
-
-        context = {
-            **self.admin_site.each_context(request),
-            'title': 'Dodjela grupe pretplatnicima',
-            'form': form,
-            'form_field': form['grupa'],
-            'queryset': queryset,
-            'opts': self.model._meta,
-            'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
-            'action_name': 'bulk_assign_group',
-            'submit_label': 'Dodijeli grupu',
-            'changelist_url': reverse('admin:EcommerceApp_marketingsubscriber_changelist'),
-        }
-        return render(request, 'admin/EcommerceApp/marketingsubscriber/bulk_assign_group.html', context)
-
-    bulk_assign_group.short_description = 'Dodijeli odabranim u grupu'
-
-    def bulk_remove_from_group(self, request, queryset):
-        count = queryset.update(grupa=None)
-        self.message_user(
-            request,
-            f'{count} pretplatnika uklonjeno iz grupe.',
-            messages.SUCCESS,
-        )
-
-    bulk_remove_from_group.short_description = 'Ukloni odabrane iz grupe'
-
-
 @admin.register(ActiveCartItem)
 class ActiveCartItemAdmin(admin.ModelAdmin):
     list_display = (
@@ -1450,15 +1383,3 @@ class ActiveCartItemAdmin(admin.ModelAdmin):
     autocomplete_fields = ('user', 'product')
 
 
-@admin.register(MarketingEmailCampaign)
-class MarketingEmailCampaignAdmin(admin.ModelAdmin):
-    list_display = ('naslov', 'status', 'broj_primaoca', 'broj_gresaka', 'poslano', 'poslao', 'kreirano')
-    list_filter = ('status',)
-    search_fields = ('naslov', 'uvod', 'poslao__email')
-    readonly_fields = (
-        'status', 'broj_primaoca', 'broj_gresaka', 'poslano', 'kreirano', 'poslao',
-    )
-    fieldsets = (
-        ('Sadržaj', {'fields': ('naslov', 'uvod', 'banner', 'cta_link', 'cta_tekst')}),
-        ('Slanje', {'fields': ('status', 'broj_primaoca', 'broj_gresaka', 'poslano', 'poslao', 'kreirano')}),
-    )

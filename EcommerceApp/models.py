@@ -1969,7 +1969,15 @@ class ActiveCartItem(models.Model):
 
 class CartRecoveryAlert(models.Model):
     """Admin podsjetnik kupcu da završi kupovinu (opcionalno s popustom)."""
-    session_key = models.CharField(max_length=40, unique=True, db_index=True, verbose_name='Sesija')
+    session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='cart_recovery_alerts_received',
+        verbose_name='Kupac',
+    )
     discount_percent = models.DecimalField(
         max_digits=5, decimal_places=2, default=0, verbose_name='Popust (%)',
     )

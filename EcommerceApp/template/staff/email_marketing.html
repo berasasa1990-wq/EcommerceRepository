@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -13,7 +12,8 @@
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Email marketing</h1>
         <p class="staff-email-marketing-subtitle">
-            Kreirajte prodajni email sa bannerom i pošaljite odabranoj marketing grupi.
+            Kreirajte prodajni email sa bannerom i pošaljite svim kupcima:
+            {{ registered_recipient_count }} registrovanih + {{ subscriber_recipient_count }} dodatnih = {{ recipient_count }} ukupno.
         </p>
     </div>
 
@@ -75,13 +75,7 @@
                     {% endif %}
                     <div class="staff-email-preview-cta-row">
                         <span class="staff-email-preview-cta">{{ preview_campaign.cta_tekst }}</span>
-                        <img
-                            src="{% static 'img/warranty-seal.svg' %}"
-                            alt="Garancija na proizvode"
-                            class="staff-email-preview-warranty-seal"
-                            width="72"
-                            height="72"
-                        >
+                        <span class="staff-email-preview-warranty">Pisana garancija</span>
                     </div>
                 </div>
             </div>
@@ -97,7 +91,7 @@
                         <div
                             class="staff-email-send-progress-fill"
                             id="marketingSendProgressFill"
-                            style="width: {{ marketing_send_percent }}%;"
+                            style="width: {% if preview_campaign.slanje_ukupno %}{% widthratio preview_campaign.broj_primaoca preview_campaign.slanje_ukupno 100 %}{% else %}0{% endif %}%;"
                         ></div>
                     </div>
                     <p class="staff-email-send-progress-hint">
@@ -111,33 +105,25 @@
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
                 </form>
-                {% if marketing_send_groups %}
-                <form
-                    method="post"
-                    class="staff-email-marketing-send-form"
-                    onsubmit="return confirm('Poslati email odabranoj grupi?');"
-                >
+                {% if marketing_send_progress.can_resume %}
+                <p class="staff-email-send-resume-note">
+                    Već poslano: <strong>{{ marketing_send_progress.already_sent }}</strong>.
+                    Preostalo: <strong>{{ marketing_send_progress.remaining }}</strong>.
+                    Ponovni klik šalje samo preostalima — već primili neće dobiti dupli email.
+                </p>
+                {% endif %}
+                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('{% if marketing_send_progress.can_resume %}Nastaviti slanje? {{ marketing_send_progress.already_sent }} adresa je već primilo email — preskaču se. Šalje se još {{ marketing_send_progress.remaining }} adresa.{% else %}Poslati email na {{ recipient_count }} adresa?{% endif %} Slanje ide u grupama po {{ marketing_batch_size }} — ostavite stranicu otvorenu.');">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="send">
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
-                    <div class="form-group">
-                        <label for="send_grupa_id">Izaberi grupu</label>
-                        <select name="send_grupa_id" id="send_grupa_id" class="form-input" required>
-                            <option value="">— Klikni i izaberi grupu —</option>
-                            {% for group in marketing_send_groups %}
-                            <option value="{{ group.pk }}"{% if not group.remaining %} disabled{% endif %}>
-                                {{ group.naziv }} — {{ group.remaining }} za slanje{% if group.sent %} ({{ group.sent }} već poslano){% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary staff-email-send-btn">Pošalji</button>
+                    <button type="submit" class="btn btn-primary staff-email-send-btn">
+                        {% if marketing_send_progress.can_resume %}
+                        Nastavi slanje ({{ marketing_send_progress.remaining }} preostalo)
+                        {% else %}
+                        Pošalji na {{ recipient_count }} emailova
+                        {% endif %}
+                    </button>
                 </form>
-                {% else %}
-                <p class="staff-email-send-groups-empty">
-                    Nema marketing grupa s emailovima. Kreirajte grupe ispod i raspodijelite pretplatnike.
-                </p>
-                {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -147,47 +133,8 @@
     <div class="staff-email-marketing-subscribers">
         <h2>Lista emailova</h2>
         <p class="staff-email-marketing-subscribers-intro">
-            Dodajte emailove kupaca i raspodijelite ih u marketing grupe. Kampanja se šalje samo odabranoj grupi.
+            Dodajte emailove kupaca koji nisu registrovani na sajtu. Pri slanju kampanje primaju svi — registrovani i ova lista — bez duplikata.
         </p>
-
-        <div class="staff-email-groups-panel">
-            <h3>Grupe pretplatnika</h3>
-            <p>Raspodijelite emailove u grupe po 50. Svaku grupu šaljete zasebno iz pregleda kampanje.</p>
-            <div class="staff-email-groups-actions">
-                <form method="post" class="staff-email-group-create-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="create_group">
-                    {% for field in subscriber_group_form %}
-                    <div class="form-group{% if field.errors %} form-group--error{% endif %}">
-                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {{ field }}
-                        {% for error in field.errors %}
-                        <p class="form-error">{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                    {% endfor %}
-                    <button type="submit" class="btn btn-secondary">Kreiraj grupu</button>
-                </form>
-                <form method="post" onsubmit="return confirm('Raspodijeliti neraspoređene emailove u grupe po 50?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="auto_distribute_groups">
-                    <button type="submit" class="btn btn-primary">
-                        Raspodijeli u grupe po 50
-                        {% if unassigned_subscriber_count %}({{ unassigned_subscriber_count }} čeka){% endif %}
-                    </button>
-                </form>
-            </div>
-            {% if subscriber_groups %}
-            <ul class="staff-email-groups-list">
-                {% for group in subscriber_groups %}
-                <li>
-                    <strong>{{ group.naziv }}</strong>
-                    <span>{{ group.active_count }} emailova</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-        </div>
 
         <div class="staff-email-marketing-subscribers-layout">
             <form method="post" class="staff-email-subscriber-form">
@@ -256,7 +203,6 @@
                         <th>#</th>
                         <th>Email</th>
                         <th>Ime</th>
-                        <th>Grupa</th>
                         <th>Izvor</th>
                         <th>Dodano</th>
                         <th></th>
@@ -268,7 +214,6 @@
                         <td>{{ subscriber_page_obj.start_index|add:forloop.counter0 }}</td>
                         <td><code class="staff-email-subscriber-email">{{ subscriber.email }}</code></td>
                         <td>{{ subscriber.ime|default:"—" }}</td>
-                        <td>{{ subscriber.grupa.naziv|default:"—" }}</td>
                         <td>{{ subscriber.get_izvor_display }}</td>
                         <td>{{ subscriber.kreirano|date:"d.m.Y. H:i" }}</td>
                         <td>
@@ -356,7 +301,7 @@
     const fillEl = document.getElementById('marketingSendProgressFill');
     let running = false;
 
-    const groupPauseMs = {{ marketing_group_pause_ms }};
+    const groupPauseMs = '{{ marketing_group_pause_ms }}';
 
     function updateUi(data) {
         const total = data.total || 0;

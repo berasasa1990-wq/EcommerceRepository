@@ -5,15 +5,12 @@ from django.contrib.auth.models import User
 import re
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import EmailValidator
-
 from .models import (
     Akcija,
     Banner,
     Brand,
     Category,
-    MarketingEmailCampaign,
-    MarketingSubscriberGroup,
+
     Popup,
     Product,
     Tag,
@@ -467,17 +464,6 @@ class BulkAssignBrandForm(forms.Form):
     )
 
 
-class BulkAssignSubscriberGroupForm(forms.Form):
-    grupa = forms.ModelChoiceField(
-        label='Grupa',
-        queryset=MarketingSubscriberGroup.objects.order_by('redoslijed', 'id'),
-        widget=forms.Select(attrs={'class': 'odoo-select'}),
-        empty_label='— Odaberi grupu —',
-        required=True,
-        help_text='Odabrani pretplatnici će biti premješteni u ovu grupu.',
-    )
-
-
 class BulkAssignTagsForm(forms.Form):
     tagovi = forms.ModelMultipleChoiceField(
         label='Tagovi',
@@ -488,103 +474,4 @@ class BulkAssignTagsForm(forms.Form):
     )
 
 
-class MarketingEmailCampaignForm(forms.ModelForm):
-    class Meta:
-        model = MarketingEmailCampaign
-        fields = ('naslov', 'uvod', 'banner', 'cta_link', 'cta_tekst')
-        widgets = {
-            'naslov': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'npr. Akcijska ponuda — do 30% popusta',
-            }),
-            'uvod': forms.Textarea(attrs={
-                'class': 'form-input form-textarea',
-                'rows': 4,
-                'placeholder': 'Kratka poruka za kupce…',
-            }),
-            'cta_link': forms.URLInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'https://www.opremazaribolov.ba/?akcija=1',
-            }),
-            'cta_tekst': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'Pogledaj akcijsku ponudu',
-            }),
-            'banner': forms.FileInput(attrs={
-                'class': 'form-input',
-                'accept': 'image/*',
-            }),
-        }
 
-    def clean_banner(self):
-        banner = self.cleaned_data.get('banner')
-        if not banner and not getattr(self.instance, 'banner', None):
-            raise forms.ValidationError('Odaberite banner sliku.')
-        return banner
-
-
-class MarketingSubscriberBulkForm(forms.Form):
-    emails = forms.CharField(
-        label='Email adrese',
-        widget=forms.Textarea(attrs={
-            'class': 'form-input form-textarea',
-            'rows': 8,
-            'placeholder': 'Jedan email po liniji.\nOpcionalno: email@mail.com, Ime Prezime',
-        }),
-        help_text='Zalijepite listu emailova. Duplikati i registrovani korisnici se preskaču.',
-    )
-
-    def clean_emails(self):
-        raw = self.cleaned_data.get('emails', '')
-        if not raw.strip():
-            raise forms.ValidationError('Unesite barem jedan email.')
-        return raw
-
-    def parsed_entries(self):
-        raw = self.cleaned_data['emails']
-        validator = EmailValidator()
-        entries = []
-        seen = set()
-        for line in raw.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            email = ''
-            name = ''
-            if ',' in line or ';' in line:
-                parts = re.split(r'[,;]', line, maxsplit=1)
-                email = parts[0].strip()
-                if len(parts) > 1:
-                    name = parts[1].strip()
-            else:
-                email = line
-            normalized = email.strip().lower()
-            if not normalized or normalized in seen:
-                continue
-            try:
-                validator(normalized)
-            except DjangoValidationError:
-                continue
-            seen.add(normalized)
-            entries.append((normalized, name))
-        if not entries:
-            raise forms.ValidationError('Nema validnih email adresa u unosu.')
-        return entries
-
-
-class MarketingSubscriberGroupForm(forms.ModelForm):
-    class Meta:
-        model = MarketingSubscriberGroup
-        fields = ('naziv',)
-        widgets = {
-            'naziv': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'npr. Grupa 7',
-            }),
-        }
-
-    def clean_naziv(self):
-        naziv = (self.cleaned_data.get('naziv') or '').strip()
-        if not naziv:
-            raise forms.ValidationError('Unesite naziv grupe.')
-        return naziv

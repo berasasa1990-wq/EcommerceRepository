@@ -40,18 +40,7 @@ from .loyalty import (
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import (
     EmailNotConfiguredError,
-    auto_distribute_subscribers_to_groups,
-    bulk_import_marketing_subscribers,
-    create_marketing_subscriber_group,
     get_order_email_context,
-    import_marketing_subscribers_from_orders,
-    MARKETING_TEST_EMAIL,
-    marketing_send_groups,
-    marketing_recipient_counts,
-    marketing_send_progress,
-    send_marketing_campaign_batch,
-    send_marketing_campaign_test_email,
-    start_marketing_campaign_send,
     send_order_emails,
 )
 from .olx_api import (
@@ -75,9 +64,6 @@ from .forms import (
     CheckoutForm,
     CouponForm,
     LoginForm,
-    MarketingEmailCampaignForm,
-    MarketingSubscriberBulkForm,
-    MarketingSubscriberGroupForm,
     ProfileForm,
     RegisterForm,
 )
@@ -90,9 +76,6 @@ from .models import (
     HomeFeaturedProduct,
     HomeVlog,
     LoyaltyCard,
-    MarketingEmailCampaign,
-    MarketingSubscriber,
-    MarketingSubscriberGroup,
     Order,
     OrderItem,
     Product,
@@ -2316,11 +2299,19 @@ def staff_active_carts(request):
             )
         except (InvalidOperation, ValueError):
             discount_percent = Decimal('0')
+        cart_item = (
+            ActiveCartItem.objects.filter(session_key=session_key)
+            .exclude(user__isnull=True)
+            .select_related('user')
+            .first()
+        )
+        target_user = cart_item.user if cart_item else None
         try:
             send_cart_recovery_alert(
                 session_key,
                 discount_percent=discount_percent,
                 staff_user=request.user,
+                target_user=target_user,
             )
             if discount_percent > 0:
                 pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
@@ -2356,12 +2347,20 @@ def staff_active_carts(request):
 
     groups = _active_cart_groups(qs[:1000])
     session_keys = [group['session_key'] for group in groups]
-    alert_map = {
-        alert.session_key: alert
-        for alert in CartRecoveryAlert.objects.filter(session_key__in=session_keys)
-    }
+    user_ids = [group['user'].pk for group in groups if group.get('user')]
+    alerts = CartRecoveryAlert.objects.filter(
+        Q(session_key__in=session_keys) | Q(user_id__in=user_ids),
+    )
+    alert_by_session = {}
+    alert_by_user = {}
+    for alert in alerts:
+        alert_by_session[alert.session_key] = alert
+        if alert.user_id:
+            alert_by_user[alert.user_id] = alert
     for group in groups:
-        alert = alert_map.get(group['session_key'])
+        alert = alert_by_session.get(group['session_key'])
+        if not alert and group.get('user'):
+            alert = alert_by_user.get(group['user'].pk)
         group['recovery_alert'] = alert
         group['recovery_pending'] = bool(alert and alert.show_popup and not alert.discount_applied)
     total_items = sum(len(group['items']) for group in groups)
@@ -2374,74 +2373,6 @@ def staff_active_carts(request):
         'sort': sort,
     }
     return render(request, 'staff/active_carts.html', context)
-
-
-MARKETING_SUBSCRIBERS_PER_PAGE = 25
-
-
-def _marketing_subscriber_queryset(search_query=''):
-    qs = MarketingSubscriber.objects.filter(aktivan=True).select_related('grupa').order_by('-kreirano', 'email')
-    search_query = (search_query or '').strip()
-    if search_query:
-        qs = qs.filter(
-            Q(email__icontains=search_query) | Q(ime__icontains=search_query),
-        )
-    return qs
-
-
-def _paginate_marketing_subscribers(request):
-    page_number = request.GET.get('lista_page', 1)
-    paginator = Paginator(
-        _marketing_subscriber_queryset(request.GET.get('lista_q', '')),
-        MARKETING_SUBSCRIBERS_PER_PAGE,
-    )
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages or 1)
-    return page_obj
-
-
-def _marketing_subscribers_csv_response():
-    import csv
-    from django.http import HttpResponse
-
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = 'attachment; filename="marketing-emailovi.csv"'
-    response.write('\ufeff')
-    writer = csv.writer(response)
-    writer.writerow(['Email', 'Ime', 'Grupa', 'Izvor', 'Dodano', 'Aktivan'])
-    for subscriber in MarketingSubscriber.objects.filter(aktivan=True).select_related('grupa').order_by('email'):
-        writer.writerow([
-            subscriber.email,
-            subscriber.ime,
-            subscriber.grupa.naziv if subscriber.grupa_id else '',
-            subscriber.get_izvor_display(),
-            subscriber.kreirano.strftime('%d.%m.%Y. %H:%M'),
-            'Da' if subscriber.aktivan else 'Ne',
-        ])
-    return response
-
-
-def _format_subscriber_import_result(result):
-    parts = [f'Dodano {result["added"]} emailova.']
-    if result['skipped_duplicate']:
-        parts.append(f'{result["skipped_duplicate"]} već u listi.')
-    if result['skipped_registered']:
-        parts.append(f'{result["skipped_registered"]} registrovanih korisnika preskočeno.')
-    if result['invalid']:
-        parts.append(f'{result["invalid"]} nevalidnih preskočeno.')
-    return ' '.join(parts)
-
-
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
-def staff_email_marketing(request):
-    messages.info(request, 'Email marketing je uklonjen sa sajta.')
-    return redirect('staff_admin_panel')
-
 
 
 def _staff_olx_messages_filter(request):

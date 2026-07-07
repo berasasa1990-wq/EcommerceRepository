@@ -316,10 +316,6 @@ ORDER_NOTIFICATION_EMAIL = _env(
     'narudzbe@opremazaribolov.ba',
 ).strip().lower()
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
-MARKETING_EMAIL_BATCH_SIZE = int(_env('MARKETING_EMAIL_BATCH_SIZE', '50'))
-MARKETING_EMAIL_BATCH_PAUSE = float(_env('MARKETING_EMAIL_BATCH_PAUSE', '0.15'))
-MARKETING_EMAIL_GROUP_PAUSE = float(_env('MARKETING_EMAIL_GROUP_PAUSE', '4'))
-MARKETING_SUBSCRIBER_GROUP_SIZE = int(_env('MARKETING_SUBSCRIBER_GROUP_SIZE', '50'))
 SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')
 MESSENGER_PAGE = _env('MESSENGER_PAGE', 'opremazaribolov.ba')
