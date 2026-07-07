@@ -90,7 +90,32 @@
         }
     });
 
-    window.setTimeout(openOverlay, 800);
+    function shouldDeferRecoveryPopup() {
+        if (document.getElementById('liveOfferMount')) {
+            try {
+                if (sessionStorage.getItem('live_offer_active_session') === '1') {
+                    return true;
+                }
+            } catch (err) {
+                /* ignore */
+            }
+        }
+        const liveOfferOverlay = document.getElementById('liveOfferOverlay');
+        if (liveOfferOverlay && !liveOfferOverlay.hidden) {
+            return true;
+        }
+        return false;
+    }
+
+    function scheduleOpen() {
+        if (shouldDeferRecoveryPopup()) {
+            window.setTimeout(scheduleOpen, 1200);
+            return;
+        }
+        openOverlay();
+    }
+
+    window.setTimeout(scheduleOpen, 800);
 })();
 </script>
 {% endif %}

@@ -1,10 +1,14 @@
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.utils import timezone
 
 from .cart_tracking import get_cart_session_key
 from .models import LiveVisitorOffer, Product, ProductVariation
+
+OFFER_TIMER_MINUTES = 9
 
 
 def _clamp_percent(value):
@@ -65,6 +69,9 @@ def send_live_visitor_offer(
     if target_user and not isinstance(target_user, User):
         target_user = None
 
+    defaults['show_popup'] = True
+    defaults['added_to_cart'] = False
+
     if target_user:
         defaults['user'] = target_user
         offer = LiveVisitorOffer.objects.filter(user=target_user).first()
@@ -73,7 +80,7 @@ def send_live_visitor_offer(
         if offer:
             for field, value in defaults.items():
                 setattr(offer, field, value)
-            offer.save()
+            offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
         else:
             LiveVisitorOffer.objects.filter(session_key=session_key).delete()
             offer = LiveVisitorOffer.objects.create(**defaults)
@@ -86,7 +93,7 @@ def send_live_visitor_offer(
         if offer:
             for field, value in defaults.items():
                 setattr(offer, field, value)
-            offer.save()
+            offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
         else:
             LiveVisitorOffer.objects.filter(session_key=session_key, user__isnull=True).delete()
             offer = LiveVisitorOffer.objects.create(**defaults)
@@ -104,11 +111,13 @@ def get_active_live_visitor_offer(request):
     ).select_related('product').order_by('-azurirano').first()
 
 
-def build_live_visitor_offer_context(request):
-    offer = get_active_live_visitor_offer(request)
-    if not offer:
-        return None
+def _offer_timer_seconds(offer):
+    expires_at = offer.azurirano + timedelta(minutes=OFFER_TIMER_MINUTES)
+    remaining = int((expires_at - timezone.now()).total_seconds())
+    return max(0, remaining)
 
+
+def _build_offer_payload(offer):
     product = offer.product
     discount = offer.discount_percent or Decimal('0')
     in_stock_variations = list(
@@ -125,32 +134,61 @@ def build_live_visitor_offer_context(request):
         variations.append({
             'id': variation.pk,
             'naziv': variation.naziv,
-            'base_price': base_price,
-            'final_price': final_price,
+            'base_price': str(base_price),
+            'final_price': str(final_price),
             'has_discount': discount > 0 and final_price < base_price,
         })
 
     if variations:
         display_base = variations[0]['base_price']
         display_final = variations[0]['final_price']
+        has_discount = variations[0]['has_discount']
     else:
-        display_base = product.prikazna_cijena
-        display_final = _discounted_price(display_base, discount)
+        display_base = str(product.prikazna_cijena)
+        display_final = str(_discounted_price(product.prikazna_cijena, discount))
+        has_discount = discount > 0 and Decimal(display_final) < Decimal(display_base)
+
+    pct_display = None
+    if discount > 0:
+        pct_display = int(discount) if discount == int(discount) else float(discount)
 
     return {
-        'offer': offer,
-        'product': product,
+        'offer_id': offer.pk,
+        'offer_version': int(offer.azurirano.timestamp()),
         'product_id': product.pk,
         'product_name': product.naziv,
         'product_url': product.get_absolute_url(),
         'image_url': product.prikazna_slika.url if product.prikazna_slika else '',
-        'discount_percent': discount,
-        'has_discount': discount > 0 and display_final < display_base,
+        'discount_percent': pct_display,
+        'has_discount': has_discount,
         'has_variations': bool(variations),
         'variations': variations,
         'display_base_price': display_base,
         'display_final_price': display_final,
+        'timer_seconds': _offer_timer_seconds(offer),
+        'timer_minutes': OFFER_TIMER_MINUTES,
+        'add_url': '/ponuda/dodaj/',
+        'dismiss_url': '/ponuda/zatvori/',
     }
+
+
+def build_live_visitor_offer_context(request):
+    offer = get_active_live_visitor_offer(request)
+    if not offer:
+        return None
+    payload = _build_offer_payload(offer)
+    if not payload:
+        return None
+    payload['offer'] = offer
+    payload['product'] = offer.product
+    return payload
+
+
+def poll_live_visitor_offer(request):
+    offer = get_active_live_visitor_offer(request)
+    if not offer:
+        return None
+    return _build_offer_payload(offer)
 
 
 def apply_live_visitor_offer(request, cart):

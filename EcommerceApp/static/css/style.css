@@ -8423,62 +8423,133 @@ body.search-results-active main {
     border-color: #5BB805 !important;
 }
 
+@keyframes live-offer-cta-pulse {
+    0%, 100% {
+        box-shadow: 0 4px 14px rgba(217, 48, 37, 0.45);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 6px 22px rgba(217, 48, 37, 0.65);
+        transform: scale(1.02);
+    }
+}
+
 .live-offer-overlay {
     z-index: 3200;
 }
 
 .live-offer-popup {
-    max-width: 440px;
-    text-align: left;
+    max-width: 400px;
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
 }
 
-.live-offer-header {
-    padding: 20px 20px 0;
+.live-offer-popup .site-popup-close {
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.92);
 }
 
-.live-offer-promo {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--gray-600);
-}
-
-.live-offer-product {
-    display: grid;
-    gap: 16px;
-    padding: 16px 20px 20px;
+.live-offer-hero {
+    position: relative;
+    padding: 28px 20px 16px;
+    background: linear-gradient(180deg, #fff5f5 0%, #fff 100%);
 }
 
 .live-offer-image-wrap {
     display: flex;
     justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
 .live-offer-image,
 .live-offer-image-placeholder {
-    width: 140px;
-    height: 140px;
-    border-radius: 8px;
-    border: 1px solid var(--gray-200);
+    width: min(240px, 72vw);
+    height: min(240px, 72vw);
+    border-radius: 12px;
+    border: 2px solid #f4c7c3;
     object-fit: contain;
     background: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .live-offer-image-placeholder {
     background: var(--gray-100);
 }
 
+.live-offer-timer-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.live-offer-timer-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.live-offer-timer-value {
+    font-size: 28px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: #ff6b6b;
+    line-height: 1.1;
+}
+
+.live-offer-body {
+    padding: 0 20px 22px;
+    text-align: center;
+}
+
+.live-offer-kicker {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #d93025;
+}
+
+.live-offer-promo {
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--gray-600);
+}
+
+.live-offer-promo strong {
+    color: #d93025;
+}
+
 .live-offer-form {
     display: grid;
     gap: 12px;
+    margin-top: 14px;
 }
 
 .live-offer-product-name {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
     line-height: 1.35;
-    color: #111;
+    color: var(--gray-700);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .live-offer-prices {
@@ -8486,18 +8557,20 @@ body.search-results-active main {
     flex-wrap: wrap;
     gap: 8px;
     align-items: baseline;
+    justify-content: center;
 }
 
 .live-offer-price-original {
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--gray-500);
     text-decoration: line-through;
 }
 
 .live-offer-price-final {
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 800;
-    color: #1a7f4b;
+    color: #d93025;
 }
 
 .live-offer-price-note {
@@ -8514,12 +8587,24 @@ body.search-results-active main {
     font-size: 14px;
     font-family: inherit;
     background: #fff;
+    text-align: left;
 }
 
 .live-offer-cta {
     width: 100%;
-    background: #5BB805 !important;
-    border-color: #5BB805 !important;
+    background: #d93025 !important;
+    border-color: #c5221f !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+    font-size: 16px !important;
+    letter-spacing: 0.02em;
+    animation: live-offer-cta-pulse 1.4s ease-in-out infinite;
+}
+
+.live-offer-cta:hover {
+    background: #c5221f !important;
+    border-color: #b31412 !important;
+    color: #fff !important;
 }
 
 .staff-online-orders-filter {

@@ -33,6 +33,7 @@ urlpatterns = [
     path('korpa/podsjetnik/zatvori/', views.cart_recovery_dismiss, name='cart_recovery_dismiss'),
     path('ponuda/dodaj/', views.live_visitor_offer_add, name='live_visitor_offer_add'),
     path('ponuda/zatvori/', views.live_visitor_offer_dismiss, name='live_visitor_offer_dismiss'),
+    path('ponuda/status/', views.live_visitor_offer_poll, name='live_visitor_offer_poll'),
     path('narudzba/', views.checkout, name='checkout'),
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),

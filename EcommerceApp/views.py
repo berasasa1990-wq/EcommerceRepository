@@ -26,6 +26,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
 from .cart import Cart
@@ -2320,6 +2322,7 @@ def staff_send_live_offer(request):
 
     visitor = LiveVisitor.objects.filter(session_key=session_key).select_related('user').first()
     target_user = visitor.user if visitor else None
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     try:
         send_live_visitor_offer(
             session_key,
@@ -2330,10 +2333,15 @@ def staff_send_live_offer(request):
         )
         if discount_percent > 0:
             pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
-            messages.success(request, f'Ponuda artikla poslana kupcu s popustom {pct}%.')
+            success_message = f'Ponuda artikla poslana kupcu s popustom {pct}%.'
         else:
-            messages.success(request, 'Ponuda artikla poslana kupcu.')
+            success_message = 'Ponuda artikla poslana kupcu.'
+        if is_ajax:
+            return JsonResponse({'ok': True, 'message': success_message})
+        messages.success(request, success_message)
     except ValueError as exc:
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
         messages.error(request, str(exc))
     return redirect('staff_live_analytics')
 
@@ -2342,9 +2350,18 @@ def staff_send_live_offer(request):
 def live_visitor_offer_add(request):
     from .live_visitor_offer import apply_live_visitor_offer
 
-    cart = Cart(request)
-    ok, result = apply_live_visitor_offer(request, cart)
-    stay_on_page = request.POST.get('stay') == '1'
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    stay_on_page = request.POST.get('stay') == '1' or is_ajax
+    try:
+        cart = Cart(request)
+        ok, result = apply_live_visitor_offer(request, cart)
+    except Exception:
+        if stay_on_page:
+            return JsonResponse(
+                {'ok': False, 'message': 'Dodavanje u korpu nije uspjelo.'},
+                status=500,
+            )
+        raise
     if stay_on_page:
         if ok:
             return JsonResponse({
@@ -2365,8 +2382,28 @@ def live_visitor_offer_dismiss(request):
     from .live_visitor_offer import dismiss_live_visitor_offer
 
     dismiss_live_visitor_offer(request)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True})
     next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
     return redirect(next_url)
+
+
+@ensure_csrf_cookie
+@require_GET
+def live_visitor_offer_poll(request):
+    from .live_visitor_offer import poll_live_visitor_offer
+
+    if request.user.is_authenticated and request.user.is_superuser:
+        payload = {'active': False}
+    else:
+        offer = poll_live_visitor_offer(request)
+        if not offer:
+            payload = {'active': False}
+        else:
+            payload = {'active': True, 'offer': offer}
+
+    payload['csrf_token'] = get_token(request)
+    return JsonResponse(payload)
 
 
 @login_required(login_url='login')

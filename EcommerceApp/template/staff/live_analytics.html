@@ -100,7 +100,7 @@
                                 {% endif %}
                             </td>
                             <td class="staff-live-action-cell">
-                                {% if visitor.is_online %}
+                                {% if visitor.session_key %}
                                 <button type="button" class="staff-live-offer-btn" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}">Ponuda</button>
                                 {% else %}
                                 <span class="staff-live-muted">—</span>
@@ -177,8 +177,33 @@
             .replace(/"/g, '&quot;');
     }
 
+    function readStaffCsrfToken() {
+        const formToken = document.querySelector('#liveOfferSendForm input[name="csrfmiddlewaretoken"]');
+        if (formToken && formToken.value) {
+            return formToken.value;
+        }
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.content) {
+            return meta.content;
+        }
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    async function parseStaffJsonResponse(response) {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (err) {
+            if (response.status === 403) {
+                throw new Error('Sesija je istekla. Osvježite stranicu i pokušajte ponovo.');
+            }
+            throw new Error('Slanje ponude nije uspjelo.');
+        }
+    }
+
     function offerButton(visitor) {
-        if (!visitor.is_online || !visitor.session_key) {
+        if (!visitor.session_key) {
             return '<span class="staff-live-muted">—</span>';
         }
         return (
@@ -188,7 +213,7 @@
         );
     }
 
-    function renderRows(visitors, emptyText, showOfferForOffline) {
+    function renderRows(visitors, emptyText) {
         if (!visitors.length) {
             return '<tr class="staff-live-empty-row"><td colspan="4">' + escapeHtml(emptyText) + '</td></tr>';
         }
@@ -199,15 +224,12 @@
             const badgeClass = visitor.is_online
                 ? 'staff-live-badge staff-live-badge--online'
                 : 'staff-live-badge';
-            const actionCell = showOfferForOffline
-                ? '<td class="staff-live-action-cell">' + offerButton(visitor) + '</td>'
-                : '<td class="staff-live-action-cell">' + (visitor.is_online ? offerButton(visitor) : '<span class="staff-live-muted">—</span>') + '</td>';
             return (
                 '<tr>' +
                 '<td>' + escapeHtml(visitor.ime) + '</td>' +
                 '<td>' + email + '</td>' +
                 '<td><span class="' + badgeClass + '">' + escapeHtml(visitor.last_seen_label) + '</span></td>' +
-                actionCell +
+                '<td class="staff-live-action-cell">' + offerButton(visitor) + '</td>' +
                 '</tr>'
             );
         }).join('');
@@ -297,10 +319,52 @@
         }, 250);
     });
 
-    document.getElementById('liveOfferSendForm')?.addEventListener('submit', function (e) {
+    const offerSendForm = document.getElementById('liveOfferSendForm');
+    offerSendForm?.addEventListener('submit', async function (e) {
+        e.preventDefault();
         if (!productIdEl.value) {
-            e.preventDefault();
             alert('Odaberite artikal za ponudu.');
+            return;
+        }
+        const submitBtn = offerSendForm.querySelector('.staff-live-offer-submit');
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+            const csrf = readStaffCsrfToken();
+            if (!csrf) {
+                throw new Error('Sigurnosni token nije dostupan. Osvježite stranicu.');
+            }
+            const body = new URLSearchParams(new FormData(offerSendForm));
+            body.set('csrfmiddlewaretoken', csrf);
+            const response = await fetch(offerSendForm.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await parseStaffJsonResponse(response);
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || 'Slanje ponude nije uspjelo.');
+            }
+            closeOfferModal();
+            let toast = document.querySelector('.cart-toast');
+            if (!toast) {
+                toast = document.createElement('p');
+                toast.className = 'cart-toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = data.message;
+            toast.classList.add('cart-toast--visible');
+            window.setTimeout(function () {
+                toast.classList.remove('cart-toast--visible');
+            }, 2600);
+        } catch (err) {
+            alert(err.message || 'Slanje ponude nije uspjelo.');
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
         }
     });
 
@@ -320,12 +384,10 @@
             onlineBody.innerHTML = renderRows(
                 data.online_visitors || [],
                 'Trenutno nema aktivnih posjetilaca.',
-                true,
             );
             windowBody.innerHTML = renderRows(
                 data.window_visitors || [],
                 'Nema posjeta u zadnjih {{ window_minutes }} minuta.',
-                false,
             );
             bindOfferButtons(onlineBody);
             bindOfferButtons(windowBody);
