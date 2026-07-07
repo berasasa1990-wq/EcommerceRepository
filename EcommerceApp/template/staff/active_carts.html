@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
 <title>Aktivne korpe — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-active-carts.css' %}?v=20260708v2">
 {% endblock %}
 
 {% block content %}
