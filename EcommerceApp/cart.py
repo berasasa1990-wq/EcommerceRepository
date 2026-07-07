@@ -1,6 +1,9 @@
+import logging
 from decimal import ROUND_HALF_UP, Decimal
 
 from .models import Product, ProductVariation
+
+logger = logging.getLogger(__name__)
 from .upsell import get_deal_info_for_cart_item, get_quantity_deal, calculate_deal_adjusted_total
 
 PDV_STOPA = Decimal('0.17')
@@ -41,6 +44,7 @@ class Cart:
 
     def add(self, product, variation=None, quantity=1, custom_price=None, *, promo_bazna=None, gratis_akcija_id=None):
         key = self._line_key(product.pk, variation.pk if variation else None)
+        quantity = max(1, int(quantity or 1))
         prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
         if custom_price is not None:
             price = Decimal(str(custom_price))
@@ -91,6 +95,13 @@ class Cart:
                 self.cart[key]['gratis_promo'] = True
         self.save()
         self._track_line(key)
+        self._notify_add(
+            product,
+            variation,
+            quantity_added=quantity,
+            line_price=price,
+            total_qty_in_line=self.cart[key]['quantity'],
+        )
 
     def remove(self, key):
         if key in self.cart:
@@ -125,6 +136,22 @@ class Cart:
     def _untrack_all(self):
         from .cart_tracking import track_cart_cleared
         track_cart_cleared(self.request)
+
+    def _notify_add(self, product, variation, *, quantity_added, line_price, total_qty_in_line):
+        try:
+            from .emails import send_cart_add_notification
+            send_cart_add_notification(
+                self.request,
+                product=product,
+                variation=variation,
+                quantity_added=quantity_added,
+                line_price=line_price,
+                line_total=(line_price * quantity_added).quantize(Decimal('0.01')),
+                total_qty_in_line=total_qty_in_line,
+                cart=self,
+            )
+        except Exception:
+            logger.exception('Obavijest o dodavanju u korpu nije poslana.')
 
     def get_coupon_code(self):
         if not self.is_coupon_applied():

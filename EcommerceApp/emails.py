@@ -1,5 +1,6 @@
 import logging
 import time
+from decimal import Decimal
 from email.utils import formataddr
 from types import SimpleNamespace
 
@@ -206,6 +207,138 @@ def send_chat_notification(conversation, message):
     mail.attach_alternative(html_body, 'text/html')
     mail.send(fail_silently=False)
     logger.info('Chat obavijest poslana za razgovor #%s (%s)', conversation.pk, email)
+
+
+def _cart_notification_items(cart):
+    items = []
+    for raw in cart.cart.values():
+        price = Decimal(str(raw.get('cijena', 0)))
+        qty = int(raw.get('quantity', 0) or 0)
+        name = raw.get('product_naziv') or raw.get('naziv', '')
+        variation = (raw.get('varijacija_naziv') or '').strip()
+        if variation:
+            name = f'{name} — {variation}'
+        items.append({
+            'naziv': name,
+            'quantity': qty,
+            'ukupno': (price * qty).quantize(Decimal('0.01')),
+        })
+    return items
+
+
+def send_cart_add_notification(
+    request,
+    *,
+    product,
+    variation=None,
+    quantity_added=1,
+    line_price=None,
+    line_total=None,
+    total_qty_in_line=None,
+    cart=None,
+):
+    """Obavijest trgovini kad posjetilac doda artikal u korpu."""
+    try:
+        _ensure_email_configured()
+    except EmailNotConfiguredError:
+        logger.warning('Cart add obavijest preskočena — email nije konfigurisan.')
+        return
+
+    if line_price is None:
+        line_price = variation.prikazna_cijena if variation else product.prikazna_cijena
+    if line_total is None:
+        line_total = (Decimal(str(line_price)) * quantity_added).quantize(Decimal('0.01'))
+    if total_qty_in_line is None:
+        total_qty_in_line = quantity_added
+
+    label = product.naziv
+    if variation:
+        label = f'{product.naziv} — {variation.naziv}'
+
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated:
+        user_email = (user.email or '').strip()
+        user_label = user.get_full_name().strip() or user_email or 'Registrovan korisnik'
+        registered = True
+    else:
+        user_email = ''
+        user_label = 'Gost'
+        registered = False
+
+    created = timezone.localtime(timezone.now())
+    product_url = f'{settings.SITE_URL}{product.get_absolute_url()}'
+    active_carts_url = f'{settings.SITE_URL}/nalog/aktivne-korpe/'
+
+    cart_items = _cart_notification_items(cart) if cart is not None else []
+    cart_line_count = len(cart_items)
+    cart_item_count = sum(item['quantity'] for item in cart_items)
+    cart_total = cart.ukupno if cart is not None else line_total
+
+    body_lines = [
+        'Artikal je dodan u korpu na opremazaribolov.ba',
+        '',
+        f'Korisnik: {user_label}',
+        f'Email: {user_email or "—"}',
+        f'Registrovan: {"Da" if registered else "Ne (gost)"}',
+        f'Vrijeme: {created.strftime("%d.%m.%Y. %H:%M")}',
+        '',
+        'Dodano:',
+        f'- {label}',
+        f'  Količina u ovom koraku: {quantity_added}',
+        f'  Ukupno u korpi (ova stavka): {total_qty_in_line}',
+        f'  Cijena: {line_price} KM',
+        f'  Iznos (ovaj korak): {line_total} KM',
+        f'  Link: {product_url}',
+    ]
+    if cart_items:
+        body_lines.extend(['', f'Trenutna korpa ({cart_line_count} artikala, {cart_item_count} kom):', ''])
+        for item in cart_items:
+            body_lines.append(f'- {item["naziv"]} × {item["quantity"]} = {item["ukupno"]} KM')
+        body_lines.extend(['', f'Ukupno u korpi: {cart_total} KM'])
+    body_lines.extend([
+        '',
+        f'Pregled aktivnih korpi: {active_carts_url}',
+    ])
+
+    reply_to = [user_email] if user_email and '@' in user_email else None
+    recipient = settings.ORDER_NOTIFICATION_EMAIL
+
+    mail = EmailMultiAlternatives(
+        subject=f'Korpa: {label} — opremazaribolov.ba',
+        body='\n'.join(body_lines),
+        from_email=_from_email(),
+        to=[recipient],
+        reply_to=reply_to,
+    )
+    mail.attach_alternative(
+        render_to_string('emails/cart_add_notification.html', {
+            'label': label,
+            'product': product,
+            'variation': variation,
+            'product_url': product_url,
+            'active_carts_url': active_carts_url,
+            'user_label': user_label,
+            'user_email': user_email,
+            'registered': registered,
+            'created': created,
+            'quantity_added': quantity_added,
+            'total_qty_in_line': total_qty_in_line,
+            'line_price': line_price,
+            'line_total': line_total,
+            'cart_items': cart_items,
+            'cart_line_count': cart_line_count,
+            'cart_item_count': cart_item_count,
+            'cart_total': cart_total,
+            'site_url': settings.SITE_URL,
+        }),
+        'text/html',
+    )
+    mail.send(fail_silently=False)
+    logger.info(
+        'Cart add obavijest poslana za %s (korisnik: %s)',
+        label,
+        user_email or 'gost',
+    )
 
 
 def _marketing_display_name(email, name=''):

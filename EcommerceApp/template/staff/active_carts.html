@@ -12,11 +12,11 @@
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Aktivne korpe</h1>
         <p class="staff-active-carts-subtitle">
-            Pregled artikala koji su trenutno u korpama na sajtu — ažurira se u realnom vremenu.
+            Kliknite na korisnika da otvorite njegovu korpu. Lista se ažurira kad neko doda ili ukloni artikal.
         </p>
     </header>
 
-    <div class="staff-active-carts-stats" aria-label="Sažetak aktivnih korpi">
+    <div class="staff-active-carts-stats">
         <div class="staff-active-carts-stat">
             <span class="staff-active-carts-stat-value">{{ cart_group_count }}</span>
             <span class="staff-active-carts-stat-label">Aktivnih korpi</span>
@@ -24,10 +24,6 @@
         <div class="staff-active-carts-stat">
             <span class="staff-active-carts-stat-value">{{ cart_item_count }}</span>
             <span class="staff-active-carts-stat-label">Stavki ukupno</span>
-        </div>
-        <div class="staff-active-carts-stat staff-active-carts-stat--hint">
-            <span class="staff-active-carts-stat-icon" aria-hidden="true">🛒</span>
-            <span class="staff-active-carts-stat-label">Registrovani korisnici po emailu · gosti po sesiji</span>
         </div>
     </div>
 
@@ -40,7 +36,7 @@
                     name="q"
                     id="cart_q"
                     value="{{ search_query }}"
-                    placeholder="Artikal, šifra ili email korisnika"
+                    placeholder="Email, artikal ili šifra"
                     autocomplete="off"
                 >
                 <button type="submit" class="btn btn-primary">Pretraži</button>
@@ -64,75 +60,33 @@
     </div>
 
     {% if cart_groups %}
-    <div class="staff-active-carts-list">
+    <div class="staff-active-carts-accordion">
         {% for group in cart_groups %}
-        <article class="staff-active-cart-card">
-            <header class="staff-active-cart-card-head">
-                <div class="staff-active-cart-user">
-                    <span class="staff-active-cart-avatar" aria-hidden="true">
-                        {% if group.user_email %}👤{% else %}🧑‍💻{% endif %}
-                    </span>
-                    <div class="staff-active-cart-user-info">
-                        <div class="staff-active-cart-user-top">
-                            <h2 class="staff-active-cart-user-name">
-                                {% if group.user_email %}
-                                {{ group.user_email }}
-                                {% else %}
-                                Gost posjetilac
-                                {% endif %}
-                            </h2>
-                            {% if group.user_email %}
-                            <span class="staff-active-cart-badge staff-active-cart-badge--user">Registrovan</span>
-                            {% else %}
-                            <span class="staff-active-cart-badge staff-active-cart-badge--guest">Gost</span>
-                            {% endif %}
-                        </div>
-                        <p class="staff-active-cart-user-meta">
-                            {{ group.items|length }} artikal{% if group.items|length != 1 %}a{% endif %} ·
-                            {{ group.stavki }} kom
-                            {% if not group.user_email %} · sesija {{ group.session_short }}{% endif %}
-                        </p>
-                    </div>
-                </div>
-                <div class="staff-active-cart-summary-box">
-                    <span class="staff-active-cart-summary-label">Vrijednost korpe</span>
-                    <strong class="staff-active-cart-summary-value">{{ group.ukupno }} KM</strong>
-                </div>
-            </header>
-
-            <ul class="staff-active-cart-items">
-                {% for item in group.items %}
-                <li class="staff-active-cart-item">
-                    <a href="{{ item.product.get_absolute_url }}" class="staff-active-cart-item-link" target="_blank" rel="noopener">
-                        <span class="staff-active-cart-item-media">
-                            {% if item.product.prikazna_slika %}
-                            <img src="{{ item.product.prikazna_slika.url }}" alt="" loading="lazy" decoding="async">
-                            {% else %}
-                            <span class="staff-active-cart-item-placeholder" aria-hidden="true">📦</span>
-                            {% endif %}
-                        </span>
-                        <span class="staff-active-cart-item-body">
-                            <span class="staff-active-cart-item-name">{{ item.naziv }}</span>
-                            {% if item.varijacija_naziv %}
-                            <span class="staff-active-cart-item-variant">{{ item.varijacija_naziv }}</span>
-                            {% endif %}
-                            <span class="staff-active-cart-item-added">U korpi od {{ item.dodano|date:"d.m.Y. H:i" }}</span>
-                        </span>
-                        <span class="staff-active-cart-item-qty" aria-label="Količina">{{ item.kolicina }}×</span>
-                        <span class="staff-active-cart-item-price">
-                            <span class="staff-active-cart-item-unit">{{ item.cijena }} KM</span>
-                            <strong>{{ item.ukupno }} KM</strong>
-                        </span>
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-
-            <footer class="staff-active-cart-card-foot">
-                <span>Prvo dodano: <strong>{{ group.dodano|date:"d.m.Y. H:i" }}</strong></span>
-                <span>Zadnja izmjena: <strong>{{ group.azurirano|date:"d.m.Y. H:i" }}</strong></span>
-            </footer>
-        </article>
+        <details class="staff-active-cart-entry"{% if cart_groups|length == 1 %} open{% endif %}>
+            <summary class="staff-active-cart-entry-summary">
+                <span class="staff-active-cart-entry-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </span>
+                <span class="staff-active-cart-entry-name">
+                    {% if group.user_email %}
+                    {{ group.user_email }}
+                    {% else %}
+                    Gost
+                    {% endif %}
+                </span>
+                <span class="staff-active-cart-entry-chips">
+                    <span class="staff-active-cart-chip">{{ group.items|length }} art.</span>
+                    <span class="staff-active-cart-chip">{{ group.stavki }} kom</span>
+                    <span class="staff-active-cart-chip staff-active-cart-chip--total">{{ group.ukupno }} KM</span>
+                    <span class="staff-active-cart-chip staff-active-cart-chip--time">{{ group.azurirano|date:"d.m. H:i" }}</span>
+                </span>
+            </summary>
+            <div class="staff-active-cart-entry-panel">
+                {% include 'staff/partials/active_cart_preview.html' with group=group %}
+            </div>
+        </details>
         {% endfor %}
     </div>
     {% else %}
@@ -141,9 +95,9 @@
         <h2>Nema aktivnih korpi</h2>
         <p>
             {% if search_query %}
-            Nema rezultata za „{{ search_query }}”. Pokušajte s drugim pojmom ili poništite pretragu.
+            Nema rezultata za „{{ search_query }}”.
             {% else %}
-            Trenutno nijedan posjetilac nema artikle u korpi. Čim neko doda proizvod, pojavit će se ovdje.
+            Trenutno nijedan posjetilac nema artikle u korpi.
             {% endif %}
         </p>
         {% if search_query %}
