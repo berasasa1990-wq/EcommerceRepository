@@ -40,6 +40,7 @@ from .models import (
     HomeVlog,
     LoyaltyCard,
     MarketingEmailCampaign,
+    MarketingSubscriber,
     Order,
     OrderItem,
     Popup,
@@ -1353,6 +1354,15 @@ class ChatMessageAdmin(admin.ModelAdmin):
     @admin.display(description='Poruka')
     def body_preview(self, obj):
         return obj.body[:80]
+
+
+@admin.register(MarketingSubscriber)
+class MarketingSubscriberAdmin(admin.ModelAdmin):
+    list_display = ('email', 'ime', 'izvor', 'aktivan', 'dodao', 'kreirano')
+    list_filter = ('aktivan', 'izvor', 'kreirano')
+    search_fields = ('email', 'ime')
+    readonly_fields = ('kreirano',)
+    ordering = ('-kreirano', 'email')
 
 
 @admin.register(MarketingEmailCampaign)

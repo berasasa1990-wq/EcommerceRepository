@@ -1818,3 +1818,45 @@ class MarketingEmailCampaign(models.Model):
             return self.cta_link
         from django.conf import settings as django_settings
         return f'{django_settings.SITE_URL.rstrip("/")}/?akcija=1#product-showcase'
+
+
+class MarketingSubscriber(models.Model):
+    class Source(models.TextChoices):
+        MANUAL = 'manual', 'Ručno'
+        ORDER = 'order', 'Narudžba'
+        IMPORT = 'import', 'Import'
+
+    email = models.EmailField(unique=True, verbose_name='Email')
+    ime = models.CharField(max_length=120, blank=True, verbose_name='Ime')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+    izvor = models.CharField(
+        max_length=10,
+        choices=Source.choices,
+        default=Source.MANUAL,
+        verbose_name='Izvor',
+    )
+    dodao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='marketing_pretplatnici',
+        verbose_name='Dodao',
+    )
+    kreirano = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Marketing pretplatnik'
+        verbose_name_plural = 'Marketing pretplatnici'
+        ordering = ['-kreirano']
+        indexes = [
+            models.Index(fields=['aktivan']),
+        ]
+
+    def __str__(self):
+        return self.email
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)

@@ -148,7 +148,7 @@
                         {% endif %}
 
                         <div class="content">
-                            <p class="greeting">Poštovani {{ user.first_name|default:user.email }},</p>
+                            <p class="greeting">Poštovani {{ display_name }},</p>
                             <h1 class="headline">{{ campaign.naslov }}</h1>
                             {% if campaign.uvod %}
                             <p class="intro">{{ campaign.uvod|linebreaksbr }}</p>
@@ -174,7 +174,7 @@
                         </div>
 
                         <div class="footer">
-                            <p>Primili ste ovaj email jer ste registrovani korisnik na <a href="{{ site_url }}">{{ site_name }}</a>.</p>
+                            <p>Primili ste ovaj email jer ste kupac ili registrovani korisnik na <a href="{{ site_url }}">{{ site_name }}</a>.</p>
                             {% if store_email %}<p>Kontakt: <a href="mailto:{{ store_email }}">{{ store_email }}</a>{% if store_phone %} · {{ store_phone }}{% endif %}</p>{% endif %}
                             <p>© {{ site_name }}</p>
                         </div>

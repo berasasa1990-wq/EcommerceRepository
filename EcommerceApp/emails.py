@@ -8,7 +8,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import MarketingEmailCampaign, SiteSettings
+from .models import MarketingEmailCampaign, MarketingSubscriber, Order, SiteSettings
 from .pricing import pripremi_stavke_za_racun, sazetak_iz_narudzbe
 
 logger = logging.getLogger(__name__)
@@ -201,7 +201,27 @@ def send_chat_notification(conversation, message):
     logger.info('Chat obavijest poslana za razgovor #%s (%s)', conversation.pk, email)
 
 
+def _marketing_display_name(email, name=''):
+    cleaned = (name or '').strip()
+    if cleaned:
+        return cleaned
+    return email.split('@', 1)[0]
+
+
+def _registered_marketing_emails():
+    seen = set()
+    for user in User.objects.filter(is_active=True).exclude(email='').order_by('id'):
+        email = (user.email or '').strip().lower()
+        if not email or '@' not in email:
+            continue
+        if email in seen:
+            continue
+        seen.add(email)
+    return seen
+
+
 def marketing_recipient_users():
+    """Zadržano radi kompatibilnosti — vraća samo registrovane korisnike."""
     seen = set()
     recipients = []
     for user in User.objects.filter(is_active=True).exclude(email='').order_by('id'):
@@ -216,7 +236,94 @@ def marketing_recipient_users():
     return recipients
 
 
-def _marketing_email_context(campaign, user):
+def marketing_recipients():
+    seen = set()
+    recipients = []
+    for user in marketing_recipient_users():
+        email = user.email.strip().lower()
+        seen.add(email)
+        recipients.append(SimpleNamespace(
+            email=email,
+            display_name=_marketing_display_name(email, user.first_name),
+        ))
+    for subscriber in MarketingSubscriber.objects.filter(aktivan=True).order_by('id'):
+        email = subscriber.email.strip().lower()
+        if not email or email in seen:
+            continue
+        seen.add(email)
+        recipients.append(SimpleNamespace(
+            email=email,
+            display_name=_marketing_display_name(email, subscriber.ime),
+        ))
+    return recipients
+
+
+def marketing_recipient_counts():
+    registered = len(marketing_recipient_users())
+    registered_emails = _registered_marketing_emails()
+    subscribers = MarketingSubscriber.objects.filter(aktivan=True).exclude(
+        email__in=registered_emails,
+    ).count()
+    return {
+        'registered': registered,
+        'subscribers': subscribers,
+        'total': registered + subscribers,
+    }
+
+
+def bulk_import_marketing_subscribers(entries, *, added_by=None, source=MarketingSubscriber.Source.MANUAL):
+    registered_emails = _registered_marketing_emails()
+    existing = set(
+        MarketingSubscriber.objects.values_list('email', flat=True),
+    )
+    added = 0
+    skipped_registered = 0
+    skipped_duplicate = 0
+    invalid = 0
+    for email, name in entries:
+        normalized = (email or '').strip().lower()
+        if not normalized or '@' not in normalized:
+            invalid += 1
+            continue
+        if normalized in registered_emails:
+            skipped_registered += 1
+            continue
+        if normalized in existing:
+            skipped_duplicate += 1
+            continue
+        MarketingSubscriber.objects.create(
+            email=normalized,
+            ime=(name or '').strip()[:120],
+            izvor=source,
+            dodao=added_by,
+        )
+        existing.add(normalized)
+        added += 1
+    return {
+        'added': added,
+        'skipped_registered': skipped_registered,
+        'skipped_duplicate': skipped_duplicate,
+        'invalid': invalid,
+    }
+
+
+def import_marketing_subscribers_from_orders(*, added_by=None):
+    seen_orders = set()
+    entries = []
+    for order in Order.objects.exclude(email='').order_by('-kreirana'):
+        email = order.email.strip().lower()
+        if not email or '@' not in email or email in seen_orders:
+            continue
+        seen_orders.add(email)
+        entries.append((email, order.ime_prezime))
+    return bulk_import_marketing_subscribers(
+        entries,
+        added_by=added_by,
+        source=MarketingSubscriber.Source.ORDER,
+    )
+
+
+def _marketing_email_context(campaign, recipient):
     site_settings = SiteSettings.load()
     logo_url = None
     if site_settings.logo:
@@ -226,7 +333,8 @@ def _marketing_email_context(campaign, user):
         banner_url = f'{settings.SITE_URL}{campaign.banner.url}'
     return {
         'campaign': campaign,
-        'user': user,
+        'recipient': recipient,
+        'display_name': recipient.display_name,
         'site_name': 'opremazaribolov.ba',
         'site_url': settings.SITE_URL,
         'logo_url': logo_url,
@@ -237,17 +345,16 @@ def _marketing_email_context(campaign, user):
     }
 
 
-def _render_marketing_html(campaign, user):
+def _render_marketing_html(campaign, recipient):
     return render_to_string(
         'emails/marketing_campaign.html',
-        _marketing_email_context(campaign, user),
+        _marketing_email_context(campaign, recipient),
     )
 
 
-def _marketing_plain_text(campaign, user):
-    name = user.first_name or user.email
+def _marketing_plain_text(campaign, recipient):
     lines = [
-        f'Poštovani {name},',
+        f'Poštovani {recipient.display_name},',
         '',
         campaign.naslov,
     ]
@@ -262,16 +369,16 @@ def _marketing_plain_text(campaign, user):
     return '\n'.join(lines)
 
 
-def send_marketing_campaign_email(campaign, user, *, subject_prefix=''):
+def send_marketing_campaign_email(campaign, recipient, *, subject_prefix=''):
     _ensure_email_configured()
     mail = EmailMultiAlternatives(
         subject=f'{subject_prefix}{campaign.naslov} — opremazaribolov.ba',
-        body=_marketing_plain_text(campaign, user),
+        body=_marketing_plain_text(campaign, recipient),
         from_email=_from_email(),
-        to=[user.email.strip()],
+        to=[recipient.email.strip()],
         reply_to=[settings.ORDER_NOTIFICATION_EMAIL],
     )
-    mail.attach_alternative(_render_marketing_html(campaign, user), 'text/html')
+    mail.attach_alternative(_render_marketing_html(campaign, recipient), 'text/html')
     mail.send(fail_silently=False)
 
 
@@ -279,13 +386,13 @@ def send_marketing_campaign_test_email(campaign):
     """Pošalji test verziju kampanje na internu adresu prije masovnog slanja."""
     if not campaign.banner:
         raise ValueError('Kampanja nema banner sliku.')
-    test_user = SimpleNamespace(
-        first_name='Test',
+    test_recipient = SimpleNamespace(
         email=MARKETING_TEST_EMAIL,
+        display_name='Test',
     )
     send_marketing_campaign_email(
         campaign,
-        test_user,
+        test_recipient,
         subject_prefix='[TEST] ',
     )
     logger.info(
@@ -296,26 +403,26 @@ def send_marketing_campaign_test_email(campaign):
 
 
 def send_marketing_campaign(campaign):
-    """Pošalji marketing kampanju svim aktivnim registrovanim korisnicima."""
+    """Pošalji marketing kampanju svim registrovanim korisnicima i pretplatnicima."""
     _ensure_email_configured()
     if not campaign.banner:
         raise ValueError('Kampanja nema banner sliku.')
 
-    recipients = marketing_recipient_users()
+    recipients = marketing_recipients()
     if not recipients:
-        raise ValueError('Nema registrovanih korisnika sa email adresom.')
+        raise ValueError('Nema email adresa za slanje kampanje.')
 
     sent = 0
     failed = 0
-    for user in recipients:
+    for recipient in recipients:
         try:
-            send_marketing_campaign_email(campaign, user)
+            send_marketing_campaign_email(campaign, recipient)
             sent += 1
         except Exception:
             failed += 1
             logger.exception(
-                'Marketing email nije poslan korisniku %s (kampanja #%s)',
-                user.email,
+                'Marketing email nije poslan na %s (kampanja #%s)',
+                recipient.email,
                 campaign.pk,
             )
 

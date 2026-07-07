@@ -9,6 +9,7 @@ from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
 from .models import SiteSettings
+from django import forms as django_forms
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -39,9 +40,11 @@ from .loyalty import (
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import (
     EmailNotConfiguredError,
+    bulk_import_marketing_subscribers,
     get_order_email_context,
+    import_marketing_subscribers_from_orders,
     MARKETING_TEST_EMAIL,
-    marketing_recipient_users,
+    marketing_recipient_counts,
     send_marketing_campaign,
     send_marketing_campaign_test_email,
     send_order_emails,
@@ -68,6 +71,7 @@ from .forms import (
     CouponForm,
     LoginForm,
     MarketingEmailCampaignForm,
+    MarketingSubscriberBulkForm,
     ProfileForm,
     RegisterForm,
 )
@@ -79,6 +83,7 @@ from .models import (
     HomeVlog,
     LoyaltyCard,
     MarketingEmailCampaign,
+    MarketingSubscriber,
     Order,
     OrderItem,
     Product,
@@ -2232,10 +2237,74 @@ def staff_admin_panel(request):
     return render(request, 'staff/admin_panel.html', context)
 
 
+MARKETING_SUBSCRIBERS_PER_PAGE = 25
+
+
+def _marketing_subscriber_queryset(search_query=''):
+    qs = MarketingSubscriber.objects.filter(aktivan=True).order_by('-kreirano', 'email')
+    search_query = (search_query or '').strip()
+    if search_query:
+        qs = qs.filter(
+            Q(email__icontains=search_query) | Q(ime__icontains=search_query),
+        )
+    return qs
+
+
+def _paginate_marketing_subscribers(request):
+    page_number = request.GET.get('lista_page', 1)
+    paginator = Paginator(
+        _marketing_subscriber_queryset(request.GET.get('lista_q', '')),
+        MARKETING_SUBSCRIBERS_PER_PAGE,
+    )
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages or 1)
+    return page_obj
+
+
+def _marketing_subscribers_csv_response():
+    import csv
+    from django.http import HttpResponse
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="marketing-emailovi.csv"'
+    response.write('\ufeff')
+    writer = csv.writer(response)
+    writer.writerow(['Email', 'Ime', 'Izvor', 'Dodano', 'Aktivan'])
+    for subscriber in MarketingSubscriber.objects.filter(aktivan=True).order_by('email'):
+        writer.writerow([
+            subscriber.email,
+            subscriber.ime,
+            subscriber.get_izvor_display(),
+            subscriber.kreirano.strftime('%d.%m.%Y. %H:%M'),
+            'Da' if subscriber.aktivan else 'Ne',
+        ])
+    return response
+
+
+def _format_subscriber_import_result(result):
+    parts = [f'Dodano {result["added"]} emailova.']
+    if result['skipped_duplicate']:
+        parts.append(f'{result["skipped_duplicate"]} već u listi.')
+    if result['skipped_registered']:
+        parts.append(f'{result["skipped_registered"]} registrovanih korisnika preskočeno.')
+    if result['invalid']:
+        parts.append(f'{result["invalid"]} nevalidnih preskočeno.')
+    return ' '.join(parts)
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_email_marketing(request):
+    if request.GET.get('export') == 'subscribers':
+        return _marketing_subscribers_csv_response()
+
     preview_campaign = None
+    subscriber_form = MarketingSubscriberBulkForm()
+    subscriber_search_query = (request.GET.get('lista_q') or '').strip()
     kampanja_id = request.GET.get('kampanja') or request.POST.get('kampanja_id')
     if kampanja_id:
         preview_campaign = MarketingEmailCampaign.objects.filter(
@@ -2245,7 +2314,34 @@ def staff_email_marketing(request):
 
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
-        if action in ('send', 'test'):
+        if action == 'import_subscribers':
+            subscriber_form = MarketingSubscriberBulkForm(request.POST)
+            if subscriber_form.is_valid():
+                try:
+                    entries = subscriber_form.parsed_entries()
+                except django_forms.ValidationError as exc:
+                    subscriber_form.add_error('emails', exc)
+                else:
+                    result = bulk_import_marketing_subscribers(
+                        entries,
+                        added_by=request.user,
+                    )
+                    messages.success(request, _format_subscriber_import_result(result))
+                    return redirect('staff_email_marketing')
+            form = MarketingEmailCampaignForm(instance=preview_campaign)
+        elif action == 'import_from_orders':
+            result = import_marketing_subscribers_from_orders(added_by=request.user)
+            messages.success(request, _format_subscriber_import_result(result))
+            return redirect('staff_email_marketing')
+        elif action == 'delete_subscriber':
+            subscriber = MarketingSubscriber.objects.filter(
+                pk=request.POST.get('subscriber_id'),
+            ).first()
+            if subscriber:
+                subscriber.delete()
+                messages.success(request, f'Email {subscriber.email} uklonjen iz liste.')
+            return redirect('staff_email_marketing')
+        elif action in ('send', 'test'):
             campaign = get_object_or_404(
                 MarketingEmailCampaign,
                 pk=request.POST.get('kampanja_id'),
@@ -2272,7 +2368,7 @@ def staff_email_marketing(request):
                 sent, failed, total = send_marketing_campaign(campaign)
                 messages.success(
                     request,
-                    f'Email kampanja poslana na {sent} od {total} registrovanih korisnika.',
+                    f'Email kampanja poslana na {sent} od {total} adresa.',
                 )
                 if failed:
                     messages.warning(request, f'{failed} emailova nije uspjelo poslati.')
@@ -2318,11 +2414,30 @@ def staff_email_marketing(request):
     if site_settings.logo:
         preview_logo_url = request.build_absolute_uri(site_settings.logo.url)
 
+    recipient_stats = marketing_recipient_counts()
+    subscriber_page_obj = _paginate_marketing_subscribers(request)
+    subscriber_total_count = MarketingSubscriber.objects.filter(aktivan=True).count()
+    lista_query = {}
+    if subscriber_search_query:
+        lista_query['lista_q'] = subscriber_search_query
+    if kampanja_id:
+        lista_query['kampanja'] = kampanja_id
+    lista_base_query = urlencode(lista_query)
     context = {
         **_base_context(),
         'form': form,
+        'subscriber_form': subscriber_form,
         'preview_campaign': preview_campaign,
-        'recipient_count': len(marketing_recipient_users()),
+        'recipient_count': recipient_stats['total'],
+        'registered_recipient_count': recipient_stats['registered'],
+        'subscriber_recipient_count': recipient_stats['subscribers'],
+        'subscriber_total_count': subscriber_total_count,
+        'subscriber_search_query': subscriber_search_query,
+        'subscriber_page_obj': subscriber_page_obj,
+        'subscriber_elided_page_range': subscriber_page_obj.paginator.get_elided_page_range(
+            subscriber_page_obj.number,
+        ),
+        'lista_base_query': lista_base_query,
         'test_email': MARKETING_TEST_EMAIL,
         'preview_logo_url': preview_logo_url,
         'preview_banner_url': preview_banner_url,

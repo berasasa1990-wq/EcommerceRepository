@@ -4674,6 +4674,182 @@ body.search-results-active main {
     color: var(--gray-600);
 }
 
+.staff-email-marketing-subscribers {
+    margin-top: 40px;
+    padding: 24px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+}
+
+.staff-email-marketing-subscribers h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.staff-email-marketing-subscribers-intro {
+    margin: 0 0 20px;
+    color: var(--gray-600);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.staff-email-marketing-subscribers-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 24px;
+}
+
+.staff-email-subscriber-form,
+.staff-email-subscriber-import-panel {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.staff-email-subscriber-import-panel h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.staff-email-subscriber-import-panel p {
+    margin: 0 0 16px;
+    color: var(--gray-600);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.staff-email-subscriber-table-wrap {
+    overflow-x: auto;
+}
+
+.staff-email-subscriber-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.staff-email-subscriber-table th,
+.staff-email-subscriber-table td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.staff-email-subscriber-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-600);
+    background: var(--gray-100);
+}
+
+.staff-email-subscriber-delete-form {
+    margin: 0;
+}
+
+.staff-email-subscriber-empty {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 14px;
+}
+
+.staff-email-subscriber-saved-banner {
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #ecfdf3;
+    border: 1px solid #b7ebc6;
+    color: #14532d;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.staff-email-subscriber-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.staff-email-subscriber-search-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    flex: 1 1 280px;
+}
+
+.staff-email-subscriber-search-form .form-input {
+    min-width: min(100%, 280px);
+    flex: 1 1 220px;
+}
+
+.staff-email-subscriber-export-btn {
+    flex-shrink: 0;
+}
+
+.staff-email-subscriber-email {
+    font-size: 13px;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.staff-email-subscriber-pagination {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+}
+
+.staff-email-subscriber-pagination-info {
+    margin: 0;
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+.staff-email-subscriber-pagination-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 900px) {
+    .staff-email-marketing-subscribers-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .staff-email-subscriber-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .staff-email-subscriber-export-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
 /* Staff Loyalty */
 .staff-loyalty-page {
     max-width: 1100px;

@@ -12,7 +12,8 @@
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Email marketing</h1>
         <p class="staff-email-marketing-subtitle">
-            Kreirajte prodajni email sa bannerom i pošaljite svim registrovanim korisnicima ({{ recipient_count }} adresa).
+            Kreirajte prodajni email sa bannerom i pošaljite svim kupcima:
+            {{ registered_recipient_count }} registrovanih + {{ subscriber_recipient_count }} dodatnih = {{ recipient_count }} ukupno.
         </p>
     </div>
 
@@ -86,7 +87,7 @@
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
                 </form>
-                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} registrovanih korisnika?');">
+                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} adresa (registrovani + lista kupaca)?');">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="send">
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
@@ -94,6 +95,146 @@
                 </form>
             </div>
         </div>
+        {% endif %}
+    </div>
+
+    <div class="staff-email-marketing-subscribers">
+        <h2>Lista emailova</h2>
+        <p class="staff-email-marketing-subscribers-intro">
+            Dodajte emailove kupaca koji nisu registrovani na sajtu. Pri slanju kampanje primaju svi — registrovani i ova lista — bez duplikata.
+        </p>
+
+        <div class="staff-email-marketing-subscribers-layout">
+            <form method="post" class="staff-email-subscriber-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="import_subscribers">
+                {% for field in subscriber_form %}
+                <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <p class="form-hint">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                    <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                <div class="staff-email-marketing-actions">
+                    <button type="submit" class="btn btn-primary">Dodaj emailove</button>
+                </div>
+            </form>
+
+            <div class="staff-email-subscriber-import-panel">
+                <h3>Uvezi iz narudžbi</h3>
+                <p>Jednim klikom dodajte sve unique email adrese iz historije narudžbi koje još nisu na listi.</p>
+                <form method="post" onsubmit="return confirm('Uvesti emailove iz svih narudžbi?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_from_orders">
+                    <button type="submit" class="btn btn-secondary">Uvezi iz narudžbi</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="staff-email-subscriber-saved-banner">
+            <strong>{{ subscriber_total_count }} emailova</strong> sigurno pohranjeno u bazi.
+            Preuzmite CSV kopiju za backup ili pregledajte cijelu listu ispod.
+        </div>
+
+        <div class="staff-email-subscriber-toolbar">
+            <form method="get" class="staff-email-subscriber-search-form">
+                {% if preview_campaign %}
+                <input type="hidden" name="kampanja" value="{{ preview_campaign.pk }}">
+                {% endif %}
+                <label class="visually-hidden" for="lista_q">Pretraži emailove</label>
+                <input
+                    type="search"
+                    name="lista_q"
+                    id="lista_q"
+                    class="form-input"
+                    value="{{ subscriber_search_query }}"
+                    placeholder="Pretraži po emailu ili imenu"
+                >
+                <button type="submit" class="btn btn-secondary">Pretraži</button>
+                {% if subscriber_search_query %}
+                <a href="{% url 'staff_email_marketing' %}{% if preview_campaign %}?kampanja={{ preview_campaign.pk }}{% endif %}#lista-emailova" class="btn btn-secondary">Poništi</a>
+                {% endif %}
+            </form>
+            <a href="{% url 'staff_email_marketing' %}?export=subscribers" class="btn btn-primary staff-email-subscriber-export-btn">Preuzmi CSV ({{ subscriber_total_count }})</a>
+        </div>
+
+        {% if subscriber_page_obj.paginator.count %}
+        <div class="staff-email-subscriber-table-wrap" id="lista-emailova">
+            <table class="staff-email-subscriber-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Email</th>
+                        <th>Ime</th>
+                        <th>Izvor</th>
+                        <th>Dodano</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subscriber in subscriber_page_obj %}
+                    <tr>
+                        <td>{{ subscriber_page_obj.start_index|add:forloop.counter0 }}</td>
+                        <td><code class="staff-email-subscriber-email">{{ subscriber.email }}</code></td>
+                        <td>{{ subscriber.ime|default:"—" }}</td>
+                        <td>{{ subscriber.get_izvor_display }}</td>
+                        <td>{{ subscriber.kreirano|date:"d.m.Y. H:i" }}</td>
+                        <td>
+                            <form method="post" class="staff-email-subscriber-delete-form" onsubmit="return confirm('Ukloniti {{ subscriber.email }} iz liste?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_subscriber">
+                                <input type="hidden" name="subscriber_id" value="{{ subscriber.pk }}">
+                                <button type="submit" class="btn btn-secondary">Ukloni</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if subscriber_page_obj.paginator.num_pages > 1 %}
+        <nav class="staff-email-subscriber-pagination" aria-label="Stranice liste emailova">
+            <p class="staff-email-subscriber-pagination-info">
+                Strana {{ subscriber_page_obj.number }} od {{ subscriber_page_obj.paginator.num_pages }}
+                ({{ subscriber_page_obj.paginator.count }} emailova{% if subscriber_search_query %} u pretrazi{% endif %})
+            </p>
+            <div class="staff-email-subscriber-pagination-links">
+                {% if subscriber_page_obj.has_previous %}
+                <a href="{% url 'staff_email_marketing' %}?{% if lista_base_query %}{{ lista_base_query }}&{% endif %}lista_page={{ subscriber_page_obj.previous_page_number }}#lista-emailova" class="catalog-page-link">Prethodna</a>
+                {% else %}
+                <span class="catalog-page-link catalog-page-link--disabled">Prethodna</span>
+                {% endif %}
+
+                {% for page_num in subscriber_elided_page_range %}
+                    {% if page_num == subscriber_page_obj.paginator.ELLIPSIS %}
+                    <span class="catalog-page-ellipsis">…</span>
+                    {% elif page_num == subscriber_page_obj.number %}
+                    <span class="catalog-page-link catalog-page-link--active">{{ page_num }}</span>
+                    {% elif page_num == 1 %}
+                    <a href="{% url 'staff_email_marketing' %}{% if lista_base_query %}?{{ lista_base_query }}{% endif %}#lista-emailova" class="catalog-page-link">{{ page_num }}</a>
+                    {% else %}
+                    <a href="{% url 'staff_email_marketing' %}?{% if lista_base_query %}{{ lista_base_query }}&{% endif %}lista_page={{ page_num }}#lista-emailova" class="catalog-page-link">{{ page_num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if subscriber_page_obj.has_next %}
+                <a href="{% url 'staff_email_marketing' %}?{% if lista_base_query %}{{ lista_base_query }}&{% endif %}lista_page={{ subscriber_page_obj.next_page_number }}#lista-emailova" class="catalog-page-link">Sljedeća</a>
+                {% else %}
+                <span class="catalog-page-link catalog-page-link--disabled">Sljedeća</span>
+                {% endif %}
+            </div>
+        </nav>
+        {% endif %}
+        {% elif subscriber_search_query %}
+        <p class="staff-email-subscriber-empty" id="lista-emailova">Nema rezultata za „{{ subscriber_search_query }}".</p>
+        {% else %}
+        <p class="staff-email-subscriber-empty" id="lista-emailova">Još nema dodatnih emailova. Zalijepite listu iznad ili uvezite iz narudžbi.</p>
         {% endif %}
     </div>
 

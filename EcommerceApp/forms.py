@@ -2,6 +2,11 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
+import re
+
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import EmailValidator
+
 from .models import Akcija, Banner, Brand, Category, MarketingEmailCampaign, Popup, Product, Tag
 
 
@@ -495,3 +500,52 @@ class MarketingEmailCampaignForm(forms.ModelForm):
         if not banner and not getattr(self.instance, 'banner', None):
             raise forms.ValidationError('Odaberite banner sliku.')
         return banner
+
+
+class MarketingSubscriberBulkForm(forms.Form):
+    emails = forms.CharField(
+        label='Email adrese',
+        widget=forms.Textarea(attrs={
+            'class': 'form-input form-textarea',
+            'rows': 8,
+            'placeholder': 'Jedan email po liniji.\nOpcionalno: email@mail.com, Ime Prezime',
+        }),
+        help_text='Zalijepite listu emailova. Duplikati i registrovani korisnici se preskaču.',
+    )
+
+    def clean_emails(self):
+        raw = self.cleaned_data.get('emails', '')
+        if not raw.strip():
+            raise forms.ValidationError('Unesite barem jedan email.')
+        return raw
+
+    def parsed_entries(self):
+        raw = self.cleaned_data['emails']
+        validator = EmailValidator()
+        entries = []
+        seen = set()
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            email = ''
+            name = ''
+            if ',' in line or ';' in line:
+                parts = re.split(r'[,;]', line, maxsplit=1)
+                email = parts[0].strip()
+                if len(parts) > 1:
+                    name = parts[1].strip()
+            else:
+                email = line
+            normalized = email.strip().lower()
+            if not normalized or normalized in seen:
+                continue
+            try:
+                validator(normalized)
+            except DjangoValidationError:
+                continue
+            seen.add(normalized)
+            entries.append((normalized, name))
+        if not entries:
+            raise forms.ValidationError('Nema validnih email adresa u unosu.')
+        return entries
