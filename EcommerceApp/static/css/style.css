@@ -3530,6 +3530,63 @@ body.search-results-active main {
     margin: 0;
 }
 
+.product-detail-opis-col + .product-why-buy {
+    margin-top: 40px;
+    padding-top: 36px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.product-why-buy-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 18px;
+}
+
+@media (min-width: 768px) {
+    .product-why-buy-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px 28px;
+    }
+}
+
+.product-why-buy-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+    border-radius: 10px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+}
+
+.product-why-buy-icon {
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 1.4;
+}
+
+.product-why-buy-body {
+    min-width: 0;
+}
+
+.product-why-buy-title {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--black);
+    line-height: 1.35;
+}
+
+.product-why-buy-body p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--gray-600);
+}
+
 /* Gratis offer modal on product detail */
 .gratis-offer-overlay {
     z-index: 12050;

@@ -320,8 +320,8 @@
         </div>
     </div>
 
-    {% if product.opis %}
     <div class="product-detail-content">
+        {% if product.opis %}
         <div class="product-detail-opis-col">
             <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
             <div class="product-detail-description">
@@ -332,8 +332,9 @@
                 {% endif %}
             </div>
         </div>
+        {% endif %}
+        {% include 'partials/product_why_buy.html' %}
     </div>
-    {% endif %}
 </section>
 
 {% if related_products %}
