@@ -2493,6 +2493,8 @@ def staff_email_marketing(request):
             and preview_campaign.status == MarketingEmailCampaign.Status.SENDING,
         ),
         'marketing_send_url': reverse('staff_email_marketing'),
+        'marketing_batch_size': settings.MARKETING_EMAIL_BATCH_SIZE,
+        'marketing_group_pause_ms': int(settings.MARKETING_EMAIL_GROUP_PAUSE * 1000),
     }
     return render(request, 'staff/email_marketing.html', context)
 

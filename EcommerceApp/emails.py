@@ -457,30 +457,35 @@ def send_marketing_campaign_batch(campaign):
 
     batch_sent = 0
     batch_failed = 0
-    connection = get_connection()
     pause_seconds = max(0.0, settings.MARKETING_EMAIL_BATCH_PAUSE)
+    chunk_size = max(1, min(10, batch_size))
 
-    try:
-        connection.open()
-        for index, payload in enumerate(batch):
-            recipient = _marketing_recipient_from_payload(payload)
-            try:
-                send_marketing_campaign_email(campaign, recipient, connection=connection)
-                batch_sent += 1
-            except Exception:
-                batch_failed += 1
-                logger.exception(
-                    'Marketing email nije poslan na %s (kampanja #%s)',
-                    recipient.email,
-                    campaign.pk,
-                )
-            if pause_seconds and index < len(batch) - 1:
-                time.sleep(pause_seconds)
-    finally:
+    for chunk_start in range(0, len(batch), chunk_size):
+        chunk = batch[chunk_start:chunk_start + chunk_size]
+        connection = get_connection()
         try:
-            connection.close()
-        except Exception:
-            logger.debug('Zatvaranje SMTP konekcije nije uspjelo.', exc_info=True)
+            connection.open()
+            for index, payload in enumerate(chunk):
+                recipient = _marketing_recipient_from_payload(payload)
+                try:
+                    send_marketing_campaign_email(campaign, recipient, connection=connection)
+                    batch_sent += 1
+                except Exception:
+                    batch_failed += 1
+                    logger.exception(
+                        'Marketing email nije poslan na %s (kampanja #%s)',
+                        recipient.email,
+                        campaign.pk,
+                    )
+                if pause_seconds and index < len(chunk) - 1:
+                    time.sleep(pause_seconds)
+        finally:
+            try:
+                connection.close()
+            except Exception:
+                logger.debug('Zatvaranje SMTP konekcije nije uspjelo.', exc_info=True)
+        if chunk_start + chunk_size < len(batch):
+            time.sleep(max(0.5, settings.MARKETING_EMAIL_GROUP_PAUSE / 4))
 
     campaign.slanje_offset = offset + len(batch)
     campaign.broj_primaoca += batch_sent
@@ -491,6 +496,8 @@ def send_marketing_campaign_batch(campaign):
     if done:
         return _finalize_marketing_campaign_send(campaign, total=total)
 
+    group_number = (campaign.slanje_offset + batch_size - 1) // batch_size
+    group_total = (total + batch_size - 1) // batch_size
     return {
         'done': False,
         'offset': campaign.slanje_offset,
@@ -499,6 +506,9 @@ def send_marketing_campaign_batch(campaign):
         'failed': campaign.broj_gresaka,
         'batch_sent': batch_sent,
         'batch_failed': batch_failed,
+        'batch_size': batch_size,
+        'group_number': group_number,
+        'group_total': group_total,
     }
 
 

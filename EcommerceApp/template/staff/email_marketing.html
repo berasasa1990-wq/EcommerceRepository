@@ -95,7 +95,7 @@
                         ></div>
                     </div>
                     <p class="staff-email-send-progress-hint">
-                        Ostavite ovu stranicu otvorenu dok se slanje ne završi. Emailovi se šalju u manjim grupama da server ne prekine vezu.
+                        Ostavite ovu stranicu otvorenu dok se slanje ne završi. Emailovi se šalju u grupama po {{ marketing_batch_size }}, s pauzom između grupa.
                     </p>
                 </div>
                 {% else %}
@@ -105,7 +105,7 @@
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
                 </form>
-                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} adresa? Slanje ide u grupama — ostavite stranicu otvorenu dok se ne završi.');">
+                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} adresa? Slanje ide u grupama po {{ marketing_batch_size }} — ostavite stranicu otvorenu dok se ne završi.');">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="send">
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
@@ -288,14 +288,25 @@
     const fillEl = document.getElementById('marketingSendProgressFill');
     let running = false;
 
+    const groupPauseMs = {{ marketing_group_pause_ms }};
+
     function updateUi(data) {
         const total = data.total || 0;
         const offset = data.offset || 0;
         const sent = data.sent || 0;
         const failed = data.failed || 0;
+        const groupNumber = data.group_number || 0;
+        const groupTotal = data.group_total || 0;
         const percent = total ? Math.min(100, Math.round((offset / total) * 100)) : 0;
         if (statusEl) {
-            statusEl.textContent = `${offset} / ${total} obrađeno · ${sent} poslano` + (failed ? ` · ${failed} grešaka` : '');
+            let text = `${offset} / ${total} obrađeno · ${sent} poslano`;
+            if (groupTotal) {
+                text += ` · grupa ${groupNumber}/${groupTotal}`;
+            }
+            if (failed) {
+                text += ` · ${failed} grešaka`;
+            }
+            statusEl.textContent = text;
         }
         if (fillEl) {
             fillEl.style.width = `${percent}%`;
@@ -329,7 +340,7 @@
                 return;
             }
             running = false;
-            window.setTimeout(sendNextBatch, 600);
+            window.setTimeout(sendNextBatch, groupPauseMs);
         } catch (error) {
             running = false;
             if (statusEl) {
