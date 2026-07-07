@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from .models import LiveVisitor
+from .visitor_geo import get_client_ip, resolve_visitor_city
 
 ONLINE_MINUTES = 5
 WINDOW_MINUTES = 30
@@ -63,10 +64,23 @@ def track_live_visitor(request):
 
     user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
     now = timezone.now()
+    ip = get_client_ip(request)
+    existing = LiveVisitor.objects.filter(session_key=session_key).only('grad', 'ip_adresa').first()
+
+    grad = ''
+    if existing and existing.grad and ip and existing.ip_adresa == ip:
+        grad = existing.grad
+    elif existing and existing.grad and not ip:
+        grad = existing.grad
+    else:
+        grad = resolve_visitor_city(request, ip=ip) or (existing.grad if existing else '')
+
     defaults = {
         'user': user,
         'ime': _display_name(user)[:120],
         'email': _display_email(user)[:254],
+        'grad': (grad or '')[:100],
+        'ip_adresa': ip or None,
         'last_seen': now,
     }
     LiveVisitor.objects.update_or_create(
@@ -96,6 +110,7 @@ def _visitor_payload(visitor, *, now):
         'session_key': visitor.session_key,
         'ime': visitor.ime or 'Gost',
         'email': visitor.email or '',
+        'grad': visitor.grad or '',
         'is_guest': not visitor.user_id and not visitor.email,
         'last_seen': visitor.last_seen,
         'last_seen_label': ago_label,

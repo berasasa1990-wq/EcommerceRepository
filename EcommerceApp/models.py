@@ -1980,6 +1980,8 @@ class LiveVisitor(models.Model):
     )
     ime = models.CharField(max_length=120, blank=True, verbose_name='Ime')
     email = models.EmailField(blank=True, verbose_name='Email')
+    grad = models.CharField(max_length=100, blank=True, verbose_name='Grad')
+    ip_adresa = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP adresa')
     first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva aktivnost')
     last_seen = models.DateTimeField(db_index=True, verbose_name='Zadnja aktivnost')
 

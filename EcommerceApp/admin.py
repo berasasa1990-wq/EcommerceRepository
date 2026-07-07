@@ -1384,9 +1384,9 @@ class LiveVisitorOfferAdmin(admin.ModelAdmin):
 
 @admin.register(LiveVisitor)
 class LiveVisitorAdmin(admin.ModelAdmin):
-    list_display = ('ime', 'email', 'user', 'last_seen', 'first_seen', 'session_key')
-    list_filter = ('last_seen',)
-    search_fields = ('ime', 'email', 'session_key', 'user__email')
+    list_display = ('ime', 'email', 'grad', 'user', 'last_seen', 'first_seen', 'session_key')
+    list_filter = ('last_seen', 'grad')
+    search_fields = ('ime', 'email', 'grad', 'session_key', 'user__email', 'ip_adresa')
     readonly_fields = ('first_seen', 'last_seen', 'session_key')
     ordering = ('-last_seen',)
 

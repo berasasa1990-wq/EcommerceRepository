@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260708v2">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260708v3">
 {% endblock %}
 
 {% block content %}
@@ -51,6 +51,7 @@
                         <tr>
                             <th>Ime</th>
                             <th>Email</th>
+                            <th>Grad</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
@@ -60,6 +61,7 @@
                         <tr>
                             <td>{{ visitor.ime }}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
+                            <td>{% if visitor.grad %}{{ visitor.grad }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td><span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span></td>
                             <td class="staff-live-action-cell">
                                 <button type="button" class="staff-live-offer-btn" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}">Ponuda</button>
@@ -67,7 +69,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="4">Trenutno nema aktivnih posjetilaca.</td>
+                            <td colspan="5">Trenutno nema aktivnih posjetilaca.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -83,6 +85,7 @@
                         <tr>
                             <th>Ime</th>
                             <th>Email</th>
+                            <th>Grad</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
@@ -92,6 +95,7 @@
                         <tr>
                             <td>{{ visitor.ime }}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
+                            <td>{% if visitor.grad %}{{ visitor.grad }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>
                                 {% if visitor.is_online %}
                                 <span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span>
@@ -109,7 +113,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="4">Nema posjeta u zadnjih {{ window_minutes }} minuta.</td>
+                            <td colspan="5">Nema posjeta u zadnjih {{ window_minutes }} minuta.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -215,11 +219,14 @@
 
     function renderRows(visitors, emptyText) {
         if (!visitors.length) {
-            return '<tr class="staff-live-empty-row"><td colspan="4">' + escapeHtml(emptyText) + '</td></tr>';
+            return '<tr class="staff-live-empty-row"><td colspan="5">' + escapeHtml(emptyText) + '</td></tr>';
         }
         return visitors.map(function (visitor) {
             const email = visitor.email
                 ? escapeHtml(visitor.email)
+                : '<span class="staff-live-muted">—</span>';
+            const grad = visitor.grad
+                ? '<span class="staff-live-city">' + escapeHtml(visitor.grad) + '</span>'
                 : '<span class="staff-live-muted">—</span>';
             const badgeClass = visitor.is_online
                 ? 'staff-live-badge staff-live-badge--online'
@@ -228,6 +235,7 @@
                 '<tr>' +
                 '<td>' + escapeHtml(visitor.ime) + '</td>' +
                 '<td>' + email + '</td>' +
+                '<td>' + grad + '</td>' +
                 '<td><span class="' + badgeClass + '">' + escapeHtml(visitor.last_seen_label) + '</span></td>' +
                 '<td class="staff-live-action-cell">' + offerButton(visitor) + '</td>' +
                 '</tr>'
