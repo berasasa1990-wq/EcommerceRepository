@@ -586,13 +586,16 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ('tagovi',)
     list_display = (
         'naziv', 'sifra', 'brend', 'kategorija', 'cijena',
-        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'aktivan', 'olx_status',
-        'pregled_slike',
+        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'aktivan',
+        'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
     list_filter = (
         'aktivan', NaStanjuFilter, 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
         'kategorija', 'brend', 'tagovi',
+        ('kreiran', admin.DateFieldListFilter),
     )
+    date_hierarchy = 'kreiran'
+    ordering = ('-kreiran',)
     list_editable = ('prikazi_na_pocetnoj', 'aktivan', 'na_stanju')
     search_fields = (
         'naziv', 'sifra', 'barkod', 'tagovi__naziv',
@@ -601,6 +604,7 @@ class ProductAdmin(admin.ModelAdmin):
     )
     prepopulated_fields = {'slug': ('naziv',)}
     readonly_fields = (
+        'kreiran', 'azuriran',
         'pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview',
         'olx_objavi_info', 'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
     )
@@ -670,6 +674,9 @@ class ProductAdmin(admin.ModelAdmin):
         ('Odoo', {
             'fields': ('odoo_template_id',),
             'classes': ('collapse',),
+        }),
+        ('Datumi', {
+            'fields': ('kreiran', 'azuriran'),
         }),
     )
 
@@ -1262,6 +1269,14 @@ class ProductAdmin(admin.ModelAdmin):
         return mark_safe(
             'Nije objavljen. Klikni <strong>Objavi na OLX / Pik</strong> pored Save (dolje na stranici).',
         )
+
+    @admin.display(description='Dodano', ordering='kreiran')
+    def datum_dodavanja(self, obj):
+        if not obj.kreiran:
+            return '—'
+        from django.utils import timezone
+        local = timezone.localtime(obj.kreiran)
+        return local.strftime('%d.%m.%Y. %H:%M')
 
     @admin.display(description='OLX/Pik')
     def olx_status(self, obj):

@@ -1087,8 +1087,8 @@ class Product(models.Model):
         blank=True, null=True,
         verbose_name='Objavljeno na OLX/Pik',
     )
-    kreiran = models.DateTimeField(auto_now_add=True)
-    azuriran = models.DateTimeField(auto_now=True)
+    kreiran = models.DateTimeField(auto_now_add=True, verbose_name='Dodano')
+    azuriran = models.DateTimeField(auto_now=True, verbose_name='Ažurirano')
 
     class Meta:
         verbose_name = 'Artikal'
