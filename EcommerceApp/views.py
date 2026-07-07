@@ -82,6 +82,7 @@ from .forms import (
     RegisterForm,
 )
 from .models import (
+    ActiveCartItem,
     Banner,
     Brand,
     Category,
@@ -1655,9 +1656,11 @@ def _cart_context(request, cart):
 
 
 def cart_view(request):
+    from .cart_tracking import sync_active_cart
     from .upsell import get_cart_banner_upsell_offers
 
     cart = Cart(request)
+    sync_active_cart(request, cart)
     if not cart.should_keep_coupon_on_cart_view():
         cart.clear_coupon()
     elif not cart.is_coupon_applied() and cart.request.session.get(Cart.COUPON_KEY):
@@ -2242,6 +2245,73 @@ def staff_admin_panel(request):
         'olx_chat_configured': olx_chat_configured(),
     }
     return render(request, 'staff/admin_panel.html', context)
+
+
+def _active_cart_groups(queryset):
+    from collections import defaultdict
+    from decimal import Decimal
+
+    buckets = defaultdict(list)
+    for item in queryset:
+        buckets[item.session_key].append(item)
+
+    groups = []
+    for session_key, items in buckets.items():
+        items.sort(key=lambda row: row.azurirano, reverse=True)
+        user = next((row.user for row in items if row.user_id), None)
+        groups.append({
+            'session_key': session_key,
+            'session_short': session_key[:8] if session_key else '—',
+            'user': user,
+            'user_email': user.email if user else None,
+            'azurirano': max(row.azurirano for row in items),
+            'dodano': min(row.dodano for row in items),
+            'items': items,
+            'ukupno': sum((row.ukupno for row in items), Decimal('0')),
+            'stavki': sum(row.kolicina for row in items),
+        })
+    groups.sort(key=lambda group: group['azurirano'], reverse=True)
+    return groups
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_active_carts(request):
+    from .cart_tracking import cleanup_stale_active_cart_items
+
+    cleanup_stale_active_cart_items()
+
+    sort = (request.GET.get('sort') or 'azurirano').strip()
+    search_query = (request.GET.get('q') or '').strip()
+
+    qs = ActiveCartItem.objects.select_related('user', 'product', 'variation')
+    if search_query:
+        qs = qs.filter(
+            Q(naziv__icontains=search_query)
+            | Q(varijacija_naziv__icontains=search_query)
+            | Q(user__email__icontains=search_query)
+            | Q(product__naziv__icontains=search_query)
+            | Q(product__sifra__icontains=search_query),
+        )
+
+    if sort == 'dodano':
+        qs = qs.order_by('-dodano', '-azurirano')
+    elif sort == 'naziv':
+        qs = qs.order_by('naziv', '-azurirano')
+    else:
+        qs = qs.order_by('-azurirano', '-dodano')
+
+    groups = _active_cart_groups(qs[:1000])
+    total_items = sum(len(group['items']) for group in groups)
+    context = {
+        **_base_context(),
+        'cart_groups': groups,
+        'cart_group_count': len(groups),
+        'cart_item_count': total_items,
+        'search_query': search_query,
+        'sort': sort,
+    }
+    return render(request, 'staff/active_carts.html', context)
 
 
 MARKETING_SUBSCRIBERS_PER_PAGE = 25

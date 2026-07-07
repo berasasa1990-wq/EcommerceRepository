@@ -90,11 +90,13 @@ class Cart:
                 self.cart[key]['gratis_akcija_id'] = gratis_akcija_id
                 self.cart[key]['gratis_promo'] = True
         self.save()
+        self._track_line(key)
 
     def remove(self, key):
         if key in self.cart:
             del self.cart[key]
             self.save()
+            self._untrack_line(key)
 
     def set_quantity(self, key, quantity):
         if key not in self.cart:
@@ -104,11 +106,25 @@ class Cart:
         else:
             self.cart[key]['quantity'] = quantity
             self.save()
+            self._track_line(key)
 
     def clear(self):
+        self._untrack_all()
         self.cart = {}
         self.clear_coupon()
         self.save()
+
+    def _track_line(self, key):
+        from .cart_tracking import track_cart_line_added_or_updated
+        track_cart_line_added_or_updated(self.request, key, self.cart.get(key))
+
+    def _untrack_line(self, key):
+        from .cart_tracking import track_cart_line_removed
+        track_cart_line_removed(self.request, key)
+
+    def _untrack_all(self):
+        from .cart_tracking import track_cart_cleared
+        track_cart_cleared(self.request)
 
     def get_coupon_code(self):
         if not self.is_coupon_applied():

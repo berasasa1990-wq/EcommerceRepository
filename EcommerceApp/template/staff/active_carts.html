@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Aktivne korpe — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-active-carts-page">
+    <div class="staff-active-carts-header">
+        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+        <h1>Aktivne korpe</h1>
+        <p class="staff-active-carts-subtitle">
+            Uvid u artikle koji su trenutno u korpama na sajtu. Kada korisnik ukloni artikal, nestaje s liste.
+            Registrovani korisnici se prikazuju po emailu; gosti kao anonimna sesija.
+        </p>
+    </div>
+
+    <div class="staff-active-carts-summary">
+        <strong>{{ cart_group_count }}</strong> aktivnih korpi ·
+        <strong>{{ cart_item_count }}</strong> stavki ukupno
+    </div>
+
+    <div class="staff-active-carts-toolbar">
+        <form method="get" class="staff-active-carts-search-form">
+            <label class="visually-hidden" for="cart_q">Pretraži</label>
+            <input
+                type="search"
+                name="q"
+                id="cart_q"
+                class="form-input"
+                value="{{ search_query }}"
+                placeholder="Artikal, šifra ili email korisnika"
+            >
+            {% if sort and sort != 'azurirano' %}
+            <input type="hidden" name="sort" value="{{ sort }}">
+            {% endif %}
+            <button type="submit" class="btn btn-secondary">Pretraži</button>
+            {% if search_query %}
+            <a href="{% url 'staff_active_carts' %}{% if sort and sort != 'azurirano' %}?sort={{ sort }}{% endif %}" class="btn btn-secondary">Poništi</a>
+            {% endif %}
+        </form>
+
+        <div class="staff-active-carts-sort">
+            <span>Sortiraj:</span>
+            <a href="{% url 'staff_active_carts' %}?sort=azurirano{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-active-carts-sort-link{% if sort == 'azurirano' or not sort %} is-active{% endif %}">Zadnja izmjena</a>
+            <a href="{% url 'staff_active_carts' %}?sort=dodano{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-active-carts-sort-link{% if sort == 'dodano' %} is-active{% endif %}">Dodano u korpu</a>
+            <a href="{% url 'staff_active_carts' %}?sort=naziv{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-active-carts-sort-link{% if sort == 'naziv' %} is-active{% endif %}">Naziv artikla</a>
+        </div>
+    </div>
+
+    {% if cart_groups %}
+    <div class="staff-active-carts-list">
+        {% for group in cart_groups %}
+        <article class="staff-active-cart-card">
+            <header class="staff-active-cart-card-head">
+                <div>
+                    <strong>
+                        {% if group.user_email %}
+                        {{ group.user_email }}
+                        {% else %}
+                        Gost (sesija {{ group.session_short }})
+                        {% endif %}
+                    </strong>
+                    <p>
+                        {{ group.items|length }} artikal{% if group.items|length != 1 %}a{% endif %} ·
+                        {{ group.stavki }} kom ·
+                        {{ group.ukupno }} KM
+                    </p>
+                </div>
+                <div class="staff-active-cart-card-meta">
+                    <span>Dodano: {{ group.dodano|date:"d.m.Y. H:i" }}</span>
+                    <span>Zadnja izmjena: {{ group.azurirano|date:"d.m.Y. H:i" }}</span>
+                </div>
+            </header>
+
+            <div class="staff-active-cart-table-wrap">
+                <table class="staff-active-cart-table">
+                    <thead>
+                        <tr>
+                            <th>Artikal</th>
+                            <th>Kol.</th>
+                            <th>Cijena</th>
+                            <th>Ukupno</th>
+                            <th>U korpi od</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in group.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ item.product.get_absolute_url }}" target="_blank" rel="noopener">
+                                    {{ item.naziv }}{% if item.varijacija_naziv %} — {{ item.varijacija_naziv }}{% endif %}
+                                </a>
+                            </td>
+                            <td>{{ item.kolicina }}</td>
+                            <td>{{ item.cijena }} KM</td>
+                            <td>{{ item.ukupno }} KM</td>
+                            <td>{{ item.dodano|date:"d.m.Y. H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="staff-active-carts-empty">
+        {% if search_query %}
+        Nema aktivnih korpi za „{{ search_query }}”.
+        {% else %}
+        Trenutno nema artikala u korpama posjetilaca.
+        {% endif %}
+    </p>
+    {% endif %}
+</section>
+{% endblock %}

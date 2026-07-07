@@ -1912,3 +1912,56 @@ class MarketingSubscriber(models.Model):
         if self.email:
             self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
+
+
+class ActiveCartItem(models.Model):
+    """Trenutne stavke u korpama posjetilaca (usklađeno sa sesijom)."""
+    session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')
+    line_key = models.CharField(max_length=64, verbose_name='Stavka')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='aktivne_korpe_stavke',
+        verbose_name='Korisnik',
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='aktivne_korpe_stavke',
+        verbose_name='Artikal',
+    )
+    variation = models.ForeignKey(
+        ProductVariation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='aktivne_korpe_stavke',
+        verbose_name='Varijacija',
+    )
+    naziv = models.CharField(max_length=200, verbose_name='Naziv')
+    varijacija_naziv = models.CharField(max_length=100, blank=True, verbose_name='Varijacija naziv')
+    kolicina = models.PositiveIntegerField(default=1, verbose_name='Količina')
+    cijena = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Cijena')
+    ukupno = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Ukupno')
+    dodano = models.DateTimeField(auto_now_add=True, verbose_name='Dodano u korpu')
+    azurirano = models.DateTimeField(auto_now=True, verbose_name='Zadnja izmjena')
+
+    class Meta:
+        verbose_name = 'Stavka aktivne korpe'
+        verbose_name_plural = 'Stavke aktivnih korpi'
+        ordering = ['-azurirano']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['session_key', 'line_key'],
+                name='uniq_active_cart_session_line',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['-azurirano']),
+            models.Index(fields=['user', '-azurirano']),
+        ]
+
+    def __str__(self):
+        return f'{self.naziv} × {self.kolicina}'

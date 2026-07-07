@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
+    ActiveCartItem,
     Akcija,
     Banner,
     Brand,
@@ -1434,6 +1435,19 @@ class MarketingSubscriberAdmin(admin.ModelAdmin):
         )
 
     bulk_remove_from_group.short_description = 'Ukloni odabrane iz grupe'
+
+
+@admin.register(ActiveCartItem)
+class ActiveCartItemAdmin(admin.ModelAdmin):
+    list_display = (
+        'naziv', 'varijacija_naziv', 'kolicina', 'cijena', 'ukupno',
+        'user', 'session_key', 'dodano', 'azurirano',
+    )
+    list_filter = ('dodano', 'azurirano')
+    search_fields = ('naziv', 'varijacija_naziv', 'session_key', 'user__email', 'product__naziv')
+    readonly_fields = ('dodano', 'azurirano')
+    ordering = ('-azurirano',)
+    autocomplete_fields = ('user', 'product')
 
 
 @admin.register(MarketingEmailCampaign)
