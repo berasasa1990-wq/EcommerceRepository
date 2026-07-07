@@ -467,6 +467,17 @@ class BulkAssignBrandForm(forms.Form):
     )
 
 
+class BulkAssignSubscriberGroupForm(forms.Form):
+    grupa = forms.ModelChoiceField(
+        label='Grupa',
+        queryset=MarketingSubscriberGroup.objects.order_by('redoslijed', 'id'),
+        widget=forms.Select(attrs={'class': 'odoo-select'}),
+        empty_label='— Odaberi grupu —',
+        required=True,
+        help_text='Odabrani pretplatnici će biti premješteni u ovu grupu.',
+    )
+
+
 class BulkAssignTagsForm(forms.Form):
     tagovi = forms.ModelMultipleChoiceField(
         label='Tagovi',
