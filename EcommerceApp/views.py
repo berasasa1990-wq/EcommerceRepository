@@ -45,8 +45,9 @@ from .emails import (
     import_marketing_subscribers_from_orders,
     MARKETING_TEST_EMAIL,
     marketing_recipient_counts,
-    send_marketing_campaign,
+    send_marketing_campaign_batch,
     send_marketing_campaign_test_email,
+    start_marketing_campaign_send,
     send_order_emails,
 )
 from .olx_api import (
@@ -2306,10 +2307,35 @@ def staff_email_marketing(request):
     subscriber_form = MarketingSubscriberBulkForm()
     subscriber_search_query = (request.GET.get('lista_q') or '').strip()
     kampanja_id = request.GET.get('kampanja') or request.POST.get('kampanja_id')
+    if request.GET.get('slanje') == 'gotovo' and kampanja_id:
+        finished_campaign = MarketingEmailCampaign.objects.filter(pk=kampanja_id).first()
+        if finished_campaign and finished_campaign.status in (
+            MarketingEmailCampaign.Status.SENT,
+            MarketingEmailCampaign.Status.FAILED,
+        ):
+            total = (
+                finished_campaign.slanje_ukupno
+                or finished_campaign.broj_primaoca + finished_campaign.broj_gresaka
+            )
+            if finished_campaign.broj_primaoca:
+                messages.success(
+                    request,
+                    f'Email kampanja poslana na {finished_campaign.broj_primaoca} od {total} adresa.',
+                )
+            else:
+                messages.error(request, 'Kampanja nije poslana — nijedan email nije uspio.')
+            if finished_campaign.broj_gresaka:
+                messages.warning(
+                    request,
+                    f'{finished_campaign.broj_gresaka} emailova nije uspjelo poslati.',
+                )
     if kampanja_id:
         preview_campaign = MarketingEmailCampaign.objects.filter(
             pk=kampanja_id,
-            status=MarketingEmailCampaign.Status.DRAFT,
+            status__in=(
+                MarketingEmailCampaign.Status.DRAFT,
+                MarketingEmailCampaign.Status.SENDING,
+            ),
         ).first()
 
     if request.method == 'POST':
@@ -2341,11 +2367,30 @@ def staff_email_marketing(request):
                 subscriber.delete()
                 messages.success(request, f'Email {subscriber.email} uklonjen iz liste.')
             return redirect('staff_email_marketing')
+        elif action == 'send_batch':
+            campaign = get_object_or_404(
+                MarketingEmailCampaign,
+                pk=request.POST.get('kampanja_id'),
+                status=MarketingEmailCampaign.Status.SENDING,
+            )
+            try:
+                result = send_marketing_campaign_batch(campaign)
+                return JsonResponse(result)
+            except EmailNotConfiguredError as exc:
+                return JsonResponse({'error': str(exc)}, status=400)
+            except ValueError as exc:
+                return JsonResponse({'error': str(exc)}, status=400)
+            except Exception:
+                logger.exception('Marketing batch slanje nije uspjelo')
+                return JsonResponse({'error': 'Slanje nije uspjelo.'}, status=500)
         elif action in ('send', 'test'):
             campaign = get_object_or_404(
                 MarketingEmailCampaign,
                 pk=request.POST.get('kampanja_id'),
-                status=MarketingEmailCampaign.Status.DRAFT,
+                status__in=(
+                    MarketingEmailCampaign.Status.DRAFT,
+                    MarketingEmailCampaign.Status.SENDING,
+                ),
             )
             if action == 'test':
                 try:
@@ -2363,16 +2408,15 @@ def staff_email_marketing(request):
                     messages.error(request, 'Test email nije poslan.')
                 return redirect(f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}')
             try:
-                campaign.poslao = request.user
-                campaign.save(update_fields=['poslao'])
-                sent, failed, total = send_marketing_campaign(campaign)
-                messages.success(
-                    request,
-                    f'Email kampanja poslana na {sent} od {total} adresa.',
+                if campaign.status == MarketingEmailCampaign.Status.SENDING:
+                    return redirect(
+                        f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}&slanje=1',
+                    )
+                total = start_marketing_campaign_send(campaign, user=request.user)
+                request.session['marketing_send_total'] = total
+                return redirect(
+                    f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}&slanje=1',
                 )
-                if failed:
-                    messages.warning(request, f'{failed} emailova nije uspjelo poslati.')
-                return redirect('staff_email_marketing')
             except EmailNotConfiguredError as exc:
                 messages.error(request, str(exc))
             except ValueError as exc:
@@ -2444,6 +2488,11 @@ def staff_email_marketing(request):
         'recent_campaigns': MarketingEmailCampaign.objects.filter(
             status=MarketingEmailCampaign.Status.SENT,
         ).order_by('-poslano')[:8],
+        'marketing_send_active': bool(
+            preview_campaign
+            and preview_campaign.status == MarketingEmailCampaign.Status.SENDING,
+        ),
+        'marketing_send_url': reverse('staff_email_marketing'),
     }
     return render(request, 'staff/email_marketing.html', context)
 

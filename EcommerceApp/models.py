@@ -1763,6 +1763,7 @@ class ChatMessage(models.Model):
 class MarketingEmailCampaign(models.Model):
     class Status(models.TextChoices):
         DRAFT = 'draft', 'Nacrt'
+        SENDING = 'sending', 'Slanje u toku'
         SENT = 'sent', 'Poslano'
         FAILED = 'failed', 'Greška'
 
@@ -1793,6 +1794,9 @@ class MarketingEmailCampaign(models.Model):
     )
     broj_primaoca = models.PositiveIntegerField(default=0)
     broj_gresaka = models.PositiveIntegerField(default=0)
+    slanje_offset = models.PositiveIntegerField(default=0)
+    slanje_ukupno = models.PositiveIntegerField(default=0)
+    slanje_lista = models.JSONField(default=list, blank=True)
     poslano = models.DateTimeField(null=True, blank=True)
     kreirano = models.DateTimeField(auto_now_add=True)
     poslao = models.ForeignKey(

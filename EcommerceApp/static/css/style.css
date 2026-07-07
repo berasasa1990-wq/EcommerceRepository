@@ -4642,6 +4642,46 @@ body.search-results-active main {
     width: 100%;
 }
 
+.staff-email-send-progress {
+    padding: 18px;
+    border-radius: 10px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+}
+
+.staff-email-send-progress-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.staff-email-send-progress-status {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
+.staff-email-send-progress-bar {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--gray-200);
+    overflow: hidden;
+}
+
+.staff-email-send-progress-fill {
+    height: 100%;
+    background: #5BB805;
+    border-radius: 999px;
+    transition: width 0.35s ease;
+}
+
+.staff-email-send-progress-hint {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--gray-600);
+    line-height: 1.5;
+}
+
 .staff-email-marketing-history {
     margin-top: 40px;
     padding: 24px;

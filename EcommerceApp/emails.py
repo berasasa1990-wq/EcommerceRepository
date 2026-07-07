@@ -1,10 +1,11 @@
 import logging
+import time
 from email.utils import formataddr
 from types import SimpleNamespace
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -369,7 +370,14 @@ def _marketing_plain_text(campaign, recipient):
     return '\n'.join(lines)
 
 
-def send_marketing_campaign_email(campaign, recipient, *, subject_prefix=''):
+def _marketing_recipient_from_payload(payload):
+    return SimpleNamespace(
+        email=payload['email'],
+        display_name=payload.get('display_name') or _marketing_display_name(payload['email']),
+    )
+
+
+def send_marketing_campaign_email(campaign, recipient, *, subject_prefix='', connection=None):
     _ensure_email_configured()
     mail = EmailMultiAlternatives(
         subject=f'{subject_prefix}{campaign.naslov} — opremazaribolov.ba',
@@ -377,6 +385,7 @@ def send_marketing_campaign_email(campaign, recipient, *, subject_prefix=''):
         from_email=_from_email(),
         to=[recipient.email.strip()],
         reply_to=[settings.ORDER_NOTIFICATION_EMAIL],
+        connection=connection,
     )
     mail.attach_alternative(_render_marketing_html(campaign, recipient), 'text/html')
     mail.send(fail_silently=False)
@@ -402,8 +411,8 @@ def send_marketing_campaign_test_email(campaign):
     )
 
 
-def send_marketing_campaign(campaign):
-    """Pošalji marketing kampanju svim registrovanim korisnicima i pretplatnicima."""
+def start_marketing_campaign_send(campaign, *, user=None):
+    """Pripremi kampanju za batch slanje (izbjegava HTTP timeout na velikim listama)."""
     _ensure_email_configured()
     if not campaign.banner:
         raise ValueError('Kampanja nema banner sliku.')
@@ -412,30 +421,114 @@ def send_marketing_campaign(campaign):
     if not recipients:
         raise ValueError('Nema email adresa za slanje kampanje.')
 
-    sent = 0
-    failed = 0
-    for recipient in recipients:
-        try:
-            send_marketing_campaign_email(campaign, recipient)
-            sent += 1
-        except Exception:
-            failed += 1
-            logger.exception(
-                'Marketing email nije poslan na %s (kampanja #%s)',
-                recipient.email,
-                campaign.pk,
-            )
+    campaign.slanje_lista = [
+        {'email': recipient.email, 'display_name': recipient.display_name}
+        for recipient in recipients
+    ]
+    campaign.slanje_ukupno = len(recipients)
+    campaign.slanje_offset = 0
+    campaign.broj_primaoca = 0
+    campaign.broj_gresaka = 0
+    campaign.poslano = None
+    campaign.status = MarketingEmailCampaign.Status.SENDING
+    if user is not None:
+        campaign.poslao = user
+    campaign.save(update_fields=[
+        'slanje_lista', 'slanje_ukupno', 'slanje_offset',
+        'broj_primaoca', 'broj_gresaka', 'poslano', 'status', 'poslao',
+    ])
+    return len(recipients)
 
-    campaign.broj_primaoca = sent
-    campaign.broj_gresaka = failed
+
+def send_marketing_campaign_batch(campaign):
+    """Pošalji sljedeću grupu emailova i ažuriraj napredak kampanje."""
+    _ensure_email_configured()
+    if campaign.status != MarketingEmailCampaign.Status.SENDING:
+        raise ValueError('Kampanja nije u statusu slanja.')
+
+    recipient_payloads = campaign.slanje_lista or []
+    total = campaign.slanje_ukupno or len(recipient_payloads)
+    offset = campaign.slanje_offset
+    batch_size = max(1, settings.MARKETING_EMAIL_BATCH_SIZE)
+    batch = recipient_payloads[offset:offset + batch_size]
+
+    if not batch:
+        return _finalize_marketing_campaign_send(campaign, total=total)
+
+    batch_sent = 0
+    batch_failed = 0
+    connection = get_connection()
+    pause_seconds = max(0.0, settings.MARKETING_EMAIL_BATCH_PAUSE)
+
+    try:
+        connection.open()
+        for index, payload in enumerate(batch):
+            recipient = _marketing_recipient_from_payload(payload)
+            try:
+                send_marketing_campaign_email(campaign, recipient, connection=connection)
+                batch_sent += 1
+            except Exception:
+                batch_failed += 1
+                logger.exception(
+                    'Marketing email nije poslan na %s (kampanja #%s)',
+                    recipient.email,
+                    campaign.pk,
+                )
+            if pause_seconds and index < len(batch) - 1:
+                time.sleep(pause_seconds)
+    finally:
+        try:
+            connection.close()
+        except Exception:
+            logger.debug('Zatvaranje SMTP konekcije nije uspjelo.', exc_info=True)
+
+    campaign.slanje_offset = offset + len(batch)
+    campaign.broj_primaoca += batch_sent
+    campaign.broj_gresaka += batch_failed
+    campaign.save(update_fields=['slanje_offset', 'broj_primaoca', 'broj_gresaka'])
+
+    done = campaign.slanje_offset >= total
+    if done:
+        return _finalize_marketing_campaign_send(campaign, total=total)
+
+    return {
+        'done': False,
+        'offset': campaign.slanje_offset,
+        'total': total,
+        'sent': campaign.broj_primaoca,
+        'failed': campaign.broj_gresaka,
+        'batch_sent': batch_sent,
+        'batch_failed': batch_failed,
+    }
+
+
+def _finalize_marketing_campaign_send(campaign, *, total):
     campaign.poslano = timezone.now()
     campaign.status = (
-        MarketingEmailCampaign.Status.SENT if sent else MarketingEmailCampaign.Status.FAILED
+        MarketingEmailCampaign.Status.SENT
+        if campaign.broj_primaoca
+        else MarketingEmailCampaign.Status.FAILED
     )
-    campaign.save(update_fields=[
-        'broj_primaoca', 'broj_gresaka', 'poslano', 'status',
-    ])
-    return sent, failed, len(recipients)
+    campaign.slanje_lista = []
+    campaign.save(update_fields=['poslano', 'status', 'slanje_lista'])
+    return {
+        'done': True,
+        'offset': total,
+        'total': total,
+        'sent': campaign.broj_primaoca,
+        'failed': campaign.broj_gresaka,
+        'batch_sent': 0,
+        'batch_failed': 0,
+    }
+
+
+def send_marketing_campaign(campaign, *, user=None):
+    """Kompatibilnost — pokreće batch slanje od početka."""
+    total = start_marketing_campaign_send(campaign, user=user)
+    result = {'sent': 0, 'failed': 0, 'total': total, 'done': False}
+    while not result.get('done'):
+        result = send_marketing_campaign_batch(campaign)
+    return result['sent'], result['failed'], result['total']
 
 
 def send_order_emails(order):

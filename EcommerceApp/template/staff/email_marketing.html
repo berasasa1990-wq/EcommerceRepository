@@ -75,24 +75,43 @@
                     {% endif %}
                     <div class="staff-email-preview-cta-row">
                         <span class="staff-email-preview-cta">{{ preview_campaign.cta_tekst }}</span>
-                        <span class="staff-email-preview-warranty">Pisana garancija na proizvode</span>
+                        <span class="staff-email-preview-warranty">Pisana garancija</span>
                     </div>
                 </div>
             </div>
 
             <div class="staff-email-marketing-send-actions">
+                {% if marketing_send_active %}
+                <div class="staff-email-send-progress" id="marketingSendProgress">
+                    <p class="staff-email-send-progress-title">Slanje u toku…</p>
+                    <p class="staff-email-send-progress-status" id="marketingSendStatus">
+                        {{ preview_campaign.slanje_offset }} / {{ preview_campaign.slanje_ukupno }} poslano
+                    </p>
+                    <div class="staff-email-send-progress-bar" aria-hidden="true">
+                        <div
+                            class="staff-email-send-progress-fill"
+                            id="marketingSendProgressFill"
+                            style="width: {% if preview_campaign.slanje_ukupno %}{% widthratio preview_campaign.slanje_offset preview_campaign.slanje_ukupno 100 %}{% else %}0{% endif %}%;"
+                        ></div>
+                    </div>
+                    <p class="staff-email-send-progress-hint">
+                        Ostavite ovu stranicu otvorenu dok se slanje ne završi. Emailovi se šalju u manjim grupama da server ne prekine vezu.
+                    </p>
+                </div>
+                {% else %}
                 <form method="post" class="staff-email-marketing-test-form">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="test">
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-secondary staff-email-test-btn">Pošalji test na {{ test_email }}</button>
                 </form>
-                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} adresa (registrovani + lista kupaca)?');">
+                <form method="post" class="staff-email-marketing-send-form" onsubmit="return confirm('Poslati email na {{ recipient_count }} adresa? Slanje ide u grupama — ostavite stranicu otvorenu dok se ne završi.');">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="send">
                     <input type="hidden" name="kampanja_id" value="{{ preview_campaign.pk }}">
                     <button type="submit" class="btn btn-primary staff-email-send-btn">Pošalji na {{ recipient_count }} emailova</button>
                 </form>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -256,4 +275,71 @@
     </div>
     {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% if marketing_send_active %}
+<script>
+(function () {
+    const progressUrl = '{{ marketing_send_url|escapejs }}';
+    const campaignId = '{{ preview_campaign.pk }}';
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    const statusEl = document.getElementById('marketingSendStatus');
+    const fillEl = document.getElementById('marketingSendProgressFill');
+    let running = false;
+
+    function updateUi(data) {
+        const total = data.total || 0;
+        const offset = data.offset || 0;
+        const sent = data.sent || 0;
+        const failed = data.failed || 0;
+        const percent = total ? Math.min(100, Math.round((offset / total) * 100)) : 0;
+        if (statusEl) {
+            statusEl.textContent = `${offset} / ${total} obrađeno · ${sent} poslano` + (failed ? ` · ${failed} grešaka` : '');
+        }
+        if (fillEl) {
+            fillEl.style.width = `${percent}%`;
+        }
+    }
+
+    async function sendNextBatch() {
+        if (running) return;
+        running = true;
+        const body = new URLSearchParams({
+            csrfmiddlewaretoken: csrfToken,
+            action: 'send_batch',
+            kampanja_id: campaignId,
+        });
+        try {
+            const response = await fetch(progressUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: body.toString(),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Slanje nije uspjelo.');
+            }
+            updateUi(data);
+            if (data.done) {
+                window.location.href = `${progressUrl}?kampanja=${campaignId}&slanje=gotovo`;
+                return;
+            }
+            running = false;
+            window.setTimeout(sendNextBatch, 600);
+        } catch (error) {
+            running = false;
+            if (statusEl) {
+                statusEl.textContent = `Greška: ${error.message}. Osvježite stranicu da nastavite slanje.`;
+            }
+        }
+    }
+
+    sendNextBatch();
+})();
+</script>
+{% endif %}
 {% endblock %}
