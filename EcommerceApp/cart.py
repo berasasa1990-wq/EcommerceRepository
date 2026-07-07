@@ -27,6 +27,7 @@ class Cart:
     COUPON_KEY = 'applied_coupon'
     COUPON_APPLIED_KEY = 'coupon_applied_by_user'
     COUPON_KEEP_KEY = 'coupon_keep_after_apply'
+    RECOVERY_DISCOUNT_KEY = 'cart_recovery_discount_percent'
 
     def __init__(self, request):
         self.request = request
@@ -45,6 +46,7 @@ class Cart:
     def add(self, product, variation=None, quantity=1, custom_price=None, *, promo_bazna=None, gratis_akcija_id=None):
         key = self._line_key(product.pk, variation.pk if variation else None)
         quantity = max(1, int(quantity or 1))
+        was_empty = not self.cart
         prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
         if custom_price is not None:
             price = Decimal(str(custom_price))
@@ -95,13 +97,14 @@ class Cart:
                 self.cart[key]['gratis_promo'] = True
         self.save()
         self._track_line(key)
-        self._notify_add(
-            product,
-            variation,
-            quantity_added=quantity,
-            line_price=price,
-            total_qty_in_line=self.cart[key]['quantity'],
-        )
+        if was_empty:
+            self._notify_add(
+                product,
+                variation,
+                quantity_added=quantity,
+                line_price=price,
+                total_qty_in_line=self.cart[key]['quantity'],
+            )
 
     def remove(self, key):
         if key in self.cart:
@@ -123,7 +126,35 @@ class Cart:
         self._untrack_all()
         self.cart = {}
         self.clear_coupon()
+        self.clear_recovery_discount()
         self.save()
+
+    def get_recovery_discount_percent(self):
+        raw = self.request.session.get(self.RECOVERY_DISCOUNT_KEY)
+        if raw in (None, ''):
+            return Decimal('0')
+        try:
+            percent = Decimal(str(raw))
+        except Exception:
+            return Decimal('0')
+        if percent <= 0:
+            return Decimal('0')
+        return min(percent, Decimal('50'))
+
+    def set_recovery_discount(self, percent):
+        percent = Decimal(str(percent or 0))
+        if percent <= 0:
+            self.clear_recovery_discount()
+            return
+        self.request.session[self.RECOVERY_DISCOUNT_KEY] = str(
+            min(percent, Decimal('50')).quantize(Decimal('0.01')),
+        )
+        self.request.session.modified = True
+
+    def clear_recovery_discount(self):
+        if self.RECOVERY_DISCOUNT_KEY in self.request.session:
+            del self.request.session[self.RECOVERY_DISCOUNT_KEY]
+            self.request.session.modified = True
 
     def _track_line(self, key):
         from .cart_tracking import track_cart_line_added_or_updated
@@ -286,6 +317,7 @@ class Cart:
             user=user,
             coupon_code=self.get_coupon_code(),
             cart_items=list(self),
+            recovery_discount_percent=self.get_recovery_discount_percent(),
         )
 
     def get_product_and_variation(self, item):

@@ -1,0 +1,80 @@
+{% if cart_recovery_alert and cart_count %}
+<div class="site-popup-overlay cart-recovery-overlay" id="cartRecoveryOverlay" hidden>
+    <div class="site-popup site-popup--akcija site-popup--cart-recovery" role="dialog" aria-modal="true" aria-labelledby="cartRecoveryTitle">
+        <h2 id="cartRecoveryTitle" class="site-popup-akcija-title">Imate artikle u korpi</h2>
+        <button type="button" class="site-popup-close" data-cart-recovery-close aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <div class="site-popup-akcija">
+            <p class="cart-recovery-text">
+                Niste završili kupovinu. Vaši odabrani artikli još uvijek čekaju u korpi.
+            </p>
+            {% if cart_recovery_alert.discount_percent and cart_recovery_alert.discount_percent > 0 %}
+            <div class="site-popup-akcija-promo cart-recovery-discount">
+                <strong>Odobren vam je popust od {{ cart_recovery_alert.discount_percent|floatformat:0 }}%</strong> na vrijednost korpe.
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="site-popup-actions cart-recovery-actions">
+            <form method="post" action="{% url 'cart_recovery_apply' %}">
+                {% csrf_token %}
+                {% if cart_recovery_alert.discount_percent and cart_recovery_alert.discount_percent > 0 %}
+                <button type="submit" class="btn btn-primary site-popup-cta cart-recovery-cta">
+                    Završi i iskoristi popust
+                </button>
+                {% else %}
+                <button type="submit" class="btn btn-primary site-popup-cta cart-recovery-cta">
+                    Idi na korpu
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const overlay = document.getElementById('cartRecoveryOverlay');
+    if (!overlay) return;
+
+    function closeOverlay() {
+        overlay.setAttribute('hidden', '');
+        document.body.classList.remove('popup-open');
+    }
+
+    function openOverlay() {
+        overlay.removeAttribute('hidden');
+        document.body.classList.add('popup-open');
+    }
+
+    function readCsrfToken() {
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input && input.value) return input.value;
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    overlay.querySelector('[data-cart-recovery-close]')?.addEventListener('click', function () {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "cart_recovery_dismiss" %}';
+        const token = readCsrfToken();
+        if (token) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrfmiddlewaretoken';
+            input.value = token;
+            form.appendChild(input);
+        }
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    window.setTimeout(openOverlay, 1200);
+})();
+</script>
+{% endif %}

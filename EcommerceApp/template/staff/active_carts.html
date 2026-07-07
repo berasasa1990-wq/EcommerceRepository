@@ -12,7 +12,7 @@
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Aktivne korpe</h1>
         <p class="staff-active-carts-subtitle">
-            Kliknite na korisnika da otvorite njegovu korpu. Lista se ažurira kad neko doda ili ukloni artikal.
+            Pored kupca koristite <strong>Upozori</strong> da mu na sajtu iskoči popup. Unesite % za poseban popust.
         </p>
     </header>
 
@@ -60,33 +60,54 @@
     </div>
 
     {% if cart_groups %}
-    <div class="staff-active-carts-accordion">
+    <div class="staff-active-carts-list">
         {% for group in cart_groups %}
-        <details class="staff-active-cart-entry"{% if cart_groups|length == 1 %} open{% endif %}>
-            <summary class="staff-active-cart-entry-summary">
-                <span class="staff-active-cart-entry-chevron" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 9l6 6 6-6"/>
-                    </svg>
-                </span>
-                <span class="staff-active-cart-entry-name">
-                    {% if group.user_email %}
-                    {{ group.user_email }}
-                    {% else %}
-                    Gost
-                    {% endif %}
-                </span>
-                <span class="staff-active-cart-entry-chips">
-                    <span class="staff-active-cart-chip">{{ group.items|length }} art.</span>
-                    <span class="staff-active-cart-chip">{{ group.stavki }} kom</span>
-                    <span class="staff-active-cart-chip staff-active-cart-chip--total">{{ group.ukupno }} KM</span>
-                    <span class="staff-active-cart-chip staff-active-cart-chip--time">{{ group.azurirano|date:"d.m. H:i" }}</span>
-                </span>
-            </summary>
-            <div class="staff-active-cart-entry-panel">
+        <article class="staff-active-cart-row" data-cart-row>
+            <div class="staff-active-cart-row-head">
+                <div class="staff-active-cart-row-ident">
+                    <h2 class="staff-active-cart-row-name">
+                        {% if group.user_email %}
+                        {{ group.user_email }}
+                        {% else %}
+                        Gost
+                        {% endif %}
+                    </h2>
+                    <p class="staff-active-cart-row-meta">
+                        {{ group.items|length }} art. · {{ group.stavki }} kom · {{ group.ukupno }} KM · {{ group.azurirano|date:"d.m. H:i" }}
+                        {% if group.recovery_pending %}
+                        <span class="staff-active-cart-row-status">Podsjetnik aktivan</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="staff-active-cart-row-actions">
+                    <form method="post" class="staff-active-cart-warn-form" onsubmit="return confirm('Poslati podsjetnik ovom kupcu?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="warn">
+                        <input type="hidden" name="session_key" value="{{ group.session_key }}">
+                        <label class="visually-hidden" for="discount-{{ forloop.counter }}">Popust %</label>
+                        <input
+                            type="number"
+                            name="discount_percent"
+                            id="discount-{{ forloop.counter }}"
+                            class="staff-active-cart-discount-input"
+                            min="0"
+                            max="50"
+                            step="1"
+                            value="{% if group.recovery_alert and group.recovery_alert.discount_percent %}{{ group.recovery_alert.discount_percent|floatformat:0 }}{% else %}0{% endif %}"
+                            placeholder="%"
+                            title="Popust u postocima (0 = samo podsjetnik)"
+                        >
+                        <button type="submit" class="staff-btn-green">Upozori</button>
+                    </form>
+                    <button type="button" class="staff-btn-green staff-active-cart-toggle" data-cart-toggle aria-expanded="false">
+                        Otvori korpu
+                    </button>
+                </div>
+            </div>
+            <div class="staff-active-cart-row-panel" hidden>
                 {% include 'staff/partials/active_cart_preview.html' with group=group %}
             </div>
-        </details>
+        </article>
         {% endfor %}
     </div>
     {% else %}
@@ -106,4 +127,28 @@
     </div>
     {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    document.querySelectorAll('[data-cart-toggle]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const row = btn.closest('[data-cart-row]');
+            const panel = row ? row.querySelector('.staff-active-cart-row-panel') : null;
+            if (!panel) return;
+            const open = panel.hasAttribute('hidden');
+            if (open) {
+                panel.removeAttribute('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+                btn.textContent = 'Zatvori korpu';
+            } else {
+                panel.setAttribute('hidden', '');
+                btn.setAttribute('aria-expanded', 'false');
+                btn.textContent = 'Otvori korpu';
+            }
+        });
+    });
+})();
+</script>
 {% endblock %}

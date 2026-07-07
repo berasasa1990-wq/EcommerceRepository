@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db.models import Prefetch
 
 from .cart import Cart
+from .cart_recovery import get_active_cart_recovery_alert
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .models import Akcija, Category, SiteSettings
 from .upsell import get_active_upsell_offer
@@ -103,6 +104,7 @@ def nav_categories(request):
         'active_popup': active_akcija,
         'popup_queue': popup_queue,
         'active_upsell_offer': get_active_upsell_offer(request),
+        'cart_recovery_alert': get_active_cart_recovery_alert(request, cart),
         'search_query': request.GET.get('q', '').strip(),
         'contact_phone': contact_phone,
         'contact_whatsapp_url': _whatsapp_contact_url(contact_phone),

@@ -83,6 +83,7 @@ from .forms import (
 )
 from .models import (
     ActiveCartItem,
+    CartRecoveryAlert,
     Banner,
     Brand,
     Category,
@@ -1730,6 +1731,32 @@ def remove_from_cart(request, key):
     return redirect('cart')
 
 
+@require_POST
+def cart_recovery_apply(request):
+    from .cart_recovery import apply_cart_recovery_discount
+
+    cart = Cart(request)
+    ok, result = apply_cart_recovery_discount(request, cart)
+    if ok:
+        if result and result > 0:
+            pct = int(result) if result == int(result) else result
+            messages.success(request, f'Popust od {pct}% je primijenjen na vašu korpu.')
+        else:
+            messages.info(request, 'Nastavite kupovinu u korpi.')
+    else:
+        messages.warning(request, result)
+    return redirect('cart')
+
+
+@require_POST
+def cart_recovery_dismiss(request):
+    from .cart_recovery import dismiss_cart_recovery_alert
+
+    dismiss_cart_recovery_alert(request)
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
+    return redirect(next_url)
+
+
 def _checkout_initial(request):
     if not request.user.is_authenticated:
         return {}
@@ -2277,9 +2304,35 @@ def _active_cart_groups(queryset):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_active_carts(request):
+    from .cart_recovery import send_cart_recovery_alert
     from .cart_tracking import cleanup_stale_active_cart_items
-
     cleanup_stale_active_cart_items()
+
+    if request.method == 'POST' and request.POST.get('action') == 'warn':
+        session_key = (request.POST.get('session_key') or '').strip()
+        try:
+            discount_percent = Decimal(
+                (request.POST.get('discount_percent') or '0').replace(',', '.'),
+            )
+        except (InvalidOperation, ValueError):
+            discount_percent = Decimal('0')
+        try:
+            send_cart_recovery_alert(
+                session_key,
+                discount_percent=discount_percent,
+                staff_user=request.user,
+            )
+            if discount_percent > 0:
+                pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
+                messages.success(
+                    request,
+                    f'Podsjetnik poslan kupcu (sesija {session_key[:8]}…) s popustom {pct}%.',
+                )
+            else:
+                messages.success(request, f'Podsjetnik poslan kupcu (sesija {session_key[:8]}…).')
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        return redirect('staff_active_carts')
 
     sort = (request.GET.get('sort') or 'azurirano').strip()
     search_query = (request.GET.get('q') or '').strip()
@@ -2302,6 +2355,15 @@ def staff_active_carts(request):
         qs = qs.order_by('-azurirano', '-dodano')
 
     groups = _active_cart_groups(qs[:1000])
+    session_keys = [group['session_key'] for group in groups]
+    alert_map = {
+        alert.session_key: alert
+        for alert in CartRecoveryAlert.objects.filter(session_key__in=session_keys)
+    }
+    for group in groups:
+        alert = alert_map.get(group['session_key'])
+        group['recovery_alert'] = alert
+        group['recovery_pending'] = bool(alert and alert.show_popup and not alert.discount_applied)
     total_items = sum(len(group['items']) for group in groups)
     context = {
         **_base_context(),
@@ -2377,265 +2439,9 @@ def _format_subscriber_import_result(result):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_email_marketing(request):
-    if request.GET.get('export') == 'subscribers':
-        return _marketing_subscribers_csv_response()
+    messages.info(request, 'Email marketing je uklonjen sa sajta.')
+    return redirect('staff_admin_panel')
 
-    preview_campaign = None
-    subscriber_form = MarketingSubscriberBulkForm()
-    subscriber_group_form = MarketingSubscriberGroupForm()
-    subscriber_search_query = (request.GET.get('lista_q') or '').strip()
-    kampanja_id = request.GET.get('kampanja') or request.POST.get('kampanja_id')
-    if request.GET.get('slanje') == 'gotovo' and kampanja_id:
-        finished_campaign = MarketingEmailCampaign.objects.filter(pk=kampanja_id).first()
-        if finished_campaign:
-            group_label = ''
-            if finished_campaign.slanje_grupa_id:
-                group_label = f' ({finished_campaign.slanje_grupa.naziv})'
-            elif finished_campaign.slanje_ukljuci_registrovane:
-                group_label = ' (registrovani korisnici)'
-            total = finished_campaign.slanje_ukupno or finished_campaign.broj_primaoca
-            if finished_campaign.broj_primaoca:
-                messages.success(
-                    request,
-                    f'Slanje grupe završeno{group_label}: {finished_campaign.broj_primaoca} od {total} adresa.',
-                )
-            else:
-                messages.error(request, 'Grupa nije poslana — nijedan email nije uspio.')
-            if finished_campaign.broj_gresaka:
-                messages.warning(
-                    request,
-                    f'{finished_campaign.broj_gresaka} emailova nije uspjelo poslati.',
-                )
-    if kampanja_id:
-        preview_campaign = MarketingEmailCampaign.objects.filter(
-            pk=kampanja_id,
-            status__in=(
-                MarketingEmailCampaign.Status.DRAFT,
-                MarketingEmailCampaign.Status.SENDING,
-                MarketingEmailCampaign.Status.FAILED,
-            ),
-        ).first()
-
-    if request.method == 'POST':
-        action = (request.POST.get('action') or '').strip()
-        if action == 'import_subscribers':
-            subscriber_form = MarketingSubscriberBulkForm(request.POST)
-            if subscriber_form.is_valid():
-                try:
-                    entries = subscriber_form.parsed_entries()
-                except django_forms.ValidationError as exc:
-                    subscriber_form.add_error('emails', exc)
-                else:
-                    result = bulk_import_marketing_subscribers(
-                        entries,
-                        added_by=request.user,
-                    )
-                    messages.success(request, _format_subscriber_import_result(result))
-                    return redirect('staff_email_marketing')
-            form = MarketingEmailCampaignForm(instance=preview_campaign)
-        elif action == 'import_from_orders':
-            result = import_marketing_subscribers_from_orders(added_by=request.user)
-            messages.success(request, _format_subscriber_import_result(result))
-            return redirect('staff_email_marketing')
-        elif action == 'create_group':
-            subscriber_group_form = MarketingSubscriberGroupForm(request.POST)
-            if subscriber_group_form.is_valid():
-                group = subscriber_group_form.save(commit=False)
-                group.dodao = request.user
-                if not group.redoslijed:
-                    last_order = MarketingSubscriberGroup.objects.order_by('-redoslijed').values_list(
-                        'redoslijed', flat=True,
-                    ).first() or 0
-                    group.redoslijed = last_order + 1
-                group.save()
-                messages.success(request, f'Grupa „{group.naziv}” je kreirana.')
-                return redirect('staff_email_marketing')
-            form = MarketingEmailCampaignForm(instance=preview_campaign)
-        elif action == 'auto_distribute_groups':
-            result = auto_distribute_subscribers_to_groups(added_by=request.user)
-            if result['assigned']:
-                messages.success(
-                    request,
-                    (
-                        f'Raspodijeljeno {result["assigned"]} emailova u '
-                        f'{result["groups_used"]} grupa'
-                        f'{" (kreirano " + str(result["groups_created"]) + " novih)" if result["groups_created"] else ""}.'
-                    ),
-                )
-            else:
-                messages.info(request, 'Nema neraspoređenih emailova za grupe.')
-            return redirect('staff_email_marketing')
-        elif action == 'delete_subscriber':
-            subscriber = MarketingSubscriber.objects.filter(
-                pk=request.POST.get('subscriber_id'),
-            ).first()
-            if subscriber:
-                subscriber.delete()
-                messages.success(request, f'Email {subscriber.email} uklonjen iz liste.')
-            return redirect('staff_email_marketing')
-        elif action == 'send_batch':
-            campaign = get_object_or_404(
-                MarketingEmailCampaign,
-                pk=request.POST.get('kampanja_id'),
-                status=MarketingEmailCampaign.Status.SENDING,
-            )
-            try:
-                result = send_marketing_campaign_batch(campaign)
-                return JsonResponse(result)
-            except EmailNotConfiguredError as exc:
-                return JsonResponse({'error': str(exc)}, status=400)
-            except ValueError as exc:
-                return JsonResponse({'error': str(exc)}, status=400)
-            except Exception:
-                logger.exception('Marketing batch slanje nije uspjelo')
-                return JsonResponse({'error': 'Slanje nije uspjelo.'}, status=500)
-        elif action in ('send', 'test'):
-            campaign = get_object_or_404(
-                MarketingEmailCampaign,
-                pk=request.POST.get('kampanja_id'),
-                status__in=(
-                    MarketingEmailCampaign.Status.DRAFT,
-                    MarketingEmailCampaign.Status.SENDING,
-                    MarketingEmailCampaign.Status.FAILED,
-                ),
-            )
-            if action == 'test':
-                try:
-                    send_marketing_campaign_test_email(campaign)
-                    messages.success(
-                        request,
-                        f'Test email poslan na {MARKETING_TEST_EMAIL}.',
-                    )
-                except EmailNotConfiguredError as exc:
-                    messages.error(request, str(exc))
-                except ValueError as exc:
-                    messages.error(request, str(exc))
-                except Exception:
-                    logger.exception('Marketing test email nije poslan')
-                    messages.error(request, 'Test email nije poslan.')
-                return redirect(f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}')
-            try:
-                if campaign.status == MarketingEmailCampaign.Status.SENDING:
-                    return redirect(
-                        f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}&slanje=1',
-                    )
-                send_grupa_id = (request.POST.get('send_grupa_id') or '').strip()
-                if not send_grupa_id:
-                    raise ValueError('Odaberite marketing grupu za slanje.')
-                send_group = MarketingSubscriberGroup.objects.filter(pk=send_grupa_id).first()
-                if not send_group:
-                    raise ValueError('Odabrana grupa ne postoji.')
-                total = start_marketing_campaign_send(
-                    campaign,
-                    user=request.user,
-                    group=send_group,
-                )
-                if total == 0:
-                    messages.info(request, 'Svi u odabranoj grupi su već primili ovaj email.')
-                    return redirect(f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}')
-                return redirect(
-                    f'{reverse("staff_email_marketing")}?kampanja={campaign.pk}&slanje=1',
-                )
-            except EmailNotConfiguredError as exc:
-                messages.error(request, str(exc))
-            except ValueError as exc:
-                messages.error(request, str(exc))
-            except Exception:
-                logger.exception('Marketing email slanje nije uspjelo')
-                messages.error(request, 'Slanje kampanje nije uspjelo.')
-            preview_campaign = campaign
-            form = MarketingEmailCampaignForm(instance=campaign)
-        else:
-            draft_instance = preview_campaign
-            posted_id = request.POST.get('kampanja_id')
-            if posted_id:
-                draft_instance = MarketingEmailCampaign.objects.filter(
-                    pk=posted_id,
-                    status=MarketingEmailCampaign.Status.DRAFT,
-                ).first() or draft_instance
-            form = MarketingEmailCampaignForm(
-                request.POST,
-                request.FILES,
-                instance=draft_instance,
-            )
-            if form.is_valid():
-                draft = form.save(commit=False)
-                if not draft.poslao_id:
-                    draft.poslao = request.user
-                draft.status = MarketingEmailCampaign.Status.DRAFT
-                draft.save()
-                return redirect(f'{reverse("staff_email_marketing")}?kampanja={draft.pk}')
-            preview_campaign = draft_instance
-    else:
-        form = MarketingEmailCampaignForm(instance=preview_campaign)
-
-    site_settings = SiteSettings.load()
-    preview_logo_url = None
-    preview_banner_url = None
-    if preview_campaign and preview_campaign.banner:
-        preview_banner_url = request.build_absolute_uri(preview_campaign.banner.url)
-    if site_settings.logo:
-        preview_logo_url = request.build_absolute_uri(site_settings.logo.url)
-
-    recipient_stats = marketing_recipient_counts()
-    marketing_send_percent = 0
-    if preview_campaign and preview_campaign.slanje_ukupno:
-        marketing_send_percent = min(
-            100,
-            round((preview_campaign.broj_primaoca / preview_campaign.slanje_ukupno) * 100),
-        )
-    subscriber_page_obj = _paginate_marketing_subscribers(request)
-    subscriber_groups = MarketingSubscriberGroup.objects.order_by('redoslijed', 'id')
-    unassigned_subscriber_count = MarketingSubscriber.objects.filter(
-        aktivan=True, grupa__isnull=True,
-    ).count()
-    subscriber_total_count = MarketingSubscriber.objects.filter(aktivan=True).count()
-    lista_query = {}
-    if subscriber_search_query:
-        lista_query['lista_q'] = subscriber_search_query
-    if kampanja_id:
-        lista_query['kampanja'] = kampanja_id
-    lista_base_query = urlencode(lista_query)
-    context = {
-        **_base_context(),
-        'form': form,
-        'subscriber_form': subscriber_form,
-        'subscriber_group_form': subscriber_group_form,
-        'subscriber_groups': subscriber_groups,
-        'unassigned_subscriber_count': unassigned_subscriber_count,
-        'marketing_send_groups': (
-            marketing_send_groups(campaign=preview_campaign) if preview_campaign else []
-        ),
-        'marketing_send_percent': marketing_send_percent,
-        'preview_campaign': preview_campaign,
-        'recipient_count': recipient_stats['total'],
-        'registered_recipient_count': recipient_stats['registered'],
-        'subscriber_recipient_count': recipient_stats['subscribers'],
-        'subscriber_total_count': subscriber_total_count,
-        'subscriber_search_query': subscriber_search_query,
-        'subscriber_page_obj': subscriber_page_obj,
-        'subscriber_elided_page_range': subscriber_page_obj.paginator.get_elided_page_range(
-            subscriber_page_obj.number,
-        ),
-        'lista_base_query': lista_base_query,
-        'test_email': MARKETING_TEST_EMAIL,
-        'preview_logo_url': preview_logo_url,
-        'preview_banner_url': preview_banner_url,
-        'recent_campaigns': MarketingEmailCampaign.objects.filter(
-            status=MarketingEmailCampaign.Status.SENT,
-        ).order_by('-poslano')[:8],
-        'marketing_send_active': bool(
-            preview_campaign
-            and preview_campaign.status == MarketingEmailCampaign.Status.SENDING,
-        ),
-        'marketing_send_url': reverse('staff_email_marketing'),
-        'marketing_batch_size': settings.MARKETING_EMAIL_BATCH_SIZE,
-        'marketing_group_pause_ms': int(settings.MARKETING_EMAIL_GROUP_PAUSE * 1000),
-        'marketing_send_progress': (
-            marketing_send_progress(preview_campaign) if preview_campaign else None
-        ),
-    }
-    return render(request, 'staff/email_marketing.html', context)
 
 
 def _staff_olx_messages_filter(request):

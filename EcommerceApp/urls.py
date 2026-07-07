@@ -29,6 +29,8 @@ urlpatterns = [
     path('korpa/kupon/', views.apply_coupon, name='apply_coupon'),
     path('korpa/kupon/ukloni/', views.remove_coupon, name='remove_coupon'),
     path('korpa/ukloni/<str:key>/', views.remove_from_cart, name='remove_from_cart'),
+    path('korpa/podsjetnik/primijeni/', views.cart_recovery_apply, name='cart_recovery_apply'),
+    path('korpa/podsjetnik/zatvori/', views.cart_recovery_dismiss, name='cart_recovery_dismiss'),
     path('narudzba/', views.checkout, name='checkout'),
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),
@@ -41,7 +43,7 @@ urlpatterns = [
     path('nalog/provjera-narudzbi/<str:broj>/', views.staff_order_detail, name='staff_order_detail'),
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
-    path('nalog/email-marketing/', views.staff_email_marketing, name='staff_email_marketing'),
+
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
     path('nalog/olx-poruke/', views.staff_olx_messages, name='staff_olx_messages'),

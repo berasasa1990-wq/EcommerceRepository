@@ -64,7 +64,13 @@ def korisnik_ima_pogodnosti(user):
     return not Order.objects.filter(korisnik=user).exists()
 
 
-def izracunaj_sazetak(medjuzbir, user=None, coupon_code='', cart_items=None):
+def izracunaj_sazetak(
+    medjuzbir,
+    user=None,
+    coupon_code='',
+    cart_items=None,
+    recovery_discount_percent=None,
+):
     postavke = SiteSettings.load()
     medjuzbir = _kvantiziraj(medjuzbir)
 
@@ -97,6 +103,19 @@ def izracunaj_sazetak(medjuzbir, user=None, coupon_code='', cart_items=None):
             popust += iznos
             pogodnosti.append(f'Popust {iznos} KM za novog korisnika')
 
+    recovery_popust = Decimal('0.00')
+    if recovery_discount_percent:
+        recovery_percent = _kvantiziraj(recovery_discount_percent)
+        if recovery_percent > 0:
+            recovery_popust = _postotni_popust(medjuzbir, recovery_percent)
+            popust += recovery_popust
+            pct_display = (
+                int(recovery_percent)
+                if recovery_percent == int(recovery_percent)
+                else recovery_percent
+            )
+            pogodnosti.append(f'Poseban popust {pct_display}% na korpu')
+
     kupon = None
     kupon_popust = Decimal('0.00')
     if coupon_code:
@@ -120,6 +139,7 @@ def izracunaj_sazetak(medjuzbir, user=None, coupon_code='', cart_items=None):
         'pdv_artikli': pdv_artikli,
         'popust': popust,
         'kupon_popust': kupon_popust,
+        'recovery_popust': recovery_popust,
         'ostali_popust': _kvantiziraj(popust - kupon_popust),
         'kupon_primijenjen': bool(kupon),
         'pogodnosti': pogodnosti,
