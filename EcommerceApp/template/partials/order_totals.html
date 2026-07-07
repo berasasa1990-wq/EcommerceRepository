@@ -15,6 +15,13 @@
         <span>Popust</span>
         <span>{% if summary.popust %}-{{ summary.popust }}{% else %}0.00{% endif %} KM</span>
     </div>
+    {% if summary.pogodnosti %}
+    <ul class="order-totals-benefits">
+        {% for benefit in summary.pogodnosti %}
+        <li>{{ benefit }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
     <div class="order-totals-row">
         <span>Dostava{% if summary.dostava_naziv %} — {{ summary.dostava_naziv }}{% endif %}</span>
         <span>

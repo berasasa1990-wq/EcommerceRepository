@@ -5842,6 +5842,19 @@ body.search-results-active main {
     font-weight: 600;
 }
 
+.order-totals-benefits {
+    margin: 0 0 8px;
+    padding: 0 0 0 18px;
+    list-style: disc;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #1a7f4b;
+}
+
+.order-totals-benefits li {
+    margin: 0 0 2px;
+}
+
 .order-shipping-note {
     margin: 12px 0 4px;
     padding: 10px 12px;

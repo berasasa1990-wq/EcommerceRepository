@@ -1473,13 +1473,7 @@ def _checkout_summary_payload(request, cart):
     from .upsell import get_checkout_upsell_offers
 
     cart_items = list(cart)
-    applied_code = cart.get_coupon_code()
-    summary = izracunaj_sazetak(
-        cart.ukupno,
-        user=request.user,
-        coupon_code=applied_code,
-        cart_items=cart_items,
-    )
+    summary = cart.sazetak(user=request.user)
     for item in cart_items:
         item.pop('deal_info', None)
         item.pop('akcija_popup_discount', None)
@@ -1613,12 +1607,7 @@ def _cart_context(request, cart):
     loyalty_card = _loyalty_za_kupon(request)
     cart_items = list(cart)
     applied_code = cart.get_coupon_code()
-    summary = izracunaj_sazetak(
-        cart.ukupno,
-        user=request.user,
-        coupon_code=applied_code,
-        cart_items=cart_items,
-    )
+    summary = cart.sazetak(user=request.user)
     if cart_items:
         slug_map = dict(
             Product.objects.filter(
