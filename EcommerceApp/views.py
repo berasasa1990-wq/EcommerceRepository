@@ -476,48 +476,7 @@ def search_suggest(request):
     return JsonResponse({'results': results, 'query': query, 'has_more': has_more})
 
 
-WISHLIST_LOOKUP_LIMIT = 50
 
-
-@require_GET
-def wishlist_products(request):
-    ids = []
-    seen = set()
-    for part in request.GET.get('ids', '').split(','):
-        part = part.strip()
-        if not part.isdigit():
-            continue
-        pk = int(part)
-        if pk in seen:
-            continue
-        seen.add(pk)
-        ids.append(pk)
-        if len(ids) >= WISHLIST_LOOKUP_LIMIT:
-            break
-
-    if not ids:
-        return JsonResponse({'items': []})
-
-    products_qs = _prefetch_product_cards(_product_queryset(request).filter(pk__in=ids))
-    product_map = {product.pk: product for product in products_qs}
-    items = []
-    for pk in ids:
-        product = product_map.get(pk)
-        if not product:
-            continue
-        variation_count = getattr(product, 'variation_count', 0) or 0
-        items.append({
-            'id': product.pk,
-            'naziv': product.naziv,
-            'url': product.get_absolute_url(),
-            'image': product.prikazna_slika.url if product.prikazna_slika else '',
-            'price': f'{product.katalog_prikazna_cijena:.2f}',
-            'base_price': f'{product.katalog_bazna_cijena:.2f}',
-            'on_sale': product.katalog_na_akciji,
-            'has_variations': variation_count > 1,
-        })
-
-    return JsonResponse({'items': items})
 
 
 def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):

@@ -9,7 +9,7 @@
                         <a href="{{ section.category_url }}">{{ section.title }}</a>
                     </h2>
                 </div>
-                <div class="product-grid product-grid--catalog">
+                <div class="product-grid product-grid--catalog product-grid--category-showcase">
                     {% for product in section.products %}
                     {% include 'partials/product_catalog_card.html' with product=product hide_variations=True %}
                     {% endfor %}

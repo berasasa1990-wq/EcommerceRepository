@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260708v48" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260708v48">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260708v55" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260708v55">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -218,32 +218,7 @@
                         <span class="nav-action-label">Admin Panel</span>
                     </a>
                     {% endif %}
-                    <div class="header-wishlist-wrap" id="headerWishlist" data-wishlist-api="{% url 'wishlist_products' %}">
-                        <button
-                            type="button"
-                            class="nav-action-link wishlist-nav-btn"
-                            id="wishlistNavBtn"
-                            aria-label="Lista želja"
-                            aria-expanded="false"
-                            aria-controls="wishlistPanel"
-                        >
-                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="1.8"/>
-                            </svg>
-                            <span class="nav-action-label">Lista želja</span>
-                            <span class="wishlist-badge" id="wishlistBadge" hidden></span>
-                        </button>
-                        <div class="wishlist-panel" id="wishlistPanel" hidden>
-                            <div class="wishlist-panel__header">
-                                <h2>Lista želja</h2>
-                                <button type="button" class="wishlist-panel__close" id="wishlistPanelClose" aria-label="Zatvori listu želja">×</button>
-                            </div>
-                            <div class="wishlist-panel__body" id="wishlistPanelBody">
-                                <p class="wishlist-panel__empty">Nema artikala na listi želja.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="wishlist-panel-backdrop" id="wishlistPanelBackdrop" hidden></div>
+
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Moj nalog">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -408,7 +383,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260708v19" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260708v20" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
