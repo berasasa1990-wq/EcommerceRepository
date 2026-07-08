@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260708v26" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260708v26">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260708v39" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260708v39">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -274,7 +274,9 @@
             </div>
 
             <nav class="header-row header-row--categories" aria-label="Kategorije">
-                <ul class="nav-menu" id="navLinks">
+                <div class="mobile-nav-panel" id="mobileNavPanel">
+                    <button type="button" class="mobile-nav-panel__back" id="mobileNavClose" aria-label="Zatvori meni kategorija">Nazad</button>
+                    <ul class="nav-menu" id="navLinks">
                     {% for category in nav_categories %}
                     <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
                         data-nav-item
@@ -309,7 +311,8 @@
                     <li class="nav-item nav-item--akcija nav-item--akcija-mobile">
                         <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJSKA PONUDA</a>
                     </li>
-                </ul>
+                    </ul>
+                </div>
                 <div class="mobile-nav-subview" id="mobileNavSubview" aria-hidden="true">
                     <button type="button" class="mobile-nav-back" id="mobileNavBack">
                         <span class="mobile-nav-back__icon" aria-hidden="true">‹</span>
@@ -400,7 +403,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260708v8" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260708v19" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

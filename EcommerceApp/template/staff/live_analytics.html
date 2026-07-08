@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260708v6">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260708v8">
 {% endblock %}
 
 {% block content %}
@@ -64,7 +64,10 @@
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td><span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span></td>
                             <td class="staff-live-action-cell">
-                                <button type="button" class="staff-live-offer-btn" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}">Ponuda</button>
+                                {% if visitor.offer_sent %}
+                                <span class="staff-live-offer-sent{% if visitor.offer_active %} staff-live-offer-sent--active{% endif %}" title="Ponuda poslana{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}" aria-label="Ponuda poslana">✓</span>
+                                {% endif %}
+                                <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
                             </td>
                         </tr>
                         {% empty %}
@@ -105,7 +108,10 @@
                             </td>
                             <td class="staff-live-action-cell">
                                 {% if visitor.session_key %}
-                                <button type="button" class="staff-live-offer-btn" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}">Ponuda</button>
+                                {% if visitor.offer_sent %}
+                                <span class="staff-live-offer-sent{% if visitor.offer_active %} staff-live-offer-sent--active{% endif %}" title="Ponuda poslana{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}" aria-label="Ponuda poslana">✓</span>
+                                {% endif %}
+                                <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
                                 {% else %}
                                 <span class="staff-live-muted">—</span>
                                 {% endif %}
@@ -206,14 +212,32 @@
         }
     }
 
+    function offerSentBadge(visitor) {
+        if (!visitor.offer_sent) {
+            return '';
+        }
+        const productLabel = visitor.offer_product ? ': ' + visitor.offer_product : '';
+        const title = 'Ponuda poslana' + productLabel;
+        const activeClass = visitor.offer_active ? ' staff-live-offer-sent--active' : '';
+        return (
+            '<span class="staff-live-offer-sent' + activeClass + '" title="' + escapeHtml(title) + '" ' +
+            'aria-label="' + escapeHtml(title) + '">✓</span>'
+        );
+    }
+
     function offerButton(visitor) {
         if (!visitor.session_key) {
             return '<span class="staff-live-muted">—</span>';
         }
+        const sentClass = visitor.offer_sent ? ' staff-live-offer-btn--sent' : '';
+        const activeTitle = visitor.offer_active
+            ? ' title="Aktivna ponuda — kupac je još uvijek vidi"'
+            : '';
         return (
-            '<button type="button" class="staff-live-offer-btn" data-offer-open ' +
+            offerSentBadge(visitor) +
+            '<button type="button" class="staff-live-offer-btn' + sentClass + '" data-offer-open ' +
             'data-session-key="' + escapeHtml(visitor.session_key) + '" ' +
-            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '">Ponuda</button>'
+            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '"' + activeTitle + '>Ponuda</button>'
         );
     }
 
@@ -358,6 +382,7 @@
                 throw new Error(data.message || 'Slanje ponude nije uspjelo.');
             }
             closeOfferModal();
+            refreshLiveAnalytics();
             let toast = document.querySelector('.cart-toast');
             if (!toast) {
                 toast = document.createElement('p');

@@ -78,10 +78,24 @@ document.addEventListener('DOMContentLoaded', () => {
         navLinks.classList.toggle('mobile-nav-has-open', Boolean(hasOpen));
     }
 
+    const mobileNavPanel = document.getElementById('mobileNavPanel');
+    const mobileNavClose = document.getElementById('mobileNavClose');
     const mobileNavSubview = document.getElementById('mobileNavSubview');
     const mobileNavSubTitle = document.getElementById('mobileNavSubTitle');
     const mobileNavSubBody = document.getElementById('mobileNavSubBody');
     const mobileNavBack = document.getElementById('mobileNavBack');
+    let mobileNavScrollLockY = 0;
+
+    function syncMobileNavLayout() {
+        if (!header || window.innerWidth > 1024) return;
+        const top = Math.max(0, Math.round(header.getBoundingClientRect().bottom));
+        document.documentElement.style.setProperty('--mobile-nav-panel-top', `${top}px`);
+    }
+
+    function resetMobileNavScroll() {
+        navLinks.scrollTop = 0;
+        mobileNavPanel && (mobileNavPanel.scrollTop = 0);
+    }
 
     function closeMobileNavSubview() {
         mobileNavSubview?.classList.remove('is-open');
@@ -138,11 +152,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setMobileNavOpen(isOpen) {
         navLinks?.classList.toggle('mobile-open', isOpen);
+        mobileNavPanel?.classList.toggle('is-open', isOpen);
+        document.documentElement.classList.toggle('mobile-nav-open', isOpen);
         document.body.classList.toggle('mobile-nav-open', isOpen);
         if (isOpen) {
+            mobileNavScrollLockY = window.scrollY || window.pageYOffset || 0;
+            document.body.style.top = `-${mobileNavScrollLockY}px`;
+            document.body.style.width = '100%';
             closeSearchOverlay();
-        }
-        if (!isOpen) {
+            syncMobileNavLayout();
+            requestAnimationFrame(() => {
+                syncMobileNavLayout();
+                resetMobileNavScroll();
+            });
+        } else {
+            document.body.style.top = '';
+            document.body.style.width = '';
+            document.documentElement.style.removeProperty('--mobile-nav-panel-top');
+            resetMobileNavScroll();
+            window.scrollTo(0, mobileNavScrollLockY);
             closeMegaMenu();
             closeMobileNavSubview();
         }
@@ -152,6 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
     navToggle?.addEventListener('click', () => {
         setMobileNavOpen(!navLinks?.classList.contains('mobile-open'));
     });
+
+    mobileNavClose?.addEventListener('click', () => setMobileNavOpen(false));
 
     function openMegaMenu(item) {
         clearTimeout(megaCloseTimer);
@@ -223,6 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', () => {
         if (window.innerWidth > 1024) {
             setMobileNavOpen(false);
+            return;
+        }
+        if (navLinks?.classList.contains('mobile-open')) {
+            syncMobileNavLayout();
         }
     });
 

@@ -5018,8 +5018,18 @@ body.catalog-variation-modal-open {
 
 .catalog-mobile-zone,
 .catalog-mobile-filter-sheet,
+.mobile-nav-panel__back,
 .mobile-nav-subview {
     display: none;
+}
+
+.mobile-nav-panel {
+    display: contents;
+}
+
+html.mobile-nav-open,
+body.mobile-nav-open {
+    overflow: hidden;
 }
 
 /* ========================================
@@ -7145,30 +7155,86 @@ button.nav-action-link {
         display: none;
     }
 
-    .header-row--categories .nav-menu.mobile-open {
+    body.mobile-nav-open .header {
+        z-index: 1210;
+    }
+
+    body.mobile-nav-open .header-akcija-cta,
+    body.mobile-nav-open .scroll-top-btn,
+    body.mobile-nav-open .contact-float-group {
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .mobile-nav-panel.is-open {
         display: flex;
         flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
         position: fixed;
-        top: calc(var(--promo-height) + var(--header-top-height));
+        top: var(--mobile-nav-panel-top, calc(var(--promo-height) + var(--header-top-height)));
         left: 0;
         right: 0;
-        bottom: auto;
-        max-height: calc(100dvh - var(--promo-height) - var(--header-top-height));
-        background: var(--white);
-        padding: 0 16px 24px;
-        transform: none;
-        gap: 0;
-        z-index: 1002;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        border-top: 1px solid var(--gray-200);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        bottom: 0;
+        min-height: calc(100dvh - var(--mobile-nav-panel-top, calc(var(--promo-height) + var(--header-top-height))));
+        max-height: none;
+        background: #ffffff;
+        z-index: 1200;
+        overflow: hidden;
+        border-top: none;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
     }
 
+    .mobile-nav-panel.is-open .mobile-nav-panel__back {
+        display: block;
+        position: absolute;
+        top: 6px;
+        right: 16px;
+        z-index: 2;
+        border: none;
+        background: none;
+        padding: 6px 2px;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.2;
+        color: #28403d;
+        cursor: pointer;
+        font-family: inherit;
+        letter-spacing: -0.01em;
+    }
+
+    .header-row--categories .nav-menu.mobile-open {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        align-content: flex-start;
+        justify-content: flex-start;
+        position: static;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        max-height: none;
+        margin: 0;
+        background: transparent;
+        padding: 40px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+        transform: none;
+        gap: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        border-top: none;
+        box-shadow: none;
+        font-family: inherit;
+        -webkit-font-smoothing: inherit;
+    }
+
     .nav-menu.mobile-open > .nav-item:first-child {
         border-top: none;
+    }
+
+    .nav-menu.mobile-open > .nav-item:first-child > a {
+        padding-right: 72px;
     }
 
     .nav-menu.mobile-open > .nav-item {
@@ -7233,11 +7299,11 @@ button.nav-action-link {
         display: flex;
         flex-direction: column;
         position: fixed;
-        top: calc(var(--promo-height) + var(--header-top-height));
+        top: var(--mobile-nav-panel-top, calc(var(--promo-height) + var(--header-top-height)));
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 1004;
+        z-index: 1202;
         background: #ffffff;
         padding: 0 16px 24px;
         overflow-y: auto;
@@ -7391,7 +7457,11 @@ button.nav-action-link {
     }
 
     body.mobile-nav-open {
-        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        left: 0;
+        right: 0;
+        touch-action: none;
     }
 
     .logo-text {
