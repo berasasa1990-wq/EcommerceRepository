@@ -3562,6 +3562,20 @@ body.catalog-variation-modal-open {
         object-position: left center;
     }
 
+    .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row {
+        min-height: 24px;
+        margin: 6px 0 0;
+    }
+
+    .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-logo {
+        max-width: 88px;
+        height: 22px;
+    }
+
+    .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-name {
+        font-size: 11px;
+    }
+
     .product-card--catalog .product-card__brand-row .brand-name {
         font-size: 10px;
         line-height: 1.2;
@@ -8227,18 +8241,18 @@ button.nav-action-link {
         text-align: center;
     }
 
-    .category-page .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row {
-        min-height: 22px;
-        margin: 6px auto 0;
+    .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row {
+        min-height: 26px;
+        margin: 8px auto 0;
     }
 
-    .category-page .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-logo {
-        max-width: 72px;
-        height: 18px;
+    .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-logo {
+        max-width: 88px;
+        height: 22px;
     }
 
-    .category-page .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-name {
-        font-size: 10px;
+    .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-name {
+        font-size: 11px;
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__stock,
