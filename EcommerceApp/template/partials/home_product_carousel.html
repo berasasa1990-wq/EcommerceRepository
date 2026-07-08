@@ -1,5 +1,5 @@
 {% if products %}
-<div class="home-product-carousel" data-visible-desktop="6" data-visible-mobile="2" data-autoplay-ms="4500">
+<div class="home-product-carousel home-product-carousel--catalog" data-visible-desktop="6" data-visible-mobile="2" data-autoplay-ms="4500">
     <button type="button" class="home-product-carousel__btn home-product-carousel__btn--prev" aria-label="Prethodni artikli" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polyline points="15 18 9 12 15 6"/>
@@ -9,24 +9,11 @@
         <div class="home-product-carousel__track">
             {% for product in products %}
             <div class="home-product-carousel__slide">
-                <a href="{{ product.get_absolute_url }}" class="product-card product-card--home-carousel" data-product-card data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
-                    <div class="product-image">
-                        {% if home_section_badge == 'novo' %}
-                        <span class="product-home-ribbon product-home-ribbon--novo" aria-hidden="true">Novo</span>
-                        {% elif home_section_badge == 'hit' %}
-                        <span class="product-home-ribbon product-home-ribbon--hit" aria-hidden="true">HIT PONUDA</span>
-                        {% else %}
-                        {% include 'partials/product_sale_ribbon.html' with product=product %}
-                        {% include 'partials/product_discount_badge.html' with product=product %}
-                        {% endif %}
-                        {% if eager_first_image and forloop.first %}
-                        {% include 'partials/product_image.html' with product=product image_loading='eager' image_sizes='(max-width: 768px) 50vw, 16vw' %}
-                        {% else %}
-                        {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 50vw, 16vw' %}
-                        {% endif %}
-                    </div>
-                    {% include 'partials/product_card_home_info.html' with product=product %}
-                </a>
+                {% if eager_first_image and forloop.first %}
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=True home_section_badge=home_section_badge image_loading='eager' image_sizes='(max-width: 768px) 50vw, 16vw' %}
+                {% else %}
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=True home_section_badge=home_section_badge image_sizes='(max-width: 768px) 50vw, 16vw' %}
+                {% endif %}
             </div>
             {% endfor %}
         </div>

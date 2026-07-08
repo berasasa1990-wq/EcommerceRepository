@@ -808,11 +808,17 @@ document.addEventListener('DOMContentLoaded', () => {
             root.addEventListener('focusout', startAutoplay);
 
             let touchStartX = 0;
+            const isCarouselInteractiveTarget = (target) => (
+                target && target.closest('button, a, [data-catalog-add], [data-wishlist-toggle], .catalog-variation-modal')
+            );
+
             viewport.addEventListener('touchstart', (e) => {
+                if (isCarouselInteractiveTarget(e.target)) return;
                 touchStartX = e.touches[0].clientX;
             }, { passive: true });
 
             viewport.addEventListener('touchend', (e) => {
+                if (isCarouselInteractiveTarget(e.target)) return;
                 const diff = touchStartX - e.changedTouches[0].clientX;
                 if (Math.abs(diff) > 40) {
                     goTo(diff > 0 ? index + 1 : index - 1);
@@ -1668,7 +1674,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function openCatalogVariationModal(card, triggerBtn) {
         if (!catalogVariationModal || !catalogVariationModalOptions) return;
         const slug = triggerBtn.dataset.productSlug || card?.dataset.productSlug || '';
-        const productName = card?.dataset.defaultName || '';
+        const productName = card?.dataset.defaultName
+            || card?.querySelector('[data-product-name]')?.textContent?.trim()
+            || '';
         const variations = Array.from(card?.querySelectorAll('[data-catalog-variation]') || []);
         if (!slug || !variations.length) return;
 

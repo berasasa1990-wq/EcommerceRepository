@@ -11,22 +11,16 @@
         <div class="product-card__media">
             <div class="product-image">
                 <a href="{{ product.get_absolute_url }}" class="product-card__media-link" aria-label="{{ product.naziv }}">
+                    {% if home_section_badge == 'novo' %}
+                    <span class="product-home-ribbon product-home-ribbon--novo" aria-hidden="true">Novo</span>
+                    {% elif home_section_badge == 'hit' %}
+                    <span class="product-home-ribbon product-home-ribbon--hit" aria-hidden="true">HIT PONUDA</span>
+                    {% else %}
                     {% include 'partials/product_sale_ribbon.html' with product=product %}
                     {% include 'partials/product_discount_badge.html' with product=product %}
-                    {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 100vw, 25vw' %}
+                    {% endif %}
+                    {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}
                 </a>
-                <button
-                    type="button"
-                    class="product-wishlist-btn product-card__media-wishlist"
-                    data-wishlist-toggle
-                    data-product-id="{{ product.pk }}"
-                    aria-label="Dodaj u listu želja"
-                    aria-pressed="false"
-                >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                </button>
             </div>
             <div class="variation-swatches{% if hide_variations or not product.variation_count %} variation-swatches--empty{% endif %}">
                 {% if not hide_variations and product.variation_count %}
@@ -56,15 +50,16 @@
         </div>
     </div>
 
-    {% if product.brend %}
     <div class="product-card__brand-row">
+        {% if product.brend %}
         {% include 'partials/brand_display.html' with brand=product.brend %}
+        {% endif %}
     </div>
-    {% endif %}
 
-    {% if product.variation_count > 1 %}
+    {% with card_variations=product.varijacije.all %}
+    {% if card_variations|length > 1 %}
     <div class="catalog-variation-data" hidden aria-hidden="true">
-        {% for var in product.varijacije.all %}
+        {% for var in card_variations %}
         <span data-catalog-variation data-variation-id="{{ var.pk }}" data-variation-name="{{ var.naziv }}"></span>
         {% endfor %}
     </div>
@@ -73,10 +68,10 @@
     <div class="product-card__price-block">
         <div class="product-price product-card__price" data-product-price>
             {% if product.katalog_na_akciji %}
-            <span class="price-sale">{% if product.variation_count > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
-            <span class="price-original">{% if product.variation_count > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
+            <span class="price-sale">{% if card_variations|length > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+            <span class="price-original">{% if card_variations|length > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
             {% else %}
-            <span class="price-current">{% if product.variation_count > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+            <span class="price-current">{% if card_variations|length > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
             {% endif %}
         </div>
     </div>
@@ -88,9 +83,9 @@
             class="product-card-add-btn"
             data-catalog-add
             data-product-slug="{{ product.slug }}"
-            {% if product.variation_count > 1 %}data-pick-variation="1"{% endif %}
-            {% if product.variation_count == 1 %}
-                {% for variation in product.varijacije.all %}
+            {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
+            {% if card_variations|length == 1 %}
+                {% for variation in card_variations %}
             data-variation-id="{{ variation.pk }}"
                 {% endfor %}
             {% endif %}
@@ -112,5 +107,18 @@
             <span>Rasprodato</span>
         </button>
         {% endif %}
+        <button
+            type="button"
+            class="product-wishlist-btn product-card__footer-wishlist"
+            data-wishlist-toggle
+            data-product-id="{{ product.pk }}"
+            aria-label="Dodaj u listu želja"
+            aria-pressed="false"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+        </button>
     </div>
+    {% endwith %}
 </article>

@@ -1,6 +1,6 @@
 {% if sections %}
 {% for section in sections %}
-<section class="home-products home-products--category-showcase">
+<section class="category-page home-products home-products--category-showcase">
     <div class="product-catalog product-catalog--compact home-product-catalog home-category-showcase">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
@@ -9,16 +9,9 @@
                         <a href="{{ section.category_url }}">{{ section.title }}</a>
                     </h2>
                 </div>
-                <div class="home-category-showcase-grid">
+                <div class="product-grid product-grid--catalog">
                     {% for product in section.products %}
-                    <a href="{{ product.get_absolute_url }}" class="product-card product-card--home-grid" data-product-card data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
-                        <div class="product-image">
-                            {% include 'partials/product_sale_ribbon.html' with product=product %}
-                            {% include 'partials/product_discount_badge.html' with product=product %}
-                            {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 50vw, 25vw' %}
-                        </div>
-                        {% include 'partials/product_card_home_info.html' with product=product %}
-                    </a>
+                    {% include 'partials/product_catalog_card.html' with product=product hide_variations=True %}
                     {% endfor %}
                 </div>
                 <div class="home-category-showcase-footer">
