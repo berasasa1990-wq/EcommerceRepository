@@ -8386,11 +8386,29 @@ button.nav-action-link {
 
     .home-products--category-showcase .product-catalog--compact .product-grid--category-showcase .product-card--catalog .product-card__brand-row {
         width: 100%;
-        margin: 2px auto 0;
+        margin: 4px auto 0;
+        min-height: 16px;
     }
 
     .home-products--category-showcase .product-catalog--compact .product-grid--category-showcase .product-card--catalog:nth-child(n+5) {
         display: none;
+    }
+
+    /* Home mobile: unified brand logo on Noviteti, Izdvojeni and category showcases */
+    .home-products--novo .home-product-carousel--catalog .product-card--catalog .product-card__brand-row .brand-logo,
+    .home-products--izdvojeno .home-product-carousel--catalog .product-card--catalog .product-card__brand-row .brand-logo,
+    .home-products--category-showcase .product-catalog--compact .product-grid--category-showcase .product-card--catalog .product-card__brand-row .brand-logo,
+    .home-products--category-showcase .product-grid--category-showcase .product-card--catalog .product-card__brand-row .brand-logo {
+        width: auto;
+        max-width: 46px;
+        height: 12px;
+        object-fit: contain;
+        object-position: center center;
+    }
+
+    .home-products--novo .home-product-carousel--catalog .product-card--catalog .product-card__brand-row,
+    .home-products--izdvojeno .home-product-carousel--catalog .product-card--catalog .product-card__brand-row {
+        min-height: 16px;
     }
 
     .catalog-mobile-zone {
@@ -9564,8 +9582,16 @@ button.nav-action-link {
     }
 
     .home-brand-carousel .showcase-brand-link {
-        height: 50px;
-        padding: 6px 10px;
+        height: 36px;
+        padding: 4px 8px;
+    }
+
+    .home-brand-carousel .showcase-brand-logo {
+        width: 120px;
+        height: 30px;
+        max-width: 100%;
+        object-fit: contain;
+        object-position: center;
     }
 
     .home-brand-strip-section {
@@ -9740,7 +9766,13 @@ button.nav-action-link {
     }
 
     .home-brand-carousel .showcase-brand-link {
-        height: 48px;
+        height: 34px;
+        padding: 3px 6px;
+    }
+
+    .home-brand-carousel .showcase-brand-logo {
+        width: 120px;
+        height: 30px;
     }
 
     .home-product-catalog .product-grid,
