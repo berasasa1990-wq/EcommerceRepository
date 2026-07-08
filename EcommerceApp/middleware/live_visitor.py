@@ -1,4 +1,8 @@
+import logging
+
 from EcommerceApp.live_visitors import track_live_visitor
+
+logger = logging.getLogger(__name__)
 
 
 class LiveVisitorMiddleware:
@@ -12,5 +16,5 @@ class LiveVisitorMiddleware:
         try:
             track_live_visitor(request)
         except Exception:
-            pass
+            logger.exception('Live visitor tracking failed')
         return response

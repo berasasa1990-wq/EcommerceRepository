@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
+    path('api/lista-zelja/', views.wishlist_products, name='wishlist_products'),
     path('facebook-feed.xml', views_feed.facebook_feed, name='facebook_feed'),
 
     path('priprema-pristup/', views_site_prep.site_prep_unlock, name='site_prep_unlock'),

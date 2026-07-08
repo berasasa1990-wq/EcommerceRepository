@@ -1,0 +1,116 @@
+<article
+    class="product-card product-card--catalog"
+    data-product-card
+    data-product-id="{{ product.pk }}"
+    data-product-slug="{{ product.slug }}"
+    {% if not hide_variations %}data-cart-on-swatch{% endif %}
+    data-default-name="{{ product.naziv }}"
+    data-default-price="{{ product.katalog_prikazna_cijena }}"
+>
+    <div class="product-card__top">
+        <div class="product-card__media">
+            <div class="product-image">
+                <a href="{{ product.get_absolute_url }}" class="product-card__media-link" aria-label="{{ product.naziv }}">
+                    {% include 'partials/product_sale_ribbon.html' with product=product %}
+                    {% include 'partials/product_discount_badge.html' with product=product %}
+                    {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 100vw, 25vw' %}
+                </a>
+                <button
+                    type="button"
+                    class="product-wishlist-btn product-card__media-wishlist"
+                    data-wishlist-toggle
+                    data-product-id="{{ product.pk }}"
+                    aria-label="Dodaj u listu želja"
+                    aria-pressed="false"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="variation-swatches{% if hide_variations or not product.variation_count %} variation-swatches--empty{% endif %}">
+                {% if not hide_variations and product.variation_count %}
+                {% include 'partials/product_variation_swatches.html' with product=product card=True %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="product-card__body">
+            <a href="{{ product.get_absolute_url }}" class="product-card__title" data-product-name>{{ product.naziv }}</a>
+
+            {% if user.is_superuser and not product.na_stanju %}
+            <span class="staff-stock-badge">Nije na stanju</span>
+            {% endif %}
+
+            <p class="stock-badge{% if product.na_stanju %} stock-badge--in{% else %} stock-badge--out{% endif %} product-card__stock">
+                {% if product.na_stanju %}Na stanju{% else %}Rasprodato{% endif %}
+            </p>
+
+            {% if product.proizvedeno_u_japanu %}
+            <p class="product-origin product-card__origin">Made in Japan</p>
+            {% endif %}
+
+            {% if show_akcija_expiry and product.prikaz_akcija_istice %}
+            <p class="product-sale-expiry product-card__sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if product.brend %}
+    <div class="product-card__brand-row">
+        {% include 'partials/brand_display.html' with brand=product.brend %}
+    </div>
+    {% endif %}
+
+    {% if product.variation_count > 1 %}
+    <div class="catalog-variation-data" hidden aria-hidden="true">
+        {% for var in product.varijacije.all %}
+        <span data-catalog-variation data-variation-id="{{ var.pk }}" data-variation-name="{{ var.naziv }}"></span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="product-card__price-block">
+        <div class="product-price product-card__price" data-product-price>
+            {% if product.katalog_na_akciji %}
+            <span class="price-sale">{% if product.variation_count > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+            <span class="price-original">{% if product.variation_count > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
+            {% else %}
+            <span class="price-current">{% if product.variation_count > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="product-card__actions">
+        {% if product.na_stanju %}
+        <button
+            type="button"
+            class="product-card-add-btn"
+            data-catalog-add
+            data-product-slug="{{ product.slug }}"
+            {% if product.variation_count > 1 %}data-pick-variation="1"{% endif %}
+            {% if product.variation_count == 1 %}
+                {% for variation in product.varijacije.all %}
+            data-variation-id="{{ variation.pk }}"
+                {% endfor %}
+            {% endif %}
+        >
+            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+            </svg>
+            <span>Dodaj u korpu</span>
+        </button>
+        {% else %}
+        <button type="button" class="product-card-add-btn" disabled>
+            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+            </svg>
+            <span>Rasprodato</span>
+        </button>
+        {% endif %}
+    </div>
+</article>

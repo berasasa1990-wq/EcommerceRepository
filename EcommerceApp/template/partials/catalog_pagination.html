@@ -1,21 +1,18 @@
-{% if page_obj.paginator.num_pages > 1 %}
-<nav class="catalog-pagination" aria-label="Stranice artikala">
-    <div class="catalog-pagination-info">
-        Strana {{ page_obj.number }} od {{ page_obj.paginator.num_pages }}
-        ({{ page_obj.paginator.count }} artikala)
-    </div>
+{% if page_obj %}
+<nav class="catalog-pagination catalog-pagination--compact{% if pagination_placement %} catalog-pagination--{{ pagination_placement }}{% endif %}" aria-label="Stranice artikala">
+    {% if page_obj.paginator.num_pages > 1 %}
     <div class="catalog-pagination-links">
         {% if page_obj.has_previous %}
-        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.previous_page_number }}#product-showcase" class="catalog-page-link">Prethodna</a>
+        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.previous_page_number }}#product-showcase" class="catalog-page-link" aria-label="Prethodna strana">‹</a>
         {% else %}
-        <span class="catalog-page-link catalog-page-link--disabled">Prethodna</span>
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">‹</span>
         {% endif %}
 
         {% for page_num in elided_page_range|default:page_obj.paginator.page_range %}
             {% if page_num == page_obj.paginator.ELLIPSIS %}
             <span class="catalog-page-ellipsis">…</span>
             {% elif page_num == page_obj.number %}
-            <span class="catalog-page-link catalog-page-link--active">{{ page_num }}</span>
+            <span class="catalog-page-link catalog-page-link--active" aria-current="page">{{ page_num }}</span>
             {% elif page_num == 1 %}
             <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}{% endif %}#product-showcase" class="catalog-page-link">{{ page_num }}</a>
             {% else %}
@@ -24,10 +21,14 @@
         {% endfor %}
 
         {% if page_obj.has_next %}
-        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.next_page_number }}#product-showcase" class="catalog-page-link">Sljedeća</a>
+        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.next_page_number }}#product-showcase" class="catalog-page-link" aria-label="Sljedeća strana">›</a>
         {% else %}
-        <span class="catalog-page-link catalog-page-link--disabled">Sljedeća</span>
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">›</span>
         {% endif %}
+    </div>
+    {% endif %}
+    <div class="catalog-pagination-info">
+        {{ page_obj.number }}/{{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} art.
     </div>
 </nav>
 {% endif %}

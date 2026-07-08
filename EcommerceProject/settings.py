@@ -63,8 +63,8 @@ DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 # ALLOWED_HOSTS: always support local development even if .env has production values
 # (e.g. ALLOWED_HOSTS from Render .env section)
-_allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
-ALLOWED_HOSTS = []
+_allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1,')
+ALLOWED_HOSTS = ['192.168.1.103']
 for h in _allowed.split(','):
     h = h.strip()
     if not h:

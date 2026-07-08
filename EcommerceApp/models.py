@@ -525,6 +525,42 @@ class HomeFeaturedProduct(models.Model):
         return self.artikal.naziv
 
 
+class HomeCategoryShowcase(models.Model):
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='kategorije_na_pocetnoj',
+        default=1,
+        editable=False,
+    )
+    kategorija = models.ForeignKey(
+        'Category',
+        on_delete=models.CASCADE,
+        related_name='pocetna_sekcije',
+        verbose_name='Kategorija',
+        limit_choices_to={'aktivan': True},
+    )
+    naslov = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Naslov sekcije',
+        help_text='Prazno = naziv kategorije.',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Kategorija na početnoj (2×2)'
+        verbose_name_plural = 'Kategorije na početnoj (2×2 mobil)'
+        ordering = ['redoslijed', 'id']
+
+    def display_title(self):
+        return (self.naslov or '').strip() or self.kategorija.naziv
+
+    def __str__(self):
+        return self.display_title()
+
+
 class HomeVlog(models.Model):
     naslov = models.CharField(
         max_length=200,
@@ -1981,6 +2017,7 @@ class LiveVisitor(models.Model):
     ime = models.CharField(max_length=120, blank=True, verbose_name='Ime')
     email = models.EmailField(blank=True, verbose_name='Email')
     grad = models.CharField(max_length=100, blank=True, verbose_name='Grad')
+    drzava = models.CharField(max_length=2, blank=True, verbose_name='Država')
     ip_adresa = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP adresa')
     first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva aktivnost')
     last_seen = models.DateTimeField(db_index=True, verbose_name='Zadnja aktivnost')

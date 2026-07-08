@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260708v3">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260708v6">
 {% endblock %}
 
 {% block content %}
@@ -19,7 +19,7 @@
             <div>
                 <h1>Uživo analitika</h1>
                 <p class="staff-live-analytics-subtitle">
-                    Trenutno aktivni posjetioci i svi u zadnjih {{ window_minutes }} minuta.
+                    Prikazani su isključivo posjetioci iz Bosne i Hercegovine (grad na sajtu).
                     Pošaljite im ponudu artikla s opcionalnim popustom.
                 </p>
             </div>
@@ -50,8 +50,8 @@
                     <thead>
                         <tr>
                             <th>Ime</th>
+                            <th>Grad (BiH)</th>
                             <th>Email</th>
-                            <th>Grad</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
@@ -60,8 +60,8 @@
                         {% for visitor in online_visitors %}
                         <tr>
                             <td>{{ visitor.ime }}</td>
+                            <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td>{% if visitor.grad %}{{ visitor.grad }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td><span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span></td>
                             <td class="staff-live-action-cell">
                                 <button type="button" class="staff-live-offer-btn" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}">Ponuda</button>
@@ -69,7 +69,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="5">Trenutno nema aktivnih posjetilaca.</td>
+                            <td colspan="5">Trenutno nema aktivnih posjetilaca iz BiH.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -84,8 +84,8 @@
                     <thead>
                         <tr>
                             <th>Ime</th>
+                            <th>Grad (BiH)</th>
                             <th>Email</th>
-                            <th>Grad</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
@@ -94,8 +94,8 @@
                         {% for visitor in window_visitors %}
                         <tr>
                             <td>{{ visitor.ime }}</td>
+                            <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td>{% if visitor.grad %}{{ visitor.grad }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>
                                 {% if visitor.is_online %}
                                 <span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span>
@@ -113,7 +113,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="5">Nema posjeta u zadnjih {{ window_minutes }} minuta.</td>
+                            <td colspan="5">Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -213,7 +213,7 @@
         return (
             '<button type="button" class="staff-live-offer-btn" data-offer-open ' +
             'data-session-key="' + escapeHtml(visitor.session_key) + '" ' +
-            'data-visitor-name="' + escapeHtml(visitor.ime) + '">Ponuda</button>'
+            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '">Ponuda</button>'
         );
     }
 
@@ -233,9 +233,9 @@
                 : 'staff-live-badge';
             return (
                 '<tr>' +
-                '<td>' + escapeHtml(visitor.ime) + '</td>' +
-                '<td>' + email + '</td>' +
+                '<td>' + escapeHtml(visitor.ime || 'Gost') + '</td>' +
                 '<td>' + grad + '</td>' +
+                '<td>' + email + '</td>' +
                 '<td><span class="' + badgeClass + '">' + escapeHtml(visitor.last_seen_label) + '</span></td>' +
                 '<td class="staff-live-action-cell">' + offerButton(visitor) + '</td>' +
                 '</tr>'
@@ -391,11 +391,11 @@
             updatedEl.textContent = data.generated_at_label || '—';
             onlineBody.innerHTML = renderRows(
                 data.online_visitors || [],
-                'Trenutno nema aktivnih posjetilaca.',
+                'Trenutno nema aktivnih posjetilaca iz BiH.',
             );
             windowBody.innerHTML = renderRows(
                 data.window_visitors || [],
-                'Nema posjeta u zadnjih {{ window_minutes }} minuta.',
+                'Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.',
             );
             bindOfferButtons(onlineBody);
             bindOfferButtons(windowBody);

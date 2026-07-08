@@ -172,7 +172,7 @@
 
 {% if filters_active %}
 <section class="category-page home-search-results{% if filter_params.q %} home-search-results--search{% endif %}{% if filter_params.akcija %} home-search-results--akcija{% endif %}" id="product-showcase">
-    {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action filter_categories=filter_categories filter_reset_url=filter_reset_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_groups=filter_size_groups %}
+    {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action filter_categories=filter_categories filter_reset_url=filter_reset_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_groups=filter_size_groups filter_params=filter_params selected_brand=selected_brand %}
 </section>
 {% else %}
 {% if showcase_brands %}
@@ -186,12 +186,10 @@
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% if site_settings.naslov_novo or site_settings.podnaslov_novo %}
                 <div class="home-products-header home-products-header--novo">
-                    {% if site_settings.naslov_novo %}<h2>{{ site_settings.naslov_novo }}</h2>{% endif %}
+                    <h2>{{ site_settings.naslov_novo|default:"Noviteti" }}</h2>
                     {% if site_settings.podnaslov_novo %}<p>{{ site_settings.podnaslov_novo }}</p>{% endif %}
                 </div>
-                {% endif %}
                 {% include 'partials/home_product_carousel.html' with products=latest_products eager_first_image=eager_first_novo_image home_section_badge='novo' %}
             </div>
         </div>
@@ -204,17 +202,19 @@
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% if site_settings.naslov_izdvojeno or site_settings.podnaslov_izdvojeno %}
                 <div class="home-products-header home-products-header--izdvojeno">
-                    {% if site_settings.naslov_izdvojeno %}<h2>{{ site_settings.naslov_izdvojeno }}</h2>{% endif %}
+                    <h2>{{ site_settings.naslov_izdvojeno|default:"Izdvojeni artikli" }}</h2>
                     {% if site_settings.podnaslov_izdvojeno %}<p>{{ site_settings.podnaslov_izdvojeno }}</p>{% endif %}
                 </div>
-                {% endif %}
                 {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
             </div>
         </div>
     </div>
 </section>
+{% endif %}
+
+{% if home_category_showcases %}
+{% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}
 {% endif %}
 
 {% if home_vlogs %}

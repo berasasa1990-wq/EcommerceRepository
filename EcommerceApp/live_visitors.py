@@ -4,11 +4,18 @@ from datetime import timedelta
 from django.utils import timezone
 
 from .models import LiveVisitor
-from .visitor_geo import get_client_ip, resolve_visitor_city
+from .visitor_geo import (
+    get_client_ip,
+    is_known_foreign_visitor,
+    resolve_visitor_city,
+    resolve_visitor_country,
+)
 
 ONLINE_MINUTES = 5
 WINDOW_MINUTES = 30
 RETENTION_HOURS = 48
+BOSNIA_HERZEGOVINA_COUNTRY_CODE = 'BA'
+
 
 
 def _display_name(user):
@@ -62,14 +69,20 @@ def track_live_visitor(request):
     if not session_key:
         return
 
+    ip = get_client_ip(request)
+    if is_known_foreign_visitor(request, ip=ip):
+        LiveVisitor.objects.filter(session_key=session_key).delete()
+        return
+
     user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
     now = timezone.now()
-    ip = get_client_ip(request)
-    existing = LiveVisitor.objects.filter(session_key=session_key).only('grad', 'ip_adresa').first()
+    country = (resolve_visitor_country(request, ip=ip) or '').strip().upper()
+    if country and country != BOSNIA_HERZEGOVINA_COUNTRY_CODE:
+        LiveVisitor.objects.filter(session_key=session_key).delete()
+        return
 
-    if not ip and existing and existing.grad:
-        grad = existing.grad
-    else:
+    grad = ''
+    if not country or country == BOSNIA_HERZEGOVINA_COUNTRY_CODE:
         grad = resolve_visitor_city(request, ip=ip) or ''
 
     defaults = {
@@ -77,6 +90,7 @@ def track_live_visitor(request):
         'ime': _display_name(user)[:120],
         'email': _display_email(user)[:254],
         'grad': (grad or '')[:100],
+        'drzava': BOSNIA_HERZEGOVINA_COUNTRY_CODE,
         'ip_adresa': ip or None,
         'last_seen': now,
     }
@@ -103,11 +117,15 @@ def _visitor_payload(visitor, *, now):
     else:
         hours = seconds_ago // 3600
         ago_label = f'prije {hours} h'
+    grad = ''
+    if (visitor.drzava or '').strip().upper() == BOSNIA_HERZEGOVINA_COUNTRY_CODE:
+        grad = visitor.grad or ''
+
     return {
         'session_key': visitor.session_key,
         'ime': visitor.ime or 'Gost',
         'email': visitor.email or '',
-        'grad': visitor.grad or '',
+        'grad': grad,
         'is_guest': not visitor.user_id and not visitor.email,
         'last_seen': visitor.last_seen,
         'last_seen_label': ago_label,
@@ -121,9 +139,10 @@ def get_live_visitor_snapshot():
     online_cutoff = now - timedelta(minutes=ONLINE_MINUTES)
     window_cutoff = now - timedelta(minutes=WINDOW_MINUTES)
 
-    window_qs = LiveVisitor.objects.filter(last_seen__gte=window_cutoff).order_by('-last_seen')
-    online_qs = window_qs.filter(last_seen__gte=online_cutoff)
-
+    window_qs = LiveVisitor.objects.filter(
+        last_seen__gte=window_cutoff,
+        drzava=BOSNIA_HERZEGOVINA_COUNTRY_CODE,
+    ).order_by('-last_seen')
     window_visitors = [_visitor_payload(row, now=now) for row in window_qs]
     online_visitors = [row for row in window_visitors if row['is_online']]
 

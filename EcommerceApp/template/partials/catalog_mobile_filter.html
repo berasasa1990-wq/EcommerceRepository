@@ -1,0 +1,122 @@
+{% if filter_size_groups or category or catalog_title %}
+<div class="catalog-mobile-zone" id="catalogMobileZone">
+    {% if category_subnav %}
+    <div class="catalog-mobile-zone__subnav">
+        {% include 'partials/category_subnav.html' %}
+    </div>
+    {% endif %}
+
+    <div class="catalog-mobile-zone__bar">
+        <button type="button" class="catalog-mobile-filter-btn" id="catalogMobileFilterOpen" aria-expanded="false" aria-controls="catalogMobileFilterSheet">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M4 6h16M7 12h10M10 18h4"/>
+            </svg>
+            <span>Filter i sortiranje</span>
+            {% if filter_params.velicina or filter_params.sort or filter_params.cijena_od or filter_params.cijena_do %}
+            <span class="catalog-mobile-filter-btn__badge" aria-hidden="true"></span>
+            {% endif %}
+        </button>
+    </div>
+</div>
+
+<div class="catalog-mobile-filter-sheet" id="catalogMobileFilterSheet" hidden>
+    <div class="catalog-mobile-filter-sheet__backdrop" id="catalogMobileFilterClose" aria-hidden="true"></div>
+    <div class="catalog-mobile-filter-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="catalogMobileFilterTitle">
+        <div class="catalog-mobile-filter-sheet__header">
+            <h2 id="catalogMobileFilterTitle">Filter</h2>
+            <button type="button" class="catalog-mobile-filter-sheet__close" id="catalogMobileFilterCloseBtn" aria-label="Zatvori">×</button>
+        </div>
+
+        <form class="catalog-mobile-filter-form" method="get" action="{{ filter_action }}">
+            <div class="catalog-mobile-filter-sheet__body">
+                {% if filter_params.q %}
+                <input type="hidden" name="q" value="{{ filter_params.q }}">
+                <p class="catalog-mobile-filter-hint">Pretraga: <strong>{{ filter_params.q }}</strong></p>
+                {% endif %}
+                {% if filter_params.akcija %}
+                <input type="hidden" name="akcija" value="{{ filter_params.akcija }}">
+                <p class="catalog-mobile-filter-hint">Akcija: <strong>sniženi artikli</strong></p>
+                {% endif %}
+                {% if filter_params.brend %}
+                <input type="hidden" name="brend" value="{{ filter_params.brend }}">
+                {% if selected_brand %}
+                <p class="catalog-mobile-filter-hint">Brend: <strong>{{ selected_brand.naziv }}</strong></p>
+                {% endif %}
+                {% endif %}
+                {% if catalog_show_all %}<input type="hidden" name="all" value="1">{% endif %}
+
+                {% if not hide_category_filter and filter_categories %}
+                <div class="catalog-mobile-filter-section">
+                    <label class="catalog-mobile-filter-section__label" for="mobile-filter-kategorija">Kategorija</label>
+                    <select id="mobile-filter-kategorija" name="kategorija" class="catalog-mobile-filter-select">
+                        <option value="">Sve kategorije</option>
+                        {% for cat in filter_categories %}
+                        <option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>
+                            {% if cat.nivo == 1 %}— {% elif cat.nivo == 2 %}—— {% endif %}{{ cat.naziv }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                {% for group in filter_size_groups %}
+                <div class="catalog-mobile-filter-section catalog-mobile-filter-section--collapsible{% if group.has_selection %} is-open{% endif %}" data-mobile-filter-group="{{ group.key }}">
+                    <button type="button" class="catalog-mobile-filter-section__toggle" aria-expanded="{% if group.has_selection %}true{% else %}false{% endif %}">
+                        <span>{{ group.label }}</span>
+                        <span class="catalog-mobile-filter-section__meta">
+                            <span class="catalog-mobile-filter-section__count">{{ group.options|length }}</span>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="catalog-mobile-filter-section__panel">
+                        {% for option in group.options %}
+                            {% if option.selected %}
+                            <p class="catalog-mobile-filter-selected">Odabrano: <strong>{{ option.label }}</strong></p>
+                            {% endif %}
+                        {% endfor %}
+                        <div class="catalog-mobile-filter-size-list">
+                            {% for option in group.options %}
+                            <label class="catalog-mobile-filter-size-option">
+                                <input type="radio" name="velicina" value="{{ option.label }}"{% if option.selected %} checked{% endif %}>
+                                <span>{{ option.label }}</span>
+                            </label>
+                            {% endfor %}
+                            {% if group.clear_url %}
+                            <label class="catalog-mobile-filter-size-option">
+                                <input type="radio" name="velicina" value=""{% if not filter_params.velicina %} checked{% endif %}>
+                                <span>{{ group.clear_label }}</span>
+                            </label>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="catalog-mobile-filter-section">
+                    <span class="catalog-mobile-filter-section__label">Cijena (KM)</span>
+                    <div class="catalog-mobile-filter-price">
+                        <input type="number" name="cijena_od" placeholder="Od" min="0" step="0.01" value="{{ filter_params.cijena_od }}">
+                        <input type="number" name="cijena_do" placeholder="Do" min="0" step="0.01" value="{{ filter_params.cijena_do }}">
+                    </div>
+                </div>
+
+                <div class="catalog-mobile-filter-section">
+                    <label class="catalog-mobile-filter-section__label" for="mobile-filter-sort">Sortiranje</label>
+                    <select id="mobile-filter-sort" name="sort" class="catalog-mobile-filter-select">
+                        <option value="">Zadano</option>
+                        <option value="rastuca"{% if filter_params.sort == 'rastuca' %} selected{% endif %}>Rastuća cijena</option>
+                        <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Opadajuća cijena</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="catalog-mobile-filter-sheet__footer">
+                <a href="{% if filter_reset_url %}{{ filter_reset_url }}{% else %}{{ filter_action }}{% endif %}#product-showcase" class="btn btn-secondary catalog-mobile-filter-reset">Poništi</a>
+                <button type="submit" class="btn btn-primary catalog-mobile-filter-apply">Primijeni</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}

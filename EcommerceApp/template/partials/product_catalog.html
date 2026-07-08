@@ -3,6 +3,10 @@
         {% include 'partials/product_filter_sidebar.html' with filter_action=filter_action filter_size_groups=filter_size_groups %}
 
         <div class="catalog-products">
+            {% if category or catalog_title %}
+            {% include 'partials/catalog_mobile_filter.html' %}
+            {% endif %}
+
             {% if category %}
             <div class="category-header">
                 <h1>{{ category.naziv }}</h1>
@@ -25,22 +29,14 @@
             </p>
             {% endif %}
 
+            {% if page_obj %}
+            {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='top' %}
+            {% endif %}
+
             {% if products %}
-            <div class="product-grid">
+            <div class="product-grid product-grid--catalog">
                 {% for product in products %}
-                <a href="{{ product.get_absolute_url }}" class="product-card" data-product-card{% if not hide_variations %} data-cart-on-swatch{% endif %} data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
-                    <div class="product-image">
-                        {% include 'partials/product_sale_ribbon.html' with product=product %}
-                        {% include 'partials/product_discount_badge.html' with product=product %}
-                        {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 50vw, 25vw' %}
-                    </div>
-                    <div class="variation-swatches{% if hide_variations or not product.varijacije.count %} variation-swatches--empty{% endif %}">
-                        {% if not hide_variations and product.varijacije.count %}
-                        {% include 'partials/product_variation_swatches.html' with product=product card=True %}
-                        {% endif %}
-                    </div>
-                    {% include 'partials/product_card_info.html' with product=product show_akcija_expiry=show_akcija_expiry %}
-                </a>
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations show_akcija_expiry=show_akcija_expiry %}
                 {% endfor %}
             </div>
             {% else %}
@@ -48,7 +44,7 @@
             {% endif %}
 
             {% if page_obj %}
-            {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query %}
+            {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='bottom' %}
             {% endif %}
         </div>
     </div>

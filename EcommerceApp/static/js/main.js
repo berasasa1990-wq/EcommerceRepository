@@ -17,6 +17,18 @@ window.addEventListener('pageshow', (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
+    if (scrollTopBtn) {
+        const toggleScrollTopBtn = () => {
+            scrollTopBtn.classList.toggle('is-visible', window.scrollY > 320);
+        };
+        toggleScrollTopBtn();
+        window.addEventListener('scroll', toggleScrollTopBtn, { passive: true });
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
     const header = document.getElementById('header');
     const navToggle = document.getElementById('navToggle');
     const navLinks = document.getElementById('navLinks');
@@ -66,6 +78,64 @@ document.addEventListener('DOMContentLoaded', () => {
         navLinks.classList.toggle('mobile-nav-has-open', Boolean(hasOpen));
     }
 
+    const mobileNavSubview = document.getElementById('mobileNavSubview');
+    const mobileNavSubTitle = document.getElementById('mobileNavSubTitle');
+    const mobileNavSubBody = document.getElementById('mobileNavSubBody');
+    const mobileNavBack = document.getElementById('mobileNavBack');
+
+    function closeMobileNavSubview() {
+        mobileNavSubview?.classList.remove('is-open');
+        mobileNavSubview?.setAttribute('aria-hidden', 'true');
+        navLinks?.classList.remove('mobile-nav-sub-open');
+        megaItems.forEach((el) => el.classList.remove('mega-open'));
+        syncMobileNavExpanded();
+    }
+
+    function buildMobileNavSubLink(anchor, className) {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = anchor.getAttribute('href') || '#';
+        link.textContent = anchor.textContent.trim();
+        if (className) link.className = className;
+        link.addEventListener('click', () => setMobileNavOpen(false));
+        li.appendChild(link);
+        return li;
+    }
+
+    function openMobileNavSubview(item) {
+        const link = item.querySelector(':scope > a');
+        const submenu = item.querySelector('.nav-submenu');
+        if (!link || !submenu || !mobileNavSubview || !mobileNavSubBody || !mobileNavSubTitle) return;
+
+        mobileNavSubTitle.textContent = link.childNodes[0]?.textContent?.trim() || link.textContent.trim();
+        mobileNavSubBody.innerHTML = '';
+        const list = document.createElement('ul');
+        list.className = 'mobile-nav-subview-list';
+
+        submenu.querySelectorAll(':scope > li').forEach((entry) => {
+            if (entry.classList.contains('nav-submenu-all')) {
+                const anchor = entry.querySelector('a');
+                if (anchor) list.appendChild(buildMobileNavSubLink(anchor, 'mobile-nav-subview-link mobile-nav-subview-link--all'));
+                return;
+            }
+            const titleLink = entry.querySelector(':scope > a.nav-submenu-title, :scope > a');
+            if (titleLink) {
+                list.appendChild(buildMobileNavSubLink(titleLink, 'mobile-nav-subview-link mobile-nav-subview-link--title'));
+            }
+            entry.querySelectorAll('.nav-submenu-nested a').forEach((nestedLink) => {
+                list.appendChild(buildMobileNavSubLink(nestedLink, 'mobile-nav-subview-link mobile-nav-subview-link--child'));
+            });
+        });
+
+        mobileNavSubBody.appendChild(list);
+        megaItems.forEach((el) => el.classList.remove('mega-open'));
+        item.classList.add('mega-open');
+        navLinks?.classList.add('mobile-nav-sub-open');
+        mobileNavSubview.classList.add('is-open');
+        mobileNavSubview.setAttribute('aria-hidden', 'false');
+        syncMobileNavExpanded();
+    }
+
     function setMobileNavOpen(isOpen) {
         navLinks?.classList.toggle('mobile-open', isOpen);
         document.body.classList.toggle('mobile-nav-open', isOpen);
@@ -74,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!isOpen) {
             closeMegaMenu();
+            closeMobileNavSubview();
         }
         syncMobileNavExpanded();
     }
@@ -138,30 +209,16 @@ document.addEventListener('DOMContentLoaded', () => {
         link?.addEventListener('click', (e) => {
             if (window.innerWidth <= 1024 && navLinks?.classList.contains('mobile-open') && submenu) {
                 e.preventDefault();
-                const wasOpen = item.classList.contains('mega-open');
-                megaItems.forEach((el) => el.classList.remove('mega-open'));
-                if (!wasOpen) {
-                    item.classList.add('mega-open');
-                    syncMobileNavExpanded();
-                    // On mobile: ALWAYS scroll clicked category to top so its subcategories are shown from the very beginning
-                    const doScroll = () => {
-                        if (navLinks && item) {
-                            // scroll item to top of the scroll container
-                            navLinks.scrollTo({
-                                top: Math.max(0, item.offsetTop - 4),
-                                behavior: 'smooth'
-                            });
-                        }
-                    };
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(doScroll);
-                    });
-                } else {
-                    syncMobileNavExpanded();
+                if (item.classList.contains('mega-open') && mobileNavSubview?.classList.contains('is-open')) {
+                    closeMobileNavSubview();
+                    return;
                 }
+                openMobileNavSubview(item);
             }
         });
     });
+
+    mobileNavBack?.addEventListener('click', closeMobileNavSubview);
 
     window.addEventListener('resize', () => {
         if (window.innerWidth > 1024) {
@@ -450,11 +507,61 @@ document.addEventListener('DOMContentLoaded', () => {
     catalogFilterForm?.addEventListener('submit', saveCatalogScroll);
     catalogFilterForm?.querySelector('.btn-filter.btn-secondary')?.addEventListener('click', saveCatalogScroll);
 
+    const catalogMobileFilterSheet = document.getElementById('catalogMobileFilterSheet');
+    const catalogMobileFilterOpen = document.getElementById('catalogMobileFilterOpen');
+    const catalogMobileFilterCloseBtn = document.getElementById('catalogMobileFilterCloseBtn');
+    const catalogMobileFilterBackdrop = document.getElementById('catalogMobileFilterClose');
+
+    function setCatalogMobileFilterOpen(isOpen) {
+        if (!catalogMobileFilterSheet) return;
+        if (isOpen) {
+            catalogMobileFilterSheet.hidden = false;
+            requestAnimationFrame(() => {
+                document.body.classList.add('catalog-mobile-filter-open');
+            });
+        } else {
+            document.body.classList.remove('catalog-mobile-filter-open');
+            window.setTimeout(() => {
+                if (!document.body.classList.contains('catalog-mobile-filter-open')) {
+                    catalogMobileFilterSheet.hidden = true;
+                }
+            }, 280);
+        }
+        catalogMobileFilterOpen?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+
+    catalogMobileFilterOpen?.addEventListener('click', () => setCatalogMobileFilterOpen(true));
+    catalogMobileFilterCloseBtn?.addEventListener('click', () => setCatalogMobileFilterOpen(false));
+    catalogMobileFilterBackdrop?.addEventListener('click', () => setCatalogMobileFilterOpen(false));
+    catalogMobileFilterSheet?.querySelector('.catalog-mobile-filter-form')?.addEventListener('submit', saveCatalogScroll);
+    catalogMobileFilterSheet?.querySelector('.catalog-mobile-filter-reset')?.addEventListener('click', saveCatalogScroll);
+
+    document.querySelectorAll('.catalog-mobile-filter-section--collapsible .catalog-mobile-filter-section__toggle').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const section = toggle.closest('.catalog-mobile-filter-section--collapsible');
+            if (!section) return;
+            const willOpen = !section.classList.contains('is-open');
+            document.querySelectorAll('.catalog-mobile-filter-section--collapsible').forEach((other) => {
+                if (other !== section) {
+                    other.classList.remove('is-open');
+                    other.querySelector('.catalog-mobile-filter-section__toggle')?.setAttribute('aria-expanded', 'false');
+                }
+            });
+            section.classList.toggle('is-open', willOpen);
+            toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        });
+    });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeSearchOverlay();
             closeMegaMenu();
-            setMobileNavOpen(false);
+            setCatalogMobileFilterOpen(false);
+            if (mobileNavSubview?.classList.contains('is-open')) {
+                closeMobileNavSubview();
+            } else {
+                setMobileNavOpen(false);
+            }
         }
     });
 
@@ -1280,6 +1387,332 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     bindCheckoutUpsellForms();
+
+    const WISHLIST_STORAGE_KEY = 'opremazaribolov_wishlist';
+
+    function readWishlistIds() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(WISHLIST_STORAGE_KEY) || '[]');
+            return Array.isArray(parsed) ? parsed.map(String) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function writeWishlistIds(ids) {
+        localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(ids));
+    }
+
+    function escapeWishlistHtml(text) {
+        return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function syncWishlistButtons(root = document) {
+        const activeIds = new Set(readWishlistIds());
+        root.querySelectorAll('[data-wishlist-toggle]').forEach((button) => {
+            const isActive = activeIds.has(String(button.dataset.productId || ''));
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+
+    function syncWishlistNav() {
+        const button = document.getElementById('wishlistNavBtn');
+        const badge = document.getElementById('wishlistBadge');
+        if (!button) return;
+
+        const count = readWishlistIds().length;
+        button.classList.toggle('wishlist-nav-btn--has-items', count > 0);
+        if (!badge) return;
+
+        if (count > 0) {
+            badge.hidden = false;
+            badge.textContent = count > 99 ? '99+' : String(count);
+        } else {
+            badge.hidden = true;
+            badge.textContent = '';
+        }
+    }
+
+    function removeWishlistProduct(productId) {
+        const id = String(productId || '');
+        if (!id) return;
+        writeWishlistIds(readWishlistIds().filter((entry) => entry !== id));
+        syncWishlistButtons(document);
+        syncWishlistNav();
+        const panel = document.getElementById('wishlistPanel');
+        if (panel && !panel.hidden) {
+            renderWishlistPanel();
+        }
+    }
+
+    async function renderWishlistPanel() {
+        const panelBody = document.getElementById('wishlistPanelBody');
+        const wrap = document.getElementById('headerWishlist');
+        if (!panelBody) return;
+
+        const ids = readWishlistIds();
+        if (!ids.length) {
+            panelBody.innerHTML = '<p class="wishlist-panel__empty">Nema artikala na listi želja.</p>';
+            return;
+        }
+
+        panelBody.innerHTML = '<p class="wishlist-panel__loading">Učitavanje...</p>';
+        const apiUrl = wrap?.dataset.wishlistApi || '/api/lista-zelja/';
+
+        try {
+            const response = await fetch(`${apiUrl}?ids=${encodeURIComponent(ids.join(','))}`, {
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) {
+                throw new Error('Wishlist fetch failed');
+            }
+
+            const data = await response.json();
+            const items = Array.isArray(data.items) ? data.items : [];
+            if (!items.length) {
+                panelBody.innerHTML = '<p class="wishlist-panel__empty">Nema dostupnih artikala na listi želja.</p>';
+                return;
+            }
+
+            panelBody.innerHTML = items.map((item) => {
+                const prefix = item.has_variations ? 'Od ' : '';
+                const imageHtml = item.image
+                    ? `<img src="${escapeWishlistHtml(item.image)}" alt="" class="wishlist-panel-item__image" loading="lazy" decoding="async">`
+                    : '<span class="wishlist-panel-item__image wishlist-panel-item__image--placeholder"></span>';
+                const pricesHtml = item.on_sale
+                    ? `<span class="wishlist-panel-item__sale">${prefix}${escapeWishlistHtml(item.price)} KM</span><span class="wishlist-panel-item__original">${prefix}${escapeWishlistHtml(item.base_price)} KM</span>`
+                    : `<span class="wishlist-panel-item__current">${prefix}${escapeWishlistHtml(item.price)} KM</span>`;
+
+                return `<div class="wishlist-panel-item">
+                    <a href="${escapeWishlistHtml(item.url)}" class="wishlist-panel-item__link">
+                        ${imageHtml}
+                        <span class="wishlist-panel-item__info">
+                            <span class="wishlist-panel-item__name">${escapeWishlistHtml(item.naziv)}</span>
+                            <span class="wishlist-panel-item__prices">${pricesHtml}</span>
+                        </span>
+                    </a>
+                    <button type="button" class="wishlist-panel-item__remove" data-wishlist-remove="${escapeWishlistHtml(item.id)}" aria-label="Ukloni iz liste želja">×</button>
+                </div>`;
+            }).join('');
+
+            panelBody.querySelectorAll('[data-wishlist-remove]').forEach((removeButton) => {
+                removeButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    removeWishlistProduct(removeButton.dataset.wishlistRemove);
+                });
+            });
+        } catch {
+            panelBody.innerHTML = '<p class="wishlist-panel__empty">Nije moguće učitati listu želja.</p>';
+        }
+    }
+
+    function setWishlistPanelOpen(open) {
+        const panel = document.getElementById('wishlistPanel');
+        const backdrop = document.getElementById('wishlistPanelBackdrop');
+        const button = document.getElementById('wishlistNavBtn');
+        if (!panel || !button) return;
+
+        panel.hidden = !open;
+        if (backdrop) backdrop.hidden = !open;
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('wishlist-panel-open', open);
+        if (open) {
+            renderWishlistPanel();
+        }
+    }
+
+    function bindWishlistNav() {
+        const button = document.getElementById('wishlistNavBtn');
+        const closeButton = document.getElementById('wishlistPanelClose');
+        const backdrop = document.getElementById('wishlistPanelBackdrop');
+        const panel = document.getElementById('wishlistPanel');
+        if (!button || !panel) return;
+
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setWishlistPanelOpen(panel.hidden);
+        });
+
+        closeButton?.addEventListener('click', () => setWishlistPanelOpen(false));
+        backdrop?.addEventListener('click', () => setWishlistPanelOpen(false));
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !panel.hidden) {
+                setWishlistPanelOpen(false);
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (panel.hidden) return;
+            if (event.target.closest('#headerWishlist')) return;
+            setWishlistPanelOpen(false);
+        });
+    }
+
+    function bindWishlistButtons(root = document) {
+        root.querySelectorAll('[data-wishlist-toggle]').forEach((button) => {
+            if (button.dataset.wishlistBound === '1') return;
+            button.dataset.wishlistBound = '1';
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const productId = String(button.dataset.productId || '');
+                if (!productId) return;
+                const wishlistIds = readWishlistIds();
+                const existingIndex = wishlistIds.indexOf(productId);
+                if (existingIndex >= 0) {
+                    wishlistIds.splice(existingIndex, 1);
+                } else {
+                    wishlistIds.push(productId);
+                }
+                writeWishlistIds(wishlistIds);
+                syncWishlistButtons(document);
+                syncWishlistNav();
+                const panel = document.getElementById('wishlistPanel');
+                if (panel && !panel.hidden) {
+                    renderWishlistPanel();
+                }
+            });
+        });
+    }
+
+    async function catalogAddProductToCart(slug, variationId = '') {
+        const body = new URLSearchParams({
+            quantity: '1',
+            stay: '1',
+        });
+        if (variationId) {
+            body.set('variation_id', variationId);
+        }
+        const response = await fetch(`/artikal/${slug}/dodaj/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: body.toString(),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+            throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+        }
+        updateCartBadge(data.cart_count || 0);
+        showCartToast(data.message || 'Artikal je dodan u korpu.');
+        if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
+            window.trackMetaAddToCart(data.meta_add_to_cart);
+        }
+        if (data.upsell_html) {
+            handleUpsellResponse(data.upsell_html);
+        }
+        return data;
+    }
+
+    const catalogVariationModal = document.getElementById('catalogVariationModal');
+    const catalogVariationModalProduct = document.getElementById('catalogVariationModalProduct');
+    const catalogVariationModalOptions = document.getElementById('catalogVariationModalOptions');
+    let catalogVariationModalSlug = '';
+
+    function closeCatalogVariationModal() {
+        if (!catalogVariationModal) return;
+        catalogVariationModal.hidden = true;
+        catalogVariationModal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('catalog-variation-modal-open');
+        catalogVariationModalSlug = '';
+        if (catalogVariationModalOptions) {
+            catalogVariationModalOptions.innerHTML = '';
+        }
+    }
+
+    function openCatalogVariationModal(card, triggerBtn) {
+        if (!catalogVariationModal || !catalogVariationModalOptions) return;
+        const slug = triggerBtn.dataset.productSlug || card?.dataset.productSlug || '';
+        const productName = card?.dataset.defaultName || '';
+        const variations = Array.from(card?.querySelectorAll('[data-catalog-variation]') || []);
+        if (!slug || !variations.length) return;
+
+        catalogVariationModalSlug = slug;
+        if (catalogVariationModalProduct) {
+            catalogVariationModalProduct.textContent = productName;
+        }
+        catalogVariationModalOptions.innerHTML = variations.map((node) => {
+            const variationId = node.dataset.variationId || '';
+            const variationName = node.dataset.variationName || 'Model';
+            return (
+                `<button type="button" class="catalog-variation-modal__option" data-variation-id="${variationId}">${variationName}</button>`
+            );
+        }).join('');
+
+        catalogVariationModal.hidden = false;
+        catalogVariationModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('catalog-variation-modal-open');
+    }
+
+    if (catalogVariationModal) {
+        catalogVariationModal.querySelectorAll('[data-catalog-variation-close]').forEach((node) => {
+            node.addEventListener('click', closeCatalogVariationModal);
+        });
+        catalogVariationModalOptions?.addEventListener('click', async (event) => {
+            const option = event.target.closest('[data-variation-id]');
+            if (!option || !catalogVariationModalSlug) return;
+            option.disabled = true;
+            try {
+                await catalogAddProductToCart(catalogVariationModalSlug, option.dataset.variationId || '');
+                closeCatalogVariationModal();
+            } catch (err) {
+                showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
+            } finally {
+                option.disabled = false;
+            }
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !catalogVariationModal.hidden) {
+                closeCatalogVariationModal();
+            }
+        });
+    }
+
+    function bindCatalogAddButtons(root = document) {
+        root.querySelectorAll('[data-catalog-add]').forEach((button) => {
+            if (button.dataset.catalogAddBound === '1') return;
+            button.dataset.catalogAddBound = '1';
+            button.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (button.disabled) return;
+
+                const card = button.closest('.product-card--catalog');
+                const slug = button.dataset.productSlug || card?.dataset.productSlug || '';
+
+                if (button.dataset.pickVariation === '1') {
+                    openCatalogVariationModal(card, button);
+                    return;
+                }
+
+                button.disabled = true;
+                try {
+                    await catalogAddProductToCart(slug, button.dataset.variationId || '');
+                } catch (err) {
+                    showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        });
+    }
+
+    bindCatalogAddButtons();
+    bindWishlistButtons();
+    bindWishlistNav();
+    syncWishlistButtons();
+    syncWishlistNav();
 
     document.querySelectorAll('[data-product-card]').forEach((card) => {
         const mainImage = card.querySelector('[data-main-image]');

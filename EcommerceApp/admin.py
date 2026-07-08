@@ -39,6 +39,7 @@ from .models import (
     ChatConversation,
     ChatMessage,
     Coupon,
+    HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeVlog,
     LoyaltyCard,
@@ -156,10 +157,32 @@ class HomeFeaturedProductInline(admin.TabularInline):
         return formset
 
 
+class HomeCategoryShowcaseInline(admin.TabularInline):
+    model = HomeCategoryShowcase
+    fk_name = 'postavke'
+    extra = 1
+    autocomplete_fields = ('kategorija',)
+    fields = ('kategorija', 'naslov', 'redoslijed', 'aktivan')
+    verbose_name = 'Kategorija (2×2)'
+    verbose_name_plural = (
+        'Kategorije na početnoj (ispod Izdvojenih) — 4 artikla, 2×2 na mobilnom'
+    )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.base_fields['kategorija'].help_text = (
+            'Odaberite kategoriju čiji se artikli prikazuju u mreži 2×2 na mobilnom.'
+        )
+        formset.form.base_fields['naslov'].help_text = (
+            'Opcionalno. Prazno = naziv kategorije.'
+        )
+        return formset
+
+
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     readonly_fields = ('pregled_loga', 'pregled_favicona', 'pregled_badgea')
-    inlines = [HomeFeaturedProductInline]
+    inlines = [HomeFeaturedProductInline, HomeCategoryShowcaseInline]
     fieldsets = (
         ('Logo i ikona', {
             'fields': ('logo', 'pregled_loga', 'favicon', 'pregled_favicona'),
@@ -192,7 +215,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'naslov_izdvojeno', 'podnaslov_izdvojeno',
                 'naslov_blog',
             ),
-            'description': 'Naslovi sekcija Novo, Izdvojeno i Blog. Prazno polje = naslov se ne prikazuje.',
+            'description': (
+                'Naslovi sekcija Novo, Izdvojeno i Blog. Prazno polje = naslov se ne prikazuje. '
+                'Na mobilnom se naslovi Novo/Izdvojeno ne prikazuju. Kategorije 2×2 dodajte u inline ispod.'
+            ),
         }),
         ('Stranica artikla — povezani artikli', {
             'fields': ('naslov_povezani', 'podnaslov_povezani'),

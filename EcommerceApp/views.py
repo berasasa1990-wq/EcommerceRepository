@@ -75,6 +75,7 @@ from .models import (
     Banner,
     Brand,
     Category,
+    HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeVlog,
     LoyaltyCard,
@@ -365,6 +366,58 @@ def _filter_categories():
     ).order_by('redoslijed', 'naziv')
 
 
+def _category_subnav_items(category, *, show_all_active=False):
+    populated_category_ids = get_category_ids_with_products()
+    items = []
+
+    if category.roditelj_id:
+        parent = category.roditelj
+        siblings = list(
+            filter_categories_with_products(
+                Category.objects.filter(roditelj=parent, aktivan=True),
+                populated_category_ids,
+            ).order_by('redoslijed', 'naziv'),
+        )
+        if not siblings:
+            return items
+        parent_url = parent.get_absolute_url()
+        items.append({
+            'label': f'Sve u {parent.naziv}',
+            'url': f'{parent_url}?all=1',
+            'active': show_all_active and category.pk == parent.pk,
+        })
+        for sub in siblings:
+            items.append({
+                'label': sub.naziv,
+                'url': sub.get_absolute_url(),
+                'active': sub.pk == category.pk,
+            })
+        return items
+
+    direct_subs = list(
+        filter_categories_with_products(
+            category.podkategorije.filter(aktivan=True),
+            populated_category_ids,
+        ).order_by('redoslijed', 'naziv'),
+    )
+    if not direct_subs:
+        return items
+
+    base_url = category.get_absolute_url()
+    items.append({
+        'label': f'Sve u {category.naziv}',
+        'url': f'{base_url}?all=1',
+        'active': show_all_active,
+    })
+    for sub in direct_subs:
+        items.append({
+            'label': sub.naziv,
+            'url': sub.get_absolute_url(),
+            'active': False,
+        })
+    return items
+
+
 def _filter_banners_for_empty_categories(banners, populated_ids=None):
     populated_ids = populated_ids or get_category_ids_with_products()
     return [
@@ -421,6 +474,50 @@ def search_suggest(request):
     return JsonResponse({'results': results, 'query': query, 'has_more': has_more})
 
 
+WISHLIST_LOOKUP_LIMIT = 50
+
+
+@require_GET
+def wishlist_products(request):
+    ids = []
+    seen = set()
+    for part in request.GET.get('ids', '').split(','):
+        part = part.strip()
+        if not part.isdigit():
+            continue
+        pk = int(part)
+        if pk in seen:
+            continue
+        seen.add(pk)
+        ids.append(pk)
+        if len(ids) >= WISHLIST_LOOKUP_LIMIT:
+            break
+
+    if not ids:
+        return JsonResponse({'items': []})
+
+    products_qs = _prefetch_product_cards(_product_queryset(request).filter(pk__in=ids))
+    product_map = {product.pk: product for product in products_qs}
+    items = []
+    for pk in ids:
+        product = product_map.get(pk)
+        if not product:
+            continue
+        variation_count = getattr(product, 'variation_count', 0) or 0
+        items.append({
+            'id': product.pk,
+            'naziv': product.naziv,
+            'url': product.get_absolute_url(),
+            'image': product.prikazna_slika.url if product.prikazna_slika else '',
+            'price': f'{product.katalog_prikazna_cijena:.2f}',
+            'base_price': f'{product.katalog_bazna_cijena:.2f}',
+            'on_sale': product.katalog_na_akciji,
+            'has_variations': variation_count > 1,
+        })
+
+    return JsonResponse({'items': items})
+
+
 def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     params = _get_filter_params(request)
     products_qs = _apply_search_filter(products_qs, params['q'])
@@ -468,7 +565,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     return products, params
 
 
-HOME_PRODUCTS_PER_PAGE = 18
+CATALOG_PRODUCTS_PER_PAGE = 49
+HOME_PRODUCTS_PER_PAGE = CATALOG_PRODUCTS_PER_PAGE
 HOME_PRODUCT_ORDER_KEY = 'home_product_ids'
 HOME_FILTER_KEY = 'home_filter_key'
 
@@ -523,8 +621,18 @@ def _size_filter_groups(filter_action, filter_params, sizes):
     return groups
 
 
-def _paginate_home_products(request, products, filter_params):
+def _paginate_catalog_products(request, products, *, per_page=CATALOG_PRODUCTS_PER_PAGE):
     page_number = request.GET.get('page', '1')
+    paginator = Paginator(products, per_page)
+    try:
+        return paginator.page(page_number)
+    except PageNotAnInteger:
+        return paginator.page(1)
+    except EmptyPage:
+        return paginator.page(paginator.num_pages or 1)
+
+
+def _paginate_home_products(request, products, filter_params):
     filters_active = _filters_active(filter_params)
     filter_signature = _catalog_query_string(filter_params)
 
@@ -551,14 +659,7 @@ def _paginate_home_products(request, products, filter_params):
                         ordered.append(product)
                 products = ordered
 
-    paginator = Paginator(products, HOME_PRODUCTS_PER_PAGE)
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages or 1)
-    return page_obj
+    return _paginate_catalog_products(request, products)
 
 
 def _base_context():
@@ -651,6 +752,7 @@ def _banners_with_media(qs):
 HOME_SECTION_PRODUCT_LIMIT = 10
 HOME_SECTION_PRODUCT_VISIBLE = 6
 HOME_SECTION_PRODUCT_VISIBLE_MOBILE = 2
+HOME_CATEGORY_SHOWCASE_LIMIT = 4
 HOME_VLOG_LIMIT = 3
 
 
@@ -673,6 +775,31 @@ def _home_featured_products(request=None):
         Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
     )[:HOME_SECTION_PRODUCT_LIMIT]
     return [entry.artikal for entry in entries]
+
+
+def _home_category_showcases(request=None):
+    entries = HomeCategoryShowcase.objects.filter(
+        aktivan=True,
+        kategorija__aktivan=True,
+    ).select_related('kategorija').order_by('redoslijed', 'id')
+
+    sections = []
+    for entry in entries:
+        category_ids = entry.kategorija.get_descendant_ids()
+        products = list(
+            _product_queryset(request)
+            .filter(kategorija_id__in=category_ids)
+            .order_by('-kreiran')[:HOME_CATEGORY_SHOWCASE_LIMIT],
+        )
+        if not products:
+            continue
+        sections.append({
+            'title': entry.display_title(),
+            'category': entry.kategorija,
+            'category_url': entry.kategorija.get_absolute_url(),
+            'products': products,
+        })
+    return sections
 
 
 def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT, request=None):
@@ -759,6 +886,7 @@ def home(request):
 
     latest_products = []
     featured_products = []
+    home_category_showcases = []
     home_vlogs = []
     page_obj = None
     search_products = []
@@ -825,6 +953,7 @@ def home(request):
     else:
         latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
+        home_category_showcases = _home_category_showcases(request)
         home_vlogs = _home_vlogs()
 
     first_hero = hero_banners.first()
@@ -905,6 +1034,7 @@ def home(request):
         'spotlight': spotlight,
         'latest_products': latest_products,
         'featured_products': featured_products,
+        'home_category_showcases': home_category_showcases,
         'home_vlogs': home_vlogs,
         'showcase_brands': _showcase_brands() if not filters_active else [],
         'search_products': search_products,
@@ -1058,14 +1188,21 @@ def category_detail(request, slug):
         keep_all_products=bool(direct_subs),
     )
 
+    page_obj = _paginate_catalog_products(request, products)
+
     context = {
         **_base_context(),
         'category': category,
-        'products': products,
+        'products': page_obj.object_list,
+        'page_obj': page_obj,
+        'elided_page_range': page_obj.paginator.get_elided_page_range(page_obj.number),
+        'catalog_query': _catalog_query_string(catalog_url_params),
         'filter_categories': _filter_categories(),
         'filter_params': filter_params,
         'filter_size_groups': _size_filter_groups(category_url, catalog_url_params, filter_sizes),
         'filter_reset_url': _filter_reset_url(category_url, catalog_url_params),
+        'category_subnav': _category_subnav_items(category, show_all_active=show_all),
+        'catalog_show_all': show_all,
         # SEO
         'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
         'seo_description': category.meta_description or f"{category.naziv} — kvalitetna oprema za ribolov po povoljnim cijenama. Brza dostava širom Bosne i Hercegovine.",
