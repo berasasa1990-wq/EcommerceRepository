@@ -272,6 +272,46 @@ class LoginForm(forms.Form):
         return cleaned
 
 
+class LoyaltyIssueForm(forms.Form):
+    ime = forms.CharField(
+        label='Ime',
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'npr. Amira',
+            'autocomplete': 'given-name',
+        }),
+    )
+    prezime = forms.CharField(
+        label='Prezime',
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'npr. Hadžić',
+            'autocomplete': 'family-name',
+        }),
+    )
+    telefon = forms.CharField(
+        label='Telefon',
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'npr. 061 123 456',
+            'autocomplete': 'tel',
+            'inputmode': 'tel',
+        }),
+    )
+
+    def clean_telefon(self):
+        telefon = self.cleaned_data.get('telefon', '').strip()
+        if not telefon:
+            raise forms.ValidationError('Telefon je obavezan.')
+        digits = ''.join(ch for ch in telefon if ch.isdigit())
+        if len(digits) < 8:
+            raise forms.ValidationError('Unesite ispravan broj telefona.')
+        return telefon
+
+
 class ProfileForm(forms.Form):
     ime_prezime = forms.CharField(
         label='Ime i prezime',

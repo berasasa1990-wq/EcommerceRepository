@@ -1,9 +1,11 @@
+import re
 import secrets
 from decimal import Decimal
 
+from django.contrib.auth.models import User
 from django.db.models import Sum
 
-from .models import Coupon, LoyaltyCard, Order
+from .models import Coupon, LoyaltyCard, Order, UserProfile
 
 
 LOYALTY_TIERS = (
@@ -36,6 +38,62 @@ LOYALTY_TIERS = (
         'do': None,
     },
 )
+
+
+def _normalizuj_telefon(telefon):
+    return re.sub(r'\D', '', telefon or '')
+
+
+def _pronadji_korisnika_po_telefonu(telefon):
+    digits = _normalizuj_telefon(telefon)
+    if len(digits) < 8:
+        return None
+    for profil in UserProfile.objects.select_related('user').exclude(telefon=''):
+        if _normalizuj_telefon(profil.telefon) == digits:
+            return profil.user
+    return None
+
+
+def izdaj_loyalty_karticu(ime, prezime, telefon):
+    """Kreira novog kupca ili koristi postojećeg po telefonu i izdaje loyalty karticu."""
+    telefon = telefon.strip()
+    user = _pronadji_korisnika_po_telefonu(telefon)
+
+    if user:
+        updated = []
+        if ime and not user.first_name:
+            user.first_name = ime
+            updated.append('first_name')
+        if prezime and not user.last_name:
+            user.last_name = prezime
+            updated.append('last_name')
+        if updated:
+            user.save(update_fields=updated)
+        profil = getattr(user, 'profil', None)
+        if profil and telefon and not profil.telefon:
+            profil.telefon = telefon
+            profil.save(update_fields=['telefon'])
+    else:
+        digits = _normalizuj_telefon(telefon) or secrets.token_hex(4)
+        username = f'loy_{digits}'
+        while User.objects.filter(username=username).exists():
+            username = f'loy_{digits}_{secrets.token_hex(2)}'
+        email = f'{username}@kartica.opremazaribolov.ba'
+        while User.objects.filter(email=email).exists():
+            email = f'{username}_{secrets.token_hex(2)}@kartica.opremazaribolov.ba'
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=User.objects.make_random_password(length=32),
+            first_name=ime.strip(),
+            last_name=prezime.strip(),
+            is_active=True,
+        )
+        UserProfile.objects.create(user=user, telefon=telefon)
+
+    card = osiguraj_loyalty_karticu(user)
+    return card, user
 
 
 def _generisi_kod(user):

@@ -1,0 +1,38 @@
+<div class="loyalty-physical-card loyalty-physical-card--{{ loyalty.tier.nivo }}" id="loyaltyPrintCard">
+    <div class="loyalty-physical-card__bg-pattern" aria-hidden="true"></div>
+    <div class="loyalty-physical-card__shine" aria-hidden="true"></div>
+
+    <header class="loyalty-physical-card__header">
+        <div class="loyalty-physical-card__brand">
+            <span class="loyalty-physical-card__brand-mark">OZ</span>
+            <span class="loyalty-physical-card__brand-text">opremazaribolov.ba</span>
+        </div>
+        <span class="loyalty-physical-card__tier">{{ loyalty.tier.label }}</span>
+    </header>
+
+    <div class="loyalty-physical-card__chip" aria-hidden="true"></div>
+
+    <p class="loyalty-physical-card__label">Vlasnik kartice</p>
+    <p class="loyalty-physical-card__name">{{ cardholder_name }}</p>
+
+    <div class="loyalty-physical-card__codes">
+        <div class="loyalty-physical-card__code-block">
+            <span class="loyalty-physical-card__code-label">Broj kartice</span>
+            <strong class="loyalty-physical-card__number">{{ loyalty.kartica.kod }}</strong>
+        </div>
+        <div class="loyalty-physical-card__code-block loyalty-physical-card__barcode-block">
+            <span class="loyalty-physical-card__code-label">Barkod</span>
+            <div class="loyalty-physical-card__barcode" aria-label="Barkod {{ loyalty.kartica.barkod }}">
+                {% for sirina in loyalty.barkod_trake %}
+                <span class="loyalty-physical-card__bar" style="width: {{ sirina }}px;"></span>
+                {% endfor %}
+            </div>
+            <span class="loyalty-physical-card__barcode-text">{{ loyalty.kartica.barkod }}</span>
+        </div>
+    </div>
+
+    <footer class="loyalty-physical-card__footer">
+        <span>{{ loyalty.tier.postotak }}% popusta</span>
+        <span>Loyalty program</span>
+    </footer>
+</div>

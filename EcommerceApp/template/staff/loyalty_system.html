@@ -12,382 +12,208 @@
     <div class="staff-loyalty-header">
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Loyalty System</h1>
-        <p class="staff-loyalty-subtitle">Pretraži kupce po broju kartice, telefonu, emailu ili imenu</p>
+        <p class="staff-loyalty-subtitle">Izdajte nove kartice ili pretražite postojeće kupce</p>
     </div>
 
-    <form method="get" class="staff-loyalty-search">
-        <div class="search-input-group">
-            <input type="search" name="q" value="{{ search_query }}" 
-                   placeholder="Broj kartice, telefon, email ili ime..." 
-                   autocomplete="off" required>
-            <button type="submit" class="btn btn-primary">Pretraži</button>
-        </div>
-    </form>
-
-    {% if searched %}
-        {% if cards %}
-            {% if cards|length > 1 %}
-            <div class="staff-results">
-                <h3>Više rezultata ({{ cards|length }})</h3>
-                <div class="results-grid">
-                    {% for c in cards %}
-                    <a href="?q={{ c.kod|urlencode }}" class="result-card {% if selected_card and selected_card.id == c.id %}active{% endif %}">
-                        <div class="result-name">{{ c.user.get_full_name|default:c.user.email }}</div>
-                        <div class="result-meta">
-                            <span class="tier-badge tier-{{ c.nivo }}">{{ c.nivo|title }}</span>
-                            <span class="card-code">{{ c.kod }}</span>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if selected_card and loyalty %}
-            <div class="loyalty-customer">
-                <!-- Pretty Loyalty Card -->
-                <div class="loyalty-card-wrapper">
-                    {% include 'partials/loyalty_card.html' with loyalty=loyalty %}
-                </div>
-
-                <!-- Evidentiraj kupovinu -->
-                <div class="section-card" style="margin-bottom: 24px;">
-                    <div class="section-header">
-                        <h3>Evidentiraj kupovinu</h3>
+    <div class="staff-loyalty-layout">
+        <aside class="staff-loyalty-issue-panel">
+            <div class="staff-loyalty-issue-card">
+                <div class="staff-loyalty-issue-header">
+                    <span class="staff-loyalty-issue-icon" aria-hidden="true">✦</span>
+                    <div>
+                        <h2>Izdaj karticu</h2>
+                        <p>Unesite podatke kupca — kartica se generiše automatski.</p>
                     </div>
-                    <form method="post" class="purchase-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="evidentiraj_kupovinu">
-                        <div class="form-inline">
-                            <input type="number" name="iznos" step="0.01" min="0.01" placeholder="Iznos u KM (npr. 125.50)" required>
-                            <button type="submit" class="btn btn-primary">Evidentiraj kupovinu</button>
-                        </div>
-                        <small class="hint">Dodaje potrošnju na karticu i ažurira nivo automatski.</small>
-                    </form>
                 </div>
 
-                <div class="customer-details">
-                    <!-- Orders Section -->
-                    <div class="section-card">
-                        <div class="section-header">
-                            <h3>Narudžbe ({{ user_orders|length }})</h3>
+                <form method="post" class="staff-loyalty-issue-form" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="izdaj_karticu">
+
+                    <div class="staff-loyalty-issue-grid">
+                        <div class="form-field">
+                            <label for="{{ issue_form.ime.id_for_label }}">{{ issue_form.ime.label }}</label>
+                            {{ issue_form.ime }}
+                            {% if issue_form.ime.errors %}
+                            <div class="field-error">{{ issue_form.ime.errors.0 }}</div>
+                            {% endif %}
                         </div>
-                        {% if user_orders %}
-                        <div class="orders-list">
-                            {% for order in user_orders %}
-                            <div class="order-item">
-                                <div class="order-info">
-                                    <div>
-                                        <strong>#{{ order.broj }}</strong>
-                                        <span class="order-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</span>
-                                    </div>
-                                    <div class="order-meta">
-                                        <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
-                                        <span class="order-amount">{{ order.ukupno }} KM</span>
-                                    </div>
-                                </div>
-                                <div class="order-actions">
-                                    <a href="{% url 'staff_order_detail' broj=order.broj %}" 
-                                       class="btn btn-sm btn-outline" target="_blank">
-                                        Pregled računa
-                                    </a>
-                                </div>
-                            </div>
-                            {% endfor %}
+                        <div class="form-field">
+                            <label for="{{ issue_form.prezime.id_for_label }}">{{ issue_form.prezime.label }}</label>
+                            {{ issue_form.prezime }}
+                            {% if issue_form.prezime.errors %}
+                            <div class="field-error">{{ issue_form.prezime.errors.0 }}</div>
+                            {% endif %}
                         </div>
-                        {% else %}
-                        <p class="empty-text">Nema narudžbi za ovog kupca.</p>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="{{ issue_form.telefon.id_for_label }}">{{ issue_form.telefon.label }}</label>
+                        {{ issue_form.telefon }}
+                        {% if issue_form.telefon.errors %}
+                        <div class="field-error">{{ issue_form.telefon.errors.0 }}</div>
                         {% endif %}
                     </div>
 
-                    <!-- Profile Edit Section -->
-                    <div class="section-card">
-                        <div class="section-header">
-                            <h3>Licni podaci</h3>
-                        </div>
-                        {% if edit_form %}
-                        <form method="post" class="profile-edit-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="update_profile">
+                    {% if issue_form.non_field_errors %}
+                    <div class="field-error">{{ issue_form.non_field_errors.0 }}</div>
+                    {% endif %}
 
-                            {% for field in edit_form %}
-                            <div class="form-field">
-                                <label>{{ field.label }}</label>
-                                {{ field }}
-                                {% if field.errors %}
-                                <div class="field-error">{{ field.errors.0 }}</div>
+                    <button type="submit" class="btn btn-primary btn-issue-card">
+                        Generiši karticu
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="staff-loyalty-main">
+            <form method="get" class="staff-loyalty-search">
+                <label class="staff-loyalty-search-label" for="loyaltySearchInput">Pretraga kupaca</label>
+                <div class="search-input-group">
+                    <input type="search" id="loyaltySearchInput" name="q" value="{{ search_query }}"
+                           placeholder="Broj kartice, telefon, email ili ime..."
+                           autocomplete="off">
+                    <button type="submit" class="btn btn-primary">Pretraži</button>
+                </div>
+            </form>
+
+            {% if searched %}
+                {% if cards %}
+                    {% if cards|length > 1 %}
+                    <div class="staff-results">
+                        <h3>Više rezultata ({{ cards|length }})</h3>
+                        <div class="results-grid">
+                            {% for c in cards %}
+                            <a href="?q={{ c.kod|urlencode }}" class="result-card {% if selected_card and selected_card.id == c.id %}active{% endif %}">
+                                <div class="result-name">{{ c.user.get_full_name|default:c.user.email }}</div>
+                                <div class="result-meta">
+                                    <span class="tier-badge tier-{{ c.nivo }}">{{ c.nivo|title }}</span>
+                                    <span class="card-code">{{ c.kod }}</span>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if selected_card and loyalty %}
+                    <div class="loyalty-customer">
+                        {% if newly_issued %}
+                        <div class="loyalty-success-banner" role="status">
+                            Kartica uspješno izdata. Možete je odmah odštampati.
+                        </div>
+                        {% endif %}
+
+                        <div class="loyalty-preview-section">
+                            <div class="loyalty-preview-header">
+                                <h3>Fizička kartica</h3>
+                                <button type="button" class="btn btn-print-card" onclick="window.print()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                        <rect x="6" y="14" width="12" height="8"/>
+                                    </svg>
+                                    Štampaj karticu
+                                </button>
+                            </div>
+                            <div class="loyalty-print-preview">
+                                {% include 'partials/loyalty_card_print.html' %}
+                            </div>
+                        </div>
+
+                        <div class="loyalty-card-wrapper">
+                            {% include 'partials/loyalty_card.html' with loyalty=loyalty %}
+                        </div>
+
+                        <div class="section-card purchase-section">
+                            <div class="section-header">
+                                <h3>Evidentiraj kupovinu</h3>
+                            </div>
+                            <form method="post" class="purchase-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="evidentiraj_kupovinu">
+                                <div class="form-inline">
+                                    <input type="number" name="iznos" step="0.01" min="0.01" placeholder="Iznos u KM (npr. 125.50)" required>
+                                    <button type="submit" class="btn btn-primary">Evidentiraj kupovinu</button>
+                                </div>
+                                <small class="hint">Dodaje potrošnju na karticu i ažurira nivo automatski.</small>
+                            </form>
+                        </div>
+
+                        <div class="customer-details">
+                            <div class="section-card">
+                                <div class="section-header">
+                                    <h3>Narudžbe ({{ user_orders|length }})</h3>
+                                </div>
+                                {% if user_orders %}
+                                <div class="orders-list">
+                                    {% for order in user_orders %}
+                                    <div class="order-item">
+                                        <div class="order-info">
+                                            <div>
+                                                <strong>#{{ order.broj }}</strong>
+                                                <span class="order-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</span>
+                                            </div>
+                                            <div class="order-meta">
+                                                <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+                                                <span class="order-amount">{{ order.ukupno }} KM</span>
+                                            </div>
+                                        </div>
+                                        <div class="order-actions">
+                                            <a href="{% url 'staff_order_detail' broj=order.broj %}"
+                                               class="btn btn-sm btn-outline" target="_blank">
+                                                Pregled računa
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="empty-text">Nema narudžbi za ovog kupca.</p>
                                 {% endif %}
                             </div>
-                            {% endfor %}
 
-                            <button type="submit" class="btn btn-primary btn-full">
-                                Sačuvaj promjene
-                            </button>
-                        </form>
-                        {% else %}
-                        <p class="empty-text">Podaci nisu dostupni za uređivanje.</p>
-                        {% endif %}
+                            <div class="section-card">
+                                <div class="section-header">
+                                    <h3>Lični podaci</h3>
+                                </div>
+                                {% if edit_form %}
+                                <form method="post" class="profile-edit-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="update_profile">
+
+                                    {% for field in edit_form %}
+                                    <div class="form-field">
+                                        <label>{{ field.label }}</label>
+                                        {{ field }}
+                                        {% if field.errors %}
+                                        <div class="field-error">{{ field.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+
+                                    <button type="submit" class="btn btn-primary btn-full">
+                                        Sačuvaj promjene
+                                    </button>
+                                </form>
+                                {% else %}
+                                <p class="empty-text">Podaci nisu dostupni za uređivanje.</p>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
+                    {% endif %}
+
+                {% else %}
+                    <div class="empty-state">
+                        <p>Nema rezultata za pretragu „{{ search_query }}“.</p>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="empty-state empty-state--hint">
+                    <p>Pretražite postojećeg kupca ili izdajte novu karticu pomoću forme lijevo.</p>
                 </div>
-            </div>
             {% endif %}
-
-        {% else %}
-            <div class="empty-state">
-                <p>Nema rezultata za pretragu „{{ search_query }}“.</p>
-            </div>
-        {% endif %}
-    {% else %}
-        <div class="empty-state">
-            <p>Unesite kriterijum za pretragu da biste pronašli kupca.</p>
         </div>
-    {% endif %}
+    </div>
 </section>
-
-<style>
-.staff-loyalty-page {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 32px 20px;
-}
-
-.staff-loyalty-header {
-    margin-bottom: 24px;
-}
-
-.staff-loyalty-header h1 {
-    font-size: 28px;
-    margin: 8px 0 4px;
-}
-
-.staff-loyalty-subtitle {
-    color: #666;
-    margin: 0;
-}
-
-.staff-loyalty-search {
-    margin-bottom: 32px;
-}
-
-.search-input-group {
-    display: flex;
-    gap: 12px;
-    max-width: 520px;
-}
-
-.search-input-group input {
-    flex: 1;
-    padding: 12px 16px;
-    font-size: 15px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-}
-
-.staff-results {
-    margin-bottom: 32px;
-}
-
-.staff-results h3 {
-    font-size: 15px;
-    margin-bottom: 12px;
-    color: #444;
-}
-
-.results-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px;
-}
-
-.result-card {
-    display: block;
-    padding: 14px 16px;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.2s;
-}
-
-.result-card:hover {
-    border-color: #9ca3af;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-
-.result-card.active {
-    border-color: #111;
-    background: #f8f9fa;
-}
-
-.result-name {
-    font-weight: 600;
-    font-size: 15px;
-}
-
-.result-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 6px;
-    font-size: 13px;
-}
-
-.tier-badge {
-    font-size: 11px;
-    padding: 1px 8px;
-    border-radius: 999px;
-    background: #f3f4f6;
-    color: #374151;
-    text-transform: uppercase;
-}
-
-.tier-bronza { background: #fef3c7; color: #92400e; }
-.tier-srebrna { background: #e5e7eb; color: #374151; }
-.tier-zlatna { background: #fef08c; color: #854d0e; }
-.tier-platinum { background: #e0e7ff; color: #3730a3; }
-
-.loyalty-customer {
-    margin-top: 20px;
-}
-
-.loyalty-card-wrapper {
-    margin-bottom: 32px;
-}
-
-.customer-details {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-}
-
-@media (max-width: 900px) {
-    .customer-details {
-        grid-template-columns: 1fr;
-    }
-}
-
-.section-card {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 20px;
-}
-
-.section-header {
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.section-header h3 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.orders-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.order-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    background: #fafafa;
-    border-radius: 8px;
-}
-
-.order-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.order-info strong {
-    font-size: 14px;
-}
-
-.order-date {
-    font-size: 12px;
-    color: #666;
-}
-
-.order-meta {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-}
-
-.profile-edit-form .form-field {
-    margin-bottom: 14px;
-}
-
-.profile-edit-form label {
-    display: block;
-    font-size: 13px;
-    margin-bottom: 4px;
-    color: #444;
-}
-
-.profile-edit-form input {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-.form-inline {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
-
-.form-inline {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
-
-.form-inline input {
-    flex: 1;
-    max-width: 220px;
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-.hint {
-    display: block;
-    margin-top: 8px;
-    font-size: 12px;
-    color: #666;
-}
-
-.btn-full {
-    width: 100%;
-    margin-top: 8px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #666;
-}
-
-.empty-text {
-    color: #666;
-    font-size: 14px;
-}
-
-.staff-loyalty-page .btn-sm {
-    font-size: 13px;
-    padding: 5px 12px;
-}
-</style>
 {% endblock %}

@@ -34,6 +34,7 @@ from .cart import Cart
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .loyalty import (
     azuriraj_loyalty_nakon_narudzbe,
+    izdaj_loyalty_karticu,
     kreiraj_loyalty_karticu,
     loyalty_kontekst,
     osiguraj_loyalty_karticu,
@@ -66,6 +67,7 @@ from .forms import (
     CheckoutForm,
     CouponForm,
     LoginForm,
+    LoyaltyIssueForm,
     ProfileForm,
     RegisterForm,
 )
@@ -3040,12 +3042,32 @@ def staff_loyalty_system(request):
     from decimal import InvalidOperation
     from .loyalty import azuriraj_loyalty_karticu, loyalty_kontekst, osiguraj_loyalty_karticu
 
+    issue_form = LoyaltyIssueForm()
+    newly_issued = request.GET.get('issued') == '1'
+
+    if request.method == 'POST' and request.POST.get('action') == 'izdaj_karticu':
+        issue_form = LoyaltyIssueForm(request.POST)
+        if issue_form.is_valid():
+            card, user = izdaj_loyalty_karticu(
+                issue_form.cleaned_data['ime'],
+                issue_form.cleaned_data['prezime'],
+                issue_form.cleaned_data['telefon'],
+            )
+            sync_korisnik(user)
+            messages.success(
+                request,
+                f'Kartica izdata za {user.get_full_name()}. Broj: {card.kod}',
+            )
+            return redirect(f"{request.path}?q={card.kod}&issued=1")
+        messages.error(request, 'Provjerite unesene podatke i pokušajte ponovo.')
+
     q = (request.GET.get('q') or '').strip()
     cards = []
     selected_card = None
     user_orders = []
     loyalty_ctx = None
     edit_form = None
+    cardholder_name = ''
     searched = bool(q)
 
     if q:
@@ -3065,6 +3087,7 @@ def staff_loyalty_system(request):
             selected_card = cards[0]
             selected_card = osiguraj_loyalty_karticu(selected_card.user)
             loyalty_ctx = loyalty_kontekst(selected_card)
+            cardholder_name = selected_card.user.get_full_name().strip()
 
             user_orders = Order.objects.filter(korisnik=selected_card.user).prefetch_related('stavke').order_by('-kreirana')[:50]
 
@@ -3133,5 +3156,8 @@ def staff_loyalty_system(request):
         'user_orders': user_orders,
         'loyalty': loyalty_ctx,
         'edit_form': edit_form,
+        'issue_form': issue_form,
+        'newly_issued': newly_issued,
+        'cardholder_name': cardholder_name,
     }
     return render(request, 'staff/loyalty_system.html', context)
