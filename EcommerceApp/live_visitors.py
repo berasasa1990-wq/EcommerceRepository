@@ -67,13 +67,10 @@ def track_live_visitor(request):
     ip = get_client_ip(request)
     existing = LiveVisitor.objects.filter(session_key=session_key).only('grad', 'ip_adresa').first()
 
-    grad = ''
-    if existing and existing.grad and ip and existing.ip_adresa == ip:
-        grad = existing.grad
-    elif existing and existing.grad and not ip:
+    if not ip and existing and existing.grad:
         grad = existing.grad
     else:
-        grad = resolve_visitor_city(request, ip=ip) or (existing.grad if existing else '')
+        grad = resolve_visitor_city(request, ip=ip) or ''
 
     defaults = {
         'user': user,
