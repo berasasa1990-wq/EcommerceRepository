@@ -8414,15 +8414,16 @@ button.nav-action-link {
     .home-products--category-showcase .product-catalog--compact .product-grid--category-showcase .product-card--catalog .product-card__brand-row .brand-logo,
     .home-products--category-showcase .product-grid--category-showcase .product-card--catalog .product-card__brand-row .brand-logo {
         width: auto;
-        max-width: 46px;
-        height: 12px;
+        max-width: 60px;
+        height: 15px;
         object-fit: contain;
         object-position: center center;
     }
 
     .home-products--novo .home-product-carousel--catalog .product-card--catalog .product-card__brand-row,
-    .home-products--izdvojeno .home-product-carousel--catalog .product-card--catalog .product-card__brand-row {
-        min-height: 16px;
+    .home-products--izdvojeno .home-product-carousel--catalog .product-card--catalog .product-card__brand-row,
+    .home-products--category-showcase .product-catalog--compact .product-grid--category-showcase .product-card--catalog .product-card__brand-row {
+        min-height: 18px;
     }
 
     .catalog-mobile-zone {
