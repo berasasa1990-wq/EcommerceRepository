@@ -2075,6 +2075,21 @@ class LiveVisitor(models.Model):
         return label
 
 
+class CityVisitTotal(models.Model):
+    """Kumulativni broj posjeta po gradu — samo raste, ne resetuje se s filterom datuma."""
+    grad = models.CharField(max_length=100, unique=True, verbose_name='Grad')
+    broj_posjeta = models.PositiveIntegerField(default=0, verbose_name='Broj posjeta')
+    azurirano = models.DateTimeField(auto_now=True, verbose_name='Zadnje ažuriranje')
+
+    class Meta:
+        verbose_name = 'Posjete po gradu (ukupno)'
+        verbose_name_plural = 'Posjete po gradovima (ukupno)'
+        ordering = ['-broj_posjeta', 'grad']
+
+    def __str__(self):
+        return f'{self.grad} — {self.broj_posjeta}'
+
+
 class LiveVisitorOffer(models.Model):
     """Staff ponuda posjetiocu koji je trenutno na sajtu (artikal, popust ili registracija)."""
 

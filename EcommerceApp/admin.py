@@ -30,6 +30,7 @@ ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
     ActiveCartItem,
+    CityVisitTotal,
     LiveVisitor,
     LiveVisitorOffer,
     Akcija,
@@ -1426,6 +1427,14 @@ class LiveVisitorAdmin(admin.ModelAdmin):
     search_fields = ('ime', 'email', 'grad', 'session_key', 'user__email', 'ip_adresa')
     readonly_fields = ('first_seen', 'last_seen', 'session_key')
     ordering = ('-last_seen',)
+
+
+@admin.register(CityVisitTotal)
+class CityVisitTotalAdmin(admin.ModelAdmin):
+    list_display = ('grad', 'broj_posjeta', 'azurirano')
+    search_fields = ('grad',)
+    ordering = ('-broj_posjeta', 'grad')
+    readonly_fields = ('azurirano',)
 
 
 @admin.register(ActiveCartItem)

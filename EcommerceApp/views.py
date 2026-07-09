@@ -1730,8 +1730,10 @@ def _loyalty_za_kupon(request):
 def _cart_context(request, cart):
     loyalty_card = _loyalty_za_kupon(request)
     cart_items = list(cart)
-    applied_code = cart.get_coupon_code()
     summary = cart.sazetak(user=request.user)
+    applied_code = cart.get_coupon_code() if cart.is_coupon_applied() else ''
+    if not applied_code:
+        applied_code = summary.get('kupon_kod') or ''
     if cart_items:
         slug_map = dict(
             Product.objects.filter(
@@ -1747,7 +1749,7 @@ def _cart_context(request, cart):
         'summary': summary,
         'pricing': summary['pdv'],
         'coupon_form': CouponForm(initial={'kod': ''}),
-        'applied_coupon_code': applied_code if cart.is_coupon_applied() else '',
+        'applied_coupon_code': applied_code,
         'loyalty_card': loyalty_card,
     }
 
@@ -1961,6 +1963,9 @@ def checkout(request):
                 )
 
             cart.clear()
+            if request.user.is_authenticated:
+                from .live_visitor_offer import consume_registration_reward
+                consume_registration_reward(request.user)
 
             try:
                 send_order_emails(order)
@@ -2131,6 +2136,9 @@ def register(request):
                 logger.info("Register: sync_korisnik za novog korisnika %s", email)
                 sync_korisnik(user)
 
+                from .live_visitor_offer import claim_registration_invite_reward
+                reg_reward = claim_registration_invite_reward(request, user)
+
                 # Send activation email
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
@@ -2153,7 +2161,19 @@ def register(request):
                     fail_silently=False,
                 )
 
-                messages.success(request, 'Nalog je uspješno kreiran. Provjerite vaš email za aktivacioni link.')
+                if reg_reward:
+                    pct = reg_reward.postotak
+                    pct_label = int(pct) if pct == int(pct) else pct
+                    messages.success(
+                        request,
+                        f'Nalog je kreiran. Aktivirajte ga preko emaila — '
+                        f'zatim imate {pct_label}% popusta na prvu narudžbu (samo jednom).',
+                    )
+                else:
+                    messages.success(
+                        request,
+                        'Nalog je uspješno kreiran. Provjerite vaš email za aktivacioni link.',
+                    )
                 return redirect('login')
 
     context = {
@@ -2202,7 +2222,18 @@ def login_view(request):
                     korisnik__isnull=True,
                 ).update(korisnik=form.user)
                 osiguraj_loyalty_karticu(form.user)
-                messages.success(request, 'Uspješno ste se prijavili.')
+                from .live_visitor_offer import get_active_registration_reward_coupon
+                reg_coupon = get_active_registration_reward_coupon(form.user)
+                if reg_coupon:
+                    pct = reg_coupon.postotak
+                    pct_label = int(pct) if pct == int(pct) else pct
+                    messages.success(
+                        request,
+                        f'Uspješno ste se prijavili. Imate {pct_label}% popusta '
+                        f'na prvu narudžbu — automatski se primjenjuje u korpi.',
+                    )
+                else:
+                    messages.success(request, 'Uspješno ste se prijavili.')
                 redirect_to = request.POST.get('next') or next_url
                 if redirect_to and redirect_to.startswith('/'):
                     return redirect(redirect_to)
@@ -2267,7 +2298,7 @@ def account(request):
     cardholder_name = (
         request.user.get_full_name().strip()
         or request.user.first_name
-        or request.user.email
+        or (request.user.email or '').strip().lower()
     )
 
     context = {
@@ -2414,6 +2445,7 @@ def _live_analytics_context(request):
         'window_minutes': snapshot['window_minutes'],
         'daily_stats': traffic_stats['daily'],
         'monthly_stats': traffic_stats['monthly'],
+        'city_stats': traffic_stats['by_city'],
         'traffic_filters': traffic_filters,
         'generated_at': generated_at,
         'generated_at_label': generated_at.strftime('%H:%M:%S'),
@@ -2536,11 +2568,17 @@ def staff_send_registration_invite(request):
         return redirect('staff_live_analytics')
 
     try:
-        send_live_visitor_registration_invite(
+        offer = send_live_visitor_registration_invite(
             session_key,
             staff_user=request.user,
         )
-        success_message = 'Poziv na registraciju poslan kupcu.'
+        from .live_visitor_offer import REGISTRATION_INVITE_DISCOUNT
+        pct = offer.discount_percent or REGISTRATION_INVITE_DISCOUNT
+        pct_label = int(pct) if pct == int(pct) else pct
+        success_message = (
+            f'Poziv na registraciju poslan kupcu '
+            f'({pct_label}% popusta na prvu narudžbu).'
+        )
         if is_ajax:
             return JsonResponse({'ok': True, 'message': success_message})
         messages.success(request, success_message)
@@ -3181,7 +3219,10 @@ def staff_loyalty_system(request):
             selected_card = cards[0]
             selected_card = osiguraj_loyalty_karticu(selected_card.user)
             loyalty_ctx = loyalty_kontekst(selected_card)
-            cardholder_name = selected_card.user.get_full_name().strip()
+            cardholder_name = (
+                selected_card.user.get_full_name().strip()
+                or (selected_card.user.email or '').strip().lower()
+            )
 
             user_orders = Order.objects.filter(korisnik=selected_card.user).prefetch_related('stavke').order_by('-kreirana')[:50]
 
@@ -3280,7 +3321,7 @@ def staff_loyalty_card_image(request, card_id):
         LoyaltyCard.objects.select_related('user', 'user__profil'),
         pk=card_id,
     )
-    name = card.user.get_full_name().strip() or card.user.email
+    name = card.user.get_full_name().strip() or (card.user.email or '').strip().lower()
     png = generisi_loyalty_card_image(card, cardholder_name=name)
     response = HttpResponse(png, content_type='image/png')
     response['Content-Disposition'] = f'inline; filename="loyalty-{card.kod}.png"'

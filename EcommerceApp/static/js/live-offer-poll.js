@@ -250,6 +250,17 @@
     }
 
     function buildRegistrationOverlayHtml(offer) {
+        const pct = offer.discount_percent || 10;
+        const benefits = (offer.benefits && offer.benefits.length)
+            ? offer.benefits
+            : [
+                pct + '% popusta na cijelu prvu narudžbu',
+                'Automatski se primjenjuje na korpu',
+                'Vrijedi samo jednom — nakon porudžbe prestaje',
+            ];
+        const benefitsHtml = benefits.map(function (item) {
+            return '<li>' + escapeHtml(item) + '</li>';
+        }).join('');
         return (
             '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
             '<div class="site-popup site-popup--akcija live-offer-popup live-offer-popup--registration" role="dialog" aria-modal="true">' +
@@ -265,16 +276,12 @@
             '<line x1="22" y1="11" x2="16" y2="11"/>' +
             '</svg></div>' +
             '<div class="live-offer-body">' +
-            '<p class="live-offer-kicker">Ekskluzivne pogodnosti</p>' +
-            '<h3 class="live-offer-order-title">' + escapeHtml(offer.title || 'Registrujte se i uštedite') + '</h3>' +
+            '<p class="live-offer-kicker">' + escapeHtml(pct + '% popusta na prvu narudžbu') + '</p>' +
+            '<h3 class="live-offer-order-title">' + escapeHtml(offer.title || ('Registrujte se i ostvarite ' + pct + '% popusta')) + '</h3>' +
             '<p class="live-offer-reg-message">' + escapeHtml(offer.message || '') + '</p>' +
-            '<ul class="live-offer-reg-benefits">' +
-            '<li>Popusti samo za registrovane</li>' +
-            '<li>Akcije i nagrade u nalogu</li>' +
-            '<li>Brža narudžba sljedeći put</li>' +
-            '</ul>' +
+            '<ul class="live-offer-reg-benefits">' + benefitsHtml + '</ul>' +
             '<a href="' + escapeHtml(offer.register_url || '/registracija/') + '" class="btn btn-primary site-popup-cta live-offer-cta live-offer-reg-cta" data-live-offer-register>' +
-            escapeHtml(offer.cta_label || 'Registruj se') +
+            escapeHtml(offer.cta_label || 'Registruj se i uzmi popust') +
             '</a>' +
             '</div></div></div>'
         );

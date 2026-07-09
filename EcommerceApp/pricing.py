@@ -127,7 +127,14 @@ def izracunaj_sazetak(
             else:
                 kupon_popust = _postotni_popust(ukupno_sa_pdvom, kupon.postotak)
             popust += kupon_popust
-            pogodnosti.append(f'Loyalty kupon {kupon.postotak}% ({kupon.kod})')
+            if kupon.naziv == 'Registracijski popust (uživo)':
+                pct = kupon.postotak
+                pct_label = int(pct) if pct == int(pct) else pct
+                pogodnosti.append(f'Registracijski popust {pct_label}% (jednokratno)')
+            elif kupon.automatski or kupon.loyalty_kartica_id:
+                pogodnosti.append(f'Loyalty kupon {kupon.postotak}% ({kupon.kod})')
+            else:
+                pogodnosti.append(f'Kupon {kupon.postotak}% ({kupon.kod})')
 
     popust = min(popust, ukupno_sa_pdvom)
     ukupno = _kvantiziraj(ukupno_sa_pdvom - popust)

@@ -99,8 +99,8 @@ def viber_chat_url(telefon):
     return f'viber://chat?number=%2B{digits}'
 
 
-def izdaj_loyalty_karticu(ime, prezime, telefon, email):
-    """Registruje kupca i izdaje loyalty karticu. Telefon i email moraju biti jedinstveni."""
+def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
+    """Registruje kupca i izdaje loyalty karticu. Telefon je obavezan; email opcionalan."""
     ime = (ime or '').strip()
     prezime = (prezime or '').strip()
     telefon = (telefon or '').strip()
@@ -110,12 +110,10 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email):
         raise ValueError('Ime i prezime su obavezni.')
     if not telefon or len(_normalizuj_telefon(telefon)) < 8:
         raise ValueError('Unesite ispravan broj telefona.')
-    if not email:
-        raise ValueError('Email je obavezan.')
 
     if telefon_vec_registrovan(telefon):
         raise ValueError('Ovaj broj telefona je već registrovan na loyalty karticu.')
-    if email_vec_registrovan(email):
+    if email and email_vec_registrovan(email):
         raise ValueError('Ovaj email je već registrovan na loyalty karticu.')
 
     digits = _normalizuj_telefon(telefon) or secrets.token_hex(4)
@@ -125,7 +123,7 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email):
 
     user = User.objects.create_user(
         username=username,
-        email=email,
+        email=email or '',
         password=secrets.token_urlsafe(32),
         first_name=ime,
         last_name=prezime,
@@ -447,11 +445,19 @@ def generisi_loyalty_card_image(card, *, cardholder_name=None):
     bg = _hex_to_rgb(bg_hex)
     accent = _hex_to_rgb(accent_hex)
     dark = _hex_to_rgb(dark_hex)
-    name = (cardholder_name or card.user.get_full_name() or card.user.email or 'Kupac').strip()
+    name = (
+        cardholder_name
+        or card.user.get_full_name()
+        or (card.user.email or '').strip().lower()
+        or 'Kupac'
+    ).strip()
+    name_is_email = '@' in name
+    name_display = (name.lower() if name_is_email else name.upper())[:40]
     kod = card.kod
     barkod = card.barkod or card.kod
 
-    width, height = 900, 560
+    # Duža kartica (bliže omjeru prave bankovne kartice)
+    width, height = 980, 580
     img = Image.new('RGB', (width, height), bg)
     draw = ImageDraw.Draw(img)
 
@@ -465,7 +471,7 @@ def generisi_loyalty_card_image(card, *, cardholder_name=None):
 
     font_brand = _load_font(22, bold=True)
     font_small = _load_font(16)
-    font_name = _load_font(34, bold=True)
+    font_name = _load_font(28 if name_is_email else 34, bold=True)
     font_code = _load_font(26, bold=True)
     font_label = _load_font(13)
 
@@ -474,14 +480,14 @@ def generisi_loyalty_card_image(card, *, cardholder_name=None):
     draw.rounded_rectangle([40, 90, 118, 142], radius=8, fill=accent)
 
     draw.text((40, 168), 'VLASNIK KARTICE', fill=(230, 230, 230), font=font_label)
-    draw.text((40, 190), name.upper()[:34], fill='white', font=font_name)
+    draw.text((40, 190), name_display, fill='white', font=font_name)
 
     # Left panel with code + barcode
-    draw.rounded_rectangle([40, 260, 560, 520], radius=18, fill=(0, 0, 0))
-    draw.text((64, 282), 'BROJ KARTICE / ONLINE KOD', fill=(200, 200, 200), font=font_label)
-    draw.text((64, 308), kod, fill='white', font=font_code)
+    draw.rounded_rectangle([40, 270, 640, 540], radius=18, fill=(0, 0, 0))
+    draw.text((64, 292), 'BROJ KARTICE', fill=(200, 200, 200), font=font_label)
+    draw.text((64, 318), kod, fill='white', font=font_code)
     draw.text(
-        (64, 350),
+        (64, 360),
         f'{tier["postotak"]}% POPUSTA  ·  LOYALTY PROGRAM',
         fill=accent,
         font=font_small,
@@ -489,22 +495,22 @@ def generisi_loyalty_card_image(card, *, cardholder_name=None):
 
     try:
         barcode_img = _barcode_image(barkod)
-        max_w = 460
+        max_w = 530
         ratio = max_w / max(barcode_img.width, 1)
         new_h = max(48, int(barcode_img.height * ratio))
         barcode_img = barcode_img.resize((max_w, new_h))
-        img.paste(barcode_img, (64, 390))
+        img.paste(barcode_img, (64, 400))
         draw = ImageDraw.Draw(img)
     except Exception:
-        draw.text((64, 420), f'BARKOD: {barkod}', fill='white', font=font_small)
+        draw.text((64, 430), f'BARKOD: {barkod}', fill='white', font=font_small)
 
     # QR panel
     qr = _qr_image(kod, box_size=7, border=2).resize((190, 190))
-    draw.rounded_rectangle([600, 260, 860, 520], radius=18, fill='white')
-    img.paste(qr, (635, 300))
+    draw.rounded_rectangle([670, 270, 940, 540], radius=18, fill='white')
+    img.paste(qr, (710, 310))
     draw = ImageDraw.Draw(img)
-    draw.text((670, 272), 'QR KOD', fill='#111111', font=font_label)
-    draw.text((640, 500), 'Skeniraj za kod', fill='#444444', font=font_label)
+    draw.text((745, 282), 'QR KOD', fill='#111111', font=font_label)
+    draw.text((715, 520), 'Skeniraj za kod', fill='#444444', font=font_label)
 
     buffer = io.BytesIO()
     img.save(buffer, format='PNG', optimize=True)

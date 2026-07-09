@@ -7,9 +7,12 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .cart_tracking import get_cart_session_key
-from .models import LiveVisitorOffer, Product, ProductVariation
+from .models import Coupon, LiveVisitorOffer, Product, ProductVariation
 
 OFFER_TIMER_MINUTES = 9
+REGISTRATION_INVITE_DISCOUNT = Decimal('10')
+REGISTRATION_COUPON_NAME = 'Registracijski popust (uživo)'
+SESSION_REG_INVITE_KEY = 'live_reg_invite_pending'
 
 
 def _clamp_percent(value):
@@ -131,7 +134,7 @@ def send_live_visitor_offer(
 
 
 def send_live_visitor_registration_invite(session_key, *, staff_user=None, target_user=None):
-    """Pošalji gostu popup poziv na registraciju."""
+    """Pošalji gostu popup poziv na registraciju (+ 10% na prvu narudžbu)."""
     if not session_key:
         raise ValueError('Sesija posjetioca nije pronađena.')
     if target_user and getattr(target_user, 'is_authenticated', False):
@@ -140,7 +143,7 @@ def send_live_visitor_registration_invite(session_key, *, staff_user=None, targe
     defaults = {
         'tip': LiveVisitorOffer.Tip.REGISTRACIJA,
         'product': None,
-        'discount_percent': Decimal('0'),
+        'discount_percent': REGISTRATION_INVITE_DISCOUNT,
         'aktivacioni_kod': '',
         'kod_aktiviran': False,
         'show_popup': True,
@@ -148,6 +151,134 @@ def send_live_visitor_registration_invite(session_key, *, staff_user=None, targe
         'poslao': staff_user if isinstance(staff_user, User) else None,
     }
     return _upsert_live_visitor_offer(session_key, defaults, target_user=None)
+
+
+def _registration_discount_percent(offer=None, session_value=None):
+    if offer and offer.discount_percent and offer.discount_percent > 0:
+        return _clamp_percent(offer.discount_percent)
+    if session_value not in (None, ''):
+        return _clamp_percent(session_value)
+    return REGISTRATION_INVITE_DISCOUNT
+
+
+def _generate_registration_coupon_code(user):
+    base = f'REG{user.pk:04d}'
+    code = f'{base}{secrets.token_hex(2).upper()}'
+    while Coupon.objects.filter(kod=code).exists():
+        code = f'{base}{secrets.token_hex(2).upper()}'
+    return code[:20]
+
+
+def get_active_registration_reward_coupon(user):
+    if not user or not getattr(user, 'is_authenticated', False):
+        return None
+    return (
+        Coupon.objects
+        .filter(
+            vlasnik=user,
+            naziv=REGISTRATION_COUPON_NAME,
+            aktivan=True,
+        )
+        .order_by('-kreiran')
+        .first()
+    )
+
+
+def mark_registration_invite_pending(request, offer):
+    """Zapamti u sesiji da je posjetilac dobio poziv s popustom."""
+    if not offer or offer.tip != LiveVisitorOffer.Tip.REGISTRACIJA:
+        return
+    percent = _registration_discount_percent(offer)
+    request.session[SESSION_REG_INVITE_KEY] = str(percent)
+    request.session.modified = True
+
+
+def claim_registration_invite_reward(request, user):
+    """
+    Nakon registracije: jednokratni 10% popust na prvu narudžbu.
+    Popust se primjenjuje na korpu (recovery discount) dok se ne poruči.
+    """
+    if not user or not user.pk:
+        return None
+
+    session_key = get_cart_session_key(request)
+    pending = request.session.get(SESSION_REG_INVITE_KEY)
+
+    offer = None
+    if session_key:
+        offer = (
+            LiveVisitorOffer.objects
+            .filter(
+                session_key=session_key,
+                tip=LiveVisitorOffer.Tip.REGISTRACIJA,
+                kod_aktiviran=False,
+            )
+            .order_by('-azurirano')
+            .first()
+        )
+
+    if not offer and not pending:
+        return None
+
+    percent = _registration_discount_percent(offer, pending)
+    if percent <= 0:
+        return None
+
+    coupon = get_active_registration_reward_coupon(user)
+    if not coupon:
+        # Već iskoristio ranije — ne daj ponovo
+        already_used = Coupon.objects.filter(
+            vlasnik=user,
+            naziv=REGISTRATION_COUPON_NAME,
+            aktivan=False,
+        ).exists()
+        if already_used:
+            if offer:
+                offer.user = user
+                offer.kod_aktiviran = True
+                offer.show_popup = False
+                offer.save(update_fields=['user', 'kod_aktiviran', 'show_popup', 'azurirano'])
+            request.session.pop(SESSION_REG_INVITE_KEY, None)
+            return None
+
+        coupon = Coupon.objects.create(
+            kod=_generate_registration_coupon_code(user),
+            naziv=REGISTRATION_COUPON_NAME,
+            postotak=percent,
+            vlasnik=user,
+            aktivan=True,
+            automatski=False,
+        )
+
+    if offer:
+        offer.user = user
+        offer.discount_percent = percent
+        offer.kod_aktiviran = True
+        offer.show_popup = False
+        offer.save(update_fields=[
+            'user', 'discount_percent', 'kod_aktiviran', 'show_popup', 'azurirano',
+        ])
+
+    request.session.pop(SESSION_REG_INVITE_KEY, None)
+    request.session.modified = True
+    return coupon
+
+
+def registration_reward_coupon_code(user):
+    """Kod aktivnog registracijskog popusta (za automatsku primjenu u korpi)."""
+    coupon = get_active_registration_reward_coupon(user)
+    return coupon.kod if coupon else ''
+
+
+def consume_registration_reward(user):
+    """Nakon narudžbe — registracijski popust više ne vrijedi."""
+    if not user or not getattr(user, 'is_authenticated', False):
+        return
+    Coupon.objects.filter(
+        vlasnik=user,
+        naziv=REGISTRATION_COUPON_NAME,
+        aktivan=True,
+    ).update(aktivan=False)
 
 
 def get_active_live_visitor_offer(request):
@@ -253,16 +384,24 @@ def _build_product_offer_payload(offer):
 
 
 def _build_registration_offer_payload(offer):
+    percent = _registration_discount_percent(offer)
+    pct = _percent_display(percent) or 10
     return {
         'offer_type': 'registration',
         'offer_id': offer.pk,
         'offer_version': int(offer.azurirano.timestamp()),
-        'title': 'Registrujte se i uštedite',
+        'discount_percent': pct,
+        'title': f'Registrujte se i ostvarite {pct}% popusta',
         'message': (
-            'Otključajte ekskluzivne popuste, akcije i nagradne pogodnosti. '
-            'Registracija traje manje od minute — čeka vas dosta benefita!'
+            f'Nakon registracije dobijate {pct}% popusta na kompletnu prvu narudžbu. '
+            f'Popust se automatski primjenjuje na sve u korpi — samo jednom, do prve porudžbe.'
         ),
-        'cta_label': 'Registruj se',
+        'benefits': [
+            f'{pct}% popusta na cijelu prvu narudžbu',
+            'Automatski se primjenjuje na korpu',
+            'Vrijedi samo jednom — nakon porudžbe prestaje',
+        ],
+        'cta_label': 'Registruj se i uzmi popust',
         'register_url': '/registracija/',
         'timer_seconds': _offer_timer_seconds(offer),
         'timer_minutes': OFFER_TIMER_MINUTES,
@@ -285,6 +424,7 @@ def build_live_visitor_offer_context(request):
     payload = _build_offer_payload(offer)
     if not payload:
         return None
+    mark_registration_invite_pending(request, offer)
     payload['offer'] = offer
     if offer.product_id:
         payload['product'] = offer.product
@@ -295,6 +435,7 @@ def poll_live_visitor_offer(request):
     offer = get_active_live_visitor_offer(request)
     if not offer:
         return None
+    mark_registration_invite_pending(request, offer)
     return _build_offer_payload(offer)
 
 

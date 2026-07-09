@@ -5838,7 +5838,7 @@ body.mobile-nav-open {
 }
 
 .account-loyalty-card-preview .loyalty-physical-card {
-    width: min(100%, 440px);
+    width: min(100%, 560px);
 }
 
 .account-loyalty-card-actions {
@@ -5847,11 +5847,6 @@ body.mobile-nav-open {
     align-items: center;
     justify-content: center;
     gap: 12px;
-}
-
-.account-loyalty-card-actions .loyalty-code-display {
-    flex: 1 1 260px;
-    max-width: 420px;
 }
 
 .loyalty-code-hint--compact {
@@ -12705,6 +12700,13 @@ button.nav-action-link {
     cursor: wait;
 }
 
+.staff-loyalty-optional {
+    font-weight: 500;
+    color: var(--gray-500, #6b7280);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 .staff-loyalty-field-hint {
     display: block;
     margin-top: 4px;
@@ -12727,12 +12729,13 @@ button.nav-action-link {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: min(100%, 460px);
-    min-height: 320px;
+    /* Šira / duža kao prava bankovna kartica (~85.6 × 54 mm) */
+    width: min(100%, 560px);
+    min-height: 352px;
     /* Ne forsiraj fiksnu visinu — barkod se ne smije sjeći */
     height: auto;
-    padding: 18px 20px 14px;
-    border-radius: 20px;
+    padding: 22px 26px 16px;
+    border-radius: 18px;
     overflow: visible;
     color: #fff;
     background: linear-gradient(145deg, #4a3226 0%, #8b5a3c 42%, #c4895a 100%);
@@ -12853,6 +12856,14 @@ button.nav-action-link {
     text-transform: uppercase;
 }
 
+.loyalty-physical-card__name--email {
+    text-transform: none;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    word-break: break-all;
+}
+
 .loyalty-physical-card__mid {
     display: grid;
     grid-template-columns: 0.9fr 1.35fr;
@@ -12945,6 +12956,35 @@ button.nav-action-link {
     min-width: 0;
 }
 
+.loyalty-physical-card__code-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+}
+
+.loyalty-physical-card__copy-btn {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.loyalty-physical-card__copy-btn:hover {
+    background: rgba(255, 255, 255, 0.26);
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
 .loyalty-physical-card__barcode-block {
     min-width: 0;
     width: 100%;
@@ -12973,19 +13013,12 @@ button.nav-action-link {
 
 .loyalty-physical-card__number {
     display: block;
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: 16px;
     font-weight: 800;
     letter-spacing: 0.1em;
     word-break: break-all;
-}
-
-.loyalty-physical-card__code-hint {
-    display: block;
-    margin-top: 3px;
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    opacity: 0.88;
 }
 
 .loyalty-physical-card__code-label {
@@ -13226,6 +13259,10 @@ button.nav-action-link {
 
     #loyaltyPrintCard .loyalty-physical-card__number {
         font-size: 9pt;
+    }
+
+    #loyaltyPrintCard .loyalty-physical-card__copy-btn {
+        display: none !important;
     }
 
     #loyaltyPrintCard .loyalty-physical-card__barcode-frame {

@@ -7,7 +7,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncDate, TruncMonth
 from django.utils import timezone
 
-from .models import ActiveCartItem, Category, LiveVisitor, Product
+from .models import ActiveCartItem, Category, CityVisitTotal, LiveVisitor, Product
 from .visitor_geo import (
     get_client_ip,
     is_known_foreign_visitor,
@@ -159,12 +159,50 @@ def track_live_visitor(request):
         'pregledane_kategorije': existing_categories,
         'last_seen': now,
     }
-    LiveVisitor.objects.update_or_create(
+    _visitor, created = LiveVisitor.objects.update_or_create(
         session_key=session_key,
         defaults=defaults,
     )
+    # Kumulativni brojač po gradu — samo raste (nova sesija ili prvi put zabilježen grad)
+    city_name = (grad or '').strip()
+    if city_name and (created or not (existing_grad or '').strip()):
+        record_city_visit(city_name)
     if random.random() < 0.02:
         cleanup_stale_live_visitors()
+
+
+def record_city_visit(grad):
+    """Povećaj trajni brojač posjeta za grad (ne smanjuje se brisanjem LiveVisitor)."""
+    from django.db import IntegrityError
+    from django.db.models import F
+
+    city = (grad or '').strip()[:100]
+    if not city:
+        return
+    updated = CityVisitTotal.objects.filter(grad__iexact=city).update(
+        broj_posjeta=F('broj_posjeta') + 1,
+    )
+    if updated:
+        return
+    try:
+        CityVisitTotal.objects.create(grad=city, broj_posjeta=1)
+    except IntegrityError:
+        CityVisitTotal.objects.filter(grad__iexact=city).update(
+            broj_posjeta=F('broj_posjeta') + 1,
+        )
+
+
+def get_city_visit_totals():
+    """Ukupne posjete po gradovima, najviše → najmanje (ne zavisi od filtera datuma)."""
+    rows = CityVisitTotal.objects.filter(broj_posjeta__gt=0).order_by('-broj_posjeta', 'grad')
+    return [
+        {
+            'rank': index,
+            'label': row.grad,
+            'count': row.broj_posjeta,
+        }
+        for index, row in enumerate(rows, start=1)
+    ]
 
 
 def cleanup_stale_live_visitors():
@@ -318,7 +356,7 @@ def get_traffic_filter_defaults():
         month += 12
         year -= 1
     return {
-        'daily_from': (today - timedelta(days=13)).isoformat(),
+        'daily_from': today.isoformat(),
         'daily_to': today.isoformat(),
         'monthly_from': f'{year:04d}-{month:02d}',
         'monthly_to': today.strftime('%Y-%m'),
@@ -410,7 +448,30 @@ def get_visitor_traffic_stats(
     return {
         'daily': daily_stats,
         'monthly': monthly_stats,
+        # Kumulativno — ne zavisi od filtera datuma, samo raste
+        'by_city': get_city_visit_totals(),
     }
+
+
+def _format_time_on_site(seconds):
+    """Čitljivo vrijeme provedeno na sajtu (npr. 45 s, 12 min, 1 h 5 min)."""
+    seconds = max(0, int(seconds or 0))
+    if seconds < 60:
+        return f'{seconds} s'
+    minutes = seconds // 60
+    if minutes < 60:
+        return f'{minutes} min'
+    hours = minutes // 60
+    rem_min = minutes % 60
+    if hours < 24:
+        if rem_min:
+            return f'{hours} h {rem_min} min'
+        return f'{hours} h'
+    days = hours // 24
+    rem_h = hours % 24
+    if rem_h:
+        return f'{days} d {rem_h} h'
+    return f'{days} d'
 
 
 def _visitor_payload(visitor, *, now, offer=None, has_cart=False):
@@ -423,6 +484,14 @@ def _visitor_payload(visitor, *, now, offer=None, has_cart=False):
     else:
         hours = seconds_ago // 3600
         ago_label = f'prije {hours} h'
+
+    is_online = seconds_ago <= ONLINE_MINUTES * 60
+    # Online: od ulaska do sada; offline: od ulaska do zadnje aktivnosti
+    end_time = now if is_online else visitor.last_seen
+    first_seen = visitor.first_seen or visitor.last_seen or now
+    time_on_site_seconds = max(0, int((end_time - first_seen).total_seconds()))
+    time_on_site_label = _format_time_on_site(time_on_site_seconds)
+
     grad = ''
     if (visitor.drzava or '').strip().upper() == BOSNIA_HERZEGOVINA_COUNTRY_CODE:
         grad = (visitor.grad or '').strip()
@@ -445,7 +514,9 @@ def _visitor_payload(visitor, *, now, offer=None, has_cart=False):
         'last_seen': visitor.last_seen,
         'last_seen_label': ago_label,
         'seconds_ago': seconds_ago,
-        'is_online': seconds_ago <= ONLINE_MINUTES * 60,
+        'time_on_site_seconds': time_on_site_seconds,
+        'time_on_site_label': time_on_site_label,
+        'is_online': is_online,
     }
     payload.update(_offer_status_fields(offer, visitor_online=payload['is_online']))
     return payload

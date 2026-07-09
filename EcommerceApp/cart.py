@@ -283,11 +283,18 @@ class Cart:
         return izracunaj_pdv(self.ukupno)
 
     def sazetak(self, user=None):
+        from .live_visitor_offer import registration_reward_coupon_code
         from .pricing import izracunaj_sazetak
+
+        # Ručno primijenjeni kupon ima prioritet; inače jednokratni reg. popust 10%.
+        coupon_code = self.get_coupon_code()
+        if not coupon_code:
+            coupon_code = registration_reward_coupon_code(user)
+
         return izracunaj_sazetak(
             self.ukupno,
             user=user,
-            coupon_code=self.get_coupon_code(),
+            coupon_code=coupon_code,
             cart_items=list(self),
             recovery_discount_percent=self.get_recovery_discount_percent(),
         )

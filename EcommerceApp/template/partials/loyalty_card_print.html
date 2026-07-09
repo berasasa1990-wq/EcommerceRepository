@@ -11,7 +11,7 @@
     </header>
 
     <p class="loyalty-physical-card__label">Vlasnik kartice</p>
-    <p class="loyalty-physical-card__name">{{ cardholder_name }}</p>
+    <p class="loyalty-physical-card__name{% if '@' in cardholder_name %} loyalty-physical-card__name--email{% endif %}">{{ cardholder_name }}</p>
 
     <div class="loyalty-physical-card__mid">
         <div class="loyalty-physical-card__discount">
@@ -40,9 +40,16 @@
 
     <div class="loyalty-physical-card__codes">
         <div class="loyalty-physical-card__code-row">
-            <span class="loyalty-physical-card__code-label">Broj kartice — unesite u korpu</span>
-            <strong class="loyalty-physical-card__number">{{ loyalty.kartica.kod }}</strong>
-            <span class="loyalty-physical-card__code-hint">{{ loyalty.tier.postotak }}% popusta pri unosu u korpu</span>
+            <span class="loyalty-physical-card__code-label">Broj kartice</span>
+            <div class="loyalty-physical-card__code-value-row">
+                <strong class="loyalty-physical-card__number" id="loyaltyCardCodeValue">{{ loyalty.kartica.kod }}</strong>
+                <button
+                    type="button"
+                    class="loyalty-physical-card__copy-btn"
+                    data-copy-target="loyaltyCardCodeValue"
+                    aria-label="Kopiraj broj kartice"
+                >Kopiraj</button>
+            </div>
         </div>
         <div class="loyalty-physical-card__barcode-block">
             <span class="loyalty-physical-card__code-label">Barkod</span>

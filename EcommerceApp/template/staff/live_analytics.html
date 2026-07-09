@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v14">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v17">
 {% endblock %}
 
 {% block content %}
@@ -44,7 +44,7 @@
 
     <form method="get" class="staff-live-traffic-filters" id="liveTrafficFilterForm">
         <div class="staff-live-traffic-filter-group">
-            <span class="staff-live-traffic-filter-title">Posjeti po danima</span>
+            <span class="staff-live-traffic-filter-title">Posjeti po danima (podrazumijevano: danas)</span>
             <label class="staff-live-traffic-filter-label" for="dailyFrom">Od</label>
             <input type="date" name="daily_from" id="dailyFrom" class="staff-live-traffic-filter-input"
                    value="{{ traffic_filters.daily_from }}">
@@ -64,57 +64,77 @@
         <button type="submit" class="btn btn-primary staff-live-traffic-filter-btn">Prikaži</button>
     </form>
 
-    <div class="staff-live-analytics-traffic">
-        <section class="staff-live-analytics-panel staff-live-analytics-panel--traffic">
-            <h2>Posjeti po danima</h2>
-            <div class="staff-live-analytics-table-wrap">
-                <table class="staff-live-analytics-table staff-live-analytics-table--compact" id="liveDailyStatsTable">
-                    <thead>
-                        <tr>
-                            <th>Datum</th>
-                            <th>Broj posjeta</th>
-                        </tr>
-                    </thead>
-                    <tbody id="liveDailyStatsBody">
-                        {% for row in daily_stats %}
-                        <tr>
-                            <td>{{ row.label }}</td>
-                            <td><strong>{{ row.count }}</strong></td>
-                        </tr>
-                        {% empty %}
-                        <tr class="staff-live-empty-row">
-                            <td colspan="2">Nema podataka o posjetama.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="staff-live-analytics-traffic-layout">
+        <div class="staff-live-analytics-traffic">
+            <section class="staff-live-analytics-panel staff-live-analytics-panel--traffic">
+                <h2>Posjeti po danima</h2>
+                <div class="staff-live-analytics-table-wrap">
+                    <table class="staff-live-analytics-table staff-live-analytics-table--compact" id="liveDailyStatsTable">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Broj posjeta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveDailyStatsBody">
+                            {% for row in daily_stats %}
+                            <tr>
+                                <td>{{ row.label }}</td>
+                                <td><strong>{{ row.count }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr class="staff-live-empty-row">
+                                <td colspan="2">Nema podataka o posjetama.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <section class="staff-live-analytics-panel staff-live-analytics-panel--traffic">
+                <h2>Ukupno po mjesecima</h2>
+                <div class="staff-live-analytics-table-wrap">
+                    <table class="staff-live-analytics-table staff-live-analytics-table--compact" id="liveMonthlyStatsTable">
+                        <thead>
+                            <tr>
+                                <th>Mjesec</th>
+                                <th>Broj posjeta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveMonthlyStatsBody">
+                            {% for row in monthly_stats %}
+                            <tr>
+                                <td>{{ row.label }}</td>
+                                <td><strong>{{ row.count }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr class="staff-live-empty-row">
+                                <td colspan="2">Nema podataka o posjetama.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <aside class="staff-live-city-sidebar staff-live-analytics-panel" aria-label="Posjeti po gradovima">
+            <h2>Posjeti po gradovima</h2>
+            <p class="staff-live-city-stats-hint">Ukupno — lista se ne resetuje, samo raste. Sortirano od najviše ka najmanje.</p>
+            <div class="staff-live-city-list-wrap">
+                <ol class="staff-live-city-list" id="liveCityStatsList">
+                    {% for row in city_stats %}
+                    <li class="staff-live-city-list-item">
+                        <span class="staff-live-city-rank">{{ row.rank }}</span>
+                        <span class="staff-live-city-list-name">{{ row.label }}</span>
+                        <strong class="staff-live-city-list-count">{{ row.count }}</strong>
+                    </li>
+                    {% empty %}
+                    <li class="staff-live-city-list-empty" id="liveCityStatsEmpty">Još nema zabilježenih gradova.</li>
+                    {% endfor %}
+                </ol>
             </div>
-        </section>
-        <section class="staff-live-analytics-panel staff-live-analytics-panel--traffic">
-            <h2>Ukupno po mjesecima</h2>
-            <div class="staff-live-analytics-table-wrap">
-                <table class="staff-live-analytics-table staff-live-analytics-table--compact" id="liveMonthlyStatsTable">
-                    <thead>
-                        <tr>
-                            <th>Mjesec</th>
-                            <th>Broj posjeta</th>
-                        </tr>
-                    </thead>
-                    <tbody id="liveMonthlyStatsBody">
-                        {% for row in monthly_stats %}
-                        <tr>
-                            <td>{{ row.label }}</td>
-                            <td><strong>{{ row.count }}</strong></td>
-                        </tr>
-                        {% empty %}
-                        <tr class="staff-live-empty-row">
-                            <td colspan="2">Nema podataka o posjetama.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
+        </aside>
     </div>
 
     <div class="staff-live-analytics-panels">
@@ -128,6 +148,7 @@
                             <th>Grad (BiH)</th>
                             <th>Kategorije</th>
                             <th>Email</th>
+                            <th>Na sajtu</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
@@ -141,6 +162,7 @@
                             <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
+                            <td><span class="staff-live-time-on-site" title="Vrijeme provedeno na sajtu">{{ visitor.time_on_site_label }}</span></td>
                             <td><span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span></td>
                             <td class="staff-live-action-cell">
                                 {% if visitor.offer_sent %}
@@ -169,7 +191,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="6">Trenutno nema aktivnih posjetilaca iz BiH.</td>
+                            <td colspan="7">Trenutno nema aktivnih posjetilaca iz BiH.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -187,6 +209,7 @@
                             <th>Grad (BiH)</th>
                             <th>Kategorije</th>
                             <th>Email</th>
+                            <th>Na sajtu</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
@@ -200,6 +223,7 @@
                             <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
+                            <td><span class="staff-live-time-on-site" title="Vrijeme provedeno na sajtu">{{ visitor.time_on_site_label }}</span></td>
                             <td>
                                 {% if visitor.is_online %}
                                 <span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span>
@@ -238,7 +262,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="6">Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.</td>
+                            <td colspan="7">Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -300,6 +324,7 @@
     const selectedProductEl = document.getElementById('liveOfferSelectedProduct');
     const dailyStatsBody = document.getElementById('liveDailyStatsBody');
     const monthlyStatsBody = document.getElementById('liveMonthlyStatsBody');
+    const cityStatsList = document.getElementById('liveCityStatsList');
     const trafficFilterForm = document.getElementById('liveTrafficFilterForm');
     if (!onlineBody || !windowBody) return;
 
@@ -321,6 +346,25 @@
             return (
                 '<tr><td>' + escapeHtml(row.label) + '</td>' +
                 '<td><strong>' + escapeHtml(row.count) + '</strong></td></tr>'
+            );
+        }).join('');
+    }
+
+    function renderCityStatsList(listEl, rows, emptyText) {
+        if (!listEl) return;
+        if (!rows || !rows.length) {
+            listEl.innerHTML = '<li class="staff-live-city-list-empty">' +
+                escapeHtml(emptyText) + '</li>';
+            return;
+        }
+        listEl.innerHTML = rows.map(function (row, index) {
+            const rank = row.rank || (index + 1);
+            return (
+                '<li class="staff-live-city-list-item">' +
+                '<span class="staff-live-city-rank">' + escapeHtml(rank) + '</span>' +
+                '<span class="staff-live-city-list-name">' + escapeHtml(row.label) + '</span>' +
+                '<strong class="staff-live-city-list-count">' + escapeHtml(row.count) + '</strong>' +
+                '</li>'
             );
         }).join('');
     }
@@ -434,7 +478,7 @@
 
     function renderRows(visitors, emptyText) {
         if (!visitors.length) {
-            return '<tr class="staff-live-empty-row"><td colspan="6">' + escapeHtml(emptyText) + '</td></tr>';
+            return '<tr class="staff-live-empty-row"><td colspan="7">' + escapeHtml(emptyText) + '</td></tr>';
         }
         return visitors.map(function (visitor) {
             const email = visitor.email
@@ -445,6 +489,10 @@
                 : '<span class="staff-live-muted">—</span>';
             const categories = visitor.categories_label
                 ? '<span class="staff-live-categories">' + escapeHtml(visitor.categories_label) + '</span>'
+                : '<span class="staff-live-muted">—</span>';
+            const timeOnSite = visitor.time_on_site_label
+                ? '<span class="staff-live-time-on-site" title="Vrijeme provedeno na sajtu">' +
+                  escapeHtml(visitor.time_on_site_label) + '</span>'
                 : '<span class="staff-live-muted">—</span>';
             const badgeClass = visitor.is_online
                 ? 'staff-live-badge staff-live-badge--online'
@@ -458,6 +506,7 @@
                 '<td>' + grad + '</td>' +
                 '<td>' + categories + '</td>' +
                 '<td>' + email + '</td>' +
+                '<td>' + timeOnSite + '</td>' +
                 '<td><span class="' + badgeClass + '">' + escapeHtml(visitor.last_seen_label) + '</span></td>' +
                 '<td class="staff-live-action-cell">' + offerButton(visitor) + '</td>' +
                 '</tr>'
@@ -664,6 +713,11 @@
                 monthlyStatsBody,
                 data.monthly_stats || [],
                 'Nema podataka o posjetama za odabrani period.',
+            );
+            renderCityStatsList(
+                cityStatsList,
+                data.city_stats || [],
+                'Još nema zabilježenih gradova.',
             );
             bindOfferButtons(onlineBody);
             bindOfferButtons(windowBody);

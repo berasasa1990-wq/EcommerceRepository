@@ -65,12 +65,12 @@
                     </div>
 
                     <div class="form-field">
-                        <label for="{{ issue_form.email.id_for_label }}">{{ issue_form.email.label }}</label>
+                        <label for="{{ issue_form.email.id_for_label }}">{{ issue_form.email.label }} <span class="staff-loyalty-optional">(opcionalno)</span></label>
                         {{ issue_form.email }}
                         {% if issue_form.email.errors %}
                         <div class="field-error">{{ issue_form.email.errors.0 }}</div>
                         {% endif %}
-                        <small class="staff-loyalty-field-hint">Jedinstveni email — ne može se ponoviti.</small>
+                        <small class="staff-loyalty-field-hint">Nije obavezno. Ako unesete — mora biti jedinstven.</small>
                     </div>
 
                     {% if issue_form.non_field_errors %}

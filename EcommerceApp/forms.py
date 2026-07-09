@@ -304,9 +304,10 @@ class LoyaltyIssueForm(forms.Form):
     email = forms.EmailField(
         label='Email',
         max_length=254,
+        required=False,
         widget=forms.EmailInput(attrs={
             'class': 'form-input',
-            'placeholder': 'npr. amira@email.com',
+            'placeholder': 'opcionalno — npr. amira@email.com',
             'autocomplete': 'email',
         }),
     )
@@ -329,7 +330,7 @@ class LoyaltyIssueForm(forms.Form):
 
         email = (self.cleaned_data.get('email') or '').strip().lower()
         if not email:
-            raise forms.ValidationError('Email je obavezan.')
+            return ''
         if email_vec_registrovan(email):
             raise forms.ValidationError('Ovaj email je već registrovan.')
         return email
