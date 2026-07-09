@@ -223,7 +223,63 @@
             escapeHtml(offer.display_base_price) + ' KM</span>';
     }
 
+    function buildOrderOverlayHtml(offer) {
+        const pct = escapeHtml(offer.discount_percent);
+        return (
+            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup site-popup--akcija live-offer-popup" role="dialog" aria-modal="true">' +
+            '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+            '</svg></button>' +
+            '<div class="live-offer-timer-box" style="margin:0 auto 12px;max-width:220px;">' +
+            '<span class="live-offer-timer-label">Ponuda ističe za</span>' +
+            '<span class="live-offer-timer-value" data-live-offer-timer>9:00</span>' +
+            '</div>' +
+            '<div class="live-offer-body">' +
+            '<p class="live-offer-kicker">Posebna ponuda</p>' +
+            '<h3 class="live-offer-order-title">Imate popust od <strong>' + pct + '%</strong> na cijelu narudžbu</h3>' +
+            '<div class="live-offer-code-box">' +
+            '<span class="live-offer-code-label">Vaš kod</span>' +
+            '<span class="live-offer-code-value">' + escapeHtml(offer.activation_code) + '</span>' +
+            '</div>' +
+            '<form method="post" action="' + escapeHtml(offer.activate_url) + '" class="live-offer-activate-form" id="liveOfferActivateForm">' +
+            '<button type="submit" class="btn btn-primary site-popup-cta live-offer-activate-cta">Aktiviraj kod</button>' +
+            '</form></div></div></div>'
+        );
+    }
+
+    function showActivationConfirm(message) {
+        const existing = document.getElementById('liveOfferConfirmOverlay');
+        if (existing) existing.remove();
+
+        const confirmOverlay = document.createElement('div');
+        confirmOverlay.className = 'site-popup-overlay live-offer-confirm-overlay is-visible';
+        confirmOverlay.id = 'liveOfferConfirmOverlay';
+        confirmOverlay.innerHTML =
+            '<div class="site-popup live-offer-confirm-popup" role="dialog" aria-modal="true">' +
+            '<h3 class="live-offer-confirm-title">Kod je aktiviran!</h3>' +
+            '<p class="live-offer-confirm-text">' + escapeHtml(message) + '</p>' +
+            '<button type="button" class="btn btn-primary live-offer-confirm-cta" data-live-offer-confirm-close>Nastavi kupovinu</button>' +
+            '</div>';
+        document.body.appendChild(confirmOverlay);
+        document.body.classList.add('popup-open');
+        confirmOverlay.querySelector('[data-live-offer-confirm-close]')?.addEventListener('click', function () {
+            confirmOverlay.classList.remove('is-visible');
+            confirmOverlay.remove();
+            document.body.classList.remove('popup-open');
+        });
+        confirmOverlay.addEventListener('click', function (e) {
+            if (e.target === confirmOverlay) {
+                confirmOverlay.querySelector('[data-live-offer-confirm-close]')?.click();
+            }
+        });
+    }
+
     function buildOverlayHtml(offer) {
+        if (offer.offer_type === 'order') {
+            return buildOrderOverlayHtml(offer);
+        }
         const promoText = offer.has_discount && offer.discount_percent
             ? 'Dodatni popust od <strong>' + escapeHtml(offer.discount_percent) + '%</strong>'
             : 'Posebna ponuda samo za vas';
@@ -280,6 +336,46 @@
                 } else if (priceOriginal) {
                     priceOriginal.hidden = true;
                     priceFinal.textContent = option.dataset.base + ' KM';
+                }
+            });
+        }
+
+        const activateForm = overlay.querySelector('#liveOfferActivateForm');
+        if (activateForm) {
+            activateForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const submitBtn = activateForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    const postData = buildOfferPostBody(activateForm);
+                    const response = await fetch(activateForm.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': postData.csrf,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                        body: postData.body.toString(),
+                    });
+                    const data = await parseJsonResponse(response);
+                    if (!response.ok || !data.ok) {
+                        throw new Error(data.message || 'Aktivacija koda nije uspjela.');
+                    }
+                    lastOfferVersion = null;
+                    activeOffer = null;
+                    clearLiveOfferActive();
+                    dismissCartRecoveryOverlay();
+                    closeOverlay();
+                    if (overlay && overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                        overlay = null;
+                    }
+                    showActivationConfirm(data.message);
+                } catch (err) {
+                    alert(err.message || 'Aktivacija koda nije uspjela.');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
                 }
             });
         }

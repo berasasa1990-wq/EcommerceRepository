@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260708v8">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v12">
 {% endblock %}
 
 {% block content %}
@@ -20,7 +20,7 @@
                 <h1>Uživo analitika</h1>
                 <p class="staff-live-analytics-subtitle">
                     Prikazani su isključivo posjetioci iz Bosne i Hercegovine (grad na sajtu).
-                    Pošaljite im ponudu artikla s opcionalnim popustom.
+                    Kategorije pokazuju šta kupac pregledava — pošaljite mu odgovarajuću ponudu.
                 </p>
             </div>
             <p class="staff-live-analytics-updated">
@@ -42,6 +42,81 @@
         </div>
     </div>
 
+    <form method="get" class="staff-live-traffic-filters" id="liveTrafficFilterForm">
+        <div class="staff-live-traffic-filter-group">
+            <span class="staff-live-traffic-filter-title">Posjeti po danima</span>
+            <label class="staff-live-traffic-filter-label" for="dailyFrom">Od</label>
+            <input type="date" name="daily_from" id="dailyFrom" class="staff-live-traffic-filter-input"
+                   value="{{ traffic_filters.daily_from }}">
+            <label class="staff-live-traffic-filter-label" for="dailyTo">Do</label>
+            <input type="date" name="daily_to" id="dailyTo" class="staff-live-traffic-filter-input"
+                   value="{{ traffic_filters.daily_to }}">
+        </div>
+        <div class="staff-live-traffic-filter-group">
+            <span class="staff-live-traffic-filter-title">Po mjesecima</span>
+            <label class="staff-live-traffic-filter-label" for="monthlyFrom">Od</label>
+            <input type="month" name="monthly_from" id="monthlyFrom" class="staff-live-traffic-filter-input"
+                   value="{{ traffic_filters.monthly_from }}">
+            <label class="staff-live-traffic-filter-label" for="monthlyTo">Do</label>
+            <input type="month" name="monthly_to" id="monthlyTo" class="staff-live-traffic-filter-input"
+                   value="{{ traffic_filters.monthly_to }}">
+        </div>
+        <button type="submit" class="btn btn-primary staff-live-traffic-filter-btn">Prikaži</button>
+    </form>
+
+    <div class="staff-live-analytics-traffic">
+        <section class="staff-live-analytics-panel staff-live-analytics-panel--traffic">
+            <h2>Posjeti po danima</h2>
+            <div class="staff-live-analytics-table-wrap">
+                <table class="staff-live-analytics-table staff-live-analytics-table--compact" id="liveDailyStatsTable">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Broj posjeta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="liveDailyStatsBody">
+                        {% for row in daily_stats %}
+                        <tr>
+                            <td>{{ row.label }}</td>
+                            <td><strong>{{ row.count }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr class="staff-live-empty-row">
+                            <td colspan="2">Nema podataka o posjetama.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section class="staff-live-analytics-panel staff-live-analytics-panel--traffic">
+            <h2>Ukupno po mjesecima</h2>
+            <div class="staff-live-analytics-table-wrap">
+                <table class="staff-live-analytics-table staff-live-analytics-table--compact" id="liveMonthlyStatsTable">
+                    <thead>
+                        <tr>
+                            <th>Mjesec</th>
+                            <th>Broj posjeta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="liveMonthlyStatsBody">
+                        {% for row in monthly_stats %}
+                        <tr>
+                            <td>{{ row.label }}</td>
+                            <td><strong>{{ row.count }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr class="staff-live-empty-row">
+                            <td colspan="2">Nema podataka o posjetama.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
     <div class="staff-live-analytics-panels">
         <section class="staff-live-analytics-panel">
             <h2>Trenutno na sajtu</h2>
@@ -51,6 +126,7 @@
                         <tr>
                             <th>Ime</th>
                             <th>Grad (BiH)</th>
+                            <th>Kategorije</th>
                             <th>Email</th>
                             <th>Aktivnost</th>
                             <th></th>
@@ -59,8 +135,12 @@
                     <tbody id="liveOnlineBody">
                         {% for visitor in online_visitors %}
                         <tr>
-                            <td>{{ visitor.ime }}</td>
+                            <td class="staff-live-name-cell">
+                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}{{ visitor.ime }}
+                                {% if visitor.grad %}<span class="staff-live-city-inline">· {{ visitor.grad }}</span>{% endif %}
+                            </td>
                             <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
+                            <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td><span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span></td>
                             <td class="staff-live-action-cell">
@@ -72,7 +152,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="5">Trenutno nema aktivnih posjetilaca iz BiH.</td>
+                            <td colspan="6">Trenutno nema aktivnih posjetilaca iz BiH.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -88,6 +168,7 @@
                         <tr>
                             <th>Ime</th>
                             <th>Grad (BiH)</th>
+                            <th>Kategorije</th>
                             <th>Email</th>
                             <th>Aktivnost</th>
                             <th></th>
@@ -96,8 +177,12 @@
                     <tbody id="liveWindowBody">
                         {% for visitor in window_visitors %}
                         <tr>
-                            <td>{{ visitor.ime }}</td>
+                            <td class="staff-live-name-cell">
+                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}{{ visitor.ime }}
+                                {% if visitor.grad %}<span class="staff-live-city-inline">· {{ visitor.grad }}</span>{% endif %}
+                            </td>
                             <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
+                            <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>
                                 {% if visitor.is_online %}
@@ -119,7 +204,7 @@
                         </tr>
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="5">Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.</td>
+                            <td colspan="6">Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -140,16 +225,17 @@
             {% csrf_token %}
             <input type="hidden" name="session_key" id="liveOfferSessionKey" value="">
 
-            <label class="staff-live-offer-label" for="liveOfferProductSearch">Artikal</label>
+            <label class="staff-live-offer-label" for="liveOfferProductSearch">Artikal <span class="staff-live-offer-optional">(opcionalno)</span></label>
             <div class="staff-live-offer-search">
                 <input type="search" id="liveOfferProductSearch" placeholder="Pretraži po nazivu ili šifri…" autocomplete="off">
-                <input type="hidden" name="product_id" id="liveOfferProductId" required>
+                <input type="hidden" name="product_id" id="liveOfferProductId" value="">
                 <div class="staff-live-offer-search-results" id="liveOfferProductResults" hidden></div>
                 <p class="staff-live-offer-selected" id="liveOfferSelectedProduct" hidden></p>
             </div>
 
-            <label class="staff-live-offer-label" for="liveOfferDiscount">Popust % <span class="staff-live-offer-optional">(opcionalno)</span></label>
-            <input type="number" name="discount_percent" id="liveOfferDiscount" class="staff-live-offer-discount" min="0" max="50" step="1" value="0" placeholder="0">
+            <label class="staff-live-offer-label" for="liveOfferDiscount">Popust % na narudžbu</label>
+            <p class="staff-live-offer-hint">Bez artikla — šalje se samo kod za popust na cijelu narudžbu. S artiklom — popust na taj artikal.</p>
+            <input type="number" name="discount_percent" id="liveOfferDiscount" class="staff-live-offer-discount" min="0" max="50" step="1" value="10" placeholder="10" required>
 
             <div class="staff-live-offer-modal-actions">
                 <button type="button" class="btn btn-secondary" data-offer-close>Poništi</button>
@@ -177,7 +263,32 @@
     const productIdEl = document.getElementById('liveOfferProductId');
     const productResults = document.getElementById('liveOfferProductResults');
     const selectedProductEl = document.getElementById('liveOfferSelectedProduct');
+    const dailyStatsBody = document.getElementById('liveDailyStatsBody');
+    const monthlyStatsBody = document.getElementById('liveMonthlyStatsBody');
+    const trafficFilterForm = document.getElementById('liveTrafficFilterForm');
     if (!onlineBody || !windowBody) return;
+
+    function buildDataUrl() {
+        if (!trafficFilterForm) return dataUrl;
+        const params = new URLSearchParams(new FormData(trafficFilterForm));
+        const query = params.toString();
+        return query ? dataUrl + '?' + query : dataUrl;
+    }
+
+    function renderTrafficTable(body, rows, emptyText) {
+        if (!body) return;
+        if (!rows || !rows.length) {
+            body.innerHTML = '<tr class="staff-live-empty-row"><td colspan="2">' +
+                escapeHtml(emptyText) + '</td></tr>';
+            return;
+        }
+        body.innerHTML = rows.map(function (row) {
+            return (
+                '<tr><td>' + escapeHtml(row.label) + '</td>' +
+                '<td><strong>' + escapeHtml(row.count) + '</strong></td></tr>'
+            );
+        }).join('');
+    }
 
     function escapeHtml(value) {
         return String(value || '')
@@ -243,7 +354,7 @@
 
     function renderRows(visitors, emptyText) {
         if (!visitors.length) {
-            return '<tr class="staff-live-empty-row"><td colspan="5">' + escapeHtml(emptyText) + '</td></tr>';
+            return '<tr class="staff-live-empty-row"><td colspan="6">' + escapeHtml(emptyText) + '</td></tr>';
         }
         return visitors.map(function (visitor) {
             const email = visitor.email
@@ -252,13 +363,23 @@
             const grad = visitor.grad
                 ? '<span class="staff-live-city">' + escapeHtml(visitor.grad) + '</span>'
                 : '<span class="staff-live-muted">—</span>';
+            const categories = visitor.categories_label
+                ? '<span class="staff-live-categories">' + escapeHtml(visitor.categories_label) + '</span>'
+                : '<span class="staff-live-muted">—</span>';
             const badgeClass = visitor.is_online
                 ? 'staff-live-badge staff-live-badge--online'
                 : 'staff-live-badge';
+            const cartTag = visitor.has_cart
+                ? '<span class="staff-live-cart-tag">korpa</span>'
+                : '';
+            const gradInline = visitor.grad
+                ? '<span class="staff-live-city-inline">· ' + escapeHtml(visitor.grad) + '</span>'
+                : '';
             return (
                 '<tr>' +
-                '<td>' + escapeHtml(visitor.ime || 'Gost') + '</td>' +
+                '<td class="staff-live-name-cell">' + cartTag + escapeHtml(visitor.ime || 'Gost') + gradInline + '</td>' +
                 '<td>' + grad + '</td>' +
+                '<td>' + categories + '</td>' +
                 '<td>' + email + '</td>' +
                 '<td><span class="' + badgeClass + '">' + escapeHtml(visitor.last_seen_label) + '</span></td>' +
                 '<td class="staff-live-action-cell">' + offerButton(visitor) + '</td>' +
@@ -285,7 +406,7 @@
         selectedProductEl.textContent = '';
         productResults.hidden = true;
         productResults.innerHTML = '';
-        document.getElementById('liveOfferDiscount').value = '0';
+        document.getElementById('liveOfferDiscount').value = '10';
         modal.hidden = false;
         document.body.classList.add('popup-open');
         productSearch.focus();
@@ -354,8 +475,9 @@
     const offerSendForm = document.getElementById('liveOfferSendForm');
     offerSendForm?.addEventListener('submit', async function (e) {
         e.preventDefault();
-        if (!productIdEl.value) {
-            alert('Odaberite artikal za ponudu.');
+        const discountVal = parseFloat(document.getElementById('liveOfferDiscount').value || '0');
+        if (!productIdEl.value && (!discountVal || discountVal <= 0)) {
+            alert('Unesite popust % ili odaberite artikal.');
             return;
         }
         const submitBtn = offerSendForm.querySelector('.staff-live-offer-submit');
@@ -405,7 +527,7 @@
 
     async function refreshLiveAnalytics() {
         try {
-            const response = await fetch(dataUrl, {
+            const response = await fetch(buildDataUrl(), {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
             });
@@ -421,6 +543,16 @@
             windowBody.innerHTML = renderRows(
                 data.window_visitors || [],
                 'Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.',
+            );
+            renderTrafficTable(
+                dailyStatsBody,
+                data.daily_stats || [],
+                'Nema podataka o posjetama za odabrani period.',
+            );
+            renderTrafficTable(
+                monthlyStatsBody,
+                data.monthly_stats || [],
+                'Nema podataka o posjetama za odabrani period.',
             );
             bindOfferButtons(onlineBody);
             bindOfferButtons(windowBody);

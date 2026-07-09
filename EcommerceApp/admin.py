@@ -196,6 +196,17 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('dostava_naziv', 'dostava_cijena', 'besplatna_dostava_od'),
             'description': 'Postavke dostave prikazane u korpi i na checkoutu.',
         }),
+        ('Exit popup (cijeli sajt)', {
+            'fields': (
+                'korpa_exit_popup_aktivan',
+                'korpa_exit_popup_artikal',
+                'korpa_exit_popup_popust',
+            ),
+            'description': (
+                'Popup na cijelom sajtu kad posjetilac pomjeri kursor prema zatvaranju taba. '
+                'Obavezno odaberite artikal. Popust (%) opcionalno smanjuje cijenu tog artikla pri dodavanju u korpu.'
+            ),
+        }),
         ('Pogodnosti', {
             'fields': (
                 'novi_korisnik_besplatna_dostava',

@@ -160,6 +160,129 @@
     color: #334155;
 }
 
+.staff-live-categories {
+    display: inline-block;
+    max-width: 220px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #1e3a5f;
+    font-weight: 500;
+}
+
+.staff-live-traffic-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px 20px;
+    margin-bottom: 16px;
+    padding: 16px 18px;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.staff-live-traffic-filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+}
+
+.staff-live-traffic-filter-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111;
+    margin-right: 4px;
+}
+
+.staff-live-traffic-filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-600);
+}
+
+.staff-live-traffic-filter-input {
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--white);
+}
+
+.staff-live-traffic-filter-btn {
+    min-height: 38px;
+    padding: 0 18px;
+    margin-left: auto;
+}
+
+.staff-live-analytics-traffic {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.staff-live-analytics-panel--traffic h2 {
+    font-size: 16px;
+    margin-bottom: 12px;
+}
+
+.staff-live-analytics-table--compact th,
+.staff-live-analytics-table--compact td {
+    padding: 10px 14px;
+}
+
+.staff-live-name-cell {
+    font-weight: 600;
+}
+
+.staff-live-city-inline {
+    margin-left: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.staff-live-cart-tag {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fff4e5;
+    color: #b45309;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+
+.staff-live-offer-hint {
+    margin: -4px 0 10px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--gray-600);
+}
+
+@media (max-width: 768px) {
+    .staff-live-traffic-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .staff-live-traffic-filter-btn {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .staff-live-analytics-traffic {
+        grid-template-columns: 1fr;
+    }
+}
+
 .staff-live-session {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;

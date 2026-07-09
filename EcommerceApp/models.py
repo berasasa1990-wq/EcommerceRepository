@@ -69,6 +69,39 @@ class SiteSettings(models.Model):
         verbose_name='Besplatna dostava od (KM)',
         help_text='Narudžbe iznad ovog iznosa imaju besplatnu dostavu.',
     )
+    korpa_exit_popup_aktivan = models.BooleanField(
+        default=False,
+        verbose_name='Exit popup aktivan',
+        help_text='Prikazuje popup na cijelom sajtu kad posjetilac pomjeri kursor prema zatvaranju taba.',
+    )
+    korpa_exit_popup_naslov = models.CharField(
+        max_length=120,
+        default='Prije nego odete…',
+        blank=True,
+        verbose_name='Korpa — exit popup naslov',
+    )
+    korpa_exit_popup_tekst = models.TextField(
+        blank=True,
+        default='Završite narudžbu sada — artikli u korpi čekaju na vas.',
+        verbose_name='Korpa — exit popup tekst',
+    )
+    korpa_exit_popup_artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='korpa_exit_popupi',
+        verbose_name='Korpa — exit popup artikal',
+        help_text='Opcionalno. Prikazuje se u popupu s dugmetom za dodavanje u korpu.',
+    )
+    korpa_exit_popup_popust = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Exit popup popust (%)',
+        help_text='Opcionalno. Smanjuje cijenu odabranog artikla pri dodavanju iz popupa (max 50%).',
+    )
     novi_korisnik_besplatna_dostava = models.BooleanField(
         default=False,
         verbose_name='Novi korisnici — besplatna dostava',
@@ -2019,6 +2052,12 @@ class LiveVisitor(models.Model):
     grad = models.CharField(max_length=100, blank=True, verbose_name='Grad')
     drzava = models.CharField(max_length=2, blank=True, verbose_name='Država')
     ip_adresa = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP adresa')
+    pregledane_kategorije = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Pregledane kategorije',
+        help_text='Nazivi kategorija koje je posjetilac pregledao u ovoj sesiji (najnovije prvo).',
+    )
     first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva aktivnost')
     last_seen = models.DateTimeField(db_index=True, verbose_name='Zadnja aktivnost')
 
@@ -2037,7 +2076,12 @@ class LiveVisitor(models.Model):
 
 
 class LiveVisitorOffer(models.Model):
-    """Staff ponuda artikla posjetiocu koji je trenutno na sajtu."""
+    """Staff ponuda posjetiocu koji je trenutno na sajtu (artikal ili popust na narudžbu)."""
+
+    class Tip(models.TextChoices):
+        ARTIKAL = 'artikal', 'Artikal'
+        NARUDZBA = 'narudzba', 'Popust na narudžbu'
+
     session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -2047,17 +2091,29 @@ class LiveVisitorOffer(models.Model):
         related_name='live_visitor_offers_received',
         verbose_name='Posjetilac',
     )
+    tip = models.CharField(
+        max_length=10,
+        choices=Tip.choices,
+        default=Tip.ARTIKAL,
+        verbose_name='Tip ponude',
+    )
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
         related_name='live_visitor_offers',
+        null=True,
+        blank=True,
         verbose_name='Artikal',
     )
     discount_percent = models.DecimalField(
         max_digits=5, decimal_places=2, default=0, verbose_name='Popust (%)',
     )
+    aktivacioni_kod = models.CharField(
+        max_length=20, blank=True, verbose_name='Aktivacioni kod',
+    )
     show_popup = models.BooleanField(default=True, verbose_name='Prikaži popup')
     added_to_cart = models.BooleanField(default=False, verbose_name='Dodano u korpu')
+    kod_aktiviran = models.BooleanField(default=False, verbose_name='Kod aktiviran')
     poslao = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

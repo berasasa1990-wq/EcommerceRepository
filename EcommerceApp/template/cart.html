@@ -10,6 +10,7 @@
     <h1>Korpa</h1>
 
     {% if cart_items %}
+    {% include 'partials/cart_free_shipping_bar.html' with summary=summary %}
     <div class="cart-layout">
         <div class="cart-main">
             {% include 'partials/upsell_cart_banner.html' with position='banner_iznad' upsell_offers=upsell_banners_above %}

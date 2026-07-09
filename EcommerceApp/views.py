@@ -1324,6 +1324,23 @@ def add_to_cart(request, slug):
     custom_price = None
     promo_bazna = None
     promo_akcija = None
+    exit_popup_percent = None
+    if request.POST.get('exit_popup') == '1':
+        from .cart_exit_popup import resolve_exit_popup_add
+
+        exit_popup_add = resolve_exit_popup_add(request, product, variation)
+        if not exit_popup_add:
+            msg = 'Ponuda više nije dostupna.'
+            if stay_on_page:
+                return JsonResponse({'ok': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('product_detail', slug=slug)
+        if exit_popup_add.get('variation') and variation is None:
+            variation = exit_popup_add['variation']
+        if exit_popup_add.get('custom_price') is not None:
+            custom_price = exit_popup_add['custom_price']
+            promo_bazna = exit_popup_add['promo_bazna']
+        exit_popup_percent = exit_popup_add.get('percent')
     from .gratis import (
         _add_discounted_gratis_line,
         apply_gratis_bundle_from_popup,
@@ -1487,9 +1504,16 @@ def add_to_cart(request, slug):
         promo_bazna=promo_bazna,
     )
     cart.clear_coupon()
+    if request.POST.get('exit_popup') == '1':
+        from .cart_exit_popup import dismiss_cart_exit_popup
+
+        dismiss_cart_exit_popup(request)
     label = variation.naziv if variation else product.naziv
     message = f'"{label}" je dodano u korpu.'
-    if custom_price is not None and promo_akcija and promo_akcija.popust_postotak:
+    if exit_popup_percent and exit_popup_percent > 0 and custom_price is not None:
+        pct = int(exit_popup_percent) if exit_popup_percent == int(exit_popup_percent) else exit_popup_percent
+        message = f'"{label}" je dodano u korpu sa {pct}% popusta.'
+    elif custom_price is not None and promo_akcija and promo_akcija.popust_postotak:
         pct = int(promo_akcija.popust_postotak) if promo_akcija.popust_postotak == int(promo_akcija.popust_postotak) else promo_akcija.popust_postotak
         if promo_akcija.tip == Akcija.Tip.KORPA_NUDJENJE:
             message = f'"{label}" je dodano u korpu sa {pct}% popusta.'
@@ -1826,6 +1850,15 @@ def cart_recovery_dismiss(request):
 
     dismiss_cart_recovery_alert(request)
     next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
+    return redirect(next_url)
+
+
+@require_POST
+def cart_exit_dismiss(request):
+    from .cart_exit_popup import dismiss_cart_exit_popup
+
+    dismiss_cart_exit_popup(request)
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('cart')
     return redirect(next_url)
 
 
@@ -2346,10 +2379,21 @@ def staff_admin_panel(request):
     return render(request, 'staff/admin_panel.html', context)
 
 
-def _live_analytics_context():
-    from .live_visitors import get_live_visitor_snapshot
+def _live_analytics_context(request):
+    from .live_visitors import (
+        get_live_visitor_snapshot,
+        get_visitor_traffic_stats,
+        parse_traffic_filters,
+    )
 
     snapshot = get_live_visitor_snapshot()
+    traffic_filters = parse_traffic_filters(request)
+    traffic_stats = get_visitor_traffic_stats(
+        daily_from=traffic_filters['daily_from_date'],
+        daily_to=traffic_filters['daily_to_date'],
+        monthly_from=traffic_filters['monthly_from_date'],
+        monthly_to=traffic_filters['monthly_to_date'],
+    )
     generated_at = snapshot['generated_at']
     return {
         'online_count': snapshot['online_count'],
@@ -2358,6 +2402,9 @@ def _live_analytics_context():
         'window_visitors': snapshot['window_visitors'],
         'online_minutes': snapshot['online_minutes'],
         'window_minutes': snapshot['window_minutes'],
+        'daily_stats': traffic_stats['daily'],
+        'monthly_stats': traffic_stats['monthly'],
+        'traffic_filters': traffic_filters,
         'generated_at': generated_at,
         'generated_at_label': generated_at.strftime('%H:%M:%S'),
     }
@@ -2368,7 +2415,7 @@ def _live_analytics_context():
 def staff_live_analytics(request):
     context = {
         **_base_context(),
-        **_live_analytics_context(),
+        **_live_analytics_context(request),
     }
     return render(request, 'staff/live_analytics.html', context)
 
@@ -2421,15 +2468,27 @@ def staff_send_live_offer(request):
     visitor = LiveVisitor.objects.filter(session_key=session_key).select_related('user').first()
     target_user = visitor.user if visitor else None
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if not product_id and discount_percent <= 0:
+        msg = 'Unesite popust % ili odaberite artikal.'
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('staff_live_analytics')
+
     try:
-        send_live_visitor_offer(
+        offer = send_live_visitor_offer(
             session_key,
-            product_id=product_id,
+            product_id=product_id or None,
             discount_percent=discount_percent,
             staff_user=request.user,
             target_user=target_user,
         )
-        if discount_percent > 0:
+        from .models import LiveVisitorOffer
+
+        if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
+            pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
+            success_message = f'Kod za {pct}% popusta na narudžbu poslan kupcu ({offer.aktivacioni_kod}).'
+        elif discount_percent > 0:
             pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
             success_message = f'Ponuda artikla poslana kupcu s popustom {pct}%.'
         else:
@@ -2476,6 +2535,28 @@ def live_visitor_offer_add(request):
 
 
 @require_POST
+def live_visitor_offer_activate(request):
+    from .live_visitor_offer import activate_live_visitor_offer_code
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    cart = Cart(request)
+    ok, result = activate_live_visitor_offer_code(request, cart)
+    if is_ajax:
+        if ok:
+            return JsonResponse({
+                'ok': True,
+                'message': result['message'],
+                'percent': result['percent'],
+            })
+        return JsonResponse({'ok': False, 'message': result}, status=400)
+    if ok:
+        messages.success(request, result['message'])
+    else:
+        messages.warning(request, result)
+    return redirect('home')
+
+
+@require_POST
 def live_visitor_offer_dismiss(request):
     from .live_visitor_offer import dismiss_live_visitor_offer
 
@@ -2510,7 +2591,7 @@ def live_visitor_offer_poll(request):
 def staff_live_analytics_data(request):
     from django.utils import timezone
 
-    payload = _live_analytics_context()
+    payload = _live_analytics_context(request)
     payload['generated_at'] = timezone.localtime(payload['generated_at']).isoformat()
     for key in ('online_visitors', 'window_visitors'):
         for row in payload[key]:

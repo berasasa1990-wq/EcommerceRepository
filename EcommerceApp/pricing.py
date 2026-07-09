@@ -132,6 +132,13 @@ def izracunaj_sazetak(
     popust = min(popust, ukupno_sa_pdvom)
     ukupno = _kvantiziraj(ukupno_sa_pdvom - popust)
     preostalo = _kvantiziraj(max(Decimal('0.00'), prag_besplatne - medjuzbir))
+    if prag_besplatne > 0:
+        napredak_besplatne = min(
+            Decimal('100'),
+            (medjuzbir / prag_besplatne * Decimal('100')).quantize(Decimal('1')),
+        )
+    else:
+        napredak_besplatne = Decimal('100')
     pdv_artikli = izracunaj_pdv(medjuzbir)
 
     return {
@@ -154,6 +161,7 @@ def izracunaj_sazetak(
         'besplatna_dostava': dostava == Decimal('0.00'),
         'besplatna_dostava_od': prag_besplatne,
         'preostalo_do_besplatne': preostalo,
+        'napredak_besplatne_postotak': napredak_besplatne,
         'ukupno_prije_popusta': ukupno_sa_pdvom,
         'ukupno': ukupno,
         'pdv': izracunaj_pdv(ukupno),

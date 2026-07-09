@@ -42,6 +42,8 @@
 
             {% if product.proizvedeno_u_japanu %}
             <p class="product-origin product-card__origin">Made in Japan</p>
+            {% else %}
+            <p class="product-origin product-card__origin product-card__origin--placeholder" aria-hidden="true">&nbsp;</p>
             {% endif %}
 
             {% if show_akcija_expiry and product.prikaz_akcija_istice %}
