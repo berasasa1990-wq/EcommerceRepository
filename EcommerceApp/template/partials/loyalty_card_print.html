@@ -10,29 +10,59 @@
         <span class="loyalty-physical-card__tier">{{ loyalty.tier.label }}</span>
     </header>
 
-    <div class="loyalty-physical-card__chip" aria-hidden="true"></div>
-
     <p class="loyalty-physical-card__label">Vlasnik kartice</p>
     <p class="loyalty-physical-card__name">{{ cardholder_name }}</p>
 
-    <div class="loyalty-physical-card__codes">
-        <div class="loyalty-physical-card__code-block">
-            <span class="loyalty-physical-card__code-label">Broj kartice</span>
-            <strong class="loyalty-physical-card__number">{{ loyalty.kartica.kod }}</strong>
+    <div class="loyalty-physical-card__mid">
+        <div class="loyalty-physical-card__discount">
+            <span class="loyalty-physical-card__discount-value">{{ loyalty.tier.postotak }}%</span>
+            <span class="loyalty-physical-card__discount-label">vaš popust</span>
         </div>
-        <div class="loyalty-physical-card__code-block loyalty-physical-card__barcode-block">
-            <span class="loyalty-physical-card__code-label">Barkod</span>
-            <div class="loyalty-physical-card__barcode" aria-label="Barkod {{ loyalty.kartica.barkod }}">
-                {% for sirina in loyalty.barkod_trake %}
-                <span class="loyalty-physical-card__bar" style="width: {{ sirina }}px;"></span>
+        <div class="loyalty-physical-card__tiers">
+            <span class="loyalty-physical-card__tiers-title">Nivoi</span>
+            <ul class="loyalty-physical-card__tiers-list">
+                {% for tier in loyalty.tiers %}
+                <li class="{% if tier.nivo == loyalty.tier.nivo %}is-active{% endif %}">
+                    <span>{{ tier.label }}</span>
+                    <span>{{ tier.postotak }}%</span>
+                    <span>
+                        {% if tier.do %}
+                        {{ tier.od|floatformat:0 }}–{{ tier.do|floatformat:0 }} KM
+                        {% else %}
+                        {{ tier.od|floatformat:0 }}+ KM
+                        {% endif %}
+                    </span>
+                </li>
                 {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="loyalty-physical-card__codes">
+        <div class="loyalty-physical-card__code-row">
+            <span class="loyalty-physical-card__code-label">Broj kartice — unesite u korpu</span>
+            <strong class="loyalty-physical-card__number">{{ loyalty.kartica.kod }}</strong>
+            <span class="loyalty-physical-card__code-hint">{{ loyalty.tier.postotak }}% popusta pri unosu u korpu</span>
+        </div>
+        <div class="loyalty-physical-card__barcode-block">
+            <span class="loyalty-physical-card__code-label">Barkod</span>
+            <div class="loyalty-physical-card__barcode-frame">
+                <img
+                    class="loyalty-physical-card__barcode-img"
+                    src="{% url 'staff_loyalty_card_barcode' loyalty.kartica.pk %}"
+                    alt="Barkod {{ loyalty.kartica.barkod|default:loyalty.kartica.kod }}"
+                    width="420"
+                    height="72"
+                    loading="eager"
+                    decoding="async"
+                >
             </div>
-            <span class="loyalty-physical-card__barcode-text">{{ loyalty.kartica.barkod }}</span>
+            <span class="loyalty-physical-card__barcode-text">{{ loyalty.kartica.barkod|default:loyalty.kartica.kod }}</span>
         </div>
     </div>
 
     <footer class="loyalty-physical-card__footer">
-        <span>{{ loyalty.tier.postotak }}% popusta</span>
+        <span>Potrošnja: {{ loyalty.kartica.ukupna_potrosnja }} KM</span>
         <span>Loyalty program</span>
     </footer>
 </div>

@@ -378,6 +378,50 @@
     }
 }
 
+.staff-live-register-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid #c9d4c3;
+    border-radius: 999px;
+    background: #f4faf0;
+    color: #3d8f04;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.staff-live-register-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.staff-live-register-btn:hover {
+    background: #e7f6db;
+    border-color: #5BB805;
+    color: #2f6e03;
+}
+
+.staff-live-register-btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+.staff-live-register-btn--sent {
+    background: #5BB805;
+    border-color: #5BB805;
+    color: #fff;
+}
+
+.staff-live-register-btn--sent:hover {
+    background: #4da004;
+    border-color: #4da004;
+    color: #fff;
+}
+
 .staff-live-offer-btn {
     display: inline-flex;
     align-items: center;

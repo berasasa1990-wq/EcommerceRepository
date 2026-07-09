@@ -12,7 +12,15 @@
     <div class="staff-loyalty-header">
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Loyalty System</h1>
-        <p class="staff-loyalty-subtitle">Izdajte nove kartice ili pretražite postojeće kupce</p>
+        <form method="get" class="staff-loyalty-search staff-loyalty-search--header" role="search">
+            <label class="staff-loyalty-search-label" for="loyaltySearchInput">Pretraga kupaca</label>
+            <div class="search-input-group">
+                <input type="search" id="loyaltySearchInput" name="q" value="{{ search_query }}"
+                       placeholder="Broj kartice, telefon, email ili ime..."
+                       autocomplete="off">
+                <button type="submit" class="btn btn-primary">Pretraži</button>
+            </div>
+        </form>
     </div>
 
     <div class="staff-loyalty-layout">
@@ -53,6 +61,16 @@
                         {% if issue_form.telefon.errors %}
                         <div class="field-error">{{ issue_form.telefon.errors.0 }}</div>
                         {% endif %}
+                        <small class="staff-loyalty-field-hint">Jedinstveni broj — ne može se ponoviti.</small>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="{{ issue_form.email.id_for_label }}">{{ issue_form.email.label }}</label>
+                        {{ issue_form.email }}
+                        {% if issue_form.email.errors %}
+                        <div class="field-error">{{ issue_form.email.errors.0 }}</div>
+                        {% endif %}
+                        <small class="staff-loyalty-field-hint">Jedinstveni email — ne može se ponoviti.</small>
                     </div>
 
                     {% if issue_form.non_field_errors %}
@@ -60,23 +78,13 @@
                     {% endif %}
 
                     <button type="submit" class="btn btn-primary btn-issue-card">
-                        Generiši karticu
+                        Registruj i izdaj karticu
                     </button>
                 </form>
             </div>
         </aside>
 
         <div class="staff-loyalty-main">
-            <form method="get" class="staff-loyalty-search">
-                <label class="staff-loyalty-search-label" for="loyaltySearchInput">Pretraga kupaca</label>
-                <div class="search-input-group">
-                    <input type="search" id="loyaltySearchInput" name="q" value="{{ search_query }}"
-                           placeholder="Broj kartice, telefon, email ili ime..."
-                           autocomplete="off">
-                    <button type="submit" class="btn btn-primary">Pretraži</button>
-                </div>
-            </form>
-
             {% if searched %}
                 {% if cards %}
                     {% if cards|length > 1 %}
@@ -100,28 +108,42 @@
                     <div class="loyalty-customer">
                         {% if newly_issued %}
                         <div class="loyalty-success-banner" role="status">
-                            Kartica uspješno izdata. Možete je odmah odštampati.
+                            Kartica uspješno registrovana. Možete je odštampati ili poslati na Viber.
                         </div>
                         {% endif %}
 
                         <div class="loyalty-preview-section">
                             <div class="loyalty-preview-header">
                                 <h3>Fizička kartica</h3>
-                                <button type="button" class="btn btn-print-card" onclick="window.print()">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                                        <rect x="6" y="14" width="12" height="8"/>
-                                    </svg>
-                                    Štampaj karticu
-                                </button>
+                                <div class="loyalty-preview-actions">
+                                    <button type="button" class="btn btn-print-card" onclick="window.print()">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                            <rect x="6" y="14" width="12" height="8"/>
+                                        </svg>
+                                        Štampaj
+                                    </button>
+                                    {% if loyalty.viber_url %}
+                                    <button type="button"
+                                            class="btn btn-viber-card"
+                                            id="loyaltyViberSendBtn"
+                                            data-image-url="{% url 'staff_loyalty_card_image' selected_card.pk %}"
+                                            data-viber-url="{{ loyalty.viber_url }}"
+                                            data-card-code="{{ selected_card.kod }}"
+                                            data-phone="{{ loyalty.telefon }}">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <path d="M12 2C6.5 2 2 5.9 2 10.7c0 2.8 1.5 5.3 3.9 6.9L5 22l4.7-1.5c.8.2 1.5.3 2.3.3 5.5 0 10-3.9 10-8.7S17.5 2 12 2zm5.1 11.3c-.2.5-1.1.9-1.5 1-.4 0-.7.2-2.3-.5-1.9-.9-3.1-2.9-3.2-3.1-.1-.1-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4.2.4.7 1.6.7 1.7.1.1.1.3 0 .5-.1.2-.2.3-.3.4-.1.1-.3.3-.1.6.1.3.6 1 1.3 1.6.9.8 1.6 1 1.8 1.1.2.1.4.1.5-.1.1-.1.6-.7.8-.9.2-.2.3-.2.5-.1.2.1 1.3.6 1.5.7.2.1.4.2.4.3.1.2 0 .7-.2 1.2z"/>
+                                        </svg>
+                                        Pošalji na Viber
+                                    </button>
+                                    {% else %}
+                                    <span class="staff-loyalty-muted-hint" title="Dodajte telefon u ličnim podacima">Viber nedostupan (nema telefona)</span>
+                                    {% endif %}
+                                </div>
                             </div>
                             <div class="loyalty-print-preview">
                                 {% include 'partials/loyalty_card_print.html' %}
                             </div>
-                        </div>
-
-                        <div class="loyalty-card-wrapper">
-                            {% include 'partials/loyalty_card.html' with loyalty=loyalty %}
                         </div>
 
                         <div class="section-card purchase-section">
@@ -216,4 +238,87 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const btn = document.getElementById('loyaltyViberSendBtn');
+    if (!btn) return;
+
+    function showToast(message) {
+        let toast = document.querySelector('.cart-toast');
+        if (!toast) {
+            toast = document.createElement('p');
+            toast.className = 'cart-toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add('cart-toast--visible');
+        window.setTimeout(function () {
+            toast.classList.remove('cart-toast--visible');
+        }, 4200);
+    }
+
+    btn.addEventListener('click', async function () {
+        const imageUrl = btn.dataset.imageUrl;
+        const viberUrl = btn.dataset.viberUrl;
+        const code = btn.dataset.cardCode || '';
+        if (!imageUrl || !viberUrl) {
+            alert('Nedostaje telefon ili slika kartice.');
+            return;
+        }
+        btn.disabled = true;
+        try {
+            const response = await fetch(imageUrl, {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!response.ok) {
+                throw new Error('Preuzimanje slike nije uspjelo.');
+            }
+            const blob = await response.blob();
+            const fileName = 'loyalty-' + code + '.png';
+            const file = new File([blob], fileName, { type: 'image/png' });
+
+            // Modern share (mobile / supported desktop) — može direktno na Viber ako je dostupan
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Loyalty kartica ' + code,
+                        text: 'Vaša loyalty kartica opremazaribolov.ba — kod: ' + code,
+                    });
+                    showToast('Kartica podijeljena. Ako niste odabrali Viber, otvorite chat i priložite sliku.');
+                    return;
+                } catch (shareErr) {
+                    if (shareErr && shareErr.name === 'AbortError') {
+                        return;
+                    }
+                    /* fall through to download + viber */
+                }
+            }
+
+            // Preuzmi PNG pa otvori Viber chat s kupcem
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(function () {
+                URL.revokeObjectURL(objectUrl);
+            }, 4000);
+
+            window.open(viberUrl, '_blank');
+            showToast('Slika kartice je preuzeta. U Viber chatu priložite preuzetu sliku (QR + barkod).');
+        } catch (err) {
+            alert(err.message || 'Slanje na Viber nije uspjelo.');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+})();
+</script>
 {% endblock %}

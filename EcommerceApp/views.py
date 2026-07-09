@@ -1797,7 +1797,10 @@ def apply_coupon(request):
         else:
             cart.set_coupon_code(coupon.kod)
             cart.mark_coupon_keep_after_apply()
-            messages.success(request, f'Kupon {coupon.kod} primijenjen — popust {coupon.postotak}%.')
+            messages.success(
+                request,
+                f'Broj kartice {coupon.kod} primijenjen — popust {coupon.postotak}%.',
+            )
     else:
         for error in form.errors.get('kod', []):
             messages.error(request, error)
@@ -2259,13 +2262,20 @@ def account(request):
         .prefetch_related('stavke')
         .order_by('-kreirana')
     )
-    loyalty = loyalty_kontekst(osiguraj_loyalty_karticu(request.user))
+    loyalty_card = osiguraj_loyalty_karticu(request.user)
+    loyalty = loyalty_kontekst(loyalty_card)
+    cardholder_name = (
+        request.user.get_full_name().strip()
+        or request.user.first_name
+        or request.user.email
+    )
 
     context = {
         **_base_context(),
         'profile_form': profile_form,
         'orders': orders,
         'loyalty': loyalty,
+        'cardholder_name': cardholder_name,
     }
     return render(request, 'account/index.html', context)
 
@@ -2493,6 +2503,44 @@ def staff_send_live_offer(request):
             success_message = f'Ponuda artikla poslana kupcu s popustom {pct}%.'
         else:
             success_message = 'Ponuda artikla poslana kupcu.'
+        if is_ajax:
+            return JsonResponse({'ok': True, 'message': success_message})
+        messages.success(request, success_message)
+    except ValueError as exc:
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
+        messages.error(request, str(exc))
+    return redirect('staff_live_analytics')
+
+
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_send_registration_invite(request):
+    from .live_visitor_offer import send_live_visitor_registration_invite
+    from .models import LiveVisitor
+
+    session_key = (request.POST.get('session_key') or '').strip()
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    visitor = LiveVisitor.objects.filter(session_key=session_key).select_related('user').first()
+    if not session_key or not visitor:
+        msg = 'Posjetilac nije pronađen.'
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('staff_live_analytics')
+    if visitor.user_id:
+        msg = 'Kupac je već registrovan.'
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('staff_live_analytics')
+
+    try:
+        send_live_visitor_registration_invite(
+            session_key,
+            staff_user=request.user,
+        )
+        success_message = 'Poziv na registraciju poslan kupcu.'
         if is_ajax:
             return JsonResponse({'ok': True, 'message': success_message})
         messages.success(request, success_message)
@@ -3088,18 +3136,24 @@ def staff_loyalty_system(request):
     if request.method == 'POST' and request.POST.get('action') == 'izdaj_karticu':
         issue_form = LoyaltyIssueForm(request.POST)
         if issue_form.is_valid():
-            card, user = izdaj_loyalty_karticu(
-                issue_form.cleaned_data['ime'],
-                issue_form.cleaned_data['prezime'],
-                issue_form.cleaned_data['telefon'],
-            )
-            sync_korisnik(user)
-            messages.success(
-                request,
-                f'Kartica izdata za {user.get_full_name()}. Broj: {card.kod}',
-            )
-            return redirect(f"{request.path}?q={card.kod}&issued=1")
-        messages.error(request, 'Provjerite unesene podatke i pokušajte ponovo.')
+            try:
+                card, user = izdaj_loyalty_karticu(
+                    issue_form.cleaned_data['ime'],
+                    issue_form.cleaned_data['prezime'],
+                    issue_form.cleaned_data['telefon'],
+                    issue_form.cleaned_data['email'],
+                )
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                sync_korisnik(user)
+                messages.success(
+                    request,
+                    f'Kartica izdata za {user.get_full_name()}. Broj: {card.kod}',
+                )
+                return redirect(f"{request.path}?q={card.kod}&issued=1")
+        else:
+            messages.error(request, 'Provjerite unesene podatke i pokušajte ponovo.')
 
     q = (request.GET.get('q') or '').strip()
     cards = []
@@ -3153,17 +3207,28 @@ def staff_loyalty_system(request):
             if request.method == 'POST' and request.POST.get('action') == 'update_profile':
                 edit_form = ProfileForm(request.POST)
                 if edit_form.is_valid():
+                    from .loyalty import email_vec_registrovan, telefon_vec_registrovan
+
                     u = selected_card.user
+                    new_email = edit_form.cleaned_data.get('email', u.email).strip().lower()
+                    new_phone = edit_form.cleaned_data.get('telefon', '')
+                    if email_vec_registrovan(new_email, exclude_user_id=u.pk):
+                        messages.error(request, 'Ovaj email je već registrovan na drugoj kartici.')
+                        return redirect(f"{request.path}?q={q}")
+                    if new_phone and telefon_vec_registrovan(new_phone, exclude_user_id=u.pk):
+                        messages.error(request, 'Ovaj broj telefona je već registrovan na drugoj kartici.')
+                        return redirect(f"{request.path}?q={q}")
+
                     ime_prezime = edit_form.cleaned_data.get('ime_prezime', '').strip()
                     if ime_prezime:
                         parts = ime_prezime.split(maxsplit=1)
                         u.first_name = parts[0]
                         u.last_name = parts[1] if len(parts) > 1 else ''
-                    u.email = edit_form.cleaned_data.get('email', u.email).strip().lower()
+                    u.email = new_email
                     u.save(update_fields=['first_name', 'last_name', 'email'])
 
                     if profil:
-                        profil.telefon = edit_form.cleaned_data.get('telefon', '')
+                        profil.telefon = new_phone
                         profil.adresa = edit_form.cleaned_data.get('adresa', '')
                         profil.grad = edit_form.cleaned_data.get('grad', '')
                         profil.postanski_broj = edit_form.cleaned_data.get('postanski_broj', '')
@@ -3201,3 +3266,61 @@ def staff_loyalty_system(request):
         'cardholder_name': cardholder_name,
     }
     return render(request, 'staff/loyalty_system.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_loyalty_card_image(request, card_id):
+    """PNG slika loyalty kartice s QR kodom i barkodom (za Viber / preuzimanje)."""
+    from django.http import HttpResponse
+    from .loyalty import generisi_loyalty_card_image
+
+    card = get_object_or_404(
+        LoyaltyCard.objects.select_related('user', 'user__profil'),
+        pk=card_id,
+    )
+    name = card.user.get_full_name().strip() or card.user.email
+    png = generisi_loyalty_card_image(card, cardholder_name=name)
+    response = HttpResponse(png, content_type='image/png')
+    response['Content-Disposition'] = f'inline; filename="loyalty-{card.kod}.png"'
+    response['Cache-Control'] = 'private, max-age=60'
+    return response
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_loyalty_card_qr(request, card_id):
+    """Samostalni QR PNG za ispis / prikaz na kartici."""
+    import io
+
+    from django.http import HttpResponse
+    from .loyalty import _qr_image
+
+    card = get_object_or_404(LoyaltyCard, pk=card_id)
+    qr = _qr_image(card.kod, box_size=8, border=2)
+    buffer = io.BytesIO()
+    qr.save(buffer, format='PNG')
+    response = HttpResponse(buffer.getvalue(), content_type='image/png')
+    response['Content-Disposition'] = f'inline; filename="loyalty-qr-{card.kod}.png"'
+    response['Cache-Control'] = 'private, max-age=120'
+    return response
+
+
+@login_required(login_url='login')
+@require_GET
+def staff_loyalty_card_barcode(request, card_id):
+    """Code128 barkod PNG — vlasnik kartice ili staff."""
+    from django.http import HttpResponse, HttpResponseForbidden
+    from .loyalty import generisi_loyalty_barcode_png
+
+    card = get_object_or_404(LoyaltyCard, pk=card_id)
+    if not request.user.is_superuser and card.user_id != request.user.pk:
+        return HttpResponseForbidden('Nemate pristup ovoj kartici.')
+    code = card.barkod or card.kod
+    png = generisi_loyalty_barcode_png(code)
+    response = HttpResponse(png, content_type='image/png')
+    response['Content-Disposition'] = f'inline; filename="loyalty-barcode-{code}.png"'
+    response['Cache-Control'] = 'private, max-age=120'
+    return response

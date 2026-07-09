@@ -227,7 +227,11 @@ def _offer_status_fields(offer, *, visitor_online=False):
 
     from .models import LiveVisitorOffer
 
-    if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
+    if offer.tip == LiveVisitorOffer.Tip.REGISTRACIJA:
+        accepted = False
+        active = bool(offer.show_popup)
+        product_name = 'Poziv na registraciju'
+    elif offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
         accepted = bool(offer.kod_aktiviran)
         active = offer.show_popup and not accepted
         product_name = f'Popust {offer.discount_percent}%'
@@ -437,6 +441,7 @@ def _visitor_payload(visitor, *, now, offer=None, has_cart=False):
         'categories_label': ', '.join(categories),
         'has_cart': has_cart,
         'is_guest': not visitor.user_id and not visitor.email,
+        'can_invite_register': not bool(visitor.user_id),
         'last_seen': visitor.last_seen,
         'last_seen_label': ago_label,
         'seconds_ago': seconds_ago,

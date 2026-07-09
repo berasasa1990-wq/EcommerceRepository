@@ -51,7 +51,43 @@ def _active_offer_filter():
     return (
         Q(tip=LiveVisitorOffer.Tip.NARUDZBA, kod_aktiviran=False)
         | Q(tip=LiveVisitorOffer.Tip.ARTIKAL, added_to_cart=False)
+        | Q(tip=LiveVisitorOffer.Tip.REGISTRACIJA)
     )
+
+
+def _upsert_live_visitor_offer(session_key, defaults, *, target_user=None):
+    if target_user and not isinstance(target_user, User):
+        target_user = None
+
+    defaults = dict(defaults)
+    defaults['session_key'] = session_key
+
+    if target_user:
+        defaults['user'] = target_user
+        offer = LiveVisitorOffer.objects.filter(user=target_user).first()
+        if not offer:
+            offer = LiveVisitorOffer.objects.filter(session_key=session_key).first()
+        if offer:
+            for field, value in defaults.items():
+                setattr(offer, field, value)
+            offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
+        else:
+            LiveVisitorOffer.objects.filter(session_key=session_key).delete()
+            offer = LiveVisitorOffer.objects.create(**defaults)
+    else:
+        defaults['user'] = None
+        offer = LiveVisitorOffer.objects.filter(
+            session_key=session_key,
+            user__isnull=True,
+        ).first()
+        if offer:
+            for field, value in defaults.items():
+                setattr(offer, field, value)
+            offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
+        else:
+            LiveVisitorOffer.objects.filter(session_key=session_key, user__isnull=True).delete()
+            offer = LiveVisitorOffer.objects.create(**defaults)
+    return offer
 
 
 def send_live_visitor_offer(
@@ -90,44 +126,42 @@ def send_live_visitor_offer(
         'show_popup': True,
         'added_to_cart': False,
         'poslao': staff_user if isinstance(staff_user, User) else None,
-        'session_key': session_key,
     }
+    return _upsert_live_visitor_offer(session_key, defaults, target_user=target_user)
 
-    if target_user and not isinstance(target_user, User):
-        target_user = None
 
-    if target_user:
-        defaults['user'] = target_user
-        offer = LiveVisitorOffer.objects.filter(user=target_user).first()
-        if not offer:
-            offer = LiveVisitorOffer.objects.filter(session_key=session_key).first()
-        if offer:
-            for field, value in defaults.items():
-                setattr(offer, field, value)
-            offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
-        else:
-            LiveVisitorOffer.objects.filter(session_key=session_key).delete()
-            offer = LiveVisitorOffer.objects.create(**defaults)
-    else:
-        defaults['user'] = None
-        offer = LiveVisitorOffer.objects.filter(
-            session_key=session_key,
-            user__isnull=True,
-        ).first()
-        if offer:
-            for field, value in defaults.items():
-                setattr(offer, field, value)
-            offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
-        else:
-            LiveVisitorOffer.objects.filter(session_key=session_key, user__isnull=True).delete()
-            offer = LiveVisitorOffer.objects.create(**defaults)
-    return offer
+def send_live_visitor_registration_invite(session_key, *, staff_user=None, target_user=None):
+    """Pošalji gostu popup poziv na registraciju."""
+    if not session_key:
+        raise ValueError('Sesija posjetioca nije pronađena.')
+    if target_user and getattr(target_user, 'is_authenticated', False):
+        raise ValueError('Kupac je već registrovan.')
+
+    defaults = {
+        'tip': LiveVisitorOffer.Tip.REGISTRACIJA,
+        'product': None,
+        'discount_percent': Decimal('0'),
+        'aktivacioni_kod': '',
+        'kod_aktiviran': False,
+        'show_popup': True,
+        'added_to_cart': False,
+        'poslao': staff_user if isinstance(staff_user, User) else None,
+    }
+    return _upsert_live_visitor_offer(session_key, defaults, target_user=None)
 
 
 def get_active_live_visitor_offer(request):
     lookup = _offer_lookup_q(request)
     if not lookup:
         return None
+    # Registrovanim korisnicima ne prikazuj poziv na registraciju
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated:
+        LiveVisitorOffer.objects.filter(
+            lookup,
+            tip=LiveVisitorOffer.Tip.REGISTRACIJA,
+            show_popup=True,
+        ).update(show_popup=False)
     return LiveVisitorOffer.objects.filter(
         lookup,
         show_popup=True,
@@ -218,7 +252,27 @@ def _build_product_offer_payload(offer):
     }
 
 
+def _build_registration_offer_payload(offer):
+    return {
+        'offer_type': 'registration',
+        'offer_id': offer.pk,
+        'offer_version': int(offer.azurirano.timestamp()),
+        'title': 'Registrujte se i uštedite',
+        'message': (
+            'Otključajte ekskluzivne popuste, akcije i nagradne pogodnosti. '
+            'Registracija traje manje od minute — čeka vas dosta benefita!'
+        ),
+        'cta_label': 'Registruj se',
+        'register_url': '/registracija/',
+        'timer_seconds': _offer_timer_seconds(offer),
+        'timer_minutes': OFFER_TIMER_MINUTES,
+        'dismiss_url': '/ponuda/zatvori/',
+    }
+
+
 def _build_offer_payload(offer):
+    if offer.tip == LiveVisitorOffer.Tip.REGISTRACIJA:
+        return _build_registration_offer_payload(offer)
     if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
         return _build_order_offer_payload(offer)
     return _build_product_offer_payload(offer)

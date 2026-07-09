@@ -52,9 +52,29 @@ urlpatterns = [
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
     path('nalog/uzivo-analitika/ponuda/', views.staff_send_live_offer, name='staff_send_live_offer'),
+    path(
+        'nalog/uzivo-analitika/registracija/',
+        views.staff_send_registration_invite,
+        name='staff_send_registration_invite',
+    ),
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
+    path(
+        'nalog/loyalty/kartica/<int:card_id>/slika.png',
+        views.staff_loyalty_card_image,
+        name='staff_loyalty_card_image',
+    ),
+    path(
+        'nalog/loyalty/kartica/<int:card_id>/qr.png',
+        views.staff_loyalty_card_qr,
+        name='staff_loyalty_card_qr',
+    ),
+    path(
+        'nalog/loyalty/kartica/<int:card_id>/barkod.png',
+        views.staff_loyalty_card_barcode,
+        name='staff_loyalty_card_barcode',
+    ),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
     path('nalog/olx-poruke/', views.staff_olx_messages, name='staff_olx_messages'),
     path('nalog/pretraga-kategorija/', views.staff_category_search, name='staff_category_search'),

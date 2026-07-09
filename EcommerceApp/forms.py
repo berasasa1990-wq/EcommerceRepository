@@ -292,7 +292,7 @@ class LoyaltyIssueForm(forms.Form):
         }),
     )
     telefon = forms.CharField(
-        label='Telefon',
+        label='Telefon (Viber)',
         max_length=30,
         widget=forms.TextInput(attrs={
             'class': 'form-input',
@@ -301,15 +301,38 @@ class LoyaltyIssueForm(forms.Form):
             'inputmode': 'tel',
         }),
     )
+    email = forms.EmailField(
+        label='Email',
+        max_length=254,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'npr. amira@email.com',
+            'autocomplete': 'email',
+        }),
+    )
 
     def clean_telefon(self):
+        from .loyalty import telefon_vec_registrovan
+
         telefon = self.cleaned_data.get('telefon', '').strip()
         if not telefon:
             raise forms.ValidationError('Telefon je obavezan.')
         digits = ''.join(ch for ch in telefon if ch.isdigit())
         if len(digits) < 8:
             raise forms.ValidationError('Unesite ispravan broj telefona.')
+        if telefon_vec_registrovan(telefon):
+            raise forms.ValidationError('Ovaj broj telefona je već registrovan.')
         return telefon
+
+    def clean_email(self):
+        from .loyalty import email_vec_registrovan
+
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            raise forms.ValidationError('Email je obavezan.')
+        if email_vec_registrovan(email):
+            raise forms.ValidationError('Ovaj email je već registrovan.')
+        return email
 
 
 class ProfileForm(forms.Form):
@@ -349,20 +372,22 @@ class ProfileForm(forms.Form):
 
 class CouponForm(forms.Form):
     kod = forms.CharField(
-        label='Kupon kod',
+        label='Broj kartice',
         max_length=20,
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Unesite loyalty kod',
+            'placeholder': 'Unesite broj loyalty kartice',
             'autocomplete': 'off',
+            'inputmode': 'text',
+            'autocapitalize': 'characters',
         }),
     )
 
     def clean_kod(self):
-        kod = self.cleaned_data.get('kod', '').strip()
+        kod = self.cleaned_data.get('kod', '').strip().upper()
         if not kod:
-            raise forms.ValidationError('Unesite kupon kod.')
+            raise forms.ValidationError('Unesite broj kartice.')
         return kod.upper()
 
 

@@ -249,6 +249,37 @@
         );
     }
 
+    function buildRegistrationOverlayHtml(offer) {
+        return (
+            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup site-popup--akcija live-offer-popup live-offer-popup--registration" role="dialog" aria-modal="true">' +
+            '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+            '</svg></button>' +
+            '<div class="live-offer-reg-icon" aria-hidden="true">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>' +
+            '<circle cx="9" cy="7" r="4"/>' +
+            '<line x1="19" y1="8" x2="19" y2="14"/>' +
+            '<line x1="22" y1="11" x2="16" y2="11"/>' +
+            '</svg></div>' +
+            '<div class="live-offer-body">' +
+            '<p class="live-offer-kicker">Ekskluzivne pogodnosti</p>' +
+            '<h3 class="live-offer-order-title">' + escapeHtml(offer.title || 'Registrujte se i uštedite') + '</h3>' +
+            '<p class="live-offer-reg-message">' + escapeHtml(offer.message || '') + '</p>' +
+            '<ul class="live-offer-reg-benefits">' +
+            '<li>Popusti samo za registrovane</li>' +
+            '<li>Akcije i nagrade u nalogu</li>' +
+            '<li>Brža narudžba sljedeći put</li>' +
+            '</ul>' +
+            '<a href="' + escapeHtml(offer.register_url || '/registracija/') + '" class="btn btn-primary site-popup-cta live-offer-cta live-offer-reg-cta" data-live-offer-register>' +
+            escapeHtml(offer.cta_label || 'Registruj se') +
+            '</a>' +
+            '</div></div></div>'
+        );
+    }
+
     function showActivationConfirm(message) {
         const existing = document.getElementById('liveOfferConfirmOverlay');
         if (existing) existing.remove();
@@ -277,6 +308,9 @@
     }
 
     function buildOverlayHtml(offer) {
+        if (offer.offer_type === 'registration') {
+            return buildRegistrationOverlayHtml(offer);
+        }
         if (offer.offer_type === 'order') {
             return buildOrderOverlayHtml(offer);
         }
@@ -320,6 +354,16 @@
         overlay.addEventListener('click', function (e) {
             if (e.target === overlay) dismissOffer();
         });
+
+        const registerCta = overlay.querySelector('[data-live-offer-register]');
+        if (registerCta) {
+            registerCta.addEventListener('click', async function (e) {
+                e.preventDefault();
+                const href = registerCta.getAttribute('href') || '/registracija/';
+                await dismissOffer({ keepNavigation: true });
+                window.location.href = href;
+            });
+        }
 
         const variationSelect = overlay.querySelector('#liveOfferVariation');
         const priceOriginal = overlay.querySelector('#liveOfferPriceOriginal');
@@ -437,7 +481,8 @@
         }
     }
 
-    async function dismissOffer() {
+    async function dismissOffer(options) {
+        const keepNavigation = options && options.keepNavigation;
         try {
             await fetch('/ponuda/zatvori/', {
                 method: 'POST',
@@ -453,7 +498,9 @@
         }
         lastOfferVersion = null;
         clearLiveOfferActive();
-        closeOverlay();
+        if (!keepNavigation) {
+            closeOverlay();
+        }
     }
 
     function renderOffer(offer) {

@@ -2076,11 +2076,12 @@ class LiveVisitor(models.Model):
 
 
 class LiveVisitorOffer(models.Model):
-    """Staff ponuda posjetiocu koji je trenutno na sajtu (artikal ili popust na narudžbu)."""
+    """Staff ponuda posjetiocu koji je trenutno na sajtu (artikal, popust ili registracija)."""
 
     class Tip(models.TextChoices):
         ARTIKAL = 'artikal', 'Artikal'
         NARUDZBA = 'narudzba', 'Popust na narudžbu'
+        REGISTRACIJA = 'registracija', 'Registracija'
 
     session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')
     user = models.ForeignKey(
@@ -2092,7 +2093,7 @@ class LiveVisitorOffer(models.Model):
         verbose_name='Posjetilac',
     )
     tip = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=Tip.choices,
         default=Tip.ARTIKAL,
         verbose_name='Tip ponude',

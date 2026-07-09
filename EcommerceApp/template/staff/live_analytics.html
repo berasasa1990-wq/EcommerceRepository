@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v13">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v14">
 {% endblock %}
 
 {% block content %}
@@ -148,6 +148,22 @@
                                       title="{% if visitor.offer_status == 'accepted' %}Kupac je prihvatio ponudu{% elif visitor.offer_status == 'left' %}Kupac je odbio ponudu ili je izašao{% else %}Ponuda aktivna{% endif %}{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}"
                                       aria-label="Status ponude">✓</span>
                                 {% endif %}
+                                {% if visitor.can_invite_register %}
+                                <button type="button"
+                                        class="staff-live-register-btn{% if visitor.offer_product == 'Poziv na registraciju' and visitor.offer_sent %} staff-live-register-btn--sent{% endif %}"
+                                        data-register-invite
+                                        data-session-key="{{ visitor.session_key }}"
+                                        data-visitor-name="{{ visitor.ime }}"
+                                        title="Pošalji poziv na registraciju"
+                                        aria-label="Pošalji poziv na registraciju">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <line x1="19" y1="8" x2="19" y2="14"/>
+                                        <line x1="22" y1="11" x2="16" y2="11"/>
+                                    </svg>
+                                </button>
+                                {% endif %}
                                 <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
                             </td>
                         </tr>
@@ -197,6 +213,22 @@
                                 <span class="staff-live-offer-sent staff-live-offer-sent--{{ visitor.offer_status }}"
                                       title="{% if visitor.offer_status == 'accepted' %}Kupac je prihvatio ponudu{% elif visitor.offer_status == 'left' %}Kupac je odbio ponudu ili je izašao{% else %}Ponuda aktivna{% endif %}{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}"
                                       aria-label="Status ponude">✓</span>
+                                {% endif %}
+                                {% if visitor.can_invite_register %}
+                                <button type="button"
+                                        class="staff-live-register-btn{% if visitor.offer_product == 'Poziv na registraciju' and visitor.offer_sent %} staff-live-register-btn--sent{% endif %}"
+                                        data-register-invite
+                                        data-session-key="{{ visitor.session_key }}"
+                                        data-visitor-name="{{ visitor.ime }}"
+                                        title="Pošalji poziv na registraciju"
+                                        aria-label="Pošalji poziv na registraciju">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <line x1="19" y1="8" x2="19" y2="14"/>
+                                        <line x1="22" y1="11" x2="16" y2="11"/>
+                                    </svg>
+                                </button>
                                 {% endif %}
                                 <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
                                 {% else %}
@@ -253,6 +285,7 @@
 (function () {
     const dataUrl = '{% url "staff_live_analytics_data" %}';
     const productSearchUrl = '{% url "staff_product_search" %}';
+    const registerInviteUrl = '{% url "staff_send_registration_invite" %}';
     const onlineBody = document.getElementById('liveOnlineBody');
     const windowBody = document.getElementById('liveWindowBody');
     const onlineCountEl = document.getElementById('liveOnlineCount');
@@ -347,6 +380,27 @@
         );
     }
 
+    function registerInviteButton(visitor) {
+        if (!visitor.can_invite_register || !visitor.session_key) {
+            return '';
+        }
+        const regSent = visitor.offer_sent && visitor.offer_product === 'Poziv na registraciju';
+        const sentClass = regSent ? ' staff-live-register-btn--sent' : '';
+        return (
+            '<button type="button" class="staff-live-register-btn' + sentClass + '" data-register-invite ' +
+            'data-session-key="' + escapeHtml(visitor.session_key) + '" ' +
+            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '" ' +
+            'title="Pošalji poziv na registraciju" aria-label="Pošalji poziv na registraciju">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>' +
+            '<circle cx="9" cy="7" r="4"/>' +
+            '<line x1="19" y1="8" x2="19" y2="14"/>' +
+            '<line x1="22" y1="11" x2="16" y2="11"/>' +
+            '</svg></button>'
+        );
+    }
+
     function offerButton(visitor) {
         if (!visitor.session_key) {
             return '<span class="staff-live-muted">—</span>';
@@ -357,10 +411,25 @@
             : '';
         return (
             offerSentBadge(visitor) +
+            registerInviteButton(visitor) +
             '<button type="button" class="staff-live-offer-btn' + sentClass + '" data-offer-open ' +
             'data-session-key="' + escapeHtml(visitor.session_key) + '" ' +
             'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '"' + activeTitle + '>Ponuda</button>'
         );
+    }
+
+    function showStaffToast(message) {
+        let toast = document.querySelector('.cart-toast');
+        if (!toast) {
+            toast = document.createElement('p');
+            toast.className = 'cart-toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add('cart-toast--visible');
+        window.setTimeout(function () {
+            toast.classList.remove('cart-toast--visible');
+        }, 2600);
     }
 
     function renderRows(visitors, emptyText) {
@@ -402,6 +471,50 @@
                 openOfferModal(btn.dataset.sessionKey, btn.dataset.visitorName);
             });
         });
+        root.querySelectorAll('[data-register-invite]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                sendRegistrationInvite(btn);
+            });
+        });
+    }
+
+    async function sendRegistrationInvite(btn) {
+        const sessionKey = btn.dataset.sessionKey || '';
+        if (!sessionKey) return;
+        const name = btn.dataset.visitorName || 'Gost';
+        if (!window.confirm('Pošalji poziv na registraciju kupcu „' + name + '”?')) {
+            return;
+        }
+        btn.disabled = true;
+        try {
+            const csrf = readStaffCsrfToken();
+            if (!csrf) {
+                throw new Error('Sigurnosni token nije dostupan. Osvježite stranicu.');
+            }
+            const body = new URLSearchParams();
+            body.set('csrfmiddlewaretoken', csrf);
+            body.set('session_key', sessionKey);
+            const response = await fetch(registerInviteUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await parseStaffJsonResponse(response);
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || 'Slanje poziva nije uspjelo.');
+            }
+            showStaffToast(data.message || 'Poziv poslan.');
+            refreshLiveAnalytics();
+        } catch (err) {
+            alert(err.message || 'Slanje poziva nije uspjelo.');
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     function openOfferModal(sessionKey, visitorName) {
@@ -513,17 +626,7 @@
             }
             closeOfferModal();
             refreshLiveAnalytics();
-            let toast = document.querySelector('.cart-toast');
-            if (!toast) {
-                toast = document.createElement('p');
-                toast.className = 'cart-toast';
-                document.body.appendChild(toast);
-            }
-            toast.textContent = data.message;
-            toast.classList.add('cart-toast--visible');
-            window.setTimeout(function () {
-                toast.classList.remove('cart-toast--visible');
-            }, 2600);
+            showStaffToast(data.message);
         } catch (err) {
             alert(err.message || 'Slanje ponude nije uspjelo.');
         } finally {

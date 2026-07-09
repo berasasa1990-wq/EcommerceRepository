@@ -21,7 +21,30 @@
         </div>
     </div>
 
-    {% include 'partials/loyalty_card.html' %}
+    {% if loyalty %}
+    <section class="account-loyalty-card-section" aria-label="Loyalty kartica">
+        <div class="account-loyalty-card-header">
+            <h2>Vaša loyalty kartica</h2>
+            <p>Isti broj kartice unesite u korpi da ostvarite popust.</p>
+        </div>
+        <div class="account-loyalty-card-preview">
+            {% include 'partials/loyalty_card_print.html' with loyalty=loyalty cardholder_name=cardholder_name %}
+        </div>
+        <div class="account-loyalty-card-actions">
+            <div class="loyalty-code-display">
+                <div class="loyalty-code-display-text">
+                    <span class="loyalty-code-display-label">Broj kartice za korpu</span>
+                    <strong class="loyalty-code-display-value" id="accountLoyaltyCodeValue">{{ loyalty.kartica.kod }}</strong>
+                    <span class="loyalty-code-display-tier">{{ loyalty.tier.label }} · {{ loyalty.tier.postotak }}% popusta</span>
+                </div>
+                <button type="button" class="btn-copy-code" data-copy-target="accountLoyaltyCodeValue" aria-label="Kopiraj broj kartice">
+                    Kopiraj
+                </button>
+            </div>
+            <a href="{% url 'cart' %}" class="btn btn-primary">Unesi u korpu</a>
+        </div>
+    </section>
+    {% endif %}
 
     <div class="account-grid">
         <aside class="account-profile">

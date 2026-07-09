@@ -970,13 +970,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = document.getElementById(button.dataset.copyTarget);
             if (!target) return;
             const text = target.textContent.trim();
+            const fillId = button.dataset.fillInput;
+            if (fillId) {
+                const input = document.getElementById(fillId);
+                if (input) {
+                    input.value = text;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.focus();
+                }
+            }
             try {
                 await navigator.clipboard.writeText(text);
                 const original = button.textContent;
-                button.textContent = 'Kopirano!';
+                button.textContent = fillId ? 'Uneseno!' : 'Kopirano!';
                 setTimeout(() => { button.textContent = original; }, 1500);
             } catch {
-                button.textContent = 'Greška';
+                // Clipboard može biti blokiran; ako je polje popunjeno, i dalje OK
+                if (fillId) {
+                    const original = button.textContent;
+                    button.textContent = 'Uneseno!';
+                    setTimeout(() => { button.textContent = original; }, 1500);
+                } else {
+                    button.textContent = 'Greška';
+                }
             }
         });
     });
