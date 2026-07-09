@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v12">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v13">
 {% endblock %}
 
 {% block content %}
@@ -145,7 +145,9 @@
                             <td><span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span></td>
                             <td class="staff-live-action-cell">
                                 {% if visitor.offer_sent %}
-                                <span class="staff-live-offer-sent{% if visitor.offer_active %} staff-live-offer-sent--active{% endif %}" title="Ponuda poslana{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}" aria-label="Ponuda poslana">✓</span>
+                                <span class="staff-live-offer-sent staff-live-offer-sent--{{ visitor.offer_status }}"
+                                      title="{% if visitor.offer_status == 'accepted' %}Kupac je prihvatio ponudu{% elif visitor.offer_status == 'left' %}Kupac je odbio ponudu ili je izašao{% else %}Ponuda aktivna{% endif %}{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}"
+                                      aria-label="Status ponude">✓</span>
                                 {% endif %}
                                 <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
                             </td>
@@ -194,7 +196,9 @@
                             <td class="staff-live-action-cell">
                                 {% if visitor.session_key %}
                                 {% if visitor.offer_sent %}
-                                <span class="staff-live-offer-sent{% if visitor.offer_active %} staff-live-offer-sent--active{% endif %}" title="Ponuda poslana{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}" aria-label="Ponuda poslana">✓</span>
+                                <span class="staff-live-offer-sent staff-live-offer-sent--{{ visitor.offer_status }}"
+                                      title="{% if visitor.offer_status == 'accepted' %}Kupac je prihvatio ponudu{% elif visitor.offer_status == 'left' %}Kupac je odbio ponudu ili je izašao{% else %}Ponuda aktivna{% endif %}{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}"
+                                      aria-label="Status ponude">✓</span>
                                 {% endif %}
                                 <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
                                 {% else %}
@@ -328,11 +332,20 @@
             return '';
         }
         const productLabel = visitor.offer_product ? ': ' + visitor.offer_product : '';
-        const title = 'Ponuda poslana' + productLabel;
-        const activeClass = visitor.offer_active ? ' staff-live-offer-sent--active' : '';
+        let title = 'Ponuda poslana' + productLabel;
+        if (visitor.offer_status === 'accepted') {
+            title = 'Kupac je prihvatio ponudu' + productLabel;
+        } else if (visitor.offer_status === 'left') {
+            title = 'Kupac je odbio ponudu ili je izašao' + productLabel;
+        } else if (visitor.offer_status === 'active') {
+            title = 'Ponuda aktivna' + productLabel;
+        }
+        const statusClass = visitor.offer_status
+            ? ' staff-live-offer-sent--' + visitor.offer_status
+            : '';
         return (
-            '<span class="staff-live-offer-sent' + activeClass + '" title="' + escapeHtml(title) + '" ' +
-            'aria-label="' + escapeHtml(title) + '">✓</span>'
+            '<span class="staff-live-offer-sent' + statusClass + '" title="' + escapeHtml(title) + '" ' +
+            'aria-label="Status ponude">✓</span>'
         );
     }
 

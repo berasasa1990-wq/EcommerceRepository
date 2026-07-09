@@ -175,7 +175,6 @@ def cleanup_stale_live_visitors():
 def _build_recent_offer_map(visitors, *, now):
     from django.db.models import Q
 
-    from .live_visitor_offer import OFFER_TIMER_MINUTES
     from .models import LiveVisitorOffer
 
     session_keys = [visitor.session_key for visitor in visitors if visitor.session_key]
@@ -183,7 +182,7 @@ def _build_recent_offer_map(visitors, *, now):
     if not session_keys and not user_ids:
         return {}
 
-    timer_cutoff = now - timedelta(minutes=OFFER_TIMER_MINUTES)
+    offer_cutoff = now - timedelta(minutes=WINDOW_MINUTES)
     clauses = Q()
     if session_keys:
         clauses |= Q(session_key__in=session_keys)
@@ -191,7 +190,7 @@ def _build_recent_offer_map(visitors, *, now):
         clauses |= Q(user_id__in=user_ids)
 
     offers = (
-        LiveVisitorOffer.objects.filter(clauses, azurirano__gte=timer_cutoff)
+        LiveVisitorOffer.objects.filter(clauses, azurirano__gte=offer_cutoff)
         .select_related('product')
         .order_by('-azurirano')
     )
@@ -217,7 +216,7 @@ def _lookup_recent_offer(offer_map, visitor):
     return offer_map.get(('session', visitor.session_key))
 
 
-def _offer_status_fields(offer):
+def _offer_status_fields(offer, *, visitor_online=False):
     if not offer:
         return {
             'offer_sent': False,
@@ -229,31 +228,28 @@ def _offer_status_fields(offer):
     from .models import LiveVisitorOffer
 
     if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
-        active = offer.show_popup and not offer.kod_aktiviran
-        if active:
-            status = 'active'
-        elif offer.kod_aktiviran:
-            status = 'accepted'
-        else:
-            status = 'dismissed'
+        accepted = bool(offer.kod_aktiviran)
+        active = offer.show_popup and not accepted
         product_name = f'Popust {offer.discount_percent}%'
         if offer.aktivacioni_kod:
             product_name = f'{product_name} ({offer.aktivacioni_kod})'
     else:
-        active = offer.show_popup and not offer.added_to_cart
-        if active:
-            status = 'active'
-        elif offer.added_to_cart:
-            status = 'accepted'
-        else:
-            status = 'dismissed'
+        accepted = bool(offer.added_to_cart)
+        active = offer.show_popup and not accepted
         product_name = ''
         if offer.product_id and offer.product:
             product_name = offer.product.naziv
 
+    if accepted:
+        status = 'accepted'
+    elif active and visitor_online:
+        status = 'active'
+    else:
+        status = 'left'
+
     return {
         'offer_sent': True,
-        'offer_active': active,
+        'offer_active': status == 'active',
         'offer_product': product_name,
         'offer_status': status,
     }
@@ -446,7 +442,7 @@ def _visitor_payload(visitor, *, now, offer=None, has_cart=False):
         'seconds_ago': seconds_ago,
         'is_online': seconds_ago <= ONLINE_MINUTES * 60,
     }
-    payload.update(_offer_status_fields(offer))
+    payload.update(_offer_status_fields(offer, visitor_online=payload['is_online']))
     return payload
 
 

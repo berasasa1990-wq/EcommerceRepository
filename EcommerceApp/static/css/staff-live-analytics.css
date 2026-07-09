@@ -350,9 +350,32 @@
 }
 
 .staff-live-offer-sent--active {
-    background: #e8f7dc;
-    color: #3d8f04;
-    box-shadow: 0 0 0 1px rgba(91, 184, 5, 0.28);
+    background: #eef0ee;
+    color: #5f6b63;
+}
+
+.staff-live-offer-sent--accepted {
+    background: #e8f5e9;
+    color: #1b5e20;
+    box-shadow: 0 0 0 2px rgba(91, 184, 5, 0.35);
+    animation: staff-live-offer-accepted-pulse 1.5s ease-in-out infinite;
+}
+
+.staff-live-offer-sent--left {
+    background: #fdecea;
+    color: #c62828;
+    box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.28);
+}
+
+@keyframes staff-live-offer-accepted-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 2px rgba(91, 184, 5, 0.35);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(91, 184, 5, 0.2);
+        transform: scale(1.08);
+    }
 }
 
 .staff-live-offer-btn {
