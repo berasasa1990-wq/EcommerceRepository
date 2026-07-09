@@ -33,6 +33,7 @@ from .models import (
     CityVisitTotal,
     LiveVisitor,
     LiveVisitorOffer,
+    StaffSiteEvent,
     Akcija,
     Banner,
     Brand,
@@ -1435,6 +1436,15 @@ class CityVisitTotalAdmin(admin.ModelAdmin):
     search_fields = ('grad',)
     ordering = ('-broj_posjeta', 'grad')
     readonly_fields = ('azurirano',)
+
+
+@admin.register(StaffSiteEvent)
+class StaffSiteEventAdmin(admin.ModelAdmin):
+    list_display = ('tip', 'naslov', 'ime', 'email', 'grad', 'kreirano')
+    list_filter = ('tip', 'kreirano')
+    search_fields = ('naslov', 'poruka', 'ime', 'email', 'grad', 'session_key')
+    readonly_fields = ('kreirano',)
+    ordering = ('-kreirano',)
 
 
 @admin.register(ActiveCartItem)

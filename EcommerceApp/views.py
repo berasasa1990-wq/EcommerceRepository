@@ -1968,6 +1968,21 @@ def checkout(request):
                 consume_registration_reward(request.user)
 
             try:
+                from .cart_tracking import get_cart_session_key
+                from .staff_alerts import notify_purchase
+                if not (request.user.is_authenticated and request.user.is_superuser):
+                    notify_purchase(
+                        ime=order.ime_prezime,
+                        email=order.email,
+                        grad=order.grad,
+                        session_key=get_cart_session_key(request),
+                        order_number=order.broj,
+                        total=str(order.ukupno),
+                    )
+            except Exception:
+                pass
+
+            try:
                 send_order_emails(order)
             except EmailNotConfiguredError:
                 logger.error(
@@ -2138,6 +2153,17 @@ def register(request):
 
                 from .live_visitor_offer import claim_registration_invite_reward
                 reg_reward = claim_registration_invite_reward(request, user)
+
+                try:
+                    from .cart_tracking import get_cart_session_key
+                    from .staff_alerts import notify_registration
+                    notify_registration(
+                        ime=form.cleaned_data.get('ime_prezime') or '',
+                        email=email,
+                        session_key=get_cart_session_key(request),
+                    )
+                except Exception:
+                    pass
 
                 # Send activation email
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -2684,6 +2710,22 @@ def staff_live_analytics_data(request):
             if row.get('last_seen'):
                 row['last_seen'] = timezone.localtime(row['last_seen']).isoformat()
     return JsonResponse(payload)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_site_events_poll(request):
+    """Polling endpoint — live toast obavijesti za superusere na sajtu."""
+    from .staff_alerts import get_staff_events_since
+
+    since = request.GET.get('since') or request.GET.get('after') or '0'
+    data = get_staff_events_since(since)
+    return JsonResponse({
+        'ok': True,
+        'events': data['events'],
+        'latest_id': data['latest_id'],
+    })
 
 
 def _active_cart_groups(queryset):

@@ -386,6 +386,15 @@
     </script>
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/main.min.js' %}?v=20260709v22" defer></script>
+    {% if user.is_authenticated and user.is_superuser %}
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260709v2">
+    <div id="staffAlertsRoot" hidden
+         data-poll-url="{% url 'staff_site_events_poll' %}"
+         data-register-url="{% url 'staff_send_registration_invite' %}"
+         data-offer-url="{% url 'staff_send_live_offer' %}"
+         data-product-search-url="{% url 'staff_product_search' %}"></div>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260709v2" defer></script>
+    {% endif %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

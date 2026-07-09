@@ -167,6 +167,18 @@ def track_live_visitor(request):
     city_name = (grad or '').strip()
     if city_name and (created or not (existing_grad or '').strip()):
         record_city_visit(city_name)
+    # Superuser obavijest: novi posjetilac online (ne šalji za superusere)
+    if created and not (user and user.is_superuser):
+        try:
+            from .staff_alerts import notify_visitor_online
+            notify_visitor_online(
+                ime=defaults.get('ime') or '',
+                email=defaults.get('email') or '',
+                grad=city_name,
+                session_key=session_key,
+            )
+        except Exception:
+            pass
     if random.random() < 0.02:
         cleanup_stale_live_visitors()
 

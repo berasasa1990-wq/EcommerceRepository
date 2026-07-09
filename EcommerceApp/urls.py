@@ -51,6 +51,7 @@ urlpatterns = [
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
+    path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),
     path('nalog/uzivo-analitika/ponuda/', views.staff_send_live_offer, name='staff_send_live_offer'),
     path(
         'nalog/uzivo-analitika/registracija/',

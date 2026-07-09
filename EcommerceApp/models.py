@@ -2090,6 +2090,36 @@ class CityVisitTotal(models.Model):
         return f'{self.grad} — {self.broj_posjeta}'
 
 
+class StaffSiteEvent(models.Model):
+    """Live obavijest za superusere (online, korpa, registracija, kupovina)."""
+
+    class Tip(models.TextChoices):
+        ONLINE = 'online', 'Online na sajtu'
+        CART = 'cart', 'Dodano u korpu'
+        REGISTER = 'register', 'Registracija'
+        PURCHASE = 'purchase', 'Kupovina'
+
+    tip = models.CharField(max_length=20, choices=Tip.choices, db_index=True)
+    naslov = models.CharField(max_length=120)
+    poruka = models.CharField(max_length=300)
+    ime = models.CharField(max_length=120, blank=True)
+    email = models.EmailField(blank=True)
+    grad = models.CharField(max_length=100, blank=True)
+    session_key = models.CharField(max_length=40, blank=True, db_index=True)
+    kreirano = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Staff live obavijest'
+        verbose_name_plural = 'Staff live obavijesti'
+        ordering = ['-kreirano']
+        indexes = [
+            models.Index(fields=['-kreirano', 'id']),
+        ]
+
+    def __str__(self):
+        return f'{self.get_tip_display()}: {self.naslov}'
+
+
 class LiveVisitorOffer(models.Model):
     """Staff ponuda posjetiocu koji je trenutno na sajtu (artikal, popust ili registracija)."""
 

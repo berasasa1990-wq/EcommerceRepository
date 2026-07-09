@@ -53,12 +53,57 @@ def track_cart_line_added_or_updated(request, key, item):
     defaults = _line_defaults(request, item)
     if not defaults['product']:
         return
-    ActiveCartItem.objects.update_or_create(
+    existing = ActiveCartItem.objects.filter(
+        session_key=session_key,
+        line_key=key,
+    ).only('kolicina').first()
+    old_qty = existing.kolicina if existing else 0
+    _obj, created = ActiveCartItem.objects.update_or_create(
         session_key=session_key,
         line_key=key,
         defaults=defaults,
     )
     _attach_user_to_session(request, session_key)
+
+    # Superuser obavijest: novo dodavanje ili povećanje količine (ne za superusere)
+    user = _cart_user(request)
+    if user and user.is_superuser:
+        return
+    new_qty = defaults.get('kolicina') or 0
+    if created or new_qty > old_qty:
+        try:
+            from .live_visitors import _display_email, _display_name
+            from .models import LiveVisitor
+            from .staff_alerts import notify_cart_add
+
+            ime = _display_name(user)
+            email = _display_email(user)
+            grad = ''
+            if user:
+                profil = getattr(user, 'profil', None)
+                if profil and profil.grad:
+                    grad = (profil.grad or '').strip()
+            lv = LiveVisitor.objects.filter(session_key=session_key).only('grad', 'ime', 'email').first()
+            if lv:
+                if not grad:
+                    grad = (lv.grad or '').strip()
+                if not email:
+                    email = (lv.email or '').strip()
+                if not ime or ime == 'Gost':
+                    ime = (lv.ime or '').strip() or ime
+
+            product_name = defaults.get('naziv') or ''
+            if defaults.get('varijacija_naziv'):
+                product_name = f"{product_name} — {defaults['varijacija_naziv']}"
+            notify_cart_add(
+                ime=ime,
+                email=email,
+                grad=grad,
+                session_key=session_key,
+                product_name=product_name,
+            )
+        except Exception:
+            pass
 
 
 def track_cart_line_removed(request, key):
