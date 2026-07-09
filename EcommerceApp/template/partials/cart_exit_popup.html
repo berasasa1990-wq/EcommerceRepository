@@ -1,10 +1,7 @@
 {% if cart_exit_popup %}
 <div class="site-popup-overlay cart-exit-overlay" id="cartExitOverlay" hidden>
     <div class="site-popup site-popup--akcija site-popup--cart-exit" role="dialog" aria-modal="true" aria-labelledby="cartExitTitle">
-        {% if cart_exit_popup.discount_percent %}
-        <span class="cart-exit-discount-badge">-{{ cart_exit_popup.discount_percent|floatformat:0 }}%</span>
-        {% endif %}
-        <h2 id="cartExitTitle" class="site-popup-akcija-title">Prije nego odete pogledajte ovu ponudu</h2>
+        <h2 id="cartExitTitle" class="site-popup-akcija-title">Poslednji minut ponuda</h2>
         <button type="button" class="site-popup-close" data-cart-exit-close aria-label="Zatvori">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -14,6 +11,9 @@
 
         <div class="site-popup-akcija">
             <a href="{{ cart_exit_popup.product.get_absolute_url }}" class="site-popup-product">
+                {% if cart_exit_popup.discount_percent %}
+                <span class="cart-exit-discount-badge">-{{ cart_exit_popup.discount_percent|floatformat:0 }}%</span>
+                {% endif %}
                 <span class="site-popup-product-image">
                     {% if cart_exit_popup.product.prikazna_slika %}
                     <img src="{{ cart_exit_popup.product.prikazna_slika.url }}"

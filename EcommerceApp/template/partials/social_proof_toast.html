@@ -1,0 +1,60 @@
+{% if social_proof %}
+<div class="social-proof-toast" id="socialProofToast" hidden aria-live="polite">
+    <button type="button" class="social-proof-toast__close" data-social-proof-close aria-label="Zatvori">×</button>
+    <p class="social-proof-toast__text">
+        <strong>{{ social_proof.name }}</strong> iz {{ social_proof.city }} je kupio
+        <a href="{{ social_proof.product_url }}">{{ social_proof.product_name }}</a>
+    </p>
+</div>
+<script>
+(function () {
+    const toast = document.getElementById('socialProofToast');
+    if (!toast) return;
+
+    const STORAGE_KEY = 'social_proof_toast_shown';
+    let shown = false;
+
+    function otherPopupOpen() {
+        if (document.body.classList.contains('popup-open')) return true;
+        const overlays = document.querySelectorAll('.site-popup-overlay:not([hidden])');
+        for (let i = 0; i < overlays.length; i++) {
+            if (overlays[i].classList.contains('is-visible')) return true;
+        }
+        return false;
+    }
+
+    function closeToast() {
+        toast.classList.remove('is-visible');
+        toast.hidden = true;
+        try {
+            sessionStorage.setItem(STORAGE_KEY, '1');
+        } catch (err) {
+            /* ignore */
+        }
+    }
+
+    function openToast() {
+        if (shown) return;
+        try {
+            if (sessionStorage.getItem(STORAGE_KEY) === '1') return;
+        } catch (err) {
+            /* ignore */
+        }
+        if (otherPopupOpen()) {
+            window.setTimeout(openToast, 1500);
+            return;
+        }
+        shown = true;
+        toast.hidden = false;
+        requestAnimationFrame(function () {
+            toast.classList.add('is-visible');
+        });
+        window.setTimeout(closeToast, 9000);
+    }
+
+    toast.querySelector('[data-social-proof-close]')?.addEventListener('click', closeToast);
+
+    window.setTimeout(openToast, 6500);
+})();
+</script>
+{% endif %}

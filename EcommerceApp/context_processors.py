@@ -7,6 +7,7 @@ from django.db.models import Prefetch
 from .cart import Cart
 from .cart_exit_popup import get_cart_exit_popup_context
 from .cart_recovery import get_active_cart_recovery_alert
+from .social_proof import build_social_proof_context
 from .live_visitor_offer import build_live_visitor_offer_context
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .models import Akcija, Category, SiteSettings
@@ -114,4 +115,5 @@ def nav_categories(request):
         'contact_whatsapp_url': _whatsapp_contact_url(contact_phone),
         'contact_viber_url': _viber_contact_url(contact_phone),
         'contact_messenger_url': _messenger_contact_url(messenger_page),
+        'social_proof': build_social_proof_context(request),
     }
