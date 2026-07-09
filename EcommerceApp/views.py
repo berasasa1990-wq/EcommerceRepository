@@ -27,7 +27,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.middleware.csrf import get_token
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
 from .cart import Cart
@@ -2697,6 +2697,54 @@ def live_visitor_offer_poll(request):
     return JsonResponse(payload)
 
 
+@csrf_exempt
+@require_POST
+def live_visitor_heartbeat(request):
+    """Ping dok je posjetilac na sajtu (osvježava last_seen + presence)."""
+    from .live_visitors import heartbeat_live_visitor
+
+    body_key = (
+        request.POST.get('session_key')
+        or request.GET.get('session_key')
+        or ''
+    )
+    if request.user.is_authenticated and request.user.is_superuser:
+        return JsonResponse({'ok': True, 'tracked': False})
+    tracked = heartbeat_live_visitor(request, body_session_key=body_key)
+    return JsonResponse({'ok': True, 'tracked': tracked})
+
+
+@csrf_exempt
+@require_POST
+def live_visitor_leave(request):
+    """
+    Beacon kad posjetilac zatvori tab / ode sa sajta.
+    csrf_exempt: sendBeacon ne šalje pouzdano CSRF; veže se na sesiju (+ session_key u body).
+    """
+    from .live_visitors import mark_live_visitor_left
+
+    body_key = (
+        request.POST.get('session_key')
+        or request.GET.get('session_key')
+        or ''
+    )
+    # sendBeacon body nije uvijek u request.POST — parsiraj raw body
+    if not body_key and request.body:
+        try:
+            from urllib.parse import parse_qs
+            parsed = parse_qs(request.body.decode('utf-8', errors='ignore'))
+            vals = parsed.get('session_key') or []
+            if vals:
+                body_key = vals[0]
+        except Exception:
+            body_key = ''
+
+    if request.user.is_authenticated and request.user.is_superuser:
+        return JsonResponse({'ok': True, 'left': False})
+    left = mark_live_visitor_left(request, body_session_key=body_key)
+    return JsonResponse({'ok': True, 'left': left})
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 @require_GET
@@ -2725,6 +2773,8 @@ def staff_site_events_poll(request):
         'ok': True,
         'events': data['events'],
         'latest_id': data['latest_id'],
+        'online_sessions': data.get('online_sessions') or [],
+        'visitor_states': data.get('visitor_states') or {},
     })
 
 

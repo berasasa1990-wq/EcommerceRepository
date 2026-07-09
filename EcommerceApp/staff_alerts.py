@@ -113,11 +113,160 @@ def cleanup_staff_events():
     return StaffSiteEvent.objects.filter(kreirano__lt=cutoff).delete()[0]
 
 
+def _online_session_keys():
+    """
+    Session keys posjetilaca online za sticky toast.
+    Poštuje leave cache (odmah offline) + kratki last_seen prozor.
+    """
+    from .live_visitors import (
+        STAFF_TOAST_ONLINE_SECONDS,
+        is_visitor_marked_left,
+    )
+    from .models import LiveVisitor
+
+    cutoff = timezone.now() - timedelta(seconds=STAFF_TOAST_ONLINE_SECONDS)
+    candidates = list(
+        LiveVisitor.objects.filter(last_seen__gte=cutoff)
+        .exclude(session_key='')
+        .values_list('session_key', flat=True)
+    )
+    online = []
+    for session_key in candidates:
+        if is_visitor_marked_left(session_key):
+            continue
+        online.append(session_key)
+    return online
+
+
+def _format_money(value):
+    try:
+        amount = float(value or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    text = f'{amount:.2f}'.replace('.', ',')
+    return text
+
+
+def _offer_reject_flags(offer):
+    """Da li je posjetilac odbio ponudu / poziv na registraciju."""
+    from .models import LiveVisitorOffer
+
+    flags = {
+        'offer_rejected': False,
+        'register_rejected': False,
+        'offer_active': False,
+        'register_active': False,
+        'offer_accepted': False,
+    }
+    if not offer:
+        return flags
+
+    if offer.tip == LiveVisitorOffer.Tip.REGISTRACIJA:
+        flags['register_active'] = bool(offer.show_popup)
+        flags['register_rejected'] = not bool(offer.show_popup)
+        return flags
+
+    accepted = bool(offer.added_to_cart) or bool(offer.kod_aktiviran)
+    flags['offer_accepted'] = accepted
+    flags['offer_active'] = bool(offer.show_popup) and not accepted
+    flags['offer_rejected'] = (not bool(offer.show_popup)) and not accepted
+    return flags
+
+
+def build_visitor_states(session_keys):
+    """
+    Stanje online posjetilaca za sticky toast:
+    kupac, korpa, odbijena ponuda / registracija.
+    """
+    from collections import defaultdict
+    from decimal import Decimal
+
+    from .live_visitors import (
+        _build_site_buyer_sets,
+        _visitor_has_purchased,
+    )
+    from .models import ActiveCartItem, LiveVisitor, LiveVisitorOffer
+
+    keys = [k for k in (session_keys or []) if k]
+    if not keys:
+        return {}
+
+    visitors = list(
+        LiveVisitor.objects.filter(session_key__in=keys).select_related('user'),
+    )
+    visitor_by_key = {v.session_key: v for v in visitors}
+    buyer_user_ids, buyer_emails = _build_site_buyer_sets(visitors)
+
+    cart_rows = (
+        ActiveCartItem.objects.filter(session_key__in=keys)
+        .order_by('-azurirano', '-id')
+    )
+    carts = defaultdict(list)
+    cart_totals = defaultdict(lambda: Decimal('0'))
+    for row in cart_rows:
+        label = (row.naziv or '').strip() or 'Artikal'
+        if row.varijacija_naziv:
+            label = f'{label} — {row.varijacija_naziv}'
+        qty = int(row.kolicina or 1)
+        line_total = row.ukupno if row.ukupno is not None else (row.cijena or 0) * qty
+        carts[row.session_key].append({
+            'name': label[:120],
+            'qty': qty,
+            'price': _format_money(row.cijena),
+            'total': _format_money(line_total),
+        })
+        try:
+            cart_totals[row.session_key] += Decimal(str(line_total or 0))
+        except Exception:
+            pass
+
+    offers = (
+        LiveVisitorOffer.objects.filter(session_key__in=keys)
+        .order_by('-azurirano', '-id')
+    )
+    offer_by_key = {}
+    for offer in offers:
+        if offer.session_key not in offer_by_key:
+            offer_by_key[offer.session_key] = offer
+
+    states = {}
+    for session_key in keys:
+        visitor = visitor_by_key.get(session_key)
+        offer = offer_by_key.get(session_key)
+        flags = _offer_reject_flags(offer)
+        cart_items = carts.get(session_key) or []
+        has_user = bool(visitor and visitor.user_id)
+        states[session_key] = {
+            'session_key': session_key,
+            'ime': (visitor.ime if visitor else '') or 'Gost',
+            'email': (visitor.email if visitor else '') or '',
+            'grad': (visitor.grad if visitor else '') or '',
+            'has_purchased': bool(
+                visitor and _visitor_has_purchased(visitor, buyer_user_ids, buyer_emails),
+            ),
+            'can_register': not has_user,
+            'can_offer': True,
+            'offer_rejected': flags['offer_rejected'],
+            'register_rejected': flags['register_rejected'],
+            'offer_active': flags['offer_active'],
+            'register_active': flags['register_active'],
+            'offer_accepted': flags['offer_accepted'],
+            'cart_items': cart_items,
+            'cart_count': len(cart_items),
+            'cart_total': _format_money(cart_totals.get(session_key, 0)),
+        }
+    return states
+
+
 def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
     try:
         since_id = int(since_id or 0)
     except (TypeError, ValueError):
         since_id = 0
+
+    online_sessions = _online_session_keys()
+    visitor_states = build_visitor_states(online_sessions)
+
     qs = StaffSiteEvent.objects.all().order_by('id')
     if since_id > 0:
         qs = qs.filter(id__gt=since_id)
@@ -127,43 +276,71 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
         return {
             'events': [],
             'latest_id': latest or 0,
+            'online_sessions': online_sessions,
+            'visitor_states': visitor_states,
         }
 
     events = list(qs[: max(1, min(int(limit or MAX_EVENTS_RETURN), 50))])
     latest_id = events[-1].id if events else since_id
 
-    session_keys = [e.session_key for e in events if e.session_key]
+    event_session_keys = [e.session_key for e in events if e.session_key]
     registered_sessions = set()
-    if session_keys:
+    if event_session_keys:
         from .models import LiveVisitor
         registered_sessions = set(
             LiveVisitor.objects.filter(
-                session_key__in=session_keys,
+                session_key__in=event_session_keys,
                 user_id__isnull=False,
             ).values_list('session_key', flat=True)
         )
 
+    # Dopuni state i za sesije iz novih događaja (npr. korpa)
+    missing = [k for k in event_session_keys if k not in visitor_states]
+    if missing:
+        visitor_states.update(build_visitor_states(missing))
+
+    online_set = set(online_sessions)
     payload = []
     for event in events:
         session_key = event.session_key or ''
+        state = visitor_states.get(session_key) or {}
         can_act = bool(session_key) and event.tip in {
             StaffSiteEvent.Tip.ONLINE,
             StaffSiteEvent.Tip.CART,
         }
+        sticky = (
+            event.tip in {StaffSiteEvent.Tip.ONLINE, StaffSiteEvent.Tip.CART}
+            and bool(session_key)
+            and session_key in online_set
+        )
+        can_register = can_act and session_key not in registered_sessions
+        if state:
+            can_register = bool(state.get('can_register', can_register))
         payload.append({
             'id': event.id,
             'tip': event.tip,
             'naslov': event.naslov,
             'poruka': event.poruka,
-            'ime': event.ime,
-            'email': event.email,
-            'grad': event.grad,
+            'ime': event.ime or state.get('ime') or '',
+            'email': event.email or state.get('email') or '',
+            'grad': event.grad or state.get('grad') or '',
             'session_key': session_key,
-            'can_register': can_act and session_key not in registered_sessions,
-            'can_offer': can_act,
+            'can_register': can_register,
+            'can_offer': can_act or bool(state.get('can_offer')),
+            'sticky': sticky,
+            'has_purchased': bool(state.get('has_purchased')),
+            'offer_rejected': bool(state.get('offer_rejected')),
+            'register_rejected': bool(state.get('register_rejected')),
+            'offer_active': bool(state.get('offer_active')),
+            'register_active': bool(state.get('register_active')),
+            'cart_items': state.get('cart_items') or [],
+            'cart_count': state.get('cart_count') or 0,
+            'cart_total': state.get('cart_total') or '0,00',
             'kreirano': timezone.localtime(event.kreirano).strftime('%H:%M:%S'),
         })
     return {
         'events': payload,
         'latest_id': latest_id,
+        'online_sessions': online_sessions,
+        'visitor_states': visitor_states,
     }

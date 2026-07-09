@@ -16,6 +16,12 @@ from .visitor_geo import (
 )
 
 ONLINE_MINUTES = 5
+# Staff toast: kraći prozor + heartbeat/leave, da se popup skloni čim kupac ode
+STAFF_TOAST_ONLINE_SECONDS = 30
+PRESENCE_CACHE_PREFIX = 'live_visitor_presence:'
+LEFT_CACHE_PREFIX = 'live_visitor_left:'
+PRESENCE_CACHE_TTL = STAFF_TOAST_ONLINE_SECONDS + 20
+LEFT_CACHE_TTL = 300
 WINDOW_MINUTES = 30
 RETENTION_HOURS = 48
 BOSNIA_HERZEGOVINA_COUNTRY_CODE = 'BA'
@@ -106,12 +112,112 @@ def should_track_visitor(request):
     return True
 
 
+def _ensure_session_key(request):
+    if not request.session.session_key:
+        request.session.save()
+    return request.session.session_key or ''
+
+
+def _presence_cache_key(session_key):
+    return f'{PRESENCE_CACHE_PREFIX}{session_key}'
+
+
+def _left_cache_key(session_key):
+    return f'{LEFT_CACHE_PREFIX}{session_key}'
+
+
+def touch_visitor_presence(session_key):
+    """Označi sesiju aktivnom za staff toast (cache + briše left flag)."""
+    if not session_key:
+        return
+    from django.core.cache import cache
+
+    cache.set(_presence_cache_key(session_key), 1, PRESENCE_CACHE_TTL)
+    cache.delete(_left_cache_key(session_key))
+
+
+def clear_visitor_presence(session_key):
+    """Odmah označi sesiju offline za staff toast."""
+    if not session_key:
+        return
+    from django.core.cache import cache
+
+    cache.delete(_presence_cache_key(session_key))
+    cache.set(_left_cache_key(session_key), 1, LEFT_CACHE_TTL)
+
+
+def is_visitor_marked_left(session_key):
+    if not session_key:
+        return False
+    from django.core.cache import cache
+
+    return bool(cache.get(_left_cache_key(session_key)))
+
+
+def resolve_presence_session_key(request, body_session_key=''):
+    """
+    Session key za presence: cookie sesija ima prioritet.
+    body_session_key se prihvata samo ako se poklapa sa cookie sesijom
+    (ili ako cookie sesije nema — fallback za beacon edge case).
+    """
+    cookie_key = ''
+    try:
+        cookie_key = (getattr(request.session, 'session_key', None) or '').strip()
+    except Exception:
+        cookie_key = ''
+    body_key = (body_session_key or '').strip()[:40]
+    if cookie_key and body_key and cookie_key != body_key:
+        # Ne dozvoli tuđu sesiju preko body-ja
+        return cookie_key
+    return cookie_key or body_key
+
+
+def heartbeat_live_visitor(request, body_session_key=''):
+    """Laki ping dok je tab otvoren — osvježava last_seen + presence cache."""
+    user = getattr(request, 'user', None)
+    if user is not None and user.is_authenticated and user.is_superuser:
+        return False
+
+    session_key = resolve_presence_session_key(request, body_session_key)
+    if not session_key:
+        session_key = _ensure_session_key(request)
+    if not session_key:
+        return False
+
+    now = timezone.now()
+    updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+    if not updated:
+        # Nema reda (npr. prvi heartbeat) — full track ako smije
+        if should_track_visitor(request):
+            track_live_visitor(request)
+            updated = LiveVisitor.objects.filter(session_key=session_key).exists()
+    touch_visitor_presence(session_key)
+    return bool(updated) or bool(session_key)
+
+
+def mark_live_visitor_left(request, body_session_key=''):
+    """
+    Posjetilac je zatvorio tab / otišao sa sajta.
+    Cache left flag + last_seen unazad → staff toast nestaje odmah.
+    """
+    user = getattr(request, 'user', None)
+    if user is not None and user.is_authenticated and user.is_superuser:
+        return False
+
+    session_key = resolve_presence_session_key(request, body_session_key)
+    if not session_key:
+        return False
+
+    clear_visitor_presence(session_key)
+    offline_at = timezone.now() - timedelta(seconds=STAFF_TOAST_ONLINE_SECONDS + 60)
+    LiveVisitor.objects.filter(session_key=session_key).update(last_seen=offline_at)
+    return True
+
+
 def track_live_visitor(request):
     if not should_track_visitor(request):
         return
-    if not request.session.session_key:
-        request.session.save()
-    session_key = request.session.session_key or ''
+    session_key = _ensure_session_key(request)
     if not session_key:
         return
 
@@ -163,6 +269,7 @@ def track_live_visitor(request):
         session_key=session_key,
         defaults=defaults,
     )
+    touch_visitor_presence(session_key)
     # Kumulativni brojač po gradu — samo raste (nova sesija ili prvi put zabilježen grad)
     city_name = (grad or '').strip()
     if city_name and (created or not (existing_grad or '').strip()):
