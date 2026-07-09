@@ -307,11 +307,6 @@
             confirmOverlay.remove();
             document.body.classList.remove('popup-open');
         });
-        confirmOverlay.addEventListener('click', function (e) {
-            if (e.target === confirmOverlay) {
-                confirmOverlay.querySelector('[data-live-offer-confirm-close]')?.click();
-            }
-        });
     }
 
     function buildOverlayHtml(offer) {
@@ -357,10 +352,8 @@
     function bindOverlayEvents() {
         if (!overlay) return;
 
+        // Zatvaranje samo preko X — klik pored popupa ne gasi ponudu
         overlay.querySelector('[data-live-offer-close]')?.addEventListener('click', dismissOffer);
-        overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) dismissOffer();
-        });
 
         const registerCta = overlay.querySelector('[data-live-offer-register]');
         if (registerCta) {
@@ -562,12 +555,6 @@
             /* ignore */
         }
     }
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay && overlay.classList.contains('is-visible')) {
-            dismissOffer();
-        }
-    });
 
     pollOffer();
     window.setInterval(pollOffer, pollIntervalMs);

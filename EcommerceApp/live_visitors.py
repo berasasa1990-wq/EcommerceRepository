@@ -474,7 +474,59 @@ def _format_time_on_site(seconds):
     return f'{days} d'
 
 
-def _visitor_payload(visitor, *, now, offer=None, has_cart=False):
+def _build_site_buyer_sets(visitors):
+    """Korisnici / emailovi koji su već poručili preko sajta (neotkazane narudžbe)."""
+    from django.db.models.functions import Lower
+
+    from .models import Order
+
+    user_ids = [v.user_id for v in visitors if v.user_id]
+    emails = []
+    for visitor in visitors:
+        email = (visitor.email or '').strip().lower()
+        if email:
+            emails.append(email)
+        user = getattr(visitor, 'user', None)
+        if user is not None:
+            user_email = (getattr(user, 'email', None) or '').strip().lower()
+            if user_email:
+                emails.append(user_email)
+    emails = list(set(emails))
+
+    buyer_user_ids = set()
+    buyer_emails = set()
+    orders = Order.objects.exclude(status=Order.Status.OTKAZANA)
+    if user_ids:
+        buyer_user_ids = set(
+            orders.filter(korisnik_id__in=user_ids)
+            .values_list('korisnik_id', flat=True)
+            .distinct()
+        )
+    if emails:
+        buyer_emails = set(
+            orders.annotate(email_l=Lower('email'))
+            .filter(email_l__in=emails)
+            .values_list('email_l', flat=True)
+            .distinct()
+        )
+    return buyer_user_ids, buyer_emails
+
+
+def _visitor_has_purchased(visitor, buyer_user_ids, buyer_emails):
+    if visitor.user_id and visitor.user_id in buyer_user_ids:
+        return True
+    email = (visitor.email or '').strip().lower()
+    if email and email in buyer_emails:
+        return True
+    user = getattr(visitor, 'user', None)
+    if user is not None:
+        user_email = (getattr(user, 'email', None) or '').strip().lower()
+        if user_email and user_email in buyer_emails:
+            return True
+    return False
+
+
+def _visitor_payload(visitor, *, now, offer=None, has_cart=False, has_purchased=False):
     seconds_ago = max(0, int((now - visitor.last_seen).total_seconds()))
     if seconds_ago < 60:
         ago_label = 'upravo sada'
@@ -509,6 +561,7 @@ def _visitor_payload(visitor, *, now, offer=None, has_cart=False):
         'categories': categories,
         'categories_label': ', '.join(categories),
         'has_cart': has_cart,
+        'has_purchased': bool(has_purchased),
         'is_guest': not visitor.user_id and not visitor.email,
         'can_invite_register': not bool(visitor.user_id),
         'last_seen': visitor.last_seen,
@@ -534,12 +587,14 @@ def get_live_visitor_snapshot():
     visitor_rows = list(window_qs)
     offer_map = _build_recent_offer_map(visitor_rows, now=now)
     sessions_with_cart, users_with_cart = _build_cart_presence_map(visitor_rows)
+    buyer_user_ids, buyer_emails = _build_site_buyer_sets(visitor_rows)
     window_visitors = [
         _visitor_payload(
             row,
             now=now,
             offer=_lookup_recent_offer(offer_map, row),
             has_cart=_visitor_has_cart(row, sessions_with_cart, users_with_cart),
+            has_purchased=_visitor_has_purchased(row, buyer_user_ids, buyer_emails),
         )
         for row in visitor_rows
     ]

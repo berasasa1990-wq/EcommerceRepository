@@ -184,12 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gratisAccept?.addEventListener('click', () => submitGratisChoice('yes'));
     gratisDecline?.addEventListener('click', () => submitGratisChoice('no'));
+    // Zatvaranje samo preko X — klik pored ne gasi
     gratisClose?.addEventListener('click', closeGratisOfferModal);
-    gratisOverlay?.addEventListener('click', (event) => {
-        if (event.target === gratisOverlay) {
-            closeGratisOfferModal();
-        }
-    });
 
     async function submitAddToCartForm(form, extraFields = {}) {
         const submitBtn = form.querySelector('[type="submit"]');

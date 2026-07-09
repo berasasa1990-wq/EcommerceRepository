@@ -1169,6 +1169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         sitePopupOverlays.forEach((overlay) => {
+            // Zatvaranje samo preko X — klik pored / Escape ne gasi
             overlay.querySelector('[data-popup-close]')?.addEventListener('click', () => {
                 closePopup(overlay, true);
             });
@@ -1179,12 +1180,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     markPopupSeen(overlay);
                 }, { once: true });
             }
-
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    closePopup(overlay, true);
-                }
-            });
 
             const akcijaForm = overlay.querySelector('.akcija-popup-add-form');
             if (akcijaForm) {
@@ -1227,12 +1222,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (submitBtn) submitBtn.disabled = false;
                     }
                 });
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && activeOverlay?.classList.contains('is-visible')) {
-                closePopup(activeOverlay, true);
             }
         });
     }
@@ -1324,18 +1313,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         openUpsell();
 
+        // Zatvaranje samo preko X — klik pored / Escape ne gasi
         overlay.querySelector('#upsellPopupClose')?.addEventListener('click', () => {
             closeUpsell(true);
-        });
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                closeUpsell(true);
-            }
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && overlay.classList.contains('is-visible')) {
-                closeUpsell(true);
-            }
         });
 
         overlay.querySelectorAll('.upsell-add-form').forEach((form) => {
@@ -1519,7 +1499,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (catalogVariationModal) {
-        catalogVariationModal.querySelectorAll('[data-catalog-variation-close]').forEach((node) => {
+        // Zatvaranje samo preko X — klik na pozadinu / Escape ne gasi
+        catalogVariationModal.querySelectorAll(
+            'button[data-catalog-variation-close], .catalog-variation-modal__close',
+        ).forEach((node) => {
             node.addEventListener('click', closeCatalogVariationModal);
         });
         catalogVariationModalOptions?.addEventListener('click', async (event) => {
@@ -1533,11 +1516,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
             } finally {
                 option.disabled = false;
-            }
-        });
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && !catalogVariationModal.hidden) {
-                closeCatalogVariationModal();
             }
         });
     }

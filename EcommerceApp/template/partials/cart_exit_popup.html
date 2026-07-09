@@ -144,23 +144,12 @@
         document.body.classList.add('popup-open');
     }
 
+    // Zatvaranje samo preko X (ili dugmeta „Ostani“) — klik pored / Escape ne gasi
     overlay.querySelectorAll('[data-cart-exit-close]').forEach(function (btn) {
         btn.addEventListener('click', closeOverlay);
     });
 
     overlay.querySelector('[data-cart-exit-stay]')?.addEventListener('click', closeOverlay);
-
-    overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) {
-            closeOverlay();
-        }
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay.classList.contains('is-visible')) {
-            closeOverlay();
-        }
-    });
 
     document.documentElement.addEventListener('mouseout', function (e) {
         if (!e.relatedTarget && e.clientY <= 12) {

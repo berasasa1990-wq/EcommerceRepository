@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v17">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v18">
 {% endblock %}
 
 {% block content %}
@@ -157,7 +157,12 @@
                         {% for visitor in online_visitors %}
                         <tr>
                             <td class="staff-live-name-cell">
-                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}{{ visitor.ime }}
+                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}
+                                {% if visitor.has_purchased %}
+                                <span class="staff-live-buyer-name" title="Već kupio preko sajta">{{ visitor.ime }}</span>
+                                {% else %}
+                                {{ visitor.ime }}
+                                {% endif %}
                             </td>
                             <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
@@ -218,7 +223,12 @@
                         {% for visitor in window_visitors %}
                         <tr>
                             <td class="staff-live-name-cell">
-                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}{{ visitor.ime }}
+                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}
+                                {% if visitor.has_purchased %}
+                                <span class="staff-live-buyer-name" title="Već kupio preko sajta">{{ visitor.ime }}</span>
+                                {% else %}
+                                {{ visitor.ime }}
+                                {% endif %}
                             </td>
                             <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
                             <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
@@ -500,9 +510,13 @@
             const cartTag = visitor.has_cart
                 ? '<span class="staff-live-cart-tag">korpa</span>'
                 : '';
+            const nameLabel = escapeHtml(visitor.ime || 'Gost');
+            const nameHtml = visitor.has_purchased
+                ? '<span class="staff-live-buyer-name" title="Već kupio preko sajta">' + nameLabel + '</span>'
+                : nameLabel;
             return (
                 '<tr>' +
-                '<td class="staff-live-name-cell">' + cartTag + escapeHtml(visitor.ime || 'Gost') + '</td>' +
+                '<td class="staff-live-name-cell">' + cartTag + nameHtml + '</td>' +
                 '<td>' + grad + '</td>' +
                 '<td>' + categories + '</td>' +
                 '<td>' + email + '</td>' +

@@ -62,6 +62,7 @@
         return match ? decodeURIComponent(match[1]) : '';
     }
 
+    // Zatvaranje samo preko X — klik pored / Escape ne gasi
     overlay.querySelector('[data-cart-recovery-close]')?.addEventListener('click', function () {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -76,18 +77,6 @@
         }
         document.body.appendChild(form);
         form.submit();
-    });
-
-    overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) {
-            overlay.querySelector('[data-cart-recovery-close]')?.click();
-        }
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay.classList.contains('is-visible')) {
-            overlay.querySelector('[data-cart-recovery-close]')?.click();
-        }
     });
 
     function shouldDeferRecoveryPopup() {
