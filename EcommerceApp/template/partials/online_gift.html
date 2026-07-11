@@ -1,6 +1,6 @@
 {% if online_gift %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260711v3">
+<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260711v4">
 <div id="onlineGiftOverlay" class="og-overlay" hidden
      data-id="{{ online_gift.id }}"
      data-delay="{{ online_gift.delay_seconds }}"
@@ -53,6 +53,7 @@
 
             <div class="og-actions">
                 <a href="{% url 'cart' %}" class="og-btn og-btn-main" id="ogCartBtn" hidden>Otvori korpu</a>
+                <button type="button" class="og-btn og-btn-main" id="ogBackBtn" hidden>Nazad na sajt</button>
             </div>
         </div>
     </div>

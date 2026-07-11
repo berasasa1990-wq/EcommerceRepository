@@ -16,6 +16,7 @@
     var productName = document.getElementById('ogProductName');
     var productOld = document.getElementById('ogProductOld');
     var cartBtn = document.getElementById('ogCartBtn');
+    var backBtn = document.getElementById('ogBackBtn');
     var titleEl = document.getElementById('ogTitle');
     var porukaEl = document.getElementById('ogPoruka');
 
@@ -140,6 +141,11 @@
         if (resultMsg) resultMsg.textContent = data.message || '';
         if (result) result.classList.toggle('is-win', won);
 
+        // Reset akcija
+        if (cartBtn) cartBtn.hidden = true;
+        if (backBtn) backBtn.hidden = true;
+        if (productBox) productBox.hidden = true;
+
         if (won && product && productBox) {
             productBox.hidden = false;
             if (productImg && product.image) {
@@ -155,20 +161,27 @@
             if (cartBtn) {
                 cartBtn.hidden = false;
                 cartBtn.href = product.cart_url || cartUrl;
+                cartBtn.textContent = 'Otvori korpu';
             }
             bumpCart();
-        } else if (productBox) {
-            productBox.hidden = true;
+        } else if (won && (reward.type === 'percent' || reward.type === 'fixed_km' || reward.type === 'free_shipping')) {
+            // Osvojio popust / dostavu — korpa ima smisla
             if (cartBtn) {
-                if (won && (reward.type === 'percent' || reward.type === 'fixed_km' || reward.type === 'free_shipping')) {
-                    cartBtn.hidden = false;
-                    cartBtn.href = cartUrl;
-                    cartBtn.textContent = reward.type === 'free_shipping'
-                        ? 'Idi u korpu (gratis dostava)'
-                        : 'Idi u korpu';
-                } else {
-                    cartBtn.hidden = true;
-                }
+                cartBtn.hidden = false;
+                cartBtn.href = cartUrl;
+                cartBtn.textContent = reward.type === 'free_shipping'
+                    ? 'Idi u korpu (gratis dostava)'
+                    : 'Idi u korpu';
+            }
+        } else {
+            // Nije osvojio — nazad na sajt, NE u korpu
+            if (cartBtn) {
+                cartBtn.hidden = true;
+                cartBtn.removeAttribute('href');
+            }
+            if (backBtn) {
+                backBtn.hidden = false;
+                backBtn.textContent = 'Nazad na sajt';
             }
         }
         markClosed();
@@ -250,6 +263,14 @@
     }
 
     if (revealBtn) revealBtn.addEventListener('click', reveal);
+
+    // Kad ne osvoji — „Nazad na sajt” zatvara popup (ostaje na istoj stranici)
+    if (backBtn) {
+        backBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!busy) close();
+        });
+    }
 
     // Zatvaranje SAMO na X (data-og-close na .og-x)
     overlay.querySelectorAll('.og-x[data-og-close]').forEach(function (el) {
