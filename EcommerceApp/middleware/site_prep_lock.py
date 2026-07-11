@@ -47,4 +47,11 @@ class SitePrepLockMiddleware:
             return True
         if path == '/facebook-feed.xml':
             return True
+        # AJAX endpoints (JSON) — ne smiju vratiti HTML redirect
+        if path.startswith('/online-nagrada/'):
+            return True
+        if path.startswith('/ponuda/'):
+            return True
+        if path.startswith('/uzivo/'):
+            return True
         return False

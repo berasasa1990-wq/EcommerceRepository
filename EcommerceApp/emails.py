@@ -361,20 +361,38 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
         percent = Decimal('0')
     code = (getattr(offer, 'aktivacioni_kod', None) or '').strip()
     tip = getattr(offer, 'tip', None) or ''
+    free_shipping = bool(getattr(offer, 'besplatna_dostava', False))
 
     if tip == LiveVisitorOffer.Tip.ARTIKAL and product:
         subject = f'Posebna ponuda: {product_name} — opremazaribolov.ba'
         headline = 'Imate posebnu ponudu na sajtu'
+        parts = []
         if percent > 0:
+            parts.append(f'popust od {percent:g}% na artikal „{product_name}”')
+        else:
+            parts.append(f'posebnu ponudu za artikal „{product_name}”')
+        if free_shipping:
+            parts.append('besplatnu dostavu na prvu kupovinu')
+        body_lead = 'Pripremili smo Vam ' + ' i '.join(parts) + '.'
+    elif tip == LiveVisitorOffer.Tip.NARUDZBA:
+        if free_shipping and percent <= 0:
+            subject = 'Besplatna dostava na prvu kupovinu — opremazaribolov.ba'
+            headline = 'Besplatna dostava na prvu kupovinu'
             body_lead = (
-                f'Pripremili smo Vam popust od {percent:g}% na artikal „{product_name}”.'
+                f'Prihvatite ponudu na sajtu — na prvu narudžbu dostava vam je besplatna'
+                f'{f" (kod: {code})" if code else ""}.'
+            )
+        elif free_shipping and percent > 0:
+            subject = f'{percent:g}% popusta + besplatna dostava — opremazaribolov.ba'
+            headline = 'Popust i besplatna dostava'
+            body_lead = (
+                f'Vaš kod za {percent:g}% popusta na narudžbu: {code or "—"}. '
+                f'Uz to, na prvu kupovinu imate besplatnu dostavu.'
             )
         else:
-            body_lead = f'Pripremili smo Vam posebnu ponudu za artikal „{product_name}”.'
-    elif tip == LiveVisitorOffer.Tip.NARUDZBA:
-        subject = f'Vaš kod za {percent:g}% popusta — opremazaribolov.ba'
-        headline = 'Popust na vašu narudžbu'
-        body_lead = f'Vaš aktivacioni kod za {percent:g}% popusta na narudžbu: {code or "—"}.'
+            subject = f'Vaš kod za {percent:g}% popusta — opremazaribolov.ba'
+            headline = 'Popust na vašu narudžbu'
+            body_lead = f'Vaš aktivacioni kod za {percent:g}% popusta na narudžbu: {code or "—"}.'
     else:
         subject = 'Posebna ponuda — opremazaribolov.ba'
         headline = 'Imate posebnu ponudu'
@@ -412,6 +430,7 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
             'product_name': product_name,
             'product_url': product_url if product else '',
             'discount_percent': percent,
+            'free_shipping': free_shipping,
             'activation_code': code,
             'site_url': site_url,
             'store_email': settings.STORE_EMAIL,

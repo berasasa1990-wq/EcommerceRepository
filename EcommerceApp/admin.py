@@ -48,6 +48,9 @@ from .models import (
     Order,
     OrderItem,
     Popup,
+    OnlineGiftCampaign,
+    OnlineGiftClaim,
+    OnlineGiftPush,
     Product,
     ProductImage,
     ProductVariation,
@@ -1419,6 +1422,78 @@ class LiveVisitorOfferAdmin(admin.ModelAdmin):
     readonly_fields = ('kreirano', 'azurirano')
     ordering = ('-azurirano',)
     autocomplete_fields = ('product', 'user', 'poslao')
+
+
+@admin.register(OnlineGiftCampaign)
+class OnlineGiftCampaignAdmin(admin.ModelAdmin):
+    list_display = (
+        'naziv', 'aktivan', 'automatic', 'audience', 'prize_type', 'win_chance_percent',
+        'only_tracked_online', 'product', 'discount_percent', 'discount_km', 'azurirano',
+    )
+    list_filter = ('aktivan', 'automatic', 'audience', 'prize_type', 'only_tracked_online')
+    search_fields = ('naziv', 'naslov', 'product__naziv')
+    autocomplete_fields = ('product',)
+    readonly_fields = ('kreirano', 'azurirano')
+    fieldsets = (
+        ('Osnovno', {
+            'fields': (
+                'naziv', 'aktivan', 'automatic', 'audience', 'only_tracked_online',
+                'naslov', 'poruka', 'popup_delay_seconds', 'once_per_visitor',
+            ),
+            'description': (
+                'Nagrada za kupce ONLINE na sajtu. '
+                'Automatski: iskače svima jednom. '
+                'Manuelno: isključi „Automatski” i pusti pored kupca u Uživo analitici.'
+            ),
+        }),
+        ('Nagrada', {
+            'fields': ('prize_type', 'product', 'discount_percent', 'discount_km', 'win_chance_percent'),
+            'description': (
+                '① Gratis artikal (dostava se naplaćuje). '
+                '② % na narudžbu. ③ KM. '
+                '④ Besplatna dostava — jedina nagrada s gratis poštom.'
+            ),
+        }),
+        ('Sistem', {'fields': ('kreirano', 'azurirano')}),
+    )
+
+
+@admin.register(OnlineGiftPush)
+class OnlineGiftPushAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'campaign', 'session_key', 'user', 'staff',
+        'played', 'dismissed', 'kreirano',
+    )
+    list_filter = ('played', 'dismissed', 'kreirano')
+    search_fields = ('session_key', 'user__email')
+    readonly_fields = (
+        'campaign', 'session_key', 'user', 'staff',
+        'played', 'dismissed', 'kreirano', 'azurirano',
+    )
+    ordering = ('-kreirano',)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.aktivan:
+            OnlineGiftCampaign.objects.filter(aktivan=True).exclude(pk=obj.pk).update(aktivan=False)
+
+
+@admin.register(OnlineGiftClaim)
+class OnlineGiftClaimAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'campaign', 'won', 'prize_type', 'user', 'session_key',
+        'reward_claimed', 'reward_consumed', 'order', 'kreirano',
+    )
+    list_filter = ('won', 'prize_type', 'reward_claimed', 'reward_consumed')
+    search_fields = (
+        'session_key', 'user__email', 'campaign__naziv', 'order__broj',
+    )
+    readonly_fields = (
+        'campaign', 'session_key', 'user', 'won', 'prize_type', 'product',
+        'discount_percent', 'discount_km', 'reward_claimed', 'reward_consumed',
+        'order', 'kreirano',
+    )
+    ordering = ('-kreirano',)
 
 
 @admin.register(LiveVisitor)

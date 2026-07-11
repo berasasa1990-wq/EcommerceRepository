@@ -34,6 +34,19 @@
                     Popust: {{ discount_percent }}%
                 </p>
                 {% endif %}
+                {% if free_shipping %}
+                <p style="margin: 8px 0 0; font-size: 14px; color: #166534; font-weight: 700;">
+                    + Besplatna dostava na prvu kupovinu
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if free_shipping and not product_name %}
+            <div style="padding: 14px 16px; border-radius: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; margin-bottom: 18px; text-align: center;">
+                <p style="margin: 0; font-size: 15px; font-weight: 700; color: #166534;">
+                    🚚 Besplatna dostava na prvu kupovinu
+                </p>
             </div>
             {% endif %}
 

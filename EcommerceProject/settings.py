@@ -209,9 +209,14 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+            # IMMEDIATE + timeout: izbjegava DEFERRED deadlock ("database is locked"
+            # odmah) kad više requestova radi update_or_create / atomic (live tracking,
+            # korpa, heartbeat, staff poll).
             'OPTIONS': {
-                'timeout': 60,
+                'timeout': 30,
+                'transaction_mode': 'IMMEDIATE',
             },
+            'CONN_MAX_AGE': 0,
         }
     }
 

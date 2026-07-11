@@ -1,10 +1,10 @@
 import calendar
 import random
 import re
-from datetime import datetime, timedelta
+from collections import Counter
+from datetime import datetime, time, timedelta
 
 from django.db.models import Count
-from django.db.models.functions import TruncDate, TruncMonth
 from django.utils import timezone
 
 from .models import ActiveCartItem, Category, CityVisitTotal, LiveVisitor, Product
@@ -381,10 +381,21 @@ def track_live_visitor(request):
         'izvor_dolaska': (traffic_source or '')[:20],
         'last_seen': now,
     }
-    _visitor, created = LiveVisitor.objects.update_or_create(
-        session_key=session_key,
-        defaults=defaults,
-    )
+    # update pa create umjesto update_or_create (select_for_update + DEFERRED deadlock na SQLite)
+    created = False
+    updated = LiveVisitor.objects.filter(session_key=session_key).update(**defaults)
+    if updated:
+        _visitor = None
+    else:
+        try:
+            _visitor = LiveVisitor.objects.create(session_key=session_key, **defaults)
+            created = True
+        except Exception:
+            # Race: drugi request je upravo kreirao red
+            updated = LiveVisitor.objects.filter(session_key=session_key).update(**defaults)
+            if not updated:
+                raise
+            created = False
     touch_visitor_presence(session_key)
     # Kumulativni brojač po gradu — samo raste (nova sesija ili prvi put zabilježen grad)
     city_name = (grad or '').strip()
@@ -611,6 +622,19 @@ def _month_end(value):
     return value.replace(day=last_day)
 
 
+def _aware_day_start(value):
+    """Start of a local calendar day as an aware datetime (inclusive bound)."""
+    return timezone.make_aware(
+        datetime.combine(value, time.min),
+        timezone.get_current_timezone(),
+    )
+
+
+def _aware_day_end_exclusive(value):
+    """Start of the next local calendar day (exclusive upper bound)."""
+    return _aware_day_start(value + timedelta(days=1))
+
+
 def get_traffic_filter_defaults():
     today = timezone.localdate()
     year = today.year
@@ -670,43 +694,50 @@ def get_visitor_traffic_stats(
     monthly_from=None,
     monthly_to=None,
 ):
+    """
+    Group LiveVisitor.first_seen by local day/month.
+
+    Avoids TruncDate/TruncMonth and __date lookups on SQLite: Django's
+    django_datetime_cast_date UDF raises when a row stores a date-only string
+    (e.g. '2026-07-11') instead of a full timestamp.
+    """
     daily_qs = LiveVisitor.objects.all()
     if daily_from:
-        daily_qs = daily_qs.filter(first_seen__date__gte=daily_from)
+        daily_qs = daily_qs.filter(first_seen__gte=_aware_day_start(daily_from))
     if daily_to:
-        daily_qs = daily_qs.filter(first_seen__date__lte=daily_to)
+        daily_qs = daily_qs.filter(first_seen__lt=_aware_day_end_exclusive(daily_to))
 
-    daily_rows = (
-        daily_qs.annotate(day=TruncDate('first_seen'))
-        .values('day')
-        .annotate(count=Count('pk'))
-        .order_by('-day')
-    )
+    daily_counts = Counter()
+    for first_seen in daily_qs.values_list('first_seen', flat=True).iterator():
+        if not first_seen:
+            continue
+        day = timezone.localtime(first_seen).date()
+        daily_counts[day] += 1
+
+    daily_stats = [
+        {'label': day.strftime('%d.%m.%Y.'), 'count': count}
+        for day, count in sorted(daily_counts.items(), reverse=True)
+    ]
 
     monthly_qs = LiveVisitor.objects.all()
     if monthly_from:
-        monthly_qs = monthly_qs.filter(first_seen__date__gte=monthly_from)
+        monthly_qs = monthly_qs.filter(first_seen__gte=_aware_day_start(monthly_from))
     if monthly_to:
-        monthly_qs = monthly_qs.filter(first_seen__date__lte=_month_end(monthly_to))
+        monthly_qs = monthly_qs.filter(
+            first_seen__lt=_aware_day_end_exclusive(_month_end(monthly_to)),
+        )
 
-    monthly_rows = (
-        monthly_qs.annotate(month=TruncMonth('first_seen'))
-        .values('month')
-        .annotate(count=Count('pk'))
-        .order_by('-month')
-    )
+    monthly_counts = Counter()
+    for first_seen in monthly_qs.values_list('first_seen', flat=True).iterator():
+        if not first_seen:
+            continue
+        local = timezone.localtime(first_seen)
+        monthly_counts[(local.year, local.month)] += 1
 
-    daily_stats = []
-    for row in daily_rows:
-        day = row['day']
-        label = day.strftime('%d.%m.%Y.') if day else '—'
-        daily_stats.append({'label': label, 'count': row['count']})
-
-    monthly_stats = []
-    for row in monthly_rows:
-        month = row['month']
-        label = month.strftime('%m/%Y') if month else '—'
-        monthly_stats.append({'label': label, 'count': row['count']})
+    monthly_stats = [
+        {'label': f'{month:02d}/{year}', 'count': count}
+        for (year, month), count in sorted(monthly_counts.items(), reverse=True)
+    ]
 
     return {
         'daily': daily_stats,
@@ -899,9 +930,19 @@ def _visitor_payload(
     products_viewed_count = len(products)
     revisited = [p for p in products if p.get('views', 1) > 1]
     returned_to_product = bool(revisited)
+    returned_products = [
+        {
+            'id': p['id'],
+            'naziv': p.get('naziv') or '',
+            'views': p.get('views') or 1,
+        }
+        for p in revisited
+    ]
     returned_products_label = ', '.join(
-        f"{p['naziv']} ({p['views']}×)" for p in revisited[:3] if p.get('naziv')
+        f"{p['naziv']} ({p['views']}×)" for p in returned_products[:3] if p.get('naziv')
     )
+    if len(returned_products) > 3:
+        returned_products_label = f'{returned_products_label}…'
 
     source_key = (getattr(visitor, 'izvor_dolaska', None) or SOURCE_DIRECT).strip().lower()
     if source_key not in SOURCE_LABELS:
@@ -942,6 +983,7 @@ def _visitor_payload(
         'products_viewed_count': products_viewed_count,
         'products_label': products_label,
         'returned_to_product': returned_to_product,
+        'returned_products': returned_products,
         'returned_products_label': returned_products_label,
         'traffic_source': source_key,
         'traffic_source_label': source_label,
@@ -1027,3 +1069,42 @@ def get_live_visitor_snapshot():
         'window_minutes': WINDOW_MINUTES,
         'generated_at': now,
     }
+
+
+def get_registered_customers(*, online_user_ids=None):
+    """
+    Svi registrovani kupci (ne-staff) s emailom, uključujući neaktivirane naloge.
+    online_user_ids — set user_id koji su trenutno online (za badge).
+    """
+    from django.contrib.auth.models import User
+
+    online_user_ids = set(online_user_ids or [])
+    users = (
+        User.objects.filter(is_superuser=False, is_staff=False)
+        .exclude(email='')
+        .select_related('profil')
+        # Neaktivirani prvo, zatim po emailu
+        .order_by('is_active', 'email')
+    )
+    rows = []
+    for user in users:
+        email = (user.email or '').strip()
+        if not email or '@' not in email:
+            continue
+        full = (user.get_full_name() or '').strip()
+        if not full:
+            full = (user.first_name or '').strip() or email.split('@', 1)[0]
+        grad = ''
+        profil = getattr(user, 'profil', None)
+        if profil and profil.grad:
+            grad = profil.grad.strip()
+        rows.append({
+            'user_id': user.pk,
+            'ime': full[:120],
+            'email': email,
+            'grad': grad,
+            'is_online': user.pk in online_user_ids,
+            'is_active': bool(user.is_active),
+            'account_status_label': 'Aktivan' if user.is_active else 'Nije aktiviran',
+        })
+    return rows

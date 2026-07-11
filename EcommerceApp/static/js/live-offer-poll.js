@@ -223,8 +223,7 @@
             escapeHtml(offer.display_base_price) + ' KM</span>';
     }
 
-    function buildOrderOverlayHtml(offer) {
-        const pct = escapeHtml(offer.discount_percent);
+    function buildFreeShippingOverlayHtml(offer) {
         return (
             '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
             '<div class="site-popup site-popup--akcija live-offer-popup" role="dialog" aria-modal="true">' +
@@ -238,7 +237,47 @@
             '</div>' +
             '<div class="live-offer-body">' +
             '<p class="live-offer-kicker">Posebna ponuda</p>' +
-            '<h3 class="live-offer-order-title">Imate popust od <strong>' + pct + '%</strong> na cijelu narudžbu</h3>' +
+            '<h3 class="live-offer-order-title">' +
+            escapeHtml(offer.title || 'Besplatna dostava na prvu kupovinu') +
+            '</h3>' +
+            '<p class="live-offer-reg-message">' +
+            escapeHtml(offer.message || 'Prihvatite ponudu — na prvu narudžbu dostava vam je besplatna.') +
+            '</p>' +
+            (offer.activation_code
+                ? ('<div class="live-offer-code-box">' +
+                   '<span class="live-offer-code-label">Vaš kod</span>' +
+                   '<span class="live-offer-code-value">' + escapeHtml(offer.activation_code) + '</span>' +
+                   '</div>')
+                : '') +
+            '<form method="post" action="' + escapeHtml(offer.activate_url || '/ponuda/aktiviraj/') +
+            '" class="live-offer-activate-form" id="liveOfferActivateForm">' +
+            '<button type="submit" class="btn btn-primary site-popup-cta live-offer-activate-cta">' +
+            escapeHtml(offer.cta_label || 'Prihvati besplatnu dostavu') +
+            '</button>' +
+            '</form></div></div></div>'
+        );
+    }
+
+    function buildOrderOverlayHtml(offer) {
+        const pct = escapeHtml(offer.discount_percent);
+        const freeShip = !!offer.free_shipping;
+        const title = freeShip
+            ? ('Imate popust od <strong>' + pct + '%</strong> + besplatnu dostavu na prvu kupovinu')
+            : ('Imate popust od <strong>' + pct + '%</strong> na cijelu narudžbu');
+        return (
+            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup site-popup--akcija live-offer-popup" role="dialog" aria-modal="true">' +
+            '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+            '</svg></button>' +
+            '<div class="live-offer-timer-box" style="margin:0 auto 12px;max-width:220px;">' +
+            '<span class="live-offer-timer-label">Ponuda ističe za</span>' +
+            '<span class="live-offer-timer-value" data-live-offer-timer>9:00</span>' +
+            '</div>' +
+            '<div class="live-offer-body">' +
+            '<p class="live-offer-kicker">Posebna ponuda</p>' +
+            '<h3 class="live-offer-order-title">' + title + '</h3>' +
             '<div class="live-offer-code-box">' +
             '<span class="live-offer-code-label">Vaš kod</span>' +
             '<span class="live-offer-code-value">' + escapeHtml(offer.activation_code) + '</span>' +
@@ -250,12 +289,11 @@
     }
 
     function buildRegistrationOverlayHtml(offer) {
-        const pct = offer.discount_percent || 10;
         const benefits = (offer.benefits && offer.benefits.length)
             ? offer.benefits
             : [
-                pct + '% popusta na cijelu prvu narudžbu',
-                'Automatski se primjenjuje na korpu',
+                'Besplatna dostava na prvu narudžbu',
+                'Automatski se primjenjuje u korpi',
                 'Vrijedi samo jednom — nakon porudžbe prestaje',
             ];
         const benefitsHtml = benefits.map(function (item) {
@@ -276,12 +314,15 @@
             '<line x1="22" y1="11" x2="16" y2="11"/>' +
             '</svg></div>' +
             '<div class="live-offer-body">' +
-            '<p class="live-offer-kicker">' + escapeHtml(pct + '% popusta na prvu narudžbu') + '</p>' +
-            '<h3 class="live-offer-order-title">' + escapeHtml(offer.title || ('Registrujte se i ostvarite ' + pct + '% popusta')) + '</h3>' +
+            '<p class="live-offer-kicker">Besplatna dostava na prvu narudžbu</p>' +
+            '<h3 class="live-offer-order-title">' +
+            escapeHtml(offer.title || 'Registrujte se i ostvarite besplatnu dostavu') +
+            '</h3>' +
             '<p class="live-offer-reg-message">' + escapeHtml(offer.message || '') + '</p>' +
             '<ul class="live-offer-reg-benefits">' + benefitsHtml + '</ul>' +
-            '<a href="' + escapeHtml(offer.register_url || '/registracija/') + '" class="btn btn-primary site-popup-cta live-offer-cta live-offer-reg-cta" data-live-offer-register>' +
-            escapeHtml(offer.cta_label || 'Registruj se i uzmi popust') +
+            '<a href="' + escapeHtml(offer.register_url || '/registracija/') +
+            '" class="btn btn-primary site-popup-cta live-offer-cta live-offer-reg-cta" data-live-offer-register>' +
+            escapeHtml(offer.cta_label || 'Registruj se i uzmi besplatnu dostavu') +
             '</a>' +
             '</div></div></div>'
         );
@@ -313,12 +354,18 @@
         if (offer.offer_type === 'registration') {
             return buildRegistrationOverlayHtml(offer);
         }
+        if (offer.offer_type === 'free_shipping') {
+            return buildFreeShippingOverlayHtml(offer);
+        }
         if (offer.offer_type === 'order') {
             return buildOrderOverlayHtml(offer);
         }
-        const promoText = offer.has_discount && offer.discount_percent
+        let promoText = offer.has_discount && offer.discount_percent
             ? 'Dodatni popust od <strong>' + escapeHtml(offer.discount_percent) + '%</strong>'
             : 'Posebna ponuda samo za vas';
+        if (offer.free_shipping) {
+            promoText += ' + <strong>besplatna dostava</strong> na prvu kupovinu';
+        }
         const imageHtml = offer.image_url
             ? '<img src="' + escapeHtml(offer.image_url) + '" alt="' + escapeHtml(offer.product_name) +
               '" class="live-offer-image" width="240" height="240" loading="eager" decoding="async">'

@@ -213,7 +213,7 @@
                 </div>
 
                 <div class="nav-actions">
-                    {% if user.is_superuser %}
+                    {% if user.is_superuser or user.is_staff %}
                     <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn" aria-label="Admin Panel" title="Admin Panel">
                         <span class="nav-action-label">Admin Panel</span>
                     </a>
@@ -357,6 +357,7 @@
     {% include 'partials/cart_recovery_popup.html' %}
     {% include 'partials/cart_exit_popup.html' %}
     {% include 'partials/live_visitor_offer_popup.html' %}
+    {% include 'partials/online_gift.html' %}
     {% include 'partials/social_proof_toast.html' %}
 
     {% include 'partials/footer.html' %}
@@ -386,6 +387,9 @@
     </script>
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/main.min.js' %}?v=20260709v22" defer></script>
+    {% if online_gift %}
+    <script src="{% static 'js/online-gift.js' %}?v=20260711v3" defer></script>
+    {% endif %}
     {% if not user.is_authenticated or not user.is_superuser %}
     <div id="visitorPresenceRoot" hidden
          data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
@@ -394,11 +398,12 @@
     <script src="{% static 'js/visitor-presence.js' %}?v=20260710v2" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260711v2">
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260711v4">
     <div id="staffAlertsRoot" hidden
          data-poll-url="{% url 'staff_site_events_poll' %}"
-         data-analytics-url="{% url 'staff_live_analytics' %}"></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20260711v2" defer></script>
+         data-analytics-url="{% url 'staff_live_analytics' %}"
+         {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260711v4" defer></script>
     {% endif %}
     {% block extra_js %}{% endblock %}
 </body>

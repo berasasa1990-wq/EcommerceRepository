@@ -1,0 +1,60 @@
+{% if online_gift %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260711v3">
+<div id="onlineGiftOverlay" class="og-overlay" hidden
+     data-id="{{ online_gift.id }}"
+     data-delay="{{ online_gift.delay_seconds }}"
+     data-show-now="{% if online_gift.show_now %}1{% else %}0{% endif %}"
+     data-source="{{ online_gift.source|default:'auto' }}"
+     data-claim-url="{% url 'online_gift_reveal' %}"
+     data-dismiss-url="{% url 'online_gift_dismiss' %}"
+     data-poll-url="{% url 'online_gift_poll' %}"
+     data-cart-url="{% url 'cart' %}">
+
+    <div class="og-card" role="dialog" aria-modal="true" aria-labelledby="ogTitle">
+        <button type="button" class="og-x" data-og-close aria-label="Zatvori">×</button>
+
+        <div id="ogIntro" class="og-step">
+            <div class="og-gift-icon" aria-hidden="true">🎁</div>
+            <p class="og-kicker">Samo za online posjetioce</p>
+            <h2 id="ogTitle" class="og-title">{{ online_gift.naslov }}</h2>
+            {% if online_gift.poruka %}
+            <p class="og-text" id="ogPoruka">{{ online_gift.poruka }}</p>
+            {% else %}
+            <p class="og-text" id="ogPoruka" hidden></p>
+            {% endif %}
+            <button type="button" class="og-btn og-btn-main" id="ogRevealBtn">
+                Otkrij nagradu
+            </button>
+        </div>
+
+        <div id="ogLoading" class="og-step" hidden>
+            <div class="og-spinner" aria-hidden="true"></div>
+            <p class="og-loading-text">Otkrivamo nagradu…</p>
+        </div>
+
+        <div id="ogResult" class="og-step" hidden>
+            <div class="og-result-emoji" id="ogResultEmoji">🎉</div>
+            <h3 class="og-result-title" id="ogResultTitle">Čestitamo!</h3>
+            <p class="og-result-msg" id="ogResultMsg"></p>
+
+            <div class="og-product" id="ogProduct" hidden>
+                <div class="og-product-img-wrap">
+                    <img src="" alt="" id="ogProductImg" width="160" height="160">
+                    <span class="og-product-tag">GRATIS</span>
+                </div>
+                <strong class="og-product-name" id="ogProductName"></strong>
+                <div class="og-product-price">
+                    <s id="ogProductOld"></s>
+                    <b>0,00 KM</b>
+                </div>
+                <p class="og-product-note">✓ U korpi · dostava se naplaćuje</p>
+            </div>
+
+            <div class="og-actions">
+                <a href="{% url 'cart' %}" class="og-btn og-btn-main" id="ogCartBtn" hidden>Otvori korpu</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

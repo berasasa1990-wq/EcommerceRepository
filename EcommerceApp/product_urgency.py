@@ -27,7 +27,7 @@ def _product_has_stock(product):
 def build_product_urgency(product):
     """
     Vraća:
-      sold_24h   — 2..10 (svi artikli na stanju)
+      sold_24h   — 1..4 (svi artikli)
       stock_left — 2..4 samo za akcijske (katalog_na_akciji / na_akciji)
       show_stock — bool
     """
@@ -35,8 +35,8 @@ def build_product_urgency(product):
         return None
 
     seed = _day_seed(product.pk)
-    sold_24h = 2 + (seed % 9)  # 2–10
-    stock_left = 2 + ((seed // 9) % 3)  # 2–4
+    sold_24h = 1 + (seed % 4)  # 1–4
+    stock_left = 2 + ((seed // 4) % 3)  # 2–4
 
     on_sale = bool(
         getattr(product, 'katalog_na_akciji', False)

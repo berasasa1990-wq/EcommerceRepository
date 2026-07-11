@@ -70,6 +70,10 @@ def izracunaj_sazetak(
     coupon_code='',
     cart_items=None,
     recovery_discount_percent=None,
+    free_shipping_reward=False,
+    prize_discount_percent=None,
+    prize_discount_km=None,
+    prize_free_shipping=False,
 ):
     postavke = SiteSettings.load()
     medjuzbir = _kvantiziraj(medjuzbir)
@@ -84,10 +88,24 @@ def izracunaj_sazetak(
     if medjuzbir >= prag_besplatne:
         dostava = Decimal('0.00')
 
+    # Uživo ponuda / registracija: besplatna dostava samo na prvu kupovinu
+    if free_shipping_reward:
+        if not user or not getattr(user, 'is_authenticated', False) or ima_novu_pogodnost:
+            dostava = Decimal('0.00')
+            if 'Besplatna dostava na prvu kupovinu' not in pogodnosti:
+                pogodnosti.append('Besplatna dostava na prvu kupovinu')
+
+    # Nagradni točak: besplatna dostava (uvijek, jednokratno)
+    if prize_free_shipping:
+        dostava = Decimal('0.00')
+        if 'Nagradni točak: besplatna dostava' not in pogodnosti:
+            pogodnosti.append('Nagradni točak: besplatna dostava')
+
     if ima_novu_pogodnost:
         if postavke.novi_korisnik_besplatna_dostava:
             dostava = Decimal('0.00')
-            pogodnosti.append('Besplatna dostava za novog korisnika')
+            if 'Besplatna dostava za novog korisnika' not in pogodnosti:
+                pogodnosti.append('Besplatna dostava za novog korisnika')
 
     # Cijene artikala i dostave su maloprodajne (sa PDV-om).
     ukupno_sa_pdvom = _kvantiziraj(medjuzbir + dostava)
@@ -115,6 +133,27 @@ def izracunaj_sazetak(
                 else recovery_percent
             )
             pogodnosti.append(f'Poseban popust {pct_display}% na korpu')
+
+    # Nagradni točak — jednokratni % ili KM popust na narudžbu/korpu
+    prize_popust = Decimal('0.00')
+    if prize_discount_percent:
+        prize_percent = _kvantiziraj(prize_discount_percent)
+        if prize_percent > 0:
+            prize_popust = _postotni_popust(medjuzbir, prize_percent)
+            popust += prize_popust
+            pct_display = (
+                int(prize_percent)
+                if prize_percent == int(prize_percent)
+                else prize_percent
+            )
+            pogodnosti.append(f'Nagradni točak: {pct_display}% na narudžbu')
+    if prize_discount_km:
+        prize_km = _kvantiziraj(prize_discount_km)
+        if prize_km > 0:
+            iznos = min(prize_km, medjuzbir)
+            prize_popust = _kvantiziraj(prize_popust + iznos)
+            popust += iznos
+            pogodnosti.append(f'Nagradni točak: -{iznos} KM')
 
     kupon = None
     kupon_popust = Decimal('0.00')
@@ -154,6 +193,7 @@ def izracunaj_sazetak(
         'popust': popust,
         'kupon_popust': kupon_popust,
         'recovery_popust': recovery_popust,
+        'prize_popust': prize_popust,
         'ostali_popust': _kvantiziraj(popust - kupon_popust),
         'kupon_primijenjen': bool(kupon),
         'pogodnosti': pogodnosti,

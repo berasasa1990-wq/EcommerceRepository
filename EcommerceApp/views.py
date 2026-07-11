@@ -1758,11 +1758,17 @@ def _cart_context(request, cart):
 
 
 def cart_view(request):
+    from django.db import OperationalError
+
     from .cart_tracking import sync_active_cart
     from .upsell import get_cart_banner_upsell_offers
 
     cart = Cart(request)
-    sync_active_cart(request, cart)
+    try:
+        sync_active_cart(request, cart)
+    except OperationalError:
+        # SQLite lock — prikaži korpu iz sesije bez staff track sync-a
+        pass
     if not cart.should_keep_coupon_on_cart_view():
         cart.clear_coupon()
     elif not cart.is_coupon_applied() and cart.request.session.get(Cart.COUPON_KEY):
@@ -1965,10 +1971,20 @@ def checkout(request):
                     kolicina=item['quantity'],
                 )
 
+            try:
+                from .online_gift import mark_reward_consumed
+                mark_reward_consumed(request, order=order)
+            except Exception:
+                pass
             cart.clear()
             if request.user.is_authenticated:
                 from .live_visitor_offer import consume_registration_reward
                 consume_registration_reward(request.user)
+            try:
+                from .live_visitor_offer import clear_free_shipping_reward
+                clear_free_shipping_reward(request, request.user if request.user.is_authenticated else None)
+            except Exception:
+                pass
 
             try:
                 from .cart_tracking import get_cart_session_key
@@ -2191,12 +2207,10 @@ def register(request):
                 )
 
                 if reg_reward:
-                    pct = reg_reward.postotak
-                    pct_label = int(pct) if pct == int(pct) else pct
                     messages.success(
                         request,
-                        f'Nalog je kreiran. Aktivirajte ga preko emaila — '
-                        f'zatim imate {pct_label}% popusta na prvu narudžbu (samo jednom).',
+                        'Nalog je kreiran. Aktivirajte ga preko emaila — '
+                        'zatim imate besplatnu dostavu na prvu narudžbu (samo jednom).',
                     )
                 else:
                     messages.success(
@@ -2361,6 +2375,11 @@ def _superuser_required(user):
     return user.is_authenticated and user.is_superuser
 
 
+def _staff_required(user):
+    """Staff ili superuser — npr. Admin panel ulaz i Loyalty System."""
+    return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
 def _staff_upload_is_image(uploaded_file):
     content_type = getattr(uploaded_file, 'content_type', '') or ''
     return content_type.startswith('image/')
@@ -2440,21 +2459,83 @@ def staff_order_detail(request, broj):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(_staff_required)
 def staff_admin_panel(request):
     context = {
         **_base_context(),
         'olx_chat_configured': olx_chat_configured(),
+        'is_superuser_staff': request.user.is_superuser,
     }
     return render(request, 'staff/admin_panel.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_staff_required)
+@require_POST
+def staff_activate_user(request):
+    """Ručna aktivacija naloga (email aktivacija nije završena)."""
+    from django.contrib.auth.models import User
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    try:
+        user_id = int(request.POST.get('user_id') or 0)
+    except (TypeError, ValueError):
+        user_id = 0
+
+    target = User.objects.filter(
+        pk=user_id,
+        is_superuser=False,
+        is_staff=False,
+    ).first()
+    if not target:
+        msg = 'Kupac nije pronađen.'
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': msg}, status=404)
+        messages.error(request, msg)
+        return redirect('staff_admin_panel')
+
+    if target.is_active:
+        msg = f'Nalog {target.email or target.username} je već aktivan.'
+        if is_ajax:
+            return JsonResponse({
+                'ok': True,
+                'message': msg,
+                'already_active': True,
+                'user_id': target.pk,
+                'is_active': True,
+            })
+        messages.info(request, msg)
+    else:
+        target.is_active = True
+        target.save(update_fields=['is_active'])
+        msg = f'Nalog {target.email or target.username} je aktiviran. Kupac se sada može prijaviti.'
+        if is_ajax:
+            return JsonResponse({
+                'ok': True,
+                'message': msg,
+                'already_active': False,
+                'user_id': target.pk,
+                'is_active': True,
+            })
+        messages.success(request, msg)
+
+    next_url = (request.POST.get('next') or '').strip()
+    if next_url.startswith('/') and not next_url.startswith('//'):
+        return redirect(next_url)
+    q = (request.POST.get('q') or '').strip()
+    if q:
+        return redirect(f"{reverse('staff_loyalty_system')}?{urlencode({'q': q})}")
+    return redirect('staff_loyalty_system')
 
 
 def _live_analytics_context(request):
     from .live_visitors import (
         get_live_visitor_snapshot,
+        get_registered_customers,
         get_visitor_traffic_stats,
         parse_traffic_filters,
     )
+    from .online_gift import get_online_gift_staff_feed
 
     snapshot = get_live_visitor_snapshot()
     traffic_filters = parse_traffic_filters(request)
@@ -2464,12 +2545,23 @@ def _live_analytics_context(request):
         monthly_from=traffic_filters['monthly_from_date'],
         monthly_to=traffic_filters['monthly_to_date'],
     )
+    online_user_ids = {
+        row.get('user_id')
+        for row in (snapshot.get('registered_online_visitors') or [])
+        if row.get('user_id')
+    }
+    registered_customers = get_registered_customers(online_user_ids=online_user_ids)
+    gift_feed = get_online_gift_staff_feed()
+    from .online_gift import get_campaign_staff_status
+    gift_campaign = get_campaign_staff_status()
     generated_at = snapshot['generated_at']
     return {
         'online_count': snapshot['online_count'],
         'window_count': snapshot['window_count'],
         'registered_online_count': snapshot.get('registered_online_count', 0),
         'registered_window_count': snapshot.get('registered_window_count', 0),
+        'registered_customers_count': len(registered_customers),
+        'registered_customers': registered_customers,
         'online_visitors': snapshot['online_visitors'],
         'window_visitors': snapshot['window_visitors'],
         'registered_online_visitors': snapshot.get('registered_online_visitors') or [],
@@ -2479,7 +2571,14 @@ def _live_analytics_context(request):
         'daily_stats': traffic_stats['daily'],
         'monthly_stats': traffic_stats['monthly'],
         'city_stats': traffic_stats['by_city'],
+        'city_stats_json': traffic_stats['by_city'],
         'traffic_filters': traffic_filters,
+        'gift_winners': gift_feed.get('winners') or [],
+        'gift_winners_count': gift_feed.get('winners_count') or 0,
+        'gift_ordered_count': gift_feed.get('ordered_count') or 0,
+        'gift_online_winners_count': gift_feed.get('online_winners_count') or 0,
+        'gift_feed_hours': gift_feed.get('hours') or 48,
+        'gift_campaign': gift_campaign,
         'generated_at': generated_at,
         'generated_at_label': generated_at.strftime('%H:%M:%S'),
     }
@@ -2525,10 +2624,17 @@ def staff_product_search(request):
 @user_passes_test(_superuser_required)
 @require_POST
 def staff_send_live_offer(request):
+    from django.contrib.auth.models import User
+
     from .live_visitor_offer import send_live_visitor_offer
-    from .models import LiveVisitor
+    from .models import LiveVisitor, LiveVisitorOffer
 
     session_key = (request.POST.get('session_key') or '').strip()
+    email_to = (request.POST.get('email') or '').strip()
+    try:
+        user_id = int(request.POST.get('user_id') or 0)
+    except (TypeError, ValueError):
+        user_id = 0
     try:
         product_id = int(request.POST.get('product_id') or 0)
     except (TypeError, ValueError):
@@ -2539,55 +2645,137 @@ def staff_send_live_offer(request):
         )
     except (InvalidOperation, ValueError):
         discount_percent = Decimal('0')
+    free_shipping = (request.POST.get('free_shipping') or '').strip().lower() in {
+        '1', 'true', 'on', 'yes', 'da',
+    }
 
-    visitor = LiveVisitor.objects.filter(session_key=session_key).select_related('user').first()
-    target_user = visitor.user if visitor else None
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    if not product_id and discount_percent <= 0:
-        msg = 'Unesite popust % ili odaberite artikal.'
+    if not product_id and discount_percent <= 0 and not free_shipping:
+        msg = 'Unesite popust %, besplatnu dostavu ili odaberite artikal.'
         if is_ajax:
             return JsonResponse({'ok': False, 'message': msg}, status=400)
         messages.error(request, msg)
         return redirect('staff_live_analytics')
+
+    visitor = None
+    target_user = None
+    visitor_name = ''
+
+    if session_key:
+        visitor = LiveVisitor.objects.filter(session_key=session_key).select_related('user').first()
+        if visitor:
+            target_user = visitor.user if visitor.user_id else None
+            visitor_name = (visitor.ime or '').strip()
+            if not email_to:
+                email_to = (visitor.email or '').strip()
+                if not email_to and visitor.user_id and visitor.user:
+                    email_to = (visitor.user.email or '').strip()
+
+    if user_id and not target_user:
+        target_user = User.objects.filter(
+            pk=user_id, is_active=True, is_superuser=False,
+        ).first()
+        if target_user:
+            visitor_name = (
+                target_user.get_full_name().strip()
+                or (target_user.first_name or '').strip()
+                or (target_user.email or '').split('@', 1)[0]
+            )
+            if not email_to:
+                email_to = (target_user.email or '').strip()
+            if not session_key:
+                live = (
+                    LiveVisitor.objects.filter(user_id=target_user.pk)
+                    .order_by('-last_seen')
+                    .first()
+                )
+                if live:
+                    session_key = live.session_key
+                    visitor = live
+
+    if email_to and not target_user:
+        target_user = User.objects.filter(
+            email__iexact=email_to, is_active=True, is_superuser=False,
+        ).first()
+        if target_user and not visitor_name:
+            visitor_name = (
+                target_user.get_full_name().strip()
+                or (target_user.first_name or '').strip()
+                or email_to.split('@', 1)[0]
+            )
+        if target_user and not session_key:
+            live = (
+                LiveVisitor.objects.filter(user_id=target_user.pk)
+                .order_by('-last_seen')
+                .first()
+            )
+            if live:
+                session_key = live.session_key
+                visitor = live
+
+    # Offline registrovani: koristi stabilan session_key vezan za user/email
+    # (popup se veže na user_id pa radi kad se prijave)
+    if not session_key:
+        if target_user:
+            session_key = f'reg-user-{target_user.pk}'
+        elif email_to:
+            session_key = f'reg-email-{email_to.lower()[:80]}'
+        else:
+            msg = 'Nema sesije ni emaila kupca.'
+            if is_ajax:
+                return JsonResponse({'ok': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('staff_live_analytics')
+
+    email_only = not bool(visitor)
 
     try:
         offer = send_live_visitor_offer(
             session_key,
             product_id=product_id or None,
             discount_percent=discount_percent,
+            free_shipping=free_shipping,
             staff_user=request.user,
             target_user=target_user,
         )
-        from .models import LiveVisitorOffer
-
+        extras = []
+        if free_shipping:
+            extras.append('besplatna dostava na prvu kupovinu')
         if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
-            pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
-            success_message = f'Kod za {pct}% popusta na narudžbu poslan kupcu ({offer.aktivacioni_kod}).'
+            if discount_percent > 0:
+                pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
+                success_message = (
+                    f'Kod za {pct}% popusta na narudžbu poslan kupcu ({offer.aktivacioni_kod}).'
+                )
+            else:
+                success_message = (
+                    f'Ponuda besplatne dostave poslana kupcu ({offer.aktivacioni_kod}).'
+                )
         elif discount_percent > 0:
             pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
             success_message = f'Ponuda artikla poslana kupcu s popustom {pct}%.'
         else:
             success_message = 'Ponuda artikla poslana kupcu.'
+        if free_shipping and 'besplatna dostava' not in success_message.lower():
+            success_message = f'{success_message} + {extras[0]}.'
 
-        # Popup na sajtu + email (ako kupac ima email)
-        email_to = ''
-        if visitor:
-            email_to = (visitor.email or '').strip()
-            if not email_to and visitor.user_id and visitor.user:
-                email_to = (visitor.user.email or '').strip()
         if email_to:
             try:
                 from .emails import send_live_offer_email
                 send_live_offer_email(
                     to_email=email_to,
-                    visitor_name=(visitor.ime if visitor else '') or '',
+                    visitor_name=visitor_name or '',
                     offer=offer,
                 )
                 success_message = f'{success_message} Email poslan na {email_to}.'
             except Exception:
+                if email_only:
+                    raise ValueError('Slanje emaila nije uspjelo. Provjerite email postavke.')
                 success_message = (
                     f'{success_message} Popup je aktivan, ali slanje emaila nije uspjelo.'
                 )
+        elif email_only:
+            raise ValueError('Kupac nema email adresu.')
 
         if is_ajax:
             return JsonResponse({'ok': True, 'message': success_message})
@@ -2622,16 +2810,13 @@ def staff_send_registration_invite(request):
         return redirect('staff_live_analytics')
 
     try:
-        offer = send_live_visitor_registration_invite(
+        send_live_visitor_registration_invite(
             session_key,
             staff_user=request.user,
         )
-        from .live_visitor_offer import REGISTRATION_INVITE_DISCOUNT
-        pct = offer.discount_percent or REGISTRATION_INVITE_DISCOUNT
-        pct_label = int(pct) if pct == int(pct) else pct
         success_message = (
-            f'Poziv na registraciju poslan kupcu '
-            f'({pct_label}% popusta na prvu narudžbu).'
+            'Poziv na registraciju poslan kupcu '
+            '(besplatna dostava na prvu narudžbu).'
         )
         if is_ajax:
             return JsonResponse({'ok': True, 'message': success_message})
@@ -2705,6 +2890,132 @@ def live_visitor_offer_dismiss(request):
         return JsonResponse({'ok': True})
     next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
     return redirect(next_url)
+
+
+@require_POST
+def online_gift_reveal(request):
+    from .online_gift import reveal_online_gift
+
+    try:
+        result = reveal_online_gift(request)
+        return JsonResponse(result)
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
+    except Exception:
+        logger.exception('online_gift_reveal')
+        return JsonResponse(
+            {'ok': False, 'message': 'Nagrada nije uspjela. Pokušajte ponovo.'},
+            status=500,
+        )
+
+
+@require_POST
+def online_gift_dismiss(request):
+    from .online_gift import dismiss_online_gift
+
+    dismiss_online_gift(request)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True})
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
+    return redirect(next_url)
+
+
+@ensure_csrf_cookie
+@require_GET
+def online_gift_poll(request):
+    """Poll — staff ručno pušta nagradu dok je kupac na sajtu."""
+    from .online_gift import poll_online_gift
+
+    if request.user.is_authenticated and request.user.is_superuser:
+        payload = {'active': False}
+    else:
+        payload = poll_online_gift(request)
+    payload['csrf_token'] = get_token(request)
+    return JsonResponse(payload)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_push_online_gift(request):
+    """Ručno pusti online nagradu odabranom live kupcu."""
+    from .models import LiveVisitor
+    from .online_gift import push_online_gift_to_visitor
+
+    session_key = (request.POST.get('session_key') or '').strip()
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    visitor = (
+        LiveVisitor.objects.filter(session_key=session_key)
+        .select_related('user')
+        .first()
+    )
+    if not session_key or not visitor:
+        msg = 'Posjetilac nije pronađen.'
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('staff_live_analytics')
+
+    try:
+        push, created = push_online_gift_to_visitor(
+            session_key=session_key,
+            staff_user=request.user,
+            target_user=visitor.user if visitor.user_id else None,
+        )
+        name = (visitor.ime or '').strip() or 'kupcu'
+        success_message = (
+            f'Online nagrada puštena za {name}. '
+            f'Popup će se pojaviti na njihovom ekranu za nekoliko sekundi.'
+        )
+        if not created:
+            success_message = (
+                f'Online nagrada ponovo puštena za {name}.'
+            )
+        if is_ajax:
+            return JsonResponse({
+                'ok': True,
+                'message': success_message,
+                'push_id': push.pk,
+            })
+        messages.success(request, success_message)
+    except ValueError as exc:
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
+        messages.error(request, str(exc))
+    return redirect('staff_live_analytics')
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_set_online_gift_automatic(request):
+    """Uključi/isključi automatski režim online nagrade (uživo analitika)."""
+    from .online_gift import get_campaign_staff_status, set_campaign_automatic
+
+    raw = (request.POST.get('automatic') or '').strip().lower()
+    automatic = raw in {'1', 'true', 'on', 'yes', 'da'}
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    try:
+        campaign = set_campaign_automatic(automatic)
+        if campaign.automatic:
+            msg = (
+                f'Automatski režim UKLJUČEN — nagrada iskače svima online '
+                f'(jednom po posjetiocu). Nagrada: {campaign.prize_label()}.'
+            )
+        else:
+            msg = (
+                'Automatski režim ISKLJUČEN — nagrada se ne pojavljuje sama. '
+                'Pusti je ručno pored kupca (🎁 Nagrada).'
+            )
+        status = get_campaign_staff_status()
+        if is_ajax:
+            return JsonResponse({'ok': True, 'message': msg, **status})
+        messages.success(request, msg)
+    except ValueError as exc:
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
+        messages.error(request, str(exc))
+    return redirect('staff_live_analytics')
 
 
 @ensure_csrf_cookie
@@ -2790,6 +3101,9 @@ def staff_live_analytics_data(request):
         for row in payload.get(key) or []:
             if row.get('last_seen'):
                 row['last_seen'] = timezone.localtime(row['last_seen']).isoformat()
+    for row in payload.get('gift_winners') or []:
+        if row.get('won_at'):
+            row['won_at'] = timezone.localtime(row['won_at']).isoformat()
     return JsonResponse(payload)
 
 
@@ -3288,13 +3602,39 @@ def staff_post_product_olx(request, slug):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(_staff_required)
 def staff_loyalty_system(request):
     from decimal import InvalidOperation
     from .loyalty import azuriraj_loyalty_karticu, loyalty_kontekst, osiguraj_loyalty_karticu
 
     issue_form = LoyaltyIssueForm()
     newly_issued = request.GET.get('issued') == '1'
+
+    if request.method == 'POST' and request.POST.get('action') == 'aktiviraj_nalog':
+        try:
+            activate_user_id = int(request.POST.get('user_id') or 0)
+        except (TypeError, ValueError):
+            activate_user_id = 0
+        target = User.objects.filter(
+            pk=activate_user_id,
+            is_superuser=False,
+            is_staff=False,
+        ).first()
+        if not target:
+            messages.error(request, 'Kupac nije pronađen.')
+        elif target.is_active:
+            messages.info(request, f'Nalog {target.email or target.username} je već aktivan.')
+        else:
+            target.is_active = True
+            target.save(update_fields=['is_active'])
+            messages.success(
+                request,
+                f'Nalog {target.email or target.username} je aktiviran. Kupac se sada može prijaviti.',
+            )
+        q = (request.POST.get('q') or request.GET.get('q') or '').strip()
+        if q:
+            return redirect(f'{request.path}?q={q}')
+        return redirect(request.path)
 
     if request.method == 'POST' and request.POST.get('action') == 'izdaj_karticu':
         issue_form = LoyaltyIssueForm(request.POST)
@@ -3435,7 +3775,7 @@ def staff_loyalty_system(request):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(_staff_required)
 @require_GET
 def staff_loyalty_card_image(request, card_id):
     """PNG slika loyalty kartice s QR kodom i barkodom (za Viber / preuzimanje)."""
@@ -3455,7 +3795,7 @@ def staff_loyalty_card_image(request, card_id):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(_staff_required)
 @require_GET
 def staff_loyalty_card_qr(request, card_id):
     """Samostalni QR PNG za ispis / prikaz na kartici."""
@@ -3482,7 +3822,10 @@ def staff_loyalty_card_barcode(request, card_id):
     from .loyalty import generisi_loyalty_barcode_png
 
     card = get_object_or_404(LoyaltyCard, pk=card_id)
-    if not request.user.is_superuser and card.user_id != request.user.pk:
+    is_staff_user = request.user.is_authenticated and (
+        request.user.is_superuser or request.user.is_staff
+    )
+    if not is_staff_user and card.user_id != request.user.pk:
         return HttpResponseForbidden('Nemate pristup ovoj kartici.')
     code = card.barkod or card.kod
     png = generisi_loyalty_barcode_png(code)

@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260711v1">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260711v9">
 {% endblock %}
 
 {% block content %}
@@ -19,9 +19,8 @@
             <div>
                 <h1>Uživo analitika</h1>
                 <p class="staff-live-analytics-subtitle">
-                    Real-time engine za posjetioce iz BiH: vrijeme na sajtu, pregledani proizvodi,
-                    kategorije, vrijednost korpe, izvor dolaska, povratak na proizvod i prethodne kupovine.
-                    Registrovanim kupcima pošaljite popup + email.
+                    Real-time engine za posjetioce iz BiH. Klikni na kategorije / povratak na proizvod
+                    da vidiš cijelu listu. Registrovanim kupcima pošalji ponudu na email.
                 </p>
             </div>
             <p class="staff-live-analytics-updated">
@@ -36,20 +35,20 @@
             <span class="staff-live-analytics-stat-label">Trenutno na sajtu</span>
             <span class="staff-live-analytics-stat-hint">aktivnost u zadnjih {{ online_minutes }} min</span>
         </div>
-        <div class="staff-live-analytics-stat staff-live-analytics-stat--registered">
-            <span class="staff-live-analytics-stat-value" id="liveRegisteredOnlineCount">{{ registered_online_count }}</span>
-            <span class="staff-live-analytics-stat-label">Registrovani online</span>
-            <span class="staff-live-analytics-stat-hint">mogu primiti popup + email</span>
-        </div>
+        <button type="button" class="staff-live-analytics-stat staff-live-analytics-stat--registered staff-live-analytics-stat--btn" id="openRegisteredCustomersBtn" title="Otvori sve registrovane kupce">
+            <span class="staff-live-analytics-stat-value" id="liveRegisteredCustomersCount">{{ registered_customers_count }}</span>
+            <span class="staff-live-analytics-stat-label">Registrovani kupci</span>
+            <span class="staff-live-analytics-stat-hint">klikni — svi emailovi + ponuda</span>
+        </button>
         <div class="staff-live-analytics-stat">
             <span class="staff-live-analytics-stat-value" id="liveWindowCount">{{ window_count }}</span>
             <span class="staff-live-analytics-stat-label">U zadnjih {{ window_minutes }} min</span>
             <span class="staff-live-analytics-stat-hint">jedinstvene sesije</span>
         </div>
-        <div class="staff-live-analytics-stat">
-            <span class="staff-live-analytics-stat-value" id="liveRegisteredWindowCount">{{ registered_window_count }}</span>
-            <span class="staff-live-analytics-stat-label">Registrovani (prozor)</span>
-            <span class="staff-live-analytics-stat-hint">u zadnjih {{ window_minutes }} min</span>
+        <div class="staff-live-analytics-stat staff-live-analytics-stat--online-soft">
+            <span class="staff-live-analytics-stat-value" id="liveRegisteredOnlineCount">{{ registered_online_count }}</span>
+            <span class="staff-live-analytics-stat-label">Registrovani online</span>
+            <span class="staff-live-analytics-stat-hint">trenutno na sajtu</span>
         </div>
     </div>
 
@@ -130,28 +129,179 @@
         </div>
 
         <aside class="staff-live-city-sidebar staff-live-analytics-panel" aria-label="Posjeti po gradovima">
-            <h2>Posjeti po gradovima</h2>
+            <button type="button" class="staff-live-city-open-btn" id="openCityStatsBtn" title="Otvori listu posjeta po gradovima">
+                <span class="staff-live-city-open-title">Ukupno posjeta po gradovima</span>
+                <span class="staff-live-city-open-meta">
+                    <strong id="liveCityStatsTotal">{{ city_stats|length }}</strong> gradova
+                    <span class="staff-live-city-open-cta">Klikni za listu →</span>
+                </span>
+            </button>
             <p class="staff-live-city-stats-hint">Ukupno — lista se ne resetuje, samo raste. Sortirano od najviše ka najmanje.</p>
-            <div class="staff-live-city-list-wrap">
+            <div class="staff-live-city-list-wrap staff-live-city-list-wrap--preview">
                 <ol class="staff-live-city-list" id="liveCityStatsList">
                     {% for row in city_stats %}
+                    {% if forloop.counter <= 8 %}
                     <li class="staff-live-city-list-item">
                         <span class="staff-live-city-rank">{{ row.rank }}</span>
                         <span class="staff-live-city-list-name">{{ row.label }}</span>
                         <strong class="staff-live-city-list-count">{{ row.count }}</strong>
                     </li>
+                    {% endif %}
                     {% empty %}
                     <li class="staff-live-city-list-empty" id="liveCityStatsEmpty">Još nema zabilježenih gradova.</li>
                     {% endfor %}
                 </ol>
             </div>
+            {% if city_stats|length > 8 %}
+            <button type="button" class="staff-live-city-more-btn" id="openCityStatsBtn2" data-open-cities>
+                Prikaži svih {{ city_stats|length }} gradova →
+            </button>
+            {% else %}
+            <button type="button" class="staff-live-city-more-btn" id="openCityStatsBtn2" data-open-cities>
+                Otvori listu gradova →
+            </button>
+            {% endif %}
         </aside>
     </div>
 
+    {# Online nagrade — režim + pobjednici #}
+    <section class="staff-live-analytics-panel staff-live-analytics-panel--gifts" id="liveGiftWinnersPanel">
+        <div class="staff-live-panel-head">
+            <h2>
+                Online nagrade
+                <span class="staff-live-panel-count" id="liveGiftWinnersCount">({{ gift_winners_count }})</span>
+            </h2>
+            <div class="staff-live-gift-summary" id="liveGiftSummary">
+                <span class="staff-live-gift-summary-item">
+                    Online: <strong id="liveGiftOnlineCount">{{ gift_online_winners_count }}</strong>
+                </span>
+                <span class="staff-live-gift-summary-item">
+                    Poručilo: <strong id="liveGiftOrderedCount">{{ gift_ordered_count }}</strong>
+                </span>
+                <span class="staff-live-gift-summary-item staff-live-gift-summary-item--muted">
+                    zadnjih {{ gift_feed_hours }} h
+                </span>
+            </div>
+        </div>
+
+        <div class="staff-live-gift-mode" id="liveGiftModeBar">
+            {% if gift_campaign.active %}
+            <label class="staff-live-gift-auto-label" title="Kada je uključeno — popup iskače svima online jednom">
+                <input type="checkbox" id="liveGiftAutomaticToggle"
+                       {% if gift_campaign.automatic %}checked{% endif %}>
+                <span>
+                    <strong>Automatski svima online</strong>
+                    <small id="liveGiftModeHint">
+                        {% if gift_campaign.automatic %}
+                        Iskače svima na sajtu (jednom po posjetiocu). Nagrada: {{ gift_campaign.prize_label }}.
+                        {% else %}
+                        Isključeno — ručno pusti pored kupca dugmetom 🎁 Nagrada.
+                        {% endif %}
+                    </small>
+                </span>
+            </label>
+            <span class="staff-live-gift-campaign-name" id="liveGiftCampaignName">
+                {{ gift_campaign.campaign_name }} · {{ gift_campaign.prize_label }}
+            </span>
+            {% else %}
+            <p class="staff-live-panel-hint" id="liveGiftNoCampaign">
+                Nema aktivne online nagrade. Uključi je u Django adminu (Online nagrada).
+            </p>
+            {% endif %}
+        </div>
+
+        <p class="staff-live-panel-hint">
+            Ko je osvojio nagradu, šta radi poslije (korpa / proizvodi) i da li je poručio.
+            Popup se gasi <strong>samo na ×</strong>.
+        </p>
+        <div class="staff-live-analytics-table-wrap">
+            <table class="staff-live-analytics-table staff-live-analytics-table--gifts" id="liveGiftWinnersTable">
+                <thead>
+                    <tr>
+                        <th>Kupac</th>
+                        <th>Nagrada</th>
+                        <th>Šta radi</th>
+                        <th>Status</th>
+                        <th>Narudžba</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="liveGiftWinnersBody">
+                    {% for w in gift_winners %}
+                    <tr>
+                        <td class="staff-live-name-cell">
+                            {% if w.is_online %}<span class="staff-live-cart-tag staff-live-gift-online-tag">online</span>{% endif %}
+                            {% if w.is_registered %}<span class="staff-live-reg-tag" title="Registrovan">reg</span>{% endif %}
+                            {{ w.ime }}
+                            {% if w.grad %}<div class="staff-live-city-sub">{{ w.grad }}</div>{% endif %}
+                            {% if w.email %}<div class="staff-live-email-hint">{{ w.email }}</div>{% endif %}
+                            <div class="staff-live-gift-won-ago" title="{{ w.won_at_label }}">Osvojio {{ w.won_ago_label }}</div>
+                        </td>
+                        <td>
+                            <strong class="staff-live-gift-prize">{{ w.prize_label }}</strong>
+                            {% if w.campaign_name %}
+                            <div class="staff-live-muted">{{ w.campaign_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="staff-live-gift-activity-cell">
+                            <span class="staff-live-gift-activity">{{ w.activity_label }}</span>
+                            {% if w.has_cart %}
+                            <div class="staff-live-gift-cart">🛒 {{ w.cart_value_label }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="staff-live-gift-status staff-live-gift-status--{{ w.status_key }}">{{ w.status_label }}</span>
+                        </td>
+                        <td>
+                            {% if w.order_number %}
+                            <a href="{% url 'staff_order_detail' w.order_number %}" class="staff-live-gift-order-link" title="Otvori narudžbu">
+                                #{{ w.order_number }}
+                            </a>
+                            {% if w.order_total_label %}
+                            <div class="staff-live-muted">{{ w.order_total_label }}</div>
+                            {% endif %}
+                            {% elif w.reward_consumed %}
+                            <span class="staff-live-gift-status staff-live-gift-status--consumed">Iskorišteno</span>
+                            {% else %}
+                            <span class="staff-live-muted">Nije</span>
+                            {% endif %}
+                        </td>
+                        <td class="staff-live-action-cell">
+                            {% if w.session_key or w.email or w.user_id %}
+                            <button type="button"
+                                    class="staff-live-offer-btn"
+                                    data-offer-open
+                                    data-session-key="{{ w.session_key }}"
+                                    data-visitor-name="{{ w.ime }}"
+                                    data-visitor-email="{{ w.email }}"
+                                    data-user-id="{{ w.user_id|default:'' }}"
+                                    title="Pošalji ponudu">
+                                Ponuda
+                            </button>
+                            {% else %}
+                            <span class="staff-live-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="staff-live-empty-row">
+                        <td colspan="6">Još nema pobjednika online nagrade u zadnjih {{ gift_feed_hours }} h.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <div class="staff-live-analytics-panels">
         <section class="staff-live-analytics-panel staff-live-analytics-panel--registered">
-            <h2>Registrovani kupci online <span class="staff-live-panel-count" id="liveRegisteredPanelCount">({{ registered_online_count }})</span></h2>
-            <p class="staff-live-panel-hint">Pošaljite im popup na sajtu — stići će i na email ako imaju adresu.</p>
+            <div class="staff-live-panel-head">
+                <h2>Registrovani online <span class="staff-live-panel-count" id="liveRegisteredPanelCount">({{ registered_online_count }})</span></h2>
+                <button type="button" class="btn btn-secondary btn-sm" id="openRegisteredCustomersBtn2">
+                    Svi registrovani ({{ registered_customers_count }}) →
+                </button>
+            </div>
+            <p class="staff-live-panel-hint">Online sada — popup + email. Za sve emailove klikni „Svi registrovani”.</p>
             <div class="staff-live-analytics-table-wrap">
                 <table class="staff-live-analytics-table staff-live-analytics-table--engine" id="liveRegisteredTable">
                     <thead>
@@ -167,7 +317,7 @@
                         {% include 'staff/partials/live_visitor_row.html' with visitor=visitor colspan=4 %}
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="4">Trenutno nema registrovanih kupaca online.</td>
+                            <td colspan="4">Trenutno nema registrovanih kupaca online. <button type="button" class="staff-live-inline-link" data-open-registered>Pogledaj sve registrovane →</button></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -235,11 +385,13 @@
         <button type="button" class="staff-live-offer-modal-close" data-offer-close aria-label="Zatvori">×</button>
         <h2 id="liveOfferModalTitle">Pošalji ponudu</h2>
         <p class="staff-live-offer-modal-subtitle">Kupac: <strong id="liveOfferVisitorName">—</strong></p>
-        <p class="staff-live-offer-hint">Popup se prikazuje na sajtu. Ako kupac ima email, ista ponuda stiže i na email.</p>
+        <p class="staff-live-offer-hint" id="liveOfferHint">Ako je online — popup na sajtu. Ako ima email — stigne i na email.</p>
 
         <form method="post" action="{% url 'staff_send_live_offer' %}" id="liveOfferSendForm" class="staff-live-offer-modal-form">
             {% csrf_token %}
             <input type="hidden" name="session_key" id="liveOfferSessionKey" value="">
+            <input type="hidden" name="email" id="liveOfferEmail" value="">
+            <input type="hidden" name="user_id" id="liveOfferUserId" value="">
 
             <label class="staff-live-offer-label" for="liveOfferProductSearch">Artikal <span class="staff-live-offer-optional">(opcionalno)</span></label>
             <div class="staff-live-offer-search">
@@ -249,9 +401,17 @@
                 <p class="staff-live-offer-selected" id="liveOfferSelectedProduct" hidden></p>
             </div>
 
-            <label class="staff-live-offer-label" for="liveOfferDiscount">Popust % na narudžbu</label>
-            <p class="staff-live-offer-hint">Bez artikla — šalje se samo kod za popust na cijelu narudžbu. S artiklom — popust na taj artikal.</p>
-            <input type="number" name="discount_percent" id="liveOfferDiscount" class="staff-live-offer-discount" min="0" max="50" step="1" value="10" placeholder="10" required>
+            <label class="staff-live-offer-label" for="liveOfferDiscount">Popust % na narudžbu <span class="staff-live-offer-optional">(opcionalno)</span></label>
+            <p class="staff-live-offer-hint">Bez artikla — šalje se kod za popust na cijelu narudžbu. S artiklom — popust na taj artikal. Može se kombinovati s besplatnom dostavom.</p>
+            <input type="number" name="discount_percent" id="liveOfferDiscount" class="staff-live-offer-discount" min="0" max="50" step="1" value="0" placeholder="0">
+
+            <label class="staff-live-offer-free-ship" for="liveOfferFreeShipping">
+                <input type="checkbox" name="free_shipping" id="liveOfferFreeShipping" value="1">
+                <span>
+                    <strong>Besplatna dostava na prvu kupovinu</strong>
+                    <small>Kad kupac prihvati — dostava besplatna samo prvi put</small>
+                </span>
+            </label>
 
             <div class="staff-live-offer-modal-actions">
                 <button type="button" class="btn btn-secondary" data-offer-close>Poništi</button>
@@ -260,26 +420,144 @@
         </form>
     </div>
 </div>
+
+{# Detalji: kategorije / povratak na proizvod / pregledani #}
+<div class="staff-live-offer-modal" id="liveDetailModal" hidden>
+    <div class="staff-live-offer-modal-backdrop" data-detail-close></div>
+    <div class="staff-live-offer-modal-card staff-live-detail-modal-card" role="dialog" aria-modal="true" aria-labelledby="liveDetailTitle">
+        <button type="button" class="staff-live-offer-modal-close" data-detail-close aria-label="Zatvori">×</button>
+        <h2 id="liveDetailTitle">Detalji</h2>
+        <p class="staff-live-detail-subtitle" id="liveDetailSubtitle"></p>
+        <ul class="staff-live-detail-list" id="liveDetailList"></ul>
+    </div>
+</div>
+
+{# Lista posjeta po gradovima #}
+<div class="staff-live-offer-modal" id="liveCityModal" hidden>
+    <div class="staff-live-offer-modal-backdrop" data-city-close></div>
+    <div class="staff-live-offer-modal-card staff-live-city-modal-card" role="dialog" aria-modal="true" aria-labelledby="liveCityModalTitle">
+        <button type="button" class="staff-live-offer-modal-close" data-city-close aria-label="Zatvori">×</button>
+        <h2 id="liveCityModalTitle">Posjeti po gradovima</h2>
+        <p class="staff-live-offer-hint">Ukupno posjeta — lista se ne resetuje, samo raste. Sortirano od najviše ka najmanje.</p>
+        <div class="staff-live-city-modal-list-wrap">
+            <ol class="staff-live-city-list staff-live-city-list--modal" id="liveCityModalList">
+                {% for row in city_stats %}
+                <li class="staff-live-city-list-item">
+                    <span class="staff-live-city-rank">{{ row.rank }}</span>
+                    <span class="staff-live-city-list-name">{{ row.label }}</span>
+                    <strong class="staff-live-city-list-count">{{ row.count }}</strong>
+                </li>
+                {% empty %}
+                <li class="staff-live-city-list-empty">Još nema zabilježenih gradova.</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+</div>
+
+{# Svi registrovani kupci + email ponuda #}
+<div class="staff-live-offer-modal" id="liveRegisteredModal" hidden>
+    <div class="staff-live-offer-modal-backdrop" data-registered-close></div>
+    <div class="staff-live-offer-modal-card staff-live-registered-modal-card" role="dialog" aria-modal="true" aria-labelledby="liveRegisteredModalTitle">
+        <button type="button" class="staff-live-offer-modal-close" data-registered-close aria-label="Zatvori">×</button>
+        <h2 id="liveRegisteredModalTitle">Registrovani kupci</h2>
+        <p class="staff-live-offer-hint">Svi nalozi s emailom (uključujući neaktivirane). Pošalji ponudu ili aktiviraj nalog.</p>
+        <div class="staff-live-registered-search-wrap">
+            <input type="search" id="liveRegisteredSearch" class="staff-live-registered-search" placeholder="Pretraži ime ili email…" autocomplete="off">
+            <span class="staff-live-registered-count" id="liveRegisteredListCount" title="Broj prikazanih">{{ registered_customers_count }}</span>
+        </div>
+        <div class="staff-live-registered-list-wrap">
+            <table class="staff-live-analytics-table staff-live-registered-table">
+                <thead>
+                    <tr>
+                        <th>Ime</th>
+                        <th>Email</th>
+                        <th>Grad</th>
+                        <th>Online</th>
+                        <th>Nalog</th>
+                        <th>Akcija</th>
+                    </tr>
+                </thead>
+                <tbody id="liveRegisteredCustomersBody">
+                    {% for c in registered_customers %}
+                    <tr data-reg-row data-user-id="{{ c.user_id }}" data-search="{{ c.ime|lower }} {{ c.email|lower }} {{ c.grad|lower }}">
+                        <td class="staff-live-name-cell">{{ c.ime }}</td>
+                        <td title="{{ c.email }}">{{ c.email }}</td>
+                        <td>{% if c.grad %}{{ c.grad }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
+                        <td>
+                            {% if c.is_online %}
+                            <span class="staff-live-badge staff-live-badge--online">online</span>
+                            {% else %}
+                            <span class="staff-live-badge">offline</span>
+                            {% endif %}
+                        </td>
+                        <td class="staff-live-account-cell">
+                            {% if c.is_active %}
+                            <span class="staff-live-account-badge staff-live-account-badge--active">Aktivan</span>
+                            {% else %}
+                            <span class="staff-live-account-badge staff-live-account-badge--inactive">Nije aktiviran</span>
+                            <button type="button"
+                                    class="staff-live-activate-btn"
+                                    data-activate-user
+                                    data-user-id="{{ c.user_id }}"
+                                    data-visitor-name="{{ c.ime }}"
+                                    data-visitor-email="{{ c.email }}"
+                                    title="Aktiviraj nalog bez email potvrde">
+                                Aktiviraj
+                            </button>
+                            {% endif %}
+                        </td>
+                        <td class="staff-live-action-cell">
+                            <button type="button"
+                                    class="staff-live-offer-btn"
+                                    data-offer-open
+                                    data-session-key=""
+                                    data-visitor-name="{{ c.ime }}"
+                                    data-visitor-email="{{ c.email }}"
+                                    data-user-id="{{ c.user_id }}"
+                                    title="Pošalji ponudu na email">
+                                Email ponuda
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="staff-live-empty-row">
+                        <td colspan="6">Nema registrovanih kupaca s emailom.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+{{ city_stats_json|json_script:"liveCityStatsInitial" }}
 <script>
 (function () {
     const dataUrl = '{% url "staff_live_analytics_data" %}';
     const productSearchUrl = '{% url "staff_product_search" %}';
     const registerInviteUrl = '{% url "staff_send_registration_invite" %}';
+    const activateUserUrl = '{% url "staff_activate_user" %}';
+    const giftPushUrl = '{% url "staff_push_online_gift" %}';
+    const giftAutoUrl = '{% url "staff_set_online_gift_automatic" %}';
+    const orderDetailBase = '{% url "staff_order_lookup" %}';
     const onlineBody = document.getElementById('liveOnlineBody');
     const windowBody = document.getElementById('liveWindowBody');
     const registeredBody = document.getElementById('liveRegisteredBody');
     const onlineCountEl = document.getElementById('liveOnlineCount');
     const windowCountEl = document.getElementById('liveWindowCount');
     const registeredOnlineCountEl = document.getElementById('liveRegisteredOnlineCount');
-    const registeredWindowCountEl = document.getElementById('liveRegisteredWindowCount');
+    const registeredCustomersCountEl = document.getElementById('liveRegisteredCustomersCount');
     const registeredPanelCountEl = document.getElementById('liveRegisteredPanelCount');
     const updatedEl = document.getElementById('liveAnalyticsUpdated');
     const modal = document.getElementById('liveOfferModal');
     const visitorNameEl = document.getElementById('liveOfferVisitorName');
     const sessionKeyEl = document.getElementById('liveOfferSessionKey');
+    const offerEmailEl = document.getElementById('liveOfferEmail');
+    const offerUserIdEl = document.getElementById('liveOfferUserId');
+    const offerHintEl = document.getElementById('liveOfferHint');
     const productSearch = document.getElementById('liveOfferProductSearch');
     const productIdEl = document.getElementById('liveOfferProductId');
     const productResults = document.getElementById('liveOfferProductResults');
@@ -287,7 +565,27 @@
     const dailyStatsBody = document.getElementById('liveDailyStatsBody');
     const monthlyStatsBody = document.getElementById('liveMonthlyStatsBody');
     const cityStatsList = document.getElementById('liveCityStatsList');
+    const cityModal = document.getElementById('liveCityModal');
+    const cityModalList = document.getElementById('liveCityModalList');
+    const cityStatsTotalEl = document.getElementById('liveCityStatsTotal');
     const trafficFilterForm = document.getElementById('liveTrafficFilterForm');
+    const detailModal = document.getElementById('liveDetailModal');
+    const detailTitleEl = document.getElementById('liveDetailTitle');
+    const detailListEl = document.getElementById('liveDetailList');
+    const registeredModal = document.getElementById('liveRegisteredModal');
+    const registeredCustomersBody = document.getElementById('liveRegisteredCustomersBody');
+    const registeredSearch = document.getElementById('liveRegisteredSearch');
+    const registeredListCountEl = document.getElementById('liveRegisteredListCount');
+    let registeredCustomersCache = [];
+    let cityStatsCache = [];
+    try {
+        const cityInit = document.getElementById('liveCityStatsInitial');
+        if (cityInit && cityInit.textContent) {
+            cityStatsCache = JSON.parse(cityInit.textContent) || [];
+        }
+    } catch (err) {
+        cityStatsCache = [];
+    }
     if (!onlineBody || !windowBody) return;
 
     function buildDataUrl() {
@@ -312,14 +610,13 @@
         }).join('');
     }
 
-    function renderCityStatsList(listEl, rows, emptyText) {
-        if (!listEl) return;
+    function cityListHtml(rows, emptyText, limit) {
         if (!rows || !rows.length) {
-            listEl.innerHTML = '<li class="staff-live-city-list-empty">' +
+            return '<li class="staff-live-city-list-empty">' +
                 escapeHtml(emptyText) + '</li>';
-            return;
         }
-        listEl.innerHTML = rows.map(function (row, index) {
+        const slice = (limit && limit > 0) ? rows.slice(0, limit) : rows;
+        return slice.map(function (row, index) {
             const rank = row.rank || (index + 1);
             return (
                 '<li class="staff-live-city-list-item">' +
@@ -329,6 +626,49 @@
                 '</li>'
             );
         }).join('');
+    }
+
+    function renderCityStatsList(listEl, rows, emptyText) {
+        cityStatsCache = rows || [];
+        if (cityStatsTotalEl) {
+            cityStatsTotalEl.textContent = String(cityStatsCache.length);
+        }
+        const moreBtn = document.getElementById('openCityStatsBtn2');
+        if (moreBtn) {
+            moreBtn.textContent = cityStatsCache.length > 8
+                ? ('Prikaži svih ' + cityStatsCache.length + ' gradova →')
+                : 'Otvori listu gradova →';
+        }
+        if (listEl) {
+            listEl.innerHTML = cityListHtml(cityStatsCache, emptyText, 8);
+        }
+        if (cityModalList) {
+            cityModalList.innerHTML = cityListHtml(
+                cityStatsCache,
+                emptyText || 'Još nema zabilježenih gradova.',
+            );
+        }
+    }
+
+    function openCityModal() {
+        if (!cityModal) return;
+        if (cityModalList) {
+            cityModalList.innerHTML = cityListHtml(
+                cityStatsCache.length ? cityStatsCache : null,
+                'Još nema zabilježenih gradova.',
+            );
+        }
+        cityModal.hidden = false;
+        document.body.classList.add('popup-open');
+    }
+
+    function closeCityModal() {
+        if (!cityModal) return;
+        cityModal.hidden = true;
+        if (modal && !modal.hidden) return;
+        if (detailModal && !detailModal.hidden) return;
+        if (registeredModal && !registeredModal.hidden) return;
+        document.body.classList.remove('popup-open');
     }
 
     function escapeHtml(value) {
@@ -407,27 +747,102 @@
         );
     }
 
+    function joinDetailItems(items) {
+        return (items || []).map(function (item) {
+            return String(item || '').replace(/\|/g, '¦');
+        }).join('||');
+    }
+
+    function encodeDetailProducts(products) {
+        return (products || []).map(function (p) {
+            const name = String(p.naziv || 'Artikal').replace(/\|/g, '¦');
+            return String(p.id || 0) + '::' + String(p.views || 1) + '::' + name;
+        }).join('||');
+    }
+
+    function parseDetailProducts(raw) {
+        return String(raw || '')
+            .split('||')
+            .map(function (chunk) {
+                const parts = chunk.split('::');
+                if (parts.length < 3) return null;
+                const id = parseInt(parts[0], 10) || 0;
+                const views = parseInt(parts[1], 10) || 1;
+                const naziv = parts.slice(2).join('::').replace(/¦/g, '|').trim();
+                if (!id || !naziv) return null;
+                return { id: id, views: views, naziv: naziv };
+            })
+            .filter(Boolean);
+    }
+
+    function detailButton(className, title, items, label) {
+        if (!items || !items.length) return '';
+        return (
+            '<button type="button" class="' + className + ' staff-live-engine-chip--btn" ' +
+            'data-detail-open data-detail-kind="text" data-detail-title="' + escapeHtml(title) + '" ' +
+            'data-detail-items="' + escapeHtml(joinDetailItems(items)) + '" ' +
+            'title="Klikni za cijelu listu">' + label + '</button>'
+        );
+    }
+
+    function productDetailButton(className, title, products, label, visitor) {
+        if (!products || !products.length) return '';
+        return (
+            '<button type="button" class="' + className + ' staff-live-engine-chip--btn" ' +
+            'data-detail-open data-detail-kind="products" data-detail-title="' + escapeHtml(title) + '" ' +
+            'data-detail-products="' + escapeHtml(encodeDetailProducts(products)) + '" ' +
+            'data-session-key="' + escapeHtml(visitor.session_key || '') + '" ' +
+            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '" ' +
+            'data-visitor-email="' + escapeHtml(visitor.email || '') + '" ' +
+            'data-user-id="' + escapeHtml(visitor.user_id || '') + '" ' +
+            'title="Klikni — unesi % popusta i pošalji ponudu za artikal">' + label + '</button>'
+        );
+    }
+
+    function giftPushButton(visitor) {
+        if (!visitor.session_key) return '';
+        return (
+            '<button type="button" class="staff-live-gift-push-btn" data-gift-push ' +
+            'data-session-key="' + escapeHtml(visitor.session_key) + '" ' +
+            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '" ' +
+            'title="Ručno pusti online nagradu ovom kupcu">🎁 Nagrada</button>'
+        );
+    }
+
     function offerButton(visitor) {
-        if (!visitor.session_key) {
+        const hasSession = !!visitor.session_key;
+        const hasEmail = !!(visitor.email || visitor.user_id);
+        if (!hasSession && !hasEmail) {
             return '<span class="staff-live-muted">—</span>';
         }
         const sentClass = visitor.offer_sent ? ' staff-live-offer-btn--sent' : '';
-        let title = visitor.can_email_offer
-            ? 'Popup na sajtu + email'
-            : (visitor.offer_active ? 'Aktivna ponuda — kupac je još uvijek vidi' : 'Pošalji ponudu');
-        const label = visitor.can_email_offer ? 'Ponuda + email' : 'Ponuda';
+        let title = 'Pošalji ponudu';
+        let label = 'Ponuda';
+        if (hasSession && visitor.can_email_offer) {
+            title = 'Popup na sajtu + email';
+            label = 'Ponuda + email';
+        } else if (!hasSession && hasEmail) {
+            title = 'Pošalji ponudu na email';
+            label = 'Email ponuda';
+        } else if (visitor.offer_active) {
+            title = 'Aktivna ponuda — kupac je još uvijek vidi';
+        }
         return (
-            offerSentBadge(visitor) +
-            registerInviteButton(visitor) +
+            (hasSession ? offerSentBadge(visitor) : '') +
+            (hasSession ? registerInviteButton(visitor) : '') +
+            (hasSession ? giftPushButton(visitor) : '') +
             '<button type="button" class="staff-live-offer-btn' + sentClass + '" data-offer-open ' +
-            'data-session-key="' + escapeHtml(visitor.session_key) + '" ' +
+            'data-session-key="' + escapeHtml(visitor.session_key || '') + '" ' +
             'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '" ' +
+            'data-visitor-email="' + escapeHtml(visitor.email || '') + '" ' +
+            'data-user-id="' + escapeHtml(visitor.user_id || '') + '" ' +
             'title="' + escapeHtml(title) + '">' + label + '</button>'
         );
     }
 
     function engineCell(visitor) {
         const chips = [];
+        const name = visitor.ime || 'Gost';
         chips.push(
             '<span class="staff-live-engine-chip" title="Vrijeme provedeno na sajtu">⏱ ' +
             escapeHtml(visitor.time_on_site_label || '—') + '</span>'
@@ -436,11 +851,17 @@
             '<span class="staff-live-engine-chip" title="Broj pregledanih proizvoda">📦 ' +
             escapeHtml(visitor.products_viewed_count || 0) + ' proiz.</span>'
         );
-        if (visitor.categories_label) {
-            chips.push(
-                '<span class="staff-live-engine-chip staff-live-engine-chip--cat" title="Kategorije">🏷 ' +
-                escapeHtml(visitor.categories_label) + '</span>'
-            );
+        const categories = visitor.categories || [];
+        if (categories.length) {
+            const catLabel = categories.length === 1
+                ? ('🏷 ' + categories[0])
+                : ('🏷 ' + categories.length + ' kategorija');
+            chips.push(detailButton(
+                'staff-live-engine-chip staff-live-engine-chip--cat',
+                'Kategorije — ' + name,
+                categories,
+                escapeHtml(catLabel),
+            ));
         }
         const cartClass = visitor.has_cart ? ' staff-live-engine-chip--cart' : '';
         chips.push(
@@ -453,12 +874,15 @@
             escapeHtml(src) + '" title="Izvor dolaska">↗ ' +
             escapeHtml(visitor.traffic_source_label || 'Direktno') + '</span>'
         );
-        if (visitor.returned_to_product) {
-            chips.push(
-                '<span class="staff-live-engine-chip staff-live-engine-chip--return" title="' +
-                escapeHtml(visitor.returned_products_label || '') +
-                '">↩ Povratak na proizvod</span>'
-            );
+        const returned = visitor.returned_products || [];
+        if (visitor.returned_to_product && returned.length) {
+            chips.push(productDetailButton(
+                'staff-live-engine-chip staff-live-engine-chip--return',
+                'Povratak na proizvod — ' + name,
+                returned,
+                '↩ Povratak (' + returned.length + ')',
+                visitor,
+            ));
         }
         if (visitor.has_purchased) {
             chips.push(
@@ -467,11 +891,15 @@
             );
         }
         let productsHtml = '';
-        if (visitor.products_label) {
-            productsHtml =
-                '<span class="staff-live-engine-products" title="' +
-                escapeHtml(visitor.products_label) + '">' +
-                escapeHtml(visitor.products_label) + '</span>';
+        const products = visitor.products || [];
+        if (products.length) {
+            productsHtml = productDetailButton(
+                'staff-live-engine-products',
+                'Pregledani proizvodi — ' + name,
+                products,
+                escapeHtml(visitor.products_label || (products.length + ' proizvoda')),
+                visitor,
+            );
         }
         return (
             '<div class="staff-live-engine">' + chips.join('') + productsHtml + '</div>'
@@ -541,10 +969,282 @@
         }).join('');
     }
 
+    function openDetailModal(title, itemsRaw, opts) {
+        if (!detailModal || !detailListEl) return;
+        opts = opts || {};
+        const isProducts = opts.kind === 'products';
+        const card = detailModal.querySelector('.staff-live-detail-modal-card');
+        if (card) {
+            card.classList.toggle('staff-live-detail-modal-card--products', isProducts);
+        }
+        detailTitleEl.textContent = title || 'Detalji';
+        const subtitleEl = document.getElementById('liveDetailSubtitle');
+
+        if (isProducts) {
+            const products = parseDetailProducts(opts.productsRaw || itemsRaw);
+            if (subtitleEl) {
+                subtitleEl.textContent = products.length
+                    ? (products.length + (products.length === 1 ? ' artikal' : ' artikala') +
+                       ' — unesi % popusta i pošalji ponudu')
+                    : '';
+            }
+            if (!products.length) {
+                detailListEl.innerHTML = '<li class="staff-live-detail-empty">Nema artikala za prikaz.</li>';
+            } else {
+                const sessionKey = opts.sessionKey || '';
+                const email = opts.email || '';
+                const userId = opts.userId || '';
+                const visitorName = opts.visitorName || 'Gost';
+                detailListEl.innerHTML = products.map(function (product, index) {
+                    const viewsLabel = product.views > 1
+                        ? (product.views + '× pregleda')
+                        : '1 pregled';
+                    return (
+                        '<li class="staff-live-detail-product">' +
+                        '<span class="staff-live-detail-rank">' + (index + 1) + '</span>' +
+                        '<div class="staff-live-detail-product-meta">' +
+                        '<span class="staff-live-detail-text">' + escapeHtml(product.naziv) + '</span>' +
+                        '<span class="staff-live-detail-product-views">' + escapeHtml(viewsLabel) + '</span>' +
+                        '</div>' +
+                        '<div class="staff-live-detail-product-offer">' +
+                        '<label class="staff-live-detail-pct-wrap" title="Popust u %">' +
+                        '<input type="number" class="staff-live-detail-pct-input" min="0" max="50" step="1" value="10" ' +
+                        'aria-label="Popust % za ' + escapeHtml(product.naziv) + '">' +
+                        '<span class="staff-live-detail-pct-suffix">%</span>' +
+                        '</label>' +
+                        '<button type="button" class="staff-live-detail-offer-btn" data-product-offer-send ' +
+                        'data-product-id="' + product.id + '" ' +
+                        'data-product-name="' + escapeHtml(product.naziv) + '" ' +
+                        'data-session-key="' + escapeHtml(sessionKey) + '" ' +
+                        'data-visitor-email="' + escapeHtml(email) + '" ' +
+                        'data-user-id="' + escapeHtml(userId) + '" ' +
+                        'data-visitor-name="' + escapeHtml(visitorName) + '">' +
+                        'Pošalji</button>' +
+                        '</div></li>'
+                    );
+                }).join('');
+                detailListEl.querySelectorAll('[data-product-offer-send]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        sendProductOfferFromDetail(btn);
+                    });
+                });
+            }
+        } else {
+            const items = String(itemsRaw || '')
+                .split('||')
+                .map(function (s) { return s.replace(/¦/g, '|').trim(); })
+                .filter(Boolean);
+            if (subtitleEl) {
+                subtitleEl.textContent = items.length
+                    ? (items.length + (items.length === 1 ? ' stavka' : ' stavki') + ' — cijela lista')
+                    : '';
+            }
+            if (!items.length) {
+                detailListEl.innerHTML = '<li class="staff-live-detail-empty">Nema stavki za prikaz.</li>';
+            } else {
+                detailListEl.innerHTML = items.map(function (item, index) {
+                    return (
+                        '<li>' +
+                        '<span class="staff-live-detail-rank">' + (index + 1) + '</span>' +
+                        '<span class="staff-live-detail-text">' + escapeHtml(item) + '</span>' +
+                        '</li>'
+                    );
+                }).join('');
+            }
+        }
+        detailModal.hidden = false;
+        document.body.classList.add('popup-open');
+    }
+
+    async function sendProductOfferFromDetail(btn) {
+        if (!btn || btn.disabled) return;
+        const productId = btn.dataset.productId || '';
+        const productName = btn.dataset.productName || 'Artikal';
+        const sessionKey = btn.dataset.sessionKey || '';
+        const email = btn.dataset.visitorEmail || '';
+        const userId = btn.dataset.userId || '';
+        if (!productId) {
+            alert('Artikal nije pronađen.');
+            return;
+        }
+        if (!sessionKey && !email && !userId) {
+            alert('Nema sesije ni emaila kupca.');
+            return;
+        }
+        const row = btn.closest('.staff-live-detail-product');
+        const pctInput = row ? row.querySelector('.staff-live-detail-pct-input') : null;
+        let discountVal = parseFloat(pctInput && pctInput.value != null ? pctInput.value : '0');
+        if (isNaN(discountVal) || discountVal < 0) discountVal = 0;
+        if (discountVal > 50) discountVal = 50;
+        if (discountVal <= 0) {
+            alert('Unesite popust u % (1–50) za ovaj artikal.');
+            if (pctInput) pctInput.focus();
+            return;
+        }
+        const pctLabel = Number.isInteger(discountVal) ? String(discountVal) : String(discountVal);
+        if (!window.confirm(
+            'Pošalji ponudu „' + productName + '” s popustom ' + pctLabel + '%?'
+        )) {
+            return;
+        }
+        btn.disabled = true;
+        try {
+            const csrf = readStaffCsrfToken();
+            if (!csrf) {
+                throw new Error('Sigurnosni token nije dostupan. Osvježite stranicu.');
+            }
+            const form = document.getElementById('liveOfferSendForm');
+            if (!form || !form.action) {
+                throw new Error('Forma za ponudu nije dostupna.');
+            }
+            const body = new URLSearchParams();
+            body.set('csrfmiddlewaretoken', csrf);
+            body.set('session_key', sessionKey);
+            body.set('email', email);
+            body.set('user_id', userId);
+            body.set('product_id', productId);
+            body.set('discount_percent', String(discountVal));
+            body.set('free_shipping', '0');
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await parseStaffJsonResponse(response);
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || 'Slanje ponude nije uspjelo.');
+            }
+            showStaffToast(data.message || 'Ponuda poslana.');
+            closeDetailModal();
+            refreshLiveAnalytics();
+        } catch (err) {
+            alert(err.message || 'Slanje ponude nije uspjelo.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function closeDetailModal() {
+        if (!detailModal) return;
+        detailModal.hidden = true;
+        const card = detailModal.querySelector('.staff-live-detail-modal-card');
+        if (card) card.classList.remove('staff-live-detail-modal-card--products');
+        if (modal && !modal.hidden) return;
+        if (registeredModal && !registeredModal.hidden) return;
+        if (cityModal && !cityModal.hidden) return;
+        document.body.classList.remove('popup-open');
+    }
+
+    function openRegisteredModal() {
+        if (!registeredModal) return;
+        registeredModal.hidden = false;
+        document.body.classList.add('popup-open');
+        if (registeredSearch) {
+            registeredSearch.value = '';
+            filterRegisteredRows('');
+            registeredSearch.focus();
+        }
+    }
+
+    function closeRegisteredModal() {
+        if (!registeredModal) return;
+        registeredModal.hidden = true;
+        if (modal && !modal.hidden) return;
+        if (detailModal && !detailModal.hidden) return;
+        if (cityModal && !cityModal.hidden) return;
+        document.body.classList.remove('popup-open');
+    }
+
+    function filterRegisteredRows(query) {
+        if (!registeredCustomersBody) return;
+        const q = (query || '').trim().toLowerCase();
+        let visible = 0;
+        registeredCustomersBody.querySelectorAll('[data-reg-row]').forEach(function (row) {
+            const hay = (row.dataset.search || '').toLowerCase();
+            const show = !q || hay.indexOf(q) !== -1;
+            row.hidden = !show;
+            if (show) visible += 1;
+        });
+        if (registeredListCountEl) {
+            registeredListCountEl.textContent = String(visible);
+        }
+    }
+
+    function renderRegisteredCustomers(customers) {
+        registeredCustomersCache = customers || [];
+        if (registeredCustomersCountEl) {
+            registeredCustomersCountEl.textContent = registeredCustomersCache.length;
+        }
+        const btn2 = document.getElementById('openRegisteredCustomersBtn2');
+        if (btn2) {
+            btn2.textContent = 'Svi registrovani (' + registeredCustomersCache.length + ') →';
+        }
+        if (!registeredCustomersBody) return;
+        if (!registeredCustomersCache.length) {
+            registeredCustomersBody.innerHTML =
+                '<tr class="staff-live-empty-row"><td colspan="6">Nema registrovanih kupaca s emailom.</td></tr>';
+            if (registeredListCountEl) registeredListCountEl.textContent = '0';
+            return;
+        }
+        registeredCustomersBody.innerHTML = registeredCustomersCache.map(function (c) {
+            const search = ((c.ime || '') + ' ' + (c.email || '') + ' ' + (c.grad || '')).toLowerCase();
+            const status = c.is_online
+                ? '<span class="staff-live-badge staff-live-badge--online">online</span>'
+                : '<span class="staff-live-badge">offline</span>';
+            const grad = c.grad
+                ? escapeHtml(c.grad)
+                : '<span class="staff-live-muted">—</span>';
+            const isActive = !!c.is_active;
+            let accountCell;
+            if (isActive) {
+                accountCell = '<span class="staff-live-account-badge staff-live-account-badge--active">Aktivan</span>';
+            } else {
+                accountCell = (
+                    '<span class="staff-live-account-badge staff-live-account-badge--inactive">Nije aktiviran</span>' +
+                    '<button type="button" class="staff-live-activate-btn" data-activate-user ' +
+                    'data-user-id="' + escapeHtml(c.user_id || '') + '" ' +
+                    'data-visitor-name="' + escapeHtml(c.ime || '') + '" ' +
+                    'data-visitor-email="' + escapeHtml(c.email || '') + '" ' +
+                    'title="Aktiviraj nalog bez email potvrde">Aktiviraj</button>'
+                );
+            }
+            return (
+                '<tr data-reg-row data-user-id="' + escapeHtml(c.user_id || '') + '" data-search="' + escapeHtml(search) + '">' +
+                '<td class="staff-live-name-cell">' + escapeHtml(c.ime || '') + '</td>' +
+                '<td title="' + escapeHtml(c.email || '') + '">' + escapeHtml(c.email || '') + '</td>' +
+                '<td>' + grad + '</td>' +
+                '<td>' + status + '</td>' +
+                '<td class="staff-live-account-cell">' + accountCell + '</td>' +
+                '<td class="staff-live-action-cell">' +
+                '<button type="button" class="staff-live-offer-btn" data-offer-open ' +
+                'data-session-key="" data-visitor-name="' + escapeHtml(c.ime || '') + '" ' +
+                'data-visitor-email="' + escapeHtml(c.email || '') + '" ' +
+                'data-user-id="' + escapeHtml(c.user_id || '') + '" ' +
+                'title="Pošalji ponudu na email">Email ponuda</button>' +
+                '</td></tr>'
+            );
+        }).join('');
+        if (registeredListCountEl) {
+            registeredListCountEl.textContent = String(registeredCustomersCache.length);
+        }
+        bindOfferButtons(registeredCustomersBody);
+    }
+
     function bindOfferButtons(root) {
+        if (!root) return;
         root.querySelectorAll('[data-offer-open]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                openOfferModal(btn.dataset.sessionKey, btn.dataset.visitorName);
+                openOfferModal({
+                    sessionKey: btn.dataset.sessionKey || '',
+                    visitorName: btn.dataset.visitorName || 'Gost',
+                    email: btn.dataset.visitorEmail || '',
+                    userId: btn.dataset.userId || '',
+                });
             });
         });
         root.querySelectorAll('[data-register-invite]').forEach(function (btn) {
@@ -552,6 +1252,254 @@
                 sendRegistrationInvite(btn);
             });
         });
+        root.querySelectorAll('[data-detail-open]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openDetailModal(btn.dataset.detailTitle || 'Detalji', btn.dataset.detailItems || '', {
+                    kind: btn.dataset.detailKind || 'text',
+                    productsRaw: btn.dataset.detailProducts || '',
+                    sessionKey: btn.dataset.sessionKey || '',
+                    email: btn.dataset.visitorEmail || '',
+                    userId: btn.dataset.userId || '',
+                    visitorName: btn.dataset.visitorName || 'Gost',
+                });
+            });
+        });
+        root.querySelectorAll('[data-open-registered]').forEach(function (btn) {
+            btn.addEventListener('click', openRegisteredModal);
+        });
+        root.querySelectorAll('[data-open-cities]').forEach(function (btn) {
+            btn.addEventListener('click', openCityModal);
+        });
+        root.querySelectorAll('[data-activate-user]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                activateRegisteredUser(btn);
+            });
+        });
+        root.querySelectorAll('[data-gift-push]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                pushOnlineGift(btn);
+            });
+        });
+    }
+
+    async function pushOnlineGift(btn) {
+        const sessionKey = btn.dataset.sessionKey || '';
+        const name = btn.dataset.visitorName || 'kupca';
+        if (!sessionKey) {
+            alert('Nema sesije kupca.');
+            return;
+        }
+        if (!window.confirm('Pusti online nagradu za „' + name + '”?\nPopup će mu iskočiti na sajtu.')) {
+            return;
+        }
+        btn.disabled = true;
+        try {
+            const csrf = readStaffCsrfToken();
+            if (!csrf) throw new Error('Sigurnosni token nije dostupan. Osvježite stranicu.');
+            const body = new URLSearchParams();
+            body.set('csrfmiddlewaretoken', csrf);
+            body.set('session_key', sessionKey);
+            const response = await fetch(giftPushUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await parseStaffJsonResponse(response);
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || 'Puštanje nagrade nije uspjelo.');
+            }
+            showStaffToast(data.message || 'Nagrada puštena.');
+            btn.classList.add('staff-live-gift-push-btn--sent');
+            refreshLiveAnalytics();
+        } catch (err) {
+            alert(err.message || 'Puštanje nagrade nije uspjelo.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function setGiftAutomatic(checked) {
+        const csrf = readStaffCsrfToken();
+        if (!csrf) {
+            alert('Sigurnosni token nije dostupan. Osvježite stranicu.');
+            return;
+        }
+        const body = new URLSearchParams();
+        body.set('csrfmiddlewaretoken', csrf);
+        body.set('automatic', checked ? '1' : '0');
+        try {
+            const response = await fetch(giftAutoUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await parseStaffJsonResponse(response);
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || 'Promjena nije uspjela.');
+            }
+            showStaffToast(data.message || 'Sačuvano.');
+            const hint = document.getElementById('liveGiftModeHint');
+            if (hint) {
+                hint.textContent = data.automatic
+                    ? ('Iskače svima na sajtu (jednom po posjetiocu). Nagrada: ' +
+                       (data.prize_label || '') + '.')
+                    : 'Isključeno — ručno pusti pored kupca dugmetom 🎁 Nagrada.';
+            }
+            const nameEl = document.getElementById('liveGiftCampaignName');
+            if (nameEl && data.campaign_name) {
+                nameEl.textContent = data.campaign_name + ' · ' + (data.prize_label || '');
+            }
+        } catch (err) {
+            alert(err.message || 'Promjena nije uspjela.');
+            const toggle = document.getElementById('liveGiftAutomaticToggle');
+            if (toggle) toggle.checked = !checked;
+        }
+    }
+
+    document.getElementById('liveGiftAutomaticToggle')?.addEventListener('change', function () {
+        setGiftAutomatic(!!this.checked);
+    });
+
+    function renderGiftWinners(winners, hours) {
+        const body = document.getElementById('liveGiftWinnersBody');
+        const countEl = document.getElementById('liveGiftWinnersCount');
+        if (countEl) countEl.textContent = '(' + (winners ? winners.length : 0) + ')';
+        if (!body) return;
+        if (!winners || !winners.length) {
+            body.innerHTML =
+                '<tr class="staff-live-empty-row"><td colspan="6">' +
+                'Još nema pobjednika online nagrade u zadnjih ' +
+                escapeHtml(hours || 48) + ' h.</td></tr>';
+            return;
+        }
+        body.innerHTML = winners.map(function (w) {
+            const onlineTag = w.is_online
+                ? '<span class="staff-live-cart-tag staff-live-gift-online-tag">online</span>'
+                : '';
+            const regTag = w.is_registered
+                ? '<span class="staff-live-reg-tag" title="Registrovan">reg</span>'
+                : '';
+            const grad = w.grad
+                ? '<div class="staff-live-city-sub">' + escapeHtml(w.grad) + '</div>'
+                : '';
+            const email = w.email
+                ? '<div class="staff-live-email-hint">' + escapeHtml(w.email) + '</div>'
+                : '';
+            const campaign = w.campaign_name
+                ? '<div class="staff-live-muted">' + escapeHtml(w.campaign_name) + '</div>'
+                : '';
+            const cart = w.has_cart
+                ? '<div class="staff-live-gift-cart">🛒 ' + escapeHtml(w.cart_value_label) + '</div>'
+                : '';
+            let orderCell;
+            if (w.order_number) {
+                orderCell =
+                    '<a href="' + orderDetailBase + encodeURIComponent(w.order_number) + '/" ' +
+                    'class="staff-live-gift-order-link" title="Otvori narudžbu">#' +
+                    escapeHtml(w.order_number) + '</a>' +
+                    (w.order_total_label
+                        ? '<div class="staff-live-muted">' + escapeHtml(w.order_total_label) + '</div>'
+                        : '');
+            } else if (w.reward_consumed) {
+                orderCell = '<span class="staff-live-gift-status staff-live-gift-status--consumed">Iskorišteno</span>';
+            } else {
+                orderCell = '<span class="staff-live-muted">Nije</span>';
+            }
+            let action = '<span class="staff-live-muted">—</span>';
+            if (w.session_key || w.email || w.user_id) {
+                action =
+                    '<button type="button" class="staff-live-offer-btn" data-offer-open ' +
+                    'data-session-key="' + escapeHtml(w.session_key || '') + '" ' +
+                    'data-visitor-name="' + escapeHtml(w.ime || 'Gost') + '" ' +
+                    'data-visitor-email="' + escapeHtml(w.email || '') + '" ' +
+                    'data-user-id="' + escapeHtml(w.user_id || '') + '" ' +
+                    'title="Pošalji ponudu">Ponuda</button>';
+            }
+            return (
+                '<tr>' +
+                '<td class="staff-live-name-cell">' + onlineTag + regTag +
+                escapeHtml(w.ime || 'Gost') + grad + email +
+                '<div class="staff-live-gift-won-ago" title="' + escapeHtml(w.won_at_label || '') + '">' +
+                'Osvojio ' + escapeHtml(w.won_ago_label || '') + '</div></td>' +
+                '<td><strong class="staff-live-gift-prize">' + escapeHtml(w.prize_label || '') +
+                '</strong>' + campaign + '</td>' +
+                '<td class="staff-live-gift-activity-cell">' +
+                '<span class="staff-live-gift-activity">' + escapeHtml(w.activity_label || '—') +
+                '</span>' + cart + '</td>' +
+                '<td><span class="staff-live-gift-status staff-live-gift-status--' +
+                escapeHtml(w.status_key || 'won') + '">' +
+                escapeHtml(w.status_label || '') + '</span></td>' +
+                '<td>' + orderCell + '</td>' +
+                '<td class="staff-live-action-cell">' + action + '</td>' +
+                '</tr>'
+            );
+        }).join('');
+        bindOfferButtons(body);
+    }
+
+    async function activateRegisteredUser(btn) {
+        const userId = btn.dataset.userId || '';
+        if (!userId) return;
+        const name = btn.dataset.visitorName || btn.dataset.visitorEmail || 'kupca';
+        if (!window.confirm('Aktivirati nalog za „' + name + '”? Kupac će se moći prijaviti bez email potvrde.')) {
+            return;
+        }
+        btn.disabled = true;
+        try {
+            const csrf = readStaffCsrfToken();
+            if (!csrf) {
+                throw new Error('Sigurnosni token nije dostupan. Osvježite stranicu.');
+            }
+            const body = new URLSearchParams();
+            body.set('csrfmiddlewaretoken', csrf);
+            body.set('user_id', userId);
+            const response = await fetch(activateUserUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await parseStaffJsonResponse(response);
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || 'Aktivacija nije uspjela.');
+            }
+            showStaffToast(data.message || 'Nalog aktiviran.');
+            const row = btn.closest('[data-reg-row]');
+            if (row) {
+                const cell = row.querySelector('.staff-live-account-cell');
+                if (cell) {
+                    cell.innerHTML = '<span class="staff-live-account-badge staff-live-account-badge--active">Aktivan</span>';
+                }
+            }
+            registeredCustomersCache = registeredCustomersCache.map(function (c) {
+                if (String(c.user_id) === String(userId)) {
+                    return Object.assign({}, c, {
+                        is_active: true,
+                        account_status_label: 'Aktivan',
+                    });
+                }
+                return c;
+            });
+        } catch (err) {
+            alert(err.message || 'Aktivacija nije uspjela.');
+            btn.disabled = false;
+        }
     }
 
     async function sendRegistrationInvite(btn) {
@@ -593,17 +1541,31 @@
         }
     }
 
-    function openOfferModal(sessionKey, visitorName) {
+    function openOfferModal(opts) {
         if (!modal) return;
-        sessionKeyEl.value = sessionKey || '';
-        visitorNameEl.textContent = visitorName || 'Gost';
+        opts = opts || {};
+        sessionKeyEl.value = opts.sessionKey || '';
+        if (offerEmailEl) offerEmailEl.value = opts.email || '';
+        if (offerUserIdEl) offerUserIdEl.value = opts.userId || '';
+        visitorNameEl.textContent = opts.visitorName || opts.email || 'Gost';
+        if (offerHintEl) {
+            if (opts.sessionKey) {
+                offerHintEl.textContent = 'Ako je online — popup na sajtu. Ako ima email — stigne i na email.';
+            } else {
+                offerHintEl.textContent = 'Ponuda se šalje na email' +
+                    (opts.email ? ' (' + opts.email + ')' : '') +
+                    '. Ako je kupac online, dobiće i popup.';
+            }
+        }
         productIdEl.value = '';
         productSearch.value = '';
         selectedProductEl.hidden = true;
         selectedProductEl.textContent = '';
         productResults.hidden = true;
         productResults.innerHTML = '';
-        document.getElementById('liveOfferDiscount').value = '10';
+        document.getElementById('liveOfferDiscount').value = '0';
+        const freeShipEl = document.getElementById('liveOfferFreeShipping');
+        if (freeShipEl) freeShipEl.checked = true;
         modal.hidden = false;
         document.body.classList.add('popup-open');
         productSearch.focus();
@@ -612,11 +1574,30 @@
     function closeOfferModal() {
         if (!modal) return;
         modal.hidden = true;
+        if (detailModal && !detailModal.hidden) return;
+        if (registeredModal && !registeredModal.hidden) return;
+        if (cityModal && !cityModal.hidden) return;
         document.body.classList.remove('popup-open');
     }
 
     modal?.querySelectorAll('[data-offer-close]').forEach(function (el) {
         el.addEventListener('click', closeOfferModal);
+    });
+    detailModal?.querySelectorAll('[data-detail-close]').forEach(function (el) {
+        el.addEventListener('click', closeDetailModal);
+    });
+    registeredModal?.querySelectorAll('[data-registered-close]').forEach(function (el) {
+        el.addEventListener('click', closeRegisteredModal);
+    });
+    cityModal?.querySelectorAll('[data-city-close]').forEach(function (el) {
+        el.addEventListener('click', closeCityModal);
+    });
+    document.getElementById('openRegisteredCustomersBtn')?.addEventListener('click', openRegisteredModal);
+    document.getElementById('openRegisteredCustomersBtn2')?.addEventListener('click', openRegisteredModal);
+    document.getElementById('openCityStatsBtn')?.addEventListener('click', openCityModal);
+    document.getElementById('openCityStatsBtn2')?.addEventListener('click', openCityModal);
+    registeredSearch?.addEventListener('input', function () {
+        filterRegisteredRows(registeredSearch.value);
     });
 
     let searchTimer = null;
@@ -673,8 +1654,10 @@
     offerSendForm?.addEventListener('submit', async function (e) {
         e.preventDefault();
         const discountVal = parseFloat(document.getElementById('liveOfferDiscount').value || '0');
-        if (!productIdEl.value && (!discountVal || discountVal <= 0)) {
-            alert('Unesite popust % ili odaberite artikal.');
+        const freeShipEl = document.getElementById('liveOfferFreeShipping');
+        const freeShip = !!(freeShipEl && freeShipEl.checked);
+        if (!productIdEl.value && (!discountVal || discountVal <= 0) && !freeShip) {
+            alert('Unesite popust %, uključite besplatnu dostavu ili odaberite artikal.');
             return;
         }
         const submitBtn = offerSendForm.querySelector('.staff-live-offer-submit');
@@ -725,11 +1708,13 @@
             if (registeredOnlineCountEl) {
                 registeredOnlineCountEl.textContent = data.registered_online_count || 0;
             }
-            if (registeredWindowCountEl) {
-                registeredWindowCountEl.textContent = data.registered_window_count || 0;
-            }
             if (registeredPanelCountEl) {
                 registeredPanelCountEl.textContent = '(' + (data.registered_online_count || 0) + ')';
+            }
+            if (data.registered_customers) {
+                renderRegisteredCustomers(data.registered_customers);
+            } else if (registeredCustomersCountEl && data.registered_customers_count != null) {
+                registeredCustomersCountEl.textContent = data.registered_customers_count;
             }
             updatedEl.textContent = data.generated_at_label || '—';
             onlineBody.innerHTML = renderRows(
@@ -743,11 +1728,16 @@
                 { showActivity: true },
             );
             if (registeredBody) {
-                registeredBody.innerHTML = renderRows(
-                    data.registered_online_visitors || [],
-                    'Trenutno nema registrovanih kupaca online.',
-                    { showActivity: false },
-                );
+                const regRows = data.registered_online_visitors || [];
+                if (!regRows.length) {
+                    registeredBody.innerHTML =
+                        '<tr class="staff-live-empty-row"><td colspan="4">' +
+                        'Trenutno nema registrovanih kupaca online. ' +
+                        '<button type="button" class="staff-live-inline-link" data-open-registered>' +
+                        'Pogledaj sve registrovane →</button></td></tr>';
+                } else {
+                    registeredBody.innerHTML = renderRows(regRows, '', { showActivity: false });
+                }
             }
             renderTrafficTable(
                 dailyStatsBody,
@@ -764,6 +1754,24 @@
                 data.city_stats || [],
                 'Još nema zabilježenih gradova.',
             );
+            if (data.gift_online_winners_count != null) {
+                const onlineGiftEl = document.getElementById('liveGiftOnlineCount');
+                if (onlineGiftEl) onlineGiftEl.textContent = data.gift_online_winners_count;
+            }
+            if (data.gift_ordered_count != null) {
+                const orderedEl = document.getElementById('liveGiftOrderedCount');
+                if (orderedEl) orderedEl.textContent = data.gift_ordered_count;
+            }
+            if (data.gift_winners) {
+                renderGiftWinners(data.gift_winners, data.gift_feed_hours || 48);
+            }
+            if (data.gift_campaign) {
+                const toggle = document.getElementById('liveGiftAutomaticToggle');
+                if (toggle && data.gift_campaign.active) {
+                    toggle.checked = !!data.gift_campaign.automatic;
+                }
+            }
+            // Sačuvaj punu listu za modal (renderCityStatsList već puni cache)
             bindOfferButtons(onlineBody);
             bindOfferButtons(windowBody);
             if (registeredBody) bindOfferButtons(registeredBody);

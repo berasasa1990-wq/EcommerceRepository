@@ -1,11 +1,18 @@
+import logging
+import time
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db import OperationalError, transaction
 from django.utils import timezone
 
 from .models import ActiveCartItem, Product, ProductVariation
 
+logger = logging.getLogger(__name__)
+
 STALE_CART_DAYS = 14
+_SQLITE_LOCK_RETRIES = 4
+_SQLITE_LOCK_SLEEP = 0.05
 
 
 def get_cart_session_key(request):
@@ -58,11 +65,24 @@ def track_cart_line_added_or_updated(request, key, item):
         line_key=key,
     ).only('kolicina').first()
     old_qty = existing.kolicina if existing else 0
-    _obj, created = ActiveCartItem.objects.update_or_create(
-        session_key=session_key,
-        line_key=key,
-        defaults=defaults,
-    )
+    created = False
+    try:
+        updated = ActiveCartItem.objects.filter(
+            session_key=session_key,
+            line_key=key,
+        ).update(**defaults)
+        if not updated:
+            ActiveCartItem.objects.create(
+                session_key=session_key,
+                line_key=key,
+                **defaults,
+            )
+            created = True
+    except OperationalError as exc:
+        if not _is_db_locked(exc):
+            raise
+        logger.warning('track_cart_line skipped (db locked): %s', exc)
+        return
     _attach_user_to_session(request, session_key)
 
     # Superuser obavijest: novo dodavanje ili povećanje količine (ne za superusere)
@@ -118,6 +138,10 @@ def track_cart_cleared(request):
         ActiveCartItem.objects.filter(session_key=session_key).delete()
 
 
+def _is_db_locked(exc):
+    return isinstance(exc, OperationalError) and 'locked' in str(exc).lower()
+
+
 def sync_active_cart(request, cart):
     """Potpuna usklađenost sesije i baze (npr. pri otvaranju korpe)."""
     session_key = get_cart_session_key(request)
@@ -126,21 +150,47 @@ def sync_active_cart(request, cart):
 
     current_keys = set()
     user = _cart_user(request)
+    line_payloads = []
     for key, item in cart.cart.items():
         current_keys.add(key)
         defaults = _line_defaults(request, item)
         if not defaults['product']:
             continue
         defaults['user'] = user
-        ActiveCartItem.objects.update_or_create(
-            session_key=session_key,
-            line_key=key,
-            defaults=defaults,
-        )
+        line_payloads.append((key, defaults))
 
-    ActiveCartItem.objects.filter(session_key=session_key).exclude(
-        line_key__in=current_keys,
-    ).delete()
+    last_error = None
+    for attempt in range(_SQLITE_LOCK_RETRIES):
+        try:
+            with transaction.atomic():
+                for key, defaults in line_payloads:
+                    # update pa create — kraći lock od update_or_create + select_for_update
+                    updated = ActiveCartItem.objects.filter(
+                        session_key=session_key,
+                        line_key=key,
+                    ).update(**defaults)
+                    if not updated:
+                        ActiveCartItem.objects.create(
+                            session_key=session_key,
+                            line_key=key,
+                            **defaults,
+                        )
+                ActiveCartItem.objects.filter(session_key=session_key).exclude(
+                    line_key__in=current_keys,
+                ).delete()
+            return
+        except OperationalError as exc:
+            last_error = exc
+            if not _is_db_locked(exc) or attempt + 1 >= _SQLITE_LOCK_RETRIES:
+                break
+            time.sleep(_SQLITE_LOCK_SLEEP * (attempt + 1))
+        except Exception as exc:
+            logger.exception('sync_active_cart failed: %s', exc)
+            return
+
+    if last_error is not None:
+        # Korpa u sesiji i dalje radi — ne ruši stranicu zbog staff track tabele
+        logger.warning('sync_active_cart skipped after lock: %s', last_error)
 
 
 def cleanup_stale_active_cart_items():

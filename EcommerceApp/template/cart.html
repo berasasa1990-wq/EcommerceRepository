@@ -10,6 +10,11 @@
     <h1>Korpa</h1>
 
     {% if cart_items %}
+    {% if online_gift_reward_label %}
+    <div class="online-gift-banner" role="status">
+        🎁 Online nagrada: {{ online_gift_reward_label }} — primjenjuje se na ovoj narudžbi
+    </div>
+    {% endif %}
     {% include 'partials/cart_free_shipping_bar.html' with summary=summary %}
     <div class="cart-layout">
         <div class="cart-main">

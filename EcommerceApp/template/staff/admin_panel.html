@@ -11,7 +11,13 @@
     <div class="staff-admin-header">
         <a href="{% url 'account' %}" class="account-back-link">← Nazad na nalog</a>
         <h1>Admin panel</h1>
-        <p class="staff-admin-subtitle">Odaberite sekciju</p>
+        <p class="staff-admin-subtitle">
+            {% if user.is_superuser %}
+            Odaberite sekciju
+            {% else %}
+            Staff pristup — Loyalty System
+            {% endif %}
+        </p>
     </div>
 
     <div class="admin-buttons">
@@ -23,6 +29,7 @@
             </div>
         </a>
 
+        {% if user.is_superuser %}
         <a href="{% url 'staff_online_orders' %}" class="admin-btn">
             <div class="admin-btn-icon">🛒</div>
             <div class="admin-btn-text">
@@ -47,7 +54,7 @@
             </div>
         </a>
 
-{% if olx_chat_configured %}
+        {% if olx_chat_configured %}
         <a href="{% url 'staff_olx_messages' %}" class="admin-btn">
             <div class="admin-btn-icon">💬</div>
             <div class="admin-btn-text">
@@ -55,6 +62,15 @@
                 <span>Pregled chata sa kupcima na Pik/OLX</span>
             </div>
         </a>
+        {% endif %}
+        {% else %}
+        <div class="admin-btn admin-btn--locked" title="Dostupno samo superuseru" aria-disabled="true">
+            <div class="admin-btn-icon">🔒</div>
+            <div class="admin-btn-text">
+                <strong>Ostale sekcije</strong>
+                <span>Online narudžbe, korpe, analitika — samo superuser</span>
+            </div>
+        </div>
         {% endif %}
     </div>
 </section>

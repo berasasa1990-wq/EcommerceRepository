@@ -2167,6 +2167,11 @@ class LiveVisitorOffer(models.Model):
     discount_percent = models.DecimalField(
         max_digits=5, decimal_places=2, default=0, verbose_name='Popust (%)',
     )
+    besplatna_dostava = models.BooleanField(
+        default=False,
+        verbose_name='Besplatna dostava (prva kupovina)',
+        help_text='Ako je uključeno, kupac na prvu narudžbu ostvaruje besplatnu dostavu.',
+    )
     aktivacioni_kod = models.CharField(
         max_length=20, blank=True, verbose_name='Aktivacioni kod',
     )
@@ -2227,3 +2232,272 @@ class CartRecoveryAlert(models.Model):
 
     def __str__(self):
         return f'{self.session_key[:8]}… ({self.discount_percent}%)'
+
+
+class OnlineGiftCampaign(models.Model):
+    """
+    Online nagrada za posjetioce koji su trenutno na sajtu.
+    Jednostavan otkrij-nagradu popup (bez točka / greb-greba).
+    """
+
+    class Audience(models.TextChoices):
+        ALL = 'all', 'Svi online posjetioci'
+        REGISTERED = 'registered', 'Samo registrovani online'
+
+    class PrizeType(models.TextChoices):
+        PRODUCT = 'product', 'Gratis artikal (100%)'
+        PERCENT = 'percent', '% na kompletnu narudžbu'
+        FIXED_KM = 'fixed_km', 'KM iznos popusta'
+        FREE_SHIPPING = 'free_shipping', 'Besplatna dostava'
+
+    naziv = models.CharField(
+        max_length=100,
+        verbose_name='Interni naziv',
+        help_text='Samo za admin (npr. „Vikend online poklon”).',
+    )
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+    audience = models.CharField(
+        max_length=20,
+        choices=Audience.choices,
+        default=Audience.ALL,
+        verbose_name='Kome prikazati',
+    )
+    prize_type = models.CharField(
+        max_length=20,
+        choices=PrizeType.choices,
+        default=PrizeType.PERCENT,
+        verbose_name='Tip nagrade',
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='online_gift_campaigns',
+        verbose_name='Artikal (gratis)',
+        help_text='Za tip gratis artikal.',
+    )
+    discount_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name='Popust %',
+        help_text='Za tip % na narudžbu (jednokratno).',
+    )
+    discount_km = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name='Popust KM',
+        help_text='Za tip fiksni KM popust (jednokratno).',
+    )
+    win_chance_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('30.00'),
+        verbose_name='Šansa za nagradu (%)',
+        help_text='Koliko % online posjetilaca dobije nagradu (ostali vide „sreću drugi put”).',
+    )
+    naslov = models.CharField(
+        max_length=120,
+        default='Online nagrada za tebe!',
+        verbose_name='Naslov',
+    )
+    poruka = models.CharField(
+        max_length=220,
+        blank=True,
+        default='Kao hvala što ste na sajtu — otkrijte da li ste dobili poklon.',
+        verbose_name='Poruka',
+    )
+    popup_delay_seconds = models.PositiveSmallIntegerField(
+        default=3,
+        verbose_name='Prikaži nakon (sekundi)',
+        help_text='0 = odmah.',
+    )
+    only_tracked_online = models.BooleanField(
+        default=False,
+        verbose_name='Samo praćeni online posjetioci',
+        help_text='Ako je uključeno, nagrada se nudi samo onima koje vidiš u Uživo analitici (LiveVisitor).',
+    )
+    automatic = models.BooleanField(
+        default=True,
+        verbose_name='Automatski svima online',
+        help_text=(
+            'Uključeno: popup se automatski prikaže svima na sajtu (jednom po posjetiocu). '
+            'Isključeno: nagrada se ne pojavljuje sama — staff je pušta ručno u Uživo analitici '
+            'pored kupca.'
+        ),
+    )
+    once_per_visitor = models.BooleanField(
+        default=True,
+        verbose_name='Jednom po posjetiocu',
+    )
+    kreirano = models.DateTimeField(auto_now_add=True)
+    azurirano = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Online nagrada'
+        verbose_name_plural = 'Online nagrade'
+        ordering = ['-aktivan', '-azurirano']
+
+    def __str__(self):
+        status = 'aktivna' if self.aktivan else 'neaktivna'
+        return f'{self.naziv} ({status})'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.win_chance_percent is not None and (
+            self.win_chance_percent < 0 or self.win_chance_percent > 100
+        ):
+            raise ValidationError({'win_chance_percent': 'Šansa mora biti 0–100%.'})
+        if self.prize_type == self.PrizeType.PRODUCT and not self.product_id:
+            raise ValidationError({'product': 'Odaberite artikal.'})
+        if self.prize_type == self.PrizeType.PERCENT:
+            if not self.discount_percent or self.discount_percent <= 0:
+                raise ValidationError({'discount_percent': 'Unesite % veći od 0.'})
+        if self.prize_type == self.PrizeType.FIXED_KM:
+            if not self.discount_km or self.discount_km <= 0:
+                raise ValidationError({'discount_km': 'Unesite KM veći od 0.'})
+
+    def prize_label(self):
+        if self.prize_type == self.PrizeType.PRODUCT:
+            name = ''
+            if self.product_id and self.product:
+                name = (self.product.naziv or '')[:40]
+            return f'GRATIS {name}'.strip() or 'Gratis artikal'
+        if self.prize_type == self.PrizeType.PERCENT:
+            pct = self.discount_percent or 0
+            pct_label = int(pct) if pct == int(pct) else pct
+            return f'{pct_label}% na narudžbu'
+        if self.prize_type == self.PrizeType.FIXED_KM:
+            km = self.discount_km or 0
+            km_label = int(km) if km == int(km) else km
+            return f'-{km_label} KM'
+        if self.prize_type == self.PrizeType.FREE_SHIPPING:
+            return 'Besplatna dostava'
+        return 'Nagrada'
+
+    def audience_matches(self, user):
+        if self.audience == self.Audience.REGISTERED:
+            return bool(user and getattr(user, 'is_authenticated', False))
+        return True
+
+
+class OnlineGiftClaim(models.Model):
+    """Jedan pokušaj / nagrada online posjetioca."""
+
+    campaign = models.ForeignKey(
+        OnlineGiftCampaign,
+        on_delete=models.CASCADE,
+        related_name='claims',
+        verbose_name='Kampanja',
+    )
+    session_key = models.CharField(max_length=40, db_index=True, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='online_gift_claims',
+    )
+    won = models.BooleanField(default=False)
+    prize_type = models.CharField(max_length=20, blank=True)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='online_gift_claims',
+    )
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    discount_km = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    reward_claimed = models.BooleanField(default=False)
+    reward_consumed = models.BooleanField(default=False)
+    order = models.ForeignKey(
+        'Order',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='online_gift_claims',
+        verbose_name='Narudžba',
+        help_text='Popunjava se kad kupac iskoristi nagradu u checkoutu.',
+    )
+    kreirano = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Online nagrada (pokušaj)'
+        verbose_name_plural = 'Online nagrade (pokušaji)'
+        ordering = ['-kreirano']
+        indexes = [
+            models.Index(fields=['session_key', 'campaign']),
+            models.Index(fields=['user', 'campaign']),
+            models.Index(fields=['won', '-kreirano']),
+        ]
+
+    def __str__(self):
+        return f'Claim #{self.pk} ({"pobjeda" if self.won else "promašaj"})'
+
+    def prize_label(self):
+        """Ljudski čitljiv naziv osvojene nagrade."""
+        if self.prize_type == OnlineGiftCampaign.PrizeType.PRODUCT:
+            name = ''
+            if self.product_id and self.product:
+                name = (self.product.naziv or '')[:40]
+            return f'GRATIS {name}'.strip() or 'Gratis artikal'
+        if self.prize_type == OnlineGiftCampaign.PrizeType.PERCENT:
+            pct = self.discount_percent or 0
+            pct_label = int(pct) if pct == int(pct) else pct
+            return f'{pct_label}% na narudžbu'
+        if self.prize_type == OnlineGiftCampaign.PrizeType.FIXED_KM:
+            km = self.discount_km or 0
+            km_label = int(km) if km == int(km) else km
+            return f'-{km_label} KM'
+        if self.prize_type == OnlineGiftCampaign.PrizeType.FREE_SHIPPING:
+            return 'Besplatna dostava'
+        if self.campaign_id:
+            try:
+                return self.campaign.prize_label()
+            except Exception:
+                pass
+        return 'Nagrada'
+
+
+class OnlineGiftPush(models.Model):
+    """
+    Staff ručno pušta online nagradu određenom posjetiocu (sesija).
+    Koristi se kad kampanja nije u automatskom režimu.
+    """
+
+    campaign = models.ForeignKey(
+        OnlineGiftCampaign,
+        on_delete=models.CASCADE,
+        related_name='pushes',
+        verbose_name='Kampanja',
+    )
+    session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='online_gift_pushes',
+        verbose_name='Kupac',
+    )
+    staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='online_gift_pushes_sent',
+        verbose_name='Staff',
+    )
+    played = models.BooleanField(default=False, verbose_name='Otvorio nagradu')
+    dismissed = models.BooleanField(default=False, verbose_name='Zatvorio')
+    kreirano = models.DateTimeField(auto_now_add=True)
+    azurirano = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Online nagrada (ručno)'
+        verbose_name_plural = 'Online nagrade (ručno)'
+        ordering = ['-kreirano']
+        indexes = [
+            models.Index(fields=['session_key', 'campaign', 'played']),
+        ]
+
+    def __str__(self):
+        return f'Push #{self.pk} → {self.session_key[:8]}…'

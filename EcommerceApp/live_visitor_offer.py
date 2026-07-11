@@ -7,12 +7,15 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .cart_tracking import get_cart_session_key
-from .models import Coupon, LiveVisitorOffer, Product, ProductVariation
+from .models import Coupon, LiveVisitorOffer, Order, Product, ProductVariation
 
 OFFER_TIMER_MINUTES = 9
-REGISTRATION_INVITE_DISCOUNT = Decimal('10')
+# Legacy — stari pozivi su nudili 10%; novi nude besplatnu dostavu.
+REGISTRATION_INVITE_DISCOUNT = Decimal('0')
 REGISTRATION_COUPON_NAME = 'Registracijski popust (uživo)'
+REGISTRATION_FREE_SHIPPING_NAME = 'Besplatna dostava (registracija uživo)'
 SESSION_REG_INVITE_KEY = 'live_reg_invite_pending'
+SESSION_FREE_SHIPPING_KEY = 'cart_free_shipping_first'
 
 
 def _clamp_percent(value):
@@ -98,6 +101,7 @@ def send_live_visitor_offer(
     *,
     product_id=None,
     discount_percent=0,
+    free_shipping=False,
     staff_user=None,
     target_user=None,
 ):
@@ -105,6 +109,7 @@ def send_live_visitor_offer(
         raise ValueError('Sesija posjetioca nije pronađena.')
 
     percent = _clamp_percent(discount_percent)
+    free_shipping = bool(free_shipping)
     product = None
     if product_id:
         product = Product.objects.filter(pk=product_id, aktivan=True).first()
@@ -114,16 +119,17 @@ def send_live_visitor_offer(
     if product:
         tip = LiveVisitorOffer.Tip.ARTIKAL
         code = ''
-    elif percent > 0:
+    elif percent > 0 or free_shipping:
         tip = LiveVisitorOffer.Tip.NARUDZBA
         code = _generate_activation_code()
     else:
-        raise ValueError('Unesite popust % ili odaberite artikal.')
+        raise ValueError('Unesite popust %, besplatnu dostavu ili odaberite artikal.')
 
     defaults = {
         'tip': tip,
         'product': product,
         'discount_percent': percent,
+        'besplatna_dostava': free_shipping,
         'aktivacioni_kod': code,
         'kod_aktiviran': False,
         'show_popup': True,
@@ -134,7 +140,7 @@ def send_live_visitor_offer(
 
 
 def send_live_visitor_registration_invite(session_key, *, staff_user=None, target_user=None):
-    """Pošalji gostu popup poziv na registraciju (+ 10% na prvu narudžbu)."""
+    """Pošalji gostu popup poziv na registraciju (+ besplatna dostava na prvu narudžbu)."""
     if not session_key:
         raise ValueError('Sesija posjetioca nije pronađena.')
     if target_user and getattr(target_user, 'is_authenticated', False):
@@ -143,7 +149,8 @@ def send_live_visitor_registration_invite(session_key, *, staff_user=None, targe
     defaults = {
         'tip': LiveVisitorOffer.Tip.REGISTRACIJA,
         'product': None,
-        'discount_percent': REGISTRATION_INVITE_DISCOUNT,
+        'discount_percent': Decimal('0'),
+        'besplatna_dostava': True,
         'aktivacioni_kod': '',
         'kod_aktiviran': False,
         'show_popup': True,
@@ -153,50 +160,62 @@ def send_live_visitor_registration_invite(session_key, *, staff_user=None, targe
     return _upsert_live_visitor_offer(session_key, defaults, target_user=None)
 
 
-def _registration_discount_percent(offer=None, session_value=None):
-    if offer and offer.discount_percent and offer.discount_percent > 0:
-        return _clamp_percent(offer.discount_percent)
-    if session_value not in (None, ''):
-        return _clamp_percent(session_value)
-    return REGISTRATION_INVITE_DISCOUNT
+def set_session_free_shipping(request, active=True):
+    if active:
+        request.session[SESSION_FREE_SHIPPING_KEY] = '1'
+    else:
+        request.session.pop(SESSION_FREE_SHIPPING_KEY, None)
+    request.session.modified = True
 
 
-def _generate_registration_coupon_code(user):
-    base = f'REG{user.pk:04d}'
-    code = f'{base}{secrets.token_hex(2).upper()}'
-    while Coupon.objects.filter(kod=code).exists():
-        code = f'{base}{secrets.token_hex(2).upper()}'
-    return code[:20]
+def session_has_free_shipping(request):
+    return bool(request and request.session.get(SESSION_FREE_SHIPPING_KEY))
 
 
-def get_active_registration_reward_coupon(user):
+def user_has_first_order_free_shipping(user):
+    """Registrovan kupac s prihvaćenom besplatnom dostavom, još bez narudžbe."""
     if not user or not getattr(user, 'is_authenticated', False):
-        return None
-    return (
-        Coupon.objects
-        .filter(
-            vlasnik=user,
-            naziv=REGISTRATION_COUPON_NAME,
-            aktivan=True,
-        )
-        .order_by('-kreiran')
-        .first()
-    )
+        return False
+    if Order.objects.filter(korisnik=user).exists():
+        return False
+    return LiveVisitorOffer.objects.filter(
+        user=user,
+        besplatna_dostava=True,
+        kod_aktiviran=True,
+    ).exists()
+
+
+def has_free_shipping_reward(request, user=None):
+    user = user if user is not None else getattr(request, 'user', None)
+    if session_has_free_shipping(request):
+        if not user or not getattr(user, 'is_authenticated', False):
+            return True
+        # Registrovan: samo dok nema nijednu narudžbu
+        return not Order.objects.filter(korisnik=user).exists()
+    return user_has_first_order_free_shipping(user)
+
+
+def clear_free_shipping_reward(request, user=None):
+    if request is not None:
+        set_session_free_shipping(request, False)
+    user = user if user is not None else (getattr(request, 'user', None) if request else None)
+    if user and getattr(user, 'is_authenticated', False):
+        # Ostavi kod_aktiviran=True (iskorišteno), ali nakon narudžbe
+        # user_has_first_order_free_shipping više ne prolazi jer postoji Order.
+        pass
 
 
 def mark_registration_invite_pending(request, offer):
-    """Zapamti u sesiji da je posjetilac dobio poziv s popustom."""
+    """Zapamti u sesiji da je posjetilac dobio poziv (besplatna dostava)."""
     if not offer or offer.tip != LiveVisitorOffer.Tip.REGISTRACIJA:
         return
-    percent = _registration_discount_percent(offer)
-    request.session[SESSION_REG_INVITE_KEY] = str(percent)
+    request.session[SESSION_REG_INVITE_KEY] = 'free_shipping'
     request.session.modified = True
 
 
 def claim_registration_invite_reward(request, user):
     """
-    Nakon registracije: jednokratni 10% popust na prvu narudžbu.
-    Popust se primjenjuje na korpu (recovery discount) dok se ne poruči.
+    Nakon registracije: besplatna dostava na prvu narudžbu (jednokratno).
     """
     if not user or not user.pk:
         return None
@@ -220,58 +239,72 @@ def claim_registration_invite_reward(request, user):
     if not offer and not pending:
         return None
 
-    percent = _registration_discount_percent(offer, pending)
-    if percent <= 0:
+    # Već iskoristio ranije (ima narudžbu) — ne daj ponovo
+    if Order.objects.filter(korisnik=user).exists():
+        if offer:
+            offer.user = user
+            offer.kod_aktiviran = True
+            offer.show_popup = False
+            offer.besplatna_dostava = True
+            offer.save(update_fields=[
+                'user', 'kod_aktiviran', 'show_popup', 'besplatna_dostava', 'azurirano',
+            ])
+        request.session.pop(SESSION_REG_INVITE_KEY, None)
         return None
-
-    coupon = get_active_registration_reward_coupon(user)
-    if not coupon:
-        # Već iskoristio ranije — ne daj ponovo
-        already_used = Coupon.objects.filter(
-            vlasnik=user,
-            naziv=REGISTRATION_COUPON_NAME,
-            aktivan=False,
-        ).exists()
-        if already_used:
-            if offer:
-                offer.user = user
-                offer.kod_aktiviran = True
-                offer.show_popup = False
-                offer.save(update_fields=['user', 'kod_aktiviran', 'show_popup', 'azurirano'])
-            request.session.pop(SESSION_REG_INVITE_KEY, None)
-            return None
-
-        coupon = Coupon.objects.create(
-            kod=_generate_registration_coupon_code(user),
-            naziv=REGISTRATION_COUPON_NAME,
-            postotak=percent,
-            vlasnik=user,
-            aktivan=True,
-            automatski=False,
-        )
 
     if offer:
         offer.user = user
-        offer.discount_percent = percent
+        offer.discount_percent = Decimal('0')
+        offer.besplatna_dostava = True
         offer.kod_aktiviran = True
         offer.show_popup = False
         offer.save(update_fields=[
-            'user', 'discount_percent', 'kod_aktiviran', 'show_popup', 'azurirano',
+            'user', 'discount_percent', 'besplatna_dostava',
+            'kod_aktiviran', 'show_popup', 'azurirano',
         ])
+    else:
+        # Pending iz sesije bez aktivne ponude u bazi
+        sk = session_key or f'reg-user-{user.pk}'
+        LiveVisitorOffer.objects.create(
+            session_key=sk,
+            user=user,
+            tip=LiveVisitorOffer.Tip.REGISTRACIJA,
+            discount_percent=Decimal('0'),
+            besplatna_dostava=True,
+            kod_aktiviran=True,
+            show_popup=False,
+            added_to_cart=False,
+        )
 
+    set_session_free_shipping(request, True)
     request.session.pop(SESSION_REG_INVITE_KEY, None)
     request.session.modified = True
-    return coupon
+    return {'free_shipping': True, 'type': 'registration'}
 
 
 def registration_reward_coupon_code(user):
-    """Kod aktivnog registracijskog popusta (za automatsku primjenu u korpi)."""
+    """Legacy: stari registracijski % kupon (ako još postoji aktivan)."""
     coupon = get_active_registration_reward_coupon(user)
     return coupon.kod if coupon else ''
 
 
+def get_active_registration_reward_coupon(user):
+    if not user or not getattr(user, 'is_authenticated', False):
+        return None
+    return (
+        Coupon.objects
+        .filter(
+            vlasnik=user,
+            naziv=REGISTRATION_COUPON_NAME,
+            aktivan=True,
+        )
+        .order_by('-kreiran')
+        .first()
+    )
+
+
 def consume_registration_reward(user):
-    """Nakon narudžbe — registracijski popust više ne vrijedi."""
+    """Nakon narudžbe — stari % kupon više ne vrijedi."""
     if not user or not getattr(user, 'is_authenticated', False):
         return
     Coupon.objects.filter(
@@ -314,13 +347,33 @@ def _percent_display(discount):
 def _build_order_offer_payload(offer):
     discount = offer.discount_percent or Decimal('0')
     pct_display = _percent_display(discount)
-    if not pct_display or not offer.aktivacioni_kod:
+    free_shipping = bool(getattr(offer, 'besplatna_dostava', False))
+    if not free_shipping and (not pct_display or not offer.aktivacioni_kod):
         return None
+    if free_shipping and not pct_display:
+        return {
+            'offer_type': 'free_shipping',
+            'offer_id': offer.pk,
+            'offer_version': int(offer.azurirano.timestamp()),
+            'free_shipping': True,
+            'title': 'Besplatna dostava na prvu kupovinu',
+            'message': (
+                'Prihvatite ponudu i na prvu narudžbu dostava vam je besplatna. '
+                'Vrijedi samo jednom — za prvu kupovinu.'
+            ),
+            'activation_code': offer.aktivacioni_kod or '',
+            'timer_seconds': _offer_timer_seconds(offer),
+            'timer_minutes': OFFER_TIMER_MINUTES,
+            'activate_url': '/ponuda/aktiviraj/',
+            'dismiss_url': '/ponuda/zatvori/',
+            'cta_label': 'Prihvati besplatnu dostavu',
+        }
     return {
         'offer_type': 'order',
         'offer_id': offer.pk,
         'offer_version': int(offer.azurirano.timestamp()),
         'discount_percent': pct_display,
+        'free_shipping': free_shipping,
         'activation_code': offer.aktivacioni_kod,
         'timer_seconds': _offer_timer_seconds(offer),
         'timer_minutes': OFFER_TIMER_MINUTES,
@@ -334,6 +387,7 @@ def _build_product_offer_payload(offer):
     if not product:
         return None
     discount = offer.discount_percent or Decimal('0')
+    free_shipping = bool(getattr(offer, 'besplatna_dostava', False))
     in_stock_variations = list(
         product.varijacije.filter(na_stanju=True).order_by('redoslijed', 'id'),
     )
@@ -372,6 +426,7 @@ def _build_product_offer_payload(offer):
         'image_url': product.prikazna_slika.url if product.prikazna_slika else '',
         'discount_percent': _percent_display(discount),
         'has_discount': has_discount,
+        'free_shipping': free_shipping,
         'has_variations': bool(variations),
         'variations': variations,
         'display_base_price': display_base,
@@ -384,24 +439,23 @@ def _build_product_offer_payload(offer):
 
 
 def _build_registration_offer_payload(offer):
-    percent = _registration_discount_percent(offer)
-    pct = _percent_display(percent) or 10
     return {
         'offer_type': 'registration',
         'offer_id': offer.pk,
         'offer_version': int(offer.azurirano.timestamp()),
-        'discount_percent': pct,
-        'title': f'Registrujte se i ostvarite {pct}% popusta',
+        'discount_percent': None,
+        'free_shipping': True,
+        'title': 'Registrujte se i ostvarite besplatnu dostavu',
         'message': (
-            f'Nakon registracije dobijate {pct}% popusta na kompletnu prvu narudžbu. '
-            f'Popust se automatski primjenjuje na sve u korpi — samo jednom, do prve porudžbe.'
+            'Nakon registracije na prvu narudžbu imate besplatnu dostavu. '
+            'Pogodnost vrijedi samo jednom — za prvu kupovinu.'
         ),
         'benefits': [
-            f'{pct}% popusta na cijelu prvu narudžbu',
-            'Automatski se primjenjuje na korpu',
+            'Besplatna dostava na prvu narudžbu',
+            'Automatski se primjenjuje u korpi',
             'Vrijedi samo jednom — nakon porudžbe prestaje',
         ],
-        'cta_label': 'Registruj se i uzmi popust',
+        'cta_label': 'Registruj se i uzmi besplatnu dostavu',
         'register_url': '/registracija/',
         'timer_seconds': _offer_timer_seconds(offer),
         'timer_minutes': OFFER_TIMER_MINUTES,
@@ -454,18 +508,50 @@ def activate_live_visitor_offer_code(request, cart):
         return False, 'Ponuda više nije dostupna.'
 
     percent = offer.discount_percent or Decimal('0')
-    if percent <= 0:
-        return False, 'Ponuda nema popusta.'
+    free_shipping = bool(getattr(offer, 'besplatna_dostava', False))
+    if percent <= 0 and not free_shipping:
+        return False, 'Ponuda nema popusta ni besplatne dostave.'
 
-    cart.set_recovery_discount(percent)
+    messages = []
+    if percent > 0:
+        cart.set_recovery_discount(percent)
+        pct = _percent_display(percent)
+        messages.append(f'{pct}% popusta na cijelu narudžbu')
+
+    assigned_user = False
+    if free_shipping:
+        set_session_free_shipping(request, True)
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            offer.user = user
+            assigned_user = True
+        messages.append('besplatna dostava na prvu kupovinu')
+
     offer.kod_aktiviran = True
     offer.show_popup = False
-    offer.save(update_fields=['kod_aktiviran', 'show_popup', 'azurirano'])
+    update_fields = ['kod_aktiviran', 'show_popup', 'azurirano']
+    if assigned_user:
+        update_fields.append('user')
+    offer.save(update_fields=update_fields)
 
-    pct = _percent_display(percent)
+    if free_shipping and percent > 0:
+        msg = (
+            f'Šta god da poručite, {messages[0]} — i {messages[1]}. '
+            f'Besplatna dostava vrijedi samo za prvu narudžbu.'
+        )
+    elif free_shipping:
+        msg = (
+            'Besplatna dostava je aktivirana na prvu kupovinu. '
+            'Vrijedi samo jednom — za prvu narudžbu.'
+        )
+    else:
+        pct = _percent_display(percent)
+        msg = f'Šta god da poručite, {pct}% vam je sniženo na cijelu narudžbu.'
+
     return True, {
-        'percent': pct,
-        'message': f'Šta god da poručite, {pct}% vam je sniženo na cijelu narudžbu.',
+        'percent': _percent_display(percent) if percent > 0 else None,
+        'free_shipping': free_shipping,
+        'message': msg,
     }
 
 
@@ -504,6 +590,7 @@ def apply_live_visitor_offer(request, cart):
         return False, 'Artikal nije na stanju.'
 
     discount = offer.discount_percent or Decimal('0')
+    free_shipping = bool(getattr(offer, 'besplatna_dostava', False))
     base_price = variation.prikazna_cijena if variation else product.prikazna_cijena
     if discount > 0:
         final_price = _discounted_price(base_price, discount)
@@ -517,13 +604,34 @@ def apply_live_visitor_offer(request, cart):
     else:
         cart.add(product, variation=variation, quantity=1)
 
+    assigned_user = False
+    if free_shipping:
+        set_session_free_shipping(request, True)
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            offer.user = user
+            assigned_user = True
+
     offer.added_to_cart = True
+    if free_shipping:
+        offer.kod_aktiviran = True
     offer.show_popup = False
-    offer.save(update_fields=['added_to_cart', 'show_popup', 'azurirano'])
+    update_fields = ['added_to_cart', 'show_popup', 'azurirano']
+    if free_shipping:
+        update_fields.append('kod_aktiviran')
+    if assigned_user:
+        update_fields.append('user')
+    offer.save(update_fields=update_fields)
+
     label = f'{product.naziv}' + (f' — {variation.naziv}' if variation else '')
+    parts = []
     if discount > 0:
         pct = _percent_display(discount)
-        return True, f'"{label}" je dodato u korpu s popustom od {pct}%.'
+        parts.append(f'popustom od {pct}%')
+    if free_shipping:
+        parts.append('besplatnom dostavom na prvu kupovinu')
+    if parts:
+        return True, f'"{label}" je dodato u korpu s {" i ".join(parts)}.'
     return True, f'"{label}" je dodato u korpu.'
 
 

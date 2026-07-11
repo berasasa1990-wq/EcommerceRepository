@@ -5324,6 +5324,18 @@ body.mobile-nav-open {
     font-size: 13px;
     color: #666;
 }
+.admin-btn--locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+    background: #f8f8f8;
+    border-style: dashed;
+}
+.admin-btn--locked:hover {
+    border-color: #e5e5e5;
+    box-shadow: none;
+    transform: none;
+}
 
 /* Staff Email Marketing */
 .staff-email-marketing-page {
@@ -12670,6 +12682,45 @@ button.nav-action-link {
 .tier-zlatna { background: #fef08c; color: #854d0e; }
 .tier-platinum { background: #e0e7ff; color: #3730a3; }
 
+.loyalty-account-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.loyalty-account-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.loyalty-account-badge--active {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.loyalty-account-badge--inactive {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fdba74;
+}
+
+.loyalty-activate-form {
+    display: inline-flex;
+    margin: 0;
+}
+
 .loyalty-success-banner {
     margin-bottom: 20px;
     padding: 14px 18px;
@@ -14956,5 +15007,306 @@ button.nav-action-link {
 
     .checkout-upsell-btn {
         width: 100%;
+    }
+}
+
+/* ========================================
+   ONLINE NAGRADA (poklon za online posjetioce)
+   ======================================== */
+body.og-open { overflow: hidden; }
+
+.og-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    background: #0b1220;
+    background-image:
+        radial-gradient(ellipse 80% 60% at 50% 30%, rgba(91, 184, 5, 0.25) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 50% 80%, rgba(91, 184, 5, 0.12) 0%, transparent 50%),
+        linear-gradient(180deg, #0f1a0a 0%, #0b1220 50%, #070b12 100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+.og-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.og-card {
+    position: relative;
+    width: min(400px, 94vw);
+    max-height: min(90vh, 640px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 0 auto;
+    padding: 28px 22px 22px;
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(91, 184, 5, 0.2);
+    text-align: center;
+    transform: translateY(14px) scale(0.96);
+    transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);
+    box-sizing: border-box;
+}
+.og-overlay.is-open .og-card {
+    transform: none;
+}
+.og-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #3d8a00, #5BB805 40%, #9be84a 60%, #5BB805);
+    border-radius: 24px 24px 0 0;
+}
+
+.og-x {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 36px; height: 36px;
+    border: none; border-radius: 50%;
+    background: #f0f9e8;
+    color: #3d7a0a;
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+}
+.og-x:hover { background: #dcf7c4; }
+
+.og-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.og-gift-icon {
+    font-size: 56px;
+    line-height: 1;
+    margin: 4px 0 12px;
+    animation: og-bob 2s ease-in-out infinite;
+}
+@keyframes og-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.og-kicker {
+    margin: 0 0 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    border: 1px solid #86efac;
+    color: #166534;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.og-title {
+    margin: 0 0 10px;
+    padding: 0 12px;
+    font-size: 22px;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1.2;
+}
+.og-text {
+    margin: 0 0 20px;
+    padding: 0 8px;
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.45;
+    font-weight: 500;
+    max-width: 320px;
+}
+
+.og-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 280px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+.og-btn-main {
+    background: linear-gradient(180deg, #6fd00f, #5BB805 50%, #3f8f00);
+    color: #fff;
+    box-shadow: 0 6px 0 #2f6b00, 0 10px 22px rgba(91, 184, 5, 0.35);
+}
+.og-btn-main:hover { filter: brightness(1.05); }
+.og-btn-ghost {
+    background: #f8fafc;
+    color: #334155;
+    border: 1.5px solid #e2e8f0;
+    margin-top: 8px;
+}
+.og-link {
+    margin-top: 12px;
+    border: none;
+    background: none;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.og-spinner {
+    width: 48px;
+    height: 48px;
+    margin: 24px auto 16px;
+    border-radius: 50%;
+    border: 4px solid #e2e8f0;
+    border-top-color: #5BB805;
+    animation: og-spin 0.8s linear infinite;
+}
+@keyframes og-spin { to { transform: rotate(360deg); } }
+.og-loading-text {
+    margin: 0 0 24px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.og-result-emoji {
+    font-size: 52px;
+    line-height: 1;
+    margin: 8px 0 10px;
+}
+.og-result-title {
+    margin: 0 0 8px;
+    font-size: 26px;
+    font-weight: 900;
+    color: #0f172a;
+}
+.og-step.is-win .og-result-title,
+#ogResult.is-win .og-result-title {
+    color: #166534;
+}
+.og-result-msg {
+    margin: 0 0 16px;
+    max-width: 300px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    line-height: 1.45;
+}
+
+.og-product {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto 16px;
+    padding: 16px 12px;
+    border-radius: 16px;
+    background: #f0fdf4;
+    border: 2px solid #86efac;
+    box-sizing: border-box;
+}
+.og-product-img-wrap {
+    position: relative;
+    width: min(150px, 46vw);
+    height: min(150px, 46vw);
+    margin: 0 auto 10px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #d1fae5;
+}
+.og-product-img-wrap img {
+    width: 100%; height: 100%;
+    object-fit: contain; display: block;
+}
+.og-product-tag {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 5px;
+    background: #5BB805;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-align: center;
+}
+.og-product-name {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.3;
+    word-break: break-word;
+}
+.og-product-price {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+.og-product-price s {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+.og-product-price b {
+    font-size: 18px;
+    font-weight: 900;
+    color: #5BB805;
+}
+.og-product-note {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #166534;
+}
+
+.og-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 280px;
+}
+
+.online-gift-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #ecfdf5;
+    border: 1px solid #86efac;
+    color: #166534;
+    font-size: 13.5px;
+    font-weight: 700;
+}
+
+@media (max-width: 480px) {
+    .og-card { padding: 22px 14px 16px; }
+    .og-title { font-size: 18px; }
+    .og-gift-icon { font-size: 44px; }
+    .og-product-img-wrap {
+        width: min(130px, 42vw);
+        height: min(130px, 42vw);
     }
 }

@@ -1,14 +1,27 @@
 import logging
 
 from django.apps import AppConfig
+from django.db.backends.signals import connection_created
 
 logger = logging.getLogger(__name__)
+
+
+def _configure_sqlite(sender, connection, **kwargs):
+    """WAL + busy_timeout smanjuju 'database is locked' pri lokalnom runserveru."""
+    if connection.vendor != 'sqlite':
+        return
+    with connection.cursor() as cursor:
+        cursor.execute('PRAGMA journal_mode=WAL;')
+        cursor.execute('PRAGMA busy_timeout=60000;')
+        cursor.execute('PRAGMA synchronous=NORMAL;')
 
 
 class EcommerceappConfig(AppConfig):
     name = 'EcommerceApp'
 
     def ready(self):
+        connection_created.connect(_configure_sqlite)
+
         from django.conf import settings
 
         if not settings.EMAIL_HOST_PASSWORD:

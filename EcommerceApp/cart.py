@@ -25,6 +25,7 @@ class Cart:
     COUPON_APPLIED_KEY = 'coupon_applied_by_user'
     COUPON_KEEP_KEY = 'coupon_keep_after_apply'
     RECOVERY_DISCOUNT_KEY = 'cart_recovery_discount_percent'
+    FREE_SHIPPING_KEY = 'cart_free_shipping_first'
 
     def __init__(self, request):
         self.request = request
@@ -115,6 +116,12 @@ class Cart:
         self.cart = {}
         self.clear_coupon()
         self.clear_recovery_discount()
+        self.clear_free_shipping()
+        try:
+            from .online_gift import clear_session_reward
+            clear_session_reward(self.request)
+        except Exception:
+            pass
         self.save()
 
     def get_recovery_discount_percent(self):
@@ -142,6 +149,21 @@ class Cart:
     def clear_recovery_discount(self):
         if self.RECOVERY_DISCOUNT_KEY in self.request.session:
             del self.request.session[self.RECOVERY_DISCOUNT_KEY]
+            self.request.session.modified = True
+
+    def has_free_shipping_first(self):
+        return bool(self.request.session.get(self.FREE_SHIPPING_KEY))
+
+    def set_free_shipping_first(self, active=True):
+        if active:
+            self.request.session[self.FREE_SHIPPING_KEY] = '1'
+        else:
+            self.request.session.pop(self.FREE_SHIPPING_KEY, None)
+        self.request.session.modified = True
+
+    def clear_free_shipping(self):
+        if self.FREE_SHIPPING_KEY in self.request.session:
+            del self.request.session[self.FREE_SHIPPING_KEY]
             self.request.session.modified = True
 
     def _track_line(self, key):
@@ -283,13 +305,26 @@ class Cart:
         return izracunaj_pdv(self.ukupno)
 
     def sazetak(self, user=None):
-        from .live_visitor_offer import registration_reward_coupon_code
+        from .live_visitor_offer import (
+            has_free_shipping_reward,
+            registration_reward_coupon_code,
+        )
         from .pricing import izracunaj_sazetak
+        from .online_gift import (
+            reward_discount_km,
+            reward_discount_percent,
+            reward_free_shipping,
+        )
 
-        # Ručno primijenjeni kupon ima prioritet; inače jednokratni reg. popust 10%.
+        # Ručno primijenjeni kupon ima prioritet; inače legacy reg. % kupon.
         coupon_code = self.get_coupon_code()
         if not coupon_code:
             coupon_code = registration_reward_coupon_code(user)
+
+        free_shipping_reward = (
+            self.has_free_shipping_first()
+            or has_free_shipping_reward(self.request, user)
+        )
 
         return izracunaj_sazetak(
             self.ukupno,
@@ -297,6 +332,10 @@ class Cart:
             coupon_code=coupon_code,
             cart_items=list(self),
             recovery_discount_percent=self.get_recovery_discount_percent(),
+            free_shipping_reward=free_shipping_reward,
+            prize_discount_percent=reward_discount_percent(self.request),
+            prize_discount_km=reward_discount_km(self.request),
+            prize_free_shipping=reward_free_shipping(self.request),
         )
 
     def get_product_and_variation(self, item):

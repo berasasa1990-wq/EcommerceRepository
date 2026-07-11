@@ -86,16 +86,24 @@ def email_vec_registrovan(email, *, exclude_user_id=None):
 
 
 def viber_chat_url(telefon):
-    """Deep link za otvaranje Viber chata s kupcem (BA brojevi)."""
+    """
+    Deep link za otvaranje Viber chata s kupcem (BA brojevi).
+    Koristi se u staff loyalty — otvara chat tačno na uneseni broj.
+    """
     digits = _normalizuj_telefon(telefon)
     if not digits:
         return ''
     if digits.startswith('00'):
         digits = digits[2:]
-    if digits.startswith('0') and len(digits) >= 8:
+    # BA: 061… → 38761… ; 387… ostaje
+    if digits.startswith('387'):
+        pass
+    elif digits.startswith('0') and len(digits) >= 8:
         digits = '387' + digits[1:]
     elif len(digits) in (8, 9) and not digits.startswith('387'):
         digits = '387' + digits.lstrip('0')
+    if len(digits) < 10:
+        return ''
     return f'viber://chat?number=%2B{digits}'
 
 

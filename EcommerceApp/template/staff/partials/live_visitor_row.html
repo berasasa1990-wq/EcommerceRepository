@@ -13,19 +13,50 @@
         <div class="staff-live-engine">
             <span class="staff-live-engine-chip" title="Vrijeme provedeno na sajtu">⏱ {{ visitor.time_on_site_label }}</span>
             <span class="staff-live-engine-chip" title="Broj pregledanih proizvoda">📦 {{ visitor.products_viewed_count|default:0 }} proiz.</span>
-            {% if visitor.categories_label %}
-            <span class="staff-live-engine-chip staff-live-engine-chip--cat" title="Kategorije">🏷 {{ visitor.categories_label }}</span>
+            {% if visitor.categories %}
+            <button type="button"
+                    class="staff-live-engine-chip staff-live-engine-chip--cat staff-live-engine-chip--btn"
+                    data-detail-open
+                    data-detail-title="Kategorije — {{ visitor.ime }}"
+                    data-detail-items="{% for c in visitor.categories %}{{ c }}{% if not forloop.last %}||{% endif %}{% endfor %}"
+                    title="Klikni za sve kategorije">
+                🏷 {% if visitor.categories|length == 1 %}{{ visitor.categories.0 }}{% else %}{{ visitor.categories|length }} kategorija{% endif %}
+            </button>
             {% endif %}
             <span class="staff-live-engine-chip{% if visitor.has_cart %} staff-live-engine-chip--cart{% endif %}" title="Vrijednost korpe">🛒 {{ visitor.cart_value_label|default:"—" }}</span>
             <span class="staff-live-engine-chip staff-live-engine-chip--src staff-live-engine-chip--{{ visitor.traffic_source|default:'direct' }}" title="Izvor dolaska">↗ {{ visitor.traffic_source_label|default:"Direktno" }}</span>
-            {% if visitor.returned_to_product %}
-            <span class="staff-live-engine-chip staff-live-engine-chip--return" title="{{ visitor.returned_products_label }}">↩ Povratak na proizvod</span>
+            {% if visitor.returned_to_product and visitor.returned_products %}
+            <button type="button"
+                    class="staff-live-engine-chip staff-live-engine-chip--return staff-live-engine-chip--btn"
+                    data-detail-open
+                    data-detail-kind="products"
+                    data-detail-title="Povratak na proizvod — {{ visitor.ime }}"
+                    data-detail-products="{% for p in visitor.returned_products %}{{ p.id }}::{{ p.views }}::{{ p.naziv }}{% if not forloop.last %}||{% endif %}{% endfor %}"
+                    data-session-key="{{ visitor.session_key }}"
+                    data-visitor-name="{{ visitor.ime }}"
+                    data-visitor-email="{{ visitor.email }}"
+                    data-user-id="{{ visitor.user_id|default:'' }}"
+                    title="Klikni za ponudu popusta na te artikle">
+                ↩ Povratak ({{ visitor.returned_products|length }})
+            </button>
             {% endif %}
             {% if visitor.has_purchased %}
             <span class="staff-live-engine-chip staff-live-engine-chip--buy" title="Prethodne kupovine">★ {{ visitor.purchase_label|default:"Kupovao" }}</span>
             {% endif %}
-            {% if visitor.products_label %}
-            <span class="staff-live-engine-products" title="{{ visitor.products_label }}">{{ visitor.products_label }}</span>
+            {% if visitor.products %}
+            <button type="button"
+                    class="staff-live-engine-products staff-live-engine-chip--btn"
+                    data-detail-open
+                    data-detail-kind="products"
+                    data-detail-title="Pregledani proizvodi — {{ visitor.ime }}"
+                    data-detail-products="{% for p in visitor.products %}{{ p.id }}::{{ p.views }}::{{ p.naziv }}{% if not forloop.last %}||{% endif %}{% endfor %}"
+                    data-session-key="{{ visitor.session_key }}"
+                    data-visitor-name="{{ visitor.ime }}"
+                    data-visitor-email="{{ visitor.email }}"
+                    data-user-id="{{ visitor.user_id|default:'' }}"
+                    title="Klikni — unesi % popusta i pošalji ponudu za artikal">
+                {{ visitor.products_label }}
+            </button>
             {% endif %}
         </div>
     </td>
@@ -70,12 +101,33 @@
         </button>
         {% endif %}
         <button type="button"
+                class="staff-live-gift-push-btn"
+                data-gift-push
+                data-session-key="{{ visitor.session_key }}"
+                data-visitor-name="{{ visitor.ime }}"
+                title="Ručno pusti online nagradu ovom kupcu">
+            🎁 Nagrada
+        </button>
+        <button type="button"
                 class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}"
                 data-offer-open
                 data-session-key="{{ visitor.session_key }}"
                 data-visitor-name="{{ visitor.ime }}"
+                data-visitor-email="{{ visitor.email }}"
+                data-user-id="{{ visitor.user_id|default:'' }}"
                 title="{% if visitor.can_email_offer %}Popup na sajtu + email{% elif visitor.offer_active %}Aktivna ponuda{% else %}Pošalji ponudu{% endif %}">
             {% if visitor.can_email_offer %}Ponuda + email{% else %}Ponuda{% endif %}
+        </button>
+        {% elif visitor.email or visitor.user_id %}
+        <button type="button"
+                class="staff-live-offer-btn"
+                data-offer-open
+                data-session-key=""
+                data-visitor-name="{{ visitor.ime }}"
+                data-visitor-email="{{ visitor.email }}"
+                data-user-id="{{ visitor.user_id|default:'' }}"
+                title="Pošalji ponudu na email">
+            Email ponuda
         </button>
         {% else %}
         <span class="staff-live-muted">—</span>

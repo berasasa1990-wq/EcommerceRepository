@@ -11,6 +11,7 @@ from .social_proof import build_social_proof_context
 from .live_visitor_offer import build_live_visitor_offer_context
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .models import Akcija, Category, SiteSettings
+from .online_gift import active_reward_label, build_online_gift_context
 from .upsell import get_active_upsell_offer
 
 _CONTACT_MESSAGE = 'Zdravo, imam pitanje sa opremazaribolov.ba'
@@ -110,6 +111,8 @@ def nav_categories(request):
         'cart_recovery_alert': get_active_cart_recovery_alert(request, cart),
         'cart_exit_popup': get_cart_exit_popup_context(request, cart),
         'live_visitor_offer': build_live_visitor_offer_context(request),
+        'online_gift': build_online_gift_context(request),
+        'online_gift_reward_label': active_reward_label(request),
         'search_query': request.GET.get('q', '').strip(),
         'contact_phone': contact_phone,
         'contact_whatsapp_url': _whatsapp_contact_url(contact_phone),
