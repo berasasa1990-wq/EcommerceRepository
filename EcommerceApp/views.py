@@ -2555,15 +2555,20 @@ def _live_analytics_context(request):
     from .online_gift import get_campaign_staff_status
     gift_campaign = get_campaign_staff_status()
     generated_at = snapshot['generated_at']
+    online_visitors = snapshot['online_visitors'] or []
+    window_visitors = snapshot['window_visitors'] or []
+    offline_visitors = [row for row in window_visitors if not row.get('is_online')]
     return {
         'online_count': snapshot['online_count'],
         'window_count': snapshot['window_count'],
+        'offline_count': len(offline_visitors),
         'registered_online_count': snapshot.get('registered_online_count', 0),
         'registered_window_count': snapshot.get('registered_window_count', 0),
         'registered_customers_count': len(registered_customers),
         'registered_customers': registered_customers,
-        'online_visitors': snapshot['online_visitors'],
-        'window_visitors': snapshot['window_visitors'],
+        'online_visitors': online_visitors,
+        'window_visitors': window_visitors,
+        'offline_visitors': offline_visitors,
         'registered_online_visitors': snapshot.get('registered_online_visitors') or [],
         'registered_window_visitors': snapshot.get('registered_window_visitors') or [],
         'online_minutes': snapshot['online_minutes'],
@@ -3095,16 +3100,21 @@ def staff_live_analytics_data(request):
     for key in (
         'online_visitors',
         'window_visitors',
+        'offline_visitors',
         'registered_online_visitors',
         'registered_window_visitors',
     ):
         for row in payload.get(key) or []:
-            if row.get('last_seen'):
+            if row.get('last_seen') and hasattr(row['last_seen'], 'isoformat'):
                 row['last_seen'] = timezone.localtime(row['last_seen']).isoformat()
     for row in payload.get('gift_winners') or []:
-        if row.get('won_at'):
+        if row.get('won_at') and hasattr(row['won_at'], 'isoformat'):
             row['won_at'] = timezone.localtime(row['won_at']).isoformat()
-    return JsonResponse(payload)
+    # Cache-bust headers — staff live poll mora uvijek dobiti svježe stanje
+    response = JsonResponse(payload)
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    return response
 
 
 @login_required(login_url='login')

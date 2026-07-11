@@ -34,7 +34,7 @@ ONLINE_WINDOW_MINUTES = 30
 STAFF_FEED_HOURS = 48
 STAFF_FEED_LIMIT = 40
 # Online badge u feedu (usklađeno s live_visitors.ONLINE_MINUTES)
-STAFF_ONLINE_MINUTES = 5
+STAFF_ONLINE_MINUTES = 1
 
 
 def _q(value):
@@ -516,7 +516,7 @@ def get_online_gift_staff_feed(*, limit=STAFF_FEED_LIMIT, hours=STAFF_FEED_HOURS
         is_online = bool(
             visitor
             and visitor.last_seen
-            and visitor.last_seen >= online_cutoff
+            and visitor.last_seen > online_cutoff
         )
         if is_online:
             online_winners_count += 1

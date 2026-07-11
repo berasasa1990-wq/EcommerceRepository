@@ -15,9 +15,14 @@ from .visitor_geo import (
     resolve_visitor_country,
 )
 
-ONLINE_MINUTES = 5
+# „Trenutno na sajtu” — aktivnost u zadnjoj minuti; stariji idu u „zadnjih 30 min”
+ONLINE_MINUTES = 1
 # Staff toast: kraći prozor + heartbeat/leave, da se popup skloni čim kupac ode
 STAFF_TOAST_ONLINE_SECONDS = 30
+# Staff popup „Kupac na sajtu” — tek ako je ostao duže od 1 minute
+ONLINE_NOTIFY_AFTER_SECONDS = 60
+ONLINE_NOTIFIED_CACHE_PREFIX = 'live_visitor_online_notified:'
+ONLINE_NOTIFIED_CACHE_TTL = 48 * 3600
 PRESENCE_CACHE_PREFIX = 'live_visitor_presence:'
 LEFT_CACHE_PREFIX = 'live_visitor_left:'
 PRESENCE_CACHE_TTL = STAFF_TOAST_ONLINE_SECONDS + 20
@@ -272,6 +277,54 @@ def resolve_presence_session_key(request, body_session_key=''):
     return cookie_key or body_key
 
 
+def maybe_notify_visitor_online(session_key):
+    """
+    Staff toast „Kupac na sajtu” tek nakon ONLINE_NOTIFY_AFTER_SECONDS na sajtu.
+    Jednom po sesiji (cache).
+    """
+    session_key = (session_key or '').strip()
+    if not session_key:
+        return False
+    from django.core.cache import cache
+
+    cache_key = f'{ONLINE_NOTIFIED_CACHE_PREFIX}{session_key}'
+    if cache.get(cache_key):
+        return False
+
+    visitor = (
+        LiveVisitor.objects.filter(session_key=session_key)
+        .only('first_seen', 'last_seen', 'ime', 'email', 'grad')
+        .first()
+    )
+    if not visitor or not visitor.first_seen:
+        return False
+
+    now = timezone.now()
+    on_site_seconds = max(0, int((now - visitor.first_seen).total_seconds()))
+    if on_site_seconds < ONLINE_NOTIFY_AFTER_SECONDS:
+        return False
+
+    # Mora još uvijek biti „online” (aktivnost mlađa od 1 min)
+    if visitor.last_seen:
+        idle_seconds = max(0, int((now - visitor.last_seen).total_seconds()))
+        if idle_seconds >= ONLINE_MINUTES * 60:
+            return False
+
+    cache.set(cache_key, 1, ONLINE_NOTIFIED_CACHE_TTL)
+    try:
+        from .staff_alerts import notify_visitor_online
+        notify_visitor_online(
+            ime=visitor.ime or '',
+            email=visitor.email or '',
+            grad=visitor.grad or '',
+            session_key=session_key,
+        )
+    except Exception:
+        cache.delete(cache_key)
+        return False
+    return True
+
+
 def heartbeat_live_visitor(request, body_session_key=''):
     """Laki ping dok je tab otvoren — osvježava last_seen + presence cache."""
     user = getattr(request, 'user', None)
@@ -292,6 +345,9 @@ def heartbeat_live_visitor(request, body_session_key=''):
             track_live_visitor(request)
             updated = LiveVisitor.objects.filter(session_key=session_key).exists()
     touch_visitor_presence(session_key)
+    # Toast tek nakon 1 min na sajtu
+    if updated or session_key:
+        maybe_notify_visitor_online(session_key)
     return bool(updated) or bool(session_key)
 
 
@@ -401,18 +457,9 @@ def track_live_visitor(request):
     city_name = (grad or '').strip()
     if city_name and (created or not (existing_grad or '').strip()):
         record_city_visit(city_name)
-    # Superuser obavijest: novi posjetilac online (ne šalji za superusere)
-    if created and not (user and user.is_superuser):
-        try:
-            from .staff_alerts import notify_visitor_online
-            notify_visitor_online(
-                ime=defaults.get('ime') or '',
-                email=defaults.get('email') or '',
-                grad=city_name,
-                session_key=session_key,
-            )
-        except Exception:
-            pass
+    # Staff toast „Kupac na sajtu” tek nakon 1 min (heartbeat/track) — ne odmah na ulazak
+    if not (user and user.is_superuser):
+        maybe_notify_visitor_online(session_key)
     if random.random() < 0.02:
         cleanup_stale_live_visitors()
 
@@ -506,11 +553,16 @@ def _offer_status_fields(offer, *, visitor_online=False):
             'offer_sent': False,
             'offer_active': False,
             'offer_product': '',
+            'offer_product_id': None,
             'offer_status': '',
+            'offer_status_label': '',
+            'offer_discount_label': '',
         }
 
     from .models import LiveVisitorOffer
 
+    product_id = None
+    discount_label = ''
     if offer.tip == LiveVisitorOffer.Tip.REGISTRACIJA:
         accepted = False
         active = bool(offer.show_popup)
@@ -518,28 +570,43 @@ def _offer_status_fields(offer, *, visitor_online=False):
     elif offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
         accepted = bool(offer.kod_aktiviran)
         active = offer.show_popup and not accepted
-        product_name = f'Popust {offer.discount_percent}%'
+        pct = offer.discount_percent or 0
+        pct_label = int(pct) if pct == int(pct) else pct
+        product_name = f'Popust {pct_label}% na narudžbu'
+        discount_label = f'{pct_label}%'
         if offer.aktivacioni_kod:
             product_name = f'{product_name} ({offer.aktivacioni_kod})'
     else:
         accepted = bool(offer.added_to_cart)
         active = offer.show_popup and not accepted
         product_name = ''
+        product_id = offer.product_id or None
         if offer.product_id and offer.product:
             product_name = offer.product.naziv
+        pct = offer.discount_percent or 0
+        if pct:
+            pct_label = int(pct) if pct == int(pct) else pct
+            discount_label = f'{pct_label}%'
 
     if accepted:
         status = 'accepted'
+        status_label = 'Prihvatio ponudu'
     elif active and visitor_online:
         status = 'active'
+        status_label = 'Čeka odgovor'
     else:
+        # Odbio (zatvorio popup) ili offline bez prihvatanja
         status = 'left'
+        status_label = 'Odbio / napustio'
 
     return {
         'offer_sent': True,
         'offer_active': status == 'active',
-        'offer_product': product_name,
+        'offer_product': product_name or '',
+        'offer_product_id': product_id,
         'offer_status': status,
+        'offer_status_label': status_label,
+        'offer_discount_label': discount_label,
     }
 
 
@@ -910,7 +977,8 @@ def _visitor_payload(
         hours = seconds_ago // 3600
         ago_label = f'prije {hours} h'
 
-    is_online = seconds_ago <= ONLINE_MINUTES * 60
+    # Online samo dok je aktivnost mlađa od 1 min; „prije 1 min” i starije → prozor 30 min
+    is_online = seconds_ago < ONLINE_MINUTES * 60
     # Online: od ulaska do sada; offline: od ulaska do zadnje aktivnosti
     end_time = now if is_online else visitor.last_seen
     first_seen = visitor.first_seen or visitor.last_seen or now
