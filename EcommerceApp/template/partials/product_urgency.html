@@ -1,0 +1,31 @@
+{% if product_urgency %}
+<div class="product-urgency" aria-live="polite">
+    <p class="product-urgency-sold">
+        <span class="product-urgency-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+        </span>
+        <span>
+            <strong>{{ product_urgency.sold_24h }}</strong>
+            {% if product_urgency.sold_24h == 1 %}prodan{% else %}prodato{% endif %}
+            u proteklih 24h
+        </span>
+    </p>
+    {% if product_urgency.show_stock and product_urgency.stock_left %}
+    <p class="product-urgency-stock">
+        <span class="product-urgency-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </span>
+        <span>
+            Ostalo još na stanju:
+            <strong class="product-urgency-stock-count">{{ product_urgency.stock_left }}</strong>
+        </span>
+    </p>
+    {% endif %}
+</div>
+{% endif %}

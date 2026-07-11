@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260709v76" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260709v76">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260711v1" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260711v1">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -394,13 +394,11 @@
     <script src="{% static 'js/visitor-presence.js' %}?v=20260710v2" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260710v4">
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260711v2">
     <div id="staffAlertsRoot" hidden
          data-poll-url="{% url 'staff_site_events_poll' %}"
-         data-register-url="{% url 'staff_send_registration_invite' %}"
-         data-offer-url="{% url 'staff_send_live_offer' %}"
-         data-product-search-url="{% url 'staff_product_search' %}"></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20260710v4" defer></script>
+         data-analytics-url="{% url 'staff_live_analytics' %}"></div>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260711v2" defer></script>
     {% endif %}
     {% block extra_js %}{% endblock %}
 </body>

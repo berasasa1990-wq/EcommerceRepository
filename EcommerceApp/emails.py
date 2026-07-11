@@ -332,6 +332,96 @@ def send_cart_add_notification(
     )
 
 
+def send_live_offer_email(*, to_email, visitor_name='', offer=None):
+    """
+    Email kupcu kad staff pošalje uživo ponudu (popup na sajtu + email).
+    Ne prekida slanje popup-a ako email nije konfigurisan.
+    """
+    to_email = (to_email or '').strip()
+    if not to_email or '@' not in to_email:
+        raise ValueError('Kupac nema valjan email.')
+
+    try:
+        _ensure_email_configured()
+    except EmailNotConfiguredError:
+        logger.warning('Live offer email preskočen — email nije konfigurisan.')
+        raise
+
+    from .models import LiveVisitorOffer
+
+    site_url = (settings.SITE_URL or '').rstrip('/')
+    name = (visitor_name or '').strip() or 'poštovani kupče'
+    product = getattr(offer, 'product', None) if offer else None
+    product_name = product.naziv if product else ''
+    product_url = f'{site_url}{product.get_absolute_url()}' if product else site_url
+    percent = getattr(offer, 'discount_percent', None) or Decimal('0')
+    try:
+        percent = Decimal(str(percent))
+    except Exception:
+        percent = Decimal('0')
+    code = (getattr(offer, 'aktivacioni_kod', None) or '').strip()
+    tip = getattr(offer, 'tip', None) or ''
+
+    if tip == LiveVisitorOffer.Tip.ARTIKAL and product:
+        subject = f'Posebna ponuda: {product_name} — opremazaribolov.ba'
+        headline = 'Imate posebnu ponudu na sajtu'
+        if percent > 0:
+            body_lead = (
+                f'Pripremili smo Vam popust od {percent:g}% na artikal „{product_name}”.'
+            )
+        else:
+            body_lead = f'Pripremili smo Vam posebnu ponudu za artikal „{product_name}”.'
+    elif tip == LiveVisitorOffer.Tip.NARUDZBA:
+        subject = f'Vaš kod za {percent:g}% popusta — opremazaribolov.ba'
+        headline = 'Popust na vašu narudžbu'
+        body_lead = f'Vaš aktivacioni kod za {percent:g}% popusta na narudžbu: {code or "—"}.'
+    else:
+        subject = 'Posebna ponuda — opremazaribolov.ba'
+        headline = 'Imate posebnu ponudu'
+        body_lead = 'Otvorite sajt da vidite personalizovanu ponudu.'
+
+    text_lines = [
+        f'Poštovani/a {name},',
+        '',
+        body_lead,
+        '',
+        'Ponuda je aktivna i na sajtu kao popup — dovoljno je da otvorite stranicu.',
+        f'Sajt: {site_url}',
+    ]
+    if product_url and product:
+        text_lines.append(f'Artikal: {product_url}')
+    if code:
+        text_lines.append(f'Kod: {code}')
+    text_lines.extend([
+        '',
+        'Lijep pozdrav,',
+        'opremazaribolov.ba',
+    ])
+
+    mail = EmailMultiAlternatives(
+        subject=subject,
+        body='\n'.join(text_lines),
+        from_email=_from_email(),
+        to=[to_email],
+    )
+    mail.attach_alternative(
+        render_to_string('emails/live_offer.html', {
+            'visitor_name': name,
+            'headline': headline,
+            'body_lead': body_lead,
+            'product_name': product_name,
+            'product_url': product_url if product else '',
+            'discount_percent': percent,
+            'activation_code': code,
+            'site_url': site_url,
+            'store_email': settings.STORE_EMAIL,
+        }),
+        'text/html',
+    )
+    mail.send(fail_silently=False)
+    logger.info('Live offer email poslan na %s', to_email)
+
+
 def send_order_emails(order):
     """Prvo obavijest trgovini, zatim potvrda kupcu."""
     send_admin_order_notification(order)

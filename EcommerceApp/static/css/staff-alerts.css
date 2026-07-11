@@ -21,12 +21,39 @@
     box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
     opacity: 0;
     transform: translateX(18px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .staff-alert-toast.is-visible {
     opacity: 1;
     transform: translateX(0);
+}
+
+/* Cijeli toast = link u uživo analitiku */
+.staff-alert-toast--clickable {
+    cursor: pointer;
+}
+
+.staff-alert-toast--clickable:hover {
+    border-color: #60a5fa;
+    box-shadow: 0 14px 36px rgba(29, 78, 216, 0.2);
+}
+
+.staff-alert-toast--clickable:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.staff-alert-toast__cta {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.staff-alert-toast--clickable:hover .staff-alert-toast__cta {
+    text-decoration: underline;
 }
 
 .staff-alert-toast__badges {

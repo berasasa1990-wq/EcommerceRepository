@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ headline }}</title>
+</head>
+<body style="font-family: Inter, Arial, sans-serif; color: #111; line-height: 1.5; background: #f4f5f7; margin: 0; padding: 24px 12px;">
+    <div style="max-width: 620px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+        <div style="padding: 22px 24px; border-bottom: 1px solid #e8ebe8; background: linear-gradient(180deg, #f0fdf4 0%, #f8faf8 100%);">
+            <h2 style="margin: 0 0 6px; font-size: 20px;">🎁 {{ headline }}</h2>
+            <p style="margin: 0; font-size: 14px; color: #666;">opremazaribolov.ba</p>
+        </div>
+
+        <div style="padding: 22px 24px;">
+            <p style="margin: 0 0 14px; font-size: 15px;">
+                Poštovani/a <strong>{{ visitor_name }}</strong>,
+            </p>
+            <p style="margin: 0 0 18px; font-size: 15px; color: #333;">
+                {{ body_lead }}
+            </p>
+
+            {% if product_name %}
+            <div style="padding: 16px; border: 1px solid #e8ebe8; border-radius: 10px; background: #fafcfa; margin-bottom: 18px;">
+                <p style="margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #28403d;">Artikal</p>
+                <p style="margin: 0; font-size: 16px; font-weight: 700;">
+                    {% if product_url %}
+                    <a href="{{ product_url }}" style="color: #111; text-decoration: none;">{{ product_name }}</a>
+                    {% else %}
+                    {{ product_name }}
+                    {% endif %}
+                </p>
+                {% if discount_percent and discount_percent > 0 %}
+                <p style="margin: 8px 0 0; font-size: 14px; color: #166534; font-weight: 700;">
+                    Popust: {{ discount_percent }}%
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if activation_code %}
+            <div style="padding: 14px 16px; border-radius: 10px; background: #111; color: #fff; text-align: center; margin-bottom: 18px;">
+                <p style="margin: 0 0 4px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8;">Aktivacioni kod</p>
+                <p style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.06em;">{{ activation_code }}</p>
+            </div>
+            {% endif %}
+
+            <p style="margin: 0 0 18px; font-size: 14px; color: #555;">
+                Ponuda je aktivna i na sajtu kao popup — otvorite stranicu da je odmah iskoristite.
+            </p>
+
+            <p style="margin: 0; text-align: center;">
+                <a href="{{ site_url }}" style="display: inline-block; padding: 12px 22px; background: #5BB805; color: #fff; text-decoration: none; border-radius: 999px; font-size: 14px; font-weight: 700;">
+                    Otvori sajt
+                </a>
+            </p>
+        </div>
+
+        <div style="padding: 14px 24px 20px; border-top: 1px solid #eee; font-size: 12px; color: #888; text-align: center;">
+            {% if store_email %}Kontakt: {{ store_email }} · {% endif %}{{ site_url }}
+        </div>
+    </div>
+</body>
+</html>

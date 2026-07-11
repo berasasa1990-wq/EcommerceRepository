@@ -256,6 +256,8 @@
                 {% include 'partials/product_price.html' with item=product %}
             </div>
 
+            {% include 'partials/product_urgency.html' %}
+
             <div class="product-detail-meta">
                 {% if product.sifra %}<p><strong>Šifra:</strong> {{ product.sifra }}</p>{% endif %}
                 {% if product.barkod %}<p><strong>Barkod:</strong> {{ product.barkod }}</p>{% endif %}
@@ -287,6 +289,10 @@
                 <span class="sold-out-text">Rasprodato</span>
             </div>
             {% endif %}
+            {% endif %}
+
+            {% if product.varijacije.count %}
+            {% include 'partials/product_urgency.html' %}
             {% endif %}
 
             {% if in_stock_variations %}

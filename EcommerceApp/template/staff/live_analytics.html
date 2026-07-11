@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260709v18">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260711v1">
 {% endblock %}
 
 {% block content %}
@@ -19,8 +19,9 @@
             <div>
                 <h1>Uživo analitika</h1>
                 <p class="staff-live-analytics-subtitle">
-                    Prikazani su isključivo posjetioci iz Bosne i Hercegovine (grad na sajtu).
-                    Kategorije pokazuju šta kupac pregledava — pošaljite mu odgovarajuću ponudu.
+                    Real-time engine za posjetioce iz BiH: vrijeme na sajtu, pregledani proizvodi,
+                    kategorije, vrijednost korpe, izvor dolaska, povratak na proizvod i prethodne kupovine.
+                    Registrovanim kupcima pošaljite popup + email.
                 </p>
             </div>
             <p class="staff-live-analytics-updated">
@@ -29,16 +30,26 @@
         </div>
     </header>
 
-    <div class="staff-live-analytics-stats">
+    <div class="staff-live-analytics-stats staff-live-analytics-stats--4">
         <div class="staff-live-analytics-stat staff-live-analytics-stat--online">
             <span class="staff-live-analytics-stat-value" id="liveOnlineCount">{{ online_count }}</span>
             <span class="staff-live-analytics-stat-label">Trenutno na sajtu</span>
             <span class="staff-live-analytics-stat-hint">aktivnost u zadnjih {{ online_minutes }} min</span>
         </div>
+        <div class="staff-live-analytics-stat staff-live-analytics-stat--registered">
+            <span class="staff-live-analytics-stat-value" id="liveRegisteredOnlineCount">{{ registered_online_count }}</span>
+            <span class="staff-live-analytics-stat-label">Registrovani online</span>
+            <span class="staff-live-analytics-stat-hint">mogu primiti popup + email</span>
+        </div>
         <div class="staff-live-analytics-stat">
             <span class="staff-live-analytics-stat-value" id="liveWindowCount">{{ window_count }}</span>
             <span class="staff-live-analytics-stat-label">U zadnjih {{ window_minutes }} min</span>
             <span class="staff-live-analytics-stat-hint">jedinstvene sesije</span>
+        </div>
+        <div class="staff-live-analytics-stat">
+            <span class="staff-live-analytics-stat-value" id="liveRegisteredWindowCount">{{ registered_window_count }}</span>
+            <span class="staff-live-analytics-stat-label">Registrovani (prozor)</span>
+            <span class="staff-live-analytics-stat-hint">u zadnjih {{ window_minutes }} min</span>
         </div>
     </div>
 
@@ -138,65 +149,51 @@
     </div>
 
     <div class="staff-live-analytics-panels">
+        <section class="staff-live-analytics-panel staff-live-analytics-panel--registered">
+            <h2>Registrovani kupci online <span class="staff-live-panel-count" id="liveRegisteredPanelCount">({{ registered_online_count }})</span></h2>
+            <p class="staff-live-panel-hint">Pošaljite im popup na sajtu — stići će i na email ako imaju adresu.</p>
+            <div class="staff-live-analytics-table-wrap">
+                <table class="staff-live-analytics-table staff-live-analytics-table--engine" id="liveRegisteredTable">
+                    <thead>
+                        <tr>
+                            <th>Kupac</th>
+                            <th>Real-time motor</th>
+                            <th>Email</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="liveRegisteredBody">
+                        {% for visitor in registered_online_visitors %}
+                        {% include 'staff/partials/live_visitor_row.html' with visitor=visitor colspan=4 %}
+                        {% empty %}
+                        <tr class="staff-live-empty-row">
+                            <td colspan="4">Trenutno nema registrovanih kupaca online.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section class="staff-live-analytics-panel">
             <h2>Trenutno na sajtu</h2>
             <div class="staff-live-analytics-table-wrap">
-                <table class="staff-live-analytics-table" id="liveOnlineTable">
+                <table class="staff-live-analytics-table staff-live-analytics-table--engine" id="liveOnlineTable">
                     <thead>
                         <tr>
-                            <th>Ime</th>
-                            <th>Grad (BiH)</th>
-                            <th>Kategorije</th>
+                            <th>Kupac</th>
+                            <th>Real-time motor</th>
                             <th>Email</th>
-                            <th>Na sajtu</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody id="liveOnlineBody">
                         {% for visitor in online_visitors %}
-                        <tr>
-                            <td class="staff-live-name-cell">
-                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}
-                                {% if visitor.has_purchased %}
-                                <span class="staff-live-buyer-name" title="Već kupio preko sajta">{{ visitor.ime }}</span>
-                                {% else %}
-                                {{ visitor.ime }}
-                                {% endif %}
-                            </td>
-                            <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td><span class="staff-live-time-on-site" title="Vrijeme provedeno na sajtu">{{ visitor.time_on_site_label }}</span></td>
-                            <td><span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span></td>
-                            <td class="staff-live-action-cell">
-                                {% if visitor.offer_sent %}
-                                <span class="staff-live-offer-sent staff-live-offer-sent--{{ visitor.offer_status }}"
-                                      title="{% if visitor.offer_status == 'accepted' %}Kupac je prihvatio ponudu{% elif visitor.offer_status == 'left' %}Kupac je odbio ponudu ili je izašao{% else %}Ponuda aktivna{% endif %}{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}"
-                                      aria-label="Status ponude">✓</span>
-                                {% endif %}
-                                {% if visitor.can_invite_register %}
-                                <button type="button"
-                                        class="staff-live-register-btn{% if visitor.offer_product == 'Poziv na registraciju' and visitor.offer_sent %} staff-live-register-btn--sent{% endif %}"
-                                        data-register-invite
-                                        data-session-key="{{ visitor.session_key }}"
-                                        data-visitor-name="{{ visitor.ime }}"
-                                        title="Pošalji poziv na registraciju"
-                                        aria-label="Pošalji poziv na registraciju">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <line x1="19" y1="8" x2="19" y2="14"/>
-                                        <line x1="22" y1="11" x2="16" y2="11"/>
-                                    </svg>
-                                </button>
-                                {% endif %}
-                                <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
-                            </td>
-                        </tr>
+                        {% include 'staff/partials/live_visitor_row.html' with visitor=visitor show_activity=1 colspan=5 %}
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="7">Trenutno nema aktivnih posjetilaca iz BiH.</td>
+                            <td colspan="5">Trenutno nema aktivnih posjetilaca iz BiH.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -207,72 +204,22 @@
         <section class="staff-live-analytics-panel">
             <h2>Zadnjih {{ window_minutes }} minuta</h2>
             <div class="staff-live-analytics-table-wrap">
-                <table class="staff-live-analytics-table" id="liveWindowTable">
+                <table class="staff-live-analytics-table staff-live-analytics-table--engine" id="liveWindowTable">
                     <thead>
                         <tr>
-                            <th>Ime</th>
-                            <th>Grad (BiH)</th>
-                            <th>Kategorije</th>
+                            <th>Kupac</th>
+                            <th>Real-time motor</th>
                             <th>Email</th>
-                            <th>Na sajtu</th>
                             <th>Aktivnost</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody id="liveWindowBody">
                         {% for visitor in window_visitors %}
-                        <tr>
-                            <td class="staff-live-name-cell">
-                                {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}
-                                {% if visitor.has_purchased %}
-                                <span class="staff-live-buyer-name" title="Već kupio preko sajta">{{ visitor.ime }}</span>
-                                {% else %}
-                                {{ visitor.ime }}
-                                {% endif %}
-                            </td>
-                            <td>{% if visitor.grad %}<span class="staff-live-city">{{ visitor.grad }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td>{% if visitor.categories_label %}<span class="staff-live-categories">{{ visitor.categories_label }}</span>{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td>{% if visitor.email %}{{ visitor.email }}{% else %}<span class="staff-live-muted">—</span>{% endif %}</td>
-                            <td><span class="staff-live-time-on-site" title="Vrijeme provedeno na sajtu">{{ visitor.time_on_site_label }}</span></td>
-                            <td>
-                                {% if visitor.is_online %}
-                                <span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span>
-                                {% else %}
-                                <span class="staff-live-badge">{{ visitor.last_seen_label }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="staff-live-action-cell">
-                                {% if visitor.session_key %}
-                                {% if visitor.offer_sent %}
-                                <span class="staff-live-offer-sent staff-live-offer-sent--{{ visitor.offer_status }}"
-                                      title="{% if visitor.offer_status == 'accepted' %}Kupac je prihvatio ponudu{% elif visitor.offer_status == 'left' %}Kupac je odbio ponudu ili je izašao{% else %}Ponuda aktivna{% endif %}{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}"
-                                      aria-label="Status ponude">✓</span>
-                                {% endif %}
-                                {% if visitor.can_invite_register %}
-                                <button type="button"
-                                        class="staff-live-register-btn{% if visitor.offer_product == 'Poziv na registraciju' and visitor.offer_sent %} staff-live-register-btn--sent{% endif %}"
-                                        data-register-invite
-                                        data-session-key="{{ visitor.session_key }}"
-                                        data-visitor-name="{{ visitor.ime }}"
-                                        title="Pošalji poziv na registraciju"
-                                        aria-label="Pošalji poziv na registraciju">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <line x1="19" y1="8" x2="19" y2="14"/>
-                                        <line x1="22" y1="11" x2="16" y2="11"/>
-                                    </svg>
-                                </button>
-                                {% endif %}
-                                <button type="button" class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}" data-offer-open data-session-key="{{ visitor.session_key }}" data-visitor-name="{{ visitor.ime }}"{% if visitor.offer_active %} title="Aktivna ponuda — kupac je još uvijek vidi"{% endif %}>Ponuda</button>
-                                {% else %}
-                                <span class="staff-live-muted">—</span>
-                                {% endif %}
-                            </td>
-                        </tr>
+                        {% include 'staff/partials/live_visitor_row.html' with visitor=visitor show_activity=1 colspan=5 %}
                         {% empty %}
                         <tr class="staff-live-empty-row">
-                            <td colspan="7">Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.</td>
+                            <td colspan="5">Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -288,6 +235,7 @@
         <button type="button" class="staff-live-offer-modal-close" data-offer-close aria-label="Zatvori">×</button>
         <h2 id="liveOfferModalTitle">Pošalji ponudu</h2>
         <p class="staff-live-offer-modal-subtitle">Kupac: <strong id="liveOfferVisitorName">—</strong></p>
+        <p class="staff-live-offer-hint">Popup se prikazuje na sajtu. Ako kupac ima email, ista ponuda stiže i na email.</p>
 
         <form method="post" action="{% url 'staff_send_live_offer' %}" id="liveOfferSendForm" class="staff-live-offer-modal-form">
             {% csrf_token %}
@@ -322,8 +270,12 @@
     const registerInviteUrl = '{% url "staff_send_registration_invite" %}';
     const onlineBody = document.getElementById('liveOnlineBody');
     const windowBody = document.getElementById('liveWindowBody');
+    const registeredBody = document.getElementById('liveRegisteredBody');
     const onlineCountEl = document.getElementById('liveOnlineCount');
     const windowCountEl = document.getElementById('liveWindowCount');
+    const registeredOnlineCountEl = document.getElementById('liveRegisteredOnlineCount');
+    const registeredWindowCountEl = document.getElementById('liveRegisteredWindowCount');
+    const registeredPanelCountEl = document.getElementById('liveRegisteredPanelCount');
     const updatedEl = document.getElementById('liveAnalyticsUpdated');
     const modal = document.getElementById('liveOfferModal');
     const visitorNameEl = document.getElementById('liveOfferVisitorName');
@@ -460,15 +412,69 @@
             return '<span class="staff-live-muted">—</span>';
         }
         const sentClass = visitor.offer_sent ? ' staff-live-offer-btn--sent' : '';
-        const activeTitle = visitor.offer_active
-            ? ' title="Aktivna ponuda — kupac je još uvijek vidi"'
-            : '';
+        let title = visitor.can_email_offer
+            ? 'Popup na sajtu + email'
+            : (visitor.offer_active ? 'Aktivna ponuda — kupac je još uvijek vidi' : 'Pošalji ponudu');
+        const label = visitor.can_email_offer ? 'Ponuda + email' : 'Ponuda';
         return (
             offerSentBadge(visitor) +
             registerInviteButton(visitor) +
             '<button type="button" class="staff-live-offer-btn' + sentClass + '" data-offer-open ' +
             'data-session-key="' + escapeHtml(visitor.session_key) + '" ' +
-            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '"' + activeTitle + '>Ponuda</button>'
+            'data-visitor-name="' + escapeHtml(visitor.ime || 'Gost') + '" ' +
+            'title="' + escapeHtml(title) + '">' + label + '</button>'
+        );
+    }
+
+    function engineCell(visitor) {
+        const chips = [];
+        chips.push(
+            '<span class="staff-live-engine-chip" title="Vrijeme provedeno na sajtu">⏱ ' +
+            escapeHtml(visitor.time_on_site_label || '—') + '</span>'
+        );
+        chips.push(
+            '<span class="staff-live-engine-chip" title="Broj pregledanih proizvoda">📦 ' +
+            escapeHtml(visitor.products_viewed_count || 0) + ' proiz.</span>'
+        );
+        if (visitor.categories_label) {
+            chips.push(
+                '<span class="staff-live-engine-chip staff-live-engine-chip--cat" title="Kategorije">🏷 ' +
+                escapeHtml(visitor.categories_label) + '</span>'
+            );
+        }
+        const cartClass = visitor.has_cart ? ' staff-live-engine-chip--cart' : '';
+        chips.push(
+            '<span class="staff-live-engine-chip' + cartClass + '" title="Vrijednost korpe">🛒 ' +
+            escapeHtml(visitor.cart_value_label || '—') + '</span>'
+        );
+        const src = visitor.traffic_source || 'direct';
+        chips.push(
+            '<span class="staff-live-engine-chip staff-live-engine-chip--src staff-live-engine-chip--' +
+            escapeHtml(src) + '" title="Izvor dolaska">↗ ' +
+            escapeHtml(visitor.traffic_source_label || 'Direktno') + '</span>'
+        );
+        if (visitor.returned_to_product) {
+            chips.push(
+                '<span class="staff-live-engine-chip staff-live-engine-chip--return" title="' +
+                escapeHtml(visitor.returned_products_label || '') +
+                '">↩ Povratak na proizvod</span>'
+            );
+        }
+        if (visitor.has_purchased) {
+            chips.push(
+                '<span class="staff-live-engine-chip staff-live-engine-chip--buy" title="Prethodne kupovine">★ ' +
+                escapeHtml(visitor.purchase_label || 'Kupovao') + '</span>'
+            );
+        }
+        let productsHtml = '';
+        if (visitor.products_label) {
+            productsHtml =
+                '<span class="staff-live-engine-products" title="' +
+                escapeHtml(visitor.products_label) + '">' +
+                escapeHtml(visitor.products_label) + '</span>';
+        }
+        return (
+            '<div class="staff-live-engine">' + chips.join('') + productsHtml + '</div>'
         );
     }
 
@@ -486,42 +492,49 @@
         }, 2600);
     }
 
-    function renderRows(visitors, emptyText) {
-        if (!visitors.length) {
-            return '<tr class="staff-live-empty-row"><td colspan="7">' + escapeHtml(emptyText) + '</td></tr>';
+    function renderRows(visitors, emptyText, options) {
+        options = options || {};
+        const showActivity = options.showActivity !== false;
+        const colspan = showActivity ? 5 : 4;
+        if (!visitors || !visitors.length) {
+            return '<tr class="staff-live-empty-row"><td colspan="' + colspan + '">' +
+                escapeHtml(emptyText) + '</td></tr>';
         }
         return visitors.map(function (visitor) {
-            const email = visitor.email
+            let email = visitor.email
                 ? escapeHtml(visitor.email)
                 : '<span class="staff-live-muted">—</span>';
-            const grad = visitor.grad
-                ? '<span class="staff-live-city">' + escapeHtml(visitor.grad) + '</span>'
-                : '<span class="staff-live-muted">—</span>';
-            const categories = visitor.categories_label
-                ? '<span class="staff-live-categories">' + escapeHtml(visitor.categories_label) + '</span>'
-                : '<span class="staff-live-muted">—</span>';
-            const timeOnSite = visitor.time_on_site_label
-                ? '<span class="staff-live-time-on-site" title="Vrijeme provedeno na sajtu">' +
-                  escapeHtml(visitor.time_on_site_label) + '</span>'
-                : '<span class="staff-live-muted">—</span>';
+            if (visitor.email && visitor.can_email_offer) {
+                email += '<div class="staff-live-email-hint">popup + email</div>';
+            }
             const badgeClass = visitor.is_online
                 ? 'staff-live-badge staff-live-badge--online'
                 : 'staff-live-badge';
             const cartTag = visitor.has_cart
                 ? '<span class="staff-live-cart-tag">korpa</span>'
                 : '';
+            const regTag = visitor.is_registered
+                ? '<span class="staff-live-reg-tag" title="Registrovan kupac">reg</span>'
+                : '';
             const nameLabel = escapeHtml(visitor.ime || 'Gost');
+            const purchaseTitle = visitor.purchase_label || 'Već kupio preko sajta';
             const nameHtml = visitor.has_purchased
-                ? '<span class="staff-live-buyer-name" title="Već kupio preko sajta">' + nameLabel + '</span>'
+                ? '<span class="staff-live-buyer-name" title="' + escapeHtml(purchaseTitle) + '">' +
+                  nameLabel + '</span>'
                 : nameLabel;
+            const citySub = visitor.grad
+                ? '<div class="staff-live-city-sub">' + escapeHtml(visitor.grad) + '</div>'
+                : '';
+            const activityCell = showActivity
+                ? '<td><span class="' + badgeClass + '">' +
+                  escapeHtml(visitor.last_seen_label || '—') + '</span></td>'
+                : '';
             return (
                 '<tr>' +
-                '<td class="staff-live-name-cell">' + cartTag + nameHtml + '</td>' +
-                '<td>' + grad + '</td>' +
-                '<td>' + categories + '</td>' +
+                '<td class="staff-live-name-cell">' + cartTag + regTag + nameHtml + citySub + '</td>' +
+                '<td class="staff-live-engine-cell">' + engineCell(visitor) + '</td>' +
                 '<td>' + email + '</td>' +
-                '<td>' + timeOnSite + '</td>' +
-                '<td><span class="' + badgeClass + '">' + escapeHtml(visitor.last_seen_label) + '</span></td>' +
+                activityCell +
                 '<td class="staff-live-action-cell">' + offerButton(visitor) + '</td>' +
                 '</tr>'
             );
@@ -709,15 +722,33 @@
             const data = await response.json();
             onlineCountEl.textContent = data.online_count;
             windowCountEl.textContent = data.window_count;
+            if (registeredOnlineCountEl) {
+                registeredOnlineCountEl.textContent = data.registered_online_count || 0;
+            }
+            if (registeredWindowCountEl) {
+                registeredWindowCountEl.textContent = data.registered_window_count || 0;
+            }
+            if (registeredPanelCountEl) {
+                registeredPanelCountEl.textContent = '(' + (data.registered_online_count || 0) + ')';
+            }
             updatedEl.textContent = data.generated_at_label || '—';
             onlineBody.innerHTML = renderRows(
                 data.online_visitors || [],
                 'Trenutno nema aktivnih posjetilaca iz BiH.',
+                { showActivity: true },
             );
             windowBody.innerHTML = renderRows(
                 data.window_visitors || [],
                 'Nema posjeta iz BiH u zadnjih {{ window_minutes }} minuta.',
+                { showActivity: true },
             );
+            if (registeredBody) {
+                registeredBody.innerHTML = renderRows(
+                    data.registered_online_visitors || [],
+                    'Trenutno nema registrovanih kupaca online.',
+                    { showActivity: false },
+                );
+            }
             renderTrafficTable(
                 dailyStatsBody,
                 data.daily_stats || [],
@@ -735,6 +766,7 @@
             );
             bindOfferButtons(onlineBody);
             bindOfferButtons(windowBody);
+            if (registeredBody) bindOfferButtons(registeredBody);
         } catch (err) {
             /* tiho */
         }

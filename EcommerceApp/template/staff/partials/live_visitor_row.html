@@ -1,0 +1,84 @@
+<tr>
+    <td class="staff-live-name-cell">
+        {% if visitor.has_cart %}<span class="staff-live-cart-tag">korpa</span>{% endif %}
+        {% if visitor.is_registered %}<span class="staff-live-reg-tag" title="Registrovan kupac">reg</span>{% endif %}
+        {% if visitor.has_purchased %}
+        <span class="staff-live-buyer-name" title="{% if visitor.purchase_label %}{{ visitor.purchase_label }}{% else %}Već kupio preko sajta{% endif %}">{{ visitor.ime }}</span>
+        {% else %}
+        {{ visitor.ime }}
+        {% endif %}
+        {% if visitor.grad %}<div class="staff-live-city-sub">{{ visitor.grad }}</div>{% endif %}
+    </td>
+    <td class="staff-live-engine-cell">
+        <div class="staff-live-engine">
+            <span class="staff-live-engine-chip" title="Vrijeme provedeno na sajtu">⏱ {{ visitor.time_on_site_label }}</span>
+            <span class="staff-live-engine-chip" title="Broj pregledanih proizvoda">📦 {{ visitor.products_viewed_count|default:0 }} proiz.</span>
+            {% if visitor.categories_label %}
+            <span class="staff-live-engine-chip staff-live-engine-chip--cat" title="Kategorije">🏷 {{ visitor.categories_label }}</span>
+            {% endif %}
+            <span class="staff-live-engine-chip{% if visitor.has_cart %} staff-live-engine-chip--cart{% endif %}" title="Vrijednost korpe">🛒 {{ visitor.cart_value_label|default:"—" }}</span>
+            <span class="staff-live-engine-chip staff-live-engine-chip--src staff-live-engine-chip--{{ visitor.traffic_source|default:'direct' }}" title="Izvor dolaska">↗ {{ visitor.traffic_source_label|default:"Direktno" }}</span>
+            {% if visitor.returned_to_product %}
+            <span class="staff-live-engine-chip staff-live-engine-chip--return" title="{{ visitor.returned_products_label }}">↩ Povratak na proizvod</span>
+            {% endif %}
+            {% if visitor.has_purchased %}
+            <span class="staff-live-engine-chip staff-live-engine-chip--buy" title="Prethodne kupovine">★ {{ visitor.purchase_label|default:"Kupovao" }}</span>
+            {% endif %}
+            {% if visitor.products_label %}
+            <span class="staff-live-engine-products" title="{{ visitor.products_label }}">{{ visitor.products_label }}</span>
+            {% endif %}
+        </div>
+    </td>
+    <td>
+        {% if visitor.email %}
+        {{ visitor.email }}
+        {% if visitor.can_email_offer %}<div class="staff-live-email-hint">popup + email</div>{% endif %}
+        {% else %}
+        <span class="staff-live-muted">—</span>
+        {% endif %}
+    </td>
+    {% if show_activity %}
+    <td>
+        {% if visitor.is_online %}
+        <span class="staff-live-badge staff-live-badge--online">{{ visitor.last_seen_label }}</span>
+        {% else %}
+        <span class="staff-live-badge">{{ visitor.last_seen_label }}</span>
+        {% endif %}
+    </td>
+    {% endif %}
+    <td class="staff-live-action-cell">
+        {% if visitor.session_key %}
+        {% if visitor.offer_sent %}
+        <span class="staff-live-offer-sent staff-live-offer-sent--{{ visitor.offer_status }}"
+              title="{% if visitor.offer_status == 'accepted' %}Kupac je prihvatio ponudu{% elif visitor.offer_status == 'left' %}Kupac je odbio ponudu ili je izašao{% else %}Ponuda aktivna{% endif %}{% if visitor.offer_product %}: {{ visitor.offer_product }}{% endif %}"
+              aria-label="Status ponude">✓</span>
+        {% endif %}
+        {% if visitor.can_invite_register %}
+        <button type="button"
+                class="staff-live-register-btn{% if visitor.offer_product == 'Poziv na registraciju' and visitor.offer_sent %} staff-live-register-btn--sent{% endif %}"
+                data-register-invite
+                data-session-key="{{ visitor.session_key }}"
+                data-visitor-name="{{ visitor.ime }}"
+                title="Pošalji poziv na registraciju"
+                aria-label="Pošalji poziv na registraciju">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <line x1="19" y1="8" x2="19" y2="14"/>
+                <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+        </button>
+        {% endif %}
+        <button type="button"
+                class="staff-live-offer-btn{% if visitor.offer_sent %} staff-live-offer-btn--sent{% endif %}"
+                data-offer-open
+                data-session-key="{{ visitor.session_key }}"
+                data-visitor-name="{{ visitor.ime }}"
+                title="{% if visitor.can_email_offer %}Popup na sajtu + email{% elif visitor.offer_active %}Aktivna ponuda{% else %}Pošalji ponudu{% endif %}">
+            {% if visitor.can_email_offer %}Ponuda + email{% else %}Ponuda{% endif %}
+        </button>
+        {% else %}
+        <span class="staff-live-muted">—</span>
+        {% endif %}
+    </td>
+</tr>

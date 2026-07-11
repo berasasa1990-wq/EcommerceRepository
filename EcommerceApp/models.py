@@ -2058,6 +2058,18 @@ class LiveVisitor(models.Model):
         verbose_name='Pregledane kategorije',
         help_text='Nazivi kategorija koje je posjetilac pregledao u ovoj sesiji (najnovije prvo).',
     )
+    pregledani_proizvodi = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Pregledani proizvodi',
+        help_text='Lista {id, naziv, views} — proizvodi koje je posjetilac otvorio u ovoj sesiji.',
+    )
+    izvor_dolaska = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name='Izvor dolaska',
+        help_text='facebook / google / instagram / direct / other',
+    )
     first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva aktivnost')
     last_seen = models.DateTimeField(db_index=True, verbose_name='Zadnja aktivnost')
 
@@ -2068,6 +2080,7 @@ class LiveVisitor(models.Model):
         indexes = [
             models.Index(fields=['-last_seen']),
             models.Index(fields=['email', '-last_seen']),
+            models.Index(fields=['user', '-last_seen']),
         ]
 
     def __str__(self):

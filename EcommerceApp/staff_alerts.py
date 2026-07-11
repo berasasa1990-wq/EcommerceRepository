@@ -53,7 +53,7 @@ def notify_visitor_online(*, ime='', email='', grad='', session_key=''):
     label = _actor_label(ime=ime, email=email, grad=grad)
     return push_staff_event(
         StaffSiteEvent.Tip.ONLINE,
-        naslov='Novi posjetilac online',
+        naslov='Kupac na sajtu',
         poruka=f'{label} je na sajtu.',
         ime=ime,
         email=email,

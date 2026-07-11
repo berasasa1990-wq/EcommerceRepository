@@ -1248,6 +1248,9 @@ def product_detail(request, slug):
     context['meta_view_content_event_id'] = view_content_event_id
     track_view_content(request, product, event_id=view_content_event_id)
 
+    from .product_urgency import build_product_urgency
+    context['product_urgency'] = build_product_urgency(product)
+
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
     context['staff_product_tools'] = _request_is_superuser(request)
 
@@ -2465,8 +2468,12 @@ def _live_analytics_context(request):
     return {
         'online_count': snapshot['online_count'],
         'window_count': snapshot['window_count'],
+        'registered_online_count': snapshot.get('registered_online_count', 0),
+        'registered_window_count': snapshot.get('registered_window_count', 0),
         'online_visitors': snapshot['online_visitors'],
         'window_visitors': snapshot['window_visitors'],
+        'registered_online_visitors': snapshot.get('registered_online_visitors') or [],
+        'registered_window_visitors': snapshot.get('registered_window_visitors') or [],
         'online_minutes': snapshot['online_minutes'],
         'window_minutes': snapshot['window_minutes'],
         'daily_stats': traffic_stats['daily'],
@@ -2561,6 +2568,27 @@ def staff_send_live_offer(request):
             success_message = f'Ponuda artikla poslana kupcu s popustom {pct}%.'
         else:
             success_message = 'Ponuda artikla poslana kupcu.'
+
+        # Popup na sajtu + email (ako kupac ima email)
+        email_to = ''
+        if visitor:
+            email_to = (visitor.email or '').strip()
+            if not email_to and visitor.user_id and visitor.user:
+                email_to = (visitor.user.email or '').strip()
+        if email_to:
+            try:
+                from .emails import send_live_offer_email
+                send_live_offer_email(
+                    to_email=email_to,
+                    visitor_name=(visitor.ime if visitor else '') or '',
+                    offer=offer,
+                )
+                success_message = f'{success_message} Email poslan na {email_to}.'
+            except Exception:
+                success_message = (
+                    f'{success_message} Popup je aktivan, ali slanje emaila nije uspjelo.'
+                )
+
         if is_ajax:
             return JsonResponse({'ok': True, 'message': success_message})
         messages.success(request, success_message)
@@ -2753,8 +2781,13 @@ def staff_live_analytics_data(request):
 
     payload = _live_analytics_context(request)
     payload['generated_at'] = timezone.localtime(payload['generated_at']).isoformat()
-    for key in ('online_visitors', 'window_visitors'):
-        for row in payload[key]:
+    for key in (
+        'online_visitors',
+        'window_visitors',
+        'registered_online_visitors',
+        'registered_window_visitors',
+    ):
+        for row in payload.get(key) or []:
             if row.get('last_seen'):
                 row['last_seen'] = timezone.localtime(row['last_seen']).isoformat()
     return JsonResponse(payload)

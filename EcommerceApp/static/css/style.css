@@ -4866,6 +4866,61 @@ body.catalog-variation-modal-open {
     margin-left: -8px;
 }
 
+/* Urgency: prodato u 24h + ostalo na stanju (akcijski) */
+.product-urgency {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+    background: linear-gradient(180deg, #fff7f7 0%, #fff 100%);
+}
+
+.product-urgency-sold,
+.product-urgency-stock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: #444;
+}
+
+.product-urgency-sold strong {
+    color: #b91c1c;
+    font-weight: 800;
+}
+
+.product-urgency-stock {
+    color: #9a3412;
+}
+
+.product-urgency-stock-count {
+    color: #c2410c;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.product-urgency-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.product-urgency-stock .product-urgency-icon {
+    background: #ffedd5;
+    color: #ea580c;
+}
+
 .product-price--detail {
     display: flex;
     flex-direction: column;
