@@ -10,20 +10,22 @@
     const heartbeatUrl = root.dataset.heartbeatUrl || '/uzivo/prisutan/';
     const leaveUrl = root.dataset.leaveUrl || '/uzivo/odlazak/';
     const sessionKey = (root.dataset.sessionKey || '').trim();
-    const heartbeatMs = 4000;
-    const pageLoadedAt = Date.now();
+    // Brži ping — staff live lista se osvježava skoro u real-time
+    const heartbeatMs = 3000;
     let leftSent = false;
     let heartbeatTimer = null;
 
     function sendHeartbeat() {
         if (leftSent) return;
         const params = new URLSearchParams();
+        // session_key iz data-attr ILI cookie sesija (server i bez body-ja rješava)
         if (sessionKey) params.set('session_key', sessionKey);
         params.set('ping', '1');
         try {
             params.set('path', window.location.pathname || '/');
             const q = new URLSearchParams(window.location.search || '').get('q');
             if (q) params.set('q', q);
+            params.set('title', (document.title || '').slice(0, 80));
         } catch (err) {
             /* ignore */
         }

@@ -652,6 +652,10 @@ def _touch_visitor_identity(request, session_key):
 
 
 def track_live_visitor(request):
+    """
+    Evidentiraj svakog posjetioca na sajtu (live analitika).
+    Superuser se ne prati. Strani IP se i dalje bilježi (sa svojom državom).
+    """
     if not should_track_visitor(request):
         return
     session_key = _ensure_session_key(request)
@@ -661,28 +665,22 @@ def track_live_visitor(request):
     ip = get_client_ip(request)
     from .visitor_geo import _is_public_ip
 
-    # Lokalni / privatni IP (dev, LAN) — uvijek prati kao BA
     is_local_ip = not _is_public_ip(ip)
     user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
     now = timezone.now()
 
-    if not is_local_ip:
-        if is_known_foreign_visitor(request, ip=ip):
-            # Strani javni IP — ne prikazuj u BA live listi
-            LiveVisitor.objects.filter(session_key=session_key).delete()
-            return
-        country = (resolve_visitor_country(request, ip=ip) or '').strip().upper()
-        if country and country != BOSNIA_HERZEGOVINA_COUNTRY_CODE:
-            LiveVisitor.objects.filter(session_key=session_key).delete()
-            return
-    else:
+    # Svaki posjetilac se prati — lokalni = BA, javni = geo ili BA ako nepoznato
+    if is_local_ip:
         country = BOSNIA_HERZEGOVINA_COUNTRY_CODE
+    else:
+        country = (resolve_visitor_country(request, ip=ip) or '').strip().upper()
+        if not country:
+            country = BOSNIA_HERZEGOVINA_COUNTRY_CODE
 
-    # Poll / heartbeat / AJAX — samo last_seen, NE mijenjaj „Sada:” niti istoriju gledanja
+    # Poll / heartbeat / AJAX — samo last_seen (+ kreiraj red ako nedostaje)
     if is_background_request_path(getattr(request, 'path', '') or ''):
         updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
         if not updated:
-            # Heartbeat prije page tracka — kreiraj red
             try:
                 LiveVisitor.objects.create(
                     session_key=session_key,
@@ -690,7 +688,7 @@ def track_live_visitor(request):
                     ime=_display_name(user)[:120],
                     email=_display_email(user)[:254],
                     grad='',
-                    drzava=BOSNIA_HERZEGOVINA_COUNTRY_CODE,
+                    drzava=country[:2] if country else BOSNIA_HERZEGOVINA_COUNTRY_CODE,
                     ip_adresa=ip or None,
                     trenutna_putanja='/',
                     trenutno_gleda='Na sajtu',
@@ -774,7 +772,7 @@ def track_live_visitor(request):
         'ime': _display_name(user)[:120],
         'email': _display_email(user)[:254],
         'grad': (grad or '')[:100],
-        'drzava': BOSNIA_HERZEGOVINA_COUNTRY_CODE,
+        'drzava': (country or BOSNIA_HERZEGOVINA_COUNTRY_CODE)[:2],
         'ip_adresa': ip or None,
         'visitor_token': visitor_token,
         'site_visit_count': visit_count,
@@ -2040,9 +2038,9 @@ def get_live_visitor_snapshot():
     now = timezone.now()
     window_cutoff = now - timedelta(minutes=WINDOW_MINUTES)
 
+    # Svi posjetioci u prozoru (ne samo BA) — ko je na sajtu, vidi se live
     window_qs = LiveVisitor.objects.filter(
         last_seen__gte=window_cutoff,
-        drzava=BOSNIA_HERZEGOVINA_COUNTRY_CODE,
     ).select_related('user__profil').order_by('-last_seen')
     visitor_rows = list(window_qs)
     actions_bundle = _build_recent_offer_map(visitor_rows, now=now)

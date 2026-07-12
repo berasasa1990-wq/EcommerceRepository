@@ -394,12 +394,13 @@
     {% if online_gift %}
     <script src="{% static 'js/online-gift.js' %}?v=20260712v8" defer></script>
     {% endif %}
+    {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
     {% if not user.is_authenticated or not user.is_superuser %}
     <div id="visitorPresenceRoot" hidden
          data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
          data-leave-url="{% url 'live_visitor_leave' %}"
          data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script src="{% static 'js/visitor-presence.js' %}?v=20260712v6" defer></script>
+    <script src="{% static 'js/visitor-presence.js' %}?v=20260712v7" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
     <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260712v1">

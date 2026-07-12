@@ -122,7 +122,7 @@
         </div>
 
         {% elif akcija.tip == 'bundle' %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260712v11">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260712v12">
         {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary unit_count=akcija.bundle_unit_count %}
         {# Jedna kartica po liniji; qty≥2 → badge ×2/×3 (ne dupla slika). unit_count ≥ 2 #}
         {% if unit_count >= 2 and bundle_items %}

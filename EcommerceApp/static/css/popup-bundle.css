@@ -226,10 +226,13 @@
   opacity: 0.45;
 }
 
+/* % badge gore lijevo — odvojeno od ×N dole desno */
 .bundle-pack-card-badge {
   position: absolute;
   top: 6px;
   left: 6px;
+  right: auto;
+  bottom: auto;
   padding: 3px 7px;
   border-radius: 6px;
   background: #e11d48;
@@ -248,25 +251,30 @@
   flex: 0 1 220px;
 }
 
+/* ×2 / ×3 / ×4 — donji desni ugao da ne prekrije proizvod (štap, itd.) */
 .bundle-pack-card-qty {
   position: absolute;
-  top: 8px;
+  top: auto;
+  bottom: 8px;
   right: 8px;
+  left: auto;
   z-index: 2;
-  min-width: 36px;
-  height: 36px;
-  padding: 0 10px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 12px;
   border-radius: 999px;
   background: linear-gradient(180deg, #22c55e, #15803d);
   color: #fff;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 900;
+  letter-spacing: -0.02em;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.45);
+  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.5);
   border: 2px solid #fff;
+  line-height: 1;
 }
 
 .bundle-pack-card-qty-text {
@@ -563,6 +571,14 @@
 
 /* 3+ artikla na mobilnom — omogući wrap da stane */
 @media (max-width: 480px) {
+  .bundle-pack-card-qty {
+    min-width: 40px;
+    height: 40px;
+    font-size: 17px;
+    bottom: 6px;
+    right: 6px;
+  }
+
   .bundle-pack-row:has(.bundle-pack-card:nth-child(5)) {
     flex-wrap: wrap;
     row-gap: 10px;
