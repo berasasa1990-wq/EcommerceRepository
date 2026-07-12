@@ -102,6 +102,23 @@ class SiteSettings(models.Model):
         verbose_name='Exit popup popust (%)',
         help_text='Opcionalno. Smanjuje cijenu odabranog artikla pri dodavanju iz popupa (max 50%).',
     )
+    browse_interest_popup_aktivan = models.BooleanField(
+        default=True,
+        verbose_name='Personalizovana ponuda (gledanje) aktivna',
+        help_text=(
+            'Automatski popup do 4 artikla 2×2 („Specijalna ponuda za vas”): '
+            'prva nakon 2 min, druga nakon 4 min (popust ispod).'
+        ),
+    )
+    browse_interest_popust = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        null=True,
+        blank=True,
+        verbose_name='Personalizovana ponuda — popust (%)',
+        help_text='Popust na preporučene artikle (max 50%). Podrazumijevano 10%.',
+    )
     novi_korisnik_besplatna_dostava = models.BooleanField(
         default=False,
         verbose_name='Novi korisnici — besplatna dostava',
@@ -2036,6 +2053,29 @@ class ActiveCartItem(models.Model):
         return f'{self.naziv} × {self.kolicina}'
 
 
+class SiteVisitorIdentity(models.Model):
+    """
+    Trajni token posjetioca (cookie) — broj dolazaka na sajt preko sesija.
+    """
+    token = models.CharField(max_length=64, unique=True, db_index=True, verbose_name='Token')
+    visit_count = models.PositiveIntegerField(default=1, verbose_name='Broj posjeta')
+    last_session_key = models.CharField(max_length=40, blank=True, db_index=True)
+    first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva posjeta')
+    last_seen = models.DateTimeField(auto_now=True, verbose_name='Zadnja posjeta')
+
+    class Meta:
+        verbose_name = 'Identitet posjetioca'
+        verbose_name_plural = 'Identiteti posjetilaca'
+        ordering = ['-last_seen']
+
+    def __str__(self):
+        return f'{self.token[:8]}… ({self.visit_count}×)'
+
+    @property
+    def is_returning(self):
+        return self.visit_count > 1
+
+
 class LiveVisitor(models.Model):
     """Posjetilac sajta — zadnja aktivnost po sesiji."""
     session_key = models.CharField(max_length=40, unique=True, db_index=True, verbose_name='Sesija')
@@ -2052,6 +2092,14 @@ class LiveVisitor(models.Model):
     grad = models.CharField(max_length=100, blank=True, verbose_name='Grad')
     drzava = models.CharField(max_length=2, blank=True, verbose_name='Država')
     ip_adresa = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP adresa')
+    visitor_token = models.CharField(
+        max_length=64, blank=True, db_index=True, verbose_name='Trajni token',
+        help_text='Cookie ozb_vid — veza preko sesija.',
+    )
+    site_visit_count = models.PositiveIntegerField(
+        default=1, verbose_name='Broj dolazaka na sajt',
+        help_text='>1 = vraćeni posjetilac (nije prvi put).',
+    )
     pregledane_kategorije = models.JSONField(
         default=list,
         blank=True,
@@ -2063,6 +2111,15 @@ class LiveVisitor(models.Model):
         blank=True,
         verbose_name='Pregledani proizvodi',
         help_text='Lista {id, naziv, views} — proizvodi koje je posjetilac otvorio u ovoj sesiji.',
+    )
+    skoro_korpa = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Skoro dodao u korpu',
+        help_text=(
+            'Artikli gdje je kursor bio na „Dodaj u korpu” ali nije kliknuo. '
+            'Lista {id, naziv, hovers, last_at} — najjači intent za #1 ponudu.'
+        ),
     )
     izvor_dolaska = models.CharField(
         max_length=20,
@@ -2317,7 +2374,8 @@ class OnlineGiftCampaign(models.Model):
         default=True,
         verbose_name='Automatski svima online',
         help_text=(
-            'Uključeno: popup se automatski prikaže svima na sajtu (jednom po posjetiocu). '
+            'Uključeno: na stranicama iskače ponuda nagradne igre — kupac sam bira '
+            '„Da, igraj” ili „Ne, hvala” (jednom po posjetiocu ako je uključeno ispod). '
             'Isključeno: nagrada se ne pojavljuje sama — staff je pušta ručno u Uživo analitici '
             'pored kupca.'
         ),

@@ -5316,13 +5316,53 @@ body.mobile-nav-open {
     margin-right: 20px;
 }
 .admin-btn-text strong {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
     font-size: 18px;
     margin-bottom: 4px;
 }
-.admin-btn-text span {
+.admin-btn-text span:not(.admin-orders-badge) {
     font-size: 13px;
     color: #666;
+}
+
+/* Zeleni broj novih online narudžbi */
+.admin-orders-badge {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: linear-gradient(145deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+    animation: admin-orders-badge-pulse 1.6s ease-in-out infinite;
+}
+
+.admin-orders-badge.is-visible {
+    display: inline-flex;
+}
+
+@keyframes admin-orders-badge-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+        transform: scale(1.06);
+    }
+}
+
+.admin-btn--orders:hover .admin-orders-badge {
+    animation-duration: 1s;
 }
 .admin-btn--locked {
     opacity: 0.55;
@@ -10558,6 +10598,100 @@ button.nav-action-link {
     border-color: #5BB805 !important;
 }
 
+/* Exit podsjetnik: ima u korpi — završi narudžbu */
+.cart-abandon-overlay {
+    z-index: 3150;
+}
+
+.site-popup--cart-abandon {
+    max-width: 400px;
+    text-align: center;
+}
+
+.cart-abandon-body {
+    padding-top: 8px;
+}
+
+.cart-abandon-icon {
+    font-size: 40px;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.cart-abandon-text {
+    margin: 0 0 10px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #374151;
+}
+
+.cart-abandon-count {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: #166534;
+    font-weight: 600;
+}
+
+.cart-abandon-list {
+    list-style: none;
+    margin: 0 0 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    text-align: left;
+}
+
+.cart-abandon-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: #14532d;
+    border-bottom: 1px dashed #dcfce7;
+}
+
+.cart-abandon-list li:last-child {
+    border-bottom: none;
+}
+
+.cart-abandon-item-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.cart-abandon-item-qty {
+    flex-shrink: 0;
+    font-weight: 800;
+}
+
+.cart-abandon-more {
+    font-size: 12px !important;
+    color: #64748b !important;
+    justify-content: center !important;
+}
+
+.cart-abandon-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.cart-abandon-cta {
+    width: 100%;
+    animation: live-offer-cta-pulse 1.4s ease-in-out infinite;
+}
+
+.cart-abandon-cart,
+.cart-abandon-stay {
+    width: 100%;
+}
+
 .cart-exit-text {
     margin: 0 0 12px;
     font-size: 15px;
@@ -11007,6 +11141,196 @@ button.nav-action-link {
     background: #c5221f !important;
     border-color: #b31412 !important;
     color: #fff !important;
+}
+
+/* Personalizovana ponuda (browse interest) — 2×2 na telefonu */
+.live-offer-popup--browse {
+    max-width: 420px;
+    width: min(96vw, 420px);
+    padding-top: 16px;
+}
+
+.live-offer-popup--browse-multi {
+    max-width: min(96vw, 440px);
+    width: min(96vw, 440px);
+}
+
+.browse-offer-title {
+    font-size: 1.1rem;
+    line-height: 1.35;
+    margin: 0 0 6px;
+    text-align: center;
+}
+
+.browse-offer-message {
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.browse-offer-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr;
+}
+
+.live-offer-popup--browse-multi .browse-offer-grid,
+.browse-offer-grid[data-browse-count="2"],
+.browse-offer-grid[data-browse-count="3"],
+.browse-offer-grid[data-browse-count="4"] {
+    grid-template-columns: 1fr 1fr;
+}
+
+.browse-offer-grid[data-browse-count="1"] {
+    grid-template-columns: 1fr;
+    max-width: 220px;
+    margin: 0 auto;
+}
+
+.browse-offer-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e6ebd9;
+    border-radius: 12px;
+    background: #fbfcf8;
+    overflow: hidden;
+    min-height: 100%;
+    min-width: 0;
+}
+
+.browse-offer-card-media {
+    position: relative;
+    display: block;
+    background: #fff;
+    aspect-ratio: 1;
+    overflow: hidden;
+}
+
+.browse-offer-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 8px;
+}
+
+.browse-offer-card-image--empty {
+    background: #f0f2ea;
+}
+
+.browse-offer-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #e53935;
+    color: #fff;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+
+.browse-offer-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px 10px;
+    flex: 1;
+}
+
+.browse-offer-card-name {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.browse-offer-card-name a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.browse-offer-card-name a:hover {
+    color: #3d8f04;
+}
+
+.browse-offer-card-prices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.browse-offer-card-prices .live-offer-price-original {
+    font-size: 11px;
+}
+
+.browse-offer-card-prices .live-offer-price-final {
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.browse-offer-form {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.browse-offer-var {
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+}
+
+.browse-offer-cta {
+    width: 100%;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+    white-space: nowrap;
+}
+
+.browse-offer-card--added {
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    background: #f0fbe6;
+    border-color: #c5e6a8;
+}
+
+.browse-offer-added-msg {
+    margin: 0;
+    padding: 12px;
+    text-align: center;
+    font-weight: 700;
+    color: #2f6b03;
+    font-size: 13px;
+}
+
+@media (max-width: 380px) {
+    .live-offer-popup--browse-multi {
+        max-width: 96vw;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .browse-offer-grid {
+        gap: 8px;
+    }
+
+    .browse-offer-card-name {
+        font-size: 11px;
+    }
+
+    .browse-offer-cta {
+        font-size: 11px !important;
+        padding: 7px 8px !important;
+    }
 }
 
 .staff-online-orders-filter {

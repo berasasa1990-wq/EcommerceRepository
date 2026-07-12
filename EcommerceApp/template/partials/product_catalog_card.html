@@ -85,6 +85,9 @@
             class="product-card-add-btn"
             data-catalog-add
             data-product-slug="{{ product.slug }}"
+            data-product-id="{{ product.pk }}"
+            data-product-name="{{ product.naziv }}"
+            data-almost-cart
             {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
             {% if card_variations|length == 1 %}
                 {% for variation in card_variations %}

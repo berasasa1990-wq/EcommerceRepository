@@ -1876,6 +1876,18 @@ def cart_exit_dismiss(request):
     return redirect(next_url)
 
 
+@require_POST
+def cart_abandon_exit_dismiss(request):
+    """Zatvori exit podsjetnik „imamo u korpi” (sesija)."""
+    from .cart_exit_popup import dismiss_cart_abandon_exit
+
+    dismiss_cart_abandon_exit(request)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True})
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
+    return redirect(next_url)
+
+
 def _checkout_initial(request):
     if not request.user.is_authenticated:
         return {}
@@ -2461,10 +2473,16 @@ def staff_order_detail(request, broj):
 @login_required(login_url='login')
 @user_passes_test(_staff_required)
 def staff_admin_panel(request):
+    from .models import Order
+
+    nova_count = 0
+    if request.user.is_superuser:
+        nova_count = Order.objects.filter(status=Order.Status.NOVA).count()
     context = {
         **_base_context(),
         'olx_chat_configured': olx_chat_configured(),
         'is_superuser_staff': request.user.is_superuser,
+        'new_orders_count': nova_count,
     }
     return render(request, 'staff/admin_panel.html', context)
 
@@ -2898,6 +2916,71 @@ def live_visitor_offer_dismiss(request):
 
 
 @require_POST
+def browse_interest_offer_add(request):
+    from .browse_interest_offer import apply_browse_interest_offer
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    stay_on_page = request.POST.get('stay') == '1' or is_ajax
+    try:
+        cart = Cart(request)
+        ok, result = apply_browse_interest_offer(request, cart)
+    except Exception:
+        if stay_on_page:
+            return JsonResponse(
+                {'ok': False, 'message': 'Dodavanje u korpu nije uspjelo.'},
+                status=500,
+            )
+        raise
+    if stay_on_page:
+        if ok:
+            return JsonResponse({
+                'ok': True,
+                'message': result,
+                'cart_count': len(cart),
+            })
+        return JsonResponse({'ok': False, 'message': result}, status=400)
+    if ok:
+        messages.success(request, result)
+    else:
+        messages.warning(request, result)
+    return redirect('cart')
+
+
+@require_POST
+def browse_interest_offer_dismiss(request):
+    from .browse_interest_offer import dismiss_browse_interest_offer
+
+    dismiss_browse_interest_offer(request)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True})
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('home')
+    return redirect(next_url)
+
+
+@require_GET
+def social_proof_poll(request):
+    """JSON za toast „neko je kupio…” (svaka 3 min na frontu)."""
+    from .social_proof import build_social_proof_payload, _should_show_social_proof
+
+    if not _should_show_social_proof(request):
+        return JsonResponse({'active': False})
+
+    exclude = []
+    raw = (request.GET.get('exclude') or '').strip()
+    if raw:
+        for part in raw.split(','):
+            try:
+                exclude.append(int(part.strip()))
+            except (TypeError, ValueError):
+                continue
+
+    proof = build_social_proof_payload(request, exclude_ids=exclude)
+    if not proof:
+        return JsonResponse({'active': False})
+    return JsonResponse({'active': True, 'proof': proof})
+
+
+@require_POST
 def online_gift_reveal(request):
     from .online_gift import reveal_online_gift
 
@@ -3004,8 +3087,9 @@ def staff_set_online_gift_automatic(request):
         campaign = set_campaign_automatic(automatic)
         if campaign.automatic:
             msg = (
-                f'Automatski režim UKLJUČEN — nagrada iskače svima online '
-                f'(jednom po posjetiocu). Nagrada: {campaign.prize_label()}.'
+                f'Automatski režim UKLJUČEN — na stranicama iskače ponuda nagradne igre; '
+                f'kupac sam bira „Da, igraj” ili „Ne, hvala” (jednom po posjetiocu). '
+                f'Nagrada: {campaign.prize_label()}.'
             )
         else:
             msg = (
@@ -3039,6 +3123,32 @@ def live_visitor_offer_poll(request):
 
     payload['csrf_token'] = get_token(request)
     return JsonResponse(payload)
+
+
+@require_POST
+def almost_cart_track(request):
+    """
+    Kursor na „Dodaj u korpu” bez klika → skoro_korpa.
+    clicked=1 briše (korisnik je kliknuo).
+    """
+    from .almost_cart import record_almost_cart
+
+    try:
+        product_id = int(request.POST.get('product_id') or 0)
+    except (TypeError, ValueError):
+        product_id = 0
+    if not product_id:
+        return JsonResponse({'ok': False, 'message': 'Nedostaje artikal.'}, status=400)
+
+    product_name = (request.POST.get('product_name') or '')[:120]
+    clicked = (request.POST.get('clicked') or '') in ('1', 'true', 'yes')
+    record_almost_cart(
+        request,
+        product_id,
+        product_name=product_name,
+        clicked=clicked,
+    )
+    return JsonResponse({'ok': True, 'clicked': clicked})
 
 
 @csrf_exempt
@@ -3132,6 +3242,7 @@ def staff_site_events_poll(request):
         'latest_id': data['latest_id'],
         'online_sessions': data.get('online_sessions') or [],
         'visitor_states': data.get('visitor_states') or {},
+        'new_orders_count': int(data.get('new_orders_count') or 0),
     })
 
 

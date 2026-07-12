@@ -38,11 +38,21 @@ class Cart:
         self.request.session[self.SESSION_KEY] = self.cart
         self.request.session.modified = True
 
-    def _line_key(self, product_id, variation_id=None):
-        return f'{product_id}:{variation_id or 0}'
+    def _line_key(self, product_id, variation_id=None, *, promo=False):
+        """
+        Promo/ponuda i redovna cijena su odvojene stavke.
+        Prihvaćena ponuda ostaje sniženom cijenom; ručno dodavanje istog artikla = regularna cijena.
+        """
+        base = f'{product_id}:{variation_id or 0}'
+        return f'{base}:promo' if promo else base
 
     def add(self, product, variation=None, quantity=1, custom_price=None, *, promo_bazna=None, gratis_akcija_id=None):
-        key = self._line_key(product.pk, variation.pk if variation else None)
+        is_promo = custom_price is not None
+        key = self._line_key(
+            product.pk,
+            variation.pk if variation else None,
+            promo=is_promo,
+        )
         quantity = max(1, int(quantity or 1))
         prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
         if custom_price is not None:
@@ -63,12 +73,16 @@ class Cart:
             slika = product.prikazna_slika.url
 
         if key in self.cart:
+            # Ista vrsta stavke (promo ili regular) — samo količina
             self.cart[key]['quantity'] += quantity
-            if custom_price is not None:
+            # Ne prepisuj promo cijenu redovnim dodavanjem (i obrnuto)
+            if is_promo:
                 self.cart[key]['cijena'] = str(price)
                 self.cart[key]['bazna_cijena'] = str(bazna)
                 self.cart[key]['na_akciji'] = na_akciji
                 self.cart[key]['timer_akcija'] = True
+                self.cart[key]['upsell'] = True
+                self.cart[key]['promo_line'] = True
             if gratis_akcija_id is not None:
                 self.cart[key]['gratis_akcija_id'] = gratis_akcija_id
                 self.cart[key]['gratis_promo'] = True
@@ -86,8 +100,9 @@ class Cart:
                 'na_akciji': na_akciji,
                 'slika': slika,
                 'quantity': quantity,
-                'upsell': bool(custom_price),
-                'timer_akcija': bool(custom_price),
+                'upsell': bool(is_promo),
+                'timer_akcija': bool(is_promo),
+                'promo_line': bool(is_promo),
             }
             if gratis_akcija_id is not None:
                 self.cart[key]['gratis_akcija_id'] = gratis_akcija_id

@@ -97,15 +97,30 @@ def notify_purchase(*, ime='', email='', grad='', session_key='', order_number='
         parts.append(f'(#{order_number})')
     if total:
         parts.append(f'— {total} KM')
+    # Strukturirani rep u poruci radi celebration popupa (order_number / total)
+    meta = []
+    if order_number:
+        meta.append(f'ORDER:{order_number}')
+    if total:
+        meta.append(f'TOTAL:{total}')
+    poruka = ' '.join(parts) + '.'
+    if meta:
+        poruka = poruka + ' [[' + '|'.join(meta) + ']]'
     return push_staff_event(
         StaffSiteEvent.Tip.PURCHASE,
         naslov='Nova kupovina',
-        poruka=' '.join(parts) + '.',
+        poruka=poruka,
         ime=ime,
         email=email,
         grad=grad,
         session_key=session_key,
     )
+
+
+def count_new_online_orders():
+    from .models import Order
+
+    return Order.objects.filter(status=Order.Status.NOVA).count()
 
 
 def cleanup_staff_events():
@@ -266,6 +281,7 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
 
     online_sessions = _online_session_keys()
     visitor_states = build_visitor_states(online_sessions)
+    new_orders_count = count_new_online_orders()
 
     qs = StaffSiteEvent.objects.all().order_by('id')
     if since_id > 0:
@@ -278,6 +294,7 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
             'latest_id': latest or 0,
             'online_sessions': online_sessions,
             'visitor_states': visitor_states,
+            'new_orders_count': new_orders_count,
         }
 
     events = list(qs[: max(1, min(int(limit or MAX_EVENTS_RETURN), 50))])
@@ -316,15 +333,40 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
         can_register = can_act and session_key not in registered_sessions
         if state:
             can_register = bool(state.get('can_register', can_register))
+        raw_poruka = event.poruka or ''
+        order_number = ''
+        order_total = ''
+        display_poruka = raw_poruka
+        if '[[' in raw_poruka and ']]' in raw_poruka:
+            try:
+                main, meta = raw_poruka.rsplit('[[', 1)
+                display_poruka = main.strip()
+                meta = meta.replace(']]', '')
+                for part in meta.split('|'):
+                    if part.startswith('ORDER:'):
+                        order_number = part[6:].strip()
+                    elif part.startswith('TOTAL:'):
+                        order_total = part[6:].strip()
+            except Exception:
+                display_poruka = raw_poruka
+        if not order_number:
+            # fallback: (#BROJ) u tekstu
+            import re
+            m = re.search(r'#([A-Za-z0-9\-]+)', raw_poruka)
+            if m:
+                order_number = m.group(1)
+
         payload.append({
             'id': event.id,
             'tip': event.tip,
             'naslov': event.naslov,
-            'poruka': event.poruka,
+            'poruka': display_poruka,
             'ime': event.ime or state.get('ime') or '',
             'email': event.email or state.get('email') or '',
             'grad': event.grad or state.get('grad') or '',
             'session_key': session_key,
+            'order_number': order_number,
+            'order_total': order_total,
             'can_register': can_register,
             'can_offer': can_act or bool(state.get('can_offer')),
             'sticky': sticky,
@@ -343,4 +385,5 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
         'latest_id': latest_id,
         'online_sessions': online_sessions,
         'visitor_states': visitor_states,
+        'new_orders_count': new_orders_count,
     }

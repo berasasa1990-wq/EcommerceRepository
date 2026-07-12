@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db.models import Prefetch
 
 from .cart import Cart
-from .cart_exit_popup import get_cart_exit_popup_context
+from .cart_exit_popup import get_cart_abandon_exit_context, get_cart_exit_popup_context
 from .cart_recovery import get_active_cart_recovery_alert
 from .social_proof import build_social_proof_context
 from .live_visitor_offer import build_live_visitor_offer_context
@@ -99,6 +99,12 @@ def nav_categories(request):
         or 'opremazaribolov.ba'
     ).strip()
 
+    # Exit s korpom: podsjetnik da završi narudžbu (prioritet nad product deal popupa)
+    cart_abandon_exit = get_cart_abandon_exit_context(request, cart)
+    cart_exit_popup = (
+        None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
+    )
+
     return {
         'site_url': settings.SITE_URL,
         'nav_categories': categories,
@@ -109,7 +115,8 @@ def nav_categories(request):
         'popup_queue': popup_queue,
         'active_upsell_offer': get_active_upsell_offer(request),
         'cart_recovery_alert': get_active_cart_recovery_alert(request, cart),
-        'cart_exit_popup': get_cart_exit_popup_context(request, cart),
+        'cart_abandon_exit': cart_abandon_exit,
+        'cart_exit_popup': cart_exit_popup,
         'live_visitor_offer': build_live_visitor_offer_context(request),
         'online_gift': build_online_gift_context(request),
         'online_gift_reward_label': active_reward_label(request),

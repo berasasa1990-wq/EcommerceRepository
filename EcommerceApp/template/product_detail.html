@@ -67,7 +67,10 @@
             {% endif %}
         </div>
 
-        <div class="product-detail-info" id="productDetailInfo"{% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
+        <div class="product-detail-info" id="productDetailInfo"
+             data-product-id="{{ product.pk }}"
+             data-product-name="{{ product.naziv }}"
+             {% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
             <div class="product-detail-brand">
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>
@@ -268,7 +271,10 @@
                 {% csrf_token %}
                 <div class="product-detail-purchase">
                     {% include 'partials/product_qty_selector.html' %}
-                    <button type="submit" class="btn btn-primary btn-add-to-bag">Dodaj u korpu</button>
+                    <button type="submit" class="btn btn-primary btn-add-to-bag"
+                            data-product-id="{{ product.pk }}"
+                            data-product-name="{{ product.naziv }}"
+                            data-almost-cart>Dodaj u korpu</button>
                 </div>
 
                 {% include 'partials/gratis_promo.html' %}

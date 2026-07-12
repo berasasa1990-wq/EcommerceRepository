@@ -748,7 +748,7 @@ button.la-kpi:hover {
 .la-drawer-panel {
     position: relative;
     z-index: 1;
-    width: min(440px, 100vw);
+    width: min(960px, 96vw);
     height: 100%;
     background: #fff;
     box-shadow: -12px 0 40px rgba(15, 23, 42, 0.18);
@@ -863,7 +863,49 @@ button.la-kpi:hover {
 .la-drawer-body {
     flex: 1 1 auto;
     overflow: auto;
-    padding: 18px 20px 28px;
+    padding: 0;
+    min-height: 0;
+}
+
+/* Live drawer: lijevo ishod / desno spremne ponude */
+.la-drawer-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.95fr) minmax(320px, 1.15fr);
+    gap: 0;
+    min-height: 100%;
+    align-items: stretch;
+}
+
+.la-drawer-col {
+    padding: 16px 18px 28px;
+    min-width: 0;
+}
+
+.la-drawer-col--left {
+    background: #f8fafc;
+    border-right: 1px solid var(--live-border, #e2e8f0);
+}
+
+.la-drawer-col--right {
+    background: #fff;
+}
+
+.la-drawer-col--left .la-drawer-block:first-child h3,
+.la-drawer-col--right .la-recs-block h3 {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: inherit;
+    padding: 4px 0 8px;
+}
+
+.la-drawer-col--left {
+    background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 40%);
+}
+
+.la-list--compact li {
+    padding: 6px 0;
+    font-size: 13px;
 }
 
 .la-drawer-block {
@@ -1028,6 +1070,13 @@ button.la-kpi:hover {
     justify-content: center;
     font-size: 16px;
     font-weight: 800;
+    background: transparent;
+}
+
+.la-offer-banner-icon .la-outcome-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
 }
 
 .la-offer-banner-status {
@@ -1099,6 +1148,319 @@ button.la-kpi:hover {
 .la-offer-banner--active .la-offer-banner-status,
 .la-offer-banner--wait .la-offer-banner-status {
     color: #b45309;
+}
+
+/* Zeleni check (pulsira) / crveni X — ishod ponude */
+@keyframes la-check-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+}
+
+.la-outcome-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: 900;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.la-outcome-icon--ok {
+    background: #22c55e;
+    color: #fff;
+    animation: la-check-pulse 1.4s ease-in-out infinite;
+}
+
+.la-outcome-icon--no {
+    background: #ef4444;
+    color: #fff;
+}
+
+.la-outcome-icon--wait {
+    background: #f59e0b;
+    color: #fff;
+    font-size: 11px;
+}
+
+/* Kompaktna lista: prošlo / odbio / čeka — bez velikih banera */
+.la-done-list {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.la-done-list--full {
+    max-height: 280px;
+    margin-bottom: 0;
+}
+
+.la-done-list--wait {
+    max-height: 100px;
+    margin-bottom: 0;
+}
+
+.la-done-row--lost {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+.la-done-kind {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+    margin-right: 2px;
+}
+
+.la-done-when {
+    font-size: 10px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-left: 4px;
+}
+
+.la-done-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.25;
+    border: 1px solid transparent;
+    min-width: 0;
+}
+
+.la-done-row--ok {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #14532d;
+}
+
+.la-done-row--no {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #7f1d1d;
+}
+
+.la-done-row--wait {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #78350f;
+}
+
+.la-done-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.la-done-row--ok .la-done-ico {
+    background: #22c55e;
+    color: #fff;
+}
+
+.la-done-row--no .la-done-ico {
+    background: #ef4444;
+    color: #fff;
+}
+
+.la-done-row--wait .la-done-ico {
+    background: #f59e0b;
+    color: #fff;
+    font-size: 7px;
+}
+
+.la-done-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.la-done-tag {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+.la-list-empty--sm {
+    font-size: 12px;
+    padding: 6px 0;
+    color: var(--live-muted, #64748b);
+}
+
+/* Klik na korpu — pregled stavki */
+.la-chip--return {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #3730a3;
+    font-weight: 800;
+}
+
+.la-insight-meta--return {
+    color: #3730a3;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.la-chip--clickable {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid #86efac;
+    background: #ecfdf5;
+}
+
+.la-chip--clickable:hover {
+    background: #d1fae5;
+    border-color: #4ade80;
+}
+
+.la-stat-box--cart-click {
+    cursor: pointer;
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.la-stat-box--cart-click:hover {
+    background: #dcfce7;
+}
+
+.la-stat-hint {
+    font-size: 10px;
+    font-weight: 700;
+    color: #15803d;
+    text-transform: lowercase;
+}
+
+.la-cart-preview-block h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.la-cart-preview-total {
+    font-size: 12px;
+    font-weight: 800;
+    color: #166534;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.la-cart-preview-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.la-cart-preview-item {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+.la-cart-preview-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.la-cart-preview-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.la-cart-preview-ph {
+    font-size: 16px;
+}
+
+.la-cart-preview-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.la-cart-preview-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+.la-cart-preview-name a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.la-cart-preview-name a:hover {
+    color: #15803d;
+    text-decoration: underline;
+}
+
+.la-cart-preview-meta {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.la-outcome-note {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.la-outcome-note--ok {
+    color: #15803d;
+}
+
+.la-outcome-note--no {
+    color: #b91c1c;
 }
 
 .la-product-name--accepted {
@@ -1249,6 +1611,146 @@ button.la-kpi:hover {
     background: #dcfce7;
     color: #166534;
     border: 1px solid #86efac;
+}
+
+/* Preporuke za ručno slanje (psihologija gledanja) */
+.la-insight-block .la-insight {
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.la-insight--hot {
+    border-color: #fca5a5;
+    background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+}
+
+.la-insight--warm {
+    border-color: #fcd34d;
+    background: #fffbeb;
+}
+
+.la-insight--explore {
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.la-insight--browse,
+.la-insight--cold {
+    border-color: #e5e7eb;
+    background: #f9fafb;
+}
+
+.la-insight-label {
+    font-weight: 800;
+    font-size: 14px;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.la-insight-tip {
+    font-size: 13px;
+    line-height: 1.45;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+.la-insight-meta {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.la-insight-meta--hot {
+    color: #991b1b;
+    font-weight: 600;
+}
+
+.la-recs-intro {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.4;
+}
+
+.la-recs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.la-rec-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    list-style: none;
+}
+
+.la-rec-item--hot {
+    border-color: #fca5a5;
+    background: #fffafa;
+}
+
+.la-rec-item--warm {
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+
+.la-rec-main {
+    min-width: 0;
+}
+
+.la-rec-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-bottom: 4px;
+}
+
+.la-rec-badge--top {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.la-rec-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.la-rec-reason {
+    font-size: 12px;
+    color: #166534;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.la-rec-meta {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.la-rec-item .la-product-offer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.la-rec-item .la-product-offer input[type="number"] {
+    width: 64px;
 }
 
 .la-card--offer-ok {
@@ -1836,7 +2338,28 @@ body.popup-open {
         width: 100vw;
     }
 
+    .la-drawer-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .la-drawer-col--left {
+        border-right: 0;
+        border-bottom: 1px solid var(--live-border, #e2e8f0);
+        max-height: 42vh;
+        overflow: auto;
+    }
+
     .la-stats-row {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 561px) and (max-width: 900px) {
+    .la-drawer-panel {
+        width: min(720px, 96vw);
+    }
+
+    .la-drawer-layout {
+        grid-template-columns: 0.9fr 1.1fr;
     }
 }

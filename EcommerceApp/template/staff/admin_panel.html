@@ -30,10 +30,17 @@
         </a>
 
         {% if user.is_superuser %}
-        <a href="{% url 'staff_online_orders' %}" class="admin-btn">
+        <a href="{% url 'staff_online_orders' %}" class="admin-btn admin-btn--orders" id="adminOnlineOrdersBtn">
             <div class="admin-btn-icon">🛒</div>
             <div class="admin-btn-text">
-                <strong>Online narudžbe</strong>
+                <strong>
+                    Online narudžbe
+                    <span class="admin-orders-badge{% if new_orders_count %} is-visible{% endif %}"
+                          id="adminNewOrdersBadge"
+                          {% if not new_orders_count %}hidden{% endif %}
+                          data-count="{{ new_orders_count|default:0 }}"
+                          aria-label="{{ new_orders_count }} novih narudžbi">{{ new_orders_count }}</span>
+                </strong>
                 <span>Pregled novih narudžbi sa sajta</span>
             </div>
         </a>

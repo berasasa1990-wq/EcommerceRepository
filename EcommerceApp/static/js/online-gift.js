@@ -8,6 +8,7 @@
     var loading = document.getElementById('ogLoading');
     var result = document.getElementById('ogResult');
     var revealBtn = document.getElementById('ogRevealBtn');
+    var declineBtn = document.getElementById('ogDeclineBtn');
     var resultEmoji = document.getElementById('ogResultEmoji');
     var resultTitle = document.getElementById('ogResultTitle');
     var resultMsg = document.getElementById('ogResultMsg');
@@ -67,8 +68,7 @@
         showStep('intro');
     }
 
-    function close() {
-        // Samo preko X dugmeta
+    function hideOverlay() {
         overlay.classList.remove('is-open');
         document.body.classList.remove('og-open');
         isOpen = false;
@@ -77,6 +77,17 @@
             overlay.setAttribute('hidden', '');
         }, 280);
         markClosed();
+    }
+
+    function close() {
+        // X ili „Ne, hvala”
+        if (busy) return;
+        // Već odigrao — samo sakrij UI, ne šalji dismiss
+        if (done) {
+            hideOverlay();
+            return;
+        }
+        hideOverlay();
         var t = csrf();
         if (!t) return;
         var body = new URLSearchParams();
@@ -268,12 +279,12 @@
     if (backBtn) {
         backBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            if (!busy) close();
+            if (!busy) hideOverlay();
         });
     }
 
-    // Zatvaranje SAMO na X (data-og-close na .og-x)
-    overlay.querySelectorAll('.og-x[data-og-close]').forEach(function (el) {
+    // Zatvaranje: X ili „Ne, hvala” (data-og-close)
+    overlay.querySelectorAll('[data-og-close]').forEach(function (el) {
         el.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();

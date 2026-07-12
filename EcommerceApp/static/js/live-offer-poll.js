@@ -350,6 +350,99 @@
         });
     }
 
+    function buildBrowseProductCard(product, offer) {
+        const pct = offer.discount_percent;
+        const imageHtml = product.image_url
+            ? '<img src="' + escapeHtml(product.image_url) + '" alt="' + escapeHtml(product.product_name) +
+              '" class="browse-offer-card-image" width="120" height="120" loading="eager" decoding="async">'
+            : '<div class="browse-offer-card-image browse-offer-card-image--empty"></div>';
+
+        let variationsHtml = '';
+        if (product.has_variations && product.variations && product.variations.length) {
+            const options = ['<option value="">Varijacija</option>'];
+            product.variations.forEach(function (variation) {
+                const price = variation.has_discount ? variation.final_price : variation.base_price;
+                options.push(
+                    '<option value="' + variation.id + '" ' +
+                    'data-base="' + escapeHtml(variation.base_price) + '" ' +
+                    'data-final="' + escapeHtml(variation.final_price) + '" ' +
+                    'data-has-discount="' + (variation.has_discount ? '1' : '0') + '">' +
+                    escapeHtml(variation.naziv) + ' — ' + escapeHtml(price) + ' KM</option>',
+                );
+            });
+            variationsHtml =
+                '<select name="variation_id" class="live-offer-var-select browse-offer-var" required>' +
+                options.join('') + '</select>';
+        } else {
+            variationsHtml =
+                '<input type="hidden" name="variation_id" value="' +
+                escapeHtml(product.variation_id || '') + '">';
+        }
+
+        const pricesHtml = product.has_discount
+            ? (
+                '<span class="live-offer-price-original browse-offer-price-original">' +
+                escapeHtml(product.display_base_price) + ' KM</span>' +
+                '<span class="live-offer-price-final">' +
+                escapeHtml(product.display_final_price) + ' KM</span>'
+            )
+            : (
+                '<span class="live-offer-price-final">' +
+                escapeHtml(product.display_base_price) + ' KM</span>'
+            );
+
+        return (
+            '<article class="browse-offer-card" data-product-id="' + product.product_id + '">' +
+            '<a href="' + escapeHtml(product.product_url) + '" class="browse-offer-card-media">' +
+            imageHtml +
+            (pct ? '<span class="browse-offer-badge">-' + escapeHtml(pct) + '%</span>' : '') +
+            '</a>' +
+            '<div class="browse-offer-card-body">' +
+            '<h4 class="browse-offer-card-name">' +
+            '<a href="' + escapeHtml(product.product_url) + '">' +
+            escapeHtml(product.product_name) + '</a></h4>' +
+            '<div class="browse-offer-card-prices">' + pricesHtml + '</div>' +
+            '<form method="post" action="' + escapeHtml(offer.add_url || '/preporuka/dodaj/') +
+            '" class="browse-offer-form live-offer-form">' +
+            '<input type="hidden" name="product_id" value="' + product.product_id + '">' +
+            variationsHtml +
+            '<button type="submit" class="btn btn-primary site-popup-cta live-offer-cta browse-offer-cta">' +
+            'Uzmi -' + escapeHtml(pct || '10') + '%</button>' +
+            '</form></div></article>'
+        );
+    }
+
+    function buildBrowseInterestOverlayHtml(offer) {
+        const products = offer.products || [];
+        const cardsHtml = products.map(function (product) {
+            return buildBrowseProductCard(product, offer);
+        }).join('');
+        const multiClass = products.length > 1 ? ' live-offer-popup--browse-multi' : '';
+
+        return (
+            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup site-popup--akcija live-offer-popup live-offer-popup--browse' + multiClass +
+            '" role="dialog" aria-modal="true">' +
+            '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+            '</svg></button>' +
+            '<div class="live-offer-timer-box browse-offer-timer" style="margin:0 auto 10px;max-width:220px;">' +
+            '<span class="live-offer-timer-label">Ponuda ističe za</span>' +
+            '<span class="live-offer-timer-value" data-live-offer-timer>2:00</span>' +
+            '</div>' +
+            '<div class="live-offer-body browse-offer-body">' +
+            '<p class="live-offer-kicker">' + escapeHtml(offer.kicker || 'Specijalna ponuda za vas') + '</p>' +
+            '<h3 class="live-offer-order-title browse-offer-title">' +
+            escapeHtml(offer.title || 'Specijalna ponuda za vas') + '</h3>' +
+            '<p class="live-offer-reg-message browse-offer-message">' +
+            escapeHtml(offer.message || '') + '</p>' +
+            '<div class="browse-offer-grid browse-offer-grid--2x2" data-browse-count="' + products.length + '">' +
+            cardsHtml +
+            '</div></div></div></div>'
+        );
+    }
+
     function buildOverlayHtml(offer) {
         if (offer.offer_type === 'registration') {
             return buildRegistrationOverlayHtml(offer);
@@ -359,6 +452,9 @@
         }
         if (offer.offer_type === 'order') {
             return buildOrderOverlayHtml(offer);
+        }
+        if (offer.offer_type === 'browse_interest') {
+            return buildBrowseInterestOverlayHtml(offer);
         }
         let promoText = offer.has_discount && offer.discount_percent
             ? 'Dodatni popust od <strong>' + escapeHtml(offer.discount_percent) + '%</strong>'
@@ -471,8 +567,7 @@
             });
         }
 
-        const offerForm = overlay.querySelector('#liveOfferForm');
-        if (offerForm) {
+        function bindAddToCartForm(offerForm) {
             offerForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 const submitBtn = offerForm.querySelector('button[type="submit"]');
@@ -493,6 +588,7 @@
                     if (!response.ok || !data.ok) {
                         throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
                     }
+
                     lastOfferVersion = null;
                     activeOffer = null;
                     clearLiveOfferActive();
@@ -502,6 +598,7 @@
                         overlay.parentNode.removeChild(overlay);
                         overlay = null;
                     }
+
                     showCartToast(data.message);
                     const cartBtn = document.querySelector('.cart-btn');
                     if (cartBtn && data.cart_count != null) {
@@ -526,12 +623,42 @@
                 }
             });
         }
+
+        const offerForm = overlay.querySelector('#liveOfferForm');
+        if (offerForm) {
+            bindAddToCartForm(offerForm);
+        }
+        overlay.querySelectorAll('.browse-offer-form').forEach(function (form) {
+            bindAddToCartForm(form);
+            const select = form.querySelector('select.browse-offer-var');
+            if (select) {
+                select.addEventListener('change', function () {
+                    const card = form.closest('.browse-offer-card');
+                    if (!card) return;
+                    const option = select.options[select.selectedIndex];
+                    if (!option || !option.value) return;
+                    const original = card.querySelector('.browse-offer-price-original');
+                    const finalEl = card.querySelector('.live-offer-price-final');
+                    if (!finalEl) return;
+                    const hasDiscount = option.dataset.hasDiscount === '1';
+                    if (hasDiscount && original) {
+                        original.textContent = option.dataset.base + ' KM';
+                        original.hidden = false;
+                        finalEl.textContent = option.dataset.final + ' KM';
+                    } else if (original) {
+                        original.hidden = true;
+                        finalEl.textContent = option.dataset.base + ' KM';
+                    }
+                });
+            }
+        });
     }
 
     async function dismissOffer(options) {
         const keepNavigation = options && options.keepNavigation;
+        const dismissUrl = (activeOffer && activeOffer.dismiss_url) || '/ponuda/zatvori/';
         try {
-            await fetch('/ponuda/zatvori/', {
+            await fetch(dismissUrl, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': readCsrfToken(),

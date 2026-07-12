@@ -21,6 +21,7 @@ from .models import (
 
 SESSION_REWARD_KEY = 'online_gift_reward'
 SESSION_PLAYED_KEY = 'online_gift_played'
+SESSION_DECLINED_KEY = 'online_gift_declined'
 # legacy session keys from greb/wheel
 _LEGACY_KEYS = (
     'greb_greb_reward',
@@ -91,6 +92,24 @@ def _already_played(request, campaign):
     return OnlineGiftClaim.objects.filter(lookup, campaign=campaign).exists()
 
 
+def _already_declined(request, campaign):
+    """Kupac je u ovoj sesiji odbio ponudu (Ne, hvala / X) — ne nudi ponovo."""
+    if not campaign or not request:
+        return False
+    declined = request.session.get(SESSION_DECLINED_KEY) or {}
+    if str(campaign.pk) in declined or campaign.pk in declined:
+        return True
+    session_key = _session_key(request)
+    if not session_key:
+        return False
+    return OnlineGiftPush.objects.filter(
+        campaign=campaign,
+        session_key=session_key,
+        dismissed=True,
+        played=False,
+    ).exists()
+
+
 def _blocked_staff_path(request):
     path = getattr(request, 'path', '') or ''
     return path.startswith('/nalog/') or path.startswith('/admin')
@@ -110,6 +129,8 @@ def _base_eligible(request, campaign):
     if _blocked_staff_path(request):
         return False
     if campaign.once_per_visitor and _already_played(request, campaign):
+        return False
+    if _already_declined(request, campaign):
         return False
     reward = get_session_reward(request)
     if reward and int(reward.get('campaign_id') or 0) == campaign.pk:
@@ -531,11 +552,13 @@ def get_online_gift_staff_feed(*, limit=STAFF_FEED_LIMIT, hours=STAFF_FEED_HOURS
                         'naziv': str(item.get('naziv') or '')[:80],
                         'views': int(item.get('views') or 1),
                     })
-            categories = [
-                str(c).strip()
-                for c in (visitor.pregledane_kategorije or [])[:6]
-                if str(c).strip()
-            ]
+            for c in (visitor.pregledane_kategorije or [])[:6]:
+                if isinstance(c, dict):
+                    name = str(c.get('naziv') or c.get('name') or '').strip()
+                else:
+                    name = str(c or '').strip()
+                if name:
+                    categories.append(name)
 
         # Status funnel: poručio → u korpi → online → nagrada čeka
         if order:
@@ -641,10 +664,54 @@ def _mark_push_done(request, campaign, *, played=False, dismissed=False):
 
 
 def dismiss_online_gift(request):
-    """Zatvaranje samo preko X — označi push kao dismissed."""
+    """
+    Kupac odbio ponudu (X ili „Ne, hvala”) — ne igra.
+    Evidentiraj u sesiji + staff istoriji (odbio).
+    """
     campaign = get_active_campaign()
-    if campaign:
-        _mark_push_done(request, campaign, dismissed=True)
+    if not campaign:
+        return
+
+    declined = request.session.get(SESSION_DECLINED_KEY) or {}
+    declined[str(campaign.pk)] = 1
+    request.session[SESSION_DECLINED_KEY] = declined
+    request.session.modified = True
+
+    session_key = _session_key(request)
+    if not session_key:
+        return
+
+    # Aktivni push (ručni) → dismissed
+    updated = OnlineGiftPush.objects.filter(
+        campaign=campaign,
+        session_key=session_key,
+        played=False,
+        dismissed=False,
+    ).update(dismissed=True)
+
+    if updated:
+        return
+
+    # Automatska ponuda: nema push-a — kreiraj zapis da staff vidi „odbio”
+    already = OnlineGiftPush.objects.filter(
+        campaign=campaign,
+        session_key=session_key,
+    ).order_by('-kreirano').first()
+    if already and (already.played or already.dismissed):
+        return
+
+    user = getattr(request, 'user', None)
+    OnlineGiftPush.objects.create(
+        campaign=campaign,
+        session_key=session_key,
+        user=(
+            user
+            if user is not None and getattr(user, 'is_authenticated', False)
+            else None
+        ),
+        played=False,
+        dismissed=True,
+    )
 
 
 def _roll_win(campaign):

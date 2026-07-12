@@ -24,4 +24,21 @@ class LiveVisitorMiddleware:
             track_live_visitor(request)
         except Exception:
             logger.exception('Live visitor tracking failed')
+        # Trajni cookie za vraćene posjetioce (nije prvi put na sajtu)
+        try:
+            token = getattr(request, '_ozb_vid_set', None)
+            if token:
+                from EcommerceApp.live_visitors import VISITOR_COOKIE, VISITOR_COOKIE_MAX_AGE
+
+                response.set_cookie(
+                    VISITOR_COOKIE,
+                    token,
+                    max_age=VISITOR_COOKIE_MAX_AGE,
+                    samesite='Lax',
+                    httponly=True,
+                    secure=request.is_secure(),
+                    path='/',
+                )
+        except Exception:
+            logger.exception('Live visitor cookie failed')
         return response

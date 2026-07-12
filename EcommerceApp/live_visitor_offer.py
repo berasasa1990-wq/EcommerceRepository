@@ -326,10 +326,20 @@ def get_active_live_visitor_offer(request):
             tip=LiveVisitorOffer.Tip.REGISTRACIJA,
             show_popup=True,
         ).update(show_popup=False)
-    return LiveVisitorOffer.objects.filter(
-        lookup,
-        show_popup=True,
-    ).filter(_active_offer_filter()).select_related('product').order_by('-azurirano').first()
+    from .browse_interest_offer import AUTO_BROWSE_CODE
+
+    return (
+        LiveVisitorOffer.objects.filter(
+            lookup,
+            show_popup=True,
+        )
+        .filter(_active_offer_filter())
+        .exclude(aktivacioni_kod=AUTO_BROWSE_CODE)
+        .exclude(aktivacioni_kod__startswith=f'{AUTO_BROWSE_CODE}-')
+        .select_related('product')
+        .order_by('-azurirano')
+        .first()
+    )
 
 
 def _offer_timer_seconds(offer):
@@ -487,10 +497,16 @@ def build_live_visitor_offer_context(request):
 
 def poll_live_visitor_offer(request):
     offer = get_active_live_visitor_offer(request)
-    if not offer:
+    if offer:
+        mark_registration_invite_pending(request, offer)
+        return _build_offer_payload(offer)
+    # Fallback: personalizovana ponuda na osnovu gledanja (2+ pregleda / top kategorija)
+    try:
+        from .browse_interest_offer import poll_browse_interest_offer
+
+        return poll_browse_interest_offer(request)
+    except Exception:
         return None
-    mark_registration_invite_pending(request, offer)
-    return _build_offer_payload(offer)
 
 
 def activate_live_visitor_offer_code(request, cart):

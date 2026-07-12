@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260711v15">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260712v9">
 {% endblock %}
 
 {% block content %}
@@ -79,7 +79,9 @@
                     <span class="la-chip">⏱ {{ visitor.time_on_site_label|default:"—" }}</span>
                     <span class="la-chip">📦 {{ visitor.products_viewed_count|default:0 }}</span>
                     {% if visitor.has_cart %}
-                    <span class="la-chip la-chip--cart">🛒 {{ visitor.cart_value_label }}</span>
+                    <span class="la-chip la-chip--cart la-chip--clickable" role="button" tabindex="0"
+                          data-open-cart-preview data-session-key="{{ visitor.session_key }}"
+                          title="Klikni da vidiš šta je u korpi">🛒 {{ visitor.cart_value_label }}</span>
                     {% endif %}
                 </div>
                 <div class="la-card-footer">
@@ -149,7 +151,7 @@
                         <strong>Automatski online nagrada</strong>
                         <small id="liveGiftModeHint">
                             {% if gift_campaign.automatic %}
-                            Iskače svima live (jednom). {{ gift_campaign.prize_label }}
+                            Ponuda na stranicama — kupac bira igraj / ne (jednom). {{ gift_campaign.prize_label }}
                             {% else %}
                             Isključeno — pusti ručno iz detalja kupca (🎁 Nagrada).
                             {% endif %}
@@ -544,8 +546,22 @@
             const chips = [];
             chips.push('<span class="la-chip">⏱ ' + escapeHtml(v.time_on_site_label || '—') + '</span>');
             chips.push('<span class="la-chip">📦 ' + escapeHtml(v.products_viewed_count || 0) + '</span>');
+            if (v.is_returning_visitor) {
+                chips.push(
+                    '<span class="la-chip la-chip--return" title="' +
+                    escapeHtml(v.returning_label || 'Vraćeni posjetilac') +
+                    '">↩ ' + escapeHtml(v.site_visit_count || 2) + '×</span>'
+                );
+            }
             if (v.has_cart) {
-                chips.push('<span class="la-chip la-chip--cart">🛒 ' + escapeHtml(v.cart_value_label || '') + '</span>');
+                chips.push(
+                    '<span class="la-chip la-chip--cart la-chip--clickable" role="button" tabindex="0" ' +
+                    'data-open-cart-preview data-session-key="' +
+                    escapeHtml(v.session_key || '') +
+                    '" title="Klikni da vidiš šta je u korpi">🛒 ' +
+                    escapeHtml(v.cart_value_label || '') +
+                    '</span>'
+                );
             }
             if (v.has_staff_actions || v.offer_sent) {
                 const st = v.staff_action_summary_status || v.offer_status || '';
@@ -598,56 +614,160 @@
 
     function staffActionBannerClass(status) {
         if (status === 'accepted') return 'la-offer-banner la-offer-banner--ok';
-        if (status === 'left') return 'la-offer-banner la-offer-banner--no';
-        if (status === 'active') return 'la-offer-banner la-offer-banner--active';
+        if (status === 'left' || status === 'rejected') return 'la-offer-banner la-offer-banner--no';
+        if (status === 'active' || status === 'pending') return 'la-offer-banner la-offer-banner--active';
         return 'la-offer-banner la-offer-banner--wait';
     }
 
     function staffActionIcon(status) {
-        if (status === 'accepted') return '✓';
-        if (status === 'left') return '✕';
-        if (status === 'active') return '●';
-        return '→';
+        // Zeleni check (pulsira) / crveni X / čeka
+        if (status === 'accepted') {
+            return '<span class="la-outcome-icon la-outcome-icon--ok" title="Prihvatio">✓</span>';
+        }
+        if (status === 'left' || status === 'rejected') {
+            return '<span class="la-outcome-icon la-outcome-icon--no" title="Odbio">✕</span>';
+        }
+        if (status === 'active' || status === 'pending') {
+            return '<span class="la-outcome-icon la-outcome-icon--wait" title="Čeka">●</span>';
+        }
+        return '<span class="la-outcome-icon">→</span>';
     }
 
     function staffActionsPanelHtml(v) {
         const actions = v.staff_actions || [];
-        if (!actions.length) {
+        const outcomes = v.offer_outcomes || {};
+
+        function cleanOfferName(name) {
+            return String(name || '')
+                .replace(/\s*[(\[]\s*[-−]?\s*\d+([.,]\d+)?\s*%\s*[)\]]\s*/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function shortName(name, maxLen) {
+            const clean = cleanOfferName(name) || 'Artikal';
+            maxLen = maxLen || 44;
+            return clean.length > maxLen ? clean.slice(0, maxLen - 1) + '…' : clean;
+        }
+
+        /**
+         * Tag za red: prošlo / odbio / izgubio / osvojio / čeka
+         * Nagrade: gift_result = osvojio | izgubio | odbio | ceka
+         */
+        function rowFromAction(a) {
+            const kind = a.kind || '';
+            const st = a.status || '';
+            const giftResult = a.gift_result || '';
+            let rowClass = 'la-done-row';
+            let tag = '';
+            let title = a.status_label || '';
+
+            if (kind === 'gift' || giftResult) {
+                if (giftResult === 'osvojio' || st === 'accepted') {
+                    rowClass += ' la-done-row--ok';
+                    tag = 'osvojio';
+                } else if (giftResult === 'izgubio' || st === 'lost') {
+                    rowClass += ' la-done-row--lost';
+                    tag = 'izgubio';
+                } else if (giftResult === 'odbio' || st === 'dismissed' || st === 'left') {
+                    rowClass += ' la-done-row--no';
+                    tag = 'odbio';
+                } else {
+                    rowClass += ' la-done-row--wait';
+                    tag = 'čeka';
+                }
+                const prefix = 'Nagrada';
+                const prize = shortName(a.title || 'Online nagrada', 36);
+                const when = a.sent_at_clock
+                    ? ' <span class="la-done-when">' + escapeHtml(a.sent_at_clock) + '</span>'
+                    : '';
+                return (
+                    '<li class="' + rowClass + '" title="' + escapeHtml(title || tag) + '">' +
+                    '<span class="la-done-name">' +
+                    '<span class="la-done-kind">' + prefix + '</span> ' +
+                    escapeHtml(prize) + when +
+                    '</span>' +
+                    '<span class="la-done-tag">' + escapeHtml(tag) + '</span></li>'
+                );
+            }
+
+            // Ponude artikla / popust / reg
+            if (st === 'accepted') {
+                rowClass += ' la-done-row--ok';
+                tag = 'prošlo';
+            } else if (st === 'left' || st === 'rejected') {
+                rowClass += ' la-done-row--no';
+                tag = 'odbio';
+            } else if (st === 'active' || st === 'pending') {
+                rowClass += ' la-done-row--wait';
+                tag = 'čeka';
+            } else {
+                rowClass += ' la-done-row--wait';
+                tag = (a.status_label || 'poslato').toLowerCase().slice(0, 12);
+            }
+            const when = a.sent_at_clock
+                ? ' <span class="la-done-when">' + escapeHtml(a.sent_at_clock) + '</span>'
+                : '';
             return (
-                '<div class="la-drawer-block">' +
-                '<h3>Poslato kupcu</h3>' +
-                '<div class="la-list-empty">Još ništa nije poslano ovom kupcu.</div></div>'
+                '<li class="' + rowClass + '" title="' + escapeHtml(a.status_label || tag) + '">' +
+                '<span class="la-done-name">' +
+                escapeHtml(shortName(a.title || a.kind_label || 'Ponuda')) +
+                when +
+                '</span>' +
+                '<span class="la-done-tag">' + escapeHtml(tag) + '</span></li>'
             );
         }
-        const cards = actions.map(function (a) {
-            const st = a.status || '';
-            const disc = a.discount_label
-                ? '<span class="la-offer-disc">' + escapeHtml(a.discount_label) + '</span>'
-                : '';
-            const when = a.sent_at_clock
-                ? (escapeHtml(a.sent_at_clock) +
-                   (a.sent_at_label ? ' · ' + escapeHtml(a.sent_at_label) : ''))
-                : escapeHtml(a.sent_at_label || '');
-            return (
-                '<div class="' + staffActionBannerClass(st) + ' la-staff-action-card">' +
-                '<div class="la-offer-banner-icon" aria-hidden="true">' +
-                staffActionIcon(st) + '</div>' +
-                '<div class="la-offer-banner-body">' +
-                '<div class="la-staff-action-kind">' + escapeHtml(a.kind_label || 'Akcija') +
-                ' <span class="la-staff-action-sent">POSLANO</span></div>' +
-                '<div class="la-offer-banner-status">' +
-                escapeHtml(a.status_label || offerStatusFallback(st)) + '</div>' +
-                '<div class="la-offer-banner-product">' +
-                escapeHtml(a.title || '') + disc + '</div>' +
-                (when ? '<div class="la-staff-action-when">Poslato: ' + when + '</div>' : '') +
-                '</div></div>'
+
+        // Potpuna istorija iz staff_actions (nagrade + ponude) — ništa se ne briše
+        const rows = [];
+        const seenEvent = {};
+        (actions || []).forEach(function (a) {
+            const eid = a.event_id || (
+                (a.kind || 'x') + '|' + (a.product_id || '') + '|' +
+                (a.status || '') + '|' + (a.title || '') + '|' + (a.sent_at_clock || '')
             );
-        }).join('');
-        return (
-            '<div class="la-drawer-block">' +
-            '<h3>Poslato / šta je uradio</h3>' +
-            '<div class="la-staff-actions-stack">' + cards + '</div></div>'
-        );
+            if (seenEvent[eid]) return;
+            seenEvent[eid] = true;
+            rows.push(rowFromAction(a));
+        });
+
+        // Dopuni offer_outcomes ako nisu u actions (edge)
+        (outcomes.accepted || []).forEach(function (r) {
+            const eid = 'out-acc-' + (r.product_id || r.naziv || '');
+            if (seenEvent[eid]) return;
+            seenEvent[eid] = true;
+            rows.push(
+                '<li class="la-done-row la-done-row--ok">' +
+                '<span class="la-done-name">' + escapeHtml(shortName(r.naziv || 'Artikal')) +
+                '</span><span class="la-done-tag">prošlo</span></li>'
+            );
+        });
+        (outcomes.rejected || []).forEach(function (r) {
+            const eid = 'out-rej-' + (r.product_id || r.naziv || '');
+            if (seenEvent[eid]) return;
+            seenEvent[eid] = true;
+            rows.push(
+                '<li class="la-done-row la-done-row--no">' +
+                '<span class="la-done-name">' + escapeHtml(shortName(r.naziv || 'Artikal')) +
+                '</span><span class="la-done-tag">odbio</span></li>'
+            );
+        });
+        (outcomes.pending || []).forEach(function (r) {
+            const eid = 'out-pen-' + (r.product_id || r.naziv || '');
+            if (seenEvent[eid]) return;
+            seenEvent[eid] = true;
+            rows.push(
+                '<li class="la-done-row la-done-row--wait">' +
+                '<span class="la-done-name">' + escapeHtml(shortName(r.naziv || 'Artikal')) +
+                '</span><span class="la-done-tag">čeka</span></li>'
+            );
+        });
+
+        if (!rows.length) {
+            return '<div class="la-list-empty la-list-empty--sm">Još ništa poslano.</div>';
+        }
+
+        return '<ul class="la-done-list la-done-list--full">' + rows.join('') + '</ul>';
     }
 
     function renderOfflineList(visitors) {
@@ -716,6 +836,21 @@
         drawer.hidden = false;
         setPopupOpen(true);
         bindDrawerActions(v);
+        // Ako je otvoreno s klikom na korpu — skrolaj do pregleda korpe
+        if (v._openCartPreview) {
+            window.setTimeout(function () {
+                const block = drawerBody.querySelector('.la-cart-preview-block');
+                if (block) block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 80);
+            v._openCartPreview = false;
+        }
+    }
+
+    function openDrawerToCart(sessionKey) {
+        const v = visitorsByKey[sessionKey];
+        if (!v) return;
+        v._openCartPreview = true;
+        openDrawer(sessionKey);
     }
 
     async function refreshDrawerLive() {
@@ -839,26 +974,220 @@
             );
         }
 
-        return (
-            staffActionsPanelHtml(v) +
+        const insight = v.visitor_insight || {};
+        const recs = v.sell_recommendations || [];
+        let insightHtml = '';
+        if (insight.intent_label || insight.tip) {
+            const intentClass = 'la-insight--' + escapeHtml(insight.intent || 'browse');
+            insightHtml =
+                '<div class="la-drawer-block la-insight-block">' +
+                '<h3>Šta kupac radi</h3>' +
+                '<div class="la-insight ' + intentClass + '">' +
+                (v.is_returning_visitor
+                    ? '<div class="la-insight-meta la-insight-meta--return">↩ ' +
+                      escapeHtml(v.returning_label || 'Vraćeni posjetilac') +
+                      '</div>'
+                    : '<div class="la-insight-meta">Prvi put na sajtu</div>') +
+                '<div class="la-insight-label">' + escapeHtml(insight.intent_label || '—') + '</div>' +
+                '<div class="la-insight-tip">' + escapeHtml(insight.tip || '') + '</div>' +
+                (insight.focus_category
+                    ? '<div class="la-insight-meta">Fokus kategorija: <strong>' +
+                      escapeHtml(insight.focus_category) + '</strong></div>'
+                    : '') +
+                (insight.almost_cart_product_name
+                    ? '<div class="la-insight-meta la-insight-meta--hot">⚠ Skoro korpa: <strong>' +
+                      escapeHtml(insight.almost_cart_product_name) + '</strong>' +
+                      (insight.almost_cart_hovers
+                          ? ' (hover ' + escapeHtml(insight.almost_cart_hovers) + '×, bez klika)'
+                          : ' (bez klika)') +
+                      '</div>'
+                    : (insight.top_product_name
+                        ? '<div class="la-insight-meta">Najviše gleda: <strong>' +
+                          escapeHtml(insight.top_product_name) + '</strong>' +
+                          (insight.top_product_views > 1
+                              ? ' (' + escapeHtml(insight.top_product_views) + '×)'
+                              : '') +
+                          '</div>'
+                        : '')) +
+                '</div></div>';
+        }
+
+        const acceptedIds = {};
+        (v.accepted_offer_ids || []).forEach(function (id) { acceptedIds[String(id)] = true; });
+        const rejectedIds = {};
+        (v.rejected_offer_ids || []).forEach(function (id) { rejectedIds[String(id)] = true; });
+        // Aktivne preporuke — bez već prihvaćenih (backend već filtrira, UI double-check)
+        const activeRecs = (recs || []).filter(function (r) {
+            const id = String(r.product_id || r.id || '');
+            return id && !acceptedIds[id];
+        });
+
+        // Sortiraj pregledane proizvode po broju povrataka (desc)
+        const sortedProducts = (products || []).slice().sort(function (a, b) {
+            return (b.views || 1) - (a.views || 1);
+        });
+        // Rebuild productsHtml with sorted order for left context
+        let productsSortedHtml;
+        if (!sortedProducts.length) {
+            productsSortedHtml = '<div class="la-list-empty">Nema pregledanih proizvoda.</div>';
+        } else {
+            productsSortedHtml = '<ul class="la-list la-list--compact">' + sortedProducts.map(function (p) {
+                const pid = String(p.id || '');
+                const taken = acceptedIds[pid];
+                const views = p.views > 1
+                    ? ' <span class="la-muted">(' + p.views + '×)</span>'
+                    : '';
+                return (
+                    '<li class="' + (taken ? 'la-list-item--offer-ok' : '') + '">' +
+                    '<span class="la-product-line">' +
+                    escapeHtml(p.naziv || 'Artikal') + views +
+                    (taken ? ' <span class="la-offer-tag la-offer-tag--ok">Uzet</span>' : '') +
+                    '</span></li>'
+                );
+            }).join('') + '</ul>';
+        }
+
+        let recsHtml = '';
+        if (activeRecs.length) {
+            recsHtml =
+                '<div class="la-drawer-block la-recs-block">' +
+                '<h3>Spremne ponude (redom po gledanju)</h3>' +
+                '<p class="la-recs-intro">#1 = što najviše gleda. Zatim ostali po gledanju, pa bestselleri fokus kategorije. Prihvaćeni se ne pokazuju.</p>' +
+                '<ul class="la-list la-recs-list">' +
+                activeRecs.map(function (r, idx) {
+                    const pid = String(r.product_id || r.id || '');
+                    const rank = r.rank || (idx + 1);
+                    const views = r.views || 0;
+                    const badge = rank === 1
+                        ? '<span class="la-rec-badge la-rec-badge--top">#1' +
+                          (views ? ' · ' + escapeHtml(views) + '×' : '') + '</span>'
+                        : '<span class="la-rec-badge">#' + rank +
+                          (views ? ' · ' + escapeHtml(views) + '×' : ' · cat') + '</span>';
+                    const prio = views >= 3
+                        ? ' la-rec-item--hot'
+                        : (views >= 2 ? ' la-rec-item--warm' : '');
+                    return (
+                        '<li class="la-rec-item' + prio + '">' +
+                        '<div class="la-rec-main">' +
+                        badge +
+                        '<div class="la-rec-name">' + escapeHtml(r.naziv || 'Artikal') + '</div>' +
+                        '<div class="la-rec-reason">' + escapeHtml(r.reason || '') + '</div>' +
+                        '<div class="la-rec-meta">' +
+                        escapeHtml(r.price_label || '') +
+                        (views ? ' · gleda ' + escapeHtml(views) + '×' : ' · bestseller') +
+                        (r.category ? ' · ' + escapeHtml(r.category) : '') +
+                        (r.on_sale ? ' · na akciji' : '') +
+                        '</div></div>' +
+                        '<div class="la-product-offer">' +
+                        '<input type="number" min="0" max="50" step="1" value="' +
+                        escapeHtml(r.suggested_discount || 10) +
+                        '" data-pct-for="rec-' + escapeHtml(pid) +
+                        '" aria-label="Popust %">' +
+                        '<button type="button" class="staff-live-offer-btn" data-product-offer ' +
+                        'data-product-id="' + escapeHtml(pid) +
+                        '" data-product-name="' + escapeHtml(r.naziv || '') +
+                        '" data-pct-input="rec-' + escapeHtml(pid) +
+                        '">Pošalji</button></div></li>'
+                    );
+                }).join('') +
+                '</ul></div>';
+        } else if ((v.offer_outcomes && (v.offer_outcomes.accepted || []).length)) {
+            recsHtml =
+                '<div class="la-drawer-block la-recs-block">' +
+                '<h3>Spremne ponude</h3>' +
+                '<div class="la-list-empty">Nema novih predloga — prihvaćeni su sklonjeni. ' +
+                'Pratim dalje gledanje…</div></div>';
+        } else {
+            recsHtml =
+                '<div class="la-drawer-block la-recs-block">' +
+                '<h3>Spremne ponude</h3>' +
+                '<div class="la-list-empty">Još nema jasnog signala — kad se vrati na artikal, pojavi se ovdje.</div></div>';
+        }
+
+        const cartItems = v.cart_items || [];
+        let cartPreviewHtml = '';
+        if (v.has_cart && cartItems.length) {
+            cartPreviewHtml =
+                '<div class="la-drawer-block la-cart-preview-block">' +
+                '<h3>Korpa kupca <span class="la-cart-preview-total">' +
+                escapeHtml(v.cart_value_label || '') +
+                '</span></h3>' +
+                '<ul class="la-cart-preview-list">' +
+                cartItems.map(function (it) {
+                    const img = it.image_url
+                        ? '<img src="' + escapeHtml(it.image_url) + '" alt="" width="40" height="40" loading="lazy">'
+                        : '<span class="la-cart-preview-ph" aria-hidden="true">🛒</span>';
+                    const name = it.product_url
+                        ? '<a href="' + escapeHtml(it.product_url) + '" target="_blank" rel="noopener">' +
+                          escapeHtml(it.naziv || 'Artikal') + '</a>'
+                        : escapeHtml(it.naziv || 'Artikal');
+                    return (
+                        '<li class="la-cart-preview-item">' +
+                        '<span class="la-cart-preview-img">' + img + '</span>' +
+                        '<span class="la-cart-preview-info">' +
+                        '<span class="la-cart-preview-name">' + name +
+                        (it.varijacija
+                            ? ' <span class="la-muted">· ' + escapeHtml(it.varijacija) + '</span>'
+                            : '') +
+                        '</span>' +
+                        '<span class="la-cart-preview-meta">×' +
+                        escapeHtml(it.kolicina || 1) +
+                        ' · ' + escapeHtml(it.ukupno_label || it.cijena_label || '') +
+                        '</span></span></li>'
+                    );
+                }).join('') +
+                '</ul></div>';
+        } else if (v.has_cart) {
+            cartPreviewHtml =
+                '<div class="la-drawer-block"><h3>Korpa</h3>' +
+                '<div class="la-list-empty">Korpa: ' +
+                escapeHtml(v.cart_value_label || '—') +
+                ' (detalji nisu dostupni)</div></div>';
+        }
+
+        const statsHtml =
             '<div class="la-drawer-block"><h3>Pregled</h3><div class="la-stats-row">' +
-            '<div class="la-stat-box"><span>Vrijeme na sajtu</span><strong>' +
+            '<div class="la-stat-box"><span>Vrijeme</span><strong>' +
             escapeHtml(v.time_on_site_label || '—') + '</strong></div>' +
-            '<div class="la-stat-box"><span>Korpa</span><strong>' +
-            escapeHtml(v.cart_value_label || '—') + '</strong></div>' +
-            '<div class="la-stat-box"><span>Proizvodi</span><strong>' +
+            '<div class="la-stat-box' + (v.has_cart ? ' la-stat-box--cart-click' : '') + '"' +
+            (v.has_cart ? ' data-scroll-cart-preview title="Skrolaj do korpe"' : '') +
+            '><span>Korpa</span><strong>' +
+            escapeHtml(v.cart_value_label || '—') +
+            (v.has_cart ? ' <span class="la-stat-hint">klik</span>' : '') +
+            '</strong></div>' +
+            '<div class="la-stat-box"><span>Artikli</span><strong>' +
             escapeHtml(v.products_viewed_count || 0) + '</strong></div>' +
             '<div class="la-stat-box"><span>Izvor</span><strong>' +
             escapeHtml(v.traffic_source_label || 'Direktno') + '</strong></div>' +
-            (v.has_purchased
-                ? '<div class="la-stat-box"><span>Kupovine</span><strong>' +
-                  escapeHtml(v.purchase_label || 'Da') + '</strong></div>'
-                : '') +
             '</div></div>' +
-            '<div class="la-drawer-block"><h3>Nove akcije</h3><div class="la-actions">' +
-            actions.join('') + '</div></div>' +
-            '<div class="la-drawer-block"><h3>Pregledani proizvodi</h3>' + productsHtml + '</div>' +
-            '<div class="la-drawer-block"><h3>Kategorije</h3>' + catsHtml + '</div>'
+            cartPreviewHtml;
+
+        const leftCol =
+            '<div class="la-drawer-col la-drawer-col--left">' +
+            '<div class="la-drawer-block la-drawer-block--sticky-title"><h3>Poslato / šta je uradio</h3>' +
+            staffActionsPanelHtml(v) +
+            '</div>' +
+            '<div class="la-drawer-block"><h3>Gledao (po povratcima)</h3>' +
+            productsSortedHtml +
+            '</div>' +
+            '<div class="la-drawer-block"><h3>Kategorije</h3>' + catsHtml + '</div>' +
+            '</div>';
+
+        const rightCol =
+            '<div class="la-drawer-col la-drawer-col--right">' +
+            insightHtml +
+            recsHtml +
+            statsHtml +
+            '<div class="la-drawer-block"><h3>Brze akcije</h3><div class="la-actions">' +
+            actions.join('') +
+            '</div></div>' +
+            '</div>';
+
+        return (
+            '<div class="la-drawer-layout">' +
+            leftCol +
+            rightCol +
+            '</div>'
         );
     }
 
@@ -901,14 +1230,35 @@
                 sendProductOffer(btn, v);
             });
         });
+        drawerBody.querySelectorAll('[data-scroll-cart-preview]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                const block = drawerBody.querySelector('.la-cart-preview-block');
+                if (block) block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        });
     }
+
+    // Klik / Enter na 🛒 chip na kartici — otvori drawer na korpu
+    function handleOpenCartPreview(e) {
+        const btn = e.target && e.target.closest && e.target.closest('[data-open-cart-preview]');
+        if (!btn) return;
+        if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        e.stopPropagation();
+        const sk = btn.getAttribute('data-session-key') || '';
+        if (sk) openDrawerToCart(sk);
+    }
+    document.addEventListener('click', handleOpenCartPreview, true);
+    document.addEventListener('keydown', handleOpenCartPreview, true);
 
     async function sendProductOffer(btn, v) {
         const productId = btn.dataset.productId || '';
         const productName = btn.dataset.productName || 'Artikal';
         if (!productId) return;
-        const input = drawerBody.querySelector('[data-pct-for="' + productId + '"]');
-        let discountVal = parseFloat(input && input.value != null ? input.value : '0');
+        const pctKey = btn.dataset.pctInput || productId;
+        const input = drawerBody.querySelector('[data-pct-for="' + pctKey + '"]')
+            || drawerBody.querySelector('[data-pct-for="' + productId + '"]');
+        let discountVal = parseFloat(input && input.value != null ? input.value : '10');
         if (isNaN(discountVal) || discountVal < 0) discountVal = 0;
         if (discountVal > 50) discountVal = 50;
         if (discountVal <= 0) {
@@ -1343,7 +1693,7 @@
             const hint = document.getElementById('liveGiftModeHint');
             if (hint) {
                 hint.textContent = data.automatic
-                    ? ('Iskače svima live (jednom). ' + (data.prize_label || ''))
+                    ? ('Ponuda na stranicama — kupac bira igraj / ne (jednom). ' + (data.prize_label || ''))
                     : 'Isključeno — pusti ručno iz detalja kupca (🎁 Nagrada).';
             }
         } catch (err) {

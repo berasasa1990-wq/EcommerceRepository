@@ -1,6 +1,6 @@
 {% if online_gift %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260711v4">
+<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260712v1">
 <div id="onlineGiftOverlay" class="og-overlay" hidden
      data-id="{{ online_gift.id }}"
      data-delay="{{ online_gift.delay_seconds }}"
@@ -16,15 +16,19 @@
 
         <div id="ogIntro" class="og-step">
             <div class="og-gift-icon" aria-hidden="true">🎁</div>
-            <p class="og-kicker">Samo za online posjetioce</p>
+            <p class="og-kicker">Nagradna igra · po želji</p>
             <h2 id="ogTitle" class="og-title">{{ online_gift.naslov }}</h2>
             {% if online_gift.poruka %}
             <p class="og-text" id="ogPoruka">{{ online_gift.poruka }}</p>
             {% else %}
             <p class="og-text" id="ogPoruka" hidden></p>
             {% endif %}
+            <p class="og-choice-hint">Ti biraš — možeš odigrati ili zatvoriti.</p>
             <button type="button" class="og-btn og-btn-main" id="ogRevealBtn">
-                Otkrij nagradu
+                Da, igraj
+            </button>
+            <button type="button" class="og-btn og-btn-ghost" id="ogDeclineBtn" data-og-close>
+                Ne, hvala
             </button>
         </div>
 

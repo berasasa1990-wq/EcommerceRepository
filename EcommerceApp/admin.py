@@ -208,8 +208,20 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'korpa_exit_popup_popust',
             ),
             'description': (
-                'Popup na cijelom sajtu kad posjetilac pomjeri kursor prema zatvaranju taba. '
-                'Obavezno odaberite artikal. Popust (%) opcionalno smanjuje cijenu tog artikla pri dodavanju u korpu.'
+                '„Poslednji minut” — samo kad kupac hoće da izađe (kursor prema zatvaranju taba). '
+                'Artikal se bira automatski: 1) skoro dodao u korpu (hover bez klika), '
+                '2) prema gledanju, 3) artikal ispod kao fallback. Popust % na cijenu u popupu.'
+            ),
+        }),
+        ('Personalizovana ponuda (gledanje)', {
+            'fields': (
+                'browse_interest_popup_aktivan',
+                'browse_interest_popust',
+            ),
+            'description': (
+                'Automatski popup „Specijalna ponuda za vas” — do 4 artikla (2×2) iz kategorije '
+                'koju kupac gleda. Prva nakon 2 min, druga nakon 4 min. '
+                'U uživo analitici: zeleni krug = prihvatio, crveni = odbio.'
             ),
         }),
         ('Pogodnosti', {

@@ -151,9 +151,21 @@
 
     overlay.querySelector('[data-cart-exit-stay]')?.addEventListener('click', closeOverlay);
 
+    // Samo kad kupac hoće da izađe (desktop: kursor prema tab close)
     document.documentElement.addEventListener('mouseout', function (e) {
         if (!e.relatedTarget && e.clientY <= 12) {
             openOverlay();
+        }
+    });
+
+    // Mobilni / tab switch: jednom kad napušta stranicu (ne pri scrollu)
+    let pageHideArmed = false;
+    window.setTimeout(function () { pageHideArmed = true; }, 8000);
+    document.addEventListener('visibilitychange', function () {
+        if (!pageHideArmed) return;
+        if (document.visibilityState === 'hidden') {
+            // Ne otvaraj popup dok je tab u pozadini — samo zabilježi namjeru
+            // (popup se ne vidi na hidden tabu). Desktop mouseout ostaje glavni.
         }
     });
 })();

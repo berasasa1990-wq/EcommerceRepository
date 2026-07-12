@@ -1,0 +1,133 @@
+{% if cart_abandon_exit %}
+<div class="site-popup-overlay cart-abandon-overlay" id="cartAbandonExitOverlay" hidden
+     data-cart-count="{{ cart_abandon_exit.qty_total|default:cart_count }}">
+    <div class="site-popup site-popup--akcija site-popup--cart-abandon" role="dialog" aria-modal="true" aria-labelledby="cartAbandonTitle">
+        <h2 id="cartAbandonTitle" class="site-popup-akcija-title">{{ cart_abandon_exit.naslov }}</h2>
+        <button type="button" class="site-popup-close" data-cart-abandon-close aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <div class="site-popup-akcija cart-abandon-body">
+            <div class="cart-abandon-icon" aria-hidden="true">🛒</div>
+            <p class="cart-abandon-text">{{ cart_abandon_exit.tekst }}</p>
+            <p class="cart-abandon-count">
+                U korpi:
+                <strong>
+                    {% if cart_abandon_exit.qty_total == 1 %}
+                    1 artikal
+                    {% else %}
+                    {{ cart_abandon_exit.qty_total }} artikla
+                    {% endif %}
+                </strong>
+                {% if cart_abandon_exit.total is not None %}
+                · <strong>{{ cart_abandon_exit.total }} KM</strong>
+                {% endif %}
+            </p>
+            {% if cart_abandon_exit.preview %}
+            <ul class="cart-abandon-list">
+                {% for item in cart_abandon_exit.preview %}
+                <li>
+                    <span class="cart-abandon-item-name">
+                        {{ item.naziv }}{% if item.varijacija %} — {{ item.varijacija }}{% endif %}
+                    </span>
+                    <span class="cart-abandon-item-qty">×{{ item.quantity }}</span>
+                </li>
+                {% endfor %}
+                {% if cart_abandon_exit.item_count > 3 %}
+                <li class="cart-abandon-more">… i još stavki u korpi</li>
+                {% endif %}
+            </ul>
+            {% endif %}
+        </div>
+
+        <div class="site-popup-actions cart-abandon-actions">
+            <a href="{% url 'checkout' %}" class="btn btn-primary site-popup-cta cart-abandon-cta">
+                Završi narudžbu
+            </a>
+            <a href="{% url 'cart' %}" class="btn btn-cart-secondary cart-abandon-cart">
+                Otvori korpu
+            </a>
+            <button type="button" class="btn btn-cart-secondary cart-abandon-stay" data-cart-abandon-close>
+                Nastavi kupovinu
+            </button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const overlay = document.getElementById('cartAbandonExitOverlay');
+    if (!overlay) return;
+
+    const STORAGE_KEY = 'cart_abandon_exit_shown';
+    let opened = false;
+
+    function readCsrfToken() {
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input && input.value) return input.value;
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function dismissOnServer() {
+        const token = readCsrfToken();
+        const body = new URLSearchParams();
+        if (token) body.set('csrfmiddlewaretoken', token);
+        fetch('{% url "cart_abandon_exit_dismiss" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': token,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: body.toString(),
+            credentials: 'same-origin',
+        }).catch(function () { /* ignore */ });
+    }
+
+    function closeOverlay() {
+        overlay.classList.remove('is-visible');
+        overlay.hidden = true;
+        document.body.classList.remove('popup-open');
+        try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch (err) { /* ignore */ }
+        dismissOnServer();
+    }
+
+    function openOverlay() {
+        if (opened) return;
+        try {
+            if (sessionStorage.getItem(STORAGE_KEY) === '1') return;
+        } catch (err) { /* ignore */ }
+        if (document.body.classList.contains('popup-open')) return;
+        const recovery = document.getElementById('cartRecoveryOverlay');
+        if (recovery && !recovery.hidden) return;
+        const liveOffer = document.getElementById('liveOfferOverlay');
+        if (liveOffer && !liveOffer.hidden) return;
+        const other = document.querySelector(
+            '.site-popup-overlay.is-visible:not(.cart-abandon-overlay)'
+        );
+        if (other) return;
+
+        opened = true;
+        overlay.hidden = false;
+        requestAnimationFrame(function () {
+            overlay.classList.add('is-visible');
+        });
+        document.body.classList.add('popup-open');
+    }
+
+    overlay.querySelectorAll('[data-cart-abandon-close]').forEach(function (btn) {
+        btn.addEventListener('click', closeOverlay);
+    });
+
+    // Exit intent — kursor prema zatvaranju taba
+    document.documentElement.addEventListener('mouseout', function (e) {
+        if (!e.relatedTarget && e.clientY <= 12) {
+            openOverlay();
+        }
+    });
+})();
+</script>
+{% endif %}

@@ -1,9 +1,13 @@
 {% if social_proof %}
-<div class="social-proof-toast" id="socialProofToast" hidden aria-live="polite">
+<div class="social-proof-toast" id="socialProofToast" hidden aria-live="polite"
+     data-poll-url="{{ social_proof.poll_url|default:'/drustveni-dokaz/' }}"
+     data-interval-ms="{{ social_proof.interval_ms|default:180000 }}"
+     data-first-delay-ms="{{ social_proof.first_delay_ms|default:45000 }}"
+     data-visible-ms="{{ social_proof.visible_ms|default:9000 }}">
     <button type="button" class="social-proof-toast__close" data-social-proof-close aria-label="Zatvori">×</button>
-    <p class="social-proof-toast__text">
-        <strong>{{ social_proof.name }}</strong> iz {{ social_proof.city }} je kupio
-        <a href="{{ social_proof.product_url }}">{{ social_proof.product_name }}</a>
+    <p class="social-proof-toast__text" data-social-proof-text>
+        <strong data-social-proof-name>{{ social_proof.name }}</strong> iz <span data-social-proof-city>{{ social_proof.city }}</span> je kupio
+        <a href="{{ social_proof.product_url }}" data-social-proof-link>{{ social_proof.product_name }}</a>
     </p>
 </div>
 <script>
@@ -11,8 +15,16 @@
     const toast = document.getElementById('socialProofToast');
     if (!toast) return;
 
-    const STORAGE_KEY = 'social_proof_toast_shown';
-    let shown = false;
+    const pollUrl = toast.getAttribute('data-poll-url') || '/drustveni-dokaz/';
+    const intervalMs = Math.max(60000, parseInt(toast.getAttribute('data-interval-ms') || '180000', 10) || 180000);
+    const firstDelayMs = Math.max(5000, parseInt(toast.getAttribute('data-first-delay-ms') || '45000', 10) || 45000);
+    const visibleMs = Math.max(4000, parseInt(toast.getAttribute('data-visible-ms') || '9000', 10) || 9000);
+
+    const nameEl = toast.querySelector('[data-social-proof-name]');
+    const cityEl = toast.querySelector('[data-social-proof-city]');
+    const linkEl = toast.querySelector('[data-social-proof-link]');
+    let hideTimer = null;
+    let lastProductId = null;
 
     function otherPopupOpen() {
         if (document.body.classList.contains('popup-open')) return true;
@@ -26,35 +38,68 @@
     function closeToast() {
         toast.classList.remove('is-visible');
         toast.hidden = true;
-        try {
-            sessionStorage.setItem(STORAGE_KEY, '1');
-        } catch (err) {
-            /* ignore */
+        if (hideTimer) {
+            window.clearTimeout(hideTimer);
+            hideTimer = null;
         }
     }
 
-    function openToast() {
-        if (shown) return;
-        try {
-            if (sessionStorage.getItem(STORAGE_KEY) === '1') return;
-        } catch (err) {
-            /* ignore */
+    function applyPayload(data) {
+        if (!data || !data.product_name) return false;
+        if (nameEl) nameEl.textContent = data.name || '';
+        if (cityEl) cityEl.textContent = data.city || '';
+        if (linkEl) {
+            linkEl.textContent = data.product_name || '';
+            if (data.product_url) linkEl.setAttribute('href', data.product_url);
         }
+        if (data.product_id) lastProductId = data.product_id;
+        return true;
+    }
+
+    function openToast() {
         if (otherPopupOpen()) {
-            window.setTimeout(openToast, 1500);
+            window.setTimeout(openToast, 2000);
             return;
         }
-        shown = true;
         toast.hidden = false;
         requestAnimationFrame(function () {
             toast.classList.add('is-visible');
         });
-        window.setTimeout(closeToast, 9000);
+        if (hideTimer) window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(closeToast, visibleMs);
+    }
+
+    async function fetchAndShow() {
+        try {
+            let url = pollUrl;
+            if (lastProductId) {
+                url += (url.indexOf('?') >= 0 ? '&' : '?') + 'exclude=' + encodeURIComponent(lastProductId);
+            }
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            if (!response.ok) {
+                openToast();
+                return;
+            }
+            const data = await response.json();
+            if (data && data.active && data.proof) {
+                applyPayload(data.proof);
+            }
+            openToast();
+        } catch (err) {
+            openToast();
+        }
     }
 
     toast.querySelector('[data-social-proof-close]')?.addEventListener('click', closeToast);
 
-    window.setTimeout(openToast, 6500);
+    // Prvi toast, zatim svaka 3 minute
+    window.setTimeout(function () {
+        fetchAndShow();
+        window.setInterval(fetchAndShow, intervalMs);
+    }, firstDelayMs);
 })();
 </script>
 {% endif %}

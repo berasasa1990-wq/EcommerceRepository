@@ -105,15 +105,52 @@ def _category_names_from_request(request, product=None):
     return []
 
 
+def _normalize_category_views(raw_categories):
+    """
+    Normalizuj istoriju kategorija.
+    Podržava legacy listu stringova i novi format {naziv, views}.
+    """
+    history = []
+    for item in (raw_categories or []):
+        if isinstance(item, dict):
+            name = str(item.get('naziv') or item.get('name') or '').strip()
+            if not name:
+                continue
+            try:
+                views = max(1, int(item.get('views') or 1))
+            except (TypeError, ValueError):
+                views = 1
+            history.append({'naziv': name[:120], 'views': views})
+        else:
+            name = str(item or '').strip()
+            if name:
+                history.append({'naziv': name[:120], 'views': 1})
+    return history
+
+
+def _category_names_only(raw_categories):
+    """Lista naziva (za staff UI / labele) — najnovije prvo."""
+    return [c['naziv'] for c in _normalize_category_views(raw_categories) if c.get('naziv')]
+
+
 def _merge_category_history(existing, new_items):
-    history = list(existing or [])
+    """Ažuriraj listu pregledanih kategorija; povećaj views pri povratku na istu."""
+    history = _normalize_category_views(existing)
     for item in new_items:
-        name = (item or '').strip()
+        name = (item or '').strip()[:120]
         if not name:
             continue
-        if name in history:
-            history.remove(name)
-        history.insert(0, name)
+        matched = None
+        for entry in history:
+            if entry['naziv'] == name:
+                matched = entry
+                break
+        if matched:
+            matched['views'] = matched.get('views', 1) + 1
+            history.remove(matched)
+            history.insert(0, matched)
+        else:
+            history.insert(0, {'naziv': name, 'views': 1})
     return history[:MAX_TRACKED_CATEGORIES]
 
 
@@ -370,6 +407,47 @@ def mark_live_visitor_left(request, body_session_key=''):
     return True
 
 
+VISITOR_COOKIE = 'ozb_vid'
+VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 400  # ~13 mjeseci
+
+
+def _touch_visitor_identity(request, session_key):
+    """
+    Trajni cookie → broj dolazaka na sajt.
+    Nova sesija za isti token = +1 posjeta (nije prvi put).
+    """
+    import secrets
+
+    from .models import SiteVisitorIdentity
+
+    token = (request.COOKIES.get(VISITOR_COOKIE) or '').strip()
+    if not token or len(token) < 16 or len(token) > 64:
+        token = secrets.token_hex(16)
+        request._ozb_vid_set = token
+
+    identity, created = SiteVisitorIdentity.objects.get_or_create(
+        token=token,
+        defaults={
+            'visit_count': 1,
+            'last_session_key': session_key or '',
+        },
+    )
+    if not created:
+        last_sk = (identity.last_session_key or '').strip()
+        if session_key and last_sk and last_sk != session_key:
+            identity.visit_count = (identity.visit_count or 1) + 1
+            identity.last_session_key = session_key
+            identity.save(update_fields=['visit_count', 'last_session_key', 'last_seen'])
+        elif session_key and not last_sk:
+            identity.last_session_key = session_key
+            identity.save(update_fields=['last_session_key', 'last_seen'])
+        else:
+            # ista sesija — samo last_seen
+            SiteVisitorIdentity.objects.filter(pk=identity.pk).update(last_seen=timezone.now())
+            identity.refresh_from_db(fields=['visit_count', 'last_session_key', 'last_seen'])
+    return identity
+
+
 def track_live_visitor(request):
     if not should_track_visitor(request):
         return
@@ -389,11 +467,19 @@ def track_live_visitor(request):
         LiveVisitor.objects.filter(session_key=session_key).delete()
         return
 
+    identity = None
+    try:
+        identity = _touch_visitor_identity(request, session_key)
+    except Exception:
+        identity = None
+
     existing_visitor = LiveVisitor.objects.filter(session_key=session_key).only(
         'pregledane_kategorije',
         'pregledani_proizvodi',
         'izvor_dolaska',
         'grad',
+        'visitor_token',
+        'site_visit_count',
     ).first()
     existing_grad = (existing_visitor.grad if existing_visitor else '') or ''
 
@@ -425,6 +511,12 @@ def track_live_visitor(request):
     # Izvor se pamti pri prvom ulasku; ne prepisuj kasnije unutrašnjim navigacijama
     traffic_source = existing_source or detect_traffic_source(request)
 
+    visit_count = 1
+    visitor_token = ''
+    if identity is not None:
+        visit_count = max(1, int(identity.visit_count or 1))
+        visitor_token = (identity.token or '')[:64]
+
     defaults = {
         'user': user,
         'ime': _display_name(user)[:120],
@@ -432,6 +524,8 @@ def track_live_visitor(request):
         'grad': (grad or '')[:100],
         'drzava': BOSNIA_HERZEGOVINA_COUNTRY_CODE,
         'ip_adresa': ip or None,
+        'visitor_token': visitor_token,
+        'site_visit_count': visit_count,
         'pregledane_kategorije': existing_categories,
         'pregledani_proizvodi': existing_products,
         'izvor_dolaska': (traffic_source or '')[:20],
@@ -462,6 +556,16 @@ def track_live_visitor(request):
         maybe_notify_visitor_online(session_key)
     if random.random() < 0.02:
         cleanup_stale_live_visitors()
+
+    # Personalizovana ponuda na osnovu gledanja (2+ pregleda artikla / top kategorija)
+    try:
+        from .browse_interest_offer import maybe_create_browse_interest_offer
+
+        visitor_for_offer = LiveVisitor.objects.filter(session_key=session_key).first()
+        if visitor_for_offer:
+            maybe_create_browse_interest_offer(request, visitor_for_offer)
+    except Exception:
+        pass
 
 
 def record_city_visit(grad):
@@ -533,9 +637,14 @@ def _build_recent_offer_map(visitors, *, now):
     empty = {
         'offer_map': {},
         'offers_by_key': {},
+        'offers_list_by_session': {},
+        'offers_list_by_user': {},
         'gift_push_by_session': {},
         'gift_claim_by_session': {},
         'gift_claim_by_user': {},
+        'gift_pushes_by_session': {},
+        'gift_claims_by_session': {},
+        'gift_claims_by_user': {},
     }
     if not session_keys and not user_ids:
         return empty
@@ -553,30 +662,47 @@ def _build_recent_offer_map(visitors, *, now):
         .order_by('-azurirano')
     )
 
+    from collections import defaultdict
+
     offer_map = {}
     offers_by_key = {}
+    offers_list_by_session = defaultdict(list)
+    offers_list_by_user = defaultdict(list)
     for offer in offers:
         keys = []
         if offer.user_id:
             keys.append(('user', offer.user_id))
+            offers_list_by_user[offer.user_id].append(offer)
         if offer.session_key:
             keys.append(('session', offer.session_key))
+            offers_list_by_session[offer.session_key].append(offer)
+        is_auto = False
+        try:
+            from .browse_interest_offer import is_auto_browse_offer
+
+            is_auto = is_auto_browse_offer(offer)
+        except Exception:
+            is_auto = (getattr(offer, 'aktivacioni_kod', None) or '') == 'AUTO-BROWSE'
         for key in keys:
             bucket = offers_by_key.setdefault(key, {})
-            if offer.tip not in bucket:
+            # Auto preporuka posebno (zeleni/crveni krug) — ne gazi staff artikal-ponudu
+            if is_auto:
+                if 'auto_browse' not in bucket:
+                    bucket['auto_browse'] = offer
+            elif offer.tip not in bucket:
                 bucket[offer.tip] = offer
-            # Legacy: prva non-registracija ponuda
+            # Legacy chip: prefer staff, ali auto ako nema drugog
             if key not in offer_map and offer.tip != LiveVisitorOffer.Tip.REGISTRACIJA:
                 offer_map[key] = offer
             elif key not in offer_map and offer.tip == LiveVisitorOffer.Tip.REGISTRACIJA:
-                # samo registracija — stavi ako nema druge
                 pass
-        # Ako nema ništa u offer_map, registracija je fallback
         for key in keys:
             if key not in offer_map:
                 offer_map[key] = offer
 
-    gift_push_by_session = {}
+    # Sve nagrade (ne samo zadnja) — potpuna istorija za staff
+
+    gift_pushes_by_session = defaultdict(list)
     if session_keys:
         for push in (
             OnlineGiftPush.objects.filter(
@@ -586,11 +712,10 @@ def _build_recent_offer_map(visitors, *, now):
             .select_related('campaign', 'campaign__product')
             .order_by('-kreirano')
         ):
-            if push.session_key not in gift_push_by_session:
-                gift_push_by_session[push.session_key] = push
+            gift_pushes_by_session[push.session_key].append(push)
 
-    gift_claim_by_session = {}
-    gift_claim_by_user = {}
+    gift_claims_by_session = defaultdict(list)
+    gift_claims_by_user = defaultdict(list)
     claim_q = Q()
     if session_keys:
         claim_q |= Q(session_key__in=session_keys)
@@ -602,17 +727,33 @@ def _build_recent_offer_map(visitors, *, now):
             .select_related('campaign', 'product', 'order')
             .order_by('-kreirano')
         ):
-            if claim.session_key and claim.session_key not in gift_claim_by_session:
-                gift_claim_by_session[claim.session_key] = claim
-            if claim.user_id and claim.user_id not in gift_claim_by_user:
-                gift_claim_by_user[claim.user_id] = claim
+            if claim.session_key:
+                gift_claims_by_session[claim.session_key].append(claim)
+            if claim.user_id:
+                gift_claims_by_user[claim.user_id].append(claim)
+
+    # Legacy: prvi (najnoviji) za stare call-site-ove
+    gift_push_by_session = {
+        sk: items[0] for sk, items in gift_pushes_by_session.items() if items
+    }
+    gift_claim_by_session = {
+        sk: items[0] for sk, items in gift_claims_by_session.items() if items
+    }
+    gift_claim_by_user = {
+        uid: items[0] for uid, items in gift_claims_by_user.items() if items
+    }
 
     return {
         'offer_map': offer_map,
         'offers_by_key': offers_by_key,
+        'offers_list_by_session': dict(offers_list_by_session),
+        'offers_list_by_user': dict(offers_list_by_user),
         'gift_push_by_session': gift_push_by_session,
         'gift_claim_by_session': gift_claim_by_session,
         'gift_claim_by_user': gift_claim_by_user,
+        'gift_pushes_by_session': dict(gift_pushes_by_session),
+        'gift_claims_by_session': dict(gift_claims_by_session),
+        'gift_claims_by_user': dict(gift_claims_by_user),
     }
 
 
@@ -702,8 +843,15 @@ def _offer_status_fields(offer, *, visitor_online=False):
         active = offer.show_popup and not accepted
         product_name = ''
         product_id = offer.product_id or None
-        kind = 'product_offer'
-        kind_label = 'Ponuda artikla'
+        auto_browse = False
+        try:
+            from .browse_interest_offer import is_auto_browse_offer
+
+            auto_browse = is_auto_browse_offer(offer)
+        except Exception:
+            auto_browse = (getattr(offer, 'aktivacioni_kod', None) or '') == 'AUTO-BROWSE'
+        kind = 'auto_browse' if auto_browse else 'product_offer'
+        kind_label = 'Auto preporuka' if auto_browse else 'Ponuda artikla'
         if offer.product_id and offer.product:
             product_name = offer.product.naziv
         pct = offer.discount_percent or 0
@@ -714,15 +862,20 @@ def _offer_status_fields(offer, *, visitor_online=False):
                 product_name = f'{product_name} (−{pct_label}%)'
         if offer.besplatna_dostava:
             product_name = (product_name or 'Ponuda') + ' + gratis dostava'
+        if auto_browse and not product_name:
+            product_name = 'Auto preporuka (gledanje)'
         if accepted:
             status = 'accepted'
             status_label = 'Prihvatio — u korpi'
         elif active and visitor_online:
             status = 'active'
             status_label = 'Čeka odgovor'
+        elif active:
+            status = 'active'
+            status_label = 'Ponuda poslana'
         else:
             status = 'left'
-            status_label = 'Odbio / napustio'
+            status_label = 'Odbio / zatvorio'
 
     return {
         'offer_sent': True,
@@ -757,41 +910,61 @@ def _serialize_staff_action_from_offer(offer, *, visitor_online=False, now=None)
     }
 
 
-def _serialize_gift_staff_action(*, push=None, claim=None, now=None):
-    """Online nagrada: push i/ili claim → šta je poslato i šta je kupac uradio."""
-    now = now or timezone.now()
+def _gift_prize_label(*, push=None, claim=None):
     prize = ''
     if claim and claim.won:
-        prize = claim.prize_label() if hasattr(claim, 'prize_label') else ''
+        try:
+            prize = claim.prize_label() if hasattr(claim, 'prize_label') else ''
+        except Exception:
+            prize = ''
+    if not prize and claim and claim.product_id and claim.product:
+        prize = claim.product.naziv or ''
     if not prize and push and push.campaign_id and push.campaign:
         try:
             prize = push.campaign.prize_label()
         except Exception:
-            prize = push.campaign.naziv or 'Online nagrada'
-    if not prize:
-        prize = 'Online nagrada'
+            prize = push.campaign.naziv or ''
+    return (prize or 'Online nagrada').strip()
+
+
+def _serialize_gift_staff_action(*, push=None, claim=None, now=None):
+    """
+    Online nagrada — statusi:
+    osvojio (accepted), izgubio (lost), odbio (dismissed), čeka (pending).
+    """
+    now = now or timezone.now()
+    prize = _gift_prize_label(push=push, claim=claim)
 
     if claim:
         sent_at = claim.kreirano
+        source = 'auto' if not push else 'manual'
         if claim.won:
             if claim.reward_consumed or claim.order_id:
-                status, status_label = 'accepted', 'Osvojio i iskoristio'
-                if claim.order_id and claim.order:
-                    status_label = f'Osvojio · poručio #{claim.order.broj}'
+                status, status_label, gift_result = 'accepted', 'Osvojio', 'osvojio'
+                if claim.order_id and getattr(claim, 'order', None):
+                    status_label = f'Osvojio · #{claim.order.broj}'
+                elif claim.reward_consumed:
+                    status_label = 'Osvojio · iskoristio'
             else:
-                status, status_label = 'accepted', 'Osvojio nagradu'
+                status, status_label, gift_result = 'accepted', 'Osvojio', 'osvojio'
         else:
-            status, status_label = 'left', 'Nije dobio (promašaj)'
-        source = 'auto' if not push else 'manual'
+            status, status_label, gift_result = 'lost', 'Izgubio', 'izgubio'
+        event_id = f'claim-{claim.pk}'
+        product_id = claim.product_id
     elif push:
         sent_at = push.kreirano
         source = 'manual'
-        if push.played:
-            status, status_label = 'active', 'Otvorio nagradu'
-        elif push.dismissed:
-            status, status_label = 'left', 'Zatvorio nagradu (X)'
+        product_id = None
+        event_id = f'push-{push.pk}'
+        if push.dismissed and not push.played:
+            status, status_label, gift_result = 'dismissed', 'Odbio', 'odbio'
+        elif push.dismissed and push.played:
+            # Otvorio pa zatvorio bez claima — tretira se kao odbio
+            status, status_label, gift_result = 'dismissed', 'Odbio', 'odbio'
+        elif push.played:
+            status, status_label, gift_result = 'pending', 'Otvorio — čeka', 'ceka'
         else:
-            status, status_label = 'active', 'Puštana — čeka otvaranje'
+            status, status_label, gift_result = 'pending', 'Čeka otvaranje', 'ceka'
     else:
         return None
 
@@ -801,60 +974,166 @@ def _serialize_gift_staff_action(*, push=None, claim=None, now=None):
         'title': prize,
         'status': status,
         'status_label': status_label,
+        'gift_result': gift_result,  # osvojio | izgubio | odbio | ceka
         'discount_label': '',
-        'product_id': claim.product_id if claim else None,
+        'product_id': product_id,
+        'event_id': event_id,
         'sent_at_label': _ago_action_label(sent_at, now),
         'sent_at_clock': (
             timezone.localtime(sent_at).strftime('%H:%M') if sent_at else ''
         ),
+        'sent_at_ts': sent_at.timestamp() if sent_at else 0,
         'already_sent': True,
         'source': source,
     }
 
 
+def _staff_gift_actions_for_visitor(visitor, actions_bundle, *, now=None):
+    """
+    Svi događaji nagrade (ne briši / ne spajaj u jedan).
+    Claims + push-evi koji još nemaju claim u istom vremenskom prozoru.
+    """
+    now = now or timezone.now()
+    actions = []
+    claims = []
+    if visitor.session_key:
+        claims.extend(
+            (actions_bundle.get('gift_claims_by_session') or {}).get(visitor.session_key)
+            or []
+        )
+    if visitor.user_id:
+        for c in (actions_bundle.get('gift_claims_by_user') or {}).get(visitor.user_id) or []:
+            if c not in claims:
+                claims.append(c)
+
+    # Dedup claims po pk
+    seen_claim = set()
+    unique_claims = []
+    for c in claims:
+        if c.pk in seen_claim:
+            continue
+        seen_claim.add(c.pk)
+        unique_claims.append(c)
+
+    claim_session_keys = {c.session_key for c in unique_claims if c.session_key}
+    claim_times = [c.kreirano for c in unique_claims if c.kreirano]
+
+    for claim in unique_claims:
+        # Poveži push blizu claima (isti session) — opcionalno za source
+        push = None
+        if claim.session_key:
+            for p in (actions_bundle.get('gift_pushes_by_session') or {}).get(claim.session_key) or []:
+                # isti campaign, push prije ili blizu claima
+                if claim.campaign_id and p.campaign_id == claim.campaign_id:
+                    push = p
+                    break
+        action = _serialize_gift_staff_action(push=push, claim=claim, now=now)
+        if action:
+            actions.append(action)
+
+    # Push-evi bez claima (čekaju / odbio) — svi ostaju u listi
+    pushes = []
+    if visitor.session_key:
+        pushes = list(
+            (actions_bundle.get('gift_pushes_by_session') or {}).get(visitor.session_key)
+            or []
+        )
+    for push in pushes:
+        # Ako postoji claim za isti campaign + session, push je već pokriven claimom
+        has_claim = any(
+            c.campaign_id == push.campaign_id and c.session_key == push.session_key
+            for c in unique_claims
+        )
+        if has_claim:
+            continue
+        action = _serialize_gift_staff_action(push=push, claim=None, now=now)
+        if action:
+            actions.append(action)
+
+    return actions
+
+
 def _staff_actions_for_visitor(visitor, actions_bundle, *, visitor_online=False, now=None):
-    """Sve poslane staff akcije + ishod za ovog posjetioca."""
+    """Sve poslane staff akcije + ishod — potpuna istorija (odbio + prihvatio ostaju)."""
     now = now or timezone.now()
     from .models import LiveVisitorOffer
 
     actions = []
-    by_tip = _lookup_offers_by_tip(actions_bundle, visitor)
-    # Redoslijed: artikal, popust, registracija
-    for tip in (
-        LiveVisitorOffer.Tip.ARTIKAL,
-        LiveVisitorOffer.Tip.NARUDZBA,
-        LiveVisitorOffer.Tip.REGISTRACIJA,
-    ):
-        offer = by_tip.get(tip)
-        if offer:
+    seen_offer_ids = set()
+
+    # SVE ponude (ne samo zadnja po tipu) — da stoje i odbijene i prihvaćene
+    offer_lists = []
+    if visitor.session_key:
+        offer_lists.append(
+            (actions_bundle.get('offers_list_by_session') or {}).get(visitor.session_key) or []
+        )
+    if visitor.user_id:
+        offer_lists.append(
+            (actions_bundle.get('offers_list_by_user') or {}).get(visitor.user_id) or []
+        )
+    for offer_list in offer_lists:
+        for offer in offer_list:
+            if offer.pk in seen_offer_ids:
+                continue
+            seen_offer_ids.add(offer.pk)
             action = _serialize_staff_action_from_offer(
                 offer, visitor_online=visitor_online, now=now,
             )
-            # Ako se gost registrovao nakon poziva — označi kao prihvaćeno
             if (
-                tip == LiveVisitorOffer.Tip.REGISTRACIJA
+                offer.tip == LiveVisitorOffer.Tip.REGISTRACIJA
                 and visitor.user_id
                 and action.get('status') != 'accepted'
             ):
                 action['status'] = 'accepted'
                 action['status_label'] = 'Registrovao se'
+            try:
+                action['sent_at_ts'] = (
+                    offer.azurirano or offer.kreirano
+                ).timestamp()
+            except Exception:
+                action['sent_at_ts'] = 0
+            action['event_id'] = f'offer-{offer.pk}'
             actions.append(action)
 
-    push = (actions_bundle.get('gift_push_by_session') or {}).get(visitor.session_key)
-    claim = None
-    if visitor.session_key:
-        claim = (actions_bundle.get('gift_claim_by_session') or {}).get(visitor.session_key)
-    if not claim and visitor.user_id:
-        claim = (actions_bundle.get('gift_claim_by_user') or {}).get(visitor.user_id)
-    gift_action = _serialize_gift_staff_action(push=push, claim=claim, now=now)
-    if gift_action:
-        actions.append(gift_action)
+    # Fallback: stari bucket po tipu (ako lista prazna)
+    if not actions:
+        by_tip = _lookup_offers_by_tip(actions_bundle, visitor)
+        for tip in (
+            'auto_browse',
+            LiveVisitorOffer.Tip.ARTIKAL,
+            LiveVisitorOffer.Tip.NARUDZBA,
+            LiveVisitorOffer.Tip.REGISTRACIJA,
+        ):
+            offer = by_tip.get(tip)
+            if not offer or offer.pk in seen_offer_ids:
+                continue
+            seen_offer_ids.add(offer.pk)
+            action = _serialize_staff_action_from_offer(
+                offer, visitor_online=visitor_online, now=now,
+            )
+            try:
+                action['sent_at_ts'] = (offer.azurirano or offer.kreirano).timestamp()
+            except Exception:
+                action['sent_at_ts'] = 0
+            action['event_id'] = f'offer-{offer.pk}'
+            actions.append(action)
 
+    # Sve nagrade (osvojio / izgubio / odbio / čeka)
+    actions.extend(_staff_gift_actions_for_visitor(visitor, actions_bundle, now=now))
+
+    # Najnovije prvo
+    actions.sort(key=lambda a: float(a.get('sent_at_ts') or 0), reverse=True)
     return actions
 
 
 def _build_cart_presence_map(visitors):
-    """Vraća (sessions_with_cart, users_with_cart, cart_value_by_session, cart_value_by_user)."""
+    """
+    Vraća:
+    sessions_with_cart, users_with_cart,
+    cart_value_by_session, cart_value_by_user,
+    cart_items_by_session, cart_items_by_user
+    """
+    from collections import defaultdict
     from decimal import Decimal
 
     from django.db.models import Sum
@@ -865,6 +1144,8 @@ def _build_cart_presence_map(visitors):
     users_with_cart = set()
     cart_value_by_session = {}
     cart_value_by_user = {}
+    cart_items_by_session = defaultdict(list)
+    cart_items_by_user = defaultdict(list)
 
     if session_keys:
         session_rows = (
@@ -878,6 +1159,13 @@ def _build_cart_presence_map(visitors):
             sessions_with_cart.add(key)
             cart_value_by_session[key] = total
 
+        for item in (
+            ActiveCartItem.objects.filter(session_key__in=session_keys)
+            .select_related('product', 'variation')
+            .order_by('-azurirano', '-id')
+        ):
+            cart_items_by_session[item.session_key].append(_serialize_cart_line(item))
+
     if user_ids:
         user_rows = (
             ActiveCartItem.objects.filter(user_id__in=user_ids)
@@ -890,7 +1178,59 @@ def _build_cart_presence_map(visitors):
             users_with_cart.add(uid)
             cart_value_by_user[uid] = total
 
-    return sessions_with_cart, users_with_cart, cart_value_by_session, cart_value_by_user
+        for item in (
+            ActiveCartItem.objects.filter(user_id__in=user_ids)
+            .select_related('product', 'variation')
+            .order_by('-azurirano', '-id')
+        ):
+            cart_items_by_user[item.user_id].append(_serialize_cart_line(item))
+
+    return (
+        sessions_with_cart,
+        users_with_cart,
+        cart_value_by_session,
+        cart_value_by_user,
+        dict(cart_items_by_session),
+        dict(cart_items_by_user),
+    )
+
+
+def _serialize_cart_line(item):
+    """JSON-friendly stavka aktivne korpe za staff live UI."""
+    image_url = ''
+    product_url = ''
+    try:
+        if item.variation_id and item.variation and item.variation.slika:
+            image_url = item.variation.slika.url
+        elif item.product_id and item.product and item.product.prikazna_slika:
+            image_url = item.product.prikazna_slika.url
+    except Exception:
+        image_url = ''
+    try:
+        if item.product_id and item.product:
+            product_url = item.product.get_absolute_url()
+    except Exception:
+        product_url = ''
+    name = (item.naziv or '').strip() or 'Artikal'
+    var_name = (item.varijacija_naziv or '').strip()
+    try:
+        cijena = item.cijena
+        ukupno = item.ukupno
+    except Exception:
+        cijena = 0
+        ukupno = 0
+    return {
+        'product_id': item.product_id,
+        'naziv': name,
+        'varijacija': var_name,
+        'kolicina': int(item.kolicina or 1),
+        'cijena': str(cijena),
+        'cijena_label': f'{cijena} KM',
+        'ukupno': str(ukupno),
+        'ukupno_label': f'{ukupno} KM',
+        'image_url': image_url,
+        'product_url': product_url,
+    }
 
 
 def _visitor_has_cart(visitor, sessions_with_cart, users_with_cart):
@@ -905,6 +1245,16 @@ def _visitor_cart_value(visitor, cart_value_by_session, cart_value_by_user):
     if visitor.user_id and visitor.user_id in cart_value_by_user:
         return cart_value_by_user[visitor.user_id]
     return cart_value_by_session.get(visitor.session_key) or Decimal('0')
+
+
+def _visitor_cart_items(visitor, cart_items_by_session, cart_items_by_user):
+    """Preferiraj korpu po sesiji; ako prazna, po useru."""
+    items = []
+    if visitor.session_key:
+        items = list(cart_items_by_session.get(visitor.session_key) or [])
+    if not items and visitor.user_id:
+        items = list(cart_items_by_user.get(visitor.user_id) or [])
+    return items
 
 
 def _parse_date_param(value):
@@ -1206,6 +1556,7 @@ def _visitor_payload(
     staff_actions=None,
     has_cart=False,
     cart_value=None,
+    cart_items=None,
     has_purchased=False,
     purchase_count=0,
 ):
@@ -1237,9 +1588,17 @@ def _visitor_payload(
             if profil and profil.grad:
                 grad = profil.grad.strip()
 
-    categories = list(visitor.pregledane_kategorije or [])
+    category_views = _normalize_category_views(visitor.pregledane_kategorije)
+    categories = [c['naziv'] for c in category_views if c.get('naziv')]
     products = _normalize_product_views(getattr(visitor, 'pregledani_proizvodi', None))
     products_viewed_count = len(products)
+    almost_cart = []
+    try:
+        from .almost_cart import get_almost_cart_products
+
+        almost_cart = get_almost_cart_products(visitor)
+    except Exception:
+        almost_cart = []
     revisited = [p for p in products if p.get('views', 1) > 1]
     returned_to_product = bool(revisited)
     returned_products = [
@@ -1283,6 +1642,26 @@ def _visitor_payload(
         else:
             purchase_label = 'Kupovao ranije'
 
+    # Pametne preporuke za staff (šta ručno poslati) + psihologija gledanja
+    sell_recs = []
+    visitor_insight = {}
+    offer_outcomes = {'accepted': [], 'rejected': [], 'pending': []}
+    try:
+        from .browse_interest_offer import (
+            build_sell_recommendations,
+            build_visitor_insight,
+            get_offer_outcome_summary,
+        )
+
+        visitor_insight = build_visitor_insight(visitor) or {}
+        sell_recs = build_sell_recommendations(visitor, limit=4) or []
+        offer_outcomes = get_offer_outcome_summary(visitor) or offer_outcomes
+    except Exception:
+        sell_recs = []
+        visitor_insight = {}
+
+    top_sell = sell_recs[0] if sell_recs else None
+
     payload = {
         'session_key': visitor.session_key,
         'user_id': visitor.user_id or None,
@@ -1290,7 +1669,11 @@ def _visitor_payload(
         'email': visitor.email or '',
         'grad': grad,
         'categories': categories,
-        'categories_label': ', '.join(categories),
+        'categories_label': ', '.join(
+            f"{c['naziv']} ({c['views']}×)" if c.get('views', 1) > 1 else c['naziv']
+            for c in category_views[:6]
+            if c.get('naziv')
+        ),
         'products': products,
         'products_viewed_count': products_viewed_count,
         'products_label': products_label,
@@ -1302,6 +1685,8 @@ def _visitor_payload(
         'cart_value': str(cart_value_dec),
         'cart_value_label': cart_value_label,
         'has_cart': has_cart or cart_value_dec > 0,
+        'cart_items': list(cart_items or []),
+        'cart_items_count': len(list(cart_items or [])),
         'has_purchased': bool(has_purchased),
         'purchase_count': int(purchase_count or 0),
         'purchase_label': purchase_label,
@@ -1315,6 +1700,35 @@ def _visitor_payload(
         'time_on_site_seconds': time_on_site_seconds,
         'time_on_site_label': time_on_site_label,
         'is_online': is_online,
+        'site_visit_count': int(getattr(visitor, 'site_visit_count', 1) or 1),
+        'is_returning_visitor': int(getattr(visitor, 'site_visit_count', 1) or 1) > 1,
+        'returning_label': (
+            f'Vraćeni posjetilac ({int(getattr(visitor, "site_visit_count", 1) or 1)}× na sajtu)'
+            if int(getattr(visitor, 'site_visit_count', 1) or 1) > 1
+            else 'Prvi put na sajtu'
+        ),
+        'visitor_insight': visitor_insight,
+        'sell_recommendations': sell_recs,
+        'top_sell_recommendation': top_sell,
+        'top_sell_label': (
+            f"{top_sell.get('naziv')} — {top_sell.get('reason')}"
+            if top_sell else ''
+        ),
+        'almost_cart': almost_cart,
+        'almost_cart_count': len(almost_cart),
+        'almost_cart_label': (
+            f"{almost_cart[0].get('naziv')} ({almost_cart[0].get('hovers')}× hover)"
+            if almost_cart else ''
+        ),
+        'offer_outcomes': offer_outcomes,
+        'accepted_offer_ids': [
+            r.get('product_id') for r in (offer_outcomes.get('accepted') or [])
+            if r.get('product_id')
+        ],
+        'rejected_offer_ids': [
+            r.get('product_id') for r in (offer_outcomes.get('rejected') or [])
+            if r.get('product_id')
+        ],
     }
     payload.update(_offer_status_fields(offer, visitor_online=payload['is_online']))
     actions = list(staff_actions or [])
@@ -1359,6 +1773,8 @@ def get_live_visitor_snapshot():
         users_with_cart,
         cart_value_by_session,
         cart_value_by_user,
+        cart_items_by_session,
+        cart_items_by_user,
     ) = _build_cart_presence_map(visitor_rows)
     (
         buyer_user_ids,
@@ -1390,6 +1806,7 @@ def get_live_visitor_snapshot():
                 staff_actions=staff_actions,
                 has_cart=_visitor_has_cart(row, sessions_with_cart, users_with_cart),
                 cart_value=_visitor_cart_value(row, cart_value_by_session, cart_value_by_user),
+                cart_items=_visitor_cart_items(row, cart_items_by_session, cart_items_by_user),
                 has_purchased=has_purchased,
                 purchase_count=purchase_count,
             )
