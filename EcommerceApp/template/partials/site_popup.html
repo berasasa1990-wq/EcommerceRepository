@@ -122,9 +122,10 @@
         </div>
 
         {% elif akcija.tip == 'bundle' %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260712v8">
-        {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary %}
-        {% if bundle_items|length >= 2 %}
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260712v10">
+        {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary unit_count=akcija.bundle_unit_count %}
+        {# Svaki komad = kartica (qty 2 = dvije kartice +) — unit_count ≥ 2 #}
+        {% if unit_count >= 2 and bundle_items|length >= 2 %}
         <div class="site-popup-akcija site-popup-bundle-pack">
             <div class="bundle-pack-ribbon bundle-pack-ribbon--left" aria-hidden="true">
                 {% if pricing and pricing.pct_label %}
@@ -143,7 +144,11 @@
                 {% endif %}
             </h3>
             <p class="bundle-pack-sub">
-                {{ bundle_items|length }} artikla — da se kupi zasebno košta više
+                {% if unit_count == 2 %}
+                1+1 set — 2 komada · jeftinije nego zasebno
+                {% else %}
+                {{ unit_count }} kom. u setu — da se kupi zasebno košta više
+                {% endif %}
             </p>
 
             {% if pricing and pricing.has_discount %}

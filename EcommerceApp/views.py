@@ -1370,10 +1370,11 @@ def add_to_cart(request, slug):
             )
             .filter(
                 Q(bundle_artikli=product)
+                | Q(bundle_lines__product=product)
                 | Q(artikal_id=product.pk)
                 | Q(gratis_artikal_id=product.pk)
             )
-            .prefetch_related('bundle_artikli')
+            .prefetch_related('bundle_artikli', 'bundle_lines__product')
             .select_related('gratis_artikal', 'artikal')
             .distinct()
             .first()
@@ -2225,12 +2226,13 @@ def register(request):
                 form.add_error(None, 'Turnstile provjera nije uspjela. Molimo pokušajte ponovo.')
             else:
                 email = form.cleaned_data['email']
+                # Odmah aktivan — bez email aktivacije / bez slanja maila
                 user = User.objects.create_user(
                     username=email,
                     email=email,
                     password=form.cleaned_data['lozinka'],
                     first_name=form.cleaned_data['ime_prezime'],
-                    is_active=False,
+                    is_active=True,
                 )
                 UserProfile.objects.create(
                     user=user,
@@ -2255,45 +2257,6 @@ def register(request):
                 except Exception:
                     pass
 
-                # Send activation email
-                uid = urlsafe_base64_encode(force_bytes(user.pk))
-                token = default_token_generator.make_token(user)
-                activation_link = request.build_absolute_uri(
-                    reverse('activate', kwargs={'uidb64': uid, 'token': token})
-                )
-                subject = 'Aktivirajte vaš nalog | opremazaribolov.ba'
-                html_message = render_to_string('emails/activation_email.html', {
-                    'user': user,
-                    'activation_link': activation_link,
-                    'site_name': 'opremazaribolov.ba',
-                })
-                plain_message = strip_tags(html_message)
-                send_mail(
-                    subject,
-                    plain_message,
-                    getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@opremazaribolov.ba'),
-                    [user.email],
-                    html_message=html_message,
-                    fail_silently=False,
-                )
-
-                if reg_reward and reg_reward.get('percent'):
-                    messages.success(
-                        request,
-                        f'Nalog je kreiran. Aktivirajte ga preko emaila — '
-                        f'zatim imate {reg_reward["percent"]}% popusta na prvu narudžbu.',
-                    )
-                elif reg_reward:
-                    messages.success(
-                        request,
-                        'Nalog je kreiran. Aktivirajte ga preko emaila — '
-                        'zatim imate besplatnu dostavu na prvu narudžbu (samo jednom).',
-                    )
-                else:
-                    messages.success(
-                        request,
-                        'Nalog je uspješno kreiran. Provjerite vaš email za aktivacioni link.',
-                    )
                 # Nagradna igra: ako je došao preko „Registruj se i igraj”, zadrži flag
                 try:
                     from .online_gift import SESSION_AFTER_AUTH_KEY, mark_gift_registration_intent
@@ -2301,7 +2264,35 @@ def register(request):
                         mark_gift_registration_intent(request)
                 except Exception:
                     pass
-                return redirect(f"{reverse('login')}?next=/")
+
+                # Odmah prijavi korisnika (nema čekanja na email)
+                from django.contrib.auth import login as auth_login
+                auth_login(
+                    request,
+                    user,
+                    backend='django.contrib.auth.backends.ModelBackend',
+                )
+
+                if reg_reward and reg_reward.get('percent'):
+                    messages.success(
+                        request,
+                        f'Dobrodošli! Nalog je spreman. '
+                        f'Imate {reg_reward["percent"]}% popusta na prvu narudžbu.',
+                    )
+                elif reg_reward:
+                    messages.success(
+                        request,
+                        'Dobrodošli! Nalog je spreman — besplatna dostava na prvu narudžbu.',
+                    )
+                else:
+                    messages.success(
+                        request,
+                        'Dobrodošli! Nalog je kreiran i odmah ste prijavljeni.',
+                    )
+                next_url = request.GET.get('next') or request.POST.get('next') or '/'
+                if not str(next_url).startswith('/'):
+                    next_url = '/'
+                return redirect(next_url)
 
     context = {
         **_base_context(),

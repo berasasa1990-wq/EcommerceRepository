@@ -239,6 +239,28 @@
   box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
 }
 
+.bundle-pack-card-qty {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  min-width: 28px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+}
+
+.bundle-pack-card-qty-text {
+  color: #15803d;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .bundle-pack-card-name {
   margin: 0 0 6px;
   font-size: 13.5px;

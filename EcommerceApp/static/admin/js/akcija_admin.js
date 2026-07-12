@@ -164,6 +164,15 @@
             },
         );
 
+        // Bundle inline (stavke s količinom)
+        var $bundleInline = $('.inline-group').filter(function () {
+            var id = (this.id || '') + ' ' + ($(this).attr('class') || '');
+            return id.indexOf('bundle_line') !== -1 || id.indexOf('bundle_lines') !== -1;
+        });
+        if (!$bundleInline.length) {
+            $bundleInline = $('#bundle_lines-group, .inline-group[id*="bundle_line"]');
+        }
+
         if (isBundle) {
             // Eksplicitno sakrij sve tuđe tipove
             BUNDLE_FORBIDDEN.forEach(hideField);
@@ -178,8 +187,8 @@
             } else {
                 hideField('kategorija');
             }
-            // Bundle polja uvijek
-            showField('bundle_artikli');
+            // Bundle polja
+            hideField('bundle_artikli'); // legacy M2M — koristi inline
             showField('bundle_trigger');
             showField('popust_postotak');
             showField('tekst_dugmeta');
@@ -193,9 +202,11 @@
             showField('tip');
             showField('aktivan');
             showField('redoslijed');
+            $bundleInline.show();
         } else {
             hideField('bundle_artikli');
             hideField('bundle_trigger');
+            $bundleInline.hide();
         }
     }
 

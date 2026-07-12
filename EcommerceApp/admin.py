@@ -30,6 +30,7 @@ ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
     ActiveCartItem,
+    AkcijaBundleLine,
     CityVisitTotal,
     LiveVisitor,
     LiveVisitorOffer,
@@ -383,6 +384,60 @@ class BrandAdmin(admin.ModelAdmin):
         return 'Nema loga — prikazuje se naziv brenda'
 
 
+class AkcijaBundleLineInline(admin.TabularInline):
+    model = AkcijaBundleLine
+    extra = 2
+    min_num = 0
+    autocomplete_fields = ('product',)
+    fields = ('product', 'quantity', 'redoslijed')
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Stavka seta'
+    verbose_name_plural = (
+        'BUNDLE SET (obavezno) — artikal + količina. '
+        'Primjer 1+1: jedan artikal, količina 2. '
+        'Primjer A+B: dva reda, količina 1.'
+    )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        original_clean = formset.clean
+
+        def clean(self):
+            if original_clean:
+                original_clean(self)
+            if any(self.errors):
+                return
+            parent = getattr(self, 'instance', None)
+            tip = None
+            if parent is not None:
+                tip = getattr(parent, 'tip', None)
+            # Ako je tip bundle (ili dolazi iz requesta)
+            if tip != 'bundle' and request is not None:
+                tip = request.POST.get('tip') or tip
+            if tip != 'bundle':
+                return
+            total_units = 0
+            for form in self.forms:
+                if not hasattr(form, 'cleaned_data') or not form.cleaned_data:
+                    continue
+                if form.cleaned_data.get('DELETE'):
+                    continue
+                product = form.cleaned_data.get('product')
+                if not product:
+                    continue
+                qty = form.cleaned_data.get('quantity') or 1
+                total_units += max(1, int(qty))
+            if total_units < 2:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(
+                    'Bundle set mora imati ukupno barem 2 komada. '
+                    'Npr. isti artikal s količinom 2 (1+1), ili dva artikla.'
+                )
+
+        formset.clean = clean
+        return formset
+
+
 @admin.register(Akcija)
 class AkcijaAdmin(admin.ModelAdmin):
     form = AkcijaAdminForm
@@ -396,6 +451,7 @@ class AkcijaAdmin(admin.ModelAdmin):
     autocomplete_fields = ('artikal', 'gratis_artikal', 'kategorija')
     filter_horizontal = ('bundle_artikli',)
     readonly_fields = ('preview_slika',)
+    inlines = [AkcijaBundleLineInline]
 
     class Media:
         js = ('admin/js/akcija_admin.js',)
@@ -405,12 +461,11 @@ class AkcijaAdmin(admin.ModelAdmin):
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
                 'Izaberite tip — prikazuju se samo polja za taj tip. '
-                'Za Pop-up bundle: set artikala, % na kompletan set, trigger.'
+                'Za Pop-up bundle: ispod forme dodaj linije seta (količina po artiklu).'
             ),
         }),
         ('Sadržaj', {
             'fields': (
-                'bundle_artikli',
                 'bundle_trigger',
                 'popust_postotak',
                 'artikal',
@@ -423,8 +478,8 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'boja_dugmeta', 'boja_opisa',
             ),
             'description': (
-                'Pop-up bundle: Artikli u setu + % + trigger. '
-                'Polja drugih tipova se automatski sakrivaju.'
+                'Pop-up bundle: % + trigger. Stavke seta (s količinom) su ispod — '
+                'možeš isti artikal više puta (npr. qty 2 = 1+1).'
             ),
         }),
         ('Pop-up ponašanje', {
@@ -436,7 +491,26 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'Kašnjenje i publika. Za bundle: kašnjenje se broji tek kad je trigger ispunjen.'
             ),
         }),
+        ('Legacy M2M (opcionalno)', {
+            'classes': ('collapse',),
+            'fields': ('bundle_artikli',),
+            'description': 'Stari način (bez količine). Preferiraj inline stavke iznad.',
+        }),
     )
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        obj = form.instance
+        if obj.tip != Akcija.Tip.BUNDLE:
+            return
+        # Ako ima linija — OK; inače traži barem 2 iz M2M
+        if obj.bundle_unit_count() < 2:
+            from django.contrib import messages as django_messages
+            django_messages.warning(
+                request,
+                'Bundle set mora imati ukupno barem 2 komada '
+                '(npr. jedan artikal ×2, ili dva različita ×1).',
+            )
 
     @admin.display(description='Pregled slike')
     def preview_slika(self, obj):

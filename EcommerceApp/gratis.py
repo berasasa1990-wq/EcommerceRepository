@@ -133,48 +133,40 @@ def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1):
 def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
     """
     Pop-up bundle: svi artikli iz seta u korpu s istim % popusta.
-    Smije se dodavati više puta — ista stavka samo povećava količinu (nema limota).
+    Linije s količinom (npr. A×2) se sabiru; set se smije dodavati više puta.
     """
     if akcija.tip != Akcija.Tip.BUNDLE or akcija.popust_postotak is None:
         return None
 
-    quantity = max(1, int(quantity or 1))
+    sets = max(1, int(quantity or 1))
+    rows = akcija.bundle_line_rows()
+    if not rows:
+        # legacy fallback
+        products = akcija.bundle_products()
+        if len(products) < 2:
+            products = []
+            if akcija.artikal_id and akcija.artikal and akcija.artikal.aktivan:
+                products.append(akcija.artikal)
+            if (
+                akcija.gratis_artikal_id
+                and akcija.gratis_artikal
+                and akcija.gratis_artikal.aktivan
+            ):
+                products.append(akcija.gratis_artikal)
+        rows = [{'product': p, 'quantity': 1} for p in products]
 
-    products = akcija.bundle_products()
-    if len(products) < 2:
-        # legacy fallback: artikal + gratis_artikal
-        products = []
-        if akcija.artikal_id and akcija.artikal and akcija.artikal.aktivan:
-            products.append(akcija.artikal)
-        if (
-            akcija.gratis_artikal_id
-            and akcija.gratis_artikal
-            and akcija.gratis_artikal.aktivan
-            and (not products or akcija.gratis_artikal.pk != products[0].pk)
-        ):
-            products.append(akcija.gratis_artikal)
-    if len(products) < 2:
+    unit_total = sum(max(1, int(r.get('quantity') or 1)) for r in rows)
+    if unit_total < 2:
         return None
 
-    added = 0
-    for product in products:
-        # Iste artikle u setu / ponovni klik — cart.add sabira quantity
-        if _add_bundle_discounted_line(cart, akcija, product, quantity=quantity):
-            added += 1
-    if added < 1:
+    added_units = 0
+    for row in rows:
+        product = row['product']
+        line_qty = max(1, int(row.get('quantity') or 1)) * sets
+        if _add_bundle_discounted_line(cart, akcija, product, quantity=line_qty):
+            added_units += line_qty
+    if added_units < 1:
         return None
-    # Ako je barem jedan artikal dodat (npr. drugi nije na stanju), i dalje OK
-    # za ponovno dodavanje istog seta
-    if added < 2 and len(products) >= 2:
-        # Pokušaj još jednom samo one koji nisu prošli nije smislen;
-        # zahtijevaj barem 2 uspješna kad ima 2+ dostupna
-        available = sum(
-            1
-            for p in products
-            if _product_is_available(p, _resolve_product_variation(p))
-        )
-        if available >= 2 and added < 2:
-            return None
     return akcija
 
 

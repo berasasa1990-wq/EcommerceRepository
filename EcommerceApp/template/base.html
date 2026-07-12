@@ -399,7 +399,7 @@
          data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
          data-leave-url="{% url 'live_visitor_leave' %}"
          data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script src="{% static 'js/visitor-presence.js' %}?v=20260712v5" defer></script>
+    <script src="{% static 'js/visitor-presence.js' %}?v=20260712v6" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
     <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260712v1">

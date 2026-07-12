@@ -903,28 +903,75 @@ class Akcija(models.Model):
             return True
         return self.tip in {self.Tip.SLIKA, self.Tip.TIMER, self.Tip.USLOV}
 
+    def bundle_line_rows(self):
+        """
+        Linije seta s količinom (npr. isti artikal 2× za 1+1).
+        Preferira bundle_lines; fallback na stari M2M (qty=1).
+        """
+        if self.tip != self.Tip.BUNDLE or not self.pk:
+            return []
+        lines = list(
+            self.bundle_lines.select_related('product')
+            .filter(product__aktivan=True)
+            .order_by('redoslijed', 'id')
+        )
+        if lines:
+            return [
+                {
+                    'product': line.product,
+                    'quantity': max(1, int(line.quantity or 1)),
+                    'line': line,
+                }
+                for line in lines
+                if line.product_id
+            ]
+        # Legacy M2M
+        return [
+            {'product': p, 'quantity': 1, 'line': None}
+            for p in self.bundle_artikli.filter(aktivan=True).order_by('naziv', 'id')
+        ]
+
+    def bundle_unit_count(self):
+        """Ukupan broj komada u setu (suma količina)."""
+        return sum(int(r['quantity']) for r in self.bundle_line_rows())
+
     def bundle_products(self):
-        """Aktivni artikli u setu."""
+        """
+        Aktivni artikli u setu — prošireno po količini
+        (isti artikal 2× → [A, A] za 1+1 / 2+1).
+        """
         if self.tip != self.Tip.BUNDLE:
             return []
-        return list(
-            self.bundle_artikli.filter(aktivan=True).order_by('naziv', 'id')
-        )
+        expanded = []
+        for row in self.bundle_line_rows():
+            for _ in range(row['quantity']):
+                expanded.append(row['product'])
+        return expanded
 
     def bundle_display_items(self):
-        """Lista {product, bazna, snizena} za template popupa."""
+        """
+        Kartice za popup — 1 red po komadu (qty 2 = dvije kartice istog artikla → 1+1).
+        """
         items = []
-        for p in self.bundle_products():
+        for row in self.bundle_line_rows():
+            p = row['product']
+            qty = max(1, int(row['quantity'] or 1))
             cijene = self.bundle_cijene_za_artikal(p)
             bazna = cijene['bazna'] if cijene else p.prikazna_cijena
             snizena = cijene['snizena'] if cijene else p.prikazna_cijena
-            items.append({
-                'product': p,
-                'bazna': bazna,
-                'snizena': snizena,
-                'has_discount': bool(cijene and cijene['snizena'] < cijene['bazna']),
-                'usteda': (bazna - snizena) if cijene and snizena < bazna else Decimal('0'),
-            })
+            has_discount = bool(cijene and cijene['snizena'] < cijene['bazna'])
+            usteda_one = (
+                (bazna - snizena) if has_discount else Decimal('0')
+            )
+            for _ in range(qty):
+                items.append({
+                    'product': p,
+                    'quantity': 1,
+                    'bazna': bazna,
+                    'snizena': snizena,
+                    'has_discount': has_discount,
+                    'usteda': usteda_one,
+                })
         return items
 
     def bundle_pricing_summary(self):
@@ -933,7 +980,8 @@ class Akcija(models.Model):
         (precrtana suma pojedinačnih cijena vs zelena cijena seta).
         """
         items = self.bundle_display_items()
-        if len(items) < 2:
+        unit_count = len(items)
+        if unit_count < 2:
             return None
         total_bazna = sum((i['bazna'] or Decimal('0')) for i in items)
         total_snizena = sum((i['snizena'] or Decimal('0')) for i in items)
@@ -979,7 +1027,10 @@ class Akcija(models.Model):
             m = re.match(r'^/artikal/([^/]+)$', path)
             if not m:
                 return False
-            return self.bundle_artikli.filter(slug=m.group(1), aktivan=True).exists()
+            slug = m.group(1)
+            if self.bundle_lines.filter(product__slug=slug, product__aktivan=True).exists():
+                return True
+            return self.bundle_artikli.filter(slug=slug, aktivan=True).exists()
 
         if trigger == self.BundleTrigger.TRIGGER_PRODUCT:
             if not self.artikal_id:
@@ -1037,7 +1088,7 @@ class Akcija(models.Model):
         elif self.tip == self.Tip.BUNDLE:
             if self.popust_postotak is None:
                 return False
-            if self.pk and self.bundle_artikli.filter(aktivan=True).count() < 2:
+            if self.pk and self.bundle_unit_count() < 2:
                 return False
             # Trigger je obavezan — bez request-a ne prikazuj (osim delay)
             trigger = (self.bundle_trigger or self.BundleTrigger.DELAY).strip()
@@ -1136,8 +1187,11 @@ class Akcija(models.Model):
         """Originalna i snižena cijena artikla u Pop-up bundle setu."""
         if self.tip != self.Tip.BUNDLE or not product or self.popust_postotak is None:
             return None
-        if self.pk and not self.bundle_artikli.filter(pk=product.pk).exists():
-            return None
+        if self.pk:
+            in_lines = self.bundle_lines.filter(product_id=product.pk).exists()
+            in_m2m = self.bundle_artikli.filter(pk=product.pk).exists()
+            if not in_lines and not in_m2m:
+                return None
         bazna = product.prikazna_cijena
         snizena = _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
         if snizena is None:
@@ -1160,6 +1214,43 @@ class Akcija(models.Model):
     def __str__(self):
         status = 'aktivan' if self.aktivan else 'neaktivan'
         return f'{self.naziv} ({self.get_tip_display()}, {status})'
+
+
+class AkcijaBundleLine(models.Model):
+    """
+    Stavka Pop-up bundle seta s količinom.
+    Isti artikal može više puta (npr. 2× isti = 1+1 / 2+1).
+    """
+    akcija = models.ForeignKey(
+        Akcija,
+        on_delete=models.CASCADE,
+        related_name='bundle_lines',
+        verbose_name='Akcija',
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='akcija_bundle_lines',
+        verbose_name='Artikal',
+    )
+    quantity = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name='Količina u setu',
+        help_text='Npr. 2 = isti artikal dva puta (1+1).',
+    )
+    redoslijed = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name='Redoslijed',
+    )
+
+    class Meta:
+        verbose_name = 'Bundle stavka'
+        verbose_name_plural = 'Bundle stavke'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        naziv = self.product.naziv if self.product_id else '?'
+        return f'{naziv} ×{self.quantity}'
 
 
 class Popup(models.Model):

@@ -514,12 +514,30 @@ def heartbeat_live_visitor(request, body_session_key=''):
 
     updated = LiveVisitor.objects.filter(session_key=session_key).update(**update_fields)
     if not updated:
-        # Nema reda (npr. prvi heartbeat) — full track ako smije
-        if should_track_visitor(request):
-            track_live_visitor(request)
-            updated = LiveVisitor.objects.filter(session_key=session_key).exists()
+        # Nema reda (incognito / prvi ping) — kreiraj da staff odmah vidi live
+        page_label = (update_fields.get('trenutno_gleda') or 'Na sajtu')[:200]
+        page_path = (update_fields.get('trenutna_putanja') or '/')[:300]
+        try:
+            LiveVisitor.objects.create(
+                session_key=session_key,
+                user=user if user and getattr(user, 'is_authenticated', False) else None,
+                ime=_display_name(user)[:120] if user else 'Gost',
+                email=_display_email(user)[:254] if user else '',
+                grad='',
+                drzava=BOSNIA_HERZEGOVINA_COUNTRY_CODE,
+                ip_adresa=get_client_ip(request) or None,
+                trenutna_putanja=page_path,
+                trenutno_gleda=page_label,
+                last_seen=now,
+            )
+            updated = True
+        except Exception:
+            # Race: drugi request kreirao red
+            updated = bool(
+                LiveVisitor.objects.filter(session_key=session_key).update(**update_fields)
+            )
     touch_visitor_presence(session_key)
-    # Staff toast odmah (ne čekaj 1 min)
+    # Staff toast odmah
     if updated or session_key:
         maybe_notify_visitor_online(session_key)
     return bool(updated) or bool(session_key)
@@ -641,20 +659,45 @@ def track_live_visitor(request):
         return
 
     ip = get_client_ip(request)
-    if is_known_foreign_visitor(request, ip=ip):
-        LiveVisitor.objects.filter(session_key=session_key).delete()
-        return
+    from .visitor_geo import _is_public_ip
 
+    # Lokalni / privatni IP (dev, LAN) — uvijek prati kao BA
+    is_local_ip = not _is_public_ip(ip)
     user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
     now = timezone.now()
-    country = (resolve_visitor_country(request, ip=ip) or '').strip().upper()
-    if country and country != BOSNIA_HERZEGOVINA_COUNTRY_CODE:
-        LiveVisitor.objects.filter(session_key=session_key).delete()
-        return
+
+    if not is_local_ip:
+        if is_known_foreign_visitor(request, ip=ip):
+            # Strani javni IP — ne prikazuj u BA live listi
+            LiveVisitor.objects.filter(session_key=session_key).delete()
+            return
+        country = (resolve_visitor_country(request, ip=ip) or '').strip().upper()
+        if country and country != BOSNIA_HERZEGOVINA_COUNTRY_CODE:
+            LiveVisitor.objects.filter(session_key=session_key).delete()
+            return
+    else:
+        country = BOSNIA_HERZEGOVINA_COUNTRY_CODE
 
     # Poll / heartbeat / AJAX — samo last_seen, NE mijenjaj „Sada:” niti istoriju gledanja
     if is_background_request_path(getattr(request, 'path', '') or ''):
-        LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+        updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+        if not updated:
+            # Heartbeat prije page tracka — kreiraj red
+            try:
+                LiveVisitor.objects.create(
+                    session_key=session_key,
+                    user=user,
+                    ime=_display_name(user)[:120],
+                    email=_display_email(user)[:254],
+                    grad='',
+                    drzava=BOSNIA_HERZEGOVINA_COUNTRY_CODE,
+                    ip_adresa=ip or None,
+                    trenutna_putanja='/',
+                    trenutno_gleda='Na sajtu',
+                    last_seen=now,
+                )
+            except Exception:
+                LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
         touch_visitor_presence(session_key)
         if not (user and getattr(user, 'is_superuser', False)):
             maybe_notify_visitor_online(session_key)

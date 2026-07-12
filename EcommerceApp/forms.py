@@ -119,10 +119,7 @@ class AkcijaAdminForm(forms.ModelForm):
                 self.add_error('artikal', 'Odaberite trigger artikal.')
             if trigger == Akcija.BundleTrigger.CATEGORY and not cleaned.get('kategorija'):
                 self.add_error('kategorija', 'Odaberite trigger kategoriju.')
-            # M2M se validira u clean() instance; na create bez pk koristimo form data
-            bundle = cleaned.get('bundle_artikli')
-            if bundle is not None and len(list(bundle)) < 2:
-                self.add_error('bundle_artikli', 'Odaberite barem 2 artikla za set.')
+            # Validacija linija (qty) ili legacy M2M — u ModelAdmin.save_related
 
         return cleaned
 
