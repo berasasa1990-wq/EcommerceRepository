@@ -389,13 +389,13 @@ class AkcijaBundleLineInline(admin.TabularInline):
     extra = 2
     min_num = 0
     autocomplete_fields = ('product',)
-    fields = ('product', 'quantity', 'redoslijed')
+    fields = ('product', 'quantity', 'popust_postotak', 'redoslijed')
     ordering = ('redoslijed', 'id')
     verbose_name = 'Stavka seta'
     verbose_name_plural = (
-        'BUNDLE SET (obavezno) — artikal + količina. '
-        'Primjer 1+1: jedan artikal, količina 2. '
-        'Primjer A+B: dva reda, količina 1.'
+        'BUNDLE SET — artikal + količina (+ opcionalno % samo za taj artikal). '
+        'Količina 2 = jedna slika ×2 u popup-u. '
+        'Prazan % na liniji = koristi % kompletnog seta.'
     )
 
     def get_formset(self, request, obj=None, **kwargs):

@@ -112,13 +112,26 @@ def apply_gratis_bundle_from_popup(cart, akcija, *, quantity=1):
     return akcija
 
 
-def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1):
-    """Dodaj artikal iz Pop-up bundle seta s % popustom."""
+def _bundle_line_discounted_price(akcija, product, variation=None, *, popust_postotak=None):
+    """Cijena s % — linija (po artiklu) ili set."""
+    prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
+    pct = popust_postotak if popust_postotak is not None else akcija.popust_postotak
+    if pct is None:
+        return prikazna
+    from .models import _izracunaj_akcijsku_od_postotka
+    snizena = _izracunaj_akcijsku_od_postotka(prikazna, pct)
+    return snizena if snizena is not None else prikazna
+
+
+def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1, popust_postotak=None):
+    """Dodaj artikal iz Pop-up bundle seta s % popustom (set ili po liniji)."""
     variation = _resolve_product_variation(product)
     if not _product_is_available(product, variation):
         return False
     prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
-    discounted = _gratis_discounted_price(akcija, product, variation)
+    discounted = _bundle_line_discounted_price(
+        akcija, product, variation, popust_postotak=popust_postotak,
+    )
     cart.add(
         product,
         variation=variation,
@@ -132,16 +145,15 @@ def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1):
 
 def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
     """
-    Pop-up bundle: svi artikli iz seta u korpu s istim % popusta.
-    Linije s količinom (npr. A×2) se sabiru; set se smije dodavati više puta.
+    Pop-up bundle: artikli iz seta u korpu.
+    % po liniji (ako uneseno) inače % seta; qty na liniji se sabira.
     """
-    if akcija.tip != Akcija.Tip.BUNDLE or akcija.popust_postotak is None:
+    if akcija.tip != Akcija.Tip.BUNDLE:
         return None
 
     sets = max(1, int(quantity or 1))
     rows = akcija.bundle_line_rows()
     if not rows:
-        # legacy fallback
         products = akcija.bundle_products()
         if len(products) < 2:
             products = []
@@ -153,17 +165,33 @@ def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
                 and akcija.gratis_artikal.aktivan
             ):
                 products.append(akcija.gratis_artikal)
-        rows = [{'product': p, 'quantity': 1} for p in products]
+        rows = [
+            {'product': p, 'quantity': 1, 'popust_postotak': akcija.popust_postotak}
+            for p in products
+        ]
 
     unit_total = sum(max(1, int(r.get('quantity') or 1)) for r in rows)
     if unit_total < 2:
+        return None
+
+    # Mora postojati barem jedan % (set ili linija)
+    has_any_pct = akcija.popust_postotak is not None or any(
+        r.get('popust_postotak') is not None for r in rows
+    )
+    if not has_any_pct:
         return None
 
     added_units = 0
     for row in rows:
         product = row['product']
         line_qty = max(1, int(row.get('quantity') or 1)) * sets
-        if _add_bundle_discounted_line(cart, akcija, product, quantity=line_qty):
+        if _add_bundle_discounted_line(
+            cart,
+            akcija,
+            product,
+            quantity=line_qty,
+            popust_postotak=row.get('popust_postotak'),
+        ):
             added_units += line_qty
     if added_units < 1:
         return None

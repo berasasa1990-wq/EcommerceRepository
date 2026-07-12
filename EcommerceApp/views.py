@@ -1366,13 +1366,17 @@ def add_to_cart(request, slug):
                 pk=akcija_id,
                 aktivan=True,
                 tip=Akcija.Tip.BUNDLE,
-                popust_postotak__isnull=False,
             )
             .filter(
                 Q(bundle_artikli=product)
                 | Q(bundle_lines__product=product)
                 | Q(artikal_id=product.pk)
                 | Q(gratis_artikal_id=product.pk)
+            )
+            .filter(
+                # % na setu ili barem na jednoj liniji
+                Q(popust_postotak__isnull=False)
+                | Q(bundle_lines__popust_postotak__isnull=False)
             )
             .prefetch_related('bundle_artikli', 'bundle_lines__product')
             .select_related('gratis_artikal', 'artikal')

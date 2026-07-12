@@ -802,7 +802,10 @@ class Akcija(models.Model):
         null=True,
         blank=True,
         verbose_name='Popust (%)',
-        help_text='Za Pop-up bundle: % sniženja na kompletan set (svaki artikal u setu).',
+        help_text=(
+            'Pop-up bundle: % na cijeli set (ako linija nema svoj %). '
+            'Za % samo na jedan artikal — unesi „Popust % (samo ovaj artikal)” na bundle stavci.'
+        ),
     )
     prag_korpe_km = models.DecimalField(
         max_digits=10,
@@ -905,7 +908,7 @@ class Akcija(models.Model):
 
     def bundle_line_rows(self):
         """
-        Linije seta s količinom (npr. isti artikal 2× za 1+1).
+        Linije seta s količinom i opcionalnim % po artiklu.
         Preferira bundle_lines; fallback na stari M2M (qty=1).
         """
         if self.tip != self.Tip.BUNDLE or not self.pk:
@@ -921,13 +924,20 @@ class Akcija(models.Model):
                     'product': line.product,
                     'quantity': max(1, int(line.quantity or 1)),
                     'line': line,
+                    'popust_postotak': line.effective_discount_percent(self),
                 }
                 for line in lines
                 if line.product_id
             ]
         # Legacy M2M
+        default_pct = self.popust_postotak
         return [
-            {'product': p, 'quantity': 1, 'line': None}
+            {
+                'product': p,
+                'quantity': 1,
+                'line': None,
+                'popust_postotak': default_pct,
+            }
             for p in self.bundle_artikli.filter(aktivan=True).order_by('naziv', 'id')
         ]
 
@@ -938,7 +948,7 @@ class Akcija(models.Model):
     def bundle_products(self):
         """
         Aktivni artikli u setu — prošireno po količini
-        (isti artikal 2× → [A, A] za 1+1 / 2+1).
+        (isti artikal 2× → [A, A] za korpu).
         """
         if self.tip != self.Tip.BUNDLE:
             return []
@@ -950,28 +960,37 @@ class Akcija(models.Model):
 
     def bundle_display_items(self):
         """
-        Kartice za popup — 1 red po komadu (qty 2 = dvije kartice istog artikla → 1+1).
+        Kartice za popup — 1 kartica po liniji (isti artikal qty 2 = jedna slika + ×2).
         """
         items = []
         for row in self.bundle_line_rows():
             p = row['product']
             qty = max(1, int(row['quantity'] or 1))
-            cijene = self.bundle_cijene_za_artikal(p)
+            pct = row.get('popust_postotak')
+            cijene = self.bundle_cijene_za_artikal(p, popust_postotak=pct)
             bazna = cijene['bazna'] if cijene else p.prikazna_cijena
             snizena = cijene['snizena'] if cijene else p.prikazna_cijena
             has_discount = bool(cijene and cijene['snizena'] < cijene['bazna'])
-            usteda_one = (
-                (bazna - snizena) if has_discount else Decimal('0')
-            )
-            for _ in range(qty):
-                items.append({
-                    'product': p,
-                    'quantity': 1,
-                    'bazna': bazna,
-                    'snizena': snizena,
-                    'has_discount': has_discount,
-                    'usteda': usteda_one,
-                })
+            usteda_one = (bazna - snizena) if has_discount else Decimal('0')
+            pct_label = ''
+            if pct is not None:
+                try:
+                    pct_d = Decimal(str(pct))
+                    pct_label = str(int(pct_d)) if pct_d == int(pct_d) else str(pct_d)
+                except Exception:
+                    pct_label = str(pct)
+            items.append({
+                'product': p,
+                'quantity': qty,
+                'bazna': bazna,
+                'snizena': snizena,
+                'line_bazna': (bazna * qty).quantize(Decimal('0.01')) if bazna is not None else bazna,
+                'line_snizena': (snizena * qty).quantize(Decimal('0.01')) if snizena is not None else snizena,
+                'has_discount': has_discount,
+                'usteda': (usteda_one * qty).quantize(Decimal('0.01')),
+                'pct_label': pct_label,
+                'popust_postotak': pct,
+            })
         return items
 
     def bundle_pricing_summary(self):
@@ -980,25 +999,55 @@ class Akcija(models.Model):
         (precrtana suma pojedinačnih cijena vs zelena cijena seta).
         """
         items = self.bundle_display_items()
-        unit_count = len(items)
+        unit_count = sum(int(i.get('quantity') or 1) for i in items)
+        if unit_count < 2 and len(items) < 1:
+            return None
         if unit_count < 2:
             return None
-        total_bazna = sum((i['bazna'] or Decimal('0')) for i in items)
-        total_snizena = sum((i['snizena'] or Decimal('0')) for i in items)
+        total_bazna = sum(
+            (i['bazna'] or Decimal('0')) * int(i.get('quantity') or 1) for i in items
+        )
+        total_snizena = sum(
+            (i['snizena'] or Decimal('0')) * int(i.get('quantity') or 1) for i in items
+        )
         usteda = total_bazna - total_snizena
         if usteda < 0:
             usteda = Decimal('0')
-        pct = self.popust_postotak
+        # Ribbon: jedan % ako svi isti, inače „do X%” ili set-level
+        pcts = []
+        for i in items:
+            raw = i.get('popust_postotak')
+            if raw is None:
+                continue
+            try:
+                pcts.append(Decimal(str(raw)))
+            except Exception:
+                continue
         pct_label = ''
-        if pct is not None:
+        if pcts:
+            uniq = {p.quantize(Decimal('0.01')) for p in pcts}
+            if len(uniq) == 1:
+                p = next(iter(uniq))
+                pct_label = str(int(p)) if p == int(p) else str(p)
+            else:
+                pmax = max(uniq)
+                pct_label = f'do {int(pmax) if pmax == int(pmax) else pmax}'
+        elif self.popust_postotak is not None:
+            pct = self.popust_postotak
             pct_label = str(int(pct)) if pct == int(pct) else str(pct)
+        per_product = any(
+            getattr(r.get('line'), 'popust_postotak', None) is not None
+            for r in self.bundle_line_rows()
+        )
         return {
-            'count': len(items),
+            'count': unit_count,
+            'line_count': len(items),
             'total_bazna': total_bazna.quantize(Decimal('0.01')),
             'total_snizena': total_snizena.quantize(Decimal('0.01')),
             'usteda': usteda.quantize(Decimal('0.01')),
             'pct_label': pct_label,
             'has_discount': usteda > 0,
+            'per_product_discount': per_product,
         }
 
     def _category_matches_root(self, category, root_id):
@@ -1086,7 +1135,13 @@ class Akcija(models.Model):
             if not self.artikal_id or not self.gratis_artikal_id or self.popust_postotak is None:
                 return False
         elif self.tip == self.Tip.BUNDLE:
-            if self.popust_postotak is None:
+            # Mora postojati % na setu ili na barem jednoj liniji
+            has_set_pct = self.popust_postotak is not None
+            has_line_pct = (
+                self.pk
+                and self.bundle_lines.filter(popust_postotak__isnull=False).exists()
+            )
+            if not has_set_pct and not has_line_pct:
                 return False
             if self.pk and self.bundle_unit_count() < 2:
                 return False
@@ -1183,23 +1238,26 @@ class Akcija(models.Model):
             'pct': self.popust_postotak,
         }
 
-    def bundle_cijene_za_artikal(self, product):
-        """Originalna i snižena cijena artikla u Pop-up bundle setu."""
-        if self.tip != self.Tip.BUNDLE or not product or self.popust_postotak is None:
+    def bundle_cijene_za_artikal(self, product, *, popust_postotak=None):
+        """Originalna i snižena cijena artikla u Pop-up bundle setu (% po liniji ili set)."""
+        if self.tip != self.Tip.BUNDLE or not product:
             return None
         if self.pk:
             in_lines = self.bundle_lines.filter(product_id=product.pk).exists()
             in_m2m = self.bundle_artikli.filter(pk=product.pk).exists()
             if not in_lines and not in_m2m:
                 return None
+        pct = popust_postotak if popust_postotak is not None else self.popust_postotak
+        if pct is None:
+            return None
         bazna = product.prikazna_cijena
-        snizena = _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
+        snizena = _izracunaj_akcijsku_od_postotka(bazna, pct)
         if snizena is None:
             return None
         return {
             'bazna': bazna,
             'snizena': snizena,
-            'pct': self.popust_postotak,
+            'pct': pct,
         }
 
     def get_link_href(self):
@@ -1218,8 +1276,8 @@ class Akcija(models.Model):
 
 class AkcijaBundleLine(models.Model):
     """
-    Stavka Pop-up bundle seta s količinom.
-    Isti artikal može više puta (npr. 2× isti = 1+1 / 2+1).
+    Stavka Pop-up bundle seta s količinom i opcionalnim % po artiklu.
+    Isti artikal qty 2+ = jedna slika ×2 u popup-u.
     """
     akcija = models.ForeignKey(
         Akcija,
@@ -1236,7 +1294,18 @@ class AkcijaBundleLine(models.Model):
     quantity = models.PositiveSmallIntegerField(
         default=1,
         verbose_name='Količina u setu',
-        help_text='Npr. 2 = isti artikal dva puta (1+1).',
+        help_text='Npr. 2 = isti artikal ×2 (1+1). U popup-u: jedna slika + ×2.',
+    )
+    popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust % (samo ovaj artikal)',
+        help_text=(
+            'Opcionalno. Ako uneseš — važi samo za ovaj artikal. '
+            'Prazno = koristi % kompletnog seta iz akcije.'
+        ),
     )
     redoslijed = models.PositiveSmallIntegerField(
         default=0,
@@ -1248,9 +1317,18 @@ class AkcijaBundleLine(models.Model):
         verbose_name_plural = 'Bundle stavke'
         ordering = ['redoslijed', 'id']
 
+    def effective_discount_percent(self, akcija=None):
+        """% za ovu liniju: linija > set."""
+        if self.popust_postotak is not None:
+            return self.popust_postotak
+        akcija = akcija or self.akcija
+        return getattr(akcija, 'popust_postotak', None)
+
     def __str__(self):
         naziv = self.product.naziv if self.product_id else '?'
-        return f'{naziv} ×{self.quantity}'
+        pct = self.popust_postotak
+        extra = f', -{pct}%' if pct is not None else ''
+        return f'{naziv} ×{self.quantity}{extra}'
 
 
 class Popup(models.Model):

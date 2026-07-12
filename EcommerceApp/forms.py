@@ -112,14 +112,12 @@ class AkcijaAdminForm(forms.ModelForm):
                 self.add_error('gratis_artikal', 'Gratis artikal mora biti različit od trigger artikla.')
 
         elif tip == Akcija.Tip.BUNDLE:
-            if cleaned.get('popust_postotak') in (None, ''):
-                self.add_error('popust_postotak', 'Unesite % popusta na kompletan set.')
+            # % na setu nije obavezan ako linije imaju svoj % (validacija u inline)
             trigger = cleaned.get('bundle_trigger') or Akcija.BundleTrigger.DELAY
             if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and not cleaned.get('artikal'):
                 self.add_error('artikal', 'Odaberite trigger artikal.')
             if trigger == Akcija.BundleTrigger.CATEGORY and not cleaned.get('kategorija'):
                 self.add_error('kategorija', 'Odaberite trigger kategoriju.')
-            # Validacija linija (qty) ili legacy M2M — u ModelAdmin.save_related
 
         return cleaned
 

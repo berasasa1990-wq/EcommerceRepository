@@ -122,10 +122,10 @@
         </div>
 
         {% elif akcija.tip == 'bundle' %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260712v10">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260712v11">
         {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary unit_count=akcija.bundle_unit_count %}
-        {# Svaki komad = kartica (qty 2 = dvije kartice +) — unit_count ≥ 2 #}
-        {% if unit_count >= 2 and bundle_items|length >= 2 %}
+        {# Jedna kartica po liniji; qty≥2 → badge ×2/×3 (ne dupla slika). unit_count ≥ 2 #}
+        {% if unit_count >= 2 and bundle_items %}
         <div class="site-popup-akcija site-popup-bundle-pack">
             <div class="bundle-pack-ribbon bundle-pack-ribbon--left" aria-hidden="true">
                 {% if pricing and pricing.pct_label %}
@@ -144,7 +144,7 @@
                 {% endif %}
             </h3>
             <p class="bundle-pack-sub">
-                {% if unit_count == 2 %}
+                {% if unit_count == 2 and bundle_items|length == 1 %}
                 1+1 set — 2 komada · jeftinije nego zasebno
                 {% else %}
                 {{ unit_count }} kom. u setu — da se kupi zasebno košta više
@@ -165,7 +165,7 @@
             </div>
             {% endif %}
 
-            <div class="bundle-pack-row">
+            <div class="bundle-pack-row{% if bundle_items|length == 1 %} bundle-pack-row--single{% endif %}">
                 {% for item in bundle_items %}
                 <article class="bundle-pack-card">
                     <div class="bundle-pack-card-img">
@@ -176,19 +176,36 @@
                         {% else %}
                         <span class="bundle-pack-card-ph" aria-hidden="true">📦</span>
                         {% endif %}
-                        {% if item.has_discount and pricing.pct_label %}
-                        <span class="bundle-pack-card-badge">-{{ pricing.pct_label }}%</span>
+                        {% if item.quantity > 1 %}
+                        <span class="bundle-pack-card-qty" aria-label="{{ item.quantity }} komada">×{{ item.quantity }}</span>
+                        {% endif %}
+                        {% if item.has_discount and item.pct_label %}
+                        <span class="bundle-pack-card-badge">-{{ item.pct_label }}%</span>
                         {% endif %}
                     </div>
-                    <p class="bundle-pack-card-name">{{ item.product.naziv }}</p>
-                    <p class="bundle-pack-card-price">
-                        {% if item.has_discount %}
-                        <span class="bundle-pack-was">{{ item.bazna }} KM</span>
-                        <span class="bundle-pack-now">{{ item.snizena }} KM</span>
-                        {% else %}
-                        <span class="bundle-pack-now">{{ item.bazna }} KM</span>
+                    <p class="bundle-pack-card-name">
+                        {{ item.product.naziv }}
+                        {% if item.quantity > 1 %}
+                        <span class="bundle-pack-card-qty-text">×{{ item.quantity }}</span>
                         {% endif %}
                     </p>
+                    <p class="bundle-pack-card-price">
+                        {% if item.has_discount %}
+                        <span class="bundle-pack-was">
+                            {% if item.quantity > 1 %}{{ item.line_bazna }}{% else %}{{ item.bazna }}{% endif %} KM
+                        </span>
+                        <span class="bundle-pack-now">
+                            {% if item.quantity > 1 %}{{ item.line_snizena }}{% else %}{{ item.snizena }}{% endif %} KM
+                        </span>
+                        {% else %}
+                        <span class="bundle-pack-now">
+                            {% if item.quantity > 1 %}{{ item.line_bazna }}{% else %}{{ item.bazna }}{% endif %} KM
+                        </span>
+                        {% endif %}
+                    </p>
+                    {% if item.quantity > 1 and item.has_discount %}
+                    <p class="bundle-pack-card-unit">{{ item.snizena }} KM / kom</p>
+                    {% endif %}
                 </article>
                 {% if not forloop.last %}
                 <div class="bundle-pack-plus" aria-hidden="true">+</div>

@@ -239,26 +239,47 @@
   box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
 }
 
+.bundle-pack-row--single {
+  justify-content: center;
+}
+
+.bundle-pack-row--single .bundle-pack-card {
+  max-width: 220px;
+  flex: 0 1 220px;
+}
+
 .bundle-pack-card-qty {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 8px;
+  right: 8px;
   z-index: 2;
-  min-width: 28px;
-  padding: 3px 7px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
   border-radius: 999px;
-  background: #0f172a;
+  background: linear-gradient(180deg, #22c55e, #15803d);
   color: #fff;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 900;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.45);
+  border: 2px solid #fff;
 }
 
 .bundle-pack-card-qty-text {
   color: #15803d;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.bundle-pack-card-unit {
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
 }
 
 .bundle-pack-card-name {
