@@ -1347,9 +1347,11 @@ def add_to_cart(request, slug):
     from .gratis import (
         _add_discounted_gratis_line,
         apply_gratis_bundle_from_popup,
+        apply_popup_bundle_from_popup,
         build_gratis_choice_message,
         build_gratis_offer_response,
         build_gratis_popup_message,
+        build_popup_bundle_message,
         get_active_gratis_akcija_for_product,
     )
 
@@ -1358,6 +1360,59 @@ def add_to_cart(request, slug):
 
     akcija_id = request.POST.get('akcija_id', '').strip()
     if akcija_id:
+        # Pop-up bundle: set artikala s istim % (submit s bilo kojim slugom iz seta)
+        popup_bundle_akcija = (
+            Akcija.objects.filter(
+                pk=akcija_id,
+                aktivan=True,
+                tip=Akcija.Tip.BUNDLE,
+                popust_postotak__isnull=False,
+            )
+            .filter(
+                Q(bundle_artikli=product)
+                | Q(artikal_id=product.pk)
+                | Q(gratis_artikal_id=product.pk)
+            )
+            .prefetch_related('bundle_artikli')
+            .select_related('gratis_artikal', 'artikal')
+            .distinct()
+            .first()
+        )
+        if popup_bundle_akcija and popup_bundle_akcija.jos_traje():
+            bundle_result = apply_popup_bundle_from_popup(
+                cart, popup_bundle_akcija, quantity=quantity,
+            )
+            if bundle_result:
+                cart.clear_coupon()
+                message = build_popup_bundle_message(popup_bundle_akcija)
+                add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
+                track_add_to_cart(
+                    request,
+                    product,
+                    variation=variation,
+                    quantity=quantity,
+                    event_id=add_to_cart_event_id,
+                )
+                _check_and_set_pending_upsell(request, product)
+                if stay_on_page:
+                    return JsonResponse({
+                        'ok': True,
+                        'message': message,
+                        'cart_count': len(cart),
+                        'upsell_html': '',
+                        'meta_add_to_cart': {
+                            'event_id': add_to_cart_event_id,
+                            'content_id': product.sifra or str(product.pk),
+                            'content_name': product.naziv,
+                            'value': float(
+                                (variation.prikazna_cijena if variation else product.prikazna_cijena)
+                                * quantity
+                            ),
+                        },
+                    })
+                messages.success(request, message)
+                return redirect('cart')
+
         gratis_bundle_akcija = Akcija.objects.filter(
             pk=akcija_id,
             aktivan=True,
@@ -2218,7 +2273,13 @@ def register(request):
                     fail_silently=False,
                 )
 
-                if reg_reward:
+                if reg_reward and reg_reward.get('percent'):
+                    messages.success(
+                        request,
+                        f'Nalog je kreiran. Aktivirajte ga preko emaila — '
+                        f'zatim imate {reg_reward["percent"]}% popusta na prvu narudžbu.',
+                    )
+                elif reg_reward:
                     messages.success(
                         request,
                         'Nalog je kreiran. Aktivirajte ga preko emaila — '
@@ -2229,7 +2290,14 @@ def register(request):
                         request,
                         'Nalog je uspješno kreiran. Provjerite vaš email za aktivacioni link.',
                     )
-                return redirect('login')
+                # Nagradna igra: ako je došao preko „Registruj se i igraj”, zadrži flag
+                try:
+                    from .online_gift import SESSION_AFTER_AUTH_KEY, mark_gift_registration_intent
+                    if request.session.get(SESSION_AFTER_AUTH_KEY):
+                        mark_gift_registration_intent(request)
+                except Exception:
+                    pass
+                return redirect(f"{reverse('login')}?next=/")
 
     context = {
         **_base_context(),
@@ -2279,6 +2347,12 @@ def login_view(request):
                 osiguraj_loyalty_karticu(form.user)
                 from .live_visitor_offer import get_active_registration_reward_coupon
                 reg_coupon = get_active_registration_reward_coupon(form.user)
+                play_gift_after = False
+                try:
+                    from .online_gift import should_play_gift_after_auth
+                    play_gift_after = should_play_gift_after_auth(request)
+                except Exception:
+                    play_gift_after = False
                 if reg_coupon:
                     pct = reg_coupon.postotak
                     pct_label = int(pct) if pct == int(pct) else pct
@@ -2287,9 +2361,17 @@ def login_view(request):
                         f'Uspješno ste se prijavili. Imate {pct_label}% popusta '
                         f'na prvu narudžbu — automatski se primjenjuje u korpi.',
                     )
+                elif play_gift_after:
+                    messages.success(
+                        request,
+                        'Uspješno ste se prijavili — sada možete odigrati nagradnu igru!',
+                    )
                 else:
                     messages.success(request, 'Uspješno ste se prijavili.')
                 redirect_to = request.POST.get('next') or next_url
+                # Poslije nagrade-registracije vodi na početnu da se popup odmah prikaže
+                if play_gift_after and (not redirect_to or redirect_to.startswith('/nalog')):
+                    redirect_to = '/'
                 if redirect_to and redirect_to.startswith('/'):
                     return redirect(redirect_to)
                 return redirect('account')

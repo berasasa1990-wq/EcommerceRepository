@@ -4,8 +4,9 @@
     }
 
     const pollUrl = '/ponuda/status/';
-    const pollIntervalMs = 2500;
+    const pollIntervalMs = 1000;
     const LIVE_OFFER_ACTIVE_KEY = 'live_offer_active_session';
+    const pageLoadedAt = Date.now();
     let lastOfferVersion = null;
     let activeOffer = null;
     let overlay = null;
@@ -289,13 +290,20 @@
     }
 
     function buildRegistrationOverlayHtml(offer) {
+        const pct = offer.discount_percent;
         const benefits = (offer.benefits && offer.benefits.length)
             ? offer.benefits
-            : [
-                'Besplatna dostava na prvu narudžbu',
-                'Automatski se primjenjuje u korpi',
-                'Vrijedi samo jednom — nakon porudžbe prestaje',
-            ];
+            : (pct
+                ? [
+                    pct + '% popusta na prvu narudžbu',
+                    'Automatski se primjenjuje u korpi',
+                    'Vrijedi samo jednom — nakon porudžbe prestaje',
+                ]
+                : [
+                    'Besplatna dostava na prvu narudžbu',
+                    'Automatski se primjenjuje u korpi',
+                    'Vrijedi samo jednom — nakon porudžbe prestaje',
+                ]);
         const benefitsHtml = benefits.map(function (item) {
             return '<li>' + escapeHtml(item) + '</li>';
         }).join('');
@@ -412,12 +420,27 @@
         );
     }
 
+    function isMobileViewport() {
+        try {
+            return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+        } catch (err) {
+            return window.innerWidth <= 768;
+        }
+    }
+
     function buildBrowseInterestOverlayHtml(offer) {
-        const products = offer.products || [];
+        // Mobilni: max 2 artikla radi preglednosti (desktop do 4)
+        let products = offer.products || [];
+        if (isMobileViewport() && products.length > 2) {
+            products = products.slice(0, 2);
+        }
         const cardsHtml = products.map(function (product) {
             return buildBrowseProductCard(product, offer);
         }).join('');
         const multiClass = products.length > 1 ? ' live-offer-popup--browse-multi' : '';
+        const gridClass = products.length <= 2
+            ? 'browse-offer-grid browse-offer-grid--1x2'
+            : 'browse-offer-grid browse-offer-grid--2x2';
 
         return (
             '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
@@ -437,7 +460,7 @@
             escapeHtml(offer.title || 'Specijalna ponuda za vas') + '</h3>' +
             '<p class="live-offer-reg-message browse-offer-message">' +
             escapeHtml(offer.message || '') + '</p>' +
-            '<div class="browse-offer-grid browse-offer-grid--2x2" data-browse-count="' + products.length + '">' +
+            '<div class="' + gridClass + '" data-browse-count="' + products.length + '">' +
             cardsHtml +
             '</div></div></div></div>'
         );
@@ -704,8 +727,15 @@
 
     async function pollOffer() {
         try {
-            const response = await fetch(pollUrl, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            const welcomeElapsed = Math.max(0, (Date.now() - pageLoadedAt) / 1000);
+            const url = pollUrl +
+                (pollUrl.indexOf('?') >= 0 ? '&' : '?') +
+                'welcome_elapsed=' + encodeURIComponent(welcomeElapsed.toFixed(2));
+            const response = await fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-Viewport-Mobile': isMobileViewport() ? '1' : '0',
+                },
                 credentials: 'same-origin',
             });
             if (!response.ok) return;

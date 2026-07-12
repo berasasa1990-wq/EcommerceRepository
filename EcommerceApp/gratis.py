@@ -112,6 +112,67 @@ def apply_gratis_bundle_from_popup(cart, akcija, *, quantity=1):
     return akcija
 
 
+def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1):
+    """Dodaj artikal iz Pop-up bundle seta s % popustom."""
+    variation = _resolve_product_variation(product)
+    if not _product_is_available(product, variation):
+        return False
+    prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
+    discounted = _gratis_discounted_price(akcija, product, variation)
+    cart.add(
+        product,
+        variation=variation,
+        quantity=quantity,
+        custom_price=discounted,
+        promo_bazna=prikazna,
+        gratis_akcija_id=akcija.id,
+    )
+    return True
+
+
+def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
+    """Pop-up bundle: svi artikli iz seta u korpu s istim % popusta."""
+    if akcija.tip != Akcija.Tip.BUNDLE or akcija.popust_postotak is None:
+        return None
+
+    products = akcija.bundle_products()
+    if len(products) < 2:
+        # legacy fallback: artikal + gratis_artikal
+        products = []
+        if akcija.artikal_id and akcija.artikal and akcija.artikal.aktivan:
+            products.append(akcija.artikal)
+        if (
+            akcija.gratis_artikal_id
+            and akcija.gratis_artikal
+            and akcija.gratis_artikal.aktivan
+            and (not products or akcija.gratis_artikal.pk != products[0].pk)
+        ):
+            products.append(akcija.gratis_artikal)
+    if len(products) < 2:
+        return None
+
+    added = 0
+    for product in products:
+        if _add_bundle_discounted_line(cart, akcija, product, quantity=quantity):
+            added += 1
+    if added < 2:
+        return None
+    return akcija
+
+
+def build_popup_bundle_message(akcija):
+    products = akcija.bundle_products()
+    if len(products) < 2:
+        products = [p for p in (akcija.artikal, akcija.gratis_artikal) if p]
+    if len(products) < 2:
+        return 'Set je dodan u korpu.'
+    pct = format_gratis_pct(akcija)
+    names = ' + '.join(f'„{p.naziv}”' for p in products[:6])
+    if len(products) > 6:
+        names += '…'
+    return f'Set {names} je dodan u korpu ({pct}% popusta na kompletan set).'
+
+
 def format_gratis_pct(akcija):
     pct = akcija.popust_postotak
     if pct is None:

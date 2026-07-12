@@ -11174,6 +11174,14 @@ button.nav-action-link {
     grid-template-columns: 1fr 1fr;
 }
 
+.browse-offer-grid--1x2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.browse-offer-grid--2x2 {
+    grid-template-columns: 1fr 1fr;
+}
+
 .live-offer-popup--browse-multi .browse-offer-grid,
 .browse-offer-grid[data-browse-count="2"],
 .browse-offer-grid[data-browse-count="3"],
@@ -11185,6 +11193,30 @@ button.nav-action-link {
     grid-template-columns: 1fr;
     max-width: 220px;
     margin: 0 auto;
+}
+
+/* Mobilni: 2 artikla — veće kartice, preglednije */
+@media (max-width: 768px) {
+    .browse-offer-grid--1x2,
+    .browse-offer-grid[data-browse-count="2"] {
+        gap: 10px;
+    }
+
+    .browse-offer-grid--1x2 .browse-offer-card-name,
+    .browse-offer-grid[data-browse-count="2"] .browse-offer-card-name {
+        font-size: 12.5px;
+    }
+
+    .browse-offer-grid--1x2 .browse-offer-card-prices .live-offer-price-final,
+    .browse-offer-grid[data-browse-count="2"] .browse-offer-card-prices .live-offer-price-final {
+        font-size: 14px;
+    }
+
+    .browse-offer-grid--1x2 .browse-offer-cta,
+    .browse-offer-grid[data-browse-count="2"] .browse-offer-cta {
+        min-height: 42px;
+        font-size: 12.5px !important;
+    }
 }
 
 .browse-offer-card {
@@ -11312,15 +11344,116 @@ button.nav-action-link {
     font-size: 13px;
 }
 
-@media (max-width: 380px) {
+/* Live offer + browse — mobilni */
+@media (max-width: 768px) {
+    .live-offer-overlay.site-popup-overlay,
+    .site-popup-overlay.live-offer-overlay {
+        padding: max(10px, env(safe-area-inset-top, 0px))
+            max(10px, env(safe-area-inset-right, 0px))
+            max(12px, env(safe-area-inset-bottom, 0px))
+            max(10px, env(safe-area-inset-left, 0px));
+        align-items: center;
+    }
+
+    .live-offer-popup {
+        max-width: min(calc(100vw - 20px), 400px);
+        max-height: min(88vh, 720px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+
+    .live-offer-image,
+    .live-offer-image-placeholder {
+        width: min(200px, 58vw);
+        height: min(200px, 58vw);
+    }
+
+    .live-offer-hero {
+        padding: 20px 14px 12px;
+    }
+
+    .live-offer-body {
+        padding: 0 14px 18px;
+    }
+
+    .live-offer-timer-value {
+        font-size: 24px;
+    }
+
+    .live-offer-price-final {
+        font-size: 22px;
+    }
+
+    .live-offer-order-title {
+        font-size: 1.05rem;
+    }
+
+    .live-offer-cta,
+    .live-offer-activate-cta,
+    .live-offer-reg-cta {
+        min-height: 48px;
+        font-size: 15px !important;
+    }
+
+    .live-offer-popup--registration {
+        max-width: min(calc(100vw - 20px), 400px);
+        padding-top: 20px;
+    }
+
+    .live-offer-reg-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .live-offer-reg-message {
+        font-size: 14px;
+    }
+
+    .live-offer-reg-benefits li {
+        font-size: 13px;
+        padding: 8px 10px 8px 32px;
+    }
+
+    .live-offer-popup--browse,
     .live-offer-popup--browse-multi {
-        max-width: 96vw;
-        padding-left: 12px;
-        padding-right: 12px;
+        max-width: min(calc(100vw - 16px), 420px);
+        width: min(calc(100vw - 16px), 420px);
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-bottom: 12px;
     }
 
     .browse-offer-grid {
         gap: 8px;
+    }
+
+    .browse-offer-card-body {
+        padding: 6px 8px 8px;
+    }
+
+    .browse-offer-cta {
+        min-height: 40px;
+        font-size: 12px !important;
+        padding: 8px 8px !important;
+    }
+
+    .browse-offer-var {
+        min-height: 36px;
+        font-size: 12px !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .live-offer-popup--browse-multi {
+        max-width: 96vw;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .browse-offer-grid {
+        gap: 6px;
     }
 
     .browse-offer-card-name {
@@ -11329,7 +11462,13 @@ button.nav-action-link {
 
     .browse-offer-cta {
         font-size: 11px !important;
-        padding: 7px 8px !important;
+        padding: 7px 6px !important;
+    }
+
+    .live-offer-image,
+    .live-offer-image-placeholder {
+        width: min(160px, 52vw);
+        height: min(160px, 52vw);
     }
 }
 
@@ -14080,9 +14219,60 @@ button.nav-action-link {
     min-height: 0;
 }
 
+@media (max-width: 768px) {
+    .site-popup-overlay {
+        padding: max(10px, env(safe-area-inset-top, 0px))
+            max(10px, env(safe-area-inset-right, 0px))
+            max(12px, env(safe-area-inset-bottom, 0px))
+            max(10px, env(safe-area-inset-left, 0px));
+        align-items: center;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .site-popup {
+        max-width: min(calc(100vw - 20px), 380px);
+        max-height: min(88vh, 720px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+
+    .site-popup--akcija,
+    .site-popup--bundle,
+    .site-popup--gratis {
+        max-width: min(calc(100vw - 16px), 420px);
+    }
+
+    .site-popup-actions {
+        padding: 10px 12px max(12px, env(safe-area-inset-bottom, 0px));
+    }
+
+    .site-popup-image {
+        max-height: min(48vh, 360px);
+    }
+
+    .site-popup-close {
+        width: 40px;
+        height: 40px;
+        top: 8px;
+        right: 8px;
+    }
+
+    .site-popup .site-popup-cta {
+        min-height: 48px;
+        font-size: 15px;
+    }
+
+    .site-popup-akcija {
+        padding: 22px 14px 12px;
+    }
+}
+
 @media (max-width: 480px) {
     .site-popup {
-        max-width: min(92vw, 340px);
+        max-width: min(calc(100vw - 16px), 360px);
     }
 
     .site-popup-actions {
@@ -14090,7 +14280,7 @@ button.nav-action-link {
     }
 
     .site-popup-image {
-        max-height: min(58vh, 420px);
+        max-height: min(46vh, 320px);
     }
 }
 
@@ -15336,10 +15526,22 @@ button.nav-action-link {
 
 /* ========================================
    ONLINE NAGRADA (poklon za online posjetioce)
+   Glavni stilovi su u online-gift.css (bočni popup).
+   Ovdje samo body lock + legacy fallback.
    ======================================== */
-body.og-open { overflow: hidden; }
+/* Nagradna sa strane ne smije blokirati scroll. */
+body.og-open:not(.og-side-open) {
+    overflow: hidden;
+}
+html.og-side-open,
+body.og-side-open {
+    overflow: auto !important;
+    overflow-x: clip;
+    touch-action: pan-y;
+}
 
-.og-overlay {
+/* Fallback fullscreen (samo ako nije .og-side) — ne diraj bočni */
+.og-overlay:not(.og-side) {
     position: fixed;
     inset: 0;
     z-index: 12050;
@@ -15358,12 +15560,13 @@ body.og-open { overflow: hidden; }
     visibility: hidden;
     transition: opacity 0.28s ease, visibility 0.28s ease;
 }
-.og-overlay.is-open {
+.og-overlay:not(.og-side).is-open {
     opacity: 1;
     visibility: visible;
 }
 
-.og-card {
+/* Legacy card stil — bočni popup koristi online-gift.css s !important */
+.og-overlay:not(.og-side) .og-card {
     position: relative;
     width: min(400px, 94vw);
     max-height: min(90vh, 640px);
@@ -15379,7 +15582,7 @@ body.og-open { overflow: hidden; }
     transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);
     box-sizing: border-box;
 }
-.og-overlay.is-open .og-card {
+.og-overlay:not(.og-side).is-open .og-card {
     transform: none;
 }
 .og-card::before {

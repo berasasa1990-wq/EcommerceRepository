@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import re
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
@@ -19,9 +20,15 @@ from .models import (
     Product,
 )
 
+_EMAIL_RE = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+
 SESSION_REWARD_KEY = 'online_gift_reward'
 SESSION_PLAYED_KEY = 'online_gift_played'
 SESSION_DECLINED_KEY = 'online_gift_declined'
+# Gost kliknuo „Registruj se i igraj” — ne prikazuj nagradu dok se ne uloguje
+SESSION_HIDE_GUEST_KEY = 'online_gift_hide_guest'
+# Nakon prijave (poslije registracije) odmah prikaži igru
+SESSION_AFTER_AUTH_KEY = 'online_gift_play_after_auth'
 # legacy session keys from greb/wheel
 _LEGACY_KEYS = (
     'greb_greb_reward',
@@ -36,6 +43,24 @@ STAFF_FEED_HOURS = 48
 STAFF_FEED_LIMIT = 40
 # Online badge u feedu (usklađeno s live_visitors.ONLINE_MINUTES)
 STAFF_ONLINE_MINUTES = 1
+# Bočni auto nagradna igra — uključuje se u SiteSettings
+WELCOME_GIFT_DELAY_DEFAULT = 15
+
+
+def _side_gift_settings():
+    """(aktivan, delay_sekundi) — bočni pulsirajući popup nagradne igre."""
+    try:
+        from .models import SiteSettings
+
+        s = SiteSettings.load()
+        aktivan = bool(getattr(s, 'online_nagrada_bočni_aktivan', False))
+        try:
+            delay = max(0, int(getattr(s, 'online_nagrada_delay_seconds', None) or WELCOME_GIFT_DELAY_DEFAULT))
+        except (TypeError, ValueError):
+            delay = WELCOME_GIFT_DELAY_DEFAULT
+        return aktivan, delay
+    except Exception:
+        return False, WELCOME_GIFT_DELAY_DEFAULT
 
 
 def _q(value):
@@ -110,6 +135,52 @@ def _already_declined(request, campaign):
     ).exists()
 
 
+def _campaign_id_str(campaign):
+    return str(campaign.pk) if campaign else ''
+
+
+def mark_gift_registration_intent(request):
+    """
+    Gost ide na registraciju zbog nagrade:
+    - ne prikazuj popup gostu više
+    - nakon uspješne prijave odmah ponudi igru
+    (ne bilježi se kao odbijanje)
+    """
+    campaign = get_active_campaign()
+    if not campaign or not request:
+        return
+    cid = _campaign_id_str(campaign)
+    request.session[SESSION_HIDE_GUEST_KEY] = cid
+    request.session[SESSION_AFTER_AUTH_KEY] = cid
+    request.session.modified = True
+
+
+def _guest_hidden_until_auth(request, campaign):
+    if not campaign or not request:
+        return False
+    if _user_is_registered(request):
+        return False
+    return str(request.session.get(SESSION_HIDE_GUEST_KEY) or '') == _campaign_id_str(campaign)
+
+
+def should_play_gift_after_auth(request, campaign=None):
+    """Registrovan kupac koji je došao preko „Registruj se i igraj”."""
+    campaign = campaign or get_active_campaign()
+    if not campaign or not request:
+        return False
+    if not _user_is_registered(request):
+        return False
+    return str(request.session.get(SESSION_AFTER_AUTH_KEY) or '') == _campaign_id_str(campaign)
+
+
+def clear_gift_after_auth(request):
+    if not request:
+        return
+    request.session.pop(SESSION_AFTER_AUTH_KEY, None)
+    request.session.pop(SESSION_HIDE_GUEST_KEY, None)
+    request.session.modified = True
+
+
 def _blocked_staff_path(request):
     path = getattr(request, 'path', '') or ''
     return path.startswith('/nalog/') or path.startswith('/admin')
@@ -158,27 +229,48 @@ def get_active_push(request, campaign=None):
     )
 
 
+def _seconds_on_site(request):
+    key = _session_key(request)
+    if not key:
+        return 0
+    visitor = LiveVisitor.objects.filter(session_key=key).only('first_seen').first()
+    if not visitor or not visitor.first_seen:
+        return 0
+    return max(0, (timezone.now() - visitor.first_seen).total_seconds())
+
+
 def can_show_online_gift(request):
     """
     Treba li prikazati popup sada.
-    - automatic=True → svima online (uz once_per_visitor)
-    - automatic=False → samo ako staff ručno pusti (OnlineGiftPush)
+    - Staff push → bilo kome (odmah)
+    - Nakon registracije/prijave (klik „Registruj se i igraj”) → odmah
+    - automatic=True → nakon 4 min (gostu se ne nudi opet ako je otišao na reg)
+    - Igranje zahtijeva registraciju
     """
     campaign = get_active_campaign()
     if not campaign or not _base_eligible(request, campaign):
         return None
-    if campaign.automatic:
-        if campaign.only_tracked_online and not _is_tracked_online(request):
-            return None
-        return campaign
-    # Manuelni režim: samo s aktivnim push-om
+    # Ručni push (staff) uvijek ima prioritet
     if get_active_push(request, campaign):
         return campaign
-    return None
+    # Upravo se registrovao/prijavio zbog nagrade — odmah igraj
+    if should_play_gift_after_auth(request, campaign):
+        return campaign
+
+    side_on, side_delay = _side_gift_settings()
+    # Auto bočni popup (SiteSettings) ili kampanja.automatic
+    auto_on = side_on or bool(campaign.automatic)
+    if not auto_on:
+        return None
+    # Gost je kliknuo registraciju — ne iskači više dok se ne uloguje
+    if _guest_hidden_until_auth(request, campaign):
+        return None
+    # Bočni / auto — odmah svima (ne čekaj „tracked online” niti delay)
+    return campaign
 
 
 def campaign_shell_enabled(request):
-    """Učitaj JS/shell za poll (i kad je manuelno, da push stigne bez refresha)."""
+    """Učitaj JS/shell za poll (i kad je manuelno / bočni toggle)."""
     campaign = get_active_campaign()
     if not campaign:
         return False
@@ -188,14 +280,81 @@ def campaign_shell_enabled(request):
     if user is not None and getattr(user, 'is_authenticated', False):
         if user.is_staff or user.is_superuser:
             return False
+    # Shell i kad je samo bočni toggle (kampanja automatic=False)
+    side_on, _ = _side_gift_settings()
+    if not campaign.aktivan:
+        return False
+    if not (campaign.automatic or side_on):
+        # I dalje shell za staff push
+        return True
     return True
 
 
-def _campaign_payload(campaign, *, delay_seconds=None, show_now=False, source='auto'):
+def _user_is_registered(request):
+    user = getattr(request, 'user', None)
+    return bool(user is not None and getattr(user, 'is_authenticated', False))
+
+
+def _registered_email(request):
+    user = getattr(request, 'user', None)
+    if user is not None and getattr(user, 'is_authenticated', False):
+        return (user.email or '').strip()
+    return ''
+
+
+def gift_requires_email(request):
+    """Legacy — nagradna igra više ne koristi email; mora registracija."""
+    return False
+
+
+def gift_requires_registration(request):
+    """Da bi igrao nagradnu igru, kupac mora biti registrovan."""
+    return not _user_is_registered(request)
+
+
+def _normalize_email(value):
+    email = (value or '').strip().lower()
+    if not email or len(email) > 254:
+        return ''
+    if not _EMAIL_RE.match(email):
+        return ''
+    return email
+
+
+def _persist_guest_email(request, email):
+    """Sačuvaj email u sesiju + LiveVisitor da ga staff vidi u uživo analitici."""
+    email = _normalize_email(email)
+    if not email:
+        return ''
+    request.session['online_gift_email'] = email
+    request.session.modified = True
+    session_key = _session_key(request)
+    if session_key:
+        LiveVisitor.objects.filter(session_key=session_key).update(email=email[:254])
+        # Ako još nema ime, stavi dio prije @
+        LiveVisitor.objects.filter(
+            session_key=session_key,
+            ime__in=['', 'Gost'],
+        ).update(ime=email.split('@', 1)[0][:120])
+    return email
+
+
+def _campaign_payload(campaign, *, delay_seconds=None, show_now=False, source='auto', request=None):
     product = None
     if campaign.prize_type == OnlineGiftCampaign.PrizeType.PRODUCT and campaign.product_id:
         product = _product_payload(campaign.product)
     delay = int(campaign.popup_delay_seconds or 0) if delay_seconds is None else int(delay_seconds)
+    requires_registration = True
+    is_registered = False
+    user_email = ''
+    force_show = False
+    # Uvijek bočni pulsirajući stil — ne fullscreen, stranica ostaje skrolabilna
+    side_mode = True
+    if request is not None:
+        is_registered = _user_is_registered(request)
+        requires_registration = gift_requires_registration(request)
+        user_email = _registered_email(request) or ''
+        force_show = bool(show_now and should_play_gift_after_auth(request, campaign))
     return {
         'id': campaign.pk,
         'naslov': campaign.naslov or 'Online nagrada za tebe!',
@@ -206,7 +365,14 @@ def _campaign_payload(campaign, *, delay_seconds=None, show_now=False, source='a
         'product': product,
         'automatic': bool(campaign.automatic),
         'show_now': bool(show_now),
+        'force_show': force_show,
+        'side_mode': side_mode,
         'source': source,
+        'requires_registration': requires_registration,
+        'is_registered': is_registered,
+        'requires_email': False,
+        'user_email': user_email,
+        'register_url': '/registracija/?next=/',
         'claim_url': '/online-nagrada/otkrij/',
         'dismiss_url': '/online-nagrada/zatvori/',
         'poll_url': '/online-nagrada/status/',
@@ -214,17 +380,40 @@ def _campaign_payload(campaign, *, delay_seconds=None, show_now=False, source='a
 
 
 def build_online_gift_context(request):
-    """Server-side: popup odmah (auto) ili shell za poll (manuelno)."""
+    """Server-side: bočni/auto popup ili shell za poll (staff push)."""
     campaign = get_active_campaign()
     if not campaign or not campaign_shell_enabled(request):
         return None
     show = can_show_online_gift(request)
     if show:
-        source = 'auto' if campaign.automatic else 'manual'
-        delay = 0 if source == 'manual' else None
-        return _campaign_payload(campaign, delay_seconds=delay, show_now=True, source=source)
-    # Shell za poll (manuelni push ili kasniji auto)
-    return _campaign_payload(campaign, delay_seconds=0, show_now=False, source='poll')
+        push = get_active_push(request, campaign)
+        after_auth = should_play_gift_after_auth(request, campaign)
+        if push:
+            source = 'manual'
+        elif after_auth:
+            source = 'after_auth'
+        else:
+            source = 'auto'
+        return _campaign_payload(
+            campaign, delay_seconds=0, show_now=True, source=source, request=request,
+        )
+    # Bočni auto: odmah sa strane za sve (bez delay-a / tracked filtera)
+    side_on, _side_delay = _side_gift_settings()
+    if (
+        (side_on or campaign.automatic)
+        and _base_eligible(request, campaign)
+        and not _guest_hidden_until_auth(request, campaign)
+    ):
+        return _campaign_payload(
+            campaign,
+            delay_seconds=0,
+            show_now=True,
+            source='auto',
+            request=request,
+        )
+    return _campaign_payload(
+        campaign, delay_seconds=0, show_now=False, source='poll', request=request,
+    )
 
 
 def poll_online_gift(request):
@@ -238,6 +427,7 @@ def poll_online_gift(request):
         delay_seconds=0,
         show_now=True,
         source=source,
+        request=request,
     )
     return {'active': True, 'gift': payload}
 
@@ -665,13 +855,26 @@ def _mark_push_done(request, campaign, *, played=False, dismissed=False):
 
 def dismiss_online_gift(request):
     """
-    Kupac odbio ponudu (X ili „Ne, hvala”) — ne igra.
-    Evidentiraj u sesiji + staff istoriji (odbio).
+    Kupac zatvorio nagradu.
+    reason=register → ide na registraciju (ne broji se kao odbijanje; poslije prijave igra odmah).
+    Inače: odbio (X / Ne, hvala) — ne nudi ponovo.
     """
     campaign = get_active_campaign()
     if not campaign:
         return
 
+    reason = ''
+    try:
+        reason = (request.POST.get('reason') or request.GET.get('reason') or '').strip().lower()
+    except Exception:
+        reason = ''
+
+    if reason in ('register', 'registracija', 'reg'):
+        mark_gift_registration_intent(request)
+        return
+
+    # Pravo odbijanje
+    clear_gift_after_auth(request)
     declined = request.session.get(SESSION_DECLINED_KEY) or {}
     declined[str(campaign.pk)] = 1
     request.session[SESSION_DECLINED_KEY] = declined
@@ -782,26 +985,38 @@ def _add_free_product(request, product):
 
 
 def reveal_online_gift(request):
-    """Otkrij nagradu (jedan klik) — win/lose + primjena nagrade."""
+    """Otkrij nagradu (jedan klik) — win/lose + primjena nagrade. Samo registrovani."""
     campaign = get_active_campaign()
     if not campaign:
         raise ValueError('Online nagrada trenutno nije aktivna.')
     user = getattr(request, 'user', None)
+    if not _user_is_registered(request):
+        raise ValueError(
+            'Da biste igrali nagradnu igru morate se registrovati. '
+            'Kreirajte nalog pa pokušajte ponovo.'
+        )
     if not campaign.audience_matches(user):
         raise ValueError('Nagrada je samo za registrovane kupce.')
     if campaign.once_per_visitor and _already_played(request, campaign):
         raise ValueError('Već ste otvorili online nagradu.')
-    # Manuelni režim: mora postojati staff push (ili legacy auto s auto uključenim)
-    if not campaign.automatic and not get_active_push(request, campaign):
-        # Dozvoli ako je push već "u toku" na klijentu — ali bez pusha blokiraj
+    # Manuelni režim: mora postojati staff push (ili after-auth / auto)
+    if (
+        not campaign.automatic
+        and not get_active_push(request, campaign)
+        and not should_play_gift_after_auth(request, campaign)
+    ):
         raise ValueError('Nagrada nije dostupna. Staff ju još nije pustio.')
+
+    # Iskoristio „poslije registracije” slot
+    if should_play_gift_after_auth(request, campaign):
+        clear_gift_after_auth(request)
 
     won = _roll_win(campaign)
     session_key = _session_key(request)
     claim = OnlineGiftClaim.objects.create(
         campaign=campaign,
         session_key=session_key or '',
-        user=user if user is not None and getattr(user, 'is_authenticated', False) else None,
+        user=user,
         won=won,
         prize_type=campaign.prize_type if won else '',
         product=(

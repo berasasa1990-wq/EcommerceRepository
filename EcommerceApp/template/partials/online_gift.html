@@ -1,32 +1,52 @@
 {% if online_gift %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260712v1">
-<div id="onlineGiftOverlay" class="og-overlay" hidden
+<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260712v8">
+<div id="onlineGiftOverlay" class="og-overlay og-side" hidden
      data-id="{{ online_gift.id }}"
-     data-delay="{{ online_gift.delay_seconds }}"
+     data-delay="{{ online_gift.delay_seconds|default:0 }}"
      data-show-now="{% if online_gift.show_now %}1{% else %}0{% endif %}"
+     data-force-show="{% if online_gift.force_show %}1{% else %}0{% endif %}"
+     data-side-mode="1"
      data-source="{{ online_gift.source|default:'auto' }}"
      data-claim-url="{% url 'online_gift_reveal' %}"
      data-dismiss-url="{% url 'online_gift_dismiss' %}"
      data-poll-url="{% url 'online_gift_poll' %}"
-     data-cart-url="{% url 'cart' %}">
+     data-cart-url="{% url 'cart' %}"
+     data-requires-registration="{% if online_gift.requires_registration %}1{% else %}0{% endif %}"
+     data-is-registered="{% if online_gift.is_registered %}1{% else %}0{% endif %}"
+     data-register-url="{% url 'register' %}?next=/"
+     data-user-email="{{ online_gift.user_email|default:'' }}">
 
     <div class="og-card" role="dialog" aria-modal="true" aria-labelledby="ogTitle">
         <button type="button" class="og-x" data-og-close aria-label="Zatvori">×</button>
 
         <div id="ogIntro" class="og-step">
             <div class="og-gift-icon" aria-hidden="true">🎁</div>
-            <p class="og-kicker">Nagradna igra · po želji</p>
+            <p class="og-kicker">Nagradna igra · samo za registrovane</p>
             <h2 id="ogTitle" class="og-title">{{ online_gift.naslov }}</h2>
             {% if online_gift.poruka %}
             <p class="og-text" id="ogPoruka">{{ online_gift.poruka }}</p>
             {% else %}
             <p class="og-text" id="ogPoruka" hidden></p>
             {% endif %}
-            <p class="og-choice-hint">Ti biraš — možeš odigrati ili zatvoriti.</p>
-            <button type="button" class="og-btn og-btn-main" id="ogRevealBtn">
-                Da, igraj
-            </button>
+            <p class="og-choice-hint" id="ogChoiceHint">
+                {% if online_gift.requires_registration %}
+                Registrujte se da biste mogli igrati nagradnu igru.
+                {% else %}
+                Ti biraš — možeš odigrati ili zatvoriti.
+                {% endif %}
+            </p>
+            <div id="ogRegisterGate" class="og-register-gate"{% if not online_gift.requires_registration %} hidden{% endif %}>
+                <p class="og-register-msg">Nagradna igra je dostupna samo registrovanim kupcima.</p>
+                <a href="{% url 'register' %}" class="og-btn og-btn-main" id="ogRegisterBtn">
+                    Registruj se i igraj
+                </a>
+            </div>
+            <div id="ogPlayGate"{% if online_gift.requires_registration %} hidden{% endif %}>
+                <button type="button" class="og-btn og-btn-main" id="ogRevealBtn">
+                    Da, igraj
+                </button>
+            </div>
             <button type="button" class="og-btn og-btn-ghost" id="ogDeclineBtn" data-og-close>
                 Ne, hvala
             </button>

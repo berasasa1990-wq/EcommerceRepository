@@ -25,6 +25,14 @@
         const params = new URLSearchParams();
         if (sessionKey) params.set('session_key', sessionKey);
         params.set('ping', '1');
+        // Live „Sada:” — trenutna stranica za staff analitiku
+        try {
+            params.set('path', window.location.pathname || '/');
+            const q = new URLSearchParams(window.location.search || '').get('q');
+            if (q) params.set('q', q);
+        } catch (err) {
+            /* ignore */
+        }
         fetch(heartbeatUrl, {
             method: 'POST',
             headers: {

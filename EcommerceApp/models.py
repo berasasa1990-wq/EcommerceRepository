@@ -107,7 +107,7 @@ class SiteSettings(models.Model):
         verbose_name='Personalizovana ponuda (gledanje) aktivna',
         help_text=(
             'Automatski popup do 4 artikla 2×2 („Specijalna ponuda za vas”): '
-            'prva nakon 2 min, druga nakon 4 min (popust ispod).'
+            'nakon 2 min na sajtu, prema onome što kupac najviše gleda (jednom).'
         ),
     )
     browse_interest_popust = models.DecimalField(
@@ -118,6 +118,59 @@ class SiteSettings(models.Model):
         blank=True,
         verbose_name='Personalizovana ponuda — popust (%)',
         help_text='Popust na preporučene artikle (max 50%). Podrazumijevano 10%.',
+    )
+    product_dwell_popup_aktivan = models.BooleanField(
+        default=False,
+        verbose_name='Popust na artikal (1 min gledanja) aktivan',
+        help_text=(
+            'Uključeno: ako kupac gleda isti artikal duže od 1 minute, '
+            'iskače popup s popustom na taj artikal (jednom po artiklu).'
+        ),
+    )
+    product_dwell_popust = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        null=True,
+        blank=True,
+        verbose_name='Popust na artikal (1 min) — %',
+        help_text='Popust na artikal kad se gleda ≥ 1 min (max 50%). Podrazumijevano 10%.',
+    )
+    welcome_reg_popup_aktivan = models.BooleanField(
+        default=False,
+        verbose_name='Registracija + popust aktivan',
+        help_text=(
+            'Uključeno: gostu na početku iskače poziv „Registruj se” s popustom '
+            'na prvu narudžbu. Vrijeme prikaza postavi ispod (npr. 4 sekunde).'
+        ),
+    )
+    welcome_reg_popust = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        null=True,
+        blank=True,
+        verbose_name='Registracija — popust na prvu narudžbu (%)',
+        help_text='Npr. 10 = 10% kupon nakon registracije (max 50%).',
+    )
+    welcome_reg_delay_seconds = models.PositiveSmallIntegerField(
+        default=8,
+        verbose_name='Registracija popup — prikaži nakon (sekundi)',
+        help_text='Koliko sekundi nakon ulaska na sajt (0 = odmah).',
+    )
+    online_nagrada_bočni_aktivan = models.BooleanField(
+        default=False,
+        verbose_name='Nagradna igra (bočni popup) aktivna',
+        help_text=(
+            'Uključeno: nagradna igra se nudi kao mali pulsirajući popup sa strane '
+            '(ne preko cijelog ekrana). Igranje i dalje zahtijeva registraciju. '
+            'Mora postojati aktivna kampanja Online nagrada u adminu.'
+        ),
+    )
+    online_nagrada_delay_seconds = models.PositiveSmallIntegerField(
+        default=15,
+        verbose_name='Nagradna igra — prikaži nakon (sekundi)',
+        help_text='Kašnjenje bočnog popupa nagradne igre (0 = odmah).',
     )
     novi_korisnik_besplatna_dostava = models.BooleanField(
         default=False,
@@ -664,6 +717,13 @@ class Akcija(models.Model):
         USLOV = 'uslov', 'Uslov prodaja'
         KORPA_NUDJENJE = 'korpa_nudjenje', 'Korpa nudjenje'
         GRATIS = 'gratis', '+ Gratis'
+        BUNDLE = 'bundle', 'Pop-up bundle'
+
+    class BundleTrigger(models.TextChoices):
+        DELAY = 'delay', 'Nakon kašnjenja (bilo gdje na sajtu)'
+        BUNDLE_PRODUCT = 'bundle_product', 'Kad gleda artikal iz seta'
+        TRIGGER_PRODUCT = 'trigger_product', 'Kad gleda odabrani trigger artikal'
+        CATEGORY = 'category', 'Kad gleda odabranu kategoriju'
 
     naziv = models.CharField(
         max_length=100,
@@ -690,7 +750,10 @@ class Akcija(models.Model):
         null=True,
         related_name='akcije',
         verbose_name='Artikal',
-        help_text='Aktivan artikal sa sajta (tajmer, uslov, X+1, korpa nudjenje, + Gratis trigger).',
+        help_text=(
+            'Aktivan artikal (tajmer, uslov, X+1, korpa nudjenje, + Gratis trigger). '
+            'Za Pop-up bundle: samo ako je trigger „odabrani trigger artikal”.'
+        ),
     )
     gratis_artikal = models.ForeignKey(
         'Product',
@@ -699,7 +762,22 @@ class Akcija(models.Model):
         null=True,
         related_name='akcije_gratis',
         verbose_name='Gratis artikal',
-        help_text='Za + Gratis: drugi artikal koji dobija popust (%).',
+        help_text='Za + Gratis: drugi artikal s popustom (%).',
+    )
+    bundle_artikli = models.ManyToManyField(
+        'Product',
+        blank=True,
+        related_name='akcije_bundle',
+        verbose_name='Artikli u setu (bundle)',
+        help_text='Za Pop-up bundle: 2 ili više artikala. % popusta vrijedi za kompletan set.',
+    )
+    bundle_trigger = models.CharField(
+        max_length=20,
+        choices=BundleTrigger.choices,
+        default=BundleTrigger.DELAY,
+        blank=True,
+        verbose_name='Šta trigeruje pop-up bundle',
+        help_text='Kada se bundle prikaže. Samo tada iskače.',
     )
     gratis_popup = models.BooleanField(
         default=False,
@@ -713,7 +791,10 @@ class Akcija(models.Model):
         null=True,
         related_name='akcije_korpa_nudjenje',
         verbose_name='Kategorija (trigger)',
-        help_text='Za korpa nudjenje: artikli iz ove kategorije (i podkategorija) vide ponudu.',
+        help_text=(
+            'Korpa nudjenje: artikli iz kategorije vide ponudu. '
+            'Pop-up bundle: ako je trigger „kategorija”.'
+        ),
     )
     popust_postotak = models.DecimalField(
         max_digits=5,
@@ -721,6 +802,7 @@ class Akcija(models.Model):
         null=True,
         blank=True,
         verbose_name='Popust (%)',
+        help_text='Za Pop-up bundle: % sniženja na kompletan set (svaki artikal u setu).',
     )
     prag_korpe_km = models.DecimalField(
         max_digits=10,
@@ -817,15 +899,155 @@ class Akcija(models.Model):
     def je_popup(self):
         if self.tip == self.Tip.GRATIS:
             return bool(self.gratis_popup)
+        if self.tip == self.Tip.BUNDLE:
+            return True
         return self.tip in {self.Tip.SLIKA, self.Tip.TIMER, self.Tip.USLOV}
 
-    def prikazi_korisniku(self, user):
+    def bundle_products(self):
+        """Aktivni artikli u setu."""
+        if self.tip != self.Tip.BUNDLE:
+            return []
+        return list(
+            self.bundle_artikli.filter(aktivan=True).order_by('naziv', 'id')
+        )
+
+    def bundle_display_items(self):
+        """Lista {product, bazna, snizena} za template popupa."""
+        items = []
+        for p in self.bundle_products():
+            cijene = self.bundle_cijene_za_artikal(p)
+            bazna = cijene['bazna'] if cijene else p.prikazna_cijena
+            snizena = cijene['snizena'] if cijene else p.prikazna_cijena
+            items.append({
+                'product': p,
+                'bazna': bazna,
+                'snizena': snizena,
+                'has_discount': bool(cijene and cijene['snizena'] < cijene['bazna']),
+                'usteda': (bazna - snizena) if cijene and snizena < bazna else Decimal('0'),
+            })
+        return items
+
+    def bundle_pricing_summary(self):
+        """
+        Ukupno „inače” vs cijena seta — za vizuelnu usporedbu
+        (precrtana suma pojedinačnih cijena vs zelena cijena seta).
+        """
+        items = self.bundle_display_items()
+        if len(items) < 2:
+            return None
+        total_bazna = sum((i['bazna'] or Decimal('0')) for i in items)
+        total_snizena = sum((i['snizena'] or Decimal('0')) for i in items)
+        usteda = total_bazna - total_snizena
+        if usteda < 0:
+            usteda = Decimal('0')
+        pct = self.popust_postotak
+        pct_label = ''
+        if pct is not None:
+            pct_label = str(int(pct)) if pct == int(pct) else str(pct)
+        return {
+            'count': len(items),
+            'total_bazna': total_bazna.quantize(Decimal('0.01')),
+            'total_snizena': total_snizena.quantize(Decimal('0.01')),
+            'usteda': usteda.quantize(Decimal('0.01')),
+            'pct_label': pct_label,
+            'has_discount': usteda > 0,
+        }
+
+    def _category_matches_root(self, category, root_id):
+        """True ako je category root ili potomek root-a (bilo koji nivo)."""
+        seen = set()
+        while category is not None and category.pk not in seen:
+            if category.pk == root_id:
+                return True
+            seen.add(category.pk)
+            category = getattr(category, 'roditelj', None)
+        return False
+
+    def bundle_trigger_matches(self, request):
+        """Da li trenutna stranica zadovoljava trigger bundle popupa."""
+        if self.tip != self.Tip.BUNDLE or not request:
+            return False
+        trigger = (self.bundle_trigger or self.BundleTrigger.DELAY).strip()
+        path = (getattr(request, 'path', '') or '').rstrip('/') or '/'
+
+        if trigger == self.BundleTrigger.DELAY or trigger == '':
+            return True
+
+        import re
+
+        if trigger == self.BundleTrigger.BUNDLE_PRODUCT:
+            m = re.match(r'^/artikal/([^/]+)$', path)
+            if not m:
+                return False
+            return self.bundle_artikli.filter(slug=m.group(1), aktivan=True).exists()
+
+        if trigger == self.BundleTrigger.TRIGGER_PRODUCT:
+            if not self.artikal_id:
+                return False
+            m = re.match(r'^/artikal/([^/]+)$', path)
+            if not m:
+                return False
+            return bool(
+                self.artikal
+                and self.artikal.slug == m.group(1)
+                and self.artikal.aktivan
+            )
+
+        if trigger == self.BundleTrigger.CATEGORY:
+            # SAMO na trigger kategoriji (stranica kategorije ili artikal u toj grani)
+            if not self.kategorija_id:
+                return False
+            from .models import Category, Product
+
+            m = re.match(r'^/kategorija/([^/]+)$', path)
+            if m:
+                page_cat = (
+                    Category.objects.filter(slug=m.group(1), aktivan=True)
+                    .select_related('roditelj')
+                    .first()
+                )
+                return bool(
+                    page_cat and self._category_matches_root(page_cat, self.kategorija_id)
+                )
+
+            m = re.match(r'^/artikal/([^/]+)$', path)
+            if m:
+                p = (
+                    Product.objects.filter(slug=m.group(1), aktivan=True)
+                    .select_related('kategorija', 'kategorija__roditelj')
+                    .first()
+                )
+                if not p or not p.kategorija_id:
+                    return False
+                return self._category_matches_root(p.kategorija, self.kategorija_id)
+
+            # Ni kategorija ni artikal — ne prikazuj
+            return False
+
+        return False
+
+    def prikazi_korisniku(self, user, request=None):
         if not self.jos_traje():
             return False
         if self.tip == self.Tip.GRATIS:
             if not self.gratis_popup:
                 return False
             if not self.artikal_id or not self.gratis_artikal_id or self.popust_postotak is None:
+                return False
+        elif self.tip == self.Tip.BUNDLE:
+            if self.popust_postotak is None:
+                return False
+            if self.pk and self.bundle_artikli.filter(aktivan=True).count() < 2:
+                return False
+            # Trigger je obavezan — bez request-a ne prikazuj (osim delay)
+            trigger = (self.bundle_trigger or self.BundleTrigger.DELAY).strip()
+            if trigger != self.BundleTrigger.DELAY and request is None:
+                return False
+            if request is not None and not self.bundle_trigger_matches(request):
+                return False
+            if trigger == self.BundleTrigger.CATEGORY and not self.kategorija_id:
+                return False
+            if trigger == self.BundleTrigger.TRIGGER_PRODUCT and not self.artikal_id:
                 return False
         elif self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE}:
             return False
@@ -903,6 +1125,22 @@ class Akcija(models.Model):
         bazna = artikal.prikazna_cijena
         snizena = _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
         if snizena is None or snizena >= bazna:
+            return None
+        return {
+            'bazna': bazna,
+            'snizena': snizena,
+            'pct': self.popust_postotak,
+        }
+
+    def bundle_cijene_za_artikal(self, product):
+        """Originalna i snižena cijena artikla u Pop-up bundle setu."""
+        if self.tip != self.Tip.BUNDLE or not product or self.popust_postotak is None:
+            return None
+        if self.pk and not self.bundle_artikli.filter(pk=product.pk).exists():
+            return None
+        bazna = product.prikazna_cijena
+        snizena = _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
+        if snizena is None:
             return None
         return {
             'bazna': bazna,
@@ -2127,6 +2365,18 @@ class LiveVisitor(models.Model):
         verbose_name='Izvor dolaska',
         help_text='facebook / google / instagram / direct / other',
     )
+    trenutna_putanja = models.CharField(
+        max_length=300,
+        blank=True,
+        verbose_name='Trenutna putanja',
+        help_text='URL putanja na kojoj je kupac sada (za live analitiku).',
+    )
+    trenutno_gleda = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Trenutno gleda',
+        help_text='Čitljiv opis: artikal, kategorija, korpa, početna…',
+    )
     first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva aktivnost')
     last_seen = models.DateTimeField(db_index=True, verbose_name='Zadnja aktivnost')
 
@@ -2372,12 +2622,12 @@ class OnlineGiftCampaign(models.Model):
     )
     automatic = models.BooleanField(
         default=True,
-        verbose_name='Automatski svima online',
+        verbose_name='Automatski online (nakon 4 min)',
         help_text=(
-            'Uključeno: na stranicama iskače ponuda nagradne igre — kupac sam bira '
-            '„Da, igraj” ili „Ne, hvala” (jednom po posjetiocu ako je uključeno ispod). '
-            'Isključeno: nagrada se ne pojavljuje sama — staff je pušta ručno u Uživo analitici '
-            'pored kupca.'
+            'Uključeno: nakon ~4 min na sajtu iskače nagradna igra '
+            '(prije toga na 2 min ide personalizovana ponuda prema gledanju). '
+            'Igranje je samo za registrovane (gost vidi „Registruj se i igraj”). '
+            'Isključeno: nagrada se ne pojavljuje sama — staff je pušta ručno u Uživo analitici.'
         ),
     )
     once_per_visitor = models.BooleanField(

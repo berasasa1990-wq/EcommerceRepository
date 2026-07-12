@@ -81,9 +81,9 @@ def nav_categories(request):
     cart = Cart(request)
     popup_queue = []
     for akcija in Akcija.objects.filter(aktivan=True).select_related(
-        'artikal', 'artikal__brend', 'gratis_artikal',
-    ).order_by('redoslijed', '-id'):
-        if akcija.je_popup() and akcija.prikazi_korisniku(request.user):
+        'artikal', 'artikal__brend', 'gratis_artikal', 'kategorija',
+    ).prefetch_related('bundle_artikli').order_by('redoslijed', '-id'):
+        if akcija.je_popup() and akcija.prikazi_korisniku(request.user, request=request):
             popup_queue.append(akcija)
 
     popup_queue.sort(

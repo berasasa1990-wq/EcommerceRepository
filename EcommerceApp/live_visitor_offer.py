@@ -16,6 +16,54 @@ REGISTRATION_COUPON_NAME = 'Registracijski popust (uživo)'
 REGISTRATION_FREE_SHIPPING_NAME = 'Besplatna dostava (registracija uživo)'
 SESSION_REG_INVITE_KEY = 'live_reg_invite_pending'
 SESSION_FREE_SHIPPING_KEY = 'cart_free_shipping_first'
+# Welcome reg popup — uključuje se u SiteSettings
+WELCOME_REG_DELAY_DEFAULT = 8
+SESSION_WELCOME_REG_KEY = 'welcome_reg_invite_done'
+SESSION_WELCOME_REG_CLOCK = 'welcome_reg_clock_ts'
+AUTO_REG_CODE = 'AUTO-REG-WELCOME'
+# Dwell 1 min na artiklu → % popust (uključuje se u SiteSettings)
+PRODUCT_DWELL_SECONDS = 60
+PRODUCT_DWELL_DISCOUNT_DEFAULT = Decimal('10')
+SESSION_PRODUCT_DWELL_KEY = 'product_page_dwell'
+AUTO_DWELL_CODE = 'AUTO-DWELL'
+
+
+def _product_dwell_settings():
+    """(aktivan, popust %) iz SiteSettings."""
+    try:
+        from .models import SiteSettings
+
+        s = SiteSettings.load()
+        aktivan = bool(getattr(s, 'product_dwell_popup_aktivan', False))
+        percent = _clamp_percent(
+            getattr(s, 'product_dwell_popust', None) or PRODUCT_DWELL_DISCOUNT_DEFAULT,
+        )
+        return aktivan, percent
+    except Exception:
+        return False, PRODUCT_DWELL_DISCOUNT_DEFAULT
+
+
+def _welcome_reg_settings():
+    """(aktivan, popust %, delay_sekundi) iz SiteSettings."""
+    try:
+        from .models import SiteSettings
+
+        s = SiteSettings.load()
+        aktivan = bool(getattr(s, 'welcome_reg_popup_aktivan', False))
+        percent = _clamp_percent(
+            getattr(s, 'welcome_reg_popust', None) or Decimal('10'),
+        )
+        try:
+            raw_delay = getattr(s, 'welcome_reg_delay_seconds', None)
+            if raw_delay is None:
+                delay = WELCOME_REG_DELAY_DEFAULT
+            else:
+                delay = max(0, int(raw_delay))
+        except (TypeError, ValueError):
+            delay = WELCOME_REG_DELAY_DEFAULT
+        return aktivan, percent, delay
+    except Exception:
+        return False, Decimal('10'), WELCOME_REG_DELAY_DEFAULT
 
 
 def _clamp_percent(value):
@@ -96,6 +144,222 @@ def _upsert_live_visitor_offer(session_key, defaults, *, target_user=None):
     return offer
 
 
+def is_auto_dwell_offer(offer):
+    if not offer:
+        return False
+    code = (getattr(offer, 'aktivacioni_kod', None) or '').strip()
+    return code == AUTO_DWELL_CODE or code.startswith(f'{AUTO_DWELL_CODE}-')
+
+
+def _dwell_state(request):
+    raw = request.session.get(SESSION_PRODUCT_DWELL_KEY)
+    if not isinstance(raw, dict):
+        return {'product_id': None, 'started_ts': None, 'offered_ids': []}
+    offered = []
+    for x in (raw.get('offered_ids') or []):
+        try:
+            offered.append(int(x))
+        except (TypeError, ValueError):
+            continue
+    pid = raw.get('product_id')
+    try:
+        pid = int(pid) if pid else None
+    except (TypeError, ValueError):
+        pid = None
+    started = raw.get('started_ts')
+    try:
+        started = float(started) if started is not None else None
+    except (TypeError, ValueError):
+        started = None
+    return {'product_id': pid, 'started_ts': started, 'offered_ids': offered[:40]}
+
+
+def _save_dwell_state(request, state):
+    request.session[SESSION_PRODUCT_DWELL_KEY] = {
+        'product_id': state.get('product_id'),
+        'started_ts': state.get('started_ts'),
+        'offered_ids': list(state.get('offered_ids') or [])[:40],
+    }
+    request.session.modified = True
+
+
+def touch_product_dwell(request, product_id=None):
+    """
+    Prati koliko dugo kupac gleda isti artikal.
+    product_id=None → napustio stranicu artikla (reset brojača).
+    """
+    if not request:
+        return
+    state = _dwell_state(request)
+    now_ts = timezone.now().timestamp()
+    if not product_id:
+        if state.get('product_id') or state.get('started_ts'):
+            state['product_id'] = None
+            state['started_ts'] = None
+            _save_dwell_state(request, state)
+        return
+    try:
+        pid = int(product_id)
+    except (TypeError, ValueError):
+        return
+    if pid <= 0:
+        return
+    if state.get('product_id') == pid and state.get('started_ts'):
+        # Isti artikal — brojač teče dalje
+        return
+    state['product_id'] = pid
+    state['started_ts'] = now_ts
+    _save_dwell_state(request, state)
+
+
+def touch_product_dwell_from_path(request, path=''):
+    """Heartbeat: path /artikal/<slug> → nastavi dwell, inače reset."""
+    import re
+
+    path_only = ((path or '').strip().split('?', 1)[0]).rstrip('/') or '/'
+    match = re.match(r'^/artikal/([^/]+)$', path_only)
+    if not match:
+        touch_product_dwell(request, None)
+        return
+    product = Product.objects.filter(slug=match.group(1), aktivan=True).only('pk').first()
+    if product:
+        touch_product_dwell(request, product.pk)
+    else:
+        touch_product_dwell(request, None)
+
+
+def maybe_create_product_dwell_offer(request):
+    """
+    Ako kupac gleda isti artikal ≥ 1 min → popup s popustom na taj artikal (jednom po artiklu).
+    Uključuje se u SiteSettings → „Popust na artikal (1 min gledanja)”.
+    """
+    aktivan, dwell_percent = _product_dwell_settings()
+    if not aktivan or dwell_percent <= 0:
+        return None
+    if not request or _blocked_path(request):
+        return None
+    user = getattr(request, 'user', None)
+    if user and getattr(user, 'is_authenticated', False) and (
+        user.is_staff or user.is_superuser
+    ):
+        return None
+
+    state = _dwell_state(request)
+    pid = state.get('product_id')
+    started = state.get('started_ts')
+    offered_ids = list(state.get('offered_ids') or [])
+    if not pid or not started:
+        return None
+    if pid in offered_ids:
+        return None
+    elapsed = timezone.now().timestamp() - float(started)
+    if elapsed < PRODUCT_DWELL_SECONDS:
+        return None
+
+    session_key = get_cart_session_key(request)
+    if not session_key:
+        return None
+
+    # Već prihvaćen popust na ovaj artikal
+    target_user = user if user and getattr(user, 'is_authenticated', False) else None
+    if product_offer_already_accepted(session_key, pid, target_user=target_user):
+        offered_ids.append(pid)
+        state['offered_ids'] = offered_ids
+        _save_dwell_state(request, state)
+        return None
+
+    # Već u korpi — ne nudi
+    try:
+        from .models import ActiveCartItem
+
+        cart_q = Q(session_key=session_key, product_id=pid)
+        if target_user:
+            cart_q |= Q(user=target_user, product_id=pid)
+        if ActiveCartItem.objects.filter(cart_q).exists():
+            offered_ids.append(pid)
+            state['offered_ids'] = offered_ids
+            _save_dwell_state(request, state)
+            return None
+    except Exception:
+        pass
+
+    # Već aktivna dwell / staff ponuda na isti artikal
+    existing = (
+        LiveVisitorOffer.objects.filter(
+            Q(session_key=session_key) | (Q(user=target_user) if target_user else Q()),
+            tip=LiveVisitorOffer.Tip.ARTIKAL,
+            product_id=pid,
+            show_popup=True,
+            added_to_cart=False,
+        )
+        .order_by('-azurirano')
+        .first()
+    )
+    if existing:
+        offered_ids.append(pid)
+        state['offered_ids'] = offered_ids
+        _save_dwell_state(request, state)
+        return existing
+
+    product = Product.objects.filter(pk=pid, aktivan=True).first()
+    if not product:
+        state['product_id'] = None
+        state['started_ts'] = None
+        _save_dwell_state(request, state)
+        return None
+
+    # Zatvori stare dwell popupe (ne briši staff)
+    LiveVisitorOffer.objects.filter(
+        session_key=session_key,
+        aktivacioni_kod=AUTO_DWELL_CODE,
+        show_popup=True,
+    ).update(show_popup=False)
+
+    offer = LiveVisitorOffer.objects.create(
+        session_key=session_key,
+        user=target_user if isinstance(target_user, User) else None,
+        tip=LiveVisitorOffer.Tip.ARTIKAL,
+        product=product,
+        discount_percent=dwell_percent,
+        besplatna_dostava=False,
+        aktivacioni_kod=AUTO_DWELL_CODE,
+        kod_aktiviran=False,
+        show_popup=True,
+        added_to_cart=False,
+        poslao=None,
+    )
+    offered_ids.append(pid)
+    state['offered_ids'] = offered_ids
+    # Reset brojača da se ne spam-uje; ponuda je već u DB
+    state['started_ts'] = None
+    _save_dwell_state(request, state)
+    return offer
+
+
+def product_offer_already_accepted(session_key, product_id, *, target_user=None):
+    """
+    Kupac je već prihvatio popust na ovaj artikal (dodao u korpu).
+    Ne dozvoli drugi popust na isti artikal.
+    """
+    if not product_id:
+        return False
+    try:
+        product_id = int(product_id)
+    except (TypeError, ValueError):
+        return False
+    clauses = Q(product_id=product_id, tip=LiveVisitorOffer.Tip.ARTIKAL, added_to_cart=True)
+    identity = Q()
+    if session_key:
+        identity |= Q(session_key=session_key)
+    if target_user is not None and getattr(target_user, 'pk', None):
+        identity |= Q(user_id=target_user.pk)
+    elif target_user is not None and isinstance(target_user, int):
+        identity |= Q(user_id=target_user)
+    if not identity:
+        return False
+    return LiveVisitorOffer.objects.filter(clauses).filter(identity).exists()
+
+
 def send_live_visitor_offer(
     session_key,
     *,
@@ -115,6 +379,11 @@ def send_live_visitor_offer(
         product = Product.objects.filter(pk=product_id, aktivan=True).first()
         if not product:
             raise ValueError('Artikal nije pronađen ili nije aktivan.')
+        if product_offer_already_accepted(session_key, product.pk, target_user=target_user):
+            raise ValueError(
+                'Kupac je već prihvatio popust na ovaj artikal i dodao ga u korpu. '
+                'Ne može se poslati drugi put.'
+            )
 
     if product:
         tip = LiveVisitorOffer.Tip.ARTIKAL
@@ -139,25 +408,162 @@ def send_live_visitor_offer(
     return _upsert_live_visitor_offer(session_key, defaults, target_user=target_user)
 
 
-def send_live_visitor_registration_invite(session_key, *, staff_user=None, target_user=None):
-    """Pošalji gostu popup poziv na registraciju (+ besplatna dostava na prvu narudžbu)."""
+def send_live_visitor_registration_invite(
+    session_key,
+    *,
+    staff_user=None,
+    target_user=None,
+    auto=False,
+    discount_percent=None,
+    free_shipping=None,
+):
+    """
+    Pošalji gostu popup poziv na registraciju.
+    default: % popust (iz SiteSettings za auto) ili besplatna dostava (staff legacy).
+    """
     if not session_key:
         raise ValueError('Sesija posjetioca nije pronađena.')
     if target_user and getattr(target_user, 'is_authenticated', False):
         raise ValueError('Kupac je već registrovan.')
 
+    if discount_percent is None and free_shipping is None:
+        if auto:
+            _, pct, _ = _welcome_reg_settings()
+            discount_percent = pct
+            free_shipping = pct <= 0
+        else:
+            discount_percent = Decimal('0')
+            free_shipping = True
+
+    percent = _clamp_percent(discount_percent or 0)
+    free_shipping = bool(free_shipping) if free_shipping is not None else (percent <= 0)
+
     defaults = {
         'tip': LiveVisitorOffer.Tip.REGISTRACIJA,
         'product': None,
-        'discount_percent': Decimal('0'),
-        'besplatna_dostava': True,
-        'aktivacioni_kod': '',
+        'discount_percent': percent,
+        'besplatna_dostava': free_shipping and percent <= 0,
+        'aktivacioni_kod': AUTO_REG_CODE if auto else '',
         'kod_aktiviran': False,
         'show_popup': True,
         'added_to_cart': False,
         'poslao': staff_user if isinstance(staff_user, User) else None,
     }
+    # Ako ima % — to je nagrada (ne free shipping osim eksplicitno)
+    if percent > 0:
+        defaults['besplatna_dostava'] = bool(free_shipping) if free_shipping else False
     return _upsert_live_visitor_offer(session_key, defaults, target_user=None)
+
+
+def _blocked_path(request):
+    path = getattr(request, 'path', '') or ''
+    return path.startswith('/nalog/') or path.startswith('/admin')
+
+
+def _seconds_on_site(request):
+    """Sekunde od first_seen LiveVisitor-a (ili 0)."""
+    session_key = get_cart_session_key(request)
+    if not session_key:
+        return 0
+    from .models import LiveVisitor
+
+    visitor = (
+        LiveVisitor.objects.filter(session_key=session_key)
+        .only('first_seen')
+        .first()
+    )
+    if not visitor or not visitor.first_seen:
+        return 0
+    return max(0, (timezone.now() - visitor.first_seen).total_seconds())
+
+
+def _client_welcome_elapsed(request):
+    """Sekunde od učitavanja stranice (šalje live-offer-poll.js)."""
+    if not request:
+        return None
+    raw = None
+    try:
+        raw = request.GET.get('welcome_elapsed')
+    except Exception:
+        raw = None
+    if raw is None or raw == '':
+        return None
+    try:
+        return max(0.0, float(raw))
+    except (TypeError, ValueError):
+        return None
+
+
+def maybe_auto_welcome_registration(request):
+    """
+    Gost → automatski popup registracija + % na prvu narudžbu.
+    Uključuje se u SiteSettings → „Registracija + popust”.
+    Kašnjenje (npr. 4 s) broji se od učitavanja stranice (client welcome_elapsed),
+    ne odmah na prvi request.
+    """
+    aktivan, percent, delay = _welcome_reg_settings()
+    if not aktivan:
+        return None
+    if not request or _blocked_path(request):
+        return None
+    user = getattr(request, 'user', None)
+    if user and getattr(user, 'is_authenticated', False):
+        return None
+    if request.session.get(SESSION_WELCOME_REG_KEY):
+        return None
+
+    session_key = get_cart_session_key(request)
+    if not session_key:
+        return None
+
+    # Već ima (ili je imao) reg poziv u ovoj sesiji
+    existing = (
+        LiveVisitorOffer.objects.filter(
+            session_key=session_key,
+            tip=LiveVisitorOffer.Tip.REGISTRACIJA,
+        )
+        .order_by('-azurirano')
+        .first()
+    )
+    if existing:
+        request.session[SESSION_WELCOME_REG_KEY] = '1'
+        request.session.modified = True
+        return existing if existing.show_popup and not existing.kod_aktiviran else None
+
+    # Client šalje welcome_elapsed (sekunde od page load) — to je izvor istine za delay
+    client_elapsed = _client_welcome_elapsed(request)
+    now_ts = timezone.now().timestamp()
+    clock = request.session.get(SESSION_WELCOME_REG_CLOCK)
+    try:
+        clock = float(clock) if clock is not None else None
+    except (TypeError, ValueError):
+        clock = None
+    if clock is None:
+        request.session[SESSION_WELCOME_REG_CLOCK] = now_ts
+        request.session.modified = True
+        clock = now_ts
+
+    if delay <= 0:
+        elapsed = 0.0
+    elif client_elapsed is not None:
+        # Poll s JS-a: tačno N sekundi nakon učitavanja stranice
+        elapsed = client_elapsed
+    else:
+        # SSR / bez welcome_elapsed — nikad ne kreiraj odmah kad delay > 0
+        return None
+
+    if elapsed + 0.15 < float(delay):
+        return None
+
+    offer = send_live_visitor_registration_invite(
+        session_key,
+        auto=True,
+        discount_percent=percent,
+        free_shipping=percent <= 0,
+    )
+    request.session[SESSION_WELCOME_REG_KEY] = '1'
+    request.session.modified = True
+    return offer
 
 
 def set_session_free_shipping(request, active=True):
@@ -206,16 +612,20 @@ def clear_free_shipping_reward(request, user=None):
 
 
 def mark_registration_invite_pending(request, offer):
-    """Zapamti u sesiji da je posjetilac dobio poziv (besplatna dostava)."""
+    """Zapamti u sesiji da je posjetilac dobio poziv na registraciju."""
     if not offer or offer.tip != LiveVisitorOffer.Tip.REGISTRACIJA:
         return
-    request.session[SESSION_REG_INVITE_KEY] = 'free_shipping'
+    pct = offer.discount_percent or Decimal('0')
+    if pct > 0:
+        request.session[SESSION_REG_INVITE_KEY] = f'percent:{pct}'
+    else:
+        request.session[SESSION_REG_INVITE_KEY] = 'free_shipping'
     request.session.modified = True
 
 
 def claim_registration_invite_reward(request, user):
     """
-    Nakon registracije: besplatna dostava na prvu narudžbu (jednokratno).
+    Nakon registracije: % kupon ili besplatna dostava na prvu narudžbu.
     """
     if not user or not user.pk:
         return None
@@ -245,40 +655,63 @@ def claim_registration_invite_reward(request, user):
             offer.user = user
             offer.kod_aktiviran = True
             offer.show_popup = False
-            offer.besplatna_dostava = True
             offer.save(update_fields=[
-                'user', 'kod_aktiviran', 'show_popup', 'besplatna_dostava', 'azurirano',
+                'user', 'kod_aktiviran', 'show_popup', 'azurirano',
             ])
         request.session.pop(SESSION_REG_INVITE_KEY, None)
         return None
 
+    percent = Decimal('0')
+    free_ship = True
     if offer:
+        percent = _clamp_percent(offer.discount_percent or 0)
+        free_ship = bool(offer.besplatna_dostava) and percent <= 0
         offer.user = user
-        offer.discount_percent = Decimal('0')
-        offer.besplatna_dostava = True
         offer.kod_aktiviran = True
         offer.show_popup = False
         offer.save(update_fields=[
-            'user', 'discount_percent', 'besplatna_dostava',
-            'kod_aktiviran', 'show_popup', 'azurirano',
+            'user', 'kod_aktiviran', 'show_popup', 'azurirano',
         ])
     else:
-        # Pending iz sesije bez aktivne ponude u bazi
+        # Pending iz sesije
+        if isinstance(pending, str) and pending.startswith('percent:'):
+            try:
+                percent = _clamp_percent(pending.split(':', 1)[1])
+            except Exception:
+                percent = Decimal('10')
+            free_ship = False
         sk = session_key or f'reg-user-{user.pk}'
         LiveVisitorOffer.objects.create(
             session_key=sk,
             user=user,
             tip=LiveVisitorOffer.Tip.REGISTRACIJA,
-            discount_percent=Decimal('0'),
-            besplatna_dostava=True,
+            discount_percent=percent,
+            besplatna_dostava=free_ship,
             kod_aktiviran=True,
             show_popup=False,
             added_to_cart=False,
         )
 
-    set_session_free_shipping(request, True)
     request.session.pop(SESSION_REG_INVITE_KEY, None)
     request.session.modified = True
+
+    if percent > 0:
+        # Kreiraj jednokratni kupon za prvu narudžbu
+        import secrets
+        code = f'REG{secrets.token_hex(3).upper()[:6]}'
+        while Coupon.objects.filter(kod=code).exists():
+            code = f'REG{secrets.token_hex(3).upper()[:6]}'
+        Coupon.objects.create(
+            kod=code,
+            naziv=REGISTRATION_COUPON_NAME,
+            postotak=percent,
+            vlasnik=user,
+            aktivan=True,
+            automatski=True,
+        )
+        return {'percent': str(percent), 'type': 'registration', 'coupon': code}
+
+    set_session_free_shipping(request, True)
     return {'free_shipping': True, 'type': 'registration'}
 
 
@@ -449,12 +882,40 @@ def _build_product_offer_payload(offer):
 
 
 def _build_registration_offer_payload(offer):
+    pct = offer.discount_percent or Decimal('0')
+    pct_display = _percent_display(pct)
+    free_ship = bool(getattr(offer, 'besplatna_dostava', False)) and (not pct or pct <= 0)
+
+    if pct_display:
+        return {
+            'offer_type': 'registration',
+            'offer_id': offer.pk,
+            'offer_version': int(offer.azurirano.timestamp()),
+            'discount_percent': pct_display,
+            'free_shipping': False,
+            'title': f'Registrujte se i uzmite {pct_display}% popusta',
+            'message': (
+                f'Kreirajte nalog i ostvarite {pct_display}% popusta na prvu narudžbu. '
+                f'Kupon se automatski primjenjuje u korpi — jednokratno.'
+            ),
+            'benefits': [
+                f'{pct_display}% popusta na prvu narudžbu',
+                'Automatski se primjenjuje u korpi',
+                'Vrijedi samo jednom — nakon porudžbe prestaje',
+            ],
+            'cta_label': f'Registruj se i uzmi {pct_display}%',
+            'register_url': '/registracija/',
+            'timer_seconds': _offer_timer_seconds(offer),
+            'timer_minutes': OFFER_TIMER_MINUTES,
+            'dismiss_url': '/ponuda/zatvori/',
+        }
+
     return {
         'offer_type': 'registration',
         'offer_id': offer.pk,
         'offer_version': int(offer.azurirano.timestamp()),
         'discount_percent': None,
-        'free_shipping': True,
+        'free_shipping': free_ship or True,
         'title': 'Registrujte se i ostvarite besplatnu dostavu',
         'message': (
             'Nakon registracije na prvu narudžbu imate besplatnu dostavu. '
@@ -482,6 +943,10 @@ def _build_offer_payload(offer):
 
 
 def build_live_visitor_offer_context(request):
+    try:
+        maybe_auto_welcome_registration(request)
+    except Exception:
+        pass
     offer = get_active_live_visitor_offer(request)
     if not offer:
         return None
@@ -496,11 +961,23 @@ def build_live_visitor_offer_context(request):
 
 
 def poll_live_visitor_offer(request):
+    # Welcome 10 s: gostu automatski reg + besplatna dostava
+    try:
+        maybe_auto_welcome_registration(request)
+    except Exception:
+        pass
+
+    # 1 min na stranici artikla → 10% na taj artikal
+    try:
+        maybe_create_product_dwell_offer(request)
+    except Exception:
+        pass
+
     offer = get_active_live_visitor_offer(request)
     if offer:
         mark_registration_invite_pending(request, offer)
         return _build_offer_payload(offer)
-    # Fallback: personalizovana ponuda na osnovu gledanja (2+ pregleda / top kategorija)
+    # Fallback: personalizovana ponuda nakon 2 min (prema gledanju)
     try:
         from .browse_interest_offer import poll_browse_interest_offer
 

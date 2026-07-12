@@ -1158,8 +1158,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return parseInt(a.dataset.popupId || '0', 10) - parseInt(b.dataset.popupId || '0', 10);
             });
 
+        const onProductPage = /^\/artikal\/[^/]+\/?$/.test(window.location.pathname || '');
+
         popupQueue.forEach((overlay) => {
-            const delaySec = parseInt(overlay.dataset.popupDelay || '0', 10);
+            let delaySec = parseInt(overlay.dataset.popupDelay || '0', 10);
+            // Bundle na stranici artikla: uvijek 2 s nakon ulaska
+            if (onProductPage && (overlay.dataset.akcijaTip || '') === 'bundle') {
+                delaySec = 2;
+            }
             const showAt = pageStartedAt + Math.max(0, delaySec) * 1000;
             const waitMs = Math.max(0, showAt - Date.now());
 
@@ -1191,7 +1197,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const formData = new FormData(akcijaForm);
                         formData.set('stay', '1');
                         if (
-                            (overlay.dataset.akcijaTip === 'timer' || overlay.dataset.akcijaTip === 'gratis')
+                            (
+                                overlay.dataset.akcijaTip === 'timer'
+                                || overlay.dataset.akcijaTip === 'gratis'
+                                || overlay.dataset.akcijaTip === 'bundle'
+                            )
                             && overlay.dataset.akcijaId
                             && !formData.get('akcija_id')
                         ) {

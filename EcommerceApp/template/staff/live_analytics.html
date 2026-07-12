@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260712v9">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260712v14">
 {% endblock %}
 
 {% block content %}
@@ -19,7 +19,7 @@
             <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
             <h1 class="la-title">Uživo analitika</h1>
             <p class="la-sub">
-                Klikni na kupca da vidiš detalje i pošalješ ponudu, nagradu ili poziv na registraciju.
+                Na kartici vidiš gdje kupac ide, šta prihvata/odbija i šalješ ponudu ili nagradu — bez ulaska u detalje.
             </p>
         </div>
         <div class="la-top-meta">
@@ -57,11 +57,11 @@
                 Live na sajtu
                 <span class="la-count-pill" id="liveCardsCount">{{ online_count }}</span>
             </h2>
-            <p class="la-section-hint">Samo aktivni sada · klikni karticu za akcije</p>
+            <p class="la-section-hint">Sve na kartici · ponuda / nagrada / reg bez otvaranja detalja</p>
         </div>
         <div class="la-live-grid" id="liveCards">
             {% for visitor in online_visitors %}
-            <button type="button" class="la-card" data-visitor-open data-session-key="{{ visitor.session_key }}">
+            <article class="la-card la-card--panel" data-session-key="{{ visitor.session_key }}">
                 <div class="la-card-top">
                     <div>
                         <p class="la-card-name{% if visitor.has_purchased %} la-name--buyer{% endif %}{% if visitor.is_registered %} la-name--reg{% endif %}">
@@ -71,7 +71,10 @@
                                 {% if visitor.has_purchased %}<span class="la-name-badge la-name-badge--buyer">★ kupio</span>{% endif %}
                             </span>
                         </p>
-                        {% if visitor.grad %}<p class="la-card-city">{{ visitor.grad }}</p>{% endif %}
+                        <p class="la-card-city">
+                            {% if visitor.grad %}{{ visitor.grad }}{% else %}—{% endif %}
+                            {% if visitor.email %} · {{ visitor.email }}{% elif not visitor.is_registered %} · gost{% endif %}
+                        </p>
                     </div>
                     <span class="la-badge-live"><i></i> Live</span>
                 </div>
@@ -84,11 +87,79 @@
                           title="Klikni da vidiš šta je u korpi">🛒 {{ visitor.cart_value_label }}</span>
                     {% endif %}
                 </div>
+                <div class="la-card-activity">
+                    <div class="la-card-activity-line la-card-activity-line--now">
+                        <strong>Sada:</strong>
+                        <span class="la-now-live">{% if visitor.current_page %}{{ visitor.current_page }}{% elif visitor.visitor_insight.intent_label %}{{ visitor.visitor_insight.intent_label }}{% else %}—{% endif %}</span>
+                    </div>
+                    {% if visitor.current_product_id %}
+                    {% if visitor.current_product_accepted %}
+                    <div class="la-card-now-offer la-card-now-offer--taken">
+                        <span class="la-card-now-taken">✓ Već prihvatio popust — u korpi</span>
+                    </div>
+                    {% else %}
+                    <div class="la-card-now-offer"
+                         data-session-key="{{ visitor.session_key }}">
+                        <label class="la-card-now-offer-label">
+                            % popusta
+                            <input type="number" min="1" max="50" step="1" value="10"
+                                   class="la-card-now-pct"
+                                   data-pct-for="now-{{ visitor.current_product_id }}"
+                                   aria-label="Popust % na trenutni artikal">
+                        </label>
+                        <button type="button"
+                                class="la-card-act la-card-act--now-offer"
+                                data-now-product-offer
+                                data-product-id="{{ visitor.current_product_id }}"
+                                data-product-name="{{ visitor.current_product_name|default:visitor.current_page }}"
+                                data-pct-input="now-{{ visitor.current_product_id }}"
+                                data-session-key="{{ visitor.session_key }}"
+                                title="Pošalji % sniženja za artikal koji sada gleda">
+                            Pošalji %
+                        </button>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    {% if visitor.products_label %}
+                    <div class="la-card-activity-line"><strong>Gledao:</strong> {{ visitor.products_label }}</div>
+                    {% endif %}
+                    {% if visitor.categories_label %}
+                    <div class="la-card-activity-line"><strong>Kategorije:</strong> {{ visitor.categories_label }}</div>
+                    {% endif %}
+                    {% if visitor.staff_actions %}
+                    <ul class="la-card-outcomes">
+                        {% for a in visitor.staff_actions|slice:":8" %}
+                        <li class="la-card-outcome la-card-outcome--{{ a.status|default:'wait' }}{% if a.gift_result %} la-card-outcome--{{ a.gift_result }}{% endif %}">
+                            <span>{{ a.title|default:a.kind_label|default:"Akcija" }}</span>
+                            <em>{% if a.gift_result == 'osvojio' %}osvojio{% elif a.gift_result == 'izgubio' %}izgubio{% elif a.gift_result == 'odbio' or a.status == 'left' or a.status == 'rejected' or a.status == 'dismissed' %}odbio{% elif a.status == 'accepted' %}prihvatio{% else %}čeka{% endif %}</em>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="la-card-activity-line la-card-activity-line--muted">Još nema prihvaćanja / odbijanja</div>
+                    {% endif %}
+                </div>
+                <div class="la-card-actions">
+                    <button type="button" class="la-card-act la-card-act--offer" data-card-offer
+                            data-session-key="{{ visitor.session_key }}"
+                            data-visitor-name="{{ visitor.ime }}"
+                            data-visitor-email="{{ visitor.email }}"
+                            data-user-id="{{ visitor.user_id|default:'' }}">Ponuda</button>
+                    <button type="button" class="la-card-act la-card-act--gift" data-card-gift
+                            data-session-key="{{ visitor.session_key }}"
+                            data-visitor-name="{{ visitor.ime }}">🎁 Nagrada</button>
+                    {% if visitor.can_invite_register %}
+                    <button type="button" class="la-card-act la-card-act--reg" data-card-register
+                            data-session-key="{{ visitor.session_key }}"
+                            data-visitor-name="{{ visitor.ime }}">Reg</button>
+                    {% endif %}
+                    <button type="button" class="la-card-act la-card-act--more" data-visitor-open
+                            data-session-key="{{ visitor.session_key }}">Više</button>
+                </div>
                 <div class="la-card-footer">
                     <span>{{ visitor.traffic_source_label|default:"Direktno" }} · {{ visitor.last_seen_label }}</span>
-                    <span class="la-card-cta">Otvori →</span>
                 </div>
-            </button>
+            </article>
             {% empty %}
             <div class="la-empty" id="liveCardsEmpty">
                 <strong>Niko nije live trenutno</strong>
@@ -524,6 +595,133 @@
             || (drawer && !drawer.hidden);
     }
 
+    function outcomeTag(a) {
+        const st = a.status || '';
+        const gr = a.gift_result || '';
+        const kind = a.kind || '';
+        if (gr === 'osvojio') return { cls: 'accepted', label: 'osvojio' };
+        if (gr === 'izgubio' || st === 'lost') return { cls: 'lost', label: 'izgubio' };
+        if (gr === 'odbio' || st === 'dismissed') return { cls: 'left', label: 'odbio' };
+        if (st === 'accepted') {
+            return {
+                cls: 'accepted',
+                label: kind === 'gift' ? 'osvojio' : 'prihvatio',
+            };
+        }
+        if (st === 'left' || st === 'rejected') return { cls: 'left', label: 'odbio' };
+        return { cls: 'wait', label: 'čeka' };
+    }
+
+    function cardOutcomesHtml(v) {
+        const actions = v.staff_actions || [];
+        if (!actions.length) {
+            return '<div class="la-card-activity-line la-card-activity-line--muted">Još nema prihvaćanja / odbijanja</div>';
+        }
+        const rows = actions.slice(0, 8).map(function (a) {
+            const tag = outcomeTag(a);
+            const title = a.title || a.kind_label || 'Akcija';
+            return (
+                '<li class="la-card-outcome la-card-outcome--' + escapeHtml(tag.cls) + '">' +
+                '<span>' + escapeHtml(title) + '</span>' +
+                '<em>' + escapeHtml(tag.label) + '</em></li>'
+            );
+        });
+        return '<ul class="la-card-outcomes">' + rows.join('') + '</ul>';
+    }
+
+    function isProductOfferAccepted(v, productId) {
+        if (!productId) return false;
+        const pid = String(productId);
+        if (v.current_product_accepted && String(v.current_product_id || '') === pid) {
+            return true;
+        }
+        const ids = v.accepted_offer_ids || [];
+        for (let i = 0; i < ids.length; i++) {
+            if (String(ids[i]) === pid) return true;
+        }
+        return false;
+    }
+
+    function cardNowOfferHtml(v) {
+        const pid = v.current_product_id;
+        if (!pid) return '';
+        if (isProductOfferAccepted(v, pid) || v.current_product_accepted) {
+            return (
+                '<div class="la-card-now-offer la-card-now-offer--taken">' +
+                '<span class="la-card-now-taken">✓ Već prihvatio popust — u korpi</span></div>'
+            );
+        }
+        const pctKey = 'now-' + pid;
+        const name = escapeHtml(v.current_product_name || v.current_page || 'Artikal');
+        return (
+            '<div class="la-card-now-offer" data-session-key="' +
+            escapeHtml(v.session_key || '') + '">' +
+            '<label class="la-card-now-offer-label">% popusta ' +
+            '<input type="number" min="1" max="50" step="1" value="10" ' +
+            'class="la-card-now-pct" data-pct-for="' + escapeHtml(pctKey) + '" ' +
+            'aria-label="Popust % na trenutni artikal"></label>' +
+            '<button type="button" class="la-card-act la-card-act--now-offer" ' +
+            'data-now-product-offer data-product-id="' + escapeHtml(pid) + '" ' +
+            'data-product-name="' + name + '" data-pct-input="' + escapeHtml(pctKey) + '" ' +
+            'data-session-key="' + escapeHtml(v.session_key || '') + '" ' +
+            'title="Pošalji % sniženja za artikal koji sada gleda">Pošalji %</button></div>'
+        );
+    }
+
+    function cardActivityHtml(v) {
+        const insight = v.visitor_insight || {};
+        const lines = [];
+        const nowLabel = v.current_page || insight.intent_label || '—';
+        lines.push(
+            '<div class="la-card-activity-line la-card-activity-line--now">' +
+            '<strong>Sada:</strong> <span class="la-now-live">' +
+            escapeHtml(nowLabel) + '</span></div>'
+        );
+        lines.push(cardNowOfferHtml(v));
+        if (v.products_label) {
+            lines.push(
+                '<div class="la-card-activity-line"><strong>Gledao:</strong> ' +
+                escapeHtml(v.products_label) + '</div>'
+            );
+        }
+        if (v.categories_label) {
+            lines.push(
+                '<div class="la-card-activity-line"><strong>Kategorije:</strong> ' +
+                escapeHtml(v.categories_label) + '</div>'
+            );
+        }
+        if (v.almost_cart_label) {
+            lines.push(
+                '<div class="la-card-activity-line la-card-activity-line--hot">' +
+                '<strong>Skoro korpa:</strong> ' + escapeHtml(v.almost_cart_label) + '</div>'
+            );
+        }
+        lines.push(cardOutcomesHtml(v));
+        return lines.join('');
+    }
+
+    function cardActionsHtml(v) {
+        const sk = escapeHtml(v.session_key || '');
+        const name = escapeHtml(v.ime || 'Gost');
+        const email = escapeHtml(v.email || '');
+        const uid = escapeHtml(v.user_id || '');
+        let html =
+            '<button type="button" class="la-card-act la-card-act--offer" data-card-offer ' +
+            'data-session-key="' + sk + '" data-visitor-name="' + name +
+            '" data-visitor-email="' + email + '" data-user-id="' + uid + '">Ponuda</button>' +
+            '<button type="button" class="la-card-act la-card-act--gift" data-card-gift ' +
+            'data-session-key="' + sk + '" data-visitor-name="' + name + '">🎁 Nagrada</button>';
+        if (v.can_invite_register) {
+            html +=
+                '<button type="button" class="la-card-act la-card-act--reg" data-card-register ' +
+                'data-session-key="' + sk + '" data-visitor-name="' + name + '">Reg</button>';
+        }
+        html +=
+            '<button type="button" class="la-card-act la-card-act--more" data-visitor-open ' +
+            'data-session-key="' + sk + '">Više</button>';
+        return html;
+    }
+
     /* —— Render live cards —— */
     function renderLiveCards(visitors) {
         onlineCache = visitors || [];
@@ -563,46 +761,91 @@
                     '</span>'
                 );
             }
-            if (v.has_staff_actions || v.offer_sent) {
-                const st = v.staff_action_summary_status || v.offer_status || '';
-                const oc = st === 'accepted'
-                    ? 'la-chip--offer-ok'
-                    : (st === 'left' ? 'la-chip--offer-no' : 'la-chip--offer-wait');
-                chips.push(
-                    '<span class="la-chip ' + oc + '" title="Poslato kupcu">' +
-                    escapeHtml(
-                        v.staff_action_summary ||
-                        v.offer_status_label ||
-                        offerStatusFallback(st)
-                    ) +
-                    '</span>'
-                );
-            }
-            if (v.sent_gift) {
-                chips.push('<span class="la-chip la-chip--gift" title="Online nagrada poslana">🎁 nagrada</span>');
-            }
-            if (v.sent_register_invite) {
-                chips.push('<span class="la-chip la-chip--reg-sent" title="Poziv na registraciju poslan">✉ reg</span>');
-            }
+            const cityEmail = [
+                v.grad || '—',
+                v.email || (v.is_registered ? '' : 'gost'),
+            ].filter(Boolean).join(' · ');
             return (
-                '<button type="button" class="la-card' +
+                '<article class="la-card la-card--panel' +
                 (v.offer_status === 'accepted' ? ' la-card--offer-ok' : '') +
                 (v.offer_status === 'left' ? ' la-card--offer-no' : '') +
-                '" data-visitor-open data-session-key="' +
-                escapeHtml(v.session_key || '') + '">' +
+                '" data-session-key="' + escapeHtml(v.session_key || '') + '">' +
                 '<div class="la-card-top"><div>' +
                 '<p class="la-card-name' + visitorNameClasses(v) + '">' +
                 escapeHtml(v.ime || 'Gost') + visitorNameBadgesHtml(v) + '</p>' +
-                (v.grad ? '<p class="la-card-city">' + escapeHtml(v.grad) + '</p>' : '') +
+                '<p class="la-card-city">' + escapeHtml(cityEmail) + '</p>' +
                 '</div><span class="la-badge-live"><i></i> Live</span></div>' +
                 '<div class="la-card-meta">' + chips.join('') + '</div>' +
+                '<div class="la-card-activity">' + cardActivityHtml(v) + '</div>' +
+                '<div class="la-card-actions">' + cardActionsHtml(v) + '</div>' +
                 '<div class="la-card-footer"><span>' +
                 escapeHtml(v.traffic_source_label || 'Direktno') + ' · ' +
                 escapeHtml(v.last_seen_label || '') +
-                '</span><span class="la-card-cta">Otvori →</span></div></button>'
+                '</span></div></article>'
             );
         }).join('');
         bindVisitorOpen(liveCards);
+        bindCardActions(liveCards);
+    }
+
+    function bindCardActions(root) {
+        if (!root) return;
+        root.querySelectorAll('[data-card-offer]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sk = btn.dataset.sessionKey || '';
+                const v = visitorsByKey[sk] || {};
+                openOfferModal({
+                    sessionKey: sk,
+                    visitorName: btn.dataset.visitorName || v.ime || 'Gost',
+                    email: btn.dataset.visitorEmail || v.email || '',
+                    userId: btn.dataset.userId || v.user_id || '',
+                });
+            });
+        });
+        root.querySelectorAll('[data-card-gift]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sk = btn.dataset.sessionKey || '';
+                const v = visitorsByKey[sk] || {};
+                pushOnlineGift(
+                    sk,
+                    btn.dataset.visitorName || v.ime || 'Gost',
+                    btn,
+                    !!v.sent_gift,
+                );
+            });
+        });
+        root.querySelectorAll('[data-card-register]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sk = btn.dataset.sessionKey || '';
+                const v = visitorsByKey[sk] || {};
+                sendRegistrationInvite(
+                    sk,
+                    btn.dataset.visitorName || v.ime || 'Gost',
+                    btn,
+                    !!v.sent_register_invite,
+                );
+            });
+        });
+        root.querySelectorAll('[data-now-product-offer]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sk = btn.dataset.sessionKey || '';
+                const v = visitorsByKey[sk] || {
+                    session_key: sk,
+                    ime: 'Gost',
+                    email: '',
+                    user_id: '',
+                };
+                sendProductOffer(btn, v);
+            });
+        });
     }
 
     function offerStatusFallback(status) {
@@ -807,7 +1050,9 @@
     function bindVisitorOpen(root) {
         if (!root) return;
         root.querySelectorAll('[data-visitor-open]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
                 openDrawer(btn.dataset.sessionKey || '');
             });
         });
@@ -896,11 +1141,18 @@
         if (!products.length) {
             productsHtml = '<div class="la-list-empty">Nema pregledanih proizvoda.</div>';
         } else {
+            const acceptedEarly = {};
+            (v.accepted_offer_ids || []).forEach(function (id) {
+                acceptedEarly[String(id)] = true;
+            });
             productsHtml = '<ul class="la-list">' + products.map(function (p) {
                 const isOfferProduct = offerPid && String(p.id) === offerPid;
-                let rowClass = '';
+                const taken = !!acceptedEarly[String(p.id)];
+                let rowClass = taken ? ' la-list-item--offer-ok' : '';
                 let statusTag = '';
-                if (isOfferProduct && v.offer_sent) {
+                if (taken) {
+                    statusTag = '<span class="la-offer-tag la-offer-tag--ok">U korpi</span>';
+                } else if (isOfferProduct && v.offer_sent) {
                     if (v.offer_status === 'accepted') {
                         rowClass = ' la-list-item--offer-ok';
                         statusTag = '<span class="la-offer-tag la-offer-tag--ok">Prihvatio</span>';
@@ -915,20 +1167,26 @@
                 const views = p.views > 1
                     ? ' <span class="la-muted">(' + p.views + '×)</span>'
                     : '';
-                // Ako je ponuda na ovaj artikal — umjesto samo broja pregleda prikaži status bojom
-                const nameHtml = isOfferProduct && v.offer_sent
-                    ? ('<span class="la-product-name la-product-name--' +
-                       escapeHtml(v.offer_status || 'active') + '">' +
-                       escapeHtml(p.naziv || 'Artikal') + '</span>' + statusTag)
-                    : (escapeHtml(p.naziv || 'Artikal') + views);
+                const nameHtml = (
+                    '<span class="la-product-name' +
+                    (taken || (isOfferProduct && v.offer_sent)
+                        ? ' la-product-name--' + escapeHtml(taken ? 'accepted' : (v.offer_status || 'active'))
+                        : '') +
+                    '">' + escapeHtml(p.naziv || 'Artikal') + '</span>' + views + statusTag
+                );
+                const offerControls = taken
+                    ? '<span class="la-offer-tag la-offer-tag--ok">Popust iskorišten</span>'
+                    : (
+                        '<div class="la-product-offer">' +
+                        '<input type="number" min="0" max="50" step="1" value="10" data-pct-for="' +
+                        escapeHtml(p.id) + '" aria-label="Popust %">' +
+                        '<button type="button" class="staff-live-offer-btn" data-product-offer ' +
+                        'data-product-id="' + escapeHtml(p.id) + '" data-product-name="' +
+                        escapeHtml(p.naziv || '') + '">Pošalji</button></div>'
+                    );
                 return (
                     '<li class="' + rowClass.trim() + '"><span class="la-product-line">' + nameHtml +
-                    '</span><div class="la-product-offer">' +
-                    '<input type="number" min="0" max="50" step="1" value="10" data-pct-for="' +
-                    escapeHtml(p.id) + '" aria-label="Popust %">' +
-                    '<button type="button" class="staff-live-offer-btn" data-product-offer ' +
-                    'data-product-id="' + escapeHtml(p.id) + '" data-product-name="' +
-                    escapeHtml(p.naziv || '') + '">Pošalji</button></div></li>'
+                    '</span>' + offerControls + '</li>'
                 );
             }).join('') + '</ul>';
         }
@@ -977,7 +1235,7 @@
         const insight = v.visitor_insight || {};
         const recs = v.sell_recommendations || [];
         let insightHtml = '';
-        if (insight.intent_label || insight.tip) {
+        if (v.current_page || insight.intent_label || insight.tip) {
             const intentClass = 'la-insight--' + escapeHtml(insight.intent || 'browse');
             insightHtml =
                 '<div class="la-drawer-block la-insight-block">' +
@@ -988,7 +1246,13 @@
                       escapeHtml(v.returning_label || 'Vraćeni posjetilac') +
                       '</div>'
                     : '<div class="la-insight-meta">Prvi put na sajtu</div>') +
-                '<div class="la-insight-label">' + escapeHtml(insight.intent_label || '—') + '</div>' +
+                '<div class="la-insight-label la-insight-label--now">' +
+                '<span class="la-now-live">' +
+                escapeHtml(v.current_page || insight.intent_label || '—') +
+                '</span></div>' +
+                (insight.intent_label && v.current_page
+                    ? '<div class="la-insight-meta">' + escapeHtml(insight.intent_label) + '</div>'
+                    : '') +
                 '<div class="la-insight-tip">' + escapeHtml(insight.tip || '') + '</div>' +
                 (insight.focus_category
                     ? '<div class="la-insight-meta">Fokus kategorija: <strong>' +
@@ -1255,9 +1519,16 @@
         const productId = btn.dataset.productId || '';
         const productName = btn.dataset.productName || 'Artikal';
         if (!productId) return;
+        if (isProductOfferAccepted(v, productId)) {
+            alert('Kupac je već prihvatio popust na ovaj artikal i dodao ga u korpu.');
+            return;
+        }
         const pctKey = btn.dataset.pctInput || productId;
-        const input = drawerBody.querySelector('[data-pct-for="' + pctKey + '"]')
-            || drawerBody.querySelector('[data-pct-for="' + productId + '"]');
+        const scope = btn.closest('.la-card') || btn.closest('.la-drawer-body') || drawerBody || document;
+        const input = (scope && scope.querySelector('[data-pct-for="' + pctKey + '"]'))
+            || (scope && scope.querySelector('[data-pct-for="' + productId + '"]'))
+            || (drawerBody && drawerBody.querySelector('[data-pct-for="' + pctKey + '"]'))
+            || (drawerBody && drawerBody.querySelector('[data-pct-for="' + productId + '"]'));
         let discountVal = parseFloat(input && input.value != null ? input.value : '10');
         if (isNaN(discountVal) || discountVal < 0) discountVal = 0;
         if (discountVal > 50) discountVal = 50;
@@ -1274,7 +1545,7 @@
             const form = document.getElementById('liveOfferSendForm');
             const body = new URLSearchParams();
             body.set('csrfmiddlewaretoken', csrf);
-            body.set('session_key', v.session_key || '');
+            body.set('session_key', v.session_key || btn.dataset.sessionKey || '');
             body.set('email', v.email || '');
             body.set('user_id', v.user_id || '');
             body.set('product_id', productId);
@@ -1749,6 +2020,9 @@
             return [a.kind, a.status, a.status_label, a.title, a.sent_at_label].join(':');
         }).join(';');
         return [
+            v.current_page || '',
+            v.current_path || '',
+            v.current_product_id || '',
             v.offer_status || '',
             v.offer_product || '',
             v.offer_status_label || '',
@@ -1900,6 +2174,7 @@
     // Initial binds
     bindVisitorOpen(liveCards);
     bindVisitorOpen(offlineList);
+    bindCardActions(liveCards);
     bindRegisteredBody(document.getElementById('liveRegisteredCustomersBody'));
 
     // Brži live poll — događanja (ponuda, korpa, proizvodi) bez F5

@@ -1,7 +1,4 @@
-/* Online nagrada — standalone (site koristi style.min.css) */
-body.og-open {
-  overflow: hidden !important;
-}
+/* Online nagrada — centrirani modal ili bočni pulsirajući */
 
 .og-overlay[hidden] {
   display: none !important;
@@ -10,22 +7,14 @@ body.og-open {
 .og-overlay {
   position: fixed !important;
   inset: 0 !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
   z-index: 2147483000 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 16px !important;
+  padding: 20px !important;
   margin: 0 !important;
   box-sizing: border-box !important;
-  background: #0b1220 !important;
-  background-image:
-    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(91, 184, 5, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 50% 80%, rgba(91, 184, 5, 0.14) 0%, transparent 50%),
-    linear-gradient(180deg, #0f1a0a 0%, #0b1220 50%, #070b12 100%) !important;
+  background: rgba(15, 23, 42, 0.38) !important;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -38,29 +27,250 @@ body.og-open {
   pointer-events: auto !important;
 }
 
+/* —— Bočni pulsirajući popup (sa strane, ne fullscreen) —— */
+/* Overlay ne hvata touch/wheel — scroll stranice radi ispod */
+.og-overlay.og-side {
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: 16px !important;
+  bottom: 20px !important;
+  width: min(340px, calc(100vw - 24px)) !important;
+  max-width: 340px !important;
+  height: auto !important;
+  max-height: min(78vh, 520px) !important;
+  padding: 0 !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  /* ne blokira skrol ispod (pointer-events: none na overlay) */
+  overscroll-behavior: none;
+}
+
+.og-overlay.og-side.is-open {
+  pointer-events: none !important;
+  overflow: visible !important;
+}
+
+.og-overlay.og-side .og-card {
+  pointer-events: auto !important;
+  touch-action: auto;
+  overscroll-behavior: contain;
+  width: 100% !important;
+  max-width: 340px !important;
+  margin: 0 !important;
+  box-shadow:
+    0 16px 48px rgba(15, 23, 42, 0.28),
+    0 0 0 2px rgba(91, 184, 5, 0.35),
+    0 0 24px rgba(91, 184, 5, 0.25) !important;
+  animation: og-side-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes og-side-pulse {
+  0%, 100% {
+    box-shadow:
+      0 16px 48px rgba(15, 23, 42, 0.28),
+      0 0 0 2px rgba(91, 184, 5, 0.35),
+      0 0 18px rgba(91, 184, 5, 0.2);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow:
+      0 20px 56px rgba(15, 23, 42, 0.32),
+      0 0 0 3px rgba(91, 184, 5, 0.55),
+      0 0 32px rgba(91, 184, 5, 0.4);
+    transform: translateY(-3px);
+  }
+}
+
+/* —— Mobilni: kompaktan bočni / bottom card, skrol stranice radi —— */
+@media (max-width: 768px) {
+  .og-overlay.og-side {
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px) + 8px) !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: min(72vh, 520px) !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+  }
+
+  .og-overlay.og-side .og-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: min(70vh, 500px) !important;
+    padding: 16px 14px 14px !important;
+    border-radius: 18px !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .og-overlay.og-side .og-card::before {
+    border-radius: 18px 18px 0 0;
+  }
+
+  .og-x {
+    top: 8px;
+    right: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    /* veći touch target */
+  }
+
+  .og-gift-icon {
+    font-size: 40px !important;
+    margin: 2px 0 6px !important;
+  }
+
+  .og-kicker {
+    font-size: 10px;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+  }
+
+  .og-title {
+    font-size: 17px !important;
+    padding: 0 28px 0 8px !important;
+    margin-bottom: 6px !important;
+    line-height: 1.25 !important;
+  }
+
+  .og-text {
+    font-size: 13px;
+    margin-bottom: 8px;
+    max-width: 100%;
+  }
+
+  .og-choice-hint {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .og-register-msg {
+    font-size: 12.5px;
+    margin-bottom: 10px;
+  }
+
+  .og-register-gate,
+  #ogPlayGate,
+  .og-btn,
+  .og-actions,
+  .og-product {
+    max-width: 100%;
+  }
+
+  .og-btn {
+    padding: 13px 16px;
+    font-size: 15px;
+    min-height: 46px;
+    border-radius: 12px;
+  }
+
+  .og-btn-ghost {
+    min-height: 42px;
+    margin-top: 6px;
+  }
+
+  .og-result-emoji {
+    font-size: 42px;
+    margin: 4px 0 6px;
+  }
+
+  .og-result-title {
+    font-size: 20px;
+  }
+
+  .og-result-msg {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .og-product {
+    padding: 12px 10px;
+    margin-bottom: 12px;
+  }
+
+  .og-product-img-wrap {
+    width: min(112px, 36vw);
+    height: min(112px, 36vw);
+  }
+}
+
+@media (max-width: 380px) {
+  .og-overlay.og-side {
+    max-height: min(78vh, 540px) !important;
+  }
+
+  .og-overlay.og-side .og-card {
+    padding: 14px 12px 12px !important;
+    max-height: min(76vh, 520px) !important;
+  }
+
+  .og-title {
+    font-size: 16px !important;
+  }
+
+  .og-btn {
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+}
+
+/* Landscape phone — ne prekriva cijeli ekran */
+@media (max-height: 420px) and (orientation: landscape) {
+  .og-overlay.og-side {
+    max-height: min(92vh, 360px) !important;
+    bottom: 8px !important;
+  }
+
+  .og-overlay.og-side .og-card {
+    max-height: min(88vh, 340px) !important;
+    padding: 12px 12px 10px !important;
+  }
+
+  .og-gift-icon {
+    font-size: 28px !important;
+    margin: 0 0 4px !important;
+  }
+
+  .og-title {
+    font-size: 15px !important;
+  }
+}
+
 .og-card {
   position: relative !important;
-  width: min(400px, 94vw) !important;
-  max-width: 400px !important;
-  max-height: min(90vh, 640px) !important;
+  width: min(380px, 100%) !important;
+  max-width: 380px !important;
+  max-height: min(78vh, 560px) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   margin: 0 auto !important;
-  padding: 28px 22px 22px !important;
-  border-radius: 24px !important;
+  padding: 22px 18px 18px !important;
+  border-radius: 20px !important;
   background: #ffffff !important;
   color: #0f172a !important;
   box-shadow:
-    0 28px 70px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(91, 184, 5, 0.25) !important;
+    0 22px 56px rgba(15, 23, 42, 0.32),
+    0 0 0 1px rgba(91, 184, 5, 0.22) !important;
   text-align: center !important;
-  transform: translateY(14px) scale(0.96);
+  transform: translateY(14px) scale(0.97);
   transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);
   box-sizing: border-box !important;
+  pointer-events: auto !important;
 }
 
-.og-overlay.is-open .og-card {
+.og-overlay.is-open:not(.og-side) .og-card {
   transform: none !important;
+}
+
+.og-overlay.og-side.is-open .og-card {
+  /* animacija pulse umjesto scale */
 }
 
 .og-card::before {
@@ -69,9 +279,49 @@ body.og-open {
   top: 0;
   left: 0;
   right: 0;
-  height: 5px;
+  height: 4px;
   background: linear-gradient(90deg, #3d8a00, #5BB805 40%, #9be84a 60%, #5BB805);
-  border-radius: 24px 24px 0 0;
+  border-radius: 20px 20px 0 0;
+}
+
+.og-register-gate {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.og-register-gate[hidden],
+#ogPlayGate[hidden] {
+  display: none !important;
+}
+
+.og-register-msg {
+  margin: 0 0 12px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.4;
+}
+
+#ogPlayGate {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.og-gift-icon {
+  font-size: 42px !important;
+  margin: 0 0 8px !important;
+}
+
+.og-title {
+  font-size: 18px !important;
 }
 
 .og-x {

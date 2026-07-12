@@ -2,11 +2,10 @@
 Personalizovana ponuda na osnovu gledanja sajta.
 
 Pravila:
-- Do 4 artikla iz kategorije interesa (2×2 mreža), 10% popust
-- Tekst: „Specijalna ponuda za vas”
-- Ne iskače odmah — prati gledanje / povratke na artikle
-- 1. ponuda: nakon 2 min na sajtu
-- 2. ponuda: nakon 4 min na sajtu (dalje svaka 2 min)
+- Nakon 2 min na sajtu: 10% na najgledanije artikle
+  · desktop: do 4 (2×2)
+  · mobilni: do 2 (preglednije)
+- Jedna automatska ponuda po sesiji — poslije toga nema drugih auto-ponuda
 - Staff: zeleni krug = prihvatio, crveni = odbio/zatvorio
 """
 
@@ -35,12 +34,42 @@ DEFAULT_DISCOUNT = Decimal('10')
 MIN_PRODUCT_VIEWS_PRIORITY = 2
 MIN_CATEGORY_VIEWS = 1
 MAX_RECOMMENDATIONS = 4
-MAX_OFFERS_PER_SESSION = 40
-# 1. na 2 min, 2. na 4 min, 3. na 6 min…
+MAX_RECOMMENDATIONS_MOBILE = 2  # mobilni — 2 artikla radi preglednosti
+# Jedna automatska product-ponuda po sesiji — nakon 2 min (najgledanije)
+MAX_OFFERS_PER_SESSION = 1
 FIRST_OFFER_AFTER_MINUTES = 2
-OFFER_EVERY_MINUTES = 2
+OFFER_EVERY_MINUTES = 2  # legacy (drugi val isključen)
 OFFER_TIMER_MINUTES = 2
 OFFER_TTL_MINUTES = 2
+
+_MOBILE_UA_TOKENS = (
+    'mobile', 'android', 'iphone', 'ipod', 'ipad', 'webos',
+    'blackberry', 'iemobile', 'opera mini', 'opera mobi',
+)
+
+
+def _is_mobile_request(request):
+    """Detekcija mobitela (UA) radi manjeg broja artikala u 2-min ponudi."""
+    if not request:
+        return False
+    # Klijent može poslati X-Viewport-Mobile: 1 iz live-offer-poll.js
+    try:
+        hint = (request.headers.get('X-Viewport-Mobile') or request.META.get('HTTP_X_VIEWPORT_MOBILE') or '').strip()
+        if hint in ('1', 'true', 'yes'):
+            return True
+        if hint in ('0', 'false', 'no'):
+            return False
+    except Exception:
+        pass
+    ua = (request.META.get('HTTP_USER_AGENT') or '').lower()
+    return any(token in ua for token in _MOBILE_UA_TOKENS)
+
+
+def _rec_limit(request=None):
+    """Koliko snizenih artikala nuditi: 2 na mobilnom, 4 na desktopu."""
+    if request is not None and _is_mobile_request(request):
+        return MAX_RECOMMENDATIONS_MOBILE
+    return MAX_RECOMMENDATIONS
 
 
 def _clamp_percent(value):
@@ -149,7 +178,15 @@ def is_auto_browse_offer(offer):
     if not offer:
         return False
     code = (getattr(offer, 'aktivacioni_kod', None) or '').strip()
-    return code == AUTO_BROWSE_CODE or code.startswith(AUTO_BROWSE_CODE)
+    if code == AUTO_BROWSE_CODE or code.startswith(AUTO_BROWSE_CODE):
+        return True
+    # Dwell 1 min na artiklu (10%) — isto auto za staff boje
+    try:
+        from .live_visitor_offer import is_auto_dwell_offer
+
+        return is_auto_dwell_offer(offer)
+    except Exception:
+        return False
 
 
 def _has_active_staff_offer(request):
@@ -170,6 +207,8 @@ def _has_active_staff_offer(request):
         )
         .exclude(aktivacioni_kod=AUTO_BROWSE_CODE)
         .exclude(aktivacioni_kod__startswith=f'{AUTO_BROWSE_CODE}-')
+        .exclude(aktivacioni_kod='AUTO-DWELL')
+        .exclude(aktivacioni_kod__startswith='AUTO-DWELL-')
         .exists()
     )
 
@@ -794,9 +833,11 @@ def _site_seconds(request, visitor, state):
 
 
 def _minutes_required_for_wave(wave):
-    """Wave 1 → 2 min, wave 2 → 4 min, wave 3 → 6 min…"""
+    """Wave 1 → 2 min (jedina automatska product-ponuda). Dodatni valovi isključeni."""
     wave = max(1, int(wave or 1))
-    return FIRST_OFFER_AFTER_MINUTES + (wave - 1) * OFFER_EVERY_MINUTES
+    if wave > 1:
+        return 10**9  # ne okidaj dalje
+    return FIRST_OFFER_AFTER_MINUTES
 
 
 def _should_trigger_wave(request, visitor, state, wave):
@@ -931,20 +972,22 @@ def _create_active_offer(request, visitor, state, percent, wave):
         | _claimed_ids(request)
         | {int(x) for x in (state.get('offered_ids') or []) if x}
     )
+    limit = _rec_limit(request)
     product_ids = pick_recommendation_product_ids(
         visitor,
         exclude_ids=exclude,
-        limit=MAX_RECOMMENDATIONS,
+        limit=limit,
     )
     if not product_ids:
         return None
 
+    product_ids = product_ids[:limit]
     tracking = _create_tracking_offer(request, visitor, product_ids, percent, wave)
     now = timezone.now()
     active = {
         'show': True,
         'wave': wave,
-        'product_ids': product_ids[:MAX_RECOMMENDATIONS],
+        'product_ids': product_ids,
         'discount_percent': str(percent),
         'top_category': _focus_category_name(visitor) or _top_category_name(visitor) or '',
         'created_ts': now.timestamp(),
@@ -952,6 +995,7 @@ def _create_active_offer(request, visitor, state, percent, wave):
         'version': int(now.timestamp()),
         'reason': _build_reason(visitor, product_ids),
         'tracking_offer_id': tracking.pk if tracking else None,
+        'mobile_limit': limit <= MAX_RECOMMENDATIONS_MOBILE,
     }
     state['active'] = active
     state['tracking_offer_id'] = tracking.pk if tracking else None
@@ -960,7 +1004,7 @@ def _create_active_offer(request, visitor, state, percent, wave):
 
 
 def maybe_create_browse_interest_offer(request, visitor=None):
-    """1. nakon 2 min, 2. nakon 4 min — dok pratimo gledanje."""
+    """Jedna ponuda nakon 2 min — najgledaniji artikli kupca."""
     if not request or _blocked_path(request):
         return None
 
@@ -1109,12 +1153,14 @@ def _timer_seconds(offer_data):
 
 
 def build_browse_interest_payload(request):
-    """JSON payload — do 4 artikla u 2×2 mreži."""
+    """JSON payload — desktop do 4 (2×2), mobilni do 2 artikla."""
     aktivan, percent = _settings()
     if not aktivan:
         return None
     if _has_active_staff_offer(request):
         return None
+
+    limit = _rec_limit(request)
 
     data = _session_offer(request)
     if not data or not data.get('show'):
@@ -1154,7 +1200,7 @@ def build_browse_interest_payload(request):
         product = by_id.get(pid)
         if product and _product_available(product):
             cards.append(_build_product_card(product, percent))
-        if len(cards) >= MAX_RECOMMENDATIONS:
+        if len(cards) >= limit:
             break
 
     if not cards:
@@ -1162,9 +1208,11 @@ def build_browse_interest_payload(request):
 
     state = _get_state(request)
     active = state.get('active') or data
-    active['product_ids'] = [c['product_id'] for c in cards]
+    # Na mobilnom prikaži samo 2 čak i ako je sesija ranije sačuvala 4
+    active['product_ids'] = [c['product_id'] for c in cards][:limit]
     active['discount_percent'] = str(percent)
     active['show'] = True
+    active['mobile_limit'] = limit <= MAX_RECOMMENDATIONS_MOBILE
     state['active'] = active
     if active.get('tracking_offer_id'):
         state['tracking_offer_id'] = active['tracking_offer_id']
@@ -1192,6 +1240,7 @@ def build_browse_interest_payload(request):
         _complete_active_offer(request, state, outcome='expire')
         return None
 
+    layout = 'grid-1x2' if len(cards) <= 2 else 'grid-2x2'
     return {
         'offer_type': 'browse_interest',
         'offer_id': f'browse-{active.get("version") or int(timezone.now().timestamp())}',
@@ -1203,7 +1252,8 @@ def build_browse_interest_payload(request):
         'top_category': top_category,
         'wave': wave,
         'products': cards,
-        'layout': 'grid-2x2',
+        'layout': layout,
+        'mobile': limit <= MAX_RECOMMENDATIONS_MOBILE,
         'timer_seconds': timer,
         'timer_minutes': OFFER_TIMER_MINUTES,
         'add_url': '/preporuka/dodaj/',

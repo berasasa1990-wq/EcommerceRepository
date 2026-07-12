@@ -217,11 +217,26 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': (
                 'browse_interest_popup_aktivan',
                 'browse_interest_popust',
+                'product_dwell_popup_aktivan',
+                'product_dwell_popust',
             ),
             'description': (
-                'Automatski popup „Specijalna ponuda za vas” — do 4 artikla (2×2) iz kategorije '
-                'koju kupac gleda. Prva nakon 2 min, druga nakon 4 min. '
-                'U uživo analitici: zeleni krug = prihvatio, crveni = odbio.'
+                '1) 2 min na sajtu — do 4 artikla (2×2) što najviše gleda. '
+                '2) 1 min na istom artiklu — popup s popustom na taj artikal. '
+                'U uživo analitici: zeleni = prihvatio, crveni = odbio.'
+            ),
+        }),
+        ('Registracija i nagradna igra', {
+            'fields': (
+                'welcome_reg_popup_aktivan',
+                'welcome_reg_popust',
+                'welcome_reg_delay_seconds',
+                'online_nagrada_bočni_aktivan',
+                'online_nagrada_delay_seconds',
+            ),
+            'description': (
+                '1) Registracija + % na prvu narudžbu — gostu na početku. '
+                '2) Nagradna igra — mali pulsirajući popup sa strane (treba aktivna kampanja Online nagrada).'
             ),
         }),
         ('Pogodnosti', {
@@ -371,11 +386,15 @@ class BrandAdmin(admin.ModelAdmin):
 @admin.register(Akcija)
 class AkcijaAdmin(admin.ModelAdmin):
     form = AkcijaAdminForm
-    list_display = ('naziv', 'tip', 'artikal', 'gratis_artikal', 'popust_postotak', 'gratis_popup', 'aktivan', 'redoslijed')
-    list_filter = ('tip', 'aktivan')
+    list_display = (
+        'naziv', 'tip', 'artikal', 'gratis_artikal', 'popust_postotak',
+        'bundle_trigger', 'gratis_popup', 'aktivan', 'redoslijed',
+    )
+    list_filter = ('tip', 'aktivan', 'bundle_trigger')
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naziv', 'artikal__naziv', 'gratis_artikal__naziv', 'kategorija__naziv')
     autocomplete_fields = ('artikal', 'gratis_artikal', 'kategorija')
+    filter_horizontal = ('bundle_artikli',)
     readonly_fields = ('preview_slika',)
 
     class Media:
@@ -385,23 +404,27 @@ class AkcijaAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
-                '1) Pop-up + slika — upload slike, tekst/link dugmeta, boje, kašnjenje; prikazuje se dok je uključeno (bez trajanja i %). '
-                '2) Akcija + tajmer — artikal, % sniženja, odbrojavanje. '
-                '3) X+1 — samo u korpi (1+1 / 2+1 / 3+1). '
-                '4) Uslov prodaja — prag se računa od cijele korpe minus 1 komad ovog artikla; popust na 1 komad. '
-                '5) Korpa nudjenje — artikal + % + kategorija; pored stavki iz kategorije u korpi. '
-                '6) + Gratis — trigger + drugi artikal sa % popusta; opcionalno pop-up (oba u korpu na klik). '
-                'Sve akcije rade dok je „Aktivan” uključen.'
+                'Izaberite tip — prikazuju se samo polja za taj tip. '
+                'Za Pop-up bundle: set artikala, % na kompletan set, trigger.'
             ),
         }),
         ('Sadržaj', {
             'fields': (
+                'bundle_artikli',
+                'bundle_trigger',
+                'popust_postotak',
+                'artikal',
+                'kategorija',
                 'slika', 'preview_slika',
-                'artikal', 'gratis_artikal', 'popust_postotak', 'gratis_popup',
-                'kategorija', 'prag_korpe_km', 'deal_vrsta',
+                'gratis_artikal', 'gratis_popup',
+                'prag_korpe_km', 'deal_vrsta',
                 'pocetak', 'trajanje_sati',
                 'tekst_dugmeta', 'link_dugmeta',
                 'boja_dugmeta', 'boja_opisa',
+            ),
+            'description': (
+                'Pop-up bundle: Artikli u setu + % + trigger. '
+                'Polja drugih tipova se automatski sakrivaju.'
             ),
         }),
         ('Pop-up ponašanje', {
@@ -410,11 +433,8 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'ponovo_poslije_dana',
             ),
             'description': (
-                'Za prikaz pop-upa uključite obje opcije publike ako želite da svi vide akciju. '
-                'Akcija radi dok je „Aktivan” uključen. Početak/trajanje služi samo za odbrojavanje u pop-upu. '
-                '„Ponovo prikaži poslije (dana)” = 0 znači ponovo u svakoj novoj posjeti; 7 = pauza 7 dana nakon zatvaranja.'
+                'Kašnjenje i publika. Za bundle: kašnjenje se broji tek kad je trigger ispunjen.'
             ),
-            'classes': ('collapse',),
         }),
     )
 

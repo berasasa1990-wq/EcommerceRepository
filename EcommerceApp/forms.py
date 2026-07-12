@@ -25,6 +25,17 @@ class AkcijaAdminForm(forms.ModelForm):
     def clean_artikal(self):
         artikal = self.cleaned_data.get('artikal')
         tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
+        tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
+        if tip == Akcija.Tip.BUNDLE:
+            # artikal je opcionalan — samo za trigger „odabrani trigger artikal”
+            trigger = self.cleaned_data.get('bundle_trigger') or getattr(
+                self.instance, 'bundle_trigger', None,
+            )
+            if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and not artikal:
+                raise forms.ValidationError('Odaberite trigger artikal.')
+            if artikal and not artikal.aktivan:
+                raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
+            return artikal
         if tip in {
             Akcija.Tip.TIMER,
             Akcija.Tip.USLOV,
@@ -45,7 +56,7 @@ class AkcijaAdminForm(forms.ModelForm):
         if not gratis_artikal:
             raise forms.ValidationError('Odaberite gratis artikal.')
         if not gratis_artikal.aktivan:
-            raise forms.ValidationError('Gratis artikal mora biti aktivan na sajtu.')
+            raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
         return gratis_artikal
 
     def clean(self):
@@ -99,6 +110,19 @@ class AkcijaAdminForm(forms.ModelForm):
                 self.add_error('popust_postotak', 'Unesite % popusta na drugi artikal.')
             if artikal and gratis_artikal and artikal.pk == gratis_artikal.pk:
                 self.add_error('gratis_artikal', 'Gratis artikal mora biti različit od trigger artikla.')
+
+        elif tip == Akcija.Tip.BUNDLE:
+            if cleaned.get('popust_postotak') in (None, ''):
+                self.add_error('popust_postotak', 'Unesite % popusta na kompletan set.')
+            trigger = cleaned.get('bundle_trigger') or Akcija.BundleTrigger.DELAY
+            if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and not cleaned.get('artikal'):
+                self.add_error('artikal', 'Odaberite trigger artikal.')
+            if trigger == Akcija.BundleTrigger.CATEGORY and not cleaned.get('kategorija'):
+                self.add_error('kategorija', 'Odaberite trigger kategoriju.')
+            # M2M se validira u clean() instance; na create bez pk koristimo form data
+            bundle = cleaned.get('bundle_artikli')
+            if bundle is not None and len(list(bundle)) < 2:
+                self.add_error('bundle_artikli', 'Odaberite barem 2 artikla za set.')
 
         return cleaned
 

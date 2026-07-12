@@ -25,15 +25,56 @@
     var dismissUrl = overlay.getAttribute('data-dismiss-url') || '/online-nagrada/zatvori/';
     var pollUrl = overlay.getAttribute('data-poll-url') || '/online-nagrada/status/';
     var cartUrl = overlay.getAttribute('data-cart-url') || '/korpa/';
+    var registerUrl = overlay.getAttribute('data-register-url') || '/registracija/?next=/';
     var giftId = overlay.getAttribute('data-id') || '0';
     var delay = Math.max(0, parseInt(overlay.getAttribute('data-delay') || '0', 10) || 0);
     var showNow = overlay.getAttribute('data-show-now') === '1';
+    var forceShow = overlay.getAttribute('data-force-show') === '1';
+    var sideMode = overlay.getAttribute('data-side-mode') === '1';
+    var requiresRegistration = overlay.getAttribute('data-requires-registration') === '1';
+
+    // Uvijek bočni popup (ne fullscreen) — stranica ostaje skrolabilna
+    sideMode = true;
+    overlay.classList.add('og-side');
+    overlay.setAttribute('data-side-mode', '1');
+    var registerGate = document.getElementById('ogRegisterGate');
+    var playGate = document.getElementById('ogPlayGate');
+    var registerBtn = document.getElementById('ogRegisterBtn');
+    var choiceHint = document.getElementById('ogChoiceHint');
     var closedKey = 'og_closed_' + giftId;
     var busy = false;
     var done = false;
     var isOpen = false;
     var pollTimer = null;
     var POLL_MS = 2800;
+
+    // Nakon prijave (force_show) obriši sessionStorage da se popup opet otvori
+    if (forceShow) {
+        try { sessionStorage.removeItem(closedKey); } catch (e) {}
+    }
+
+    function setRequiresRegistration(on) {
+        requiresRegistration = !!on;
+        if (registerGate) {
+            registerGate.hidden = !requiresRegistration;
+            if (requiresRegistration) registerGate.removeAttribute('hidden');
+            else registerGate.setAttribute('hidden', '');
+        }
+        if (playGate) {
+            playGate.hidden = !!requiresRegistration;
+            if (requiresRegistration) playGate.setAttribute('hidden', '');
+            else playGate.removeAttribute('hidden');
+        }
+        if (choiceHint) {
+            choiceHint.textContent = requiresRegistration
+                ? 'Registrujte se da biste mogli igrati nagradnu igru.'
+                : 'Ti biraš — možeš odigrati ili zatvoriti.';
+        }
+        if (registerBtn && registerUrl) {
+            registerBtn.setAttribute('href', registerUrl);
+        }
+        overlay.setAttribute('data-requires-registration', requiresRegistration ? '1' : '0');
+    }
 
     function csrf() {
         var meta = document.querySelector('meta[name="csrf-token"]');
@@ -56,27 +97,73 @@
         try { sessionStorage.setItem(closedKey, '1'); } catch (e) {}
     }
 
+    function clearClosed() {
+        try { sessionStorage.removeItem(closedKey); } catch (e) {}
+    }
+
     function open() {
         if (done || isOpen) return;
-        if (isClosed()) return;
+        if (!forceShow && isClosed()) return;
+        if (forceShow) clearClosed();
+        // Uvijek sa strane — ne blokira scroll (desktop + mobilni)
+        sideMode = true;
+        overlay.classList.add('og-side');
+        overlay.setAttribute('data-side-mode', '1');
         overlay.hidden = false;
         overlay.removeAttribute('hidden');
         void overlay.offsetWidth;
         overlay.classList.add('is-open');
-        document.body.classList.add('og-open');
+        document.documentElement.classList.add('og-side-open');
+        document.body.classList.add('og-open', 'og-side-open');
         isOpen = true;
         showStep('intro');
     }
 
-    function hideOverlay() {
+    function hideOverlay(markAsClosed) {
+        if (markAsClosed !== false) markClosed();
         overlay.classList.remove('is-open');
-        document.body.classList.remove('og-open');
+        document.documentElement.classList.remove('og-side-open');
+        document.body.classList.remove('og-open', 'og-side-open');
         isOpen = false;
         setTimeout(function () {
             overlay.hidden = true;
             overlay.setAttribute('hidden', '');
         }, 280);
-        markClosed();
+    }
+
+    function postDismiss(reason) {
+        var t = csrf();
+        if (!t) return;
+        var body = new URLSearchParams();
+        body.set('csrfmiddlewaretoken', t);
+        if (reason) body.set('reason', reason);
+        fetch(dismissUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': t,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: body.toString(),
+            keepalive: true,
+        }).catch(function () {});
+    }
+
+    function goToRegister(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (busy) return;
+        // Sakrij i ne prikazuj gostu više; server pamti da poslije prijave odmah igra
+        hideOverlay(true);
+        postDismiss('register');
+        var url = registerUrl || '/registracija/?next=/';
+        window.setTimeout(function () {
+            window.location.href = url;
+        }, 80);
     }
 
     function close() {
@@ -88,21 +175,7 @@
             return;
         }
         hideOverlay();
-        var t = csrf();
-        if (!t) return;
-        var body = new URLSearchParams();
-        body.set('csrfmiddlewaretoken', t);
-        fetch(dismissUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': t,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-            credentials: 'same-origin',
-            body: body.toString(),
-        }).catch(function () {});
+        postDismiss('');
     }
 
     function bumpCart() {
@@ -138,6 +211,24 @@
         if (gift.claim_url) claimUrl = gift.claim_url;
         if (gift.dismiss_url) dismissUrl = gift.dismiss_url;
         if (gift.cart_url) cartUrl = gift.cart_url;
+        if (gift.register_url) {
+            registerUrl = gift.register_url;
+            overlay.setAttribute('data-register-url', registerUrl);
+        }
+        if (typeof gift.requires_registration !== 'undefined') {
+            setRequiresRegistration(!!gift.requires_registration);
+        } else if (typeof gift.is_registered !== 'undefined') {
+            setRequiresRegistration(!gift.is_registered);
+        }
+        if (gift.force_show) {
+            forceShow = true;
+            overlay.setAttribute('data-force-show', '1');
+            clearClosed();
+        }
+        // Uvijek bočni — bez fullscreen-a
+        sideMode = true;
+        overlay.setAttribute('data-side-mode', '1');
+        overlay.classList.add('og-side');
     }
 
     function showResult(data) {
@@ -200,6 +291,12 @@
 
     function reveal() {
         if (busy || done) return;
+
+        if (requiresRegistration) {
+            goToRegister();
+            return;
+        }
+
         busy = true;
         showStep('loading');
 
@@ -250,7 +347,8 @@
     }
 
     function poll() {
-        if (done || isOpen || isClosed()) return;
+        if (done || isOpen) return;
+        if (!forceShow && isClosed()) return;
         fetch(pollUrl, {
             method: 'GET',
             headers: {
@@ -268,12 +366,15 @@
                 if (meta) meta.content = data.csrf_token;
             }
             applyGiftMeta(data.gift);
-            if (isClosed()) return;
+            if (!forceShow && isClosed()) return;
             open();
         }).catch(function () {});
     }
 
     if (revealBtn) revealBtn.addEventListener('click', reveal);
+    if (registerBtn) {
+        registerBtn.addEventListener('click', goToRegister);
+    }
 
     // Kad ne osvoji — „Nazad na sajt” zatvara popup (ostaje na istoj stranici)
     if (backBtn) {
@@ -292,8 +393,9 @@
         });
     });
 
-    // Klik na backdrop / van kartice NE zatvara
+    // Klik na backdrop / van kartice NE zatvara; ne blokiraj touch skrol stranice
     overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) return;
         e.stopPropagation();
     });
     var card = overlay.querySelector('.og-card');
@@ -301,19 +403,28 @@
         card.addEventListener('click', function (e) {
             e.stopPropagation();
         });
+        // Touch skrol unutar kartice — ne propagiraj preventDefault na body
+        card.addEventListener('touchmove', function (e) {
+            e.stopPropagation();
+        }, { passive: true });
     }
 
     // Escape ne zatvara — samo X
     // (namjerno nema keydown listenera)
 
+    // Odmah sa strane (delay 0) — ili nakon kratkog delay-a iz data-atributa
     if (showNow) {
-        setTimeout(open, delay * 1000);
+        if (delay > 0) {
+            setTimeout(open, delay * 1000);
+        } else {
+            open();
+        }
     }
 
     // Poll za manuelni push (i ako auto još nije stigao)
     pollTimer = setInterval(poll, POLL_MS);
     // brzi prvi poll ako nije show_now
     if (!showNow) {
-        setTimeout(poll, 800);
+        setTimeout(poll, 400);
     }
 })();

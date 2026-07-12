@@ -80,6 +80,93 @@ def _product_from_request(request):
     ).select_related('kategorija').only('pk', 'naziv', 'kategorija__naziv').first()
 
 
+def _resolve_current_page(path='', *, query='', product=None):
+    """
+    Trenutna lokacija kupca — putanja + čitljiv label za staff „Sada:”.
+    """
+    raw_path = (path or '').strip() or '/'
+    # Zadrži query u putanji samo ako treba prikazati pretragu
+    path_only = raw_path.split('?', 1)[0]
+    path_only = path_only.rstrip('/') or '/'
+    q = (query or '').strip()[:80]
+
+    # Poll/API putanje nisu „stranice” — ne prikazuj u Sada
+    if is_background_request_path(path_only) or is_background_request_path(path_only + '/'):
+        return '', ''
+
+    # Fiksne stranice
+    static_labels = {
+        '/': 'Početna',
+        '/korpa': 'Korpa',
+        '/narudzba': 'Checkout / narudžba',
+        '/checkout': 'Checkout / narudžba',
+        '/registracija': 'Registracija',
+        '/prijava': 'Prijava',
+        '/nalog': 'Moj nalog',
+        '/o-nama': 'O nama',
+        '/nacin-placanja': 'Način plaćanja',
+        '/vlog': 'Vlog',
+    }
+    if path_only in static_labels and not q:
+        return path_only[:300], static_labels[path_only]
+    if path_only in ('', '/') and q:
+        return f'/?q={q}'[:300], f'Pretraga: {q[:48]}'
+
+    product_match = re.match(r'^/artikal/([^/]+)$', path_only)
+    if product_match:
+        if product is None:
+            product = Product.objects.filter(
+                slug=product_match.group(1),
+                aktivan=True,
+            ).only('pk', 'naziv').first()
+        name = (product.naziv if product else '') or product_match.group(1).replace('-', ' ')
+        return path_only[:300], f'Artikal: {name}'[:200]
+
+    category_match = re.match(r'^/kategorija/([^/]+)$', path_only)
+    if category_match:
+        category = Category.objects.filter(
+            slug=category_match.group(1),
+            aktivan=True,
+        ).only('naziv').first()
+        name = (category.naziv if category else '') or category_match.group(1).replace('-', ' ')
+        return path_only[:300], f'Kategorija: {name}'[:200]
+
+    vlog_match = re.match(r'^/vlog/([^/]+)$', path_only)
+    if vlog_match:
+        return path_only[:300], f'Vlog: {vlog_match.group(1).replace("-", " ")}'[:200]
+
+    if path_only.startswith('/nalog'):
+        return path_only[:300], 'Moj nalog'
+
+    # Fallback — skraćena putanja
+    label = path_only if path_only != '/' else 'Početna'
+    if q:
+        label = f'{label} · pretraga: {q[:32]}'
+    return path_only[:300], label[:200]
+
+
+def _current_page_from_request(request, product=None):
+    path = getattr(request, 'path', '') or '/'
+    query = ''
+    try:
+        query = (request.GET.get('q') or '').strip()
+    except Exception:
+        query = ''
+    return _resolve_current_page(path, query=query, product=product)
+
+
+def _product_from_path(path):
+    """Product sa putanje /artikal/<slug> — za live „Sada” ponudu %."""
+    path_only = ((path or '').strip().split('?', 1)[0]).rstrip('/') or '/'
+    product_match = re.match(r'^/artikal/([^/]+)$', path_only)
+    if not product_match:
+        return None
+    return Product.objects.filter(
+        slug=product_match.group(1),
+        aktivan=True,
+    ).only('pk', 'naziv').first()
+
+
 def _category_names_from_request(request, product=None):
     path = (request.path or '').rstrip('/') or '/'
 
@@ -233,6 +320,30 @@ def detect_traffic_source(request):
     return SOURCE_DIRECT
 
 
+# AJAX / poll endpointi — ne smiju prepisati „Sada:” (trenutna stranica kupca)
+BACKGROUND_PATH_PREFIXES = (
+    '/online-nagrada/',
+    '/ponuda/',
+    '/preporuka/',
+    '/uzivo/',
+    '/korpa/podsjetnik',
+    '/korpa/podsjetnik-exit',
+    '/korpa/exit/',
+    '/korpa/azuriraj',
+    '/korpa/kupon',
+    '/korpa/ukloni',
+    '/api/',
+)
+
+
+def is_background_request_path(path):
+    """Pozadinski endpoint (poll, heartbeat, dodaj u korpu…) — nije stvarna stranica."""
+    path = (path or '').strip()
+    if not path:
+        return False
+    return any(path.startswith(prefix) for prefix in BACKGROUND_PATH_PREFIXES)
+
+
 def should_track_visitor(request):
     if getattr(request, 'user', None) and request.user.is_authenticated and request.user.is_superuser:
         return False
@@ -363,7 +474,7 @@ def maybe_notify_visitor_online(session_key):
 
 
 def heartbeat_live_visitor(request, body_session_key=''):
-    """Laki ping dok je tab otvoren — osvježava last_seen + presence cache."""
+    """Laki ping dok je tab otvoren — osvježava last_seen, trenutnu stranicu + presence."""
     user = getattr(request, 'user', None)
     if user is not None and user.is_authenticated and user.is_superuser:
         return False
@@ -375,7 +486,31 @@ def heartbeat_live_visitor(request, body_session_key=''):
         return False
 
     now = timezone.now()
-    updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+    update_fields = {'last_seen': now}
+
+    # Live „Sada:” — klijent šalje path + q sa stvarne stranice (ne poll URL)
+    body_path = ''
+    body_q = ''
+    try:
+        body_path = (request.POST.get('path') or request.GET.get('path') or '').strip()
+        body_q = (request.POST.get('q') or request.GET.get('q') or '').strip()
+    except Exception:
+        body_path = ''
+        body_q = ''
+    if body_path and len(body_path) <= 300 and not is_background_request_path(body_path):
+        page_path, page_label = _resolve_current_page(body_path, query=body_q)
+        if page_label:
+            update_fields['trenutna_putanja'] = page_path
+            update_fields['trenutno_gleda'] = page_label
+        # Dwell na artiklu dok heartbeat šalje path
+        try:
+            from .live_visitor_offer import touch_product_dwell_from_path
+
+            touch_product_dwell_from_path(request, body_path)
+        except Exception:
+            pass
+
+    updated = LiveVisitor.objects.filter(session_key=session_key).update(**update_fields)
     if not updated:
         # Nema reda (npr. prvi heartbeat) — full track ako smije
         if should_track_visitor(request):
@@ -467,6 +602,14 @@ def track_live_visitor(request):
         LiveVisitor.objects.filter(session_key=session_key).delete()
         return
 
+    # Poll / heartbeat / AJAX — samo last_seen, NE mijenjaj „Sada:” niti istoriju gledanja
+    if is_background_request_path(getattr(request, 'path', '') or ''):
+        LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+        touch_visitor_presence(session_key)
+        if not (user and getattr(user, 'is_superuser', False)):
+            maybe_notify_visitor_online(session_key)
+        return
+
     identity = None
     try:
         identity = _touch_visitor_identity(request, session_key)
@@ -480,6 +623,8 @@ def track_live_visitor(request):
         'grad',
         'visitor_token',
         'site_visit_count',
+        'trenutna_putanja',
+        'trenutno_gleda',
     ).first()
     existing_grad = (existing_visitor.grad if existing_visitor else '') or ''
 
@@ -511,6 +656,20 @@ def track_live_visitor(request):
     # Izvor se pamti pri prvom ulasku; ne prepisuj kasnije unutrašnjim navigacijama
     traffic_source = existing_source or detect_traffic_source(request)
 
+    page_path, page_label = _current_page_from_request(request, product=product)
+    # Ako iz nekog razloga nema labela, zadrži prethodno „Sada:”
+    if not page_label and existing_visitor:
+        page_path = (existing_visitor.trenutna_putanja or '')[:300]
+        page_label = (existing_visitor.trenutno_gleda or '')[:200]
+
+    # Dwell: broji vrijeme na stranici artikla (popup 10% nakon 1 min)
+    try:
+        from .live_visitor_offer import touch_product_dwell
+
+        touch_product_dwell(request, product.pk if product else None)
+    except Exception:
+        pass
+
     visit_count = 1
     visitor_token = ''
     if identity is not None:
@@ -529,6 +688,8 @@ def track_live_visitor(request):
         'pregledane_kategorije': existing_categories,
         'pregledani_proizvodi': existing_products,
         'izvor_dolaska': (traffic_source or '')[:20],
+        'trenutna_putanja': page_path,
+        'trenutno_gleda': page_label,
         'last_seen': now,
     }
     # update pa create umjesto update_or_create (select_for_update + DEFERRED deadlock na SQLite)
@@ -1662,6 +1823,17 @@ def _visitor_payload(
 
     top_sell = sell_recs[0] if sell_recs else None
 
+    # Trenutni artikal (ako je na /artikal/…) — za brzi % na kartici „Sada”
+    current_path = (getattr(visitor, 'trenutna_putanja', None) or '')[:300]
+    current_page = (getattr(visitor, 'trenutno_gleda', None) or '')[:200]
+    current_product = _product_from_path(current_path)
+    current_product_id = current_product.pk if current_product else None
+    current_product_name = (
+        (current_product.naziv or '')[:120] if current_product else ''
+    )
+    if current_product_id and not current_page:
+        current_page = f'Artikal: {current_product_name}'[:200]
+
     payload = {
         'session_key': visitor.session_key,
         'user_id': visitor.user_id or None,
@@ -1706,6 +1878,18 @@ def _visitor_payload(
             f'Vraćeni posjetilac ({int(getattr(visitor, "site_visit_count", 1) or 1)}× na sajtu)'
             if int(getattr(visitor, 'site_visit_count', 1) or 1) > 1
             else 'Prvi put na sajtu'
+        ),
+        'current_path': current_path,
+        'current_page': current_page,
+        'current_product_id': current_product_id,
+        'current_product_name': current_product_name,
+        'current_product_accepted': bool(
+            current_product_id
+            and any(
+                int(r.get('product_id') or 0) == int(current_product_id)
+                for r in (offer_outcomes.get('accepted') or [])
+                if r.get('product_id')
+            )
         ),
         'visitor_insight': visitor_insight,
         'sell_recommendations': sell_recs,
