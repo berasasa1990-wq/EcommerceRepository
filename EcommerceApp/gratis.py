@@ -131,9 +131,14 @@ def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1):
 
 
 def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
-    """Pop-up bundle: svi artikli iz seta u korpu s istim % popusta."""
+    """
+    Pop-up bundle: svi artikli iz seta u korpu s istim % popusta.
+    Smije se dodavati više puta — ista stavka samo povećava količinu (nema limota).
+    """
     if akcija.tip != Akcija.Tip.BUNDLE or akcija.popust_postotak is None:
         return None
+
+    quantity = max(1, int(quantity or 1))
 
     products = akcija.bundle_products()
     if len(products) < 2:
@@ -153,14 +158,27 @@ def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
 
     added = 0
     for product in products:
+        # Iste artikle u setu / ponovni klik — cart.add sabira quantity
         if _add_bundle_discounted_line(cart, akcija, product, quantity=quantity):
             added += 1
-    if added < 2:
+    if added < 1:
         return None
+    # Ako je barem jedan artikal dodat (npr. drugi nije na stanju), i dalje OK
+    # za ponovno dodavanje istog seta
+    if added < 2 and len(products) >= 2:
+        # Pokušaj još jednom samo one koji nisu prošli nije smislen;
+        # zahtijevaj barem 2 uspješna kad ima 2+ dostupna
+        available = sum(
+            1
+            for p in products
+            if _product_is_available(p, _resolve_product_variation(p))
+        )
+        if available >= 2 and added < 2:
+            return None
     return akcija
 
 
-def build_popup_bundle_message(akcija):
+def build_popup_bundle_message(akcija, *, quantity=1):
     products = akcija.bundle_products()
     if len(products) < 2:
         products = [p for p in (akcija.artikal, akcija.gratis_artikal) if p]
@@ -170,7 +188,16 @@ def build_popup_bundle_message(akcija):
     names = ' + '.join(f'„{p.naziv}”' for p in products[:6])
     if len(products) > 6:
         names += '…'
-    return f'Set {names} je dodan u korpu ({pct}% popusta na kompletan set).'
+    qty = max(1, int(quantity or 1))
+    if qty > 1:
+        return (
+            f'Set {names} ×{qty} je dodan u korpu '
+            f'({pct}% popusta na kompletan set).'
+        )
+    return (
+        f'Set {names} je dodan u korpu ({pct}% popusta na kompletan set). '
+        f'Možeš dodati set ponovo koliko želiš.'
+    )
 
 
 def format_gratis_pct(akcija):

@@ -19,8 +19,8 @@ from .visitor_geo import (
 ONLINE_MINUTES = 1
 # Staff toast: kraći prozor + heartbeat/leave, da se popup skloni čim kupac ode
 STAFF_TOAST_ONLINE_SECONDS = 30
-# Staff popup „Kupac na sajtu” — tek ako je ostao duže od 1 minute
-ONLINE_NOTIFY_AFTER_SECONDS = 60
+# Staff toast „Kupac na sajtu” — odmah (0 = čim se pojavi LiveVisitor red)
+ONLINE_NOTIFY_AFTER_SECONDS = 0
 ONLINE_NOTIFIED_CACHE_PREFIX = 'live_visitor_online_notified:'
 ONLINE_NOTIFIED_CACHE_TTL = 48 * 3600
 PRESENCE_CACHE_PREFIX = 'live_visitor_presence:'
@@ -427,7 +427,7 @@ def resolve_presence_session_key(request, body_session_key=''):
 
 def maybe_notify_visitor_online(session_key):
     """
-    Staff toast „Kupac na sajtu” tek nakon ONLINE_NOTIFY_AFTER_SECONDS na sajtu.
+    Staff toast „Kupac na sajtu” — odmah kad se pojavi online posjetilac.
     Jednom po sesiji (cache).
     """
     session_key = (session_key or '').strip()
@@ -441,14 +441,15 @@ def maybe_notify_visitor_online(session_key):
 
     visitor = (
         LiveVisitor.objects.filter(session_key=session_key)
-        .only('first_seen', 'last_seen', 'ime', 'email', 'grad')
+        .only('first_seen', 'last_seen', 'ime', 'email', 'grad', 'trenutno_gleda')
         .first()
     )
-    if not visitor or not visitor.first_seen:
+    if not visitor:
         return False
 
     now = timezone.now()
-    on_site_seconds = max(0, int((now - visitor.first_seen).total_seconds()))
+    first_seen = visitor.first_seen or visitor.last_seen or now
+    on_site_seconds = max(0, int((now - first_seen).total_seconds()))
     if on_site_seconds < ONLINE_NOTIFY_AFTER_SECONDS:
         return False
 
@@ -466,6 +467,7 @@ def maybe_notify_visitor_online(session_key):
             email=visitor.email or '',
             grad=visitor.grad or '',
             session_key=session_key,
+            trenutno_gleda=(visitor.trenutno_gleda or '')[:120],
         )
     except Exception:
         cache.delete(cache_key)
@@ -517,16 +519,46 @@ def heartbeat_live_visitor(request, body_session_key=''):
             track_live_visitor(request)
             updated = LiveVisitor.objects.filter(session_key=session_key).exists()
     touch_visitor_presence(session_key)
-    # Toast tek nakon 1 min na sajtu
+    # Staff toast odmah (ne čekaj 1 min)
     if updated or session_key:
         maybe_notify_visitor_online(session_key)
     return bool(updated) or bool(session_key)
 
 
+def _parse_leave_at_seconds(request):
+    """Client leave_at u ms (Date.now()) → sekunde; None ako nema."""
+    raw = None
+    try:
+        raw = request.POST.get('leave_at') or request.GET.get('leave_at')
+    except Exception:
+        raw = None
+    if raw is None and getattr(request, 'body', None):
+        try:
+            from urllib.parse import parse_qs
+
+            parsed = parse_qs(request.body.decode('utf-8', errors='ignore'))
+            vals = parsed.get('leave_at') or []
+            if vals:
+                raw = vals[0]
+        except Exception:
+            raw = None
+    if raw is None or raw == '':
+        return None
+    try:
+        val = float(raw)
+    except (TypeError, ValueError):
+        return None
+    # ms → s (Date.now() je ~1.7e12)
+    if val > 1e12:
+        val = val / 1000.0
+    return val
+
+
 def mark_live_visitor_left(request, body_session_key=''):
     """
     Posjetilac je zatvorio tab / otišao sa sajta.
-    Cache left flag + last_seen unazad → staff toast nestaje odmah.
+    Odmah offline za staff (left flag + last_seen).
+    Ignoriše leave ako je u međuvremenu nova stranica već trackala (navigacija).
     """
     user = getattr(request, 'user', None)
     if user is not None and user.is_authenticated and user.is_superuser:
@@ -536,8 +568,26 @@ def mark_live_visitor_left(request, body_session_key=''):
     if not session_key:
         return False
 
+    visitor = (
+        LiveVisitor.objects.filter(session_key=session_key)
+        .only('last_seen')
+        .first()
+    )
+    leave_at = _parse_leave_at_seconds(request)
+    if visitor and visitor.last_seen:
+        last_ts = visitor.last_seen.timestamp()
+        # Navigacija: stara stranica šalje leave, nova je već trackala last_seen
+        if leave_at is not None and last_ts > leave_at + 0.4:
+            return False
+        # Bez leave_at: ako je last_seen svježi (<1.5 s) — vjerojatno navigacija
+        if leave_at is None:
+            age = max(0.0, timezone.now().timestamp() - last_ts)
+            if age < 1.5:
+                return False
+
     clear_visitor_presence(session_key)
-    offline_at = timezone.now() - timedelta(seconds=STAFF_TOAST_ONLINE_SECONDS + 60)
+    # 2 s unazad — odmah ispod ONLINE_MINUTES prozora, ali ne „prije 1.5 min”
+    offline_at = timezone.now() - timedelta(seconds=2)
     LiveVisitor.objects.filter(session_key=session_key).update(last_seen=offline_at)
     return True
 
@@ -712,7 +762,7 @@ def track_live_visitor(request):
     city_name = (grad or '').strip()
     if city_name and (created or not (existing_grad or '').strip()):
         record_city_visit(city_name)
-    # Staff toast „Kupac na sajtu” tek nakon 1 min (heartbeat/track) — ne odmah na ulazak
+    # Staff toast „Kupac na sajtu” odmah na ulazak
     if not (user and user.is_superuser):
         maybe_notify_visitor_online(session_key)
     if random.random() < 0.02:
@@ -1733,8 +1783,9 @@ def _visitor_payload(
         hours = seconds_ago // 3600
         ago_label = f'prije {hours} h'
 
-    # Online samo dok je aktivnost mlađa od 1 min; „prije 1 min” i starije → prozor 30 min
-    is_online = seconds_ago < ONLINE_MINUTES * 60
+    # Online: svjež last_seen I nije označen kao left (zatvorio tab)
+    marked_left = is_visitor_marked_left(getattr(visitor, 'session_key', '') or '')
+    is_online = (seconds_ago < ONLINE_MINUTES * 60) and not marked_left
     # Online: od ulaska do sada; offline: od ulaska do zadnje aktivnosti
     end_time = now if is_online else visitor.last_seen
     first_seen = visitor.first_seen or visitor.last_seen or now

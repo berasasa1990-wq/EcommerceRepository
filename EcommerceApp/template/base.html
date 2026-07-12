@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260712v5" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260712v5">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260712v6" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260712v6">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -387,7 +387,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260712v23" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260712v24" defer></script>
     {% if not user.is_authenticated or not user.is_superuser %}
     <script src="{% static 'js/almost-cart.js' %}?v=20260712v3" defer></script>
     {% endif %}
@@ -399,7 +399,7 @@
          data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
          data-leave-url="{% url 'live_visitor_leave' %}"
          data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script src="{% static 'js/visitor-presence.js' %}?v=20260712v3" defer></script>
+    <script src="{% static 'js/visitor-presence.js' %}?v=20260712v5" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
     <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260712v1">

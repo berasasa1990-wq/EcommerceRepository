@@ -312,6 +312,45 @@
   font-weight: 900;
 }
 
+.bundle-pack-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.bundle-pack-qty-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.bundle-pack-qty-input {
+  width: 72px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+  color: #0f172a;
+  background: #fff;
+  font-family: inherit;
+}
+
+.bundle-pack-qty-input:focus {
+  outline: none;
+  border-color: #5BB805;
+  box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.2);
+}
+
 .bundle-pack-cta {
   font-size: 15px !important;
   font-weight: 900 !important;

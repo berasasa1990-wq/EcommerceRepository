@@ -1,77 +1,116 @@
 {% if cart_exit_popup %}
 <div class="site-popup-overlay cart-exit-overlay" id="cartExitOverlay" hidden>
-    <div class="site-popup site-popup--akcija site-popup--cart-exit" role="dialog" aria-modal="true" aria-labelledby="cartExitTitle">
-        <h2 id="cartExitTitle" class="site-popup-akcija-title">Poslednji minut ponuda</h2>
-        <button type="button" class="site-popup-close" data-cart-exit-close aria-label="Zatvori">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="site-popup site-popup--cart-exit" role="dialog" aria-modal="true" aria-labelledby="cartExitTitle">
+        <button type="button" class="site-popup-close cart-exit-close" data-cart-exit-close aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
         </button>
 
-        <div class="site-popup-akcija">
-            <a href="{{ cart_exit_popup.product.get_absolute_url }}" class="site-popup-product">
-                {% if cart_exit_popup.discount_percent %}
-                <span class="cart-exit-discount-badge">-{{ cart_exit_popup.discount_percent|floatformat:0 }}%</span>
+        <div class="cart-exit-inner">
+            <div class="cart-exit-urgency" aria-hidden="true">
+                <span class="cart-exit-urgency-dot"></span>
+                <span class="cart-exit-urgency-text">Poslednji minut · nestaje čim zatvoriš</span>
+            </div>
+
+            <p class="cart-exit-kicker">🔥 Ekskluzivna cijena samo za tebe</p>
+            <h2 id="cartExitTitle" class="cart-exit-title">
+                {% if cart_exit_popup.discount_percent_label %}
+                Ne odlazi bez <span class="cart-exit-title-pct">-{{ cart_exit_popup.discount_percent_label }}%</span>
+                {% else %}
+                Poslednji minut ponuda
                 {% endif %}
-                <span class="site-popup-product-image">
+            </h2>
+            <p class="cart-exit-sub">
+                {% if cart_exit_popup.usteda %}
+                Uštedi <strong>{{ cart_exit_popup.usteda }} KM</strong> — ova cijena se ne ponavlja.
+                {% else %}
+                Specijalna cijena samo sada — nećeš je vidjeti opet.
+                {% endif %}
+            </p>
+
+            <a href="{{ cart_exit_popup.product.get_absolute_url }}" class="cart-exit-product">
+                {% if cart_exit_popup.discount_percent_label %}
+                <span class="cart-exit-ribbon" aria-hidden="true">-{{ cart_exit_popup.discount_percent_label }}%</span>
+                {% endif %}
+
+                <span class="cart-exit-product-img">
                     {% if cart_exit_popup.product.prikazna_slika %}
                     <img src="{{ cart_exit_popup.product.prikazna_slika.url }}"
                          alt="{{ cart_exit_popup.product.naziv }}"
-                         width="140" height="140" loading="lazy" decoding="async">
+                         width="200" height="200" loading="eager" decoding="async">
                     {% else %}
-                    <span class="site-popup-product-placeholder" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <circle cx="8.5" cy="8.5" r="1.5"/>
-                            <path d="M21 15l-5-5L5 21"/>
-                        </svg>
+                    <span class="cart-exit-product-ph" aria-hidden="true">📦</span>
+                    {% endif %}
+                </span>
+
+                <span class="cart-exit-product-meta">
+                    <span class="cart-exit-product-name">{{ cart_exit_popup.product.naziv }}</span>
+                    {% if cart_exit_popup.product.proizvedeno_u_japanu %}
+                    <span class="cart-exit-origin">Made in Japan</span>
+                    {% endif %}
+
+                    <span class="cart-exit-prices">
+                        {% if cart_exit_popup.product_prices.has_discount %}
+                        <span class="cart-exit-price-was">{{ cart_exit_popup.product_prices.bazna }} KM</span>
+                        <span class="cart-exit-price-now">{{ cart_exit_popup.product_prices.snizena }} KM</span>
+                        {% else %}
+                        <span class="cart-exit-price-now">{{ cart_exit_popup.product_prices.bazna }} KM</span>
+                        {% endif %}
+                    </span>
+
+                    {% if cart_exit_popup.usteda %}
+                    <span class="cart-exit-save">
+                        Ušteda <strong>{{ cart_exit_popup.usteda }} KM</strong>
+                        {% if cart_exit_popup.discount_percent_label %}
+                        <em>(-{{ cart_exit_popup.discount_percent_label }}%)</em>
+                        {% endif %}
+                    </span>
+                    {% elif cart_exit_popup.discount_percent_label %}
+                    <span class="cart-exit-save">
+                        Popust <strong>-{{ cart_exit_popup.discount_percent_label }}%</strong>
                     </span>
                     {% endif %}
                 </span>
-                <span class="site-popup-product-info">
-                    <span class="site-popup-product-name">{{ cart_exit_popup.product.naziv }}</span>
-                    <span class="cart-exit-origin-slot">
-                        {% if cart_exit_popup.product.proizvedeno_u_japanu %}
-                        <span class="cart-exit-origin">Made in Japan</span>
-                        {% else %}
-                        <span class="cart-exit-origin cart-exit-origin--placeholder" aria-hidden="true"></span>
-                        {% endif %}
-                    </span>
-                    <span class="site-popup-product-price product-price">
-                        {% if cart_exit_popup.product_prices.has_discount %}
-                        <span class="cart-exit-price-sale">{{ cart_exit_popup.product_prices.snizena }} KM</span>
-                        <span class="price-original">{{ cart_exit_popup.product_prices.bazna }} KM</span>
-                        {% else %}
-                        {% include 'partials/product_price.html' with item=cart_exit_popup.product %}
-                        {% endif %}
-                    </span>
-                </span>
             </a>
-        </div>
 
-        <div class="site-popup-actions cart-exit-actions">
-            {% if cart_exit_popup.can_add_directly %}
-            <form method="post" action="{% url 'add_to_cart' cart_exit_popup.product.slug %}" class="cart-exit-add-form">
-                {% csrf_token %}
-                <input type="hidden" name="quantity" value="1">
-                <input type="hidden" name="exit_popup" value="1">
-                <input type="hidden" name="redirect_to" value="cart">
-                {% if cart_exit_popup.variation_id %}
-                <input type="hidden" name="variation_id" value="{{ cart_exit_popup.variation_id }}">
+            <p class="cart-exit-scarcity">
+                <span class="cart-exit-scarcity-icon" aria-hidden="true">⏱</span>
+                Samo jednom po posjeti · klikni dok traje
+            </p>
+
+            <div class="cart-exit-actions">
+                {% if cart_exit_popup.can_add_directly %}
+                <form method="post" action="{% url 'add_to_cart' cart_exit_popup.product.slug %}" class="cart-exit-add-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="1">
+                    <input type="hidden" name="exit_popup" value="1">
+                    <input type="hidden" name="redirect_to" value="cart">
+                    {% if cart_exit_popup.variation_id %}
+                    <input type="hidden" name="variation_id" value="{{ cart_exit_popup.variation_id }}">
+                    {% endif %}
+                    <button type="submit" class="btn cart-exit-cta">
+                        {% if cart_exit_popup.discount_percent_label %}
+                        Uzmi s -{{ cart_exit_popup.discount_percent_label }}% popusta
+                        {% else %}
+                        Dodaj u korpu po specijalnoj cijeni
+                        {% endif %}
+                    </button>
+                </form>
+                {% else %}
+                <a href="{{ cart_exit_popup.product.get_absolute_url }}" class="btn cart-exit-cta">
+                    {% if cart_exit_popup.discount_percent_label %}
+                    Uzmi s -{{ cart_exit_popup.discount_percent_label }}% popusta
+                    {% else %}
+                    Pogledaj specijalnu cijenu
+                    {% endif %}
+                </a>
                 {% endif %}
-                <button type="submit" class="btn btn-primary site-popup-cta cart-exit-cta">
-                    Dodaj u korpu
+                <button type="button" class="cart-exit-stay" data-cart-exit-stay>
+                    Ne, hvala — odustajem od popusta
                 </button>
-            </form>
-            {% else %}
-            <a href="{{ cart_exit_popup.product.get_absolute_url }}" class="btn btn-primary site-popup-cta cart-exit-cta">
-                Dodaj u korpu
-            </a>
-            {% endif %}
-            <button type="button" class="btn btn-cart-secondary cart-exit-stay" data-cart-exit-stay>
-                Nastavi kupovinu
-            </button>
+            </div>
         </div>
     </div>
 </div>
@@ -144,28 +183,24 @@
         document.body.classList.add('popup-open');
     }
 
-    // Zatvaranje samo preko X (ili dugmeta „Ostani“) — klik pored / Escape ne gasi
     overlay.querySelectorAll('[data-cart-exit-close]').forEach(function (btn) {
         btn.addEventListener('click', closeOverlay);
     });
 
     overlay.querySelector('[data-cart-exit-stay]')?.addEventListener('click', closeOverlay);
 
-    // Samo kad kupac hoće da izađe (desktop: kursor prema tab close)
     document.documentElement.addEventListener('mouseout', function (e) {
         if (!e.relatedTarget && e.clientY <= 12) {
             openOverlay();
         }
     });
 
-    // Mobilni / tab switch: jednom kad napušta stranicu (ne pri scrollu)
     let pageHideArmed = false;
     window.setTimeout(function () { pageHideArmed = true; }, 8000);
     document.addEventListener('visibilitychange', function () {
         if (!pageHideArmed) return;
         if (document.visibilityState === 'hidden') {
-            // Ne otvaraj popup dok je tab u pozadini — samo zabilježi namjeru
-            // (popup se ne vidi na hidden tabu). Desktop mouseout ostaje glavni.
+            // Desktop mouseout ostaje glavni trigger
         }
     });
 })();

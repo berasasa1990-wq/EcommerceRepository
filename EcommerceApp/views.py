@@ -1379,12 +1379,16 @@ def add_to_cart(request, slug):
             .first()
         )
         if popup_bundle_akcija and popup_bundle_akcija.jos_traje():
+            # Bundle set — smije se dodavati više puta (količina se sabira)
+            quantity = max(1, int(quantity or 1))
             bundle_result = apply_popup_bundle_from_popup(
                 cart, popup_bundle_akcija, quantity=quantity,
             )
             if bundle_result:
                 cart.clear_coupon()
-                message = build_popup_bundle_message(popup_bundle_akcija)
+                message = build_popup_bundle_message(
+                    popup_bundle_akcija, quantity=quantity,
+                )
                 add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
                 track_add_to_cart(
                     request,
@@ -3274,6 +3278,10 @@ def live_visitor_leave(request):
                 body_key = vals[0]
         except Exception:
             body_key = ''
+    # FormData leave_at ostaje u request.POST; query fallback
+    if not request.POST.get('leave_at') and request.GET.get('leave_at'):
+        # mark_live_visitor_left čita i GET
+        pass
 
     if request.user.is_authenticated and request.user.is_superuser:
         return JsonResponse({'ok': True, 'left': False})

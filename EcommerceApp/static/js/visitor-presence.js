@@ -1,6 +1,7 @@
 /**
  * Prisutnost posjetioca: heartbeat + leave beacon.
- * Kad kupac zatvori tab (X), staff toast se skida odmah.
+ * Leave samo na pagehide (ne 3× beforeunload/unload) + leave_at da server
+ * ignoriše leave kad je navigacija unutar sajta (nova stranica već trackana).
  */
 (function () {
     const root = document.getElementById('visitorPresenceRoot');
@@ -9,23 +10,16 @@
     const heartbeatUrl = root.dataset.heartbeatUrl || '/uzivo/prisutan/';
     const leaveUrl = root.dataset.leaveUrl || '/uzivo/odlazak/';
     const sessionKey = (root.dataset.sessionKey || '').trim();
-    const heartbeatMs = 12000;
+    const heartbeatMs = 4000;
+    const pageLoadedAt = Date.now();
     let leftSent = false;
     let heartbeatTimer = null;
-
-    function buildBody() {
-        const params = new URLSearchParams();
-        params.set('left', '1');
-        if (sessionKey) params.set('session_key', sessionKey);
-        return params.toString();
-    }
 
     function sendHeartbeat() {
         if (leftSent) return;
         const params = new URLSearchParams();
         if (sessionKey) params.set('session_key', sessionKey);
         params.set('ping', '1');
-        // Live „Sada:” — trenutna stranica za staff analitiku
         try {
             params.set('path', window.location.pathname || '/');
             const q = new URLSearchParams(window.location.search || '').get('q');
@@ -55,14 +49,19 @@
             heartbeatTimer = null;
         }
 
-        const body = buildBody();
-        let beaconOk = false;
+        // leave_at = trenutak napuštanja ove stranice (ms)
+        const leaveAt = String(Date.now());
+        const body = new URLSearchParams();
+        body.set('left', '1');
+        body.set('leave_at', leaveAt);
+        if (sessionKey) body.set('session_key', sessionKey);
 
+        let beaconOk = false;
         try {
             if (navigator.sendBeacon) {
-                // FormData + sendBeacon pouzdanije šalje cookie + body u modernim browserima
                 const fd = new FormData();
                 fd.append('left', '1');
+                fd.append('leave_at', leaveAt);
                 if (sessionKey) fd.append('session_key', sessionKey);
                 beaconOk = navigator.sendBeacon(leaveUrl, fd);
             }
@@ -70,7 +69,6 @@
             beaconOk = false;
         }
 
-        // Backup: fetch keepalive (i ako beacon vrati false)
         try {
             fetch(leaveUrl, {
                 method: 'POST',
@@ -79,7 +77,7 @@
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
-                body: body,
+                body: body.toString(),
                 keepalive: true,
             }).catch(function () {
                 /* tiho */
@@ -88,7 +86,6 @@
             /* tiho */
         }
 
-        // Query-string fallback (neki browseri gutaju body na unload)
         if (!beaconOk) {
             try {
                 const sep = leaveUrl.indexOf('?') >= 0 ? '&' : '?';
@@ -97,7 +94,8 @@
                     sep +
                     'session_key=' +
                     encodeURIComponent(sessionKey || '') +
-                    '&left=1';
+                    '&left=1&leave_at=' +
+                    encodeURIComponent(leaveAt);
                 if (navigator.sendBeacon) {
                     navigator.sendBeacon(url);
                 }
@@ -113,12 +111,11 @@
         heartbeatTimer = window.setInterval(sendHeartbeat, heartbeatMs);
     }
 
-    // pagehide je najpouzdaniji signal zatvaranja taba (uključujući X)
-    window.addEventListener('pagehide', sendLeave);
-    window.addEventListener('beforeunload', sendLeave);
-    window.addEventListener('unload', sendLeave);
+    // Samo pagehide — beforeunload+unload su uzrokovali trostruki leave i race s navigacijom
+    window.addEventListener('pagehide', function () {
+        sendLeave();
+    });
 
-    // Kad tab opet postane vidljiv (bfcache restore), nastavi ping
     window.addEventListener('pageshow', function (event) {
         if (event.persisted) {
             leftSent = false;
@@ -134,5 +131,10 @@
         }
     });
 
+    // Prvi ping odmah (staff vidi „Sada:” bez čekanja)
     startHeartbeat();
+    // Drugi ping ~0.6 s (session cookie + early track)
+    window.setTimeout(function () {
+        if (!leftSent) sendHeartbeat();
+    }, 600);
 })();

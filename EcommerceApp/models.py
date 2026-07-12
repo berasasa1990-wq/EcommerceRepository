@@ -138,10 +138,10 @@ class SiteSettings(models.Model):
     )
     welcome_reg_popup_aktivan = models.BooleanField(
         default=False,
-        verbose_name='Registracija + popust aktivan',
+        verbose_name='Registracija + popust (odmah) aktivan',
         help_text=(
-            'Uključeno: gostu na početku iskače poziv „Registruj se” s popustom '
-            'na prvu narudžbu. Vrijeme prikaza postavi ispod (npr. 4 sekunde).'
+            'Uključeno: gostu na početku (nakon nekoliko sekundi) iskače poziv '
+            '„Registruj se” s popustom na prvu narudžbu.'
         ),
     )
     welcome_reg_popust = models.DecimalField(
@@ -2445,7 +2445,7 @@ class LiveVisitorOffer(models.Model):
 
     class Tip(models.TextChoices):
         ARTIKAL = 'artikal', 'Artikal'
-        NARUDZBA = 'narudzba', 'Popust na narudžbu'
+        NARUDZBA = 'narudzba', 'Popust na narudžbu' 
         REGISTRACIJA = 'registracija', 'Registracija'
 
     session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')

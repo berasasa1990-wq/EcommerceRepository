@@ -1193,6 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                     const submitBtn = akcijaForm.querySelector('button[type="submit"], .site-popup-cta');
                     if (submitBtn) submitBtn.disabled = true;
+                    const isBundle = (overlay.dataset.akcijaTip || '') === 'bundle';
                     try {
                         const formData = new FormData(akcijaForm);
                         formData.set('stay', '1');
@@ -1200,12 +1201,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             (
                                 overlay.dataset.akcijaTip === 'timer'
                                 || overlay.dataset.akcijaTip === 'gratis'
-                                || overlay.dataset.akcijaTip === 'bundle'
+                                || isBundle
                             )
                             && overlay.dataset.akcijaId
                             && !formData.get('akcija_id')
                         ) {
                             formData.set('akcija_id', overlay.dataset.akcijaId);
+                        }
+                        // Bundle: quantity iz inputa (default 1), smije se klikati više puta
+                        if (isBundle && !formData.get('quantity')) {
+                            formData.set('quantity', '1');
                         }
                         const response = await fetch(akcijaForm.action, {
                             method: 'POST',
@@ -1225,7 +1230,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
                             window.trackMetaAddToCart(data.meta_add_to_cart);
                         }
-                        closePopup(overlay, true);
+                        if (isBundle) {
+                            // Bundle: ne zaključavaj sesiju — korisnik smije dodati set koliko hoće
+                            closePopup(overlay, false);
+                        } else {
+                            closePopup(overlay, true);
+                        }
                     } catch (err) {
                         showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
                     } finally {

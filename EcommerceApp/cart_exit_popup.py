@@ -140,6 +140,16 @@ def get_cart_exit_popup_context(request, cart):
     )
     display_variation = in_stock_variations[0] if len(in_stock_variations) == 1 else None
     prices = exit_popup_prices_for_product(product, percent, display_variation)
+    usteda = None
+    if prices.get('has_discount'):
+        try:
+            usteda = (Decimal(str(prices['bazna'])) - Decimal(str(prices['snizena']))).quantize(
+                Decimal('0.01')
+            )
+            if usteda <= 0:
+                usteda = None
+        except Exception:
+            usteda = None
 
     if product.varijacije.exists():
         can_add_directly = len(in_stock_variations) == 1
@@ -148,10 +158,16 @@ def get_cart_exit_popup_context(request, cart):
         can_add_directly = True
         is_available = product.na_stanju
 
+    pct_label = None
+    if percent > 0:
+        pct_label = int(percent) if percent == int(percent) else float(percent)
+
     return {
         'product': product,
         'discount_percent': percent if percent > 0 else None,
+        'discount_percent_label': pct_label,
         'product_prices': prices,
+        'usteda': usteda,
         'can_add_directly': can_add_directly and is_available,
         'variation_id': display_variation.pk if display_variation else '',
         'source': source,

@@ -961,23 +961,34 @@ def build_live_visitor_offer_context(request):
 
 
 def poll_live_visitor_offer(request):
-    # Welcome 10 s: gostu automatski reg + besplatna dostava
+    # Welcome: gostu automatski reg + popust (nakon delay-a)
     try:
         maybe_auto_welcome_registration(request)
     except Exception:
         pass
 
-    # 1 min na stranici artikla → 10% na taj artikal
+    # 1 min na stranici artikla → 10% na taj artikal (ako je uključeno)
     try:
         maybe_create_product_dwell_offer(request)
     except Exception:
         pass
 
+    # 2 min na sajtu → 10% na gledane artikle (kreiraj čak i ako ima reg invite)
+    try:
+        from .browse_interest_offer import maybe_create_browse_interest_offer
+
+        maybe_create_browse_interest_offer(request)
+    except Exception:
+        pass
+
     offer = get_active_live_visitor_offer(request)
     if offer:
+        # Auto dwell ima prioritet samo dok je aktivan; browse ide preko session payloada
         mark_registration_invite_pending(request, offer)
+        # Ako je samo reg invite — i dalje pokušaj browse payload ispod? Ne: reg prvo.
         return _build_offer_payload(offer)
-    # Fallback: personalizovana ponuda nakon 2 min (prema gledanju)
+
+    # Personalizovana ponuda nakon 2 min (prema gledanju)
     try:
         from .browse_interest_offer import poll_browse_interest_offer
 

@@ -49,12 +49,17 @@ def push_staff_event(
     return event
 
 
-def notify_visitor_online(*, ime='', email='', grad='', session_key=''):
+def notify_visitor_online(*, ime='', email='', grad='', session_key='', trenutno_gleda=''):
     label = _actor_label(ime=ime, email=email, grad=grad)
+    page = (trenutno_gleda or '').strip()
+    if page:
+        poruka = f'{label} je na sajtu — sada: {page}.'
+    else:
+        poruka = f'{label} je na sajtu.'
     return push_staff_event(
         StaffSiteEvent.Tip.ONLINE,
         naslov='Kupac na sajtu',
-        poruka=f'{label} je na sajtu.',
+        poruka=poruka,
         ime=ime,
         email=email,
         grad=grad,

@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260712v14">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260712v15">
 {% endblock %}
 
 {% block content %}
@@ -19,7 +19,7 @@
             <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
             <h1 class="la-title">Uživo analitika</h1>
             <p class="la-sub">
-                Na kartici vidiš gdje kupac ide, šta prihvata/odbija i šalješ ponudu ili nagradu — bez ulaska u detalje.
+                Live se osvježava odmah (~2 s) — vidiš gdje kupac ide, šta gleda, korpu, ponude i nagrade u real-time.
             </p>
         </div>
         <div class="la-top-meta">
@@ -2177,13 +2177,17 @@
     bindCardActions(liveCards);
     bindRegisteredBody(document.getElementById('liveRegisteredCustomersBody'));
 
-    // Brži live poll — događanja (ponuda, korpa, proizvodi) bez F5
+    // Brzi live poll — kartice i „Sada:” skoro u real-time (bez F5)
     window.setInterval(function () {
         refreshLiveAnalytics(false);
-    }, 4000);
+    }, 2000);
     window.setTimeout(function () {
         refreshLiveAnalytics(false);
-    }, 1500);
+    }, 400);
+    // Još jedan rani poll (heartbeat + track stignu za ~0.5–1 s)
+    window.setTimeout(function () {
+        refreshLiveAnalytics(false);
+    }, 1200);
 })();
 </script>
 {% endblock %}

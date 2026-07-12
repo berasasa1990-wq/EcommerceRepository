@@ -190,7 +190,10 @@ def is_auto_browse_offer(offer):
 
 
 def _has_active_staff_offer(request):
-    """Staff uživo ponuda ima prioritet (isključuje auto preporuke)."""
+    """
+    Ručna staff ponuda (poslao staff) ima prioritet — isključuje auto preporuke.
+    Auto welcome / dwell / browse NE blokiraju 2-min ponudu.
+    """
     session_key = get_cart_session_key(request)
     if not session_key:
         return False
@@ -199,7 +202,7 @@ def _has_active_staff_offer(request):
     if user and user.is_authenticated:
         lookup |= Q(user=user)
     return (
-        LiveVisitorOffer.objects.filter(lookup, show_popup=True)
+        LiveVisitorOffer.objects.filter(lookup, show_popup=True, poslao__isnull=False)
         .filter(
             Q(tip=LiveVisitorOffer.Tip.NARUDZBA, kod_aktiviran=False)
             | Q(tip=LiveVisitorOffer.Tip.ARTIKAL, added_to_cart=False)
@@ -209,6 +212,8 @@ def _has_active_staff_offer(request):
         .exclude(aktivacioni_kod__startswith=f'{AUTO_BROWSE_CODE}-')
         .exclude(aktivacioni_kod='AUTO-DWELL')
         .exclude(aktivacioni_kod__startswith='AUTO-DWELL-')
+        .exclude(aktivacioni_kod='AUTO-REG-WELCOME')
+        .exclude(aktivacioni_kod__startswith='AUTO-REG')
         .exists()
     )
 
