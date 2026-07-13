@@ -124,7 +124,7 @@
         </div>
 
         {% elif akcija.tip == 'bundle' %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260713v14">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260713v15">
         {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary unit_count=akcija.bundle_unit_count %}
         {# Desktop: 2 po redu (4 = 2×2, veće slike). unit_count ≥ 2 #}
         {% if unit_count >= 2 and bundle_items %}
@@ -233,7 +233,7 @@
         {% endwith %}
 
         {% elif akcija.tip == 'qty_deal' and akcija.artikal %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260713v14">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260713v15">
         {% with options=akcija.qty_deal_display_options product=akcija.artikal best=akcija.qty_deal_best_option %}
         {% if options %}
         <div class="site-popup-akcija site-popup-bundle-pack site-popup-qty-deal">

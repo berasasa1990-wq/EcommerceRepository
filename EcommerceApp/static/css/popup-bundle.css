@@ -213,9 +213,22 @@
   font-size: 20px;
   font-weight: 800;
   color: #fca5a5;
-  text-decoration: line-through;
-  text-decoration-thickness: 2.5px;
-  text-decoration-color: #f87171;
+  /* dijagonalni precrt — jasnije snizenje */
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-was::after {
+  content: '';
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 50%;
+  height: 0;
+  border-top: 2.5px solid #f87171;
+  transform: rotate(-14deg);
+  pointer-events: none;
 }
 
 .bundle-pack-deal--hero .bundle-pack-deal-now {
@@ -297,7 +310,20 @@
   font-size: 18px;
   font-weight: 800;
   color: #f87171;
-  text-decoration: line-through;
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+
+.bundle-pack-deal-was::after {
+  content: '';
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 50%;
+  border-top: 2.5px solid #f87171;
+  transform: rotate(-14deg);
+  pointer-events: none;
 }
 
 .bundle-pack-deal-now {
@@ -549,9 +575,22 @@
   font-size: 12px;
   font-weight: 700;
   color: #94a3b8;
-  text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
   order: -1;
+}
+
+/* Ukoso precrtana stara cijena — bolje se vidi snizenje */
+.bundle-pack-was::after {
+  content: '';
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  top: 50%;
+  border-top: 2px solid #e11d48;
+  transform: rotate(-15deg);
+  pointer-events: none;
 }
 
 .bundle-pack-now {
@@ -1075,27 +1114,34 @@
     padding: 4px;
   }
 
-  /* % gore desno */
+  /* % dolje desno na slici artikla */
   .bundle-pack-card-badge {
-    top: 4px;
+    top: auto;
+    bottom: 4px;
     right: 4px;
     left: auto;
-    font-size: 10px;
-    padding: 2px 5px;
-    border-radius: 5px;
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 6px;
   }
 
-  /* ×N dolje desno */
+  /* ×N dolje lijevo kad ima i % (da se ne preklapaju) */
   .bundle-pack-card-qty {
     top: auto;
+    left: 4px;
+    right: auto;
+    bottom: 4px;
+    min-width: 28px;
+    height: 28px;
+    font-size: 12px;
+    padding: 0 6px;
+    border-width: 1.5px;
+  }
+
+  /* Samo ×N bez % — i dalje dolje desno */
+  .bundle-pack-card-img:not(:has(.bundle-pack-card-badge)) .bundle-pack-card-qty {
     left: auto;
     right: 4px;
-    bottom: 4px;
-    min-width: 30px;
-    height: 30px;
-    font-size: 13px;
-    padding: 0 7px;
-    border-width: 1.5px;
   }
 
   .bundle-pack-card-name {
@@ -1486,9 +1532,9 @@
 
 @media (max-width: 768px) {
   .site-popup--qty-deal {
-    max-width: min(calc(100vw - 10px), 480px) !important;
-    width: min(calc(100vw - 10px), 480px) !important;
-    max-height: min(92dvh, 92vh) !important;
+    max-width: min(calc(100vw - 8px), 520px) !important;
+    width: min(calc(100vw - 8px), 520px) !important;
+    max-height: min(94dvh, 94vh) !important;
   }
 
   /* Mobilni: sakrij Inače/Sada/Ušteda + kicker/naslov (već piše na svakom tieru) */
@@ -1504,25 +1550,26 @@
     display: none !important;
   }
 
-  /* Podigni sadržaj gore — više mjesta za 4+ ponude */
+  /* Veći prozor + veća slika artikla */
   .site-popup-qty-deal {
-    padding: 8px 8px 6px !important;
+    padding: 12px 10px 10px !important;
   }
 
   .site-popup-qty-deal .qty-deal-product {
-    gap: 8px;
-    padding: 6px 8px;
-    margin: 0 0 6px;
+    gap: 12px;
+    padding: 10px 12px;
+    margin: 0 0 10px;
   }
 
   .qty-deal-product-img {
-    width: 56px;
-    height: 56px;
-    flex-basis: 56px;
+    width: 96px;
+    height: 96px;
+    flex-basis: 96px;
+    border-radius: 14px;
   }
 
   .qty-deal-product-name {
-    font-size: 12px;
+    font-size: 14px;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     display: -webkit-box;
@@ -1531,7 +1578,7 @@
   }
 
   .qty-deal-product-base {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .qty-deal-tiers {

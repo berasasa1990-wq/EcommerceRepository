@@ -7504,20 +7504,40 @@ button.nav-action-link {
     }
 
     .nav-menu.mobile-open .nav-chevron {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        margin: -8px -4px -8px 4px;
+        border-right: none;
+        border-bottom: none;
+        transform: none;
+        transition: transform var(--transition);
+        flex-shrink: 0;
+        position: relative;
+        /* veća zona za dodir — otvara podkategorije */
+    }
+
+    .nav-menu.mobile-open .nav-chevron::before {
+        content: '';
+        display: block;
         width: 8px;
         height: 8px;
         border-right: 2px solid currentColor;
         border-bottom: 2px solid currentColor;
         transform: rotate(45deg);
-        transition: transform var(--transition);
-        flex-shrink: 0;
         margin-top: -4px;
     }
 
-    .nav-menu.mobile-open .nav-item.mega-open > a .nav-chevron {
+    .nav-menu.mobile-open .nav-item.mega-open > a .nav-chevron::before {
         transform: rotate(-135deg);
         margin-top: 4px;
+    }
+
+    .nav-menu.mobile-open .nav-item.mega-open > a .nav-chevron {
+        transform: none;
+        margin-top: -8px;
     }
 
     .nav-menu.mobile-open .nav-submenu {

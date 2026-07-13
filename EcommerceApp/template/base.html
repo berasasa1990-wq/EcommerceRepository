@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260713v1" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260713v1">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260713v2" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260713v2">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -261,10 +261,11 @@
                     <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
                         data-nav-item
                         {% if category.podkategorije.all %}data-mega-target="mega-{{ category.slug }}"{% endif %}>
-                        <a href="{{ category.get_absolute_url }}">
+                        {# Mobilni: glavna kategorija → svi artikli (?all=1); chevron otvara podkategorije #}
+                        <a href="{% if category.podkategorije.all %}{{ category.get_absolute_url }}?all=1{% else %}{{ category.get_absolute_url }}{% endif %}">
                             {{ category.naziv }}
                             {% if category.podkategorije.all %}
-                            <span class="nav-chevron" aria-hidden="true"></span>
+                            <span class="nav-chevron" aria-hidden="true" role="button" tabindex="0" title="Podkategorije"></span>
                             {% endif %}
                         </a>
                         {% if category.podkategorije.all %}
@@ -387,7 +388,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260713v27" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260713v28" defer></script>
     {% if not user.is_authenticated or not user.is_superuser %}
     <script src="{% static 'js/almost-cart.js' %}?v=20260712v3" defer></script>
     {% endif %}
