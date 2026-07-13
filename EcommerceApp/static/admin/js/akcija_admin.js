@@ -55,6 +55,7 @@
     };
 
     // Kupi više (količinski %): artikal + polja 2/3/4/5/6 kom → %
+    // Bez popup_delay — prikaz samo na stranici artikla, ne nakon kašnjenja širom sajta
     var QTY_DEAL_FIELDS = {
         naziv: 1,
         tip: 1,
@@ -69,7 +70,6 @@
         tekst_dugmeta: 1,
         boja_dugmeta: 1,
         boja_opisa: 1,
-        popup_delay_seconds: 1,
         za_prijavljene: 1,
         za_neprijavljene: 1,
         ponovo_poslije_dana: 1,

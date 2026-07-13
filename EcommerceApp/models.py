@@ -879,7 +879,10 @@ class Akcija(models.Model):
     popup_delay_seconds = models.PositiveSmallIntegerField(
         default=5,
         verbose_name='Prikaži pop-up nakon (sekundi)',
-        help_text='0 = odmah. Ne vrijedi za X+1 (samo korpa).',
+        help_text=(
+            '0 = odmah. Ne vrijedi za X+1 (samo korpa). '
+            'Ne vrijedi za „Kupi više” — taj se prikazuje samo na stranici odabranog artikla, bez kašnjenja.'
+        ),
     )
 
     class Meta:
@@ -1324,22 +1327,24 @@ class Akcija(models.Model):
         return rows
 
     def qty_deal_trigger_matches(self, request):
-        """Prikaži na stranici odabranog artikla (ili bilo gdje s delay-om kao fallback)."""
+        """
+        Kupi više: samo na stranici odabranog artikla.
+        Ne prikazuj širom sajta nakon kašnjenja — trigger je taj artikal.
+        """
         if self.tip != self.Tip.QTY_DEAL or not self.artikal_id:
             return False
-        path = ''
-        if request is not None:
-            try:
-                path = (request.path or '').rstrip('/') or '/'
-            except Exception:
-                path = ''
-        # Ako je na stranici tog artikla — uvijek OK
-        if self.artikal_id and self.artikal:
+        if request is None:
+            return False
+        try:
+            path = (request.path or '').rstrip('/') or '/'
+        except Exception:
+            path = ''
+        slug = ''
+        if self.artikal:
             slug = (self.artikal.slug or '').strip()
-            if slug and path == f'/artikal/{slug}':
-                return True
-        # Inače: prikaži i drugdje (kašnjenje) — da se vidi i s home/kategorije
-        return True
+        if not slug:
+            return False
+        return path == f'/artikal/{slug}'
 
     def qty_deal_display_options(self):
         """

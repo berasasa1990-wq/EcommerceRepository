@@ -1320,9 +1320,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Svaki popup se na svoj delay stavlja u red; red garantuje jedan po jedan
         popupQueue.forEach((overlay, index) => {
             let delaySec = parseInt(overlay.dataset.popupDelay || '0', 10);
-            // Bundle / qty_deal na stranici artikla: uvijek 2 s nakon ulaska
+            // Bundle na stranici artikla: 2 s nakon ulaska
+            // qty_deal: bez forsirnog delay-a — trigger je artikal, delay=0 iz HTML-a
             const tip = overlay.dataset.akcijaTip || '';
-            if (onProductPage && (tip === 'bundle' || tip === 'qty_deal')) {
+            if (onProductPage && tip === 'bundle') {
                 delaySec = 2;
             }
             // Sitni offset po redu da isti delay ne „udari” u istom ticku

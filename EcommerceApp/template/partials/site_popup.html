@@ -5,8 +5,9 @@
      data-popup-id="{{ akcija.id }}"
      {% if akcija.tip == 'bundle' and request.resolver_match.url_name == 'product_detail' %}
      data-popup-delay="2"
-     {% elif akcija.tip == 'qty_deal' and request.resolver_match.url_name == 'product_detail' %}
-     data-popup-delay="2"
+     {% elif akcija.tip == 'qty_deal' %}
+     {# Kupi više: samo na trigger artiklu, bez kašnjenja (ne širom sajta) #}
+     data-popup-delay="0"
      {% else %}
      data-popup-delay="{{ akcija.popup_delay_seconds|default:5 }}"
      {% endif %}
