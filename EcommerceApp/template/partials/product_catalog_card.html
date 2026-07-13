@@ -46,6 +46,14 @@
             <p class="product-origin product-card__origin product-card__origin--placeholder" aria-hidden="true">&nbsp;</p>
             {% endif %}
 
+            {% if product.je_pakovanje %}
+            <p class="product-pack-line product-card__pack">
+                <span class="product-pack-badge product-pack-badge--card">
+                    <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+                    <span class="product-pack-badge-text">{{ product.pakovanje_label }}</span>
+                </span>
+            </p>
+            {% endif %}
             {% if show_akcija_expiry and product.prikaz_akcija_istice %}
             <p class="product-sale-expiry product-card__sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
             {% endif %}
@@ -76,6 +84,9 @@
             <span class="price-current">{% if card_variations|length > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
             {% endif %}
         </div>
+        {% if product.je_pakovanje %}
+        <p class="product-pack-hint product-card__pack-hint">{{ product.pakovanje_cijena_hint }}</p>
+        {% endif %}
     </div>
 
     <div class="product-card__actions">

@@ -10,6 +10,7 @@ from django.middleware.csrf import get_token
 
 from .forms import (
     AkcijaAdminForm,
+    AkcijaQtyTierForm,
     BannerAdminForm,
     BulkAssignBrandForm,
     MergeProductsForm,
@@ -31,6 +32,7 @@ from .product_merge import ProductMergeError, merge_products
 from .models import (
     ActiveCartItem,
     AkcijaBundleLine,
+    AkcijaQtyTier,
     CityVisitTotal,
     LiveVisitor,
     LiveVisitorOffer,
@@ -112,7 +114,8 @@ class ProductVariationInline(admin.TabularInline):
     model = ProductVariation
     extra = 1
     fields = (
-        'naziv', 'sifra', 'slika', 'cijena', 'akcija_postotak', 'akcijska_cijena',
+        'naziv', 'sifra', 'slika', 'cijena', 'pakovanje_komada',
+        'akcija_postotak', 'akcijska_cijena',
         'na_stanju', 'stanje', 'redoslijed', 'odoo_template_id', 'pregled_slike',
     )
     readonly_fields = ('odoo_template_id', 'pregled_slike')
@@ -397,6 +400,7 @@ class AkcijaBundleLineInline(admin.TabularInline):
         'Količina 2 = jedna slika ×2 u popup-u. '
         'Prazan % na liniji = koristi % kompletnog seta.'
     )
+    classes = ('akcija-inline-bundle-lines',)
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
@@ -438,6 +442,73 @@ class AkcijaBundleLineInline(admin.TabularInline):
         return formset
 
 
+class AkcijaQtyTierInline(admin.TabularInline):
+    model = AkcijaQtyTier
+    form = AkcijaQtyTierForm
+    extra = 3
+    min_num = 0
+    fields = ('quantity', 'popust_postotak', 'redoslijed')
+    ordering = ('quantity', 'redoslijed', 'id')
+    verbose_name = 'Količina + %'
+    verbose_name_plural = (
+        '⬇ KUPI VIŠE — ovdje unesi redove (obavezno!): '
+        'količina 2 + popust %, količina 3 + popust %. '
+        'Ne u „BUNDLE SET” iznad — to je za druge artikle.'
+    )
+    classes = ('akcija-inline-qty-tiers',)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        original_clean = formset.clean
+
+        def clean(self):
+            if original_clean:
+                original_clean(self)
+            parent = getattr(self, 'instance', None)
+            tip = None
+            if parent is not None:
+                tip = getattr(parent, 'tip', None)
+            if tip != 'qty_deal' and request is not None:
+                tip = request.POST.get('tip') or tip
+            if tip != 'qty_deal':
+                return
+            # Ako pojedinačni redovi imaju greške — poruka i dalje odozgo
+            if any(self.errors):
+                from django.core.exceptions import ValidationError
+                raise ValidationError(
+                    'Ispravi greške u redovima ispod (količina ≥ 2, popust npr. 10 ili 10,5).'
+                )
+            tiers = 0
+            seen_qty = set()
+            for form in self.forms:
+                if not hasattr(form, 'cleaned_data') or not form.cleaned_data:
+                    continue
+                if form.cleaned_data.get('DELETE'):
+                    continue
+                qty = form.cleaned_data.get('quantity')
+                pct = form.cleaned_data.get('popust_postotak')
+                if qty in (None, '') or pct in (None, ''):
+                    continue
+                q = int(qty)
+                if q in seen_qty:
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError(
+                        f'Količina {q} je unesena više puta — svaka količina samo jednom.'
+                    )
+                seen_qty.add(q)
+                tiers += 1
+            if tiers < 1:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(
+                    'Za „Kupi više” morate unijeti barem jedan red ispod: '
+                    'npr. Kupi 2 komada + Popust 10. '
+                    '(Ne u BUNDLE SET — tamo se unosi set različitih artikala.)'
+                )
+
+        formset.clean = clean
+        return formset
+
+
 @admin.register(Akcija)
 class AkcijaAdmin(admin.ModelAdmin):
     form = AkcijaAdminForm
@@ -451,6 +522,7 @@ class AkcijaAdmin(admin.ModelAdmin):
     autocomplete_fields = ('artikal', 'gratis_artikal', 'kategorija')
     filter_horizontal = ('bundle_artikli',)
     readonly_fields = ('preview_slika',)
+    # Samo bundle inline — količinski popusti su polja na formi (2, 3, 4…)
     inlines = [AkcijaBundleLineInline]
 
     class Media:
@@ -461,7 +533,7 @@ class AkcijaAdmin(admin.ModelAdmin):
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
                 'Izaberite tip — prikazuju se samo polja za taj tip. '
-                'Za Pop-up bundle: ispod forme dodaj linije seta (količina po artiklu).'
+                'Za „Kupi više”: odaberi artikal, pa upiši popust pored 2 / 3 / 4 komada.'
             ),
         }),
         ('Sadržaj', {
@@ -477,9 +549,20 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'tekst_dugmeta', 'link_dugmeta',
                 'boja_dugmeta', 'boja_opisa',
             ),
+        }),
+        ('Kupi više — količina i popust', {
+            'fields': (
+                'qty_2_popust',
+                'qty_3_popust',
+                'qty_4_popust',
+                'qty_5_popust',
+                'qty_6_popust',
+            ),
             'description': (
-                'Pop-up bundle: % + trigger. Stavke seta (s količinom) su ispod — '
-                'možeš isti artikal više puta (npr. qty 2 = 1+1).'
+                'Samo za tip „Kupi više”. '
+                'Upiši npr. 10 pored „Kupi 2 komada” (= -10% za 2 kom), '
+                '20 pored „Kupi 3 komada” (= -20% za 3 kom). '
+                'Prazno polje = ta opcija se ne nudi.'
             ),
         }),
         ('Pop-up ponašanje', {
@@ -488,7 +571,7 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'ponovo_poslije_dana',
             ),
             'description': (
-                'Kašnjenje i publika. Za bundle: kašnjenje se broji tek kad je trigger ispunjen.'
+                'Kašnjenje i publika. Za „Kupi više” popup se najbolje vidi na stranici artikla.'
             ),
         }),
         ('Legacy M2M (opcionalno)', {
@@ -498,19 +581,33 @@ class AkcijaAdmin(admin.ModelAdmin):
         }),
     )
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Snimi 2/3/4… popuste u AkcijaQtyTier
+        if hasattr(form, 'save_qty_deal_tiers'):
+            form.save_qty_deal_tiers(obj)
+
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
         obj = form.instance
-        if obj.tip != Akcija.Tip.BUNDLE:
-            return
-        # Ako ima linija — OK; inače traži barem 2 iz M2M
-        if obj.bundle_unit_count() < 2:
-            from django.contrib import messages as django_messages
-            django_messages.warning(
-                request,
-                'Bundle set mora imati ukupno barem 2 komada '
-                '(npr. jedan artikal ×2, ili dva različita ×1).',
-            )
+        # Još jednom poslije related (ako je form.save_m2m redoslijed)
+        if hasattr(form, 'save_qty_deal_tiers'):
+            form.save_qty_deal_tiers(obj)
+        if obj.tip == Akcija.Tip.BUNDLE:
+            if obj.bundle_unit_count() < 2:
+                from django.contrib import messages as django_messages
+                django_messages.warning(
+                    request,
+                    'Bundle set mora imati ukupno barem 2 komada '
+                    '(npr. jedan artikal ×2, ili dva različita ×1).',
+                )
+        elif obj.tip == Akcija.Tip.QTY_DEAL:
+            if not obj.qty_deal_tiers():
+                from django.contrib import messages as django_messages
+                django_messages.warning(
+                    request,
+                    '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).',
+                )
 
     @admin.display(description='Pregled slike')
     def preview_slika(self, obj):
@@ -787,13 +884,16 @@ class ProductAdmin(admin.ModelAdmin):
         }),
         ('Slika i cijena', {
             'fields': (
-                'slika', 'pregled_slike_velika', 'cijena',
+                'slika', 'pregled_slike_velika', 'cijena', 'pakovanje_komada',
                 'akcija_postotak', 'akcijska_cijena', 'akcija_do',
                 'na_stanju', 'stanje',
             ),
             'description': (
                 'Akcija: unesite popust (%) za automatski izračun akcijske cijene, '
-                'ili ručno unesite akcijsku cijenu. Upload slike: AVIF max 15KB + responsive 120/200/320w.'
+                'ili ručno unesite akcijsku cijenu. '
+                'Pakovanje: ako je cijena za pakovanje (npr. 9 kom), unesi broj komada — '
+                'kupac vidi „Pakovanje 9 kom.” da ne pomisli da je cijena po komadu. '
+                'Upload slike: AVIF max 15KB + responsive 120/200/320w.'
             ),
         }),
         ('Prikaz', {

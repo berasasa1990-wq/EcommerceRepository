@@ -85,6 +85,7 @@ def nav_categories(request):
     ).prefetch_related(
         'bundle_artikli',
         'bundle_lines__product',
+        'qty_tiers',
     ).order_by('redoslijed', '-id'):
         if akcija.je_popup() and akcija.prikazi_korisniku(request.user, request=request):
             popup_queue.append(akcija)

@@ -254,6 +254,16 @@
             {% endif %}
             <p class="product-detail-category">{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}</p>
 
+            {% if product.je_pakovanje %}
+            <div class="product-pack-detail" role="note">
+                <span class="product-pack-badge product-pack-badge--detail">
+                    <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+                    <span class="product-pack-badge-text">{{ product.pakovanje_label }}</span>
+                </span>
+                <span class="product-pack-detail-hint">{{ product.pakovanje_cijena_hint }} — ne po komadu</span>
+            </div>
+            {% endif %}
+
             {% if not product.varijacije.count %}
             <div class="product-detail-price product-price--detail" id="detailPrice">
                 {% include 'partials/product_price.html' with item=product %}
@@ -264,6 +274,7 @@
             <div class="product-detail-meta">
                 {% if product.sifra %}<p><strong>Šifra:</strong> {{ product.sifra }}</p>{% endif %}
                 {% if product.barkod %}<p><strong>Barkod:</strong> {{ product.barkod }}</p>{% endif %}
+                {% if product.je_pakovanje %}<p><strong>Pakovanje:</strong> {{ product.pakovanje_komada_prikaz }} komada</p>{% endif %}
             </div>
 
             {% if product.na_stanju %}

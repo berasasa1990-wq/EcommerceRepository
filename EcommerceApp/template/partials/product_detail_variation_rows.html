@@ -1,6 +1,14 @@
 {% for var in in_stock_variations %}
 <div class="product-detail-variation-row"{% if var.slika %} data-image="{{ var.slika.url }}"{% endif %}>
-    <span class="product-detail-variation-name">{{ var.naziv }}</span>
+    <span class="product-detail-variation-name">
+        {{ var.naziv }}
+        {% if var.je_pakovanje %}
+        <span class="product-pack-badge product-pack-badge--inline" title="{{ var.pakovanje_cijena_hint }}">
+            <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+            <span class="product-pack-badge-text">{{ var.pakovanje_label }}</span>
+        </span>
+        {% endif %}
+    </span>
     <span class="product-detail-variation-price product-price--detail">
         {% include 'partials/product_price.html' with item=var %}
     </span>

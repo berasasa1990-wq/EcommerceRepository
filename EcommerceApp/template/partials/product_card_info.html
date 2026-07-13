@@ -22,4 +22,13 @@
         <span class="price-current">{{ product.katalog_prikazna_cijena }} KM</span>
         {% endif %}
     </p>
+    {% if product.je_pakovanje %}
+    <p class="product-pack-line" title="{{ product.pakovanje_cijena_hint }}">
+        <span class="product-pack-badge product-pack-badge--card">
+            <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+            <span class="product-pack-badge-text">{{ product.pakovanje_label }}</span>
+        </span>
+        <span class="product-pack-hint">{{ product.pakovanje_cijena_hint }}</span>
+    </p>
+    {% endif %}
 </div>

@@ -3,10 +3,12 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
 import re
+from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import (
     Akcija,
+    AkcijaQtyTier,
     Banner,
     Brand,
     Category,
@@ -17,14 +19,197 @@ from .models import (
 )
 
 
+def _parse_flexible_number(value, *, field_label='Broj'):
+    """Prihvati 10, 10.5, 10,5, 10%, ' 15 % '."""
+    if value is None or value == '':
+        return None
+    if isinstance(value, (int, float, Decimal)):
+        return Decimal(str(value))
+    s = str(value).strip()
+    if not s:
+        return None
+    s = s.replace('%', '').replace(' ', '').replace(',', '.')
+    # ostavi samo prvi broj
+    m = re.search(r'-?\d+(?:\.\d+)?', s)
+    if not m:
+        raise forms.ValidationError(f'Unesite ispravan broj za {field_label} (npr. 10 ili 10,5).')
+    try:
+        return Decimal(m.group(0))
+    except (InvalidOperation, ValueError):
+        raise forms.ValidationError(f'Unesite ispravan broj za {field_label} (npr. 10 ili 10,5).')
+
+
+class FlexibleDecimalField(forms.DecimalField):
+    """Decimal polje koje prihvata zarez i znak %."""
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        try:
+            return _parse_flexible_number(value, field_label=str(self.label or 'vrijednost'))
+        except forms.ValidationError:
+            raise
+        except Exception:
+            raise forms.ValidationError('Unesite ispravan broj (npr. 10 ili 10,5).')
+
+
+class AkcijaQtyTierForm(forms.ModelForm):
+    """Forma za količinski tier — tolerantna na 10% / 10,5."""
+
+    popust_postotak = FlexibleDecimalField(
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        max_value=Decimal('100'),
+        label='Popust (%)',
+        required=False,
+        help_text='Npr. 10 ili 10,5 (bez obaveznog znaka %).',
+    )
+    quantity = forms.IntegerField(
+        label='Kupi (komada)',
+        required=False,
+        min_value=1,
+        help_text='Minimalno 2.',
+    )
+
+    class Meta:
+        model = AkcijaQtyTier
+        fields = ('quantity', 'popust_postotak', 'redoslijed')
+
+    def _raw_qty_pct(self):
+        if self.data is None or self.prefix is None:
+            return '', ''
+        p = self.prefix
+        return (
+            str(self.data.get(f'{p}-quantity', '') or '').strip(),
+            str(self.data.get(f'{p}-popust_postotak', '') or '').strip(),
+        )
+
+    def has_changed(self):
+        """Prazan red (bez količine i %) se ne smatra unosom — inače save puca."""
+        qty_raw, pct_raw = self._raw_qty_pct()
+        if not qty_raw and not pct_raw:
+            return False
+        return super().has_changed()
+
+    def clean(self):
+        cleaned = super().clean()
+        qty = cleaned.get('quantity')
+        pct = cleaned.get('popust_postotak')
+        qty_raw, pct_raw = self._raw_qty_pct()
+        # Prazan red (oba prazna) — OK, ne snima se
+        if not qty_raw and not pct_raw:
+            cleaned['quantity'] = None
+            cleaned['popust_postotak'] = None
+            return cleaned
+        if qty in (None, ''):
+            self.add_error('quantity', 'Unesite količinu (npr. 2).')
+        elif int(qty) < 2:
+            self.add_error('quantity', 'Količina mora biti barem 2.')
+        if pct in (None, ''):
+            self.add_error('popust_postotak', 'Unesite popust u % (npr. 10).')
+        else:
+            try:
+                pct_dec = Decimal(pct)
+            except Exception:
+                pct_dec = None
+            if pct_dec is not None and pct_dec <= 0:
+                self.add_error('popust_postotak', 'Popust mora biti veći od 0.')
+            elif pct_dec is not None and pct_dec > 100:
+                self.add_error('popust_postotak', 'Popust ne može biti preko 100%.')
+        return cleaned
+
+
 class AkcijaAdminForm(forms.ModelForm):
+    """
+    Za „Kupi više”: jednostavna polja
+    Kupi 2 kom → popust %, Kupi 3 kom → popust %, …
+    (snima se u AkcijaQtyTier)
+    """
+
+    qty_2_popust = FlexibleDecimalField(
+        required=False,
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        max_value=Decimal('100'),
+        label='Kupi 2 komada — popust (%)',
+        help_text='Npr. 10 = -10% kad kupac uzme 2 komada. Prazno = nema te opcije.',
+    )
+    qty_3_popust = FlexibleDecimalField(
+        required=False,
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        max_value=Decimal('100'),
+        label='Kupi 3 komada — popust (%)',
+        help_text='Npr. 20 = -20% za 3 komada.',
+    )
+    qty_4_popust = FlexibleDecimalField(
+        required=False,
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        max_value=Decimal('100'),
+        label='Kupi 4 komada — popust (%)',
+        help_text='Opcionalno.',
+    )
+    qty_5_popust = FlexibleDecimalField(
+        required=False,
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        max_value=Decimal('100'),
+        label='Kupi 5 komada — popust (%)',
+        help_text='Opcionalno.',
+    )
+    qty_6_popust = FlexibleDecimalField(
+        required=False,
+        max_digits=5,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        max_value=Decimal('100'),
+        label='Kupi 6 komada — popust (%)',
+        help_text='Opcionalno.',
+    )
+
     class Meta:
         model = Akcija
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Učitaj postojeće tierove u polja 2–6
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk and getattr(instance, 'tip', None) == Akcija.Tip.QTY_DEAL:
+            for tier in instance.qty_tiers.all():
+                try:
+                    q = int(tier.quantity)
+                except (TypeError, ValueError):
+                    continue
+                if 2 <= q <= 6:
+                    field_name = f'qty_{q}_popust'
+                    if field_name in self.fields and tier.popust_postotak is not None:
+                        self.fields[field_name].initial = tier.popust_postotak
+
+    def qty_deal_tiers_from_form(self):
+        """Lista (quantity, popust) iz jednostavnih polja."""
+        rows = []
+        for q in (2, 3, 4, 5, 6):
+            pct = self.cleaned_data.get(f'qty_{q}_popust')
+            if pct is None or pct == '':
+                continue
+            try:
+                pct_dec = Decimal(pct)
+            except Exception:
+                continue
+            if pct_dec <= 0:
+                continue
+            rows.append((q, pct_dec))
+        return rows
+
     def clean_artikal(self):
         artikal = self.cleaned_data.get('artikal')
-        tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
         tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
         if tip == Akcija.Tip.BUNDLE:
             # artikal je opcionalan — samo za trigger „odabrani trigger artikal”
@@ -42,6 +227,7 @@ class AkcijaAdminForm(forms.ModelForm):
             Akcija.Tip.X_PLUS_1,
             Akcija.Tip.KORPA_NUDJENJE,
             Akcija.Tip.GRATIS,
+            Akcija.Tip.QTY_DEAL,
         } and not artikal:
             raise forms.ValidationError('Odaberite artikal.')
         if artikal and not artikal.aktivan:
@@ -119,7 +305,43 @@ class AkcijaAdminForm(forms.ModelForm):
             if trigger == Akcija.BundleTrigger.CATEGORY and not cleaned.get('kategorija'):
                 self.add_error('kategorija', 'Odaberite trigger kategoriju.')
 
+        elif tip == Akcija.Tip.QTY_DEAL:
+            if not cleaned.get('artikal'):
+                self.add_error('artikal', 'Odaberite artikal za količinski popust.')
+            tiers = []
+            for q in (2, 3, 4, 5, 6):
+                pct = cleaned.get(f'qty_{q}_popust')
+                if pct is not None and pct != '':
+                    tiers.append(q)
+            if not tiers:
+                self.add_error(
+                    'qty_2_popust',
+                    'Unesi barem jedan popust — npr. kod „Kupi 2 komada” upiši 10, '
+                    'ili kod „Kupi 3 komada” upiši 20.',
+                )
+
         return cleaned
+
+    def save_qty_deal_tiers(self, akcija):
+        """Snimi jednostavna polja kao AkcijaQtyTier redove."""
+        if not akcija or not akcija.pk:
+            return
+        if akcija.tip != Akcija.Tip.QTY_DEAL:
+            # Ako tip nije qty_deal — obriši stare tierove
+            akcija.qty_tiers.all().delete()
+            return
+        wanted = {q: pct for q, pct in self.qty_deal_tiers_from_form()}
+        # Obriši što više nije u formi
+        akcija.qty_tiers.exclude(quantity__in=list(wanted.keys()) or [0]).delete()
+        for q, pct in wanted.items():
+            AkcijaQtyTier.objects.update_or_create(
+                akcija=akcija,
+                quantity=q,
+                defaults={
+                    'popust_postotak': pct,
+                    'redoslijed': q,
+                },
+            )
 
 
 class PopupAdminForm(forms.ModelForm):

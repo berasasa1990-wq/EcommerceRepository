@@ -242,6 +242,9 @@ class Cart:
                 item['product_naziv'] = item.get('naziv', '')
             item['cijena_decimal'] = Decimal(item['cijena'])
             item['bazna_cijena_decimal'] = Decimal(item['bazna_cijena'])
+            item['pakovanje_label'] = ''
+            item['pakovanje_cijena_hint'] = ''
+            item['pakovanje_komada'] = 0
 
             # Compute deal if exists
             deal_info = None
@@ -250,6 +253,19 @@ class Cart:
                 product = Product.objects.filter(pk=item['product_id']).first()
                 if product:
                     deal_info = get_deal_info_for_cart_item(item, product)
+                    pack_src = product
+                    var_id = item.get('variation_id')
+                    if var_id:
+                        from .models import ProductVariation
+                        var = ProductVariation.objects.filter(
+                            pk=var_id, artikal_id=product.pk,
+                        ).first()
+                        if var and var.je_pakovanje:
+                            pack_src = var
+                    if pack_src.je_pakovanje:
+                        item['pakovanje_label'] = pack_src.pakovanje_label
+                        item['pakovanje_cijena_hint'] = pack_src.pakovanje_cijena_hint
+                        item['pakovanje_komada'] = pack_src.pakovanje_komada_prikaz
             except Exception:
                 pass
 

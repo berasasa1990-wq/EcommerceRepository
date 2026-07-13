@@ -48,6 +48,15 @@
                         </div>
                         {% endif %}
                         {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}
+                        {% if item.pakovanje_label %}
+                        <p class="cart-item-pack product-pack-line">
+                            <span class="product-pack-badge product-pack-badge--card">
+                                <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+                                <span class="product-pack-badge-text">{{ item.pakovanje_label }}</span>
+                            </span>
+                            <span class="product-pack-hint">{{ item.pakovanje_cijena_hint }}</span>
+                        </p>
+                        {% endif %}
                         <p class="cart-item-price">
                             {% if item.deal_info and item.deal_info.has_discount and item.deal_info.discounted_unit_price %}
                                 <span class="price-original">{{ item.deal_info.full_unit_price }} KM</span>

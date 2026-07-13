@@ -16211,3 +16211,104 @@ body.og-side-open {
         height: min(130px, 42vw);
     }
 }
+
+/* —— Pakovanje (cijena po pakovanju, ne po komadu) —— */
+.product-pack-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #e0f2fe;
+    border: 1px solid #7dd3fc;
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.product-pack-badge-icon {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.product-pack-badge--card {
+    font-size: 10px;
+    padding: 2px 7px;
+}
+
+.product-pack-badge--detail {
+    font-size: 13px;
+    padding: 5px 12px;
+    background: linear-gradient(180deg, #e0f2fe, #bae6fd);
+    border-color: #38bdf8;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+}
+
+.product-pack-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    margin: 4px 0 0;
+    line-height: 1.3;
+}
+
+.product-pack-hint {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.product-card__pack {
+    margin: 2px 0 0;
+    min-height: 0;
+}
+
+.product-card__pack-hint {
+    margin: 3px 0 0;
+    font-size: 10px;
+    font-weight: 700;
+    color: #0369a1;
+    line-height: 1.25;
+}
+
+.product-pack-detail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin: 8px 0 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+}
+
+.product-pack-detail-hint {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0c4a6e;
+    line-height: 1.35;
+}
+
+.cart-item-pack {
+    margin: 4px 0 6px;
+}
+
+@media (max-width: 480px) {
+    .product-pack-badge--card {
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+    .product-pack-detail {
+        padding: 8px 10px;
+        margin: 6px 0 10px;
+    }
+    .product-pack-detail-hint {
+        font-size: 12px;
+    }
+}

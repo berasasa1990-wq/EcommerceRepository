@@ -1288,6 +1288,15 @@ def add_to_cart(request, slug):
             artikal_id=product.pk,
         ).exists()
     )
+    is_qty_deal_popup_add = bool(
+        timer_akcija_from_popup
+        and Akcija.objects.filter(
+            pk=timer_akcija_from_popup,
+            aktivan=True,
+            tip=Akcija.Tip.QTY_DEAL,
+            artikal_id=product.pk,
+        ).exists()
+    )
 
     if product.varijacije.exists():
         if variation_id:
@@ -1297,6 +1306,8 @@ def add_to_cart(request, slug):
         else:
             in_stock = product.varijacije.filter(na_stanju=True).order_by('redoslijed', 'id')
             if is_gratis_popup_add and in_stock.exists():
+                variation = in_stock.first()
+            elif is_qty_deal_popup_add and in_stock.exists():
                 variation = in_stock.first()
             elif timer_akcija_from_popup and in_stock.count() == 1:
                 variation = in_stock.first()
@@ -1348,10 +1359,12 @@ def add_to_cart(request, slug):
         _add_discounted_gratis_line,
         apply_gratis_bundle_from_popup,
         apply_popup_bundle_from_popup,
+        apply_qty_deal_from_popup,
         build_gratis_choice_message,
         build_gratis_offer_response,
         build_gratis_popup_message,
         build_popup_bundle_message,
+        build_qty_deal_message,
         get_active_gratis_akcija_for_product,
     )
 
@@ -1417,6 +1430,64 @@ def add_to_cart(request, slug):
                                 (variation.prikazna_cijena if variation else product.prikazna_cijena)
                                 * quantity
                             ),
+                        },
+                    })
+                messages.success(request, message)
+                return redirect('cart')
+
+        # Kupi više: N komada istog artikla s tier %
+        qty_deal_akcija = (
+            Akcija.objects.filter(
+                pk=akcija_id,
+                aktivan=True,
+                tip=Akcija.Tip.QTY_DEAL,
+                artikal_id=product.pk,
+            )
+            .prefetch_related('qty_tiers')
+            .select_related('artikal')
+            .first()
+        )
+        if qty_deal_akcija and qty_deal_akcija.jos_traje():
+            tier_id = request.POST.get('tier_id', '').strip()
+            deal_result = apply_qty_deal_from_popup(
+                cart,
+                qty_deal_akcija,
+                quantity=quantity,
+                tier_id=tier_id or None,
+                variation=variation,
+            )
+            if deal_result:
+                cart.clear_coupon()
+                deal_qty = deal_result['quantity']
+                message = build_qty_deal_message(
+                    qty_deal_akcija,
+                    quantity=deal_qty,
+                    popust_postotak=deal_result.get('popust_postotak'),
+                )
+                add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
+                track_add_to_cart(
+                    request,
+                    product,
+                    variation=variation,
+                    quantity=deal_qty,
+                    event_id=add_to_cart_event_id,
+                )
+                _check_and_set_pending_upsell(request, product)
+                unit = deal_result.get('unit_price') or (
+                    variation.prikazna_cijena if variation else product.prikazna_cijena
+                )
+                if stay_on_page:
+                    return JsonResponse({
+                        'ok': True,
+                        'message': message,
+                        'cart_count': len(cart),
+                        'upsell_html': '',
+                        'meta_add_to_cart': {
+                            'event_id': add_to_cart_event_id,
+                            'content_id': product.sifra or str(product.pk),
+                            'content_name': product.naziv,
+                            'value': float(unit * deal_qty),
+                            'quantity': deal_qty,
                         },
                     })
                 messages.success(request, message)
