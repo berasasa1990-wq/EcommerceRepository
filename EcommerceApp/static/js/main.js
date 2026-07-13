@@ -1006,6 +1006,130 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<span class="price-current">${formatted} KM</span>`;
     }
 
+    /**
+     * Globalni red popupova — strogo jedan po jedan.
+     * Prvi koji izađe ostaje; svi ostali čekaju i ne propadaju.
+     * job: { id: string, canShow?: () => bool, show: () => void }
+     */
+    const SiteModalQueue = (function createSiteModalQueue() {
+        const queue = [];
+        /** @type {string|null} */
+        let activeId = null;
+        let drainTimer = null;
+
+        function anyVisible() {
+            return !!document.querySelector('.site-popup-overlay.is-visible');
+        }
+
+        function isBusy() {
+            // activeId ili bilo koji vidljivi overlay ili body.popup-open
+            if (activeId) return true;
+            if (anyVisible()) return true;
+            if (document.body.classList.contains('popup-open')) return true;
+            return false;
+        }
+
+        function findIndex(id) {
+            if (!id) return -1;
+            return queue.findIndex((job) => job && job.id === id);
+        }
+
+        function activate(job) {
+            if (!job || typeof job.show !== 'function') return false;
+            // canShow = trajni razlog (cooldown/session) — false ⇒ preskoči zauvijek
+            if (typeof job.canShow === 'function' && !job.canShow()) return false;
+            activeId = job.id || 'active';
+            try {
+                job.show();
+            } catch (err) {
+                activeId = null;
+                return false;
+            }
+            return true;
+        }
+
+        function processNext() {
+            // Dok je bilo šta vidljivo — ne diraj red
+            if (anyVisible() || document.body.classList.contains('popup-open')) {
+                if (!activeId) activeId = 'external-visible';
+                return;
+            }
+            activeId = null;
+            while (queue.length) {
+                const job = queue.shift();
+                if (activate(job)) return;
+                // canShow false ili greška — sljedeći u redu (ne vraćamo u red)
+            }
+        }
+
+        function enqueue(job) {
+            if (!job || typeof job.show !== 'function') return;
+            const id = job.id || '';
+            // Već prikazan taj id
+            if (id && activeId === id) return;
+            // Već u redu
+            if (id && findIndex(id) !== -1) return;
+
+            if (isBusy() || queue.length) {
+                queue.push(job);
+                // Ako nitko nije aktivan a red je stajao — drain
+                if (!activeId && !anyVisible() && !document.body.classList.contains('popup-open')) {
+                    processNext();
+                }
+                return;
+            }
+            if (!activate(job)) {
+                processNext();
+            }
+        }
+
+        /**
+         * Zatvoren popup — pusti sljedećeg iz reda.
+         * @param {string} [closedId] opcionalno: id joba koji se zatvorio
+         */
+        function notifyClosed(closedId) {
+            if (closedId && activeId && closedId !== activeId) {
+                // Zatvoren je stariji/drugi — ne diraj aktivni, ali pokušaj drain
+                // samo ako ništa nije vidljivo
+            } else {
+                activeId = null;
+            }
+            if (drainTimer) clearTimeout(drainTimer);
+            drainTimer = window.setTimeout(() => {
+                drainTimer = null;
+                // Ako je još nešto vidljivo, ne diraj
+                if (anyVisible()) {
+                    // uskladi activeId s vidljivim (fallback)
+                    if (!activeId) activeId = 'external-visible';
+                    return;
+                }
+                document.body.classList.remove('popup-open');
+                activeId = null;
+                processNext();
+            }, 80);
+        }
+
+        function getActiveId() {
+            return activeId;
+        }
+
+        function peekQueueLength() {
+            return queue.length;
+        }
+
+        return {
+            enqueue,
+            notifyClosed,
+            anyVisible,
+            isBusy,
+            processNext,
+            getActiveId,
+            peekQueueLength,
+        };
+    })();
+
+    window.SiteModalQueue = SiteModalQueue;
+
     const sitePopupOverlays = Array.from(
         document.querySelectorAll('.site-popup-overlay[data-popup-id]'),
     );
@@ -1075,6 +1199,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function popupJobId(overlay) {
+            return `akcija-${overlay.dataset.popupId || 'default'}`;
+        }
+
         function hidePopup(overlay) {
             if (!overlay) return;
             overlay.classList.remove('is-visible');
@@ -1087,11 +1215,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function closePopup(overlay, recordSeen = true) {
             if (!overlay) return;
+            const jobId = popupJobId(overlay);
             stopCountdown();
             hidePopup(overlay);
             if (recordSeen) {
                 markPopupSeen(overlay);
             }
+            // Oslobodi red — sljedeći popup na čekanju
+            SiteModalQueue.notifyClosed(jobId);
         }
 
         function startCountdown(overlay) {
@@ -1117,13 +1248,26 @@ document.addEventListener('DOMContentLoaded', () => {
             activeCountdownInterval = setInterval(tick, 1000);
         }
 
-        function openPopup(overlay) {
+        function showOverlayNow(overlay) {
+            const jobId = popupJobId(overlay);
             if (!overlay || !shouldShowPopup(overlay)) {
+                SiteModalQueue.notifyClosed(jobId);
                 return;
             }
 
-            if (activeOverlay && activeOverlay !== overlay) {
-                closePopup(activeOverlay, true);
+            // Strogo: nikad preko drugog popup-a — vrati u red, ne preuzimaj slot
+            const visibleOther = document.querySelector('.site-popup-overlay.is-visible');
+            if (
+                (visibleOther && visibleOther !== overlay)
+                || (activeOverlay && activeOverlay !== overlay && activeOverlay.classList.contains('is-visible'))
+            ) {
+                SiteModalQueue.notifyClosed(jobId);
+                SiteModalQueue.enqueue({
+                    id: jobId,
+                    canShow: () => shouldShowPopup(overlay),
+                    show: () => showOverlayNow(overlay),
+                });
+                return;
             }
 
             const popupImage = overlay.querySelector('.site-popup-image');
@@ -1131,20 +1275,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 popupImage.setAttribute('src', popupImage.dataset.src);
             }
 
-            sitePopupOverlays.forEach((item) => {
-                if (item !== overlay) {
-                    item.classList.remove('is-visible');
-                    item.hidden = true;
-                }
-            });
-
+            // Sinkrono — is-visible odmah, bez rAF trke
             overlay.hidden = false;
-            requestAnimationFrame(() => {
-                overlay.classList.add('is-visible');
-            });
+            overlay.classList.add('is-visible');
             document.body.classList.add('popup-open');
             activeOverlay = overlay;
             startCountdown(overlay);
+        }
+
+        /**
+         * Zatraži prikaz: ako je neki popup već otvoren, stavi u red.
+         * Nikad ne prekida aktivni popup i ne gubi onaj na čekanju.
+         */
+        function openPopup(overlay) {
+            if (!overlay || !shouldShowPopup(overlay)) {
+                return;
+            }
+            if (activeOverlay === overlay && overlay.classList.contains('is-visible')) {
+                return;
+            }
+            const jobId = popupJobId(overlay);
+            SiteModalQueue.enqueue({
+                id: jobId,
+                canShow: () => shouldShowPopup(overlay),
+                show: () => showOverlayNow(overlay),
+            });
         }
 
         const popupQueue = sitePopupOverlays
@@ -1155,18 +1310,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (delayA !== delayB) {
                     return delayA - delayB;
                 }
+                // Isti delay: stabilan red po id — prvi u redu prvi izlazi
                 return parseInt(a.dataset.popupId || '0', 10) - parseInt(b.dataset.popupId || '0', 10);
             });
 
         const onProductPage = /^\/artikal\/[^/]+\/?$/.test(window.location.pathname || '');
 
-        popupQueue.forEach((overlay) => {
+        // Svaki popup se na svoj delay stavlja u red; red garantuje jedan po jedan
+        popupQueue.forEach((overlay, index) => {
             let delaySec = parseInt(overlay.dataset.popupDelay || '0', 10);
-            // Bundle na stranici artikla: uvijek 2 s nakon ulaska
-            if (onProductPage && (overlay.dataset.akcijaTip || '') === 'bundle') {
+            // Bundle / qty_deal na stranici artikla: uvijek 2 s nakon ulaska
+            const tip = overlay.dataset.akcijaTip || '';
+            if (onProductPage && (tip === 'bundle' || tip === 'qty_deal')) {
                 delaySec = 2;
             }
-            const showAt = pageStartedAt + Math.max(0, delaySec) * 1000;
+            // Sitni offset po redu da isti delay ne „udari” u istom ticku
+            const showAt = pageStartedAt + Math.max(0, delaySec) * 1000 + index * 30;
             const waitMs = Math.max(0, showAt - Date.now());
 
             window.setTimeout(() => {
@@ -1314,6 +1473,10 @@ document.addEventListener('DOMContentLoaded', () => {
             countdownInterval = setInterval(tick, 1000);
         }
 
+        function upsellJobId() {
+            return `upsell-${overlay.dataset.upsellId || 'default'}`;
+        }
+
         function closeUpsell(recordConsumed = true) {
             stopUpsellCountdown();
             overlay.classList.remove('is-visible');
@@ -1322,6 +1485,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (recordConsumed) {
                 markUpsellConsumed();
             }
+            if (window.SiteModalQueue) {
+                window.SiteModalQueue.notifyClosed(upsellJobId());
+            }
+        }
+
+        function showUpsellNow() {
+            if (isUpsellConsumed() || !overlay.isConnected) {
+                overlay.remove();
+                if (window.SiteModalQueue) {
+                    window.SiteModalQueue.notifyClosed(upsellJobId());
+                }
+                return;
+            }
+            const other = document.querySelector('.site-popup-overlay.is-visible');
+            if (other && other !== overlay) {
+                if (window.SiteModalQueue) {
+                    window.SiteModalQueue.notifyClosed(upsellJobId());
+                    window.SiteModalQueue.enqueue({
+                        id: upsellJobId(),
+                        canShow: () => !isUpsellConsumed() && overlay.isConnected,
+                        show: showUpsellNow,
+                    });
+                }
+                return;
+            }
+            overlay.hidden = false;
+            overlay.classList.add('is-visible');
+            document.body.classList.add('popup-open');
+            startUpsellCountdown();
         }
 
         function openUpsell() {
@@ -1329,12 +1521,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 overlay.remove();
                 return;
             }
-            overlay.hidden = false;
-            requestAnimationFrame(() => {
-                overlay.classList.add('is-visible');
-            });
-            document.body.classList.add('popup-open');
-            startUpsellCountdown();
+            // Čekaj u redu — ne preko drugog popup-a i ne propadaj
+            if (window.SiteModalQueue) {
+                window.SiteModalQueue.enqueue({
+                    id: upsellJobId(),
+                    canShow: () => !isUpsellConsumed() && overlay.isConnected,
+                    show: showUpsellNow,
+                });
+            } else {
+                showUpsellNow();
+            }
         }
 
         openUpsell();

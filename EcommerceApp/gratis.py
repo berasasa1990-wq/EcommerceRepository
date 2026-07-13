@@ -223,7 +223,8 @@ def build_popup_bundle_message(akcija, *, quantity=1):
 def apply_qty_deal_from_popup(cart, akcija, *, quantity=None, tier_id=None, variation=None):
     """
     Kupi više: N komada istog artikla s % popustom po tieru.
-    quantity ili tier_id određuju koji % se primjenjuje.
+    quantity=1 (bez tier_id) = 1 kom po regularnoj cijeni.
+    quantity ili tier_id određuju koji % se primjenjuje za 2+.
     """
     if akcija.tip != Akcija.Tip.QTY_DEAL:
         return None
@@ -231,41 +232,10 @@ def apply_qty_deal_from_popup(cart, akcija, *, quantity=None, tier_id=None, vari
     if not product or not product.aktivan:
         return None
 
-    tiers = akcija.qty_deal_tiers()
-    if not tiers:
-        return None
-
-    chosen = None
-    if tier_id:
-        try:
-            tid = int(tier_id)
-        except (TypeError, ValueError):
-            tid = None
-        if tid:
-            for t in tiers:
-                if t['id'] == tid:
-                    chosen = t
-                    break
-    if chosen is None and quantity is not None:
-        try:
-            q = int(quantity)
-        except (TypeError, ValueError):
-            q = None
-        if q:
-            # Točno match, inače najbliži tier ≤ qty (s najvećim qty)
-            exact = [t for t in tiers if t['quantity'] == q]
-            if exact:
-                chosen = exact[0]
-            else:
-                lower = [t for t in tiers if t['quantity'] <= q]
-                if lower:
-                    chosen = max(lower, key=lambda t: t['quantity'])
-    if chosen is None:
-        # default: prvi (najmanji) tier
-        chosen = tiers[0]
-
-    qty = max(2, int(chosen['quantity']))
-    pct = chosen['popust_postotak']
+    try:
+        q_req = int(quantity) if quantity is not None else None
+    except (TypeError, ValueError):
+        q_req = None
 
     if variation is None:
         variation = _resolve_product_variation(product)
@@ -273,6 +243,63 @@ def apply_qty_deal_from_popup(cart, akcija, *, quantity=None, tier_id=None, vari
         return None
 
     prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
+
+    # 1 kom po regularnoj cijeni — bez količinskog popusta
+    tid_raw = (str(tier_id).strip() if tier_id is not None else '')
+    if q_req == 1 and (not tid_raw or tid_raw in ('0', 'single', 'none')):
+        cart.add(
+            product,
+            variation=variation,
+            quantity=1,
+        )
+        return {
+            'akcija': akcija,
+            'quantity': 1,
+            'popust_postotak': None,
+            'unit_price': prikazna,
+            'is_single': True,
+        }
+
+    tiers = akcija.qty_deal_tiers()
+    if not tiers:
+        return None
+
+    chosen = None
+    if tid_raw:
+        try:
+            tid = int(tid_raw)
+        except (TypeError, ValueError):
+            tid = None
+        if tid:
+            for t in tiers:
+                if t['id'] == tid:
+                    chosen = t
+                    break
+    if chosen is None and q_req is not None and q_req >= 2:
+        # Točno match, inače najbliži tier ≤ qty (s najvećim qty)
+        exact = [t for t in tiers if t['quantity'] == q_req]
+        if exact:
+            chosen = exact[0]
+        else:
+            lower = [t for t in tiers if t['quantity'] <= q_req]
+            if lower:
+                chosen = max(lower, key=lambda t: t['quantity'])
+    if chosen is None:
+        # default: prvi (najmanji) tier — samo ako nije eksplicitno tražen 1 kom
+        if q_req == 1:
+            cart.add(product, variation=variation, quantity=1)
+            return {
+                'akcija': akcija,
+                'quantity': 1,
+                'popust_postotak': None,
+                'unit_price': prikazna,
+                'is_single': True,
+            }
+        chosen = tiers[0]
+
+    qty = max(2, int(chosen['quantity']))
+    pct = chosen['popust_postotak']
+
     from .models import _izracunaj_akcijsku_od_postotka
     discounted = _izracunaj_akcijsku_od_postotka(prikazna, pct)
     if discounted is None:
@@ -291,6 +318,7 @@ def apply_qty_deal_from_popup(cart, akcija, *, quantity=None, tier_id=None, vari
         'quantity': qty,
         'popust_postotak': pct,
         'unit_price': discounted,
+        'is_single': False,
     }
 
 
@@ -298,11 +326,13 @@ def build_qty_deal_message(akcija, *, quantity=1, popust_postotak=None):
     product = akcija.artikal
     name = product.naziv if product else 'Artikal'
     qty = max(1, int(quantity or 1))
-    pct = popust_postotak if popust_postotak is not None else akcija.popust_postotak
+    pct = popust_postotak if popust_postotak is not None else None
     try:
         pct_s = int(pct) if pct is not None and pct == int(pct) else pct
     except (TypeError, ValueError):
         pct_s = pct
+    if qty == 1 and (pct_s is None or pct_s == 0):
+        return f'„{name}” dodano u korpu.'
     if pct_s is not None:
         return (
             f'„{name}” ×{qty} dodano u korpu s -{pct_s}% popustom '

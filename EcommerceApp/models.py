@@ -966,6 +966,9 @@ class Akcija(models.Model):
     def bundle_display_items(self):
         """
         Kartice za popup — 1 kartica po liniji (isti artikal qty 2 = jedna slika + ×2).
+
+        Izuzetak: ukupno tačno 2 komada u setu — uvijek 2 kartice (artikal + artikal),
+        nikad jedna kartica sa ×2, da se polje vizuelno popuni.
         """
         items = []
         for row in self.bundle_line_rows():
@@ -996,6 +999,30 @@ class Akcija(models.Model):
                 'pct_label': pct_label,
                 'popust_postotak': pct,
             })
+
+        unit_count = sum(int(i.get('quantity') or 1) for i in items)
+        # Samo 2 komada u setu: proširi qty 2 → dvije kartice (A + A), ne ×2
+        if unit_count == 2 and any(int(i.get('quantity') or 1) > 1 for i in items):
+            expanded = []
+            for i in items:
+                qty = max(1, int(i.get('quantity') or 1))
+                if qty <= 1:
+                    expanded.append(i)
+                    continue
+                unit_usteda = (
+                    (i['bazna'] - i['snizena']).quantize(Decimal('0.01'))
+                    if i.get('has_discount') and i.get('bazna') is not None and i.get('snizena') is not None
+                    else Decimal('0')
+                )
+                for _ in range(qty):
+                    expanded.append({
+                        **i,
+                        'quantity': 1,
+                        'line_bazna': i['bazna'],
+                        'line_snizena': i['snizena'],
+                        'usteda': unit_usteda,
+                    })
+            return expanded
         return items
 
     def bundle_pricing_summary(self):
@@ -1316,13 +1343,29 @@ class Akcija(models.Model):
 
     def qty_deal_display_options(self):
         """
-        Opcije za popup: količina, %, cijene po kom i ukupno.
+        Opcije za popup: uvijek 1 kom po regularnoj cijeni, zatim tierovi 2/3/… s %.
         """
         product = self.artikal
         if not product or self.tip != self.Tip.QTY_DEAL:
             return []
         bazna = product.prikazna_cijena
         options = []
+        # 1 kom — regularna cijena (bez popusta), da kupac može uzeti i samo jedan
+        if bazna is not None:
+            options.append({
+                'id': None,
+                'quantity': 1,
+                'popust_postotak': Decimal('0'),
+                'pct_label': 0,
+                'unit_bazna': bazna,
+                'unit_snizena': bazna,
+                'line_bazna': bazna.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                if hasattr(bazna, 'quantize') else bazna,
+                'line_snizena': bazna.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                if hasattr(bazna, 'quantize') else bazna,
+                'usteda': Decimal('0.00'),
+                'is_single': True,
+            })
         for row in self.qty_deal_tiers():
             pct = row['popust_postotak']
             snizena = _izracunaj_akcijsku_od_postotka(bazna, pct)
@@ -1343,14 +1386,18 @@ class Akcija(models.Model):
                 'line_bazna': (bazna * qty).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
                 'line_snizena': (snizena * qty).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
                 'usteda': ((bazna - snizena) * qty).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+                'is_single': False,
             })
         return options
 
     def qty_deal_best_option(self):
-        opts = self.qty_deal_display_options()
+        # Najbolja ušteda među količinskim tierovima (ne 1 kom regularno)
+        opts = [
+            o for o in self.qty_deal_display_options()
+            if not o.get('is_single') and int(o.get('quantity') or 0) >= 2
+        ]
         if not opts:
             return None
-        # Najveći % ili najveća ušteda
         return max(opts, key=lambda o: (o['popust_postotak'], o['quantity']))
 
     def get_link_href(self):

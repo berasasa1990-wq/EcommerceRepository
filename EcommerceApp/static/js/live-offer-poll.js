@@ -25,20 +25,14 @@
     }
 
     function hideCompetingPopups() {
-        const recoveryOverlay = document.getElementById('cartRecoveryOverlay');
-        if (recoveryOverlay) {
-            recoveryOverlay.classList.remove('is-visible');
-            recoveryOverlay.hidden = true;
-        }
-        document.querySelectorAll('.site-popup-overlay[data-popup-id]').forEach(function (popup) {
-            popup.classList.remove('is-visible');
-            popup.hidden = true;
-        });
-        const upsellOverlay = document.getElementById('upsellPopupOverlay');
-        if (upsellOverlay) {
-            upsellOverlay.classList.remove('is-visible');
-            upsellOverlay.hidden = true;
-        }
+        // Namjerno prazno: ne gasimo druge popupove — čekamo u SiteModalQueue.
+        // (Zadržano ime radi dismissCartRecoveryOverlay poziva ispod.)
+    }
+
+    function anyOtherPopupVisible() {
+        return !!document.querySelector(
+            '.site-popup-overlay.is-visible:not(.live-offer-overlay):not(.live-offer-confirm-overlay)'
+        );
     }
 
     function markLiveOfferActive() {
@@ -176,20 +170,60 @@
         overlay.hidden = true;
         document.body.classList.remove('popup-open');
         stopCountdown();
+        if (window.SiteModalQueue && typeof window.SiteModalQueue.notifyClosed === 'function') {
+            window.SiteModalQueue.notifyClosed('live-offer');
+        }
     }
 
-    function openOverlay() {
-        if (!overlay) return;
-        hideCompetingPopups();
+    function showLiveOfferNow() {
+        if (!overlay || !overlay.isConnected) {
+            if (window.SiteModalQueue) window.SiteModalQueue.notifyClosed('live-offer');
+            return;
+        }
+        // Nikad preko drugog
+        if (anyOtherPopupVisible()) {
+            if (window.SiteModalQueue) {
+                window.SiteModalQueue.notifyClosed('live-offer');
+                window.SiteModalQueue.enqueue({
+                    id: 'live-offer',
+                    canShow: function () { return !!overlay && overlay.isConnected; },
+                    show: showLiveOfferNow,
+                });
+            } else {
+                window.setTimeout(openOverlay, 400);
+            }
+            return;
+        }
         markLiveOfferActive();
         overlay.hidden = false;
-        requestAnimationFrame(function () {
-            overlay.classList.add('is-visible');
-        });
+        overlay.classList.add('is-visible');
         document.body.classList.add('popup-open');
         if (activeOffer) {
             startCountdown(activeOffer.timer_seconds);
         }
+    }
+
+    function openOverlay() {
+        if (!overlay) return;
+        // Sakrij dok red ne odobri prikaz (HTML se više ne montira s is-visible)
+        overlay.hidden = true;
+        overlay.classList.remove('is-visible');
+        // Ako je neki drugi popup otvoren — stani u red, ne preko njega i ne propadaj
+        if (window.SiteModalQueue && typeof window.SiteModalQueue.enqueue === 'function') {
+            window.SiteModalQueue.enqueue({
+                id: 'live-offer',
+                canShow: function () {
+                    return !!overlay && overlay.isConnected;
+                },
+                show: showLiveOfferNow,
+            });
+            return;
+        }
+        if (anyOtherPopupVisible() || document.body.classList.contains('popup-open')) {
+            window.setTimeout(openOverlay, 400);
+            return;
+        }
+        showLiveOfferNow();
     }
 
     function buildVariationOptions(offer) {
@@ -226,7 +260,7 @@
 
     function buildFreeShippingOverlayHtml(offer) {
         return (
-            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup-overlay live-offer-overlay" id="liveOfferOverlay">' +
             '<div class="site-popup site-popup--akcija live-offer-popup" role="dialog" aria-modal="true">' +
             '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
@@ -266,7 +300,7 @@
             ? ('Imate popust od <strong>' + pct + '%</strong> + besplatnu dostavu na prvu kupovinu')
             : ('Imate popust od <strong>' + pct + '%</strong> na cijelu narudžbu');
         return (
-            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup-overlay live-offer-overlay" id="liveOfferOverlay">' +
             '<div class="site-popup site-popup--akcija live-offer-popup" role="dialog" aria-modal="true">' +
             '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
@@ -308,7 +342,7 @@
             return '<li>' + escapeHtml(item) + '</li>';
         }).join('');
         return (
-            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup-overlay live-offer-overlay" id="liveOfferOverlay">' +
             '<div class="site-popup site-popup--akcija live-offer-popup live-offer-popup--registration" role="dialog" aria-modal="true">' +
             '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
@@ -443,7 +477,7 @@
             : 'browse-offer-grid browse-offer-grid--2x2';
 
         return (
-            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup-overlay live-offer-overlay" id="liveOfferOverlay">' +
             '<div class="site-popup site-popup--akcija live-offer-popup live-offer-popup--browse' + multiClass +
             '" role="dialog" aria-modal="true">' +
             '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
@@ -491,7 +525,7 @@
             : '<div class="live-offer-image-placeholder"></div>';
 
         return (
-            '<div class="site-popup-overlay live-offer-overlay is-visible" id="liveOfferOverlay">' +
+            '<div class="site-popup-overlay live-offer-overlay" id="liveOfferOverlay">' +
             '<div class="site-popup site-popup--akcija live-offer-popup" role="dialog" aria-modal="true">' +
             '<button type="button" class="site-popup-close" data-live-offer-close aria-label="Zatvori">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +

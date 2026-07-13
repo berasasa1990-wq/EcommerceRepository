@@ -156,6 +156,39 @@
             /* ignore */
         }
         dismissOnServer();
+        if (window.SiteModalQueue && typeof window.SiteModalQueue.notifyClosed === 'function') {
+            window.SiteModalQueue.notifyClosed('cart-exit');
+        }
+    }
+
+    function showExitNow() {
+        if (!overlay || !overlay.isConnected) {
+            if (window.SiteModalQueue) window.SiteModalQueue.notifyClosed('cart-exit');
+            return;
+        }
+        try {
+            if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+                if (window.SiteModalQueue) window.SiteModalQueue.notifyClosed('cart-exit');
+                return;
+            }
+        } catch (err) { /* ignore */ }
+        if (document.querySelector('.site-popup-overlay.is-visible:not(.cart-exit-overlay)')) {
+            if (window.SiteModalQueue) {
+                window.SiteModalQueue.notifyClosed('cart-exit');
+                window.SiteModalQueue.enqueue({
+                    id: 'cart-exit',
+                    canShow: function () {
+                        try { return sessionStorage.getItem(STORAGE_KEY) !== '1'; } catch (e) { return true; }
+                    },
+                    show: showExitNow,
+                });
+            }
+            return;
+        }
+        opened = true;
+        overlay.hidden = false;
+        overlay.classList.add('is-visible');
+        document.body.classList.add('popup-open');
     }
 
     function openOverlay() {
@@ -165,22 +198,22 @@
         } catch (err) {
             /* ignore */
         }
-        if (document.body.classList.contains('popup-open')) return;
-        const recovery = document.getElementById('cartRecoveryOverlay');
-        if (recovery && !recovery.hidden) return;
-        const liveOffer = document.getElementById('liveOfferOverlay');
-        if (liveOffer && !liveOffer.hidden) return;
-        const otherPopup = document.querySelector(
-            '.site-popup-overlay.is-visible:not(.cart-exit-overlay)'
-        );
-        if (otherPopup) return;
-
-        opened = true;
-        overlay.hidden = false;
-        requestAnimationFrame(function () {
-            overlay.classList.add('is-visible');
-        });
-        document.body.classList.add('popup-open');
+        if (window.SiteModalQueue && typeof window.SiteModalQueue.enqueue === 'function') {
+            window.SiteModalQueue.enqueue({
+                id: 'cart-exit',
+                canShow: function () {
+                    try { return sessionStorage.getItem(STORAGE_KEY) !== '1'; } catch (e) { return true; }
+                },
+                show: showExitNow,
+            });
+            return;
+        }
+        if (document.body.classList.contains('popup-open')
+            || document.querySelector('.site-popup-overlay.is-visible')) {
+            window.setTimeout(openOverlay, 500);
+            return;
+        }
+        showExitNow();
     }
 
     overlay.querySelectorAll('[data-cart-exit-close]').forEach(function (btn) {

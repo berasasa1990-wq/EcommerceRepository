@@ -93,6 +93,39 @@
         document.body.classList.remove('popup-open');
         try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch (err) { /* ignore */ }
         dismissOnServer();
+        if (window.SiteModalQueue && typeof window.SiteModalQueue.notifyClosed === 'function') {
+            window.SiteModalQueue.notifyClosed('cart-abandon');
+        }
+    }
+
+    function showAbandonNow() {
+        if (!overlay || !overlay.isConnected) {
+            if (window.SiteModalQueue) window.SiteModalQueue.notifyClosed('cart-abandon');
+            return;
+        }
+        try {
+            if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+                if (window.SiteModalQueue) window.SiteModalQueue.notifyClosed('cart-abandon');
+                return;
+            }
+        } catch (err) { /* ignore */ }
+        if (document.querySelector('.site-popup-overlay.is-visible:not(.cart-abandon-overlay)')) {
+            if (window.SiteModalQueue) {
+                window.SiteModalQueue.notifyClosed('cart-abandon');
+                window.SiteModalQueue.enqueue({
+                    id: 'cart-abandon',
+                    canShow: function () {
+                        try { return sessionStorage.getItem(STORAGE_KEY) !== '1'; } catch (e) { return true; }
+                    },
+                    show: showAbandonNow,
+                });
+            }
+            return;
+        }
+        opened = true;
+        overlay.hidden = false;
+        overlay.classList.add('is-visible');
+        document.body.classList.add('popup-open');
     }
 
     function openOverlay() {
@@ -100,22 +133,23 @@
         try {
             if (sessionStorage.getItem(STORAGE_KEY) === '1') return;
         } catch (err) { /* ignore */ }
-        if (document.body.classList.contains('popup-open')) return;
-        const recovery = document.getElementById('cartRecoveryOverlay');
-        if (recovery && !recovery.hidden) return;
-        const liveOffer = document.getElementById('liveOfferOverlay');
-        if (liveOffer && !liveOffer.hidden) return;
-        const other = document.querySelector(
-            '.site-popup-overlay.is-visible:not(.cart-abandon-overlay)'
-        );
-        if (other) return;
-
-        opened = true;
-        overlay.hidden = false;
-        requestAnimationFrame(function () {
-            overlay.classList.add('is-visible');
-        });
-        document.body.classList.add('popup-open');
+        if (window.SiteModalQueue && typeof window.SiteModalQueue.enqueue === 'function') {
+            window.SiteModalQueue.enqueue({
+                id: 'cart-abandon',
+                canShow: function () {
+                    try { return sessionStorage.getItem(STORAGE_KEY) !== '1'; } catch (e) { return true; }
+                },
+                show: showAbandonNow,
+            });
+            return;
+        }
+        // Fallback: ako je nešto otvoreno — sačekaj, ne propadaj
+        if (document.body.classList.contains('popup-open')
+            || document.querySelector('.site-popup-overlay.is-visible')) {
+            window.setTimeout(openOverlay, 500);
+            return;
+        }
+        showAbandonNow();
     }
 
     overlay.querySelectorAll('[data-cart-abandon-close]').forEach(function (btn) {
