@@ -261,11 +261,10 @@
                     <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
                         data-nav-item
                         {% if category.podkategorije.all %}data-mega-target="mega-{{ category.slug }}"{% endif %}>
-                        {# Mobilni: glavna kategorija → svi artikli (?all=1); chevron otvara podkategorije #}
-                        <a href="{% if category.podkategorije.all %}{{ category.get_absolute_url }}?all=1{% else %}{{ category.get_absolute_url }}{% endif %}">
+                        <a href="{{ category.get_absolute_url }}">
                             {{ category.naziv }}
                             {% if category.podkategorije.all %}
-                            <span class="nav-chevron" aria-hidden="true" role="button" tabindex="0" title="Podkategorije"></span>
+                            <span class="nav-chevron" aria-hidden="true"></span>
                             {% endif %}
                         </a>
                         {% if category.podkategorije.all %}
@@ -388,7 +387,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260713v28" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260713v29" defer></script>
     {% if not user.is_authenticated or not user.is_superuser %}
     <script src="{% static 'js/almost-cart.js' %}?v=20260712v3" defer></script>
     {% endif %}

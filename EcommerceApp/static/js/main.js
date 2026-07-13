@@ -236,32 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
     megaItems.forEach((item) => {
         const link = item.querySelector(':scope > a');
         const submenu = item.querySelector('.nav-submenu');
-        const chevron = link?.querySelector('.nav-chevron');
-        // Mobilni: klik na naziv → svi artikli u kategoriji; chevron → podkategorije
+        // Mobilni: klik na glavnu kategoriju → otvori podkategorije
         link?.addEventListener('click', (e) => {
             if (window.innerWidth <= 1024 && navLinks?.classList.contains('mobile-open') && submenu) {
-                const onChevron = e.target && (
-                    e.target === chevron
-                    || (e.target.closest && e.target.closest('.nav-chevron'))
-                );
-                if (onChevron) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (item.classList.contains('mega-open') && mobileNavSubview?.classList.contains('is-open')) {
-                        closeMobileNavSubview();
-                        return;
-                    }
-                    openMobileNavSubview(item);
-                    return;
-                }
-                // Klik na naziv kategorije — idi na sve artikle (href već ?all=1)
-                setMobileNavOpen(false);
-            }
-        });
-        chevron?.addEventListener('click', (e) => {
-            if (window.innerWidth <= 1024 && navLinks?.classList.contains('mobile-open') && submenu) {
                 e.preventDefault();
-                e.stopPropagation();
                 if (item.classList.contains('mega-open') && mobileNavSubview?.classList.contains('is-open')) {
                     closeMobileNavSubview();
                     return;
