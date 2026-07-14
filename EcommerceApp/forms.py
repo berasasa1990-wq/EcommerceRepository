@@ -221,29 +221,11 @@ class AkcijaAdminForm(forms.ModelForm):
             if artikal and not artikal.aktivan:
                 raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
             return artikal
-        if tip in {
-            Akcija.Tip.TIMER,
-            Akcija.Tip.USLOV,
-            Akcija.Tip.X_PLUS_1,
-            Akcija.Tip.KORPA_NUDJENJE,
-            Akcija.Tip.GRATIS,
-            Akcija.Tip.QTY_DEAL,
-        } and not artikal:
+        if tip == Akcija.Tip.QTY_DEAL and not artikal:
             raise forms.ValidationError('Odaberite artikal.')
         if artikal and not artikal.aktivan:
             raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
         return artikal
-
-    def clean_gratis_artikal(self):
-        gratis_artikal = self.cleaned_data.get('gratis_artikal')
-        tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
-        if tip != Akcija.Tip.GRATIS:
-            return gratis_artikal
-        if not gratis_artikal:
-            raise forms.ValidationError('Odaberite gratis artikal.')
-        if not gratis_artikal.aktivan:
-            raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
-        return gratis_artikal
 
     def clean(self):
         cleaned = super().clean()
@@ -251,53 +233,14 @@ class AkcijaAdminForm(forms.ModelForm):
         if not tip:
             return cleaned
 
-        if tip == Akcija.Tip.SLIKA:
-            has_slika = bool(cleaned.get('slika')) or bool(getattr(self.instance, 'slika', None))
-            if not has_slika:
-                self.add_error('slika', 'Obavezna slika za pop-up.')
+        if tip not in Akcija.ACTIVE_TIPS:
+            self.add_error(
+                'tip',
+                'Dozvoljeni tipovi: Pop-up bundle i Kupi više (količinski %).',
+            )
+            return cleaned
 
-        elif tip == Akcija.Tip.TIMER:
-            for field, label in (
-                ('pocetak', 'Početak akcije'),
-                ('trajanje_sati', 'Trajanje akcije'),
-                ('popust_postotak', 'Popust (%)'),
-            ):
-                if cleaned.get(field) in (None, ''):
-                    self.add_error(field, f'Obavezno ({label}).')
-
-        elif tip == Akcija.Tip.USLOV:
-            for field, label in (
-                ('pocetak', 'Početak akcije'),
-                ('trajanje_sati', 'Trajanje akcije'),
-                ('popust_postotak', 'Popust (%)'),
-                ('prag_korpe_km', 'Uslov iznosa u korpi'),
-            ):
-                if cleaned.get(field) in (None, ''):
-                    self.add_error(field, f'Obavezno ({label}).')
-
-        elif tip == Akcija.Tip.X_PLUS_1:
-            if not cleaned.get('deal_vrsta'):
-                self.add_error('deal_vrsta', 'Odaberite vrstu (1+1, 2+1 ili 3+1).')
-            if cleaned.get('popust_postotak') is None:
-                self.add_error('popust_postotak', 'Unesite % popusta na dodatni artikal.')
-
-        elif tip == Akcija.Tip.KORPA_NUDJENJE:
-            for field, label in (
-                ('popust_postotak', 'Popust (%)'),
-                ('kategorija', 'Kategorija (trigger)'),
-            ):
-                if cleaned.get(field) in (None, ''):
-                    self.add_error(field, f'Obavezno ({label}).')
-
-        elif tip == Akcija.Tip.GRATIS:
-            artikal = cleaned.get('artikal')
-            gratis_artikal = cleaned.get('gratis_artikal')
-            if cleaned.get('popust_postotak') in (None, ''):
-                self.add_error('popust_postotak', 'Unesite % popusta na drugi artikal.')
-            if artikal and gratis_artikal and artikal.pk == gratis_artikal.pk:
-                self.add_error('gratis_artikal', 'Gratis artikal mora biti različit od trigger artikla.')
-
-        elif tip == Akcija.Tip.BUNDLE:
+        if tip == Akcija.Tip.BUNDLE:
             # % na setu nije obavezan ako linije imaju svoj % (validacija u inline)
             trigger = cleaned.get('bundle_trigger') or Akcija.BundleTrigger.DELAY
             if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and not cleaned.get('artikal'):

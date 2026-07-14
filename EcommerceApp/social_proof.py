@@ -22,10 +22,10 @@ MUSLIM_PROFILES = (
     ('Edin', 'Goražda'),
 )
 
-# Interval između toastova „neko je kupio…”
-SOCIAL_PROOF_INTERVAL_MS = 3 * 60 * 1000
-SOCIAL_PROOF_FIRST_DELAY_MS = 45 * 1000
-SOCIAL_PROOF_VISIBLE_MS = 9000
+# Interval između toastova „neko je kupio…” — češće = jači social proof
+SOCIAL_PROOF_INTERVAL_MS = 2 * 60 * 1000
+SOCIAL_PROOF_FIRST_DELAY_MS = 28 * 1000
+SOCIAL_PROOF_VISIBLE_MS = 10000
 
 
 def _should_show_social_proof(request):

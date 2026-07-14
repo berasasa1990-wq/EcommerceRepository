@@ -28,7 +28,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from .cart import Cart
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
@@ -1250,6 +1250,61 @@ def product_detail(request, slug):
 
     from .product_urgency import build_product_urgency
     context['product_urgency'] = build_product_urgency(product)
+    try:
+        from .ai_conversion import product_conversion_boost
+        context['conversion_boost'] = product_conversion_boost(product, request)
+    except Exception:
+        context['conversion_boost'] = None
+
+    # AI dwell: flash cijena odmah na ulasku (bez popupa) — config za JS
+    try:
+        from .live_visitor_offer import (
+            PRODUCT_DWELL_FLASH_SECONDS,
+            PRODUCT_DWELL_SECONDS,
+            _product_dwell_settings,
+            activate_product_dwell_flash,
+            get_active_dwell_flash,
+            product_allowed_for_dwell,
+        )
+        dwell_on, dwell_pct = _product_dwell_settings()
+        dwell_on_this = bool(dwell_on and product_allowed_for_dwell(product.pk))
+        dwell_flash = None
+        if dwell_on_this and dwell_pct and dwell_pct > 0:
+            # Odmah na ulasku: aktiviraj ili nastavi preostalo; ako je isteklo — None
+            dwell_flash = get_active_dwell_flash(request, product.pk)
+            if not dwell_flash:
+                dwell_flash, _ = activate_product_dwell_flash(request, product.pk)
+        flash_json = None
+        if dwell_flash:
+            pct = dwell_flash.get('percent')
+            try:
+                pct_f = float(pct)
+            except (TypeError, ValueError):
+                pct_f = 0
+            flash_json = {
+                'product_id': dwell_flash.get('product_id'),
+                'percent': pct_f,
+                'expires_ts': dwell_flash.get('expires_ts'),
+                'remaining_seconds': dwell_flash.get('remaining_seconds'),
+                'base': dwell_flash.get('base'),
+                'sale': dwell_flash.get('sale'),
+            }
+        try:
+            pct_cfg = float(dwell_pct) if dwell_pct else 0
+        except (TypeError, ValueError):
+            pct_cfg = 0
+        context['dwell_flash_config'] = {
+            'active': bool(dwell_on_this and dwell_pct and dwell_pct > 0),
+            'product_id': product.pk,
+            'trigger_seconds': PRODUCT_DWELL_SECONDS,  # 0 = odmah
+            'flash_seconds': PRODUCT_DWELL_FLASH_SECONDS,
+            'percent': pct_cfg,
+            'base_price': str(product.prikazna_cijena),
+            'activate_url': '/ai-dwell/aktiviraj/',
+            'flash': flash_json,  # None ako isteklo / nedostupno → samo regularna cijena
+        }
+    except Exception:
+        context['dwell_flash_config'] = {'active': False}
 
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
     context['staff_product_tools'] = _request_is_superuser(request)
@@ -1339,6 +1394,18 @@ def add_to_cart(request, slug):
     promo_bazna = None
     promo_akcija = None
     exit_popup_percent = None
+
+    # AI dwell flash cijena (2 min snizenje na product page, bez popupa)
+    try:
+        from .live_visitor_offer import get_active_dwell_flash, _discounted_price
+        dwell_deal = get_active_dwell_flash(request, product.pk)
+        if dwell_deal and dwell_deal.get('percent'):
+            base = variation.prikazna_cijena if variation else product.prikazna_cijena
+            custom_price = _discounted_price(base, dwell_deal['percent'])
+            promo_bazna = base
+    except Exception:
+        pass
+
     if request.POST.get('exit_popup') == '1':
         from .cart_exit_popup import resolve_exit_popup_add
 
@@ -2814,6 +2881,22 @@ def staff_send_live_offer(request):
         product_id = int(request.POST.get('product_id') or 0)
     except (TypeError, ValueError):
         product_id = 0
+    # Više artikala odjednom: product_ids=1,2,3 (svi pregledani)
+    product_ids = []
+    raw_ids = (request.POST.get('product_ids') or '').strip()
+    if raw_ids:
+        for part in raw_ids.replace(';', ',').split(','):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                pid = int(part)
+            except (TypeError, ValueError):
+                continue
+            if pid > 0 and pid not in product_ids:
+                product_ids.append(pid)
+    if product_id and product_id not in product_ids:
+        product_ids.insert(0, product_id)
     try:
         discount_percent = Decimal(
             (request.POST.get('discount_percent') or '0').replace(',', '.'),
@@ -2825,7 +2908,7 @@ def staff_send_live_offer(request):
     }
 
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    if not product_id and discount_percent <= 0 and not free_shipping:
+    if not product_ids and discount_percent <= 0 and not free_shipping:
         msg = 'Unesite popust %, besplatnu dostavu ili odaberite artikal.'
         if is_ajax:
             return JsonResponse({'ok': False, 'message': msg}, status=400)
@@ -2905,38 +2988,74 @@ def staff_send_live_offer(request):
     email_only = not bool(visitor)
 
     try:
-        offer = send_live_visitor_offer(
-            session_key,
-            product_id=product_id or None,
-            discount_percent=discount_percent,
-            free_shipping=free_shipping,
-            staff_user=request.user,
-            target_user=target_user,
-        )
-        extras = []
-        if free_shipping:
-            extras.append('besplatna dostava na prvu kupovinu')
-        if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
-            if discount_percent > 0:
-                pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
+        offers_sent = []
+        skipped = []
+        if product_ids:
+            for pid in product_ids:
+                try:
+                    offer = send_live_visitor_offer(
+                        session_key,
+                        product_id=pid,
+                        discount_percent=discount_percent,
+                        free_shipping=free_shipping,
+                        staff_user=request.user,
+                        target_user=target_user,
+                    )
+                    offers_sent.append(offer)
+                except ValueError as exc:
+                    skipped.append(str(exc))
+            if not offers_sent:
+                raise ValueError(skipped[0] if skipped else 'Nijedna ponuda nije poslana.')
+            offer = offers_sent[0]
+            pct = (
+                int(discount_percent)
+                if discount_percent == int(discount_percent)
+                else discount_percent
+            )
+            if len(offers_sent) == 1:
                 success_message = (
-                    f'Kod za {pct}% popusta na narudžbu poslan kupcu ({offer.aktivacioni_kod}).'
+                    f'Ponuda artikla poslana kupcu'
+                    + (f' s popustom {pct}%.' if discount_percent > 0 else '.')
                 )
             else:
                 success_message = (
-                    f'Ponuda besplatne dostave poslana kupcu ({offer.aktivacioni_kod}).'
+                    f'Poslano {len(offers_sent)} ponuda na pregledane artikle'
+                    + (f' s -{pct}%.' if discount_percent > 0 else '.')
                 )
-        elif discount_percent > 0:
-            pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
-            success_message = f'Ponuda artikla poslana kupcu s popustom {pct}%.'
+                if skipped:
+                    success_message += f' ({len(skipped)} preskočeno — već prihvaćeno).'
         else:
-            success_message = 'Ponuda artikla poslana kupcu.'
-        if free_shipping and 'besplatna dostava' not in success_message.lower():
-            success_message = f'{success_message} + {extras[0]}.'
+            offer = send_live_visitor_offer(
+                session_key,
+                product_id=None,
+                discount_percent=discount_percent,
+                free_shipping=free_shipping,
+                staff_user=request.user,
+                target_user=target_user,
+            )
+            offers_sent = [offer]
+            extras = []
+            if free_shipping:
+                extras.append('besplatna dostava na prvu kupovinu')
+            if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
+                if discount_percent > 0:
+                    pct = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
+                    success_message = (
+                        f'Kod za {pct}% popusta na narudžbu poslan kupcu ({offer.aktivacioni_kod}).'
+                    )
+                else:
+                    success_message = (
+                        f'Ponuda besplatne dostave poslana kupcu ({offer.aktivacioni_kod}).'
+                    )
+            else:
+                success_message = 'Ponuda poslana kupcu.'
+            if free_shipping and 'besplatna dostava' not in success_message.lower():
+                success_message = f'{success_message} + {extras[0]}.'
 
         if email_to:
             try:
                 from .emails import send_live_offer_email
+                # Email za prvu (ili jedinu) ponudu
                 send_live_offer_email(
                     to_email=email_to,
                     visitor_name=visitor_name or '',
@@ -2953,7 +3072,11 @@ def staff_send_live_offer(request):
             raise ValueError('Kupac nema email adresu.')
 
         if is_ajax:
-            return JsonResponse({'ok': True, 'message': success_message})
+            return JsonResponse({
+                'ok': True,
+                'message': success_message,
+                'offers_count': len(offers_sent),
+            })
         messages.success(request, success_message)
     except ValueError as exc:
         if is_ajax:
@@ -3096,6 +3219,71 @@ def browse_interest_offer_add(request):
     else:
         messages.warning(request, result)
     return redirect('cart')
+
+
+@require_POST
+def ai_dwell_activate(request):
+    """Aktiviraj flash cijenu odmah na ulasku na artikal (bez popupa)."""
+    from .live_visitor_offer import activate_product_dwell_flash
+
+    try:
+        product_id = int(request.POST.get('product_id') or 0)
+    except (TypeError, ValueError):
+        product_id = 0
+    flash, err = activate_product_dwell_flash(request, product_id)
+    if not flash:
+        return JsonResponse({'ok': False, 'message': err or 'Nije aktivirano.'}, status=400)
+    pct = flash.get('percent')
+    try:
+        pct_f = float(pct)
+        pct_out = int(pct_f) if pct_f == int(pct_f) else pct_f
+    except (TypeError, ValueError):
+        pct_out = str(pct)
+    return JsonResponse({
+        'ok': True,
+        'product_id': flash['product_id'],
+        'percent': pct_out,
+        'remaining_seconds': flash['remaining_seconds'],
+        'expires_ts': flash['expires_ts'],
+        'base': flash.get('base'),
+        'sale': flash.get('sale'),
+    })
+
+
+@require_http_methods(['GET', 'POST'])
+def fishing_advisor_step(request):
+    """Virtuelni ribolovački savjetnik — vođeni chat koraci (samo superuser)."""
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated or not user.is_superuser:
+        return JsonResponse({'ok': False, 'message': 'Nedostupno.'}, status=403)
+
+    from .fishing_advisor import process_step
+
+    if request.method == 'GET':
+        data = process_step('start', '', {}, request=request)
+        return JsonResponse(data)
+
+    try:
+        body = json.loads(request.body.decode('utf-8') or '{}')
+    except (json.JSONDecodeError, UnicodeDecodeError, AttributeError):
+        body = {}
+    if not body:
+        body = {
+            'step': request.POST.get('step') or 'start',
+            'answer': request.POST.get('answer') or '',
+        }
+        state_raw = request.POST.get('state')
+        if state_raw:
+            try:
+                body['state'] = json.loads(state_raw)
+            except json.JSONDecodeError:
+                body['state'] = {}
+
+    step = body.get('step') or 'start'
+    answer = body.get('answer') or ''
+    state = body.get('state') if isinstance(body.get('state'), dict) else {}
+    data = process_step(step, answer, state, request=request)
+    return JsonResponse(data)
 
 
 @require_POST

@@ -21,15 +21,17 @@ WELCOME_REG_DELAY_DEFAULT = 8
 SESSION_WELCOME_REG_KEY = 'welcome_reg_invite_done'
 SESSION_WELCOME_REG_CLOCK = 'welcome_reg_clock_ts'
 AUTO_REG_CODE = 'AUTO-REG-WELCOME'
-# Dwell 1 min na artiklu → % popust (uključuje se u SiteSettings)
-PRODUCT_DWELL_SECONDS = 60
+# AI dwell: odmah na ulasku na artikal → flash % popust (uključuje se u SiteSettings)
+PRODUCT_DWELL_SECONDS = 0  # 0 = odmah na ulasku (nema čekanja)
+PRODUCT_DWELL_FLASH_SECONDS = 120  # koliko traje snizena cijena (odbrojavanje od ulaska)
 PRODUCT_DWELL_DISCOUNT_DEFAULT = Decimal('10')
 SESSION_PRODUCT_DWELL_KEY = 'product_page_dwell'
+SESSION_DWELL_FLASH_KEY = 'product_dwell_flash'  # {pid: {percent, expires_ts, base}}
 AUTO_DWELL_CODE = 'AUTO-DWELL'
 
 
 def _product_dwell_settings():
-    """(aktivan, popust %) iz SiteSettings."""
+    """(aktivan, popust %) iz SiteSettings — AI dwell, max 10%."""
     try:
         from .models import SiteSettings
 
@@ -38,9 +40,37 @@ def _product_dwell_settings():
         percent = _clamp_percent(
             getattr(s, 'product_dwell_popust', None) or PRODUCT_DWELL_DISCOUNT_DEFAULT,
         )
+        # Hard cap usklađen s AI prodajom
+        if percent > Decimal('10'):
+            percent = Decimal('10.00')
         return aktivan, percent
     except Exception:
         return False, PRODUCT_DWELL_DISCOUNT_DEFAULT
+
+
+def product_allowed_for_dwell(product_id):
+    """
+    True ako AI dwell smije raditi na ovom artiklu.
+    Prazna lista u postavkama = svi artikli; inače samo odabrani.
+    """
+    if not product_id:
+        return False
+    try:
+        pid = int(product_id)
+    except (TypeError, ValueError):
+        return False
+    try:
+        from .models import SiteSettings
+
+        s = SiteSettings.load()
+        if not bool(getattr(s, 'product_dwell_popup_aktivan', False)):
+            return False
+        # Nema odabranih → svi artikli
+        if not s.product_dwell_artikli.exists():
+            return True
+        return s.product_dwell_artikli.filter(pk=pid).exists()
+    except Exception:
+        return False
 
 
 def _welcome_reg_settings():
@@ -67,6 +97,7 @@ def _welcome_reg_settings():
 
 
 def _clamp_percent(value):
+    """Opšti clamp; AI/dwell koriste max 10 preko SiteSettings + AI_MAX."""
     try:
         percent = Decimal(str(value or 0))
     except (InvalidOperation, TypeError, ValueError):
@@ -116,30 +147,61 @@ def _upsert_live_visitor_offer(session_key, defaults, *, target_user=None):
     defaults = dict(defaults)
     defaults['session_key'] = session_key
 
+    tip = defaults.get('tip')
+    product = defaults.get('product')
+    # Artikal-ponude: jedna po proizvodu (može ih biti više aktivnih za istog kupca)
+    if tip == LiveVisitorOffer.Tip.ARTIKAL and product is not None:
+        qs = LiveVisitorOffer.objects.filter(
+            session_key=session_key,
+            tip=LiveVisitorOffer.Tip.ARTIKAL,
+            product=product,
+        )
+        if target_user:
+            defaults['user'] = target_user
+            offer = qs.filter(user=target_user).first() or qs.first()
+        else:
+            defaults['user'] = None
+            offer = qs.filter(user__isnull=True).first() or qs.first()
+        if offer:
+            for field, value in defaults.items():
+                setattr(offer, field, value)
+            offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
+            return offer
+        return LiveVisitorOffer.objects.create(**defaults)
+
+    # Narudžba / registracija: jedna aktivna po sesiji/useru (kao do sada)
     if target_user:
         defaults['user'] = target_user
-        offer = LiveVisitorOffer.objects.filter(user=target_user).first()
+        offer = LiveVisitorOffer.objects.filter(user=target_user).exclude(
+            tip=LiveVisitorOffer.Tip.ARTIKAL,
+        ).first()
         if not offer:
-            offer = LiveVisitorOffer.objects.filter(session_key=session_key).first()
+            offer = LiveVisitorOffer.objects.filter(session_key=session_key).exclude(
+                tip=LiveVisitorOffer.Tip.ARTIKAL,
+            ).first()
         if offer:
             for field, value in defaults.items():
                 setattr(offer, field, value)
             offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
         else:
-            LiveVisitorOffer.objects.filter(session_key=session_key).delete()
+            LiveVisitorOffer.objects.filter(session_key=session_key).exclude(
+                tip=LiveVisitorOffer.Tip.ARTIKAL,
+            ).delete()
             offer = LiveVisitorOffer.objects.create(**defaults)
     else:
         defaults['user'] = None
         offer = LiveVisitorOffer.objects.filter(
             session_key=session_key,
             user__isnull=True,
-        ).first()
+        ).exclude(tip=LiveVisitorOffer.Tip.ARTIKAL).first()
         if offer:
             for field, value in defaults.items():
                 setattr(offer, field, value)
             offer.save(update_fields=list(defaults.keys()) + ['azurirano'])
         else:
-            LiveVisitorOffer.objects.filter(session_key=session_key, user__isnull=True).delete()
+            LiveVisitorOffer.objects.filter(
+                session_key=session_key, user__isnull=True,
+            ).exclude(tip=LiveVisitorOffer.Tip.ARTIKAL).delete()
             offer = LiveVisitorOffer.objects.create(**defaults)
     return offer
 
@@ -228,112 +290,198 @@ def touch_product_dwell_from_path(request, path=''):
         touch_product_dwell(request, None)
 
 
-def maybe_create_product_dwell_offer(request):
+def _flash_deals(request):
+    raw = request.session.get(SESSION_DWELL_FLASH_KEY)
+    return dict(raw) if isinstance(raw, dict) else {}
+
+
+def _save_flash_deals(request, deals):
+    request.session[SESSION_DWELL_FLASH_KEY] = deals
+    request.session.modified = True
+
+
+def get_active_dwell_flash(request, product_id):
     """
-    Ako kupac gleda isti artikal ≥ 1 min → popup s popustom na taj artikal (jednom po artiklu).
-    Uključuje se u SiteSettings → „Popust na artikal (1 min gledanja)”.
+    Aktivna flash cijena za artikal (bez popupa).
+    Vraća {percent, expires_ts, remaining_seconds, base, sale} ili None.
+    """
+    if not request or not product_id:
+        return None
+    try:
+        pid = str(int(product_id))
+    except (TypeError, ValueError):
+        return None
+    deals = _flash_deals(request)
+    deal = deals.get(pid)
+    if not isinstance(deal, dict):
+        return None
+    try:
+        expires = float(deal.get('expires_ts') or 0)
+    except (TypeError, ValueError):
+        expires = 0
+    now = timezone.now().timestamp()
+    remaining = int(expires - now)
+    if remaining <= 0:
+        deals.pop(pid, None)
+        _save_flash_deals(request, deals)
+        return None
+    try:
+        percent = Decimal(str(deal.get('percent') or 0))
+    except (InvalidOperation, TypeError, ValueError):
+        percent = Decimal('0')
+    if percent <= 0:
+        return None
+    base = deal.get('base')
+    sale = deal.get('sale')
+    try:
+        pct_f = float(percent)
+        pct_out = int(pct_f) if pct_f == int(pct_f) else pct_f
+    except (TypeError, ValueError):
+        pct_out = str(percent)
+    return {
+        'product_id': int(pid),
+        'percent': percent,
+        'percent_display': pct_out,
+        'expires_ts': expires,
+        'remaining_seconds': remaining,
+        'base': base,
+        'sale': sale,
+    }
+
+
+def get_all_active_dwell_flashes(request):
+    """
+    Sve aktivne AI dwell flash cijene u sesiji (za početnu / kartice).
+    Vraća dict str(product_id) -> {percent_display, expires_ts, remaining_seconds, base, sale}.
+    """
+    if not request:
+        return {}
+    deals = _flash_deals(request)
+    if not deals:
+        return {}
+    now = timezone.now().timestamp()
+    changed = False
+    result = {}
+    for pid, deal in list(deals.items()):
+        if not isinstance(deal, dict):
+            deals.pop(pid, None)
+            changed = True
+            continue
+        try:
+            expires = float(deal.get('expires_ts') or 0)
+        except (TypeError, ValueError):
+            expires = 0
+        remaining = int(expires - now)
+        if remaining <= 0:
+            deals.pop(pid, None)
+            changed = True
+            continue
+        try:
+            percent = Decimal(str(deal.get('percent') or 0))
+        except (InvalidOperation, TypeError, ValueError):
+            percent = Decimal('0')
+        if percent <= 0:
+            continue
+        try:
+            pct_f = float(percent)
+            pct_out = int(pct_f) if pct_f == int(pct_f) else pct_f
+        except (TypeError, ValueError):
+            pct_out = str(percent)
+        result[str(pid)] = {
+            'product_id': int(pid) if str(pid).isdigit() else pid,
+            'percent': pct_out,
+            'expires_ts': expires,
+            'remaining_seconds': remaining,
+            'base': deal.get('base'),
+            'sale': deal.get('sale'),
+        }
+    if changed:
+        _save_flash_deals(request, deals)
+    return result
+
+
+def activate_product_dwell_flash(request, product_id):
+    """
+    Odmah na ulasku na artikal: aktiviraj 2-min flash cijenu (BEZ popupa).
+    Timer kreće od trenutka ulaska; kad istekne — u ovoj sesiji više nema ponude
+    (samo regularna cijena). Ako se vrati dok traje — nastavlja se preostalo vrijeme.
     """
     aktivan, dwell_percent = _product_dwell_settings()
     if not aktivan or dwell_percent <= 0:
-        return None
+        return None, 'AI dwell nije aktivan.'
     if not request or _blocked_path(request):
-        return None
+        return None, 'Nedostupno.'
     user = getattr(request, 'user', None)
     if user and getattr(user, 'is_authenticated', False) and (
         user.is_staff or user.is_superuser
     ):
-        return None
+        return None, 'Nedostupno.'
 
-    state = _dwell_state(request)
-    pid = state.get('product_id')
-    started = state.get('started_ts')
-    offered_ids = list(state.get('offered_ids') or [])
-    if not pid or not started:
-        return None
-    if pid in offered_ids:
-        return None
-    elapsed = timezone.now().timestamp() - float(started)
-    if elapsed < PRODUCT_DWELL_SECONDS:
-        return None
-
-    session_key = get_cart_session_key(request)
-    if not session_key:
-        return None
-
-    # Već prihvaćen popust na ovaj artikal
-    target_user = user if user and getattr(user, 'is_authenticated', False) else None
-    if product_offer_already_accepted(session_key, pid, target_user=target_user):
-        offered_ids.append(pid)
-        state['offered_ids'] = offered_ids
-        _save_dwell_state(request, state)
-        return None
-
-    # Već u korpi — ne nudi
     try:
-        from .models import ActiveCartItem
-
-        cart_q = Q(session_key=session_key, product_id=pid)
-        if target_user:
-            cart_q |= Q(user=target_user, product_id=pid)
-        if ActiveCartItem.objects.filter(cart_q).exists():
-            offered_ids.append(pid)
-            state['offered_ids'] = offered_ids
-            _save_dwell_state(request, state)
-            return None
-    except Exception:
-        pass
-
-    # Već aktivna dwell / staff ponuda na isti artikal
-    existing = (
-        LiveVisitorOffer.objects.filter(
-            Q(session_key=session_key) | (Q(user=target_user) if target_user else Q()),
-            tip=LiveVisitorOffer.Tip.ARTIKAL,
-            product_id=pid,
-            show_popup=True,
-            added_to_cart=False,
-        )
-        .order_by('-azurirano')
-        .first()
-    )
-    if existing:
-        offered_ids.append(pid)
-        state['offered_ids'] = offered_ids
-        _save_dwell_state(request, state)
-        return existing
+        pid = int(product_id)
+    except (TypeError, ValueError):
+        return None, 'Neispravan artikal.'
 
     product = Product.objects.filter(pk=pid, aktivan=True).first()
     if not product:
-        state['product_id'] = None
-        state['started_ts'] = None
-        _save_dwell_state(request, state)
-        return None
+        return None, 'Artikal nije pronađen.'
 
-    # Zatvori stare dwell popupe (ne briši staff)
-    LiveVisitorOffer.objects.filter(
-        session_key=session_key,
-        aktivacioni_kod=AUTO_DWELL_CODE,
-        show_popup=True,
-    ).update(show_popup=False)
+    if not product_allowed_for_dwell(pid):
+        return None, 'AI dwell nije uključen za ovaj artikal.'
 
-    offer = LiveVisitorOffer.objects.create(
-        session_key=session_key,
-        user=target_user if isinstance(target_user, User) else None,
-        tip=LiveVisitorOffer.Tip.ARTIKAL,
-        product=product,
-        discount_percent=dwell_percent,
-        besplatna_dostava=False,
-        aktivacioni_kod=AUTO_DWELL_CODE,
-        kod_aktiviran=False,
-        show_popup=True,
-        added_to_cart=False,
-        poslao=None,
-    )
+    # Već aktivna flash — vrati istu (povratak na artikal dok traje)
+    active = get_active_dwell_flash(request, pid)
+    if active:
+        return active, None
+
+    state = _dwell_state(request)
+    offered_ids = list(state.get('offered_ids') or [])
+    # Već isteklo u ovoj sesiji — samo regularna cijena, bez re-aktivacije
+    if pid in offered_ids:
+        return None, 'Flash cijena za ovaj artikal je već istekla u ovoj posjeti.'
+
+    base = product.prikazna_cijena
+    try:
+        base_d = Decimal(str(base))
+    except (InvalidOperation, TypeError, ValueError):
+        return None, 'Cijena nije dostupna.'
+    sale_d = _discounted_price(base_d, dwell_percent)
+    expires = timezone.now().timestamp() + PRODUCT_DWELL_FLASH_SECONDS
+    deals = _flash_deals(request)
+    deals[str(pid)] = {
+        'percent': str(dwell_percent),
+        'expires_ts': expires,
+        'base': str(base_d.quantize(Decimal('0.01'))),
+        'sale': str(sale_d),
+    }
+    _save_flash_deals(request, deals)
+
     offered_ids.append(pid)
-    state['offered_ids'] = offered_ids
-    # Reset brojača da se ne spam-uje; ponuda je već u DB
-    state['started_ts'] = None
+    state['offered_ids'] = offered_ids[:40]
+    state['product_id'] = pid
+    state['started_ts'] = timezone.now().timestamp()
     _save_dwell_state(request, state)
-    return offer
+
+    return get_active_dwell_flash(request, pid), None
+
+
+def maybe_create_product_dwell_offer(request):
+    """
+    Legacy hook iz poll-a: NE pravi popup.
+    Flash cijena se aktivira s product page (activate_product_dwell_flash).
+    """
+    # Zatvori stare dwell popup-e ako ih ima (migracija sa starog ponašanja)
+    try:
+        session_key = get_cart_session_key(request)
+        if session_key:
+            LiveVisitorOffer.objects.filter(
+                session_key=session_key,
+                aktivacioni_kod=AUTO_DWELL_CODE,
+                show_popup=True,
+            ).update(show_popup=False)
+    except Exception:
+        pass
+    return None
 
 
 def product_offer_already_accepted(session_key, product_id, *, target_user=None):
@@ -759,7 +907,7 @@ def get_active_live_visitor_offer(request):
             tip=LiveVisitorOffer.Tip.REGISTRACIJA,
             show_popup=True,
         ).update(show_popup=False)
-    from .browse_interest_offer import AUTO_BROWSE_CODE
+    from .browse_interest_offer import AUTO_BROWSE_CODE, AI_PRODAJA_CODE
 
     return (
         LiveVisitorOffer.objects.filter(
@@ -769,6 +917,11 @@ def get_active_live_visitor_offer(request):
         .filter(_active_offer_filter())
         .exclude(aktivacioni_kod=AUTO_BROWSE_CODE)
         .exclude(aktivacioni_kod__startswith=f'{AUTO_BROWSE_CODE}-')
+        .exclude(aktivacioni_kod=AI_PRODAJA_CODE)
+        .exclude(aktivacioni_kod__startswith=f'{AI_PRODAJA_CODE}-')
+        # Dwell više nije popup — samo flash cijena na product page
+        .exclude(aktivacioni_kod=AUTO_DWELL_CODE)
+        .exclude(aktivacioni_kod__startswith=f'{AUTO_DWELL_CODE}-')
         .select_related('product')
         .order_by('-azurirano')
         .first()
@@ -1038,6 +1191,27 @@ def activate_live_visitor_offer_code(request, cart):
         update_fields.append('user')
     offer.save(update_fields=update_fields)
 
+    try:
+        from .staff_alerts import notify_offer_accepted
+        from .models import LiveVisitor
+        from .cart_tracking import get_cart_session_key
+
+        sk = get_cart_session_key(request) or (offer.session_key or '')
+        lv = LiveVisitor.objects.filter(session_key=sk).only(
+            'ime', 'email', 'grad',
+        ).first() if sk else None
+        notify_offer_accepted(
+            ime=(lv.ime if lv else '') or '',
+            email=(lv.email if lv else '') or '',
+            grad=(lv.grad if lv else '') or '',
+            session_key=sk,
+            product_name='cijelu narudžbu' if percent > 0 else 'besplatnu dostavu',
+            discount_percent=percent if percent > 0 else None,
+            source='ponudu na narudžbu',
+        )
+    except Exception:
+        pass
+
     if free_shipping and percent > 0:
         msg = (
             f'Šta god da poručite, {messages[0]} — i {messages[1]}. '
@@ -1127,6 +1301,30 @@ def apply_live_visitor_offer(request, cart):
         update_fields.append('user')
     offer.save(update_fields=update_fields)
 
+    # Staff toast — AI prodaja / bilo koja prihvaćena ponuda
+    try:
+        from .staff_alerts import notify_offer_accepted
+        from .models import LiveVisitor
+        from .cart_tracking import get_cart_session_key
+
+        sk = get_cart_session_key(request) or (offer.session_key or '')
+        lv = LiveVisitor.objects.filter(session_key=sk).only(
+            'ime', 'email', 'grad',
+        ).first() if sk else None
+        code = (offer.aktivacioni_kod or '').strip()
+        source = 'AI prodaja' if code == 'AI-PRODAJA' or code.startswith('AI-PRODAJA') else 'ponudu'
+        notify_offer_accepted(
+            ime=(lv.ime if lv else '') or '',
+            email=(lv.email if lv else '') or (getattr(request.user, 'email', '') if getattr(request, 'user', None) else ''),
+            grad=(lv.grad if lv else '') or '',
+            session_key=sk,
+            product_name=product.naziv or '',
+            discount_percent=discount,
+            source=source,
+        )
+    except Exception:
+        pass
+
     label = f'{product.naziv}' + (f' — {variation.naziv}' if variation else '')
     parts = []
     if discount > 0:
@@ -1143,7 +1341,23 @@ def dismiss_live_visitor_offer(request):
     lookup = _offer_lookup_q(request)
     if not lookup:
         return
-    LiveVisitorOffer.objects.filter(
-        lookup,
-        show_popup=True,
-    ).update(show_popup=False)
+    # Zatvori samo jednu (trenutnu) — ostale artikal-ponude ostaju u redu
+    offer_id = None
+    try:
+        offer_id = int(request.POST.get('offer_id') or request.GET.get('offer_id') or 0)
+    except (TypeError, ValueError):
+        offer_id = None
+    if offer_id:
+        LiveVisitorOffer.objects.filter(lookup, pk=offer_id, show_popup=True).update(
+            show_popup=False,
+        )
+        return
+    offer = (
+        LiveVisitorOffer.objects.filter(lookup, show_popup=True)
+        .filter(_active_offer_filter())
+        .order_by('-azurirano')
+        .first()
+    )
+    if offer:
+        offer.show_popup = False
+        offer.save(update_fields=['show_popup', 'azurirano'])

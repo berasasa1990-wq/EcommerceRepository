@@ -1,0 +1,38 @@
+{% load ecommerce_extras %}
+{# AI dwell flash: snizena cijena + tajmer na kartici (početna / katalog) #}
+{% with flash=dwell_flash_by_id|dict_get:product.pk %}
+{% if flash and flash.remaining_seconds > 0 %}
+<div class="card-dwell-flash is-active"
+     data-dwell-card-flash
+     data-dwell-expires="{{ flash.expires_ts }}"
+     data-dwell-product-id="{{ product.pk }}">
+    <p class="card-dwell-timer" aria-live="polite">
+        ⏱ <strong data-dwell-countdown>{{ flash.remaining_seconds|format_mmss }}</strong>
+    </p>
+    <div class="product-price product-card__price card-dwell-prices" data-product-price data-dwell-price-block>
+        <span class="price-original pd-dwell-was card-dwell-was">{{ flash.base }} KM</span>
+        <span class="price-sale pd-dwell-now card-dwell-now">{{ flash.sale }} KM</span>
+        {% if flash.percent %}
+        <span class="card-dwell-badge">−{{ flash.percent }}%</span>
+        {% endif %}
+    </div>
+</div>
+<div class="product-price product-card__price card-dwell-regular" data-product-price data-dwell-regular-price hidden>
+    {% if product.katalog_na_akciji %}
+    <span class="price-sale">{{ product.katalog_prikazna_cijena }} KM</span>
+    <span class="price-original">{{ product.katalog_bazna_cijena }} KM</span>
+    {% else %}
+    <span class="price-current">{{ product.katalog_prikazna_cijena }} KM</span>
+    {% endif %}
+</div>
+{% else %}
+<div class="product-price product-card__price" data-product-price>
+    {% if product.katalog_na_akciji %}
+    <span class="price-sale">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+    <span class="price-original">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
+    {% else %}
+    <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+    {% endif %}
+</div>
+{% endif %}
+{% endwith %}

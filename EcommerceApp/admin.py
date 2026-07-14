@@ -31,6 +31,7 @@ ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
     ActiveCartItem,
+    AIProdajaSettings,
     AkcijaBundleLine,
     AkcijaQtyTier,
     CityVisitTotal,
@@ -215,19 +216,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 '„Poslednji minut” — samo kad kupac hoće da izađe (kursor prema zatvaranju taba). '
                 'Artikal se bira automatski: 1) skoro dodao u korpu (hover bez klika), '
                 '2) prema gledanju, 3) artikal ispod kao fallback. Popust % na cijenu u popupu.'
-            ),
-        }),
-        ('Personalizovana ponuda (gledanje)', {
-            'fields': (
-                'browse_interest_popup_aktivan',
-                'browse_interest_popust',
-                'product_dwell_popup_aktivan',
-                'product_dwell_popust',
-            ),
-            'description': (
-                '1) 2 min na sajtu — do 4 artikla (2×2) što najviše gleda. '
-                '2) 1 min na istom artiklu — popup s popustom na taj artikal. '
-                'U uživo analitici: zeleni = prihvatio, crveni = odbio.'
             ),
         }),
         ('Registracija i nagradna igra', {
@@ -509,19 +497,59 @@ class AkcijaQtyTierInline(admin.TabularInline):
         return formset
 
 
+@admin.register(AIProdajaSettings)
+class AIProdajaSettingsAdmin(admin.ModelAdmin):
+    """AI prodaja — u adminu pored Akcija (ne u općim Podešavanjima)."""
+    filter_horizontal = ('product_dwell_artikli',)
+    fieldsets = (
+        ('AI prodaja (popup)', {
+            'fields': (
+                'browse_interest_popup_aktivan',
+                'browse_interest_popust',
+            ),
+            'description': (
+                'AI prati kupca i šalje do 2 popup-a (1–2 artikla), razmak ~3 min, max 10%.'
+            ),
+        }),
+        ('AI dwell (flash cijena na artiklu)', {
+            'fields': (
+                'product_dwell_popup_aktivan',
+                'product_dwell_popust',
+                'product_dwell_artikli',
+            ),
+            'description': (
+                'Odmah na ulasku na artikal — BEZ popupa; precrtana + snizena + 2 min. '
+                'Kad istekne → samo regularna cijena. '
+                'Ako artikli nisu odabrani → radi na svim; inače samo na odabranim.'
+            ),
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return not AIProdajaSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        obj = AIProdajaSettings.load()
+        return redirect(
+            reverse('admin:EcommerceApp_aiprodajasettings_change', args=[obj.pk]),
+        )
+
+
 @admin.register(Akcija)
 class AkcijaAdmin(admin.ModelAdmin):
     form = AkcijaAdminForm
     list_display = (
-        'naziv', 'tip', 'artikal', 'gratis_artikal', 'popust_postotak',
-        'bundle_trigger', 'gratis_popup', 'aktivan', 'redoslijed',
+        'naziv', 'tip', 'artikal', 'popust_postotak',
+        'bundle_trigger', 'aktivan', 'redoslijed',
     )
     list_filter = ('tip', 'aktivan', 'bundle_trigger')
     list_editable = ('aktivan', 'redoslijed')
-    search_fields = ('naziv', 'artikal__naziv', 'gratis_artikal__naziv', 'kategorija__naziv')
-    autocomplete_fields = ('artikal', 'gratis_artikal', 'kategorija')
+    search_fields = ('naziv', 'artikal__naziv', 'kategorija__naziv')
+    autocomplete_fields = ('artikal', 'kategorija')
     filter_horizontal = ('bundle_artikli',)
-    readonly_fields = ('preview_slika',)
     # Samo bundle inline — količinski popusti su polja na formi (2, 3, 4…)
     inlines = [AkcijaBundleLineInline]
 
@@ -532,8 +560,8 @@ class AkcijaAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
-                'Izaberite tip — prikazuju se samo polja za taj tip. '
-                'Za „Kupi više”: odaberi artikal, pa upiši popust pored 2 / 3 / 4 komada.'
+                'Samo 2 tipa: „Pop-up bundle” i „Kupi više (količinski %)”. '
+                'AI prodaju podesi u meniju „AI prodaja”.'
             ),
         }),
         ('Sadržaj', {
@@ -542,12 +570,9 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'popust_postotak',
                 'artikal',
                 'kategorija',
-                'slika', 'preview_slika',
-                'gratis_artikal', 'gratis_popup',
-                'prag_korpe_km', 'deal_vrsta',
-                'pocetak', 'trajanje_sati',
-                'tekst_dugmeta', 'link_dugmeta',
-                'boja_dugmeta', 'boja_opisa',
+                'tekst_dugmeta',
+                'boja_dugmeta',
+                'boja_opisa',
             ),
         }),
         ('Kupi više — količina i popust', {
@@ -581,16 +606,28 @@ class AkcijaAdmin(admin.ModelAdmin):
         }),
     )
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(tip__in=Akcija.ACTIVE_TIPS)
+
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        if db_field.name == 'tip':
+            kwargs['choices'] = [
+                (Akcija.Tip.BUNDLE, Akcija.Tip.BUNDLE.label),
+                (Akcija.Tip.QTY_DEAL, Akcija.Tip.QTY_DEAL.label),
+            ]
+        return super().formfield_for_choice_field(db_field, request, **kwargs)
+
     def save_model(self, request, obj, form, change):
+        if obj.tip not in Akcija.ACTIVE_TIPS:
+            obj.tip = Akcija.Tip.BUNDLE
         super().save_model(request, obj, form, change)
-        # Snimi 2/3/4… popuste u AkcijaQtyTier
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
 
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
         obj = form.instance
-        # Još jednom poslije related (ako je form.save_m2m redoslijed)
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
         if obj.tip == Akcija.Tip.BUNDLE:
@@ -608,15 +645,6 @@ class AkcijaAdmin(admin.ModelAdmin):
                     request,
                     '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).',
                 )
-
-    @admin.display(description='Pregled slike')
-    def preview_slika(self, obj):
-        if obj and obj.slika:
-            return format_html(
-                '<img src="{}" style="max-height:120px; border-radius:6px; margin-top:8px;" />',
-                obj.slika.url,
-            )
-        return ''
 
 
 @admin.register(UpsellOffer)

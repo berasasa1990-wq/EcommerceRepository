@@ -104,10 +104,11 @@ class SiteSettings(models.Model):
     )
     browse_interest_popup_aktivan = models.BooleanField(
         default=True,
-        verbose_name='Personalizovana ponuda (gledanje) aktivna',
+        verbose_name='AI prodaja aktivna',
         help_text=(
-            'Automatski popup do 4 artikla 2×2 („Specijalna ponuda za vas”): '
-            'nakon 2 min na sajtu, prema onome što kupac najviše gleda (jednom).'
+            'AI prati kupca (šta gleda, koliko dugo, skoro-korpa) i u pravom trenutku '
+            'šalje popup s popustom na 1–2 artikla. Max 2 ponude po posjeti, s razmakom. '
+            'Popust nikad preko 10%.'
         ),
     )
     browse_interest_popust = models.DecimalField(
@@ -116,15 +117,17 @@ class SiteSettings(models.Model):
         default=Decimal('10.00'),
         null=True,
         blank=True,
-        verbose_name='Personalizovana ponuda — popust (%)',
-        help_text='Popust na preporučene artikle (max 50%). Podrazumijevano 10%.',
+        verbose_name='AI prodaja — max popust (%)',
+        help_text='Maksimalni popust na AI ponudu (preporučeno 10, hard cap 10%).',
     )
     product_dwell_popup_aktivan = models.BooleanField(
         default=False,
-        verbose_name='Popust na artikal (1 min gledanja) aktivan',
+        verbose_name='AI dwell (odmah na artiklu) aktivan',
         help_text=(
-            'Uključeno: ako kupac gleda isti artikal duže od 1 minute, '
-            'iskače popup s popustom na taj artikal (jednom po artiklu).'
+            'Čim kupac uđe na artikal: NEMA popup-a. '
+            'Odmah se precrta stara cijena, pojavi se snizena i odbrojavanje 2 min. '
+            'Kad istekne — u toj posjeti više nema ponude, samo regularna cijena. '
+            'Dok traje može izaći i vratiti se. Popust max 10%.'
         ),
     )
     product_dwell_popust = models.DecimalField(
@@ -133,8 +136,18 @@ class SiteSettings(models.Model):
         default=Decimal('10.00'),
         null=True,
         blank=True,
-        verbose_name='Popust na artikal (1 min) — %',
-        help_text='Popust na artikal kad se gleda ≥ 1 min (max 50%). Podrazumijevano 10%.',
+        verbose_name='AI dwell — popust (%)',
+        help_text='Flash popust odmah na ulasku na artikal, traje 2 min (max 10%).',
+    )
+    product_dwell_artikli = models.ManyToManyField(
+        'Product',
+        blank=True,
+        related_name='dwell_flash_sitesettings',
+        verbose_name='AI dwell — artikli (opcionalno)',
+        help_text=(
+            'Odaberi jedan ili više artikala na kojima radi AI dwell. '
+            'Ako ne odabereš nijedan — radi na SVIM artiklima.'
+        ),
     )
     welcome_reg_popup_aktivan = models.BooleanField(
         default=False,
@@ -321,6 +334,18 @@ class SiteSettings(models.Model):
 
     def __str__(self):
         return 'Podešavanja'
+
+
+class AIProdajaSettings(SiteSettings):
+    """
+    Proxy: AI prodaja postavke u adminu pored Akcija
+    (ne u općim Podešavanjima).
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = 'AI prodaja'
+        verbose_name_plural = 'AI prodaja'
 
 
 class Category(models.Model):
@@ -711,14 +736,19 @@ class HomeVlog(models.Model):
 
 class Akcija(models.Model):
     class Tip(models.TextChoices):
-        SLIKA = 'slika', 'Pop-up + slika'
-        TIMER = 'timer', 'Akcija + tajmer'
-        X_PLUS_1 = 'x_plus_1', 'X+1 prodaja (samo korpa)'
-        USLOV = 'uslov', 'Uslov prodaja'
-        KORPA_NUDJENJE = 'korpa_nudjenje', 'Korpa nudjenje'
-        GRATIS = 'gratis', '+ Gratis'
+        # Aktivni tipovi (admin + popup)
         BUNDLE = 'bundle', 'Pop-up bundle'
         QTY_DEAL = 'qty_deal', 'Kupi više (količinski %)'
+        # Zastarjeli (zadržani zbog postojećih redova; više se ne nude)
+        SLIKA = 'slika', 'Pop-up + slika (zastarjelo)'
+        TIMER = 'timer', 'Akcija + tajmer (zastarjelo)'
+        X_PLUS_1 = 'x_plus_1', 'X+1 prodaja (zastarjelo)'
+        USLOV = 'uslov', 'Uslov prodaja (zastarjelo)'
+        KORPA_NUDJENJE = 'korpa_nudjenje', 'Korpa nudjenje (zastarjelo)'
+        GRATIS = 'gratis', '+ Gratis (zastarjelo)'
+
+    # Samo ovi tipovi u adminu i na sajtu
+    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL)
 
     class BundleTrigger(models.TextChoices):
         DELAY = 'delay', 'Nakon kašnjenja (bilo gdje na sajtu)'
@@ -734,7 +764,7 @@ class Akcija(models.Model):
     tip = models.CharField(
         max_length=16,
         choices=Tip.choices,
-        default=Tip.SLIKA,
+        default=Tip.BUNDLE,
         verbose_name='Tip akcije',
     )
     slika = models.ImageField(
@@ -906,13 +936,8 @@ class Akcija(models.Model):
         return self.aktivan
 
     def je_popup(self):
-        if self.tip == self.Tip.GRATIS:
-            return bool(self.gratis_popup)
-        if self.tip == self.Tip.BUNDLE:
-            return True
-        if self.tip == self.Tip.QTY_DEAL:
-            return True
-        return self.tip in {self.Tip.SLIKA, self.Tip.TIMER, self.Tip.USLOV}
+        """Samo Pop-up bundle i Kupi više (ostali tipovi uklonjeni s Akcija)."""
+        return self.tip in self.ACTIVE_TIPS
 
     def bundle_line_rows(self):
         """
@@ -2855,6 +2880,7 @@ class StaffSiteEvent(models.Model):
         CART = 'cart', 'Dodano u korpu'
         REGISTER = 'register', 'Registracija'
         PURCHASE = 'purchase', 'Kupovina'
+        OFFER = 'offer', 'Prihvaćena ponuda'
 
     tip = models.CharField(max_length=20, choices=Tip.choices, db_index=True)
     naslov = models.CharField(max_length=120)

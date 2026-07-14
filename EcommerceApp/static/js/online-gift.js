@@ -31,7 +31,9 @@
     var showNow = overlay.getAttribute('data-show-now') === '1';
     var forceShow = overlay.getAttribute('data-force-show') === '1';
     var sideMode = overlay.getAttribute('data-side-mode') === '1';
-    var requiresRegistration = overlay.getAttribute('data-requires-registration') === '1';
+    var requiresRegistration = false; // više ne forsira reg — email je dovoljan
+    var requiresEmail = overlay.getAttribute('data-requires-email') !== '0';
+    var userEmail = (overlay.getAttribute('data-user-email') || '').trim();
 
     // Uvijek bočni popup (ne fullscreen) — stranica ostaje skrolabilna
     sideMode = true;
@@ -41,6 +43,7 @@
     var playGate = document.getElementById('ogPlayGate');
     var registerBtn = document.getElementById('ogRegisterBtn');
     var choiceHint = document.getElementById('ogChoiceHint');
+    var emailInput = document.getElementById('ogEmailInput');
     var closedKey = 'og_closed_' + giftId;
     var busy = false;
     var done = false;
@@ -53,27 +56,47 @@
         try { sessionStorage.removeItem(closedKey); } catch (e) {}
     }
 
+    function validEmail(val) {
+        val = (val || '').trim();
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    }
+
     function setRequiresRegistration(on) {
-        requiresRegistration = !!on;
+        // Registracija više nije uslov — sakrij gate, prikaži play + email
+        requiresRegistration = false;
         if (registerGate) {
-            registerGate.hidden = !requiresRegistration;
-            if (requiresRegistration) registerGate.removeAttribute('hidden');
-            else registerGate.setAttribute('hidden', '');
+            registerGate.hidden = true;
+            registerGate.setAttribute('hidden', '');
         }
         if (playGate) {
-            playGate.hidden = !!requiresRegistration;
-            if (requiresRegistration) playGate.setAttribute('hidden', '');
-            else playGate.removeAttribute('hidden');
+            playGate.hidden = false;
+            playGate.removeAttribute('hidden');
         }
         if (choiceHint) {
-            choiceHint.textContent = requiresRegistration
-                ? 'Registrujte se da biste mogli igrati nagradnu igru.'
-                : 'Ti biraš — možeš odigrati ili zatvoriti.';
+            choiceHint.textContent = 'Unesite email da biste igrali — nije potrebna aktivacija naloga.';
         }
         if (registerBtn && registerUrl) {
             registerBtn.setAttribute('href', registerUrl);
         }
-        overlay.setAttribute('data-requires-registration', requiresRegistration ? '1' : '0');
+        overlay.setAttribute('data-requires-registration', '0');
+        if (typeof on === 'boolean' && emailInput && userEmail) {
+            emailInput.value = userEmail;
+        }
+    }
+
+    function setRequiresEmail(on, email) {
+        requiresEmail = !!on;
+        if (email) userEmail = String(email).trim();
+        overlay.setAttribute('data-requires-email', requiresEmail ? '1' : '0');
+        if (emailInput) {
+            if (userEmail) emailInput.value = userEmail;
+            emailInput.readOnly = !requiresEmail && !!userEmail;
+        }
+        if (choiceHint) {
+            choiceHint.textContent = requiresEmail
+                ? 'Unesite email da biste igrali — nije potrebna aktivacija naloga.'
+                : 'Ti biraš — možeš odigrati ili zatvoriti.';
+        }
     }
 
     function csrf() {
@@ -215,11 +238,13 @@
             registerUrl = gift.register_url;
             overlay.setAttribute('data-register-url', registerUrl);
         }
-        if (typeof gift.requires_registration !== 'undefined') {
-            setRequiresRegistration(!!gift.requires_registration);
-        } else if (typeof gift.is_registered !== 'undefined') {
-            setRequiresRegistration(!gift.is_registered);
+        if (typeof gift.requires_email !== 'undefined') {
+            setRequiresEmail(!!gift.requires_email, gift.user_email || '');
+        } else if (gift.user_email) {
+            setRequiresEmail(false, gift.user_email);
         }
+        // Nikad ne forsira registraciju
+        setRequiresRegistration(false);
         if (gift.force_show) {
             forceShow = true;
             overlay.setAttribute('data-force-show', '1');
@@ -292,10 +317,16 @@
     function reveal() {
         if (busy || done) return;
 
-        if (requiresRegistration) {
-            goToRegister();
+        var emailVal = emailInput ? (emailInput.value || '').trim() : (userEmail || '');
+        if (!validEmail(emailVal)) {
+            if (emailInput) {
+                emailInput.focus();
+                emailInput.classList.add('og-email-input--error');
+            }
+            alert('Unesite ispravan email da biste igrali. Aktivacija naloga nije potrebna.');
             return;
         }
+        if (emailInput) emailInput.classList.remove('og-email-input--error');
 
         busy = true;
         showStep('loading');
@@ -309,6 +340,7 @@
         }
         var body = new URLSearchParams();
         body.set('csrfmiddlewaretoken', t);
+        body.set('email', emailVal);
 
         var started = Date.now();
         fetch(claimUrl, {

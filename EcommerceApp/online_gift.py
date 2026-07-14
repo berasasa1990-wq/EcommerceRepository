@@ -195,8 +195,11 @@ def _base_eligible(request, campaign):
         if user.is_staff or user.is_superuser:
             if _blocked_staff_path(request):
                 return False
+    # Publika: gosti smiju igrati s emailom (ne traži aktivaciju naloga)
     if not campaign.audience_matches(user):
-        return False
+        # REGISTERED kampanja: i dalje prikaži gostu — email gate pri igri
+        if campaign.audience != OnlineGiftCampaign.Audience.REGISTERED:
+            return False
     if _blocked_staff_path(request):
         return False
     if campaign.once_per_visitor and _already_played(request, campaign):
@@ -243,9 +246,9 @@ def can_show_online_gift(request):
     """
     Treba li prikazati popup sada.
     - Staff push → bilo kome (odmah)
-    - Nakon registracije/prijave (klik „Registruj se i igraj”) → odmah
-    - automatic=True → nakon 4 min (gostu se ne nudi opet ako je otišao na reg)
-    - Igranje zahtijeva registraciju
+    - Nakon registracije/prijave → odmah
+    - automatic / bočni → svima
+    - Igranje traži email (ne aktivaciju naloga)
     """
     campaign = get_active_campaign()
     if not campaign or not _base_eligible(request, campaign):
@@ -262,10 +265,7 @@ def can_show_online_gift(request):
     auto_on = side_on or bool(campaign.automatic)
     if not auto_on:
         return None
-    # Gost je kliknuo registraciju — ne iskači više dok se ne uloguje
-    if _guest_hidden_until_auth(request, campaign):
-        return None
-    # Bočni / auto — odmah svima (ne čekaj „tracked online” niti delay)
+    # Bočni / auto — odmah svima
     return campaign
 
 
@@ -302,14 +302,27 @@ def _registered_email(request):
     return ''
 
 
+def _session_gift_email(request):
+    """Email iz sesije (gost unio za igru) ili sa naloga."""
+    if not request:
+        return ''
+    reg = _registered_email(request)
+    if reg:
+        return reg
+    return _normalize_email(request.session.get('online_gift_email') or '')
+
+
 def gift_requires_email(request):
-    """Legacy — nagradna igra više ne koristi email; mora registracija."""
-    return False
+    """
+    Da bi igrao, mora unijeti email (ili biti ulogovan s emailom).
+    Ne traži aktivaciju naloga — samo email za kontakt/praćenje.
+    """
+    return not bool(_session_gift_email(request))
 
 
 def gift_requires_registration(request):
-    """Da bi igrao nagradnu igru, kupac mora biti registrovan."""
-    return not _user_is_registered(request)
+    """Više se ne forsira registracija — dovoljan je email."""
+    return False
 
 
 def _normalize_email(value):
@@ -344,7 +357,8 @@ def _campaign_payload(campaign, *, delay_seconds=None, show_now=False, source='a
     if campaign.prize_type == OnlineGiftCampaign.PrizeType.PRODUCT and campaign.product_id:
         product = _product_payload(campaign.product)
     delay = int(campaign.popup_delay_seconds or 0) if delay_seconds is None else int(delay_seconds)
-    requires_registration = True
+    requires_registration = False
+    requires_email = True
     is_registered = False
     user_email = ''
     force_show = False
@@ -352,8 +366,9 @@ def _campaign_payload(campaign, *, delay_seconds=None, show_now=False, source='a
     side_mode = True
     if request is not None:
         is_registered = _user_is_registered(request)
-        requires_registration = gift_requires_registration(request)
-        user_email = _registered_email(request) or ''
+        requires_registration = False
+        user_email = _session_gift_email(request) or ''
+        requires_email = gift_requires_email(request)
         force_show = bool(show_now and should_play_gift_after_auth(request, campaign))
     return {
         'id': campaign.pk,
@@ -370,7 +385,7 @@ def _campaign_payload(campaign, *, delay_seconds=None, show_now=False, source='a
         'source': source,
         'requires_registration': requires_registration,
         'is_registered': is_registered,
-        'requires_email': False,
+        'requires_email': requires_email,
         'user_email': user_email,
         'register_url': '/registracija/?next=/',
         'claim_url': '/online-nagrada/otkrij/',
@@ -985,18 +1000,27 @@ def _add_free_product(request, product):
 
 
 def reveal_online_gift(request):
-    """Otkrij nagradu (jedan klik) — win/lose + primjena nagrade. Samo registrovani."""
+    """Otkrij nagradu (jedan klik) — win/lose + primjena nagrade. Traži email, ne aktivaciju."""
     campaign = get_active_campaign()
     if not campaign:
         raise ValueError('Online nagrada trenutno nije aktivna.')
     user = getattr(request, 'user', None)
-    if not _user_is_registered(request):
+    # Email obavezan (POST ili već sačuvan / sa naloga) — bez aktivacije računa
+    post_email = _normalize_email(request.POST.get('email') or '')
+    if post_email:
+        _persist_guest_email(request, post_email)
+    email = _session_gift_email(request)
+    if not email:
         raise ValueError(
-            'Da biste igrali nagradnu igru morate se registrovati. '
-            'Kreirajte nalog pa pokušajte ponovo.'
+            'Unesite email da biste mogli igrati nagradnu igru. '
+            'Nije potrebna aktivacija naloga.'
         )
-    if not campaign.audience_matches(user):
-        raise ValueError('Nagrada je samo za registrovane kupce.')
+    # Audience REGISTERED: dozvoli i gostu s emailom (samo email gate)
+    if campaign.audience == OnlineGiftCampaign.Audience.REGISTERED and not _user_is_registered(request):
+        # I dalje dozvoli igru s emailom — staff vidi kontakt
+        pass
+    elif not campaign.audience_matches(user) and not email:
+        raise ValueError('Nagrada nije dostupna za vaš nalog.')
     if campaign.once_per_visitor and _already_played(request, campaign):
         raise ValueError('Već ste otvorili online nagradu.')
     # Manuelni režim: mora postojati staff push (ili after-auth / auto)
@@ -1005,7 +1029,9 @@ def reveal_online_gift(request):
         and not get_active_push(request, campaign)
         and not should_play_gift_after_auth(request, campaign)
     ):
-        raise ValueError('Nagrada nije dostupna. Staff ju još nije pustio.')
+        side_on, _ = _side_gift_settings()
+        if not side_on:
+            raise ValueError('Nagrada nije dostupna. Staff ju još nije pustio.')
 
     # Iskoristio „poslije registracije” slot
     if should_play_gift_after_auth(request, campaign):
@@ -1016,7 +1042,7 @@ def reveal_online_gift(request):
     claim = OnlineGiftClaim.objects.create(
         campaign=campaign,
         session_key=session_key or '',
-        user=user,
+        user=user if _user_is_registered(request) else None,
         won=won,
         prize_type=campaign.prize_type if won else '',
         product=(

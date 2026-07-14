@@ -277,4 +277,215 @@ document.addEventListener('DOMContentLoaded', () => {
 
         syncButtons();
     });
+
+    /* AI dwell: odmah na ulasku — precrtana + snizena + 2 min odbrojavanje; kad istekne → regularna */
+    (function initDwellFlashPrice() {
+        const cfgEl = document.getElementById('dwellFlashConfigData');
+        if (!cfgEl) return;
+        let cfg;
+        try {
+            cfg = JSON.parse(cfgEl.textContent || '{}');
+        } catch (e) {
+            return;
+        }
+        if (!cfg || !cfg.active || !cfg.product_id) return;
+
+        const flashBox = document.getElementById('pdDwellFlash');
+        const countdownEl = document.getElementById('pdDwellCountdown');
+        const wasEl = document.getElementById('pdDwellWas');
+        const nowEl = document.getElementById('pdDwellNow');
+        const badgeEl = document.getElementById('pdDwellBadge');
+        const detailPrice = document.getElementById('detailPrice');
+        if (!flashBox || !countdownEl) return;
+
+        const flashSec = Math.max(30, parseInt(cfg.flash_seconds || 120, 10) || 120);
+        const productId = cfg.product_id;
+        const activateUrl = cfg.activate_url || '/ai-dwell/aktiviraj/';
+        let tickTimer = null;
+        let activated = false;
+
+        function csrf() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta && meta.content) return meta.content;
+            const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (input && input.value) return input.value;
+            const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+            return m ? decodeURIComponent(m[1]) : '';
+        }
+
+        function fmt(sec) {
+            sec = Math.max(0, Math.floor(sec));
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        function formatKm(val) {
+            const n = Number(val);
+            if (!Number.isFinite(n)) return String(val) + ' KM';
+            return n.toFixed(2).replace('.', ',') + ' KM';
+        }
+
+        function hideFlash() {
+            flashBox.hidden = true;
+            flashBox.classList.remove('is-active');
+            if (detailPrice) detailPrice.hidden = false;
+            if (tickTimer) {
+                clearInterval(tickTimer);
+                tickTimer = null;
+            }
+            document.body.classList.remove('pd-dwell-flash-on');
+        }
+
+        function showFlash(data) {
+            const base = data.base || cfg.base_price;
+            const sale = data.sale;
+            const pct = data.percent || cfg.percent || 10;
+            let remaining = parseInt(data.remaining_seconds || flashSec, 10) || flashSec;
+            if (remaining <= 0) {
+                hideFlash();
+                return;
+            }
+
+            if (wasEl) {
+                wasEl.textContent = formatKm(base);
+            }
+            if (nowEl) {
+                nowEl.textContent = formatKm(sale);
+            }
+            if (badgeEl) {
+                badgeEl.textContent = '−' + pct + '%';
+            }
+            if (detailPrice) detailPrice.hidden = true;
+            flashBox.hidden = false;
+            flashBox.classList.add('is-active');
+            document.body.classList.add('pd-dwell-flash-on');
+            countdownEl.textContent = fmt(remaining);
+
+            if (tickTimer) clearInterval(tickTimer);
+            tickTimer = setInterval(function () {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    hideFlash();
+                    return;
+                }
+                countdownEl.textContent = fmt(remaining);
+            }, 1000);
+        }
+
+        function activate() {
+            if (activated) return;
+            activated = true;
+            const token = csrf();
+            if (!token) {
+                activated = false;
+                return;
+            }
+            const body = new URLSearchParams();
+            body.set('csrfmiddlewaretoken', token);
+            body.set('product_id', String(productId));
+            fetch(activateUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            }).then(function (res) {
+                return res.json().then(function (data) {
+                    if (!res.ok || !data.ok) {
+                        // Isteklo ili nedostupno — ostaje regularna cijena (bez retry-a)
+                        activated = true;
+                        return;
+                    }
+                    showFlash(data);
+                });
+            }).catch(function () {
+                activated = false;
+            });
+        }
+
+        // Server već aktivirao na ulasku, ili još traje iz sesije — odmah prikaži + odbrojavaj
+        if (cfg.flash && cfg.flash.remaining_seconds > 0) {
+            activated = true;
+            showFlash({
+                base: cfg.flash.base || cfg.base_price,
+                sale: cfg.flash.sale,
+                percent: cfg.flash.percent || cfg.percent,
+                remaining_seconds: cfg.flash.remaining_seconds,
+            });
+            return;
+        }
+
+        // Nema flasha u configu (isteklo / greška servera): jedan odmah pokušaj, bez čekanja
+        // Ako je već isteklo u sesiji, API odbija → regularna cijena
+        activate();
+    })();
+
+    /* Sticky „Dodaj u korpu” na mobilnom — kad glavni CTA izađe iz viewporta */
+    (function initStickyAddToCart() {
+        if (window.matchMedia && !window.matchMedia('(max-width: 768px)').matches) {
+            return;
+        }
+        const sticky = document.getElementById('pdStickyCart');
+        const stickyBtn = document.getElementById('pdStickyCartBtn');
+        if (!sticky || !stickyBtn) return;
+
+        const mainBtn = document.getElementById('mainAddToCartBtn')
+            || document.querySelector('.product-detail-purchase .btn-add-to-bag')
+            || document.querySelector('.product-detail-variation-form button[type="submit"]')
+            || document.querySelector('#detailVariations');
+
+        const showSticky = () => {
+            sticky.hidden = false;
+            sticky.classList.add('is-visible');
+            document.body.classList.add('pd-sticky-cart-open');
+        };
+        const hideSticky = () => {
+            sticky.classList.remove('is-visible');
+            sticky.hidden = true;
+            document.body.classList.remove('pd-sticky-cart-open');
+        };
+
+        if (mainBtn && 'IntersectionObserver' in window) {
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) hideSticky();
+                    else showSticky();
+                });
+            }, { root: null, threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+            io.observe(mainBtn);
+        } else {
+            // Fallback: prikaži nakon skrola
+            const onScroll = () => {
+                if (window.scrollY > 280) showSticky();
+                else hideSticky();
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        }
+
+        stickyBtn.addEventListener('click', () => {
+            if (stickyBtn.hasAttribute('data-scroll-to-variations')) {
+                const block = document.getElementById('detailVariations')
+                    || document.querySelector('.product-detail-variations-block');
+                if (block) {
+                    block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+            const form = document.getElementById('mainAddToCartForm')
+                || document.querySelector('.add-to-cart-form');
+            if (form && typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else if (form) {
+                form.submit();
+            } else if (mainBtn && mainBtn.click) {
+                mainBtn.click();
+            }
+        });
+    })();
 });

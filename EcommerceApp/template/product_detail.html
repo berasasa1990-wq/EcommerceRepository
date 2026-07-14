@@ -265,8 +265,21 @@
             {% endif %}
 
             {% if not product.varijacije.count %}
-            <div class="product-detail-price product-price--detail" id="detailPrice">
+            <div class="product-detail-price product-price--detail" id="detailPrice"
+                 data-base-price="{{ product.prikazna_cijena }}"
+                 {% if dwell_flash_config.flash %}hidden{% endif %}>
                 {% include 'partials/product_price.html' with item=product %}
+            </div>
+            {# AI dwell flash: odmah na ulasku — precrtana / snizena + 2 min #}
+            <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                <p class="pd-dwell-flash-timer" aria-live="polite">
+                    ⏱ Specijalna cijena još <strong id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
+                </p>
+                <div class="pd-dwell-flash-prices product-price product-price--detail">
+                    <span class="pd-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>
+                    <span class="pd-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
+                    <span class="pd-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                </div>
             </div>
 
             {% include 'partials/product_urgency.html' %}
@@ -278,15 +291,28 @@
             </div>
 
             {% if product.na_stanju %}
-            <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form">
+            <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form" id="mainAddToCartForm">
                 {% csrf_token %}
                 <div class="product-detail-purchase">
                     {% include 'partials/product_qty_selector.html' %}
                     <button type="submit" class="btn btn-primary btn-add-to-bag"
                             data-product-id="{{ product.pk }}"
                             data-product-name="{{ product.naziv }}"
-                            data-almost-cart>Dodaj u korpu</button>
+                            data-almost-cart
+                            id="mainAddToCartBtn">Dodaj u korpu</button>
                 </div>
+                {% if conversion_boost %}
+                <div class="pd-conversion-boost">
+                    {% if conversion_boost.free_shipping_hint %}
+                    <p class="pd-conversion-ship">🚚 {{ conversion_boost.free_shipping_hint|safe }}</p>
+                    {% endif %}
+                    <ul class="pd-conversion-trust">
+                        {% for line in conversion_boost.trust_lines %}
+                        <li>✓ {{ line }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
 
                 {% include 'partials/gratis_promo.html' %}
 
@@ -310,6 +336,16 @@
 
             {% if product.varijacije.count %}
             {% include 'partials/product_urgency.html' %}
+            <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                <p class="pd-dwell-flash-timer" aria-live="polite">
+                    ⏱ Specijalna cijena još <strong id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
+                </p>
+                <div class="pd-dwell-flash-prices product-price product-price--detail">
+                    <span class="pd-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>
+                    <span class="pd-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
+                    <span class="pd-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                </div>
+            </div>
             {% endif %}
 
             {% if in_stock_variations %}
@@ -378,10 +414,45 @@
 </section>
 {% endif %}
 {% include 'partials/gratis_offer_modal.html' %}
+
+{# Sticky „Dodaj u korpu” — samo mobilni (CSS), kad glavni CTA izađe iz view-a #}
+{% if product.na_stanju and not product.varijacije.count %}
+<div class="pd-sticky-cart" id="pdStickyCart" hidden>
+    <div class="pd-sticky-cart-inner">
+        <div class="pd-sticky-cart-info">
+            <span class="pd-sticky-cart-name">{{ product.naziv }}</span>
+            <span class="pd-sticky-cart-price product-price">
+                {% include 'partials/product_price.html' with item=product %}
+            </span>
+        </div>
+        <button type="button" class="btn btn-primary btn-add-to-bag pd-sticky-cart-btn" id="pdStickyCartBtn"
+                data-product-id="{{ product.pk }}"
+                data-product-name="{{ product.naziv }}">
+            Dodaj u korpu
+        </button>
+    </div>
+</div>
+{% elif product.na_stanju and in_stock_variations %}
+<div class="pd-sticky-cart" id="pdStickyCart" hidden>
+    <div class="pd-sticky-cart-inner">
+        <div class="pd-sticky-cart-info">
+            <span class="pd-sticky-cart-name">{{ product.naziv }}</span>
+            <span class="pd-sticky-cart-hint">Izaberi opciju ispod</span>
+        </div>
+        <button type="button" class="btn btn-primary pd-sticky-cart-btn" id="pdStickyCartBtn"
+                data-scroll-to-variations>
+            Izaberi opciju
+        </button>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260709v2" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260714v6" defer></script>
+{% if dwell_flash_config and dwell_flash_config.active %}
+{{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
+{% endif %}
 {% if meta_pixel_id and meta_view_content_event_id %}
 <script data-cfasync="false">
 (function () {

@@ -14,14 +14,7 @@
     {% if show_akcija_expiry and product.prikaz_akcija_istice %}
     <p class="product-sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
     {% endif %}
-    <p class="product-price" data-product-price>
-        {% if product.katalog_na_akciji %}
-        <span class="price-sale">{{ product.katalog_prikazna_cijena }} KM</span>
-        <span class="price-original">{{ product.katalog_bazna_cijena }} KM</span>
-        {% else %}
-        <span class="price-current">{{ product.katalog_prikazna_cijena }} KM</span>
-        {% endif %}
-    </p>
+    {% include 'partials/product_card_dwell_price.html' with product=product %}
     {% if product.je_pakovanje %}
     <p class="product-pack-line" title="{{ product.pakovanje_cijena_hint }}">
         <span class="product-pack-badge product-pack-badge--card">

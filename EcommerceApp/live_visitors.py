@@ -809,12 +809,11 @@ def track_live_visitor(request):
     if random.random() < 0.02:
         cleanup_stale_live_visitors()
 
-    # Personalizovana ponuda na osnovu gledanja (2+ pregleda artikla / top kategorija)
+    # AI prodaja (jedan sistem — max 2 popup-a, 1–2 artikla, ≤10%)
     try:
-        from .browse_interest_offer import maybe_create_browse_interest_offer
-
         visitor_for_offer = LiveVisitor.objects.filter(session_key=session_key).first()
         if visitor_for_offer:
+            from .browse_interest_offer import maybe_create_browse_interest_offer
             maybe_create_browse_interest_offer(request, visitor_for_offer)
     except Exception:
         pass
@@ -1833,18 +1832,26 @@ def _visitor_payload(
     time_on_site_seconds = max(0, int((end_time - first_seen).total_seconds()))
     time_on_site_label = _format_time_on_site(time_on_site_seconds)
 
-    grad = ''
-    if (visitor.drzava or '').strip().upper() == BOSNIA_HERZEGOVINA_COUNTRY_CODE:
-        grad = (visitor.grad or '').strip()
-        if not grad and visitor.user_id and getattr(visitor, 'user', None):
-            profil = getattr(visitor.user, 'profil', None)
-            if profil and profil.grad:
-                grad = profil.grad.strip()
+    # Grad: uvijek prikaži ako znamo (IP geo, profil, raniji unos)
+    grad = (visitor.grad or '').strip()
+    if not grad and visitor.user_id and getattr(visitor, 'user', None):
+        profil = getattr(visitor.user, 'profil', None)
+        if profil and profil.grad:
+            grad = profil.grad.strip()
 
     category_views = _normalize_category_views(visitor.pregledane_kategorije)
     categories = [c['naziv'] for c in category_views if c.get('naziv')]
+    # Sa brojem ulazaka (views) za staff UI
+    categories_with_views = [
+        {
+            'naziv': c['naziv'],
+            'views': int(c.get('views') or 1),
+        }
+        for c in category_views if c.get('naziv')
+    ]
     products = _normalize_product_views(getattr(visitor, 'pregledani_proizvodi', None))
     products_viewed_count = len(products)
+    total_product_entries = sum(int(p.get('views') or 1) for p in products)
     almost_cart = []
     try:
         from .almost_cart import get_almost_cart_products
@@ -1882,8 +1889,18 @@ def _visitor_payload(
     cart_value_label = f'{cart_value_dec:.2f} KM' if cart_value_dec > 0 else '—'
 
     is_registered = bool(visitor.user_id)
-    products_label = ', '.join(p['naziv'] for p in products[:4] if p.get('naziv'))
-    if products_viewed_count > 4:
+    # Label s brojem ulazaka: „Artikal (3×), Drugi (1×)”
+    def _prod_entry_label(p):
+        name = (p.get('naziv') or '').strip()
+        if not name:
+            return ''
+        views = int(p.get('views') or 1)
+        return f'{name} ({views}×)' if views > 1 else f'{name} (1×)'
+
+    products_label = ', '.join(
+        _prod_entry_label(p) for p in products[:5] if p.get('naziv')
+    )
+    if products_viewed_count > 5:
         products_label = f'{products_label}…'
 
     purchase_label = ''
@@ -1931,16 +1948,20 @@ def _visitor_payload(
         'user_id': visitor.user_id or None,
         'ime': visitor.ime or 'Gost',
         'email': visitor.email or '',
-        'grad': grad,
+        'grad': grad or '',
+        'grad_label': grad or 'Grad nepoznat',
         'categories': categories,
+        'categories_with_views': categories_with_views,
         'categories_label': ', '.join(
-            f"{c['naziv']} ({c['views']}×)" if c.get('views', 1) > 1 else c['naziv']
+            f"{c['naziv']} ({c['views']}×)"
             for c in category_views[:6]
             if c.get('naziv')
         ),
         'products': products,
         'products_viewed_count': products_viewed_count,
+        'total_product_entries': total_product_entries,
         'products_label': products_label,
+        'visited_product_ids': [int(p['id']) for p in products if p.get('id')],
         'returned_to_product': returned_to_product,
         'returned_products': returned_products,
         'returned_products_label': returned_products_label,
@@ -2006,6 +2027,23 @@ def _visitor_payload(
             if r.get('product_id')
         ],
     }
+    # AI conversion — intent skor + preporučena akcija za staff
+    try:
+        from .ai_conversion import staff_ai_payload
+        payload.update(staff_ai_payload(visitor))
+    except Exception:
+        payload.update({
+            'ai_score': 0,
+            'ai_level': 'cold',
+            'ai_level_label': '—',
+            'ai_reasons': [],
+            'ai_action': '',
+            'ai_action_code': 'watch',
+            'ai_suggested_discount': 10,
+            'ai_top_product_id': None,
+            'ai_top_product_name': '',
+            'ai_badge': '',
+        })
     payload.update(_offer_status_fields(offer, visitor_online=payload['is_online']))
     actions = list(staff_actions or [])
     payload['staff_actions'] = actions

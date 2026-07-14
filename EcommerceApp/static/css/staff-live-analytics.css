@@ -350,6 +350,109 @@ button.la-kpi:hover {
     color: #166534;
 }
 
+/* Bulk ponuda na sve pregledane */
+.la-card-bulk-offer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+
+.la-card-bulk-offer .la-card-now-offer-label {
+    color: #1e40af;
+}
+
+.la-card-bulk-offer .la-card-now-pct {
+    border-color: #93c5fd;
+}
+
+.la-card-act--bulk-offer {
+    background: linear-gradient(180deg, #3b82f6, #2563eb) !important;
+    border-color: #1d4ed8 !important;
+    color: #fff !important;
+    font-size: 12px;
+    padding: 7px 12px;
+}
+
+.la-card-act--bulk-offer:hover {
+    filter: brightness(1.06);
+    color: #fff !important;
+}
+
+.la-card-city-pin {
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.la-bulk-offer-block .la-card-bulk-offer {
+    margin-top: 4px;
+}
+
+/* AI intent chips */
+.la-chip--ai {
+    font-weight: 900;
+    letter-spacing: 0.01em;
+}
+.la-chip--ai-hot {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+.la-chip--ai-warm {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+}
+.la-chip--ai-mild {
+    background: #fefce8;
+    border-color: #fde68a;
+    color: #a16207;
+}
+.la-chip--ai-cold {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+.la-card-activity-line--ai {
+    color: #1e3a8a;
+    background: #eff6ff;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-top: 4px;
+}
+.la-ai-pct {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+}
+.la-insight-meta--ai {
+    margin-top: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+.la-ai-level--hot { color: #b91c1c; }
+.la-ai-level--warm { color: #c2410c; }
+.la-ai-level--mild { color: #a16207; }
+.la-ai-level--cold { color: #64748b; }
+.la-ai-reasons {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.35;
+}
+
 .la-now-live {
     display: inline;
     color: #0f172a;

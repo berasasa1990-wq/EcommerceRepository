@@ -1778,7 +1778,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-product-card]').forEach((card) => {
         const mainImage = card.querySelector('[data-main-image]');
         const nameEl = card.querySelector('[data-product-name]');
-        const priceEl = card.querySelector('[data-product-price]');
+        const priceEl = card.querySelector('[data-product-price]:not([hidden])');
         const swatches = card.querySelectorAll('.variation-swatch');
         const defaultName = card.dataset.defaultName;
         const cartOnSwatch = card.hasAttribute('data-cart-on-swatch');
@@ -1787,6 +1787,11 @@ document.addEventListener('DOMContentLoaded', () => {
             swatch.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // Ne diraj cijenu dok traje AI dwell flash na kartici
+                if (card.querySelector('[data-dwell-card-flash].is-active')) {
+                    return;
+                }
 
                 swatches.forEach(s => s.classList.remove('active'));
                 swatch.classList.add('active');
@@ -1804,8 +1809,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (nameEl) {
                     nameEl.textContent = defaultName;
                 }
-                if (priceEl && price) {
-                    priceEl.innerHTML = buildPriceHtml(price, originalPrice, onSale);
+                const livePriceEl = card.querySelector('[data-product-price]:not([hidden])');
+                if (livePriceEl && price) {
+                    livePriceEl.innerHTML = buildPriceHtml(price, originalPrice, onSale);
                 }
 
                 if (cartOnSwatch && swatch.dataset.productSlug && swatch.dataset.variationId) {
@@ -1816,5 +1822,52 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    /* AI dwell flash na karticama (početna / katalog) — odbrojavanje, pa regularna cijena */
+    (function initCardDwellFlashTimers() {
+        const blocks = document.querySelectorAll('[data-dwell-card-flash]');
+        if (!blocks.length) return;
+
+        function fmt(sec) {
+            sec = Math.max(0, Math.floor(sec));
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        function expireBlock(block) {
+            block.classList.remove('is-active');
+            block.hidden = true;
+            const parent = block.parentElement || block.closest('.product-card, .product-info, .product-card__price-block');
+            const regular = parent
+                ? parent.querySelector('[data-dwell-regular-price]')
+                : block.parentElement && block.parentElement.querySelector('[data-dwell-regular-price]');
+            if (regular) {
+                regular.hidden = false;
+                regular.removeAttribute('hidden');
+            }
+        }
+
+        blocks.forEach((block) => {
+            const expiresTs = parseFloat(block.getAttribute('data-dwell-expires') || '0');
+            const countdownEl = block.querySelector('[data-dwell-countdown]');
+            if (!expiresTs || !countdownEl) return;
+
+            const tick = () => {
+                const remaining = Math.floor(expiresTs - (Date.now() / 1000));
+                if (remaining <= 0) {
+                    expireBlock(block);
+                    return false;
+                }
+                countdownEl.textContent = fmt(remaining);
+                return true;
+            };
+
+            if (!tick()) return;
+            const timer = setInterval(() => {
+                if (!tick()) clearInterval(timer);
+            }, 1000);
+        });
+    })();
 
 });

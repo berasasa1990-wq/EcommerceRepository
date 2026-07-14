@@ -76,14 +76,11 @@
     {% endif %}
 
     <div class="product-card__price-block">
-        <div class="product-price product-card__price" data-product-price>
-            {% if product.katalog_na_akciji %}
-            <span class="price-sale">{% if card_variations|length > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
-            <span class="price-original">{% if card_variations|length > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
-            {% else %}
-            <span class="price-current">{% if card_variations|length > 1 %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
-            {% endif %}
-        </div>
+        {% if card_variations|length > 1 %}
+        {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
+        {% else %}
+        {% include 'partials/product_card_dwell_price.html' with product=product %}
+        {% endif %}
         {% if product.je_pakovanje %}
         <p class="product-pack-hint product-card__pack-hint">{{ product.pakovanje_cijena_hint }}</p>
         {% endif %}

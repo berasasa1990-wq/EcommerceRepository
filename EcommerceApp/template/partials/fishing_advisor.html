@@ -1,0 +1,32 @@
+{# Virtuelni ribolovački savjetnik — veći, upečatljiv chat #}
+<div class="fish-advisor" id="fishAdvisor" data-advisor-url="{% url 'fishing_advisor' %}">
+    <button type="button" class="fish-advisor__launcher" id="fishAdvisorLauncher" aria-expanded="false" aria-controls="fishAdvisorPanel">
+        <span class="fish-advisor__launcher-glow" aria-hidden="true"></span>
+        <span class="fish-advisor__launcher-pulse" aria-hidden="true"></span>
+        <span class="fish-advisor__launcher-icon" aria-hidden="true">🎣</span>
+        <span class="fish-advisor__launcher-text">
+            <strong>Ribolovački savjetnik</strong>
+            <small>Feeder · Šaran · Varalica</small>
+        </span>
+        <span class="fish-advisor__launcher-badge" aria-hidden="true">FREE</span>
+    </button>
+
+    <div class="fish-advisor__panel" id="fishAdvisorPanel" hidden role="dialog" aria-label="Ribolovački savjetnik" aria-modal="false">
+        <header class="fish-advisor__header">
+            <div class="fish-advisor__avatar" aria-hidden="true">🎣</div>
+            <div class="fish-advisor__titles">
+                <strong>Tvoj ribolovački savjetnik</strong>
+                <span class="fish-advisor__online"><i></i> Online · odmah pomaže</span>
+            </div>
+            <button type="button" class="fish-advisor__close" id="fishAdvisorClose" aria-label="Zatvori savjetnika">×</button>
+        </header>
+
+        <div class="fish-advisor__messages" id="fishAdvisorMessages" aria-live="polite"></div>
+
+        <div class="fish-advisor__products" id="fishAdvisorProducts" hidden></div>
+
+        <div class="fish-advisor__options" id="fishAdvisorOptions"></div>
+
+        <p class="fish-advisor__hint">Odaberi opremu — predložit ću štap, mašinicu, najlon ili hranilice.</p>
+    </div>
+</div>

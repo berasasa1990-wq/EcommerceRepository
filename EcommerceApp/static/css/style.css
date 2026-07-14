@@ -16332,3 +16332,726 @@ body.og-side-open {
         font-size: 12px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════
+   Sticky „Dodaj u korpu” — mobilni product detail
+   ═══════════════════════════════════════════════════════ */
+.pd-sticky-cart {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .pd-sticky-cart {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 900;
+        padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px));
+        pointer-events: none;
+        transform: translateY(110%);
+        opacity: 0;
+        transition: transform 0.28s ease, opacity 0.28s ease;
+    }
+
+    .pd-sticky-cart.is-visible {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .pd-sticky-cart[hidden] {
+        display: none !important;
+    }
+
+    .pd-sticky-cart.is-visible:not([hidden]) {
+        display: block !important;
+    }
+
+    .pd-sticky-cart-inner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 16px 16px 14px 14px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.14), 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .pd-sticky-cart-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .pd-sticky-cart-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: #0f172a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.25;
+    }
+
+    .pd-sticky-cart-price {
+        font-size: 14px;
+        font-weight: 900;
+        color: #16a34a;
+    }
+
+    .pd-sticky-cart-price .price-original,
+    .pd-sticky-cart-price .price-sale,
+    .pd-sticky-cart-price .price-current {
+        font-size: inherit;
+    }
+
+    .pd-sticky-cart-hint {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .pd-sticky-cart-btn {
+        flex-shrink: 0;
+        min-height: 46px !important;
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        border-radius: 12px !important;
+        white-space: nowrap;
+    }
+
+    body.pd-sticky-cart-open {
+        padding-bottom: 84px;
+    }
+}
+
+/* Product conversion boost (trust + free shipping) */
+.pd-conversion-boost {
+    margin: 10px 0 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #f0fdf4, #f8fafc);
+    border: 1px solid #bbf7d0;
+}
+.pd-conversion-ship {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #166534;
+    line-height: 1.35;
+}
+.pd-conversion-trust {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+}
+.pd-conversion-trust li {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+}
+
+/* AI dwell flash cijena — precrtana + snizena + odbrojavanje (bez popupa) */
+.pd-dwell-flash {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+}
+.pd-dwell-flash[hidden] {
+    display: none !important;
+}
+.pd-dwell-flash.is-active {
+    display: block;
+}
+.pd-dwell-flash-timer {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #86efac;
+}
+.pd-dwell-flash-timer strong {
+    font-size: 18px;
+    font-weight: 900;
+    color: #4ade80;
+    letter-spacing: 0.02em;
+}
+.pd-dwell-flash-prices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 14px;
+}
+.pd-dwell-was {
+    position: relative;
+    display: inline-block;
+    font-size: 18px;
+    font-weight: 800;
+    color: #fca5a5;
+    text-decoration: none;
+}
+.pd-dwell-was::after {
+    content: '';
+    position: absolute;
+    left: -4%;
+    right: -4%;
+    top: 50%;
+    border-top: 2.5px solid #f87171;
+    transform: rotate(-14deg);
+    pointer-events: none;
+}
+.pd-dwell-now {
+    font-size: 28px;
+    font-weight: 900;
+    color: #4ade80;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+}
+.pd-dwell-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ff5a5a, #e11d48);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    box-shadow: 0 3px 10px rgba(225, 29, 72, 0.35);
+}
+
+/* AI dwell flash na karticama (početna / katalog) */
+.card-dwell-flash {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+}
+.card-dwell-flash[hidden] {
+    display: none !important;
+}
+.card-dwell-flash.is-active {
+    display: block;
+}
+.card-dwell-timer {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #86efac;
+    line-height: 1.2;
+}
+.card-dwell-timer strong {
+    font-size: 15px;
+    font-weight: 900;
+    color: #4ade80;
+    letter-spacing: 0.02em;
+}
+.card-dwell-prices {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+    margin: 0 !important;
+}
+.card-dwell-was {
+    position: relative;
+    display: inline-block;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    color: #fca5a5 !important;
+    text-decoration: none !important;
+}
+.card-dwell-was::after {
+    content: '';
+    position: absolute;
+    left: -4%;
+    right: -4%;
+    top: 50%;
+    border-top: 2px solid #f87171;
+    transform: rotate(-14deg);
+    pointer-events: none;
+}
+.card-dwell-now {
+    font-size: 17px !important;
+    font-weight: 900 !important;
+    color: #4ade80 !important;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+.card-dwell-badge {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ff5a5a, #e11d48);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
+}
+.product-card--catalog .card-dwell-flash {
+    width: 100%;
+}
+.product-info .card-dwell-flash {
+    margin-top: 2px;
+}
+@media (max-width: 768px) {
+    .card-dwell-timer {
+        font-size: 10px;
+    }
+    .card-dwell-timer strong {
+        font-size: 13px;
+    }
+    .card-dwell-now {
+        font-size: 15px !important;
+    }
+    .card-dwell-was {
+        font-size: 12px !important;
+    }
+}
+
+/* ===== Virtuelni ribolovački savjetnik (chat) — veći & upečatljiv ===== */
+.fish-advisor {
+    position: fixed;
+    left: max(14px, env(safe-area-inset-left, 0px));
+    bottom: max(18px, env(safe-area-inset-bottom, 0px));
+    z-index: 1060;
+    font-family: inherit;
+}
+.fish-advisor__launcher {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 2px solid rgba(52, 211, 153, 0.55);
+    cursor: pointer;
+    padding: 12px 16px 12px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #042f2e 0%, #0f766e 42%, #f59e0b 160%);
+    color: #ecfdf5;
+    box-shadow:
+        0 0 0 4px rgba(16, 185, 129, 0.15),
+        0 12px 36px rgba(15, 118, 110, 0.55),
+        0 0 40px rgba(245, 158, 11, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    min-height: 64px;
+}
+.fish-advisor__launcher:hover,
+.fish-advisor__launcher.is-open {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow:
+        0 0 0 5px rgba(16, 185, 129, 0.22),
+        0 16px 42px rgba(15, 118, 110, 0.65),
+        0 0 48px rgba(245, 158, 11, 0.28);
+}
+.fish-advisor__launcher.is-nudge {
+    animation: fish-advisor-nudge 0.65s ease-in-out 4;
+}
+@keyframes fish-advisor-nudge {
+    0%, 100% { transform: translateY(0) scale(1); }
+    40% { transform: translateY(-10px) scale(1.04); }
+    70% { transform: translateY(-4px) scale(1.02); }
+}
+.fish-advisor__launcher-glow {
+    position: absolute;
+    inset: -8px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.35), transparent 70%);
+    animation: fish-advisor-glow 2.4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+@keyframes fish-advisor-glow {
+    0%, 100% { opacity: 0.55; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.08); }
+}
+.fish-advisor__launcher-pulse {
+    position: absolute;
+    inset: -5px;
+    border-radius: 999px;
+    border: 2px solid rgba(251, 191, 36, 0.7);
+    animation: fish-advisor-pulse 2s ease-out infinite;
+    pointer-events: none;
+}
+@keyframes fish-advisor-pulse {
+    0% { opacity: 0.95; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.18); }
+}
+.fish-advisor__launcher-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+}
+.fish-advisor__launcher-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+    text-align: left;
+    padding-right: 4px;
+}
+.fish-advisor__launcher-text strong {
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+.fish-advisor__launcher-text small {
+    font-size: 12px;
+    opacity: 0.92;
+    font-weight: 700;
+    color: #fef3c7;
+}
+.fish-advisor__launcher-badge {
+    position: absolute;
+    top: -8px;
+    right: 10px;
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+    color: #422006;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.45);
+}
+.fish-advisor__panel {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 14px);
+    width: min(420px, calc(100vw - 24px));
+    max-height: min(640px, calc(100vh - 90px));
+    display: flex;
+    flex-direction: column;
+    background: #070f1a;
+    color: #e2e8f0;
+    border-radius: 22px;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    box-shadow:
+        0 24px 60px rgba(2, 6, 23, 0.65),
+        0 0 0 1px rgba(251, 191, 36, 0.12);
+    overflow: hidden;
+}
+.fish-advisor__panel[hidden] {
+    display: none !important;
+}
+.fish-advisor__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px 14px 16px;
+    background: linear-gradient(105deg, #0f766e 0%, #0d9488 40%, #b45309 140%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.fish-advisor__avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.fish-advisor__titles {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.fish-advisor__titles strong {
+    font-size: 16px;
+    font-weight: 900;
+    color: #ecfdf5;
+    letter-spacing: 0.01em;
+}
+.fish-advisor__online {
+    font-size: 12px;
+    color: #fef3c7;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.fish-advisor__online i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.35);
+    display: inline-block;
+    animation: fish-advisor-online 1.6s ease-in-out infinite;
+}
+@keyframes fish-advisor-online {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+.fish-advisor__close {
+    border: none;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+.fish-advisor__close:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+.fish-advisor__messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 200px;
+    max-height: 300px;
+    background:
+        radial-gradient(ellipse at top left, rgba(15, 118, 110, 0.22), transparent 50%),
+        radial-gradient(ellipse at bottom right, rgba(245, 158, 11, 0.08), transparent 45%),
+        #070f1a;
+}
+.fish-advisor__msg {
+    display: flex;
+    max-width: 92%;
+}
+.fish-advisor__msg--bot {
+    align-self: flex-start;
+}
+.fish-advisor__msg--user {
+    align-self: flex-end;
+}
+.fish-advisor__bubble {
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: normal;
+    word-break: break-word;
+}
+.fish-advisor__msg--bot .fish-advisor__bubble {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.fish-advisor__msg--user .fish-advisor__bubble {
+    background: linear-gradient(135deg, #0d9488, #059669);
+    color: #ecfdf5;
+    border-bottom-right-radius: 4px;
+    font-weight: 600;
+}
+.fish-advisor__typing .fish-advisor__bubble {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    min-width: 52px;
+    padding: 12px 14px;
+}
+.fish-advisor__typing span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #94a3b8;
+    animation: fish-advisor-dot 1.2s ease-in-out infinite;
+}
+.fish-advisor__typing span:nth-child(2) { animation-delay: 0.15s; }
+.fish-advisor__typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes fish-advisor-dot {
+    0%, 80%, 100% { opacity: 0.35; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
+}
+.fish-advisor__products {
+    padding: 0 12px 10px;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    max-height: 230px;
+    overflow-y: auto;
+}
+.fish-advisor__products[hidden] {
+    display: none !important;
+}
+.fish-advisor__products-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 10px 2px 8px;
+    font-size: 12px;
+}
+.fish-advisor__products-head strong {
+    color: #6ee7b7;
+    font-weight: 800;
+}
+.fish-advisor__products-head span {
+    color: #94a3b8;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.fish-advisor__product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.fish-advisor__product {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 14px;
+    background: #111827;
+    border: 1px solid rgba(52, 211, 153, 0.22);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.fish-advisor__product:hover {
+    border-color: rgba(52, 211, 153, 0.55);
+    background: #0f1a2e;
+    transform: translateX(2px);
+}
+.fish-advisor__product.is-oos {
+    opacity: 0.72;
+}
+.fish-advisor__product-img {
+    width: 58px;
+    height: 58px;
+    border-radius: 12px;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    font-size: 24px;
+}
+.fish-advisor__product-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.fish-advisor__product-meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.fish-advisor__product-role {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #34d399;
+}
+.fish-advisor__product-meta strong {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f1f5f9;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.fish-advisor__product-price {
+    font-size: 13px;
+    font-weight: 800;
+    color: #4ade80;
+}
+.fish-advisor__product-note {
+    font-size: 11px;
+    font-style: normal;
+    color: #94a3b8;
+    line-height: 1.3;
+}
+.fish-advisor__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px 10px;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    background: #0a101c;
+}
+.fish-advisor__option {
+    border: 1px solid rgba(52, 211, 153, 0.45);
+    background: linear-gradient(180deg, rgba(15, 118, 110, 0.35), rgba(15, 118, 110, 0.18));
+    color: #ecfdf5;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.fish-advisor__option:hover {
+    background: linear-gradient(180deg, rgba(13, 148, 136, 0.55), rgba(15, 118, 110, 0.35));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+}
+.fish-advisor__option--link {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.25), rgba(30, 41, 59, 0.85));
+}
+.fish-advisor__hint {
+    margin: 0;
+    padding: 0 16px 14px;
+    font-size: 11px;
+    color: #94a3b8;
+    background: #0a101c;
+    font-weight: 600;
+}
+@media (max-width: 768px) {
+    .fish-advisor {
+        left: max(10px, env(safe-area-inset-left, 0px));
+        bottom: max(78px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+    }
+    .fish-advisor__launcher {
+        padding: 10px 14px 10px 10px;
+        min-height: 56px;
+    }
+    .fish-advisor__launcher-text strong {
+        font-size: 13px;
+    }
+    .fish-advisor__launcher-text small {
+        font-size: 11px;
+    }
+    .fish-advisor__launcher-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 24px;
+    }
+    .fish-advisor__panel {
+        width: min(400px, calc(100vw - 16px));
+        max-height: min(75vh, 580px);
+    }
+    body.mobile-nav-open .fish-advisor {
+        display: none;
+    }
+}

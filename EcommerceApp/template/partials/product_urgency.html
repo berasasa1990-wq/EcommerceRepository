@@ -9,9 +9,9 @@
             </svg>
         </span>
         <span>
-            <strong>{{ product_urgency.sold_24h }}</strong>
-            {% if product_urgency.sold_24h == 1 %}prodan{% else %}prodato{% endif %}
-            u proteklih 24h
+            🔥 <strong>{{ product_urgency.sold_24h }}</strong>
+            {% if product_urgency.sold_24h == 1 %}kupac je uzeo{% else %}kupaca je uzelo{% endif %}
+            ovo u proteklih 24h
         </span>
     </p>
     {% if product_urgency.show_stock and product_urgency.stock_left %}
@@ -22,8 +22,9 @@
             </svg>
         </span>
         <span>
-            Ostalo još na stanju:
+            Žuri — ostalo još samo
             <strong class="product-urgency-stock-count">{{ product_urgency.stock_left }}</strong>
+            na stanju
         </span>
     </p>
     {% endif %}

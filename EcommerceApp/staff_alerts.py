@@ -122,6 +122,39 @@ def notify_purchase(*, ime='', email='', grad='', session_key='', order_number='
     )
 
 
+def notify_offer_accepted(
+    *,
+    ime='',
+    email='',
+    grad='',
+    session_key='',
+    product_name='',
+    discount_percent=None,
+    source='ponuda',
+):
+    """Kupac je prihvatio AI prodaju / staff ponudu — toast superuserima."""
+    label = _actor_label(ime=ime, email=email, grad=grad)
+    product = (product_name or '').strip() or 'artikal'
+    pct = ''
+    try:
+        if discount_percent is not None:
+            d = float(discount_percent)
+            if d > 0:
+                pct = f' (−{int(d) if d == int(d) else d}%)'
+    except (TypeError, ValueError):
+        pct = ''
+    src = (source or 'ponuda').strip()
+    return push_staff_event(
+        StaffSiteEvent.Tip.OFFER,
+        naslov='Prihvaćena ponuda',
+        poruka=f'{label} je prihvatio/la {src}: {product}{pct}.',
+        ime=ime,
+        email=email,
+        grad=grad,
+        session_key=session_key,
+    )
+
+
 def count_new_online_orders():
     from .models import Order
 

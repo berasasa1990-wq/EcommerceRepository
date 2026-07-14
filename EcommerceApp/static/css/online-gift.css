@@ -312,7 +312,55 @@
   max-width: 280px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+}
+
+.og-email-label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  text-align: left;
+}
+
+.og-email-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  background: #fff;
+  font-family: inherit;
+}
+
+.og-email-input:focus {
+  outline: none;
+  border-color: #5BB805;
+  box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.2);
+}
+
+.og-email-input--error {
+  border-color: #e11d48 !important;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15) !important;
+}
+
+.og-email-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.35;
+  text-align: left;
 }
 
 .og-gift-icon {

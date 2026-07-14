@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260713v2" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260713v2">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260714v9" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260714v9">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -363,6 +363,9 @@
 
     {% include 'partials/footer.html' %}
     {% include 'partials/contact_float.html' %}
+    {% if user.is_authenticated and user.is_superuser %}
+    {% include 'partials/fishing_advisor.html' %}
+    {% endif %}
     {% include 'partials/catalog_variation_modal.html' %}
 
     <button type="button" class="scroll-top-btn" id="scrollTopBtn" aria-label="Na vrh stranice">
@@ -387,12 +390,15 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260713v30" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260714v6" defer></script>
+    {% if user.is_authenticated and user.is_superuser %}
+    <script src="{% static 'js/fishing-advisor.js' %}?v=20260714v3" defer></script>
+    {% endif %}
     {% if not user.is_authenticated or not user.is_superuser %}
     <script src="{% static 'js/almost-cart.js' %}?v=20260712v3" defer></script>
     {% endif %}
     {% if online_gift %}
-    <script src="{% static 'js/online-gift.js' %}?v=20260712v8" defer></script>
+    <script src="{% static 'js/online-gift.js' %}?v=20260713v9" defer></script>
     {% endif %}
     {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
     {% if not user.is_authenticated or not user.is_superuser %}
@@ -403,12 +409,12 @@
     <script src="{% static 'js/visitor-presence.js' %}?v=20260712v7" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260712v1">
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260713v2">
     <div id="staffAlertsRoot" hidden
          data-poll-url="{% url 'staff_site_events_poll' %}"
          data-analytics-url="{% url 'staff_live_analytics' %}"
          {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20260712v1" defer></script>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260713v2" defer></script>
     {% endif %}
     {% block extra_js %}{% endblock %}
 </body>

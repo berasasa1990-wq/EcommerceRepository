@@ -1,6 +1,6 @@
 {% if online_gift %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260712v8">
+<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260713v9">
 <div id="onlineGiftOverlay" class="og-overlay og-side" hidden
      data-id="{{ online_gift.id }}"
      data-delay="{{ online_gift.delay_seconds|default:0 }}"
@@ -12,7 +12,8 @@
      data-dismiss-url="{% url 'online_gift_dismiss' %}"
      data-poll-url="{% url 'online_gift_poll' %}"
      data-cart-url="{% url 'cart' %}"
-     data-requires-registration="{% if online_gift.requires_registration %}1{% else %}0{% endif %}"
+     data-requires-registration="0"
+     data-requires-email="{% if online_gift.requires_email %}1{% else %}0{% endif %}"
      data-is-registered="{% if online_gift.is_registered %}1{% else %}0{% endif %}"
      data-register-url="{% url 'register' %}?next=/"
      data-user-email="{{ online_gift.user_email|default:'' }}">
@@ -22,7 +23,7 @@
 
         <div id="ogIntro" class="og-step">
             <div class="og-gift-icon" aria-hidden="true">🎁</div>
-            <p class="og-kicker">Nagradna igra · samo za registrovane</p>
+            <p class="og-kicker">Nagradna igra · unesi email i igraj</p>
             <h2 id="ogTitle" class="og-title">{{ online_gift.naslov }}</h2>
             {% if online_gift.poruka %}
             <p class="og-text" id="ogPoruka">{{ online_gift.poruka }}</p>
@@ -30,19 +31,28 @@
             <p class="og-text" id="ogPoruka" hidden></p>
             {% endif %}
             <p class="og-choice-hint" id="ogChoiceHint">
-                {% if online_gift.requires_registration %}
-                Registrujte se da biste mogli igrati nagradnu igru.
-                {% else %}
-                Ti biraš — možeš odigrati ili zatvoriti.
-                {% endif %}
+                Unesite email da biste igrali — nije potrebna aktivacija naloga.
             </p>
-            <div id="ogRegisterGate" class="og-register-gate"{% if not online_gift.requires_registration %} hidden{% endif %}>
+            <div id="ogRegisterGate" class="og-register-gate" hidden>
                 <p class="og-register-msg">Nagradna igra je dostupna samo registrovanim kupcima.</p>
                 <a href="{% url 'register' %}" class="og-btn og-btn-main" id="ogRegisterBtn">
                     Registruj se i igraj
                 </a>
             </div>
-            <div id="ogPlayGate"{% if online_gift.requires_registration %} hidden{% endif %}>
+            <div id="ogPlayGate">
+                <label class="og-email-label" for="ogEmailInput">
+                    Email
+                    <input type="email"
+                           id="ogEmailInput"
+                           class="og-email-input"
+                           name="email"
+                           autocomplete="email"
+                           inputmode="email"
+                           placeholder="vas@email.com"
+                           value="{{ online_gift.user_email|default:'' }}"
+                           {% if not online_gift.requires_email and online_gift.user_email %}readonly{% endif %}>
+                </label>
+                <p class="og-email-hint" id="ogEmailHint">Samo za kontakt oko nagrade — bez aktivacije.</p>
                 <button type="button" class="og-btn og-btn-main" id="ogRevealBtn">
                     Da, igraj
                 </button>

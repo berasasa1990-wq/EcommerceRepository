@@ -2,7 +2,6 @@
     'use strict';
 
     var BUNDLE_TIP = 'bundle';
-    var GRATIS_TIP = 'gratis';
     var QTY_DEAL_TIP = 'qty_deal';
 
     // Dozvoljena polja za Pop-up bundle
@@ -23,7 +22,6 @@
         ponovo_poslije_dana: 1,
     };
 
-    // Nikad za bundle (ostale vrste akcija)
     var BUNDLE_FORBIDDEN = [
         'slika',
         'preview_slika',
@@ -36,26 +34,7 @@
         'link_dugmeta',
     ];
 
-    var GRATIS_FIELDS = {
-        naziv: 1,
-        tip: 1,
-        aktivan: 1,
-        redoslijed: 1,
-        artikal: 1,
-        gratis_artikal: 1,
-        popust_postotak: 1,
-        gratis_popup: 1,
-        tekst_dugmeta: 1,
-        boja_dugmeta: 1,
-        boja_opisa: 1,
-        popup_delay_seconds: 1,
-        za_prijavljene: 1,
-        za_neprijavljene: 1,
-        ponovo_poslije_dana: 1,
-    };
-
     // Kupi više (količinski %): artikal + polja 2/3/4/5/6 kom → %
-    // Bez popup_delay — prikaz samo na stranici artikla, ne nakon kašnjenja širom sajta
     var QTY_DEAL_FIELDS = {
         naziv: 1,
         tip: 1,
@@ -159,10 +138,8 @@
     function toggleAkcijaFields() {
         var tip = tipVal();
         var isBundle = tip === BUNDLE_TIP;
-        var isGratis = tip === GRATIS_TIP;
         var isQtyDeal = tip === QTY_DEAL_TIP;
         var trigger = triggerVal();
-        var showGratisPopup = isGratis && $('#id_gratis_popup').is(':checked');
 
         $('#content-main .form-row, #akcija_form .form-row, form .aligned .form-row').each(
             function () {
@@ -177,53 +154,20 @@
                     return;
                 }
 
-                if (isGratis) {
-                    var gShow = !!GRATIS_FIELDS[name];
-                    if (
-                        name === 'popup_delay_seconds' ||
-                        name === 'za_prijavljene' ||
-                        name === 'za_neprijavljene' ||
-                        name === 'ponovo_poslije_dana' ||
-                        name === 'tekst_dugmeta' ||
-                        name === 'boja_dugmeta' ||
-                        name === 'boja_opisa'
-                    ) {
-                        gShow = showGratisPopup;
-                    }
-                    if (
-                        name === 'bundle_artikli' ||
-                        name === 'bundle_trigger'
-                    ) {
-                        gShow = false;
-                    }
-                    setVisible($row, gShow);
-                    return;
-                }
-
                 if (isQtyDeal) {
                     setVisible($row, !!QTY_DEAL_FIELDS[name]);
                     return;
                 }
 
-                if (
-                    name === 'bundle_artikli' ||
-                    name === 'bundle_trigger' ||
-                    name === 'gratis_artikal' ||
-                    name === 'gratis_popup'
-                ) {
-                    setVisible($row, false);
-                    return;
-                }
-                setVisible($row, true);
+                // Nepoznat tip — sakrij sve osim osnovnih
+                setVisible($row, name === 'naziv' || name === 'tip' || name === 'aktivan' || name === 'redoslijed');
             },
         );
 
         var $bundleInline = findInline('bundle_line', 'akcija-inline-bundle-lines');
-        // Stari qty-tier inline (ako postoji u kešu) — sakrij uvijek
         var $qtyInline = findInline('qty_tier', 'akcija-inline-qty-tiers');
         $qtyInline.hide();
 
-        // Fieldset „Kupi više — količina i popust”
         var $qtyFieldset = $('fieldset').filter(function () {
             var t = $(this).find('h2, .fieldset-heading, legend').first().text() || '';
             return t.toLowerCase().indexOf('kupi više') !== -1 || t.toLowerCase().indexOf('kolicina') !== -1;
@@ -265,16 +209,8 @@
             hideField('bundle_artikli');
             hideField('bundle_trigger');
             hideField('popust_postotak');
-            hideField('gratis_artikal');
-            hideField('gratis_popup');
             hideField('kategorija');
-            hideField('slika');
-            hideField('preview_slika');
-            hideField('prag_korpe_km');
-            hideField('deal_vrsta');
-            hideField('pocetak');
-            hideField('trajanje_sati');
-            hideField('link_dugmeta');
+            hideField('popup_delay_seconds');
             showField('artikal');
             showField('qty_2_popust');
             showField('qty_3_popust');
@@ -284,7 +220,6 @@
             showField('tekst_dugmeta');
             showField('boja_dugmeta');
             showField('boja_opisa');
-            showField('popup_delay_seconds');
             showField('za_prijavljene');
             showField('za_neprijavljene');
             showField('ponovo_poslije_dana');
@@ -295,7 +230,6 @@
             $bundleInline.hide();
             $qtyFieldset.show().css('display', '');
             $qtyFieldset.find('.form-row').show();
-            // Highlight polja da se odmah vide
             if (!$qtyFieldset.data('qty-hinted')) {
                 $qtyFieldset.css('outline', '2px solid #5BB805');
                 window.setTimeout(function () {
@@ -319,9 +253,6 @@
         $(document)
             .off('change.akcijaBundle', '#id_tip')
             .on('change.akcijaBundle', '#id_tip', toggleAkcijaFields);
-        $(document)
-            .off('change.akcijaBundle', '#id_gratis_popup')
-            .on('change.akcijaBundle', '#id_gratis_popup', toggleAkcijaFields);
         $(document)
             .off('change.akcijaBundle', '#id_bundle_trigger')
             .on('change.akcijaBundle', '#id_bundle_trigger', toggleAkcijaFields);

@@ -715,6 +715,12 @@
         const keepNavigation = options && options.keepNavigation;
         const dismissUrl = (activeOffer && activeOffer.dismiss_url) || '/ponuda/zatvori/';
         try {
+            const body = new URLSearchParams();
+            body.set('csrfmiddlewaretoken', readCsrfToken());
+            // Samo trenutna ponuda — ostale artikal-ponude ostaju u redu
+            if (activeOffer && activeOffer.offer_id) {
+                body.set('offer_id', String(activeOffer.offer_id));
+            }
             await fetch(dismissUrl, {
                 method: 'POST',
                 headers: {
@@ -722,7 +728,7 @@
                     'X-Requested-With': 'XMLHttpRequest',
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'csrfmiddlewaretoken=' + encodeURIComponent(readCsrfToken()),
+                body: body.toString(),
             });
         } catch (err) {
             /* ignore */

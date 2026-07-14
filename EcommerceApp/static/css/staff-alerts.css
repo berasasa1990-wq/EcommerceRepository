@@ -114,6 +114,11 @@
     color: #15803d;
 }
 
+.staff-alert-toast--offer .staff-alert-toast__tip {
+    background: #fef3c7;
+    color: #b45309;
+}
+
 .staff-alert-toast--online {
     border-color: #93c5fd;
 }
@@ -163,6 +168,11 @@
 .staff-alert-toast--purchase {
     border-color: #86efac;
     box-shadow: 0 12px 32px rgba(22, 163, 74, 0.18);
+}
+
+.staff-alert-toast--offer {
+    border-color: #fcd34d;
+    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.2);
 }
 
 .staff-alert-toast__title {

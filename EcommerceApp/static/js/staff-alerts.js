@@ -85,6 +85,7 @@
         if (tip === 'cart') return 'Korpa';
         if (tip === 'register') return 'Registracija';
         if (tip === 'purchase') return 'Kupovina';
+        if (tip === 'offer') return 'Prihvaćena ponuda';
         return 'Obavijest';
     }
 
@@ -381,8 +382,8 @@
             showOrderCelebration(event);
         }
 
-        // Na uživo analitici ne prikazuj sitne toast-e
-        if (quietMode) {
+        // Na uživo analitici: samo AI/ponude + kupovine (ne online spam)
+        if (quietMode && tip !== 'offer' && tip !== 'purchase') {
             return;
         }
 

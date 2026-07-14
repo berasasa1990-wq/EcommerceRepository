@@ -80,8 +80,11 @@ def nav_categories(request):
 
     cart = Cart(request)
     popup_queue = []
-    for akcija in Akcija.objects.filter(aktivan=True).select_related(
-        'artikal', 'artikal__brend', 'gratis_artikal', 'kategorija',
+    for akcija in Akcija.objects.filter(
+        aktivan=True,
+        tip__in=Akcija.ACTIVE_TIPS,
+    ).select_related(
+        'artikal', 'artikal__brend', 'kategorija',
     ).prefetch_related(
         'bundle_artikli',
         'bundle_lines__product',
@@ -109,6 +112,13 @@ def nav_categories(request):
         None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
     )
 
+    # AI dwell flash — snizene cijene u sesiji (početna / kartice)
+    try:
+        from .live_visitor_offer import get_all_active_dwell_flashes
+        dwell_flash_by_id = get_all_active_dwell_flashes(request)
+    except Exception:
+        dwell_flash_by_id = {}
+
     return {
         'site_url': settings.SITE_URL,
         'nav_categories': categories,
@@ -130,4 +140,5 @@ def nav_categories(request):
         'contact_viber_url': _viber_contact_url(contact_phone),
         'contact_messenger_url': _messenger_contact_url(messenger_page),
         'social_proof': build_social_proof_context(request),
+        'dwell_flash_by_id': dwell_flash_by_id,
     }
