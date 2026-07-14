@@ -1,140 +1,152 @@
 """
-Virtuelni ribolovački savjetnik — vođeni chat:
+Ribolovački savjetnik — razgovor s iskusnim ribolovcem.
+Cilj: 30–60 s, malo pitanja, setovi iz admina.
 
-  Koja oprema? → Feeder / Šaranska / Varaličarska
-    → šta tražiš? (štap / mašinica / najlon / hranilice…)
-      → štap|mašinica → budžet → preporuka
-      → najlon → debljina (mm) → preporuka
-      → hranilice → gramaža (g) → preporuka
-
-Pravila štap/mašinica:
-  Šaran: mašinice 6000+; štapovi 3 / 3,25 / 3,5 lb
-  Varalica: štapovi 2,4 / 2,7 / 3 m; mašinice 3000 / 4000 / 4500
-  Feeder: feeder štapovi i mašinice
+Tok:
+  welcome → experience → fish → water → budget
+  → [samo iskusan] technique
+  → kit_level → owned → results
+  → accessories / single-item / again
 """
 from __future__ import annotations
 
-import re
 from decimal import Decimal, InvalidOperation
 
-from django.db.models import Q
+from django.db.models import Q, Prefetch
+from django.urls import reverse
 
-from .models import Product
+from .models import Category, Product
 
-BUDGET_OPTIONS = (
-    (100, 'Do 100 KM'),
-    (200, 'Do 200 KM'),
-    (300, 'Do 300 KM'),
-    (500, 'Do 500 KM'),
-)
+# ─── Opcije ────────────────────────────────────────────────────────
 
-# Debljina najlona (mm)
-LINE_DIAMETERS = (
-    ('0.10', '0,10 mm'),
-    ('0.12', '0,12 mm'),
-    ('0.14', '0,14 mm'),
-    ('0.16', '0,16 mm'),
-    ('0.18', '0,18 mm'),
-    ('0.20', '0,20 mm'),
-    ('0.22', '0,22 mm'),
-    ('0.25', '0,25 mm'),
-    ('0.28', '0,28 mm'),
-    ('0.30', '0,30 mm'),
-)
-
-# Gramaža hranilica
-FEEDER_WEIGHTS = (
-    (20, '20 g'),
-    (30, '30 g'),
-    (40, '40 g'),
-    (45, '45 g'),
-    (50, '50 g'),
-    (60, '60 g'),
-    (80, '80 g'),
-    (100, '100 g'),
-    (150, '150 g'),
-)
-
-STYLES = {
-    'feeder': {
-        'label': 'Feeder oprema',
-        'short': 'Feeder',
-        'emoji': '🎣',
-        'intro': 'Feeder oprema — hranilica, precizan rad, puno pečenja.',
-        'items': ('stap', 'masinica', 'najlon', 'hranilice'),
-        'rod_note': 'Feeder štapovi (feeder / method / picker).',
-        'reel_note': 'Feeder mašinice (match / feeder reel).',
+EXPERIENCE = {
+    'prvi': {
+        'label': 'Prvi put kupujem opremu',
+        'emoji': '🟢',
+        'level': 'beginner',
     },
-    'saran': {
-        'label': 'Šaranska oprema',
-        'short': 'Šaran',
-        'emoji': '🐟',
-        'intro': 'Šaranska oprema — jači štapovi (lb) i veće mašinice.',
-        'items': ('stap', 'masinica', 'najlon', 'hranilice'),
-        'rod_note': 'Štapovi 3 lb / 3,25 lb / 3,5 lb.',
-        'reel_note': 'Mašinice veličine 6000 i više.',
+    'povremeno': {
+        'label': 'Lovim povremeno',
+        'emoji': '🔵',
+        'level': 'mid',
     },
-    'varalica': {
-        'label': 'Varaličarska oprema',
-        'short': 'Varalica',
-        'emoji': '🌀',
-        'intro': 'Varaličarska oprema — spinning štapovi i manje mašinice.',
-        'items': ('stap', 'masinica', 'najlon'),
-        'rod_note': 'Štapovi 2,4 m / 2,7 m / 3 m.',
-        'reel_note': 'Mašinice 3000 / 4000 / 4500 (ovisno o dužini).',
+    'iskusan': {
+        'label': 'Iskusan sam ribolovac',
+        'emoji': '🔴',
+        'level': 'pro',
     },
 }
 
-ITEM_TYPES = {
+FISH = {
+    'saran': {'label': 'Šaran', 'emoji': '🐟', 'codes': ('saran',)},
+    'som': {'label': 'Som', 'emoji': '🐟', 'codes': ('som',)},
+    'stuka': {'label': 'Štuka', 'emoji': '🐟', 'codes': ('stuka',)},
+    'smud': {'label': 'Smuđ', 'emoji': '🐟', 'codes': ('smud', 'stuka')},
+    'pastrmka': {'label': 'Pastrmka', 'emoji': '🐟', 'codes': ('pastrmka',)},
+    'bijela': {'label': 'Bijela riba', 'emoji': '🐟', 'codes': ('bijela',)},
+    'vise': {'label': 'Više vrsta ribe', 'emoji': '🐟', 'codes': ('saran', 'bijela', 'stuka')},
+}
+
+WATER = {
+    'jezero': {'label': 'Jezero', 'emoji': '🏞'},
+    'rijeka': {'label': 'Rijeka', 'emoji': '🌊'},
+    'bara': {'label': 'Bara', 'emoji': '🟤'},
+    'camac': {'label': 'Čamac', 'emoji': '🚤'},
+    'sve': {'label': 'Sve pomalo', 'emoji': '❓'},
+}
+
+BUDGET = {
+    '80': {'label': 'Do 80 KM', 'emoji': '💰', 'max': Decimal('80')},
+    '150': {'label': 'Do 150 KM', 'emoji': '💰', 'max': Decimal('150')},
+    '250': {'label': 'Do 250 KM', 'emoji': '💰', 'max': Decimal('250')},
+    '250plus': {'label': 'Preko 250 KM', 'emoji': '💰', 'max': Decimal('9999')},
+}
+
+TECHNIQUE = {
+    'teleskop': {'label': 'Teleskopski štap', 'emoji': '🎣'},
+    'feeder': {'label': 'Feeder', 'emoji': '🎣'},
+    'saran_tech': {'label': 'Šaran', 'emoji': '🎣'},
+    'varalica': {'label': 'Varaličarenje', 'emoji': '🎣'},
+    'som_tech': {'label': 'Som', 'emoji': '🎣'},
+    'plovak': {'label': 'Plovak', 'emoji': '🎣'},
+    'ne_znam': {'label': 'Ne znam', 'emoji': '🎣'},
+}
+
+KIT_LEVEL = {
+    'osnovni': {'label': 'Samo osnovni komplet', 'emoji': '✅', 'tier': 1},
+    'pribor': {'label': 'Komplet sa priborom', 'emoji': '✅', 'tier': 2},
+    'profesionalno': {'label': 'Profesionalnu opremu', 'emoji': '✅', 'tier': 3},
+}
+
+OWNED = {
+    'nista': {'label': 'Nemam ništa', 'emoji': ''},
+    'stap': {'label': 'Imam štap', 'emoji': ''},
+    'masinica': {'label': 'Imam mašinicu', 'emoji': ''},
+    'skoro_sve': {'label': 'Imam skoro sve', 'emoji': ''},
+}
+
+SINGLE_ITEMS = {
     'stap': {
         'label': 'Štap',
-        'emoji': '🥢',
-        'needs': 'budget',
+        'emoji': '🎣',
+        'slugs': ('feeder-stapovi', 'stapovi-za-varalicu', 'stapovi'),
+        'names': ('štap', 'stap', 'rod'),
+        'keywords': ('štap', 'stap', 'rod'),
     },
     'masinica': {
-        'label': 'Mašinica',
-        'emoji': '⚙️',
-        'needs': 'budget',
+        'label': 'Mašinicu',
+        'emoji': '⚙',
+        'slugs': ('masinice', 'mašinice'),
+        'names': ('mašin', 'masin', 'reel'),
+        'keywords': ('reel', 'mašin', 'masin', 'eos'),
     },
     'najlon': {
         'label': 'Najlon',
         'emoji': '🧵',
-        'needs': 'diameter',
+        'slugs': ('najloni', 'najlon'),
+        'names': ('najlon', 'mono'),
+        'keywords': ('najlon', 'mono', 'micron'),
     },
-    'hranilice': {
-        'label': 'Hranilice',
-        'emoji': '⚖️',
-        'needs': 'weight',
+    'udice': {
+        'label': 'Udice',
+        'emoji': '🪝',
+        'slugs': (
+            'udice-za-ribolov', 'saranske-udice', 'feeder-udice',
+            'udice-za-bjelu-ribu', 'udice-za-soma',
+        ),
+        'names': ('udic',),
+        'keywords': ('udica', 'udice', 'hook'),
+    },
+    'varalice': {
+        'label': 'Varalice',
+        'emoji': '🎯',
+        'slugs': ('varalice', 'virble-i-kopce'),
+        'names': ('varalic', 'wobbl'),
+        'keywords': ('varalic', 'softbait', 'wobbl', 'jig', 'rage'),
+    },
+    'ostalo': {
+        'label': 'Ostalu opremu',
+        'emoji': '🧰',
+        'slugs': (),
+        'names': (),
+        'keywords': (),
+        'url_home': True,
     },
 }
 
-ROD_KEYWORDS = (
-    'štap', 'stap', 'rod', 'casting', 'spinning rod', 'feeder rod',
-    'carp rod', 'picker', 'match rod', 'spinn', 'h-cast', 'h cast',
+# Cross-sell pribor (keyword matching)
+ACCESSORIES = (
+    {'id': 'stolica', 'label': 'Stolica', 'keywords': ('stolic', 'chair', 'seat box')},
+    {'id': 'suncobran', 'label': 'Suncobran', 'keywords': ('suncobran', 'umbrella', 'brolly')},
+    {'id': 'torba', 'label': 'Torba', 'keywords': ('torba', 'bag', 'rucksack', 'carryall')},
+    {'id': 'hranilice', 'label': 'Hranilice', 'keywords': ('hranil', 'method feeder', 'cage feeder', 'feeder medium', 'feeder large')},
+    {'id': 'signalizatori', 'label': 'Signalizatori', 'keywords': ('signaliz', 'swinger', 'alarm', 'bite')},
+    {'id': 'cuvarica', 'label': 'Čuvarica', 'keywords': ('čuvar', 'cuvar', 'keepnet', 'sak')},
+    {'id': 'podmetac', 'label': 'Podmetač', 'keywords': ('podmeta', 'unhooking', 'mat')},
+    {'id': 'varalice', 'label': 'Varalice', 'keywords': ('varalic', 'softbait', 'wobbl', 'jig')},
+    {'id': 'najlon', 'label': 'Najlon', 'keywords': ('najlon', 'mono', 'micron', 'fluoro')},
+    {'id': 'spula', 'label': 'Rezervna špula', 'keywords': ('špul', 'spul', 'spool')},
 )
-REEL_KEYWORDS = (
-    'mašin', 'masin', 'reel', 'navijač', 'navijac', 'baitrunner',
-    'spool', 'eos',
-)
-LINE_KEYWORDS = (
-    'najlon', 'mono', 'monofilament', 'micron', 'sinking', 'fluorocarbon',
-    'fluoro', 'line', 'pletenica', 'braid', 'špag', 'spag',
-)
-FEEDER_CAGE_KEYWORDS = (
-    'method feeder', 'open method', 'hranil', 'cage feeder', 'pellet feeder',
-    'alloy method', 'inline method', 'banjo', 'flat method', 'feeder medium',
-    'feeder large', 'feeder small', 'gfr',
-)
-
-SARAN_ROD_LB = (3.0, 3.25, 3.5)
-SARAN_REEL_MIN = 6000
-VARALICA_ROD_LENGTHS = (2.4, 2.7, 3.0)
-VARALICA_REEL_BY_LENGTH = {
-    2.4: (3000,),
-    2.7: (4000,),
-    3.0: (4500, 4000),
-}
-VARALICA_REEL_SIZES = (3000, 4000, 4500)
 
 
 def _dec(val):
@@ -151,21 +163,6 @@ def _product_price(product):
         return _dec(getattr(product, 'cijena', 0))
 
 
-def _product_name(product):
-    return (getattr(product, 'naziv', '') or '').lower()
-
-
-def _product_text(product):
-    parts = [
-        getattr(product, 'naziv', '') or '',
-        getattr(product, 'opis', '') or '',
-    ]
-    brend = getattr(product, 'brend', None)
-    if brend is not None:
-        parts.append(getattr(brend, 'naziv', '') or '')
-    return ' '.join(parts).lower()
-
-
 def _product_image_url(product, request=None):
     img = getattr(product, 'slika', None)
     if img:
@@ -179,12 +176,14 @@ def _product_image_url(product, request=None):
     return ''
 
 
-def _serialize_product(product, request=None, role='', note=''):
+def _serialize_product(product, request=None, role='', note='', quantity=1):
     price = _product_price(product)
-    in_stock = bool(getattr(product, 'na_stanju', True))
+    name = product.naziv
+    if quantity and quantity > 1:
+        name = f'{name} ×{quantity}'
     return {
         'id': product.pk,
-        'name': product.naziv,
+        'name': name,
         'slug': product.slug,
         'url': product.get_absolute_url(),
         'price': str(price.quantize(Decimal('0.01'))),
@@ -192,19 +191,55 @@ def _serialize_product(product, request=None, role='', note=''):
         'image': _product_image_url(product, request),
         'role': role,
         'note': note,
-        'in_stock': in_stock,
+        'quantity': quantity,
+        'in_stock': bool(getattr(product, 'na_stanju', True)),
     }
 
 
-def _base_qs(require_stock=True):
+def _opts(mapping):
+    return [
+        {
+            'id': k,
+            'label': f'{v["emoji"]} {v["label"]}'.strip() if v.get('emoji') else v['label'],
+        }
+        for k, v in mapping.items()
+    ]
+
+
+def _find_categories(slugs=(), name_parts=()):
+    q = Q()
+    for s in slugs or ():
+        q |= Q(slug__iexact=s) | Q(slug__icontains=s)
+    for n in name_parts or ():
+        q |= Q(naziv__icontains=n)
+    if not q:
+        return []
+    cats = list(Category.objects.filter(q))
+    if not cats:
+        return []
+    parent_ids = [c.pk for c in cats]
+    children = list(Category.objects.filter(roditelj_id__in=parent_ids))
+    by_id = {c.pk: c for c in cats + children}
+    return list(by_id.values())
+
+
+def _category_url(cats, fallback_q=''):
+    if cats:
+        try:
+            return cats[0].get_absolute_url()
+        except Exception:
+            pass
+    if fallback_q:
+        from urllib.parse import quote
+        return reverse('home') + f'?q={quote(fallback_q)}'
+    return reverse('home')
+
+
+def _base_qs(require_stock=False):
     qs = (
         Product.objects.filter(aktivan=True)
         .exclude(naziv__icontains='gift card')
-        .exclude(naziv__icontains='poklon')
-        .exclude(naziv__icontains='vaučer')
-        .exclude(naziv__icontains='vaucer')
         .exclude(naziv__icontains='testni')
-        .exclude(naziv__icontains='test artikal')
         .select_related('brend', 'kategorija')
     )
     if require_stock:
@@ -214,558 +249,212 @@ def _base_qs(require_stock=True):
 
 def _keyword_q(keywords):
     q = Q()
-    for kw in keywords:
+    for kw in keywords or ():
         q |= Q(naziv__icontains=kw) | Q(opis__icontains=kw)
         q |= Q(brend__naziv__icontains=kw)
     return q
 
 
-def _is_noise_product(text):
-    noise = (
-        'udica', 'udice', 'hook', 'trokuk', 'glove', 'rukavic', 'elastic',
-        'meredov', 'landing net', 'feeder link', 'snap', 'kopča', 'kopca',
-        'virbl', 'swivel', 'assist cord', 'shot', 'disgorger', 'catapult',
-        'mould', 'boilies', 'kuka', 'spoon-', 'tackle system', 'tackle box',
-    )
-    return any(n in text for n in noise)
-
-
-def _nearest(value, targets, tol=0.15):
-    for t in targets:
-        if abs(value - t) <= max(tol, t * 0.06):
-            return t
-    return None
-
-
-def _parse_lb(text):
-    found = []
-    for m in re.finditer(r'(\d+(?:[.,]\d+)?)\s*lb\b', text, re.I):
-        try:
-            found.append(float(m.group(1).replace(',', '.')))
-        except ValueError:
-            continue
-    return found
-
-
-def _parse_length_m(text):
-    found = []
-    for m in re.finditer(r'(\d+(?:[.,]\d+)?)\s*m\b', text, re.I):
-        try:
-            v = float(m.group(1).replace(',', '.'))
-        except ValueError:
-            continue
-        if 1.5 <= v <= 5.0:
-            found.append(v)
-    for m in re.finditer(r'(\d{3})\s*cm\b', text, re.I):
-        try:
-            v = int(m.group(1)) / 100.0
-        except ValueError:
-            continue
-        if 1.5 <= v <= 5.0:
-            found.append(v)
-    return found
-
-
-def _parse_mm(text):
-    found = []
-    for m in re.finditer(r'(\d+[.,]\d+)\s*mm\b', text, re.I):
-        try:
-            found.append(float(m.group(1).replace(',', '.')))
-        except ValueError:
-            continue
-    # npr. 0.16 bez mm u Power Micron X 0.16mm već uhvaćeno; fallback 0.16 u nazivu
-    for m in re.finditer(r'\b0[.,](\d{2})\b', text):
-        try:
-            found.append(float('0.' + m.group(1)))
-        except ValueError:
-            continue
-    return found
-
-
-def _parse_grams(text):
-    found = []
-    for m in re.finditer(r'(\d+(?:[.,]\d+)?)\s*g\b', text, re.I):
-        try:
-            found.append(float(m.group(1).replace(',', '.')))
-        except ValueError:
-            continue
-    return found
-
-
-def _looks_like_rod(text, name_only=''):
-    check = name_only or text
-    if _is_noise_product(check):
-        return False
-    if re.search(r'\b(reel|mašinica|masinica|navijač|navijac|baitrunner)\b', check):
-        if not re.search(r'\b(rod|štap|stap)\b', check):
-            return False
-    if re.search(
-        r'\b(rod|štap|stap|picker|feeder rod|carp rod|spinning rod|match rod|'
-        r'h-cast|h cast|spin rod)\b',
-        check,
-    ):
-        return True
-    lbs = _parse_lb(check)
-    if lbs and any(2.5 <= lb <= 4.0 for lb in lbs):
-        if any(k in check for k in ('carp', 'šaran', 'saran', 'rod', 'štap', 'stap')):
-            return True
-    lengths = _parse_length_m(check)
-    if lengths and any(k in check for k in ('feeder', 'cast', 'spin', 'carp', 'picker')):
-        return True
-    return False
-
-
-def _looks_like_reel(text, name_only=''):
-    check = name_only or text
-    if _is_noise_product(check):
-        return False
-    if not re.search(
-        r'\b(reel|mašin|masin|navijač|navijac|baitrunner|big pit)\b',
-        check,
-    ) and 'eos' not in check:
-        return False
-    if re.search(r'\b(rod|štap)\b', check) and not re.search(r'\b(reel|mašin|masin)\b', check):
-        return False
-    return True
-
-
-def _looks_like_line(text, name_only=''):
-    check = name_only or text
-    if _is_noise_product(check) and 'najlon' not in check and 'mono' not in check:
-        # dozvoli mono/najlon čak i ako ima "elastic" u opisu rijetko
-        pass
-    if any(k in check for k in ('elastic', 'glove', 'udica', 'hook', 'feeder link')):
-        return False
-    return any(k in check for k in (
-        'najlon', 'mono', 'monofilament', 'micron', 'fluorocarbon', 'fluoro',
-        'sinking mono', 'power micron', 'braid', 'pleten',
-    )) or (bool(_parse_mm(check)) and any(k in check for k in ('line', 'mm', 'lb')))
-
-
-def _looks_like_feeder_cage(text, name_only=''):
-    check = name_only or text
-    if any(k in check for k in ('feeder link', 'feeder bead', 'tackle box', 'rod', 'štap', 'reel')):
-        return False
-    if any(k in check for k in (
-        'method feeder', 'open method', 'hranil', 'cage feeder', 'pellet feeder',
-        'alloy method', 'alloy open', 'banjo', 'flat method',
-    )):
-        return True
-    # "Feeder Medium 40g" stil
-    if 'feeder' in check and _parse_grams(check) and not re.search(r'\b(rod|štap|3m|150g)\b', check):
-        # 150g na štapu — izbjegni; 40g na hranilici ok
-        grams = _parse_grams(check)
-        if any(10 <= g <= 200 for g in grams) and 'rod' not in check and 'štap' not in check:
-            if re.search(r'\b(method|open|cage|inline|medium|large|small|gfr)\b', check):
-                return True
-    return False
-
-
-def _parse_reel_size(text, name_only=''):
-    check = name_only or text
-    if not _looks_like_reel(check) and 'eos' not in check:
+def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
+    """Setovi iz admina za vrstu ribe, filtrirani budžetom."""
+    try:
+        from .models import AdvisorBeginnerFishType, AdvisorBeginnerSet
+    except Exception:
         return []
-    sizes = []
-    patterns = (
-        r'(?:eos|size|sz|reel|mašin\w*|masin\w*)\s*([1-9]\d{3,4})\b',
-        r'\b([1-9]\d{3,4})\b',
+
+    fish = FISH.get(fish_key) or FISH['saran']
+    codes = list(fish.get('codes') or (fish_key,))
+    # direktan code ili mapirani
+    codes = list(dict.fromkeys([fish_key] + list(codes)))
+
+    fish_types = list(
+        AdvisorBeginnerFishType.objects
+        .filter(aktivan=True, code__in=codes)
+        .prefetch_related(
+            Prefetch(
+                'setovi',
+                queryset=AdvisorBeginnerSet.objects
+                .filter(aktivan=True)
+                .prefetch_related('stavke__product')
+                .order_by('redoslijed', 'id'),
+            ),
+        )
+        .order_by('redoslijed')
     )
-    typical = {
-        2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 7000, 8000, 10000, 12000, 14000,
-    }
-    for pat in patterns:
-        for m in re.finditer(pat, check, re.I):
-            try:
-                n = int(m.group(1))
-            except ValueError:
+    if not fish_types:
+        # bilo koji aktivan tip s kodom
+        fish_types = list(
+            AdvisorBeginnerFishType.objects
+            .filter(aktivan=True)
+            .prefetch_related('setovi__stavke__product')
+            .order_by('redoslijed')[:1]
+        )
+
+    kits = []
+    for ft in fish_types:
+        for s in ft.setovi.all():
+            stavke = [
+                it for it in s.stavke.all()
+                if it.product_id and getattr(it.product, 'aktivan', False)
+            ]
+            if not stavke:
                 continue
-            if n in typical or (1000 <= n <= 20000 and n % 500 == 0):
-                sizes.append(n)
-    return list(dict.fromkeys(sizes))
+            reg = s.regularni_iznos()
+            sale = s.snizeni_iznos()
+            if budget_max is not None and sale > budget_max and budget_max < Decimal('9000'):
+                # blaga tolerancija 15%
+                if sale > budget_max * Decimal('1.15'):
+                    continue
+            products = []
+            for item in sorted(stavke, key=lambda x: (x.redoslijed, x.id)):
+                products.append(
+                    _serialize_product(
+                        item.product,
+                        request,
+                        role='komplet',
+                        quantity=int(item.kolicina or 1),
+                    ),
+                )
+            has_disc = s.ima_popust()
+            kits.append({
+                'id': str(s.pk),
+                'db_id': s.pk,
+                'label': s.naziv,
+                'emoji': s.emoji or '🎣',
+                'products': products,
+                'total': str(sale),
+                'total_display': f'{sale} KM'.replace('.', ','),
+                'regular_total': str(reg),
+                'regular_total_display': f'{reg} KM'.replace('.', ','),
+                'discount_percent': float(s.popust_postotak) if has_disc else None,
+                'has_discount': has_disc,
+                'sort_price': sale,
+                'fish_type_name': ft.naziv,
+            })
+
+    kits.sort(key=lambda k: k['sort_price'])
+
+    # kit_tier: uzmi slice (osnovni jeftiniji, pro skuplji)
+    if kit_tier == 1 and len(kits) > 1:
+        kits = kits[: max(1, (len(kits) + 1) // 2)]
+    elif kit_tier == 3 and len(kits) > 1:
+        mid = len(kits) // 3
+        kits = kits[mid:] or kits
+    elif kit_tier == 2 and len(kits) > 2:
+        # sredina
+        n = len(kits)
+        kits = kits[max(0, n // 4): max(1, n - n // 4)] or kits
+
+    return kits[:6]
 
 
-def _score_rod(product, style_key):
-    name = _product_name(product)
-    text = _product_text(product)
-    if not _looks_like_rod(text, name_only=name):
-        return -1, ''
-    score = 10
-    note = 'Štap'
-    if style_key == 'saran':
-        lbs = _parse_lb(text)
-        hit = None
-        for lb in lbs:
-            hit = _nearest(lb, SARAN_ROD_LB, tol=0.2)
-            if hit:
-                break
-        if hit:
-            score += 50
-            note = f'{hit:g} lb — idealno za šarana'
-        elif lbs and any(2.5 <= lb <= 4.0 for lb in lbs):
-            score += 30
-            note = f'{lbs[0]:g} lb (blizu 3–3,5 lb)'
-        elif any(k in text for k in ('carp', 'šaran', 'saran')):
-            score += 22
-            note = 'Šaranski štap'
-        else:
-            score += 5
-            note = 'Štap (za šarana: 3 / 3,25 / 3,5 lb)'
-    elif style_key == 'varalica':
-        lengths = _parse_length_m(text)
-        hit = None
-        for ln in lengths:
-            hit = _nearest(ln, VARALICA_ROD_LENGTHS, tol=0.12)
-            if hit:
-                break
-        if hit:
-            score += 50
-            reel_hint = VARALICA_REEL_BY_LENGTH.get(hit, (4000,))
-            note = f'{hit:g} m — mašinica ~{reel_hint[0]}'
-        elif any(k in text for k in ('spin', 'varalic', 'rage', 'casting', 'cast')):
-            score += 22
-            note = 'Spinning / varalica štap'
-        else:
-            score += 5
-            note = 'Štap (varalica: 2,4 / 2,7 / 3 m)'
-    else:
-        if 'feeder' in text or 'fider' in text:
-            score += 50
-            note = 'Feeder štap'
-        elif 'picker' in text:
-            score += 40
-            note = 'Picker / feeder štap'
-        else:
-            score += 5
-            note = 'Štap (feeder)'
-    return score, note
+def _products_by_keywords(keywords, limit=8, require_stock=False):
+    if not keywords:
+        return []
+    qs = _base_qs(require_stock=require_stock).filter(_keyword_q(keywords))
+    return list(qs.order_by('-na_stanju', '?')[:limit])
 
 
-def _score_reel(product, style_key, preferred_sizes=None):
-    name = _product_name(product)
-    text = _product_text(product)
-    if not _looks_like_reel(text, name_only=name):
-        return -1, ''
-    sizes = _parse_reel_size(text, name_only=name)
-    score = 10
-    note = 'Mašinica'
-    preferred_sizes = preferred_sizes or ()
-    if style_key == 'saran':
-        big = [s for s in sizes if s >= SARAN_REEL_MIN]
-        if big:
-            score += 50
-            note = f'Veličina {max(big)} — 6000+ za šarana'
-        elif sizes:
-            score += 8
-            note = f'Veličina {sizes[0]} (za šarana 6000+)'
-        elif any(k in text for k in ('carp', 'baitrunner', 'big pit')):
-            score += 28
-            note = 'Šaranska / baitrunner mašinica'
-        else:
-            score += 5
-            note = 'Mašinica (šaran: 6000+)'
-    elif style_key == 'varalica':
-        matched = None
-        for s in sizes:
-            if s in VARALICA_REEL_SIZES or 2500 <= s <= 5000:
-                matched = s
-                break
-        if preferred_sizes:
-            for s in sizes:
-                if s in preferred_sizes:
-                    score += 55
-                    note = f'Veličina {s} — uz štap'
-                    break
-            else:
-                if matched:
-                    score += 35
-                    note = f'Veličina {matched} (spinning)'
-        elif matched:
-            score += 45
-            note = f'Veličina {matched} — spinning'
-        else:
-            score += 8
-            note = 'Mašinica (spinning 3000–4500)'
-    else:
-        if 'feeder' in text or 'match' in text:
-            score += 50
-            note = 'Feeder / match mašinica'
-        elif sizes and any(2500 <= s <= 6500 for s in sizes):
-            score += 35
-            note = f'Veličina {sizes[0]} — ok za feeder'
-        else:
-            score += 10
-            note = 'Mašinica (feeder)'
-    return score, note
-
-
-def _score_line(product, diameter_mm):
-    name = _product_name(product)
-    text = _product_text(product)
-    if not _looks_like_line(text, name_only=name):
-        return -1, ''
-    mms = _parse_mm(text)
-    target = float(diameter_mm)
-    score = 10
-    note = 'Najlon'
-    hit = None
-    for mm in mms:
-        if abs(mm - target) <= 0.015:
-            hit = mm
-            break
-        if abs(mm - target) <= 0.03:
-            hit = mm
-    if hit is not None and abs(hit - target) <= 0.015:
-        score += 55
-        note = f'{hit:.2f} mm — tačna debljina'.replace('.', ',')
-    elif hit is not None:
-        score += 30
-        note = f'{hit:.2f} mm — blizu {target:.2f} mm'.replace('.', ',')
-    elif mms:
-        score += 8
-        note = f'{mms[0]:.2f} mm'.replace('.', ',')
-    else:
-        score += 5
-        note = 'Najlon / mono'
-    if getattr(product, 'na_stanju', False):
-        score += 8
-    return score, note
-
-
-def _score_feeder_cage(product, weight_g):
-    name = _product_name(product)
-    text = _product_text(product)
-    if not _looks_like_feeder_cage(text, name_only=name):
-        return -1, ''
-    grams = _parse_grams(text)
-    target = float(weight_g)
-    score = 10
-    note = 'Hranilica'
-    hit = None
-    for g in grams:
-        if abs(g - target) <= 5:
-            hit = g
-            break
-        if abs(g - target) <= 15:
-            hit = g
-    if hit is not None and abs(hit - target) <= 5:
-        score += 55
-        note = f'{int(hit) if hit == int(hit) else hit} g — tražena gramaža'
-    elif hit is not None:
-        score += 28
-        note = f'{int(hit) if hit == int(hit) else hit} g — blizu {int(target)} g'
-    elif grams:
-        score += 10
-        note = f'{int(grams[0])} g'
-    else:
-        score += 5
-    if 'method' in text:
-        score += 8
-    if getattr(product, 'na_stanju', False):
-        score += 8
-    return score, note
-
-
-def _candidate_products(kind, budget=None, require_stock=True, limit_scan=250):
-    kws = {
-        'rod': ROD_KEYWORDS,
-        'reel': REEL_KEYWORDS,
-        'line': LINE_KEYWORDS,
-        'cage': FEEDER_CAGE_KEYWORDS,
-    }.get(kind, ())
-    qs = _base_qs(require_stock=require_stock)
-    if kws:
-        qs = qs.filter(_keyword_q(kws))
+def build_accessory_products(request=None, limit_per=2):
+    """Najčešći pribor uz komplet — po kategorijama/keywordima."""
     out = []
-    for p in qs[:limit_scan]:
-        price = _product_price(p)
-        if budget is not None and (price <= 0 or price > budget):
-            continue
-        out.append(p)
-    if len(out) < 4 and require_stock:
-        # proširi i na rasprodato za prikaz
-        return _candidate_products(kind, budget=budget, require_stock=False, limit_scan=limit_scan)
-    if len(out) < 4:
-        for p in _base_qs(require_stock=False)[:300]:
-            if p.pk in {x.pk for x in out}:
+    seen = set()
+    for acc in ACCESSORIES:
+        items = _products_by_keywords(acc['keywords'], limit=limit_per, require_stock=False)
+        for p in items:
+            if p.pk in seen:
                 continue
-            price = _product_price(p)
-            if budget is not None and (price <= 0 or price > budget):
-                continue
-            name = _product_name(p)
-            text = _product_text(p)
-            ok = False
-            if kind == 'rod':
-                ok = _looks_like_rod(text, name_only=name)
-            elif kind == 'reel':
-                ok = _looks_like_reel(text, name_only=name)
-            elif kind == 'line':
-                ok = _looks_like_line(text, name_only=name)
-            elif kind == 'cage':
-                ok = _looks_like_feeder_cage(text, name_only=name)
-            if ok:
-                out.append(p)
-            if len(out) >= 40:
-                break
+            seen.add(p.pk)
+            out.append(
+                _serialize_product(p, request, role='pribor', note=acc['label']),
+            )
+        if len(out) >= 12:
+            break
     return out
 
 
-def _rank_rods(style_key, budget, limit=5):
-    scored = []
-    for p in _candidate_products('rod', budget=budget, require_stock=True):
-        sc, note = _score_rod(p, style_key)
-        if sc < 0:
-            continue
-        sc += float(min(_product_price(p), budget) / budget) * 5
-        if p.na_stanju:
-            sc += 5
-        scored.append((sc, p, note))
-    if not scored:
-        for p in _candidate_products('rod', budget=budget, require_stock=False):
-            sc, note = _score_rod(p, style_key)
-            if sc < 0:
-                continue
-            scored.append((sc, p, note))
-    scored.sort(key=lambda x: (-x[0], _product_price(x[1])))
-    return scored[:limit]
-
-
-def _rank_reels(style_key, budget, preferred_sizes=None, limit=5):
-    scored = []
-    for p in _candidate_products('reel', budget=budget, require_stock=True):
-        sc, note = _score_reel(p, style_key, preferred_sizes=preferred_sizes)
-        if sc < 0:
-            continue
-        sc += float(min(_product_price(p), budget) / budget) * 5
-        if p.na_stanju:
-            sc += 5
-        scored.append((sc, p, note))
-    if not scored:
-        for p in _candidate_products('reel', budget=budget, require_stock=False):
-            sc, note = _score_reel(p, style_key, preferred_sizes=preferred_sizes)
-            if sc < 0:
-                continue
-            scored.append((sc, p, note))
-    scored.sort(key=lambda x: (-x[0], _product_price(x[1])))
-    return scored[:limit]
-
-
-def _rank_lines(diameter_mm, limit=6):
-    scored = []
-    for p in _candidate_products('line', budget=None, require_stock=False):
-        sc, note = _score_line(p, diameter_mm)
-        if sc < 0:
-            continue
-        scored.append((sc, p, note))
-    scored.sort(key=lambda x: (-x[0], not x[1].na_stanju, _product_price(x[1])))
-    return scored[:limit]
-
-
-def _rank_cages(weight_g, limit=6):
-    scored = []
-    for p in _candidate_products('cage', budget=None, require_stock=False):
-        sc, note = _score_feeder_cage(p, weight_g)
-        if sc < 0:
-            continue
-        scored.append((sc, p, note))
-    scored.sort(key=lambda x: (-x[0], not x[1].na_stanju, _product_price(x[1])))
-    return scored[:limit]
-
-
-def _item_options_for_style(style_key):
-    style = STYLES.get(style_key) or STYLES['feeder']
-    opts = []
-    for key in style['items']:
-        it = ITEM_TYPES[key]
-        opts.append({'id': key, 'label': f'{it["emoji"]} {it["label"]}'})
-    return opts
-
-
-def build_recommendation(style_key, item_key, budget_km=None, diameter=None, weight_g=None, request=None):
-    style = STYLES.get(style_key) or STYLES['feeder']
-    item = ITEM_TYPES.get(item_key) or ITEM_TYPES['stap']
-    products = []
-    tip = ''
-    headline = ''
-
-    if item_key == 'stap':
-        budget = _dec(budget_km or 100)
-        ranked = _rank_rods(style_key, budget, limit=4)
-        for sc, p, note in ranked:
-            products.append(_serialize_product(p, request, role='stap', note=note))
-        tip = style['rod_note']
-        headline = (
-            f'Predloženi štapovi — {style["short"].lower()} do {int(budget)} KM:'
-            if products else
-            f'Nema štapova do {int(budget)} KM za {style["short"].lower()}. {style["rod_note"]}'
-        )
-
-    elif item_key == 'masinica':
-        budget = _dec(budget_km or 100)
-        ranked = _rank_reels(style_key, budget, limit=4)
-        for sc, p, note in ranked:
-            products.append(_serialize_product(p, request, role='masinica', note=note))
-        tip = style['reel_note']
-        headline = (
-            f'Predložene mašinice — {style["short"].lower()} do {int(budget)} KM:'
-            if products else
-            f'Nema mašinica do {int(budget)} KM. {style["reel_note"]}'
-        )
-
-    elif item_key == 'najlon':
-        diam = str(diameter or '0.18')
-        ranked = _rank_lines(diam, limit=6)
-        for sc, p, note in ranked:
-            products.append(_serialize_product(p, request, role='najlon', note=note))
-        tip = f'Tražiš najlon ~{diam.replace(".", ",")} mm.'
-        headline = (
-            f'Najlon / mono oko {diam.replace(".", ",")} mm:'
-            if products else
-            f'Trenutno nema najlona ~{diam.replace(".", ",")} mm u katalogu. '
-            f'Provjeri kasnije ili drugu debljinu.'
-        )
-
-    elif item_key == 'hranilice':
-        w = int(weight_g or 40)
-        ranked = _rank_cages(w, limit=6)
-        for sc, p, note in ranked:
-            products.append(_serialize_product(p, request, role='hranilica', note=note))
-        tip = f'Tražiš hranilice oko {w} g (method / open / cage).'
-        headline = (
-            f'Hranilice oko {w} g:'
-            if products else
-            f'Trenutno nema hranilica ~{w} g. Probaj drugu gramažu.'
-        )
+def build_single_item_rec(item_key, request=None):
+    conf = SINGLE_ITEMS.get(item_key) or SINGLE_ITEMS['ostalo']
+    if conf.get('url_home'):
+        return {
+            'item_label': conf['label'],
+            'category_url': reverse('home'),
+            'products': [],
+            'headline': conf['label'],
+        }
+    cats = _find_categories(conf.get('slugs'), conf.get('names'))
+    qs = _base_qs(require_stock=False)
+    if cats:
+        ids = [c.pk for c in cats]
+        qs = qs.filter(Q(kategorija_id__in=ids) | Q(kategorija__roditelj_id__in=ids))
     else:
-        headline = 'Odaberi šta tražiš.'
-        tip = ''
-
-    total = sum((_dec(p['price']) for p in products), Decimal('0'))
+        qs = qs.filter(_keyword_q(conf.get('keywords')))
+    products = [
+        _serialize_product(p, request, role=item_key)
+        for p in qs.order_by('-na_stanju', 'naziv')[:12]
+    ]
+    kw = (conf.get('keywords') or ('',))[0]
     return {
-        'headline': headline,
-        'tip': tip,
-        'style': style_key,
-        'style_label': style['label'],
-        'item': item_key,
-        'item_label': item['label'],
-        'budget': int(budget_km) if budget_km else None,
-        'diameter': diameter,
-        'weight_g': weight_g,
-        'set_kind': item_key,
+        'item_label': conf['label'],
+        'category_url': _category_url(cats, fallback_q=kw),
+        'category_label': cats[0].naziv if cats else conf['label'],
         'products': products,
-        'total': str(total.quantize(Decimal('0.01'))),
-        'total_display': f'{total.quantize(Decimal("0.01"))} KM'.replace('.', ','),
+        'headline': conf['label'],
+        'total_display': '',
+    }
+
+
+def build_recommendation_from_state(state, request=None):
+    fish_key = state.get('fish') or 'saran'
+    budget_key = state.get('budget') or '150'
+    budget_max = BUDGET.get(budget_key, BUDGET['150'])['max']
+    kit_key = state.get('kit_level') or 'osnovni'
+    tier = KIT_LEVEL.get(kit_key, KIT_LEVEL['osnovni'])['tier']
+    exp = state.get('experience') or 'prvi'
+    level = EXPERIENCE.get(exp, EXPERIENCE['prvi'])['level']
+    technique = state.get('technique') or ''
+
+    # "Ne znam" tehniku → početnički setovi
+    force_beginner = (
+        level == 'beginner'
+        or technique == 'ne_znam'
+        or not technique
+    )
+
+    kits = _kits_from_admin(
+        fish_key,
+        request=request,
+        budget_max=budget_max,
+        kit_tier=tier if force_beginner else (3 if level == 'pro' else tier),
+    )
+
+    # Ako nema admin setova — prazno (admin treba da doda)
+    fish_label = FISH.get(fish_key, {}).get('label', '')
+    if level == 'pro' and technique and technique != 'ne_znam':
+        headline = 'Preporučujem setove prema tvom stilu i budžetu.'
+    else:
+        headline = 'Preporučujem ovaj komplet'
+
+    return {
+        'fish': fish_key,
+        'fish_label': fish_label,
+        'headline': headline,
+        'kits': kits,
+        'products': [p for k in kits for p in k.get('products') or []],
+        'item_label': fish_label or 'Komplet',
+        'style_label': EXPERIENCE.get(exp, {}).get('label', ''),
+        'total_display': kits[0]['total_display'] if kits else '',
+        'from_admin': bool(kits),
+        'budget_key': budget_key,
     }
 
 
 def process_step(step, answer, state=None, request=None):
-    """
-    start → style → item → budget|diameter|weight → done
-    """
     state = dict(state or {})
     answer = (answer or '').strip().lower()
     step = (step or 'start').strip().lower()
 
-    def bot(text, options=None, next_step=None, recommendation=None, done=False):
+    def bot(text, options=None, next_step=None, recommendation=None, done=False, kits=None, extra=None):
         payload = {
             'ok': True,
             'messages': [{'role': 'bot', 'text': text}],
@@ -774,170 +463,318 @@ def process_step(step, answer, state=None, request=None):
             'step': next_step or step,
             'done': done,
         }
-        if recommendation:
+        if recommendation is not None:
             payload['recommendation'] = recommendation
+        if kits is not None:
+            payload['kits'] = kits
+        if extra:
+            payload.update(extra)
         return payload
 
-    def finish_rec(rec):
-        lines = [rec['headline']]
-        if rec.get('tip'):
-            lines.append(f'💡 {rec["tip"]}')
-        for p in rec.get('products') or []:
-            stock = '' if p.get('in_stock') else ' · rasprodato'
-            if p.get('note'):
-                lines.append(f'• {p["note"]}{stock}')
-        if rec.get('products') and rec.get('budget'):
-            lines.append(f'Ukupno u listi: {rec["total_display"]} (budžet do {rec["budget"]} KM).')
-        elif rec.get('products'):
-            lines.append(f'Ukupno u listi: {rec["total_display"]}.')
-        lines.append('Otvori artikle ili kreni ispočetka.')
+    def after_budget_or_technique():
+        """Sljedeći korak nakon budžeta (ili tehnike)."""
         return bot(
-            '\n'.join(lines),
+            'Šta želiš kupiti?',
+            options=_opts(KIT_LEVEL),
+            next_step='kit_level',
+        )
+
+    # ── START / WELCOME ────────────────────────────────────────────
+    if step in ('start', 'reset', ''):
+        state.clear()
+        return bot(
+            '🎣 Pozdrav!\n\n'
+            'Ja sam ribolovački savjetnik.\n'
+            'Pomoći ću ti da za manje od minute pronađeš idealnu opremu.\n\n'
+            'Odgovori na nekoliko kratkih pitanja.',
+            options=[{'id': 'start_go', 'label': '👉 Počni'}],
+            next_step='welcome',
+        )
+
+    if step == 'welcome':
+        return bot(
+            'Koliko iskustva imaš?',
+            options=_opts(EXPERIENCE),
+            next_step='experience',
+        )
+
+    # ── 1 EXPERIENCE ───────────────────────────────────────────────
+    if step == 'experience':
+        if answer not in EXPERIENCE:
+            return bot(
+                'Koliko iskustva imaš?',
+                options=_opts(EXPERIENCE),
+                next_step='experience',
+            )
+        state['experience'] = answer
+        return bot(
+            'Šta najčešće loviš?',
+            options=_opts(FISH),
+            next_step='fish',
+        )
+
+    # ── 2 FISH ─────────────────────────────────────────────────────
+    if step == 'fish':
+        if answer not in FISH:
+            return bot(
+                'Šta najčešće loviš?',
+                options=_opts(FISH),
+                next_step='fish',
+            )
+        state['fish'] = answer
+        return bot(
+            'Gdje najčešće pecaš?',
+            options=_opts(WATER),
+            next_step='water',
+        )
+
+    # ── 3 WATER ────────────────────────────────────────────────────
+    if step == 'water':
+        if answer not in WATER:
+            return bot(
+                'Gdje najčešće pecaš?',
+                options=_opts(WATER),
+                next_step='water',
+            )
+        state['water'] = answer
+        return bot(
+            'Koliki budžet imaš?',
+            options=_opts(BUDGET),
+            next_step='budget',
+        )
+
+    # ── 4 BUDGET ───────────────────────────────────────────────────
+    if step == 'budget':
+        if answer not in BUDGET:
+            return bot(
+                'Koliki budžet imaš?',
+                options=_opts(BUDGET),
+                next_step='budget',
+            )
+        state['budget'] = answer
+        exp = state.get('experience') or 'prvi'
+        # Tehniku pitamo samo iskusne
+        if exp == 'iskusan':
+            return bot(
+                'Koji način ribolova preferiraš?',
+                options=_opts(TECHNIQUE),
+                next_step='technique',
+            )
+        return after_budget_or_technique()
+
+    # ── 5 TECHNIQUE (samo iskusan) ─────────────────────────────────
+    if step == 'technique':
+        if answer not in TECHNIQUE:
+            return bot(
+                'Koji način ribolova preferiraš?',
+                options=_opts(TECHNIQUE),
+                next_step='technique',
+            )
+        state['technique'] = answer
+        return after_budget_or_technique()
+
+    # ── 6 KIT LEVEL ────────────────────────────────────────────────
+    if step == 'kit_level':
+        if answer not in KIT_LEVEL:
+            return bot(
+                'Šta želiš kupiti?',
+                options=_opts(KIT_LEVEL),
+                next_step='kit_level',
+            )
+        state['kit_level'] = answer
+        return bot(
+            'Da li već posjeduješ nešto od opreme?',
+            options=_opts(OWNED),
+            next_step='owned',
+        )
+
+    # ── 7 OWNED → RESULTS ──────────────────────────────────────────
+    if step == 'owned':
+        if answer not in OWNED:
+            return bot(
+                'Da li već posjeduješ nešto od opreme?',
+                options=_opts(OWNED),
+                next_step='owned',
+            )
+        state['owned'] = answer
+        rec = build_recommendation_from_state(state, request=request)
+        kits = rec.get('kits') or []
+
+        text = (
+            'Na osnovu tvojih odgovora pronašao sam opremu koja će ti najviše odgovarati.\n\n'
+        )
+        if kits:
+            text += 'Preporučujem ove komplete:'
+        else:
+            text += (
+                'Još nema setova u adminu za ovu kombinaciju — '
+                'dodaj setove pod „Početnik — vrste ribolova”, '
+                'ili izaberi pojedinačnu opremu.'
+            )
+
+        opts = [
+            {'id': 'no_kit', 'label': 'Ne želim komplet'},
+            {'id': 'accessories_ask', 'label': '✅ Pribor uz komplet'},
+            {'id': 'again', 'label': '🔄 Ispočetka'},
+        ]
+        # prvi set — brzi link ako ima db id
+        if kits and kits[0].get('db_id'):
+            opts.insert(0, {
+                'id': 'view_kit',
+                'label': f'👉 Pogledaj: {kits[0].get("label", "komplet")}',
+            })
+
+        return bot(
+            text,
+            options=opts,
+            next_step='results',
+            recommendation=rec,
+            kits=kits,
+            done=False,
+        )
+
+    # ── RESULTS ACTIONS ────────────────────────────────────────────
+    if step == 'results':
+        if answer == 'view_kit':
+            return bot(
+                'Iznad su artikli kompleta — možeš Kupiti set ili pojedinačno.\n\n'
+                'Da li želiš da ti odmah pokažem najčešće proizvode koje ribolovci kupuju uz ovaj komplet?',
+                options=[
+                    {'id': 'accessories_yes', 'label': 'DA'},
+                    {'id': 'finish', 'label': 'Ne, hvala'},
+                    {'id': 'no_kit', 'label': 'Ne želim komplet'},
+                    {'id': 'again', 'label': '🔄 Ispočetka'},
+                ],
+                next_step='results',
+                recommendation=build_recommendation_from_state(state, request=request),
+                kits=(build_recommendation_from_state(state, request=request).get('kits') or []),
+            )
+
+        if answer in ('accessories_ask', 'accessories_yes'):
+            acc = build_accessory_products(request=request)
+            rec = {
+                'item_label': 'Pribor uz komplet',
+                'products': acc,
+                'kits': [],
+                'headline': 'Pribor',
+                'total_display': '',
+            }
+            return bot(
+                'Evo što ribolovci često uzimaju uz komplet — dodaj u korpu što ti treba:',
+                options=[
+                    {'id': 'finish', 'label': 'Završi'},
+                    {'id': 'more', 'label': '👉 Prikaži još preporuka'},
+                    {'id': 'no_kit', 'label': 'Pojedinačna oprema'},
+                    {'id': 'again', 'label': '🔄 Ispočetka'},
+                ],
+                next_step='post',
+                recommendation=rec,
+            )
+
+        if answer == 'no_kit':
+            return bot(
+                'Nema problema.\nŠta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS),
+                next_step='single',
+            )
+
+        if answer == 'finish':
+            return bot(
+                '🎣 Nadam se da sam pomogao.\n\n'
+                'Ako želiš, mogu ti preporučiti još opreme ili pribor uz odabrani komplet.',
+                options=[
+                    {'id': 'more', 'label': '👉 Prikaži još preporuka'},
+                    {'id': 'accessories_yes', 'label': 'Pribor uz komplet'},
+                    {'id': 'again', 'label': '🔄 Ispočetka'},
+                ],
+                next_step='post',
+            )
+
+        if answer == 'again':
+            state.clear()
+            return process_step('start', '', state, request=request)
+
+        # default keep results
+        rec = build_recommendation_from_state(state, request=request)
+        return bot(
+            'Šta dalje?',
             options=[
-                {'id': 'again', 'label': '🔄 Novi savjet'},
-                {'id': 'catalog', 'label': '📦 Katalog', 'url': '/'},
+                {'id': 'accessories_yes', 'label': 'DA — pribor uz komplet'},
+                {'id': 'no_kit', 'label': 'Ne želim komplet'},
+                {'id': 'finish', 'label': 'Završi'},
+                {'id': 'again', 'label': '🔄 Ispočetka'},
             ],
-            next_step='done',
+            next_step='results',
+            recommendation=rec,
+            kits=rec.get('kits'),
+        )
+
+    # ── SINGLE ITEM (ne želim komplet) ─────────────────────────────
+    if step == 'single':
+        if answer not in SINGLE_ITEMS:
+            return bot(
+                'Šta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS),
+                next_step='single',
+            )
+        rec = build_single_item_rec(answer, request=request)
+        opts = []
+        if rec.get('category_url'):
+            opts.append({
+                'id': 'cat',
+                'label': f'📦 Otvori: {rec.get("category_label") or rec.get("item_label")}',
+                'url': rec['category_url'],
+            })
+        opts.extend([
+            {'id': 'more', 'label': '👉 Prikaži još preporuka'},
+            {'id': 'again', 'label': '🔄 Ispočetka'},
+        ])
+        return bot(
+            rec.get('item_label') or 'Oprema',
+            options=opts,
+            next_step='post',
             recommendation=rec,
             done=True,
         )
 
-    # --- START: odmah stil opreme ---
-    if step in ('start', 'reset', ''):
-        state.clear()
-        return bot(
-            'Zdravo! 🎣 Ja sam tvoj ribolovački savjetnik.\n\n'
-            'Koja ti oprema treba?',
-            options=[
-                {'id': 'feeder', 'label': f'{STYLES["feeder"]["emoji"]} Feeder oprema'},
-                {'id': 'saran', 'label': f'{STYLES["saran"]["emoji"]} Šaranska oprema'},
-                {'id': 'varalica', 'label': f'{STYLES["varalica"]["emoji"]} Varaličarska oprema'},
-            ],
-            next_step='style',
-        )
-
-    # --- STYLE ---
-    if step == 'style':
-        if answer not in STYLES:
+    # ── POST / MORE ────────────────────────────────────────────────
+    if step == 'post':
+        if answer in ('more', 'accessories_yes'):
+            acc = build_accessory_products(request=request)
+            rec = {
+                'item_label': 'Još preporuka',
+                'products': acc,
+                'kits': [],
+                'headline': 'Pribor',
+            }
             return bot(
-                'Odaberi vrstu opreme:',
+                'Još pribora koji se često uzima uz opremu:',
                 options=[
-                    {'id': 'feeder', 'label': f'{STYLES["feeder"]["emoji"]} Feeder oprema'},
-                    {'id': 'saran', 'label': f'{STYLES["saran"]["emoji"]} Šaranska oprema'},
-                    {'id': 'varalica', 'label': f'{STYLES["varalica"]["emoji"]} Varaličarska oprema'},
+                    {'id': 'finish', 'label': 'Završi'},
+                    {'id': 'no_kit', 'label': 'Pojedinačna oprema'},
+                    {'id': 'again', 'label': '🔄 Ispočetka'},
                 ],
-                next_step='style',
+                next_step='post',
+                recommendation=rec,
             )
-        state['style'] = answer
-        style = STYLES[answer]
-        return bot(
-            f'{style["intro"]}\n\nŠta tačno tražiš?',
-            options=_item_options_for_style(answer),
-            next_step='item',
-        )
-
-    # --- ITEM ---
-    if step == 'item':
-        style_key = state.get('style') or 'feeder'
-        allowed = set((STYLES.get(style_key) or STYLES['feeder'])['items'])
-        if answer not in allowed:
+        if answer == 'no_kit':
             return bot(
-                'Odaberi šta tražiš:',
-                options=_item_options_for_style(style_key),
-                next_step='item',
+                'Šta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS),
+                next_step='single',
             )
-        state['item'] = answer
-        item = ITEM_TYPES[answer]
-        style = STYLES.get(style_key, STYLES['feeder'])
-
-        if item['needs'] == 'budget':
-            hint = style['rod_note'] if answer == 'stap' else style['reel_note']
+        if answer == 'finish':
             return bot(
-                f'Super — {item["label"].lower()} za {style["short"].lower()}.\n'
-                f'{hint}\n\nDo koliko bi izdvojio?',
-                options=[{'id': str(b), 'label': lab} for b, lab in BUDGET_OPTIONS],
-                next_step='budget',
+                '🎣 Nadam se da sam pomogao. Sretno na vodi!',
+                options=[{'id': 'again', 'label': '🔄 Novi savjet'}],
+                next_step='post',
+                done=True,
             )
+        if answer == 'again':
+            state.clear()
+            return process_step('start', '', state, request=request)
 
-        if item['needs'] == 'diameter':
-            return bot(
-                'Za najlon mi treba debljina.\n'
-                'Koju debljinu tražiš?',
-                options=[{'id': d, 'label': lab} for d, lab in LINE_DIAMETERS],
-                next_step='diameter',
-            )
-
-        if item['needs'] == 'weight':
-            return bot(
-                'Za hranilice mi treba gramaža.\n'
-                'Koju težinu tražiš?',
-                options=[{'id': str(w), 'label': lab} for w, lab in FEEDER_WEIGHTS],
-                next_step='weight',
-            )
-
-    # --- BUDGET (štap / mašinica) ---
-    if step == 'budget':
-        try:
-            budget = int(answer)
-        except (TypeError, ValueError):
-            budget = 0
-        if budget not in {b for b, _ in BUDGET_OPTIONS}:
-            return bot(
-                'Odaberi budžet:',
-                options=[{'id': str(b), 'label': lab} for b, lab in BUDGET_OPTIONS],
-                next_step='budget',
-            )
-        state['budget'] = budget
-        rec = build_recommendation(
-            state.get('style') or 'feeder',
-            state.get('item') or 'stap',
-            budget_km=budget,
-            request=request,
-        )
-        return finish_rec(rec)
-
-    # --- DIAMETER (najlon) ---
-    if step == 'diameter':
-        allowed = {d for d, _ in LINE_DIAMETERS}
-        # normalizuj 0,18 → 0.18
-        ans = answer.replace(',', '.')
-        if ans not in allowed:
-            return bot(
-                'Odaberi debljinu najlona:',
-                options=[{'id': d, 'label': lab} for d, lab in LINE_DIAMETERS],
-                next_step='diameter',
-            )
-        state['diameter'] = ans
-        rec = build_recommendation(
-            state.get('style') or 'feeder',
-            'najlon',
-            diameter=ans,
-            request=request,
-        )
-        return finish_rec(rec)
-
-    # --- WEIGHT (hranilice) ---
-    if step == 'weight':
-        try:
-            w = int(float(answer))
-        except (TypeError, ValueError):
-            w = 0
-        if w not in {x for x, _ in FEEDER_WEIGHTS}:
-            return bot(
-                'Odaberi gramažu hranilice:',
-                options=[{'id': str(x), 'label': lab} for x, lab in FEEDER_WEIGHTS],
-                next_step='weight',
-            )
-        state['weight_g'] = w
-        rec = build_recommendation(
-            state.get('style') or 'feeder',
-            'hranilice',
-            weight_g=w,
-            request=request,
-        )
-        return finish_rec(rec)
-
-    if step == 'done' or answer in ('again', 'reset'):
+    if answer in ('again', 'reset'):
         state.clear()
         return process_step('start', '', state, request=request)
 

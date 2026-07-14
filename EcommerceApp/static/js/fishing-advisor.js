@@ -5,6 +5,7 @@
     if (!root) return;
 
     const url = root.getAttribute('data-advisor-url') || '/savjetnik/';
+    const buySetUrl = root.getAttribute('data-buy-set-url') || '/savjetnik/kupi-set/';
     const launcher = document.getElementById('fishAdvisorLauncher');
     const panel = document.getElementById('fishAdvisorPanel');
     const closeBtn = document.getElementById('fishAdvisorClose');
@@ -60,7 +61,6 @@
         row.className = 'fish-advisor__msg fish-advisor__msg--' + role;
         const bubble = document.createElement('div');
         bubble.className = 'fish-advisor__bubble';
-        // Preserve line breaks
         String(text).split('\n').forEach((line, i) => {
             if (i > 0) bubble.appendChild(document.createElement('br'));
             bubble.appendChild(document.createTextNode(line));
@@ -93,6 +93,112 @@
         if (optionsEl) optionsEl.innerHTML = '';
     }
 
+    function clearProducts() {
+        if (!productsEl) return;
+        productsEl.hidden = true;
+        productsEl.innerHTML = '';
+    }
+
+    function restartAdvisor() {
+        if (messagesEl) messagesEl.innerHTML = '';
+        clearProducts();
+        state = {};
+        step = 'start';
+        sendStep('start', '');
+    }
+
+    function toast(msg) {
+        if (typeof window.showCartToast === 'function') {
+            window.showCartToast(msg);
+            return;
+        }
+        let el = panel && panel.querySelector('.fish-advisor__toast');
+        if (!el && panel) {
+            el = document.createElement('div');
+            el.className = 'fish-advisor__toast';
+            panel.appendChild(el);
+        }
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add('is-visible');
+        window.setTimeout(() => el.classList.remove('is-visible'), 2200);
+    }
+
+    function updateCartBadge(count) {
+        const n = Math.max(0, parseInt(count, 10) || 0);
+        const cartBtn = document.querySelector('.cart-btn');
+        if (!cartBtn) return;
+        let badge = cartBtn.querySelector('.cart-badge');
+        if (n > 0) {
+            cartBtn.classList.add('cart-btn--has-items');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'cart-badge';
+                cartBtn.appendChild(badge);
+            }
+            badge.textContent = String(n);
+        } else {
+            cartBtn.classList.remove('cart-btn--has-items');
+            if (badge) badge.remove();
+        }
+        cartBtn.dataset.cartCount = String(n);
+    }
+
+    async function addProductToCart(slug, button) {
+        if (!slug) {
+            toast('Artikal nije dostupan.');
+            return;
+        }
+        const token = csrf();
+        if (!token) {
+            toast('CSRF token nedostaje — osvježi stranicu.');
+            return;
+        }
+        if (button) {
+            button.disabled = true;
+            button.classList.add('is-loading');
+        }
+        try {
+            const body = new URLSearchParams({ quantity: '1', stay: '1' });
+            const res = await fetch('/artikal/' + encodeURIComponent(slug) + '/dodaj/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) {
+                throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+            }
+            if (data.cart_count != null) updateCartBadge(data.cart_count);
+            toast(data.message || 'Dodano u korpu.');
+            if (button) {
+                button.textContent = '✓ U korpi';
+                button.classList.add('is-added');
+                window.setTimeout(() => {
+                    if (button) {
+                        button.textContent = 'Kupi';
+                        button.classList.remove('is-added');
+                        button.disabled = false;
+                        button.classList.remove('is-loading');
+                    }
+                }, 1600);
+                return;
+            }
+        } catch (err) {
+            toast(err.message || 'Greška pri dodavanju.');
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('is-loading');
+            }
+        }
+    }
+
     function renderOptions(options) {
         clearOptions();
         if (!optionsEl || !options || !options.length) return;
@@ -109,23 +215,27 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'fish-advisor__option';
+            if (opt.id === 'continue') btn.classList.add('fish-advisor__option--primary');
+            if (opt.id === 'again' || opt.id === 'reset') btn.classList.add('fish-advisor__option--ghost');
             btn.textContent = opt.label || opt.id;
             btn.dataset.answer = opt.id || '';
             btn.addEventListener('click', () => {
                 if (busy) return;
                 const ans = btn.dataset.answer;
                 const label = btn.textContent;
+
                 if (ans === 'again' || ans === 'reset') {
-                    messagesEl.innerHTML = '';
-                    if (productsEl) {
-                        productsEl.hidden = true;
-                        productsEl.innerHTML = '';
-                    }
-                    state = {};
-                    step = 'start';
-                    sendStep('start', '');
+                    restartAdvisor();
                     return;
                 }
+
+                if (ans === 'continue') {
+                    appendUserChoice(label);
+                    clearProducts();
+                    sendStep(step, 'continue');
+                    return;
+                }
+
                 appendUserChoice(label);
                 sendStep(step, ans);
             });
@@ -137,79 +247,197 @@
         if (role === 'stap') return 'Štap';
         if (role === 'masinica') return 'Mašinica';
         if (role === 'najlon') return 'Najlon';
+        if (role === 'varalice') return 'Varalica';
+        if (role === 'signalizatori') return 'Signalizator';
+        if (role === 'komplet') return 'Komplet';
         if (role === 'hranilica' || role === 'hranilice') return 'Hranilica';
-        if (role === 'set') return 'Set';
         return 'Oprema';
     }
 
-    function renderProducts(rec) {
+    function renderProductCard(p) {
+        const card = document.createElement('div');
+        card.className = 'fish-advisor__product' + (p.in_stock === false ? ' is-oos' : '');
+
+        const link = document.createElement('a');
+        link.className = 'fish-advisor__product-main';
+        link.href = p.url || '#';
+        link.target = '_blank';
+        link.rel = 'noopener';
+
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'fish-advisor__product-img';
+        if (p.image) {
+            const img = document.createElement('img');
+            img.src = p.image;
+            img.alt = p.name || '';
+            img.loading = 'lazy';
+            imgWrap.appendChild(img);
+        } else {
+            imgWrap.textContent = '🎣';
+        }
+
+        const meta = document.createElement('div');
+        meta.className = 'fish-advisor__product-meta';
+        const badge = document.createElement('span');
+        badge.className = 'fish-advisor__product-role';
+        badge.textContent = roleLabel(p.role) + (p.in_stock === false ? ' · rasprodato' : '');
+        const name = document.createElement('strong');
+        name.textContent = p.name || '';
+        const price = document.createElement('span');
+        price.className = 'fish-advisor__product-price';
+        price.textContent = p.price_display || (p.price + ' KM');
+        meta.append(badge, name, price);
+
+        link.append(imgWrap, meta);
+
+        const buyBtn = document.createElement('button');
+        buyBtn.type = 'button';
+        buyBtn.className = 'fish-advisor__buy';
+        buyBtn.textContent = p.in_stock === false ? 'Nedostupno' : 'Kupi';
+        buyBtn.disabled = p.in_stock === false || !p.slug;
+        buyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (buyBtn.disabled) return;
+            addProductToCart(p.slug, buyBtn);
+        });
+
+        card.append(link, buyBtn);
+        return card;
+    }
+
+    async function buyWholeSet(setId, button) {
+        if (!setId) return;
+        const token = csrf();
+        if (!token) {
+            toast('CSRF token nedostaje — osvježi stranicu.');
+            return;
+        }
+        if (button) {
+            button.disabled = true;
+            button.classList.add('is-loading');
+        }
+        try {
+            const body = new URLSearchParams({ set_id: String(setId) });
+            const res = await fetch(buySetUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) {
+                throw new Error(data.message || 'Set nije dodan.');
+            }
+            if (data.cart_count != null) updateCartBadge(data.cart_count);
+            toast(data.message || 'Set dodan u korpu.');
+            if (button) {
+                button.textContent = '✓ Set u korpi';
+                button.classList.add('is-added');
+                window.setTimeout(() => {
+                    button.textContent = 'Kupi set';
+                    button.classList.remove('is-added');
+                    button.disabled = false;
+                    button.classList.remove('is-loading');
+                }, 1800);
+                return;
+            }
+        } catch (err) {
+            toast(err.message || 'Greška.');
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('is-loading');
+            }
+        }
+    }
+
+    function renderProducts(rec, kits) {
         if (!productsEl) return;
         productsEl.innerHTML = '';
-        if (!rec || !rec.products || !rec.products.length) {
+
+        const kitList = (kits && kits.length) ? kits : (rec && rec.kits) || null;
+        const flat = (rec && rec.products) || [];
+
+        if ((!kitList || !kitList.length) && !flat.length) {
             productsEl.hidden = true;
             return;
         }
         productsEl.hidden = false;
 
-        const head = document.createElement('div');
-        head.className = 'fish-advisor__products-head';
-        let right = rec.total_display || '';
-        if (rec.budget) {
-            right = (rec.total_display || '') + ' / do ' + rec.budget + ' KM';
-        } else if (rec.diameter) {
-            right = '~' + String(rec.diameter).replace('.', ',') + ' mm';
-        } else if (rec.weight_g) {
-            right = '~' + rec.weight_g + ' g';
+        if (kitList && kitList.length) {
+            kitList.forEach((kit) => {
+                const block = document.createElement('div');
+                block.className = 'fish-advisor__kit';
+
+                const head = document.createElement('div');
+                head.className = 'fish-advisor__products-head fish-advisor__kit-head';
+                let priceHtml = kit.total_display || '';
+                if (kit.has_discount && kit.regular_total_display) {
+                    priceHtml =
+                        '<del class="fish-advisor__kit-was">' +
+                        kit.regular_total_display +
+                        '</del> ' +
+                        '<strong class="fish-advisor__kit-now">' +
+                        (kit.total_display || '') +
+                        '</strong>';
+                    if (kit.discount_percent) {
+                        priceHtml +=
+                            ' <span class="fish-advisor__kit-pct">−' +
+                            kit.discount_percent +
+                            '%</span>';
+                    }
+                }
+                head.innerHTML =
+                    '<strong>' +
+                    (kit.emoji || '') +
+                    ' ' +
+                    (kit.label || 'Komplet') +
+                    '</strong><span class="fish-advisor__kit-price">' +
+                    priceHtml +
+                    '</span>';
+                block.appendChild(head);
+
+                const list = document.createElement('div');
+                list.className = 'fish-advisor__product-list';
+                (kit.products || []).forEach((p) => {
+                    list.appendChild(renderProductCard(p));
+                });
+                block.appendChild(list);
+
+                // Kupi cijeli set (samo admin setovi s db id)
+                const setId = kit.db_id || (String(kit.id || '').match(/^\d+$/) ? kit.id : null);
+                if (setId && (kit.products || []).length) {
+                    const buySet = document.createElement('button');
+                    buySet.type = 'button';
+                    buySet.className = 'fish-advisor__buy-set';
+                    buySet.textContent = kit.has_discount
+                        ? 'Kupi set' + (kit.discount_percent ? ' (−' + kit.discount_percent + '%)' : '')
+                        : 'Kupi set';
+                    buySet.addEventListener('click', () => buyWholeSet(setId, buySet));
+                    block.appendChild(buySet);
+                }
+
+                productsEl.appendChild(block);
+            });
+        } else {
+            const head = document.createElement('div');
+            head.className = 'fish-advisor__products-head';
+            const title = (rec && (rec.item_label || rec.style_label)) || 'Preporuka';
+            const right = (rec && rec.total_display) || '';
+            head.innerHTML = '<strong>' + title + '</strong><span>' + right + '</span>';
+            productsEl.appendChild(head);
+
+            const list = document.createElement('div');
+            list.className = 'fish-advisor__product-list';
+            flat.forEach((p) => list.appendChild(renderProductCard(p)));
+            productsEl.appendChild(list);
         }
-        const title = rec.item_label || rec.style_label || 'Preporuka';
-        head.innerHTML = '<strong>' + title + '</strong><span>' + right + '</span>';
-        productsEl.appendChild(head);
 
-        const list = document.createElement('div');
-        list.className = 'fish-advisor__product-list';
-
-        rec.products.forEach((p) => {
-            const card = document.createElement('a');
-            card.className = 'fish-advisor__product' + (p.in_stock === false ? ' is-oos' : '');
-            card.href = p.url || '#';
-            card.target = '_blank';
-            card.rel = 'noopener';
-
-            const imgWrap = document.createElement('div');
-            imgWrap.className = 'fish-advisor__product-img';
-            if (p.image) {
-                const img = document.createElement('img');
-                img.src = p.image;
-                img.alt = p.name || '';
-                img.loading = 'lazy';
-                imgWrap.appendChild(img);
-            } else {
-                imgWrap.textContent = '🎣';
-            }
-
-            const meta = document.createElement('div');
-            meta.className = 'fish-advisor__product-meta';
-            const badge = document.createElement('span');
-            badge.className = 'fish-advisor__product-role';
-            badge.textContent = roleLabel(p.role) + (p.in_stock === false ? ' · rasprodato' : '');
-            const name = document.createElement('strong');
-            name.textContent = p.name || '';
-            const price = document.createElement('span');
-            price.className = 'fish-advisor__product-price';
-            price.textContent = p.price_display || (p.price + ' KM');
-            meta.append(badge, name, price);
-            if (p.note) {
-                const note = document.createElement('em');
-                note.className = 'fish-advisor__product-note';
-                note.textContent = p.note;
-                meta.appendChild(note);
-            }
-
-            card.append(imgWrap, meta);
-            list.appendChild(card);
-        });
-
-        productsEl.appendChild(list);
         scrollMessages();
     }
 
@@ -239,7 +467,7 @@
             showTyping(false);
             if (!res.ok || !data.ok) {
                 appendMessage('bot', 'Ups, nešto nije uredu. Pokušaj ponovo.');
-                renderOptions([{ id: 'reset', label: '🔄 Ponovo' }]);
+                renderOptions([{ id: 'reset', label: '🔄 Ispočetka' }]);
                 step = 'start';
                 return;
             }
@@ -248,14 +476,16 @@
             (data.messages || []).forEach((m) => {
                 if (m && m.text) appendMessage(m.role || 'bot', m.text);
             });
-            if (data.recommendation) {
-                renderProducts(data.recommendation);
+            if (data.recommendation || data.kits) {
+                renderProducts(data.recommendation || {}, data.kits || (data.recommendation && data.recommendation.kits));
+            } else if (answer === 'continue') {
+                clearProducts();
             }
             renderOptions(data.options || []);
         } catch (err) {
             showTyping(false);
-            appendMessage('bot', 'Konekcija nije uspjela. Provjeri internet i pokušaj opet.');
-            renderOptions([{ id: 'reset', label: '🔄 Ponovo' }]);
+            appendMessage('bot', 'Konekcija nije uspjela. Pokušaj opet.');
+            renderOptions([{ id: 'reset', label: '🔄 Ispočetka' }]);
         } finally {
             busy = false;
         }
@@ -270,7 +500,6 @@
             setOpen(false);
         });
 
-    // Soft invite after 12s (once per session tab)
     try {
         if (!sessionStorage.getItem('fish_advisor_nudge')) {
             window.setTimeout(() => {

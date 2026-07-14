@@ -16917,25 +16917,94 @@ body.og-side-open {
     flex-direction: column;
     gap: 8px;
 }
+.fish-advisor__kit {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(148, 163, 184, 0.2);
+}
+.fish-advisor__kit:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.fish-advisor__kit-head strong {
+    color: #fbbf24 !important;
+}
+.fish-advisor__kit-price {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.fish-advisor__kit-was {
+    color: #94a3b8 !important;
+    font-weight: 600;
+    font-size: 12px;
+}
+.fish-advisor__kit-now {
+    color: #4ade80 !important;
+    font-size: 14px;
+}
+.fish-advisor__kit-pct {
+    background: #e11d48;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 999px;
+}
+.fish-advisor__buy-set {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    border: none;
+    cursor: pointer;
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 900;
+    color: #042f2e;
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+}
+.fish-advisor__buy-set:hover:not(:disabled) {
+    filter: brightness(1.05);
+}
+.fish-advisor__buy-set:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+.fish-advisor__buy-set.is-added {
+    background: linear-gradient(180deg, #6ee7b7, #34d399);
+    color: #042f2e;
+}
 .fish-advisor__product {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
     padding: 10px;
     border-radius: 14px;
     background: #111827;
     border: 1px solid rgba(52, 211, 153, 0.22);
-    text-decoration: none;
     color: inherit;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    transition: border-color 0.15s ease, background 0.15s ease;
 }
 .fish-advisor__product:hover {
     border-color: rgba(52, 211, 153, 0.55);
     background: #0f1a2e;
-    transform: translateX(2px);
 }
 .fish-advisor__product.is-oos {
     opacity: 0.72;
+}
+.fish-advisor__product-main {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
 }
 .fish-advisor__product-img {
     width: 58px;
@@ -16948,6 +17017,71 @@ body.og-side-open {
     overflow: hidden;
     flex-shrink: 0;
     font-size: 24px;
+}
+.fish-advisor__buy {
+    flex-shrink: 0;
+    border: none;
+    cursor: pointer;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    color: #042f2e;
+    background: linear-gradient(180deg, #6ee7b7, #34d399);
+    box-shadow: 0 3px 12px rgba(52, 211, 153, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.fish-advisor__buy:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(52, 211, 153, 0.45);
+}
+.fish-advisor__buy:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    background: #475569;
+    color: #e2e8f0;
+    box-shadow: none;
+}
+.fish-advisor__buy.is-added {
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+    color: #422006;
+}
+.fish-advisor__buy.is-loading {
+    opacity: 0.7;
+}
+.fish-advisor__option--primary {
+    border-color: rgba(251, 191, 36, 0.55) !important;
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.45), rgba(15, 118, 110, 0.35)) !important;
+}
+.fish-advisor__option--ghost {
+    border-color: rgba(148, 163, 184, 0.35) !important;
+    background: rgba(30, 41, 59, 0.7) !important;
+}
+.fish-advisor__toast {
+    position: absolute;
+    left: 50%;
+    bottom: 72px;
+    transform: translateX(-50%) translateY(8px);
+    background: #ecfdf5;
+    color: #064e3b;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 8px 14px;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 5;
+    white-space: nowrap;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fish-advisor__toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 .fish-advisor__product-img img {
     width: 100%;

@@ -31,6 +31,9 @@ ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products
 from .models import (
     ActiveCartItem,
+    AdvisorBeginnerFishType,
+    AdvisorBeginnerSet,
+    AdvisorBeginnerSetItem,
     AIProdajaSettings,
     AkcijaBundleLine,
     AkcijaQtyTier,
@@ -536,6 +539,130 @@ class AIProdajaSettingsAdmin(admin.ModelAdmin):
         return redirect(
             reverse('admin:EcommerceApp_aiprodajasettings_change', args=[obj.pk]),
         )
+
+
+# ─── Ribolovački savjetnik: početnički setovi ───────────────────────
+
+class AdvisorBeginnerSetInline(admin.TabularInline):
+    """Na vrsti ribolova — brzo dodaj setove (artikle uredi u Set adminu)."""
+    model = AdvisorBeginnerSet
+    extra = 1
+    fields = ('naziv', 'emoji', 'popust_postotak', 'redoslijed', 'aktivan')
+    show_change_link = True
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Set'
+    verbose_name_plural = (
+        'Setovi za ovu vrstu ribolova — klikni na set da dodaš artikle'
+    )
+
+
+class AdvisorBeginnerSetItemInline(admin.TabularInline):
+    model = AdvisorBeginnerSetItem
+    extra = 2
+    autocomplete_fields = ('product',)
+    fields = ('product', 'kolicina', 'redoslijed', 'linija_cijena')
+    readonly_fields = ('linija_cijena',)
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Artikal u setu'
+    verbose_name_plural = 'Artikli u setu'
+
+    @admin.display(description='Iznos')
+    def linija_cijena(self, obj):
+        if not obj or not obj.pk or not obj.product_id:
+            return '—'
+        try:
+            iznos = obj.linija_iznos()
+            return f'{iznos} KM'
+        except Exception:
+            return '—'
+
+
+@admin.register(AdvisorBeginnerFishType)
+class AdvisorBeginnerFishTypeAdmin(admin.ModelAdmin):
+    list_display = (
+        'naziv', 'emoji', 'code', 'setovi_aktivni', 'redoslijed', 'aktivan',
+    )
+    list_editable = ('redoslijed', 'aktivan')
+    list_filter = ('aktivan',)
+    search_fields = ('naziv', 'code')
+    prepopulated_fields = {'code': ('naziv',)}
+    inlines = [AdvisorBeginnerSetInline]
+    ordering = ('redoslijed', 'naziv')
+
+    fieldsets = (
+        (None, {
+            'fields': ('naziv', 'code', 'emoji', 'redoslijed', 'aktivan'),
+            'description': (
+                'Klikni vrstu ribolova → dodaj setove ispod. '
+                'Zatim otvori svaki set (link u tabeli) i dodaj artikle. '
+                'Savjetnik za početnike prikazuje samo aktivne setove s artiklima.'
+            ),
+        }),
+    )
+
+    @admin.display(description='Aktivni setovi')
+    def setovi_aktivni(self, obj):
+        if not obj or not obj.pk:
+            return 0
+        return obj.setovi.filter(aktivan=True).count()
+
+
+@admin.register(AdvisorBeginnerSet)
+class AdvisorBeginnerSetAdmin(admin.ModelAdmin):
+    list_display = (
+        'naziv', 'fish_type', 'popust_postotak', 'broj_artikala',
+        'iznos_regularni', 'iznos_snizeni', 'redoslijed', 'aktivan',
+    )
+    list_filter = ('fish_type', 'aktivan')
+    list_editable = ('redoslijed', 'aktivan')
+    search_fields = ('naziv', 'fish_type__naziv')
+    autocomplete_fields = ()
+    inlines = [AdvisorBeginnerSetItemInline]
+    ordering = ('fish_type__redoslijed', 'redoslijed', 'id')
+
+    fieldsets = (
+        (None, {
+            'fields': (
+                'fish_type', 'naziv', 'emoji', 'popust_postotak',
+                'redoslijed', 'aktivan', 'popis',
+            ),
+            'description': (
+                'Dodaj artikle u tabeli ispod. '
+                'Iznos se sabira automatski. Popust % je opcionalan na cijeli set.'
+            ),
+        }),
+        ('Pregled cijene', {
+            'fields': ('iznos_regularni', 'iznos_snizeni'),
+        }),
+    )
+    readonly_fields = ('iznos_regularni', 'iznos_snizeni')
+
+    @admin.display(description='Artikala')
+    def broj_artikala(self, obj):
+        if not obj or not obj.pk:
+            return 0
+        return obj.stavke.count()
+
+    @admin.display(description='Regularno')
+    def iznos_regularni(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        return f'{obj.regularni_iznos()} KM'
+
+    @admin.display(description='Sa popustom')
+    def iznos_snizeni(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        reg = obj.regularni_iznos()
+        sale = obj.snizeni_iznos()
+        if obj.ima_popust():
+            return format_html(
+                '<strong style="color:#0a0">{} KM</strong> '
+                '<span style="text-decoration:line-through;color:#888">{} KM</span> '
+                '(-{}%)',
+                sale, reg, obj.popust_postotak,
+            )
+        return f'{sale} KM'
 
 
 @admin.register(Akcija)

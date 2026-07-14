@@ -3272,3 +3272,130 @@ class OnlineGiftPush(models.Model):
 
     def __str__(self):
         return f'Push #{self.pk} → {self.session_key[:8]}…'
+
+class AdvisorBeginnerFishType(models.Model):
+    """
+    Vrsta ribolova za početničke setove u savjetniku
+    (Šaran, Štuka, Som, Pastrmka, Bijela riba…).
+    """
+    code = models.SlugField(
+        max_length=40,
+        unique=True,
+        verbose_name='Kod',
+        help_text='Interni kod, npr. saran, stuka, som, pastrmka, bijela.',
+    )
+    naziv = models.CharField(max_length=100, verbose_name='Naziv')
+    emoji = models.CharField(max_length=8, blank=True, default='', verbose_name='Emoji')
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Početnik — vrsta ribolova'
+        verbose_name_plural = 'Početnik — vrste ribolova'
+        ordering = ['redoslijed', 'naziv']
+
+    def __str__(self):
+        return f'{self.emoji} {self.naziv}'.strip() if self.emoji else self.naziv
+
+    @property
+    def setovi_count(self):
+        return self.setovi.filter(aktivan=True).count()
+
+
+class AdvisorBeginnerSet(models.Model):
+    """
+    Jedan set/komplet za početnike unutar vrste ribolova.
+    Možeš dodati koliko god setova želiš (osnovni, srednji…).
+    """
+    fish_type = models.ForeignKey(
+        AdvisorBeginnerFishType,
+        on_delete=models.CASCADE,
+        related_name='setovi',
+        verbose_name='Vrsta ribolova',
+    )
+    naziv = models.CharField(
+        max_length=120,
+        verbose_name='Naziv seta',
+        help_text='Npr. Osnovni komplet, Srednji, Napredni…',
+    )
+    emoji = models.CharField(max_length=8, blank=True, default='', verbose_name='Emoji')
+    popis = models.TextField(
+        blank=True,
+        verbose_name='Kratki opis (opcionalno)',
+        help_text='Samo za admin / internu napomenu. Na sajtu se ne mora prikazati.',
+    )
+    popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust na set (%)',
+        help_text='Opcionalno. Npr. 10 = −10% na cijeli set. Prazno = bez popusta.',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Početnik — set'
+        verbose_name_plural = 'Početnik — setovi'
+        ordering = ['fish_type__redoslijed', 'redoslijed', 'id']
+
+    def __str__(self):
+        return f'{self.fish_type.naziv}: {self.naziv}'
+
+    def regularni_iznos(self):
+        total = Decimal('0')
+        for item in self.stavke.select_related('product'):
+            try:
+                price = Decimal(str(item.product.prikazna_cijena))
+            except Exception:
+                price = Decimal('0')
+            total += price * Decimal(item.kolicina or 1)
+        return total.quantize(Decimal('0.01'))
+
+    def snizeni_iznos(self):
+        total = self.regularni_iznos()
+        pct = self.popust_postotak
+        if pct is None or pct <= 0:
+            return total
+        if pct > 100:
+            pct = Decimal('100')
+        faktor = Decimal('1') - (Decimal(pct) / Decimal('100'))
+        return (total * faktor).quantize(Decimal('0.01'))
+
+    def ima_popust(self):
+        return bool(self.popust_postotak and self.popust_postotak > 0)
+
+
+class AdvisorBeginnerSetItem(models.Model):
+    """Artikal u početničkom setu."""
+    set = models.ForeignKey(
+        AdvisorBeginnerSet,
+        on_delete=models.CASCADE,
+        related_name='stavke',
+        verbose_name='Set',
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='advisor_beginner_set_items',
+        verbose_name='Artikal',
+    )
+    kolicina = models.PositiveSmallIntegerField(default=1, verbose_name='Količina')
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+
+    class Meta:
+        verbose_name = 'Stavka seta'
+        verbose_name_plural = 'Stavke seta'
+        ordering = ['redoslijed', 'id']
+        unique_together = [('set', 'product')]
+
+    def __str__(self):
+        return f'{self.product} ×{self.kolicina}'
+
+    def linija_iznos(self):
+        try:
+            price = Decimal(str(self.product.prikazna_cijena))
+        except Exception:
+            price = Decimal('0')
+        return (price * Decimal(self.kolicina or 1)).quantize(Decimal('0.01'))

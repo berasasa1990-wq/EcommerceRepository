@@ -3287,6 +3287,88 @@ def fishing_advisor_step(request):
 
 
 @require_POST
+def fishing_advisor_buy_set(request):
+    """
+    Dodaj cijeli početnički set u korpu (opcionalni % popust na set).
+    Samo superuser — isto kao savjetnik.
+    """
+    from decimal import Decimal, ROUND_HALF_UP
+
+    from .cart import Cart
+    from .models import AdvisorBeginnerSet
+
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated or not user.is_superuser:
+        return JsonResponse({'ok': False, 'message': 'Nedostupno.'}, status=403)
+
+    try:
+        set_id = int(request.POST.get('set_id') or 0)
+    except (TypeError, ValueError):
+        set_id = 0
+    kit = (
+        AdvisorBeginnerSet.objects
+        .filter(pk=set_id, aktivan=True, fish_type__aktivan=True)
+        .prefetch_related('stavke__product')
+        .first()
+    )
+    if not kit:
+        return JsonResponse({'ok': False, 'message': 'Set nije pronađen.'}, status=404)
+
+    stavke = [
+        s for s in kit.stavke.all()
+        if s.product_id and getattr(s.product, 'aktivan', False)
+    ]
+    if not stavke:
+        return JsonResponse({'ok': False, 'message': 'Set nema aktivnih artikala.'}, status=400)
+
+    cart = Cart(request)
+    pct = kit.popust_postotak
+    has_disc = bool(pct and pct > 0)
+    added = 0
+    for item in stavke:
+        product = item.product
+        qty = max(1, int(item.kolicina or 1))
+        unit = product.prikazna_cijena
+        custom = None
+        promo_bazna = None
+        if has_disc:
+            try:
+                faktor = Decimal('1') - (Decimal(pct) / Decimal('100'))
+                custom = (Decimal(str(unit)) * faktor).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP,
+                )
+                promo_bazna = unit
+            except Exception:
+                custom = None
+        cart.add(
+            product,
+            quantity=qty,
+            custom_price=custom,
+            promo_bazna=promo_bazna,
+        )
+        added += qty
+
+    from .cart_tracking import sync_active_cart
+    try:
+        sync_active_cart(request)
+    except Exception:
+        pass
+
+    label = kit.naziv
+    if has_disc:
+        msg = f'Set „{label}” dodan u korpu (−{pct}%).'
+    else:
+        msg = f'Set „{label}” dodan u korpu.'
+    return JsonResponse({
+        'ok': True,
+        'message': msg,
+        'cart_count': len(cart),
+        'added_lines': len(stavke),
+        'added_qty': added,
+    })
+
+
+@require_POST
 def browse_interest_offer_dismiss(request):
     from .browse_interest_offer import dismiss_browse_interest_offer
 

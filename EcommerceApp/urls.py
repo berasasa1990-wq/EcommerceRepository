@@ -42,6 +42,7 @@ urlpatterns = [
     path('preporuka/zatvori/', views.browse_interest_offer_dismiss, name='browse_interest_offer_dismiss'),
     path('ai-dwell/aktiviraj/', views.ai_dwell_activate, name='ai_dwell_activate'),
     path('savjetnik/', views.fishing_advisor_step, name='fishing_advisor'),
+    path('savjetnik/kupi-set/', views.fishing_advisor_buy_set, name='fishing_advisor_buy_set'),
     path('drustveni-dokaz/', views.social_proof_poll, name='social_proof_poll'),
     path('online-nagrada/otkrij/', views.online_gift_reveal, name='online_gift_reveal'),
     path('online-nagrada/zatvori/', views.online_gift_dismiss, name='online_gift_dismiss'),
