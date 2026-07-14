@@ -559,28 +559,11 @@ class AdvisorBeginnerSetInline(admin.TabularInline):
 
 
 class AdvisorBeginnerSetItemForm(forms.ModelForm):
-    """Samo artikli na stanju (aktivan + na_stanju)."""
+    """Validacija: samo artikli na stanju."""
 
     class Meta:
         model = AdvisorBeginnerSetItem
         fields = '__all__'
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if 'product' not in self.fields:
-            return
-        qs = Product.objects.filter(aktivan=True, na_stanju=True).order_by('naziv')
-        # zadrži trenutni artikal ako je već u setu (i ako više nije na stanju)
-        inst = getattr(self, 'instance', None)
-        if inst and inst.pk and inst.product_id:
-            qs = (
-                Product.objects
-                .filter(Q(pk=inst.product_id) | Q(aktivan=True, na_stanju=True))
-                .order_by('naziv')
-                .distinct()
-            )
-        self.fields['product'].queryset = qs
-        self.fields['product'].help_text = 'Samo artikli koji su na stanju.'
 
     def clean_product(self):
         product = self.cleaned_data.get('product')
@@ -595,12 +578,13 @@ class AdvisorBeginnerSetItemInline(admin.TabularInline):
     model = AdvisorBeginnerSetItem
     form = AdvisorBeginnerSetItemForm
     extra = 2
-    # Bez autocomplete — dropdown filtriran na na_stanju
+    # Unos slovo po slovo (autocomplete) — filtrirano u ProductAdmin.get_search_results
+    autocomplete_fields = ('product',)
     fields = ('product', 'kolicina', 'redoslijed', 'linija_cijena')
     readonly_fields = ('linija_cijena',)
     ordering = ('redoslijed', 'id')
     verbose_name = 'Artikal u setu'
-    verbose_name_plural = 'Artikli u setu (samo na stanju)'
+    verbose_name_plural = 'Artikli u setu — kucaj naziv (samo na stanju)'
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'product':
@@ -1044,6 +1028,20 @@ class ProductAdmin(admin.ModelAdmin):
         'kategorija__naziv', 'kategorija__roditelj__naziv',
         'odoo_template_id', 'meta_title', 'meta_description',
     )
+
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Autocomplete za početničke setove: samo artikli na stanju.
+        (model_name=advisorbeginnersetitem u /admin/autocomplete/)
+        """
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term,
+        )
+        model_name = (request.GET.get('model_name') or '').lower()
+        if model_name == 'advisorbeginnersetitem':
+            queryset = queryset.filter(aktivan=True, na_stanju=True)
+        return queryset, use_distinct
+
     prepopulated_fields = {'slug': ('naziv',)}
     readonly_fields = (
         'kreiran', 'azuriran',

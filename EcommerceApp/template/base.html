@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260714v13" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260714v13">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260714v14" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260714v14">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -392,7 +392,7 @@
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/main.min.js' %}?v=20260714v6" defer></script>
     {% if user.is_authenticated and user.is_superuser %}
-    <script src="{% static 'js/fishing-advisor.js' %}?v=20260714v10" defer></script>
+    <script src="{% static 'js/fishing-advisor.js' %}?v=20260714v11" defer></script>
     {% endif %}
     {% if not user.is_authenticated or not user.is_superuser %}
     <script src="{% static 'js/almost-cart.js' %}?v=20260712v3" defer></script>

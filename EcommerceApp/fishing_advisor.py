@@ -592,16 +592,12 @@ def process_step(step, answer, state=None, request=None):
         rec = build_recommendation_from_state(state, request=request)
         kits = rec.get('kits') or []
 
-        text = (
-            'Na osnovu tvojih odgovora pronašao sam opremu koja će ti najviše odgovarati.\n\n'
-        )
         if kits:
-            text += 'Preporučujem ove komplete:'
+            text = ''  # samo setovi ispod, bez spama u chatu
         else:
-            text += (
-                'Još nema setova u adminu za ovu kombinaciju — '
-                'dodaj setove pod „Početnik — vrste ribolova”, '
-                'ili izaberi pojedinačnu opremu.'
+            text = (
+                'Još nema setova za ovu kombinaciju — '
+                'izaberi pojedinačnu opremu ili dodaj setove u adminu.'
             )
 
         opts = [

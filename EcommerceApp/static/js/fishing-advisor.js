@@ -54,7 +54,11 @@
     function showOnlyQuestion(text) {
         if (!messagesEl) return;
         messagesEl.innerHTML = '';
-        if (!text) return;
+        if (!text || !String(text).trim()) {
+            messagesEl.classList.add('is-empty');
+            return;
+        }
+        messagesEl.classList.remove('is-empty');
         const row = document.createElement('div');
         row.className = 'fish-advisor__msg fish-advisor__msg--bot fish-advisor__msg--current';
         const bubble = document.createElement('div');
@@ -89,6 +93,7 @@
         if (!productsEl) return;
         productsEl.hidden = true;
         productsEl.innerHTML = '';
+        if (panel) panel.classList.remove('has-kits');
     }
 
     function restartAdvisor() {
@@ -357,9 +362,13 @@
 
         if ((!kitList || !kitList.length) && !flat.length) {
             productsEl.hidden = true;
+            if (panel) panel.classList.remove('has-kits');
             return;
         }
         productsEl.hidden = false;
+        if (panel) {
+            panel.classList.toggle('has-kits', !!(kitList && kitList.length));
+        }
 
         if (kitList && kitList.length) {
             kitList.forEach((kit, idx) => {

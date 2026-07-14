@@ -16738,8 +16738,8 @@ body.og-side-open {
     position: absolute;
     left: 0;
     bottom: calc(100% + 14px);
-    width: min(420px, calc(100vw - 24px));
-    max-height: min(640px, calc(100vh - 90px));
+    width: min(440px, calc(100vw - 20px));
+    max-height: min(88vh, calc(100vh - 70px));
     display: flex;
     flex-direction: column;
     background: #070f1a;
@@ -16750,6 +16750,9 @@ body.og-side-open {
         0 24px 60px rgba(2, 6, 23, 0.65),
         0 0 0 1px rgba(251, 191, 36, 0.12);
     overflow: hidden;
+}
+.fish-advisor__panel.has-kits {
+    max-height: min(92vh, calc(100vh - 48px));
 }
 .fish-advisor__panel[hidden] {
     display: none !important;
@@ -16823,18 +16826,23 @@ body.og-side-open {
     background: rgba(255, 255, 255, 0.24);
 }
 .fish-advisor__messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 14px;
+    flex: 0 0 auto;
+    overflow: visible;
+    padding: 14px 14px 8px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    min-height: 200px;
-    max-height: 300px;
+    gap: 8px;
+    min-height: 0;
+    max-height: none;
     background:
         radial-gradient(ellipse at top left, rgba(15, 118, 110, 0.22), transparent 50%),
         radial-gradient(ellipse at bottom right, rgba(245, 158, 11, 0.08), transparent 45%),
         #070f1a;
+}
+.fish-advisor__messages.is-empty {
+    display: none;
+    padding: 0;
+    min-height: 0;
 }
 .fish-advisor__msg {
     display: flex;
@@ -16887,13 +16895,21 @@ body.og-side-open {
     40% { opacity: 1; transform: translateY(-3px); }
 }
 .fish-advisor__products {
-    padding: 0 12px 10px;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px 12px 12px;
     border-top: 1px solid rgba(148, 163, 184, 0.12);
-    max-height: 230px;
+    max-height: none;
+    overflow-x: hidden;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .fish-advisor__products[hidden] {
     display: none !important;
+}
+.fish-advisor__panel.has-kits .fish-advisor__products {
+    /* setovi imaju prioritet — cijeli sadržaj u scrollu panela */
+    max-height: none;
 }
 .fish-advisor__products-head {
     display: flex;
@@ -17177,10 +17193,21 @@ body.og-side-open {
     font-size: 12px;
     font-weight: 700;
     color: #f1f5f9;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    display: block;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
+    line-height: 1.35;
+    word-break: break-word;
+}
+.fish-advisor__kit .fish-advisor__product-img {
+    width: 64px;
+    height: 64px;
+}
+.fish-advisor__kit .fish-advisor__product-img img {
+    object-fit: contain;
+    background: #fff;
 }
 .fish-advisor__product-price {
     font-size: 13px;
@@ -17255,7 +17282,10 @@ body.og-side-open {
     }
     .fish-advisor__panel {
         width: min(400px, calc(100vw - 16px));
-        max-height: min(75vh, 580px);
+        max-height: min(85vh, calc(100vh - 100px));
+    }
+    .fish-advisor__panel.has-kits {
+        max-height: min(90vh, calc(100vh - 80px));
     }
     body.mobile-nav-open .fish-advisor {
         display: none;
