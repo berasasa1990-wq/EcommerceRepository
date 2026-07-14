@@ -256,16 +256,21 @@ def _keyword_q(keywords):
 
 
 def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
-    """Setovi iz admina za vrstu ribe, filtrirani budžetom."""
+    """
+    Setovi iz admina za TAČNU vrstu ribe, strogo filtrirani budžetom.
+    Nema seta do npr. 80 KM → prazna lista (ne nudi se lažna ponuda).
+    """
     try:
         from .models import AdvisorBeginnerFishType, AdvisorBeginnerSet
     except Exception:
         return []
 
-    fish = FISH.get(fish_key) or FISH['saran']
-    codes = list(fish.get('codes') or (fish_key,))
-    # direktan code ili mapirani
-    codes = list(dict.fromkeys([fish_key] + list(codes)))
+    fish = FISH.get(fish_key) or {}
+    # Primarni kod je izbor kupca; codes su samo aliasi iste vrste (ne druge ribe)
+    codes = list(dict.fromkeys([fish_key] + list(fish.get('codes') or ())))
+    # Za „više vrsta” dozvoli mapirane kodove; inače samo tačan code
+    if fish_key != 'vise':
+        codes = [fish_key]
 
     fish_types = list(
         AdvisorBeginnerFishType.objects
@@ -281,14 +286,7 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
         )
         .order_by('redoslijed')
     )
-    if not fish_types:
-        # bilo koji aktivan tip s kodom
-        fish_types = list(
-            AdvisorBeginnerFishType.objects
-            .filter(aktivan=True)
-            .prefetch_related('setovi__stavke__product')
-            .order_by('redoslijed')[:1]
-        )
+    # BEZ fallbacka na drugu vrstu ribe — ako nema setova za šarana, nema ponude za šarana
 
     kits = []
     for ft in fish_types:
@@ -303,9 +301,9 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
                 continue
             reg = s.regularni_iznos()
             sale = s.snizeni_iznos()
-            if budget_max is not None and sale > budget_max and budget_max < Decimal('9000'):
-                # blaga tolerancija 15%
-                if sale > budget_max * Decimal('1.15'):
+            # Strogi budžet: snizena cijena seta mora stati u odabrani limit
+            if budget_max is not None and budget_max < Decimal('9000'):
+                if sale > budget_max:
                     continue
             products = []
             for item in sorted(stavke, key=lambda x: (x.redoslijed, x.id)):
@@ -336,18 +334,46 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
 
     kits.sort(key=lambda k: k['sort_price'])
 
-    # kit_tier: uzmi slice (osnovni jeftiniji, pro skuplji)
+    # kit_tier: uzmi slice među setovima koji VEĆ prolaze budžet
     if kit_tier == 1 and len(kits) > 1:
         kits = kits[: max(1, (len(kits) + 1) // 2)]
     elif kit_tier == 3 and len(kits) > 1:
         mid = len(kits) // 3
         kits = kits[mid:] or kits
     elif kit_tier == 2 and len(kits) > 2:
-        # sredina
         n = len(kits)
         kits = kits[max(0, n // 4): max(1, n - n // 4)] or kits
 
     return kits[:6]
+
+
+def _budget_options_for_fish(fish_key):
+    """
+    Budžet-opcije koje imaju barem jedan set u bazi za tu ribu.
+    Npr. nema seta ≤80 KM za šarana → ne nudi se „Do 80 KM”.
+    """
+    all_kits = _kits_from_admin(fish_key, budget_max=None, kit_tier=None)
+    if not all_kits:
+        return []
+    prices = [k['sort_price'] for k in all_kits]
+    opts = []
+    for key, conf in BUDGET.items():
+        max_b = conf['max']
+        if max_b >= Decimal('9000'):
+            # „Preko 250 KM” — samo ako postoji set iznad 250 ili bilo koji set
+            # (kupac s velikim budžetom može uzeti i jeftiniji set)
+            if prices:
+                opts.append({
+                    'id': key,
+                    'label': f'{conf["emoji"]} {conf["label"]}'.strip(),
+                })
+            continue
+        if any(p <= max_b for p in prices):
+            opts.append({
+                'id': key,
+                'label': f'{conf["emoji"]} {conf["label"]}'.strip(),
+            })
+    return opts
 
 
 def _products_by_keywords(keywords, limit=8, require_stock=False):
@@ -429,18 +455,20 @@ def build_recommendation_from_state(state, request=None):
         budget_max=budget_max,
         kit_tier=tier if force_beginner else (3 if level == 'pro' else tier),
     )
+    # Ako tier-slice isprazni listu a ima setova u budžetu — vrati sve u budžetu
+    if not kits:
+        kits = _kits_from_admin(
+            fish_key,
+            request=request,
+            budget_max=budget_max,
+            kit_tier=None,
+        )
 
-    # Ako nema admin setova — prazno (admin treba da doda)
     fish_label = FISH.get(fish_key, {}).get('label', '')
-    if level == 'pro' and technique and technique != 'ne_znam':
-        headline = 'Preporučujem setove prema tvom stilu i budžetu.'
-    else:
-        headline = 'Preporučujem ovaj komplet'
-
     return {
         'fish': fish_key,
         'fish_label': fish_label,
-        'headline': headline,
+        'headline': '',
         'kits': kits,
         'products': [p for k in kits for p in k.get('products') or []],
         'item_label': fish_label or 'Komplet',
@@ -448,6 +476,7 @@ def build_recommendation_from_state(state, request=None):
         'total_display': kits[0]['total_display'] if kits else '',
         'from_admin': bool(kits),
         'budget_key': budget_key,
+        'has_offer': bool(kits),
     }
 
 
@@ -569,7 +598,10 @@ def track_advisor_live(request, *, step='', answer='', state=None, payload=None,
     kits = payload.get('kits') or rec.get('kits') or []
     kit_names = [k.get('label') for k in kits if k.get('label')][:6]
 
-    offer_shown = bool(data.get('offer_shown')) or bool(kits)
+    # offer_shown samo ako stvarno ima setova za prikaz
+    offer_shown = bool(data.get('offer_shown'))
+    if kits:
+        offer_shown = True
     offer_accepted = bool(data.get('offer_accepted'))
     accepted_set_name = data.get('accepted_set') or ''
     if accepted_set:
@@ -739,18 +771,51 @@ def process_step(step, answer, state=None, request=None):
                 next_step='water',
             )
         state['water'] = answer
+        fish_key = state.get('fish') or 'saran'
+        budget_opts = _budget_options_for_fish(fish_key)
+        if not budget_opts:
+            # Nema nijednog seta u bazi za ovu ribu — ne nudi budžete lažno
+            state['budget'] = ''
+            return bot(
+                'Za ovu vrstu ribe trenutno nema kompleta u ponudi.\n'
+                'Šta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS),
+                next_step='single',
+            )
         return bot(
             'Koliki budžet imaš?',
-            options=_opts(BUDGET),
+            options=budget_opts,
             next_step='budget',
         )
 
     # ── 4 BUDGET ───────────────────────────────────────────────────
     if step == 'budget':
-        if answer not in BUDGET:
+        fish_key = state.get('fish') or 'saran'
+        budget_opts = _budget_options_for_fish(fish_key)
+        allowed = {o['id'] for o in budget_opts}
+        if answer not in allowed:
+            if not budget_opts:
+                return bot(
+                    'Za ovu vrstu ribe trenutno nema kompleta u ponudi.\n'
+                    'Šta tačno tražiš?',
+                    options=_opts(SINGLE_ITEMS),
+                    next_step='single',
+                )
             return bot(
                 'Koliki budžet imaš?',
-                options=_opts(BUDGET),
+                options=budget_opts,
+                next_step='budget',
+            )
+        # Još jednom: mora postojati barem 1 set u tom budžetu
+        bmax = BUDGET.get(answer, {}).get('max')
+        matching = _kits_from_admin(fish_key, budget_max=bmax, kit_tier=None)
+        if not matching:
+            return bot(
+                'U tom budžetu trenutno nema kompleta.\n'
+                'Izaberi drugi budžet ili pojedinačnu opremu:',
+                options=budget_opts + [
+                    {'id': 'no_kit', 'label': 'Pojedinačna oprema'},
+                ],
                 next_step='budget',
             )
         state['budget'] = answer
@@ -802,12 +867,17 @@ def process_step(step, answer, state=None, request=None):
         rec = build_recommendation_from_state(state, request=request)
         kits = rec.get('kits') or []
 
-        if kits:
-            text = ''  # samo setovi ispod, bez spama u chatu
-        else:
-            text = (
-                'Još nema setova za ovu kombinaciju — '
-                'izaberi pojedinačnu opremu ili dodaj setove u adminu.'
+        # Nema seta u budžetu / za ribu → ne prikazuj praznu „ponudu kompleta”
+        if not kits:
+            return bot(
+                'Za tvoj izbor (riba + budžet) trenutno nema kompleta u ponudi.\n'
+                'Šta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS) + [
+                    {'id': 'again', 'label': '🔄 Ispočetka'},
+                ],
+                next_step='single',
+                recommendation={'kits': [], 'products': [], 'has_offer': False},
+                kits=[],
             )
 
         opts = [
@@ -815,15 +885,14 @@ def process_step(step, answer, state=None, request=None):
             {'id': 'accessories_ask', 'label': '✅ Pribor uz komplet'},
             {'id': 'again', 'label': '🔄 Ispočetka'},
         ]
-        # prvi set — brzi link ako ima db id
-        if kits and kits[0].get('db_id'):
+        if kits[0].get('db_id'):
             opts.insert(0, {
                 'id': 'view_kit',
                 'label': f'👉 Pogledaj: {kits[0].get("label", "komplet")}',
             })
 
         return bot(
-            text,
+            '',  # samo setovi, bez teksta
             options=opts,
             next_step='results',
             recommendation=rec,
