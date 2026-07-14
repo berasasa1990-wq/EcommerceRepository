@@ -16917,67 +16917,139 @@ body.og-side-open {
     flex-direction: column;
     gap: 8px;
 }
+.fish-advisor__msg--current .fish-advisor__bubble {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    padding: 14px 16px;
+}
 .fish-advisor__kit {
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed rgba(148, 163, 184, 0.2);
+    position: relative;
+    margin-bottom: 16px;
+    padding: 16px 14px 14px;
+    border-radius: 18px;
+    background: linear-gradient(160deg, #0f1f2e 0%, #0b1220 55%, #132a1f 100%);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-.fish-advisor__kit:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
+.fish-advisor__kit.is-top {
+    border-color: rgba(251, 191, 36, 0.65);
+    box-shadow:
+        0 12px 36px rgba(245, 158, 11, 0.22),
+        0 0 0 1px rgba(251, 191, 36, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    background: linear-gradient(155deg, #1a1408 0%, #0f172a 40%, #0b3d2e 120%);
 }
-.fish-advisor__kit-head strong {
-    color: #fbbf24 !important;
+.fish-advisor__kit-badge {
+    position: absolute;
+    top: -10px;
+    left: 14px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+    color: #422006;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
 }
-.fish-advisor__kit-price {
-    display: inline-flex;
+.fish-advisor__kit.is-top .fish-advisor__kit-badge {
+    background: linear-gradient(180deg, #fde68a, #f59e0b);
+}
+.fish-advisor__kit-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0 10px;
+}
+.fish-advisor__kit-emoji {
+    font-size: 28px;
+    line-height: 1;
+}
+.fish-advisor__kit-title h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 900;
+    color: #ecfdf5;
+    letter-spacing: 0.01em;
+}
+.fish-advisor__kit-price-row {
+    display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    justify-content: flex-end;
+    gap: 8px 12px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(52, 211, 153, 0.2);
 }
 .fish-advisor__kit-was {
     color: #94a3b8 !important;
-    font-weight: 600;
-    font-size: 12px;
+    font-weight: 700;
+    font-size: 14px;
 }
 .fish-advisor__kit-now {
     color: #4ade80 !important;
-    font-size: 14px;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
 }
 .fish-advisor__kit-pct {
-    background: #e11d48;
+    background: linear-gradient(180deg, #fb7185, #e11d48);
     color: #fff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
-    padding: 2px 7px;
+    padding: 4px 10px;
     border-radius: 999px;
+    box-shadow: 0 3px 10px rgba(225, 29, 72, 0.4);
 }
 .fish-advisor__buy-set {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 14px;
     border: none;
     cursor: pointer;
-    padding: 11px 14px;
-    border-radius: 12px;
-    font-size: 13px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-size: 15px;
     font-weight: 900;
-    color: #042f2e;
-    background: linear-gradient(180deg, #fbbf24, #f59e0b);
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    letter-spacing: 0.02em;
+    color: #1a0b00;
+    background: linear-gradient(180deg, #fde68a 0%, #fbbf24 40%, #f59e0b 100%);
+    box-shadow:
+        0 6px 20px rgba(245, 158, 11, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    animation: fish-advisor-buy-pulse 2.4s ease-in-out infinite;
+}
+.fish-advisor__kit.is-top .fish-advisor__buy-set {
+    font-size: 16px;
+    padding: 16px 18px;
 }
 .fish-advisor__buy-set:hover:not(:disabled) {
-    filter: brightness(1.05);
+    transform: translateY(-2px) scale(1.02);
+    filter: brightness(1.06);
+    box-shadow: 0 10px 28px rgba(245, 158, 11, 0.55);
 }
 .fish-advisor__buy-set:disabled {
-    opacity: 0.65;
+    opacity: 0.7;
     cursor: wait;
+    animation: none;
 }
 .fish-advisor__buy-set.is-added {
-    background: linear-gradient(180deg, #6ee7b7, #34d399);
+    background: linear-gradient(180deg, #6ee7b7, #10b981);
     color: #042f2e;
+    animation: none;
+}
+@keyframes fish-advisor-buy-pulse {
+    0%, 100% { box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45); }
+    50% { box-shadow: 0 6px 28px rgba(245, 158, 11, 0.7), 0 0 0 4px rgba(251, 191, 36, 0.15); }
 }
 .fish-advisor__product {
     display: flex;

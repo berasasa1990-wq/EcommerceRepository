@@ -1,7 +1,9 @@
 import logging
 
+from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
@@ -556,15 +558,56 @@ class AdvisorBeginnerSetInline(admin.TabularInline):
     )
 
 
+class AdvisorBeginnerSetItemForm(forms.ModelForm):
+    """Samo artikli na stanju (aktivan + na_stanju)."""
+
+    class Meta:
+        model = AdvisorBeginnerSetItem
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'product' not in self.fields:
+            return
+        qs = Product.objects.filter(aktivan=True, na_stanju=True).order_by('naziv')
+        # zadrži trenutni artikal ako je već u setu (i ako više nije na stanju)
+        inst = getattr(self, 'instance', None)
+        if inst and inst.pk and inst.product_id:
+            qs = (
+                Product.objects
+                .filter(Q(pk=inst.product_id) | Q(aktivan=True, na_stanju=True))
+                .order_by('naziv')
+                .distinct()
+            )
+        self.fields['product'].queryset = qs
+        self.fields['product'].help_text = 'Samo artikli koji su na stanju.'
+
+    def clean_product(self):
+        product = self.cleaned_data.get('product')
+        if product and not product.na_stanju:
+            raise forms.ValidationError('Možeš dodati samo artikle koji su na stanju.')
+        if product and not product.aktivan:
+            raise forms.ValidationError('Artikal mora biti aktivan.')
+        return product
+
+
 class AdvisorBeginnerSetItemInline(admin.TabularInline):
     model = AdvisorBeginnerSetItem
+    form = AdvisorBeginnerSetItemForm
     extra = 2
-    autocomplete_fields = ('product',)
+    # Bez autocomplete — dropdown filtriran na na_stanju
     fields = ('product', 'kolicina', 'redoslijed', 'linija_cijena')
     readonly_fields = ('linija_cijena',)
     ordering = ('redoslijed', 'id')
     verbose_name = 'Artikal u setu'
-    verbose_name_plural = 'Artikli u setu'
+    verbose_name_plural = 'Artikli u setu (samo na stanju)'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'product':
+            kwargs['queryset'] = Product.objects.filter(
+                aktivan=True, na_stanju=True,
+            ).order_by('naziv')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     @admin.display(description='Iznos')
     def linija_cijena(self, obj):

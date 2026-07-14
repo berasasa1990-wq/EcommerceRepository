@@ -3,7 +3,7 @@ Ribolovački savjetnik — razgovor s iskusnim ribolovcem.
 Cilj: 30–60 s, malo pitanja, setovi iz admina.
 
 Tok:
-  welcome → experience → fish → water → budget
+  experience → fish → water → budget
   → [samo iskusan] technique
   → kit_level → owned → results
   → accessories / single-item / again
@@ -295,7 +295,9 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
         for s in ft.setovi.all():
             stavke = [
                 it for it in s.stavke.all()
-                if it.product_id and getattr(it.product, 'aktivan', False)
+                if it.product_id
+                and getattr(it.product, 'aktivan', False)
+                and getattr(it.product, 'na_stanju', False)
             ]
             if not stavke:
                 continue
@@ -479,19 +481,9 @@ def process_step(step, answer, state=None, request=None):
             next_step='kit_level',
         )
 
-    # ── START / WELCOME ────────────────────────────────────────────
-    if step in ('start', 'reset', ''):
+    # ── START → odmah prvo pitanje (bez „Počni”) ─────────────────
+    if step in ('start', 'reset', '', 'welcome'):
         state.clear()
-        return bot(
-            '🎣 Pozdrav!\n\n'
-            'Ja sam ribolovački savjetnik.\n'
-            'Pomoći ću ti da za manje od minute pronađeš idealnu opremu.\n\n'
-            'Odgovori na nekoliko kratkih pitanja.',
-            options=[{'id': 'start_go', 'label': '👉 Počni'}],
-            next_step='welcome',
-        )
-
-    if step == 'welcome':
         return bot(
             'Koliko iskustva imaš?',
             options=_opts(EXPERIENCE),

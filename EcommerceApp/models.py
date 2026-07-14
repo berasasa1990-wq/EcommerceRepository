@@ -3368,7 +3368,7 @@ class AdvisorBeginnerSet(models.Model):
 
 
 class AdvisorBeginnerSetItem(models.Model):
-    """Artikal u početničkom setu."""
+    """Artikal u početničkom setu (samo na stanju)."""
     set = models.ForeignKey(
         AdvisorBeginnerSet,
         on_delete=models.CASCADE,
@@ -3380,6 +3380,7 @@ class AdvisorBeginnerSetItem(models.Model):
         on_delete=models.CASCADE,
         related_name='advisor_beginner_set_items',
         verbose_name='Artikal',
+        limit_choices_to={'aktivan': True, 'na_stanju': True},
     )
     kolicina = models.PositiveSmallIntegerField(default=1, verbose_name='Količina')
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
@@ -3392,6 +3393,18 @@ class AdvisorBeginnerSetItem(models.Model):
 
     def __str__(self):
         return f'{self.product} ×{self.kolicina}'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        super().clean()
+        if self.product_id:
+            p = self.product
+            if not getattr(p, 'aktivan', True):
+                raise ValidationError({'product': 'Artikal mora biti aktivan.'})
+            if not getattr(p, 'na_stanju', False):
+                raise ValidationError({
+                    'product': 'Možeš dodati samo artikle koji su na stanju.',
+                })
 
     def linija_iznos(self):
         try:
