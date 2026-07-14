@@ -2839,6 +2839,14 @@ class LiveVisitor(models.Model):
         verbose_name='Trenutno gleda',
         help_text='Čitljiv opis: artikal, kategorija, korpa, početna…',
     )
+    savjetnik = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Ribolovački savjetnik',
+        help_text=(
+            'Live stanje savjetnika: answers, step, offer_shown, offer_accepted, set_names…'
+        ),
+    )
     first_seen = models.DateTimeField(auto_now_add=True, verbose_name='Prva aktivnost')
     last_seen = models.DateTimeField(db_index=True, verbose_name='Zadnja aktivnost')
 
@@ -2881,6 +2889,7 @@ class StaffSiteEvent(models.Model):
         REGISTER = 'register', 'Registracija'
         PURCHASE = 'purchase', 'Kupovina'
         OFFER = 'offer', 'Prihvaćena ponuda'
+        ADVISOR = 'advisor', 'Ribolovački savjetnik'
 
     tip = models.CharField(max_length=20, choices=Tip.choices, db_index=True)
     naslov = models.CharField(max_length=120)

@@ -3252,11 +3252,7 @@ def ai_dwell_activate(request):
 
 @require_http_methods(['GET', 'POST'])
 def fishing_advisor_step(request):
-    """Virtuelni ribolovački savjetnik — vođeni chat koraci (samo superuser)."""
-    user = getattr(request, 'user', None)
-    if not user or not user.is_authenticated or not user.is_superuser:
-        return JsonResponse({'ok': False, 'message': 'Nedostupno.'}, status=403)
-
+    """Virtuelni ribolovački savjetnik — vođeni chat (svi kupci)."""
     from .fishing_advisor import process_step
 
     if request.method == 'GET':
@@ -3288,18 +3284,12 @@ def fishing_advisor_step(request):
 
 @require_POST
 def fishing_advisor_buy_set(request):
-    """
-    Dodaj cijeli početnički set u korpu (opcionalni % popust na set).
-    Samo superuser — isto kao savjetnik.
-    """
+    """Dodaj cijeli početnički set u korpu (opcionalni % popust na set)."""
     from decimal import Decimal, ROUND_HALF_UP
 
     from .cart import Cart
+    from .fishing_advisor import track_advisor_live
     from .models import AdvisorBeginnerSet
-
-    user = getattr(request, 'user', None)
-    if not user or not user.is_authenticated or not user.is_superuser:
-        return JsonResponse({'ok': False, 'message': 'Nedostupno.'}, status=403)
 
     try:
         set_id = int(request.POST.get('set_id') or 0)
@@ -3316,10 +3306,12 @@ def fishing_advisor_buy_set(request):
 
     stavke = [
         s for s in kit.stavke.all()
-        if s.product_id and getattr(s.product, 'aktivan', False)
+        if s.product_id
+        and getattr(s.product, 'aktivan', False)
+        and getattr(s.product, 'na_stanju', False)
     ]
     if not stavke:
-        return JsonResponse({'ok': False, 'message': 'Set nema aktivnih artikala.'}, status=400)
+        return JsonResponse({'ok': False, 'message': 'Set nema artikala na stanju.'}, status=400)
 
     cart = Cart(request)
     pct = kit.popust_postotak
@@ -3355,6 +3347,17 @@ def fishing_advisor_buy_set(request):
         pass
 
     label = kit.naziv
+    try:
+        track_advisor_live(
+            request,
+            step='results',
+            answer='buy_set',
+            state={},
+            accepted_set=label,
+        )
+    except Exception:
+        pass
+
     if has_disc:
         msg = f'Set „{label}” dodan u korpu (−{pct}%).'
     else:

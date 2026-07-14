@@ -2752,3 +2752,102 @@ body.popup-open {
         grid-template-columns: 0.9fr 1.1fr;
     }
 }
+
+/* —— Ribolovački savjetnik na live kartici —— */
+.la-card-activity-line--advisor {
+    background: linear-gradient(90deg, rgba(15, 118, 110, 0.1), transparent);
+    border-left: 3px solid #0d9488;
+    padding-left: 10px !important;
+    margin-top: 6px;
+}
+.la-advisor-ok {
+    color: #15803d;
+    font-style: normal;
+    font-weight: 800;
+}
+.la-advisor-wait {
+    color: #b45309;
+    font-style: normal;
+    font-weight: 700;
+}
+.la-advisor-answers {
+    list-style: none;
+    margin: 6px 0 4px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    max-height: 140px;
+    overflow-y: auto;
+}
+.la-advisor-answers li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    font-size: 12px;
+    line-height: 1.35;
+    padding: 3px 0;
+    border-bottom: 1px dashed #ccfbf1;
+}
+.la-advisor-answers li:last-child {
+    border-bottom: 0;
+}
+.la-advisor-answers li span {
+    color: #0f766e;
+    font-weight: 600;
+    min-width: 5.5em;
+}
+.la-advisor-answers li strong {
+    color: #134e4a;
+    font-weight: 800;
+}
+.la-advisor-kits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+.la-chip--kit {
+    background: #ecfdf5 !important;
+    color: #065f46 !important;
+    border: 1px solid #6ee7b7 !important;
+    font-weight: 800;
+}
+
+/* Grad — jači naglasak */
+.la-card-city-pin {
+    font-weight: 800;
+    color: #0f172a;
+}
+.la-card-city {
+    font-size: 13px;
+}
+
+/* Live analitika — mobilni */
+@media (max-width: 768px) {
+    .staff-live-analytics-page {
+        padding: 16px 12px 80px;
+    }
+    .la-live-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+    .la-card--panel {
+        padding: 14px 12px;
+    }
+    .la-card-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .la-card-act {
+        min-height: 44px;
+        font-size: 13px;
+    }
+    .la-advisor-answers {
+        max-height: 160px;
+    }
+    .la-kpis {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}

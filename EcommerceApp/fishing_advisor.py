@@ -451,10 +451,210 @@ def build_recommendation_from_state(state, request=None):
     }
 
 
+# Mapiranje koraka → pitanje (za live analitiku)
+_STEP_QUESTION = {
+    'start': 'Otvorio savjetnik',
+    'experience': 'Iskustvo',
+    'fish': 'Riba',
+    'water': 'Lokacija',
+    'budget': 'Budžet',
+    'technique': 'Tehnika',
+    'kit_level': 'Tip kompleta',
+    'owned': 'Postojeća oprema',
+    'results': 'Rezultat',
+    'single': 'Pojedinačna oprema',
+    'post': 'Nakon preporuke',
+}
+
+
+def _answer_label(step, answer):
+    """Ljudski čitljiv odgovor za staff live."""
+    maps = {
+        'experience': EXPERIENCE,
+        'fish': FISH,
+        'water': WATER,
+        'budget': BUDGET,
+        'technique': TECHNIQUE,
+        'kit_level': KIT_LEVEL,
+        'owned': OWNED,
+        'single': SINGLE_ITEMS,
+    }
+    m = maps.get(step) or {}
+    if answer in m:
+        return m[answer].get('label') or answer
+    special = {
+        'no_kit': 'Ne želi komplet',
+        'view_kit': 'Gleda komplet',
+        'accessories_yes': 'Želi pribor',
+        'accessories_ask': 'Pribor uz komplet',
+        'again': 'Ispočetka',
+        'finish': 'Završio',
+        'more': 'Još preporuka',
+        'continue': 'Nastavi',
+    }
+    return special.get(answer) or (answer or '—')
+
+
+def track_advisor_live(request, *, step='', answer='', state=None, payload=None, accepted_set=None):
+    """
+    Snimi stanje savjetnika na LiveVisitor + staff event (uživo analitika).
+    """
+    if not request:
+        return
+    try:
+        from django.utils import timezone
+
+        from .cart_tracking import get_cart_session_key
+        from .models import LiveVisitor, StaffSiteEvent
+    except Exception:
+        return
+
+    session_key = ''
+    try:
+        session_key = get_cart_session_key(request) or ''
+    except Exception:
+        session_key = (getattr(request.session, 'session_key', None) or '')[:40]
+    if not session_key:
+        return
+
+    state = state or {}
+    payload = payload or {}
+    now = timezone.now()
+    now_iso = now.isoformat()
+
+    q_label = _STEP_QUESTION.get(step) or step or 'Savjetnik'
+    a_label = _answer_label(step, answer) if answer else ''
+
+    lv = LiveVisitor.objects.filter(session_key=session_key).only(
+        'pk', 'savjetnik', 'ime', 'email', 'grad',
+    ).first()
+    if not lv:
+        # Heartbeat još nije stigao — snimi minimalni red da live analitika vidi savjetnik
+        try:
+            user = getattr(request, 'user', None)
+            ime = 'Gost'
+            email = ''
+            if user and getattr(user, 'is_authenticated', False):
+                ime = (user.get_full_name() or user.first_name or user.email or 'Kupac')[:120]
+                email = (user.email or '')[:254]
+            lv, _ = LiveVisitor.objects.get_or_create(
+                session_key=session_key[:40],
+                defaults={
+                    'ime': ime,
+                    'email': email,
+                    'last_seen': now,
+                    'savjetnik': {},
+                },
+            )
+        except Exception:
+            return
+
+    data = dict(lv.savjetnik) if isinstance(lv.savjetnik, dict) else {}
+    answers = list(data.get('answers') or [])
+    if answer and step not in ('start', 'reset', '', 'welcome'):
+        # ne dupliciraj isti zadnji odgovor
+        last = answers[-1] if answers else None
+        if not (last and last.get('step') == step and last.get('answer') == answer):
+            answers.append({
+                'step': step,
+                'q': q_label,
+                'a': a_label,
+                'answer_id': answer,
+                'at': now_iso,
+            })
+            answers = answers[-20:]
+
+    next_step = payload.get('step') or step
+    rec = payload.get('recommendation') or {}
+    kits = payload.get('kits') or rec.get('kits') or []
+    kit_names = [k.get('label') for k in kits if k.get('label')][:6]
+
+    offer_shown = bool(data.get('offer_shown')) or bool(kits)
+    offer_accepted = bool(data.get('offer_accepted'))
+    accepted_set_name = data.get('accepted_set') or ''
+    if accepted_set:
+        offer_accepted = True
+        accepted_set_name = accepted_set
+        offer_shown = True
+
+    summary_parts = [f'{x.get("q")}: {x.get("a")}' for x in answers[-6:]]
+    summary = ' · '.join(summary_parts) if summary_parts else 'U savjetniku'
+
+    data.update({
+        'active': True,
+        'step': next_step,
+        'step_label': _STEP_QUESTION.get(next_step) or next_step,
+        'question': (payload.get('messages') or [{}])[0].get('text') or data.get('question') or '',
+        'answers': answers,
+        'summary': summary[:400],
+        'last_answer': a_label,
+        'last_q': q_label if answer else data.get('last_q') or '',
+        'offer_shown': offer_shown,
+        'offer_accepted': offer_accepted,
+        'accepted_set': accepted_set_name,
+        'kit_names': kit_names or data.get('kit_names') or [],
+        'fish': state.get('fish') or data.get('fish') or '',
+        'budget': state.get('budget') or data.get('budget') or '',
+        'experience': state.get('experience') or data.get('experience') or '',
+        'updated_at': now_iso,
+    })
+    if next_step in ('start',) and answer in ('again', 'reset'):
+        data['active'] = True
+        data['offer_accepted'] = False
+
+    LiveVisitor.objects.filter(pk=lv.pk).update(
+        savjetnik=data,
+        last_seen=now,
+        trenutno_gleda='Ribolovački savjetnik'[:200],
+    )
+
+    # Staff toast / event — pri otvaranju, ključnim odgovorima, ponudi, prihvatu
+    fire = False
+    naslov = 'Savjetnik'
+    poruka = summary[:280]
+    if step in ('start', 'reset', '') and not answer:
+        fire = True
+        poruka = 'Otvorio ribolovački savjetnik'
+    elif step == 'owned' and answer:
+        fire = True
+        naslov = 'Savjetnik — preporuka'
+        if kit_names:
+            poruka = f'Ponuda setova: {", ".join(kit_names[:3])}'
+        else:
+            poruka = f'Završio pitanja ({summary[:200]})'
+    elif accepted_set:
+        fire = True
+        naslov = 'Savjetnik — prihvatio set'
+        poruka = f'Kupio set: {accepted_set}'
+    elif answer == 'no_kit':
+        fire = True
+        naslov = 'Savjetnik — odbio komplet'
+        poruka = 'Ne želi komplet — bira pojedinačno'
+    elif step in ('experience', 'fish', 'budget') and answer:
+        # lagani update bez spama toasta — samo snimi JSON (već snimljeno)
+        fire = False
+
+    if fire:
+        try:
+            StaffSiteEvent.objects.create(
+                tip=StaffSiteEvent.Tip.ADVISOR,
+                naslov=naslov[:120],
+                poruka=poruka[:300],
+                ime=(lv.ime or '')[:120],
+                email=(lv.email or '')[:254],
+                grad=(lv.grad or '')[:100],
+                session_key=session_key[:40],
+            )
+        except Exception:
+            pass
+
+
 def process_step(step, answer, state=None, request=None):
     state = dict(state or {})
     answer = (answer or '').strip().lower()
     step = (step or 'start').strip().lower()
+    _incoming_step = step
+    _incoming_answer = answer
 
     def bot(text, options=None, next_step=None, recommendation=None, done=False, kits=None, extra=None):
         payload = {
@@ -471,6 +671,16 @@ def process_step(step, answer, state=None, request=None):
             payload['kits'] = kits
         if extra:
             payload.update(extra)
+        try:
+            track_advisor_live(
+                request,
+                step=_incoming_step,
+                answer=_incoming_answer,
+                state=state,
+                payload=payload,
+            )
+        except Exception:
+            pass
         return payload
 
     def after_budget_or_technique():

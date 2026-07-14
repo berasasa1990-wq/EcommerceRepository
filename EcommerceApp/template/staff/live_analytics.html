@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260713v18">
+<link rel="stylesheet" href="{% static 'css/staff-live-analytics.css' %}?v=20260714v19">
 {% endblock %}
 
 {% block content %}
@@ -106,6 +106,34 @@
                         <span class="la-ai-pct">≤{{ visitor.ai_suggested_discount }}%</span>
                         {% endif %}
                     </div>
+                    {% endif %}
+                    {% if visitor.fishing_advisor and visitor.fishing_advisor.active %}
+                    <div class="la-card-activity-line la-card-activity-line--advisor">
+                        <strong>🎣 Savjetnik:</strong>
+                        <span>
+                            {% if visitor.fishing_advisor.offer_accepted %}
+                            <em class="la-advisor-ok">✓ Prihvatio{% if visitor.fishing_advisor.accepted_set %}: {{ visitor.fishing_advisor.accepted_set }}{% endif %}</em>
+                            {% elif visitor.fishing_advisor.offer_shown %}
+                            <em class="la-advisor-wait">Ponuda seta prikazana</em>
+                            {% else %}
+                            {{ visitor.fishing_advisor.step_label|default:"U toku" }}{% if visitor.fishing_advisor.last_answer %} → {{ visitor.fishing_advisor.last_answer }}{% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if visitor.fishing_advisor.answers %}
+                    <ul class="la-advisor-answers">
+                        {% for a in visitor.fishing_advisor.answers|slice:":6" %}
+                        <li><span>{{ a.q }}</span> <strong>{{ a.a }}</strong></li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% if visitor.fishing_advisor.kit_names %}
+                    <div class="la-advisor-kits">
+                        {% for kn in visitor.fishing_advisor.kit_names|slice:":3" %}
+                        <span class="la-chip la-chip--kit">{{ kn }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     {% endif %}
                     {% if visitor.current_product_id %}
                     {% if visitor.current_product_accepted %}
@@ -700,6 +728,49 @@
         );
     }
 
+    function cardAdvisorHtml(v) {
+        const fa = v.fishing_advisor || {};
+        if (!fa.active) return '';
+        let statusHtml = '';
+        if (fa.offer_accepted) {
+            statusHtml =
+                '<em class="la-advisor-ok">✓ Prihvatio' +
+                (fa.accepted_set ? ': ' + escapeHtml(fa.accepted_set) : '') +
+                '</em>';
+        } else if (fa.offer_shown) {
+            statusHtml = '<em class="la-advisor-wait">Ponuda seta prikazana</em>';
+        } else {
+            statusHtml =
+                escapeHtml(fa.step_label || 'U toku') +
+                (fa.last_answer ? ' → ' + escapeHtml(fa.last_answer) : '');
+        }
+        let html =
+            '<div class="la-card-activity-line la-card-activity-line--advisor">' +
+            '<strong>🎣 Savjetnik:</strong> <span>' + statusHtml + '</span></div>';
+        const answers = fa.answers || [];
+        if (answers.length) {
+            html += '<ul class="la-advisor-answers">';
+            answers.slice(0, 6).forEach(function (a) {
+                html +=
+                    '<li><span>' +
+                    escapeHtml(a.q || '') +
+                    '</span> <strong>' +
+                    escapeHtml(a.a || '') +
+                    '</strong></li>';
+            });
+            html += '</ul>';
+        }
+        const kits = fa.kit_names || [];
+        if (kits.length) {
+            html += '<div class="la-advisor-kits">';
+            kits.slice(0, 3).forEach(function (kn) {
+                html += '<span class="la-chip la-chip--kit">' + escapeHtml(kn) + '</span>';
+            });
+            html += '</div>';
+        }
+        return html;
+    }
+
     function cardActivityHtml(v) {
         const insight = v.visitor_insight || {};
         const lines = [];
@@ -719,6 +790,7 @@
                 '</div>'
             );
         }
+        lines.push(cardAdvisorHtml(v));
         lines.push(cardNowOfferHtml(v));
         if (v.almost_cart_label) {
             lines.push(

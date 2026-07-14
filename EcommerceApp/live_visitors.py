@@ -2017,6 +2017,7 @@ def _visitor_payload(
             f"{almost_cart[0].get('naziv')} ({almost_cart[0].get('hovers')}× hover)"
             if almost_cart else ''
         ),
+        'fishing_advisor': _fishing_advisor_payload(visitor),
         'offer_outcomes': offer_outcomes,
         'accepted_offer_ids': [
             r.get('product_id') for r in (offer_outcomes.get('accepted') or [])
@@ -2070,6 +2071,48 @@ def _visitor_payload(
         payload['staff_action_summary'] = ''
         payload['staff_action_summary_status'] = ''
     return payload
+
+
+def _fishing_advisor_payload(visitor):
+    """Stanje ribolovačkog savjetnika za live analitiku."""
+    raw = getattr(visitor, 'savjetnik', None)
+    if not isinstance(raw, dict) or not raw:
+        return {
+            'active': False,
+            'summary': '',
+            'answers': [],
+            'offer_shown': False,
+            'offer_accepted': False,
+            'accepted_set': '',
+            'kit_names': [],
+            'step_label': '',
+            'last_answer': '',
+        }
+    answers = list(raw.get('answers') or [])
+    # skraćeni prikaz Q→A
+    answers_short = []
+    for a in answers[-8:]:
+        if not isinstance(a, dict):
+            continue
+        answers_short.append({
+            'q': (a.get('q') or '')[:40],
+            'a': (a.get('a') or '')[:60],
+        })
+    kit_names = [str(x)[:80] for x in (raw.get('kit_names') or []) if x][:6]
+    return {
+        'active': bool(raw.get('active')),
+        'summary': (raw.get('summary') or '')[:300],
+        'answers': answers_short,
+        'offer_shown': bool(raw.get('offer_shown')),
+        'offer_accepted': bool(raw.get('offer_accepted')),
+        'accepted_set': (raw.get('accepted_set') or '')[:120],
+        'kit_names': kit_names,
+        'step_label': (raw.get('step_label') or '')[:80],
+        'last_answer': (raw.get('last_answer') or '')[:80],
+        'fish': (raw.get('fish') or '')[:40],
+        'budget': (raw.get('budget') or '')[:40],
+        'experience': (raw.get('experience') or '')[:40],
+    }
 
 
 def get_live_visitor_snapshot():

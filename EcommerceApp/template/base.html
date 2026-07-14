@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260714v14" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260714v14">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260714v15" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260714v15">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -363,9 +363,8 @@
 
     {% include 'partials/footer.html' %}
     {% include 'partials/contact_float.html' %}
-    {% if user.is_authenticated and user.is_superuser %}
+    {# Ribolovački savjetnik — svi posjetioci; stanje ide u live analitiku #}
     {% include 'partials/fishing_advisor.html' %}
-    {% endif %}
     {% include 'partials/catalog_variation_modal.html' %}
 
     <button type="button" class="scroll-top-btn" id="scrollTopBtn" aria-label="Na vrh stranice">
@@ -391,9 +390,7 @@
     </script>
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/main.min.js' %}?v=20260714v6" defer></script>
-    {% if user.is_authenticated and user.is_superuser %}
-    <script src="{% static 'js/fishing-advisor.js' %}?v=20260714v11" defer></script>
-    {% endif %}
+    <script src="{% static 'js/fishing-advisor.js' %}?v=20260714v13" defer></script>
     {% if not user.is_authenticated or not user.is_superuser %}
     <script src="{% static 'js/almost-cart.js' %}?v=20260712v3" defer></script>
     {% endif %}
