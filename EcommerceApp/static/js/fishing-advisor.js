@@ -316,6 +316,9 @@
         }
         try {
             const body = new URLSearchParams({ set_id: String(setId) });
+            if (state && state.owned) {
+                body.set('owned', String(state.owned));
+            }
             const res = await fetch(buySetUrl, {
                 method: 'POST',
                 headers: {
@@ -389,6 +392,12 @@
                     (kit.label || 'Komplet') +
                     '</h3>';
                 block.appendChild(head);
+                if (kit.owned_note) {
+                    const note = document.createElement('p');
+                    note.className = 'fish-advisor__kit-owned-note';
+                    note.textContent = kit.owned_note;
+                    block.appendChild(note);
+                }
 
                 const priceRow = document.createElement('div');
                 priceRow.className = 'fish-advisor__kit-price-row';

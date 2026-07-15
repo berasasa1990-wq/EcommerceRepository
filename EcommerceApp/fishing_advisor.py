@@ -73,9 +73,18 @@ TECHNIQUE = {
 }
 
 KIT_LEVEL = {
-    'osnovni': {'label': 'Samo osnovni komplet', 'emoji': '✅', 'tier': 1},
-    'pribor': {'label': 'Komplet sa priborom', 'emoji': '✅', 'tier': 2},
-    'profesionalno': {'label': 'Profesionalnu opremu', 'emoji': '✅', 'tier': 3},
+    'komplet': {
+        'label': 'Komplet set na akciji',
+        'emoji': '✅',
+        'tier': None,  # svi setovi u budžetu
+        'mode': 'set',
+    },
+    'pojedinacno': {
+        'label': 'Pojedinačnu opremu',
+        'emoji': '✅',
+        'tier': None,
+        'mode': 'single',
+    },
 }
 
 OWNED = {
@@ -255,10 +264,98 @@ def _keyword_q(keywords):
     return q
 
 
-def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
+def _product_kind(product):
+    """'masinica' | 'stap' | 'ostalo' — za izbacivanje iz seta ako kupac već ima."""
+    name = (getattr(product, 'naziv', '') or '').lower()
+    opis = (getattr(product, 'opis', '') or '').lower()[:200]
+    text = f'{name} {opis}'
+    # mašinica prije štapa (npr. „rod tip reel”)
+    reel_kw = (
+        'reel', 'mašin', 'masin', 'navijač', 'navijac', 'baitrunner',
+        'spool', 'eos ', 'eos-',
+    )
+    if any(k in text for k in reel_kw):
+        return 'masinica'
+    rod_kw = (
+        'štap', 'stap ', ' stap', 'rod ', ' rod', 'feeder rod', 'carp rod',
+        'spinning rod', 'picker', 'teleskop', 'match rod', 'h-cast', 'h cast',
+    )
+    if any(k in text for k in rod_kw):
+        return 'stap'
+    # „Danube Feeder 3m” = štap; method feeder 40g = hranilica
+    if 'feeder' in text and not any(
+        x in text for x in (
+            'method feeder', 'open method', 'feeder link', 'feeder bead',
+            'cage feeder', 'pellet feeder', 'alloy method', 'alloy open',
+        )
+    ):
+        import re
+        if re.search(r'\d+(?:[.,]\d+)?\s*m\b', text) or re.search(r'\d+\s*cm\b', text):
+            return 'stap'
+        if 'stap' in text or 'štap' in text or 'rod' in text:
+            return 'stap'
+    # kategorija
+    kat = getattr(product, 'kategorija', None)
+    if kat is not None:
+        kn = (getattr(kat, 'naziv', '') or '').lower()
+        ks = (getattr(kat, 'slug', '') or '').lower()
+        if 'masin' in kn or 'mašin' in kn or 'reel' in kn or 'masin' in ks:
+            return 'masinica'
+        if 'stap' in kn or 'štap' in kn or 'rod' in kn or 'stap' in ks or 'feeder-stap' in ks:
+            return 'stap'
+    return 'ostalo'
+
+
+def _exclude_kinds_for_owned(owned):
+    """Šta izbaciti iz seta prema odgovoru „imaš li opremu”."""
+    owned = (owned or '').strip().lower()
+    if owned == 'masinica':
+        return {'masinica'}
+    if owned == 'stap':
+        return {'stap'}
+    if owned == 'skoro_sve':
+        # ima skoro sve — u setu ostavi sitni pribor, izbaci štap i mašinicu
+        return {'masinica', 'stap'}
+    return set()
+
+
+def _filter_stavke_by_owned(stavke, owned):
+    """Ukloni iz seta ono što kupac već posjeduje."""
+    exclude = _exclude_kinds_for_owned(owned)
+    if not exclude:
+        return list(stavke)
+    out = []
+    for it in stavke:
+        kind = _product_kind(it.product)
+        if kind in exclude:
+            continue
+        out.append(it)
+    return out
+
+
+def _line_regular_total(stavke):
+    total = Decimal('0')
+    for it in stavke:
+        try:
+            unit = Decimal(str(it.product.prikazna_cijena))
+        except Exception:
+            unit = Decimal('0')
+        total += unit * Decimal(int(it.kolicina or 1))
+    return total.quantize(Decimal('0.01'))
+
+
+def _line_sale_total(stavke, popust_postotak):
+    reg = _line_regular_total(stavke)
+    if not popust_postotak or popust_postotak <= 0:
+        return reg
+    pct = min(Decimal(str(popust_postotak)), Decimal('100'))
+    return (reg * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
+
+
+def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None, owned=None):
     """
     Setovi iz admina za TAČNU vrstu ribe, strogo filtrirani budžetom.
-    Nema seta do npr. 80 KM → prazna lista (ne nudi se lažna ponuda).
+    owned=masinica/stap/skoro_sve → te stavke se izbace iz seta (kupac već ima).
     """
     try:
         from .models import AdvisorBeginnerFishType, AdvisorBeginnerSet
@@ -266,9 +363,7 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
         return []
 
     fish = FISH.get(fish_key) or {}
-    # Primarni kod je izbor kupca; codes su samo aliasi iste vrste (ne druge ribe)
     codes = list(dict.fromkeys([fish_key] + list(fish.get('codes') or ())))
-    # Za „više vrsta” dozvoli mapirane kodove; inače samo tačan code
     if fish_key != 'vise':
         codes = [fish_key]
 
@@ -280,13 +375,12 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
                 'setovi',
                 queryset=AdvisorBeginnerSet.objects
                 .filter(aktivan=True)
-                .prefetch_related('stavke__product')
+                .prefetch_related('stavke__product', 'stavke__product__kategorija')
                 .order_by('redoslijed', 'id'),
             ),
         )
         .order_by('redoslijed')
     )
-    # BEZ fallbacka na drugu vrstu ribe — ako nema setova za šarana, nema ponude za šarana
 
     kits = []
     for ft in fish_types:
@@ -297,25 +391,35 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
                 and getattr(it.product, 'aktivan', False)
                 and getattr(it.product, 'na_stanju', False)
             ]
+            # Izbaci štap/mašinicu ako kupac već ima
+            stavke = _filter_stavke_by_owned(stavke, owned)
             if not stavke:
                 continue
-            reg = s.regularni_iznos()
-            sale = s.snizeni_iznos()
-            # Strogi budžet: snizena cijena seta mora stati u odabrani limit
+            reg = _line_regular_total(stavke)
+            sale = _line_sale_total(stavke, s.popust_postotak)
+            # Budžet na preostale stavke (nakon izbacivanja)
             if budget_max is not None and budget_max < Decimal('9000'):
                 if sale > budget_max:
                     continue
             products = []
             for item in sorted(stavke, key=lambda x: (x.redoslijed, x.id)):
+                kind = _product_kind(item.product)
                 products.append(
                     _serialize_product(
                         item.product,
                         request,
-                        role='komplet',
+                        role=kind if kind != 'ostalo' else 'komplet',
                         quantity=int(item.kolicina or 1),
                     ),
                 )
-            has_disc = s.ima_popust()
+            has_disc = bool(s.popust_postotak and s.popust_postotak > 0)
+            note_parts = []
+            if owned == 'masinica':
+                note_parts.append('bez mašinice (već imaš)')
+            elif owned == 'stap':
+                note_parts.append('bez štapa (već imaš)')
+            elif owned == 'skoro_sve':
+                note_parts.append('bez štapa/mašinice')
             kits.append({
                 'id': str(s.pk),
                 'db_id': s.pk,
@@ -330,11 +434,12 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None):
                 'has_discount': has_disc,
                 'sort_price': sale,
                 'fish_type_name': ft.naziv,
+                'owned_note': ', '.join(note_parts),
+                'excluded_owned': owned or '',
             })
 
     kits.sort(key=lambda k: k['sort_price'])
 
-    # kit_tier: uzmi slice među setovima koji VEĆ prolaze budžet
     if kit_tier == 1 and len(kits) > 1:
         kits = kits[: max(1, (len(kits) + 1) // 2)]
     elif kit_tier == 3 and len(kits) > 1:
@@ -436,33 +541,20 @@ def build_recommendation_from_state(state, request=None):
     fish_key = state.get('fish') or 'saran'
     budget_key = state.get('budget') or '150'
     budget_max = BUDGET.get(budget_key, BUDGET['150'])['max']
-    kit_key = state.get('kit_level') or 'osnovni'
-    tier = KIT_LEVEL.get(kit_key, KIT_LEVEL['osnovni'])['tier']
+    kit_key = state.get('kit_level') or 'komplet'
     exp = state.get('experience') or 'prvi'
     level = EXPERIENCE.get(exp, EXPERIENCE['prvi'])['level']
     technique = state.get('technique') or ''
 
-    # "Ne znam" tehniku → početnički setovi
-    force_beginner = (
-        level == 'beginner'
-        or technique == 'ne_znam'
-        or not technique
-    )
-
+    # Svi aktivni setovi u budžetu (bez umjetnog „tier” reza).
+    # owned (masinica/stap/skoro_sve) → te stavke se izbace iz prikaza i cijene seta
     kits = _kits_from_admin(
         fish_key,
         request=request,
         budget_max=budget_max,
-        kit_tier=tier if force_beginner else (3 if level == 'pro' else tier),
+        kit_tier=None,
+        owned=state.get('owned') or '',
     )
-    # Ako tier-slice isprazni listu a ima setova u budžetu — vrati sve u budžetu
-    if not kits:
-        kits = _kits_from_admin(
-            fish_key,
-            request=request,
-            budget_max=budget_max,
-            kit_tier=None,
-        )
 
     fish_label = FISH.get(fish_key, {}).get('label', '')
     return {
@@ -628,8 +720,11 @@ def track_advisor_live(request, *, step='', answer='', state=None, payload=None,
         'fish': state.get('fish') or data.get('fish') or '',
         'budget': state.get('budget') or data.get('budget') or '',
         'experience': state.get('experience') or data.get('experience') or '',
+        'owned': state.get('owned') or data.get('owned') or '',
         'updated_at': now_iso,
     })
+    if state.get('owned'):
+        data['owned'] = state.get('owned')
     if next_step in ('start',) and answer in ('again', 'reset'):
         data['active'] = True
         data['offer_accepted'] = False
@@ -849,6 +944,14 @@ def process_step(step, answer, state=None, request=None):
                 next_step='kit_level',
             )
         state['kit_level'] = answer
+        # Pojedinačna oprema — odmah izbor (štap, mašinica…)
+        if answer == 'pojedinacno' or KIT_LEVEL[answer].get('mode') == 'single':
+            return bot(
+                'Šta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS),
+                next_step='single',
+            )
+        # Komplet set na akciji — još jedno pitanje pa setovi
         return bot(
             'Da li već posjeduješ nešto od opreme?',
             options=_opts(OWNED),

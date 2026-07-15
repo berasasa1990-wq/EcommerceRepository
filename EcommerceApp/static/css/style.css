@@ -16990,6 +16990,12 @@ body.og-side-open {
     color: #ecfdf5;
     letter-spacing: 0.01em;
 }
+.fish-advisor__kit-owned-note {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fbbf24;
+}
 .fish-advisor__kit-price-row {
     display: flex;
     flex-wrap: wrap;

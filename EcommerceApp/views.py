@@ -3310,8 +3310,31 @@ def fishing_advisor_buy_set(request):
         and getattr(s.product, 'aktivan', False)
         and getattr(s.product, 'na_stanju', False)
     ]
+    # Izbaci štap/mašinicu ako kupac već ima (isti filter kao u savjetniku)
+    from .fishing_advisor import _filter_stavke_by_owned
+    owned = (request.POST.get('owned') or '').strip().lower()
+    if not owned:
+        try:
+            from .cart_tracking import get_cart_session_key
+            from .models import LiveVisitor
+            sk = get_cart_session_key(request)
+            lv = LiveVisitor.objects.filter(session_key=sk).only('savjetnik').first()
+            if lv and isinstance(lv.savjetnik, dict):
+                # zadnji odgovor owned iz answers ili polje
+                owned = (lv.savjetnik.get('owned') or '')[:40]
+                if not owned:
+                    for a in reversed(lv.savjetnik.get('answers') or []):
+                        if a.get('step') == 'owned':
+                            owned = (a.get('answer_id') or '')[:40]
+                            break
+        except Exception:
+            owned = ''
+    stavke = _filter_stavke_by_owned(stavke, owned)
     if not stavke:
-        return JsonResponse({'ok': False, 'message': 'Set nema artikala na stanju.'}, status=400)
+        return JsonResponse({
+            'ok': False,
+            'message': 'U setu nema preostalih artikala (već imaš tu opremu).',
+        }, status=400)
 
     cart = Cart(request)
     pct = kit.popust_postotak
@@ -3352,16 +3375,23 @@ def fishing_advisor_buy_set(request):
             request,
             step='results',
             answer='buy_set',
-            state={},
+            state={'owned': owned},
             accepted_set=label,
         )
     except Exception:
         pass
 
+    skip_note = ''
+    if owned == 'masinica':
+        skip_note = ' (bez mašinice)'
+    elif owned == 'stap':
+        skip_note = ' (bez štapa)'
+    elif owned == 'skoro_sve':
+        skip_note = ' (bez štapa/mašinice)'
     if has_disc:
-        msg = f'Set „{label}” dodan u korpu (−{pct}%).'
+        msg = f'Set „{label}” dodan u korpu (−{pct}%){skip_note}.'
     else:
-        msg = f'Set „{label}” dodan u korpu.'
+        msg = f'Set „{label}” dodan u korpu{skip_note}.'
     return JsonResponse({
         'ok': True,
         'message': msg,
