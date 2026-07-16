@@ -251,9 +251,16 @@
         return 'Oprema';
     }
 
-    function renderProductCard(p) {
+    function renderProductCard(p, opts) {
+        const options = opts || {};
+        // U kompletu samo pregled artikala + jedno dugme „Kupi set”
+        const hideBuy = !!options.hideBuy;
+
         const card = document.createElement('div');
-        card.className = 'fish-advisor__product' + (p.in_stock === false ? ' is-oos' : '');
+        card.className =
+            'fish-advisor__product' +
+            (p.in_stock === false ? ' is-oos' : '') +
+            (hideBuy ? ' fish-advisor__product--kit-line' : '');
 
         const link = document.createElement('a');
         link.className = 'fish-advisor__product-main';
@@ -286,20 +293,22 @@
         meta.append(badge, name, price);
 
         link.append(imgWrap, meta);
+        card.appendChild(link);
 
-        const buyBtn = document.createElement('button');
-        buyBtn.type = 'button';
-        buyBtn.className = 'fish-advisor__buy';
-        buyBtn.textContent = p.in_stock === false ? 'Nedostupno' : 'Kupi';
-        buyBtn.disabled = p.in_stock === false || !p.slug;
-        buyBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (buyBtn.disabled) return;
-            addProductToCart(p.slug, buyBtn);
-        });
-
-        card.append(link, buyBtn);
+        if (!hideBuy) {
+            const buyBtn = document.createElement('button');
+            buyBtn.type = 'button';
+            buyBtn.className = 'fish-advisor__buy';
+            buyBtn.textContent = p.in_stock === false ? 'Nedostupno' : 'Kupi';
+            buyBtn.disabled = p.in_stock === false || !p.slug;
+            buyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (buyBtn.disabled) return;
+                addProductToCart(p.slug, buyBtn);
+            });
+            card.appendChild(buyBtn);
+        }
         return card;
     }
 
@@ -421,9 +430,9 @@
                 block.appendChild(priceRow);
 
                 const list = document.createElement('div');
-                list.className = 'fish-advisor__product-list';
+                list.className = 'fish-advisor__product-list fish-advisor__product-list--kit';
                 (kit.products || []).forEach((p) => {
-                    list.appendChild(renderProductCard(p));
+                    list.appendChild(renderProductCard(p, { hideBuy: true }));
                 });
                 block.appendChild(list);
 
@@ -434,7 +443,7 @@
                     buySet.className = 'fish-advisor__buy-set';
                     const label = kit.has_discount && kit.discount_percent
                         ? '🎣 Kupi set (−' + kit.discount_percent + '%)'
-                        : '🎣 Kupi cijeli set';
+                        : '🎣 Kupi set';
                     buySet.textContent = label;
                     buySet.dataset.label = label;
                     buySet.addEventListener('click', () => buyWholeSet(setId, buySet));
@@ -510,13 +519,10 @@
             } else if (
                 answer === 'continue' ||
                 answer === 'no_kit' ||
-                data.step === 'experience' ||
-                data.step === 'fish' ||
-                data.step === 'water' ||
-                data.step === 'budget' ||
-                data.step === 'technique' ||
                 data.step === 'kit_level' ||
-                data.step === 'owned'
+                data.step === 'set_type' ||
+                data.step === 'varalic_style' ||
+                data.step === 'budget'
             ) {
                 clearProducts();
             }

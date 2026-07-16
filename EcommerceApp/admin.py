@@ -546,7 +546,7 @@ class AIProdajaSettingsAdmin(admin.ModelAdmin):
 # ─── Ribolovački savjetnik: početnički setovi ───────────────────────
 
 class AdvisorBeginnerSetInline(admin.TabularInline):
-    """Na vrsti ribolova — brzo dodaj setove (artikle uredi u Set adminu)."""
+    """Na tipu seta — brzo dodaj setove (artikle uredi u Set adminu)."""
     model = AdvisorBeginnerSet
     extra = 1
     fields = ('naziv', 'emoji', 'popust_postotak', 'redoslijed', 'aktivan')
@@ -554,7 +554,7 @@ class AdvisorBeginnerSetInline(admin.TabularInline):
     ordering = ('redoslijed', 'id')
     verbose_name = 'Set'
     verbose_name_plural = (
-        'Setovi za ovu vrstu ribolova — klikni na set da dodaš artikle'
+        'Setovi za ovaj tip — klikni na set da dodaš artikle'
     )
 
 
@@ -620,9 +620,11 @@ class AdvisorBeginnerFishTypeAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('naziv', 'code', 'emoji', 'redoslijed', 'aktivan'),
             'description': (
-                'Klikni vrstu ribolova → dodaj setove ispod. '
-                'Zatim otvori svaki set (link u tabeli) i dodaj artikle. '
-                'Savjetnik za početnike prikazuje samo aktivne setove s artiklima.'
+                'Tipovi setova koje nudi savjetnik (npr. Saranski set, Feeder set, '
+                'Pečaljke za plovak). Za varaličarski dodaj tipove s kodovima: '
+                'stuka, som, ul — u chatu se grupišu pod „Varaličarski set”. '
+                'Dodaj setove ispod, pa u svaki set artikle. '
+                'Prikazuju se samo aktivni setovi s artiklima na stanju.'
             ),
         }),
     )

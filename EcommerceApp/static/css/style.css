@@ -16626,9 +16626,23 @@ body.og-side-open {
 .fish-advisor {
     position: fixed;
     left: max(14px, env(safe-area-inset-left, 0px));
+    right: auto;
     bottom: max(18px, env(safe-area-inset-bottom, 0px));
-    z-index: 1060;
+    z-index: 1205;
     font-family: inherit;
+    /* column-reverse: panel (2.) ide IZNAD dugmeta (1.) — ne ispod */
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: min(440px, calc(100vw - 20px));
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    pointer-events: none; /* samo launcher/panel hvataju klik */
+}
+.fish-advisor__launcher,
+.fish-advisor__panel {
+    pointer-events: auto;
 }
 .fish-advisor__launcher {
     display: flex;
@@ -16644,9 +16658,11 @@ body.og-side-open {
         0 0 0 4px rgba(16, 185, 129, 0.15),
         0 12px 36px rgba(15, 118, 110, 0.55),
         0 0 40px rgba(245, 158, 11, 0.2);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.15s ease;
     position: relative;
     min-height: 64px;
+    flex-shrink: 0;
+    z-index: 2;
 }
 .fish-advisor__launcher:hover,
 .fish-advisor__launcher.is-open {
@@ -16735,11 +16751,15 @@ body.og-side-open {
     box-shadow: 0 3px 10px rgba(245, 158, 11, 0.45);
 }
 .fish-advisor__panel {
-    position: absolute;
-    left: 0;
-    bottom: calc(100% + 14px);
-    width: min(440px, calc(100vw - 20px));
-    max-height: min(88vh, calc(100vh - 70px));
+    /* U column-reverse stacku — uvijek IZNAD dugmeta */
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    top: auto;
+    width: min(420px, calc(100vw - 28px));
+    max-height: min(72vh, calc(100vh - 120px));
+    max-height: min(72dvh, calc(100dvh - 120px));
     display: flex;
     flex-direction: column;
     background: #070f1a;
@@ -16750,12 +16770,22 @@ body.og-side-open {
         0 24px 60px rgba(2, 6, 23, 0.65),
         0 0 0 1px rgba(251, 191, 36, 0.12);
     overflow: hidden;
+    z-index: 1;
+    flex: 0 1 auto;
+    min-height: 0;
 }
 .fish-advisor__panel.has-kits {
-    max-height: min(92vh, calc(100vh - 48px));
+    max-height: min(78vh, calc(100vh - 110px));
+    max-height: min(78dvh, calc(100dvh - 110px));
 }
 .fish-advisor__panel[hidden] {
     display: none !important;
+}
+/* Dok je otvoren — launcher ostaje vidljiv ispod panela */
+body.fish-advisor-open .fish-advisor__launcher {
+    box-shadow:
+        0 0 0 3px rgba(16, 185, 129, 0.2),
+        0 8px 24px rgba(15, 118, 110, 0.45);
 }
 .fish-advisor__header {
     display: flex;
@@ -16904,6 +16934,15 @@ body.og-side-open {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
+.fish-advisor__options {
+    flex-shrink: 0;
+}
+.fish-advisor__header {
+    flex-shrink: 0;
+}
+.fish-advisor__hint {
+    flex-shrink: 0;
+}
 .fish-advisor__products[hidden] {
     display: none !important;
 }
@@ -16933,6 +16972,9 @@ body.og-side-open {
     flex-direction: column;
     gap: 8px;
 }
+.fish-advisor__product-list--kit {
+    gap: 5px;
+}
 .fish-advisor__msg--current .fish-advisor__bubble {
     font-size: 15px;
     font-weight: 700;
@@ -16941,9 +16983,9 @@ body.og-side-open {
 }
 .fish-advisor__kit {
     position: relative;
-    margin-bottom: 16px;
-    padding: 16px 14px 14px;
-    border-radius: 18px;
+    margin-bottom: 12px;
+    padding: 14px 10px 10px;
+    border-radius: 14px;
     background: linear-gradient(160deg, #0f1f2e 0%, #0b1220 55%, #132a1f 100%);
     border: 1px solid rgba(52, 211, 153, 0.35);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -16958,11 +17000,11 @@ body.og-side-open {
 }
 .fish-advisor__kit-badge {
     position: absolute;
-    top: -10px;
-    left: 14px;
-    padding: 4px 12px;
+    top: -8px;
+    left: 10px;
+    padding: 3px 9px;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 900;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -16976,45 +17018,47 @@ body.og-side-open {
 .fish-advisor__kit-title {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 6px 0 10px;
+    gap: 6px;
+    margin: 4px 0 6px;
 }
 .fish-advisor__kit-emoji {
-    font-size: 28px;
+    font-size: 18px;
     line-height: 1;
 }
 .fish-advisor__kit-title h3 {
     margin: 0;
-    font-size: 17px;
+    font-size: 13px;
     font-weight: 900;
     color: #ecfdf5;
     letter-spacing: 0.01em;
+    line-height: 1.25;
 }
 .fish-advisor__kit-owned-note {
-    margin: 0 0 10px;
-    font-size: 12px;
+    margin: 0 0 6px;
+    font-size: 10px;
     font-weight: 700;
     color: #fbbf24;
+    line-height: 1.3;
 }
 .fish-advisor__kit-price-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px 12px;
-    margin: 0 0 12px;
-    padding: 10px 12px;
-    border-radius: 12px;
+    gap: 6px 8px;
+    margin: 0 0 8px;
+    padding: 6px 8px;
+    border-radius: 10px;
     background: rgba(0, 0, 0, 0.28);
     border: 1px solid rgba(52, 211, 153, 0.2);
 }
 .fish-advisor__kit-was {
     color: #94a3b8 !important;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 11px;
 }
 .fish-advisor__kit-now {
     color: #4ade80 !important;
-    font-size: 22px;
+    font-size: 16px;
     font-weight: 900;
     letter-spacing: -0.02em;
     line-height: 1;
@@ -17022,9 +17066,9 @@ body.og-side-open {
 .fish-advisor__kit-pct {
     background: linear-gradient(180deg, #fb7185, #e11d48);
     color: #fff;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 900;
-    padding: 4px 10px;
+    padding: 2px 7px;
     border-radius: 999px;
     box-shadow: 0 3px 10px rgba(225, 29, 72, 0.4);
 }
@@ -17032,14 +17076,14 @@ body.og-side-open {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
-    margin-top: 14px;
+    margin-top: 8px;
     border: none;
     cursor: pointer;
-    padding: 14px 16px;
-    border-radius: 14px;
-    font-size: 15px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    font-size: 13px;
     font-weight: 900;
     letter-spacing: 0.02em;
     color: #1a0b00;
@@ -17051,8 +17095,8 @@ body.og-side-open {
     animation: fish-advisor-buy-pulse 2.4s ease-in-out infinite;
 }
 .fish-advisor__kit.is-top .fish-advisor__buy-set {
-    font-size: 16px;
-    padding: 16px 18px;
+    font-size: 13px;
+    padding: 12px 14px;
 }
 .fish-advisor__buy-set:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.02);
@@ -17084,6 +17128,13 @@ body.og-side-open {
     color: inherit;
     transition: border-color 0.15s ease, background 0.15s ease;
 }
+.fish-advisor__product--kit-line {
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 10px;
+    border-color: rgba(52, 211, 153, 0.15);
+    background: rgba(17, 24, 39, 0.85);
+}
 .fish-advisor__product:hover {
     border-color: rgba(52, 211, 153, 0.55);
     background: #0f1a2e;
@@ -17099,6 +17150,9 @@ body.og-side-open {
     min-width: 0;
     text-decoration: none;
     color: inherit;
+}
+.fish-advisor__product--kit-line .fish-advisor__product-main {
+    gap: 8px;
 }
 .fish-advisor__product-img {
     width: 58px;
@@ -17188,12 +17242,19 @@ body.og-side-open {
     flex-direction: column;
     gap: 2px;
 }
+.fish-advisor__product--kit-line .fish-advisor__product-meta {
+    gap: 0;
+}
 .fish-advisor__product-role {
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #34d399;
+}
+.fish-advisor__product--kit-line .fish-advisor__product-role {
+    font-size: 9px;
+    letter-spacing: 0.03em;
 }
 .fish-advisor__product-meta strong {
     font-size: 12px;
@@ -17207,9 +17268,19 @@ body.og-side-open {
     line-height: 1.35;
     word-break: break-word;
 }
+.fish-advisor__product--kit-line .fish-advisor__product-meta strong {
+    font-size: 11px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
 .fish-advisor__kit .fish-advisor__product-img {
-    width: 64px;
-    height: 64px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 16px;
 }
 .fish-advisor__kit .fish-advisor__product-img img {
     object-fit: contain;
@@ -17219,6 +17290,9 @@ body.og-side-open {
     font-size: 13px;
     font-weight: 800;
     color: #4ade80;
+}
+.fish-advisor__product--kit-line .fish-advisor__product-price {
+    font-size: 11px;
 }
 .fish-advisor__product-note {
     font-size: 11px;
@@ -17267,82 +17341,161 @@ body.og-side-open {
     font-weight: 600;
 }
 @media (max-width: 768px) {
+    /* Chat / socijalne mreže float — sakriven na mobilnom (zamjenjuje ga savjetnik) */
+    .contact-float-group {
+        display: none !important;
+    }
+    /* Lijevo dole — panel iznad dugmeta */
     .fish-advisor {
-        left: max(8px, env(safe-area-inset-left, 0px));
+        left: max(10px, env(safe-area-inset-left, 0px));
         right: auto;
-        bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 64px));
-        z-index: 1100;
+        bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        z-index: 1205;
+        display: flex !important;
+        flex-direction: column-reverse;
+        align-items: flex-start;
+        gap: 10px;
+        max-width: min(100vw - 16px, 420px);
+        max-height: calc(100vh - 20px);
+        max-height: calc(100dvh - 20px);
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     .fish-advisor__launcher {
-        padding: 10px 14px 10px 10px;
-        min-height: 52px;
-        max-width: calc(100vw - 24px);
+        padding: 8px 12px 8px 8px;
+        min-height: 48px;
+        max-width: min(220px, calc(100vw - 72px));
+        gap: 8px;
+        align-self: flex-start;
     }
     .fish-advisor__launcher-text strong {
-        font-size: 13px;
+        font-size: 12px;
     }
     .fish-advisor__launcher-text small {
-        font-size: 11px;
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
     }
     .fish-advisor__launcher-icon {
-        width: 42px;
-        height: 42px;
-        font-size: 22px;
+        width: 38px;
+        height: 38px;
+        font-size: 20px;
     }
+    .fish-advisor__launcher-badge {
+        top: -6px;
+        right: 6px;
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+    /* Panel IZNAD dugmeta (ne ispod, ne full-screen bottom) */
     .fish-advisor__panel {
-        position: fixed;
-        left: 8px;
-        right: 8px;
-        bottom: max(70px, calc(env(safe-area-inset-bottom, 0px) + 60px));
-        width: auto;
-        max-width: none;
-        max-height: min(82vh, calc(100vh - 100px));
-        border-radius: 18px;
+        position: relative;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        top: auto;
+        width: min(100vw - 16px, 400px);
+        max-width: min(100vw - 16px, 400px);
+        max-height: min(70vh, calc(100dvh - 100px));
+        border-radius: 16px;
+        padding-bottom: 0;
+        z-index: 1;
+        align-self: stretch;
     }
     .fish-advisor__panel.has-kits {
-        max-height: min(86vh, calc(100vh - 88px));
+        max-height: min(75vh, calc(100dvh - 90px));
+    }
+    /* Launcher ostaje vidljiv ispod panela */
+    body.fish-advisor-open .fish-advisor__launcher {
+        display: flex;
+    }
+    /* Scroll top neka ne prekriva launcher */
+    body:not(.fish-advisor-open) .scroll-top-btn.is-visible {
+        bottom: max(78px, calc(env(safe-area-inset-bottom, 0px) + 70px));
     }
     .fish-advisor__options {
-        gap: 8px;
-        padding: 10px 12px 12px;
+        gap: 6px;
+        padding: 8px 10px 10px;
     }
     .fish-advisor__option {
-        min-height: 44px;
-        padding: 12px 14px;
-        font-size: 14px;
-        flex: 1 1 calc(50% - 8px);
+        min-height: 40px;
+        padding: 9px 10px;
+        font-size: 12px;
+        flex: 1 1 calc(50% - 6px);
         justify-content: center;
         text-align: center;
     }
     .fish-advisor__buy,
     .fish-advisor__buy-set {
-        min-height: 48px;
-        font-size: 15px;
+        min-height: 44px;
+        font-size: 13px;
         -webkit-tap-highlight-color: transparent;
     }
+    .fish-advisor__buy-set {
+        padding: 11px 12px;
+        font-size: 13px;
+    }
     .fish-advisor__kit {
-        padding: 18px 12px 14px;
+        padding: 12px 8px 8px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+    }
+    .fish-advisor__kit-title h3 {
+        font-size: 12px;
+    }
+    .fish-advisor__kit-now {
+        font-size: 15px;
+    }
+    .fish-advisor__kit-price-row {
+        padding: 5px 7px;
+        margin-bottom: 6px;
+    }
+    .fish-advisor__products {
+        padding: 6px 8px 8px;
     }
     .fish-advisor__product {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+    }
+    .fish-advisor__product--kit-line {
+        padding: 4px 5px;
+    }
+    .fish-advisor__kit .fish-advisor__product-img {
+        width: 36px;
+        height: 36px;
     }
     .fish-advisor__product-main {
         flex: 1 1 auto;
         min-width: 0;
     }
     .fish-advisor__buy {
-        flex: 1 1 100%;
-        margin-top: 6px;
+        flex: 0 0 auto;
+        margin-top: 0;
+        padding: 8px 12px;
+        font-size: 12px;
     }
     .fish-advisor__messages {
-        padding: 12px 12px 6px;
+        padding: 10px 10px 4px;
     }
-    body.mobile-nav-open .fish-advisor,
+    .fish-advisor__msg--current .fish-advisor__bubble {
+        font-size: 13px;
+        padding: 10px 12px;
+    }
     body.pd-sticky-cart-open .fish-advisor {
-        /* sticky CTA / nav — spusti savjetnik */
-        bottom: max(100px, calc(env(safe-area-inset-bottom, 0px) + 90px));
+        /* sticky CTA na product detail — podigni launcher */
+        bottom: max(78px, calc(env(safe-area-inset-bottom, 0px) + 70px));
     }
+    /* Samo dok je hamburger meni otvoren — ne sakrivaj inače */
     body.mobile-nav-open .fish-advisor {
-        display: none;
+        visibility: hidden;
+        pointer-events: none;
+    }
+    body.mobile-nav-open.fish-advisor-open .fish-advisor {
+        visibility: visible;
+        pointer-events: none;
+    }
+    body.mobile-nav-open.fish-advisor-open .fish-advisor__panel {
+        pointer-events: auto;
     }
 }

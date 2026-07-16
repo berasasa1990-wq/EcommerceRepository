@@ -3,9 +3,10 @@ Ribolovački savjetnik — razgovor s iskusnim ribolovcem.
 Cilj: 30–60 s, malo pitanja, setovi iz admina.
 
 Tok:
-  experience → fish → water → budget
-  → [samo iskusan] technique
-  → kit_level → owned → results
+  kit_level (set na akciji / pojedinačno)
+  → [set] set_type (iz admina: saranski, varaličarski, feeder, plovak…)
+  → [samo varaličarski] varalic_style (lov štuke / lov soma / UL)
+  → budget → results
   → accessories / single-item / again
 """
 from __future__ import annotations
@@ -19,40 +20,20 @@ from .models import Category, Product
 
 # ─── Opcije ────────────────────────────────────────────────────────
 
-EXPERIENCE = {
-    'prvi': {
-        'label': 'Prvi put kupujem opremu',
-        'emoji': '🟢',
-        'level': 'beginner',
-    },
-    'povremeno': {
-        'label': 'Lovim povremeno',
-        'emoji': '🔵',
-        'level': 'mid',
-    },
-    'iskusan': {
-        'label': 'Iskusan sam ribolovac',
-        'emoji': '🔴',
-        'level': 'pro',
-    },
-}
-
+# Legacy / fallback za pojedinačnu opremu (kategorije po ribi)
 FISH = {
-    'saran': {'label': 'Šaran', 'emoji': '🐟', 'codes': ('saran',)},
+    'saran': {'label': 'Šaran', 'emoji': '🐟', 'codes': ('saran', 'saranski')},
+    'saranski': {'label': 'Saranski set', 'emoji': '🎣', 'codes': ('saranski', 'saran')},
     'som': {'label': 'Som', 'emoji': '🐟', 'codes': ('som',)},
     'stuka': {'label': 'Štuka', 'emoji': '🐟', 'codes': ('stuka',)},
     'smud': {'label': 'Smuđ', 'emoji': '🐟', 'codes': ('smud', 'stuka')},
     'pastrmka': {'label': 'Pastrmka', 'emoji': '🐟', 'codes': ('pastrmka',)},
     'bijela': {'label': 'Bijela riba', 'emoji': '🐟', 'codes': ('bijela',)},
+    'feeder': {'label': 'Feeder set', 'emoji': '🎣', 'codes': ('feeder',)},
+    'plovak': {'label': 'Pečaljke za plovak', 'emoji': '🎣', 'codes': ('plovak',)},
+    'ul': {'label': 'UL ribolov', 'emoji': '🎣', 'codes': ('ul', 'ul_ribolov')},
+    'varalicarski': {'label': 'Varaličarski set', 'emoji': '🎣', 'codes': ('varalicarski',)},
     'vise': {'label': 'Više vrsta ribe', 'emoji': '🐟', 'codes': ('saran', 'bijela', 'stuka')},
-}
-
-WATER = {
-    'jezero': {'label': 'Jezero', 'emoji': '🏞'},
-    'rijeka': {'label': 'Rijeka', 'emoji': '🌊'},
-    'bara': {'label': 'Bara', 'emoji': '🟤'},
-    'camac': {'label': 'Čamac', 'emoji': '🚤'},
-    'sve': {'label': 'Sve pomalo', 'emoji': '❓'},
 }
 
 BUDGET = {
@@ -62,43 +43,54 @@ BUDGET = {
     '250plus': {'label': 'Preko 250 KM', 'emoji': '💰', 'max': Decimal('9999')},
 }
 
-TECHNIQUE = {
-    'teleskop': {'label': 'Teleskopski štap', 'emoji': '🎣'},
-    'feeder': {'label': 'Feeder', 'emoji': '🎣'},
-    'saran_tech': {'label': 'Šaran', 'emoji': '🎣'},
-    'varalica': {'label': 'Varaličarenje', 'emoji': '🎣'},
-    'som_tech': {'label': 'Som', 'emoji': '🎣'},
-    'plovak': {'label': 'Plovak', 'emoji': '🎣'},
-    'ne_znam': {'label': 'Ne znam', 'emoji': '🎣'},
-}
-
+# Prvo pitanje: set na akciji ili pojedinačno
 KIT_LEVEL = {
     'komplet': {
-        'label': 'Komplet set na akciji',
-        'emoji': '✅',
-        'tier': None,  # svi setovi u budžetu
+        'label': 'Setove za ribolov na akciji',
+        'emoji': '🎁',
+        'tier': None,
         'mode': 'set',
     },
     'pojedinacno': {
-        'label': 'Pojedinačnu opremu',
-        'emoji': '✅',
+        'label': 'Pojedinačno kupovati',
+        'emoji': '🛒',
         'tier': None,
         'mode': 'single',
     },
 }
 
-OWNED = {
-    'nista': {'label': 'Nemam ništa', 'emoji': ''},
-    'stap': {'label': 'Imam štap', 'emoji': ''},
-    'masinica': {'label': 'Imam mašinicu', 'emoji': ''},
-    'skoro_sve': {'label': 'Imam skoro sve', 'emoji': ''},
+# Samo za varaličarski set — prije budžeta
+VARALIC_STYLE = {
+    'stuka': {
+        'label': 'Lov štuke',
+        'emoji': '🐟',
+        'codes': ('stuka', 'lov_stuke', 'varalic_stuka'),
+    },
+    'som': {
+        'label': 'Lov soma',
+        'emoji': '🐟',
+        'codes': ('som', 'lov_soma', 'varalic_som'),
+    },
+    'ul': {
+        'label': 'UL ribolov',
+        'emoji': '🎣',
+        'codes': ('ul', 'ul_ribolov', 'varalic_ul'),
+    },
 }
+
+# Kodovi u adminu koji spadaju pod „Varaličarski set” (ne prikazuju se kao zasebni top-level)
+VARALIC_SUBTYPE_CODES = frozenset({
+    'stuka', 'som', 'ul',
+    'lov_stuke', 'lov_soma', 'ul_ribolov',
+    'varalic_stuka', 'varalic_som', 'varalic_ul',
+})
+VARALICARSKI_CODE = 'varalicarski'
 
 SINGLE_ITEMS = {
     'stap': {
         'label': 'Štap',
         'emoji': '🎣',
-        'slugs': ('feeder-stapovi', 'stapovi-za-varalicu', 'stapovi'),
+        'slugs': ('feeder-stapovi', 'stapovi-za-varalicu', 'stapovi', 'saranski-stapovi'),
         'names': ('štap', 'stap', 'rod'),
         'keywords': ('štap', 'stap', 'rod'),
     },
@@ -140,6 +132,131 @@ SINGLE_ITEMS = {
         'names': (),
         'keywords': (),
         'url_home': True,
+    },
+}
+
+# Pojedinačna oprema po ribi → kategorije (slug/naziv) koje prvo tražimo
+FISH_ITEM_CATEGORIES = {
+    'stap': {
+        'saran': {
+            'slugs': (
+                'saranski-stapovi', 'saran-stapovi', 'saranski-stap',
+                'carp-rods', 'carp-stapovi', 'stapovi-za-sarana',
+                'feeder-stapovi',  # feeder često za šarana
+            ),
+            'names': (
+                'šaransk', 'saransk', 'šaran štap', 'saran stap',
+                'carp rod', 'carp stap', 'feeder stap', 'feeder štap',
+            ),
+            'keywords': ('carp', 'saran', 'šaran', 'feeder rod', 'carp rod'),
+        },
+        'som': {
+            'slugs': (
+                'stapovi-za-soma', 'som-stapovi', 'somski-stapovi',
+                'catfish-rods', 'stapovi-som',
+            ),
+            'names': ('som', 'catfish', 'štap za soma', 'stap za soma'),
+            'keywords': ('som', 'catfish'),
+        },
+        'stuka': {
+            'slugs': (
+                'stapovi-za-varalicu', 'varalicarski-stapovi', 'spinning-stapovi',
+                'stapovi-za-stuku', 'predator-stapovi',
+            ),
+            'names': ('varalič', 'varalic', 'spinning', 'štuka', 'stuka', 'predator'),
+            'keywords': ('spinning', 'varalic', 'pike', 'štuka'),
+        },
+        'smud': {
+            'slugs': (
+                'stapovi-za-varalicu', 'varalicarski-stapovi', 'spinning-stapovi',
+                'stapovi-za-smuda', 'predator-stapovi',
+            ),
+            'names': ('varalič', 'varalic', 'spinning', 'smuđ', 'smud', 'predator'),
+            'keywords': ('spinning', 'varalic', 'zander', 'smuđ'),
+        },
+        'pastrmka': {
+            'slugs': (
+                'stapovi-za-varalicu', 'varalicarski-stapovi', 'spinning-stapovi',
+                'stapovi-za-pastrmku', 'trout-stapovi',
+            ),
+            'names': ('pastrm', 'trout', 'varalič', 'spinning'),
+            'keywords': ('pastrm', 'trout', 'spinning'),
+        },
+        'bijela': {
+            'slugs': (
+                'feeder-stapovi', 'plovkarski-stapovi', 'match-stapovi',
+                'stapovi-za-bjelu-ribu', 'picker-stapovi',
+            ),
+            'names': ('feeder', 'plovk', 'match', 'picker', 'bijel'),
+            'keywords': ('feeder', 'match', 'picker', 'plovak'),
+        },
+        'vise': {
+            'slugs': (
+                'feeder-stapovi', 'stapovi-za-varalicu', 'saranski-stapovi',
+                'stapovi', 'plovkarski-stapovi',
+            ),
+            'names': ('štap', 'stap', 'rod', 'feeder', 'varalič'),
+            'keywords': ('štap', 'stap', 'rod'),
+        },
+    },
+    'masinica': {
+        'saran': {
+            'slugs': ('masinice', 'mašinice', 'saranske-masinice', 'baitrunner', 'carp-reels'),
+            'names': ('mašin', 'masin', 'baitrunner', 'carp reel', 'šaran'),
+            'keywords': ('baitrunner', 'carp reel', 'mašin', 'masin'),
+        },
+        'som': {
+            'slugs': ('masinice', 'mašinice', 'masinice-za-soma', 'catfish-reels'),
+            'names': ('mašin', 'masin', 'som', 'catfish'),
+            'keywords': ('mašin', 'masin', 'som', 'catfish'),
+        },
+        'stuka': {
+            'slugs': ('masinice', 'mašinice', 'spinning-masinice'),
+            'names': ('mašin', 'masin', 'spinning', 'reel'),
+            'keywords': ('spinning', 'reel', 'mašin'),
+        },
+        'smud': {
+            'slugs': ('masinice', 'mašinice', 'spinning-masinice'),
+            'names': ('mašin', 'masin', 'spinning', 'reel'),
+            'keywords': ('spinning', 'reel', 'mašin'),
+        },
+        'pastrmka': {
+            'slugs': ('masinice', 'mašinice', 'spinning-masinice'),
+            'names': ('mašin', 'masin', 'spinning'),
+            'keywords': ('spinning', 'reel', 'mašin'),
+        },
+        'bijela': {
+            'slugs': ('masinice', 'mašinice', 'feeder-masinice'),
+            'names': ('mašin', 'masin', 'feeder', 'match'),
+            'keywords': ('feeder', 'match', 'mašin'),
+        },
+        'vise': {
+            'slugs': ('masinice', 'mašinice'),
+            'names': ('mašin', 'masin', 'reel'),
+            'keywords': ('mašin', 'masin', 'reel'),
+        },
+    },
+    'udice': {
+        'saran': {
+            'slugs': ('saranske-udice', 'udice-za-ribolov'),
+            'names': ('šaransk', 'saransk'),
+            'keywords': ('šaran', 'saran', 'carp hook'),
+        },
+        'som': {
+            'slugs': ('udice-za-soma', 'udice-za-ribolov'),
+            'names': ('som',),
+            'keywords': ('som', 'catfish'),
+        },
+        'bijela': {
+            'slugs': ('udice-za-bjelu-ribu', 'feeder-udice', 'udice-za-ribolov'),
+            'names': ('bijel', 'feeder'),
+            'keywords': ('bijel', 'feeder'),
+        },
+        'vise': {
+            'slugs': ('udice-za-ribolov', 'feeder-udice', 'saranske-udice'),
+            'names': ('udic',),
+            'keywords': ('udica', 'hook'),
+        },
     },
 }
 
@@ -352,9 +469,98 @@ def _line_sale_total(stavke, popust_postotak):
     return (reg * (Decimal('1') - pct / Decimal('100'))).quantize(Decimal('0.01'))
 
 
-def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None, owned=None):
+def _codes_for_set_choice(fish_key, varalic_style=''):
     """
-    Setovi iz admina za TAČNU vrstu ribe, strogo filtrirani budžetom.
+    Admin kodovi za izabrani tip seta.
+    Varaličarski → koristi pod-izbor (lov štuke / soma / UL).
+    """
+    fish_key = (fish_key or '').strip().lower()
+    style = (varalic_style or '').strip().lower()
+
+    if fish_key == VARALICARSKI_CODE or fish_key in VARALIC_SUBTYPE_CODES:
+        if style and style in VARALIC_STYLE:
+            return list(VARALIC_STYLE[style]['codes'])
+        if fish_key in VARALIC_STYLE:
+            return list(VARALIC_STYLE[fish_key]['codes'])
+        if fish_key in VARALIC_SUBTYPE_CODES:
+            return [fish_key]
+        # parent varalicarski bez stila — svi pod-kodovi
+        codes = [VARALICARSKI_CODE]
+        for conf in VARALIC_STYLE.values():
+            codes.extend(conf['codes'])
+        return list(dict.fromkeys(codes))
+
+    fish = FISH.get(fish_key) or {}
+    codes = [fish_key] + list(fish.get('codes') or ())
+    # alias: stari "saran" ↔ "saranski"
+    if fish_key in ('saran', 'saranski'):
+        codes.extend(['saran', 'saranski'])
+    return list(dict.fromkeys(c for c in codes if c))
+
+
+def _set_type_options_from_admin():
+    """
+    Top-level tipovi setova iz admina.
+    Varaličarski podtipovi (stuka/som/ul) se grupišu u jednu opciju.
+    """
+    try:
+        from .models import AdvisorBeginnerFishType
+    except Exception:
+        return []
+
+    types = list(
+        AdvisorBeginnerFishType.objects
+        .filter(aktivan=True)
+        .order_by('redoslijed', 'naziv')
+    )
+    if not types:
+        return []
+
+    opts = []
+    has_varalic = False
+    for ft in types:
+        code = (ft.code or '').strip().lower()
+        if not code:
+            continue
+        if code == VARALICARSKI_CODE or code in VARALIC_SUBTYPE_CODES:
+            has_varalic = True
+            continue
+        emoji = (ft.emoji or '🎣').strip()
+        label = (ft.naziv or code).strip()
+        opts.append({
+            'id': code,
+            'label': f'{emoji} {label}'.strip(),
+        })
+
+    if has_varalic:
+        # Umetni varaličarski blizu vrha (nakon saranskog ako postoji)
+        varalic_opt = {
+            'id': VARALICARSKI_CODE,
+            'label': '🎣 Varaličarski set',
+        }
+        insert_at = 0
+        for i, o in enumerate(opts):
+            if o['id'] in ('saranski', 'saran'):
+                insert_at = i + 1
+                break
+        opts.insert(insert_at, varalic_opt)
+
+    return opts
+
+
+def _is_varalicarski_choice(fish_key):
+    key = (fish_key or '').strip().lower()
+    return key == VARALICARSKI_CODE or key in VARALIC_SUBTYPE_CODES
+
+
+def _varalic_style_options():
+    """Opcije: lov štuke / lov soma / UL ribolov."""
+    return _opts(VARALIC_STYLE)
+
+
+def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None, owned=None, varalic_style=''):
+    """
+    Setovi iz admina za izabrani tip seta, strogo filtrirani budžetom.
     owned=masinica/stap/skoro_sve → te stavke se izbace iz seta (kupac već ima).
     """
     try:
@@ -362,10 +568,9 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None, own
     except Exception:
         return []
 
-    fish = FISH.get(fish_key) or {}
-    codes = list(dict.fromkeys([fish_key] + list(fish.get('codes') or ())))
-    if fish_key != 'vise':
-        codes = [fish_key]
+    codes = _codes_for_set_choice(fish_key, varalic_style=varalic_style or '')
+    if not codes:
+        codes = [fish_key] if fish_key else []
 
     fish_types = list(
         AdvisorBeginnerFishType.objects
@@ -381,6 +586,23 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None, own
         )
         .order_by('redoslijed')
     )
+
+    # Fallback: varaličarski parent ako nema setova na podtipu
+    if not fish_types and _is_varalicarski_choice(fish_key):
+        fish_types = list(
+            AdvisorBeginnerFishType.objects
+            .filter(aktivan=True, code=VARALICARSKI_CODE)
+            .prefetch_related(
+                Prefetch(
+                    'setovi',
+                    queryset=AdvisorBeginnerSet.objects
+                    .filter(aktivan=True)
+                    .prefetch_related('stavke__product', 'stavke__product__kategorija')
+                    .order_by('redoslijed', 'id'),
+                ),
+            )
+            .order_by('redoslijed')
+        )
 
     kits = []
     for ft in fish_types:
@@ -452,12 +674,17 @@ def _kits_from_admin(fish_key, request=None, budget_max=None, kit_tier=None, own
     return kits[:6]
 
 
-def _budget_options_for_fish(fish_key):
+def _budget_options_for_fish(fish_key, varalic_style=''):
     """
-    Budžet-opcije koje imaju barem jedan set u bazi za tu ribu.
-    Npr. nema seta ≤80 KM za šarana → ne nudi se „Do 80 KM”.
+    Budžet-opcije koje imaju barem jedan set u bazi za taj tip seta.
+    Npr. nema seta ≤80 KM → ne nudi se „Do 80 KM”.
     """
-    all_kits = _kits_from_admin(fish_key, budget_max=None, kit_tier=None)
+    all_kits = _kits_from_admin(
+        fish_key,
+        budget_max=None,
+        kit_tier=None,
+        varalic_style=varalic_style,
+    )
     if not all_kits:
         return []
     prices = [k['sort_price'] for k in all_kits]
@@ -465,8 +692,6 @@ def _budget_options_for_fish(fish_key):
     for key, conf in BUDGET.items():
         max_b = conf['max']
         if max_b >= Decimal('9000'):
-            # „Preko 250 KM” — samo ako postoji set iznad 250 ili bilo koji set
-            # (kupac s velikim budžetom može uzeti i jeftiniji set)
             if prices:
                 opts.append({
                     'id': key,
@@ -506,57 +731,180 @@ def build_accessory_products(request=None, limit_per=2):
     return out
 
 
-def build_single_item_rec(item_key, request=None):
+def _resolve_item_search(item_key, fish_key=''):
+    """
+    Kategorije/ključne riječi za pojedinačni artikal.
+    Ako je poznata riba (npr. šaran + štap) → npr. Šaranski štapovi.
+    """
     conf = SINGLE_ITEMS.get(item_key) or SINGLE_ITEMS['ostalo']
+    fish_key = (fish_key or '').strip().lower()
+    by_fish = (FISH_ITEM_CATEGORIES.get(item_key) or {}).get(fish_key) or {}
+    if by_fish:
+        slugs = tuple(dict.fromkeys(tuple(by_fish.get('slugs') or ()) + tuple(conf.get('slugs') or ())))
+        names = tuple(dict.fromkeys(tuple(by_fish.get('names') or ()) + tuple(conf.get('names') or ())))
+        keywords = tuple(dict.fromkeys(tuple(by_fish.get('keywords') or ()) + tuple(conf.get('keywords') or ())))
+        return {
+            'slugs': slugs,
+            'names': names,
+            'keywords': keywords,
+            'label': conf.get('label') or item_key,
+            'url_home': conf.get('url_home'),
+            'prefer_fish': True,
+        }
+    return {
+        'slugs': tuple(conf.get('slugs') or ()),
+        'names': tuple(conf.get('names') or ()),
+        'keywords': tuple(conf.get('keywords') or ()),
+        'label': conf.get('label') or item_key,
+        'url_home': conf.get('url_home'),
+        'prefer_fish': False,
+    }
+
+
+def _filter_products_by_budget(products, budget_max=None, limit=40):
+    """Zadrži artikle ≤ budžet (prikazna cijena). Preko 250 = bez gornje granice."""
+    out = []
+    strict = budget_max is not None and budget_max < Decimal('9000')
+    for p in products:
+        price = _product_price(p)
+        if strict and price > budget_max:
+            continue
+        if price <= 0:
+            continue
+        out.append(p)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def build_single_item_rec(item_key, request=None, state=None):
+    """
+    Pojedinačna oprema: kategorija po ribi (npr. šaran → šaranski štapovi)
+    + svi artikli u budžetu koji je kupac izabrao.
+    """
+    state = state or {}
+    fish_key = (state.get('fish') or '').strip().lower()
+    budget_key = (state.get('budget') or '').strip()
+    budget_max = None
+    if budget_key and budget_key in BUDGET:
+        budget_max = BUDGET[budget_key]['max']
+
+    conf = _resolve_item_search(item_key, fish_key)
     if conf.get('url_home'):
         return {
             'item_label': conf['label'],
             'category_url': reverse('home'),
             'products': [],
             'headline': conf['label'],
+            'kits': [],
+            'has_offer': False,
         }
+
+    # 1) prvo kategorije za ribu (npr. Šaranski štapovi)
     cats = _find_categories(conf.get('slugs'), conf.get('names'))
-    qs = _base_qs(require_stock=False)
+    # Ako preferiramo ribu, pokušaj još uži match po nazivu kategorije
+    if conf.get('prefer_fish') and fish_key and cats:
+        fish_bits = (FISH_ITEM_CATEGORIES.get(item_key) or {}).get(fish_key) or {}
+        prefer_names = [n.lower() for n in (fish_bits.get('names') or ())]
+        prefer_slugs = [s.lower() for s in (fish_bits.get('slugs') or ())]
+        ranked = []
+        for c in cats:
+            score = 0
+            kn = (c.naziv or '').lower()
+            ks = (c.slug or '').lower()
+            for s in prefer_slugs:
+                if s and (ks == s or s in ks):
+                    score += 10
+            for n in prefer_names:
+                if n and n in kn:
+                    score += 5
+            ranked.append((score, c))
+        ranked.sort(key=lambda x: (-x[0], x[1].naziv or ''))
+        if ranked and ranked[0][0] > 0:
+            # zadrži pogođene + djecu; ostale na kraju
+            cats = [c for sc, c in ranked if sc > 0] or [c for _, c in ranked]
+
+    qs = _base_qs(require_stock=True)
+    used_category = bool(cats)
     if cats:
         ids = [c.pk for c in cats]
         qs = qs.filter(Q(kategorija_id__in=ids) | Q(kategorija__roditelj_id__in=ids))
     else:
         qs = qs.filter(_keyword_q(conf.get('keywords')))
+        used_category = False
+
+    # Učitaj više, pa filtriraj budžet po prikaznoj cijeni
+    candidates = list(qs.order_by('-na_stanju', 'cijena', 'naziv')[:120])
+    filtered = _filter_products_by_budget(candidates, budget_max=budget_max, limit=40)
+
+    # Ako kategorija postoji ali ništa u budžetu — ne širi na cijelu trgovinu
+    # Ako nema kategorije i keyword je prazan rezultat, ostavi prazno
+    if not filtered and cats and conf.get('prefer_fish'):
+        # drugi pokušaj: samo keyword + budžet (širi net)
+        qs2 = _base_qs(require_stock=True).filter(_keyword_q(conf.get('keywords')))
+        candidates2 = list(qs2.order_by('-na_stanju', 'cijena', 'naziv')[:120])
+        filtered = _filter_products_by_budget(candidates2, budget_max=budget_max, limit=40)
+        used_category = False
+
     products = [
         _serialize_product(p, request, role=item_key)
-        for p in qs.order_by('-na_stanju', 'naziv')[:12]
+        for p in filtered
     ]
+
+    fish_label = FISH.get(fish_key, {}).get('label', '')
+    budget_label = BUDGET.get(budget_key, {}).get('label', '') if budget_key else ''
+    cat_label = cats[0].naziv if cats else conf['label']
+    item_label = conf['label']
+    if fish_label and item_key in ('stap', 'masinica', 'udice', 'varalice'):
+        item_label = f'{conf["label"]} — {fish_label}'
+        if budget_label:
+            item_label = f'{item_label} · {budget_label}'
+
     kw = (conf.get('keywords') or ('',))[0]
+    headline_parts = [cat_label if used_category and cats else conf['label']]
+    if budget_label:
+        headline_parts.append(budget_label)
+
     return {
-        'item_label': conf['label'],
+        'item_label': item_label,
         'category_url': _category_url(cats, fallback_q=kw),
-        'category_label': cats[0].naziv if cats else conf['label'],
+        'category_label': cat_label,
         'products': products,
-        'headline': conf['label'],
+        'headline': ' · '.join(headline_parts),
         'total_display': '',
+        'kits': [],
+        'has_offer': bool(products),
+        'fish': fish_key,
+        'budget_key': budget_key,
+        'count': len(products),
     }
 
 
 def build_recommendation_from_state(state, request=None):
-    fish_key = state.get('fish') or 'saran'
+    fish_key = state.get('fish') or state.get('set_type') or 'saranski'
     budget_key = state.get('budget') or '150'
     budget_max = BUDGET.get(budget_key, BUDGET['150'])['max']
-    kit_key = state.get('kit_level') or 'komplet'
-    exp = state.get('experience') or 'prvi'
-    level = EXPERIENCE.get(exp, EXPERIENCE['prvi'])['level']
-    technique = state.get('technique') or ''
+    varalic_style = state.get('varalic_style') or ''
 
-    # Svi aktivni setovi u budžetu (bez umjetnog „tier” reza).
-    # owned (masinica/stap/skoro_sve) → te stavke se izbace iz prikaza i cijene seta
     kits = _kits_from_admin(
         fish_key,
         request=request,
         budget_max=budget_max,
         kit_tier=None,
         owned=state.get('owned') or '',
+        varalic_style=varalic_style,
     )
 
     fish_label = FISH.get(fish_key, {}).get('label', '')
+    if not fish_label and varalic_style in VARALIC_STYLE:
+        fish_label = VARALIC_STYLE[varalic_style]['label']
+    if not fish_label:
+        fish_label = (state.get('set_type_label') or fish_key or 'Komplet')
+
+    style_label = ''
+    if varalic_style in VARALIC_STYLE:
+        style_label = VARALIC_STYLE[varalic_style]['label']
+
     return {
         'fish': fish_key,
         'fish_label': fish_label,
@@ -564,7 +912,7 @@ def build_recommendation_from_state(state, request=None):
         'kits': kits,
         'products': [p for k in kits for p in k.get('products') or []],
         'item_label': fish_label or 'Komplet',
-        'style_label': EXPERIENCE.get(exp, {}).get('label', ''),
+        'style_label': style_label,
         'total_display': kits[0]['total_display'] if kits else '',
         'from_admin': bool(kits),
         'budget_key': budget_key,
@@ -575,34 +923,46 @@ def build_recommendation_from_state(state, request=None):
 # Mapiranje koraka → pitanje (za live analitiku)
 _STEP_QUESTION = {
     'start': 'Otvorio savjetnik',
-    'experience': 'Iskustvo',
-    'fish': 'Riba',
-    'water': 'Lokacija',
+    'kit_level': 'Set ili pojedinačno',
+    'set_type': 'Tip seta',
+    'varalic_style': 'Varaličarski stil',
     'budget': 'Budžet',
-    'technique': 'Tehnika',
-    'kit_level': 'Tip kompleta',
-    'owned': 'Postojeća oprema',
     'results': 'Rezultat',
     'single': 'Pojedinačna oprema',
     'post': 'Nakon preporuke',
+    # legacy (stari live logovi)
+    'experience': 'Iskustvo',
+    'fish': 'Tip seta',
+    'water': 'Lokacija',
+    'technique': 'Tehnika',
+    'owned': 'Postojeća oprema',
 }
 
 
 def _answer_label(step, answer):
     """Ljudski čitljiv odgovor za staff live."""
     maps = {
-        'experience': EXPERIENCE,
-        'fish': FISH,
-        'water': WATER,
         'budget': BUDGET,
-        'technique': TECHNIQUE,
         'kit_level': KIT_LEVEL,
-        'owned': OWNED,
+        'varalic_style': VARALIC_STYLE,
         'single': SINGLE_ITEMS,
+        'fish': FISH,
+        'set_type': FISH,
     }
     m = maps.get(step) or {}
     if answer in m:
         return m[answer].get('label') or answer
+    if step == 'set_type' and answer:
+        # Naziv iz admina
+        try:
+            from .models import AdvisorBeginnerFishType
+            ft = AdvisorBeginnerFishType.objects.filter(code=answer).first()
+            if ft:
+                return ft.naziv
+        except Exception:
+            pass
+        if answer == VARALICARSKI_CODE:
+            return 'Varaličarski set'
     special = {
         'no_kit': 'Ne želi komplet',
         'view_kit': 'Gleda komplet',
@@ -742,7 +1102,7 @@ def track_advisor_live(request, *, step='', answer='', state=None, payload=None,
     if step in ('start', 'reset', '') and not answer:
         fire = True
         poruka = 'Otvorio ribolovački savjetnik'
-    elif step == 'owned' and answer:
+    elif step == 'budget' and answer and kits:
         fire = True
         naslov = 'Savjetnik — preporuka'
         if kit_names:
@@ -810,71 +1170,17 @@ def process_step(step, answer, state=None, request=None):
             pass
         return payload
 
-    def after_budget_or_technique():
-        """Sljedeći korak nakon budžeta (ili tehnike)."""
-        return bot(
-            'Šta želiš kupiti?',
-            options=_opts(KIT_LEVEL),
-            next_step='kit_level',
-        )
-
-    # ── START → odmah prvo pitanje (bez „Počni”) ─────────────────
-    if step in ('start', 'reset', '', 'welcome'):
-        state.clear()
-        return bot(
-            'Koliko iskustva imaš?',
-            options=_opts(EXPERIENCE),
-            next_step='experience',
-        )
-
-    # ── 1 EXPERIENCE ───────────────────────────────────────────────
-    if step == 'experience':
-        if answer not in EXPERIENCE:
-            return bot(
-                'Koliko iskustva imaš?',
-                options=_opts(EXPERIENCE),
-                next_step='experience',
-            )
-        state['experience'] = answer
-        return bot(
-            'Šta najčešće loviš?',
-            options=_opts(FISH),
-            next_step='fish',
-        )
-
-    # ── 2 FISH ─────────────────────────────────────────────────────
-    if step == 'fish':
-        if answer not in FISH:
-            return bot(
-                'Šta najčešće loviš?',
-                options=_opts(FISH),
-                next_step='fish',
-            )
-        state['fish'] = answer
-        return bot(
-            'Gdje najčešće pecaš?',
-            options=_opts(WATER),
-            next_step='water',
-        )
-
-    # ── 3 WATER ────────────────────────────────────────────────────
-    if step == 'water':
-        if answer not in WATER:
-            return bot(
-                'Gdje najčešće pecaš?',
-                options=_opts(WATER),
-                next_step='water',
-            )
-        state['water'] = answer
-        fish_key = state.get('fish') or 'saran'
-        budget_opts = _budget_options_for_fish(fish_key)
+    def ask_budget():
+        fish_key = state.get('fish') or state.get('set_type') or ''
+        style = state.get('varalic_style') or ''
+        budget_opts = _budget_options_for_fish(fish_key, varalic_style=style)
         if not budget_opts:
-            # Nema nijednog seta u bazi za ovu ribu — ne nudi budžete lažno
-            state['budget'] = ''
             return bot(
-                'Za ovu vrstu ribe trenutno nema kompleta u ponudi.\n'
+                'Za ovaj tip seta trenutno nema kompleta u ponudi.\n'
                 'Šta tačno tražiš?',
-                options=_opts(SINGLE_ITEMS),
+                options=_opts(SINGLE_ITEMS) + [
+                    {'id': 'again', 'label': '🔄 Ispočetka'},
+                ],
                 next_step='single',
             )
         return bot(
@@ -883,97 +1189,12 @@ def process_step(step, answer, state=None, request=None):
             next_step='budget',
         )
 
-    # ── 4 BUDGET ───────────────────────────────────────────────────
-    if step == 'budget':
-        fish_key = state.get('fish') or 'saran'
-        budget_opts = _budget_options_for_fish(fish_key)
-        allowed = {o['id'] for o in budget_opts}
-        if answer not in allowed:
-            if not budget_opts:
-                return bot(
-                    'Za ovu vrstu ribe trenutno nema kompleta u ponudi.\n'
-                    'Šta tačno tražiš?',
-                    options=_opts(SINGLE_ITEMS),
-                    next_step='single',
-                )
-            return bot(
-                'Koliki budžet imaš?',
-                options=budget_opts,
-                next_step='budget',
-            )
-        # Još jednom: mora postojati barem 1 set u tom budžetu
-        bmax = BUDGET.get(answer, {}).get('max')
-        matching = _kits_from_admin(fish_key, budget_max=bmax, kit_tier=None)
-        if not matching:
-            return bot(
-                'U tom budžetu trenutno nema kompleta.\n'
-                'Izaberi drugi budžet ili pojedinačnu opremu:',
-                options=budget_opts + [
-                    {'id': 'no_kit', 'label': 'Pojedinačna oprema'},
-                ],
-                next_step='budget',
-            )
-        state['budget'] = answer
-        exp = state.get('experience') or 'prvi'
-        # Tehniku pitamo samo iskusne
-        if exp == 'iskusan':
-            return bot(
-                'Koji način ribolova preferiraš?',
-                options=_opts(TECHNIQUE),
-                next_step='technique',
-            )
-        return after_budget_or_technique()
-
-    # ── 5 TECHNIQUE (samo iskusan) ─────────────────────────────────
-    if step == 'technique':
-        if answer not in TECHNIQUE:
-            return bot(
-                'Koji način ribolova preferiraš?',
-                options=_opts(TECHNIQUE),
-                next_step='technique',
-            )
-        state['technique'] = answer
-        return after_budget_or_technique()
-
-    # ── 6 KIT LEVEL ────────────────────────────────────────────────
-    if step == 'kit_level':
-        if answer not in KIT_LEVEL:
-            return bot(
-                'Šta želiš kupiti?',
-                options=_opts(KIT_LEVEL),
-                next_step='kit_level',
-            )
-        state['kit_level'] = answer
-        # Pojedinačna oprema — odmah izbor (štap, mašinica…)
-        if answer == 'pojedinacno' or KIT_LEVEL[answer].get('mode') == 'single':
-            return bot(
-                'Šta tačno tražiš?',
-                options=_opts(SINGLE_ITEMS),
-                next_step='single',
-            )
-        # Komplet set na akciji — još jedno pitanje pa setovi
-        return bot(
-            'Da li već posjeduješ nešto od opreme?',
-            options=_opts(OWNED),
-            next_step='owned',
-        )
-
-    # ── 7 OWNED → RESULTS ──────────────────────────────────────────
-    if step == 'owned':
-        if answer not in OWNED:
-            return bot(
-                'Da li već posjeduješ nešto od opreme?',
-                options=_opts(OWNED),
-                next_step='owned',
-            )
-        state['owned'] = answer
+    def show_results():
         rec = build_recommendation_from_state(state, request=request)
         kits = rec.get('kits') or []
-
-        # Nema seta u budžetu / za ribu → ne prikazuj praznu „ponudu kompleta”
         if not kits:
             return bot(
-                'Za tvoj izbor (riba + budžet) trenutno nema kompleta u ponudi.\n'
+                'Za tvoj izbor trenutno nema kompleta u ponudi.\n'
                 'Šta tačno tražiš?',
                 options=_opts(SINGLE_ITEMS) + [
                     {'id': 'again', 'label': '🔄 Ispočetka'},
@@ -982,7 +1203,6 @@ def process_step(step, answer, state=None, request=None):
                 recommendation={'kits': [], 'products': [], 'has_offer': False},
                 kits=[],
             )
-
         opts = [
             {'id': 'no_kit', 'label': 'Ne želim komplet'},
             {'id': 'accessories_ask', 'label': '✅ Pribor uz komplet'},
@@ -993,9 +1213,8 @@ def process_step(step, answer, state=None, request=None):
                 'id': 'view_kit',
                 'label': f'👉 Pogledaj: {kits[0].get("label", "komplet")}',
             })
-
         return bot(
-            '',  # samo setovi, bez teksta
+            '',
             options=opts,
             next_step='results',
             recommendation=rec,
@@ -1003,9 +1222,139 @@ def process_step(step, answer, state=None, request=None):
             done=False,
         )
 
+    # ── START → set na akciji ili pojedinačno ─────────────────────
+    if step in ('start', 'reset', '', 'welcome'):
+        state.clear()
+        return bot(
+            'Želite li setove za ribolov na akciji ili pojedinačno kupovati?',
+            options=_opts(KIT_LEVEL),
+            next_step='kit_level',
+        )
+
+    # ── 1 KIT LEVEL (set / pojedinačno) ────────────────────────────
+    if step == 'kit_level':
+        if answer not in KIT_LEVEL:
+            return bot(
+                'Želite li setove za ribolov na akciji ili pojedinačno kupovati?',
+                options=_opts(KIT_LEVEL),
+                next_step='kit_level',
+            )
+        state['kit_level'] = answer
+        if answer == 'pojedinacno' or KIT_LEVEL[answer].get('mode') == 'single':
+            return bot(
+                'Šta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS),
+                next_step='single',
+            )
+        set_opts = _set_type_options_from_admin()
+        if not set_opts:
+            return bot(
+                'Trenutno nema setova u ponudi.\nŠta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS) + [
+                    {'id': 'again', 'label': '🔄 Ispočetka'},
+                ],
+                next_step='single',
+            )
+        return bot(
+            'Koji tip seta te zanima?',
+            options=set_opts,
+            next_step='set_type',
+        )
+
+    # ── 2 SET TYPE (iz admina) ─────────────────────────────────────
+    if step == 'set_type':
+        set_opts = _set_type_options_from_admin()
+        allowed = {o['id'] for o in set_opts}
+        if answer not in allowed:
+            if not set_opts:
+                return bot(
+                    'Trenutno nema setova u ponudi.\nŠta tačno tražiš?',
+                    options=_opts(SINGLE_ITEMS),
+                    next_step='single',
+                )
+            return bot(
+                'Koji tip seta te zanima?',
+                options=set_opts,
+                next_step='set_type',
+            )
+        state['set_type'] = answer
+        state['fish'] = answer
+        for o in set_opts:
+            if o['id'] == answer:
+                state['set_type_label'] = o.get('label', answer)
+                break
+
+        # Samo varaličarski: prije budžeta pitaj stil lova
+        if _is_varalicarski_choice(answer):
+            return bot(
+                'Šta te zanima unutar varaličarskog seta?',
+                options=_varalic_style_options(),
+                next_step='varalic_style',
+            )
+        return ask_budget()
+
+    # ── 3 VARALIC STYLE (lov štuke / soma / UL) ────────────────────
+    if step == 'varalic_style':
+        if answer not in VARALIC_STYLE:
+            return bot(
+                'Šta te zanima unutar varaličarskog seta?',
+                options=_varalic_style_options(),
+                next_step='varalic_style',
+            )
+        state['varalic_style'] = answer
+        state['fish'] = answer
+        state['set_type'] = VARALICARSKI_CODE
+        state['set_type_label'] = VARALIC_STYLE[answer]['label']
+        return ask_budget()
+
+    # ── 4 BUDGET → RESULTS ─────────────────────────────────────────
+    if step == 'budget':
+        if answer == 'no_kit':
+            return bot(
+                'Šta tačno tražiš?',
+                options=_opts(SINGLE_ITEMS),
+                next_step='single',
+            )
+        fish_key = state.get('fish') or state.get('set_type') or ''
+        style = state.get('varalic_style') or ''
+        budget_opts = _budget_options_for_fish(fish_key, varalic_style=style)
+        allowed = {o['id'] for o in budget_opts}
+        if answer not in allowed:
+            if not budget_opts:
+                return bot(
+                    'Za ovaj tip seta trenutno nema kompleta u ponudi.\n'
+                    'Šta tačno tražiš?',
+                    options=_opts(SINGLE_ITEMS),
+                    next_step='single',
+                )
+            return bot(
+                'Koliki budžet imaš?',
+                options=budget_opts,
+                next_step='budget',
+            )
+        bmax = BUDGET.get(answer, {}).get('max')
+        matching = _kits_from_admin(
+            fish_key,
+            budget_max=bmax,
+            kit_tier=None,
+            varalic_style=style,
+        )
+        if not matching:
+            return bot(
+                'U tom budžetu trenutno nema kompleta.\n'
+                'Izaberi drugi budžet ili pojedinačnu opremu:',
+                options=budget_opts + [
+                    {'id': 'no_kit', 'label': 'Pojedinačna oprema'},
+                ],
+                next_step='budget',
+            )
+        state['budget'] = answer
+        return show_results()
+
     # ── RESULTS ACTIONS ────────────────────────────────────────────
     if step == 'results':
         if answer == 'view_kit':
+            rec = build_recommendation_from_state(state, request=request)
             return bot(
                 'Iznad su artikli kompleta — možeš Kupiti set ili pojedinačno.\n\n'
                 'Da li želiš da ti odmah pokažem najčešće proizvode koje ribolovci kupuju uz ovaj komplet?',
@@ -1016,8 +1365,8 @@ def process_step(step, answer, state=None, request=None):
                     {'id': 'again', 'label': '🔄 Ispočetka'},
                 ],
                 next_step='results',
-                recommendation=build_recommendation_from_state(state, request=request),
-                kits=(build_recommendation_from_state(state, request=request).get('kits') or []),
+                recommendation=rec,
+                kits=(rec.get('kits') or []),
             )
 
         if answer in ('accessories_ask', 'accessories_yes'):
@@ -1064,7 +1413,6 @@ def process_step(step, answer, state=None, request=None):
             state.clear()
             return process_step('start', '', state, request=request)
 
-        # default keep results
         rec = build_recommendation_from_state(state, request=request)
         return bot(
             'Šta dalje?',
@@ -1079,7 +1427,7 @@ def process_step(step, answer, state=None, request=None):
             kits=rec.get('kits'),
         )
 
-    # ── SINGLE ITEM (ne želim komplet) ─────────────────────────────
+    # ── SINGLE ITEM ────────────────────────────────────────────────
     if step == 'single':
         if answer not in SINGLE_ITEMS:
             return bot(
@@ -1087,7 +1435,36 @@ def process_step(step, answer, state=None, request=None):
                 options=_opts(SINGLE_ITEMS),
                 next_step='single',
             )
-        rec = build_single_item_rec(answer, request=request)
+        state['single_item'] = answer
+        rec = build_single_item_rec(answer, request=request, state=state)
+        fish_label = FISH.get(state.get('fish') or '', {}).get('label', '')
+        if not fish_label and state.get('varalic_style') in VARALIC_STYLE:
+            fish_label = VARALIC_STYLE[state['varalic_style']]['label']
+        budget_label = BUDGET.get(state.get('budget') or '', {}).get('label', '')
+        cat_label = rec.get('category_label') or rec.get('item_label') or ''
+        n = int(rec.get('count') or len(rec.get('products') or []))
+
+        if n:
+            if answer == 'stap' and fish_label:
+                msg = f'Evo štapova za {fish_label.lower()}'
+                if budget_label:
+                    msg += f' ({budget_label.lower()})'
+                if cat_label:
+                    msg += f'\nKategorija: {cat_label}'
+                msg += f'\n{n} artikal(a) na stanju — možeš kupiti pojedinačno.'
+            else:
+                msg = rec.get('item_label') or 'Oprema'
+                if budget_label:
+                    msg += f' ({budget_label})'
+                msg += f'\n{n} artikal(a) u ponudi.'
+        else:
+            msg = (
+                f'Za tvoj izbor trenutno nema artikala'
+                f'{(" u budžetu " + budget_label) if budget_label else ""}'
+                f'{(" za " + fish_label.lower()) if fish_label else ""}.\n'
+                'Probaj drugi budžet ili otvori cijelu kategoriju.'
+            )
+
         opts = []
         if rec.get('category_url'):
             opts.append({
@@ -1096,11 +1473,10 @@ def process_step(step, answer, state=None, request=None):
                 'url': rec['category_url'],
             })
         opts.extend([
-            {'id': 'more', 'label': '👉 Prikaži još preporuka'},
             {'id': 'again', 'label': '🔄 Ispočetka'},
         ])
         return bot(
-            rec.get('item_label') or 'Oprema',
+            msg,
             options=opts,
             next_step='post',
             recommendation=rec,
@@ -1146,6 +1522,6 @@ def process_step(step, answer, state=None, request=None):
 
     if answer in ('again', 'reset'):
         state.clear()
-        return process_step('start', '', state, request=request)
+        return process_step('start', '', {}, request=request)
 
     return process_step('start', '', {}, request=request)

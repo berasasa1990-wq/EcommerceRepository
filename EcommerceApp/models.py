@@ -3284,14 +3284,18 @@ class OnlineGiftPush(models.Model):
 
 class AdvisorBeginnerFishType(models.Model):
     """
-    Vrsta ribolova za početničke setove u savjetniku
-    (Šaran, Štuka, Som, Pastrmka, Bijela riba…).
+    Tip seta za savjetnik (Saranski set, Feeder set, Pečaljke za plovak…).
+    Varaličarski podtipovi: stuka (lov štuke), som (lov soma), ul (UL ribolov)
+    — u chatu se grupišu pod „Varaličarski set”.
     """
     code = models.SlugField(
         max_length=40,
         unique=True,
         verbose_name='Kod',
-        help_text='Interni kod, npr. saran, stuka, som, pastrmka, bijela.',
+        help_text=(
+            'Interni kod, npr. saranski, feeder, plovak. '
+            'Za varaličarski: stuka, som, ul (grupišu se u chatu).'
+        ),
     )
     naziv = models.CharField(max_length=100, verbose_name='Naziv')
     emoji = models.CharField(max_length=8, blank=True, default='', verbose_name='Emoji')
@@ -3299,8 +3303,8 @@ class AdvisorBeginnerFishType(models.Model):
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
 
     class Meta:
-        verbose_name = 'Početnik — vrsta ribolova'
-        verbose_name_plural = 'Početnik — vrste ribolova'
+        verbose_name = 'Savjetnik — tip seta'
+        verbose_name_plural = 'Savjetnik — tipovi setova'
         ordering = ['redoslijed', 'naziv']
 
     def __str__(self):
@@ -3313,14 +3317,14 @@ class AdvisorBeginnerFishType(models.Model):
 
 class AdvisorBeginnerSet(models.Model):
     """
-    Jedan set/komplet za početnike unutar vrste ribolova.
+    Jedan set/komplet unutar tipa seta u savjetniku.
     Možeš dodati koliko god setova želiš (osnovni, srednji…).
     """
     fish_type = models.ForeignKey(
         AdvisorBeginnerFishType,
         on_delete=models.CASCADE,
         related_name='setovi',
-        verbose_name='Vrsta ribolova',
+        verbose_name='Tip seta',
     )
     naziv = models.CharField(
         max_length=120,
