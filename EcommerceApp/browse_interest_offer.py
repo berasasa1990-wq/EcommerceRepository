@@ -1427,6 +1427,8 @@ def apply_browse_interest_offer(request, cart):
         quantity=1,
         custom_price=final_price,
         promo_bazna=base_price,
+        discount_source=f'AI prodaja / browse ponuda (−{percent}%)',
+        discount_percent=percent,
     )
 
     _mark_claimed(request, product_id)

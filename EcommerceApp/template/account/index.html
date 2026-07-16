@@ -17,6 +17,16 @@
             {% if user.is_superuser or user.is_staff %}
             <a href="{% url 'staff_admin_panel' %}" class="btn btn-admin-panel">Admin panel</a>
             {% endif %}
+            {% if user.is_superuser %}
+            <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="account-edit-mode-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <input type="hidden" name="enabled" value="{% if staff_edit_mode %}0{% else %}1{% endif %}">
+                <button type="submit" class="btn btn-edit-mode{% if staff_edit_mode %} is-on{% else %} is-off{% endif %}">
+                    {% if staff_edit_mode %}Edit mode: UKLJUČEN{% else %}Edit mode: ISKLJUČEN{% endif %}
+                </button>
+            </form>
+            {% endif %}
             <a href="{% url 'logout' %}" class="btn btn-logout">Odjavi se</a>
         </div>
     </div>

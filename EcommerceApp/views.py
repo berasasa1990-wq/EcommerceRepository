@@ -116,6 +116,20 @@ def _request_is_superuser(request):
     )
 
 
+STAFF_EDIT_MODE_SESSION_KEY = 'staff_edit_mode'
+
+
+def _staff_edit_mode_enabled(request):
+    """
+    Superuser edit mode on the storefront.
+    Default True. When False, product pages hide admin tools (view as regular user).
+    """
+    if not _request_is_superuser(request):
+        return False
+    # Missing key → on (backwards compatible)
+    return bool(request.session.get(STAFF_EDIT_MODE_SESSION_KEY, True))
+
+
 def _product_queryset(request=None):
     qs = Product.objects.filter(aktivan=True)
     if not _request_is_superuser(request):
@@ -191,6 +205,7 @@ _SIZE_HASH_SUFFIX = re.compile(r'(?<![#/])\b(\d+(?:/\d+)?)#(?!\d)', re.I)
 _SIZE_DIAMETER = re.compile(r'[Øø]\s*(\d+(?:[.,]\d+)?)', re.I)
 _SIZE_PLAIN = re.compile(r'^\d+$')
 _SIZE_CM = re.compile(r'(\d+(?:[.,]\d+)?)\s*cm\b', re.I)
+_SIZE_M = re.compile(r'(\d+(?:[.,]\d+)?)\s*m\b', re.I)  # dužina najlona (ne mm)
 _SIZE_MM = re.compile(r'(\d+(?:[.,]\d+)?)\s*mm\b', re.I)
 _SIZE_GRAM = re.compile(r'(\d+(?:[.,]\d+)?)\s*(?:g|gr|gram|grama)\b', re.I)
 _REEL_SIZES = frozenset({
@@ -240,6 +255,9 @@ def _variation_size_labels(naziv):
 
     for match in _SIZE_CM.finditer(naziv):
         add(f'{_normalize_size_number(match.group(1))} cm')
+    # Dužina u metrima (najlon). Pattern \bm ne hvata „mm” jer nema granice riječi između m-m.
+    for match in _SIZE_M.finditer(naziv):
+        add(f'{_normalize_size_number(match.group(1))} m')
     for match in _SIZE_GRAM.finditer(naziv):
         add(f'{_normalize_size_number(match.group(1))} g')
     for match in _SIZE_MM.finditer(naziv):
@@ -271,10 +289,10 @@ def _size_sort_key(label):
     hook_match = re.search(r'#(\d+)', label)
     if hook_match:
         return (0, int(hook_match.group(1)), label)
-    unit_match = re.match(r'^(\d+(?:\.\d+)?)\s*(cm|mm|g)$', label, re.I)
+    unit_match = re.match(r'^(\d+(?:\.\d+)?)\s*(m|cm|mm|g)$', label, re.I)
     if unit_match:
         unit = unit_match.group(2).lower()
-        unit_rank = {'cm': 1, 'mm': 2, 'g': 3}.get(unit, 9)
+        unit_rank = {'m': 1, 'cm': 2, 'mm': 3, 'g': 4}.get(unit, 9)
         return (unit_rank, float(unit_match.group(1)), label)
     if label.isdigit():
         return (3, int(label), label)
@@ -282,7 +300,7 @@ def _size_sort_key(label):
 
 
 _SIZE_FILTER_GROUPS = (
-    ('duzina', 'Dužina (cm)', 'Prikaži sve artikle (ukloni dužinu)'),
+    ('duzina', 'Dužina (m / cm)', 'Prikaži sve artikle (ukloni dužinu)'),
     ('debljina', 'Debljina (mm)', 'Prikaži sve artikle (ukloni debljinu)'),
     ('gramaza', 'Gramaža (g)', 'Prikaži sve artikle (ukloni gramažu)'),
     ('velicina', 'Veličina (#)', 'Prikaži sve artikle (ukloni veličinu)'),
@@ -291,7 +309,7 @@ _SIZE_FILTER_GROUPS = (
 
 def _size_filter_group_key(label):
     label = (label or '').strip()
-    if re.match(r'^\d+(?:\.\d+)?\s*cm$', label, re.I):
+    if re.match(r'^\d+(?:\.\d+)?\s*(?:m|cm)$', label, re.I):
         return 'duzina'
     if re.match(r'^\d+(?:\.\d+)?\s*mm$', label, re.I):
         return 'debljina'
@@ -1264,10 +1282,12 @@ def product_detail(request, slug):
             _product_dwell_settings,
             activate_product_dwell_flash,
             get_active_dwell_flash,
+            get_dwell_percent_for_product,
             product_allowed_for_dwell,
         )
-        dwell_on, dwell_pct = _product_dwell_settings()
+        dwell_on, _default_pct = _product_dwell_settings()
         dwell_on_this = bool(dwell_on and product_allowed_for_dwell(product.pk))
+        dwell_pct = get_dwell_percent_for_product(product.pk) if dwell_on_this else Decimal('0')
         dwell_flash = None
         if dwell_on_this and dwell_pct and dwell_pct > 0:
             # Odmah na ulasku: aktiviraj ili nastavi preostalo; ako je isteklo — None
@@ -1307,7 +1327,7 @@ def product_detail(request, slug):
         context['dwell_flash_config'] = {'active': False}
 
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
-    context['staff_product_tools'] = _request_is_superuser(request)
+    context['staff_product_tools'] = _staff_edit_mode_enabled(request)
 
     return render(request, 'product_detail.html', context)
 
@@ -1403,6 +1423,8 @@ def add_to_cart(request, slug):
             base = variation.prikazna_cijena if variation else product.prikazna_cijena
             custom_price = _discounted_price(base, dwell_deal['percent'])
             promo_bazna = base
+            # mark for cart — source set at cart.add below
+            request._dwell_discount_percent = dwell_deal['percent']
     except Exception:
         pass
 
@@ -1641,12 +1663,19 @@ def add_to_cart(request, slug):
             popust_postotak__isnull=False,
         ).select_related('gratis_artikal').first()
         if choice_akcija and choice_akcija.jos_traje():
+            g_src = None
+            g_pct = None
+            if custom_price is not None and promo_akcija:
+                g_src = f'Akcija: {promo_akcija.naziv}'
+                g_pct = promo_akcija.popust_postotak
             cart.add(
                 product,
                 variation=variation,
                 quantity=quantity,
                 custom_price=custom_price,
                 promo_bazna=promo_bazna,
+                discount_source=g_src,
+                discount_percent=g_pct,
             )
             if gratis_choice == 'yes':
                 _add_discounted_gratis_line(
@@ -1701,12 +1730,34 @@ def add_to_cart(request, slug):
                     'gratis_offer': offer,
                 })
 
+    disc_src = None
+    disc_pct = None
+    if exit_popup_percent and exit_popup_percent > 0 and custom_price is not None:
+        disc_src = f'Exit popup ponuda (−{exit_popup_percent}%)'
+        disc_pct = exit_popup_percent
+    elif custom_price is not None and promo_akcija:
+        tip_label = promo_akcija.get_tip_display() if hasattr(promo_akcija, 'get_tip_display') else 'Akcija'
+        pct = promo_akcija.popust_postotak
+        if pct:
+            disc_src = f'Akcija: {tip_label} „{promo_akcija.naziv}” (−{pct}%)'
+            disc_pct = pct
+        else:
+            disc_src = f'Akcija: {tip_label} „{promo_akcija.naziv}”'
+    elif custom_price is not None and getattr(request, '_dwell_discount_percent', None):
+        dp = request._dwell_discount_percent
+        disc_src = f'AI dwell flash (−{dp}%)'
+        disc_pct = dp
+    elif custom_price is not None:
+        disc_src = 'Specijalna snižena cijena'
+
     cart.add(
         product,
         variation=variation,
         quantity=quantity,
         custom_price=custom_price,
         promo_bazna=promo_bazna,
+        discount_source=disc_src,
+        discount_percent=disc_pct,
     )
     cart.clear_coupon()
     if request.POST.get('exit_popup') == '1':
@@ -1859,7 +1910,19 @@ def add_upsell_to_cart(request, offer_id, product_id):
         final_price = max(Decimal('0'), final_price - offer.popust_km).quantize(Decimal('0.01'))
 
     cart = Cart(request)
-    cart.add(product, variation=variation, quantity=1, custom_price=final_price)
+    up_src = f'Upsell ponuda „{offer.naziv}”'
+    up_pct = offer.popust_postotak
+    if up_pct:
+        up_src = f'{up_src} (−{up_pct}%)'
+    cart.add(
+        product,
+        variation=variation,
+        quantity=1,
+        custom_price=final_price,
+        promo_bazna=base_price,
+        discount_source=up_src,
+        discount_percent=up_pct,
+    )
 
     stay_on_page = _upsell_stay_on_page(request)
     if offer.prikaz == UpsellOffer.PrikazTip.POPUP:
@@ -2127,6 +2190,25 @@ def checkout(request):
         form = CheckoutForm(request.POST)
         if form.is_valid():
             summary = cart.sazetak(user=request.user)
+            popust_detalji = []
+            for p_label in (summary.get('pogodnosti') or []):
+                popust_detalji.append({'opis': str(p_label), 'iznos': None})
+            if summary.get('kupon_popust'):
+                popust_detalji.append({
+                    'opis': f'Kupon {summary.get("kupon_kod") or ""}'.strip(),
+                    'iznos': str(summary['kupon_popust']),
+                })
+            if summary.get('recovery_popust'):
+                popust_detalji.append({
+                    'opis': 'Poseban popust na korpu (recovery)',
+                    'iznos': str(summary['recovery_popust']),
+                })
+            if summary.get('prize_popust'):
+                popust_detalji.append({
+                    'opis': 'Nagradni točak / online nagrada',
+                    'iznos': str(summary['prize_popust']),
+                })
+
             order = Order.objects.create(
                 korisnik=request.user if request.user.is_authenticated else None,
                 ime_prezime=form.cleaned_data['ime_prezime'],
@@ -2140,6 +2222,7 @@ def checkout(request):
                 dostava=summary['dostava'],
                 popust=summary['popust'],
                 kupon_kod=summary.get('kupon_kod', ''),
+                popust_detalji=popust_detalji,
                 ukupno=summary['ukupno'],
             )
             if request.user.is_authenticated:
@@ -2151,16 +2234,37 @@ def checkout(request):
                     order.delete()
                     return redirect('cart')
                 line_price = item['cijena_decimal']
+                bazna = item.get('bazna_cijena_decimal')
+                if bazna is None:
+                    bazna = Decimal(str(item.get('bazna_cijena') or line_price))
                 deal_info = item.get('deal_info')
                 from .upsell import format_deal_order_note
 
                 deal_note = format_deal_order_note(deal_info)
                 akcija_info = item.get('akcija_popup_discount')
                 discounted_unit = item.get('discounted_unit_price')
+                popust_opis = (item.get('discount_source') or '').strip()
+                popust_postotak = None
+                raw_pct = item.get('discount_percent')
+                if raw_pct not in (None, ''):
+                    try:
+                        popust_postotak = Decimal(str(raw_pct))
+                    except Exception:
+                        popust_postotak = None
+
                 if deal_note:
                     naziv = item['product_naziv'] + deal_note
                     product_naziv = item['product_naziv'] + deal_note
                     varijacija_naziv = (item.get('varijacija_naziv', '') + deal_note).strip()
+                    if not popust_opis and deal_info:
+                        pct = deal_info.get('pct') or deal_info.get('percent')
+                        vrsta = deal_info.get('vrsta') or deal_info.get('label') or 'Deal'
+                        popust_opis = f'Deal {vrsta}' + (f' (−{pct}%)' if pct else '')
+                        if pct and popust_postotak is None:
+                            try:
+                                popust_postotak = Decimal(str(pct))
+                            except Exception:
+                                pass
                 elif akcija_info and discounted_unit is not None:
                     pct = Decimal(str(akcija_info['percent']))
                     disc_for_one = discounted_unit
@@ -2168,10 +2272,27 @@ def checkout(request):
                     naziv = item['product_naziv'] + extra_note
                     product_naziv = item['product_naziv'] + extra_note
                     varijacija_naziv = (item.get('varijacija_naziv', '') + extra_note).strip()
+                    if not popust_opis:
+                        aid = akcija_info.get('akcija_id')
+                        popust_opis = f'Uslov prodaja / akcija #{aid}' if aid else 'Uslov prodaja'
+                        popust_opis = f'{popust_opis} (−{pct}% na 1 kom.)'
+                    popust_postotak = pct
                 else:
                     naziv = item['product_naziv']
                     product_naziv = item['product_naziv']
                     varijacija_naziv = item.get('varijacija_naziv', '')
+                    if not popust_opis and item.get('na_akciji') and bazna > line_price:
+                        popust_opis = 'Katalog akcija (snižena cijena)'
+
+                # Ušteda: regularna vs naplaćena
+                qty = int(item['quantity'] or 1)
+                charged_line = Decimal(str(item.get('ukupno_stavka') or (line_price * qty)))
+                regular_line = (bazna * qty).quantize(Decimal('0.01'))
+                popust_iznos = None
+                if regular_line > charged_line:
+                    popust_iznos = (regular_line - charged_line).quantize(Decimal('0.01'))
+                elif discounted_unit is not None and bazna > discounted_unit:
+                    popust_iznos = (bazna - discounted_unit).quantize(Decimal('0.01'))
 
                 OrderItem.objects.create(
                     narudzba=order,
@@ -2182,7 +2303,11 @@ def checkout(request):
                     varijacija_naziv=varijacija_naziv,
                     sifra=item['sifra'],
                     cijena=line_price,
-                    kolicina=item['quantity'],
+                    bazna_cijena=bazna,
+                    popust_opis=popust_opis[:300] if popust_opis else '',
+                    popust_postotak=popust_postotak,
+                    popust_iznos=popust_iznos,
+                    kolicina=qty,
                 )
 
             try:
@@ -2687,6 +2812,31 @@ def staff_order_detail(request, broj):
         **get_order_email_context(order),
     }
     return render(request, 'staff/order_detail.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_toggle_edit_mode(request):
+    """Uključi/isključi edit mode na sajtu (superuser)."""
+    raw = (request.POST.get('enabled') or request.POST.get('edit_mode') or '').strip().lower()
+    if raw in ('1', 'true', 'on', 'yes', 'da'):
+        enabled = True
+    elif raw in ('0', 'false', 'off', 'no', 'ne'):
+        enabled = False
+    else:
+        # toggle
+        enabled = not _staff_edit_mode_enabled(request)
+    request.session[STAFF_EDIT_MODE_SESSION_KEY] = enabled
+    request.session.modified = True
+    if enabled:
+        messages.success(request, 'Edit mode uključen — na artiklima vidiš admin alate.')
+    else:
+        messages.success(request, 'Edit mode isključen — artikli se prikazuju kao običnom korisniku.')
+    next_url = (request.POST.get('next') or request.META.get('HTTP_REFERER') or '').strip()
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
+    return redirect('account')
 
 
 @login_required(login_url='login')
@@ -3253,6 +3403,21 @@ def ai_dwell_activate(request):
 @require_http_methods(['GET', 'POST'])
 def fishing_advisor_step(request):
     """Virtuelni ribolovački savjetnik — vođeni chat (svi kupci)."""
+    from .models import SiteSettings
+
+    try:
+        if not SiteSettings.load().savjetnik_aktivan:
+            return JsonResponse({
+                'ok': False,
+                'disabled': True,
+                'messages': [{'role': 'bot', 'text': 'Savjetnik trenutno nije aktivan.'}],
+                'options': [],
+                'state': {},
+                'step': 'start',
+            }, status=503)
+    except Exception:
+        pass
+
     from .fishing_advisor import process_step
 
     if request.method == 'GET':
@@ -3355,11 +3520,16 @@ def fishing_advisor_buy_set(request):
                 promo_bazna = unit
             except Exception:
                 custom = None
+        set_src = f'Savjetnik set „{kit.naziv}”'
+        if has_disc:
+            set_src = f'{set_src} (−{pct}%)'
         cart.add(
             product,
             quantity=qty,
             custom_price=custom,
             promo_bazna=promo_bazna,
+            discount_source=set_src if has_disc else None,
+            discount_percent=pct if has_disc else None,
         )
         added += qty
 
@@ -3621,6 +3791,27 @@ def live_visitor_heartbeat(request):
         return JsonResponse({'ok': True, 'tracked': False})
     tracked = heartbeat_live_visitor(request, body_session_key=body_key)
     return JsonResponse({'ok': True, 'tracked': tracked})
+
+
+@require_GET
+def public_online_visitors(request):
+    """
+    Javni API: ko je trenutno na sajtu (samo ako je uključeno u Podešavanjima).
+    Privatno — bez emaila i punog imena.
+    """
+    from .models import SiteSettings
+    from .live_visitors import public_online_visitors_payload
+
+    try:
+        enabled = bool(SiteSettings.load().javno_online_posjetioci)
+    except Exception:
+        enabled = False
+    if not enabled:
+        return JsonResponse({'ok': False, 'disabled': True, 'count': 0, 'items': []}, status=404)
+    payload = public_online_visitors_payload(limit=24)
+    response = JsonResponse(payload)
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return response
 
 
 @csrf_exempt
@@ -3963,6 +4154,9 @@ def staff_online_orders(request):
 @user_passes_test(_superuser_required)
 @require_POST
 def staff_product_quick_edit(request, slug):
+    if not _staff_edit_mode_enabled(request):
+        messages.error(request, 'Edit mode je isključen. Uključi ga u Moj nalog ili u headeru.')
+        return redirect('product_detail', slug=slug)
     product = get_object_or_404(Product, slug=slug)
     action = (request.POST.get('action') or '').strip()
 
@@ -4146,6 +4340,10 @@ def staff_brand_search(request):
 @require_POST
 def staff_post_product_olx(request, slug):
     from django.utils import timezone
+
+    if not _staff_edit_mode_enabled(request):
+        messages.error(request, 'Edit mode je isključen. Uključi ga da bi mijenjao artikle.')
+        return redirect('product_detail', slug=slug)
 
     product = get_object_or_404(
         Product.objects.select_related('brend').prefetch_related('dodatne_slike'),

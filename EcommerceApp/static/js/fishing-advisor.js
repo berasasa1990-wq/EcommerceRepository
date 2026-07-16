@@ -215,8 +215,11 @@
             if (opt.id === 'continue' || opt.id === 'view_kit' || opt.id === 'accessories_yes') {
                 btn.classList.add('fish-advisor__option--primary');
             }
-            if (opt.id === 'again' || opt.id === 'reset' || opt.id === 'no_kit') {
+            if (opt.id === 'again' || opt.id === 'reset' || opt.id === 'no_kit' || opt.id === 'back') {
                 btn.classList.add('fish-advisor__option--ghost');
+            }
+            if (opt.id === 'back') {
+                btn.classList.add('fish-advisor__option--back');
             }
             btn.textContent = opt.label || opt.id;
             btn.dataset.answer = opt.id || '';
@@ -230,7 +233,7 @@
                 }
 
                 // Bez prikaza odabranog odgovora — odmah sljedeće pitanje
-                if (ans === 'continue') {
+                if (ans === 'continue' || ans === 'back') {
                     clearProducts();
                 }
                 sendStep(step, ans);
@@ -518,11 +521,17 @@
                 );
             } else if (
                 answer === 'continue' ||
+                answer === 'back' ||
                 answer === 'no_kit' ||
                 data.step === 'kit_level' ||
                 data.step === 'set_type' ||
                 data.step === 'varalic_style' ||
-                data.step === 'budget'
+                data.step === 'budget' ||
+                data.step === 'single' ||
+                data.step === 'varalice_type' ||
+                data.step === 'najlon_length' ||
+                data.step === 'najlon_thickness' ||
+                data.step === 'single_budget'
             ) {
                 clearProducts();
             }

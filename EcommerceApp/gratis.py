@@ -77,6 +77,10 @@ def _add_discounted_gratis_line(cart, akcija, gratis_product, *, quantity=1):
 
     prikazna = variation.prikazna_cijena if variation else gratis_product.prikazna_cijena
     discounted = _gratis_discounted_price(akcija, gratis_product, variation)
+    pct = akcija.popust_postotak
+    src = f'Gratis akcija „{akcija.naziv}”'
+    if pct:
+        src = f'{src} (−{pct}%)'
     cart.add(
         gratis_product,
         variation=variation,
@@ -84,6 +88,8 @@ def _add_discounted_gratis_line(cart, akcija, gratis_product, *, quantity=1):
         custom_price=discounted,
         promo_bazna=prikazna,
         gratis_akcija_id=akcija.id,
+        discount_source=src,
+        discount_percent=pct,
     )
     return True
 
@@ -132,6 +138,10 @@ def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1, popust_pos
     discounted = _bundle_line_discounted_price(
         akcija, product, variation, popust_postotak=popust_postotak,
     )
+    pct = popust_postotak if popust_postotak is not None else akcija.popust_postotak
+    src = f'Bundle / set „{akcija.naziv}”'
+    if pct:
+        src = f'{src} (−{pct}%)'
     cart.add(
         product,
         variation=variation,
@@ -139,6 +149,8 @@ def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1, popust_pos
         custom_price=discounted,
         promo_bazna=prikazna,
         gratis_akcija_id=akcija.id,
+        discount_source=src,
+        discount_percent=pct,
     )
     return True
 

@@ -270,10 +270,12 @@
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
                 {% include 'partials/product_price.html' with item=product %}
             </div>
-            {# AI dwell flash: odmah na ulasku — precrtana / snizena + 2 min #}
+            {# AI dwell flash: crvena snizena (pulse) + ukoso precrtana regularna + tajmer #}
             <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                <div class="pd-dwell-flash-glow" aria-hidden="true"></div>
                 <p class="pd-dwell-flash-timer" aria-live="polite">
-                    ⏱ Specijalna cijena još <strong id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
+                    <span class="pd-dwell-flash-timer-label">⏱ Specijalna cijena još</span>
+                    <strong class="pd-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
                 </p>
                 <div class="pd-dwell-flash-prices product-price product-price--detail">
                     <span class="pd-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>
@@ -337,8 +339,10 @@
             {% if product.varijacije.count %}
             {% include 'partials/product_urgency.html' %}
             <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                <div class="pd-dwell-flash-glow" aria-hidden="true"></div>
                 <p class="pd-dwell-flash-timer" aria-live="polite">
-                    ⏱ Specijalna cijena još <strong id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
+                    <span class="pd-dwell-flash-timer-label">⏱ Specijalna cijena još</span>
+                    <strong class="pd-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
                 </p>
                 <div class="pd-dwell-flash-prices product-price product-price--detail">
                     <span class="pd-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>

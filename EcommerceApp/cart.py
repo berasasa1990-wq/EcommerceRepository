@@ -46,7 +46,18 @@ class Cart:
         base = f'{product_id}:{variation_id or 0}'
         return f'{base}:promo' if promo else base
 
-    def add(self, product, variation=None, quantity=1, custom_price=None, *, promo_bazna=None, gratis_akcija_id=None):
+    def add(
+        self,
+        product,
+        variation=None,
+        quantity=1,
+        custom_price=None,
+        *,
+        promo_bazna=None,
+        gratis_akcija_id=None,
+        discount_source=None,
+        discount_percent=None,
+    ):
         is_promo = custom_price is not None
         key = self._line_key(
             product.pk,
@@ -63,6 +74,24 @@ class Cart:
             price = prikazna
             bazna = variation.bazna_cijena if variation else product.bazna_cijena
             na_akciji = variation.na_akciji if variation else product.na_akciji
+        # Izvor popusta (za email / evidenciju)
+        source = (discount_source or '').strip()
+        pct = discount_percent
+        if pct is None and is_promo and bazna and bazna > 0 and price < bazna:
+            try:
+                pct = ((bazna - price) / bazna * Decimal('100')).quantize(Decimal('0.01'))
+            except Exception:
+                pct = None
+        if not source and is_promo:
+            if gratis_akcija_id is not None:
+                source = f'Gratis / bundle akcija #{gratis_akcija_id}'
+            elif price == 0:
+                source = 'Online nagrada / gratis artikal'
+            else:
+                source = 'Specijalna ponuda'
+        if not source and na_akciji and price < bazna:
+            source = 'Katalog akcija (snižena cijena)'
+
         varijacija_naziv = variation.naziv if variation else ''
         naziv = product.naziv
         sifra = variation.sifra if variation and variation.sifra else (product.sifra or '')
@@ -83,6 +112,10 @@ class Cart:
                 self.cart[key]['timer_akcija'] = True
                 self.cart[key]['upsell'] = True
                 self.cart[key]['promo_line'] = True
+                if source:
+                    self.cart[key]['discount_source'] = source
+                if pct is not None:
+                    self.cart[key]['discount_percent'] = str(pct)
             if gratis_akcija_id is not None:
                 self.cart[key]['gratis_akcija_id'] = gratis_akcija_id
                 self.cart[key]['gratis_promo'] = True
@@ -104,6 +137,10 @@ class Cart:
                 'timer_akcija': bool(is_promo),
                 'promo_line': bool(is_promo),
             }
+            if source:
+                self.cart[key]['discount_source'] = source
+            if pct is not None:
+                self.cart[key]['discount_percent'] = str(pct)
             if gratis_akcija_id is not None:
                 self.cart[key]['gratis_akcija_id'] = gratis_akcija_id
                 self.cart[key]['gratis_promo'] = True

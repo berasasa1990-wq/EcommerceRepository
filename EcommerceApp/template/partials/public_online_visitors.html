@@ -1,0 +1,18 @@
+{# Javni prikaz ko je online — uključuje se u SiteSettings.javno_online_posjetioci #}
+<div class="public-online" id="publicOnlineRoot"
+     data-poll-url="{% url 'public_online_visitors' %}"
+     hidden>
+    <button type="button" class="public-online__toggle" id="publicOnlineToggle" aria-expanded="false" aria-controls="publicOnlinePanel">
+        <span class="public-online__dot" aria-hidden="true"></span>
+        <span class="public-online__count" id="publicOnlineCount">0</span>
+        <span class="public-online__label">na sajtu sada</span>
+    </button>
+    <div class="public-online__panel" id="publicOnlinePanel" hidden>
+        <div class="public-online__head">
+            <strong>Trenutno na sajtu</strong>
+            <button type="button" class="public-online__close" id="publicOnlineClose" aria-label="Zatvori">×</button>
+        </div>
+        <ul class="public-online__list" id="publicOnlineList"></ul>
+        <p class="public-online__empty" id="publicOnlineEmpty" hidden>Nema drugih posjetilaca upravo sada.</p>
+    </div>
+</div>

@@ -858,6 +858,55 @@ def cleanup_stale_live_visitors():
     return LiveVisitor.objects.filter(last_seen__lt=cutoff).delete()[0]
 
 
+def public_online_visitors_payload(limit=24):
+    """
+    Javni, privatni pregled ko je online na sajtu.
+    Bez emaila / punog imena — samo Gost/Kupac + grad (ako postoji).
+    Superuseri se ne prikazuju.
+    """
+    now = timezone.now()
+    cutoff = now - timedelta(minutes=ONLINE_MINUTES)
+    qs = (
+        LiveVisitor.objects
+        .filter(last_seen__gte=cutoff)
+        .select_related('user')
+        .order_by('-last_seen')[: max(1, min(int(limit or 24), 60))]
+    )
+    items = []
+    for visitor in qs:
+        user = getattr(visitor, 'user', None)
+        if user is not None and (
+            getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False)
+        ):
+            continue
+        is_registered = bool(user and getattr(user, 'is_authenticated', False) and user.pk)
+        grad = (getattr(visitor, 'grad', None) or '').strip()
+        if is_registered:
+            role = 'Kupac'
+        else:
+            role = 'Gost'
+        if grad:
+            label = f'{role} · {grad}'
+        else:
+            label = role
+        looking = (getattr(visitor, 'trenutno_gleda', None) or '').strip()
+        # skraćeno, bez osjetljivih detalja
+        if looking and len(looking) > 48:
+            looking = looking[:45] + '…'
+        items.append({
+            'label': label,
+            'role': role,
+            'city': grad,
+            'looking': looking,
+        })
+    return {
+        'ok': True,
+        'count': len(items),
+        'items': items,
+        'generated_at': now.isoformat(),
+    }
+
+
 def _ago_action_label(dt, now):
     if not dt:
         return ''

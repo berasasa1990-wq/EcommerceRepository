@@ -991,6 +991,8 @@ def _add_free_product(request, product):
         quantity=1,
         custom_price=Decimal('0.00'),
         promo_bazna=bazna,
+        discount_source='Online nagrada (gratis artikal)',
+        discount_percent=Decimal('100'),
     )
     if key in cart.cart:
         cart.cart[key]['online_gift'] = True

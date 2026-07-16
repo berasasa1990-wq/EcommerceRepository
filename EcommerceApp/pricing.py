@@ -247,6 +247,7 @@ def pripremi_stavke_za_racun(order):
     """Pripremi listu dictova za prikaz stavki na računu (email, staff, nalog).
     Osigurava da se za AKCIJA popust prikaže stvarni iznos (sniženo na 1 kom.)
     i da linijski ukupno bude tačan (popust samo na 1 komad).
+    Uključuje izvor sniženja (AI dwell, akcija, deal…) za evidenciju.
     """
     from decimal import Decimal
     import re
@@ -299,6 +300,31 @@ def pripremi_stavke_za_racun(order):
             oi.product_naziv or naziv or '',
         ).strip()
 
+        bazna = getattr(oi, 'bazna_cijena', None)
+        if bazna is None:
+            bazna = orig
+        popust_opis = (getattr(oi, 'popust_opis', None) or '').strip()
+        popust_postotak = getattr(oi, 'popust_postotak', None)
+        popust_iznos = getattr(oi, 'popust_iznos', None)
+        if popust_iznos is None and bazna is not None and bazna > orig:
+            popust_iznos = ((bazna - orig) * oi.kolicina).quantize(Decimal('0.01'))
+        # Legacy: izvuci izvor iz napomene u nazivu
+        if not popust_opis:
+            if is_deal and deal_vrsta:
+                popust_opis = f'Deal {deal_vrsta}' + (f' (−{deal_pct}%)' if deal_pct else '')
+            elif is_akcija:
+                popust_opis = 'Uslov / akcija prodaja'
+            elif bazna is not None and bazna > orig:
+                popust_opis = 'Snižena cijena'
+
+        ima_snizenje = bool(
+            popust_opis
+            or (popust_iznos and popust_iznos > 0)
+            or (bazna is not None and bazna > orig)
+            or is_akcija
+            or is_deal
+        )
+
         stavke.append({
             'naziv': naziv,
             'product_naziv': display_naziv or oi.product_naziv or oi.naziv or '',
@@ -306,6 +332,7 @@ def pripremi_stavke_za_racun(order):
             'sifra': oi.sifra,
             'kolicina': oi.kolicina,
             'cijena': orig,
+            'bazna_cijena': bazna,
             'ukupno': charged,
             'is_akcija_promo': is_akcija,
             'is_deal_promo': is_deal,
@@ -313,5 +340,9 @@ def pripremi_stavke_za_racun(order):
             'discounted_qty': disc_qty,
             'deal_pct': deal_pct,
             'deal_vrsta': deal_vrsta,
+            'popust_opis': popust_opis,
+            'popust_postotak': popust_postotak,
+            'popust_iznos': popust_iznos,
+            'ima_snizenje': ima_snizenje,
         })
     return stavke

@@ -119,6 +119,14 @@ def nav_categories(request):
     except Exception:
         dwell_flash_by_id = {}
 
+    staff_edit_mode = False
+    if (
+        getattr(request, 'user', None)
+        and request.user.is_authenticated
+        and request.user.is_superuser
+    ):
+        staff_edit_mode = bool(request.session.get('staff_edit_mode', True))
+
     return {
         'site_url': settings.SITE_URL,
         'nav_categories': categories,
@@ -141,4 +149,5 @@ def nav_categories(request):
         'contact_messenger_url': _messenger_contact_url(messenger_page),
         'social_proof': build_social_proof_context(request),
         'dwell_flash_by_id': dwell_flash_by_id,
+        'staff_edit_mode': staff_edit_mode,
     }

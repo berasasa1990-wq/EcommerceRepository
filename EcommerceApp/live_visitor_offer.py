@@ -31,7 +31,7 @@ AUTO_DWELL_CODE = 'AUTO-DWELL'
 
 
 def _product_dwell_settings():
-    """(aktivan, popust %) iz SiteSettings — AI dwell, max 10%."""
+    """(aktivan, default popust %) iz SiteSettings — AI dwell, max 50%."""
     try:
         from .models import SiteSettings
 
@@ -40,18 +40,46 @@ def _product_dwell_settings():
         percent = _clamp_percent(
             getattr(s, 'product_dwell_popust', None) or PRODUCT_DWELL_DISCOUNT_DEFAULT,
         )
-        # Hard cap usklađen s AI prodajom
-        if percent > Decimal('10'):
-            percent = Decimal('10.00')
         return aktivan, percent
     except Exception:
         return False, PRODUCT_DWELL_DISCOUNT_DEFAULT
 
 
+def get_dwell_percent_for_product(product_id):
+    """
+    Popust % za artikal:
+    1) ručni unos u ProductDwellItem (ako postoji)
+    2) inače default iz SiteSettings
+    """
+    _, default_pct = _product_dwell_settings()
+    if not product_id:
+        return default_pct
+    try:
+        pid = int(product_id)
+    except (TypeError, ValueError):
+        return default_pct
+    try:
+        from .models import ProductDwellItem
+
+        item = (
+            ProductDwellItem.objects
+            .filter(product_id=pid)
+            .only('popust')
+            .first()
+        )
+        if item and item.popust is not None and item.popust > 0:
+            return _clamp_percent(item.popust)
+    except Exception:
+        pass
+    return default_pct
+
+
 def product_allowed_for_dwell(product_id):
     """
     True ako AI dwell smije raditi na ovom artiklu.
-    Prazna lista u postavkama = svi artikli; inače samo odabrani.
+    - Ako postoje unosi u ProductDwellItem → samo ti artikli
+    - Inače stara M2M lista product_dwell_artikli
+    - Ako su obje prazne → svi artikli
     """
     if not product_id:
         return False
@@ -60,15 +88,18 @@ def product_allowed_for_dwell(product_id):
     except (TypeError, ValueError):
         return False
     try:
-        from .models import SiteSettings
+        from .models import ProductDwellItem, SiteSettings
 
         s = SiteSettings.load()
         if not bool(getattr(s, 'product_dwell_popup_aktivan', False)):
             return False
-        # Nema odabranih → svi artikli
-        if not s.product_dwell_artikli.exists():
-            return True
-        return s.product_dwell_artikli.filter(pk=pid).exists()
+        # Nova lista s popustom po artiklu
+        if ProductDwellItem.objects.filter(settings=s).exists():
+            return ProductDwellItem.objects.filter(settings=s, product_id=pid).exists()
+        # Legacy M2M
+        if s.product_dwell_artikli.exists():
+            return s.product_dwell_artikli.filter(pk=pid).exists()
+        return True
     except Exception:
         return False
 
@@ -406,8 +437,8 @@ def activate_product_dwell_flash(request, product_id):
     Timer kreće od trenutka ulaska; kad istekne — u ovoj sesiji više nema ponude
     (samo regularna cijena). Ako se vrati dok traje — nastavlja se preostalo vrijeme.
     """
-    aktivan, dwell_percent = _product_dwell_settings()
-    if not aktivan or dwell_percent <= 0:
+    aktivan, _default_pct = _product_dwell_settings()
+    if not aktivan:
         return None, 'AI dwell nije aktivan.'
     if not request or _blocked_path(request):
         return None, 'Nedostupno.'
@@ -428,6 +459,10 @@ def activate_product_dwell_flash(request, product_id):
 
     if not product_allowed_for_dwell(pid):
         return None, 'AI dwell nije uključen za ovaj artikal.'
+
+    dwell_percent = get_dwell_percent_for_product(pid)
+    if dwell_percent <= 0:
+        return None, 'Popust za ovaj artikal nije postavljen.'
 
     # Već aktivna flash — vrati istu (povratak na artikal dok traje)
     active = get_active_dwell_flash(request, pid)
@@ -1278,6 +1313,8 @@ def apply_live_visitor_offer(request, cart):
             quantity=1,
             custom_price=final_price,
             promo_bazna=base_price,
+            discount_source=f'Uživo ponuda / staff (−{discount}%)',
+            discount_percent=discount,
         )
     else:
         cart.add(product, variation=variation, quantity=1)

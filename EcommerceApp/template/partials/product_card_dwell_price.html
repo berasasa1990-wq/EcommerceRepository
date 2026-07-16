@@ -7,7 +7,8 @@
      data-dwell-expires="{{ flash.expires_ts }}"
      data-dwell-product-id="{{ product.pk }}">
     <p class="card-dwell-timer" aria-live="polite">
-        ⏱ <strong data-dwell-countdown>{{ flash.remaining_seconds|format_mmss }}</strong>
+        <span class="card-dwell-timer-label">⏱</span>
+        <strong class="card-dwell-countdown" data-dwell-countdown>{{ flash.remaining_seconds|format_mmss }}</strong>
     </p>
     <div class="product-price product-card__price card-dwell-prices" data-product-price data-dwell-price-block>
         <span class="price-original pd-dwell-was card-dwell-was">{{ flash.base }} KM</span>

@@ -127,7 +127,8 @@ class SiteSettings(models.Model):
             'Čim kupac uđe na artikal: NEMA popup-a. '
             'Odmah se precrta stara cijena, pojavi se snizena i odbrojavanje 2 min. '
             'Kad istekne — u toj posjeti više nema ponude, samo regularna cijena. '
-            'Dok traje može izaći i vratiti se. Popust max 10%.'
+            'Dok traje može izaći i vratiti se. '
+            'Popust po artiklu unosiš u tabeli ispod (ili default ispod).'
         ),
     )
     product_dwell_popust = models.DecimalField(
@@ -136,17 +137,20 @@ class SiteSettings(models.Model):
         default=Decimal('10.00'),
         null=True,
         blank=True,
-        verbose_name='AI dwell — popust (%)',
-        help_text='Flash popust odmah na ulasku na artikal, traje 2 min (max 10%).',
+        verbose_name='AI dwell — default popust (%)',
+        help_text=(
+            'Default flash popust ako artikal nema svoj unos, '
+            'ili kad lista artikala nije postavljena (svi artikli). Max 50%.'
+        ),
     )
     product_dwell_artikli = models.ManyToManyField(
         'Product',
         blank=True,
         related_name='dwell_flash_sitesettings',
-        verbose_name='AI dwell — artikli (opcionalno)',
+        verbose_name='AI dwell — artikli (stara lista)',
         help_text=(
-            'Odaberi jedan ili više artikala na kojima radi AI dwell. '
-            'Ako ne odabereš nijedan — radi na SVIM artiklima.'
+            'Zastarjelo: koristi tabelu „AI dwell artikli” ispod s popustom po artiklu. '
+            'Ako je ta tabela prazna i ova lista prazna — radi na SVIM artiklima.'
         ),
     )
     welcome_reg_popup_aktivan = models.BooleanField(
@@ -184,6 +188,23 @@ class SiteSettings(models.Model):
         default=15,
         verbose_name='Nagradna igra — prikaži nakon (sekundi)',
         help_text='Kašnjenje bočnog popupa nagradne igre (0 = odmah).',
+    )
+    savjetnik_aktivan = models.BooleanField(
+        default=True,
+        verbose_name='Ribolovački savjetnik aktivan',
+        help_text=(
+            'Uključeno: svi posjetioci vide „Savjeti pri kupovini” (chat). '
+            'Isključeno: savjetnik se ne prikazuje na sajtu.'
+        ),
+    )
+    javno_online_posjetioci = models.BooleanField(
+        default=False,
+        verbose_name='Javno prikaži ko je na sajtu',
+        help_text=(
+            'Uključeno: svi posjetioci vide koliko ljudi je trenutno na sajtu '
+            '(grad / gost ili kupac — bez emaila i punog imena). '
+            'Isključeno: samo superuser vidi uživo analitiku u admin panelu.'
+        ),
     )
     novi_korisnik_besplatna_dostava = models.BooleanField(
         default=False,
@@ -346,6 +367,51 @@ class AIProdajaSettings(SiteSettings):
         proxy = True
         verbose_name = 'AI prodaja'
         verbose_name_plural = 'AI prodaja'
+
+
+class ProductDwellItem(models.Model):
+    """
+    Artikal s ručnim flash popustom za AI dwell.
+    Svaki artikal može imati svoj % (npr. 8%, 15%, 20%).
+    """
+    settings = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='dwell_items',
+        verbose_name='Postavke',
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='dwell_items',
+        verbose_name='Artikal',
+        limit_choices_to={'aktivan': True},
+    )
+    popust = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        verbose_name='Popust (%)',
+        help_text='Flash popust samo za ovaj artikal (0.01–50).',
+    )
+
+    class Meta:
+        verbose_name = 'AI dwell artikal'
+        verbose_name_plural = 'AI dwell artikli'
+        ordering = ['product__naziv']
+        unique_together = [('settings', 'product')]
+
+    def __str__(self):
+        return f'{self.product} (−{self.popust}%)'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        super().clean()
+        if self.popust is not None:
+            if self.popust <= 0:
+                raise ValidationError({'popust': 'Popust mora biti veći od 0.'})
+            if self.popust > 50:
+                raise ValidationError({'popust': 'Maksimalni popust je 50%.'})
 
 
 class Category(models.Model):
@@ -2396,6 +2462,12 @@ class Order(models.Model):
     dostava = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     popust = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     kupon_kod = models.CharField(max_length=20, blank=True)
+    popust_detalji = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Detalji popusta na narudžbi',
+        help_text='Lista {opis, iznos} za kupon, recovery, nagradu…',
+    )
     ukupno = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NOVA)
     kreirana = models.DateTimeField(auto_now_add=True)
@@ -2439,6 +2511,35 @@ class OrderItem(models.Model):
     varijacija_naziv = models.CharField(max_length=100, blank=True)
     sifra = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
     cijena = models.DecimalField(max_digits=10, decimal_places=2)
+    bazna_cijena = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Regularna cijena (jed.)',
+        help_text='Cijena prije sniženja na ovoj stavci (ako postoji popust).',
+    )
+    popust_opis = models.CharField(
+        max_length=300,
+        blank=True,
+        verbose_name='Izvor popusta',
+        help_text='Npr. AI dwell −10%, Akcija Timer, Live ponuda, Bundle…',
+    )
+    popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust (%)',
+    )
+    popust_iznos = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Ušteda ukupno (KM)',
+        help_text='Ukupna ušteda na stavci (sve komade) u odnosu na regularnu cijenu.',
+    )
     kolicina = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -2458,6 +2559,14 @@ class OrderItem(models.Model):
         if self.varijacija_naziv:
             return f'{self.product_naziv or self.naziv} — {self.varijacija_naziv}'
         return self.product_naziv or self.naziv
+
+    @property
+    def ima_snizenje(self):
+        if self.popust_opis:
+            return True
+        if self.bazna_cijena is not None and self.bazna_cijena > self.cijena:
+            return True
+        return bool(self.popust_iznos and self.popust_iznos > 0)
 
     def __str__(self):
         return f'{self.puni_naziv} × {self.kolicina}'

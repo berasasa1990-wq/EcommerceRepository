@@ -8161,14 +8161,15 @@ button.nav-action-link {
         transition: none;
     }
 
-    .category-page {
-        padding-left: 0;
-        padding-right: 0;
+    /* Glavne kategorije — isti bočni razmak kao podkategorije (12px) */
+    .category-page:not(.home-products) {
+        padding-left: 12px;
+        padding-right: 12px;
     }
 
-    .category-page .catalog-products {
-        padding-left: 6px;
-        padding-right: 6px;
+    .category-page:not(.home-products) .catalog-products {
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .home-products-header--novo,
@@ -9049,15 +9050,19 @@ button.nav-action-link {
         padding: 6px 10px;
     }
 
-    .category-page {
-        padding-top: 12px;
+    .category-page:not(.home-products) {
+        padding-top: 28px;
         padding-bottom: 48px;
+        padding-left: 12px;
+        padding-right: 12px;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
     }
 
-    .category-page .catalog-products .category-header {
+    .category-page:not(.home-products) .catalog-products .category-header {
         margin-bottom: 12px;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .category-page .catalog-products .category-header h1 {
@@ -9477,10 +9482,18 @@ button.nav-action-link {
         margin-top: 0;
     }
 
-    .account-header-actions .btn {
+    .account-header-actions .btn,
+    .account-header-actions .btn-admin-panel,
+    .account-header-actions .btn-edit-mode,
+    .account-header-actions .btn-logout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
         max-width: none;
         min-height: 48px;
+        text-align: center;
+        box-sizing: border-box;
     }
 
     .account-header h1,
@@ -9488,13 +9501,24 @@ button.nav-action-link {
         font-size: 26px;
     }
 
-    .account-header .btn-logout {
-        align-self: stretch;
+    .account-edit-mode-form {
+        display: block;
         width: 100%;
-        max-width: none;
-        min-height: 44px;
-        text-align: center;
-        justify-content: center;
+    }
+
+    .nav-action-link.staff-orders-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .staff-edit-mode-toggle {
+        padding: 8px;
+    }
+
+    .staff-edit-mode-toggle svg {
+        width: 26px;
+        height: 26px;
     }
 
     .loyalty-card {
@@ -9942,7 +9966,7 @@ button.nav-action-link {
         max-height: 132px;
     }
 
-    .category-page .catalog-products {
+    .category-page:not(.home-products) .catalog-products {
         padding-left: 0;
         padding-right: 0;
     }
@@ -9951,21 +9975,21 @@ button.nav-action-link {
         padding: 8px;
     }
 
-    .category-page {
-        padding-top: 8px;
+    .category-page:not(.home-products) {
+        padding-top: 28px;
         padding-bottom: 32px;
-        padding-left: 0;
-        padding-right: 0;
+        padding-left: 12px;
+        padding-right: 12px;
     }
 
     .category-page.home-search-results {
-        padding: 8px 0 32px;
+        padding: 28px 12px 32px;
     }
 
-    .category-page .catalog-products .category-header {
+    .category-page:not(.home-products) .catalog-products .category-header {
         margin-bottom: 8px;
-        padding-left: 12px;
-        padding-right: 12px;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .category-page .catalog-products .category-header h1 {
@@ -12820,6 +12844,7 @@ button.nav-action-link {
 
 .nav-action-link.staff-orders-btn svg {
     stroke: #1a6b4a;
+    color: #1a6b4a;
 }
 
 /* Account */
@@ -13086,7 +13111,8 @@ button.nav-action-link {
 }
 
 .btn-logout,
-.btn-admin-panel {
+.btn-admin-panel,
+.btn-edit-mode {
     background: var(--black);
     color: var(--white) !important;
     border: 1.5px solid var(--black);
@@ -13095,13 +13121,93 @@ button.nav-action-link {
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.2;
+    box-sizing: border-box;
 }
 
 .btn-logout:hover,
-.btn-admin-panel:hover {
+.btn-admin-panel:hover,
+.btn-edit-mode:hover {
     background: #333;
     border-color: #333;
     color: var(--white) !important;
+}
+
+.btn-admin-panel {
+    background: #1a6b4a;
+    border-color: #1a6b4a;
+}
+
+.btn-admin-panel:hover {
+    background: #145a3d;
+    border-color: #145a3d;
+}
+
+.btn-edit-mode.is-on {
+    background: #1a6b4a;
+    border-color: #1a6b4a;
+}
+
+.btn-edit-mode.is-off {
+    background: #6b7280;
+    border-color: #6b7280;
+}
+
+.account-edit-mode-form {
+    display: contents;
+}
+
+/* Header: superuser edit mode toggle */
+.staff-edit-mode-form {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.staff-edit-mode-form.nav-action-link {
+    padding: 0;
+}
+
+.staff-edit-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 6px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--black);
+    font: inherit;
+    line-height: 1;
+}
+
+.staff-edit-mode-toggle svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+.staff-edit-mode-toggle.is-on {
+    color: #1a6b4a;
+}
+
+.staff-edit-mode-toggle.is-off {
+    color: #9ca3af;
+    opacity: 0.9;
+}
+
+.staff-edit-mode-toggle:hover {
+    opacity: 0.75;
 }
 
 .auth-page .btn-primary,
@@ -16460,14 +16566,65 @@ body.og-side-open {
     color: #334155;
 }
 
-/* AI dwell flash cijena — precrtana + snizena + odbrojavanje (bez popupa) */
+/* AI dwell flash — snizena crvena (pulse) + crna regularna ukoso + zelena #5BB805 pozadina */
+@keyframes dwell-price-pulse {
+    0%, 100% {
+        color: #dc2626;
+        text-shadow: 0 0 0 rgba(220, 38, 38, 0);
+        transform: scale(1);
+    }
+    50% {
+        color: #ef4444;
+        text-shadow: 0 0 16px rgba(239, 68, 68, 0.45), 0 0 4px rgba(220, 38, 38, 0.3);
+        transform: scale(1.04);
+    }
+}
+@keyframes dwell-timer-pulse {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(91, 184, 5, 0.4);
+    }
+    50% {
+        opacity: 0.95;
+        box-shadow: 0 0 0 6px rgba(91, 184, 5, 0);
+    }
+}
+@keyframes dwell-badge-pop {
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    50% { transform: scale(1.08) rotate(1deg); }
+}
+@keyframes dwell-glow-sweep {
+    0% { opacity: 0.25; transform: translateX(-30%) skewX(-12deg); }
+    50% { opacity: 0.55; }
+    100% { opacity: 0.25; transform: translateX(130%) skewX(-12deg); }
+}
+@keyframes dwell-strike-flash {
+    0%, 100% { opacity: 0.95; }
+    50% { opacity: 0.55; }
+}
+
 .pd-dwell-flash {
-    margin: 0 0 14px;
-    padding: 12px 14px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
-    border: 1px solid rgba(74, 222, 128, 0.35);
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+    position: relative;
+    overflow: hidden;
+    margin: 0 0 16px;
+    padding: 14px 16px 16px;
+    border-radius: 16px;
+    background:
+        linear-gradient(145deg, #e8f8d9 0%, #5BB805 38%, #3f8f04 72%, #2d6b03 100%);
+    border: 1.5px solid rgba(45, 107, 3, 0.35);
+    box-shadow:
+        0 10px 28px rgba(45, 107, 3, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.pd-dwell-flash-glow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 42%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+    pointer-events: none;
+    animation: dwell-glow-sweep 2.8s ease-in-out infinite;
 }
 .pd-dwell-flash[hidden] {
     display: none !important;
@@ -16476,68 +16633,109 @@ body.og-side-open {
     display: block;
 }
 .pd-dwell-flash-timer {
-    margin: 0 0 8px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin: 0 0 10px;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #86efac;
+    color: #0f1a08;
 }
+.pd-dwell-flash-timer-label {
+    opacity: 0.9;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.pd-dwell-countdown,
 .pd-dwell-flash-timer strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.4em;
+    padding: 4px 12px;
+    border-radius: 999px;
     font-size: 18px;
     font-weight: 900;
-    color: #4ade80;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    color: #fff !important;
+    background: linear-gradient(180deg, #111111, #222222);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: dwell-timer-pulse 1.2s ease-in-out infinite;
 }
 .pd-dwell-flash-prices {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 10px 14px;
+    gap: 10px 16px;
 }
+/* Regularna — crna, ukoso precrtana */
 .pd-dwell-was {
     position: relative;
     display: inline-block;
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 800;
-    color: #fca5a5;
-    text-decoration: none;
+    color: #111111;
+    text-decoration: none !important;
+    letter-spacing: -0.01em;
+    opacity: 1;
 }
+.pd-dwell-was::before,
 .pd-dwell-was::after {
     content: '';
     position: absolute;
-    left: -4%;
-    right: -4%;
+    left: -6%;
+    right: -6%;
     top: 50%;
-    border-top: 2.5px solid #f87171;
-    transform: rotate(-14deg);
+    height: 0;
+    border-top: 2.5px solid #111111;
+    transform: rotate(-16deg);
+    transform-origin: center;
     pointer-events: none;
+    animation: dwell-strike-flash 1.6s ease-in-out infinite;
 }
+.pd-dwell-was::before {
+    border-top-color: rgba(17, 17, 17, 0.55);
+    transform: rotate(-16deg) translateY(-1px);
+}
+/* Snizena — crvena, pulsira */
 .pd-dwell-now {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 900;
-    color: #4ade80;
+    color: #dc2626;
     letter-spacing: -0.03em;
     line-height: 1.05;
+    animation: dwell-price-pulse 1.35s ease-in-out infinite;
+    will-change: transform, text-shadow;
 }
 .pd-dwell-badge {
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 999px;
-    background: linear-gradient(180deg, #ff5a5a, #e11d48);
+    background: linear-gradient(180deg, #ff4d4d, #b91c1c);
     color: #fff;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 900;
-    box-shadow: 0 3px 10px rgba(225, 29, 72, 0.35);
+    letter-spacing: 0.02em;
+    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.4);
+    animation: dwell-badge-pop 1.6s ease-in-out infinite;
 }
 
 /* AI dwell flash na karticama (početna / katalog) */
 .card-dwell-flash {
+    position: relative;
+    overflow: hidden;
     margin: 0;
-    padding: 8px 10px;
+    padding: 8px 10px 10px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
-    border: 1px solid rgba(74, 222, 128, 0.35);
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+    background:
+        linear-gradient(145deg, #e8f8d9 0%, #5BB805 40%, #3f8f04 78%, #2d6b03 100%);
+    border: 1.5px solid rgba(45, 107, 3, 0.32);
+    box-shadow: 0 4px 16px rgba(45, 107, 3, 0.2);
 }
 .card-dwell-flash[hidden] {
     display: none !important;
@@ -16546,19 +16744,34 @@ body.og-side-open {
     display: block;
 }
 .card-dwell-timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin: 0 0 6px;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: #86efac;
+    color: #0f1a08;
     line-height: 1.2;
 }
+.card-dwell-timer-label {
+    opacity: 0.9;
+}
+.card-dwell-countdown,
 .card-dwell-timer strong {
-    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.8em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 14px;
     font-weight: 900;
-    color: #4ade80;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
+    color: #fff !important;
+    background: linear-gradient(180deg, #111111, #222222);
+    animation: dwell-timer-pulse 1.2s ease-in-out infinite;
 }
 .card-dwell-prices {
     display: flex !important;
@@ -16572,34 +16785,42 @@ body.og-side-open {
     display: inline-block;
     font-size: 13px !important;
     font-weight: 800 !important;
-    color: #fca5a5 !important;
+    color: #111111 !important;
     text-decoration: none !important;
 }
+.card-dwell-was::before,
 .card-dwell-was::after {
     content: '';
     position: absolute;
-    left: -4%;
-    right: -4%;
+    left: -5%;
+    right: -5%;
     top: 50%;
-    border-top: 2px solid #f87171;
-    transform: rotate(-14deg);
+    border-top: 2px solid #111111;
+    transform: rotate(-16deg);
     pointer-events: none;
+    animation: dwell-strike-flash 1.6s ease-in-out infinite;
+}
+.card-dwell-was::before {
+    border-top-color: rgba(17, 17, 17, 0.5);
+    transform: rotate(-16deg) translateY(-1px);
 }
 .card-dwell-now {
-    font-size: 17px !important;
+    font-size: 18px !important;
     font-weight: 900 !important;
-    color: #4ade80 !important;
+    color: #dc2626 !important;
     letter-spacing: -0.02em;
     line-height: 1.1;
+    animation: dwell-price-pulse 1.35s ease-in-out infinite;
 }
 .card-dwell-badge {
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 999px;
-    background: linear-gradient(180deg, #ff5a5a, #e11d48);
+    background: linear-gradient(180deg, #ff4d4d, #b91c1c);
     color: #fff;
     font-size: 11px;
     font-weight: 900;
-    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
+    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.35);
+    animation: dwell-badge-pop 1.6s ease-in-out infinite;
 }
 .product-card--catalog .card-dwell-flash {
     width: 100%;
@@ -16608,17 +16829,40 @@ body.og-side-open {
     margin-top: 2px;
 }
 @media (max-width: 768px) {
+    .pd-dwell-now {
+        font-size: 28px;
+    }
+    .pd-dwell-countdown,
+    .pd-dwell-flash-timer strong {
+        font-size: 16px;
+    }
     .card-dwell-timer {
         font-size: 10px;
     }
+    .card-dwell-countdown,
     .card-dwell-timer strong {
-        font-size: 13px;
+        font-size: 12px;
     }
     .card-dwell-now {
-        font-size: 15px !important;
+        font-size: 16px !important;
     }
     .card-dwell-was {
         font-size: 12px !important;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pd-dwell-now,
+    .card-dwell-now,
+    .pd-dwell-countdown,
+    .card-dwell-countdown,
+    .pd-dwell-badge,
+    .card-dwell-badge,
+    .pd-dwell-flash-glow,
+    .pd-dwell-was::before,
+    .pd-dwell-was::after,
+    .card-dwell-was::before,
+    .card-dwell-was::after {
+        animation: none !important;
     }
 }
 
@@ -17497,5 +17741,157 @@ body.fish-advisor-open .fish-advisor__launcher {
     }
     body.mobile-nav-open.fish-advisor-open .fish-advisor__panel {
         pointer-events: auto;
+    }
+}
+
+/* ===== Javni online posjetioci (svi vide ko je na sajtu) ===== */
+.public-online {
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left, 0px));
+    bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 78px));
+    z-index: 1204;
+    font-family: inherit;
+    max-width: min(280px, calc(100vw - 24px));
+}
+.public-online[hidden] {
+    display: none !important;
+}
+.public-online__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f1a08;
+    background: linear-gradient(145deg, #e8f8d9 0%, #5BB805 55%, #3f8f04 100%);
+    box-shadow: 0 6px 20px rgba(45, 107, 3, 0.28);
+    border: 1px solid rgba(45, 107, 3, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.public-online__toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(45, 107, 3, 0.35);
+}
+.public-online__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #16a34a;
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+    animation: public-online-pulse 1.6s ease-out infinite;
+    flex-shrink: 0;
+}
+@keyframes public-online-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+.public-online__count {
+    font-size: 15px;
+    font-weight: 900;
+    color: #111;
+    min-width: 1.1em;
+    text-align: center;
+}
+.public-online__label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #0f1a08;
+    opacity: 0.92;
+}
+.public-online__panel {
+    margin-bottom: 10px;
+    padding: 12px 12px 10px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+    max-height: min(50vh, 320px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.public-online__panel[hidden] {
+    display: none !important;
+}
+.public-online__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.public-online__head strong {
+    font-size: 13px;
+    font-weight: 800;
+    color: #111;
+}
+.public-online__close {
+    border: none;
+    background: #f5f5f5;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    color: #555;
+}
+.public-online__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+}
+.public-online__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 4px;
+    border-bottom: 1px solid #f3f3f3;
+}
+.public-online__item:last-child {
+    border-bottom: none;
+}
+.public-online__item-main {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111;
+}
+.public-online__item-looking {
+    font-size: 11px;
+    color: #707072;
+    line-height: 1.3;
+}
+.public-online__empty {
+    margin: 8px 0 4px;
+    font-size: 12px;
+    color: #757575;
+    text-align: center;
+}
+body.fish-advisor-open .public-online {
+    bottom: max(100px, calc(env(safe-area-inset-bottom, 0px) + 90px));
+}
+@media (max-width: 480px) {
+    .public-online {
+        bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 86px));
+    }
+    .public-online__label {
+        font-size: 11px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .public-online__dot {
+        animation: none;
     }
 }

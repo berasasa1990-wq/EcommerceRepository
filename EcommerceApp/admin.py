@@ -37,6 +37,7 @@ from .models import (
     AdvisorBeginnerSet,
     AdvisorBeginnerSetItem,
     AIProdajaSettings,
+    ProductDwellItem,
     AkcijaBundleLine,
     AkcijaQtyTier,
     CityVisitTotal,
@@ -73,7 +74,15 @@ from .models import (
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ('product_naziv', 'varijacija_naziv', 'sifra', 'cijena', 'kolicina')
+    readonly_fields = (
+        'product_naziv', 'varijacija_naziv', 'sifra',
+        'bazna_cijena', 'cijena', 'kolicina',
+        'popust_opis', 'popust_postotak', 'popust_iznos',
+    )
+    fields = (
+        'product_naziv', 'varijacija_naziv', 'sifra', 'kolicina',
+        'bazna_cijena', 'cijena', 'popust_opis', 'popust_postotak', 'popust_iznos',
+    )
 
 
 @admin.register(Order)
@@ -81,11 +90,16 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ('broj', 'korisnik', 'ime_prezime', 'email', 'telefon', 'ukupno', 'status', 'kreirana')
     list_filter = ('status', 'kreirana')
     search_fields = ('broj', 'ime_prezime', 'email', 'telefon', 'korisnik__email')
-    readonly_fields = ('broj', 'kreirana', 'medjuzbir', 'dostava', 'popust', 'ukupno')
+    readonly_fields = ('broj', 'kreirana', 'medjuzbir', 'dostava', 'popust', 'ukupno', 'popust_detalji')
     autocomplete_fields = ('korisnik',)
     inlines = [OrderItemInline]
     fieldsets = (
-        ('Narudžba', {'fields': ('broj', 'status', 'medjuzbir', 'popust', 'kupon_kod', 'dostava', 'ukupno', 'kreirana')}),
+        ('Narudžba', {
+            'fields': (
+                'broj', 'status', 'medjuzbir', 'popust', 'kupon_kod',
+                'popust_detalji', 'dostava', 'ukupno', 'kreirana',
+            ),
+        }),
         ('Kupac', {'fields': ('korisnik', 'ime_prezime', 'email', 'telefon')}),
         ('Dostava', {'fields': ('adresa', 'grad', 'postanski_broj', 'napomena')}),
     )
@@ -234,6 +248,16 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'description': (
                 '1) Registracija + % na prvu narudžbu — gostu na početku. '
                 '2) Nagradna igra — mali pulsirajući popup sa strane (treba aktivna kampanja Online nagrada).'
+            ),
+        }),
+        ('Savjetnik i online posjetioci', {
+            'fields': (
+                'savjetnik_aktivan',
+                'javno_online_posjetioci',
+            ),
+            'description': (
+                '1) Ribolovački savjetnik — uključi/isključi chat „Savjeti pri kupovini”. '
+                '2) Javni prikaz — svi na sajtu vide koliko je ljudi online (privatno: grad + gost/kupac).'
             ),
         }),
         ('Pogodnosti', {
@@ -502,10 +526,30 @@ class AkcijaQtyTierInline(admin.TabularInline):
         return formset
 
 
+class ProductDwellItemInline(admin.TabularInline):
+    """Po artiklu unesi svoj flash popust %."""
+    model = ProductDwellItem
+    fk_name = 'settings'
+    extra = 1
+    autocomplete_fields = ('product',)
+    fields = ('product', 'popust')
+    verbose_name = 'Artikal s popustom'
+    verbose_name_plural = (
+        'AI dwell artikli — dodaj artikal i unesi popust % (npr. 8, 12, 20)'
+    )
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'product':
+            from .models import Product
+            kwargs['queryset'] = Product.objects.filter(aktivan=True).order_by('naziv')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
 @admin.register(AIProdajaSettings)
 class AIProdajaSettingsAdmin(admin.ModelAdmin):
     """AI prodaja — u adminu pored Akcija (ne u općim Podešavanjima)."""
     filter_horizontal = ('product_dwell_artikli',)
+    inlines = [ProductDwellItemInline]
     fieldsets = (
         ('AI prodaja (popup)', {
             'fields': (
@@ -520,12 +564,20 @@ class AIProdajaSettingsAdmin(admin.ModelAdmin):
             'fields': (
                 'product_dwell_popup_aktivan',
                 'product_dwell_popust',
-                'product_dwell_artikli',
             ),
             'description': (
                 'Odmah na ulasku na artikal — BEZ popupa; precrtana + snizena + 2 min. '
-                'Kad istekne → samo regularna cijena. '
-                'Ako artikli nisu odabrani → radi na svim; inače samo na odabranim.'
+                'Ispod dodaj artikle i za svaki upiši svoj popust %. '
+                'Ako nema nijednog u tabeli — default popust na SVIM artiklima '
+                '(ili stara lista ako još postoji).'
+            ),
+        }),
+        ('AI dwell — stara lista (opcionalno)', {
+            'classes': ('collapse',),
+            'fields': ('product_dwell_artikli',),
+            'description': (
+                'Koristi samo ako još nisi prebacio na tabelu s popustom po artiklu. '
+                'Kad ima unosa u tabeli ispod, stara lista se ignorira.'
             ),
         }),
     )
