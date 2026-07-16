@@ -156,12 +156,57 @@
         btn.addEventListener('click', closeOverlay);
     });
 
-    // Exit intent — kursor prema zatvaranju taba
-    document.documentElement.addEventListener('mouseout', function (e) {
-        if (!e.relatedTarget && e.clientY <= 12) {
-            openOverlay();
+    // Exit intent — samo kursor prema gornjem rubu (X / zatvaranje taba), svi desktop browseri
+    var armed = false;
+    var lastY = null;
+    var lastTs = 0;
+    window.setTimeout(function () { armed = true; }, 2500);
+
+    function isTouchDevice() {
+        try {
+            return (
+                'ontouchstart' in window
+                || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)
+                || window.matchMedia('(pointer: coarse)').matches
+            );
+        } catch (err) {
+            return false;
         }
-    });
+    }
+    if (isTouchDevice()) {
+        return;
+    }
+
+    function isLeavingTowardBrowserChrome(e) {
+        var dest = e.relatedTarget || e.toElement || null;
+        if (dest) return false;
+        var y = typeof e.clientY === 'number' ? e.clientY : null;
+        if (y === null) return false;
+        if (y <= 0 || y <= 16) return true;
+        return false;
+    }
+
+    function onExitIntent(e) {
+        if (!armed || opened) return;
+        if (!isLeavingTowardBrowserChrome(e)) return;
+        openOverlay();
+    }
+
+    document.documentElement.addEventListener('mouseout', onExitIntent, true);
+    document.documentElement.addEventListener('mouseleave', onExitIntent, true);
+    if (document.body) {
+        document.body.addEventListener('mouseleave', onExitIntent, true);
+    }
+    document.addEventListener('mousemove', function (e) {
+        if (!armed || opened) return;
+        var y = e.clientY;
+        var now = Date.now();
+        if (lastY !== null && y <= 8 && lastY > y && (lastY - y) >= 4) {
+            if (now - lastTs < 120) openOverlay();
+        }
+        lastY = y;
+        lastTs = now;
+    }, { passive: true });
 })();
 </script>
 {% endif %}

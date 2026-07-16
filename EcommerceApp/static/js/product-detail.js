@@ -373,12 +373,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 1000);
         }
 
+        function previewFromCfg() {
+            const pct = Number(cfg.percent || 0);
+            const base = Number(cfg.base_price || 0);
+            if (!(pct > 0) || !(base > 0)) return false;
+            const sale = (base * (1 - pct / 100)).toFixed(2);
+            showFlash({
+                base: base,
+                sale: sale,
+                percent: pct,
+                remaining_seconds: flashSec,
+            });
+            return true;
+        }
+
         function activate() {
             if (activated) return;
             activated = true;
             const token = csrf();
             if (!token) {
-                activated = false;
+                // Nema CSRF — pokušaj barem preview iz configa
+                if (!previewFromCfg()) activated = false;
                 return;
             }
             const body = new URLSearchParams();
@@ -397,31 +412,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }).then(function (res) {
                 return res.json().then(function (data) {
                     if (!res.ok || !data.ok) {
-                        // Isteklo ili nedostupno — ostaje regularna cijena (bez retry-a)
-                        activated = true;
+                        // Staff preview ili mrežni fail: prikaži iz configa
+                        if (cfg.staff_preview || cfg.flash) {
+                            if (cfg.flash && cfg.flash.sale) {
+                                showFlash({
+                                    base: cfg.flash.base || cfg.base_price,
+                                    sale: cfg.flash.sale,
+                                    percent: cfg.flash.percent || cfg.percent,
+                                    remaining_seconds: cfg.flash.remaining_seconds || flashSec,
+                                });
+                            } else {
+                                previewFromCfg();
+                            }
+                        }
                         return;
                     }
                     showFlash(data);
                 });
             }).catch(function () {
-                activated = false;
+                if (!previewFromCfg()) activated = false;
             });
         }
 
         // Server već aktivirao na ulasku, ili još traje iz sesije — odmah prikaži + odbrojavaj
-        if (cfg.flash && cfg.flash.remaining_seconds > 0) {
+        if (cfg.flash && (cfg.flash.remaining_seconds > 0 || cfg.flash.sale)) {
             activated = true;
             showFlash({
                 base: cfg.flash.base || cfg.base_price,
                 sale: cfg.flash.sale,
                 percent: cfg.flash.percent || cfg.percent,
-                remaining_seconds: cfg.flash.remaining_seconds,
+                remaining_seconds: cfg.flash.remaining_seconds || flashSec,
             });
             return;
         }
 
-        // Nema flasha u configu (isteklo / greška servera): jedan odmah pokušaj, bez čekanja
-        // Ako je već isteklo u sesiji, API odbija → regularna cijena
+        // Nema flasha u configu: odmah pokušaj aktivaciju (ili staff preview)
         activate();
     })();
 

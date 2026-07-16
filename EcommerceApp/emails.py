@@ -49,21 +49,23 @@ def _admin_order_text(order):
     if order.napomena:
         lines.append(f'Napomena: {order.napomena}')
     lines.extend(['', 'Stavke:', ''])
-    snizene = []
     for item in order.stavke.all():
-        lines.append(
-            f'- {item.puni_naziv} (šifra: {item.sifra or "—"}) × {item.kolicina} = {item.ukupno} KM',
+        line = (
+            f'- {item.puni_naziv} (šifra: {item.sifra or "—"}) × {item.kolicina} = {item.ukupno} KM'
         )
         if getattr(item, 'ima_snizenje', False) or (item.popust_opis or item.popust_iznos):
             bazna = item.bazna_cijena if item.bazna_cijena is not None else item.cijena
-            snizene.append(
-                f'  · {item.puni_naziv}: regularno {bazna} KM → plaćeno {item.cijena} KM'
-                f'{f" (−{item.popust_postotak}%)" if item.popust_postotak else ""}'
-                f'{f" | ušteda {item.popust_iznos} KM" if item.popust_iznos else ""}'
-                f'{f" | izvor: {item.popust_opis}" if item.popust_opis else ""}'
-            )
-    if snizene:
-        lines.extend(['', '⚠ SNIŽENJA NA STAVKAMA (za evidenciju):', *snizene])
+            line += f' | regularno {bazna} KM → {item.cijena} KM'
+            if item.popust_opis:
+                line += f' ({item.popust_opis}'
+                if item.popust_postotak:
+                    line += f' −{item.popust_postotak}%'
+                if item.popust_iznos:
+                    line += f', ušteda {item.popust_iznos} KM'
+                line += ')'
+            elif item.popust_iznos:
+                line += f' (ušteda {item.popust_iznos} KM)'
+        lines.append(line)
     summary = sazetak_iz_narudzbe(order)
     dostava_tekst = 'Besplatno' if order.dostava == 0 else f'{order.dostava} KM'
     lines.extend([
@@ -73,12 +75,7 @@ def _admin_order_text(order):
         f'Iznos sa PDV-om: {order.medjuzbir} KM',
     ])
     if order.popust:
-        lines.append(f'Popust na narudžbi: -{order.popust} KM')
-    for det in (getattr(order, 'popust_detalji', None) or []):
-        if isinstance(det, dict):
-            izn = det.get('iznos')
-            opis = det.get('opis') or 'Popust'
-            lines.append(f'  · {opis}' + (f': -{izn} KM' if izn else ''))
+        lines.append(f'Popust: -{order.popust} KM')
     if order.kupon_kod:
         lines.append(f'Kupon: {order.kupon_kod}')
     lines.extend([

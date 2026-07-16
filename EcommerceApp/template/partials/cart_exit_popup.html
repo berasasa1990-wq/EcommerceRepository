@@ -222,20 +222,80 @@
 
     overlay.querySelector('[data-cart-exit-stay]')?.addEventListener('click', closeOverlay);
 
-    document.documentElement.addEventListener('mouseout', function (e) {
-        if (!e.relatedTarget && e.clientY <= 12) {
-            openOverlay();
-        }
-    });
+    /**
+     * Exit intent — SAMO kad kursor ide prema gornjem rubu preglednika
+     * (zona X / zatvaranja taba). Radi na Chrome, Firefox, Safari, Edge.
+     * Mobilni (nema miša) se ne okida.
+     */
+    var armed = false;
+    var lastY = null;
+    var lastTs = 0;
 
-    let pageHideArmed = false;
-    window.setTimeout(function () { pageHideArmed = true; }, 8000);
-    document.addEventListener('visibilitychange', function () {
-        if (!pageHideArmed) return;
-        if (document.visibilityState === 'hidden') {
-            // Desktop mouseout ostaje glavni trigger
+    // Ne okidaj odmah na load (slučajni pokret)
+    window.setTimeout(function () { armed = true; }, 2500);
+
+    function isTouchDevice() {
+        try {
+            return (
+                'ontouchstart' in window
+                || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)
+                || window.matchMedia('(pointer: coarse)').matches
+            );
+        } catch (err) {
+            return false;
         }
-    });
+    }
+
+    // Samo desktop s mišem
+    if (isTouchDevice()) {
+        return;
+    }
+
+    function isLeavingTowardBrowserChrome(e) {
+        // relatedTarget / toElement = još unutar stranice
+        var dest = e.relatedTarget || e.toElement || null;
+        if (dest) return false;
+
+        var y = typeof e.clientY === 'number' ? e.clientY : null;
+        if (y === null) return false;
+
+        // Gornji rub / van viewporta gore (X taba, traffic lights, adresna traka)
+        // Negativan Y = miš je izašao iz prozora prema gore (Firefox/Safari često)
+        if (y <= 0) return true;
+        if (y <= 16) return true;
+
+        return false;
+    }
+
+    function onExitIntent(e) {
+        if (!armed || opened) return;
+        if (!isLeavingTowardBrowserChrome(e)) return;
+        openOverlay();
+    }
+
+    // mouseout na documentElement — najšira podrška (Chrome, Edge, Firefox)
+    document.documentElement.addEventListener('mouseout', onExitIntent, true);
+
+    // mouseleave na html/body — Safari / neki Firefox
+    document.documentElement.addEventListener('mouseleave', onExitIntent, true);
+    if (document.body) {
+        document.body.addEventListener('mouseleave', onExitIntent, true);
+    }
+
+    // Pomoć: brzi pokret miša prema gore uz gornji rub (kad mouseout zakasni)
+    document.addEventListener('mousemove', function (e) {
+        if (!armed || opened) return;
+        var y = e.clientY;
+        var now = Date.now();
+        if (lastY !== null && y <= 8 && lastY > y && (lastY - y) >= 4) {
+            // brzo gore u gornjih 8px
+            if (now - lastTs < 120) {
+                openOverlay();
+            }
+        }
+        lastY = y;
+        lastTs = now;
+    }, { passive: true });
 })();
 </script>
 {% endif %}

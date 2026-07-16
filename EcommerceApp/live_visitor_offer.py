@@ -431,22 +431,28 @@ def get_all_active_dwell_flashes(request):
     return result
 
 
-def activate_product_dwell_flash(request, product_id):
+def activate_product_dwell_flash(request, product_id, *, force=False):
     """
     Odmah na ulasku na artikal: aktiviraj 2-min flash cijenu (BEZ popupa).
     Timer kreće od trenutka ulaska; kad istekne — u ovoj sesiji više nema ponude
     (samo regularna cijena). Ako se vrati dok traje — nastavlja se preostalo vrijeme.
+
+    force=True ili staff/superuser: dozvoli pregled i ponovni prikaz (test u admin nalogu).
     """
     aktivan, _default_pct = _product_dwell_settings()
     if not aktivan:
         return None, 'AI dwell nije aktivan.'
     if not request or _blocked_path(request):
         return None, 'Nedostupno.'
+
     user = getattr(request, 'user', None)
-    if user and getattr(user, 'is_authenticated', False) and (
-        user.is_staff or user.is_superuser
-    ):
-        return None, 'Nedostupno.'
+    is_staff_user = bool(
+        user
+        and getattr(user, 'is_authenticated', False)
+        and (getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False))
+    )
+    # Staff/superuser MOGU vidjeti flash radi pregleda (prije su bili potpuno blokirani).
+    force_preview = bool(force or is_staff_user)
 
     try:
         pid = int(product_id)
@@ -471,16 +477,23 @@ def activate_product_dwell_flash(request, product_id):
 
     state = _dwell_state(request)
     offered_ids = list(state.get('offered_ids') or [])
-    # Već isteklo u ovoj sesiji — samo regularna cijena, bez re-aktivacije
-    if pid in offered_ids:
+    # Već isteklo u ovoj sesiji — samo regularna cijena (staff smije ponovo)
+    if pid in offered_ids and not force_preview:
         return None, 'Flash cijena za ovaj artikal je već istekla u ovoj posjeti.'
+    if pid in offered_ids and force_preview:
+        offered_ids = [x for x in offered_ids if x != pid]
 
     base = product.prikazna_cijena
     try:
         base_d = Decimal(str(base))
     except (InvalidOperation, TypeError, ValueError):
         return None, 'Cijena nije dostupna.'
+    if base_d <= 0:
+        return None, 'Cijena nije dostupna.'
     sale_d = _discounted_price(base_d, dwell_percent)
+    if sale_d >= base_d:
+        return None, 'Popust ne smanjuje cijenu.'
+
     expires = timezone.now().timestamp() + PRODUCT_DWELL_FLASH_SECONDS
     deals = _flash_deals(request)
     deals[str(pid)] = {
@@ -491,7 +504,9 @@ def activate_product_dwell_flash(request, product_id):
     }
     _save_flash_deals(request, deals)
 
-    offered_ids.append(pid)
+    # Staff preview ne troši „jednom po posjeti” slot
+    if not force_preview:
+        offered_ids.append(pid)
     state['offered_ids'] = offered_ids[:40]
     state['product_id'] = pid
     state['started_ts'] = timezone.now().timestamp()

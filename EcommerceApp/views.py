@@ -1285,15 +1285,42 @@ def product_detail(request, slug):
             get_dwell_percent_for_product,
             product_allowed_for_dwell,
         )
+        from .live_visitor_offer import _discounted_price
+
         dwell_on, _default_pct = _product_dwell_settings()
         dwell_on_this = bool(dwell_on and product_allowed_for_dwell(product.pk))
         dwell_pct = get_dwell_percent_for_product(product.pk) if dwell_on_this else Decimal('0')
+        is_staff_preview = _request_is_superuser(request) or (
+            getattr(request.user, 'is_authenticated', False)
+            and getattr(request.user, 'is_staff', False)
+        )
         dwell_flash = None
+        activate_err = ''
         if dwell_on_this and dwell_pct and dwell_pct > 0:
-            # Odmah na ulasku: aktiviraj ili nastavi preostalo; ako je isteklo — None
+            # Odmah na ulasku: aktiviraj ili nastavi preostalo
             dwell_flash = get_active_dwell_flash(request, product.pk)
             if not dwell_flash:
-                dwell_flash, _ = activate_product_dwell_flash(request, product.pk)
+                dwell_flash, activate_err = activate_product_dwell_flash(
+                    request,
+                    product.pk,
+                    force=bool(is_staff_preview),
+                )
+            # Fallback prikaz (npr. staff ili greška sesije) — izračunaj cijene
+            if not dwell_flash and dwell_pct > 0:
+                try:
+                    base_d = Decimal(str(product.prikazna_cijena))
+                    sale_d = _discounted_price(base_d, dwell_pct)
+                    if sale_d < base_d:
+                        dwell_flash = {
+                            'product_id': product.pk,
+                            'percent': dwell_pct,
+                            'expires_ts': None,
+                            'remaining_seconds': PRODUCT_DWELL_FLASH_SECONDS,
+                            'base': str(base_d.quantize(Decimal('0.01'))),
+                            'sale': str(sale_d),
+                        }
+                except Exception:
+                    pass
         flash_json = None
         if dwell_flash:
             pct = dwell_flash.get('percent')
@@ -1305,7 +1332,7 @@ def product_detail(request, slug):
                 'product_id': dwell_flash.get('product_id'),
                 'percent': pct_f,
                 'expires_ts': dwell_flash.get('expires_ts'),
-                'remaining_seconds': dwell_flash.get('remaining_seconds'),
+                'remaining_seconds': dwell_flash.get('remaining_seconds') or PRODUCT_DWELL_FLASH_SECONDS,
                 'base': dwell_flash.get('base'),
                 'sale': dwell_flash.get('sale'),
             }
@@ -1322,6 +1349,8 @@ def product_detail(request, slug):
             'base_price': str(product.prikazna_cijena),
             'activate_url': '/ai-dwell/aktiviraj/',
             'flash': flash_json,  # None ako isteklo / nedostupno → samo regularna cijena
+            'staff_preview': bool(is_staff_preview),
+            'debug_err': activate_err if is_staff_preview else '',
         }
     except Exception:
         context['dwell_flash_config'] = {'active': False}
