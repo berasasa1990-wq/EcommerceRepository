@@ -1788,8 +1788,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Ne diraj cijenu dok traje AI dwell flash na kartici
-                if (card.querySelector('[data-dwell-card-flash].is-active')) {
+                // Ne diraj cijenu dok je AI dwell sniženje na kartici
+                if (card.querySelector('[data-dwell-card-deal], [data-dwell-card-flash].is-active')) {
                     return;
                 }
 

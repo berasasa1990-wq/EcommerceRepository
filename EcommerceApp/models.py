@@ -126,9 +126,8 @@ class SiteSettings(models.Model):
         help_text=(
             'Čim kupac uđe na artikal: NEMA popup-a. '
             'Odmah se precrta stara cijena, pojavi se snizena i odbrojavanje 2 min. '
-            'Kad istekne — u toj posjeti više nema ponude, samo regularna cijena. '
-            'Dok traje može izaći i vratiti se. '
-            'Popust po artiklu unosiš u tabeli ispod (ili default ispod).'
+            'Kad istekne — u toj posjeti više nema ponude. '
+            'Artikle i % popusta unosiš u tabeli „AI dwell artikli” (po artiklu).'
         ),
     )
     product_dwell_popust = models.DecimalField(
@@ -139,19 +138,141 @@ class SiteSettings(models.Model):
         blank=True,
         verbose_name='AI dwell — default popust (%)',
         help_text=(
-            'Default flash popust ako artikal nema svoj unos, '
-            'ili kad lista artikala nije postavljena (svi artikli). Max 50%.'
+            'Fallback % ako unos u tabeli artikala nema popust. '
+            'Flash radi samo na artiklima dodanim u tabelu „AI dwell artikli”. Max 50%.'
         ),
+    )
+    product_dwell_flash_seconds = models.PositiveIntegerField(
+        default=120,
+        verbose_name='AI dwell — trajanje tajmera (sekundi)',
+        help_text='Koliko traje snizena cijena na product page (npr. 120 = 2 min). Min 30, max 3600.',
+    )
+    # —— AI dwell tekstovi ——
+    product_dwell_tag_text = models.CharField(
+        max_length=60,
+        default='Ograničena ponuda',
+        blank=True,
+        verbose_name='AI dwell — badge tekst (detalj)',
+        help_text='Npr. „Ograničena ponuda”. Prazno = sakrij badge.',
+    )
+    product_dwell_timer_label = models.CharField(
+        max_length=60,
+        default='Ističe za',
+        blank=True,
+        verbose_name='AI dwell — labela tajmera',
+        help_text='Tekst pored odbrojavanja na product page.',
+    )
+    product_dwell_catalog_label = models.CharField(
+        max_length=40,
+        default='',
+        blank=True,
+        verbose_name='AI dwell — labela na kartici (katalog)',
+        help_text='Opcionalno iznad cijene na listi (npr. „Akcija”). Prazno = bez labele.',
+    )
+    product_dwell_sale_pulse = models.BooleanField(
+        default=True,
+        verbose_name='AI dwell — pulsirajuća nova cijena',
+        help_text='Uključeno: nova (crvena) cijena blago pulira. Isključeno: mirna boja.',
+    )
+    # —— AI dwell boje — product page ——
+    product_dwell_boja_box = models.CharField(
+        max_length=7, default='#111827', blank=True,
+        verbose_name='AI dwell — pozadina boxa (detalj)',
+        help_text='Hex npr. #111827',
+    )
+    product_dwell_boja_box2 = models.CharField(
+        max_length=7, default='#1f2937', blank=True,
+        verbose_name='AI dwell — pozadina boxa 2 (gradijent)',
+        help_text='Druga boja gradijenta. Prazno = ista kao prva.',
+    )
+    product_dwell_boja_border = models.CharField(
+        max_length=7, default='#e11d48', blank=True,
+        verbose_name='AI dwell — rub boxa',
+    )
+    product_dwell_boja_accent = models.CharField(
+        max_length=7, default='#e11d48', blank=True,
+        verbose_name='AI dwell — accent linija / accent',
+    )
+    product_dwell_boja_tag_tekst = models.CharField(
+        max_length=7, default='#fecdd3', blank=True,
+        verbose_name='AI dwell — boja badge teksta',
+    )
+    product_dwell_boja_tag_bg = models.CharField(
+        max_length=7, default='#e11d48', blank=True,
+        verbose_name='AI dwell — boja badge pozadine',
+    )
+    product_dwell_boja_timer_label = models.CharField(
+        max_length=7, default='#cbd5e1', blank=True,
+        verbose_name='AI dwell — boja labele tajmera',
+    )
+    product_dwell_boja_timer_bg = models.CharField(
+        max_length=7, default='#e11d48', blank=True,
+        verbose_name='AI dwell — boja tajmera (pozadina)',
+    )
+    product_dwell_boja_timer_tekst = models.CharField(
+        max_length=7, default='#ffffff', blank=True,
+        verbose_name='AI dwell — boja tajmera (broj)',
+    )
+    product_dwell_boja_stara_cijena = models.CharField(
+        max_length=7, default='#94a3b8', blank=True,
+        verbose_name='AI dwell — boja stare cijene (detalj)',
+    )
+    product_dwell_boja_nova_cijena = models.CharField(
+        max_length=7, default='#e11d48', blank=True,
+        verbose_name='AI dwell — boja nove cijene (detalj)',
+    )
+    product_dwell_boja_nova_cijena_pulse = models.CharField(
+        max_length=7, default='#ff1f4b', blank=True,
+        verbose_name='AI dwell — boja pulse (vrh animacije)',
+        help_text='Boja na vrhuncu pulsiranja nove cijene.',
+    )
+    product_dwell_boja_badge_bg = models.CharField(
+        max_length=7, default='#be123c', blank=True,
+        verbose_name='AI dwell — boja % badge (pozadina)',
+    )
+    product_dwell_boja_badge_tekst = models.CharField(
+        max_length=7, default='#ffffff', blank=True,
+        verbose_name='AI dwell — boja % badge (tekst)',
+    )
+    # —— AI dwell boje — katalog / pretraga ——
+    product_dwell_boja_kartica_bg = models.CharField(
+        max_length=7, default='#fff7f8', blank=True,
+        verbose_name='AI dwell kartica — pozadina',
+    )
+    product_dwell_boja_kartica_bg2 = models.CharField(
+        max_length=7, default='#ffffff', blank=True,
+        verbose_name='AI dwell kartica — pozadina 2',
+    )
+    product_dwell_boja_kartica_border = models.CharField(
+        max_length=7, default='#e11d48', blank=True,
+        verbose_name='AI dwell kartica — rub',
+    )
+    product_dwell_boja_kartica_stara = models.CharField(
+        max_length=7, default='#64748b', blank=True,
+        verbose_name='AI dwell kartica — stara cijena',
+    )
+    product_dwell_boja_kartica_nova = models.CharField(
+        max_length=7, default='#e11d48', blank=True,
+        verbose_name='AI dwell kartica — nova cijena',
+    )
+    product_dwell_boja_kartica_badge_bg = models.CharField(
+        max_length=7, default='#be123c', blank=True,
+        verbose_name='AI dwell kartica — % badge pozadina',
+    )
+    product_dwell_boja_kartica_badge_tekst = models.CharField(
+        max_length=7, default='#ffffff', blank=True,
+        verbose_name='AI dwell kartica — % badge tekst',
+    )
+    product_dwell_boja_kartica_label = models.CharField(
+        max_length=7, default='#be123c', blank=True,
+        verbose_name='AI dwell kartica — boja labele',
     )
     product_dwell_artikli = models.ManyToManyField(
         'Product',
         blank=True,
         related_name='dwell_flash_sitesettings',
-        verbose_name='AI dwell — artikli (stara lista)',
-        help_text=(
-            'Zastarjelo: koristi tabelu „AI dwell artikli” ispod s popustom po artiklu. '
-            'Ako je ta tabela prazna i ova lista prazna — radi na SVIM artiklima.'
-        ),
+        verbose_name='AI dwell — artikli (ugašeno)',
+        help_text='Više se ne koristi. Unosi se u tabeli ProductDwellItem (popust po artiklu).',
     )
     welcome_reg_popup_aktivan = models.BooleanField(
         default=False,
@@ -353,20 +474,105 @@ class SiteSettings(models.Model):
     def artikala_po_stranici(self):
         return self.artikala_po_redu * 4
 
+    @staticmethod
+    def _dwell_hex(value, default):
+        """Validan #RGB / #RRGGBB ili default."""
+        import re
+        v = (value or '').strip()
+        if re.fullmatch(r'#[0-9A-Fa-f]{6}', v) or re.fullmatch(r'#[0-9A-Fa-f]{3}', v):
+            return v
+        return default
+
+    def get_dwell_ui(self):
+        """
+        Tekstovi + boje za AI dwell (template + CSS varijable).
+        Sve se uređuje u adminu (AI prodaja).
+        """
+        hx = self._dwell_hex
+        box = hx(self.product_dwell_boja_box, '#111827')
+        box2 = hx(self.product_dwell_boja_box2, '') or box
+        accent = hx(self.product_dwell_boja_accent, '#e11d48')
+        border = hx(self.product_dwell_boja_border, accent)
+        tag_bg = hx(self.product_dwell_boja_tag_bg, accent)
+        tag_tekst = hx(self.product_dwell_boja_tag_tekst, '#fecdd3')
+        timer_label = hx(self.product_dwell_boja_timer_label, '#cbd5e1')
+        timer_bg = hx(self.product_dwell_boja_timer_bg, accent)
+        timer_tekst = hx(self.product_dwell_boja_timer_tekst, '#ffffff')
+        stara = hx(self.product_dwell_boja_stara_cijena, '#94a3b8')
+        nova = hx(self.product_dwell_boja_nova_cijena, '#e11d48')
+        nova_pulse = hx(self.product_dwell_boja_nova_cijena_pulse, '#ff1f4b')
+        badge_bg = hx(self.product_dwell_boja_badge_bg, '#be123c')
+        badge_tekst = hx(self.product_dwell_boja_badge_tekst, '#ffffff')
+        card_bg = hx(self.product_dwell_boja_kartica_bg, '#fff7f8')
+        card_bg2 = hx(self.product_dwell_boja_kartica_bg2, '') or '#ffffff'
+        card_border = hx(self.product_dwell_boja_kartica_border, accent)
+        card_stara = hx(self.product_dwell_boja_kartica_stara, '#64748b')
+        card_nova = hx(self.product_dwell_boja_kartica_nova, nova)
+        card_badge_bg = hx(self.product_dwell_boja_kartica_badge_bg, badge_bg)
+        card_badge_tekst = hx(self.product_dwell_boja_kartica_badge_tekst, '#ffffff')
+        card_label = hx(self.product_dwell_boja_kartica_label, badge_bg)
+
+        try:
+            flash_sec = int(self.product_dwell_flash_seconds or 120)
+        except (TypeError, ValueError):
+            flash_sec = 120
+        flash_sec = max(30, min(flash_sec, 3600))
+
+        pulse = bool(getattr(self, 'product_dwell_sale_pulse', True))
+        tag_text = (self.product_dwell_tag_text or '').strip()
+        timer_label_text = (self.product_dwell_timer_label or '').strip() or 'Ističe za'
+        catalog_label = (self.product_dwell_catalog_label or '').strip()
+
+        css_vars = (
+            f'--dwell-box-bg:{box};'
+            f'--dwell-box-bg2:{box2};'
+            f'--dwell-box-border:{border};'
+            f'--dwell-accent:{accent};'
+            f'--dwell-tag-bg:{tag_bg};'
+            f'--dwell-tag-text:{tag_tekst};'
+            f'--dwell-timer-label:{timer_label};'
+            f'--dwell-timer-bg:{timer_bg};'
+            f'--dwell-timer-text:{timer_tekst};'
+            f'--dwell-old:{stara};'
+            f'--dwell-sale:{nova};'
+            f'--dwell-sale-pulse:{nova_pulse};'
+            f'--dwell-badge-bg:{badge_bg};'
+            f'--dwell-badge-text:{badge_tekst};'
+            f'--dwell-card-bg:{card_bg};'
+            f'--dwell-card-bg2:{card_bg2};'
+            f'--dwell-card-border:{card_border};'
+            f'--dwell-card-old:{card_stara};'
+            f'--dwell-card-sale:{card_nova};'
+            f'--dwell-card-badge-bg:{card_badge_bg};'
+            f'--dwell-card-badge-text:{card_badge_tekst};'
+            f'--dwell-card-label:{card_label};'
+            f'--dwell-pulse:{"1" if pulse else "0"};'
+        )
+
+        return {
+            'active': bool(self.product_dwell_popup_aktivan),
+            'tag_text': tag_text,
+            'timer_label': timer_label_text,
+            'catalog_label': catalog_label,
+            'flash_seconds': flash_sec,
+            'sale_pulse': pulse,
+            'css_vars': css_vars,
+        }
+
     def __str__(self):
         return 'Podešavanja'
 
 
 class AIProdajaSettings(SiteSettings):
     """
-    Proxy: AI prodaja postavke u adminu pored Akcija
-    (ne u općim Podešavanjima).
+    Proxy: AI prodaja + AI dwell postavke.
+    U adminu se otvara preko Akcije → tip „AI prodaja / AI dwell” (nema zasebnog menija).
     """
 
     class Meta:
         proxy = True
-        verbose_name = 'AI prodaja'
-        verbose_name_plural = 'AI prodaja'
+        verbose_name = 'AI prodaja / AI dwell'
+        verbose_name_plural = 'AI prodaja / AI dwell'
 
 
 class ProductDwellItem(models.Model):
@@ -385,7 +591,8 @@ class ProductDwellItem(models.Model):
         on_delete=models.CASCADE,
         related_name='dwell_items',
         verbose_name='Artikal',
-        limit_choices_to={'aktivan': True},
+        # Samo aktivni i na stanju — autocomplete i dropdown poštuju limit_choices_to
+        limit_choices_to={'aktivan': True, 'na_stanju': True},
     )
     popust = models.DecimalField(
         max_digits=5,
@@ -407,6 +614,14 @@ class ProductDwellItem(models.Model):
     def clean(self):
         from django.core.exceptions import ValidationError
         super().clean()
+        if self.product_id:
+            p = self.product
+            if not getattr(p, 'aktivan', False):
+                raise ValidationError({'product': 'Artikal mora biti aktivan.'})
+            if not getattr(p, 'na_stanju', False):
+                raise ValidationError({
+                    'product': 'Ne možeš dodati artikal koji nije na stanju.',
+                })
         if self.popust is not None:
             if self.popust <= 0:
                 raise ValidationError({'popust': 'Popust mora biti veći od 0.'})
@@ -802,9 +1017,10 @@ class HomeVlog(models.Model):
 
 class Akcija(models.Model):
     class Tip(models.TextChoices):
-        # Aktivni tipovi (admin + popup)
+        # Aktivni tipovi (admin)
         BUNDLE = 'bundle', 'Pop-up bundle'
         QTY_DEAL = 'qty_deal', 'Kupi više (količinski %)'
+        AI_PRODAJA = 'ai_prodaja', 'AI prodaja / AI dwell'
         # Zastarjeli (zadržani zbog postojećih redova; više se ne nude)
         SLIKA = 'slika', 'Pop-up + slika (zastarjelo)'
         TIMER = 'timer', 'Akcija + tajmer (zastarjelo)'
@@ -813,8 +1029,10 @@ class Akcija(models.Model):
         KORPA_NUDJENJE = 'korpa_nudjenje', 'Korpa nudjenje (zastarjelo)'
         GRATIS = 'gratis', '+ Gratis (zastarjelo)'
 
-    # Samo ovi tipovi u adminu i na sajtu
-    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL)
+    # Tipovi u listi Akcije (admin)
+    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.AI_PRODAJA)
+    # Samo ovi idu u popup queue na sajtu
+    POPUP_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL)
 
     class BundleTrigger(models.TextChoices):
         DELAY = 'delay', 'Nakon kašnjenja (bilo gdje na sajtu)'
@@ -1002,8 +1220,8 @@ class Akcija(models.Model):
         return self.aktivan
 
     def je_popup(self):
-        """Samo Pop-up bundle i Kupi više (ostali tipovi uklonjeni s Akcija)."""
-        return self.tip in self.ACTIVE_TIPS
+        """Samo Pop-up bundle i Kupi više — AI prodaja/dwell nije popup akcija."""
+        return self.tip in self.POPUP_TIPS
 
     def bundle_line_rows(self):
         """

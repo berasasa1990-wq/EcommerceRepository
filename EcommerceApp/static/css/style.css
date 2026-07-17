@@ -16567,302 +16567,461 @@ body.og-side-open {
 }
 
 /* AI dwell flash — snizena crvena (pulse) + crna regularna ukoso + zelena #5BB805 pozadina */
+/* ===== AI dwell — boje/tekst iz admina (CSS vars na :root) ===== */
+:root {
+    --dwell-box-bg: #111827;
+    --dwell-box-bg2: #1f2937;
+    --dwell-box-border: #e11d48;
+    --dwell-accent: #e11d48;
+    --dwell-tag-bg: #e11d48;
+    --dwell-tag-text: #fecdd3;
+    --dwell-timer-label: #cbd5e1;
+    --dwell-timer-bg: #e11d48;
+    --dwell-timer-text: #ffffff;
+    --dwell-old: #94a3b8;
+    --dwell-sale: #e11d48;
+    --dwell-sale-pulse: #ff1f4b;
+    --dwell-badge-bg: #be123c;
+    --dwell-badge-text: #ffffff;
+    --dwell-card-bg: #fff7f8;
+    --dwell-card-bg2: #ffffff;
+    --dwell-card-border: #e11d48;
+    --dwell-card-old: #64748b;
+    --dwell-card-sale: #e11d48;
+    --dwell-card-badge-bg: #be123c;
+    --dwell-card-badge-text: #ffffff;
+    --dwell-card-label: #be123c;
+}
 @keyframes dwell-price-pulse {
     0%, 100% {
-        color: #dc2626;
-        text-shadow: 0 0 0 rgba(220, 38, 38, 0);
+        color: var(--dwell-sale, #e11d48);
+        text-shadow:
+            0 0 0 transparent,
+            0 1px 0 rgba(0, 0, 0, 0.04);
         transform: scale(1);
     }
     50% {
-        color: #ef4444;
-        text-shadow: 0 0 16px rgba(239, 68, 68, 0.45), 0 0 4px rgba(220, 38, 38, 0.3);
-        transform: scale(1.04);
+        color: var(--dwell-sale-pulse, #ff1f4b);
+        text-shadow:
+            0 0 18px color-mix(in srgb, var(--dwell-sale-pulse, #ff1f4b) 55%, transparent),
+            0 0 6px color-mix(in srgb, var(--dwell-sale, #e11d48) 35%, transparent);
+        transform: scale(1.055);
+    }
+}
+@keyframes dwell-card-price-pulse {
+    0%, 100% {
+        color: var(--dwell-card-sale, #e11d48);
+        text-shadow: 0 0 0 transparent;
+        transform: scale(1);
+    }
+    50% {
+        color: var(--dwell-sale-pulse, #ff1f4b);
+        text-shadow: 0 0 12px color-mix(in srgb, var(--dwell-sale-pulse, #ff1f4b) 45%, transparent);
+        transform: scale(1.05);
     }
 }
 @keyframes dwell-timer-pulse {
     0%, 100% {
-        opacity: 1;
-        box-shadow: 0 0 0 0 rgba(91, 184, 5, 0.4);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--dwell-timer-bg, #e11d48) 35%, transparent);
     }
     50% {
-        opacity: 0.95;
-        box-shadow: 0 0 0 6px rgba(91, 184, 5, 0);
+        box-shadow: 0 0 0 5px transparent;
     }
 }
-@keyframes dwell-badge-pop {
-    0%, 100% { transform: scale(1) rotate(-2deg); }
-    50% { transform: scale(1.08) rotate(1deg); }
+@keyframes dwell-badge-diag-pulse {
+    0%, 100% {
+        box-shadow:
+            0 3px 12px color-mix(in srgb, var(--dwell-badge-bg, #be123c) 40%, transparent),
+            0 0 0 0 color-mix(in srgb, var(--dwell-badge-bg, #be123c) 30%, transparent);
+        transform: rotate(-22deg) scale(1);
+    }
+    50% {
+        box-shadow:
+            0 6px 22px color-mix(in srgb, var(--dwell-badge-bg, #be123c) 55%, transparent),
+            0 0 0 6px color-mix(in srgb, var(--dwell-badge-bg, #be123c) 0%, transparent);
+        transform: rotate(-22deg) scale(1.12);
+    }
 }
-@keyframes dwell-glow-sweep {
-    0% { opacity: 0.25; transform: translateX(-30%) skewX(-12deg); }
-    50% { opacity: 0.55; }
-    100% { opacity: 0.25; transform: translateX(130%) skewX(-12deg); }
+@keyframes dwell-card-badge-diag-pulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--dwell-card-badge-bg, #be123c) 35%, transparent);
+        transform: rotate(-20deg) scale(1);
+    }
+    50% {
+        box-shadow: 0 4px 14px color-mix(in srgb, var(--dwell-card-badge-bg, #be123c) 50%, transparent);
+        transform: rotate(-20deg) scale(1.1);
+    }
 }
-@keyframes dwell-strike-flash {
-    0%, 100% { opacity: 0.95; }
+@keyframes dwell-strike-soft {
+    0%, 100% { opacity: 0.9; }
     50% { opacity: 0.55; }
 }
 
+/* —— Product page: kompaktan deal (ne preko cijelog ekrana) —— */
 .pd-dwell-flash {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: auto;
+    max-width: min(100%, 280px);
     margin: 0 0 16px;
-    padding: 14px 16px 16px;
-    border-radius: 16px;
-    background:
-        linear-gradient(145deg, #e8f8d9 0%, #5BB805 38%, #3f8f04 72%, #2d6b03 100%);
-    border: 1.5px solid rgba(45, 107, 3, 0.35);
+    padding: 12px 14px 12px;
+    border-radius: 14px;
+    background: linear-gradient(
+        160deg,
+        var(--dwell-box-bg, #111827) 0%,
+        var(--dwell-box-bg2, #1f2937) 55%,
+        var(--dwell-box-bg, #111827) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--dwell-box-border, #e11d48) 55%, transparent);
     box-shadow:
-        0 10px 28px rgba(45, 107, 3, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+        0 10px 28px rgba(15, 23, 42, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
-.pd-dwell-flash-glow {
+.pd-dwell-flash::before {
+    content: '';
     position: absolute;
     top: 0;
-    bottom: 0;
     left: 0;
-    width: 42%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+    right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--dwell-accent, #e11d48) 55%, white),
+        var(--dwell-accent, #e11d48) 40%,
+        color-mix(in srgb, var(--dwell-accent, #e11d48) 70%, black)
+    );
     pointer-events: none;
-    animation: dwell-glow-sweep 2.8s ease-in-out infinite;
 }
 .pd-dwell-flash[hidden] {
     display: none !important;
 }
 .pd-dwell-flash.is-active {
-    display: block;
+    display: inline-flex;
 }
-.pd-dwell-flash-timer {
+.pd-dwell-flash-tag {
     position: relative;
     z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--dwell-tag-text, #fecdd3);
+    background: color-mix(in srgb, var(--dwell-tag-bg, #e11d48) 22%, transparent);
+    border: 1px solid color-mix(in srgb, var(--dwell-tag-bg, #e11d48) 45%, transparent);
+}
+.pd-dwell-flash-prices {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+    width: 100%;
+}
+.pd-dwell-was {
+    position: relative;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dwell-old, #94a3b8);
+    text-decoration: none !important;
+    letter-spacing: -0.01em;
+}
+.pd-dwell-was::before,
+.pd-dwell-was::after {
+    content: '';
+    position: absolute;
+    left: -5%;
+    right: -5%;
+    top: 50%;
+    height: 0;
+    border-top: 2px solid var(--dwell-old, #94a3b8);
+    transform: rotate(-14deg);
+    transform-origin: center;
+    pointer-events: none;
+    animation: dwell-strike-soft 1.8s ease-in-out infinite;
+}
+.pd-dwell-was::before {
+    opacity: 0.55;
+    transform: rotate(-14deg) translateY(-1px);
+}
+/* Snizena + −% + tajmer u jednom klasteru */
+.pd-dwell-sale-cluster {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 10px;
-    margin: 0 0 10px;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+    max-width: 100%;
+}
+.pd-dwell-now {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--dwell-sale, #e11d48);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    will-change: transform, text-shadow;
+}
+.pd-dwell-flash.is-pulse .pd-dwell-now {
+    animation: dwell-price-pulse 1.3s ease-in-out infinite;
+}
+/* Veliki −% dijagonalno, pulsirajući */
+.pd-dwell-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.1em;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--dwell-badge-bg, #be123c) 55%, white),
+        var(--dwell-badge-bg, #be123c) 55%,
+        color-mix(in srgb, var(--dwell-badge-bg, #be123c) 70%, black)
+    );
+    color: var(--dwell-badge-text, #fff);
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    transform: rotate(-22deg);
+    transform-origin: center center;
+    animation: dwell-badge-diag-pulse 1.25s ease-in-out infinite;
+    will-change: transform, box-shadow;
+    flex-shrink: 0;
+}
+.pd-dwell-flash-timer {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
-    color: #0f1a08;
+    color: var(--dwell-timer-label, #cbd5e1);
+    white-space: nowrap;
 }
 .pd-dwell-flash-timer-label {
-    opacity: 0.9;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+    opacity: 0.85;
+    max-width: 5.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .pd-dwell-countdown,
 .pd-dwell-flash-timer strong {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 3.4em;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 18px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    color: #fff !important;
-    background: linear-gradient(180deg, #111111, #222222);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    animation: dwell-timer-pulse 1.2s ease-in-out infinite;
-}
-.pd-dwell-flash-prices {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 10px 16px;
-}
-/* Regularna — crna, ukoso precrtana */
-.pd-dwell-was {
-    position: relative;
-    display: inline-block;
-    font-size: 19px;
-    font-weight: 800;
-    color: #111111;
-    text-decoration: none !important;
-    letter-spacing: -0.01em;
-    opacity: 1;
-}
-.pd-dwell-was::before,
-.pd-dwell-was::after {
-    content: '';
-    position: absolute;
-    left: -6%;
-    right: -6%;
-    top: 50%;
-    height: 0;
-    border-top: 2.5px solid #111111;
-    transform: rotate(-16deg);
-    transform-origin: center;
-    pointer-events: none;
-    animation: dwell-strike-flash 1.6s ease-in-out infinite;
-}
-.pd-dwell-was::before {
-    border-top-color: rgba(17, 17, 17, 0.55);
-    transform: rotate(-16deg) translateY(-1px);
-}
-/* Snizena — crvena, pulsira */
-.pd-dwell-now {
-    font-size: 32px;
-    font-weight: 900;
-    color: #dc2626;
-    letter-spacing: -0.03em;
-    line-height: 1.05;
-    animation: dwell-price-pulse 1.35s ease-in-out infinite;
-    will-change: transform, text-shadow;
-}
-.pd-dwell-badge {
-    padding: 5px 12px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, #ff4d4d, #b91c1c);
-    color: #fff;
+    min-width: 2.8em;
+    padding: 3px 8px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 900;
-    letter-spacing: 0.02em;
-    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.4);
-    animation: dwell-badge-pop 1.6s ease-in-out infinite;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--dwell-timer-text, #fff) !important;
+    background: linear-gradient(
+        180deg,
+        var(--dwell-timer-bg, #e11d48),
+        color-mix(in srgb, var(--dwell-timer-bg, #e11d48) 65%, black)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    animation: dwell-timer-pulse 1.25s ease-in-out infinite;
 }
 
-/* AI dwell flash na karticama (početna / katalog) */
-.card-dwell-flash {
+/* —— Katalog / pretraga: sniženje BEZ tajmera —— */
+.card-dwell-deal {
     position: relative;
-    overflow: hidden;
     margin: 0;
     padding: 8px 10px 10px;
     border-radius: 12px;
-    background:
-        linear-gradient(145deg, #e8f8d9 0%, #5BB805 40%, #3f8f04 78%, #2d6b03 100%);
-    border: 1.5px solid rgba(45, 107, 3, 0.32);
-    box-shadow: 0 4px 16px rgba(45, 107, 3, 0.2);
+    width: 100%;
+    max-width: 100%;
+    background: linear-gradient(
+        165deg,
+        var(--dwell-card-bg, #fff7f8) 0%,
+        var(--dwell-card-bg2, #fff) 55%,
+        var(--dwell-card-bg, #fff7f8) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 28%, transparent);
+    box-shadow:
+        0 4px 14px color-mix(in srgb, var(--dwell-card-border, #e11d48) 10%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
-.card-dwell-flash[hidden] {
-    display: none !important;
+.card-dwell-deal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(90deg, transparent, var(--dwell-card-border, #e11d48), transparent);
+    opacity: 0.85;
+    pointer-events: none;
 }
-.card-dwell-flash.is-active {
+.card-dwell-deal.is-active {
     display: block;
 }
-.card-dwell-timer {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0 0 6px;
-    font-size: 11px;
+.card-dwell-label {
+    display: block;
+    margin: 0 0 4px;
+    font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #0f1a08;
+    color: var(--dwell-card-label, #be123c);
     line-height: 1.2;
-}
-.card-dwell-timer-label {
-    opacity: 0.9;
-}
-.card-dwell-countdown,
-.card-dwell-timer strong {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 2.8em;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 900;
-    letter-spacing: 0.03em;
-    color: #fff !important;
-    background: linear-gradient(180deg, #111111, #222222);
-    animation: dwell-timer-pulse 1.2s ease-in-out infinite;
 }
 .card-dwell-prices {
     display: flex !important;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 6px 10px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 4px;
     margin: 0 !important;
 }
 .card-dwell-was {
     position: relative;
     display: inline-block;
-    font-size: 13px !important;
-    font-weight: 800 !important;
-    color: #111111 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: var(--dwell-card-old, #64748b) !important;
     text-decoration: none !important;
 }
 .card-dwell-was::before,
 .card-dwell-was::after {
     content: '';
     position: absolute;
-    left: -5%;
-    right: -5%;
+    left: -4%;
+    right: -4%;
     top: 50%;
-    border-top: 2px solid #111111;
-    transform: rotate(-16deg);
+    border-top: 1.5px solid var(--dwell-card-old, #64748b);
+    transform: rotate(-14deg);
     pointer-events: none;
-    animation: dwell-strike-flash 1.6s ease-in-out infinite;
 }
 .card-dwell-was::before {
-    border-top-color: rgba(17, 17, 17, 0.5);
-    transform: rotate(-16deg) translateY(-1px);
+    opacity: 0.5;
+    transform: rotate(-14deg) translateY(-1px);
+}
+.card-dwell-sale-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
 }
 .card-dwell-now {
-    font-size: 18px !important;
+    font-size: 17px !important;
     font-weight: 900 !important;
-    color: #dc2626 !important;
+    color: var(--dwell-card-sale, #e11d48) !important;
     letter-spacing: -0.02em;
     line-height: 1.1;
-    animation: dwell-price-pulse 1.35s ease-in-out infinite;
+    will-change: transform, text-shadow;
+}
+.card-dwell-deal.is-pulse .card-dwell-now {
+    animation: dwell-card-price-pulse 1.3s ease-in-out infinite;
 }
 .card-dwell-badge {
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, #ff4d4d, #b91c1c);
-    color: #fff;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.4em;
+    padding: 5px 8px;
+    border-radius: 10px;
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--dwell-card-badge-bg, #be123c) 55%, white),
+        var(--dwell-card-badge-bg, #be123c)
+    );
+    color: var(--dwell-card-badge-text, #fff);
+    font-size: 14px;
     font-weight: 900;
-    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.35);
-    animation: dwell-badge-pop 1.6s ease-in-out infinite;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transform: rotate(-20deg);
+    transform-origin: center center;
+    animation: dwell-card-badge-diag-pulse 1.25s ease-in-out infinite;
+    will-change: transform, box-shadow;
+    flex-shrink: 0;
 }
-.product-card--catalog .card-dwell-flash {
+.card-dwell-flash {
+    display: none !important;
+}
+.product-card--catalog .card-dwell-deal {
     width: 100%;
 }
-.product-info .card-dwell-flash {
+.product-info .card-dwell-deal {
     margin-top: 2px;
 }
 @media (max-width: 768px) {
+    .pd-dwell-flash {
+        max-width: min(100%, 260px);
+        padding: 10px 12px;
+    }
     .pd-dwell-now {
-        font-size: 28px;
+        font-size: 24px;
+    }
+    .pd-dwell-badge {
+        font-size: 18px;
+        padding: 6px 10px;
+        min-width: 2.8em;
     }
     .pd-dwell-countdown,
     .pd-dwell-flash-timer strong {
-        font-size: 16px;
+        font-size: 13px;
+        min-width: 2.6em;
+        padding: 3px 7px;
     }
-    .card-dwell-timer {
-        font-size: 10px;
-    }
-    .card-dwell-countdown,
-    .card-dwell-timer strong {
-        font-size: 12px;
+    .pd-dwell-was {
+        font-size: 14px;
     }
     .card-dwell-now {
-        font-size: 16px !important;
+        font-size: 15px !important;
+    }
+    .card-dwell-badge {
+        font-size: 12px;
+        padding: 4px 7px;
     }
     .card-dwell-was {
-        font-size: 12px !important;
+        font-size: 11px !important;
     }
 }
 @media (prefers-reduced-motion: reduce) {
     .pd-dwell-now,
     .card-dwell-now,
     .pd-dwell-countdown,
-    .card-dwell-countdown,
     .pd-dwell-badge,
-    .card-dwell-badge,
-    .pd-dwell-flash-glow,
-    .pd-dwell-was::before,
-    .pd-dwell-was::after,
-    .card-dwell-was::before,
-    .card-dwell-was::after {
+    .card-dwell-badge {
         animation: none !important;
+    }
+    .pd-dwell-now {
+        color: var(--dwell-sale, #e11d48) !important;
+        text-shadow: none;
+        transform: none;
+    }
+    .pd-dwell-badge {
+        transform: rotate(-22deg);
+    }
+    .card-dwell-now {
+        color: var(--dwell-card-sale, #e11d48) !important;
+        text-shadow: none;
+        transform: none;
+    }
+    .card-dwell-badge {
+        transform: rotate(-20deg);
     }
 }
 

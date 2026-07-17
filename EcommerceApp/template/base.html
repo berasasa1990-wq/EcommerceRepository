@@ -102,8 +102,11 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260716v4" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260716v4">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260717v3" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260717v3">
+    {% if dwell_ui and dwell_ui.css_vars %}
+    <style id="ai-dwell-theme">:root{ {{ dwell_ui.css_vars }} }</style>
+    {% endif %}
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -418,7 +421,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260714v6" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260717v1" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}
@@ -445,7 +448,7 @@
          data-poll-url="{% url 'staff_site_events_poll' %}"
          data-analytics-url="{% url 'staff_live_analytics' %}"
          {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20260713v2" defer></script>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260716v6" defer></script>
     {% endif %}
     {% block extra_js %}{% endblock %}
 </body>

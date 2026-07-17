@@ -1,30 +1,22 @@
 {% load ecommerce_extras %}
-{# AI dwell flash: snizena cijena + tajmer na kartici (početna / katalog) #}
-{% with flash=dwell_flash_by_id|dict_get:product.pk %}
-{% if flash and flash.remaining_seconds > 0 %}
-<div class="card-dwell-flash is-active"
-     data-dwell-card-flash
-     data-dwell-expires="{{ flash.expires_ts }}"
+{# AI dwell na karticama: snizena cijena BEZ tajmera (tajmer samo na product page) #}
+{% with deal=dwell_catalog_by_id|dict_get:product.pk %}
+{% if deal %}
+<div class="card-dwell-deal is-active{% if dwell_ui.sale_pulse %} is-pulse{% endif %}"
+     data-dwell-card-deal
      data-dwell-product-id="{{ product.pk }}">
-    <p class="card-dwell-timer" aria-live="polite">
-        <span class="card-dwell-timer-label">⏱</span>
-        <strong class="card-dwell-countdown" data-dwell-countdown>{{ flash.remaining_seconds|format_mmss }}</strong>
-    </p>
-    <div class="product-price product-card__price card-dwell-prices" data-product-price data-dwell-price-block>
-        <span class="price-original pd-dwell-was card-dwell-was">{{ flash.base }} KM</span>
-        <span class="price-sale pd-dwell-now card-dwell-now">{{ flash.sale }} KM</span>
-        {% if flash.percent %}
-        <span class="card-dwell-badge">−{{ flash.percent }}%</span>
-        {% endif %}
-    </div>
-</div>
-<div class="product-price product-card__price card-dwell-regular" data-product-price data-dwell-regular-price hidden>
-    {% if product.katalog_na_akciji %}
-    <span class="price-sale">{{ product.katalog_prikazna_cijena }} KM</span>
-    <span class="price-original">{{ product.katalog_bazna_cijena }} KM</span>
-    {% else %}
-    <span class="price-current">{{ product.katalog_prikazna_cijena }} KM</span>
+    {% if dwell_ui.catalog_label %}
+    <span class="card-dwell-label">{{ dwell_ui.catalog_label }}</span>
     {% endif %}
+    <div class="product-price product-card__price card-dwell-prices" data-product-price data-dwell-price-block>
+        <span class="price-original card-dwell-was">{{ deal.base }} KM</span>
+        <div class="card-dwell-sale-cluster">
+            <span class="price-sale card-dwell-now">{{ deal.sale }} KM</span>
+            {% if deal.percent %}
+            <span class="card-dwell-badge">−{{ deal.percent }}%</span>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% else %}
 <div class="product-price product-card__price" data-product-price>

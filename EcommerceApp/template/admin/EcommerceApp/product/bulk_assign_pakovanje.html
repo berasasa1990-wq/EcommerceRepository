@@ -1,0 +1,221 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/ozr_admin.css' %}?v=1">
+<style>
+    .bulk-pack {
+        max-width: 960px;
+        margin-top: 8px;
+    }
+    .bulk-pack-intro {
+        margin: 0 0 18px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #eef8e6 0%, #f7faf5 100%);
+        border: 1px solid #cfe8b8;
+        border-radius: 12px;
+        color: #1f3d1a;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    .bulk-pack-table-wrap {
+        overflow-x: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    }
+    .bulk-pack-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 640px;
+    }
+    .bulk-pack-table th {
+        text-align: left;
+        padding: 12px 14px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #28403d;
+        background: #f3f6f3;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .bulk-pack-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+        font-size: 13px;
+        color: #111;
+    }
+    .bulk-pack-table tr:last-child td {
+        border-bottom: none;
+    }
+    .bulk-pack-table tr:hover td {
+        background: #fafdf7;
+    }
+    .bulk-pack-name {
+        font-weight: 700;
+        color: #111;
+        display: block;
+        margin-bottom: 2px;
+    }
+    .bulk-pack-meta {
+        font-size: 12px;
+        color: #6b7280;
+    }
+    .bulk-pack-thumb {
+        width: 44px;
+        height: 44px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        background: #f9fafb;
+    }
+    .bulk-pack-thumb-ph {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 18px;
+    }
+    .bulk-pack-input {
+        width: 96px;
+        padding: 10px 12px;
+        border: 1.5px solid #d1d5db;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        color: #111;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .bulk-pack-input:focus {
+        outline: none;
+        border-color: #5BB805;
+        box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.18);
+    }
+    .bulk-pack-hint {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 4px;
+    }
+    .bulk-pack-actions {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+    }
+    .bulk-pack-actions .default {
+        background: #5BB805 !important;
+        border-color: #4a9a04 !important;
+        color: #fff !important;
+        font-weight: 800 !important;
+        padding: 12px 22px !important;
+        border-radius: 999px !important;
+        letter-spacing: 0.02em;
+        box-shadow: 0 6px 16px rgba(91, 184, 5, 0.28);
+    }
+    .bulk-pack-actions .default:hover {
+        background: #4a9a04 !important;
+    }
+    .bulk-pack-cancel {
+        color: #6b7280;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 10px 12px;
+    }
+    .bulk-pack-cancel:hover {
+        color: #111;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Bulk pakovanje
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="bulk-pack">
+    <h1>Bulk pakovanje</h1>
+    <p class="bulk-pack-intro">
+        Unesi broj komada u pakovanju za svaki artikal (npr. <strong>9</strong> = cijena je za 9 kom).
+        Ostavi prazno za „po komadu”. Jedan <strong>Sačuvaj sve</strong> ažurira sve odabrane artikle.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for product in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
+        {% endfor %}
+
+        <div class="bulk-pack-table-wrap">
+            <table class="bulk-pack-table">
+                <thead>
+                    <tr>
+                        <th style="width: 56px;"></th>
+                        <th>Artikal</th>
+                        <th style="width: 140px;">Pakovanje (kom.)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in queryset %}
+                    <tr>
+                        <td>
+                            {% if product.slika %}
+                            <img class="bulk-pack-thumb" src="{{ product.slika.url }}" alt="">
+                            {% else %}
+                            <div class="bulk-pack-thumb-ph" aria-hidden="true">📦</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="bulk-pack-name">{{ product.naziv }}</span>
+                            <span class="bulk-pack-meta">
+                                {% if product.sifra %}Šifra: {{ product.sifra }} · {% endif %}
+                                Cijena: {{ product.cijena }} KM
+                                {% if product.pakovanje_komada %}
+                                · trenutno: {{ product.pakovanje_komada }} kom
+                                {% else %}
+                                · trenutno: po komadu
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <input
+                                class="bulk-pack-input"
+                                type="number"
+                                name="pakovanje_{{ product.pk }}"
+                                min="0"
+                                max="9999"
+                                step="1"
+                                inputmode="numeric"
+                                value="{% if product.pakovanje_komada %}{{ product.pakovanje_komada }}{% endif %}"
+                                placeholder="—"
+                                aria-label="Pakovanje za {{ product.naziv }}"
+                            >
+                            <div class="bulk-pack-hint">prazno = po komadu</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bulk-pack-actions">
+            <input type="submit" name="apply" value="Sačuvaj sve ({{ queryset|length }})" class="default">
+            <a class="bulk-pack-cancel" href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -527,7 +527,7 @@ class AkcijaQtyTierInline(admin.TabularInline):
 
 
 class ProductDwellItemInline(admin.TabularInline):
-    """Po artiklu unesi svoj flash popust %."""
+    """Po artiklu unesi svoj flash popust % — samo artikli na stanju."""
     model = ProductDwellItem
     fk_name = 'settings'
     extra = 1
@@ -535,64 +535,60 @@ class ProductDwellItemInline(admin.TabularInline):
     fields = ('product', 'popust')
     verbose_name = 'Artikal s popustom'
     verbose_name_plural = (
-        'AI dwell artikli — dodaj artikal i unesi popust % (npr. 8, 12, 20)'
+        'AI dwell artikli — samo na stanju; unesi popust % (npr. 8, 12, 20)'
     )
+    classes = ('akcija-inline-dwell-items',)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'product':
             from .models import Product
-            kwargs['queryset'] = Product.objects.filter(aktivan=True).order_by('naziv')
+            kwargs['queryset'] = (
+                Product.objects
+                .filter(aktivan=True, na_stanju=True)
+                .order_by('naziv')
+            )
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+class ProductDwellItemAkcijaInline(ProductDwellItemInline):
+    """
+    ProductDwellItem je FK na SiteSettings, ne na Akciju.
+    Inicijalizira se s parent_model=SiteSettings; formset uvijek veže SiteSettings.load().
+    """
+
+    def get_formset(self, request, obj=None, **kwargs):
+        from .models import SiteSettings
+
+        settings_obj = SiteSettings.load()
+        FormSet = super().get_formset(request, settings_obj, **kwargs)
+
+        class _DwellFormSet(FormSet):
+            def __init__(self, *args, **kwargs):
+                kwargs['instance'] = SiteSettings.load()
+                super().__init__(*args, **kwargs)
+
+        return _DwellFormSet
 
 
 @admin.register(AIProdajaSettings)
 class AIProdajaSettingsAdmin(admin.ModelAdmin):
-    """AI prodaja — u adminu pored Akcija (ne u općim Podešavanjima)."""
-    filter_horizontal = ('product_dwell_artikli',)
+    """Zastarjeli proxy — sakriven; sve se uređuje u Akcije → tip AI."""
     inlines = [ProductDwellItemInline]
-    fieldsets = (
-        ('AI prodaja (popup)', {
-            'fields': (
-                'browse_interest_popup_aktivan',
-                'browse_interest_popust',
-            ),
-            'description': (
-                'AI prati kupca i šalje do 2 popup-a (1–2 artikla), razmak ~3 min, max 10%.'
-            ),
-        }),
-        ('AI dwell (flash cijena na artiklu)', {
-            'fields': (
-                'product_dwell_popup_aktivan',
-                'product_dwell_popust',
-            ),
-            'description': (
-                'Odmah na ulasku na artikal — BEZ popupa; precrtana + snizena + 2 min. '
-                'Ispod dodaj artikle i za svaki upiši svoj popust %. '
-                'Ako nema nijednog u tabeli — default popust na SVIM artiklima '
-                '(ili stara lista ako još postoji).'
-            ),
-        }),
-        ('AI dwell — stara lista (opcionalno)', {
-            'classes': ('collapse',),
-            'fields': ('product_dwell_artikli',),
-            'description': (
-                'Koristi samo ako još nisi prebacio na tabelu s popustom po artiklu. '
-                'Kad ima unosa u tabeli ispod, stara lista se ignorira.'
-            ),
-        }),
-    )
+
+    def get_model_perms(self, request):
+        return {}
+
+    def has_module_permission(self, request):
+        return False
 
     def has_add_permission(self, request):
-        return not AIProdajaSettings.objects.exists()
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
     def has_delete_permission(self, request, obj=None):
         return False
-
-    def changelist_view(self, request, extra_context=None):
-        obj = AIProdajaSettings.load()
-        return redirect(
-            reverse('admin:EcommerceApp_aiprodajasettings_change', args=[obj.pk]),
-        )
 
 
 # ─── Ribolovački savjetnik: početnički setovi ───────────────────────
@@ -758,18 +754,28 @@ class AkcijaAdmin(admin.ModelAdmin):
     search_fields = ('naziv', 'artikal__naziv', 'kategorija__naziv')
     autocomplete_fields = ('artikal', 'kategorija')
     filter_horizontal = ('bundle_artikli',)
-    # Samo bundle inline — količinski popusti su polja na formi (2, 3, 4…)
+    # Bundle inline; AI dwell artikli se dodaju u get_inline_instances
+    # (ProductDwellItem.FK je SiteSettings, ne Akcija — nije u inlines zbog admin.E202)
     inlines = [AkcijaBundleLineInline]
 
     class Media:
         js = ('admin/js/akcija_admin.js',)
 
+    def get_inline_instances(self, request, obj=None):
+        from .models import SiteSettings
+
+        inlines = super().get_inline_instances(request, obj)
+        # parent_model=SiteSettings jer ProductDwellItem.settings → SiteSettings
+        # (uvijek u DOM-u — JS prikaže samo za tip AI)
+        dwell = ProductDwellItemAkcijaInline(SiteSettings, self.admin_site)
+        return list(inlines) + [dwell]
+
     fieldsets = (
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
-                'Samo 2 tipa: „Pop-up bundle” i „Kupi više (količinski %)”. '
-                'AI prodaju podesi u meniju „AI prodaja”.'
+                'Tri tipa: „Pop-up bundle”, „Kupi više (količinski %)” i '
+                '„AI prodaja / AI dwell” — kad izabereš AI, pojave se sve AI opcije ispod.'
             ),
         }),
         ('Sadržaj', {
@@ -807,6 +813,66 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'Kašnjenje i publika. Za „Kupi više” popup se najbolje vidi na stranici artikla.'
             ),
         }),
+        ('AI prodaja (popup)', {
+            'fields': (
+                'browse_interest_popup_aktivan',
+                'browse_interest_popust',
+            ),
+            'description': (
+                'AI prati kupca i šalje do 2 popup-a (1–2 artikla), razmak ~3 min, max 10%.'
+            ),
+        }),
+        ('AI dwell — uključeno / popust / tajmer', {
+            'fields': (
+                'product_dwell_popup_aktivan',
+                'product_dwell_popust',
+                'product_dwell_flash_seconds',
+                'product_dwell_sale_pulse',
+            ),
+            'description': (
+                'Dok je uključeno: sniženje na pretrazi/katalogu (bez tajmera). '
+                'Na product page: snizena + tajmer. Artikli u tabeli ispod.'
+            ),
+        }),
+        ('AI dwell — tekstovi', {
+            'fields': (
+                'product_dwell_tag_text',
+                'product_dwell_timer_label',
+                'product_dwell_catalog_label',
+            ),
+            'description': 'Tekstovi na deal boxu (detalj) i opcionalna labela na karticama.',
+        }),
+        ('AI dwell — boje (product page)', {
+            'fields': (
+                'product_dwell_boja_box',
+                'product_dwell_boja_box2',
+                'product_dwell_boja_border',
+                'product_dwell_boja_accent',
+                'product_dwell_boja_tag_tekst',
+                'product_dwell_boja_tag_bg',
+                'product_dwell_boja_timer_label',
+                'product_dwell_boja_timer_bg',
+                'product_dwell_boja_timer_tekst',
+                'product_dwell_boja_stara_cijena',
+                'product_dwell_boja_nova_cijena',
+                'product_dwell_boja_nova_cijena_pulse',
+                'product_dwell_boja_badge_bg',
+                'product_dwell_boja_badge_tekst',
+            ),
+            'description': 'Hex boje (#RRGGBB). Color picker. Nova cijena = pulsirajuća boja.',
+        }),
+        ('AI dwell — boje (katalog / pretraga)', {
+            'fields': (
+                'product_dwell_boja_kartica_bg',
+                'product_dwell_boja_kartica_bg2',
+                'product_dwell_boja_kartica_border',
+                'product_dwell_boja_kartica_stara',
+                'product_dwell_boja_kartica_nova',
+                'product_dwell_boja_kartica_badge_bg',
+                'product_dwell_boja_kartica_badge_tekst',
+                'product_dwell_boja_kartica_label',
+            ),
+        }),
         ('Legacy M2M (opcionalno)', {
             'classes': ('collapse',),
             'fields': ('bundle_artikli',),
@@ -814,7 +880,34 @@ class AkcijaAdmin(admin.ModelAdmin):
         }),
     )
 
+    def _ensure_ai_prodaja_akcija(self):
+        """Jedan red u listi Akcije za AI prodaja / AI dwell."""
+        from .models import SiteSettings
+
+        s = SiteSettings.load()
+        dwell_on = bool(getattr(s, 'product_dwell_popup_aktivan', False))
+        browse_on = bool(getattr(s, 'browse_interest_popup_aktivan', False))
+        aktivan = dwell_on or browse_on
+        obj, _created = Akcija.objects.get_or_create(
+            tip=Akcija.Tip.AI_PRODAJA,
+            defaults={
+                'naziv': 'AI prodaja / AI dwell',
+                'aktivan': aktivan,
+                'redoslijed': 99,
+                'tekst_dugmeta': 'AI',
+            },
+        )
+        updates = {}
+        if obj.naziv != 'AI prodaja / AI dwell':
+            updates['naziv'] = 'AI prodaja / AI dwell'
+        if obj.aktivan != aktivan:
+            updates['aktivan'] = aktivan
+        if updates:
+            Akcija.objects.filter(pk=obj.pk).update(**updates)
+        return obj
+
     def get_queryset(self, request):
+        self._ensure_ai_prodaja_akcija()
         qs = super().get_queryset(request)
         return qs.filter(tip__in=Akcija.ACTIVE_TIPS)
 
@@ -823,19 +916,85 @@ class AkcijaAdmin(admin.ModelAdmin):
             kwargs['choices'] = [
                 (Akcija.Tip.BUNDLE, Akcija.Tip.BUNDLE.label),
                 (Akcija.Tip.QTY_DEAL, Akcija.Tip.QTY_DEAL.label),
+                (Akcija.Tip.AI_PRODAJA, Akcija.Tip.AI_PRODAJA.label),
             ]
         return super().formfield_for_choice_field(db_field, request, **kwargs)
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        """
+        AI polja nisu na modelu Akcija — moraju biti u form.declared_fields
+        (vidi AkcijaAdminForm). Ovdje osiguravamo da factory ne pukne.
+        """
+        from django.contrib.admin.utils import flatten_fieldsets
+        from .forms import AI_SETTINGS_FIELD_NAMES, AkcijaAdminForm
+
+        # Ako bi se base_fields izgubili (reload), ponovo zakači
+        for name in AI_SETTINGS_FIELD_NAMES:
+            if name not in AkcijaAdminForm.declared_fields:
+                try:
+                    from .forms import _make_ai_settings_formfield
+                    ff = _make_ai_settings_formfield(name)
+                    AkcijaAdminForm.base_fields[name] = ff
+                    AkcijaAdminForm.declared_fields[name] = ff
+                except Exception:
+                    pass
+
+        if 'fields' not in kwargs:
+            # Uključi model + deklarisana form polja (qty + AI)
+            fieldset_fields = list(flatten_fieldsets(self.get_fieldsets(request, obj)))
+            kwargs['fields'] = fieldset_fields
+
+        return super().get_form(request, obj, change=change, **kwargs)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.tip == Akcija.Tip.AI_PRODAJA:
+            return False
+        return super().has_delete_permission(request, obj)
 
     def save_model(self, request, obj, form, change):
         if obj.tip not in Akcija.ACTIVE_TIPS:
             obj.tip = Akcija.Tip.BUNDLE
+        # Samo jedan AI red — ne dupliciraj
+        if obj.tip == Akcija.Tip.AI_PRODAJA:
+            existing = (
+                Akcija.objects
+                .filter(tip=Akcija.Tip.AI_PRODAJA)
+                .exclude(pk=obj.pk)
+                .first()
+            )
+            if existing:
+                from django.contrib import messages as django_messages
+                django_messages.warning(
+                    request,
+                    'AI prodaja / AI dwell već postoji — uredi postojeći red u listi.',
+                )
+                # Preusmjeri snimanje na postojeći red
+                obj.pk = existing.pk
+                obj.id = existing.pk
+            obj.naziv = 'AI prodaja / AI dwell'
+            if hasattr(form, 'save_ai_settings'):
+                site = form.save_ai_settings()
+                if site is not None:
+                    obj.aktivan = bool(
+                        getattr(site, 'product_dwell_popup_aktivan', False)
+                        or getattr(site, 'browse_interest_popup_aktivan', False)
+                    )
         super().save_model(request, obj, form, change)
+        if obj.tip == Akcija.Tip.AI_PRODAJA:
+            return
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
 
     def save_related(self, request, form, formsets, change):
-        super().save_related(request, form, formsets, change)
         obj = form.instance
+        if obj.tip == Akcija.Tip.AI_PRODAJA:
+            # Dwell inline: parent je već SiteSettings u formsetu
+            for formset in formsets:
+                self.save_formset(request, form, formset, change=change)
+            if hasattr(form, 'save_ai_settings'):
+                form.save_ai_settings()
+            return
+        super().save_related(request, form, formsets, change)
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
         if obj.tip == Akcija.Tip.BUNDLE:
@@ -853,6 +1012,16 @@ class AkcijaAdmin(admin.ModelAdmin):
                     request,
                     '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).',
                 )
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        obj = self.get_object(request, object_id)
+        if obj is not None and obj.tip == Akcija.Tip.AI_PRODAJA:
+            extra_context['title'] = 'AI prodaja / AI dwell'
+            extra_context['show_save_and_add_another'] = False
+        return super().change_view(
+            request, object_id, form_url, extra_context=extra_context,
+        )
 
 
 @admin.register(UpsellOffer)
@@ -1060,12 +1229,13 @@ class ProductAdmin(admin.ModelAdmin):
     change_form_template = 'admin/EcommerceApp/product/change_form.html'
     actions = [
         'bulk_assign_category', 'bulk_assign_brand', 'bulk_assign_tags',
+        'bulk_assign_pakovanje',
         'bulk_proizvedeno_u_japanu', 'bulk_ukloni_japan', 'bulk_merge_products',
         'bulk_objavi_na_olx_pik',
     ]
     filter_horizontal = ('tagovi',)
     list_display = (
-        'naziv', 'sifra', 'brend', 'kategorija', 'cijena',
+        'naziv', 'sifra', 'brend', 'kategorija', 'cijena', 'pakovanje_komada',
         'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'aktivan',
         'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
@@ -1546,6 +1716,93 @@ class ProductAdmin(admin.ModelAdmin):
         return render(request, 'admin/EcommerceApp/product/bulk_assign_field.html', context)
 
     bulk_assign_brand.short_description = 'Dodijeli brend'
+
+    def bulk_assign_pakovanje(self, request, queryset):
+        """
+        Bulk unos pakovanja: za svaki odabrani artikal unesi svoj broj komada,
+        jedan Save sačuva sve.
+        """
+        queryset = queryset.order_by('naziv')
+
+        if request.method == 'POST' and 'apply' in request.POST:
+            selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
+            updated = 0
+            cleared = 0
+            skipped = 0
+            for pk_str in selected_ids:
+                try:
+                    pk = int(pk_str)
+                except (TypeError, ValueError):
+                    skipped += 1
+                    continue
+                raw = (request.POST.get(f'pakovanje_{pk}') or '').strip()
+                try:
+                    product = Product.objects.get(pk=pk)
+                except Product.DoesNotExist:
+                    skipped += 1
+                    continue
+                if raw == '':
+                    if product.pakovanje_komada is not None:
+                        product.pakovanje_komada = None
+                        product.save(update_fields=['pakovanje_komada'])
+                        cleared += 1
+                    else:
+                        skipped += 1
+                    continue
+                try:
+                    n = int(raw)
+                except (TypeError, ValueError):
+                    skipped += 1
+                    continue
+                if n <= 0:
+                    if product.pakovanje_komada is not None:
+                        product.pakovanje_komada = None
+                        product.save(update_fields=['pakovanje_komada'])
+                        cleared += 1
+                    else:
+                        skipped += 1
+                    continue
+                if n > 9999:
+                    n = 9999
+                product.pakovanje_komada = n
+                product.save(update_fields=['pakovanje_komada'])
+                updated += 1
+
+            if updated:
+                self.message_user(
+                    request,
+                    f'Pakovanje sačuvano za {updated} artikal/a.',
+                    messages.SUCCESS,
+                )
+            if cleared:
+                self.message_user(
+                    request,
+                    f'{cleared} artikal/a vraćeno na „po komadu” (prazno pakovanje).',
+                    messages.SUCCESS,
+                )
+            if skipped and not updated and not cleared:
+                self.message_user(
+                    request,
+                    'Nijedan artikal nije ažuriran. Provjeri unose.',
+                    messages.WARNING,
+                )
+            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Bulk pakovanje',
+            'queryset': queryset,
+            'opts': self.model._meta,
+            'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            'action_name': 'bulk_assign_pakovanje',
+        }
+        return render(
+            request,
+            'admin/EcommerceApp/product/bulk_assign_pakovanje.html',
+            context,
+        )
+
+    bulk_assign_pakovanje.short_description = 'Bulk pakovanje (po artiklu + jedan Save)'
 
     def bulk_assign_tags(self, request, queryset):
         queryset = queryset.prefetch_related('tagovi')

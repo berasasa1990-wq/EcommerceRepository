@@ -50,21 +50,11 @@ def push_staff_event(
 
 
 def notify_visitor_online(*, ime='', email='', grad='', session_key='', trenutno_gleda=''):
-    label = _actor_label(ime=ime, email=email, grad=grad)
-    page = (trenutno_gleda or '').strip()
-    if page:
-        poruka = f'{label} je na sajtu — sada: {page}.'
-    else:
-        poruka = f'{label} je na sajtu.'
-    return push_staff_event(
-        StaffSiteEvent.Tip.ONLINE,
-        naslov='Kupac na sajtu',
-        poruka=poruka,
-        ime=ime,
-        email=email,
-        grad=grad,
-        session_key=session_key,
-    )
+    """
+    Onemogućeno — ne šaljemo toast samo jer je kupac online.
+    (Uživo analitika i dalje prati posjetioce.)
+    """
+    return None
 
 
 def notify_cart_add(*, ime='', email='', grad='', session_key='', product_name=''):
@@ -360,14 +350,11 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
         session_key = event.session_key or ''
         state = visitor_states.get(session_key) or {}
         can_act = bool(session_key) and event.tip in {
-            StaffSiteEvent.Tip.ONLINE,
             StaffSiteEvent.Tip.CART,
+            StaffSiteEvent.Tip.OFFER,
         }
-        sticky = (
-            event.tip in {StaffSiteEvent.Tip.ONLINE, StaffSiteEvent.Tip.CART}
-            and bool(session_key)
-            and session_key in online_set
-        )
+        # Ne sticky online toast — samo jednokratne obavijesti
+        sticky = False
         can_register = can_act and session_key not in registered_sessions
         if state:
             can_register = bool(state.get('can_register', can_register))

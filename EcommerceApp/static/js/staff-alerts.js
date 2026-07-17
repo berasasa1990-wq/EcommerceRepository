@@ -1,9 +1,12 @@
 /**
  * Live toast obavijesti za superusere.
  *
- * - Online: JEDAN sticky popup dok ima ≥1 kupca na sajtu (ne po osobi).
- * - Registracija / kupovina: poseban popup s detaljima.
- * - Klik → uživo analitika (akcije se rade tamo).
+ * Samo akcioni događaji (NE „kupac je online”):
+ * - Dodavanje u korpu
+ * - Prihvaćena popup / AI / staff ponuda
+ * - Registracija
+ * - Kupovina (celebration)
+ * Klik → uživo analitika / online narudžbe.
  */
 (function () {
     const root = document.getElementById('staffAlertsRoot');
@@ -239,8 +242,8 @@
     }
 
     /**
-     * Event toasti: samo registracija i kupovina.
-     * Online / korpa se ne prikazuju pojedinačno — ide jedan summary toast.
+     * Event toasti: korpa, ponuda, registracija, kupovina.
+     * Online summary toast je isključen.
      */
     function goToOnlineOrders(event) {
         if (event) {
@@ -373,7 +376,8 @@
     function showEventToast(event) {
         if (!event) return;
         const tip = event.tip || '';
-        if (tip !== 'register' && tip !== 'purchase') {
+        // Dozvoljeno: cart, offer, register, purchase — NE online
+        if (tip !== 'register' && tip !== 'purchase' && tip !== 'cart' && tip !== 'offer') {
             return;
         }
 
@@ -382,8 +386,8 @@
             showOrderCelebration(event);
         }
 
-        // Na uživo analitici: samo AI/ponude + kupovine (ne online spam)
-        if (quietMode && tip !== 'offer' && tip !== 'purchase') {
+        // Na uživo analitici: korpa/ponuda/kupovina (ne spam)
+        if (quietMode && tip !== 'offer' && tip !== 'purchase' && tip !== 'cart') {
             return;
         }
 
@@ -474,10 +478,7 @@
                 });
             }
 
-            const onlineSessions = data.online_sessions || [];
-            if (!quietMode) {
-                showOrUpdateOnlineSummary(onlineSessions.length);
-            }
+            // Online sticky summary isključen — ne prikazuj „kupac je na sajtu”
 
             if (typeof data.new_orders_count !== 'undefined') {
                 updateNewOrdersBadge(data.new_orders_count);

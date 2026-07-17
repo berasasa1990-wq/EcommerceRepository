@@ -22,6 +22,12 @@ class EcommerceappConfig(AppConfig):
     def ready(self):
         connection_created.connect(_configure_sqlite)
 
+        from django.contrib import admin
+
+        admin.site.site_header = 'opremazaribolov.ba Admin'
+        admin.site.site_title = 'opremazaribolov.ba'
+        admin.site.index_title = 'Upravljanje trgovinom'
+
         from django.conf import settings
 
         if not settings.EMAIL_HOST_PASSWORD:

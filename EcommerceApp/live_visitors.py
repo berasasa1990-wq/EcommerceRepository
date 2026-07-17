@@ -427,9 +427,11 @@ def resolve_presence_session_key(request, body_session_key=''):
 
 def maybe_notify_visitor_online(session_key):
     """
-    Staff toast „Kupac na sajtu” — odmah kad se pojavi online posjetilac.
-    Jednom po sesiji (cache).
+    ISKLJUČENO: superuser više ne dobija toast samo jer je kupac online.
+    Notifikacije idu samo za: korpa, registracija, kupovina, prihvaćena ponuda.
     """
+    return False
+    # --- legacy (zadržano radi reference, nedostižno) ---
     session_key = (session_key or '').strip()
     if not session_key:
         return False

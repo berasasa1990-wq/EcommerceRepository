@@ -130,9 +130,17 @@ def _staff_edit_mode_enabled(request):
     return bool(request.session.get(STAFF_EDIT_MODE_SESSION_KEY, True))
 
 
+def _can_view_out_of_stock(request=None):
+    """
+    Superuser vidi artikle van stanja samo kad je Edit mode UKLJUČEN.
+    Edit off → isto kao običan kupac (samo na stanju).
+    """
+    return _staff_edit_mode_enabled(request)
+
+
 def _product_queryset(request=None):
     qs = Product.objects.filter(aktivan=True)
-    if not _request_is_superuser(request):
+    if not _can_view_out_of_stock(request):
         qs = qs.filter(na_stanju=True)
     return _prefetch_product_cards(qs)
 
@@ -746,7 +754,7 @@ def _home_featured_products(request=None):
         aktivan=True,
         artikal__aktivan=True,
     )
-    if not _request_is_superuser(request):
+    if not _can_view_out_of_stock(request):
         entries_qs = entries_qs.filter(artikal__na_stanju=True)
     entries = entries_qs.select_related(
         'artikal', 'artikal__kategorija', 'artikal__brend',
@@ -1205,7 +1213,11 @@ def _product_back_url(request, product):
 
 
 def product_detail(request, slug):
-    product_qs = Product.objects.all() if _request_is_superuser(request) else Product.objects.filter(aktivan=True)
+    # Edit mode ON → superuser vidi i neaktivne / van stanja; Edit OFF → kao kupac
+    if _can_view_out_of_stock(request):
+        product_qs = Product.objects.all()
+    else:
+        product_qs = Product.objects.filter(aktivan=True, na_stanju=True)
     product = get_object_or_404(
         product_qs
         .select_related('kategorija', 'brend')
@@ -1277,16 +1289,17 @@ def product_detail(request, slug):
     # AI dwell: flash cijena odmah na ulasku (bez popupa) — config za JS
     try:
         from .live_visitor_offer import (
-            PRODUCT_DWELL_FLASH_SECONDS,
             PRODUCT_DWELL_SECONDS,
             _product_dwell_settings,
             activate_product_dwell_flash,
             get_active_dwell_flash,
+            get_dwell_flash_seconds,
             get_dwell_percent_for_product,
             product_allowed_for_dwell,
         )
         from .live_visitor_offer import _discounted_price
 
+        dwell_flash_seconds = get_dwell_flash_seconds()
         dwell_on, _default_pct = _product_dwell_settings()
         dwell_on_this = bool(dwell_on and product_allowed_for_dwell(product.pk))
         dwell_pct = get_dwell_percent_for_product(product.pk) if dwell_on_this else Decimal('0')
@@ -1315,7 +1328,7 @@ def product_detail(request, slug):
                             'product_id': product.pk,
                             'percent': dwell_pct,
                             'expires_ts': None,
-                            'remaining_seconds': PRODUCT_DWELL_FLASH_SECONDS,
+                            'remaining_seconds': dwell_flash_seconds,
                             'base': str(base_d.quantize(Decimal('0.01'))),
                             'sale': str(sale_d),
                         }
@@ -1332,7 +1345,7 @@ def product_detail(request, slug):
                 'product_id': dwell_flash.get('product_id'),
                 'percent': pct_f,
                 'expires_ts': dwell_flash.get('expires_ts'),
-                'remaining_seconds': dwell_flash.get('remaining_seconds') or PRODUCT_DWELL_FLASH_SECONDS,
+                'remaining_seconds': dwell_flash.get('remaining_seconds') or dwell_flash_seconds,
                 'base': dwell_flash.get('base'),
                 'sale': dwell_flash.get('sale'),
             }
@@ -1344,7 +1357,7 @@ def product_detail(request, slug):
             'active': bool(dwell_on_this and dwell_pct and dwell_pct > 0),
             'product_id': product.pk,
             'trigger_seconds': PRODUCT_DWELL_SECONDS,  # 0 = odmah
-            'flash_seconds': PRODUCT_DWELL_FLASH_SECONDS,
+            'flash_seconds': dwell_flash_seconds,
             'percent': pct_cfg,
             'base_price': str(product.prikazna_cijena),
             'activate_url': '/ai-dwell/aktiviraj/',
@@ -1825,6 +1838,48 @@ def add_to_cart(request, slug):
         event_id=add_to_cart_event_id,
     )
 
+    # Superuser toast: prihvaćena popup / AI / exit / akcija ponuda
+    if custom_price is not None and not (
+        request.user.is_authenticated and request.user.is_superuser
+    ):
+        try:
+            from .cart_tracking import get_cart_session_key
+            from .live_visitors import _display_email, _display_name
+            from .models import LiveVisitor
+            from .staff_alerts import notify_offer_accepted
+
+            src = 'popup ponuda'
+            pct = None
+            if exit_popup_percent:
+                src = 'exit popup (poslednja šansa)'
+                pct = exit_popup_percent
+            elif getattr(request, '_dwell_discount_percent', None):
+                src = 'AI dwell flash'
+                pct = request._dwell_discount_percent
+            elif promo_akcija:
+                src = f'akcija „{promo_akcija.naziv}”'
+                pct = promo_akcija.popust_postotak
+            sk = get_cart_session_key(request) or ''
+            ime = _display_name(request.user if request.user.is_authenticated else None)
+            email = _display_email(request.user if request.user.is_authenticated else None)
+            grad = ''
+            lv = LiveVisitor.objects.filter(session_key=sk).only('ime', 'email', 'grad').first()
+            if lv:
+                ime = (lv.ime or '').strip() or ime
+                email = (lv.email or '').strip() or email
+                grad = (lv.grad or '').strip()
+            notify_offer_accepted(
+                ime=ime,
+                email=email,
+                grad=grad,
+                session_key=sk,
+                product_name=cart_label,
+                discount_percent=pct,
+                source=src,
+            )
+        except Exception:
+            pass
+
     # Trigger upsell check
     _check_and_set_pending_upsell(request, product)
 
@@ -1952,6 +2007,37 @@ def add_upsell_to_cart(request, offer_id, product_id):
         discount_source=up_src,
         discount_percent=up_pct,
     )
+
+    if not (request.user.is_authenticated and request.user.is_superuser):
+        try:
+            from .cart_tracking import get_cart_session_key
+            from .live_visitors import _display_email, _display_name
+            from .models import LiveVisitor
+            from .staff_alerts import notify_offer_accepted
+
+            sk = get_cart_session_key(request) or ''
+            ime = _display_name(request.user if request.user.is_authenticated else None)
+            email = _display_email(request.user if request.user.is_authenticated else None)
+            grad = ''
+            lv = LiveVisitor.objects.filter(session_key=sk).only('ime', 'email', 'grad').first()
+            if lv:
+                ime = (lv.ime or '').strip() or ime
+                email = (lv.email or '').strip() or email
+                grad = (lv.grad or '').strip()
+            pname = product.naziv
+            if variation:
+                pname = f'{product.naziv} — {variation.naziv}'
+            notify_offer_accepted(
+                ime=ime,
+                email=email,
+                grad=grad,
+                session_key=sk,
+                product_name=pname,
+                discount_percent=up_pct,
+                source=f'upsell „{offer.naziv}”',
+            )
+        except Exception:
+            pass
 
     stay_on_page = _upsell_stay_on_page(request)
     if offer.prikaz == UpsellOffer.PrikazTip.POPUP:

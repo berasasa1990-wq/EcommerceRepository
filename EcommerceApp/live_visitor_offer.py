@@ -45,6 +45,36 @@ def _product_dwell_settings():
         return False, PRODUCT_DWELL_DISCOUNT_DEFAULT
 
 
+def get_dwell_flash_seconds():
+    """Trajanje flash cijene (sekundi) iz admina, clamp 30–3600."""
+    try:
+        from .models import SiteSettings
+
+        s = SiteSettings.load()
+        sec = int(getattr(s, 'product_dwell_flash_seconds', None) or PRODUCT_DWELL_FLASH_SECONDS)
+        return max(30, min(sec, 3600))
+    except Exception:
+        return PRODUCT_DWELL_FLASH_SECONDS
+
+
+def get_dwell_ui():
+    """Tekstovi + CSS vars za AI dwell (iz SiteSettings)."""
+    try:
+        from .models import SiteSettings
+
+        return SiteSettings.load().get_dwell_ui()
+    except Exception:
+        return {
+            'active': False,
+            'tag_text': 'Ograničena ponuda',
+            'timer_label': 'Ističe za',
+            'catalog_label': '',
+            'flash_seconds': PRODUCT_DWELL_FLASH_SECONDS,
+            'sale_pulse': True,
+            'css_vars': '',
+        }
+
+
 def get_dwell_percent_for_product(product_id):
     """
     Popust % za artikal:
@@ -77,9 +107,7 @@ def get_dwell_percent_for_product(product_id):
 def product_allowed_for_dwell(product_id):
     """
     True ako AI dwell smije raditi na ovom artiklu.
-    - Ako postoje unosi u ProductDwellItem → samo ti artikli
-    - Inače stara M2M lista product_dwell_artikli
-    - Ako su obje prazne → svi artikli
+    Samo artikli iz ProductDwellItem (popust po artiklu) koji su aktivni i na stanju.
     """
     if not product_id:
         return False
@@ -93,15 +121,69 @@ def product_allowed_for_dwell(product_id):
         s = SiteSettings.load()
         if not bool(getattr(s, 'product_dwell_popup_aktivan', False)):
             return False
-        # Nova lista s popustom po artiklu
-        if ProductDwellItem.objects.filter(settings=s).exists():
-            return ProductDwellItem.objects.filter(settings=s, product_id=pid).exists()
-        # Legacy M2M
-        if s.product_dwell_artikli.exists():
-            return s.product_dwell_artikli.filter(pk=pid).exists()
-        return True
+        return ProductDwellItem.objects.filter(
+            settings=s,
+            product_id=pid,
+            product__aktivan=True,
+            product__na_stanju=True,
+        ).exists()
     except Exception:
         return False
+
+
+def get_dwell_catalog_map():
+    """
+    Map product_id -> {percent, base, sale} za katalog/pretragu.
+    Kad je AI dwell uključen — snizena cijena na karticama BEZ tajmera.
+    Tajmer se aktivira tek na product page.
+    """
+    aktivan, _default_pct = _product_dwell_settings()
+    if not aktivan:
+        return {}
+    try:
+        from .models import ProductDwellItem, SiteSettings
+
+        s = SiteSettings.load()
+        items = (
+            ProductDwellItem.objects
+            .filter(
+                settings=s,
+                product__aktivan=True,
+                product__na_stanju=True,
+            )
+            .select_related('product')
+            .prefetch_related('product__varijacije')
+        )
+        result = {}
+        for item in items:
+            product = item.product
+            pct = _clamp_percent(item.popust)
+            if pct <= 0:
+                continue
+            try:
+                # Katalog cijena (min varijacija ako postoje)
+                base = product.katalog_prikazna_cijena
+                base_d = Decimal(str(base))
+            except (InvalidOperation, TypeError, ValueError, AttributeError):
+                continue
+            if base_d <= 0:
+                continue
+            sale_d = _discounted_price(base_d, pct)
+            if sale_d >= base_d:
+                continue
+            if pct == pct.to_integral_value():
+                pct_str = str(int(pct))
+            else:
+                pct_str = str(pct)
+            # Ključ kao int — dict_get u templateu koristi product.pk
+            result[int(product.pk)] = {
+                'percent': pct_str,
+                'base': str(base_d.quantize(Decimal('0.01'))),
+                'sale': str(sale_d),
+            }
+        return result
+    except Exception:
+        return {}
 
 
 def _welcome_reg_settings():
@@ -462,6 +544,8 @@ def activate_product_dwell_flash(request, product_id, *, force=False):
     product = Product.objects.filter(pk=pid, aktivan=True).first()
     if not product:
         return None, 'Artikal nije pronađen.'
+    if not getattr(product, 'na_stanju', False):
+        return None, 'Artikal nije na stanju.'
 
     if not product_allowed_for_dwell(pid):
         return None, 'AI dwell nije uključen za ovaj artikal.'
@@ -494,7 +578,8 @@ def activate_product_dwell_flash(request, product_id, *, force=False):
     if sale_d >= base_d:
         return None, 'Popust ne smanjuje cijenu.'
 
-    expires = timezone.now().timestamp() + PRODUCT_DWELL_FLASH_SECONDS
+    flash_seconds = get_dwell_flash_seconds()
+    expires = timezone.now().timestamp() + flash_seconds
     deals = _flash_deals(request)
     deals[str(pid)] = {
         'percent': str(dwell_percent),

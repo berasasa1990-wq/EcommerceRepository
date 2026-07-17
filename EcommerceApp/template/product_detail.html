@@ -270,17 +270,21 @@
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
                 {% include 'partials/product_price.html' with item=product %}
             </div>
-            {# AI dwell flash: crvena snizena (pulse) + ukoso precrtana regularna + tajmer #}
-            <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
-                <div class="pd-dwell-flash-glow" aria-hidden="true"></div>
-                <p class="pd-dwell-flash-timer" aria-live="polite">
-                    <span class="pd-dwell-flash-timer-label">⏱ Specijalna cijena još</span>
-                    <strong class="pd-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
-                </p>
+            {# AI dwell flash: kompaktan deal — cijena + −% dijagonalno + tajmer uz snizenu #}
+            <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                {% if dwell_ui.tag_text %}
+                <span class="pd-dwell-flash-tag">{{ dwell_ui.tag_text }}</span>
+                {% endif %}
                 <div class="pd-dwell-flash-prices product-price product-price--detail">
                     <span class="pd-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>
-                    <span class="pd-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
-                    <span class="pd-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                    <div class="pd-dwell-sale-cluster">
+                        <span class="pd-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
+                        <span class="pd-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                        <p class="pd-dwell-flash-timer" aria-live="polite">
+                            {% if dwell_ui.timer_label %}<span class="pd-dwell-flash-timer-label">{{ dwell_ui.timer_label }}</span>{% endif %}
+                            <strong class="pd-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}{{ dwell_ui.flash_seconds|default:120 }}{% endif %}</strong>
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -338,16 +342,20 @@
 
             {% if product.varijacije.count %}
             {% include 'partials/product_urgency.html' %}
-            <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
-                <div class="pd-dwell-flash-glow" aria-hidden="true"></div>
-                <p class="pd-dwell-flash-timer" aria-live="polite">
-                    <span class="pd-dwell-flash-timer-label">⏱ Specijalna cijena još</span>
-                    <strong class="pd-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}2:00{% endif %}</strong>
-                </p>
+            <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                {% if dwell_ui.tag_text %}
+                <span class="pd-dwell-flash-tag">{{ dwell_ui.tag_text }}</span>
+                {% endif %}
                 <div class="pd-dwell-flash-prices product-price product-price--detail">
                     <span class="pd-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>
-                    <span class="pd-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
-                    <span class="pd-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                    <div class="pd-dwell-sale-cluster">
+                        <span class="pd-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
+                        <span class="pd-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                        <p class="pd-dwell-flash-timer" aria-live="polite">
+                            {% if dwell_ui.timer_label %}<span class="pd-dwell-flash-timer-label">{{ dwell_ui.timer_label }}</span>{% endif %}
+                            <strong class="pd-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}{{ dwell_ui.flash_seconds|default:120 }}{% endif %}</strong>
+                        </p>
+                    </div>
                 </div>
             </div>
             {% endif %}

@@ -82,7 +82,7 @@ def nav_categories(request):
     popup_queue = []
     for akcija in Akcija.objects.filter(
         aktivan=True,
-        tip__in=Akcija.ACTIVE_TIPS,
+        tip__in=Akcija.POPUP_TIPS,
     ).select_related(
         'artikal', 'artikal__brend', 'kategorija',
     ).prefetch_related(
@@ -112,12 +112,28 @@ def nav_categories(request):
         None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
     )
 
-    # AI dwell flash — snizene cijene u sesiji (početna / kartice)
+    # AI dwell: katalog sniženja + sesijski flash + UI (tekstovi/boje iz admina)
     try:
-        from .live_visitor_offer import get_all_active_dwell_flashes
+        from .live_visitor_offer import (
+            get_all_active_dwell_flashes,
+            get_dwell_catalog_map,
+            get_dwell_ui,
+        )
         dwell_flash_by_id = get_all_active_dwell_flashes(request)
+        dwell_catalog_by_id = get_dwell_catalog_map()
+        dwell_ui = get_dwell_ui()
     except Exception:
         dwell_flash_by_id = {}
+        dwell_catalog_by_id = {}
+        dwell_ui = {
+            'active': False,
+            'tag_text': 'Ograničena ponuda',
+            'timer_label': 'Ističe za',
+            'catalog_label': '',
+            'flash_seconds': 120,
+            'sale_pulse': True,
+            'css_vars': '',
+        }
 
     staff_edit_mode = False
     if (
@@ -149,5 +165,7 @@ def nav_categories(request):
         'contact_messenger_url': _messenger_contact_url(messenger_page),
         'social_proof': build_social_proof_context(request),
         'dwell_flash_by_id': dwell_flash_by_id,
+        'dwell_catalog_by_id': dwell_catalog_by_id,
+        'dwell_ui': dwell_ui,
         'staff_edit_mode': staff_edit_mode,
     }

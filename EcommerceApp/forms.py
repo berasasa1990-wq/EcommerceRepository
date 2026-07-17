@@ -12,11 +12,64 @@ from .models import (
     Banner,
     Brand,
     Category,
-
     Popup,
     Product,
+    SiteSettings,
     Tag,
 )
+
+# Polja iz SiteSettings koja se uređuju na tipu „AI prodaja / AI dwell”
+AI_SETTINGS_FIELD_NAMES = (
+    'browse_interest_popup_aktivan',
+    'browse_interest_popust',
+    'product_dwell_popup_aktivan',
+    'product_dwell_popust',
+    'product_dwell_flash_seconds',
+    'product_dwell_sale_pulse',
+    'product_dwell_tag_text',
+    'product_dwell_timer_label',
+    'product_dwell_catalog_label',
+    'product_dwell_boja_box',
+    'product_dwell_boja_box2',
+    'product_dwell_boja_border',
+    'product_dwell_boja_accent',
+    'product_dwell_boja_tag_tekst',
+    'product_dwell_boja_tag_bg',
+    'product_dwell_boja_timer_label',
+    'product_dwell_boja_timer_bg',
+    'product_dwell_boja_timer_tekst',
+    'product_dwell_boja_stara_cijena',
+    'product_dwell_boja_nova_cijena',
+    'product_dwell_boja_nova_cijena_pulse',
+    'product_dwell_boja_badge_bg',
+    'product_dwell_boja_badge_tekst',
+    'product_dwell_boja_kartica_bg',
+    'product_dwell_boja_kartica_bg2',
+    'product_dwell_boja_kartica_border',
+    'product_dwell_boja_kartica_stara',
+    'product_dwell_boja_kartica_nova',
+    'product_dwell_boja_kartica_badge_bg',
+    'product_dwell_boja_kartica_badge_tekst',
+    'product_dwell_boja_kartica_label',
+)
+
+
+def _make_ai_settings_formfield(name):
+    """Form field iz SiteSettings — deklarisan na AkcijaAdminForm (nije model Akcija)."""
+    model_field = SiteSettings._meta.get_field(name)
+    form_field = model_field.formfield()
+    if form_field is None:
+        form_field = forms.CharField(required=False, label=name)
+    form_field.required = False
+    if name.startswith('product_dwell_boja_'):
+        form_field.widget = forms.TextInput(attrs={
+            'type': 'color',
+            'style': (
+                'width:3.5rem;height:2.2rem;padding:2px;'
+                'cursor:pointer;vertical-align:middle;'
+            ),
+        })
+    return form_field
 
 
 def _parse_flexible_number(value, *, field_label='Broj'):
@@ -122,9 +175,8 @@ class AkcijaQtyTierForm(forms.ModelForm):
 
 class AkcijaAdminForm(forms.ModelForm):
     """
-    Za „Kupi više”: jednostavna polja
-    Kupi 2 kom → popust %, Kupi 3 kom → popust %, …
-    (snima se u AkcijaQtyTier)
+    Za „Kupi više”: jednostavna polja količina → %.
+    Za „AI prodaja / AI dwell”: sva polja iz SiteSettings (kao stari zasebni meni).
     """
 
     qty_2_popust = FlexibleDecimalField(
@@ -192,6 +244,33 @@ class AkcijaAdminForm(forms.ModelForm):
                     if field_name in self.fields and tier.popust_postotak is not None:
                         self.fields[field_name].initial = tier.popust_postotak
 
+        # AI postavke — initial iz SiteSettings (polja su deklarisana na klasi)
+        try:
+            site = SiteSettings.load()
+        except Exception:
+            site = None
+        if site is not None:
+            for name in AI_SETTINGS_FIELD_NAMES:
+                if name not in self.fields:
+                    continue
+                self.fields[name].initial = getattr(site, name, None)
+
+    def save_ai_settings(self):
+        """Snimi AI polja u SiteSettings (singleton)."""
+        if not hasattr(self, 'cleaned_data'):
+            return None
+        site = SiteSettings.load()
+        changed = []
+        for name in AI_SETTINGS_FIELD_NAMES:
+            if name not in self.cleaned_data:
+                continue
+            val = self.cleaned_data.get(name)
+            setattr(site, name, val)
+            changed.append(name)
+        if changed:
+            site.save(update_fields=changed)
+        return site
+
     def qty_deal_tiers_from_form(self):
         """Lista (quantity, popust) iz jednostavnih polja."""
         rows = []
@@ -223,6 +302,8 @@ class AkcijaAdminForm(forms.ModelForm):
             return artikal
         if tip == Akcija.Tip.QTY_DEAL and not artikal:
             raise forms.ValidationError('Odaberite artikal.')
+        if tip == Akcija.Tip.AI_PRODAJA:
+            return artikal
         if artikal and not artikal.aktivan:
             raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
         return artikal
@@ -236,8 +317,11 @@ class AkcijaAdminForm(forms.ModelForm):
         if tip not in Akcija.ACTIVE_TIPS:
             self.add_error(
                 'tip',
-                'Dozvoljeni tipovi: Pop-up bundle i Kupi više (količinski %).',
+                'Dozvoljeni tipovi: Pop-up bundle, Kupi više, AI prodaja / AI dwell.',
             )
+            return cleaned
+
+        if tip == Akcija.Tip.AI_PRODAJA:
             return cleaned
 
         if tip == Akcija.Tip.BUNDLE:
@@ -285,6 +369,16 @@ class AkcijaAdminForm(forms.ModelForm):
                     'redoslijed': q,
                 },
             )
+
+
+# Deklariši AI polja na klasi (base_fields) — inače admin fieldsets → FieldError
+for _ai_fname in AI_SETTINGS_FIELD_NAMES:
+    try:
+        _ai_ff = _make_ai_settings_formfield(_ai_fname)
+    except Exception:
+        continue
+    AkcijaAdminForm.base_fields[_ai_fname] = _ai_ff
+    AkcijaAdminForm.declared_fields[_ai_fname] = _ai_ff
 
 
 class PopupAdminForm(forms.ModelForm):
