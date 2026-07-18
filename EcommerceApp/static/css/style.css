@@ -5089,60 +5089,53 @@ body.catalog-variation-modal-open {
     margin-left: -8px;
 }
 
-/* Redovna akcija na detail — isti box kao AI dwell (bez tajmera) */
-.product-sale-deal.pd-dwell-flash {
+/* Redovna akcija na product detail — isti stil kao akcijska ponuda (card-dwell) */
+.product-sale-deal--detail.card-dwell-deal {
     margin: 0 0 20px;
+    max-width: min(100%, 320px);
+    padding: 12px 14px 14px;
 }
-.product-sale-deal .pd-dwell-now {
-    animation: dwell-price-pulse 1.3s ease-in-out infinite;
+.product-sale-deal--detail .card-dwell-now {
+    font-size: 22px !important;
+}
+.product-sale-deal--detail .card-dwell-was {
+    font-size: 14px !important;
+}
+.product-sale-deal--detail .card-dwell-badge {
+    font-size: 16px;
+    min-width: 2.6em;
+    padding: 6px 10px;
 }
 
-/* Varijacije na akciji — kompaktan dwell stil */
-.pd-var-sale {
+/* Varijacije na akciji — kompaktan card-dwell stil */
+.pd-var-sale--card.card-dwell-deal {
     display: inline-flex !important;
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
-    padding: 8px 10px;
-    border-radius: 12px;
-    background: linear-gradient(
-        160deg,
-        var(--dwell-box-bg, #111827) 0%,
-        var(--dwell-box-bg2, #1f2937) 55%,
-        var(--dwell-box-bg, #111827) 100%
-    );
-    border: 1px solid color-mix(in srgb, var(--dwell-box-border, #e11d48) 55%, transparent);
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
-    white-space: normal;
+    width: auto;
     max-width: 100%;
+    padding: 8px 10px;
+    white-space: normal;
+    text-align: right;
 }
-.pd-var-sale .pd-dwell-was {
+.pd-var-sale--card .card-dwell-prices,
+.pd-var-sale--card.card-dwell-deal {
+    margin: 0 !important;
+}
+.pd-var-sale--card .card-dwell-was {
+    font-size: 11px !important;
+}
+.pd-var-sale--card .card-dwell-now {
+    font-size: 15px !important;
+}
+.pd-var-sale--card .card-dwell-badge {
     font-size: 12px;
-}
-.pd-var-sale-cluster {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px 8px;
-}
-.pd-var-sale .pd-dwell-now {
-    font-size: 16px;
-    font-weight: 900;
-    color: var(--dwell-sale, #e11d48);
-    letter-spacing: -0.02em;
-    line-height: 1.05;
-}
-.pd-var-sale.is-pulse .pd-dwell-now {
-    animation: dwell-price-pulse 1.3s ease-in-out infinite;
-}
-.pd-var-sale .pd-dwell-badge {
-    font-size: 12px;
-    min-width: 2.4em;
+    min-width: 2.2em;
     padding: 4px 7px;
-    border-radius: 8px;
-    transform: rotate(-18deg);
-    animation: dwell-badge-diag-pulse 1.25s ease-in-out infinite;
+}
+.pd-var-sale--card .card-dwell-sale-cluster {
+    justify-content: flex-end;
 }
 
 /* Urgency: prodato u 24h + ostalo na stanju (akcijski) */
@@ -16764,102 +16757,9 @@ body.og-side-open {
     }
 }
 
-/* ═══════════════════════════════════════════════════════
-   Sticky „Dodaj u korpu” — mobilni product detail
-   ═══════════════════════════════════════════════════════ */
+/* Sticky „Dodaj u korpu” — isključeno */
 .pd-sticky-cart {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .pd-sticky-cart {
-        display: block;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 900;
-        padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px));
-        pointer-events: none;
-        transform: translateY(110%);
-        opacity: 0;
-        transition: transform 0.28s ease, opacity 0.28s ease;
-    }
-
-    .pd-sticky-cart.is-visible {
-        transform: translateY(0);
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .pd-sticky-cart[hidden] {
-        display: none !important;
-    }
-
-    .pd-sticky-cart.is-visible:not([hidden]) {
-        display: block !important;
-    }
-
-    .pd-sticky-cart-inner {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        border-radius: 16px 16px 14px 14px;
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.14), 0 8px 20px rgba(15, 23, 42, 0.08);
-    }
-
-    .pd-sticky-cart-info {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .pd-sticky-cart-name {
-        font-size: 12px;
-        font-weight: 700;
-        color: #0f172a;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.25;
-    }
-
-    .pd-sticky-cart-price {
-        font-size: 14px;
-        font-weight: 900;
-        color: #16a34a;
-    }
-
-    .pd-sticky-cart-price .price-original,
-    .pd-sticky-cart-price .price-sale,
-    .pd-sticky-cart-price .price-current {
-        font-size: inherit;
-    }
-
-    .pd-sticky-cart-hint {
-        font-size: 11px;
-        font-weight: 600;
-        color: #64748b;
-    }
-
-    .pd-sticky-cart-btn {
-        flex-shrink: 0;
-        min-height: 46px !important;
-        padding: 10px 16px !important;
-        font-size: 14px !important;
-        font-weight: 900 !important;
-        border-radius: 12px !important;
-        white-space: nowrap;
-    }
-
-    body.pd-sticky-cart-open {
-        padding-bottom: 84px;
-    }
+    display: none !important;
 }
 
 /* Product conversion boost (trust + free shipping) */
@@ -17329,24 +17229,16 @@ body.og-side-open {
     .card-dwell-now,
     .pd-dwell-countdown,
     .pd-dwell-badge,
-    .card-dwell-badge,
-    .product-sale-deal .pd-dwell-now,
-    .pd-var-sale .pd-dwell-now,
-    .pd-var-sale .pd-dwell-badge {
+    .card-dwell-badge {
         animation: none !important;
     }
-    .pd-dwell-now,
-    .product-sale-deal .pd-dwell-now,
-    .pd-var-sale .pd-dwell-now {
+    .pd-dwell-now {
         color: var(--dwell-sale, #e11d48) !important;
         text-shadow: none;
         transform: none;
     }
     .pd-dwell-badge {
         transform: rotate(-22deg);
-    }
-    .pd-var-sale .pd-dwell-badge {
-        transform: rotate(-18deg);
     }
     .card-dwell-now {
         color: var(--dwell-card-sale, #e11d48) !important;
@@ -18218,10 +18110,7 @@ body.fish-advisor-open .fish-advisor__launcher {
         font-size: 13px;
         padding: 10px 12px;
     }
-    body.pd-sticky-cart-open .fish-advisor {
-        /* sticky CTA na product detail — podigni launcher */
-        bottom: max(78px, calc(env(safe-area-inset-bottom, 0px) + 70px));
-    }
+    /* sticky CTA offset: vidi .pd-sticky-cart media block */
     /* Samo dok je hamburger meni otvoren — ne sakrivaj inače */
     body.mobile-nav-open .fish-advisor {
         visibility: hidden;

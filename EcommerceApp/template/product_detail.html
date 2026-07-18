@@ -269,17 +269,17 @@
 
             {% if not product.varijacije.count %}
             {% if product.na_akciji %}
-            {# Redovna akcija — isti vizuelni jezik kao AI dwell (bez tajmera) #}
-            <div class="pd-dwell-flash is-active is-pulse product-sale-deal" id="detailPrice"
+            {# Redovna akcija — isti izgled kao na akcijskoj ponudi (card-dwell) #}
+            <div class="card-dwell-deal is-active is-pulse product-sale-card-deal product-sale-deal--detail" id="detailPrice"
                  data-base-price="{{ product.prikazna_cijena }}"
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
-                <span class="pd-dwell-flash-tag">{% if product.akcija_istice_oznaka %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}</span>
-                <div class="pd-dwell-flash-prices product-price product-price--detail">
-                    <span class="pd-dwell-was">{{ product.bazna_cijena }} KM</span>
-                    <div class="pd-dwell-sale-cluster">
-                        <span class="pd-dwell-now">{{ product.prikazna_cijena }} KM</span>
+                <span class="card-dwell-label">{% if product.akcija_istice_oznaka %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}</span>
+                <div class="product-price product-price--detail card-dwell-prices">
+                    <span class="price-original card-dwell-was">{{ product.bazna_cijena }} KM</span>
+                    <div class="card-dwell-sale-cluster">
+                        <span class="price-sale card-dwell-now">{{ product.prikazna_cijena }} KM</span>
                         {% if product.akcija_postotak_prikaz %}
-                        <span class="pd-dwell-badge">−{{ product.akcija_postotak_prikaz }}%</span>
+                        <span class="card-dwell-badge">−{{ product.akcija_postotak_prikaz }}%</span>
                         {% endif %}
                     </div>
                 </div>
@@ -446,42 +446,10 @@
 </section>
 {% endif %}
 {% include 'partials/gratis_offer_modal.html' %}
-
-{# Sticky „Dodaj u korpu” — samo mobilni (CSS), kad glavni CTA izađe iz view-a #}
-{% if product.na_stanju and not product.varijacije.count %}
-<div class="pd-sticky-cart" id="pdStickyCart" hidden>
-    <div class="pd-sticky-cart-inner">
-        <div class="pd-sticky-cart-info">
-            <span class="pd-sticky-cart-name">{{ product.naziv }}</span>
-            <span class="pd-sticky-cart-price product-price">
-                {% include 'partials/product_price.html' with item=product %}
-            </span>
-        </div>
-        <button type="button" class="btn btn-primary btn-add-to-bag pd-sticky-cart-btn" id="pdStickyCartBtn"
-                data-product-id="{{ product.pk }}"
-                data-product-name="{{ product.naziv }}">
-            Dodaj u korpu
-        </button>
-    </div>
-</div>
-{% elif product.na_stanju and in_stock_variations %}
-<div class="pd-sticky-cart" id="pdStickyCart" hidden>
-    <div class="pd-sticky-cart-inner">
-        <div class="pd-sticky-cart-info">
-            <span class="pd-sticky-cart-name">{{ product.naziv }}</span>
-            <span class="pd-sticky-cart-hint">Izaberi opciju ispod</span>
-        </div>
-        <button type="button" class="btn btn-primary pd-sticky-cart-btn" id="pdStickyCartBtn"
-                data-scroll-to-variations>
-            Izaberi opciju
-        </button>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260717v2" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260718v3" defer></script>
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
 {% endif %}

@@ -13,12 +13,12 @@
     </span>
     <span class="product-detail-variation-price-wrap">
         {% if var.na_akciji %}
-        <span class="product-detail-variation-price product-price--detail pd-var-sale is-pulse">
-            <span class="pd-dwell-was">{{ var.bazna_cijena }} KM</span>
-            <span class="pd-var-sale-cluster">
-                <span class="pd-dwell-now">{{ var.prikazna_cijena }} KM</span>
+        <span class="product-detail-variation-price product-price--detail card-dwell-deal is-active is-pulse product-sale-card-deal pd-var-sale--card">
+            <span class="price-original card-dwell-was">{{ var.bazna_cijena }} KM</span>
+            <span class="card-dwell-sale-cluster">
+                <span class="price-sale card-dwell-now">{{ var.prikazna_cijena }} KM</span>
                 {% if var.akcija_postotak_prikaz %}
-                <span class="pd-dwell-badge">−{{ var.akcija_postotak_prikaz }}%</span>
+                <span class="card-dwell-badge">−{{ var.akcija_postotak_prikaz }}%</span>
                 {% endif %}
             </span>
         </span>
