@@ -30,7 +30,6 @@
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">
                 {% include 'partials/product_sale_ribbon.html' with product=product %}
-                {% include 'partials/product_discount_badge.html' with product=product %}
                 {% if product.prikazna_slika %}
                 {% with img=product.prikazna_slika_responsive %}
                 <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
@@ -75,6 +74,16 @@
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>
             <h1>{{ product.naziv }}</h1>
+            {% if product.proizvedeno_u_japanu %}
+            <div class="made-in-japan made-in-japan--detail" role="note" aria-label="Proizvedeno u Japanu">
+                <span class="made-in-japan__flag" aria-hidden="true">
+                    <span class="made-in-japan__sun"></span>
+                </span>
+                <span class="made-in-japan__text">
+                    <span class="made-in-japan__label">Made in Japan</span>
+                </span>
+            </div>
+            {% endif %}
 
             {% if staff_product_tools %}
             <div class="staff-product-bar">
@@ -95,6 +104,13 @@
                         <input type="hidden" name="action" value="toggle_stock">
                         <button type="submit" class="btn btn-sm staff-product-btn">
                             {% if product.na_stanju %}Skini sa stanja{% else %}Vrati na stanje{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_japan">
+                        <button type="submit" class="btn btn-sm staff-product-btn{% if product.proizvedeno_u_japanu %} staff-product-btn--japan-on{% endif %}">
+                            {% if product.proizvedeno_u_japanu %}✓ Made in Japan{% else %}Made in Japan{% endif %}
                         </button>
                     </form>
                     <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-price-form">
@@ -249,27 +265,32 @@
             </div>
             {% endif %}
 
-            {% if product.proizvedeno_u_japanu %}
-            <p class="product-origin">Made in Japan</p>
-            {% endif %}
             <p class="product-detail-category">{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}</p>
 
-            {% if product.je_pakovanje %}
-            <div class="product-pack-detail" role="note">
-                <span class="product-pack-badge product-pack-badge--detail">
-                    <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
-                    <span class="product-pack-badge-text">{{ product.pakovanje_label }}</span>
-                </span>
-                <span class="product-pack-detail-hint">{{ product.pakovanje_cijena_hint }} — ne po komadu</span>
-            </div>
-            {% endif %}
-
             {% if not product.varijacije.count %}
+            {% if product.na_akciji %}
+            {# Redovna akcija — isti vizuelni jezik kao AI dwell (bez tajmera) #}
+            <div class="pd-dwell-flash is-active is-pulse product-sale-deal" id="detailPrice"
+                 data-base-price="{{ product.prikazna_cijena }}"
+                 {% if dwell_flash_config.flash %}hidden{% endif %}>
+                <span class="pd-dwell-flash-tag">{% if product.akcija_istice_oznaka %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}</span>
+                <div class="pd-dwell-flash-prices product-price product-price--detail">
+                    <span class="pd-dwell-was">{{ product.bazna_cijena }} KM</span>
+                    <div class="pd-dwell-sale-cluster">
+                        <span class="pd-dwell-now">{{ product.prikazna_cijena }} KM</span>
+                        {% if product.akcija_postotak_prikaz %}
+                        <span class="pd-dwell-badge">−{{ product.akcija_postotak_prikaz }}%</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
             <div class="product-detail-price product-price--detail" id="detailPrice"
                  data-base-price="{{ product.prikazna_cijena }}"
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
                 {% include 'partials/product_price.html' with item=product %}
             </div>
+            {% endif %}
             {# AI dwell flash: kompaktan deal — cijena + −% dijagonalno + tajmer uz snizenu #}
             <div class="pd-dwell-flash{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}" id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
                 {% if dwell_ui.tag_text %}
@@ -293,7 +314,6 @@
             <div class="product-detail-meta">
                 {% if product.sifra %}<p><strong>Šifra:</strong> {{ product.sifra }}</p>{% endif %}
                 {% if product.barkod %}<p><strong>Barkod:</strong> {{ product.barkod }}</p>{% endif %}
-                {% if product.je_pakovanje %}<p><strong>Pakovanje:</strong> {{ product.pakovanje_komada_prikaz }} komada</p>{% endif %}
             </div>
 
             {% if product.na_stanju %}
@@ -461,7 +481,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260716v5" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260717v2" defer></script>
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
 {% endif %}

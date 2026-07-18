@@ -999,10 +999,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function buildPriceHtml(price, originalPrice, onSale) {
-        const formatted = Number(price).toFixed(2);
+        const sale = Number(price);
+        const formatted = Number.isFinite(sale) ? sale.toFixed(2) : String(price);
         if (onSale === true || onSale === 'true') {
-            const original = Number(originalPrice).toFixed(2);
-            return `<span class="price-sale">${formatted} KM</span><span class="price-original">${original} KM</span>`;
+            const base = Number(originalPrice);
+            const original = Number.isFinite(base) ? base.toFixed(2) : String(originalPrice);
+            let badge = '';
+            if (Number.isFinite(base) && base > 0 && Number.isFinite(sale) && sale < base) {
+                const pct = Math.round(((base - sale) / base) * 100);
+                if (pct > 0) {
+                    badge = `<span class="card-dwell-badge">−${pct}%</span>`;
+                }
+            }
+            // Isti markup kao card-dwell akcija (ukosa precrt + −% badge)
+            return (
+                `<span class="price-original card-dwell-was">${original} KM</span>` +
+                `<div class="card-dwell-sale-cluster">` +
+                `<span class="price-sale card-dwell-now">${formatted} KM</span>` +
+                badge +
+                `</div>`
+            );
         }
         return `<span class="price-current">${formatted} KM</span>`;
     }

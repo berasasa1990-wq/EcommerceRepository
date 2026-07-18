@@ -2209,6 +2209,13 @@ class Product(models.Model):
         )
 
     @property
+    def akcija_postotak_prikaz(self):
+        """−% za badge na product detail (samo ako je sam artikal na akciji)."""
+        if not self.na_akciji:
+            return None
+        return _izracunaj_postotak_umanjenja(self.bazna_cijena, self.prikazna_cijena)
+
+    @property
     def ima_varijacije(self):
         return self.varijacije.exists()
 
@@ -2371,6 +2378,13 @@ class ProductVariation(models.Model):
         if self.na_akciji:
             return self.efektivna_akcijska_cijena
         return self.bazna_cijena
+
+    @property
+    def akcija_postotak_prikaz(self):
+        """−% za badge (varijacija na akciji)."""
+        if not self.na_akciji:
+            return None
+        return _izracunaj_postotak_umanjenja(self.bazna_cijena, self.prikazna_cijena)
 
     @property
     def pakovanje_komada_prikaz(self):

@@ -3303,6 +3303,17 @@ body.search-results-active main {
 
 .product-card--catalog .product-card__price-block {
     width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+}
+
+.product-card--catalog .product-card__price-block .product-price,
+.product-card--catalog .product-card__price-block .card-dwell-deal {
+    flex: 0 1 auto;
+    min-width: 0;
 }
 
 .product-card--catalog .product-card__price {
@@ -3811,13 +3822,201 @@ body.catalog-variation-modal-open {
     text-align: center;
 }
 
+/* Rezervisano mjesto za Made in Japan — ista visina na svim karticama */
+.product-origin-slot,
+.product-card__origin-slot {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    height: 22px;
+    min-height: 22px;
+    max-height: 22px;
+    margin: 1px 0 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.product-card--catalog .product-card__origin-slot {
+    justify-content: flex-start;
+    height: 20px;
+    min-height: 20px;
+    max-height: 20px;
+    margin: 1px 0 0;
+}
+
 .product-origin--placeholder,
 .product-card--catalog .product-card__origin--placeholder {
-    color: transparent;
+    display: none;
+}
+
+/* ===== Made in Japan — kompaktan badge ===== */
+.made-in-japan {
+    --mij-red: #bc002d;
+    --mij-red-deep: #8a001f;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 0 8px;
+    padding: 3px 8px 3px 3px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ffffff 0%, #fff5f6 55%, #ffe8ec 100%);
+    border: 1px solid color-mix(in srgb, var(--mij-red) 22%, #e5e5e5);
+    box-shadow: 0 1px 6px rgba(188, 0, 45, 0.1);
+    overflow: hidden;
+    max-width: 100%;
+    vertical-align: middle;
+}
+.made-in-japan::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.45) 42%,
+        transparent 68%
+    );
+    transform: translateX(-60%);
+    animation: mij-shine 3.6s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes mij-shine {
+    0%, 100% { transform: translateX(-70%); opacity: 0.15; }
+    45%, 55% { opacity: 0.55; }
+    50% { transform: translateX(70%); }
+}
+.made-in-japan__flag {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
     background: #fff;
-    min-height: 18px;
-    border-radius: 3px;
-    user-select: none;
+    border: 1px solid rgba(188, 0, 45, 0.18);
+    display: grid;
+    place-items: center;
+}
+.made-in-japan__sun {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff4d6d, var(--mij-red) 55%, var(--mij-red-deep));
+}
+.made-in-japan__text {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.1;
+}
+.made-in-japan__label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--mij-red);
+    white-space: nowrap;
+}
+.made-in-japan__sub {
+    display: none;
+}
+/* Detail ispod naslova */
+.made-in-japan--detail {
+    margin: 0 0 10px;
+    padding: 4px 10px 4px 4px;
+    gap: 6px;
+}
+.made-in-japan--detail .made-in-japan__flag {
+    width: 18px;
+    height: 18px;
+}
+.made-in-japan--detail .made-in-japan__sun {
+    width: 9px;
+    height: 9px;
+}
+.made-in-japan--detail .made-in-japan__label {
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+/* Kartice + varijacije */
+.made-in-japan--card {
+    margin: 0;
+    padding: 1px 6px 1px 2px;
+    gap: 4px;
+    max-height: 18px;
+    box-shadow: 0 1px 4px rgba(188, 0, 45, 0.08);
+}
+.made-in-japan--card .made-in-japan__flag {
+    width: 14px;
+    height: 14px;
+}
+.made-in-japan--card .made-in-japan__sun {
+    width: 7px;
+    height: 7px;
+}
+.made-in-japan--card .made-in-japan__label {
+    font-size: 9px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.made-in-japan--variation {
+    margin-left: 6px;
+    vertical-align: middle;
+    max-width: min(100%, 9.5em);
+}
+.product-detail-variation-name .made-in-japan--variation {
+    display: inline-flex;
+}
+.product-origin-slot .made-in-japan--card,
+.product-card__origin-slot .made-in-japan--card,
+.product-info .made-in-japan--card,
+.product-card__origin.made-in-japan {
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    flex-shrink: 1;
+    min-width: 0;
+}
+@media (max-width: 768px) {
+    .made-in-japan--detail {
+        margin: 0 0 8px;
+        padding: 3px 8px 3px 3px;
+    }
+    .made-in-japan--detail .made-in-japan__label {
+        font-size: 10px;
+    }
+    .made-in-japan--card .made-in-japan__label,
+    .made-in-japan--variation .made-in-japan__label {
+        font-size: 8px;
+    }
+    .made-in-japan--card .made-in-japan__flag,
+    .made-in-japan--variation .made-in-japan__flag {
+        width: 12px;
+        height: 12px;
+    }
+    .made-in-japan--card .made-in-japan__sun,
+    .made-in-japan--variation .made-in-japan__sun {
+        width: 6px;
+        height: 6px;
+    }
+    .product-origin-slot,
+    .product-card__origin-slot {
+        height: 18px;
+        min-height: 18px;
+        max-height: 18px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .made-in-japan::before,
+    .made-in-japan__sun {
+        animation: none !important;
+    }
 }
 
 .product-brand-slot {
@@ -4747,21 +4946,42 @@ body.catalog-variation-modal-open {
     min-width: 0;
     font-size: 14px;
     font-weight: 500;
-    line-height: 1.2;
+    line-height: 1.25;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
 }
 
 
 
 
 
+.product-detail-variation-price-wrap {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 4px 8px;
+    flex-shrink: 0;
+    min-width: 0;
+    max-width: 42%;
+}
 .product-detail-variation-price {
     flex-shrink: 0;
-    min-width: 88px;
+    min-width: 0;
     white-space: nowrap;
     text-align: right;
+}
+.product-pack-price-note--variation {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0369a1;
+    white-space: nowrap;
+    line-height: 1.2;
 }
 
 .product-detail-variation-price.product-price--detail {
@@ -4849,6 +5069,9 @@ body.catalog-variation-modal-open {
     color: #000000;
 }
 
+.product-detail-info .made-in-japan {
+    margin: 0 0 14px;
+}
 .product-detail-info .product-origin {
     margin: 0 0 8px;
     font-size: 12px;
@@ -4864,6 +5087,62 @@ body.catalog-variation-modal-open {
 .product-detail-price {
     margin: 0 0 20px;
     margin-left: -8px;
+}
+
+/* Redovna akcija na detail — isti box kao AI dwell (bez tajmera) */
+.product-sale-deal.pd-dwell-flash {
+    margin: 0 0 20px;
+}
+.product-sale-deal .pd-dwell-now {
+    animation: dwell-price-pulse 1.3s ease-in-out infinite;
+}
+
+/* Varijacije na akciji — kompaktan dwell stil */
+.pd-var-sale {
+    display: inline-flex !important;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: linear-gradient(
+        160deg,
+        var(--dwell-box-bg, #111827) 0%,
+        var(--dwell-box-bg2, #1f2937) 55%,
+        var(--dwell-box-bg, #111827) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--dwell-box-border, #e11d48) 55%, transparent);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+    white-space: normal;
+    max-width: 100%;
+}
+.pd-var-sale .pd-dwell-was {
+    font-size: 12px;
+}
+.pd-var-sale-cluster {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px 8px;
+}
+.pd-var-sale .pd-dwell-now {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--dwell-sale, #e11d48);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+}
+.pd-var-sale.is-pulse .pd-dwell-now {
+    animation: dwell-price-pulse 1.3s ease-in-out infinite;
+}
+.pd-var-sale .pd-dwell-badge {
+    font-size: 12px;
+    min-width: 2.4em;
+    padding: 4px 7px;
+    border-radius: 8px;
+    transform: rotate(-18deg);
+    animation: dwell-badge-diag-pulse 1.25s ease-in-out infinite;
 }
 
 /* Urgency: prodato u 24h + ostalo na stanju (akcijski) */
@@ -7163,10 +7442,22 @@ button.nav-action-link {
         line-clamp: 3;
     }
 
+    .product-detail-variation-price-wrap {
+        flex: 1 1 auto;
+        justify-content: flex-start;
+        max-width: none;
+        min-width: 0;
+        gap: 4px 6px;
+    }
+
     .product-detail-variation-price {
         min-width: 0;
         text-align: left;
         flex: 0 0 auto;
+    }
+
+    .product-pack-price-note--variation {
+        font-size: 10px;
     }
 
     .product-detail-variation-price .price-sale {
@@ -7853,18 +8144,11 @@ button.nav-action-link {
     }
 
     .home-product-carousel--catalog .product-card--catalog .product-sale-ribbon {
-        display: none;
-    }
-
-    .home-product-carousel--catalog .product-card--catalog .product-discount-badge {
-        top: 6px;
-        left: 6px;
-        right: auto;
-        min-width: 34px;
-        height: 34px;
-        font-size: 10px;
-        background: #d32d2f;
-        box-shadow: 0 2px 8px rgba(211, 45, 47, 0.35);
+        top: 12px;
+        left: -30px;
+        width: 108px;
+        font-size: 8px;
+        padding: 5px 0;
     }
 
     .home-product-carousel--catalog .product-card--catalog .product-card__body {
@@ -7925,6 +8209,7 @@ button.nav-action-link {
 
     .home-product-carousel--catalog .product-card--catalog .product-card__stock,
     .home-product-carousel--catalog .product-card--catalog .product-card__origin,
+    .home-product-carousel--catalog .product-card--catalog .product-card__origin-slot,
     .home-product-carousel--catalog .product-card--catalog .product-card__sale-expiry,
     .home-product-carousel--catalog .product-card--catalog .staff-stock-badge {
         display: none;
@@ -8423,18 +8708,11 @@ button.nav-action-link {
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-sale-ribbon {
-        display: none;
-    }
-
-    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-discount-badge {
-        top: 6px;
-        left: 6px;
-        right: auto;
-        min-width: 38px;
-        height: 38px;
-        font-size: 11px;
-        background: #d32d2f;
-        box-shadow: 0 2px 8px rgba(211, 45, 47, 0.35);
+        top: 12px;
+        left: -30px;
+        width: 108px;
+        font-size: 8px;
+        padding: 5px 0;
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__body {
@@ -8509,6 +8787,7 @@ button.nav-action-link {
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__stock,
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__origin,
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__origin-slot,
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__sale-expiry,
     .product-catalog--compact .product-grid--catalog .product-card--catalog .staff-stock-badge {
         display: none;
@@ -12700,6 +12979,19 @@ button.nav-action-link {
     color: #fff !important;
 }
 
+.staff-product-bar .staff-product-btn--japan-on,
+.staff-product-btn--japan-on {
+    background: linear-gradient(135deg, #bc002d, #8a001f) !important;
+    border-color: #8a001f !important;
+    color: #fff !important;
+}
+
+.staff-product-bar .staff-product-btn--japan-on:hover,
+.staff-product-btn--japan-on:hover {
+    background: linear-gradient(135deg, #d40033, #bc002d) !important;
+    border-color: #bc002d !important;
+}
+
 @media (max-width: 768px) {
     .staff-product-bar {
         width: 100%;
@@ -16389,6 +16681,39 @@ body.og-side-open {
     color: #64748b;
 }
 
+/* „Cijena za X kom.” — desno od cijene na karticama (bez badge-a Pakovanje) */
+.product-pack-price-note {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0369a1;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: center;
+}
+.product-card--catalog .product-pack-price-note {
+    font-size: 10px;
+    color: #0369a1;
+    margin: 0;
+}
+.product-info__price-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px 8px;
+    width: 100%;
+}
+.product-info__price-row .product-price,
+.product-info__price-row .card-dwell-deal {
+    margin: 0;
+}
+.product-info__price-row .product-pack-price-note {
+    font-size: 11px;
+}
+
 .product-card__pack {
     margin: 2px 0 0;
     min-height: 0;
@@ -17004,16 +17329,24 @@ body.og-side-open {
     .card-dwell-now,
     .pd-dwell-countdown,
     .pd-dwell-badge,
-    .card-dwell-badge {
+    .card-dwell-badge,
+    .product-sale-deal .pd-dwell-now,
+    .pd-var-sale .pd-dwell-now,
+    .pd-var-sale .pd-dwell-badge {
         animation: none !important;
     }
-    .pd-dwell-now {
+    .pd-dwell-now,
+    .product-sale-deal .pd-dwell-now,
+    .pd-var-sale .pd-dwell-now {
         color: var(--dwell-sale, #e11d48) !important;
         text-shadow: none;
         transform: none;
     }
     .pd-dwell-badge {
         transform: rotate(-22deg);
+    }
+    .pd-var-sale .pd-dwell-badge {
+        transform: rotate(-18deg);
     }
     .card-dwell-now {
         color: var(--dwell-card-sale, #e11d48) !important;

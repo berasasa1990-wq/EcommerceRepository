@@ -18,14 +18,23 @@
         </div>
     </div>
 </div>
+{% elif product.katalog_na_akciji %}
+{# Redovna akcija — isti vizuelni jezik kao AI dwell (bez tajmera) #}
+<div class="card-dwell-deal is-active is-pulse product-sale-card-deal">
+    <span class="card-dwell-label">{% if product.akcija_istice_oznaka %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}</span>
+    <div class="product-price product-card__price card-dwell-prices" data-product-price>
+        <span class="price-original card-dwell-was">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
+        <div class="card-dwell-sale-cluster">
+            <span class="price-sale card-dwell-now">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+            {% if product.katalog_akcija_postotak %}
+            <span class="card-dwell-badge">−{{ product.katalog_akcija_postotak }}%</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% else %}
 <div class="product-price product-card__price" data-product-price>
-    {% if product.katalog_na_akciji %}
-    <span class="price-sale">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
-    <span class="price-original">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
-    {% else %}
     <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
-    {% endif %}
 </div>
 {% endif %}
 {% endwith %}

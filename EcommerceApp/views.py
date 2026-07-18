@@ -1292,50 +1292,38 @@ def product_detail(request, slug):
             PRODUCT_DWELL_SECONDS,
             _product_dwell_settings,
             activate_product_dwell_flash,
+            dwell_already_consumed,
             get_active_dwell_flash,
             get_dwell_flash_seconds,
             get_dwell_percent_for_product,
             product_allowed_for_dwell,
         )
-        from .live_visitor_offer import _discounted_price
 
         dwell_flash_seconds = get_dwell_flash_seconds()
         dwell_on, _default_pct = _product_dwell_settings()
         dwell_on_this = bool(dwell_on and product_allowed_for_dwell(product.pk))
         dwell_pct = get_dwell_percent_for_product(product.pk) if dwell_on_this else Decimal('0')
-        is_staff_preview = _request_is_superuser(request) or (
+        is_staff = _request_is_superuser(request) or (
             getattr(request.user, 'is_authenticated', False)
             and getattr(request.user, 'is_staff', False)
         )
+        # Samo eksplicitno ?dwell_force=1 (staff) smije obnoviti istekli flash
+        force_dwell = bool(is_staff and request.GET.get('dwell_force') == '1')
+        already_consumed = dwell_already_consumed(request, product.pk)
         dwell_flash = None
         activate_err = ''
         if dwell_on_this and dwell_pct and dwell_pct > 0:
-            # Odmah na ulasku: aktiviraj ili nastavi preostalo
+            # Nastavi aktivni flash, ili aktiviraj jednom po sesiji
             dwell_flash = get_active_dwell_flash(request, product.pk)
-            if not dwell_flash:
+            if not dwell_flash and (not already_consumed or force_dwell):
                 dwell_flash, activate_err = activate_product_dwell_flash(
                     request,
                     product.pk,
-                    force=bool(is_staff_preview),
+                    force=force_dwell,
                 )
-            # Fallback prikaz (npr. staff ili greška sesije) — izračunaj cijene
-            if not dwell_flash and dwell_pct > 0:
-                try:
-                    base_d = Decimal(str(product.prikazna_cijena))
-                    sale_d = _discounted_price(base_d, dwell_pct)
-                    if sale_d < base_d:
-                        dwell_flash = {
-                            'product_id': product.pk,
-                            'percent': dwell_pct,
-                            'expires_ts': None,
-                            'remaining_seconds': dwell_flash_seconds,
-                            'base': str(base_d.quantize(Decimal('0.01'))),
-                            'sale': str(sale_d),
-                        }
-                except Exception:
-                    pass
+            # Nema fallback-a — isteklo = regularna cijena i na refresh
         flash_json = None
-        if dwell_flash:
+        if dwell_flash and int(dwell_flash.get('remaining_seconds') or 0) > 0:
             pct = dwell_flash.get('percent')
             try:
                 pct_f = float(pct)
@@ -1353,17 +1341,19 @@ def product_detail(request, slug):
             pct_cfg = float(dwell_pct) if dwell_pct else 0
         except (TypeError, ValueError):
             pct_cfg = 0
+        # active samo dok stvarno traje flash (ne pokreći JS aktivaciju poslije isteka)
         context['dwell_flash_config'] = {
-            'active': bool(dwell_on_this and dwell_pct and dwell_pct > 0),
+            'active': bool(flash_json),
             'product_id': product.pk,
             'trigger_seconds': PRODUCT_DWELL_SECONDS,  # 0 = odmah
             'flash_seconds': dwell_flash_seconds,
             'percent': pct_cfg,
             'base_price': str(product.prikazna_cijena),
             'activate_url': '/ai-dwell/aktiviraj/',
-            'flash': flash_json,  # None ako isteklo / nedostupno → samo regularna cijena
-            'staff_preview': bool(is_staff_preview),
-            'debug_err': activate_err if is_staff_preview else '',
+            'flash': flash_json,
+            'expired': bool(already_consumed and not flash_json),
+            'staff_preview': False,
+            'debug_err': activate_err if is_staff else '',
         }
     except Exception:
         context['dwell_flash_config'] = {'active': False}
@@ -3495,7 +3485,16 @@ def ai_dwell_activate(request):
         product_id = int(request.POST.get('product_id') or 0)
     except (TypeError, ValueError):
         product_id = 0
-    flash, err = activate_product_dwell_flash(request, product_id)
+    # force samo staff + eksplicitni flag (ne obnavlja se na običan refresh)
+    force = False
+    if request.POST.get('force') == '1':
+        u = getattr(request, 'user', None)
+        force = bool(
+            u
+            and getattr(u, 'is_authenticated', False)
+            and (getattr(u, 'is_staff', False) or getattr(u, 'is_superuser', False))
+        )
+    flash, err = activate_product_dwell_flash(request, product_id, force=force)
     if not flash:
         return JsonResponse({'ok': False, 'message': err or 'Nije aktivirano.'}, status=400)
     pct = flash.get('percent')
@@ -4280,6 +4279,13 @@ def staff_product_quick_edit(request, slug):
         product.save(update_fields=['na_stanju'])
         status = 'na stanju' if product.na_stanju else 'nije na stanju'
         messages.success(request, f'Artikal „{product.naziv}” sada je {status}.')
+    elif action == 'toggle_japan':
+        product.proizvedeno_u_japanu = not product.proizvedeno_u_japanu
+        product.save(update_fields=['proizvedeno_u_japanu'])
+        if product.proizvedeno_u_japanu:
+            messages.success(request, f'„{product.naziv}” označen kao Made in Japan.')
+        else:
+            messages.success(request, f'Made in Japan uklonjen sa „{product.naziv}”.')
     elif action == 'set_price':
         raw_price = (request.POST.get('cijena') or '').strip().replace(',', '.')
         try:

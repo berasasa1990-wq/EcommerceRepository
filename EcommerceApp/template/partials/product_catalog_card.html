@@ -17,7 +17,6 @@
                     <span class="product-home-ribbon product-home-ribbon--hit" aria-hidden="true">HIT PONUDA</span>
                     {% else %}
                     {% include 'partials/product_sale_ribbon.html' with product=product %}
-                    {% include 'partials/product_discount_badge.html' with product=product %}
                     {% endif %}
                     {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}
                 </a>
@@ -40,20 +39,17 @@
                 {% if product.na_stanju %}Na stanju{% else %}Rasprodato{% endif %}
             </p>
 
-            {% if product.proizvedeno_u_japanu %}
-            <p class="product-origin product-card__origin">Made in Japan</p>
-            {% else %}
-            <p class="product-origin product-card__origin product-card__origin--placeholder" aria-hidden="true">&nbsp;</p>
-            {% endif %}
-
-            {% if product.je_pakovanje %}
-            <p class="product-pack-line product-card__pack">
-                <span class="product-pack-badge product-pack-badge--card">
-                    <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
-                    <span class="product-pack-badge-text">{{ product.pakovanje_label }}</span>
-                </span>
-            </p>
-            {% endif %}
+            {# Fiksna visina — samo Made in Japan (ne pomjera brend/cijena) #}
+            <div class="product-origin-slot product-card__origin-slot">
+                {% if product.proizvedeno_u_japanu %}
+                <div class="made-in-japan made-in-japan--card product-card__origin" role="note" aria-label="Proizvedeno u Japanu">
+                    <span class="made-in-japan__flag" aria-hidden="true"><span class="made-in-japan__sun"></span></span>
+                    <span class="made-in-japan__text">
+                        <span class="made-in-japan__label">Made in Japan</span>
+                    </span>
+                </div>
+                {% endif %}
+            </div>
             {% if show_akcija_expiry and product.prikaz_akcija_istice %}
             <p class="product-sale-expiry product-card__sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
             {% endif %}
@@ -75,14 +71,14 @@
     </div>
     {% endif %}
 
-    <div class="product-card__price-block">
+    <div class="product-card__price-block{% if product.je_pakovanje %} product-card__price-block--pack{% endif %}">
         {% if card_variations|length > 1 %}
         {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
         {% else %}
         {% include 'partials/product_card_dwell_price.html' with product=product %}
         {% endif %}
-        {% if product.je_pakovanje %}
-        <p class="product-pack-hint product-card__pack-hint">{{ product.pakovanje_cijena_hint }}</p>
+        {% if product.je_pakovanje and product.pakovanje_cijena_hint %}
+        <span class="product-pack-price-note">{{ product.pakovanje_cijena_hint }}</span>
         {% endif %}
     </div>
 

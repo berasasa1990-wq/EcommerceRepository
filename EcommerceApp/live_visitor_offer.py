@@ -131,17 +131,28 @@ def product_allowed_for_dwell(product_id):
         return False
 
 
-def get_dwell_catalog_map():
+def get_dwell_catalog_map(request=None):
     """
     Map product_id -> {percent, base, sale} za katalog/pretragu.
     Kad je AI dwell uključen — snizena cijena na karticama BEZ tajmera.
-    Tajmer se aktivira tek na product page.
+    Ako je flash za artikal već istekao u ovoj sesiji — ne prikazuj sniženje.
     """
     aktivan, _default_pct = _product_dwell_settings()
     if not aktivan:
         return {}
     try:
         from .models import ProductDwellItem, SiteSettings
+
+        # Artikli čiji je flash potrošen/istekao u ovoj sesiji
+        consumed = set()
+        active_flash = {}
+        if request is not None:
+            try:
+                consumed = set(_dwell_state(request).get('offered_ids') or [])
+                active_flash = get_all_active_dwell_flashes(request) or {}
+            except Exception:
+                consumed = set()
+                active_flash = {}
 
         s = SiteSettings.load()
         items = (
@@ -157,6 +168,12 @@ def get_dwell_catalog_map():
         result = {}
         for item in items:
             product = item.product
+            pid = int(product.pk)
+            # Već potrošeno u sesiji i nema aktivnog tajmera → sakrij katalog sniženje
+            if pid in consumed:
+                flash = active_flash.get(str(pid)) or active_flash.get(pid)
+                if not flash:
+                    continue
             pct = _clamp_percent(item.popust)
             if pct <= 0:
                 continue
@@ -176,7 +193,7 @@ def get_dwell_catalog_map():
             else:
                 pct_str = str(pct)
             # Ključ kao int — dict_get u templateu koristi product.pk
-            result[int(product.pk)] = {
+            result[pid] = {
                 'percent': pct_str,
                 'base': str(base_d.quantize(Decimal('0.01'))),
                 'sale': str(sale_d),
@@ -513,13 +530,26 @@ def get_all_active_dwell_flashes(request):
     return result
 
 
+def dwell_already_consumed(request, product_id):
+    """True ako je flash za ovaj artikal već korišten/istekao u ovoj sesiji."""
+    if not request or not product_id:
+        return False
+    try:
+        pid = int(product_id)
+    except (TypeError, ValueError):
+        return False
+    state = _dwell_state(request)
+    return pid in list(state.get('offered_ids') or [])
+
+
 def activate_product_dwell_flash(request, product_id, *, force=False):
     """
-    Odmah na ulasku na artikal: aktiviraj 2-min flash cijenu (BEZ popupa).
+    Odmah na ulasku na artikal: aktiviraj flash cijenu (BEZ popupa).
     Timer kreće od trenutka ulaska; kad istekne — u ovoj sesiji više nema ponude
-    (samo regularna cijena). Ako se vrati dok traje — nastavlja se preostalo vrijeme.
+    (refresh NE obnavlja). Ako se vrati dok traje — nastavlja se preostalo vrijeme.
 
-    force=True ili staff/superuser: dozvoli pregled i ponovni prikaz (test u admin nalogu).
+    force=True: samo eksplicitni test (npr. ?dwell_force=1 za staff) — inače
+    ni staff ne smije obnoviti istekli flash u istoj sesiji.
     """
     aktivan, _default_pct = _product_dwell_settings()
     if not aktivan:
@@ -527,14 +557,7 @@ def activate_product_dwell_flash(request, product_id, *, force=False):
     if not request or _blocked_path(request):
         return None, 'Nedostupno.'
 
-    user = getattr(request, 'user', None)
-    is_staff_user = bool(
-        user
-        and getattr(user, 'is_authenticated', False)
-        and (getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False))
-    )
-    # Staff/superuser MOGU vidjeti flash radi pregleda (prije su bili potpuno blokirani).
-    force_preview = bool(force or is_staff_user)
+    force_preview = bool(force)
 
     try:
         pid = int(product_id)
@@ -561,7 +584,7 @@ def activate_product_dwell_flash(request, product_id, *, force=False):
 
     state = _dwell_state(request)
     offered_ids = list(state.get('offered_ids') or [])
-    # Već isteklo u ovoj sesiji — samo regularna cijena (staff smije ponovo)
+    # Već isteklo u ovoj sesiji — samo regularna cijena (bez obnove na refresh)
     if pid in offered_ids and not force_preview:
         return None, 'Flash cijena za ovaj artikal je već istekla u ovoj posjeti.'
     if pid in offered_ids and force_preview:
@@ -589,8 +612,8 @@ def activate_product_dwell_flash(request, product_id, *, force=False):
     }
     _save_flash_deals(request, deals)
 
-    # Staff preview ne troši „jednom po posjeti” slot
-    if not force_preview:
+    # Uvijek zabilježi u sesiji — refresh ne smije ponovo aktivirati
+    if pid not in offered_ids:
         offered_ids.append(pid)
     state['offered_ids'] = offered_ids[:40]
     state['product_id'] = pid

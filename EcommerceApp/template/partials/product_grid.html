@@ -9,7 +9,6 @@
             <span class="product-home-ribbon product-home-ribbon--hit" aria-hidden="true">HIT PONUDA</span>
             {% else %}
             {% include 'partials/product_sale_ribbon.html' with product=product %}
-            {% include 'partials/product_discount_badge.html' with product=product %}
             {% endif %}
             {% if eager_first_image and forloop.first %}
             {% include 'partials/product_image.html' with product=product image_loading='eager' image_sizes='(max-width: 768px) 50vw, 16vw' %}

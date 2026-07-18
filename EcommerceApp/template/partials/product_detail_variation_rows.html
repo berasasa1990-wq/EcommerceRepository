@@ -2,15 +2,34 @@
 <div class="product-detail-variation-row"{% if var.slika %} data-image="{{ var.slika.url }}"{% endif %}>
     <span class="product-detail-variation-name">
         {{ var.naziv }}
-        {% if var.je_pakovanje %}
-        <span class="product-pack-badge product-pack-badge--inline" title="{{ var.pakovanje_cijena_hint }}">
-            <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
-            <span class="product-pack-badge-text">{{ var.pakovanje_label }}</span>
+        {% if product.proizvedeno_u_japanu %}
+        <span class="made-in-japan made-in-japan--card made-in-japan--variation" role="note" aria-label="Proizvedeno u Japanu">
+            <span class="made-in-japan__flag" aria-hidden="true"><span class="made-in-japan__sun"></span></span>
+            <span class="made-in-japan__text">
+                <span class="made-in-japan__label">Made in Japan</span>
+            </span>
         </span>
         {% endif %}
     </span>
-    <span class="product-detail-variation-price product-price--detail">
-        {% include 'partials/product_price.html' with item=var %}
+    <span class="product-detail-variation-price-wrap">
+        {% if var.na_akciji %}
+        <span class="product-detail-variation-price product-price--detail pd-var-sale is-pulse">
+            <span class="pd-dwell-was">{{ var.bazna_cijena }} KM</span>
+            <span class="pd-var-sale-cluster">
+                <span class="pd-dwell-now">{{ var.prikazna_cijena }} KM</span>
+                {% if var.akcija_postotak_prikaz %}
+                <span class="pd-dwell-badge">−{{ var.akcija_postotak_prikaz }}%</span>
+                {% endif %}
+            </span>
+        </span>
+        {% else %}
+        <span class="product-detail-variation-price product-price--detail">
+            {% include 'partials/product_price.html' with item=var %}
+        </span>
+        {% endif %}
+        {% if var.je_pakovanje and var.pakovanje_cijena_hint %}
+        <span class="product-pack-price-note product-pack-price-note--variation">{{ var.pakovanje_cijena_hint }}</span>
+        {% endif %}
     </span>
     <form method="post" action="{% url 'add_to_cart' product.slug %}" class="product-detail-variation-form">
         {% csrf_token %}

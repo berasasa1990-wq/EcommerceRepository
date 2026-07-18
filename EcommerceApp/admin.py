@@ -1236,8 +1236,8 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ('tagovi',)
     list_display = (
         'naziv', 'sifra', 'brend', 'kategorija', 'cijena', 'pakovanje_komada',
-        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'aktivan',
-        'datum_dodavanja', 'olx_status', 'pregled_slike',
+        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
+        'aktivan', 'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
     list_filter = (
         'aktivan', NaStanjuFilter, 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
@@ -1246,7 +1246,7 @@ class ProductAdmin(admin.ModelAdmin):
     )
     date_hierarchy = 'kreiran'
     ordering = ('-kreiran',)
-    list_editable = ('prikazi_na_pocetnoj', 'aktivan', 'na_stanju')
+    list_editable = ('prikazi_na_pocetnoj', 'proizvedeno_u_japanu', 'aktivan', 'na_stanju')
     search_fields = (
         'naziv', 'sifra', 'barkod', 'tagovi__naziv',
         'kategorija__naziv', 'kategorija__roditelj__naziv',
@@ -1317,7 +1317,10 @@ class ProductAdmin(admin.ModelAdmin):
             ),
         }),
         ('Prikaz', {
-            'fields': ('prikazi_na_pocetnoj', 'aktivan'),
+            'fields': ('prikazi_na_pocetnoj', 'proizvedeno_u_japanu', 'aktivan'),
+            'description': (
+                '„Proizvedeno u Japanu” — na sajtu se ispod naziva prikaže badge Made in Japan.'
+            ),
         }),
         ('SEO (Google i društvene mreže)', {
             'fields': (

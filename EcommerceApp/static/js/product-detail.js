@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         syncButtons();
     });
 
-    /* AI dwell: odmah na ulasku — precrtana + snizena + 2 min odbrojavanje; kad istekne → regularna */
+    /* AI dwell: flash samo dok traje u sesiji — isteklo = nema obnove na refresh */
     (function initDwellFlashPrice() {
         const cfgEl = document.getElementById('dwellFlashConfigData');
         if (!cfgEl) return;
@@ -288,7 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             return;
         }
-        if (!cfg || !cfg.active || !cfg.product_id) return;
+        // active=true samo kad server ima stvarni aktivni flash
+        if (!cfg || !cfg.active || !cfg.product_id || !cfg.flash) return;
 
         const flashBox = document.getElementById('pdDwellFlash');
         const countdownEl = document.getElementById('pdDwellCountdown');
@@ -299,19 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!flashBox || !countdownEl) return;
 
         const flashSec = Math.max(30, parseInt(cfg.flash_seconds || 120, 10) || 120);
-        const productId = cfg.product_id;
-        const activateUrl = cfg.activate_url || '/ai-dwell/aktiviraj/';
         let tickTimer = null;
-        let activated = false;
-
-        function csrf() {
-            const meta = document.querySelector('meta[name="csrf-token"]');
-            if (meta && meta.content) return meta.content;
-            const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
-            if (input && input.value) return input.value;
-            const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
-            return m ? decodeURIComponent(m[1]) : '';
-        }
 
         function fmt(sec) {
             sec = Math.max(0, Math.floor(sec));
@@ -341,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const base = data.base || cfg.base_price;
             const sale = data.sale;
             const pct = data.percent || cfg.percent || 10;
-            let remaining = parseInt(data.remaining_seconds || flashSec, 10) || flashSec;
+            let remaining = parseInt(data.remaining_seconds || 0, 10) || 0;
             if (remaining <= 0) {
                 hideFlash();
                 return;
@@ -373,81 +362,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 1000);
         }
 
-        function previewFromCfg() {
-            const pct = Number(cfg.percent || 0);
-            const base = Number(cfg.base_price || 0);
-            if (!(pct > 0) || !(base > 0)) return false;
-            const sale = (base * (1 - pct / 100)).toFixed(2);
-            showFlash({
-                base: base,
-                sale: sale,
-                percent: pct,
-                remaining_seconds: flashSec,
-            });
-            return true;
-        }
-
-        function activate() {
-            if (activated) return;
-            activated = true;
-            const token = csrf();
-            if (!token) {
-                // Nema CSRF — pokušaj barem preview iz configa
-                if (!previewFromCfg()) activated = false;
-                return;
-            }
-            const body = new URLSearchParams();
-            body.set('csrfmiddlewaretoken', token);
-            body.set('product_id', String(productId));
-            fetch(activateUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': token,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                credentials: 'same-origin',
-                body: body.toString(),
-            }).then(function (res) {
-                return res.json().then(function (data) {
-                    if (!res.ok || !data.ok) {
-                        // Staff preview ili mrežni fail: prikaži iz configa
-                        if (cfg.staff_preview || cfg.flash) {
-                            if (cfg.flash && cfg.flash.sale) {
-                                showFlash({
-                                    base: cfg.flash.base || cfg.base_price,
-                                    sale: cfg.flash.sale,
-                                    percent: cfg.flash.percent || cfg.percent,
-                                    remaining_seconds: cfg.flash.remaining_seconds || flashSec,
-                                });
-                            } else {
-                                previewFromCfg();
-                            }
-                        }
-                        return;
-                    }
-                    showFlash(data);
-                });
-            }).catch(function () {
-                if (!previewFromCfg()) activated = false;
-            });
-        }
-
-        // Server već aktivirao na ulasku, ili još traje iz sesije — odmah prikaži + odbrojavaj
-        if (cfg.flash && (cfg.flash.remaining_seconds > 0 || cfg.flash.sale)) {
-            activated = true;
+        // Samo server-side flash (već u sesiji) — bez re-aktivacije / preview fallbacka
+        const rem = parseInt(cfg.flash.remaining_seconds || 0, 10) || 0;
+        if (rem > 0 && cfg.flash.sale) {
             showFlash({
                 base: cfg.flash.base || cfg.base_price,
                 sale: cfg.flash.sale,
                 percent: cfg.flash.percent || cfg.percent,
-                remaining_seconds: cfg.flash.remaining_seconds || flashSec,
+                remaining_seconds: rem,
             });
-            return;
+        } else {
+            hideFlash();
         }
-
-        // Nema flasha u configu: odmah pokušaj aktivaciju (ili staff preview)
-        activate();
     })();
 
     /* Sticky „Dodaj u korpu” na mobilnom — kad glavni CTA izađe iz viewporta */

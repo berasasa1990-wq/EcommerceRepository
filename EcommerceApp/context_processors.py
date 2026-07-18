@@ -120,7 +120,7 @@ def nav_categories(request):
             get_dwell_ui,
         )
         dwell_flash_by_id = get_all_active_dwell_flashes(request)
-        dwell_catalog_by_id = get_dwell_catalog_map()
+        dwell_catalog_by_id = get_dwell_catalog_map(request)
         dwell_ui = get_dwell_ui()
     except Exception:
         dwell_flash_by_id = {}
