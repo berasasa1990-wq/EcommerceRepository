@@ -2,14 +2,6 @@
 <div class="product-detail-variation-row"{% if var.slika %} data-image="{{ var.slika.url }}"{% endif %}>
     <span class="product-detail-variation-name">
         {{ var.naziv }}
-        {% if product.proizvedeno_u_japanu %}
-        <span class="made-in-japan made-in-japan--card made-in-japan--variation" role="note" aria-label="Proizvedeno u Japanu">
-            <span class="made-in-japan__flag" aria-hidden="true"><span class="made-in-japan__sun"></span></span>
-            <span class="made-in-japan__text">
-                <span class="made-in-japan__label">Made in Japan</span>
-            </span>
-        </span>
-        {% endif %}
     </span>
     <span class="product-detail-variation-price-wrap">
         {% if var.na_akciji %}

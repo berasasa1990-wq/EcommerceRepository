@@ -3304,34 +3304,36 @@ body.search-results-active main {
 .product-card--catalog .product-card__price-block {
     width: 100%;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 8px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 3px;
 }
 
 .product-card--catalog .product-card__price-block .product-price,
 .product-card--catalog .product-card__price-block .card-dwell-deal {
     flex: 0 1 auto;
     min-width: 0;
+    width: 100%;
 }
 
 .product-card--catalog .product-card__price {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
     text-align: left;
     margin: 0;
 }
 
 .product-card--catalog .product-card__price .price-original {
-    order: 1;
+    order: 2;
 }
 
 .product-card--catalog .product-card__price .price-sale,
 .product-card--catalog .product-card__price .price-current {
-    order: 2;
+    order: 1;
 }
 
 .product-card--catalog .product-card__sale-expiry {
@@ -5089,7 +5091,7 @@ body.catalog-variation-modal-open {
     margin-left: -8px;
 }
 
-/* Redovna akcija na product detail — isti stil kao akcijska ponuda (card-dwell) */
+/* Product detail card-dwell (akcija + AI dwell s tajmerom) */
 .product-sale-deal--detail.card-dwell-deal {
     margin: 0 0 20px;
     max-width: min(100%, 320px);
@@ -5105,6 +5107,82 @@ body.catalog-variation-modal-open {
     font-size: 16px;
     min-width: 2.6em;
     padding: 6px 10px;
+}
+
+/* AI dwell na detail: forsira card stil (ne stari tamni pd-dwell-flash) */
+.card-dwell-deal.pd-dwell-flash {
+    display: block;
+    align-items: stretch;
+    gap: 0;
+    width: auto;
+    max-width: min(100%, 320px);
+    margin: 0 0 20px;
+    padding: 12px 14px 14px;
+    border-radius: 12px;
+    background: linear-gradient(
+        165deg,
+        var(--dwell-card-bg, #fff7f8) 0%,
+        var(--dwell-card-bg2, #fff) 55%,
+        var(--dwell-card-bg, #fff7f8) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 28%, transparent);
+    box-shadow:
+        0 4px 14px color-mix(in srgb, var(--dwell-card-border, #e11d48) 10%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.card-dwell-deal.pd-dwell-flash::before {
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(90deg, transparent, var(--dwell-card-border, #e11d48), transparent);
+    opacity: 0.85;
+}
+.card-dwell-deal.pd-dwell-flash[hidden] {
+    display: none !important;
+}
+.card-dwell-deal.pd-dwell-flash.is-active:not([hidden]) {
+    display: block;
+}
+.card-dwell-timer {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--dwell-card-label, #be123c);
+    white-space: nowrap;
+}
+.card-dwell-timer-label {
+    opacity: 0.85;
+    max-width: 5.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.card-dwell-countdown,
+.card-dwell-timer strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.8em;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: #fff !important;
+    background: linear-gradient(
+        180deg,
+        var(--dwell-card-badge-bg, #be123c),
+        color-mix(in srgb, var(--dwell-card-badge-bg, #be123c) 65%, black)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: dwell-timer-pulse 1.25s ease-in-out infinite;
 }
 
 /* Varijacije na akciji — kompaktan card-dwell stil */
@@ -8201,11 +8279,24 @@ button.nav-action-link {
     }
 
     .home-product-carousel--catalog .product-card--catalog .product-card__stock,
-    .home-product-carousel--catalog .product-card--catalog .product-card__origin,
-    .home-product-carousel--catalog .product-card--catalog .product-card__origin-slot,
     .home-product-carousel--catalog .product-card--catalog .product-card__sale-expiry,
     .home-product-carousel--catalog .product-card--catalog .staff-stock-badge {
         display: none;
+    }
+
+    .home-product-carousel--catalog .product-card--catalog .product-card__origin-slot {
+        display: flex;
+        height: 16px;
+        min-height: 16px;
+        max-height: 16px;
+        margin: 2px 0 0;
+        overflow: visible;
+    }
+
+    .home-product-carousel--catalog .product-card--catalog .product-card__origin.made-in-japan,
+    .home-product-carousel--catalog .product-card--catalog .made-in-japan--card {
+        max-height: 16px;
+        padding: 1px 5px 1px 2px;
     }
 
     .home-product-carousel--catalog .product-card--catalog .product-card__price-block {
@@ -8213,19 +8304,37 @@ button.nav-action-link {
         min-height: 24px;
         padding: 6px 0 0;
         margin-top: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
     }
 
-    .home-product-carousel--catalog .product-card--catalog .product-card__price {
-        display: flex;
+    .home-product-carousel--catalog .product-card--catalog .product-pack-price-note {
+        font-size: 9px;
+        line-height: 1.2;
+        white-space: normal;
+    }
+
+    .home-product-carousel--catalog .product-card--catalog .product-card__price,
+    .home-product-carousel--catalog .product-card--catalog .card-dwell-prices {
+        display: flex !important;
         flex-direction: row;
         flex-wrap: wrap;
-        align-items: baseline;
+        align-items: center;
         justify-content: flex-start;
-        gap: 7px;
+        gap: 4px 6px;
         font-size: 13px;
         line-height: 1.25;
-        min-height: 24px;
+        min-height: 0;
         margin-top: 0;
+        width: 100%;
+    }
+
+    .home-product-carousel--catalog .product-card--catalog .card-dwell-sale-cluster {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 4px 6px;
     }
 
     .home-product-carousel--catalog .product-card--catalog .price-sale {
@@ -8779,11 +8888,24 @@ button.nav-action-link {
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__stock,
-    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__origin,
-    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__origin-slot,
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__sale-expiry,
     .product-catalog--compact .product-grid--catalog .product-card--catalog .staff-stock-badge {
         display: none;
+    }
+
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__origin-slot {
+        display: flex;
+        height: 16px;
+        min-height: 16px;
+        max-height: 16px;
+        margin: 2px 0 0;
+        overflow: visible;
+    }
+
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__origin.made-in-japan,
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .made-in-japan--card {
+        max-height: 16px;
+        padding: 1px 5px 1px 2px;
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price-block {
@@ -8791,19 +8913,37 @@ button.nav-action-link {
         min-height: 24px;
         padding: 6px 0 0;
         margin-top: 0;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
     }
 
-    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price {
-        display: flex;
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-pack-price-note {
+        font-size: 9px;
+        line-height: 1.2;
+        white-space: normal;
+    }
+
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price,
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .card-dwell-prices {
+        display: flex !important;
         flex-direction: row;
         flex-wrap: wrap;
-        align-items: baseline;
+        align-items: center;
         justify-content: flex-start;
-        gap: 7px;
+        gap: 4px 6px;
         font-size: 13px;
         line-height: 1.25;
         min-height: 0;
         margin-top: 0;
+        width: 100%;
+    }
+
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .card-dwell-sale-cluster {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 4px 6px;
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price .price-prefix {
@@ -8811,10 +8951,13 @@ button.nav-action-link {
         color: inherit;
     }
 
-    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price .price-original,
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price .price-original {
+        order: 2;
+    }
+
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price .price-sale,
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__price .price-current {
-        order: unset;
+        order: 1;
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .price-sale {
@@ -16674,9 +16817,9 @@ body.og-side-open {
     color: #64748b;
 }
 
-/* „Cijena za X kom.” — desno od cijene na karticama (bez badge-a Pakovanje) */
+/* „Cijena za X kom.” — iznad cijene na karticama */
 .product-pack-price-note {
-    display: inline-block;
+    display: block;
     font-size: 11px;
     font-weight: 700;
     color: #0369a1;
@@ -16684,27 +16827,40 @@ body.og-side-open {
     line-height: 1.25;
     white-space: nowrap;
     flex-shrink: 0;
-    align-self: center;
+    width: 100%;
 }
 .product-card--catalog .product-pack-price-note {
     font-size: 10px;
     color: #0369a1;
     margin: 0;
+    order: -1;
 }
 .product-info__price-row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: center;
-    gap: 4px 8px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 3px;
     width: 100%;
 }
 .product-info__price-row .product-price,
 .product-info__price-row .card-dwell-deal {
     margin: 0;
+    width: 100%;
+}
+.product-info__price-row .product-price {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px 8px;
 }
 .product-info__price-row .product-pack-price-note {
     font-size: 11px;
+    text-align: center;
+    order: -1;
 }
 
 .product-card__pack {
@@ -17112,10 +17268,10 @@ body.og-side-open {
 }
 .card-dwell-prices {
     display: flex !important;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 4px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
     margin: 0 !important;
 }
 .card-dwell-was {
@@ -17228,6 +17384,7 @@ body.og-side-open {
     .pd-dwell-now,
     .card-dwell-now,
     .pd-dwell-countdown,
+    .card-dwell-countdown,
     .pd-dwell-badge,
     .card-dwell-badge {
         animation: none !important;
