@@ -2123,39 +2123,99 @@ class Product(models.Model):
             return self.akcijska_cijena
         return self.cijena
 
-    @property
-    def je_pakovanje(self):
-        """True ako se prodaje kao pakovanje (više komada u cijeni)."""
-        try:
-            n = int(self.pakovanje_komada or 0)
-        except (TypeError, ValueError):
-            return False
-        return n > 1
-
-    @property
-    def pakovanje_komada_prikaz(self):
-        """Broj komada u pakovanju ili 0 ako nije pakovanje."""
+    def _own_pakovanje_komada(self):
+        """Pakovanje sa polja artikla (bez varijacija) — baza za fallback."""
         try:
             n = int(self.pakovanje_komada or 0)
         except (TypeError, ValueError):
             return 0
         return n if n > 1 else 0
 
+    def _katalog_pakovanje_sizes(self):
+        """
+        Efektivne količine pakovanja za prikaz na pretrazi/katalogu.
+        Varijacija: svoje pakovanje_komada, inače pakovanje artikla.
+        Bez varijacija: samo pakovanje artikla.
+        Vraća listu int (0 = po komadu, >1 = pakovanje).
+        """
+        variations = list(self.varijacije.all())
+        if not variations:
+            n = self._own_pakovanje_komada()
+            return [n] if n > 1 else []
+
+        product_n = self._own_pakovanje_komada()
+        sizes = []
+        for variation in variations:
+            try:
+                n = int(variation.pakovanje_komada or 0)
+            except (TypeError, ValueError):
+                n = 0
+            if n > 1:
+                sizes.append(n)
+            elif product_n > 1:
+                sizes.append(product_n)
+            else:
+                sizes.append(0)
+        return sizes
+
+    @property
+    def je_pakovanje(self):
+        """True ako se prodaje kao pakovanje (više komada u cijeni) — artikal ili varijacije."""
+        return any(n > 1 for n in self._katalog_pakovanje_sizes())
+
+    @property
+    def pakovanje_komada_prikaz(self):
+        """
+        Broj komada u pakovanju sa polja artikla (0 ako nije).
+        Ne gleda varijacije — ProductVariation.pakovanje_komada_prikaz pada na ovo.
+        """
+        return self._own_pakovanje_komada()
+
+    @property
+    def pakovanje_jedinstvena_kolicina(self):
+        """
+        Zajednička količina pakovanja na katalogu, ili 0 ako nema / nije ista.
+        """
+        sizes = self._katalog_pakovanje_sizes()
+        pack_sizes = {n for n in sizes if n > 1}
+        if len(pack_sizes) != 1:
+            return 0
+        # Ako postoje i varijacije „po komadu” uz pakovanja — nije jedinstveno
+        if any(n <= 1 for n in sizes):
+            return 0
+        return pack_sizes.pop()
+
+    @property
+    def pakovanje_razlicite_kolicine(self):
+        """True kad varijacije imaju različite (efektivne) količine pakovanja."""
+        if not self.je_pakovanje:
+            return False
+        return self.pakovanje_jedinstvena_kolicina <= 1
+
     @property
     def pakovanje_label(self):
-        """Kratka oznaka npr. „Pakovanje 9 kom.”"""
-        n = self.pakovanje_komada_prikaz
-        if n <= 1:
+        """Kratka oznaka npr. „Pakovanje 9 kom.” ili „Pakovanje” ako su količine različite."""
+        if not self.je_pakovanje:
             return ''
-        return f'Pakovanje {n} kom.'
+        n = self.pakovanje_jedinstvena_kolicina
+        if n > 1:
+            return f'Pakovanje {n} kom.'
+        return 'Pakovanje'
 
     @property
     def pakovanje_cijena_hint(self):
-        """Npr. „Cijena za 9 kom.” — da se ne pomisli da je po komadu."""
-        n = self.pakovanje_komada_prikaz
-        if n <= 1:
+        """
+        Na pretrazi/katalogu:
+        - iste količine u varijacijama → „Cijena za 10 kom.”
+        - različite količine → „Cijena na pakovanje / ne na komad”
+        - bez varijacija / jedno pakovanje → „Cijena za N kom.”
+        """
+        if not self.je_pakovanje:
             return ''
-        return f'Cijena za {n} kom.'
+        n = self.pakovanje_jedinstvena_kolicina
+        if n > 1:
+            return f'Cijena za {n} kom.'
+        return 'Cijena na pakovanje / ne na komad'
 
     @property
     def katalog_na_akciji(self):
