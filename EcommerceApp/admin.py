@@ -810,24 +810,19 @@ class AkcijaAdmin(admin.ModelAdmin):
 
     class Media:
         js = ('admin/js/akcija_admin.js',)
+        css = {'all': ('admin/css/ozr_admin.css',)}
 
-    def get_inline_instances(self, request, obj=None):
-        from .models import SiteSettings
-
-        inlines = super().get_inline_instances(request, obj)
-        # parent_model=SiteSettings jer ProductDwellItem.settings → SiteSettings
-        # (uvijek u DOM-u — JS prikaže samo za tip AI)
-        dwell = ProductDwellItemAkcijaInline(SiteSettings, self.admin_site)
-        return list(inlines) + [dwell]
-
-    fieldsets = (
+    # --- Fieldseti po tipu (server-side; JS dodatno filtrira pri promjeni tipa) ---
+    _FS_BASE = (
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
-                'Odaberi tip. Za „+ Ponuda” unesi tri polja u sekciji ispod: '
-                'trigger artikal → opcionalni % → ponuda artikal.'
+                'Odaberi tip akcije — prikazuju se samo polja za taj tip '
+                '(bundle / kupi više / + ponuda / AI dwell).'
             ),
         }),
+    )
+    _FS_PONUDA = (
         ('+ Ponuda — unesi ovo', {
             'fields': (
                 'artikal',
@@ -836,10 +831,17 @@ class AkcijaAdmin(admin.ModelAdmin):
             ),
             'description': (
                 '1) Trigger artikal — kad ga kupac doda u korpu, iskače popup. '
-                '2) Popust (%) — opcionalno na ponuđeni artikal (prazno = regularna cijena). '
-                '3) Ponuda artikal — artikal koji se nudi u popupu (AI dwell stil). '
-                'Za „Kupi više” koristi samo Trigger artikal. '
-                'Za bundle: % i trigger po pravilima ispod.'
+                '2) Popust (%) — opcionalno (prazno = regularna cijena). '
+                '3) Ponuda artikal — što se nudi u popupu.'
+            ),
+        }),
+    )
+    _FS_BUNDLE = (
+        ('Artikal / popust seta', {
+            'fields': ('popust_postotak', 'artikal', 'gratis_artikal'),
+            'description': (
+                'Popust (%) na set. Trigger artikal samo ako je trigger „odabrani artikal”. '
+                'Stavke seta unesi u tabeli ispod.'
             ),
         }),
         ('Pop-up bundle — dodatno', {
@@ -850,9 +852,24 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'boja_dugmeta',
                 'boja_opisa',
             ),
-            'description': (
-                'Samo za tip „Pop-up bundle”: šta trigeruje set, boje i tekst dugmeta.'
+            'description': 'Šta trigeruje set, boje i tekst dugmeta.',
+        }),
+        ('Pop-up ponašanje', {
+            'fields': (
+                'popup_delay_seconds', 'za_prijavljene', 'za_neprijavljene',
+                'ponovo_poslije_dana',
             ),
+        }),
+        ('Legacy M2M (opcionalno)', {
+            'classes': ('collapse',),
+            'fields': ('bundle_artikli',),
+            'description': 'Stari način (bez količine). Preferiraj inline stavke.',
+        }),
+    )
+    _FS_QTY = (
+        ('Artikal', {
+            'fields': ('artikal',),
+            'description': 'Artikal na koji važi količinski popust.',
         }),
         ('Kupi više — količina i popust', {
             'fields': (
@@ -863,22 +880,18 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'qty_6_popust',
             ),
             'description': (
-                'Samo za tip „Kupi više”. '
-                'Upiši npr. 10 pored „Kupi 2 komada” (= -10% za 2 kom), '
-                '20 pored „Kupi 3 komada” (= -20% za 3 kom). '
-                'Prazno polje = ta opcija se ne nudi.'
+                'Npr. 10 pored „Kupi 2 komada” (= -10% za 2 kom). '
+                'Prazno = ta opcija se ne nudi.'
             ),
         }),
-        ('Pop-up ponašanje', {
+        ('Prikaz', {
             'fields': (
-                'popup_delay_seconds', 'za_prijavljene', 'za_neprijavljene',
-                'ponovo_poslije_dana',
-            ),
-            'description': (
-                'Kašnjenje i publika — za bundle i „Kupi više”. '
-                '+ Ponuda se prikazuje odmah na „Dodaj u korpu” (nema kašnjenja).'
+                'tekst_dugmeta', 'boja_dugmeta', 'boja_opisa',
+                'za_prijavljene', 'za_neprijavljene', 'ponovo_poslije_dana',
             ),
         }),
+    )
+    _FS_AI = (
         ('AI prodaja (popup)', {
             'fields': (
                 'browse_interest_popup_aktivan',
@@ -896,8 +909,8 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'product_dwell_sale_pulse',
             ),
             'description': (
-                'Dok je uključeno: sniženje na pretrazi/katalogu (bez tajmera). '
-                'Na product page: snizena + tajmer. Artikli u tabeli ispod.'
+                'Sniženje na katalogu + na product page snizena i tajmer. '
+                'Artikli u tabeli ispod.'
             ),
         }),
         ('AI dwell — tekstovi', {
@@ -906,7 +919,6 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'product_dwell_timer_label',
                 'product_dwell_catalog_label',
             ),
-            'description': 'Tekstovi na deal boxu (detalj) i opcionalna labela na karticama.',
         }),
         ('AI dwell — boje (product page)', {
             'fields': (
@@ -925,7 +937,6 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'product_dwell_boja_badge_bg',
                 'product_dwell_boja_badge_tekst',
             ),
-            'description': 'Hex boje (#RRGGBB). Color picker. Nova cijena = pulsirajuća boja.',
         }),
         ('AI dwell — boje (katalog / pretraga)', {
             'fields': (
@@ -939,12 +950,58 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'product_dwell_boja_kartica_label',
             ),
         }),
-        ('Legacy M2M (opcionalno)', {
-            'classes': ('collapse',),
-            'fields': ('bundle_artikli',),
-            'description': 'Stari način (bez količine). Preferiraj inline stavke iznad.',
-        }),
     )
+
+    # Svi fieldseti u DOM-u (JS pri promjeni tipa prikaže samo relevantne).
+    # get_fieldsets sužava pri uređivanju poznatog tipa da AI dwell ne treperi.
+    fieldsets = _FS_BASE + _FS_PONUDA + _FS_BUNDLE + _FS_QTY + _FS_AI
+
+    def _resolve_akcija_tip(self, request, obj=None):
+        if request is not None and request.method == 'POST':
+            tip = (request.POST.get('tip') or '').strip()
+            if tip:
+                return tip
+        if obj is not None and getattr(obj, 'tip', None):
+            return obj.tip
+        return None
+
+    def get_fieldsets(self, request, obj=None):
+        """
+        Pri uređivanju postojećeg reda: samo fieldseti za taj tip
+        (npr. + Ponuda ne dobije AI dwell polja u HTML-u).
+        Pri dodavanju / promjeni tipa na formi: svi fieldseti + JS filter.
+        """
+        tip = self._resolve_akcija_tip(request, obj)
+        # POST mora imati sva polja koja tip može tražiti (validacija)
+        if request is not None and request.method == 'POST':
+            return self.fieldsets
+        if tip == Akcija.Tip.PONUDA:
+            return self._FS_BASE + self._FS_PONUDA
+        if tip == Akcija.Tip.BUNDLE:
+            return self._FS_BASE + self._FS_BUNDLE
+        if tip == Akcija.Tip.QTY_DEAL:
+            return self._FS_BASE + self._FS_QTY
+        if tip == Akcija.Tip.AI_PRODAJA:
+            return self._FS_BASE + self._FS_AI
+        # Novi unos: sve u DOM-u, JS sakrije po odabranom tipu
+        return self.fieldsets
+
+    def get_inline_instances(self, request, obj=None):
+        from .models import SiteSettings
+
+        tip = self._resolve_akcija_tip(request, obj)
+        # POST / add: oba inline-a u DOM-u (JS sakrije)
+        if obj is None or (request is not None and request.method == 'POST'):
+            return [
+                AkcijaBundleLineInline(self.model, self.admin_site),
+                ProductDwellItemAkcijaInline(SiteSettings, self.admin_site),
+            ]
+        if tip == Akcija.Tip.BUNDLE:
+            return [AkcijaBundleLineInline(self.model, self.admin_site)]
+        if tip == Akcija.Tip.AI_PRODAJA:
+            return [ProductDwellItemAkcijaInline(SiteSettings, self.admin_site)]
+        # + Ponuda / Kupi više: bez inline tabela
+        return []
 
     def _ensure_ai_prodaja_akcija(self):
         """Jedan red u listi Akcije za AI prodaja / AI dwell."""

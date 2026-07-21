@@ -1,5 +1,21 @@
 /* opremazaribolov.ba — modern Django admin theme */
 
+/* Akcija admin: sakrij sekcije/polja koja ne pripadaju odabranom tipu */
+.akcija-section-hidden,
+form .form-row.akcija-section-hidden,
+form fieldset.akcija-section-hidden,
+form .inline-group.akcija-section-hidden,
+form .js-inline-admin-formset.akcija-section-hidden,
+form .module.akcija-section-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
 :root {
     --ozr-green: #5BB805;
     --ozr-green-dark: #4a9a04;

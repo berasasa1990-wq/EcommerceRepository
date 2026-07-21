@@ -6,15 +6,16 @@
     var PONUDA_TIP = 'ponuda';
     var AI_PRODAJA_TIP = 'ai_prodaja';
 
-    // Dozvoljena polja za Pop-up bundle
-    var BUNDLE_ALWAYS = {
+    /** Polja dozvoljena po tipu (sve ostalo se sakriva). */
+    var FIELDS_BY_TIP = {};
+    FIELDS_BY_TIP[BUNDLE_TIP] = {
         naziv: 1,
         tip: 1,
         aktivan: 1,
         redoslijed: 1,
-        bundle_artikli: 1,
         popust_postotak: 1,
         bundle_trigger: 1,
+        // artikal / kategorija ovisno o triggeru
         tekst_dugmeta: 1,
         boja_dugmeta: 1,
         boja_opisa: 1,
@@ -23,21 +24,7 @@
         za_neprijavljene: 1,
         ponovo_poslije_dana: 1,
     };
-
-    var BUNDLE_FORBIDDEN = [
-        'slika',
-        'preview_slika',
-        'gratis_artikal',
-        'gratis_popup',
-        'prag_korpe_km',
-        'deal_vrsta',
-        'pocetak',
-        'trajanje_sati',
-        'link_dugmeta',
-    ];
-
-    // Kupi više (količinski %): artikal + polja 2/3/4/5/6 kom → %
-    var QTY_DEAL_FIELDS = {
+    FIELDS_BY_TIP[QTY_DEAL_TIP] = {
         naziv: 1,
         tip: 1,
         aktivan: 1,
@@ -55,26 +42,54 @@
         za_neprijavljene: 1,
         ponovo_poslije_dana: 1,
     };
-
-    // + Ponuda: samo trigger + opcionalni % + ponuda artikal
-    var PONUDA_FIELDS = {
+    FIELDS_BY_TIP[PONUDA_TIP] = {
         naziv: 1,
         tip: 1,
         aktivan: 1,
         redoslijed: 1,
         artikal: 1,
-        gratis_artikal: 1,
         popust_postotak: 1,
+        gratis_artikal: 1,
     };
-
-    // Osnovna + sva AI polja (kao stari zasebni meni)
-    var AI_BASE = {
+    FIELDS_BY_TIP[AI_PRODAJA_TIP] = {
         naziv: 1,
         tip: 1,
         aktivan: 1,
         redoslijed: 1,
+        browse_interest_popup_aktivan: 1,
+        browse_interest_popust: 1,
+        product_dwell_popup_aktivan: 1,
+        product_dwell_popust: 1,
+        product_dwell_flash_seconds: 1,
+        product_dwell_sale_pulse: 1,
+        product_dwell_tag_text: 1,
+        product_dwell_timer_label: 1,
+        product_dwell_catalog_label: 1,
+        product_dwell_boja_box: 1,
+        product_dwell_boja_box2: 1,
+        product_dwell_boja_border: 1,
+        product_dwell_boja_accent: 1,
+        product_dwell_boja_tag_tekst: 1,
+        product_dwell_boja_tag_bg: 1,
+        product_dwell_boja_timer_label: 1,
+        product_dwell_boja_timer_bg: 1,
+        product_dwell_boja_timer_tekst: 1,
+        product_dwell_boja_stara_cijena: 1,
+        product_dwell_boja_nova_cijena: 1,
+        product_dwell_boja_nova_cijena_pulse: 1,
+        product_dwell_boja_badge_bg: 1,
+        product_dwell_boja_badge_tekst: 1,
+        product_dwell_boja_kartica_bg: 1,
+        product_dwell_boja_kartica_bg2: 1,
+        product_dwell_boja_kartica_border: 1,
+        product_dwell_boja_kartica_stara: 1,
+        product_dwell_boja_kartica_nova: 1,
+        product_dwell_boja_kartica_badge_bg: 1,
+        product_dwell_boja_kartica_badge_tekst: 1,
+        product_dwell_boja_kartica_label: 1,
     };
-    var AI_FIELDS = {
+
+    var AI_FIELD = {
         browse_interest_popup_aktivan: 1,
         browse_interest_popust: 1,
         product_dwell_popup_aktivan: 1,
@@ -123,323 +138,217 @@
         }
         var cls = (($row.attr('class') || '') + ' ' + ($el.attr('class') || '')).toString();
         var m = cls.match(/(?:^|\s)field-([a-z0-9_]+)(?:\s|$)/i);
-        return m ? m[1] : '';
+        if (m) {
+            return m[1];
+        }
+        // Fallback: id inputa id_FIELD
+        var $input = $row.find('[id^="id_"]').first();
+        if ($input.length) {
+            var id = $input.attr('id') || '';
+            if (id.indexOf('id_') === 0) {
+                return id.slice(3).split('-')[0];
+            }
+        }
+        return '';
     }
 
-    function setVisible($el, show) {
+    function setHidden($el, hide) {
         if (!$el || !$el.length) {
             return;
         }
-        if (show) {
-            $el.show().css('display', '');
-            $el.removeClass('akcija-field-hidden');
+        if (hide) {
+            $el.addClass('akcija-section-hidden').attr('hidden', 'hidden');
+            $el.css('display', 'none');
         } else {
-            $el.hide().css('display', 'none');
-            $el.addClass('akcija-field-hidden');
+            $el.removeClass('akcija-section-hidden').removeAttr('hidden');
+            $el.css('display', '');
         }
     }
 
-    function hideField(name) {
-        setVisible($('.form-row.field-' + name + ', .field-' + name), false);
-    }
-
-    function showField(name) {
-        setVisible($('.form-row.field-' + name + ', .field-' + name), true);
-    }
-
-    function bundleAllows(name, trigger) {
-        if (!name) {
-            return false;
-        }
-        if (BUNDLE_FORBIDDEN.indexOf(name) !== -1) {
-            return false;
-        }
-        if (BUNDLE_ALWAYS[name]) {
-            return true;
-        }
-        if (name === 'artikal') {
-            return trigger === 'trigger_product';
-        }
-        if (name === 'kategorija') {
-            return trigger === 'category';
-        }
-        return false;
-    }
-
-    function findInline(substr, className) {
-        var $g = $();
-        if (className) {
-            $g = $('.inline-group.' + className + ', .inline-group .' + className).closest('.inline-group');
-            if (!$g.length) {
-                $g = $('.' + className).closest('.inline-group, .js-inline-admin-formset');
-            }
-            if (!$g.length) {
-                $g = $('.' + className);
-            }
-        }
-        if (!$g.length) {
-            $g = $('.inline-group').filter(function () {
-                var id = (this.id || '') + ' ' + ($(this).attr('class') || '');
-                return id.toLowerCase().indexOf(substr) !== -1;
-            });
-        }
-        if (!$g.length) {
-            $g = $('.inline-group[id*="' + substr + '"]');
-        }
-        return $g;
-    }
-
-    function fieldsetByHeading(needles) {
-        return $('fieldset').filter(function () {
-            var t = ($(this).find('h2, .fieldset-heading, legend').first().text() || '').toLowerCase();
-            for (var i = 0; i < needles.length; i++) {
-                if (t.indexOf(needles[i]) !== -1) {
-                    return true;
-                }
-            }
-            return false;
+    function allowedFieldsForTip(tip) {
+        var base = $.extend({}, FIELDS_BY_TIP[tip] || {
+            naziv: 1,
+            tip: 1,
+            aktivan: 1,
+            redoslijed: 1,
         });
+        if (tip === BUNDLE_TIP) {
+            var tr = triggerVal();
+            if (tr === 'trigger_product') {
+                base.artikal = 1;
+            }
+            if (tr === 'category') {
+                base.kategorija = 1;
+            }
+        }
+        return base;
+    }
+
+    function formRoot() {
+        return $('#akcija_form, form#akcija_form, #content-main form').first();
+    }
+
+    function allFormRows() {
+        return formRoot().find('.form-row');
+    }
+
+    function allFieldsets() {
+        return formRoot().find('fieldset');
+    }
+
+    function allInlines() {
+        // Django tabular/stacked + custom wrappers
+        return formRoot().find(
+            '.inline-group, .js-inline-admin-formset, ' +
+            '[id*="bundle_line"], [id*="dwell"], [id*="productdwell"], [id*="qty_tier"]'
+        ).filter(function () {
+            // samo top-level grupe
+            return $(this).closest('.inline-group').length === 0 || $(this).hasClass('inline-group') || $(this).hasClass('js-inline-admin-formset');
+        });
+    }
+
+    function isBundleInline($el) {
+        var s = (($el.attr('id') || '') + ' ' + ($el.attr('class') || '') + ' ' + $el.text().slice(0, 200)).toLowerCase();
+        return s.indexOf('bundle') !== -1 || s.indexOf('stavk') !== -1;
+    }
+
+    function isDwellInline($el) {
+        var s = (($el.attr('id') || '') + ' ' + ($el.attr('class') || '') + ' ' + $el.find('h2, h3, caption').first().text()).toLowerCase();
+        return (
+            s.indexOf('dwell') !== -1 ||
+            s.indexOf('ai dwell') !== -1 ||
+            s.indexOf('productdwell') !== -1 ||
+            s.indexOf('dwell artikal') !== -1
+        );
+    }
+
+    function isQtyInline($el) {
+        var s = (($el.attr('id') || '') + ' ' + ($el.attr('class') || '')).toLowerCase();
+        return s.indexOf('qty') !== -1 || s.indexOf('tier') !== -1;
     }
 
     function toggleAkcijaFields() {
         var tip = tipVal();
+        var allowed = allowedFieldsForTip(tip);
         var isBundle = tip === BUNDLE_TIP;
-        var isQtyDeal = tip === QTY_DEAL_TIP;
+        var isQty = tip === QTY_DEAL_TIP;
         var isPonuda = tip === PONUDA_TIP;
         var isAi = tip === AI_PRODAJA_TIP;
-        var trigger = triggerVal();
 
-        $('#content-main .form-row, #akcija_form .form-row, form .aligned .form-row').each(
-            function () {
-                var $row = $(this);
-                var name = rowFieldName($row);
-                if (!name) {
+        // 1) Polja — samo dozvoljena
+        allFormRows().each(function () {
+            var $row = $(this);
+            var name = rowFieldName($row);
+            if (!name) {
+                return;
+            }
+            // Nikad AI polja van AI tipa
+            if (!isAi && AI_FIELD[name]) {
+                setHidden($row, true);
+                return;
+            }
+            setHidden($row, !allowed[name]);
+        });
+
+        // 2) Fieldseti — sakrij ako nema nijednog dozvoljenog polja
+        allFieldsets().each(function () {
+            var $fs = $(this);
+            var anyAllowed = false;
+            var anyAi = false;
+            $fs.find('.form-row').each(function () {
+                var n = rowFieldName($(this));
+                if (!n) {
                     return;
                 }
-
-                if (isBundle) {
-                    // Sakrij AI polja u bundle modu
-                    if (AI_FIELDS[name]) {
-                        setVisible($row, false);
-                        return;
-                    }
-                    setVisible($row, bundleAllows(name, trigger));
-                    return;
+                if (AI_FIELD[n]) {
+                    anyAi = true;
                 }
-
-                if (isQtyDeal) {
-                    if (AI_FIELDS[name]) {
-                        setVisible($row, false);
-                        return;
-                    }
-                    setVisible($row, !!QTY_DEAL_FIELDS[name]);
-                    return;
+                if (allowed[n]) {
+                    anyAllowed = true;
                 }
+            });
+            // Fieldset samo s AI poljima van AI moda → sakrij
+            if (!isAi && anyAi && !anyAllowed) {
+                setHidden($fs, true);
+                return;
+            }
+            // Prazan fieldset (sva polja sakrivena) → sakrij
+            setHidden($fs, !anyAllowed);
+        });
 
-                if (isPonuda) {
-                    if (AI_FIELDS[name]) {
-                        setVisible($row, false);
-                        return;
-                    }
-                    setVisible($row, !!PONUDA_FIELDS[name]);
-                    return;
-                }
-
-                if (isAi) {
-                    setVisible($row, !!(AI_BASE[name] || AI_FIELDS[name]));
-                    return;
-                }
-
-                // Nepoznat tip — samo osnovna
-                setVisible($row, name === 'naziv' || name === 'tip' || name === 'aktivan' || name === 'redoslijed');
-            },
-        );
-
-        var $bundleInline = findInline('bundle_line', 'akcija-inline-bundle-lines');
-        var $dwellInline = findInline('dwell', 'akcija-inline-dwell-items');
-        if (!$dwellInline.length) {
-            $dwellInline = findInline('productdwellitem', null);
+        // 3) Inline tabele
+        // Pronađi sve inline grupe u formi
+        var $inlines = formRoot().find('.inline-group, .js-inline-admin-formset');
+        if (!$inlines.length) {
+            $inlines = $('.inline-group, .js-inline-admin-formset');
         }
-        var $qtyInline = findInline('qty_tier', 'akcija-inline-qty-tiers');
-        $qtyInline.hide();
-
-        var $qtyFieldset = fieldsetByHeading(['kupi više', 'kolicina', 'količina']);
-        if (!$qtyFieldset.length) {
-            $qtyFieldset = $('.form-row.field-qty_2_popust').closest('fieldset');
-        }
-
-        var $aiFieldsets = fieldsetByHeading([
-            'ai prodaja',
-            'ai dwell',
-        ]);
-        // Nova sekcija „+ Ponuda — unesi ovo” (i stari „Sadržaj” fallback)
-        var $ponudaFieldset = fieldsetByHeading(['+ ponuda', 'ponuda — unesi', 'unesi ovo']);
-        if (!$ponudaFieldset.length) {
-            $ponudaFieldset = fieldsetByHeading(['sadržaj', 'sadrzaj']);
-        }
-        var $bundleExtraFieldset = fieldsetByHeading(['pop-up bundle', 'bundle — dodatno', 'bundle dodatno']);
-        var $popupFieldset = fieldsetByHeading(['pop-up ponašanje', 'popup ponašanje']);
-        var $legacyFieldset = fieldsetByHeading(['legacy']);
-
-        if (isBundle) {
-            BUNDLE_FORBIDDEN.forEach(hideField);
-            ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
-            Object.keys(AI_FIELDS).forEach(hideField);
-            hideField('gratis_artikal');
-            if (trigger === 'trigger_product') {
-                showField('artikal');
+        $inlines.each(function () {
+            var $g = $(this);
+            var show = false;
+            if (isBundle && isBundleInline($g)) {
+                show = true;
+            } else if (isAi && isDwellInline($g)) {
+                show = true;
+            } else if (isQty && isQtyInline($g)) {
+                show = true;
+            } else if (!isBundle && !isAi && !isQty) {
+                show = false;
             } else {
-                hideField('artikal');
+                // Nepoznat inline — sakrij van bundlea
+                show = false;
             }
-            if (trigger === 'category') {
-                showField('kategorija');
-            } else {
-                hideField('kategorija');
+            // + Ponuda i ostalo: nikad dwell
+            if (isPonuda || isQty) {
+                if (isDwellInline($g) || isBundleInline($g)) {
+                    show = false;
+                }
             }
-            hideField('bundle_artikli');
-            showField('bundle_trigger');
-            showField('popust_postotak');
-            showField('tekst_dugmeta');
-            showField('boja_dugmeta');
-            showField('boja_opisa');
-            showField('popup_delay_seconds');
-            showField('za_prijavljene');
-            showField('za_neprijavljene');
-            showField('ponovo_poslije_dana');
-            showField('naziv');
-            showField('tip');
-            showField('aktivan');
-            showField('redoslijed');
-            $bundleInline.show();
-            $dwellInline.hide();
-            $qtyFieldset.hide();
-            $aiFieldsets.hide();
-            $ponudaFieldset.show();
-            $bundleExtraFieldset.show();
-            $popupFieldset.show();
-            $legacyFieldset.hide();
-        } else if (isQtyDeal) {
-            hideField('bundle_artikli');
-            hideField('bundle_trigger');
-            hideField('popust_postotak');
-            hideField('gratis_artikal');
-            hideField('kategorija');
-            hideField('popup_delay_seconds');
-            Object.keys(AI_FIELDS).forEach(hideField);
-            showField('artikal');
-            showField('qty_2_popust');
-            showField('qty_3_popust');
-            showField('qty_4_popust');
-            showField('qty_5_popust');
-            showField('qty_6_popust');
-            showField('tekst_dugmeta');
-            showField('boja_dugmeta');
-            showField('boja_opisa');
-            showField('za_prijavljene');
-            showField('za_neprijavljene');
-            showField('ponovo_poslije_dana');
-            showField('naziv');
-            showField('tip');
-            showField('aktivan');
-            showField('redoslijed');
-            $bundleInline.hide();
-            $dwellInline.hide();
-            $qtyFieldset.show().css('display', '');
-            $qtyFieldset.find('.form-row').show();
-            $aiFieldsets.hide();
-            $ponudaFieldset.show();
-            $bundleExtraFieldset.hide();
-            $popupFieldset.show();
-            $legacyFieldset.hide();
-            if (!$qtyFieldset.data('qty-hinted')) {
-                $qtyFieldset.css('outline', '2px solid #5BB805');
-                window.setTimeout(function () {
-                    $qtyFieldset.css('outline', '');
-                }, 2500);
-                $qtyFieldset.data('qty-hinted', 1);
+            if (isBundle && isDwellInline($g)) {
+                show = false;
             }
-        } else if (isPonuda) {
-            // Samo: tip + 1) trigger  2) %  3) ponuda artikal
-            hideField('bundle_artikli');
-            hideField('bundle_trigger');
-            hideField('kategorija');
-            hideField('popup_delay_seconds');
-            hideField('tekst_dugmeta');
-            hideField('boja_dugmeta');
-            hideField('boja_opisa');
-            hideField('ponovo_poslije_dana');
-            hideField('za_prijavljene');
-            hideField('za_neprijavljene');
-            ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
-            Object.keys(AI_FIELDS).forEach(hideField);
-            showField('naziv');
-            showField('tip');
-            showField('aktivan');
-            showField('redoslijed');
-            showField('artikal');
-            showField('popust_postotak');
-            showField('gratis_artikal');
-            $bundleInline.hide();
-            $dwellInline.hide();
-            $qtyFieldset.hide();
-            $aiFieldsets.hide();
-            $ponudaFieldset.show().css('display', '');
-            $ponudaFieldset.find('.form-row').show().css('display', '');
-            $bundleExtraFieldset.hide();
-            $popupFieldset.hide();
-            $legacyFieldset.hide();
-            // Naglasi sekciju za unos
-            if (!$ponudaFieldset.data('ponuda-hinted')) {
-                $ponudaFieldset.css('outline', '2px solid #5BB805');
-                window.setTimeout(function () {
-                    $ponudaFieldset.css('outline', '');
-                }, 2500);
-                $ponudaFieldset.data('ponuda-hinted', 1);
+            if (isAi && (isBundleInline($g) || isQtyInline($g))) {
+                show = false;
             }
-        } else if (isAi) {
-            // Samo osnovna + AI opcije (sve što je bilo u starom meniju)
-            hideField('bundle_artikli');
-            hideField('bundle_trigger');
-            hideField('popust_postotak');
-            hideField('artikal');
-            hideField('gratis_artikal');
-            hideField('kategorija');
-            hideField('tekst_dugmeta');
-            hideField('boja_dugmeta');
-            hideField('boja_opisa');
-            hideField('popup_delay_seconds');
-            hideField('za_prijavljene');
-            hideField('za_neprijavljene');
-            hideField('ponovo_poslije_dana');
-            ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
+            setHidden($g, !show);
+        });
 
-            showField('naziv');
-            showField('tip');
-            showField('aktivan');
-            showField('redoslijed');
-            Object.keys(AI_FIELDS).forEach(showField);
-
-            $bundleInline.hide();
-            $dwellInline.show().css('display', '');
-            $qtyFieldset.hide();
-            $aiFieldsets.show().css('display', '');
-            $aiFieldsets.find('.form-row').show().css('display', '');
-            $ponudaFieldset.hide();
-            $bundleExtraFieldset.hide();
-            $popupFieldset.hide();
-            $legacyFieldset.hide();
-        } else {
-            hideField('bundle_artikli');
-            hideField('bundle_trigger');
-            hideField('gratis_artikal');
-            Object.keys(AI_FIELDS).forEach(hideField);
-            ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
-            $bundleInline.hide();
-            $dwellInline.hide();
-            $qtyFieldset.hide();
-            $aiFieldsets.hide();
-            $bundleExtraFieldset.hide();
+        // 4) Dodatno: sakrij bilo šta s "AI dwell" u naslovu van AI moda
+        if (!isAi) {
+            formRoot().find('fieldset, .module, .inline-group').each(function () {
+                var t = (
+                    $(this).find('h2, h3, .inline-heading, caption, legend').first().text() || ''
+                ).toLowerCase();
+                if (
+                    t.indexOf('ai dwell') !== -1 ||
+                    t.indexOf('ai prodaja') !== -1 ||
+                    t.indexOf('dwell') !== -1
+                ) {
+                    // Ne diraj + Ponuda sekciju koja spominje "AI dwell stil" u description
+                    var hasOnlyDesc =
+                        $(this).find('.form-row').length === 0 ||
+                        $(this).find('.form-row.field-product_dwell_popup_aktivan, .form-row.field-browse_interest_popup_aktivan').length > 0 ||
+                        isDwellInline($(this));
+                    if (hasOnlyDesc || t.indexOf('ai dwell') === 0 || t.indexOf('ai prodaja') === 0) {
+                        setHidden($(this), true);
+                    }
+                    if (t.indexOf('ai dwell') !== -1 && t.indexOf('unesi') === -1) {
+                        setHidden($(this), true);
+                    }
+                    if (t.indexOf('ai prodaja') !== -1) {
+                        setHidden($(this), true);
+                    }
+                }
+            });
         }
+
+        // 5) Osiguraj da su dozvoljena polja stvarno vidljiva (fieldset + row)
+        Object.keys(allowed).forEach(function (name) {
+            var $row = formRoot().find('.form-row.field-' + name + ', .field-' + name);
+            if ($row.length) {
+                setHidden($row, false);
+                setHidden($row.closest('fieldset'), false);
+            }
+        });
     }
 
     function bind() {
@@ -447,20 +356,22 @@
             return;
         }
         $(document)
-            .off('change.akcijaBundle', '#id_tip')
-            .on('change.akcijaBundle', '#id_tip', toggleAkcijaFields);
+            .off('change.akcijaTip', '#id_tip')
+            .on('change.akcijaTip', '#id_tip', toggleAkcijaFields);
         $(document)
-            .off('change.akcijaBundle', '#id_bundle_trigger')
-            .on('change.akcijaBundle', '#id_bundle_trigger', toggleAkcijaFields);
+            .off('change.akcijaTip', '#id_bundle_trigger')
+            .on('change.akcijaTip', '#id_bundle_trigger', toggleAkcijaFields);
 
         toggleAkcijaFields();
-        window.setTimeout(toggleAkcijaFields, 50);
-        window.setTimeout(toggleAkcijaFields, 300);
-        window.setTimeout(toggleAkcijaFields, 1000);
+        // Autocomplete / related widgets render late
+        [50, 150, 400, 800, 1500].forEach(function (ms) {
+            window.setTimeout(toggleAkcijaFields, ms);
+        });
     }
 
     $(bind);
     $(window).on('load', function () {
         window.setTimeout(toggleAkcijaFields, 50);
+        window.setTimeout(toggleAkcijaFields, 300);
     });
 })(django.jQuery || window.jQuery);
