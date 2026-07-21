@@ -391,6 +391,10 @@ class SiteSettings(models.Model):
         verbose_name='Badge na slici artikla',
         help_text='Prikazuje se u gornjem lijevom uglu slike na stranici artikla (npr. garancija). PNG s transparentnom pozadinom.',
     )
+    class NovitetiMod(models.TextChoices):
+        AUTO = 'auto', 'Automatski — zadnjih 10 unesenih'
+        MANUAL = 'manual', 'Ručno — odaberi do 10 artikala'
+
     naslov_novo = models.CharField(
         max_length=120, default='Novo', blank=True,
         verbose_name='Novo — naslov',
@@ -400,6 +404,16 @@ class SiteSettings(models.Model):
         max_length=200, default='Najnoviji artikli na sajtu', blank=True,
         verbose_name='Novo — podnaslov',
         help_text='Ostavite prazno da se podnaslov ne prikazuje.',
+    )
+    noviteti_mod = models.CharField(
+        max_length=10,
+        choices=NovitetiMod.choices,
+        default=NovitetiMod.AUTO,
+        verbose_name='Noviteti — način prikaza',
+        help_text=(
+            'Automatski: zadnjih 10 unesenih artikala. '
+            'Ručno: artikli koje unesete u tabeli „Noviteti na početnoj” ispod (do 10).'
+        ),
     )
     naslov_izdvojeno = models.CharField(
         max_length=120, default='Izdvojeno', blank=True,
@@ -434,6 +448,55 @@ class SiteSettings(models.Model):
         max_length=120, blank=True,
         verbose_name='Facebook Messenger',
         help_text='Korisničko ime Facebook stranice za Messenger, npr. opremazaribolov.ba',
+    )
+    # —— Kontakt dugmad (plutajuća) — koje prikazati + boje ——
+    kontakt_prikazi_whatsapp = models.BooleanField(
+        default=True,
+        verbose_name='Prikaži WhatsApp dugme',
+    )
+    kontakt_prikazi_viber = models.BooleanField(
+        default=True,
+        verbose_name='Prikaži Viber dugme',
+    )
+    kontakt_prikazi_messenger = models.BooleanField(
+        default=True,
+        verbose_name='Prikaži Messenger dugme',
+    )
+    kontakt_boja_whatsapp = models.CharField(
+        max_length=7, default='#25d366', blank=True,
+        verbose_name='Boja WhatsApp dugmeta',
+        help_text='Hex npr. #25d366',
+    )
+    kontakt_boja_viber = models.CharField(
+        max_length=7, default='#665cac', blank=True,
+        verbose_name='Boja Viber dugmeta',
+        help_text='Hex npr. #665cac',
+    )
+    kontakt_boja_messenger = models.CharField(
+        max_length=7, default='#0084ff', blank=True,
+        verbose_name='Boja Messenger dugmeta',
+        help_text='Hex npr. #0084ff',
+    )
+    # —— Glavna CTA dugmad (boje) ——
+    boja_dugme_korpa = models.CharField(
+        max_length=7, default='#5BB805', blank=True,
+        verbose_name='Boja „Dodaj u korpu” (kartice)',
+        help_text='Zelena na karticama artikala. Hex npr. #5BB805',
+    )
+    boja_dugme_korpa_hover = models.CharField(
+        max_length=7, default='#4fa104', blank=True,
+        verbose_name='Boja „Dodaj u korpu” hover',
+        help_text='Boja na prelazak miša. Hex npr. #4fa104',
+    )
+    boja_dugme_banner = models.CharField(
+        max_length=7, default='#ff9500', blank=True,
+        verbose_name='Boja dugmadi na bannerima',
+        help_text='CTA na hero/grid/featured bannerima. Hex npr. #ff9500',
+    )
+    boja_dugme_banner_hover = models.CharField(
+        max_length=7, default='#e68600', blank=True,
+        verbose_name='Boja banner dugmadi hover',
+        help_text='Hex npr. #e68600',
     )
 
     class Meta:
@@ -482,6 +545,34 @@ class SiteSettings(models.Model):
         if re.fullmatch(r'#[0-9A-Fa-f]{6}', v) or re.fullmatch(r'#[0-9A-Fa-f]{3}', v):
             return v
         return default
+
+    def get_theme_ui(self):
+        """
+        Boje dugmadi (korpa, banneri, kontakt) kao CSS varijable za :root.
+        """
+        hx = self._dwell_hex
+        cart = hx(self.boja_dugme_korpa, '#5BB805')
+        cart_hover = hx(self.boja_dugme_korpa_hover, '#4fa104')
+        banner = hx(self.boja_dugme_banner, '#ff9500')
+        banner_hover = hx(self.boja_dugme_banner_hover, '#e68600')
+        wa = hx(self.kontakt_boja_whatsapp, '#25d366')
+        viber = hx(self.kontakt_boja_viber, '#665cac')
+        msg = hx(self.kontakt_boja_messenger, '#0084ff')
+        css_vars = (
+            f'--btn-cart:{cart};'
+            f'--btn-cart-hover:{cart_hover};'
+            f'--btn-banner:{banner};'
+            f'--btn-banner-hover:{banner_hover};'
+            f'--contact-whatsapp:{wa};'
+            f'--contact-viber:{viber};'
+            f'--contact-messenger:{msg};'
+        )
+        return {
+            'css_vars': css_vars,
+            'kontakt_prikazi_whatsapp': bool(self.kontakt_prikazi_whatsapp),
+            'kontakt_prikazi_viber': bool(self.kontakt_prikazi_viber),
+            'kontakt_prikazi_messenger': bool(self.kontakt_prikazi_messenger),
+        }
 
     def get_dwell_ui(self):
         """
@@ -934,6 +1025,34 @@ class HomeFeaturedProduct(models.Model):
         return self.artikal.naziv
 
 
+class HomeNovoProduct(models.Model):
+    """Ručno odabrani noviteti na početnoj (kad je noviteti_mod = manual)."""
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='noviteti_artikli',
+        default=1,
+        editable=False,
+    )
+    artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='noviteti_na_pocetnoj',
+        verbose_name='Postojeći artikal',
+        limit_choices_to={'aktivan': True},
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Novitet (početna)'
+        verbose_name_plural = 'Noviteti na početnoj (ručno)'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return self.artikal.naziv
+
+
 class HomeCategoryShowcase(models.Model):
     postavke = models.ForeignKey(
         SiteSettings,
@@ -1020,6 +1139,7 @@ class Akcija(models.Model):
         # Aktivni tipovi (admin)
         BUNDLE = 'bundle', 'Pop-up bundle'
         QTY_DEAL = 'qty_deal', 'Kupi više (količinski %)'
+        PONUDA = 'ponuda', '+ Ponuda'
         AI_PRODAJA = 'ai_prodaja', 'AI prodaja / AI dwell'
         # Zastarjeli (zadržani zbog postojećih redova; više se ne nude)
         SLIKA = 'slika', 'Pop-up + slika (zastarjelo)'
@@ -1030,9 +1150,11 @@ class Akcija(models.Model):
         GRATIS = 'gratis', '+ Gratis (zastarjelo)'
 
     # Tipovi u listi Akcije (admin)
-    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.AI_PRODAJA)
-    # Samo ovi idu u popup queue na sajtu
+    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AI_PRODAJA)
+    # Samo ovi idu u popup queue na sajtu (site_popup kašnjenje)
     POPUP_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL)
+    # Add-to-cart cross-sell (modal DA/NE)
+    CART_OFFER_TIPS = (Tip.PONUDA, Tip.GRATIS)
 
     class BundleTrigger(models.TextChoices):
         DELAY = 'delay', 'Nakon kašnjenja (bilo gdje na sajtu)'
@@ -1066,7 +1188,7 @@ class Akcija(models.Model):
         related_name='akcije',
         verbose_name='Artikal',
         help_text=(
-            'Aktivan artikal (tajmer, uslov, X+1, korpa nudjenje, + Gratis trigger). '
+            'Trigger artikal: kad ga kupac doda u korpu (za + Ponuda). '
             'Za Pop-up bundle: samo ako je trigger „odabrani trigger artikal”. '
             'Za „Kupi više”: artikal na koji važi količinski popust.'
         ),
@@ -1077,8 +1199,11 @@ class Akcija(models.Model):
         blank=True,
         null=True,
         related_name='akcije_gratis',
-        verbose_name='Gratis artikal',
-        help_text='Za + Gratis: drugi artikal s popustom (%).',
+        verbose_name='Ponuda artikal',
+        help_text=(
+            'Za + Ponuda: artikal koji se nudi u popup-u nakon dodavanja trigger artikla. '
+            'Ako uneseš Popust (%), nudi se sa sniženjem; prazno = regularna cijena.'
+        ),
     )
     bundle_artikli = models.ManyToManyField(
         'Product',
@@ -1121,6 +1246,7 @@ class Akcija(models.Model):
         help_text=(
             'Pop-up bundle: % na cijeli set (ako linija nema svoj %). '
             'Za % samo na jedan artikal — unesi „Popust % (samo ovaj artikal)” na bundle stavci. '
+            'Za + Ponuda: opcionalno — % snizenja na ponuđeni artikal; prazno = regularna cijena. '
             'Za „Kupi više”: opcionalno — % po količini unosi se na tier linijama (2, 3…).'
         ),
     )
@@ -1473,6 +1599,9 @@ class Akcija(models.Model):
     def prikazi_korisniku(self, user, request=None):
         if not self.jos_traje():
             return False
+        if self.tip == self.Tip.PONUDA:
+            # + Ponuda nije site popup queue — modal na dodaj u korpu
+            return False
         if self.tip == self.Tip.GRATIS:
             if not self.gratis_popup:
                 return False
@@ -1544,9 +1673,9 @@ class Akcija(models.Model):
         return _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
 
     def gratis_snizena_cijena(self, product, variation=None):
-        """Snižena cijena za + Gratis (% od trenutne prikazne cijene drugog artikla)."""
+        """Snižena cijena za + Ponuda / + Gratis (% na ponuđeni artikal)."""
         if (
-            self.tip != self.Tip.GRATIS
+            self.tip not in (self.Tip.PONUDA, self.Tip.GRATIS)
             or self.popust_postotak is None
             or not self.jos_traje()
             or not self.gratis_artikal_id
@@ -1557,13 +1686,19 @@ class Akcija(models.Model):
         return _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
 
     def gratis_cijene_za_prikaz(self):
-        """Originalna i snižena cijena gratis artikla za pop-up."""
-        if self.tip != self.Tip.GRATIS or not self.gratis_artikal_id or self.popust_postotak is None:
+        """Originalna i (opcionalno) snižena cijena ponuđenog artikla za pop-up."""
+        if self.tip not in (self.Tip.PONUDA, self.Tip.GRATIS) or not self.gratis_artikal_id:
             return None
         artikal = self.gratis_artikal
         if artikal is None:
             return None
         bazna = artikal.prikazna_cijena
+        if self.popust_postotak is None:
+            return {
+                'bazna': bazna,
+                'snizena': bazna,
+                'pct': None,
+            }
         snizena = _izracunaj_akcijsku_od_postotka(bazna, self.popust_postotak)
         if snizena is None:
             return None

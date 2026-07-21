@@ -53,6 +53,7 @@ from .models import (
     Coupon,
     HomeCategoryShowcase,
     HomeFeaturedProduct,
+    HomeNovoProduct,
     HomeVlog,
     LoyaltyCard,
     Order,
@@ -186,6 +187,27 @@ class HomeFeaturedProductInline(admin.TabularInline):
         return formset
 
 
+class HomeNovoProductInline(admin.TabularInline):
+    model = HomeNovoProduct
+    fk_name = 'postavke'
+    extra = 0
+    max_num = 10
+    autocomplete_fields = ('artikal',)
+    fields = ('artikal', 'redoslijed', 'aktivan')
+    verbose_name = 'Novitet'
+    verbose_name_plural = (
+        'Noviteti na početnoj — ručni odabir (do 10). '
+        'Koristi se samo kad je način prikaza „Ručno”.'
+    )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.base_fields['artikal'].help_text = (
+            'Pretražite i odaberite postojeći artikal. Redoslijed = red u karuselu.'
+        )
+        return formset
+
+
 class HomeCategoryShowcaseInline(admin.TabularInline):
     model = HomeCategoryShowcase
     fk_name = 'postavke'
@@ -211,7 +233,7 @@ class HomeCategoryShowcaseInline(admin.TabularInline):
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     readonly_fields = ('pregled_loga', 'pregled_favicona', 'pregled_badgea')
-    inlines = [HomeFeaturedProductInline, HomeCategoryShowcaseInline]
+    inlines = [HomeNovoProductInline, HomeFeaturedProductInline, HomeCategoryShowcaseInline]
     fieldsets = (
         ('Logo i ikona', {
             'fields': ('logo', 'pregled_loga', 'favicon', 'pregled_favicona'),
@@ -220,6 +242,31 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         ('Kontakt', {
             'fields': ('kontakt_telefon', 'kontakt_messenger'),
             'description': 'Telefon za WhatsApp/Viber i Facebook stranica za Messenger u donjem desnom uglu.',
+        }),
+        ('Kontakt dugmad (plutajuća)', {
+            'fields': (
+                'kontakt_prikazi_whatsapp',
+                'kontakt_prikazi_viber',
+                'kontakt_prikazi_messenger',
+                'kontakt_boja_whatsapp',
+                'kontakt_boja_viber',
+                'kontakt_boja_messenger',
+            ),
+            'description': (
+                'Odaberite koja dugmad se prikazuju u donjem desnom uglu i njihove boje (hex). '
+                'WhatsApp/Viber trebaju telefon; Messenger treba Facebook stranicu.'
+            ),
+        }),
+        ('Boje dugmadi na sajtu', {
+            'fields': (
+                'boja_dugme_korpa',
+                'boja_dugme_korpa_hover',
+                'boja_dugme_banner',
+                'boja_dugme_banner_hover',
+            ),
+            'description': (
+                'Boje glavnih CTA dugmadi: „Dodaj u korpu” na karticama artikala i dugmad na bannerima.'
+            ),
         }),
         ('Dostava', {
             'fields': ('dostava_naziv', 'dostava_cijena', 'besplatna_dostava_od'),
@@ -273,15 +320,16 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'description': 'Naslov i opis za Google pretragu i kad se link dijeli (Facebook, WhatsApp, itd.). '
                            'Og image treba biti široka slika (preporučeno 1200×630 px).',
         }),
-        ('Početna stranica — tekstovi', {
+        ('Početna stranica — tekstovi i noviteti', {
             'fields': (
-                'naslov_novo', 'podnaslov_novo',
+                'naslov_novo', 'podnaslov_novo', 'noviteti_mod',
                 'naslov_izdvojeno', 'podnaslov_izdvojeno',
                 'naslov_blog',
             ),
             'description': (
                 'Naslovi sekcija Novo, Izdvojeno i Blog. Prazno polje = naslov se ne prikazuje. '
-                'Na mobilnom se naslovi Novo/Izdvojeno ne prikazuju. Kategorije 2×2 dodajte u inline ispod.'
+                'Noviteti: Automatski = zadnjih 10 unesenih artikala; Ručno = unesite do 10 u tabeli ispod. '
+                'Izdvojeni artikli se uvijek biraju ručno u tabeli „Istaknuti”.'
             ),
         }),
         ('Stranica artikla — povezani artikli', {
@@ -746,13 +794,15 @@ class AdvisorBeginnerSetAdmin(admin.ModelAdmin):
 class AkcijaAdmin(admin.ModelAdmin):
     form = AkcijaAdminForm
     list_display = (
-        'naziv', 'tip', 'artikal', 'popust_postotak',
+        'naziv', 'tip', 'artikal', 'gratis_artikal', 'popust_postotak',
         'bundle_trigger', 'aktivan', 'redoslijed',
     )
     list_filter = ('tip', 'aktivan', 'bundle_trigger')
     list_editable = ('aktivan', 'redoslijed')
-    search_fields = ('naziv', 'artikal__naziv', 'kategorija__naziv')
-    autocomplete_fields = ('artikal', 'kategorija')
+    search_fields = (
+        'naziv', 'artikal__naziv', 'gratis_artikal__naziv', 'kategorija__naziv',
+    )
+    autocomplete_fields = ('artikal', 'gratis_artikal', 'kategorija')
     filter_horizontal = ('bundle_artikli',)
     # Bundle inline; AI dwell artikli se dodaju u get_inline_instances
     # (ProductDwellItem.FK je SiteSettings, ne Akcija — nije u inlines zbog admin.E202)
@@ -774,8 +824,8 @@ class AkcijaAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
-                'Tri tipa: „Pop-up bundle”, „Kupi više (količinski %)” i '
-                '„AI prodaja / AI dwell” — kad izabereš AI, pojave se sve AI opcije ispod.'
+                'Tipovi: „Pop-up bundle”, „Kupi više”, „+ Ponuda” '
+                '(popup DA/NE kad se trigger doda u korpu) i „AI prodaja / AI dwell”.'
             ),
         }),
         ('Sadržaj', {
@@ -783,10 +833,16 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'bundle_trigger',
                 'popust_postotak',
                 'artikal',
+                'gratis_artikal',
                 'kategorija',
                 'tekst_dugmeta',
                 'boja_dugmeta',
                 'boja_opisa',
+            ),
+            'description': (
+                'Za + Ponuda: Artikal = trigger (dodaj u korpu), '
+                'Ponuda artikal = što se nudi u popup-u, '
+                'Popust (%) opcionalan (prazno = regularna cijena).'
             ),
         }),
         ('Kupi više — količina i popust', {
@@ -810,7 +866,8 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'ponovo_poslije_dana',
             ),
             'description': (
-                'Kašnjenje i publika. Za „Kupi više” popup se najbolje vidi na stranici artikla.'
+                'Kašnjenje i publika (bundle / kupi više). '
+                'Za + Ponuda modal se prikazuje odmah na „Dodaj u korpu”.'
             ),
         }),
         ('AI prodaja (popup)', {
@@ -916,6 +973,7 @@ class AkcijaAdmin(admin.ModelAdmin):
             kwargs['choices'] = [
                 (Akcija.Tip.BUNDLE, Akcija.Tip.BUNDLE.label),
                 (Akcija.Tip.QTY_DEAL, Akcija.Tip.QTY_DEAL.label),
+                (Akcija.Tip.PONUDA, Akcija.Tip.PONUDA.label),
                 (Akcija.Tip.AI_PRODAJA, Akcija.Tip.AI_PRODAJA.label),
             ]
         return super().formfield_for_choice_field(db_field, request, **kwargs)
@@ -1011,6 +1069,13 @@ class AkcijaAdmin(admin.ModelAdmin):
                 django_messages.warning(
                     request,
                     '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).',
+                )
+        elif obj.tip == Akcija.Tip.PONUDA:
+            if not obj.artikal_id or not obj.gratis_artikal_id:
+                from django.contrib import messages as django_messages
+                django_messages.warning(
+                    request,
+                    '+ Ponuda treba trigger artikal i ponuda artikal.',
                 )
 
     def change_view(self, request, object_id, form_url='', extra_context=None):

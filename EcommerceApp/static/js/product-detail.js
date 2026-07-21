@@ -142,10 +142,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (gratisTitle) gratisTitle.textContent = offer.gratis_naziv;
         if (gratisText) {
-            const pctHtml = offer.is_full_discount
-                ? '<strong class="gratis-offer-pct">GRATIS</strong>'
-                : `<strong class="gratis-offer-pct">-${offer.pct}%</strong>`;
-            gratisText.innerHTML = `Želite li ovaj artikal po <strong>AKCIJSKOJ</strong> cijeni ${pctHtml}?`;
+            if (offer.has_discount) {
+                const pctHtml = offer.is_full_discount
+                    ? '<strong class="gratis-offer-pct">GRATIS</strong>'
+                    : `<strong class="gratis-offer-pct">-${offer.pct}%</strong>`;
+                gratisText.innerHTML =
+                    `Želite li uz ovaj artikal i ovo sa <strong>AKCIJSKOM</strong> cijenom ${pctHtml}?`;
+            } else {
+                gratisText.innerHTML = 'Želite li uz ovaj artikal i ovo?';
+            }
         }
 
         if (offer.slika_url && gratisImage) {
@@ -159,8 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (gratisPrices && gratisOriginal && gratisDiscounted) {
-            gratisOriginal.textContent = `${offer.original_price} KM`;
-            gratisDiscounted.textContent = `${offer.discounted_price} KM`;
+            if (offer.has_discount) {
+                gratisOriginal.textContent = `${offer.original_price} KM`;
+                gratisOriginal.hidden = false;
+                gratisDiscounted.textContent = `${offer.discounted_price} KM`;
+            } else {
+                gratisOriginal.textContent = '';
+                gratisOriginal.hidden = true;
+                gratisDiscounted.textContent = `${offer.discounted_price || offer.original_price} KM`;
+            }
             gratisPrices.hidden = false;
         }
 

@@ -302,11 +302,25 @@ class AkcijaAdminForm(forms.ModelForm):
             return artikal
         if tip == Akcija.Tip.QTY_DEAL and not artikal:
             raise forms.ValidationError('Odaberite artikal.')
+        if tip == Akcija.Tip.PONUDA and not artikal:
+            raise forms.ValidationError('Odaberite trigger artikal (kad se doda u korpu).')
         if tip == Akcija.Tip.AI_PRODAJA:
             return artikal
         if artikal and not artikal.aktivan:
             raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
         return artikal
+
+    def clean_gratis_artikal(self):
+        gratis = self.cleaned_data.get('gratis_artikal')
+        tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
+        if tip == Akcija.Tip.PONUDA:
+            if not gratis:
+                raise forms.ValidationError('Odaberite artikal koji se nudi u popup-u.')
+            if not gratis.aktivan:
+                raise forms.ValidationError('Ponuda artikal mora biti aktivan na sajtu.')
+        elif gratis and not gratis.aktivan:
+            raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
+        return gratis
 
     def clean(self):
         cleaned = super().clean()
@@ -317,7 +331,7 @@ class AkcijaAdminForm(forms.ModelForm):
         if tip not in Akcija.ACTIVE_TIPS:
             self.add_error(
                 'tip',
-                'Dozvoljeni tipovi: Pop-up bundle, Kupi više, AI prodaja / AI dwell.',
+                'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, AI prodaja / AI dwell.',
             )
             return cleaned
 
@@ -346,6 +360,29 @@ class AkcijaAdminForm(forms.ModelForm):
                     'Unesi barem jedan popust — npr. kod „Kupi 2 komada” upiši 10, '
                     'ili kod „Kupi 3 komada” upiši 20.',
                 )
+
+        elif tip == Akcija.Tip.PONUDA:
+            if not cleaned.get('artikal'):
+                self.add_error('artikal', 'Odaberite trigger artikal (dodaj u korpu).')
+            if not cleaned.get('gratis_artikal'):
+                self.add_error('gratis_artikal', 'Odaberite artikal u ponudi.')
+            trigger = cleaned.get('artikal')
+            offer = cleaned.get('gratis_artikal')
+            if trigger and offer and trigger.pk == offer.pk:
+                self.add_error(
+                    'gratis_artikal',
+                    'Ponuda artikal mora biti drugačiji od trigger artikla.',
+                )
+            pct = cleaned.get('popust_postotak')
+            if pct is not None and pct != '':
+                try:
+                    pct_dec = Decimal(pct)
+                except Exception:
+                    pct_dec = None
+                if pct_dec is not None and pct_dec <= 0:
+                    self.add_error('popust_postotak', 'Popust mora biti veći od 0, ili ostavi prazno.')
+                elif pct_dec is not None and pct_dec > 100:
+                    self.add_error('popust_postotak', 'Popust ne može biti preko 100%.')
 
         return cleaned
 

@@ -79,6 +79,7 @@ from .models import (
     Category,
     HomeCategoryShowcase,
     HomeFeaturedProduct,
+    HomeNovoProduct,
     HomeVlog,
     LoyaltyCard,
     Order,
@@ -744,6 +745,26 @@ HOME_VLOG_LIMIT = 3
 
 
 def _home_latest_products(request=None):
+    """
+    Noviteti na početnoj: automatski (zadnjih 10) ili ručno (HomeNovoProduct).
+    """
+    site_settings = SiteSettings.load()
+    if site_settings.noviteti_mod == SiteSettings.NovitetiMod.MANUAL:
+        entries_qs = HomeNovoProduct.objects.filter(
+            aktivan=True,
+            artikal__aktivan=True,
+        )
+        if not _can_view_out_of_stock(request):
+            entries_qs = entries_qs.filter(artikal__na_stanju=True)
+        entries = entries_qs.select_related(
+            'artikal', 'artikal__kategorija', 'artikal__brend',
+        ).prefetch_related(
+            Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
+        )[:HOME_SECTION_PRODUCT_LIMIT]
+        products = [entry.artikal for entry in entries]
+        if products:
+            return products
+        # Ručni mod bez unosa → fallback na automatski da sekcija nije prazna
     return list(
         _product_queryset(request).order_by('-kreiran')[:HOME_SECTION_PRODUCT_LIMIT],
     )
@@ -1689,11 +1710,17 @@ def add_to_cart(request, slug):
         choice_akcija = Akcija.objects.filter(
             pk=gratis_akcija_id,
             aktivan=True,
-            tip=Akcija.Tip.GRATIS,
+            tip__in=Akcija.CART_OFFER_TIPS,
             artikal_id=product.pk,
             gratis_artikal__isnull=False,
-            popust_postotak__isnull=False,
         ).select_related('gratis_artikal').first()
+        # Legacy gratis i dalje zahtijeva %
+        if (
+            choice_akcija
+            and choice_akcija.tip == Akcija.Tip.GRATIS
+            and choice_akcija.popust_postotak is None
+        ):
+            choice_akcija = None
         if choice_akcija and choice_akcija.jos_traje():
             g_src = None
             g_pct = None

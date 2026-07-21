@@ -3,6 +3,7 @@
 
     var BUNDLE_TIP = 'bundle';
     var QTY_DEAL_TIP = 'qty_deal';
+    var PONUDA_TIP = 'ponuda';
     var AI_PRODAJA_TIP = 'ai_prodaja';
 
     // Dozvoljena polja za Pop-up bundle
@@ -53,6 +54,19 @@
         za_prijavljene: 1,
         za_neprijavljene: 1,
         ponovo_poslije_dana: 1,
+    };
+
+    // + Ponuda: trigger + ponuda artikal + opcionalni %
+    var PONUDA_FIELDS = {
+        naziv: 1,
+        tip: 1,
+        aktivan: 1,
+        redoslijed: 1,
+        artikal: 1,
+        gratis_artikal: 1,
+        popust_postotak: 1,
+        za_prijavljene: 1,
+        za_neprijavljene: 1,
     };
 
     // Osnovna + sva AI polja (kao stari zasebni meni)
@@ -193,6 +207,7 @@
         var tip = tipVal();
         var isBundle = tip === BUNDLE_TIP;
         var isQtyDeal = tip === QTY_DEAL_TIP;
+        var isPonuda = tip === PONUDA_TIP;
         var isAi = tip === AI_PRODAJA_TIP;
         var trigger = triggerVal();
 
@@ -220,6 +235,15 @@
                         return;
                     }
                     setVisible($row, !!QTY_DEAL_FIELDS[name]);
+                    return;
+                }
+
+                if (isPonuda) {
+                    if (AI_FIELDS[name]) {
+                        setVisible($row, false);
+                        return;
+                    }
+                    setVisible($row, !!PONUDA_FIELDS[name]);
                     return;
                 }
 
@@ -258,6 +282,7 @@
             BUNDLE_FORBIDDEN.forEach(hideField);
             ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
             Object.keys(AI_FIELDS).forEach(hideField);
+            hideField('gratis_artikal');
             if (trigger === 'trigger_product') {
                 showField('artikal');
             } else {
@@ -293,6 +318,7 @@
             hideField('bundle_artikli');
             hideField('bundle_trigger');
             hideField('popust_postotak');
+            hideField('gratis_artikal');
             hideField('kategorija');
             hideField('popup_delay_seconds');
             Object.keys(AI_FIELDS).forEach(hideField);
@@ -327,12 +353,40 @@
                 }, 2500);
                 $qtyFieldset.data('qty-hinted', 1);
             }
+        } else if (isPonuda) {
+            hideField('bundle_artikli');
+            hideField('bundle_trigger');
+            hideField('kategorija');
+            hideField('popup_delay_seconds');
+            hideField('tekst_dugmeta');
+            hideField('boja_dugmeta');
+            hideField('boja_opisa');
+            hideField('ponovo_poslije_dana');
+            ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
+            Object.keys(AI_FIELDS).forEach(hideField);
+            showField('naziv');
+            showField('tip');
+            showField('aktivan');
+            showField('redoslijed');
+            showField('artikal');
+            showField('gratis_artikal');
+            showField('popust_postotak');
+            showField('za_prijavljene');
+            showField('za_neprijavljene');
+            $bundleInline.hide();
+            $dwellInline.hide();
+            $qtyFieldset.hide();
+            $aiFieldsets.hide();
+            $sadrzajFieldset.show();
+            $popupFieldset.hide();
+            $legacyFieldset.hide();
         } else if (isAi) {
             // Samo osnovna + AI opcije (sve što je bilo u starom meniju)
             hideField('bundle_artikli');
             hideField('bundle_trigger');
             hideField('popust_postotak');
             hideField('artikal');
+            hideField('gratis_artikal');
             hideField('kategorija');
             hideField('tekst_dugmeta');
             hideField('boja_dugmeta');
@@ -360,6 +414,7 @@
         } else {
             hideField('bundle_artikli');
             hideField('bundle_trigger');
+            hideField('gratis_artikal');
             Object.keys(AI_FIELDS).forEach(hideField);
             ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
             $bundleInline.hide();

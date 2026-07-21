@@ -106,6 +106,32 @@ def nav_categories(request):
         or 'opremazaribolov.ba'
     ).strip()
 
+    try:
+        theme_ui = site_settings.get_theme_ui()
+    except Exception:
+        theme_ui = {
+            'css_vars': '',
+            'kontakt_prikazi_whatsapp': True,
+            'kontakt_prikazi_viber': True,
+            'kontakt_prikazi_messenger': True,
+        }
+
+    contact_whatsapp_url = (
+        _whatsapp_contact_url(contact_phone)
+        if theme_ui.get('kontakt_prikazi_whatsapp', True)
+        else ''
+    )
+    contact_viber_url = (
+        _viber_contact_url(contact_phone)
+        if theme_ui.get('kontakt_prikazi_viber', True)
+        else ''
+    )
+    contact_messenger_url = (
+        _messenger_contact_url(messenger_page)
+        if theme_ui.get('kontakt_prikazi_messenger', True)
+        else ''
+    )
+
     # Exit s korpom: podsjetnik da završi narudžbu (prioritet nad product deal popupa)
     cart_abandon_exit = get_cart_abandon_exit_context(request, cart)
     cart_exit_popup = (
@@ -160,9 +186,10 @@ def nav_categories(request):
         'online_gift_reward_label': active_reward_label(request),
         'search_query': request.GET.get('q', '').strip(),
         'contact_phone': contact_phone,
-        'contact_whatsapp_url': _whatsapp_contact_url(contact_phone),
-        'contact_viber_url': _viber_contact_url(contact_phone),
-        'contact_messenger_url': _messenger_contact_url(messenger_page),
+        'contact_whatsapp_url': contact_whatsapp_url,
+        'contact_viber_url': contact_viber_url,
+        'contact_messenger_url': contact_messenger_url,
+        'theme_ui': theme_ui,
         'social_proof': build_social_proof_context(request),
         'dwell_flash_by_id': dwell_flash_by_id,
         'dwell_catalog_by_id': dwell_catalog_by_id,

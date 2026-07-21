@@ -25,6 +25,14 @@
     --home-mobile-side-inset: clamp(8px, 5.12vw, 20px);
     --home-mobile-card-gap: 4px;
     --contact-float-clearance: 64px;
+    /* Theme (override via SiteSettings → :root inline) */
+    --btn-cart: #5BB805;
+    --btn-cart-hover: #4fa104;
+    --btn-banner: #ff9500;
+    --btn-banner-hover: #e68600;
+    --contact-whatsapp: #25d366;
+    --contact-viber: #665cac;
+    --contact-messenger: #0084ff;
 }
 
 html {
@@ -889,7 +897,7 @@ main {
 }
 
 .btn-banner {
-    background: #ff9500;
+    background: var(--btn-banner, #ff9500);
     color: #111 !important;
     font-weight: 700;
     border: none;
@@ -897,7 +905,7 @@ main {
 }
 
 .btn-banner:hover {
-    background: #e68600;
+    background: var(--btn-banner-hover, #e68600);
     color: #111 !important;
 }
 
@@ -905,7 +913,7 @@ main {
 .grid-banner .card-actions .btn-banner,
 .featured-card .card-actions .btn-banner,
 .spotlight-content .btn-banner {
-    background: #ff9500;
+    background: var(--btn-banner, #ff9500);
     color: #111 !important;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -915,7 +923,7 @@ main {
 .grid-banner .card-actions .btn-banner:hover,
 .featured-card .card-actions .btn-banner:hover,
 .spotlight-content .btn-banner:hover {
-    background: #e68600;
+    background: var(--btn-banner-hover, #e68600);
     color: #111 !important;
 }
 
@@ -1385,7 +1393,14 @@ main {
 .home-brand-strip-section {
     max-width: 1440px;
     margin: 0 auto;
-    padding: 48px 48px 0;
+    padding: 48px 48px 8px;
+}
+
+/* Odvoji brend ikone od sekcije Noviteti */
+.home-brand-strip-section + .home-products.home-products--novo {
+    padding-top: 56px;
+    margin-top: 8px;
+    border-top: 1px solid var(--gray-200);
 }
 
 .home-brand-strip {
@@ -1412,7 +1427,7 @@ main {
 }
 
 .home-products--novo {
-    padding-top: 40px;
+    padding-top: 48px;
 }
 
 .home-products-header--novo h2 {
@@ -3006,27 +3021,27 @@ body.search-results-active main {
 }
 
 .contact-float--whatsapp {
-    background: #25d366;
+    background: var(--contact-whatsapp, #25d366);
 }
 
 .contact-float--whatsapp:hover {
-    background: #1ebe57;
+    filter: brightness(0.92);
 }
 
 .contact-float--viber {
-    background: #665cac;
+    background: var(--contact-viber, #665cac);
 }
 
 .contact-float--viber:hover {
-    background: #554a94;
+    filter: brightness(0.92);
 }
 
 .contact-float--messenger {
-    background: #0084ff;
+    background: var(--contact-messenger, #0084ff);
 }
 
 .contact-float--messenger:hover {
-    background: #006fd6;
+    filter: brightness(0.92);
 }
 
 .contact-float img,
@@ -3366,7 +3381,7 @@ body.search-results-active main {
     padding: 0 14px;
     border: none;
     border-radius: 8px;
-    background: #5BB805;
+    background: var(--btn-cart, #5BB805);
     color: #ffffff;
     font-size: 14px;
     font-weight: 600;
@@ -3386,7 +3401,7 @@ body.search-results-active main {
 }
 
 .product-card--catalog .product-card-add-btn:hover:not(:disabled) {
-    background: #4fa104;
+    background: var(--btn-cart-hover, #4fa104);
 }
 
 .product-card--catalog .product-card-add-btn:disabled {
@@ -8375,7 +8390,7 @@ button.nav-action-link {
     .home-product-carousel--catalog .product-card--catalog .product-card-add-btn {
         flex: 1 1 auto;
         width: auto;
-        background: #5BB805;
+        background: var(--btn-cart, #5BB805);
         min-height: 36px;
         padding: 0 10px;
         font-size: 11px;
@@ -8386,7 +8401,7 @@ button.nav-action-link {
     }
 
     .home-product-carousel--catalog .product-card--catalog .product-card-add-btn:hover:not(:disabled) {
-        background: #4fa104;
+        background: var(--btn-cart-hover, #4fa104);
     }
 
     .home-product-carousel--catalog .product-card--catalog .product-card-add-btn__icon {
@@ -8998,7 +9013,7 @@ button.nav-action-link {
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card-add-btn {
         flex: 1 1 auto;
         width: auto;
-        background: #5BB805;
+        background: var(--btn-cart, #5BB805);
         min-height: 36px;
         padding: 0 12px;
         font-size: 12px;
@@ -9009,7 +9024,7 @@ button.nav-action-link {
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card-add-btn:hover:not(:disabled) {
-        background: #4fa104;
+        background: var(--btn-cart-hover, #4fa104);
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card-add-btn__icon {
@@ -9367,11 +9382,12 @@ button.nav-action-link {
     }
 
     .home-brand-strip-section {
-        padding: 28px 24px 0;
+        padding: 28px 24px 12px;
     }
 
     .home-brand-strip-section + .home-products--novo {
-        padding-top: 0;
+        padding-top: 36px;
+        margin-top: 4px;
     }
 
     .home-product-catalog .product-grid,
@@ -10301,11 +10317,12 @@ button.nav-action-link {
 
     .home-brand-strip-section {
         padding-top: 16px;
-        padding-bottom: 0;
+        padding-bottom: 8px;
     }
 
     .home-brand-strip-section + .home-products.home-products--novo {
-        padding-top: 0;
+        padding-top: 28px;
+        margin-top: 4px;
     }
 
     .home-brand-carousel .home-product-carousel__btn {
@@ -10463,11 +10480,12 @@ button.nav-action-link {
     }
 
     .home-brand-strip-section {
-        padding: 12px 16px 0;
+        padding: 12px 16px 8px;
     }
 
     .home-brand-strip-section + .home-products.home-products--novo {
-        padding-top: 0;
+        padding-top: 24px;
+        margin-top: 4px;
     }
 
     .home-brand-carousel .showcase-brand-link {

@@ -13,7 +13,8 @@ def _gratis_discounted_price(akcija, product, variation=None):
     prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
     if akcija.popust_postotak is None:
         return prikazna
-    return _izracunaj_akcijsku_od_postotka(prikazna, akcija.popust_postotak)
+    snizena = _izracunaj_akcijsku_od_postotka(prikazna, akcija.popust_postotak)
+    return snizena if snizena is not None else prikazna
 
 
 def _product_is_available(product, variation=None):
@@ -24,24 +25,37 @@ def _product_is_available(product, variation=None):
     return product.na_stanju
 
 
+def _is_cart_offer_akcija(akcija):
+    """+ Ponuda (aktivan) ili stari + Gratis."""
+    return bool(akcija and akcija.tip in Akcija.CART_OFFER_TIPS)
+
+
 def get_active_gratis_akcija_for_product(product):
-    """Aktivna + Gratis akcija za trigger artikal."""
+    """
+    Aktivna + Ponuda (ili legacy + Gratis) za trigger artikal.
+    Prikazuje se kao DA/NE modal pri dodavanju u korpu.
+    """
     if not product:
         return None
     for akcija in Akcija.objects.filter(
         aktivan=True,
-        tip=Akcija.Tip.GRATIS,
+        tip__in=Akcija.CART_OFFER_TIPS,
         artikal=product,
         gratis_artikal__isnull=False,
-        popust_postotak__isnull=False,
     ).select_related('gratis_artikal').order_by('redoslijed', '-id'):
-        if akcija.jos_traje() and akcija.gratis_artikal and akcija.gratis_artikal.aktivan:
-            return akcija
+        if not akcija.jos_traje():
+            continue
+        if not akcija.gratis_artikal or not akcija.gratis_artikal.aktivan:
+            continue
+        # Legacy gratis zahtijeva %; + Ponuda: % opcionalan
+        if akcija.tip == Akcija.Tip.GRATIS and akcija.popust_postotak is None:
+            continue
+        return akcija
     return None
 
 
 def build_gratis_offer_response(akcija):
-    """Podaci za modal ponude na stranici artikla."""
+    """Podaci za modal + Ponuda na dodaj u korpu."""
     gratis = akcija.gratis_artikal
     if not gratis:
         return None
@@ -56,13 +70,19 @@ def build_gratis_offer_response(akcija):
         return None
 
     pct = format_gratis_pct(akcija)
-    is_full = Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100')
+    has_discount = bool(
+        akcija.popust_postotak is not None
+        and Decimal(str(akcija.popust_postotak)) > 0
+        and snizena < prikazna
+    )
+    is_full = has_discount and Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100')
     slika_url = gratis.prikazna_slika.url if gratis.prikazna_slika else None
 
     return {
         'akcija_id': akcija.id,
         'gratis_naziv': gratis.naziv,
         'pct': pct,
+        'has_discount': has_discount,
         'is_full_discount': is_full,
         'slika_url': slika_url,
         'original_price': str(prikazna),
@@ -78,9 +98,19 @@ def _add_discounted_gratis_line(cart, akcija, gratis_product, *, quantity=1):
     prikazna = variation.prikazna_cijena if variation else gratis_product.prikazna_cijena
     discounted = _gratis_discounted_price(akcija, gratis_product, variation)
     pct = akcija.popust_postotak
-    src = f'Gratis akcija „{akcija.naziv}”'
+    tip_label = '+ Ponuda' if akcija.tip == Akcija.Tip.PONUDA else 'Gratis'
+    src = f'{tip_label} „{akcija.naziv}”'
     if pct:
         src = f'{src} (−{pct}%)'
+    # Bez popusta: regularna cijena (nije promo linija)
+    if pct is None or discounted is None or discounted >= prikazna:
+        cart.add(
+            gratis_product,
+            variation=variation,
+            quantity=quantity,
+            gratis_akcija_id=akcija.id,
+        )
+        return True
     cart.add(
         gratis_product,
         variation=variation,
@@ -95,7 +125,7 @@ def _add_discounted_gratis_line(cart, akcija, gratis_product, *, quantity=1):
 
 
 def apply_gratis_bundle_from_popup(cart, akcija, *, quantity=1):
-    """Dodaj trigger i gratis artikal iz site pop-up ponude."""
+    """Dodaj trigger i gratis artikal iz site pop-up ponude (legacy gratis)."""
     if (
         akcija.tip != Akcija.Tip.GRATIS
         or not akcija.gratis_popup
@@ -380,8 +410,13 @@ def build_gratis_popup_message(akcija):
 def build_gratis_choice_message(akcija, *, accepted, trigger_label):
     gratis = akcija.gratis_artikal
     if accepted and gratis:
+        if akcija.popust_postotak is None:
+            return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu.'
         pct = format_gratis_pct(akcija)
         if Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100'):
-            return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu.'
-        return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu ({pct}% popusta na drugi artikal).'
+            return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu (drugi artikal gratis).'
+        return (
+            f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu '
+            f'({pct}% popusta na drugi artikal).'
+        )
     return f'"{trigger_label}" je dodano u korpu.'
