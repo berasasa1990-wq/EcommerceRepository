@@ -1664,19 +1664,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
     bindCheckoutUpsellForms();
 
-    /* + Ponuda modal (isti markup kao na product detail) */
+    /* + Ponuda modal (isti markup kao na product detail — AI dwell stil) */
     const ponudaOverlay = document.getElementById('gratisOfferOverlay');
     const ponudaImage = document.getElementById('gratisOfferImage');
-    const ponudaPlaceholder = document.getElementById('gratisOfferPlaceholder');
     const ponudaTitle = document.getElementById('gratisOfferTitle');
     const ponudaText = document.getElementById('gratisOfferText');
+    const ponudaHeadline = document.getElementById('gratisOfferHeadline');
+    const ponudaLabel = document.getElementById('gratisOfferLabel');
+    const ponudaBadge = document.getElementById('gratisOfferBadge');
     const ponudaPrices = document.getElementById('gratisOfferPrices');
     const ponudaOriginal = document.getElementById('gratisOfferOriginal');
     const ponudaDiscounted = document.getElementById('gratisOfferDiscounted');
     const ponudaAccept = document.getElementById('gratisOfferAccept');
     const ponudaDecline = document.getElementById('gratisOfferDecline');
     const ponudaClose = document.getElementById('gratisOfferClose');
+    const ponudaQtyInput = document.getElementById('gratisOfferQty');
+    const ponudaQtyMinus = document.getElementById('gratisOfferQtyMinus');
+    const ponudaQtyPlus = document.getElementById('gratisOfferQtyPlus');
     let pendingPonuda = null;
+
+    function ponudaAnsweredKey(akcijaId) {
+        return `ponuda_answered_${akcijaId}`;
+    }
+
+    function markPonudaAnsweredClient(akcijaId) {
+        if (!akcijaId) return;
+        try {
+            sessionStorage.setItem(ponudaAnsweredKey(akcijaId), '1');
+        } catch (e) {}
+    }
+
+    function isPonudaAnsweredClient(akcijaId) {
+        if (!akcijaId) return false;
+        try {
+            return sessionStorage.getItem(ponudaAnsweredKey(akcijaId)) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function getPonudaOfferQty() {
+        if (!ponudaQtyInput) return 1;
+        let n = parseInt(ponudaQtyInput.value, 10);
+        if (!Number.isFinite(n) || n < 1) n = 1;
+        if (n > 99) n = 99;
+        return n;
+    }
+
+    function setPonudaOfferQty(value) {
+        if (!ponudaQtyInput) return;
+        let n = parseInt(value, 10);
+        if (!Number.isFinite(n) || n < 1) n = 1;
+        if (n > 99) n = 99;
+        ponudaQtyInput.value = String(n);
+        if (ponudaQtyMinus) ponudaQtyMinus.disabled = n <= 1;
+        if (ponudaQtyPlus) ponudaQtyPlus.disabled = n >= 99;
+    }
 
     function closePonudaOfferModal() {
         if (!ponudaOverlay) return;
@@ -1688,28 +1731,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openPonudaOfferModal(offer, slug, variationId) {
         if (!ponudaOverlay || !offer || !slug) return;
+        // Na product detail stranici product-detail.js već vodi modal
+        if (document.getElementById('mainAddToCartForm') || document.getElementById('productDetailInfo')) {
+            return;
+        }
         pendingPonuda = { offer, slug, variationId: variationId || '' };
 
+        if (ponudaLabel) ponudaLabel.textContent = offer.label || 'Dobra kupovina';
         if (ponudaTitle) ponudaTitle.textContent = offer.gratis_naziv || '';
+        if (ponudaHeadline) {
+            ponudaHeadline.textContent = offer.headline || '';
+            ponudaHeadline.hidden = !offer.headline;
+        }
         if (ponudaText) {
             if (offer.has_discount) {
                 const pctHtml = offer.is_full_discount
                     ? '<strong class="gratis-offer-pct">GRATIS</strong>'
-                    : `<strong class="gratis-offer-pct">-${offer.pct}%</strong>`;
+                    : `<strong class="gratis-offer-pct">−${offer.pct}%</strong>`;
                 ponudaText.innerHTML =
                     `Želite li uz ovaj artikal i ovo sa <strong>AKCIJSKOM</strong> cijenom ${pctHtml}?`;
             } else {
                 ponudaText.innerHTML = 'Želite li uz ovaj artikal i ovo?';
             }
         }
-        if (offer.slika_url && ponudaImage) {
-            ponudaImage.src = offer.slika_url;
-            ponudaImage.alt = offer.gratis_naziv || '';
-            ponudaImage.hidden = false;
-            if (ponudaPlaceholder) ponudaPlaceholder.hidden = true;
-        } else {
-            if (ponudaImage) ponudaImage.hidden = true;
-            if (ponudaPlaceholder) ponudaPlaceholder.hidden = false;
+        if (ponudaImage) {
+            if (offer.slika_url) {
+                ponudaImage.src = offer.slika_url;
+                ponudaImage.alt = offer.gratis_naziv || '';
+                ponudaImage.hidden = false;
+            } else {
+                ponudaImage.removeAttribute('src');
+                ponudaImage.alt = '';
+                ponudaImage.hidden = true;
+            }
         }
         if (ponudaPrices && ponudaOriginal && ponudaDiscounted) {
             if (offer.has_discount) {
@@ -1724,6 +1778,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             ponudaPrices.hidden = false;
         }
+        if (ponudaBadge) {
+            if (offer.badge) {
+                ponudaBadge.textContent = offer.badge;
+                ponudaBadge.hidden = false;
+            } else {
+                ponudaBadge.textContent = '';
+                ponudaBadge.hidden = true;
+            }
+        }
+        setPonudaOfferQty(1);
+        if (ponudaAccept) ponudaAccept.textContent = 'DA';
+        if (ponudaDecline) ponudaDecline.textContent = 'NE';
 
         ponudaOverlay.hidden = false;
         requestAnimationFrame(() => {
@@ -1735,10 +1801,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function submitPonudaChoice(choice) {
         if (!pendingPonuda) return;
         const { offer, slug, variationId } = pendingPonuda;
+        const offerQty = getPonudaOfferQty();
+        markPonudaAnsweredClient(offer.akcija_id);
         closePonudaOfferModal();
         await catalogAddProductToCart(slug, variationId, {
             gratis_choice: choice,
             gratis_akcija_id: String(offer.akcija_id),
+            gratis_quantity: String(choice === 'yes' ? offerQty : 1),
         });
     }
 
@@ -1751,9 +1820,28 @@ document.addEventListener('DOMContentLoaded', () => {
         ponudaDecline.dataset.ponudaBound = '1';
         ponudaDecline.addEventListener('click', () => submitPonudaChoice('no'));
     }
+    // X = isto kao NE: dodaj samo trigger artikal
     if (ponudaClose && !ponudaClose.dataset.ponudaBound) {
         ponudaClose.dataset.ponudaBound = '1';
-        ponudaClose.addEventListener('click', closePonudaOfferModal);
+        ponudaClose.addEventListener('click', () => submitPonudaChoice('no'));
+    }
+    if (ponudaQtyMinus && !ponudaQtyMinus.dataset.ponudaBound) {
+        ponudaQtyMinus.dataset.ponudaBound = '1';
+        ponudaQtyMinus.addEventListener('click', () => {
+            setPonudaOfferQty(getPonudaOfferQty() - 1);
+        });
+    }
+    if (ponudaQtyPlus && !ponudaQtyPlus.dataset.ponudaBound) {
+        ponudaQtyPlus.dataset.ponudaBound = '1';
+        ponudaQtyPlus.addEventListener('click', () => {
+            setPonudaOfferQty(getPonudaOfferQty() + 1);
+        });
+    }
+    if (ponudaQtyInput && !ponudaQtyInput.dataset.ponudaBound) {
+        ponudaQtyInput.dataset.ponudaBound = '1';
+        const sync = () => setPonudaOfferQty(getPonudaOfferQty());
+        ponudaQtyInput.addEventListener('change', sync);
+        ponudaQtyInput.addEventListener('input', sync);
     }
 
     async function catalogAddProductToCart(slug, variationId = '', extraFields = {}) {
@@ -1781,6 +1869,13 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
         }
         if (data.requires_gratis_choice && data.gratis_offer) {
+            if (isPonudaAnsweredClient(data.gratis_offer.akcija_id)) {
+                return catalogAddProductToCart(slug, variationId, {
+                    gratis_choice: 'no',
+                    gratis_akcija_id: String(data.gratis_offer.akcija_id),
+                    gratis_quantity: '1',
+                });
+            }
             openPonudaOfferModal(data.gratis_offer, slug, variationId);
             return data;
         }

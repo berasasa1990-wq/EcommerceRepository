@@ -1,5 +1,5 @@
 <div class="site-popup-overlay gratis-offer-overlay" id="gratisOfferOverlay" hidden>
-    <div class="site-popup site-popup--akcija site-popup--gratis-offer gratis-offer-popup"
+    <div class="site-popup site-popup--akcija site-popup--gratis-offer site-popup--ponuda-dwell gratis-offer-popup"
          role="dialog"
          aria-modal="true"
          aria-labelledby="gratisOfferTitle">
@@ -10,31 +10,37 @@
             </svg>
         </button>
 
-        <div class="site-popup-akcija gratis-offer-akcija">
-            <div class="gratis-offer-product">
-                <div class="gratis-offer-product-image">
-                    <img id="gratisOfferImage" src="" alt="" width="200" height="200" loading="lazy" decoding="async" hidden>
-                    <span class="gratis-offer-image-placeholder" id="gratisOfferPlaceholder" hidden aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <circle cx="8.5" cy="8.5" r="1.5"/>
-                            <path d="M21 15l-5-5L5 21"/>
-                        </svg>
-                    </span>
+        <div class="ponuda-dwell-card card-dwell-deal is-active is-pulse" id="ponudaDwellCard">
+            <span class="card-dwell-label" id="gratisOfferLabel">Dobra kupovina</span>
+
+            <div class="ponuda-dwell-media">
+                <img id="gratisOfferImage" class="ponuda-dwell-image" src="" alt="" width="200" height="200" loading="lazy" decoding="async" hidden>
+            </div>
+
+            <h3 class="ponuda-dwell-name" id="gratisOfferTitle"></h3>
+            <p class="ponuda-dwell-headline" id="gratisOfferHeadline"></p>
+            <p class="gratis-offer-question ponuda-dwell-question" id="gratisOfferText"></p>
+
+            <div class="card-dwell-prices gratis-offer-prices" id="gratisOfferPrices">
+                <span class="price-original card-dwell-was" id="gratisOfferOriginal"></span>
+                <div class="card-dwell-sale-cluster">
+                    <span class="price-sale card-dwell-now" id="gratisOfferDiscounted"></span>
+                    <span class="card-dwell-badge" id="gratisOfferBadge" hidden></span>
                 </div>
-                <h3 class="gratis-offer-name" id="gratisOfferTitle"></h3>
             </div>
 
-            <p class="gratis-offer-question" id="gratisOfferText"></p>
-
-            <div class="gratis-offer-prices product-price" id="gratisOfferPrices">
-                <span class="price-original" id="gratisOfferOriginal"></span>
-                <span class="price-sale" id="gratisOfferDiscounted"></span>
+            <div class="ponuda-qty" id="gratisOfferQtyWrap">
+                <span class="ponuda-qty-label">Količina</span>
+                <div class="product-qty-selector ponuda-qty-selector" data-ponuda-qty>
+                    <button type="button" class="product-qty-btn product-qty-btn--minus" id="gratisOfferQtyMinus" aria-label="Smanji količinu">−</button>
+                    <input type="number" class="product-qty-input" id="gratisOfferQty" value="1" min="1" max="99" inputmode="numeric" aria-label="Količina ponude">
+                    <button type="button" class="product-qty-btn product-qty-btn--plus" id="gratisOfferQtyPlus" aria-label="Povećaj količinu">+</button>
+                </div>
             </div>
 
-            <div class="site-popup-actions gratis-offer-actions">
-                <button type="button" class="gratis-offer-btn" id="gratisOfferAccept">DA</button>
-                <button type="button" class="gratis-offer-btn" id="gratisOfferDecline">NE</button>
+            <div class="site-popup-actions gratis-offer-actions ponuda-dwell-actions">
+                <button type="button" class="gratis-offer-btn gratis-offer-btn--accept" id="gratisOfferAccept">DA</button>
+                <button type="button" class="gratis-offer-btn gratis-offer-btn--decline" id="gratisOfferDecline">NE</button>
             </div>
         </div>
     </div>

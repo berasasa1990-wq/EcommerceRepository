@@ -54,8 +54,34 @@ def get_active_gratis_akcija_for_product(product):
     return None
 
 
-def build_gratis_offer_response(akcija):
-    """Podaci za modal + Ponuda na dodaj u korpu."""
+PONUDA_ANSWERED_SESSION_KEY = 'ponuda_answered_ids'
+
+
+def ponuda_was_answered(request, akcija_id):
+    """True ako je kupac već prihvatio/odbio ovu + Ponudu u ovoj sesiji."""
+    if not request or not akcija_id:
+        return False
+    seen = request.session.get(PONUDA_ANSWERED_SESSION_KEY) or []
+    return str(akcija_id) in {str(x) for x in seen}
+
+
+def mark_ponuda_answered(request, akcija_id):
+    """Zapamti da je + Ponuda odgovorena — više se ne prikazuje u ovoj sesiji."""
+    if not request or not akcija_id:
+        return
+    seen = list(request.session.get(PONUDA_ANSWERED_SESSION_KEY) or [])
+    sid = str(akcija_id)
+    if sid not in seen:
+        seen.append(sid)
+        request.session[PONUDA_ANSWERED_SESSION_KEY] = seen
+        request.session.modified = True
+
+
+def build_gratis_offer_response(akcija, *, mode='cart'):
+    """
+    Podaci za modal + Ponuda.
+    mode='cart' — DA/NE samo nakon dodavanja trigger artikla u korpu.
+    """
     gratis = akcija.gratis_artikal
     if not gratis:
         return None
@@ -64,7 +90,9 @@ def build_gratis_offer_response(akcija):
     if not _product_is_available(gratis, gratis_variation):
         return None
 
-    prikazna = gratis_variation.prikazna_cijena if gratis_variation else gratis.prikazna_cijena
+    prikazna = (
+        gratis_variation.prikazna_cijena if gratis_variation else gratis.prikazna_cijena
+    )
     snizena = _gratis_discounted_price(akcija, gratis, gratis_variation)
     if snizena is None:
         return None
@@ -77,16 +105,33 @@ def build_gratis_offer_response(akcija):
     )
     is_full = has_discount and Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100')
     slika_url = gratis.prikazna_slika.url if gratis.prikazna_slika else None
+    trigger = akcija.artikal
+
+    if has_discount and is_full:
+        headline = 'GRATIS uz ovaj artikal'
+        badge = 'GRATIS'
+    elif has_discount:
+        headline = f'Dobra kupovina −{pct}%'
+        badge = f'−{pct}%'
+    else:
+        headline = 'Dobra kupovina uz ovo'
+        badge = ''
 
     return {
         'akcija_id': akcija.id,
+        'mode': 'cart',
         'gratis_naziv': gratis.naziv,
+        'gratis_slug': gratis.slug,
+        'trigger_naziv': trigger.naziv if trigger else '',
         'pct': pct,
         'has_discount': has_discount,
         'is_full_discount': is_full,
         'slika_url': slika_url,
         'original_price': str(prikazna),
         'discounted_price': str(snizena),
+        'headline': headline,
+        'badge': badge,
+        'label': 'Dobra kupovina',
     }
 
 

@@ -1188,7 +1188,7 @@ class Akcija(models.Model):
         related_name='akcije',
         verbose_name='Artikal',
         help_text=(
-            'Trigger artikal: kad ga kupac doda u korpu (za + Ponuda). '
+            'Za + Ponuda: trigger artikal — popup iskače samo kad se doda u korpu. '
             'Za Pop-up bundle: samo ako je trigger „odabrani trigger artikal”. '
             'Za „Kupi više”: artikal na koji važi količinski popust.'
         ),
@@ -1201,7 +1201,8 @@ class Akcija(models.Model):
         related_name='akcije_gratis',
         verbose_name='Ponuda artikal',
         help_text=(
-            'Za + Ponuda: artikal koji se nudi u popup-u nakon dodavanja trigger artikla. '
+            'Za + Ponuda: artikal koji se nudi u popup-u (stil kao AI dwell) '
+            'nakon dodavanja trigger artikla u korpu. '
             'Ako uneseš Popust (%), nudi se sa sniženjem; prazno = regularna cijena.'
         ),
     )

@@ -112,18 +112,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const gratisOverlay = document.getElementById('gratisOfferOverlay');
     const gratisImage = document.getElementById('gratisOfferImage');
-    const gratisPlaceholder = document.getElementById('gratisOfferPlaceholder');
     const gratisTitle = document.getElementById('gratisOfferTitle');
     const gratisText = document.getElementById('gratisOfferText');
+    const gratisHeadline = document.getElementById('gratisOfferHeadline');
+    const gratisLabel = document.getElementById('gratisOfferLabel');
+    const gratisBadge = document.getElementById('gratisOfferBadge');
     const gratisPrices = document.getElementById('gratisOfferPrices');
     const gratisOriginal = document.getElementById('gratisOfferOriginal');
     const gratisDiscounted = document.getElementById('gratisOfferDiscounted');
     const gratisAccept = document.getElementById('gratisOfferAccept');
     const gratisDecline = document.getElementById('gratisOfferDecline');
     const gratisClose = document.getElementById('gratisOfferClose');
+    const gratisQtyInput = document.getElementById('gratisOfferQty');
+    const gratisQtyMinus = document.getElementById('gratisOfferQtyMinus');
+    const gratisQtyPlus = document.getElementById('gratisOfferQtyPlus');
 
     let pendingGratisForm = null;
     let pendingGratisOffer = null;
+
+    function ponudaAnsweredKey(akcijaId) {
+        return `ponuda_answered_${akcijaId}`;
+    }
+
+    function markPonudaAnsweredClient(akcijaId) {
+        if (!akcijaId) return;
+        try {
+            sessionStorage.setItem(ponudaAnsweredKey(akcijaId), '1');
+        } catch (e) {}
+    }
+
+    function isPonudaAnsweredClient(akcijaId) {
+        if (!akcijaId) return false;
+        try {
+            return sessionStorage.getItem(ponudaAnsweredKey(akcijaId)) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function getGratisOfferQty() {
+        if (!gratisQtyInput) return 1;
+        let n = parseInt(gratisQtyInput.value, 10);
+        if (!Number.isFinite(n) || n < 1) n = 1;
+        if (n > 99) n = 99;
+        return n;
+    }
+
+    function setGratisOfferQty(value) {
+        if (!gratisQtyInput) return;
+        let n = parseInt(value, 10);
+        if (!Number.isFinite(n) || n < 1) n = 1;
+        if (n > 99) n = 99;
+        gratisQtyInput.value = String(n);
+        if (gratisQtyMinus) gratisQtyMinus.disabled = n <= 1;
+        if (gratisQtyPlus) gratisQtyPlus.disabled = n >= 99;
+    }
+
+    function syncGratisQtyButtons() {
+        setGratisOfferQty(getGratisOfferQty());
+    }
 
     function closeGratisOfferModal() {
         if (!gratisOverlay) return;
@@ -134,18 +181,20 @@ document.addEventListener('DOMContentLoaded', () => {
         pendingGratisOffer = null;
     }
 
-    function openGratisOfferModal(offer, form) {
-        if (!gratisOverlay || !offer || !form) return;
-
-        pendingGratisForm = form;
-        pendingGratisOffer = offer;
-
-        if (gratisTitle) gratisTitle.textContent = offer.gratis_naziv;
+    function fillGratisOfferModal(offer) {
+        if (gratisLabel) {
+            gratisLabel.textContent = offer.label || 'Dobra kupovina';
+        }
+        if (gratisTitle) gratisTitle.textContent = offer.gratis_naziv || '';
+        if (gratisHeadline) {
+            gratisHeadline.textContent = offer.headline || '';
+            gratisHeadline.hidden = !offer.headline;
+        }
         if (gratisText) {
             if (offer.has_discount) {
                 const pctHtml = offer.is_full_discount
                     ? '<strong class="gratis-offer-pct">GRATIS</strong>'
-                    : `<strong class="gratis-offer-pct">-${offer.pct}%</strong>`;
+                    : `<strong class="gratis-offer-pct">−${offer.pct}%</strong>`;
                 gratisText.innerHTML =
                     `Želite li uz ovaj artikal i ovo sa <strong>AKCIJSKOM</strong> cijenom ${pctHtml}?`;
             } else {
@@ -153,14 +202,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (offer.slika_url && gratisImage) {
-            gratisImage.src = offer.slika_url;
-            gratisImage.alt = offer.gratis_naziv;
-            gratisImage.hidden = false;
-            if (gratisPlaceholder) gratisPlaceholder.hidden = true;
-        } else {
-            if (gratisImage) gratisImage.hidden = true;
-            if (gratisPlaceholder) gratisPlaceholder.hidden = false;
+        if (gratisImage) {
+            if (offer.slika_url) {
+                gratisImage.src = offer.slika_url;
+                gratisImage.alt = offer.gratis_naziv || '';
+                gratisImage.hidden = false;
+            } else {
+                gratisImage.removeAttribute('src');
+                gratisImage.alt = '';
+                gratisImage.hidden = true;
+            }
         }
 
         if (gratisPrices && gratisOriginal && gratisDiscounted) {
@@ -171,10 +222,31 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 gratisOriginal.textContent = '';
                 gratisOriginal.hidden = true;
-                gratisDiscounted.textContent = `${offer.discounted_price || offer.original_price} KM`;
+                gratisDiscounted.textContent =
+                    `${offer.discounted_price || offer.original_price} KM`;
             }
             gratisPrices.hidden = false;
         }
+        if (gratisBadge) {
+            if (offer.badge) {
+                gratisBadge.textContent = offer.badge;
+                gratisBadge.hidden = false;
+            } else {
+                gratisBadge.textContent = '';
+                gratisBadge.hidden = true;
+            }
+        }
+        setGratisOfferQty(1);
+        if (gratisAccept) gratisAccept.textContent = 'DA';
+        if (gratisDecline) gratisDecline.textContent = 'NE';
+    }
+
+    function openGratisOfferModal(offer, form) {
+        if (!gratisOverlay || !offer || !form) return;
+
+        pendingGratisForm = form;
+        pendingGratisOffer = offer;
+        fillGratisOfferModal(offer);
 
         gratisOverlay.hidden = false;
         requestAnimationFrame(() => {
@@ -187,17 +259,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!pendingGratisForm || !pendingGratisOffer) return;
         const form = pendingGratisForm;
         const offer = pendingGratisOffer;
+        const offerQty = getGratisOfferQty();
+        markPonudaAnsweredClient(offer.akcija_id);
         closeGratisOfferModal();
         await submitAddToCartForm(form, {
             gratis_choice: choice,
             gratis_akcija_id: String(offer.akcija_id),
+            gratis_quantity: String(choice === 'yes' ? offerQty : 1),
         });
     }
 
+    gratisQtyMinus?.addEventListener('click', () => {
+        setGratisOfferQty(getGratisOfferQty() - 1);
+    });
+    gratisQtyPlus?.addEventListener('click', () => {
+        setGratisOfferQty(getGratisOfferQty() + 1);
+    });
+    gratisQtyInput?.addEventListener('change', syncGratisQtyButtons);
+    gratisQtyInput?.addEventListener('input', syncGratisQtyButtons);
+
     gratisAccept?.addEventListener('click', () => submitGratisChoice('yes'));
     gratisDecline?.addEventListener('click', () => submitGratisChoice('no'));
-    // Zatvaranje samo preko X — klik pored ne gasi
-    gratisClose?.addEventListener('click', closeGratisOfferModal);
+    // X = isto kao NE: zatvori i dodaj samo trigger artikal u korpu
+    gratisClose?.addEventListener('click', () => submitGratisChoice('no'));
 
     async function submitAddToCartForm(form, extraFields = {}) {
         const submitBtn = form.querySelector('[type="submit"]');
@@ -223,6 +307,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
             }
             if (data.requires_gratis_choice && data.gratis_offer) {
+                // Client fallback: ako je već odgovoreno, ne prikazuj — samo dodaj trigger
+                if (isPonudaAnsweredClient(data.gratis_offer.akcija_id)) {
+                    await submitAddToCartForm(form, {
+                        gratis_choice: 'no',
+                        gratis_akcija_id: String(data.gratis_offer.akcija_id),
+                        gratis_quantity: '1',
+                    });
+                    return;
+                }
                 openGratisOfferModal(data.gratis_offer, form);
                 return;
             }

@@ -214,3 +214,130 @@ class PonudaAkcijaTests(TestCase):
         self.assertTrue(data.get('ok'))
         self.assertEqual(data.get('cart_count'), 2)
         self.assertIn('Ponuda artikal', data.get('message', ''))
+
+    def test_accept_with_offer_quantity(self):
+        """gratis_quantity povećava samo količinu ponuđenog artikla."""
+        from django.contrib.auth.models import AnonymousUser
+        from django.contrib.sessions.middleware import SessionMiddleware
+        from django.test import RequestFactory
+        from .cart import Cart
+        from .views import add_to_cart
+        import json
+
+        akcija = self.Akcija.objects.create(
+            naziv='Qty ponuda',
+            tip=self.Akcija.Tip.PONUDA,
+            artikal=self.trigger,
+            gratis_artikal=self.offer,
+            popust_postotak=Decimal('10'),
+            aktivan=True,
+        )
+        factory = RequestFactory()
+        request = factory.post(
+            f'/artikal/{self.trigger.slug}/dodaj/',
+            {
+                'quantity': '1',
+                'stay': '1',
+                'gratis_choice': 'yes',
+                'gratis_akcija_id': str(akcija.pk),
+                'gratis_quantity': '3',
+            },
+        )
+        SessionMiddleware(lambda r: None).process_request(request)
+        request.session.save()
+        request.user = AnonymousUser()
+        resp = add_to_cart(request, self.trigger.slug)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertTrue(data.get('ok'))
+        cart = Cart(request)
+        items = list(cart)
+        offer_items = [i for i in items if i.get('product_id') == self.offer.pk]
+        self.assertEqual(len(offer_items), 1)
+        self.assertEqual(offer_items[0]['quantity'], 3)
+
+    def test_no_second_popup_after_answer(self):
+        """Nakon DA/NE, naredni dodaj u korpu ne traži ponovo + Ponudu."""
+        import json
+        akcija = self.Akcija.objects.create(
+            naziv='Once only',
+            tip=self.Akcija.Tip.PONUDA,
+            artikal=self.trigger,
+            gratis_artikal=self.offer,
+            popust_postotak=Decimal('15'),
+            aktivan=True,
+        )
+        first = self._post_add({
+            'quantity': '1',
+            'stay': '1',
+            'gratis_choice': 'no',
+            'gratis_akcija_id': str(akcija.pk),
+        })
+        self.assertEqual(first.status_code, 200)
+        self.assertTrue(json.loads(first.content).get('ok'))
+
+        # Druga sesija u testu — ista request path koristi novi session.
+        # Provjeri: isti session mora zapamtiti odgovor.
+        from django.contrib.auth.models import AnonymousUser
+        from django.contrib.sessions.middleware import SessionMiddleware
+        from django.test import RequestFactory
+        from .views import add_to_cart
+
+        factory = RequestFactory()
+        request = factory.post(
+            f'/artikal/{self.trigger.slug}/dodaj/',
+            {'quantity': '1', 'stay': '1'},
+        )
+        SessionMiddleware(lambda r: None).process_request(request)
+        request.session.save()
+        request.user = AnonymousUser()
+        # Bez markiranog odgovora i dalje traži choice
+        mid = add_to_cart(request, self.trigger.slug)
+        self.assertTrue(json.loads(mid.content).get('requires_gratis_choice'))
+
+        # Odgovori no — pa ponovo
+        request2 = factory.post(
+            f'/artikal/{self.trigger.slug}/dodaj/',
+            {
+                'quantity': '1',
+                'stay': '1',
+                'gratis_choice': 'no',
+                'gratis_akcija_id': str(akcija.pk),
+            },
+        )
+        SessionMiddleware(lambda r: None).process_request(request2)
+        request2.session.save()
+        request2.user = AnonymousUser()
+        # Share session store by copying after first answer into request3
+        ans = add_to_cart(request2, self.trigger.slug)
+        self.assertTrue(json.loads(ans.content).get('ok'))
+        answered_ids = request2.session.get('ponuda_answered_ids') or []
+        self.assertIn(str(akcija.pk), [str(x) for x in answered_ids])
+
+        request3 = factory.post(
+            f'/artikal/{self.trigger.slug}/dodaj/',
+            {'quantity': '1', 'stay': '1'},
+        )
+        SessionMiddleware(lambda r: None).process_request(request3)
+        request3.session = request2.session
+        request3.user = AnonymousUser()
+        again = add_to_cart(request3, self.trigger.slug)
+        again_data = json.loads(again.content)
+        self.assertTrue(again_data.get('ok'))
+        self.assertFalse(again_data.get('requires_gratis_choice'))
+
+    def test_cart_mode_payload_label(self):
+        from .gratis import build_gratis_offer_response
+        akcija = self.Akcija.objects.create(
+            naziv='Cart ponuda label',
+            tip=self.Akcija.Tip.PONUDA,
+            artikal=self.trigger,
+            gratis_artikal=self.offer,
+            popust_postotak=Decimal('10'),
+            aktivan=True,
+        )
+        payload = build_gratis_offer_response(akcija)
+        self.assertEqual(payload['mode'], 'cart')
+        self.assertEqual(payload['gratis_slug'], 'offer-ponuda')
+        self.assertEqual(payload['label'], 'Dobra kupovina')
+        self.assertIn('10', payload['headline'])

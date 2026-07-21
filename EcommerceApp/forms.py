@@ -363,7 +363,10 @@ class AkcijaAdminForm(forms.ModelForm):
 
         elif tip == Akcija.Tip.PONUDA:
             if not cleaned.get('artikal'):
-                self.add_error('artikal', 'Odaberite trigger artikal (dodaj u korpu).')
+                self.add_error(
+                    'artikal',
+                    'Odaberite trigger artikal (popup samo pri dodavanju u korpu).',
+                )
             if not cleaned.get('gratis_artikal'):
                 self.add_error('gratis_artikal', 'Odaberite artikal u ponudi.')
             trigger = cleaned.get('artikal')

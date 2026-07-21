@@ -825,7 +825,8 @@ class AkcijaAdmin(admin.ModelAdmin):
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
                 'Tipovi: „Pop-up bundle”, „Kupi više”, „+ Ponuda” '
-                '(popup DA/NE kad se trigger doda u korpu) i „AI prodaja / AI dwell”.'
+                '(popup DA/NE samo kad se trigger doda u korpu) '
+                'i „AI prodaja / AI dwell”.'
             ),
         }),
         ('Sadržaj', {
@@ -840,8 +841,8 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'boja_opisa',
             ),
             'description': (
-                'Za + Ponuda: Artikal = trigger (dodaj u korpu), '
-                'Ponuda artikal = što se nudi u popup-u, '
+                'Za + Ponuda: Artikal = trigger (popup iskače samo kad se doda u korpu). '
+                'Ponuda artikal = što se nudi uz to (AI dwell stil). '
                 'Popust (%) opcionalan (prazno = regularna cijena).'
             ),
         }),

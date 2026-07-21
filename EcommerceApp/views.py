@@ -1293,6 +1293,7 @@ def product_detail(request, slug):
 
     gratis_akcija = get_active_gratis_akcija_for_product(product)
     if gratis_akcija and build_gratis_offer_response(gratis_akcija):
+        # Hint na product page; popup se aktivira samo pri dodavanju triggera u korpu
         context['gratis_akcija_hint'] = True
 
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
@@ -1508,10 +1509,16 @@ def add_to_cart(request, slug):
         build_popup_bundle_message,
         build_qty_deal_message,
         get_active_gratis_akcija_for_product,
+        mark_ponuda_answered,
+        ponuda_was_answered,
     )
 
     gratis_choice = request.POST.get('gratis_choice', '').strip()
     gratis_akcija_id = request.POST.get('gratis_akcija_id', '').strip()
+    try:
+        gratis_quantity = max(1, min(99, int(request.POST.get('gratis_quantity', 1) or 1)))
+    except (TypeError, ValueError):
+        gratis_quantity = 1
 
     akcija_id = request.POST.get('akcija_id', '').strip()
     if akcija_id:
@@ -1722,6 +1729,7 @@ def add_to_cart(request, slug):
         ):
             choice_akcija = None
         if choice_akcija and choice_akcija.jos_traje():
+            mark_ponuda_answered(request, choice_akcija.pk)
             g_src = None
             g_pct = None
             if custom_price is not None and promo_akcija:
@@ -1738,7 +1746,10 @@ def add_to_cart(request, slug):
             )
             if gratis_choice == 'yes':
                 _add_discounted_gratis_line(
-                    cart, choice_akcija, choice_akcija.gratis_artikal, quantity=quantity,
+                    cart,
+                    choice_akcija,
+                    choice_akcija.gratis_artikal,
+                    quantity=gratis_quantity,
                 )
             cart.clear_coupon()
             label = variation.naziv if variation else product.naziv
@@ -1780,7 +1791,8 @@ def add_to_cart(request, slug):
 
     if stay_on_page and not gratis_choice and not akcija_id:
         offer_akcija = get_active_gratis_akcija_for_product(product)
-        if offer_akcija:
+        # Jednom prihvati/odbij → više ne prikazuj u ovoj sesiji
+        if offer_akcija and not ponuda_was_answered(request, offer_akcija.pk):
             offer = build_gratis_offer_response(offer_akcija)
             if offer:
                 return JsonResponse({

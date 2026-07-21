@@ -4493,48 +4493,55 @@ body.catalog-variation-modal-open {
     color: var(--gray-600);
 }
 
-/* Gratis offer modal on product detail */
+/* + Ponuda modal — AI dwell stil */
 .gratis-offer-overlay {
     z-index: 12050;
 }
 
-.site-popup--gratis-offer {
-    max-width: min(92vw, 400px);
+.site-popup--gratis-offer.site-popup--ponuda-dwell {
+    max-width: min(92vw, 380px);
     display: flex;
     flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+    border: none;
 }
 
-.gratis-offer-akcija {
+.ponuda-dwell-card.card-dwell-deal {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     width: 100%;
-    min-height: 100%;
-    padding: 20px 16px 14px !important;
+    padding: 28px 18px 16px;
+    margin: 0;
+    box-sizing: border-box;
 }
 
-.gratis-offer-product {
-    width: 100%;
-    margin-bottom: 6px;
-    flex-shrink: 0;
+.ponuda-dwell-card .card-dwell-label {
+    margin-bottom: 10px;
+    font-size: 11px;
 }
 
-.gratis-offer-product-image {
+.ponuda-dwell-media {
     position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 6px;
-    overflow: visible;
-    background: transparent;
-    border: none;
-    box-shadow: none;
+    width: 168px;
+    height: 168px;
+    margin: 0 auto 10px;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    background: transparent;
 }
 
-.gratis-offer-product-image img {
+.ponuda-dwell-media:has(img[hidden]) {
+    display: none;
+}
+
+.ponuda-dwell-image {
     width: 100%;
     height: 100%;
     max-width: 100%;
@@ -4542,36 +4549,19 @@ body.catalog-variation-modal-open {
     object-fit: contain;
     object-position: center;
     display: block;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
+    border-radius: 10px;
     background: transparent;
 }
 
-.gratis-offer-image-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 8px;
-    background: rgba(240, 249, 232, 0.55);
-    color: var(--gray-400);
+.ponuda-dwell-image[hidden] {
+    display: none !important;
 }
 
-.gratis-offer-image-placeholder svg {
-    width: 40px;
-    height: 40px;
-}
-
-.gratis-offer-name {
-    margin: 0;
-    padding: 0 6px;
-    font-size: 13px;
-    font-weight: 700;
+.ponuda-dwell-name {
+    margin: 0 0 4px;
+    padding: 0 4px;
+    font-size: 14px;
+    font-weight: 800;
     line-height: 1.3;
     color: var(--black);
     display: -webkit-box;
@@ -4581,64 +4571,145 @@ body.catalog-variation-modal-open {
     overflow: hidden;
 }
 
-.gratis-offer-question {
+.ponuda-dwell-headline {
     margin: 0 0 8px;
-    padding: 7px 10px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--dwell-card-sale, #e11d48);
+    line-height: 1.25;
+}
+
+.gratis-offer-question,
+.ponuda-dwell-question {
+    margin: 0 0 10px;
+    padding: 0 4px;
     width: 100%;
     box-sizing: border-box;
     font-size: 12px;
     line-height: 1.4;
     font-weight: 500;
-    color: #2e7d32;
-    background: linear-gradient(135deg, #f0f9e8 0%, #e8f5d8 100%);
-    border: 1px solid #5BB805;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(91, 184, 5, 0.1);
+    color: var(--gray-600);
+    background: transparent;
+    border: none;
+    box-shadow: none;
 }
 
-.gratis-offer-question strong {
-    font-weight: 700;
-    color: #1b5e20;
+.gratis-offer-question strong,
+.ponuda-dwell-question strong {
+    font-weight: 800;
+    color: var(--dwell-card-label, #be123c);
 }
 
 .gratis-offer-pct {
-    color: #e60000 !important;
+    color: var(--dwell-card-sale, #e11d48) !important;
     font-weight: 900 !important;
 }
 
-.gratis-offer-prices {
-    display: flex;
+.gratis-offer-prices.card-dwell-prices {
+    display: flex !important;
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
     gap: 6px 10px;
-    margin: 0;
+    margin: 0 0 4px !important;
     width: 100%;
 }
 
-.gratis-offer-prices .price-original {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gray-600);
+.gratis-offer-prices .price-original,
+.gratis-offer-prices .card-dwell-was {
+    font-size: 13px !important;
+    font-weight: 700 !important;
 }
 
-.gratis-offer-prices .price-sale {
-    color: #e60000;
-    font-weight: 800;
-    font-size: 17px;
+.gratis-offer-prices .price-sale,
+.gratis-offer-prices .card-dwell-now {
+    color: var(--dwell-card-sale, #e11d48);
+    font-weight: 900;
+    font-size: 20px !important;
     margin-right: 0;
 }
 
-.gratis-offer-actions {
+.ponuda-qty {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    margin: 10px 0 0;
+}
+
+.ponuda-qty-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gray-600);
+}
+
+.ponuda-qty-selector {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 22%, #e5e5e5);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.ponuda-qty-selector .product-qty-btn {
+    width: 40px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--black);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.ponuda-qty-selector .product-qty-btn:hover:not(:disabled) {
+    background: var(--gray-100);
+}
+
+.ponuda-qty-selector .product-qty-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.ponuda-qty-selector .product-qty-input {
+    width: 48px;
+    height: 38px;
+    border: none;
+    border-left: 1px solid var(--gray-200);
+    border-right: 1px solid var(--gray-200);
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--black);
+    background: #fff;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.ponuda-qty-selector .product-qty-input::-webkit-outer-spin-button,
+.ponuda-qty-selector .product-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.gratis-offer-actions.ponuda-dwell-actions {
+    display: flex;
+    flex-direction: column;
     flex-wrap: nowrap;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     gap: 8px;
     width: 100%;
-    margin-top: auto;
-    padding: 10px 4px 0 !important;
+    margin-top: 12px;
+    padding: 4px 0 0 !important;
 }
 
 .gratis-offer-actions .gratis-offer-btn {
@@ -4646,61 +4717,92 @@ body.catalog-variation-modal-open {
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: auto;
+    width: 100%;
     min-width: 0;
-    min-height: 0;
-    padding: 5px 14px;
-    font-size: 13px;
-    font-weight: 700;
+    min-height: 42px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 800;
     line-height: 1.2;
-    border-radius: 6px;
-    background: #5BB805;
+    border-radius: 10px;
+    background: var(--btn-cart, #5BB805);
     color: #fff;
     border: none;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.25);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--btn-cart, #5BB805) 28%, transparent);
     transition: filter 0.15s ease, transform 0.15s ease;
 }
 
+.gratis-offer-actions .gratis-offer-btn--decline {
+    background: transparent;
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+    box-shadow: none;
+    font-weight: 600;
+    min-height: 38px;
+}
+
 .gratis-offer-actions .gratis-offer-btn:hover {
-    filter: brightness(0.92);
+    filter: brightness(0.95);
     color: #fff !important;
     transform: translateY(-1px);
 }
 
+.gratis-offer-actions .gratis-offer-btn--decline:hover {
+    color: var(--black) !important;
+    background: var(--gray-100);
+    filter: none;
+}
+
+/* X na dwell kartici */
+.site-popup--ponuda-dwell .site-popup-close {
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
 @media (max-width: 480px) {
-    .gratis-offer-akcija {
-        padding: 16px 12px 12px !important;
+    .ponuda-dwell-card.card-dwell-deal {
+        padding: 24px 14px 14px;
     }
 
-    .gratis-offer-product-image {
-        width: 180px;
-        height: 180px;
+    .ponuda-dwell-media {
+        width: 148px;
+        height: 148px;
     }
 
-    .gratis-offer-name {
+    .ponuda-dwell-name {
+        font-size: 13px;
+    }
+
+    .ponuda-dwell-headline {
         font-size: 12px;
     }
 
-    .gratis-offer-question {
+    .gratis-offer-question,
+    .ponuda-dwell-question {
         font-size: 11px;
-        padding: 6px 8px;
     }
 
-    .gratis-offer-prices .price-sale {
-        font-size: 16px;
-    }
-
-    .gratis-offer-actions {
-        gap: 8px;
-        padding-top: 8px !important;
+    .gratis-offer-prices .price-sale,
+    .gratis-offer-prices .card-dwell-now {
+        font-size: 18px !important;
     }
 
     .gratis-offer-actions .gratis-offer-btn {
-        min-height: 0;
-        font-size: 12px;
-        padding: 4px 12px;
+        min-height: 40px;
+        font-size: 13px;
     }
+}
+
+.gratis-akcija-hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dwell-card-label, #be123c);
 }
 
 /* Legacy gratis promo (removed from product detail) */
