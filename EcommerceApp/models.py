@@ -1186,11 +1186,11 @@ class Akcija(models.Model):
         blank=True,
         null=True,
         related_name='akcije',
-        verbose_name='Artikal',
+        verbose_name='1. Trigger artikal',
         help_text=(
-            'Za + Ponuda: trigger artikal — popup iskače samo kad se doda u korpu. '
-            'Za Pop-up bundle: samo ako je trigger „odabrani trigger artikal”. '
-            'Za „Kupi više”: artikal na koji važi količinski popust.'
+            '+ Ponuda: artikal koji kupac dodaje u korpu — tada iskače popup. '
+            'Kupi više: artikal na koji važi količinski popust. '
+            'Bundle: samo ako je trigger „odabrani trigger artikal”.'
         ),
     )
     gratis_artikal = models.ForeignKey(
@@ -1199,11 +1199,10 @@ class Akcija(models.Model):
         blank=True,
         null=True,
         related_name='akcije_gratis',
-        verbose_name='Ponuda artikal',
+        verbose_name='3. Ponuda artikal (popup)',
         help_text=(
-            'Za + Ponuda: artikal koji se nudi u popup-u (stil kao AI dwell) '
-            'nakon dodavanja trigger artikla u korpu. '
-            'Ako uneseš Popust (%), nudi se sa sniženjem; prazno = regularna cijena.'
+            '+ Ponuda: artikal koji se nudi u popupu (AI dwell stil) '
+            'nakon dodavanja triggera. Obavezno za + Ponuda.'
         ),
     )
     bundle_artikli = models.ManyToManyField(
@@ -1243,12 +1242,11 @@ class Akcija(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        verbose_name='Popust (%)',
+        verbose_name='2. Popust (%) — opcionalno',
         help_text=(
+            '+ Ponuda: % snizenja na ponuđeni artikal; prazno = regularna cijena. '
             'Pop-up bundle: % na cijeli set (ako linija nema svoj %). '
-            'Za % samo na jedan artikal — unesi „Popust % (samo ovaj artikal)” na bundle stavci. '
-            'Za + Ponuda: opcionalno — % snizenja na ponuđeni artikal; prazno = regularna cijena. '
-            'Za „Kupi više”: opcionalno — % po količini unosi se na tier linijama (2, 3…).'
+            'Kupi više: % unosi se u polja „Kupi 2/3/… komada”, ne ovdje.'
         ),
     )
     prag_korpe_km = models.DecimalField(

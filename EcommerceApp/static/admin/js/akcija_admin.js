@@ -56,7 +56,7 @@
         ponovo_poslije_dana: 1,
     };
 
-    // + Ponuda: trigger + ponuda artikal + opcionalni %
+    // + Ponuda: samo trigger + opcionalni % + ponuda artikal
     var PONUDA_FIELDS = {
         naziv: 1,
         tip: 1,
@@ -65,8 +65,6 @@
         artikal: 1,
         gratis_artikal: 1,
         popust_postotak: 1,
-        za_prijavljene: 1,
-        za_neprijavljene: 1,
     };
 
     // Osnovna + sva AI polja (kao stari zasebni meni)
@@ -274,7 +272,12 @@
             'ai prodaja',
             'ai dwell',
         ]);
-        var $sadrzajFieldset = fieldsetByHeading(['sadržaj', 'sadrzaj']);
+        // Nova sekcija „+ Ponuda — unesi ovo” (i stari „Sadržaj” fallback)
+        var $ponudaFieldset = fieldsetByHeading(['+ ponuda', 'ponuda — unesi', 'unesi ovo']);
+        if (!$ponudaFieldset.length) {
+            $ponudaFieldset = fieldsetByHeading(['sadržaj', 'sadrzaj']);
+        }
+        var $bundleExtraFieldset = fieldsetByHeading(['pop-up bundle', 'bundle — dodatno', 'bundle dodatno']);
         var $popupFieldset = fieldsetByHeading(['pop-up ponašanje', 'popup ponašanje']);
         var $legacyFieldset = fieldsetByHeading(['legacy']);
 
@@ -311,7 +314,8 @@
             $dwellInline.hide();
             $qtyFieldset.hide();
             $aiFieldsets.hide();
-            $sadrzajFieldset.show();
+            $ponudaFieldset.show();
+            $bundleExtraFieldset.show();
             $popupFieldset.show();
             $legacyFieldset.hide();
         } else if (isQtyDeal) {
@@ -343,7 +347,8 @@
             $qtyFieldset.show().css('display', '');
             $qtyFieldset.find('.form-row').show();
             $aiFieldsets.hide();
-            $sadrzajFieldset.show();
+            $ponudaFieldset.show();
+            $bundleExtraFieldset.hide();
             $popupFieldset.show();
             $legacyFieldset.hide();
             if (!$qtyFieldset.data('qty-hinted')) {
@@ -354,6 +359,7 @@
                 $qtyFieldset.data('qty-hinted', 1);
             }
         } else if (isPonuda) {
+            // Samo: tip + 1) trigger  2) %  3) ponuda artikal
             hideField('bundle_artikli');
             hideField('bundle_trigger');
             hideField('kategorija');
@@ -362,6 +368,8 @@
             hideField('boja_dugmeta');
             hideField('boja_opisa');
             hideField('ponovo_poslije_dana');
+            hideField('za_prijavljene');
+            hideField('za_neprijavljene');
             ['qty_2_popust', 'qty_3_popust', 'qty_4_popust', 'qty_5_popust', 'qty_6_popust'].forEach(hideField);
             Object.keys(AI_FIELDS).forEach(hideField);
             showField('naziv');
@@ -369,17 +377,25 @@
             showField('aktivan');
             showField('redoslijed');
             showField('artikal');
-            showField('gratis_artikal');
             showField('popust_postotak');
-            showField('za_prijavljene');
-            showField('za_neprijavljene');
+            showField('gratis_artikal');
             $bundleInline.hide();
             $dwellInline.hide();
             $qtyFieldset.hide();
             $aiFieldsets.hide();
-            $sadrzajFieldset.show();
+            $ponudaFieldset.show().css('display', '');
+            $ponudaFieldset.find('.form-row').show().css('display', '');
+            $bundleExtraFieldset.hide();
             $popupFieldset.hide();
             $legacyFieldset.hide();
+            // Naglasi sekciju za unos
+            if (!$ponudaFieldset.data('ponuda-hinted')) {
+                $ponudaFieldset.css('outline', '2px solid #5BB805');
+                window.setTimeout(function () {
+                    $ponudaFieldset.css('outline', '');
+                }, 2500);
+                $ponudaFieldset.data('ponuda-hinted', 1);
+            }
         } else if (isAi) {
             // Samo osnovna + AI opcije (sve što je bilo u starom meniju)
             hideField('bundle_artikli');
@@ -408,7 +424,8 @@
             $qtyFieldset.hide();
             $aiFieldsets.show().css('display', '');
             $aiFieldsets.find('.form-row').show().css('display', '');
-            $sadrzajFieldset.hide();
+            $ponudaFieldset.hide();
+            $bundleExtraFieldset.hide();
             $popupFieldset.hide();
             $legacyFieldset.hide();
         } else {
@@ -421,6 +438,7 @@
             $dwellInline.hide();
             $qtyFieldset.hide();
             $aiFieldsets.hide();
+            $bundleExtraFieldset.hide();
         }
     }
 

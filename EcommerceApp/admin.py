@@ -824,26 +824,34 @@ class AkcijaAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
-                'Tipovi: „Pop-up bundle”, „Kupi više”, „+ Ponuda” '
-                '(popup DA/NE samo kad se trigger doda u korpu) '
-                'i „AI prodaja / AI dwell”.'
+                'Odaberi tip. Za „+ Ponuda” unesi tri polja u sekciji ispod: '
+                'trigger artikal → opcionalni % → ponuda artikal.'
             ),
         }),
-        ('Sadržaj', {
+        ('+ Ponuda — unesi ovo', {
+            'fields': (
+                'artikal',
+                'popust_postotak',
+                'gratis_artikal',
+            ),
+            'description': (
+                '1) Trigger artikal — kad ga kupac doda u korpu, iskače popup. '
+                '2) Popust (%) — opcionalno na ponuđeni artikal (prazno = regularna cijena). '
+                '3) Ponuda artikal — artikal koji se nudi u popupu (AI dwell stil). '
+                'Za „Kupi više” koristi samo Trigger artikal. '
+                'Za bundle: % i trigger po pravilima ispod.'
+            ),
+        }),
+        ('Pop-up bundle — dodatno', {
             'fields': (
                 'bundle_trigger',
-                'popust_postotak',
-                'artikal',
-                'gratis_artikal',
                 'kategorija',
                 'tekst_dugmeta',
                 'boja_dugmeta',
                 'boja_opisa',
             ),
             'description': (
-                'Za + Ponuda: Artikal = trigger (popup iskače samo kad se doda u korpu). '
-                'Ponuda artikal = što se nudi uz to (AI dwell stil). '
-                'Popust (%) opcionalan (prazno = regularna cijena).'
+                'Samo za tip „Pop-up bundle”: šta trigeruje set, boje i tekst dugmeta.'
             ),
         }),
         ('Kupi više — količina i popust', {
@@ -867,8 +875,8 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'ponovo_poslije_dana',
             ),
             'description': (
-                'Kašnjenje i publika (bundle / kupi više). '
-                'Za + Ponuda modal se prikazuje odmah na „Dodaj u korpu”.'
+                'Kašnjenje i publika — za bundle i „Kupi više”. '
+                '+ Ponuda se prikazuje odmah na „Dodaj u korpu” (nema kašnjenja).'
             ),
         }),
         ('AI prodaja (popup)', {

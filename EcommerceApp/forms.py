@@ -231,6 +231,27 @@ class AkcijaAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Jasne labele za + Ponuda (i ostale tipove koji dijele ista polja)
+        if 'artikal' in self.fields:
+            self.fields['artikal'].label = '1. Trigger artikal'
+            self.fields['artikal'].help_text = (
+                '+ Ponuda: artikal koji kupac dodaje u korpu → tada iskače popup. '
+                'Kupi više: artikal na koji važi količinski popust. '
+                'Bundle: samo ako je trigger „odabrani trigger artikal”.'
+            )
+        if 'popust_postotak' in self.fields:
+            self.fields['popust_postotak'].label = '2. Popust (%) — opcionalno'
+            self.fields['popust_postotak'].help_text = (
+                '+ Ponuda: % snizenja na ponuđeni artikal. Prazno = regularna cijena. '
+                'Bundle: % na set (ako linija nema svoj %).'
+            )
+        if 'gratis_artikal' in self.fields:
+            self.fields['gratis_artikal'].label = '3. Ponuda artikal (popup)'
+            self.fields['gratis_artikal'].help_text = (
+                '+ Ponuda: artikal koji se nudi u popupu nakon dodavanja triggera. '
+                'Obavezno za tip + Ponuda.'
+            )
+
         # Učitaj postojeće tierove u polja 2–6
         instance = getattr(self, 'instance', None)
         if instance and instance.pk and getattr(instance, 'tip', None) == Akcija.Tip.QTY_DEAL:
