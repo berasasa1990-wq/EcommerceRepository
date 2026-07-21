@@ -812,7 +812,8 @@ class AkcijaAdmin(admin.ModelAdmin):
         js = ('admin/js/akcija_admin.js',)
         css = {'all': ('admin/css/ozr_admin.css',)}
 
-    # --- Fieldseti po tipu (server-side; JS dodatno filtrira pri promjeni tipa) ---
+    # --- Fieldseti: svako polje SAMO JEDNOM (admin.E012) ---
+    # JS pri promjeni tipa prikaže/sakrije relevantne sekcije.
     _FS_BASE = (
         (None, {
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
@@ -822,43 +823,28 @@ class AkcijaAdmin(admin.ModelAdmin):
             ),
         }),
     )
-    _FS_PONUDA = (
-        ('+ Ponuda — unesi ovo', {
+    _FS_ARTIKLI = (
+        ('Artikli i popust', {
             'fields': (
                 'artikal',
                 'popust_postotak',
                 'gratis_artikal',
             ),
             'description': (
-                '1) Trigger artikal — kad ga kupac doda u korpu, iskače popup. '
-                '2) Popust (%) — opcionalno (prazno = regularna cijena). '
-                '3) Ponuda artikal — što se nudi u popupu.'
+                '+ Ponuda: 1) Trigger artikal  2) Popust % (opcionalno)  3) Ponuda artikal. '
+                'Kupi više: samo Trigger artikal. '
+                'Bundle: Popust % na set; trigger artikal ako je trigger „odabrani artikal”.'
             ),
         }),
     )
-    _FS_BUNDLE = (
-        ('Artikal / popust seta', {
-            'fields': ('popust_postotak', 'artikal', 'gratis_artikal'),
-            'description': (
-                'Popust (%) na set. Trigger artikal samo ako je trigger „odabrani artikal”. '
-                'Stavke seta unesi u tabeli ispod.'
-            ),
-        }),
+    _FS_BUNDLE_EXTRA = (
         ('Pop-up bundle — dodatno', {
             'fields': (
                 'bundle_trigger',
                 'kategorija',
-                'tekst_dugmeta',
-                'boja_dugmeta',
-                'boja_opisa',
+                'popup_delay_seconds',
             ),
-            'description': 'Šta trigeruje set, boje i tekst dugmeta.',
-        }),
-        ('Pop-up ponašanje', {
-            'fields': (
-                'popup_delay_seconds', 'za_prijavljene', 'za_neprijavljene',
-                'ponovo_poslije_dana',
-            ),
+            'description': 'Šta trigeruje set i kašnjenje popupa.',
         }),
         ('Legacy M2M (opcionalno)', {
             'classes': ('collapse',),
@@ -867,10 +853,6 @@ class AkcijaAdmin(admin.ModelAdmin):
         }),
     )
     _FS_QTY = (
-        ('Artikal', {
-            'fields': ('artikal',),
-            'description': 'Artikal na koji važi količinski popust.',
-        }),
         ('Kupi više — količina i popust', {
             'fields': (
                 'qty_2_popust',
@@ -884,11 +866,18 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'Prazno = ta opcija se ne nudi.'
             ),
         }),
-        ('Prikaz', {
+    )
+    _FS_PRIKAZ = (
+        ('Prikaz i publika', {
             'fields': (
-                'tekst_dugmeta', 'boja_dugmeta', 'boja_opisa',
-                'za_prijavljene', 'za_neprijavljene', 'ponovo_poslije_dana',
+                'tekst_dugmeta',
+                'boja_dugmeta',
+                'boja_opisa',
+                'za_prijavljene',
+                'za_neprijavljene',
+                'ponovo_poslije_dana',
             ),
+            'description': 'Za bundle i „Kupi više”. + Ponuda ovo ne koristi.',
         }),
     )
     _FS_AI = (
@@ -952,9 +941,15 @@ class AkcijaAdmin(admin.ModelAdmin):
         }),
     )
 
-    # Svi fieldseti u DOM-u (JS pri promjeni tipa prikaže samo relevantne).
-    # get_fieldsets sužava pri uređivanju poznatog tipa da AI dwell ne treperi.
-    fieldsets = _FS_BASE + _FS_PONUDA + _FS_BUNDLE + _FS_QTY + _FS_AI
+    # Svako polje tačno jednom — Django admin.E012
+    fieldsets = (
+        _FS_BASE
+        + _FS_ARTIKLI
+        + _FS_BUNDLE_EXTRA
+        + _FS_QTY
+        + _FS_PRIKAZ
+        + _FS_AI
+    )
 
     def _resolve_akcija_tip(self, request, obj=None):
         if request is not None and request.method == 'POST':
@@ -967,23 +962,21 @@ class AkcijaAdmin(admin.ModelAdmin):
 
     def get_fieldsets(self, request, obj=None):
         """
-        Pri uređivanju postojećeg reda: samo fieldseti za taj tip
-        (npr. + Ponuda ne dobije AI dwell polja u HTML-u).
-        Pri dodavanju / promjeni tipa na formi: svi fieldseti + JS filter.
+        Pri uređivanju postojećeg reda: samo fieldseti za taj tip.
+        Pri dodavanju: svi fieldseti (bez duplikata) + JS filter.
         """
         tip = self._resolve_akcija_tip(request, obj)
-        # POST mora imati sva polja koja tip može tražiti (validacija)
+        # POST: sva polja dostupna (promjena tipa / validacija)
         if request is not None and request.method == 'POST':
             return self.fieldsets
         if tip == Akcija.Tip.PONUDA:
-            return self._FS_BASE + self._FS_PONUDA
+            return self._FS_BASE + self._FS_ARTIKLI
         if tip == Akcija.Tip.BUNDLE:
-            return self._FS_BASE + self._FS_BUNDLE
+            return self._FS_BASE + self._FS_ARTIKLI + self._FS_BUNDLE_EXTRA + self._FS_PRIKAZ
         if tip == Akcija.Tip.QTY_DEAL:
-            return self._FS_BASE + self._FS_QTY
+            return self._FS_BASE + self._FS_ARTIKLI + self._FS_QTY + self._FS_PRIKAZ
         if tip == Akcija.Tip.AI_PRODAJA:
             return self._FS_BASE + self._FS_AI
-        # Novi unos: sve u DOM-u, JS sakrije po odabranom tipu
         return self.fieldsets
 
     def get_inline_instances(self, request, obj=None):
