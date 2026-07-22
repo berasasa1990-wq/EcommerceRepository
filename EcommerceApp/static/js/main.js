@@ -1811,37 +1811,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Bind only if product-detail.js didn't already bind (product page has its own handlers)
-    if (ponudaAccept && !ponudaAccept.dataset.ponudaBound) {
-        ponudaAccept.dataset.ponudaBound = '1';
-        ponudaAccept.addEventListener('click', () => submitPonudaChoice('yes'));
-    }
-    if (ponudaDecline && !ponudaDecline.dataset.ponudaBound) {
-        ponudaDecline.dataset.ponudaBound = '1';
-        ponudaDecline.addEventListener('click', () => submitPonudaChoice('no'));
-    }
-    // X = isto kao NE: dodaj samo trigger artikal
-    if (ponudaClose && !ponudaClose.dataset.ponudaBound) {
-        ponudaClose.dataset.ponudaBound = '1';
-        ponudaClose.addEventListener('click', () => submitPonudaChoice('no'));
-    }
-    if (ponudaQtyMinus && !ponudaQtyMinus.dataset.ponudaBound) {
-        ponudaQtyMinus.dataset.ponudaBound = '1';
-        ponudaQtyMinus.addEventListener('click', () => {
-            setPonudaOfferQty(getPonudaOfferQty() - 1);
-        });
-    }
-    if (ponudaQtyPlus && !ponudaQtyPlus.dataset.ponudaBound) {
-        ponudaQtyPlus.dataset.ponudaBound = '1';
-        ponudaQtyPlus.addEventListener('click', () => {
-            setPonudaOfferQty(getPonudaOfferQty() + 1);
-        });
-    }
-    if (ponudaQtyInput && !ponudaQtyInput.dataset.ponudaBound) {
-        ponudaQtyInput.dataset.ponudaBound = '1';
-        const sync = () => setPonudaOfferQty(getPonudaOfferQty());
-        ponudaQtyInput.addEventListener('change', sync);
-        ponudaQtyInput.addEventListener('input', sync);
+    // Na product detail product-detail.js vodi modal i količinu (+1).
+    // Ne bindaj ovdje da + ne skoči za 2–3.
+    const isProductDetailPage = !!(
+        document.getElementById('mainAddToCartForm') ||
+        document.getElementById('productDetailInfo')
+    );
+    if (!isProductDetailPage) {
+        if (ponudaAccept && !ponudaAccept.dataset.ponudaBound) {
+            ponudaAccept.dataset.ponudaBound = '1';
+            ponudaAccept.addEventListener('click', () => submitPonudaChoice('yes'));
+        }
+        if (ponudaDecline && !ponudaDecline.dataset.ponudaBound) {
+            ponudaDecline.dataset.ponudaBound = '1';
+            ponudaDecline.addEventListener('click', () => submitPonudaChoice('no'));
+        }
+        // X = isto kao NE: dodaj samo trigger artikal
+        if (ponudaClose && !ponudaClose.dataset.ponudaBound) {
+            ponudaClose.dataset.ponudaBound = '1';
+            ponudaClose.addEventListener('click', () => submitPonudaChoice('no'));
+        }
+        if (ponudaQtyMinus && !ponudaQtyMinus.dataset.ponudaBound) {
+            ponudaQtyMinus.dataset.ponudaBound = '1';
+            ponudaQtyMinus.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPonudaOfferQty(getPonudaOfferQty() - 1);
+            });
+        }
+        if (ponudaQtyPlus && !ponudaQtyPlus.dataset.ponudaBound) {
+            ponudaQtyPlus.dataset.ponudaBound = '1';
+            ponudaQtyPlus.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPonudaOfferQty(getPonudaOfferQty() + 1);
+            });
+        }
+        if (ponudaQtyInput && !ponudaQtyInput.dataset.ponudaBound) {
+            ponudaQtyInput.dataset.ponudaBound = '1';
+            const sync = () => setPonudaOfferQty(getPonudaOfferQty());
+            ponudaQtyInput.addEventListener('change', sync);
+            ponudaQtyInput.addEventListener('input', sync);
+        }
     }
 
     async function catalogAddProductToCart(slug, variationId = '', extraFields = {}) {

@@ -269,19 +269,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    gratisQtyMinus?.addEventListener('click', () => {
-        setGratisOfferQty(getGratisOfferQty() - 1);
-    });
-    gratisQtyPlus?.addEventListener('click', () => {
-        setGratisOfferQty(getGratisOfferQty() + 1);
-    });
-    gratisQtyInput?.addEventListener('change', syncGratisQtyButtons);
-    gratisQtyInput?.addEventListener('input', syncGratisQtyButtons);
+    // Samo jedan handler za količinu (+1 / −1) — ne dijeli sa main.js / generic qty
+    if (gratisQtyMinus && !gratisQtyMinus.dataset.ponudaBound) {
+        gratisQtyMinus.dataset.ponudaBound = '1';
+        gratisQtyMinus.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setGratisOfferQty(getGratisOfferQty() - 1);
+        });
+    }
+    if (gratisQtyPlus && !gratisQtyPlus.dataset.ponudaBound) {
+        gratisQtyPlus.dataset.ponudaBound = '1';
+        gratisQtyPlus.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setGratisOfferQty(getGratisOfferQty() + 1);
+        });
+    }
+    if (gratisQtyInput && !gratisQtyInput.dataset.ponudaBound) {
+        gratisQtyInput.dataset.ponudaBound = '1';
+        gratisQtyInput.addEventListener('change', syncGratisQtyButtons);
+        gratisQtyInput.addEventListener('input', syncGratisQtyButtons);
+    }
 
-    gratisAccept?.addEventListener('click', () => submitGratisChoice('yes'));
-    gratisDecline?.addEventListener('click', () => submitGratisChoice('no'));
+    if (gratisAccept && !gratisAccept.dataset.ponudaBound) {
+        gratisAccept.dataset.ponudaBound = '1';
+        gratisAccept.addEventListener('click', () => submitGratisChoice('yes'));
+    }
+    if (gratisDecline && !gratisDecline.dataset.ponudaBound) {
+        gratisDecline.dataset.ponudaBound = '1';
+        gratisDecline.addEventListener('click', () => submitGratisChoice('no'));
+    }
     // X = isto kao NE: zatvori i dodaj samo trigger artikal u korpu
-    gratisClose?.addEventListener('click', () => submitGratisChoice('no'));
+    if (gratisClose && !gratisClose.dataset.ponudaBound) {
+        gratisClose.dataset.ponudaBound = '1';
+        gratisClose.addEventListener('click', () => submitGratisChoice('no'));
+    }
 
     async function submitAddToCartForm(form, extraFields = {}) {
         const submitBtn = form.querySelector('[type="submit"]');
@@ -342,10 +365,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.querySelectorAll('.product-qty-selector').forEach((selector) => {
+        // + Ponuda modal ima vlastiti +1 handler — ne dodavaj drugi
+        if (selector.hasAttribute('data-ponuda-qty') || selector.closest('#gratisOfferOverlay')) {
+            return;
+        }
         const input = selector.querySelector('.product-qty-input');
         const minusBtn = selector.querySelector('.product-qty-btn--minus');
         const plusBtn = selector.querySelector('.product-qty-btn--plus');
         if (!input || !minusBtn || !plusBtn) return;
+        if (input.id === 'gratisOfferQty') return;
 
         const min = Number.parseInt(input.min, 10) || 1;
         const max = Number.parseInt(input.max, 10) || 99;

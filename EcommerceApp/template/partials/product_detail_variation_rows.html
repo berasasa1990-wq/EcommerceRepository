@@ -30,7 +30,7 @@
         <button type="submit" class="btn btn-detail-variation-add"
                 data-product-id="{{ product.pk }}"
                 data-product-name="{{ product.naziv }}"
-                data-almost-cart>Dodaj u korpu</button>
+                data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
     </form>
 </div>
 {% endfor %}

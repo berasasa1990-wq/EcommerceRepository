@@ -341,7 +341,12 @@ def _category_bestseller_ids(focus_cat, *, exclude_ids=None, limit=8):
         .filter(Q(na_stanju=True) | Q(varijacije__na_stanju=True))
         .exclude(pk__in=exclude_ids)
         .distinct()
-        .order_by('-prikazi_na_pocetnoj', '-akcija_postotak', '-kreiran')
+        .order_by(
+            '-prioritet_lagera',
+            '-prikazi_na_pocetnoj',
+            '-akcija_postotak',
+            '-kreiran',
+        )
         .values_list('pk', flat=True)[:limit]
     )
     return list(qs)
@@ -388,7 +393,7 @@ def _candidate_product_ids(visitor, *, exclude_ids=None, pool_size=24):
                 .exclude(pk__in=exclude_ids)
                 .exclude(pk__in=ordered)
                 .distinct()
-                .order_by('-prikazi_na_pocetnoj', '-kreiran')
+                .order_by('-prioritet_lagera', '-prikazi_na_pocetnoj', '-kreiran')
                 .values_list('pk', flat=True)[:8]
             )
             for pid in same_brand:
@@ -432,6 +437,18 @@ def _score_reason_for_product(product, views, *, focus_cat, avg_viewed_price, is
 
     if getattr(product, 'prikazi_na_pocetnoj', False):
         score += 8
+
+    # Redukovanje lagera — samo boost, ne mijenja relevantnost (već smo u kandidatima)
+    try:
+        lager_prio = int(getattr(product, 'prioritet_lagera', 0) or 0)
+    except (TypeError, ValueError):
+        lager_prio = 0
+    if lager_prio >= 2:
+        score += 40
+        reasons.append('Hit redukovanje lagera')
+    elif lager_prio == 1:
+        score += 18
+        reasons.append('Favorizovano (lager)')
 
     try:
         price = Decimal(str(product.prikazna_cijena or 0))

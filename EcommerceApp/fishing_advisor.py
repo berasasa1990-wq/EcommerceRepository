@@ -759,7 +759,8 @@ def _products_by_keywords(keywords, limit=8, require_stock=False):
     if not keywords:
         return []
     qs = _base_qs(require_stock=require_stock).filter(_keyword_q(keywords))
-    return list(qs.order_by('-na_stanju', '?')[:limit])
+    # Među relevantnim (keyword): prioritet lagera, pa stanje, pa nasumično
+    return list(qs.order_by('-prioritet_lagera', '-na_stanju', '?')[:limit])
 
 
 def build_accessory_products(request=None, limit_per=2):
@@ -821,9 +822,15 @@ def _filter_products_by_budget(products, budget_max=None, limit=40):
         if price <= 0:
             continue
         out.append(p)
-        if len(out) >= limit:
-            break
-    return out
+    # Među relevantnim u budžetu: hit/favor lager prvo
+    out.sort(
+        key=lambda p: (
+            -int(getattr(p, 'prioritet_lagera', 0) or 0),
+            _product_price(p),
+            (p.naziv or '').lower(),
+        ),
+    )
+    return out[:limit]
 
 
 def build_single_item_rec(item_key, request=None, state=None):
@@ -883,7 +890,9 @@ def build_single_item_rec(item_key, request=None, state=None):
         used_category = False
 
     # Učitaj više, pa filtriraj budžet po prikaznoj cijeni
-    candidates = list(qs.order_by('-na_stanju', 'cijena', 'naziv')[:120])
+    candidates = list(
+        qs.order_by('-prioritet_lagera', '-na_stanju', 'cijena', 'naziv')[:120],
+    )
     filtered = _filter_products_by_budget(candidates, budget_max=budget_max, limit=40)
 
     # Ako kategorija postoji ali ništa u budžetu — ne širi na cijelu trgovinu
@@ -891,7 +900,9 @@ def build_single_item_rec(item_key, request=None, state=None):
     if not filtered and cats and conf.get('prefer_fish'):
         # drugi pokušaj: samo keyword + budžet (širi net)
         qs2 = _base_qs(require_stock=True).filter(_keyword_q(conf.get('keywords')))
-        candidates2 = list(qs2.order_by('-na_stanju', 'cijena', 'naziv')[:120])
+        candidates2 = list(
+            qs2.order_by('-prioritet_lagera', '-na_stanju', 'cijena', 'naziv')[:120],
+        )
         filtered = _filter_products_by_budget(candidates2, budget_max=budget_max, limit=40)
         used_category = False
 
@@ -1072,7 +1083,7 @@ def _build_varalice_type_rec(type_key, request=None):
         used_cat = False
     products = [
         _serialize_product(p, request, role='varalice')
-        for p in qs.order_by('-na_stanju', 'cijena', 'naziv')[:40]
+        for p in qs.order_by('-prioritet_lagera', '-na_stanju', 'cijena', 'naziv')[:40]
     ]
     cat_label = cats[0].naziv if cats else conf.get('label', 'Varalice')
     cat_url = _category_url(cats, fallback_q=conf.get('search_q') or conf.get('label') or 'varalice')
@@ -1093,7 +1104,9 @@ def _build_najlon_rec(state, request=None):
     length = (state.get('najlon_length') or '').strip()
     thick = (state.get('najlon_thickness') or '').strip()
     qs, cats = _najlon_product_qs()
-    candidates = list(qs.order_by('-na_stanju', 'cijena', 'naziv')[:200])
+    candidates = list(
+        qs.order_by('-prioritet_lagera', '-na_stanju', 'cijena', 'naziv')[:200],
+    )
     out = []
     for p in candidates:
         name = p.naziv or ''

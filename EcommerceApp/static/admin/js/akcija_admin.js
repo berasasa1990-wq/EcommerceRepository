@@ -213,12 +213,25 @@
     }
 
     function isDwellInline($el) {
-        var s = (($el.attr('id') || '') + ' ' + ($el.attr('class') || '') + ' ' + $el.find('h2, h3, caption').first().text()).toLowerCase();
+        if ($el.hasClass('akcija-inline-dwell-items') || $el.find('.akcija-inline-dwell-items').length) {
+            return true;
+        }
+        if ($el.closest('.akcija-inline-dwell-items').length) {
+            return true;
+        }
+        var s = (
+            ($el.attr('id') || '') +
+            ' ' +
+            ($el.attr('class') || '') +
+            ' ' +
+            $el.find('h2, h3, caption, .inline-heading').first().text()
+        ).toLowerCase();
         return (
             s.indexOf('dwell') !== -1 ||
             s.indexOf('ai dwell') !== -1 ||
             s.indexOf('productdwell') !== -1 ||
-            s.indexOf('dwell artikal') !== -1
+            s.indexOf('dwell artikal') !== -1 ||
+            s.indexOf('artikal s popustom') !== -1
         );
     }
 
@@ -349,6 +362,68 @@
                 setHidden($row.closest('fieldset'), false);
             }
         });
+
+        // 6) AI dwell: forsira prikaz tabele artikala (SiteSettings ProductDwellItem)
+        if (isAi) {
+            var $dwell = formRoot().find(
+                '.akcija-inline-dwell-items, .inline-group.akcija-inline-dwell-items, ' +
+                '.inline-group[id*="productdwell"], .inline-group[id*="dwell"]'
+            );
+            if (!$dwell.length) {
+                $dwell = $('.akcija-inline-dwell-items, .inline-group.akcija-inline-dwell-items');
+            }
+            $dwell.each(function () {
+                var $g = $(this).hasClass('inline-group')
+                    ? $(this)
+                    : $(this).closest('.inline-group').addBack();
+                setHidden($g, false);
+                $g.find('.form-row, tr, .tabular').show().css('display', '');
+            });
+            // AI fieldseti
+            formRoot().find('fieldset').each(function () {
+                var t = ($(this).find('h2, legend').first().text() || '').toLowerCase();
+                if (t.indexOf('ai ') !== -1 || t.indexOf('dwell') !== -1) {
+                    setHidden($(this), false);
+                    $(this).find('.form-row').each(function () {
+                        setHidden($(this), false);
+                    });
+                }
+            });
+        }
+
+        // Tip select — osiguraj širinu
+        $('#id_tip').css({
+            minWidth: '18rem',
+            maxWidth: '36rem',
+            width: '100%',
+        });
+
+        // + Ponuda / Kupi više: forsira prikaz polja artikala (izmjena bez brisanja)
+        if (isPonuda || isQty) {
+            ['artikal', 'popust_postotak', 'gratis_artikal'].forEach(function (name) {
+                if (isQty && name !== 'artikal') {
+                    if (name === 'popust_postotak' || name === 'gratis_artikal') {
+                        // qty ne koristi ove u formi (qty koristi qty_2..)
+                        if (name !== 'artikal') {
+                            // hide gratis for qty
+                        }
+                    }
+                }
+                var $row = formRoot().find('.form-row.field-' + name);
+                if (isPonuda || (isQty && name === 'artikal')) {
+                    setHidden($row, false);
+                    setHidden($row.closest('fieldset'), false);
+                }
+            });
+            if (isPonuda) {
+                setHidden(formRoot().find('.form-row.field-gratis_artikal'), false);
+                setHidden(formRoot().find('.form-row.field-popust_postotak'), false);
+            }
+            if (isQty) {
+                setHidden(formRoot().find('.form-row.field-gratis_artikal'), true);
+                setHidden(formRoot().find('.form-row.field-popust_postotak'), true);
+            }
+        }
     }
 
     function bind() {

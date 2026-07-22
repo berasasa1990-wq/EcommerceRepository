@@ -1,13 +1,18 @@
 {% if products %}
 <div class="product-grid{% if not use_catalog_grid %} product-grid--home{% endif %}">
     {% for product in products %}
-    <a href="{{ product.get_absolute_url }}" class="product-card{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
+    <a href="{{ product.get_absolute_url }}" class="product-card{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
+        {% if product.je_novitet %}
+        <span class="product-card-corner-badge product-card-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
+        {% elif product.je_hit %}
+        <span class="product-card-corner-badge product-card-corner-badge--hit is-pulse" aria-label="Hit ponuda">HIT PONUDA</span>
+        {% endif %}
         <div class="product-image">
-            {% if home_section_badge == 'novo' %}
+            {% if not product.je_novitet and not product.je_hit and home_section_badge == 'novo' %}
             <span class="product-home-ribbon product-home-ribbon--novo" aria-hidden="true">Novo</span>
-            {% elif home_section_badge == 'hit' %}
+            {% elif not product.je_novitet and not product.je_hit and home_section_badge == 'hit' %}
             <span class="product-home-ribbon product-home-ribbon--hit" aria-hidden="true">HIT PONUDA</span>
-            {% else %}
+            {% elif not product.je_novitet and not product.je_hit %}
             {% include 'partials/product_sale_ribbon.html' with product=product %}
             {% endif %}
             {% if eager_first_image and forloop.first %}

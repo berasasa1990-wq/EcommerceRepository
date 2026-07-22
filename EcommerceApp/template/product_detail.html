@@ -70,6 +70,11 @@
              data-product-id="{{ product.pk }}"
              data-product-name="{{ product.naziv }}"
              {% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
+            {% if product.je_novitet %}
+            <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
+            {% elif product.je_hit %}
+            <span class="product-detail-corner-badge product-detail-corner-badge--hit is-pulse" aria-label="Hit ponuda">HIT PONUDA</span>
+            {% endif %}
             <div class="product-detail-brand">
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>
@@ -113,45 +118,6 @@
                             {% if product.proizvedeno_u_japanu %}✓ Made in Japan{% else %}Made in Japan{% endif %}
                         </button>
                     </form>
-                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-price-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="set_price">
-                        <label class="staff-product-price-label">
-                            <span>Cijena (KM)</span>
-                            <input type="text" name="cijena" value="{{ product.cijena }}" inputmode="decimal" pattern="[0-9.,]*" autocomplete="off" class="staff-product-price-input">
-                        </label>
-                        <button type="submit" class="btn btn-sm staff-product-btn">Spremi cijenu</button>
-                    </form>
-                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-meta-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="set_category">
-                        <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_category_search' %}">
-                            <label class="staff-product-price-label">
-                                <span>Kategorija</span>
-                                <div class="staff-lookup-field">
-                                    <input type="hidden" name="kategorija_id" value="{% if product.kategorija_id %}{{ product.kategorija_id }}{% endif %}" data-lookup-id>
-                                    <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.kategorija %}{{ product.kategorija }}{% endif %}" placeholder="Pretraži kategoriju…" autocomplete="off" inputmode="search">
-                                    <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
-                                </div>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-sm staff-product-btn">Spremi kategoriju</button>
-                    </form>
-                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-meta-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="set_brand">
-                        <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_brand_search' %}">
-                            <label class="staff-product-price-label">
-                                <span>Brend</span>
-                                <div class="staff-lookup-field">
-                                    <input type="hidden" name="brend_id" value="{% if product.brend_id %}{{ product.brend_id }}{% endif %}" data-lookup-id>
-                                    <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.brend %}{{ product.brend.naziv }}{% endif %}" placeholder="Pretraži brend…" autocomplete="off" inputmode="search">
-                                    <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
-                                </div>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-sm staff-product-btn">Spremi brend</button>
-                    </form>
                     {% if olx_configured %}
                     {% if product.olx_listing_url %}
                     <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
@@ -168,12 +134,53 @@
                     {% endif %}
                 </div>
 
-                <div class="staff-product-bar-sections">
-                    <div class="staff-product-bar-section">
-                        <h3 class="staff-product-section-title">Slike</h3>
-                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" enctype="multipart/form-data" class="staff-product-media-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="upload_main_image">
+                {# Jedan Save: brend, kategorija, opis, cijena, slika, noviteti, tagovi #}
+                <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" enctype="multipart/form-data" class="staff-product-save-all-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_all">
+                    <input type="hidden" name="set_tags_with_save" value="1">
+
+                    <div class="staff-product-bar-sections">
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Osnovno (jedan Save)</h3>
+                            <label class="staff-product-price-label">
+                                <span>Cijena (KM)</span>
+                                <input type="text" name="cijena" value="{{ product.cijena }}" inputmode="decimal" pattern="[0-9.,]*" autocomplete="off" class="staff-product-price-input">
+                            </label>
+                            <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_category_search' %}">
+                                <label class="staff-product-price-label">
+                                    <span>Kategorija</span>
+                                    <div class="staff-lookup-field">
+                                        <input type="hidden" name="kategorija_id" value="{% if product.kategorija_id %}{{ product.kategorija_id }}{% endif %}" data-lookup-id>
+                                        <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.kategorija %}{{ product.kategorija }}{% endif %}" placeholder="Pretraži kategoriju…" autocomplete="off" inputmode="search">
+                                        <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_brand_search' %}">
+                                <label class="staff-product-price-label">
+                                    <span>Brend</span>
+                                    <div class="staff-lookup-field">
+                                        <input type="hidden" name="brend_id" value="{% if product.brend_id %}{{ product.brend_id }}{% endif %}" data-lookup-id>
+                                        <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.brend %}{{ product.brend.naziv }}{% endif %}" placeholder="Pretraži brend…" autocomplete="off" inputmode="search">
+                                        <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <label class="staff-novitet-check">
+                                <input type="checkbox" name="je_novitet" value="1"{% if product.je_novitet %} checked{% endif %}>
+                                <span>Noviteti</span>
+                                <small>Zeleni pulsirajući natpis + prikaz na početnoj</small>
+                            </label>
+                            <label class="staff-novitet-check staff-hit-check">
+                                <input type="checkbox" name="je_hit" value="1"{% if product.je_hit %} checked{% endif %}>
+                                <span>HIT ponuda / Izdvojeno</span>
+                                <small>Crveni pulsirajući natpis + prikaz u Izdvojenim na početnoj</small>
+                            </label>
+                        </div>
+
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Slike</h3>
                             <label class="staff-product-price-label">
                                 <span>Glavna slika</span>
                                 {% if product.prikazna_slika %}
@@ -183,57 +190,34 @@
                                 {% endif %}
                                 <input type="file" name="glavna_slika" accept="image/*" class="staff-file-input">
                             </label>
-                            <button type="submit" class="btn btn-sm staff-product-btn">Zamijeni glavnu sliku</button>
-                        </form>
-
-                        {% if product.dodatne_slike.exists %}
-                        <div class="staff-extra-images">
-                            <span class="staff-product-price-label"><span>Dodatne slike</span></span>
-                            <div class="staff-image-grid">
-                                {% for img in product.dodatne_slike.all %}
-                                <div class="staff-image-thumb-wrap">
-                                    <img src="{{ img.slika.url }}" alt="Dodatna slika {{ forloop.counter }}" class="staff-image-thumb" loading="lazy">
-                                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-image-delete-form">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="delete_extra_image">
-                                        <input type="hidden" name="image_id" value="{{ img.pk }}">
-                                        <button type="submit" class="staff-image-delete-btn" title="Ukloni sliku" aria-label="Ukloni sliku">×</button>
-                                    </form>
+                            {% if product.dodatne_slike.exists %}
+                            <div class="staff-extra-images">
+                                <span class="staff-product-price-label"><span>Dodatne slike</span></span>
+                                <div class="staff-image-grid">
+                                    {% for img in product.dodatne_slike.all %}
+                                    <div class="staff-image-thumb-wrap">
+                                        <img src="{{ img.slika.url }}" alt="Dodatna slika {{ forloop.counter }}" class="staff-image-thumb" loading="lazy">
+                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             </div>
-                        </div>
-                        {% endif %}
-
-                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" enctype="multipart/form-data" class="staff-product-media-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="upload_extra_images">
+                            {% endif %}
                             <label class="staff-product-price-label">
                                 <span>Dodaj dodatne slike</span>
                                 <input type="file" name="dodatne_slike" accept="image/*" multiple class="staff-file-input">
                             </label>
-                            <button type="submit" class="btn btn-sm staff-product-btn">Dodaj slike</button>
-                        </form>
-                    </div>
+                        </div>
 
-                    <div class="staff-product-bar-section">
-                        <h3 class="staff-product-section-title">Opis</h3>
-                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-content-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="set_opis">
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Opis</h3>
                             <label class="staff-product-price-label">
                                 <span>Tekst opisa</span>
                                 <textarea name="opis" rows="6" class="staff-product-textarea" placeholder="Unesite opis artikla…">{{ product.opis }}</textarea>
                             </label>
-                            <button type="submit" class="btn btn-sm staff-product-btn">Spremi opis</button>
-                        </form>
-                    </div>
+                        </div>
 
-                    <div class="staff-product-bar-section">
-                        <h3 class="staff-product-section-title">Tagovi</h3>
-                        <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-tags-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="set_tags">
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Tagovi</h3>
                             <div class="staff-tag-picker" data-staff-tag-picker>
                                 <div class="staff-tag-chips" data-tag-chips>
                                     {% for tag in product.tagovi.all %}
@@ -258,10 +242,32 @@
                                     </label>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-sm staff-product-btn">Spremi tagove</button>
-                        </form>
+                        </div>
+                    </div>
+
+                    <div class="staff-product-save-all-footer">
+                        <button type="submit" class="btn staff-product-btn staff-product-btn--save-all">Sačuvaj sve</button>
+                    </div>
+                </form>
+
+                {% if product.dodatne_slike.exists %}
+                <div class="staff-product-bar-section staff-product-delete-images">
+                    <h3 class="staff-product-section-title">Ukloni dodatnu sliku</h3>
+                    <div class="staff-image-grid">
+                        {% for img in product.dodatne_slike.all %}
+                        <div class="staff-image-thumb-wrap">
+                            <img src="{{ img.slika.url }}" alt="Dodatna slika {{ forloop.counter }}" class="staff-image-thumb" loading="lazy">
+                            <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-image-delete-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_extra_image">
+                                <input type="hidden" name="image_id" value="{{ img.pk }}">
+                                <button type="submit" class="staff-image-delete-btn" title="Ukloni sliku" aria-label="Ukloni sliku">×</button>
+                            </form>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -328,7 +334,7 @@
                             data-product-id="{{ product.pk }}"
                             data-product-name="{{ product.naziv }}"
                             data-almost-cart
-                            id="mainAddToCartBtn">Dodaj u korpu</button>
+                            id="mainAddToCartBtn">{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
                 </div>
                 {% if conversion_boost %}
                 <div class="pd-conversion-boost">
@@ -440,10 +446,10 @@
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% if site_settings.naslov_povezani or povezani_podnaslov %}
+                {% if site_settings.naslov_povezani or povezani_podnaslov or staff_edit_mode %}
                 <div class="home-products-header home-products-header--izdvojeno">
-                    {% if site_settings.naslov_povezani %}<h2>{{ site_settings.naslov_povezani }}</h2>{% endif %}
-                    {% if povezani_podnaslov %}<p>{{ povezani_podnaslov }}</p>{% endif %}
+                    <h2 data-site-edit="naslov_povezani" data-site-edit-placeholder="Povezani artikli">{% if site_settings.naslov_povezani %}{{ site_settings.naslov_povezani }}{% endif %}</h2>
+                    <p data-site-edit="podnaslov_povezani" data-site-edit-placeholder="Podnaslov (opcionalno)"{% if not povezani_podnaslov and not staff_edit_mode %} hidden{% endif %}>{% if povezani_podnaslov %}{{ povezani_podnaslov }}{% endif %}</p>
                 </div>
                 {% endif %}
                 {% include 'partials/home_product_carousel.html' with products=related_products %}
@@ -455,7 +461,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260721v4" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260722v5" defer></script>
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
 {% endif %}

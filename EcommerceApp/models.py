@@ -439,6 +439,19 @@ class SiteSettings(models.Model):
         max_length=200, default='Blogovi — Klik na željeni',
         verbose_name='Blog — naslov',
     )
+    promo_bar_tekst = models.CharField(
+        max_length=200,
+        default='Besplatna dostava za narudžbe iznad 250 KM',
+        blank=True,
+        verbose_name='Promo traka — tekst',
+        help_text='Tekst u gornjoj sivoj traci (iznad headera).',
+    )
+    promo_bar_link_tekst = models.CharField(
+        max_length=80,
+        default='Pridruži se sada',
+        blank=True,
+        verbose_name='Promo traka — link tekst',
+    )
     kontakt_telefon = models.CharField(
         max_length=30, blank=True,
         verbose_name='Kontakt telefon (WhatsApp / Viber)',
@@ -478,6 +491,15 @@ class SiteSettings(models.Model):
         help_text='Hex npr. #0084ff',
     )
     # —— Glavna CTA dugmad (boje) ——
+    tekst_dugme_korpa = models.CharField(
+        max_length=40, default='Dodaj u korpu', blank=True,
+        verbose_name='Tekst „Dodaj u korpu”',
+        help_text='Tekst na dugmetu na karticama i detail stranici.',
+    )
+    tekst_dugme_rasprodato = models.CharField(
+        max_length=40, default='Rasprodato', blank=True,
+        verbose_name='Tekst „Rasprodato”',
+    )
     boja_dugme_korpa = models.CharField(
         max_length=7, default='#5BB805', blank=True,
         verbose_name='Boja „Dodaj u korpu” (kartice)',
@@ -1839,14 +1861,21 @@ class Akcija(models.Model):
         return options
 
     def qty_deal_best_option(self):
-        # Najbolja ušteda među količinskim tierovima (ne 1 kom regularno)
+        # Najveća ušteda u KM (za „UŠTEDI DO”) — među tierovima 2+
         opts = [
             o for o in self.qty_deal_display_options()
             if not o.get('is_single') and int(o.get('quantity') or 0) >= 2
         ]
         if not opts:
             return None
-        return max(opts, key=lambda o: (o['popust_postotak'], o['quantity']))
+        return max(
+            opts,
+            key=lambda o: (
+                o.get('usteda') or 0,
+                o.get('popust_postotak') or 0,
+                int(o.get('quantity') or 0),
+            ),
+        )
 
     def get_link_href(self):
         if self.artikal_id and self.tip in {
@@ -2183,6 +2212,40 @@ class Product(models.Model):
         Tag, blank=True, related_name='artikli', verbose_name='Tagovi',
     )
     prikazi_na_pocetnoj = models.BooleanField(default=True, verbose_name='Prikaži na početnoj')
+    je_novitet = models.BooleanField(
+        default=False,
+        verbose_name='Noviteti',
+        help_text=(
+            'Uključeno: zeleni pulsirajući natpis „NOVITETI” na artiklu '
+            'i prikaz u karuselu Noviteti na početnoj.'
+        ),
+    )
+    je_hit = models.BooleanField(
+        default=False,
+        verbose_name='HIT ponuda / Izdvojeno',
+        help_text=(
+            'Uključeno: crveni pulsirajući natpis „HIT PONUDA” na artiklu '
+            'i prikaz u karuselu Izdvojeni artikli na početnoj.'
+        ),
+    )
+
+    class PrioritetLagera(models.IntegerChoices):
+        NORMAL = 0, 'Normalno'
+        FAVORIZUJ = 1, 'Favorizuj'
+        HIT = 2, 'Hit redukovanje lagera'
+
+    prioritet_lagera = models.PositiveSmallIntegerField(
+        choices=PrioritetLagera.choices,
+        default=PrioritetLagera.NORMAL,
+        db_index=True,
+        verbose_name='Redukovanje lagera',
+        help_text=(
+            'Prioritet među relevantnim rezultatima (pretraga, kategorija, preporuke). '
+            'Nikad ne gura nerelevantne artikle. '
+            'Normalno = bez boosta; Favorizuj = blago; '
+            'Hit redukovanje lagera = maksimalni prioritet.'
+        ),
+    )
     proizvedeno_u_japanu = models.BooleanField(
         default=False, verbose_name='Proizvedeno u Japanu',
     )

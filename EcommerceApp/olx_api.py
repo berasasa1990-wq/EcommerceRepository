@@ -253,10 +253,19 @@ def _olx_safe_title(text):
 
 
 def _product_price(product):
+    """
+    Cijena za OLX/Pik — ista kao na sajtu (2 decimale).
+    Ne zaokružuj na cijeli broj (4.50 KM ostaje 4.5, ne 5).
+    """
     price = product.prikazna_cijena
     if price is None:
         return 0
-    return int(Decimal(price).quantize(Decimal('1')))
+    quantized = Decimal(price).quantize(Decimal('0.01'))
+    # float zadržava decimale u JSON-u; int bi zaokružio 4.5 → 5
+    as_float = float(quantized)
+    if as_float == int(as_float):
+        return int(as_float)
+    return as_float
 
 
 def _product_description(product):

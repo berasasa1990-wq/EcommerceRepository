@@ -125,7 +125,7 @@
         </div>
 
         {% elif akcija.tip == 'bundle' %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260713v15">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260722v1">
         {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary unit_count=akcija.bundle_unit_count %}
         {# Desktop: 2 po redu (4 = 2×2, veće slike). unit_count ≥ 2 #}
         {% if unit_count >= 2 and bundle_items %}
@@ -234,7 +234,7 @@
         {% endwith %}
 
         {% elif akcija.tip == 'qty_deal' and akcija.artikal %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260713v15">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260722v4">
         {% with options=akcija.qty_deal_display_options product=akcija.artikal best=akcija.qty_deal_best_option %}
         {% if options %}
         <div class="site-popup-akcija site-popup-bundle-pack site-popup-qty-deal">
@@ -242,32 +242,17 @@
                 {% if best %}-{{ best.pct_label }}%{% else %}VIŠE{% endif %}
             </div>
 
-            <p class="bundle-pack-kicker">🔥 Kupi više — veći popust</p>
-            <h3 class="bundle-pack-title">
-                {% if best %}
-                Uštedi do <span class="bundle-pack-title-save">{{ best.usteda }} KM</span>
-                {% else %}
-                Specijalna količinska cijena
-                {% endif %}
-            </h3>
-
-            {# Desktop: hero inače/sada/ušteda. Mobilni: sakriveno CSS-om da 4 tier-a stanu #}
+            {# Samo najveća ušteda u prvom planu — bez „4× inače → Sada” #}
             {% if best %}
-            <div class="bundle-pack-deal bundle-pack-deal--hero qty-deal-deal-hero" aria-label="Najbolja ponuda">
-                <div class="bundle-pack-deal-col">
-                    <span class="bundle-pack-deal-label">{{ best.quantity }}× inače</span>
-                    <span class="bundle-pack-deal-was">{{ best.line_bazna }} KM</span>
-                </div>
-                <span class="bundle-pack-deal-arrow" aria-hidden="true">→</span>
-                <div class="bundle-pack-deal-col bundle-pack-deal-col--now">
-                    <span class="bundle-pack-deal-label bundle-pack-deal-label--now">Sada</span>
-                    <span class="bundle-pack-deal-now">{{ best.line_snizena }} KM</span>
-                </div>
-                <div class="bundle-pack-deal-save">
-                    <span class="bundle-pack-deal-save-label">Ušteda</span>
-                    <span class="bundle-pack-deal-save-val">{{ best.usteda }} KM</span>
-                </div>
+            <div class="qty-deal-max-save" aria-label="Najveća ušteda {{ best.usteda }} KM">
+                <span class="qty-deal-max-save-kicker">Kupi više — veći popust</span>
+                <p class="qty-deal-max-save-line">
+                    <span class="qty-deal-max-save-label">UŠTEDI DO</span>
+                    <span class="qty-deal-max-save-amount">{{ best.usteda }} KM</span>
+                </p>
             </div>
+            {% else %}
+            <h3 class="bundle-pack-title">Specijalna količinska cijena</h3>
             {% endif %}
 
             <div class="qty-deal-product">

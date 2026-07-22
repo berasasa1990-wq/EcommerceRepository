@@ -1,0 +1,33 @@
+{% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
+<div id="staffSiteEditorRoot"
+     data-save-url="{% url 'staff_site_edit_save' %}"
+     data-tekst-korpa="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}"
+     data-boja-korpa="{{ site_settings.boja_dugme_korpa|default:'#5BB805' }}"
+     data-boja-korpa-hover="{{ site_settings.boja_dugme_korpa_hover|default:'#4fa104' }}"
+     data-boja-banner="{{ site_settings.boja_dugme_banner|default:'#ff9500' }}"
+     data-boja-banner-hover="{{ site_settings.boja_dugme_banner_hover|default:'#e68600' }}"
+     data-boja-wa="{{ site_settings.kontakt_boja_whatsapp|default:'#25d366' }}"
+     data-boja-viber="{{ site_settings.kontakt_boja_viber|default:'#665cac' }}"
+     data-boja-msg="{{ site_settings.kontakt_boja_messenger|default:'#0084ff' }}"
+     style="display:none"
+     aria-hidden="true"></div>
+
+{# Popover na body nivou — fixed, otvara se samo na klik #}
+<div class="staff-edit-popover" id="staffEditPopover" hidden role="dialog" aria-modal="true" aria-label="Uredi">
+    <div class="staff-edit-popover-head">
+        <strong id="staffEditPopoverTitle">Uredi</strong>
+        <button type="button" class="staff-edit-popover-close" id="staffEditPopoverClose" aria-label="Zatvori">×</button>
+    </div>
+    <div class="staff-edit-popover-body" id="staffEditPopoverBody"></div>
+    <div class="staff-edit-popover-actions">
+        <button type="button" class="staff-edit-btn staff-edit-btn--ghost" id="staffEditPopoverCancel">Otkaži</button>
+        <button type="button" class="staff-edit-btn staff-edit-btn--primary" id="staffEditPopoverSave">Sačuvaj</button>
+    </div>
+    <p class="staff-edit-popover-status" id="staffEditPopoverStatus" hidden></p>
+</div>
+
+<div class="staff-edit-mode-banner" id="staffEditModeBanner" role="status">
+    <strong>Edit mode</strong>
+    <span>Klikni zeleno obrubljen natpis/dugme da urediš · klik na artikal = ulazak i edit</span>
+</div>
+{% endif %}

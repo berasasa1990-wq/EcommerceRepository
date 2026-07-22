@@ -1,6 +1,6 @@
-/* Pop-up bundle — mobilni kompakt + desktop 2×2 */
+/* Pop-up bundle / Kupi više — AI dwell stil (pulsirajuće snizenje) */
 
-/* ─── Osnova ─────────────────────────────────────────── */
+/* ─── Osnova (kao card-dwell) ─────────────────────────── */
 .site-popup--bundle {
   max-width: min(96vw, 640px) !important;
   width: min(96vw, 640px) !important;
@@ -8,7 +8,9 @@
   overflow-x: hidden !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  background: #fff !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -20,14 +22,91 @@
   flex-direction: column !important;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 20px 16px 14px !important;
+  padding: 22px 16px 16px !important;
   gap: 0 !important;
   overflow: visible;
   width: 100%;
   box-sizing: border-box;
-  background:
-    radial-gradient(ellipse 90% 50% at 50% 0%, rgba(91, 184, 5, 0.12) 0%, transparent 55%),
-    #fff !important;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 32%, transparent);
+  background: linear-gradient(
+    165deg,
+    var(--dwell-card-bg, #fff7f8) 0%,
+    var(--dwell-card-bg2, #ffffff) 55%,
+    var(--dwell-card-bg, #fff7f8) 100%
+  ) !important;
+  box-shadow:
+    0 12px 40px color-mix(in srgb, var(--dwell-card-border, #e11d48) 16%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.site-popup-bundle-pack::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--dwell-card-border, #e11d48),
+    transparent
+  );
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* Pulsirajuće cijene / badge kao AI dwell */
+.site-popup--bundle .bundle-pack-deal-now,
+.site-popup--bundle .bundle-pack-now,
+.site-popup--bundle .price-sale,
+.site-popup--qty-deal .bundle-pack-deal-now,
+.site-popup--qty-deal .price-sale {
+  color: var(--dwell-card-sale, #e11d48) !important;
+  font-weight: 900 !important;
+  animation: dwell-akcija-price-pulse 1.3s ease-in-out infinite;
+}
+
+.site-popup--bundle .bundle-pack-deal-pct,
+.site-popup--bundle .bundle-pack-ribbon,
+.site-popup--qty-deal .qty-deal-tier-badge,
+.site-popup--qty-deal .bundle-pack-ribbon {
+  animation: dwell-akcija-badge-pulse 1.35s ease-in-out infinite;
+}
+
+@keyframes dwell-akcija-price-pulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    transform: scale(1.04);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--dwell-card-sale, #e11d48) 45%, transparent);
+  }
+}
+
+@keyframes dwell-akcija-badge-pulse {
+  0%, 100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.12);
+    transform: scale(1.05);
+  }
+}
+
+/* + Ponuda modal — već card-dwell; pojačaj pulse na cijeni */
+.site-popup--ponuda-dwell .card-dwell-now,
+.gratis-offer-popup .card-dwell-now {
+  animation: dwell-akcija-price-pulse 1.3s ease-in-out infinite;
+}
+
+.site-popup--ponuda-dwell .card-dwell-badge,
+.gratis-offer-popup .card-dwell-badge {
+  animation: dwell-akcija-badge-pulse 1.35s ease-in-out infinite;
 }
 
 /* Crveni % seta — gore desno, lijevo od X */
@@ -1255,11 +1334,24 @@
 }
 
 /* ═══════════════════════════════════════════════════════
-   KUPI VIŠE (qty_deal) — količinski % na isti artikal
+   KUPI VIŠE (qty_deal) — AI dwell stil, bijela pozadina
    ═══════════════════════════════════════════════════════ */
 .site-popup--qty-deal {
   max-width: min(96vw, 560px) !important;
   width: min(96vw, 560px) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.site-popup--qty-deal .site-popup-akcija,
+.site-popup-qty-deal.site-popup-bundle-pack {
+  background: #ffffff !important;
+  border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 28%, #e5e7eb) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 12px 40px color-mix(in srgb, var(--dwell-card-border, #e11d48) 12%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 .site-popup-qty-deal .qty-deal-product {
@@ -1270,8 +1362,8 @@
   margin: 0 0 14px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
 }
 
 .qty-deal-product-img {
@@ -1456,22 +1548,125 @@
   line-height: 1.1;
 }
 
+/* Ušteda — uvijek zelena */
 .qty-deal-tier-save {
   margin: 0;
   padding: 5px 8px;
   border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
   font-size: 12px;
   font-weight: 700;
-  color: #991b1b;
+  color: #166534;
   text-align: center;
 }
 
 .qty-deal-tier-save strong {
   font-size: 14px;
   font-weight: 900;
-  color: #dc2626;
+  color: #16a34a !important;
+}
+
+.site-popup--qty-deal .bundle-pack-title-save,
+.site-popup-qty-deal .bundle-pack-title-save {
+  color: #16a34a !important;
+}
+
+.site-popup--qty-deal .bundle-pack-deal-save,
+.site-popup-qty-deal .bundle-pack-deal-save {
+  background: linear-gradient(180deg, #22c55e, #15803d) !important;
+  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.45) !important;
+}
+
+.site-popup--qty-deal .bundle-pack-deal-save-label,
+.site-popup--qty-deal .bundle-pack-deal-save-val,
+.site-popup-qty-deal .bundle-pack-deal-save-label,
+.site-popup-qty-deal .bundle-pack-deal-save-val {
+  color: #fff !important;
+}
+
+.site-popup--qty-deal .qty-deal-tier-card {
+  background: #ffffff !important;
+  border-color: #e5e7eb;
+}
+
+.site-popup--qty-deal .qty-deal-tier-card--best {
+  border-color: color-mix(in srgb, #16a34a 55%, #e5e7eb);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.15);
+}
+
+.site-popup--qty-deal .bundle-pack-kicker {
+  color: var(--dwell-card-label, #be123c);
+}
+
+.site-popup--qty-deal .bundle-pack-title {
+  color: #0f172a;
+}
+
+/* Najveća ušteda u prvom planu — namami kupca */
+.qty-deal-max-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 0%, rgba(34, 197, 94, 0.14) 0%, transparent 70%),
+    #ffffff;
+  border: 2px solid color-mix(in srgb, #16a34a 35%, #e5e7eb);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.12);
+}
+
+.qty-deal-max-save-kicker {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.qty-deal-max-save-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 0;
+  line-height: 1.05;
+}
+
+.qty-deal-max-save-label {
+  font-size: clamp(18px, 4.5vw, 26px);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.qty-deal-max-save-amount {
+  font-size: clamp(28px, 7vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #16a34a;
+  text-shadow: 0 2px 12px rgba(22, 163, 74, 0.2);
+  animation: qty-deal-save-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qty-deal-save-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qty-deal-max-save-amount {
+    animation: none;
+  }
 }
 
 .qty-deal-tier-unit {
@@ -1537,11 +1732,25 @@
     max-height: min(94dvh, 94vh) !important;
   }
 
-  /* Mobilni: sakrij Inače/Sada/Ušteda + kicker/naslov (već piše na svakom tieru) */
+  /* Mobilni: zadrži „UŠTEDI DO” (namamljuje), sakrij stari kicker/naslov ako postoji */
   .site-popup-qty-deal .qty-deal-deal-hero,
   .site-popup-qty-deal .bundle-pack-kicker,
   .site-popup-qty-deal .bundle-pack-title {
     display: none !important;
+  }
+
+  .site-popup-qty-deal .qty-deal-max-save {
+    display: flex !important;
+    margin-bottom: 10px;
+    padding: 10px 12px 12px;
+  }
+
+  .site-popup-qty-deal .qty-deal-max-save-label {
+    font-size: 16px;
+  }
+
+  .site-popup-qty-deal .qty-deal-max-save-amount {
+    font-size: 28px;
   }
 
   /* Ribbon % gore desno — nije potreban (ima na karticama) */

@@ -16,6 +16,50 @@ form .module.akcija-section-hidden {
     border: none !important;
 }
 
+/* Tip akcije — cijeli natpis vidljiv (ne siječe se) */
+.form-row.field-tip,
+.aligned .form-row.field-tip {
+    overflow: visible !important;
+}
+
+.form-row.field-tip > div,
+.form-row.field-tip .flex-container {
+    overflow: visible !important;
+    max-width: 100%;
+}
+
+.form-row.field-tip select,
+#id_tip {
+    min-width: min(100%, 22rem) !important;
+    width: max(16rem, 100%) !important;
+    max-width: 36rem !important;
+    height: auto !important;
+    min-height: 2.4rem;
+    padding: 0.45rem 2rem 0.45rem 0.65rem !important;
+    font-size: 0.95rem !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow: visible !important;
+}
+
+/* AI dwell inline — uvijek čitljiv kad je tip AI */
+.inline-group.akcija-inline-dwell-items:not(.akcija-section-hidden),
+.akcija-inline-dwell-items:not(.akcija-section-hidden) {
+    display: block !important;
+    margin-top: 1.25rem;
+    padding: 1rem;
+    border: 2px solid #5BB805;
+    border-radius: 12px;
+    background: #f7fcf2;
+}
+
+.inline-group.akcija-inline-dwell-items h2,
+.akcija-inline-dwell-items h2 {
+    color: #166534 !important;
+    font-weight: 800 !important;
+}
+
 :root {
     --ozr-green: #5BB805;
     --ozr-green-dark: #4a9a04;

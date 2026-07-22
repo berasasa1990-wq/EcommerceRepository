@@ -231,26 +231,43 @@ class AkcijaAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Jasne labele za + Ponuda (i ostale tipove koji dijele ista polja)
+        # Jasne labele — artikle uvijek smiješ mijenjati (edit postojeće akcije)
+        tip = getattr(self.instance, 'tip', None) if self.instance else None
+        # Nikad ne zaključavaj polja artikala / popusta (ni na postojećem redu)
+        for _lock_name in ('artikal', 'gratis_artikal', 'popust_postotak', 'tip'):
+            if _lock_name in self.fields:
+                self.fields[_lock_name].disabled = False
         if 'artikal' in self.fields:
+            self.fields['artikal'].required = False
             self.fields['artikal'].label = '1. Trigger artikal'
             self.fields['artikal'].help_text = (
-                '+ Ponuda: artikal koji kupac dodaje u korpu → tada iskače popup. '
-                'Kupi više: artikal na koji važi količinski popust. '
+                'Možeš promijeniti bez brisanja akcije — pretraži i odaberi drugi, pa Sačuvaj. '
+                '+ Ponuda: kad kupac doda OVAJ artikal u korpu, iskače popup. '
+                'Kupi više: artikal na koji važi količinski %. '
                 'Bundle: samo ako je trigger „odabrani trigger artikal”.'
             )
+            if tip == Akcija.Tip.PONUDA:
+                self.fields['artikal'].label = '1. Trigger (dodaj u korpu → popup)'
         if 'popust_postotak' in self.fields:
+            self.fields['popust_postotak'].required = False
             self.fields['popust_postotak'].label = '2. Popust (%) — opcionalno'
             self.fields['popust_postotak'].help_text = (
-                '+ Ponuda: % snizenja na ponuđeni artikal. Prazno = regularna cijena. '
+                '+ Ponuda: % snizenja na DRUGI (ponuda) artikal kad kupac kaže DA. '
+                'Prazno = redovna cijena (bez popusta). '
                 'Bundle: % na set (ako linija nema svoj %).'
             )
+            if tip == Akcija.Tip.PONUDA:
+                self.fields['popust_postotak'].label = '2. Popust % na ponudu (opcionalno)'
         if 'gratis_artikal' in self.fields:
+            self.fields['gratis_artikal'].required = False
             self.fields['gratis_artikal'].label = '3. Ponuda artikal (popup)'
             self.fields['gratis_artikal'].help_text = (
-                '+ Ponuda: artikal koji se nudi u popupu nakon dodavanja triggera. '
-                'Obavezno za tip + Ponuda.'
+                'Možeš promijeniti bez brisanja akcije. '
+                '+ Ponuda: artikal koji se nudi u popupu nakon dodavanja triggera '
+                '(s % iz polja 2, ili bez %). Mora biti na stanju da se popup prikaže.'
             )
+            if tip == Akcija.Tip.PONUDA:
+                self.fields['gratis_artikal'].label = '3. Artikal u ponudi (sa ili bez %)'
 
         # Učitaj postojeće tierove u polja 2–6
         instance = getattr(self, 'instance', None)
@@ -308,27 +325,44 @@ class AkcijaAdminForm(forms.ModelForm):
             rows.append((q, pct_dec))
         return rows
 
+    def _allow_inactive_if_current(self, product, *, field_name):
+        """Pri izmjeni akcije zadrži i neaktivan artikal ako je već bio odabran."""
+        if not product or product.aktivan:
+            return True
+        inst = getattr(self, 'instance', None)
+        if not inst or not inst.pk:
+            return False
+        current_id = getattr(inst, f'{field_name}_id', None)
+        return current_id == product.pk
+
     def clean_artikal(self):
         artikal = self.cleaned_data.get('artikal')
         tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
         if tip == Akcija.Tip.BUNDLE:
-            # artikal je opcionalan — samo za trigger „odabrani trigger artikal”
             trigger = self.cleaned_data.get('bundle_trigger') or getattr(
                 self.instance, 'bundle_trigger', None,
             )
             if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and not artikal:
                 raise forms.ValidationError('Odaberite trigger artikal.')
-            if artikal and not artikal.aktivan:
+            if artikal and not artikal.aktivan and not self._allow_inactive_if_current(
+                artikal, field_name='artikal',
+            ):
                 raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
             return artikal
         if tip == Akcija.Tip.QTY_DEAL and not artikal:
-            raise forms.ValidationError('Odaberite artikal.')
+            raise forms.ValidationError('Odaberite artikal (možeš ga kasnije zamijeniti).')
         if tip == Akcija.Tip.PONUDA and not artikal:
-            raise forms.ValidationError('Odaberite trigger artikal (kad se doda u korpu).')
+            raise forms.ValidationError(
+                'Odaberite trigger artikal — kad se doda u korpu, iskače ponuda.'
+            )
         if tip == Akcija.Tip.AI_PRODAJA:
             return artikal
-        if artikal and not artikal.aktivan:
-            raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
+        if artikal and not artikal.aktivan and not self._allow_inactive_if_current(
+            artikal, field_name='artikal',
+        ):
+            raise forms.ValidationError(
+                'Artikal mora biti aktivan, ili zadrži postojeći odabir.'
+            )
         return artikal
 
     def clean_gratis_artikal(self):
@@ -336,10 +370,18 @@ class AkcijaAdminForm(forms.ModelForm):
         tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
         if tip == Akcija.Tip.PONUDA:
             if not gratis:
-                raise forms.ValidationError('Odaberite artikal koji se nudi u popup-u.')
-            if not gratis.aktivan:
-                raise forms.ValidationError('Ponuda artikal mora biti aktivan na sajtu.')
-        elif gratis and not gratis.aktivan:
+                raise forms.ValidationError(
+                    'Odaberite ponudu artikal (drugi artikal u popupu, sa ili bez %).'
+                )
+            if not gratis.aktivan and not self._allow_inactive_if_current(
+                gratis, field_name='gratis_artikal',
+            ):
+                raise forms.ValidationError(
+                    'Ponuda artikal mora biti aktivan, ili zadrži postojeći odabir.'
+                )
+        elif gratis and not gratis.aktivan and not self._allow_inactive_if_current(
+            gratis, field_name='gratis_artikal',
+        ):
             raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
         return gratis
 
@@ -411,16 +453,40 @@ class AkcijaAdminForm(forms.ModelForm):
         return cleaned
 
     def save_qty_deal_tiers(self, akcija):
-        """Snimi jednostavna polja kao AkcijaQtyTier redove."""
+        """
+        Snimi polja 2–6 kom → %.
+        Obrisano polje (prazno) = obriši taj tier iz baze i sačuvaj ostale.
+        """
         if not akcija or not akcija.pk:
             return
         if akcija.tip != Akcija.Tip.QTY_DEAL:
-            # Ako tip nije qty_deal — obriši stare tierove
             akcija.qty_tiers.all().delete()
             return
-        wanted = {q: pct for q, pct in self.qty_deal_tiers_from_form()}
-        # Obriši što više nije u formi
-        akcija.qty_tiers.exclude(quantity__in=list(wanted.keys()) or [0]).delete()
+
+        # cleaned_data može nedostajati ako clean nije prošao — koristi data
+        wanted = {}
+        if hasattr(self, 'cleaned_data') and self.cleaned_data is not None:
+            wanted = {q: pct for q, pct in self.qty_deal_tiers_from_form()}
+        else:
+            # fallback iz raw POST
+            for q in (2, 3, 4, 5, 6):
+                raw = self.data.get(f'qty_{q}_popust') if hasattr(self, 'data') else None
+                if raw is None or str(raw).strip() == '':
+                    continue
+                try:
+                    pct_dec = _parse_flexible_number(raw)
+                except Exception:
+                    continue
+                if pct_dec is not None and pct_dec > 0:
+                    wanted[q] = pct_dec
+
+        # Eksplicitno obriši sve što nije više u formi (npr. obrisana opcija 3 kom)
+        keep_qty = list(wanted.keys())
+        if keep_qty:
+            akcija.qty_tiers.exclude(quantity__in=keep_qty).delete()
+        else:
+            akcija.qty_tiers.all().delete()
+
         for q, pct in wanted.items():
             AkcijaQtyTier.objects.update_or_create(
                 akcija=akcija,

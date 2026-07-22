@@ -3741,6 +3741,188 @@ body.catalog-variation-modal-open {
     background: #d93025;
 }
 
+/* Corner badge na KARTICI (ne na slici): NOVITETI / HIT PONUDA */
+.product-card--catalog,
+.product-card {
+    position: relative;
+}
+
+.product-card-corner-badge,
+.product-card-novitet-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+
+.product-card-corner-badge--novitet,
+.product-card-novitet-badge {
+    background: linear-gradient(180deg, #6ed20a 0%, #5BB805 55%, #4aa004 100%);
+    box-shadow: 0 2px 10px rgba(91, 184, 5, 0.45);
+}
+
+.product-card-corner-badge--hit {
+    background: linear-gradient(180deg, #ff5a5a 0%, #e11d48 55%, #be123c 100%);
+    box-shadow: 0 2px 10px rgba(225, 29, 72, 0.45);
+}
+
+.product-card-corner-badge.is-pulse,
+.product-card-novitet-badge.is-pulse {
+    animation: corner-badge-pulse 1.35s ease-in-out infinite;
+}
+
+.product-card-corner-badge--novitet.is-pulse {
+    animation-name: corner-badge-pulse-green;
+}
+
+.product-card-corner-badge--hit.is-pulse {
+    animation-name: corner-badge-pulse-red;
+}
+
+/* Detail: badge iznad info panela */
+.product-detail-corner-badge,
+.product-detail-novitet-badge {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 0 10px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.product-detail-corner-badge--novitet,
+.product-detail-novitet-badge {
+    background: linear-gradient(180deg, #6ed20a 0%, #5BB805 55%, #4aa004 100%);
+    box-shadow: 0 2px 10px rgba(91, 184, 5, 0.45);
+}
+
+.product-detail-corner-badge--hit {
+    background: linear-gradient(180deg, #ff5a5a 0%, #e11d48 55%, #be123c 100%);
+    box-shadow: 0 2px 10px rgba(225, 29, 72, 0.45);
+}
+
+.product-detail-corner-badge.is-pulse,
+.product-detail-novitet-badge.is-pulse {
+    animation: corner-badge-pulse 1.35s ease-in-out infinite;
+}
+
+.product-detail-corner-badge--novitet.is-pulse {
+    animation-name: corner-badge-pulse-green;
+}
+
+.product-detail-corner-badge--hit.is-pulse {
+    animation-name: corner-badge-pulse-red;
+}
+
+@keyframes corner-badge-pulse-green {
+    0%, 100% {
+        filter: brightness(1);
+        box-shadow: 0 2px 10px rgba(91, 184, 5, 0.4);
+    }
+    50% {
+        filter: brightness(1.18);
+        box-shadow: 0 4px 16px rgba(91, 184, 5, 0.65);
+    }
+}
+
+@keyframes corner-badge-pulse-red {
+    0%, 100% {
+        filter: brightness(1);
+        box-shadow: 0 2px 10px rgba(225, 29, 72, 0.4);
+    }
+    50% {
+        filter: brightness(1.18);
+        box-shadow: 0 4px 16px rgba(225, 29, 72, 0.65);
+    }
+}
+
+@keyframes corner-badge-pulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.15); }
+}
+
+.staff-hit-check {
+    border-color: rgba(225, 29, 72, 0.35) !important;
+    background: linear-gradient(135deg, #fff1f2 0%, #fff 100%) !important;
+    color: #9f1239 !important;
+}
+
+.staff-hit-check input {
+    accent-color: #e11d48;
+}
+
+/* Legacy ribbon na slici za ove badge-e */
+.product-sale-ribbon--novitet,
+.product-home-ribbon--novitet {
+    display: none !important;
+}
+
+.staff-novitet-check {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin: 12px 0 4px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(91, 184, 5, 0.35);
+    background: linear-gradient(135deg, #f0f9e8 0%, #fff 100%);
+    font-weight: 700;
+    color: #166534;
+    cursor: pointer;
+}
+
+.staff-novitet-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: #5BB805;
+}
+
+.staff-novitet-check small {
+    flex: 1 1 100%;
+    font-weight: 500;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.staff-product-save-all-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gray-200, #e5e5e5);
+}
+
+.staff-product-btn--save-all {
+    width: 100%;
+    max-width: 320px;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 800;
+    background: #5BB805 !important;
+    color: #fff !important;
+    border: none;
+    border-radius: 10px;
+}
+
+.staff-product-btn--save-all:hover {
+    filter: brightness(0.95);
+}
+
 .product-discount-badge {
     position: absolute;
     top: 8px;
@@ -4652,26 +4834,27 @@ body.catalog-variation-modal-open {
     align-items: center;
     justify-content: center;
     gap: 0;
-    border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 22%, #e5e5e5);
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
     overflow: hidden;
-    background: #fff;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .ponuda-qty-selector .product-qty-btn {
     width: 40px;
     height: 38px;
     border: none;
-    background: transparent;
+    background: #ffffff !important;
     font-size: 18px;
     font-weight: 700;
-    color: var(--black);
+    color: #0f172a !important;
     cursor: pointer;
     line-height: 1;
 }
 
 .ponuda-qty-selector .product-qty-btn:hover:not(:disabled) {
-    background: var(--gray-100);
+    background: #f8fafc !important;
 }
 
 .ponuda-qty-selector .product-qty-btn:disabled {
@@ -4683,15 +4866,27 @@ body.catalog-variation-modal-open {
     width: 48px;
     height: 38px;
     border: none;
-    border-left: 1px solid var(--gray-200);
-    border-right: 1px solid var(--gray-200);
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
     text-align: center;
     font-size: 15px;
     font-weight: 700;
-    color: var(--black);
-    background: #fff;
+    color: #0f172a !important;
+    background: #ffffff !important;
     -moz-appearance: textfield;
     appearance: textfield;
+}
+
+/* + Ponuda cijene na bijeloj kartici — ne nasljeđuj crnu temu */
+.site-popup--ponuda-dwell .gratis-offer-prices,
+.gratis-offer-popup .gratis-offer-prices {
+    background: transparent !important;
+}
+
+.site-popup--ponuda-dwell .ponuda-dwell-card.card-dwell-deal {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12) !important;
 }
 
 .ponuda-qty-selector .product-qty-input::-webkit-outer-spin-button,

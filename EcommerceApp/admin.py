@@ -824,16 +824,21 @@ class AkcijaAdmin(admin.ModelAdmin):
         }),
     )
     _FS_ARTIKLI = (
-        ('Artikli i popust', {
+        ('Artikli i popust (možeš mijenjati — nije potrebno brisati akciju)', {
             'fields': (
                 'artikal',
                 'popust_postotak',
                 'gratis_artikal',
             ),
             'description': (
-                '+ Ponuda: 1) Trigger artikal  2) Popust % (opcionalno)  3) Ponuda artikal. '
-                'Kupi više: samo Trigger artikal. '
-                'Bundle: Popust % na set; trigger artikal ako je trigger „odabrani artikal”.'
+                'Artikle možeš u bilo kojem trenutku promijeniti: pretraži, odaberi, Sačuvaj. '
+                'Ne moraš brisati akciju i kreirati novu. '
+                '—— + Ponuda: '
+                '1) Trigger = artikal koji kupac doda u korpu → iskače popup; '
+                '2) Popust % (opcionalno) na drugi artikal; prazno = redovna cijena; '
+                '3) Ponuda artikal = što se nudi u popupu. '
+                '—— Kupi više: samo Trigger. '
+                '—— Bundle: % seta; trigger artikal samo ako je trigger „odabrani artikal”.'
             ),
         }),
     )
@@ -898,8 +903,9 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'product_dwell_sale_pulse',
             ),
             'description': (
-                'Sniženje na katalogu + na product page snizena i tajmer. '
-                'Artikli u tabeli ispod.'
+                'Uključi AI dwell, postavi default % i tajmer. '
+                'Artikle za snizenje dodaj u ZELENOJ TABELI ispod forme '
+                '(„AI dwell artikli”) — pretraži artikal i unesi popust %.'
             ),
         }),
         ('AI dwell — tekstovi', {
@@ -962,13 +968,11 @@ class AkcijaAdmin(admin.ModelAdmin):
 
     def get_fieldsets(self, request, obj=None):
         """
-        Pri uređivanju postojećeg reda: samo fieldseti za taj tip.
-        Pri dodavanju: svi fieldseti (bez duplikata) + JS filter.
+        Samo polja za odabrani tip — i na GET i na POST.
+        (Stari POST=sva polja uzrokovao „Please correct the errors below”
+        jer forma nije imala skrivena required polja u HTML-u.)
         """
         tip = self._resolve_akcija_tip(request, obj)
-        # POST: sva polja dostupna (promjena tipa / validacija)
-        if request is not None and request.method == 'POST':
-            return self.fieldsets
         if tip == Akcija.Tip.PONUDA:
             return self._FS_BASE + self._FS_ARTIKLI
         if tip == Akcija.Tip.BUNDLE:
@@ -977,22 +981,24 @@ class AkcijaAdmin(admin.ModelAdmin):
             return self._FS_BASE + self._FS_ARTIKLI + self._FS_QTY + self._FS_PRIKAZ
         if tip == Akcija.Tip.AI_PRODAJA:
             return self._FS_BASE + self._FS_AI
+        # Novi red / nepoznat tip: svi fieldseti + JS filter
         return self.fieldsets
 
     def get_inline_instances(self, request, obj=None):
         from .models import SiteSettings
 
         tip = self._resolve_akcija_tip(request, obj)
-        # POST / add: oba inline-a u DOM-u (JS sakrije)
-        if obj is None or (request is not None and request.method == 'POST'):
-            return [
-                AkcijaBundleLineInline(self.model, self.admin_site),
-                ProductDwellItemAkcijaInline(SiteSettings, self.admin_site),
-            ]
+        dwell = ProductDwellItemAkcijaInline(SiteSettings, self.admin_site)
+        bundle = AkcijaBundleLineInline(self.model, self.admin_site)
+
+        # Novi red: oba u DOM-u (JS sakrije po tipu)
+        if obj is None and tip is None:
+            return [bundle, dwell]
         if tip == Akcija.Tip.BUNDLE:
-            return [AkcijaBundleLineInline(self.model, self.admin_site)]
+            return [bundle]
         if tip == Akcija.Tip.AI_PRODAJA:
-            return [ProductDwellItemAkcijaInline(SiteSettings, self.admin_site)]
+            # Obavezno: tabela „AI dwell artikli” za unos popusta po artiklu
+            return [dwell]
         # + Ponuda / Kupi više: bez inline tabela
         return []
 
@@ -1036,6 +1042,45 @@ class AkcijaAdmin(admin.ModelAdmin):
                 (Akcija.Tip.AI_PRODAJA, Akcija.Tip.AI_PRODAJA.label),
             ]
         return super().formfield_for_choice_field(db_field, request, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Dozvoli izmjenu artikala na postojećoj akciji (uključi i trenutni odabir)."""
+        if db_field.name in ('artikal', 'gratis_artikal'):
+            from .models import Product
+            qs = Product.objects.filter(aktivan=True).order_by('naziv')
+            # Object id iz URL-a change forme
+            obj_id = None
+            if hasattr(request, 'resolver_match') and request.resolver_match:
+                obj_id = (request.resolver_match.kwargs or {}).get('object_id')
+            if obj_id:
+                try:
+                    existing = Akcija.objects.filter(pk=obj_id).only(
+                        'artikal_id', 'gratis_artikal_id',
+                    ).first()
+                except Exception:
+                    existing = None
+                if existing:
+                    keep_ids = [
+                        i for i in (
+                            existing.artikal_id if db_field.name == 'artikal' else None,
+                            existing.gratis_artikal_id if db_field.name == 'gratis_artikal' else None,
+                        ) if i
+                    ]
+                    if keep_ids:
+                        from django.db.models import Q
+                        qs = Product.objects.filter(
+                            Q(aktivan=True) | Q(pk__in=keep_ids),
+                        ).order_by('naziv')
+            kwargs['queryset'] = qs
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_readonly_fields(self, request, obj=None):
+        # Nikad ne zaključavaj artikal / ponudu — uvijek izmjenjivo
+        ro = list(super().get_readonly_fields(request, obj))
+        for locked in ('artikal', 'gratis_artikal', 'popust_postotak', 'tip'):
+            if locked in ro:
+                ro.remove(locked)
+        return ro
 
     def get_form(self, request, obj=None, change=False, **kwargs):
         """
@@ -1101,6 +1146,27 @@ class AkcijaAdmin(admin.ModelAdmin):
             return
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
+        # Potvrda izmjene / kreiranja artikala (nije potrebno brisanje i nova akcija)
+        if obj.tip in (Akcija.Tip.PONUDA, Akcija.Tip.QTY_DEAL, Akcija.Tip.BUNDLE):
+            from django.contrib import messages as django_messages
+            if obj.tip == Akcija.Tip.PONUDA:
+                t = obj.artikal.naziv if obj.artikal_id else '—'
+                g = obj.gratis_artikal.naziv if obj.gratis_artikal_id else '—'
+                pct = f'{obj.popust_postotak}%' if obj.popust_postotak is not None else 'bez %'
+                verb = 'ažurirana' if change else 'kreirana'
+                django_messages.success(
+                    request,
+                    f'+ Ponuda {verb}: trigger „{t}” → ponuda „{g}” ({pct}). '
+                    f'Kad kupac doda trigger u korpu, iskače DA/NE s popustom na ponudu. '
+                    f'Artikle i % možeš mijenjati ovdje bez brisanja akcije.',
+                )
+                self._warn_ponuda_stock(request, obj)
+            elif obj.tip == Akcija.Tip.QTY_DEAL and obj.artikal_id:
+                django_messages.success(
+                    request,
+                    f'Kupi više sačuvano za „{obj.artikal.naziv}”. '
+                    f'Artikal i % opcije možeš mijenjati bez brisanja akcije.',
+                )
 
     def save_related(self, request, form, formsets, change):
         obj = form.instance
@@ -1137,12 +1203,47 @@ class AkcijaAdmin(admin.ModelAdmin):
                     '+ Ponuda treba trigger artikal i ponuda artikal.',
                 )
 
+    def _product_offerable(self, product):
+        """True ako se artikal može ponuditi u + Ponuda popup-u (na stanju)."""
+        if not product or not product.aktivan:
+            return False
+        if product.varijacije.exists():
+            return product.varijacije.filter(na_stanju=True).exists()
+        return bool(product.na_stanju)
+
+    def _warn_ponuda_stock(self, request, obj):
+        from django.contrib import messages as django_messages
+        if not obj or obj.tip != Akcija.Tip.PONUDA:
+            return
+        if obj.gratis_artikal_id and not self._product_offerable(obj.gratis_artikal):
+            django_messages.warning(
+                request,
+                f'Ponuda artikal „{obj.gratis_artikal.naziv}” nije na stanju — '
+                f'popup se NEĆE prikazati dok ne staviš artikal na stanje ili ne odabereš drugi. '
+                f'Možeš ga zamijeniti ispod (Sačuvaj) bez brisanja akcije.',
+            )
+        if obj.artikal_id and not obj.artikal.aktivan:
+            django_messages.warning(
+                request,
+                f'Trigger artikal „{obj.artikal.naziv}” nije aktivan — '
+                f'zamijeni ga ili aktiviraj artikal.',
+            )
+
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
         obj = self.get_object(request, object_id)
         if obj is not None and obj.tip == Akcija.Tip.AI_PRODAJA:
             extra_context['title'] = 'AI prodaja / AI dwell'
             extra_context['show_save_and_add_another'] = False
+        elif obj is not None and obj.tip == Akcija.Tip.PONUDA:
+            extra_context['title'] = (
+                '+ Ponuda — uredi trigger / % / ponudu (bez brisanja)'
+            )
+            # Upozorenje na učitavanju change forme
+            if request.method == 'GET':
+                self._warn_ponuda_stock(request, obj)
+        elif obj is not None and obj.tip == Akcija.Tip.QTY_DEAL:
+            extra_context['title'] = 'Kupi više — uredi artikal i % (bez brisanja)'
         return super().change_view(
             request, object_id, form_url, extra_context=extra_context,
         )
@@ -1360,17 +1461,22 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ('tagovi',)
     list_display = (
         'naziv', 'sifra', 'brend', 'kategorija', 'cijena', 'pakovanje_komada',
-        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
+        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
+        'prioritet_lagera', 'proizvedeno_u_japanu',
         'aktivan', 'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
     list_filter = (
-        'aktivan', NaStanjuFilter, 'prikazi_na_pocetnoj', 'proizvedeno_u_japanu',
+        'aktivan', NaStanjuFilter, 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
+        'prioritet_lagera', 'proizvedeno_u_japanu',
         'kategorija', 'brend', 'tagovi',
         ('kreiran', admin.DateFieldListFilter),
     )
     date_hierarchy = 'kreiran'
-    ordering = ('-kreiran',)
-    list_editable = ('prikazi_na_pocetnoj', 'proizvedeno_u_japanu', 'aktivan', 'na_stanju')
+    ordering = ('-prioritet_lagera', '-kreiran')
+    list_editable = (
+        'prikazi_na_pocetnoj', 'je_novitet', 'je_hit', 'prioritet_lagera',
+        'proizvedeno_u_japanu', 'aktivan', 'na_stanju',
+    )
     search_fields = (
         'naziv', 'sifra', 'barkod', 'tagovi__naziv',
         'kategorija__naziv', 'kategorija__roditelj__naziv',
@@ -1441,9 +1547,14 @@ class ProductAdmin(admin.ModelAdmin):
             ),
         }),
         ('Prikaz', {
-            'fields': ('prikazi_na_pocetnoj', 'proizvedeno_u_japanu', 'aktivan'),
+            'fields': (
+                'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
+                'prioritet_lagera', 'proizvedeno_u_japanu', 'aktivan',
+            ),
             'description': (
-                '„Proizvedeno u Japanu” — na sajtu se ispod naziva prikaže badge Made in Japan.'
+                '„Proizvedeno u Japanu” — na sajtu se ispod naziva prikaže badge Made in Japan. '
+                '„Redukovanje lagera”: Normalno / Favorizuj / Hit — prioritet samo među '
+                'relevantnim rezultatima pretrage, kategorije i preporuka (ne gura nerelevantne).'
             ),
         }),
         ('SEO (Google i društvene mreže)', {

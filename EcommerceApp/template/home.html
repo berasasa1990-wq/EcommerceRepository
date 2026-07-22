@@ -187,8 +187,8 @@
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
                 <div class="home-products-header home-products-header--novo">
-                    <h2>{{ site_settings.naslov_novo|default:"Noviteti" }}</h2>
-                    {% if site_settings.podnaslov_novo %}<p>{{ site_settings.podnaslov_novo }}</p>{% endif %}
+                    <h2 data-site-edit="naslov_novo" data-site-edit-placeholder="Noviteti">{% if site_settings.naslov_novo %}{{ site_settings.naslov_novo }}{% endif %}</h2>
+                    <p data-site-edit="podnaslov_novo" data-site-edit-placeholder="Podnaslov (opcionalno)"{% if not site_settings.podnaslov_novo and not staff_edit_mode %} hidden{% endif %}>{% if site_settings.podnaslov_novo %}{{ site_settings.podnaslov_novo }}{% endif %}</p>
                 </div>
                 {% include 'partials/home_product_carousel.html' with products=latest_products eager_first_image=eager_first_novo_image home_section_badge='novo' %}
             </div>
@@ -203,8 +203,8 @@
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
                 <div class="home-products-header home-products-header--izdvojeno">
-                    <h2>{{ site_settings.naslov_izdvojeno|default:"Izdvojeni artikli" }}</h2>
-                    {% if site_settings.podnaslov_izdvojeno %}<p>{{ site_settings.podnaslov_izdvojeno }}</p>{% endif %}
+                    <h2 data-site-edit="naslov_izdvojeno" data-site-edit-placeholder="Izdvojeni artikli">{% if site_settings.naslov_izdvojeno %}{{ site_settings.naslov_izdvojeno }}{% endif %}</h2>
+                    <p data-site-edit="podnaslov_izdvojeno" data-site-edit-placeholder="Podnaslov (opcionalno)"{% if not site_settings.podnaslov_izdvojeno and not staff_edit_mode %} hidden{% endif %}>{% if site_settings.podnaslov_izdvojeno %}{{ site_settings.podnaslov_izdvojeno }}{% endif %}</p>
                 </div>
                 {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
             </div>

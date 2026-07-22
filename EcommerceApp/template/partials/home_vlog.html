@@ -3,7 +3,7 @@
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
                 <div class="home-vlog-header home-vlog-header--blog">
-                    <h2>{{ site_settings.naslov_blog }}</h2>
+                    <h2 data-site-edit="naslov_blog" data-site-edit-placeholder="Blog">{% if site_settings.naslov_blog %}{{ site_settings.naslov_blog }}{% endif %}</h2>
                 </div>
                 <div class="home-vlog-grid">
                     {% for vlog in home_vlogs %}

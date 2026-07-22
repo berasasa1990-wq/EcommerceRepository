@@ -476,6 +476,101 @@ def _apply_search_filter(products_qs, query):
     ).distinct()
 
 
+def _product_lager_priority(product):
+    """0=normal, 1=favorizuj, 2=hit redukovanje — samo za sort među relevantnim."""
+    try:
+        return int(getattr(product, 'prioritet_lagera', 0) or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _search_relevance_score(product, query):
+    """Veći = bolje poklapanje (unutar već filtriranih rezultata)."""
+    q = (query or '').strip().lower()
+    if not q:
+        return 0
+    score = 0
+    name = (product.naziv or '').lower()
+    sifra = (product.sifra or '').lower()
+    tokens = [t for t in re.split(r'\s+', q) if t]
+
+    if sifra and (sifra == q or q in sifra):
+        score += 120
+    if name == q:
+        score += 100
+    elif name.startswith(q):
+        score += 80
+    elif q in name:
+        score += 50
+
+    for tok in tokens:
+        if tok in name:
+            score += 12
+        if sifra and tok in sifra:
+            score += 18
+
+    cat = getattr(product, 'kategorija', None)
+    if cat is not None:
+        cat_name = (getattr(cat, 'naziv', None) or '').lower()
+        if cat_name and (q in cat_name or any(t in cat_name for t in tokens)):
+            score += 20
+    return score
+
+
+def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
+    """
+    Među već relevantnim rezultatima: Hit > Favorizuj > Normalno,
+    zatim relevantnost (pretraga) ili cijena (ako je sort po cijeni).
+    """
+    if not products:
+        return products
+
+    def key(p):
+        prio = _product_lager_priority(p)
+        name = (p.naziv or '').lower()
+        if price_sort == 'rastuca':
+            # Eksplicitni sort po cijeni: cijena prva, lager prioritet kao tiebreak
+            return (_effective_product_price(p), -prio, name)
+        if price_sort == 'opadajuca':
+            try:
+                price = float(_effective_product_price(p) or 0)
+            except Exception:
+                price = 0.0
+            return (-price, -prio, name)
+        # default / pretraga: Hit → Favorizuj → Normal, unutar grupe relevantnost
+        rel = _search_relevance_score(p, query) if query else 0
+        return (-prio, -rel, name)
+
+    return sorted(products, key=key)
+
+
+def _order_qs_by_lager_priority(qs, *extra_order):
+    """QuerySet: prioritet_lagera DESC, zatim dodatni order_by."""
+    return qs.order_by('-prioritet_lagera', *extra_order)
+
+
+def _weighted_home_product_order(products):
+    """
+    Početna (bez filtera): prioritetni artikli češće gore,
+    ali i dalje nasumično unutar nivoa (ne uvijek isti redoslijed).
+    """
+    if not products:
+        return products
+    buckets = {0: [], 1: [], 2: []}
+    for p in products:
+        prio = _product_lager_priority(p)
+        if prio not in buckets:
+            prio = 0
+        buckets[prio].append(p)
+    for prio in buckets:
+        random.shuffle(buckets[prio])
+    # Hit prvo, pa favorizuj, pa normal — unutar grupe shuffle
+    ordered = buckets[2] + buckets[1] + buckets[0]
+    # Blago miješanje susjednih da nije kruto, ali hit ostaje ispred normalnih
+    # (ne miješamo preko granica prioriteta — korisnik želi prednost)
+    return ordered
+
+
 SEARCH_SUGGEST_LIMIT = 6
 STAFF_LOOKUP_LIMIT = 25
 
@@ -486,7 +581,8 @@ def search_suggest(request):
         return JsonResponse({'results': [], 'query': '', 'has_more': False})
 
     products_qs = _apply_search_filter(_product_queryset(request), query)
-    products = list(products_qs[:SEARCH_SUGGEST_LIMIT + 1])
+    products = list(products_qs[: max(SEARCH_SUGGEST_LIMIT * 4, 24)])
+    products = _sort_products_by_lager_priority(products, query=query)
     has_more = len(products) > SEARCH_SUGGEST_LIMIT
     products = products[:SEARCH_SUGGEST_LIMIT]
     results = []
@@ -545,10 +641,17 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             if _product_matches_size(product, size_label)
         ]
 
+    # Redukovanje lagera: prioritet samo među već filtriranim (relevantnim) rezultatima
+    price_sort = None
     if params['sort'] == 'rastuca':
-        products.sort(key=_effective_product_price)
+        price_sort = 'rastuca'
     elif params['sort'] == 'opadajuca':
-        products.sort(key=_effective_product_price, reverse=True)
+        price_sort = 'opadajuca'
+    products = _sort_products_by_lager_priority(
+        products,
+        query=params.get('q') or '',
+        price_sort=price_sort,
+    )
 
     return products, params
 
@@ -629,11 +732,12 @@ def _paginate_home_products(request, products, filter_params):
             request.session.pop(HOME_PRODUCT_ORDER_KEY, None)
             request.session[HOME_FILTER_KEY] = filter_signature
             request.session.modified = True
+        # Filter/pretraga: redoslijed već postavljen u _apply_product_filters (lager prioritet)
     else:
         request.session.pop(HOME_FILTER_KEY, None)
         fresh_visit = 'page' not in request.GET
         if fresh_visit:
-            random.shuffle(products)
+            products = _weighted_home_product_order(products)
             request.session[HOME_PRODUCT_ORDER_KEY] = [product.pk for product in products]
             request.session.modified = True
         else:
@@ -646,6 +750,8 @@ def _paginate_home_products(request, products, filter_params):
                     if product.pk not in seen:
                         ordered.append(product)
                 products = ordered
+            else:
+                products = _weighted_home_product_order(products)
 
     return _paginate_catalog_products(request, products)
 
@@ -746,8 +852,21 @@ HOME_VLOG_LIMIT = 3
 
 def _home_latest_products(request=None):
     """
-    Noviteti na početnoj: automatski (zadnjih 10) ili ručno (HomeNovoProduct).
+    Noviteti na početnoj:
+    1) Artikli označeni „Noviteti” (je_novitet) — prioritet
+    2) Ručni odabir (HomeNovoProduct) ako je mod manual
+    3) Fallback: zadnjih 10 unesenih
     """
+    base_qs = _product_queryset(request)
+    marked = list(
+        _order_qs_by_lager_priority(
+            base_qs.filter(je_novitet=True),
+            '-kreiran', '-id',
+        )[:HOME_SECTION_PRODUCT_LIMIT],
+    )
+    if marked:
+        return marked
+
     site_settings = SiteSettings.load()
     if site_settings.noviteti_mod == SiteSettings.NovitetiMod.MANUAL:
         entries_qs = HomeNovoProduct.objects.filter(
@@ -760,17 +879,34 @@ def _home_latest_products(request=None):
             'artikal', 'artikal__kategorija', 'artikal__brend',
         ).prefetch_related(
             Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
+        ).order_by(
+            '-artikal__prioritet_lagera', 'redoslijed', '-id',
         )[:HOME_SECTION_PRODUCT_LIMIT]
         products = [entry.artikal for entry in entries]
         if products:
             return products
-        # Ručni mod bez unosa → fallback na automatski da sekcija nije prazna
     return list(
-        _product_queryset(request).order_by('-kreiran')[:HOME_SECTION_PRODUCT_LIMIT],
+        _order_qs_by_lager_priority(base_qs, '-kreiran')[:HOME_SECTION_PRODUCT_LIMIT],
     )
 
 
 def _home_featured_products(request=None):
+    """
+    Izdvojeni na početnoj:
+    1) Artikli označeni „HIT / Izdvojeno” (je_hit)
+    2) Fallback: ručni HomeFeaturedProduct
+    Među njima: redukovanje lagera ima prednost.
+    """
+    base_qs = _product_queryset(request)
+    marked = list(
+        _order_qs_by_lager_priority(
+            base_qs.filter(je_hit=True),
+            '-kreiran', '-id',
+        )[:HOME_SECTION_PRODUCT_LIMIT],
+    )
+    if marked:
+        return marked
+
     entries_qs = HomeFeaturedProduct.objects.filter(
         aktivan=True,
         artikal__aktivan=True,
@@ -781,6 +917,8 @@ def _home_featured_products(request=None):
         'artikal', 'artikal__kategorija', 'artikal__brend',
     ).prefetch_related(
         Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
+    ).order_by(
+        '-artikal__prioritet_lagera', 'redoslijed', '-id',
     )[:HOME_SECTION_PRODUCT_LIMIT]
     return [entry.artikal for entry in entries]
 
@@ -795,9 +933,10 @@ def _home_category_showcases(request=None):
     for entry in entries:
         category_ids = entry.kategorija.get_descendant_ids()
         products = list(
-            _product_queryset(request)
-            .filter(kategorija_id__in=category_ids)
-            .order_by('-kreiran')[:HOME_CATEGORY_SHOWCASE_LIMIT],
+            _order_qs_by_lager_priority(
+                _product_queryset(request).filter(kategorija_id__in=category_ids),
+                '-kreiran',
+            )[:HOME_CATEGORY_SHOWCASE_LIMIT],
         )
         if not products:
             continue
@@ -811,13 +950,16 @@ def _home_category_showcases(request=None):
 
 
 def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT, request=None):
+    """Slični / povezani — ista kategorija, prednost redukovanju lagera."""
     if not product.kategorija_id:
         return []
     return list(
-        _product_queryset(request)
-        .filter(kategorija_id=product.kategorija_id)
-        .exclude(pk=product.pk)
-        .order_by('-kreiran')[:limit],
+        _order_qs_by_lager_priority(
+            _product_queryset(request)
+            .filter(kategorija_id=product.kategorija_id)
+            .exclude(pk=product.pk),
+            '-kreiran',
+        )[:limit],
     )
 
 
@@ -2974,13 +3116,120 @@ def staff_toggle_edit_mode(request):
     request.session[STAFF_EDIT_MODE_SESSION_KEY] = enabled
     request.session.modified = True
     if enabled:
-        messages.success(request, 'Edit mode uključen — na artiklima vidiš admin alate.')
+        messages.success(
+            request,
+            'Edit mode uključen — klikni natpise da ih mijenjaš, boje u panelu desno.',
+        )
     else:
         messages.success(request, 'Edit mode isključen — artikli se prikazuju kao običnom korisniku.')
     next_url = (request.POST.get('next') or request.META.get('HTTP_REFERER') or '').strip()
     if next_url and next_url.startswith('/'):
         return redirect(next_url)
     return redirect('account')
+
+
+# Polja SiteSettings koja se smiju mijenjati s fronta u edit modu
+_SITE_EDIT_TEXT_FIELDS = frozenset({
+    'naslov_novo', 'podnaslov_novo',
+    'naslov_izdvojeno', 'podnaslov_izdvojeno',
+    'naslov_blog',
+    'naslov_povezani', 'podnaslov_povezani',
+    'promo_bar_tekst', 'promo_bar_link_tekst',
+    'dostava_naziv',
+    'tekst_dugme_korpa', 'tekst_dugme_rasprodato',
+})
+_SITE_EDIT_COLOR_FIELDS = frozenset({
+    'boja_dugme_korpa', 'boja_dugme_korpa_hover',
+    'boja_dugme_banner', 'boja_dugme_banner_hover',
+    'kontakt_boja_whatsapp', 'kontakt_boja_viber', 'kontakt_boja_messenger',
+})
+_SITE_EDIT_MAX_LEN = {
+    'naslov_novo': 120,
+    'podnaslov_novo': 200,
+    'naslov_izdvojeno': 120,
+    'podnaslov_izdvojeno': 200,
+    'naslov_blog': 200,
+    'naslov_povezani': 120,
+    'podnaslov_povezani': 200,
+    'promo_bar_tekst': 200,
+    'promo_bar_link_tekst': 80,
+    'dostava_naziv': 100,
+    'tekst_dugme_korpa': 40,
+    'tekst_dugme_rasprodato': 40,
+}
+
+
+def _site_edit_normalize_value(field, value):
+    import re
+    value = str(value if value is not None else '').strip()
+    if field in _SITE_EDIT_TEXT_FIELDS:
+        max_len = _SITE_EDIT_MAX_LEN.get(field, 200)
+        return value[:max_len], None
+    if field in _SITE_EDIT_COLOR_FIELDS:
+        if not re.fullmatch(r'#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?', value):
+            return None, 'Boja mora biti hex npr. #5BB805.'
+        if len(value) == 4:
+            value = '#' + ''.join(c * 2 for c in value[1:])
+        return value, None
+    return None, f'Polje „{field}” nije dozvoljeno.'
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_site_edit_save(request):
+    """
+    AJAX: snimi jedno ili više polja SiteSettings (edit mode).
+    Single: field + value
+    Multi: updates_json = {"boja_dugme_korpa":"#…","tekst_dugme_korpa":"…"}
+    """
+    import json
+    from django.http import JsonResponse
+
+    if not _staff_edit_mode_enabled(request):
+        return JsonResponse({'ok': False, 'message': 'Edit mode je isključen.'}, status=403)
+
+    updates = {}
+    raw_json = (request.POST.get('updates_json') or '').strip()
+    if raw_json:
+        try:
+            parsed = json.loads(raw_json)
+        except json.JSONDecodeError:
+            return JsonResponse({'ok': False, 'message': 'Neispravan JSON.'}, status=400)
+        if not isinstance(parsed, dict) or not parsed:
+            return JsonResponse({'ok': False, 'message': 'Prazan updates.'}, status=400)
+        updates = parsed
+    else:
+        field = (request.POST.get('field') or '').strip()
+        value = request.POST.get('value')
+        if not field:
+            return JsonResponse({'ok': False, 'message': 'Nedostaje field.'}, status=400)
+        updates = {field: value}
+
+    site = SiteSettings.load()
+    saved = {}
+    color_changed = False
+    for field, raw_val in updates.items():
+        field = str(field).strip()
+        value, err = _site_edit_normalize_value(field, raw_val)
+        if err:
+            return JsonResponse({'ok': False, 'message': err}, status=400)
+        if not hasattr(site, field):
+            return JsonResponse({'ok': False, 'message': f'Nepoznato polje „{field}”.'}, status=400)
+        setattr(site, field, value)
+        saved[field] = value
+        if field in _SITE_EDIT_COLOR_FIELDS:
+            color_changed = True
+
+    site.save(update_fields=list(saved.keys()))
+    theme_css = site.get_theme_ui().get('css_vars', '') if color_changed else ''
+
+    return JsonResponse({
+        'ok': True,
+        'saved': saved,
+        'theme_css': theme_css,
+        'message': 'Sačuvano.',
+    })
 
 
 @login_required(login_url='login')
@@ -4325,6 +4574,128 @@ def staff_product_quick_edit(request, slug):
             messages.success(request, f'„{product.naziv}” označen kao Made in Japan.')
         else:
             messages.success(request, f'Made in Japan uklonjen sa „{product.naziv}”.')
+    elif action == 'save_all':
+        # Jedan Save: brend, kategorija, opis, cijena, glavna slika, noviteti
+        changed = []
+        errors = []
+
+        raw_price = (request.POST.get('cijena') or '').strip().replace(',', '.')
+        if raw_price:
+            try:
+                new_price = Decimal(raw_price)
+                if new_price <= 0:
+                    errors.append('Cijena mora biti veća od 0.')
+                else:
+                    product.cijena = new_price
+                    if product.akcija_postotak:
+                        product.akcijska_cijena = None
+                    changed.append('cijena')
+            except (InvalidOperation, ValueError):
+                errors.append('Unesite ispravnu cijenu (npr. 45.00).')
+
+        raw_cat = (request.POST.get('kategorija_id') or '').strip()
+        if 'kategorija_id' in request.POST:
+            if not raw_cat:
+                product.kategorija = None
+                changed.append('kategorija')
+            else:
+                try:
+                    category = Category.objects.filter(pk=int(raw_cat)).first()
+                except (TypeError, ValueError):
+                    category = None
+                if category:
+                    product.kategorija = category
+                    changed.append('kategorija')
+                else:
+                    errors.append('Kategorija nije pronađena.')
+
+        raw_brand = (request.POST.get('brend_id') or '').strip()
+        if 'brend_id' in request.POST:
+            if not raw_brand:
+                product.brend = None
+                changed.append('brend')
+            else:
+                try:
+                    brand = Brand.objects.filter(pk=int(raw_brand)).first()
+                except (TypeError, ValueError):
+                    brand = None
+                if brand:
+                    product.brend = brand
+                    changed.append('brend')
+                else:
+                    errors.append('Brend nije pronađen.')
+
+        if 'opis' in request.POST:
+            product.opis = (request.POST.get('opis') or '').strip()
+            changed.append('opis')
+
+        product.je_novitet = (request.POST.get('je_novitet') or '').strip() in (
+            '1', 'true', 'on', 'yes',
+        )
+        changed.append('je_novitet')
+        product.je_hit = (request.POST.get('je_hit') or '').strip() in (
+            '1', 'true', 'on', 'yes',
+        )
+        changed.append('je_hit')
+
+        uploaded = request.FILES.get('glavna_slika')
+        if uploaded:
+            if not _staff_upload_is_image(uploaded):
+                errors.append('Glavna slika mora biti slika.')
+            else:
+                product.slika = uploaded
+                changed.append('slika')
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+            return redirect('product_detail', slug=slug)
+
+        product.save()
+        # Dodatne slike (opcionalno u istom save-u)
+        uploads = request.FILES.getlist('dodatne_slike')
+        extra_n = 0
+        if uploads:
+            max_order = (
+                product.dodatne_slike.aggregate(max_red=Max('redoslijed')).get('max_red') or 0
+            )
+            for index, up in enumerate(uploads, start=1):
+                if not _staff_upload_is_image(up):
+                    continue
+                ProductImage.objects.create(
+                    product=product,
+                    slika=up,
+                    redoslijed=max_order + index,
+                )
+                extra_n += 1
+        # Tagovi
+        if 'tag_ids' in request.POST or request.POST.get('set_tags_with_save'):
+            tag_ids = _staff_parse_tag_ids(request)
+            tags = list(Tag.objects.filter(pk__in=tag_ids))
+            product.tagovi.set(tags)
+
+        parts = []
+        if 'cijena' in changed:
+            parts.append(f'cijena {product.cijena} KM')
+        if 'kategorija' in changed:
+            parts.append('kategorija')
+        if 'brend' in changed:
+            parts.append('brend')
+        if 'opis' in changed:
+            parts.append('opis')
+        if 'slika' in changed:
+            parts.append('glavna slika')
+        if 'je_novitet' in changed:
+            parts.append('noviteti ' + ('uključeno' if product.je_novitet else 'isključeno'))
+        if 'je_hit' in changed:
+            parts.append('HIT ponuda ' + ('uključeno' if product.je_hit else 'isključeno'))
+        if extra_n:
+            parts.append(f'+{extra_n} slika')
+        messages.success(
+            request,
+            'Sačuvano: ' + (', '.join(parts) if parts else 'bez izmjena') + '.',
+        )
+    # Legacy single-field actions (zadržano radi kompatibilnosti)
     elif action == 'set_price':
         raw_price = (request.POST.get('cijena') or '').strip().replace(',', '.')
         try:
