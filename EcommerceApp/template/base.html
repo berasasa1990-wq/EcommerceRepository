@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260722v4" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260722v4">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260722v6" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260722v6">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -373,6 +373,67 @@
         </div>
     </header>
 
+    {# Izmjeri stvarnu visinu fiksiranog chrome-a prije crtanja sadržaja (sprečava crop odozgo) #}
+    <script>
+    (function () {
+        function syncSiteChromeOffset() {
+            var root = document.documentElement;
+            var staff = document.querySelector('.staff-edit-mode-banner');
+            var promo = document.querySelector('.promo-bar');
+            var header = document.getElementById('header');
+            // Staff banner se učitava kasnije u body — ne gašenje CSS defaulta prerano
+            if (staff) {
+                var st = window.getComputedStyle(staff);
+                var staffH = 0;
+                if (st.display !== 'none' && st.visibility !== 'hidden') {
+                    staffH = Math.round(staff.getBoundingClientRect().height) || 0;
+                }
+                root.style.setProperty('--staff-edit-banner-height', staffH + 'px');
+            } else if (!document.body.classList.contains('staff-edit-mode-on')) {
+                root.style.setProperty('--staff-edit-banner-height', '0px');
+            }
+            if (promo) {
+                var ph = Math.max(32, Math.round(promo.getBoundingClientRect().height) || 0);
+                root.style.setProperty('--promo-height', ph + 'px');
+            }
+            if (header) {
+                var hh = Math.max(48, Math.round(header.getBoundingClientRect().height) || 0);
+                root.style.setProperty('--header-height', hh + 'px');
+            }
+            // Dno headera = stvarni offset ispod fiksnog chrome-a
+            // (ako je scroll > 0, header.bottom i dalje valja jer je fixed)
+            var top = 0;
+            if (header) {
+                top = Math.round(header.getBoundingClientRect().bottom);
+            } else if (promo) {
+                top = Math.round(promo.getBoundingClientRect().bottom);
+            }
+            // Mala rezerva da filter / baner ne uđu ispod headera
+            if (top > 0) {
+                root.style.setProperty('--site-chrome-top', (top + 2) + 'px');
+            }
+        }
+        window.syncSiteChromeOffset = syncSiteChromeOffset;
+        syncSiteChromeOffset();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', syncSiteChromeOffset);
+        }
+        window.addEventListener('load', syncSiteChromeOffset);
+        window.addEventListener('resize', syncSiteChromeOffset);
+        if (window.ResizeObserver) {
+            try {
+                var ro = new ResizeObserver(function () { syncSiteChromeOffset(); });
+                var h = document.getElementById('header');
+                var p = document.querySelector('.promo-bar');
+                var s = document.querySelector('.staff-edit-mode-banner');
+                if (h) ro.observe(h);
+                if (p) ro.observe(p);
+                if (s) ro.observe(s);
+            } catch (e) {}
+        }
+    })();
+    </script>
+
     {% if messages %}
     <div class="flash-messages">
         {% for message in messages %}
@@ -428,7 +489,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260722v5" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260722v6" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}

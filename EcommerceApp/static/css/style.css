@@ -14,10 +14,16 @@
     --gray-400: #757575;
     --gray-600: #707072;
     --footer-muted: #a3a3a3;
-    --header-top-height: 76px;
-    --header-nav-height: 44px;
+    /* Fiksni chrome: JS (syncSiteChromeOffset) mjeri stvarne visine i overwrite-a */
+    --header-top-height: 80px;
+    --header-nav-height: 48px;
     --header-height: calc(var(--header-top-height) + var(--header-nav-height));
-    --promo-height: 36px;
+    --promo-height: 40px;
+    --staff-edit-banner-height: 0px;
+    /* Ukupan offset ispod promo + header (+ staff banner) */
+    --site-chrome-top: calc(
+        var(--staff-edit-banner-height) + var(--promo-height) + var(--header-height)
+    );
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --home-product-inset: 12px;
@@ -72,11 +78,13 @@ img.home-vlog-card-image {
     padding: 8px 16px;
     font-size: 12px;
     position: fixed;
-    top: 0;
+    top: var(--staff-edit-banner-height);
     left: 0;
     right: 0;
     z-index: 1001;
-    height: var(--promo-height);
+    min-height: var(--promo-height);
+    height: auto;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -90,7 +98,7 @@ img.home-vlog-card-image {
 /* Header */
 .header {
     position: fixed;
-    top: var(--promo-height);
+    top: calc(var(--staff-edit-banner-height) + var(--promo-height));
     left: 0;
     right: 0;
     z-index: 1000;
@@ -142,7 +150,7 @@ img.home-vlog-card-image {
 
 .header-akcija-cta {
     position: fixed;
-    top: calc(var(--promo-height) + var(--header-height) + 10px);
+    top: calc(var(--site-chrome-top) + 10px);
     right: max(20px, env(safe-area-inset-right, 0px));
     z-index: 999;
     display: inline-flex;
@@ -857,9 +865,9 @@ img.home-vlog-card-image {
     color: var(--gray-500);
 }
 
-/* Main offset for fixed header */
+/* Main offset for fixed header + promo (+ staff edit banner) */
 main {
-    padding-top: calc(var(--header-height) + var(--promo-height));
+    padding-top: var(--site-chrome-top);
 }
 
 /* Buttons */
@@ -927,7 +935,7 @@ main {
     color: #111 !important;
 }
 
-/* Hero Carousel — omjer 24:7 kao upload banner (1920×560) */
+/* Hero Carousel — omjer kao stvarni banner (1920×420 ≈ 32/7) da se ne cropa vrh */
 .hero-carousel {
     position: relative;
     width: 100%;
@@ -939,7 +947,7 @@ main {
 
 .carousel-track {
     width: 100%;
-    aspect-ratio: 24 / 7;
+    aspect-ratio: 32 / 7;
     position: relative;
     height: auto;
 }
@@ -993,8 +1001,9 @@ main {
     width: 100%;
     height: 100%;
     max-width: none;
-    object-fit: contain;
-    object-position: center center;
+    /* cover + top: popuni traku, vrh banera ostaje vidljiv (ne crop odozgo) */
+    object-fit: cover;
+    object-position: center top;
     background: #ffffff;
 }
 
@@ -1005,7 +1014,7 @@ main {
     height: 100%;
     max-width: none;
     object-fit: cover;
-    object-position: center center;
+    object-position: center top;
     background: #000000;
 }
 
@@ -1338,7 +1347,7 @@ main {
     max-width: none;
     margin: 0;
     width: 100%;
-    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+    scroll-margin-top: calc(var(--site-chrome-top) + 16px);
 }
 
 .home-search-results {
@@ -1346,7 +1355,7 @@ main {
     max-width: none;
     margin: 0;
     width: 100%;
-    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+    scroll-margin-top: calc(var(--site-chrome-top) + 16px);
 }
 
 .home-search-results--akcija:not(.category-page) {
@@ -1970,7 +1979,7 @@ main {
     width: 100%;
     max-width: none;
     margin: 0;
-    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+    scroll-margin-top: calc(var(--site-chrome-top) + 16px);
     overflow: hidden;
     box-sizing: border-box;
 }
@@ -2421,16 +2430,16 @@ main {
     padding: 64px 0;
     max-width: none;
     width: 100%;
-    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+    scroll-margin-top: calc(var(--site-chrome-top) + 16px);
 }
 
 .product-showcase--search {
     padding-top: 32px;
-    scroll-margin-top: calc(var(--header-height) + var(--promo-height) + 16px);
+    scroll-margin-top: calc(var(--site-chrome-top) + 16px);
 }
 
 body.search-results-active main {
-    padding-top: calc(var(--header-height) + var(--promo-height));
+    padding-top: var(--site-chrome-top);
 }
 
 .product-showcase .showcase-header {
@@ -2534,8 +2543,8 @@ body.search-results-active main {
 
 .catalog-sidebar {
     position: sticky;
-    top: calc(var(--header-height) + var(--promo-height) + 12px);
-    max-height: calc(100dvh - var(--header-height) - var(--promo-height) - 24px);
+    top: calc(var(--site-chrome-top) + 12px);
+    max-height: calc(100dvh - var(--site-chrome-top) - 24px);
     min-height: 0;
     overflow: hidden;
     align-self: start;
@@ -2562,7 +2571,7 @@ body.search-results-active main {
     display: flex;
     flex-direction: column;
     gap: 18px;
-    max-height: calc(100dvh - var(--header-height) - var(--promo-height) - 24px);
+    max-height: calc(100dvh - var(--site-chrome-top) - 24px);
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
@@ -2572,8 +2581,8 @@ body.search-results-active main {
 }
 
 .catalog-sidebar.is-filter-expanded {
-    height: calc(100dvh - var(--header-height) - var(--promo-height) - 24px);
-    max-height: calc(100dvh - var(--header-height) - var(--promo-height) - 24px);
+    height: calc(100dvh - var(--site-chrome-top) - 24px);
+    max-height: calc(100dvh - var(--site-chrome-top) - 24px);
 }
 
 .catalog-filter.is-filter-expanded {
@@ -2858,7 +2867,7 @@ body.search-results-active main {
 
 .filter-group--collapsible.is-open .filter-size-panel {
     display: flex;
-    min-height: min(420px, calc(100dvh - var(--header-height) - var(--promo-height) - 240px));
+    min-height: min(420px, calc(100dvh - var(--site-chrome-top) - 240px));
 }
 
 .filter-selected-size {
@@ -2872,8 +2881,8 @@ body.search-results-active main {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
     gap: 6px;
-    min-height: min(360px, calc(100dvh - var(--header-height) - var(--promo-height) - 300px));
-    max-height: min(480px, calc(100dvh - var(--header-height) - var(--promo-height) - 220px));
+    min-height: min(360px, calc(100dvh - var(--site-chrome-top) - 300px));
+    max-height: min(480px, calc(100dvh - var(--site-chrome-top) - 220px));
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -2884,8 +2893,8 @@ body.search-results-active main {
 }
 
 .filter-group--collapsible.is-open .filter-size-list {
-    min-height: min(320px, calc(100dvh - var(--header-height) - var(--promo-height) - 280px));
-    max-height: min(480px, calc(100dvh - var(--header-height) - var(--promo-height) - 220px));
+    min-height: min(320px, calc(100dvh - var(--site-chrome-top) - 280px));
+    max-height: min(480px, calc(100dvh - var(--site-chrome-top) - 220px));
 }
 
 .filter-size-list::-webkit-scrollbar {
@@ -7059,7 +7068,7 @@ button.nav-action-link {
 /* Flash messages */
 .flash-messages {
     position: fixed;
-    top: calc(var(--promo-height) + var(--header-height) + 12px);
+    top: calc(var(--site-chrome-top) + 12px);
     right: 24px;
     z-index: 1003;
     display: flex;
@@ -7435,7 +7444,7 @@ button.nav-action-link {
     padding: 28px 32px;
     border-radius: 4px;
     position: sticky;
-    top: calc(var(--header-height) + var(--promo-height) + 24px);
+    top: calc(var(--site-chrome-top) + 24px);
 }
 
 .order-totals {
@@ -7573,7 +7582,7 @@ button.nav-action-link {
     padding: 28px 32px;
     border-radius: 4px;
     position: sticky;
-    top: calc(var(--header-height) + var(--promo-height) + 24px);
+    top: calc(var(--site-chrome-top) + 24px);
 }
 
 .checkout-form h2,
@@ -7791,9 +7800,11 @@ button.nav-action-link {
 /* Responsive */
 @media (max-width: 1024px) {
     :root {
-        --header-top-height: 120px;
+        /* Veći default dok JS ne izmjeri stvarni header (logo + search) */
+        --header-top-height: 132px;
         --header-nav-height: 0px;
         --header-height: var(--header-top-height);
+        --promo-height: 40px;
     }
 
     .product-catalog--full .catalog-products {
@@ -8071,11 +8082,11 @@ button.nav-action-link {
         align-items: stretch;
         justify-content: flex-start;
         position: fixed;
-        top: var(--mobile-nav-panel-top, calc(var(--promo-height) + var(--header-top-height)));
+        top: var(--mobile-nav-panel-top, var(--site-chrome-top));
         left: 0;
         right: 0;
         bottom: 0;
-        min-height: calc(100dvh - var(--mobile-nav-panel-top, calc(var(--promo-height) + var(--header-top-height))));
+        min-height: calc(100dvh - var(--mobile-nav-panel-top, var(--site-chrome-top)));
         max-height: none;
         background: #ffffff;
         z-index: 1200;
@@ -8226,7 +8237,7 @@ button.nav-action-link {
         display: flex;
         flex-direction: column;
         position: fixed;
-        top: var(--mobile-nav-panel-top, calc(var(--promo-height) + var(--header-top-height)));
+        top: var(--mobile-nav-panel-top, var(--site-chrome-top));
         left: 0;
         right: 0;
         bottom: 0;
@@ -8794,7 +8805,7 @@ button.nav-action-link {
     }
 
     .carousel-track {
-        aspect-ratio: 24 / 7;
+        aspect-ratio: 32 / 7;
         height: auto;
         padding-bottom: 0;
     }
@@ -8818,8 +8829,8 @@ button.nav-action-link {
         width: 100%;
         height: 100%;
         max-width: none;
-        object-fit: contain;
-        object-position: center center;
+        object-fit: cover;
+        object-position: center top;
         background: #ffffff;
     }
 
@@ -9408,7 +9419,7 @@ button.nav-action-link {
     .catalog-mobile-zone {
         display: block;
         position: sticky;
-        top: calc(var(--promo-height) + var(--header-top-height));
+        top: var(--site-chrome-top);
         z-index: 960;
         width: 100vw;
         margin-left: calc(50% - 50vw);
@@ -9474,7 +9485,7 @@ button.nav-action-link {
         position: fixed;
         left: 0;
         right: 0;
-        top: calc(var(--promo-height) + var(--header-top-height));
+        top: var(--site-chrome-top);
         bottom: 0;
         z-index: 1251;
         display: flex;
@@ -10979,8 +10990,8 @@ button.nav-action-link {
         width: 100%;
         max-width: none;
         height: 100%;
-        object-fit: contain;
-        object-position: center center;
+        object-fit: cover;
+        object-position: center top;
         background: #ffffff;
     }
 
@@ -11008,7 +11019,7 @@ button.nav-action-link {
     }
 
     .hero-carousel .carousel-track {
-        aspect-ratio: 24 / 7;
+        aspect-ratio: 32 / 7;
         padding-bottom: 0;
         height: auto;
     }

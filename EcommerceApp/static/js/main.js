@@ -35,6 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerSearch = document.getElementById('headerSearch');
     const searchClose = document.getElementById('searchClose');
 
+    // Offset ispod fiksnog headera (baneri, filteri, sticky sidebar)
+    if (typeof window.syncSiteChromeOffset === 'function') {
+        window.syncSiteChromeOffset();
+        window.addEventListener('resize', () => window.syncSiteChromeOffset(), { passive: true });
+    }
+
     window.addEventListener('scroll', () => {
         header.classList.toggle('scrolled', window.scrollY > 10);
     });
