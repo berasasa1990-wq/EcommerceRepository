@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260722v13" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260722v13">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260722v17" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260722v17">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -324,6 +324,9 @@
                     <li class="nav-item nav-item--akcija nav-item--akcija-mobile">
                         <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJSKA PONUDA</a>
                     </li>
+                    <li class="nav-item nav-item--noviteti nav-item--akcija-mobile">
+                        <a href="{% url 'home' %}?noviteti=1#product-showcase" class="nav-link-noviteti">NOVITETI</a>
+                    </li>
                     </ul>
                 </div>
                 <div class="mobile-nav-subview" id="mobileNavSubview" aria-hidden="true">
@@ -336,11 +339,24 @@
                 </div>
             </nav>
 
-            <a href="{% url 'home' %}?akcija=1#product-showcase" class="header-akcija-cta" id="headerAkcijaCta">
-                <span class="header-akcija-cta__ring" aria-hidden="true"></span>
-                <span class="header-akcija-cta__tag" aria-hidden="true">SNIŽENO</span>
-                <span class="header-akcija-cta__text">AKCIJSKA PONUDA</span>
-            </a>
+            <div class="header-float-ctas" id="headerFloatCtas" aria-label="Brzi filteri">
+                <a href="{% url 'home' %}?akcija=1#product-showcase" class="header-akcija-cta" id="headerAkcijaCta">
+                    <span class="header-akcija-cta__ring" aria-hidden="true"></span>
+                    <span class="header-akcija-cta__tag" aria-hidden="true">SNIŽENO</span>
+                    <span class="header-akcija-cta__text">
+                        <span class="header-float-ctas__full">Akcijska ponuda</span>
+                        <span class="header-float-ctas__short">Akcija</span>
+                    </span>
+                </a>
+                <a href="{% url 'home' %}?noviteti=1#product-showcase" class="header-noviteti-cta" id="headerNovitetiCta">
+                    <span class="header-noviteti-cta__ring" aria-hidden="true"></span>
+                    <span class="header-noviteti-cta__tag" aria-hidden="true">NOVO</span>
+                    <span class="header-noviteti-cta__text">
+                        <span class="header-float-ctas__full">Noviteti</span>
+                        <span class="header-float-ctas__short">Noviteti</span>
+                    </span>
+                </a>
+            </div>
         </div>
 
         <div class="mega-menu-panel" id="megaMenuPanel">
@@ -383,19 +399,13 @@
         }
         function syncSiteChromeOffset() {
             var root = document.documentElement;
-            var staff = document.querySelector('.staff-edit-mode-banner');
             var promo = document.querySelector('.promo-bar');
             var header = document.getElementById('header');
             var primary = header ? header.querySelector('.header-row--primary') : null;
 
+            // Edit banner uklonjen — ne pomiči header
             var staffH = 0;
-            if (isVisible(staff)) {
-                staffH = Math.round(staff.offsetHeight) || 0;
-            } else if (document.body.classList.contains('staff-edit-mode-on') && !staff) {
-                // banner još nije u DOM-u
-                staffH = 42;
-            }
-            root.style.setProperty('--staff-edit-banner-height', staffH + 'px');
+            root.style.setProperty('--staff-edit-banner-height', '0px');
 
             // Prirodna visina promo trake (scrollHeight hvata wrap teksta)
             var promoH = 36;
@@ -457,11 +467,9 @@
                 var ro = new ResizeObserver(function () { syncSiteChromeOffset(); });
                 var h = document.getElementById('header');
                 var p = document.querySelector('.promo-bar');
-                var s = document.querySelector('.staff-edit-mode-banner');
                 var primary = h && h.querySelector('.header-row--primary');
                 if (h) ro.observe(h);
                 if (p) ro.observe(p);
-                if (s) ro.observe(s);
                 if (primary) ro.observe(primary);
             } catch (e) {}
         }
@@ -523,7 +531,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260722v13" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260722v17" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}
@@ -554,7 +562,7 @@
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}
-    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260722v6">
+    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260722v14">
     <script src="{% static 'js/staff-site-edit.js' %}?v=20260722v6" defer></script>
     {% endif %}
     {% block extra_js %}{% endblock %}

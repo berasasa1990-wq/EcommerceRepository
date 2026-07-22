@@ -12,6 +12,11 @@
         <p class="filter-search-hint">Akcija: <strong>sniženi artikli</strong></p>
         {% endif %}
 
+        {% if filter_params.noviteti %}
+        <input type="hidden" name="noviteti" value="{{ filter_params.noviteti }}">
+        <p class="filter-search-hint">Noviteti: <strong>novi artikli</strong></p>
+        {% endif %}
+
         {% if filter_params.brend %}
         <input type="hidden" name="brend" value="{{ filter_params.brend }}">
         {% if selected_brand %}

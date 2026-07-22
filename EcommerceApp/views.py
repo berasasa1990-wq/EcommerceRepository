@@ -184,6 +184,8 @@ def _filter_reset_url(filter_action, filter_params):
     preserved = {}
     if filter_params.get('akcija'):
         preserved['akcija'] = filter_params['akcija']
+    if filter_params.get('noviteti'):
+        preserved['noviteti'] = filter_params['noviteti']
     if filter_params.get('q'):
         preserved['q'] = filter_params['q']
     if filter_params.get('brend'):
@@ -370,6 +372,7 @@ def _get_filter_params(request):
         'cijena_do': request.GET.get('cijena_do', '').strip(),
         'sort': request.GET.get('sort', '').strip(),
         'akcija': request.GET.get('akcija', '').strip(),
+        'noviteti': request.GET.get('noviteti', '').strip(),
     }
 
 
@@ -633,6 +636,9 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
 
     if params['akcija']:
         products = [product for product in products if _product_is_on_sale(product)]
+
+    if params['noviteti']:
+        products = [product for product in products if getattr(product, 'je_novitet', False)]
 
     if params['velicina']:
         size_label = params['velicina']
@@ -1067,6 +1073,12 @@ def home(request):
                 catalog_subtitle = f'{result_count} artikala na sniženoj cijeni.'
             else:
                 catalog_subtitle = 'Trenutno nema artikala na akciji.'
+        elif filter_params.get('noviteti'):
+            catalog_title = 'Noviteti'
+            if result_count:
+                catalog_subtitle = f'{result_count} novih artikala.'
+            else:
+                catalog_subtitle = 'Trenutno nema označenih noviteta.'
         elif filter_params.get('brend'):
             brand = Brand.objects.filter(slug=filter_params['brend']).first()
             if brand:
@@ -1088,6 +1100,7 @@ def home(request):
             and not filter_params.get('brend')
             and not filter_params.get('q')
             and not filter_params.get('akcija')
+            and not filter_params.get('noviteti')
         ):
             size_label = filter_params['velicina']
             group_key = _size_filter_group_key(size_label)

@@ -78,43 +78,9 @@ body.staff-edit-mode-on .site-edit-target--btn {
     outline-offset: 2px !important;
 }
 
-/* Banner na vrhu */
-.staff-edit-mode-banner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 13990;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 8px 14px;
-    padding: 8px 16px;
-    background: #111;
-    color: #fff;
-    font-size: 13px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-}
-
-.staff-edit-mode-banner strong {
-    color: #6ed20a;
-    font-weight: 800;
-}
-
-.staff-edit-mode-banner span {
-    opacity: 0.9;
-}
-
-.staff-edit-mode-banner em {
-    opacity: 0.75;
-    font-style: normal;
-    font-size: 12px;
-}
-
-/* Staff banner je fixed — offset ide preko --staff-edit-banner-height (style.css + JS) */
+/* Edit mode banner uklonjen — zaklanjao je search. Status ostaje u header dugmetu „Edit ON”. */
 body.staff-edit-mode-on {
-    --staff-edit-banner-height: 42px;
+    --staff-edit-banner-height: 0px;
     padding-top: 0;
 }
 

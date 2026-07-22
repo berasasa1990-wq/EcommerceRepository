@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const restoredCatalogScroll = restoreCatalogScroll();
     if (!restoredCatalogScroll && !isCatalogFilterRefinement) {
-        if (activeSearchQuery || urlParams.has('akcija') || urlParams.has('brend') || urlParams.has('kategorija') ||
+        if (activeSearchQuery || urlParams.has('akcija') || urlParams.has('noviteti') || urlParams.has('brend') || urlParams.has('kategorija') ||
             window.location.hash === '#product-showcase') {
             scrollToProductShowcase();
         }
