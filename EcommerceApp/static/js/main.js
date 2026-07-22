@@ -898,36 +898,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const menu = group.querySelector('[data-contact-float-menu]');
         if (!toggle || !menu) return;
 
-        const mq = window.matchMedia('(max-width: 1024px)');
-
-        function applyMode() {
-            if (mq.matches) {
-                group.classList.remove('is-open');
-                toggle.setAttribute('aria-expanded', 'false');
-            } else {
-                group.classList.add('is-open');
-                toggle.setAttribute('aria-expanded', 'true');
-            }
-        }
-
-        toggle.addEventListener('click', (event) => {
-            if (!mq.matches) return;
-            event.stopPropagation();
-            const open = !group.classList.contains('is-open');
+        // Uvijek zatvoreno na startu — klik otvara WA / Viber / Messenger
+        function setOpen(open) {
             group.classList.toggle('is-open', open);
             toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            toggle.setAttribute(
+                'aria-label',
+                open ? 'Zatvori kontakt opcije' : 'Kontakt — odaberi aplikaciju',
+            );
+        }
+
+        setOpen(false);
+
+        toggle.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(!group.classList.contains('is-open'));
         });
 
         document.addEventListener('click', (event) => {
-            if (!mq.matches || !group.classList.contains('is-open')) return;
+            if (!group.classList.contains('is-open')) return;
             if (!group.contains(event.target)) {
-                group.classList.remove('is-open');
-                toggle.setAttribute('aria-expanded', 'false');
+                setOpen(false);
             }
         });
 
-        mq.addEventListener('change', applyMode);
-        applyMode();
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && group.classList.contains('is-open')) {
+                setOpen(false);
+            }
+        });
     }
 
     function getCsrfToken() {
@@ -1737,26 +1737,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ponudaQtyPlus = document.getElementById('gratisOfferQtyPlus');
     let pendingPonuda = null;
 
-    function ponudaAnsweredKey(akcijaId) {
-        return `ponuda_answered_${akcijaId}`;
-    }
-
-    function markPonudaAnsweredClient(akcijaId) {
-        if (!akcijaId) return;
-        try {
-            sessionStorage.setItem(ponudaAnsweredKey(akcijaId), '1');
-        } catch (e) {}
-    }
-
-    function isPonudaAnsweredClient(akcijaId) {
-        if (!akcijaId) return false;
-        try {
-            return sessionStorage.getItem(ponudaAnsweredKey(akcijaId)) === '1';
-        } catch (e) {
-            return false;
-        }
-    }
-
     function getPonudaOfferQty() {
         if (!ponudaQtyInput) return 1;
         let n = parseInt(ponudaQtyInput.value, 10);
@@ -1842,8 +1822,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         setPonudaOfferQty(1);
-        if (ponudaAccept) ponudaAccept.textContent = 'DA';
-        if (ponudaDecline) ponudaDecline.textContent = 'NE';
+        if (ponudaAccept) ponudaAccept.textContent = 'DA — dodaj i ovo';
+        if (ponudaDecline) ponudaDecline.textContent = 'NE — samo ovaj artikal';
 
         ponudaOverlay.hidden = false;
         requestAnimationFrame(() => {
@@ -1856,7 +1836,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!pendingPonuda) return;
         const { offer, slug, variationId } = pendingPonuda;
         const offerQty = getPonudaOfferQty();
-        markPonudaAnsweredClient(offer.akcija_id);
         closePonudaOfferModal();
         await catalogAddProductToCart(slug, variationId, {
             gratis_choice: choice,
@@ -1934,13 +1913,7 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
         }
         if (data.requires_gratis_choice && data.gratis_offer) {
-            if (isPonudaAnsweredClient(data.gratis_offer.akcija_id)) {
-                return catalogAddProductToCart(slug, variationId, {
-                    gratis_choice: 'no',
-                    gratis_akcija_id: String(data.gratis_offer.akcija_id),
-                    gratis_quantity: '1',
-                });
-            }
+            // Uvijek iskači dok je + Ponuda aktivna
             openPonudaOfferModal(data.gratis_offer, slug, variationId);
             return data;
         }

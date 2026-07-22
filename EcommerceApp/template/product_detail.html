@@ -337,13 +337,16 @@
             {% if product.na_stanju %}
             <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form" id="mainAddToCartForm">
                 {% csrf_token %}
-                <div class="product-detail-purchase">
+                <div class="product-detail-purchase{% if gratis_akcija_hint %} product-detail-purchase--with-ponuda{% endif %}">
                     {% include 'partials/product_qty_selector.html' %}
-                    <button type="submit" class="btn btn-primary btn-add-to-bag"
-                            data-product-id="{{ product.pk }}"
-                            data-product-name="{{ product.naziv }}"
-                            data-almost-cart
-                            id="mainAddToCartBtn">{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                    <div class="product-detail-purchase__cta">
+                        <button type="submit" class="btn btn-primary btn-add-to-bag"
+                                data-product-id="{{ product.pk }}"
+                                data-product-name="{{ product.naziv }}"
+                                data-almost-cart
+                                id="mainAddToCartBtn">{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                        {% include 'partials/gratis_promo.html' %}
+                    </div>
                 </div>
                 {% if conversion_boost %}
                 <div class="pd-conversion-boost">
@@ -357,8 +360,6 @@
                     </ul>
                 </div>
                 {% endif %}
-
-                {% include 'partials/gratis_promo.html' %}
 
                 {% if deal_promo %}
                 <div class="deal-promo">
@@ -470,7 +471,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260722v5" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260722v13" defer></script>
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
 {% endif %}

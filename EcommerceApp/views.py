@@ -1435,7 +1435,7 @@ def product_detail(request, slug):
 
     gratis_akcija = get_active_gratis_akcija_for_product(product)
     if gratis_akcija and build_gratis_offer_response(gratis_akcija):
-        # Hint na product page; popup se aktivira samo pri dodavanju triggera u korpu
+        # Samo tekstualni hint pored dugmeta; popup pri svakom dodavanju u korpu
         context['gratis_akcija_hint'] = True
 
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
@@ -1537,7 +1537,11 @@ def add_to_cart(request, slug):
     variation_id = request.POST.get('variation_id', '').strip()
     quantity = max(1, int(request.POST.get('quantity', 1) or 1))
 
-    stay_on_page = request.POST.get('stay') == '1'
+    # AJAX (stay=1 ili XHR) — potreban za + Ponuda modal prije dodavanja u korpu
+    stay_on_page = (
+        request.POST.get('stay') == '1'
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    )
 
     if not product.na_stanju and not product.varijacije.exists():
         msg = 'Artikal je rasprodan.'
@@ -1651,8 +1655,6 @@ def add_to_cart(request, slug):
         build_popup_bundle_message,
         build_qty_deal_message,
         get_active_gratis_akcija_for_product,
-        mark_ponuda_answered,
-        ponuda_was_answered,
     )
 
     gratis_choice = request.POST.get('gratis_choice', '').strip()
@@ -1856,6 +1858,7 @@ def add_to_cart(request, slug):
             promo_bazna = prikazna
 
     if gratis_choice in ('yes', 'no') and gratis_akcija_id:
+        # DA → trigger + ponuda artikal; NE → samo trigger artikal
         choice_akcija = Akcija.objects.filter(
             pk=gratis_akcija_id,
             aktivan=True,
@@ -1871,12 +1874,12 @@ def add_to_cart(request, slug):
         ):
             choice_akcija = None
         if choice_akcija and choice_akcija.jos_traje():
-            mark_ponuda_answered(request, choice_akcija.pk)
             g_src = None
             g_pct = None
             if custom_price is not None and promo_akcija:
                 g_src = f'Akcija: {promo_akcija.naziv}'
                 g_pct = promo_akcija.popust_postotak
+            # 1) Uvijek dodaj artikal na kojem je + Ponuda (trigger)
             cart.add(
                 product,
                 variation=variation,
@@ -1886,7 +1889,10 @@ def add_to_cart(request, slug):
                 discount_source=g_src,
                 discount_percent=g_pct,
             )
-            if gratis_choice == 'yes':
+            # 2) Samo ako DA — dodaj i ponudu artikal (s opcionalnim %)
+            # Ponuda se može dodavati koliko puta korisnik hoće (dok je akcija aktivna)
+            accepted = gratis_choice == 'yes'
+            if accepted:
                 _add_discounted_gratis_line(
                     cart,
                     choice_akcija,
@@ -1897,7 +1903,7 @@ def add_to_cart(request, slug):
             label = variation.naziv if variation else product.naziv
             message = build_gratis_choice_message(
                 choice_akcija,
-                accepted=(gratis_choice == 'yes'),
+                accepted=accepted,
                 trigger_label=label,
             )
             add_to_cart_event_id = f'addtocart-{uuid.uuid4().hex}'
@@ -1933,14 +1939,17 @@ def add_to_cart(request, slug):
 
     if stay_on_page and not gratis_choice and not akcija_id:
         offer_akcija = get_active_gratis_akcija_for_product(product)
-        # Jednom prihvati/odbij → više ne prikazuj u ovoj sesiji
-        if offer_akcija and not ponuda_was_answered(request, offer_akcija.pk):
+        # Uvijek iskači dok je + Ponuda aktivna (ne gasimo po sesiji)
+        if offer_akcija:
             offer = build_gratis_offer_response(offer_akcija)
             if offer:
+                # NE dodaj u korpu još — čekaj DA/NE u modalu
                 return JsonResponse({
                     'ok': True,
                     'requires_gratis_choice': True,
                     'gratis_offer': offer,
+                    'cart_count': len(cart),
+                    'message': 'Odaberi: želiš li i + Ponudu?',
                 })
 
     disc_src = None

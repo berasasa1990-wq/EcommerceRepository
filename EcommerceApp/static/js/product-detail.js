@@ -130,26 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let pendingGratisForm = null;
     let pendingGratisOffer = null;
 
-    function ponudaAnsweredKey(akcijaId) {
-        return `ponuda_answered_${akcijaId}`;
-    }
-
-    function markPonudaAnsweredClient(akcijaId) {
-        if (!akcijaId) return;
-        try {
-            sessionStorage.setItem(ponudaAnsweredKey(akcijaId), '1');
-        } catch (e) {}
-    }
-
-    function isPonudaAnsweredClient(akcijaId) {
-        if (!akcijaId) return false;
-        try {
-            return sessionStorage.getItem(ponudaAnsweredKey(akcijaId)) === '1';
-        } catch (e) {
-            return false;
-        }
-    }
-
     function getGratisOfferQty() {
         if (!gratisQtyInput) return 1;
         let n = parseInt(gratisQtyInput.value, 10);
@@ -237,8 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         setGratisOfferQty(1);
-        if (gratisAccept) gratisAccept.textContent = 'DA';
-        if (gratisDecline) gratisDecline.textContent = 'NE';
+        if (gratisAccept) gratisAccept.textContent = 'DA — dodaj i ovo';
+        if (gratisDecline) gratisDecline.textContent = 'NE — samo ovaj artikal';
     }
 
     function openGratisOfferModal(offer, form) {
@@ -260,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = pendingGratisForm;
         const offer = pendingGratisOffer;
         const offerQty = getGratisOfferQty();
-        markPonudaAnsweredClient(offer.akcija_id);
         closeGratisOfferModal();
         await submitAddToCartForm(form, {
             gratis_choice: choice,
@@ -330,15 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
             }
             if (data.requires_gratis_choice && data.gratis_offer) {
-                // Client fallback: ako je već odgovoreno, ne prikazuj — samo dodaj trigger
-                if (isPonudaAnsweredClient(data.gratis_offer.akcija_id)) {
-                    await submitAddToCartForm(form, {
-                        gratis_choice: 'no',
-                        gratis_akcija_id: String(data.gratis_offer.akcija_id),
-                        gratis_quantity: '1',
-                    });
-                    return;
-                }
+                // Još NIJE u korpi — čekaj DA/NE (svaki put dok je ponuda aktivna)
                 openGratisOfferModal(data.gratis_offer, form);
                 return;
             }

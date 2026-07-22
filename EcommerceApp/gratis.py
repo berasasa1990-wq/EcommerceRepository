@@ -453,15 +453,21 @@ def build_gratis_popup_message(akcija):
 
 
 def build_gratis_choice_message(akcija, *, accepted, trigger_label):
+    """
+    Poruka nakon DA/NE:
+    - DA → trigger + ponuda artikal u korpi
+    - NE → samo trigger artikal u korpi
+    """
     gratis = akcija.gratis_artikal
     if accepted and gratis:
         if akcija.popust_postotak is None:
-            return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu.'
+            return f'U korpu: „{trigger_label}” + ponuda „{gratis.naziv}”.'
         pct = format_gratis_pct(akcija)
         if Decimal(str(akcija.popust_postotak or 0)) >= Decimal('100'):
-            return f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu (drugi artikal gratis).'
+            return (
+                f'U korpu: „{trigger_label}” + GRATIS „{gratis.naziv}”.'
+            )
         return (
-            f'"{trigger_label}" i "{gratis.naziv}" su dodani u korpu '
-            f'({pct}% popusta na drugi artikal).'
+            f'U korpu: „{trigger_label}” + „{gratis.naziv}” (−{pct}%).'
         )
-    return f'"{trigger_label}" je dodano u korpu.'
+    return f'U korpu: „{trigger_label}” (ponuda odbijena).'

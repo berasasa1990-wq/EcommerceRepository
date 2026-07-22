@@ -2994,32 +2994,63 @@ body.search-results-active main {
     gap: 10px;
 }
 
+/* Zatvoreno: samo dugme „Kontakt”; WA/Viber/Messenger na klik */
 .contact-float-menu {
-    display: flex;
+    display: none;
     flex-direction: column-reverse;
     align-items: center;
     gap: 10px;
 }
 
+.contact-float-group.is-open .contact-float-menu {
+    display: flex;
+    animation: contact-float-menu-in 0.22s ease-out;
+}
+
 .contact-float--toggle {
-    display: none;
+    display: flex;
     border: none;
     cursor: pointer;
     background: #1f2937;
     color: #fff;
     padding: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+    transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
 }
 
 .contact-float--toggle:hover {
     background: #111827;
+    transform: translateY(-2px) scale(1.04);
 }
 
 .contact-float-group.is-open .contact-float--toggle {
-    transform: rotate(0deg);
+    background: #111827;
 }
 
 .contact-float-group.is-open .contact-float--toggle svg {
-    transform: scale(1);
+    transform: scale(0.95);
+}
+
+@keyframes contact-float-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contact-float-group.is-open .contact-float-menu {
+        animation: none;
+    }
 }
 
 .contact-float {
@@ -5013,13 +5044,6 @@ body.catalog-variation-modal-open {
     }
 }
 
-.gratis-akcija-hint {
-    margin: 8px 0 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--dwell-card-label, #be123c);
-}
-
 /* Legacy gratis promo (removed from product detail) */
 .gratis-promo {
     display: flex;
@@ -5164,32 +5188,310 @@ body.catalog-variation-modal-open {
     }
 }
 
-/* Gratis akcija hint on product detail */
-.gratis-akcija-hint {
-    display: block;
-    width: 100%;
-    max-width: 360px;
-    margin: 10px 0 0;
-    padding: 8px 12px;
-    box-sizing: border-box;
-    background: #c62828;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.35;
-    text-align: center;
-    border-radius: 6px;
+/* + Ponuda preview (artikal + cijena prije dodavanja u korpu) */
+.product-detail-purchase__cta {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
-.product-detail-variations-block .gratis-akcija-hint {
+.product-detail-purchase--with-ponuda .btn-add-to-bag {
+    width: 100%;
+}
+
+.pd-ponuda-preview {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, #e11d48 32%, #fecdd3);
+    background:
+        radial-gradient(ellipse 90% 80% at 0% 0%, rgba(255, 255, 255, 0.55) 0%, transparent 55%),
+        linear-gradient(165deg, #fff7f8 0%, #ffe4e6 50%, #fff1f2 100%);
+    box-shadow:
+        0 6px 20px rgba(225, 29, 72, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    overflow: hidden;
+    animation: pd-ponuda-hint-glow 1.7s ease-in-out infinite;
+}
+
+.pd-ponuda-preview__pulse {
+    position: absolute;
+    inset: -2px;
+    border-radius: 15px;
+    border: 2px solid rgba(225, 29, 72, 0.4);
+    pointer-events: none;
+    animation: pd-ponuda-ring 1.7s ease-out infinite;
+}
+
+.pd-ponuda-preview__head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.pd-ponuda-preview__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(145deg, #fb7185, #e11d48 55%, #be123c);
+    box-shadow: 0 2px 10px rgba(190, 18, 60, 0.4);
+    animation: pd-ponuda-badge-pulse 1.2s ease-in-out infinite;
+}
+
+.pd-ponuda-preview__kicker {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9f1239;
+    letter-spacing: 0.02em;
+}
+
+.pd-ponuda-preview__body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.pd-ponuda-preview__media {
+    flex: 0 0 72px;
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #fecdd3;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.pd-ponuda-preview__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+.pd-ponuda-preview__info {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.pd-ponuda-preview__name {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: #0f172a;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.pd-ponuda-preview__prices {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+}
+
+.pd-ponuda-preview__was {
+    font-size: 13px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-decoration: line-through;
+}
+
+.pd-ponuda-preview__now {
+    font-size: 17px;
+    font-weight: 900;
+    color: #e11d48;
+    letter-spacing: -0.02em;
+    animation: pd-ponuda-badge-pulse 1.3s ease-in-out infinite;
+}
+
+.pd-ponuda-preview__now--regular {
+    color: #0f172a;
+    animation: none;
+}
+
+.pd-ponuda-preview__headline {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #be123c;
+}
+
+.pd-ponuda-preview__cta {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9f1239;
+    text-align: center;
+    opacity: 0.92;
+}
+
+/* Fallback bez slike (stari hint) */
+.pd-ponuda-hint {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    width: 100%;
+    margin: 0;
+    padding: 9px 12px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, #e11d48 35%, #fecdd3);
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 45%, #fecdd3 100%);
+    box-shadow: 0 4px 16px rgba(225, 29, 72, 0.18);
+    overflow: hidden;
+    animation: pd-ponuda-hint-glow 1.6s ease-in-out infinite;
+}
+
+.pd-ponuda-hint__pulse {
+    position: absolute;
+    inset: -2px;
+    border-radius: 13px;
+    border: 2px solid rgba(225, 29, 72, 0.45);
+    pointer-events: none;
+    animation: pd-ponuda-ring 1.6s ease-out infinite;
+}
+
+.pd-ponuda-hint__badge {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(145deg, #fb7185, #e11d48 55%, #be123c);
+    animation: pd-ponuda-badge-pulse 1.2s ease-in-out infinite;
+}
+
+.pd-ponuda-hint__text {
+    position: relative;
+    z-index: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: #9f1239;
+    text-align: center;
+}
+
+.product-detail-variations-block .pd-ponuda-preview,
+.product-detail-variations-block .pd-ponuda-hint {
     margin-top: 12px;
+    max-width: 420px;
+}
+
+@keyframes pd-ponuda-hint-glow {
+    0%, 100% {
+        box-shadow:
+            0 4px 16px rgba(225, 29, 72, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    }
+    50% {
+        box-shadow:
+            0 8px 26px rgba(225, 29, 72, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+}
+
+@keyframes pd-ponuda-ring {
+    0% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.05);
+    }
+}
+
+@keyframes pd-ponuda-badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pd-ponuda-preview,
+    .pd-ponuda-preview__pulse,
+    .pd-ponuda-preview__badge,
+    .pd-ponuda-preview__now,
+    .pd-ponuda-hint,
+    .pd-ponuda-hint__pulse,
+    .pd-ponuda-hint__badge {
+        animation: none;
+    }
 }
 
 @media (max-width: 768px) {
-    .gratis-akcija-hint {
+    .pd-ponuda-preview {
+        padding: 10px;
+        gap: 7px;
+    }
+
+    .pd-ponuda-preview__media {
+        flex-basis: 64px;
+        width: 64px;
+        height: 64px;
+    }
+
+    .pd-ponuda-preview__name {
+        font-size: 13px;
+    }
+
+    .pd-ponuda-preview__now {
+        font-size: 16px;
+    }
+
+    .pd-ponuda-preview__cta {
+        font-size: 11px;
+    }
+
+    .pd-ponuda-hint {
+        padding: 8px 10px;
+    }
+
+    .pd-ponuda-hint__badge {
+        font-size: 11px;
+    }
+
+    .pd-ponuda-hint__text {
         font-size: 12px;
-        padding: 7px 10px;
-        margin-top: 8px;
     }
 }
 
@@ -7767,6 +8069,11 @@ button.nav-action-link {
     margin-right: var(--contact-float-clearance);
 }
 
+.product-detail-purchase--with-ponuda {
+    max-width: 400px;
+    align-items: flex-start;
+}
+
 .product-qty-selector {
     display: inline-flex;
     align-items: center;
@@ -7996,33 +8303,8 @@ button.nav-action-link {
         bottom: max(18px, env(safe-area-inset-bottom, 0px));
     }
 
-    .contact-float--toggle {
-        display: flex;
-    }
-
     .contact-float-menu {
         align-items: flex-start;
-    }
-
-    .contact-float-group:not(.is-open) .contact-float-menu {
-        display: none;
-    }
-
-    .contact-float-group.is-open .contact-float-menu {
-        display: flex;
-        animation: contact-float-menu-in 0.2s ease-out;
-    }
-
-    @keyframes contact-float-menu-in {
-        from {
-            opacity: 0;
-            transform: translateY(8px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
     }
 
     .header-akcija-cta__tag {
