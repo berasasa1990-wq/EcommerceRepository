@@ -21,6 +21,9 @@
         {% endif %}
         {% if var.je_pakovanje and var.pakovanje_cijena_hint %}
         <span class="product-pack-price-note product-pack-price-note--variation">{{ var.pakovanje_cijena_hint }}</span>
+        {% elif product.je_pakovanje and product.pakovanje_cijena_hint %}
+        {# Fallback: pakovanje na artiklu, varijacija bez svog broja #}
+        <span class="product-pack-price-note product-pack-price-note--variation">{{ product.pakovanje_cijena_hint }}</span>
         {% endif %}
     </span>
     <form method="post" action="{% url 'add_to_cart' product.slug %}" class="product-detail-variation-form">

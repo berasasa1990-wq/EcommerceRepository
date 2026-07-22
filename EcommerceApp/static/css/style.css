@@ -71,23 +71,30 @@ img.home-vlog-card-image {
     max-width: none;
 }
 
-/* Promo Bar */
+/* Promo Bar — UVJEK iznad sadržaja, ISPOD headera (logo/meni ne smiju biti ispod trake) */
 .promo-bar {
     background: var(--gray-100);
     text-align: center;
-    padding: 8px 16px;
+    padding: 6px 12px;
     font-size: 12px;
+    line-height: 1.35;
     position: fixed;
     top: var(--staff-edit-banner-height);
     left: 0;
     right: 0;
-    z-index: 1001;
-    min-height: var(--promo-height);
+    z-index: 1000;
+    min-height: 0;
     height: auto;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+}
+
+.promo-bar p {
+    margin: 0;
+    max-width: 100%;
 }
 
 .promo-bar a {
@@ -95,13 +102,13 @@ img.home-vlog-card-image {
     margin-left: 4px;
 }
 
-/* Header */
+/* Header — IZNAD promo trake (z-index), top = ispod pune visine promo */
 .header {
     position: fixed;
     top: calc(var(--staff-edit-banner-height) + var(--promo-height));
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: 1002;
     background: var(--white);
     transition: box-shadow var(--transition);
 }
@@ -122,6 +129,7 @@ img.home-vlog-card-image {
 .header-shell {
     position: relative;
     background: var(--white);
+    z-index: 1;
 }
 
 .header-row--primary {
@@ -132,6 +140,9 @@ img.home-vlog-card-image {
     gap: 20px;
     padding: 6px 24px;
     min-height: var(--header-top-height);
+    position: relative;
+    z-index: 2;
+    background: var(--white);
 }
 
 .header-row--categories {
@@ -5307,6 +5318,21 @@ body.catalog-variation-modal-open {
     line-height: 1.2;
 }
 
+/* Product detail — „Cijena za 6 kom.” ispod cijene */
+.product-pack-price-note--detail {
+    display: block;
+    margin: 6px 0 0;
+    padding: 0;
+    width: auto;
+    max-width: 100%;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: #0369a1;
+    text-align: left;
+    line-height: 1.3;
+}
+
 .product-detail-variation-price.product-price--detail {
     align-items: flex-end;
     gap: 2px;
@@ -5938,6 +5964,7 @@ body.catalog-variation-modal-open {
     display: none;
 }
 
+/* Desktop: children (nav-menu) sudjeluju u flex redu kategorija */
 .mobile-nav-panel {
     display: contents;
 }
@@ -5945,6 +5972,9 @@ body.catalog-variation-modal-open {
 html.mobile-nav-open,
 body.mobile-nav-open {
     overflow: hidden;
+    overscroll-behavior: none;
+    height: 100%;
+    touch-action: none;
 }
 
 /* ========================================
@@ -7800,11 +7830,50 @@ button.nav-action-link {
 /* Responsive */
 @media (max-width: 1024px) {
     :root {
-        /* Veći default dok JS ne izmjeri stvarni header (logo + search) */
-        --header-top-height: 132px;
+        /* Default dok JS ne izmjeri — ne pretjerano veliko da ne gura layout */
+        --header-top-height: 96px;
         --header-nav-height: 0px;
         --header-height: var(--header-top-height);
-        --promo-height: 40px;
+        --promo-height: 36px;
+    }
+
+    .promo-bar {
+        z-index: 1000;
+        padding: 5px 10px;
+        font-size: 11px;
+        line-height: 1.3;
+    }
+
+    .promo-bar p {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        overflow: hidden;
+    }
+
+    .header {
+        z-index: 1002;
+    }
+
+    .header-row--primary {
+        background: #ffffff;
+        box-shadow: 0 1px 0 var(--gray-200);
+    }
+
+    .logo,
+    .nav-toggle {
+        position: relative;
+        z-index: 3;
+    }
+
+    .logo-image {
+        max-height: 52px;
+        height: 52px;
+        width: auto;
+        max-width: min(52vw, 200px);
+        object-fit: contain;
+        object-position: center center;
     }
 
     .product-catalog--full .catalog-products {
@@ -7995,8 +8064,20 @@ button.nav-action-link {
 
     .nav-toggle {
         grid-area: toggle;
-        display: flex;
+        display: flex !important;
         justify-self: start;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 1300;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        cursor: pointer;
+        background: none;
+        border: none;
     }
 
     .header-row--primary .logo {
@@ -8009,11 +8090,9 @@ button.nav-action-link {
     .header-row--primary .nav-actions {
         grid-area: actions;
         justify-self: end;
-        gap: 4px;
-    }
-
-    .header-row--primary .nav-actions {
         gap: 2px;
+        position: relative;
+        z-index: 1300;
     }
 
     /* Make cart badge smaller and better positioned on mobile (with 22px icon) */
@@ -8044,24 +8123,18 @@ button.nav-action-link {
         height: 26px;
     }
 
-    .nav-toggle {
-        padding: 8px;
-    }
-
     .nav-toggle svg {
         width: 26px;
         height: 26px;
-    }
-
-    .logo-image {
-        height: 58px;
-        max-width: 100%;
-        width: auto;
-        object-fit: contain;
-        object-position: center center;
+        pointer-events: none;
     }
 
     .nav-menu {
+        display: none;
+    }
+
+    /* Zatvoren panel ne smije biti display:contents na mobitelu (iOS bugovi) */
+    .mobile-nav-panel {
         display: none;
     }
 
@@ -8071,13 +8144,14 @@ button.nav-action-link {
 
     body.mobile-nav-open .header-akcija-cta,
     body.mobile-nav-open .scroll-top-btn,
-    body.mobile-nav-open .contact-float-group {
+    body.mobile-nav-open .contact-float-group,
+    body.mobile-nav-open .public-online {
         visibility: hidden;
         pointer-events: none;
     }
 
     .mobile-nav-panel.is-open {
-        display: flex;
+        display: flex !important;
         flex-direction: column;
         align-items: stretch;
         justify-content: flex-start;
@@ -8086,14 +8160,17 @@ button.nav-action-link {
         left: 0;
         right: 0;
         bottom: 0;
+        width: 100%;
         min-height: calc(100dvh - var(--mobile-nav-panel-top, var(--site-chrome-top)));
         max-height: none;
+        height: auto;
         background: #ffffff;
         z-index: 1200;
         overflow: hidden;
         border-top: none;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
+        -webkit-overflow-scrolling: touch;
     }
 
     .mobile-nav-panel.is-open .mobile-nav-panel__header {
@@ -8234,27 +8311,25 @@ button.nav-action-link {
     }
 
     .mobile-nav-subview {
-        display: flex;
+        display: none;
         flex-direction: column;
         position: fixed;
         top: var(--mobile-nav-panel-top, var(--site-chrome-top));
         left: 0;
         right: 0;
         bottom: 0;
+        width: 100%;
         z-index: 1202;
         background: #ffffff;
         padding: 0 16px 24px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        transform: translateX(100%);
-        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-        pointer-events: none;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
     }
 
     .mobile-nav-subview.is-open {
-        transform: translateX(0);
+        display: flex;
         pointer-events: auto;
     }
 
@@ -8394,11 +8469,12 @@ button.nav-action-link {
         transform: translateX(3px);
     }
 
+    /* Bez position:fixed na body — na iOS-u to lomi fixed meni / header */
     body.mobile-nav-open {
-        position: fixed;
         width: 100%;
         left: 0;
         right: 0;
+        overflow: hidden;
         touch-action: none;
     }
 
@@ -8843,7 +8919,9 @@ button.nav-action-link {
     }
 
     .logo-image {
-        height: 66px;
+        height: 48px;
+        max-height: 48px;
+        max-width: min(48vw, 180px);
     }
 
     .product-showcase .product-catalog--compact .product-image {
@@ -11011,8 +11089,9 @@ button.nav-action-link {
     }
 
     .logo-image {
-        max-width: 100%;
-        height: 60px;
+        max-width: min(48vw, 160px);
+        height: 44px;
+        max-height: 44px;
         width: auto;
         object-fit: contain;
         object-position: center center;

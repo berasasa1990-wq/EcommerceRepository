@@ -297,6 +297,12 @@
                 {% include 'partials/product_price.html' with item=product %}
             </div>
             {% endif %}
+            {# Pakovanje: npr. „Cijena za 6 kom.” — da se ne misli da je po komadu #}
+            {% if product.je_pakovanje and product.pakovanje_cijena_hint %}
+            <p class="product-pack-price-note product-pack-price-note--detail" id="detailPackPriceNote">
+                {{ product.pakovanje_cijena_hint }}
+            </p>
+            {% endif %}
             {# AI dwell: isti izgled kao na kartici + tajmer na product page #}
             <div class="card-dwell-deal pd-dwell-flash product-sale-deal--detail{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}"
                  id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
@@ -323,6 +329,9 @@
             <div class="product-detail-meta">
                 {% if product.sifra %}<p><strong>Šifra:</strong> {{ product.sifra }}</p>{% endif %}
                 {% if product.barkod %}<p><strong>Barkod:</strong> {{ product.barkod }}</p>{% endif %}
+                {% if product.je_pakovanje and product.pakovanje_label %}
+                <p><strong>Pakovanje:</strong> {{ product.pakovanje_label }}</p>
+                {% endif %}
             </div>
 
             {% if product.na_stanju %}

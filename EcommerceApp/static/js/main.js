@@ -93,14 +93,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let mobileNavScrollLockY = 0;
 
     function syncMobileNavLayout() {
-        if (!header || window.innerWidth > 1024) return;
-        const top = Math.max(0, Math.round(header.getBoundingClientRect().bottom));
+        if (window.innerWidth > 1024) return;
+        // Mjeri dno primarnog reda (logo/search) — ne cijeli header s panelom
+        const primary = header?.querySelector('.header-row--primary');
+        const promo = document.querySelector('.promo-bar');
+        let top = 0;
+        if (primary) {
+            top = Math.round(primary.getBoundingClientRect().bottom);
+        } else if (header) {
+            top = Math.round(header.getBoundingClientRect().bottom);
+        } else if (promo) {
+            top = Math.round(promo.getBoundingClientRect().bottom);
+        }
+        // Sigurnosni minimum da meni ne krene ispod status bara
+        top = Math.max(top, 48);
         document.documentElement.style.setProperty('--mobile-nav-panel-top', `${top}px`);
+        if (typeof window.syncSiteChromeOffset === 'function') {
+            window.syncSiteChromeOffset();
+        }
     }
 
     function resetMobileNavScroll() {
-        navLinks.scrollTop = 0;
-        mobileNavPanel && (mobileNavPanel.scrollTop = 0);
+        if (navLinks) navLinks.scrollTop = 0;
+        if (mobileNavPanel) mobileNavPanel.scrollTop = 0;
+        if (mobileNavSubview) mobileNavSubview.scrollTop = 0;
     }
 
     function closeMobileNavSubview() {
@@ -157,37 +173,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setMobileNavOpen(isOpen) {
-        navLinks?.classList.toggle('mobile-open', isOpen);
-        mobileNavPanel?.classList.toggle('is-open', isOpen);
-        document.documentElement.classList.toggle('mobile-nav-open', isOpen);
-        document.body.classList.toggle('mobile-nav-open', isOpen);
-        if (isOpen) {
+        const open = Boolean(isOpen);
+        navLinks?.classList.toggle('mobile-open', open);
+        mobileNavPanel?.classList.toggle('is-open', open);
+        document.documentElement.classList.toggle('mobile-nav-open', open);
+        document.body.classList.toggle('mobile-nav-open', open);
+        if (navToggle) {
+            navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            navToggle.setAttribute('aria-label', open ? 'Zatvori meni' : 'Otvori meni');
+        }
+        if (open) {
             mobileNavScrollLockY = window.scrollY || window.pageYOffset || 0;
-            document.body.style.top = `-${mobileNavScrollLockY}px`;
+            // Samo overflow lock — NE position:fixed na body (iOS lomi fixed panel)
             document.body.style.width = '100%';
             closeSearchOverlay();
+            closeMobileNavSubview();
             syncMobileNavLayout();
             requestAnimationFrame(() => {
                 syncMobileNavLayout();
                 resetMobileNavScroll();
             });
+            // Drugi frame — layout nakon display:flex
+            setTimeout(() => {
+                syncMobileNavLayout();
+                resetMobileNavScroll();
+            }, 50);
         } else {
-            document.body.style.top = '';
             document.body.style.width = '';
             document.documentElement.style.removeProperty('--mobile-nav-panel-top');
             resetMobileNavScroll();
-            window.scrollTo(0, mobileNavScrollLockY);
             closeMegaMenu();
             closeMobileNavSubview();
+            // Vrati scroll bez skoka ako nismo mijenjali position
+            if (Math.abs((window.scrollY || 0) - mobileNavScrollLockY) > 2) {
+                window.scrollTo(0, mobileNavScrollLockY);
+            }
         }
         syncMobileNavExpanded();
     }
 
-    navToggle?.addEventListener('click', () => {
-        setMobileNavOpen(!navLinks?.classList.contains('mobile-open'));
-    });
+    // click + touchend — pouzdanije na iOS Safari
+    function onNavToggleActivate(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const isOpen = navLinks?.classList.contains('mobile-open');
+        setMobileNavOpen(!isOpen);
+    }
+    if (navToggle) {
+        navToggle.addEventListener('click', onNavToggleActivate);
+        navToggle.setAttribute('aria-expanded', 'false');
+        navToggle.setAttribute('aria-controls', 'mobileNavPanel');
+    }
 
-    mobileNavClose?.addEventListener('click', () => setMobileNavOpen(false));
+    mobileNavClose?.addEventListener('click', (e) => {
+        e.preventDefault();
+        setMobileNavOpen(false);
+    });
 
     function openMegaMenu(item) {
         clearTimeout(megaCloseTimer);
@@ -244,18 +285,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const submenu = item.querySelector('.nav-submenu');
         // Mobilni: klik na glavnu kategoriju → otvori podkategorije
         link?.addEventListener('click', (e) => {
-            if (window.innerWidth <= 1024 && navLinks?.classList.contains('mobile-open') && submenu) {
+            const menuOpen = navLinks?.classList.contains('mobile-open')
+                || mobileNavPanel?.classList.contains('is-open');
+            if (window.innerWidth <= 1024 && menuOpen && submenu) {
                 e.preventDefault();
+                e.stopPropagation();
                 if (item.classList.contains('mega-open') && mobileNavSubview?.classList.contains('is-open')) {
                     closeMobileNavSubview();
                     return;
                 }
                 openMobileNavSubview(item);
+                requestAnimationFrame(syncMobileNavLayout);
             }
         });
     });
 
-    mobileNavBack?.addEventListener('click', closeMobileNavSubview);
+    mobileNavBack?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMobileNavSubview();
+    });
 
     window.addEventListener('resize', () => {
         if (window.innerWidth > 1024) {
