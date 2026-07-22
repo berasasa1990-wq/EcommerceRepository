@@ -118,6 +118,16 @@
                             {% if product.proizvedeno_u_japanu %}✓ Made in Japan{% else %}Made in Japan{% endif %}
                         </button>
                     </form>
+                    <button type="button"
+                            class="btn btn-sm staff-product-btn staff-objava-btn"
+                            id="staffObjavaBtn"
+                            data-product-name="{{ product.naziv|escape }}"
+                            data-product-slug="{{ product.slug }}"
+                            data-product-price="{{ product.prikazna_cijena }}"
+                            data-product-image="{% if product.prikazna_slika %}{{ product.prikazna_slika.url }}{% endif %}"
+                            title="Generiši sliku 800×800 za objavu (opcionalni %)">
+                        Objava
+                    </button>
                     {% if olx_configured %}
                     {% if product.olx_listing_url %}
                     <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
@@ -132,6 +142,31 @@
                     </form>
                     {% endif %}
                     {% endif %}
+                </div>
+
+                {# Modal: generisanje objave 800×800 #}
+                <div class="staff-objava-overlay" id="staffObjavaOverlay" hidden>
+                    <div class="staff-objava-modal" role="dialog" aria-modal="true" aria-labelledby="staffObjavaTitle">
+                        <div class="staff-objava-modal__head">
+                            <h3 id="staffObjavaTitle">Objava za društvene mreže</h3>
+                            <button type="button" class="staff-objava-modal__close" id="staffObjavaClose" aria-label="Zatvori">×</button>
+                        </div>
+                        <p class="staff-objava-modal__hint">
+                            Unesi popust % (npr. 15) ili ostavi prazno za redovnu cijenu. Generiše se slika <strong>800×800</strong>.
+                        </p>
+                        <label class="staff-objava-modal__field">
+                            <span>Popust % (opcionalno)</span>
+                            <input type="number" id="staffObjavaPct" min="0.01" max="99.99" step="0.01" inputmode="decimal" placeholder="npr. 20 — ili prazno">
+                        </label>
+                        <div class="staff-objava-modal__actions">
+                            <button type="button" class="btn btn-sm staff-product-btn" id="staffObjavaGenerate">Generiši preview</button>
+                            <a class="btn btn-sm staff-product-btn staff-objava-btn--download" id="staffObjavaDownload" hidden download>Preuzmi PNG</a>
+                        </div>
+                        <div class="staff-objava-preview-wrap">
+                            <canvas id="staffObjavaCanvas" width="800" height="800" aria-label="Preview objave"></canvas>
+                        </div>
+                        <p class="staff-objava-modal__status" id="staffObjavaStatus" hidden></p>
+                    </div>
                 </div>
 
                 {# Jedan Save: brend, kategorija, opis, cijena, slika, noviteti, tagovi #}
@@ -472,6 +507,9 @@
 
 {% block extra_js %}
 <script src="{% static 'js/product-detail.min.js' %}?v=20260722v13" defer></script>
+{% if staff_product_tools %}
+<script src="{% static 'js/staff-product-objava.js' %}?v=20260722v11" defer></script>
+{% endif %}
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
 {% endif %}

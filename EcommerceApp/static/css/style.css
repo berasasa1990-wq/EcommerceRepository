@@ -172,6 +172,13 @@ img.home-vlog-card-image {
     max-width: min(240px, 46vw);
 }
 
+/* Sakrij Akcija/Noviteti dok su otvoreni rezultati live pretrage */
+body.search-suggest-open .header-float-ctas {
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+}
+
 .header-float-ctas__full {
     display: inline;
 }
@@ -1796,6 +1803,26 @@ main {
 .home-product-carousel__viewport {
     overflow: hidden;
     width: 100%;
+    /* Omogući horizontalni swipe prstom (vertikalni scroll stranice ostaje) */
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.home-brand-carousel .home-product-carousel__viewport {
+    touch-action: pan-y;
+    cursor: grab;
+}
+
+.home-brand-carousel .showcase-brand-link {
+    -webkit-user-drag: none;
+    user-select: none;
+    touch-action: pan-y;
+}
+
+.home-brand-carousel .showcase-brand-logo {
+    pointer-events: none;
+    -webkit-user-drag: none;
 }
 
 .home-product-carousel__track {
@@ -4097,6 +4124,276 @@ body.catalog-variation-modal-open {
 
 .staff-product-btn--save-all:hover {
     filter: brightness(0.95);
+}
+
+/* Staff: Objava 800×800 social post */
+.staff-objava-btn {
+    background: linear-gradient(135deg, #5BB805 0%, #3d8a04 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(91, 184, 5, 0.35);
+}
+
+.staff-objava-btn:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 6px 18px rgba(91, 184, 5, 0.45);
+}
+
+.staff-objava-btn--download {
+    background: linear-gradient(135deg, #5BB805 0%, #2f6b03 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(91, 184, 5, 0.35);
+}
+
+.staff-objava-btn--download[hidden] {
+    display: none !important;
+}
+
+.staff-objava-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background:
+        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(91, 184, 5, 0.22), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 85% 40%, rgba(61, 138, 4, 0.18), transparent 50%),
+        rgba(15, 23, 42, 0.62);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.staff-objava-overlay[hidden] {
+    display: none !important;
+}
+
+.staff-objava-modal {
+    position: relative;
+    width: min(460px, 100%);
+    max-height: min(92vh, 920px);
+    overflow: auto;
+    background:
+        linear-gradient(180deg, #ffffff 0%, #f7fdf2 100%);
+    border-radius: 18px;
+    border: 1px solid rgba(91, 184, 5, 0.28);
+    box-shadow:
+        0 28px 72px rgba(15, 23, 42, 0.32),
+        0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+    padding: 20px 20px 22px;
+    isolation: isolate;
+}
+
+/* Zelene bočne mrlje na modalu */
+.staff-objava-modal::before,
+.staff-objava-modal::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 50%;
+    filter: blur(2px);
+}
+
+.staff-objava-modal::before {
+    left: -48px;
+    top: 12%;
+    width: 120px;
+    height: 220px;
+    background:
+        radial-gradient(circle at 70% 30%, rgba(91, 184, 5, 0.55) 0%, transparent 62%),
+        radial-gradient(circle at 40% 70%, rgba(47, 107, 3, 0.4) 0%, transparent 58%);
+}
+
+.staff-objava-modal::after {
+    right: -52px;
+    bottom: 8%;
+    width: 130px;
+    height: 240px;
+    background:
+        radial-gradient(circle at 30% 40%, rgba(91, 184, 5, 0.5) 0%, transparent 60%),
+        radial-gradient(circle at 60% 80%, rgba(61, 138, 4, 0.38) 0%, transparent 55%);
+}
+
+.staff-objava-modal > * {
+    position: relative;
+    z-index: 1;
+}
+
+.staff-objava-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.staff-objava-modal__head h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: #2f6b03;
+    letter-spacing: -0.02em;
+}
+
+.staff-objava-modal__close {
+    appearance: none;
+    border: none;
+    background: rgba(91, 184, 5, 0.12);
+    color: #2f6b03;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.staff-objava-modal__close:hover {
+    background: rgba(91, 184, 5, 0.22);
+}
+
+.staff-objava-modal__hint {
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #4b5563;
+}
+
+.staff-objava-modal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.staff-objava-modal__field input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1.5px solid rgba(91, 184, 5, 0.35);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.staff-objava-modal__field input:focus {
+    outline: none;
+    border-color: #5BB805;
+    box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.22);
+}
+
+.staff-objava-modal__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.staff-objava-modal__actions #staffObjavaGenerate {
+    background: #0f172a !important;
+    color: #fff !important;
+    border: none !important;
+    font-weight: 800;
+}
+
+.staff-objava-preview-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    border-radius: 14px;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse 40% 70% at 0% 50%, rgba(91, 184, 5, 0.55) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 70% at 100% 50%, rgba(91, 184, 5, 0.55) 0%, transparent 70%),
+        radial-gradient(circle at 15% 20%, rgba(61, 138, 4, 0.35) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(47, 107, 3, 0.3) 0%, transparent 42%),
+        linear-gradient(160deg, #f0fbe6 0%, #ffffff 45%, #e8f5d8 100%);
+    border: 1.5px solid rgba(91, 184, 5, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* Dodatne “mrlje” u preview okviru */
+.staff-objava-preview-wrap::before,
+.staff-objava-preview-wrap::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.staff-objava-preview-wrap::before {
+    left: -18px;
+    top: 18%;
+    width: 72px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(91, 184, 5, 0.65) 0%, transparent 68%);
+    filter: blur(1px);
+}
+
+.staff-objava-preview-wrap::after {
+    right: -20px;
+    bottom: 14%;
+    width: 80px;
+    height: 130px;
+    background: radial-gradient(circle, rgba(47, 107, 3, 0.55) 0%, transparent 68%);
+    filter: blur(1px);
+}
+
+.staff-objava-preview-wrap canvas {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 360px);
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow:
+        0 12px 32px rgba(47, 107, 3, 0.18),
+        0 0 0 2px rgba(91, 184, 5, 0.2);
+    display: block;
+}
+
+.staff-objava-modal__status {
+    margin: 12px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2f6b03;
+}
+
+.staff-objava-modal__status[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 480px) {
+    .staff-objava-modal {
+        width: 100%;
+        max-height: 94vh;
+        border-radius: 14px;
+        padding: 14px;
+    }
+
+    .staff-objava-modal__actions .btn {
+        flex: 1 1 auto;
+        min-height: 44px;
+    }
 }
 
 .product-discount-badge {
@@ -8407,10 +8704,10 @@ button.nav-action-link {
         display: none;
     }
 
-    /* Mobitel: manja dugmad, dolje desno (ne zaklanjaju search) */
+    /* Mobitel: manja dugmad, gore desno (nestanu samo dok se kuca u pretragu) */
     .header-float-ctas {
-        top: auto;
-        bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 64px));
+        top: calc(var(--site-chrome-top) + 6px);
+        bottom: auto;
         right: max(10px, env(safe-area-inset-right, 0px));
         gap: 7px;
         max-width: 122px;

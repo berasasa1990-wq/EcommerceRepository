@@ -349,11 +349,16 @@ document.addEventListener('DOMContentLoaded', () => {
         target.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     }
 
+    function setSearchSuggestActive(active) {
+        document.body.classList.toggle('search-suggest-open', Boolean(active));
+    }
+
     function clearSearchSuggestions() {
         if (!searchSuggestions) return;
         searchSuggestions.innerHTML = '';
         searchSuggestions.hidden = true;
         setSuggestionsExpanded(false);
+        setSearchSuggestActive(false);
     }
 
     function renderSearchSuggestions(results, query, hasMore = false) {
@@ -368,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchSuggestions.innerHTML = `<div role="status" class="search-suggestions-empty">Nema artikala za „${escapeHtml(query)}".</div>`;
             searchSuggestions.hidden = false;
             setSuggestionsExpanded(true);
+            setSearchSuggestActive(true);
             return;
         }
 
@@ -393,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchSuggestions.innerHTML = items + footer;
         searchSuggestions.hidden = false;
         setSuggestionsExpanded(true);
+        setSearchSuggestActive(true);
     }
 
     function escapeHtml(value) {
@@ -412,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretraga…</div>';
         searchSuggestions.hidden = false;
         setSuggestionsExpanded(true);
+        setSearchSuggestActive(true);
 
         try {
             const response = await fetch(`${searchSuggestUrl}?q=${encodeURIComponent(query)}`, {
@@ -426,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error.name === 'AbortError') return;
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
             searchSuggestions.hidden = false;
+            setSearchSuggestActive(true);
         }
     }
 
@@ -862,23 +871,73 @@ document.addEventListener('DOMContentLoaded', () => {
             root.addEventListener('focusin', () => clearInterval(autoplayTimer));
             root.addEventListener('focusout', startAutoplay);
 
+            // Swipe prstom lijevo/desno — radi i preko <a> (brend logo / kartice)
             let touchStartX = 0;
-            const isCarouselInteractiveTarget = (target) => (
-                target && target.closest('button, a, [data-catalog-add], .catalog-variation-modal')
-            );
+            let touchStartY = 0;
+            let touchActive = false;
+            let didSwipe = false;
+            const SWIPE_MIN = 36;
+
+            function suppressNextClick() {
+                const onClick = (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    viewport.removeEventListener('click', onClick, true);
+                };
+                viewport.addEventListener('click', onClick, true);
+                window.setTimeout(() => {
+                    viewport.removeEventListener('click', onClick, true);
+                }, 450);
+            }
 
             viewport.addEventListener('touchstart', (e) => {
-                if (isCarouselInteractiveTarget(e.target)) return;
-                touchStartX = e.touches[0].clientX;
+                if (e.touches.length !== 1) return;
+                // Ne ometaj form buttons / modal unutar carousel-a
+                if (e.target && e.target.closest('button, [data-catalog-add], .catalog-variation-modal')) {
+                    touchActive = false;
+                    return;
+                }
+                const t = e.touches[0];
+                touchStartX = t.clientX;
+                touchStartY = t.clientY;
+                touchActive = true;
+                didSwipe = false;
+            }, { passive: true });
+
+            viewport.addEventListener('touchmove', (e) => {
+                if (!touchActive || e.touches.length !== 1) return;
+                const t = e.touches[0];
+                const dx = t.clientX - touchStartX;
+                const dy = t.clientY - touchStartY;
+                // Horizontalni swipe (jači od vertikale) → pomakni traku
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_MIN) {
+                    didSwipe = true;
+                }
             }, { passive: true });
 
             viewport.addEventListener('touchend', (e) => {
-                if (isCarouselInteractiveTarget(e.target)) return;
-                const diff = touchStartX - e.changedTouches[0].clientX;
-                if (Math.abs(diff) > 40) {
-                    goTo(diff > 0 ? index + 1 : index - 1);
-                    resetAutoplay();
+                if (!touchActive) return;
+                touchActive = false;
+                const t = e.changedTouches[0];
+                if (!t) return;
+                const dx = touchStartX - t.clientX;
+                const dy = touchStartY - t.clientY;
+                if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
+                // lijevo prevuci (dx > 0) → sljedeći; desno → prethodni
+                if (dx > 0) {
+                    if (index >= maxIndex()) goTo(0, { animate: false });
+                    else goTo(index + 1);
+                } else {
+                    if (index <= 0) goTo(maxIndex(), { animate: false });
+                    else goTo(index - 1);
                 }
+                resetAutoplay();
+                didSwipe = true;
+                suppressNextClick();
+            }, { passive: true });
+
+            viewport.addEventListener('touchcancel', () => {
+                touchActive = false;
             }, { passive: true });
 
             window.addEventListener('resize', updateLayout);
