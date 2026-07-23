@@ -829,18 +829,27 @@ def _commit_stock_only(product, template, variant_payloads):
 
     effective_qty = max(template_qty, variant_qty_sum)
 
+    site_was_on_stock = bool(product.na_stanju)
+    site_stanje = _int_qty(product.stanje)
+
     if variations_updated:
         sync_primary_stock(product)
         # Ako sync ostavi 0 a Odoo ima zalihu — forsira na stanju
         if effective_qty > 0:
             product.stanje = max(_int_qty(product.stanje), effective_qty)
             product.na_stanju = True
+        elif site_was_on_stock:
+            # Odoo 0 — ne skidaj sa stanja na sajtu
+            product.na_stanju = True
+            product.stanje = max(_int_qty(product.stanje), site_stanje)
         product.save(update_fields=['stanje', 'na_stanju'])
         return stats
 
     # Nema varijacija na sajtu (ili nijedna nije matchana) — piši na Product
-    if _apply_product_in_stock(product, effective_qty):
-        stats['azurirano'] = 1
+    if effective_qty > 0:
+        if _apply_product_in_stock(product, effective_qty):
+            stats['azurirano'] = 1
+    # effective_qty == 0 → ne diraj postojeće stanje na sajtu
     return stats
 
 
@@ -886,6 +895,11 @@ def _commit_template_import(prepared):
         return _preskoceno_rezultat()
 
     created = product is None
+    # Sačuvaj stanje/opis sa sajta prije bilo kakvog overwrite-a
+    site_was_on_stock = bool(product.na_stanju) if product else False
+    site_stanje = _int_qty(product.stanje) if product else 0
+    site_opis = (product.opis or '') if product else ''
+
     raw_code = template.get('default_code')
     if raw_code is False or raw_code is None:
         raw_code = ''
@@ -905,22 +919,28 @@ def _commit_template_import(prepared):
         'naziv': (_odoo_template_name(template) or f'Artikal {odoo_template_id}')[:200],
         'sifra': (sifra or '')[:SIFRA_MAX_LENGTH] or None,
         'barkod': (str(template.get('barcode') or '') if template.get('barcode') not in (False, None) else '')[:BARKOD_MAX_LENGTH],
-        'opis': template.get('description_sale') or '',
         'cijena': _decimal(template.get('list_price')),
         'kategorija': django_category,
         'odoo_template_id': odoo_template_id,
         'aktivan': True,
     }
-    # Stanje: Odoo > 0 → na stanju; Odoo 0 na postojećem → ostavi sajt kako jeste
-    # Uzmi max(template, zbroj varijanti) — varijante ponekad imaju qty a template 0 i obrnuto
+    # Opis: samo za NOVE artikle. Postojeći zadržavaju opis sa sajta (u Odoo-u često prazan).
+    if created:
+        odoo_opis = template.get('description_sale')
+        if odoo_opis is False or odoo_opis is None:
+            odoo_opis = ''
+        values['opis'] = str(odoo_opis)
+
+    # Stanje: Odoo > 0 → na stanju; Odoo 0 na postojećem → NE skidaj sa stanja
     template_qty = _odoo_qty_from_record(template)
     variant_qty_sum = sum(
         _odoo_qty_from_record(p.get('variant') or {})
         for p in (variant_payloads or [])
     )
+    effective_qty = max(template_qty, variant_qty_sum)
     values.update(
         _odoo_stock_update_fields(
-            max(template_qty, variant_qty_sum),
+            effective_qty,
             existing=not created,
         )
     )
@@ -932,6 +952,8 @@ def _commit_template_import(prepared):
             values.pop('kategorija', None)
         for key, value in values.items():
             setattr(product, key, value)
+        # Nikad ne diraj postojeći opis
+        product.opis = site_opis
 
     if prepared_image:
         save_prepared_product_image(product.slika, prepared_image)
@@ -954,11 +976,16 @@ def _commit_template_import(prepared):
         )
         product = existing
         created = False
+        site_was_on_stock = bool(product.na_stanju)
+        site_stanje = _int_qty(product.stanje)
+        site_opis = product.opis or ''
         merge_values = dict(values)
+        merge_values.pop('opis', None)  # ne diraj opis
         if django_category is None:
             merge_values.pop('kategorija', None)
         for key, value in merge_values.items():
             setattr(product, key, value)
+        product.opis = site_opis
         if prepared_image:
             save_prepared_product_image(product.slika, prepared_image)
         product.save()
@@ -973,17 +1000,28 @@ def _commit_template_import(prepared):
         sync_primary_stock(product)
         product.save(update_fields=['stanje', 'na_stanju'])
 
-    # Ako Odoo ima zalihu a artikal i dalje nije na stanju (npr. bez varijacija na sajtu)
-    effective_qty = max(
-        _odoo_qty_from_record(template),
-        sum(_odoo_qty_from_record(p.get('variant') or {}) for p in (variant_payloads or [])),
-    )
-    if effective_qty > 0 and not product.na_stanju:
-        _apply_product_in_stock(product, effective_qty)
-    elif effective_qty > 0 and _int_qty(product.stanje) < effective_qty:
-        product.stanje = effective_qty
-        product.na_stanju = True
-        product.save(update_fields=['stanje', 'na_stanju'])
+    # Odoo > 0 → na stanju; Odoo 0 → vrati/ostavi stanje sa sajta (ne skidaj)
+    if effective_qty > 0:
+        if not product.na_stanju or _int_qty(product.stanje) < effective_qty:
+            product.stanje = max(_int_qty(product.stanje), effective_qty)
+            product.na_stanju = True
+            product.save(update_fields=['stanje', 'na_stanju'])
+    elif not created and site_was_on_stock:
+        # Odoo nema zalihu — ne skidaj artikal sa stanja na sajtu
+        if not product.na_stanju or _int_qty(product.stanje) < site_stanje:
+            product.na_stanju = True
+            product.stanje = max(_int_qty(product.stanje), site_stanje)
+            product.save(update_fields=['stanje', 'na_stanju'])
+            logger.info(
+                'Odoo stock 0: product #%s ostaje na stanju (sajt stanje=%s)',
+                product.pk,
+                product.stanje,
+            )
+
+    # Još jednom: postojeći opis se ne dira
+    if not created and (product.opis or '') != site_opis:
+        product.opis = site_opis
+        product.save(update_fields=['opis'])
 
     return {
         'action': 'kreirano' if created else 'azurirano',

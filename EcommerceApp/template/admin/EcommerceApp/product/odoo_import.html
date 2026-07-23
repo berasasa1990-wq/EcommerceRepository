@@ -124,9 +124,16 @@
         Za automatsko mapiranje kategorija u lokalnoj bazi, u Kategorijama postavite <em>Odoo category ID</em>.
         Brendove koji nisu u Odoo-u možete označiti ispod — ti artikli se neće dirati pri importu.
         <br><br>
+        <strong>Pravila pri ažuriranju postojećih:</strong>
+        <ul style="margin: 8px 0 0 18px;">
+            <li>Odoo <strong>ima zalihu</strong> → stavi artikal <strong>na stanju</strong> na sajtu</li>
+            <li>Odoo <strong>nema zalihu (0)</strong> → <strong>ne skida</strong> sa stanja na sajtu (webshop-only artikli ostaju)</li>
+            <li><strong>Opis</strong> sa sajta se <strong>ne dira</strong> (Odoo opis se ne prepisuje)</li>
+        </ul>
+        <br>
         <strong>Specijalni režimi</strong> (odaberi najviše jedan):
         <ul style="margin: 8px 0 0 18px;">
-            <li><strong>Samo količine</strong> — ažurira stanje / dostupnost</li>
+            <li><strong>Samo količine</strong> — samo nabaci na stanje kad Odoo ima qty &gt; 0</li>
             <li><strong>Samo naziv</strong> — ažurira naziv ako se u Odoo-u promijenio</li>
             <li><strong>Samo slike</strong> — povlači/ažurira slike artikla</li>
         </ul>
