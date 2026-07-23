@@ -4681,6 +4681,29 @@ def staff_product_quick_edit(request, slug):
         )
         changed.append('je_hit')
 
+        # Pakovanje: checkbox + količina komada (prazno / isključeno = po komadu)
+        if 'je_pakovanje' in request.POST or 'pakovanje_komada' in request.POST:
+            pack_on = (request.POST.get('je_pakovanje') or '').strip() in (
+                '1', 'true', 'on', 'yes',
+            )
+            raw_pack = (request.POST.get('pakovanje_komada') or '').strip()
+            if not pack_on:
+                if product.pakovanje_komada:
+                    product.pakovanje_komada = None
+                    changed.append('pakovanje')
+            else:
+                try:
+                    pack_n = int(raw_pack) if raw_pack else 0
+                except (TypeError, ValueError):
+                    pack_n = 0
+                    errors.append('Pakovanje: unesite cijeli broj komada (npr. 9).')
+                if pack_n > 1:
+                    if product.pakovanje_komada != pack_n:
+                        product.pakovanje_komada = pack_n
+                        changed.append('pakovanje')
+                elif pack_on and not errors:
+                    errors.append('Pakovanje: količina mora biti najmanje 2 komada.')
+
         uploaded = request.FILES.get('glavna_slika')
         if uploaded:
             if not _staff_upload_is_image(uploaded):
@@ -4732,6 +4755,11 @@ def staff_product_quick_edit(request, slug):
             parts.append('noviteti ' + ('uključeno' if product.je_novitet else 'isključeno'))
         if 'je_hit' in changed:
             parts.append('HIT ponuda ' + ('uključeno' if product.je_hit else 'isključeno'))
+        if 'pakovanje' in changed:
+            if product.pakovanje_komada and product.pakovanje_komada > 1:
+                parts.append(f'pakovanje {product.pakovanje_komada} kom.')
+            else:
+                parts.append('pakovanje isključeno')
         if extra_n:
             parts.append(f'+{extra_n} slika')
         messages.success(

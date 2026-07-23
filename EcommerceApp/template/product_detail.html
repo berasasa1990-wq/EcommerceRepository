@@ -212,6 +212,27 @@
                                 <span>HIT ponuda / Izdvojeno</span>
                                 <small>Crveni pulsirajući natpis + prikaz u Izdvojenim na početnoj</small>
                             </label>
+                            <div class="staff-pakovanje-edit" data-staff-pakovanje>
+                                <label class="staff-novitet-check">
+                                    <input type="checkbox" name="je_pakovanje" value="1" data-pakovanje-toggle{% if product.pakovanje_komada and product.pakovanje_komada > 1 %} checked{% endif %}>
+                                    <span>Pakovanje</span>
+                                    <small>Cijena je za više komada, ne po komadu</small>
+                                </label>
+                                <label class="staff-product-price-label staff-pakovanje-qty" data-pakovanje-qty-wrap{% if not product.pakovanje_komada or product.pakovanje_komada <= 1 %} hidden{% endif %}>
+                                    <span>Količina u pakovanju (komada)</span>
+                                    <input type="number"
+                                           name="pakovanje_komada"
+                                           min="2"
+                                           max="999"
+                                           step="1"
+                                           inputmode="numeric"
+                                           class="staff-product-price-input"
+                                           data-pakovanje-qty
+                                           value="{% if product.pakovanje_komada and product.pakovanje_komada > 1 %}{{ product.pakovanje_komada }}{% endif %}"
+                                           placeholder="npr. 9">
+                                    <small class="staff-pakovanje-hint">Npr. 9 = cijena važi za 9 komada u pakovanju</small>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="staff-product-bar-section">
@@ -530,6 +551,25 @@
 {% endif %}
 {% if staff_product_tools %}
 <script>
+/* Pakovanje: prikaži polje količine kad je checkbox upaljen */
+document.querySelectorAll('[data-staff-pakovanje]').forEach(function (root) {
+    var toggle = root.querySelector('[data-pakovanje-toggle]');
+    var wrap = root.querySelector('[data-pakovanje-qty-wrap]');
+    var qty = root.querySelector('[data-pakovanje-qty]');
+    if (!toggle || !wrap) return;
+    function syncPakovanje() {
+        var on = toggle.checked;
+        wrap.hidden = !on;
+        if (qty) {
+            qty.required = on;
+            if (on && !qty.value) qty.focus();
+            if (!on) qty.required = false;
+        }
+    }
+    toggle.addEventListener('change', syncPakovanje);
+    syncPakovanje();
+});
+
 document.querySelectorAll('.staff-olx-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
         var msg = form.querySelector('.staff-olx-btn--publish')

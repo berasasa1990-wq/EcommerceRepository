@@ -4125,6 +4125,41 @@ body.catalog-variation-modal-open {
     color: #64748b;
 }
 
+.staff-pakovanje-edit {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: #f8fafc;
+}
+
+.staff-pakovanje-edit .staff-novitet-check {
+    margin: 0;
+    border-color: rgba(15, 23, 42, 0.14);
+    background: #fff;
+    color: #0f172a;
+}
+
+.staff-pakovanje-edit .staff-novitet-check input {
+    accent-color: #0f172a;
+}
+
+.staff-pakovanje-qty {
+    margin-top: 10px;
+}
+
+.staff-pakovanje-qty[hidden] {
+    display: none !important;
+}
+
+.staff-pakovanje-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+}
+
 .staff-product-save-all-footer {
     margin-top: 16px;
     padding-top: 12px;
