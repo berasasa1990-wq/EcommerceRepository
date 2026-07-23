@@ -82,8 +82,7 @@
         <div class="filter-group">
             <label class="filter-label" for="filter-sort">Sortiranje</label>
             <select id="filter-sort" name="sort" class="filter-input">
-                <option value="">Zadano</option>
-                <option value="rastuca"{% if filter_params.sort == 'rastuca' %} selected{% endif %}>Rastuća cijena</option>
+                <option value=""{% if filter_params.sort != 'opadajuca' %} selected{% endif %}>Cijena rastuća (zadano)</option>
                 <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Opadajuća cijena</option>
             </select>
         </div>

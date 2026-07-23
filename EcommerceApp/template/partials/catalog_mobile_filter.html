@@ -109,8 +109,7 @@
                 <div class="catalog-mobile-filter-section">
                     <label class="catalog-mobile-filter-section__label" for="mobile-filter-sort">Sortiranje</label>
                     <select id="mobile-filter-sort" name="sort" class="catalog-mobile-filter-select">
-                        <option value="">Zadano</option>
-                        <option value="rastuca"{% if filter_params.sort == 'rastuca' %} selected{% endif %}>Rastuća cijena</option>
+                        <option value=""{% if filter_params.sort != 'opadajuca' %} selected{% endif %}>Cijena rastuća (zadano)</option>
                         <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Opadajuća cijena</option>
                     </select>
                 </div>

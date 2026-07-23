@@ -543,8 +543,9 @@ def _search_relevance_score(product, query):
 
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
-    Među već relevantnim rezultatima: Hit > Favorizuj > Normalno,
-    zatim relevantnost (pretraga) ili cijena (ako je sort po cijeni).
+    Katalog / pretraga / kategorija:
+    1) Hit redukovanje lagera → Favorizuj → Normal
+    2) Unutar nivoa: cijena rastuće (jeftinije → skuplje), osim opadajuce.
     """
     if not products:
         return products
@@ -552,18 +553,15 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     def key(p):
         prio = _product_lager_priority(p)
         name = (p.naziv or '').lower()
-        if price_sort == 'rastuca':
-            # Eksplicitni sort po cijeni: cijena prva, lager prioritet kao tiebreak
-            return (_effective_product_price(p), -prio, name)
+        try:
+            price = float(_effective_product_price(p) or 0)
+        except Exception:
+            price = 0.0
+        # Opadajuća: prioritet, pa skuplje → jeftinije
         if price_sort == 'opadajuca':
-            try:
-                price = float(_effective_product_price(p) or 0)
-            except Exception:
-                price = 0.0
-            return (-price, -prio, name)
-        # default / pretraga: Hit → Favorizuj → Normal, unutar grupe relevantnost
-        rel = _search_relevance_score(p, query) if query else 0
-        return (-prio, -rel, name)
+            return (-prio, -price, name)
+        # Zadano + rastuća: prioritet, pa jeftinije → skuplje
+        return (-prio, price, name)
 
     return sorted(products, key=key)
 
@@ -668,12 +666,12 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             if _product_matches_size(product, size_label)
         ]
 
-    # Redukovanje lagera: prioritet samo među već filtriranim (relevantnim) rezultatima
-    price_sort = None
-    if params['sort'] == 'rastuca':
-        price_sort = 'rastuca'
-    elif params['sort'] == 'opadajuca':
+    # Redukovanje lagera prvo, zatim cijena (zadano = rastuća)
+    if params['sort'] == 'opadajuca':
         price_sort = 'opadajuca'
+    else:
+        # prazno / rastuca / bilo šta drugo → rastuća cijena unutar prioriteta
+        price_sort = 'rastuca'
     products = _sort_products_by_lager_priority(
         products,
         query=params.get('q') or '',
