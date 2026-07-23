@@ -13,7 +13,7 @@ def sync_primary_stock(product):
         return
     product.stanje = sum(variation.stanje for variation in variations)
     product.na_stanju = any(variation.na_stanju for variation in variations)
-    product.odoo_template_id = None
+    # Ne briši odoo_template_id — potreban je za Odoo sync (npr. samo naziv).
 
 
 def _variation_label(product):

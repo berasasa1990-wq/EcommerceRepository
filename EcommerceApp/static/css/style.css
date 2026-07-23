@@ -162,7 +162,8 @@ img.home-vlog-card-image {
 /* Plutača: Akcijska ponuda + Noviteti (šire na desktopu, kompaktno na mobitelu) */
 .header-float-ctas {
     position: fixed;
-    top: calc(var(--site-chrome-top) + 8px);
+    /* Desktop: ispod kategorija / filter trake da ih ne zaklanja */
+    top: calc(var(--site-chrome-top) + 96px);
     right: max(14px, env(safe-area-inset-right, 0px));
     z-index: 999;
     display: flex;
@@ -1078,6 +1079,26 @@ main {
     aspect-ratio: 32 / 7;
     position: relative;
     height: auto;
+}
+
+/* Desktop: baner malo niže + blago viša traka da vrh nije isječen */
+@media (min-width: 1025px) {
+    .hero-carousel {
+        /* pomak dolje ispod fiksiranog headera */
+        margin-top: 10px;
+    }
+
+    .hero-carousel .carousel-track {
+        /* blago viši omjer → manje vertikalnog cropa */
+        aspect-ratio: 32 / 8;
+    }
+
+    .hero-carousel .slide-image-img,
+    .hero-carousel .slide-image-video {
+        object-fit: cover;
+        /* vrh banera uvijek u kadru */
+        object-position: center top;
+    }
 }
 
 .carousel-slide {

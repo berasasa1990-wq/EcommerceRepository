@@ -151,6 +151,7 @@ class OdooClient:
             'categ_id',
             'product_variant_ids',
             'qty_available',
+            'virtual_available',
         ]
 
     def get_products_in_category(self, category_id, *, include_children=True):
@@ -194,6 +195,7 @@ class OdooClient:
             'lst_price',
             'product_tmpl_id',
             'qty_available',
+            'virtual_available',
         ]
         variants = []
         for offset in range(0, len(variant_ids), VARIANT_BATCH_SIZE):

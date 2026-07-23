@@ -123,7 +123,13 @@
         Artikli se mapiraju po Odoo ID-u — ponovni import ažurira postojeće zapise.
         Za automatsko mapiranje kategorija u lokalnoj bazi, u Kategorijama postavite <em>Odoo category ID</em>.
         Brendove koji nisu u Odoo-u možete označiti ispod — ti artikli se neće dirati pri importu.
-        Za artikle koji su već uvezeni bez slika, označite <strong>Samo učitaj/ažuriraj slike</strong>.
+        <br><br>
+        <strong>Specijalni režimi</strong> (odaberi najviše jedan):
+        <ul style="margin: 8px 0 0 18px;">
+            <li><strong>Samo količine</strong> — ažurira stanje / dostupnost</li>
+            <li><strong>Samo naziv</strong> — ažurira naziv ako se u Odoo-u promijenio</li>
+            <li><strong>Samo slike</strong> — povlači/ažurira slike artikla</li>
+        </ul>
     </div>
 
     {% if odoo_error %}
@@ -179,17 +185,30 @@
             <label for="{{ form.ucitaj_slike.id_for_label }}">{{ form.ucitaj_slike.label }}</label>
         </div>
 
-        <div class="form-row checkbox-row">
-            {{ form.samo_stanje }}
-            <label for="{{ form.samo_stanje.id_for_label }}">{{ form.samo_stanje.label }}</label>
-        </div>
-        {% if form.samo_stanje.help_text %}<p class="help">{{ form.samo_stanje.help_text }}</p>{% endif %}
+        <div class="form-row" style="padding: 12px 14px; border: 1px solid #e5e5e5; border-radius: 6px; background: #fafafa; max-width: 520px;">
+            <strong style="display:block; margin-bottom: 10px;">Specijalni režim (opcionalno — samo jedan)</strong>
 
-        <div class="form-row checkbox-row">
-            {{ form.samo_slike }}
-            <label for="{{ form.samo_slike.id_for_label }}">{{ form.samo_slike.label }}</label>
+            <div class="checkbox-row" style="margin-bottom: 10px;">
+                {{ form.samo_stanje }}
+                <label for="{{ form.samo_stanje.id_for_label }}">{{ form.samo_stanje.label }}</label>
+            </div>
+            {% if form.samo_stanje.help_text %}<p class="help" style="margin: -4px 0 12px 24px;">{{ form.samo_stanje.help_text }}</p>{% endif %}
+
+            <div class="checkbox-row" style="margin-bottom: 10px;">
+                {{ form.samo_naziv }}
+                <label for="{{ form.samo_naziv.id_for_label }}">{{ form.samo_naziv.label }}</label>
+            </div>
+            {% if form.samo_naziv.help_text %}<p class="help" style="margin: -4px 0 12px 24px;">{{ form.samo_naziv.help_text }}</p>{% endif %}
+
+            <div class="checkbox-row" style="margin-bottom: 6px;">
+                {{ form.samo_slike }}
+                <label for="{{ form.samo_slike.id_for_label }}">{{ form.samo_slike.label }}</label>
+            </div>
+            {% if form.samo_slike.help_text %}<p class="help" style="margin: -4px 0 0 24px;">{{ form.samo_slike.help_text }}</p>{% endif %}
         </div>
-        {% if form.samo_slike.help_text %}<p class="help">{{ form.samo_slike.help_text }}</p>{% endif %}
+        {% if form.non_field_errors %}
+        <p class="errornote">{{ form.non_field_errors|join:', ' }}</p>
+        {% endif %}
 
         <div class="form-row">
             <span class="label">{{ form.preskoci_brendovi.label }}</span>

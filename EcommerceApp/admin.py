@@ -1689,6 +1689,7 @@ class ProductAdmin(admin.ModelAdmin):
                 'load_images': cleaned['ucitaj_slike'],
                 'stock_only': cleaned['samo_stanje'],
                 'images_only': cleaned['samo_slike'],
+                'names_only': cleaned.get('samo_naziv', False),
                 'excluded_brand_ids': [
                     brand.pk for brand in cleaned['preskoci_brendovi']
                 ],
@@ -1714,6 +1715,7 @@ class ProductAdmin(admin.ModelAdmin):
             load_images=options['load_images'],
             stock_only=options['stock_only'],
             images_only=options.get('images_only', False),
+            names_only=options.get('names_only', False),
             excluded_brand_ids=options['excluded_brand_ids'],
             client=client,
             template_ids=template_ids,
@@ -1722,6 +1724,7 @@ class ProductAdmin(admin.ModelAdmin):
                 load_images=options['load_images'],
                 stock_only=options['stock_only'],
                 images_only=options.get('images_only', False),
+                names_only=options.get('names_only', False),
             ),
         )
         stats = merge_import_stats(stats, chunk_stats)
@@ -1729,17 +1732,27 @@ class ProductAdmin(admin.ModelAdmin):
         job['stats'] = stats
         return job, stats
 
-    def _finish_import_success(self, request, stats):
+    def _finish_import_success(self, request, stats, *, names_only=False):
         request.session.pop(ODOO_IMPORT_SESSION_KEY, None)
-        messages.success(
-            request,
-            (
-                f'Odoo import završen: {stats["kreirano"]} novih, '
-                f'{stats["azurirano"]} ažuriranih, {stats["preskoceno"]} preskočenih. '
-                f'Varijacije: {stats["varijacija_kreirano"]} novih, '
-                f'{stats["varijacija_azurirano"]} ažuriranih.'
-            ),
-        )
+        if names_only:
+            messages.success(
+                request,
+                (
+                    f'Odoo sync naziva završen: {stats["azurirano"]} artikala usklađeno, '
+                    f'{stats["preskoceno"]} preskočenih (nisu pronađeni na sajtu ili zaštićen brend). '
+                    f'Varijacije ažurirane: {stats["varijacija_azurirano"]}.'
+                ),
+            )
+        else:
+            messages.success(
+                request,
+                (
+                    f'Odoo import završen: {stats["kreirano"]} novih, '
+                    f'{stats["azurirano"]} ažuriranih, {stats["preskoceno"]} preskočenih. '
+                    f'Varijacije: {stats["varijacija_kreirano"]} novih, '
+                    f'{stats["varijacija_azurirano"]} ažuriranih.'
+                ),
+            )
         if stats['greske']:
             messages.warning(
                 request,
@@ -1780,7 +1793,11 @@ class ProductAdmin(admin.ModelAdmin):
             try:
                 job, stats = self._run_import_job_chunk(request, job)
                 if stats['done']:
-                    return self._finish_import_success(request, stats)
+                    return self._finish_import_success(
+                        request,
+                        stats,
+                        names_only=bool((job.get('options') or {}).get('names_only')),
+                    )
 
                 request.session[ODOO_IMPORT_SESSION_KEY] = job
                 request.session.modified = True
@@ -1812,7 +1829,11 @@ class ProductAdmin(admin.ModelAdmin):
                         django_category=form.cleaned_data['kategorija'],
                     )
                     if stats['done']:
-                        return self._finish_import_success(request, stats)
+                        return self._finish_import_success(
+                            request,
+                            stats,
+                            names_only=bool((job.get('options') or {}).get('names_only')),
+                        )
 
                     request.session[ODOO_IMPORT_SESSION_KEY] = job
                     request.session.modified = True

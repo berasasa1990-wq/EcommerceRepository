@@ -858,16 +858,26 @@ class OdooImportForm(forms.Form):
         initial=True,
     )
     samo_stanje = forms.BooleanField(
-        label='Samo ažuriraj stanje (postojeći artikli)',
+        label='Samo ažuriraj količine / stanje',
         required=False,
         initial=False,
-        help_text='Ažurira samo količinu i dostupnost. Ne mijenja naziv, cijenu, kategoriju, slike niti kreira nove artikle.',
+        help_text=(
+            'Samo količina kad je u Odoo-u > 0 (stavi na stanje na sajtu). '
+            'Ako je u Odoo-u 0 — ne skida sa stanja na sajtu (artikli koje držiš samo na sajtu). '
+            'Ne mijenja naziv, cijenu, slike. Ne kreira nove artikle.'
+        ),
+    )
+    samo_naziv = forms.BooleanField(
+        label='Samo ažuriraj naziv artikla',
+        required=False,
+        initial=False,
+        help_text='Samo naziv artikla (i varijacija) iz Odoo-a ako se promijenio. Ne dirа količine, cijene, slike, kategoriju.',
     )
     samo_slike = forms.BooleanField(
-        label='Samo učitaj/ažuriraj slike (postojeći artikli)',
+        label='Samo ažuriraj slike artikla',
         required=False,
         initial=False,
-        help_text='Koristi nakon importa bez slika — povlači samo slike iz Odoo-a za artikle koji već postoje u bazi.',
+        help_text='Samo slike iz Odoo-a za postojeće artikle. Ne mijenja naziv, količinu ni cijenu.',
     )
     preskoci_brendovi = forms.ModelMultipleChoiceField(
         label='Ne ažuriraj artikle ovih brendova',
@@ -879,14 +889,30 @@ class OdooImportForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
+        modes = [
+            cleaned.get('samo_stanje'),
+            cleaned.get('samo_naziv'),
+            cleaned.get('samo_slike'),
+        ]
+        if sum(1 for m in modes if m) > 1:
+            raise forms.ValidationError(
+                'Odaberi samo jedan specijalni režim: količine, naziv ili slike.'
+            )
         if cleaned.get('samo_stanje'):
             cleaned['azuriraj_postojece'] = True
             cleaned['ucitaj_slike'] = False
+            cleaned['samo_slike'] = False
+            cleaned['samo_naziv'] = False
+        if cleaned.get('samo_naziv'):
+            cleaned['azuriraj_postojece'] = True
+            cleaned['ucitaj_slike'] = False
+            cleaned['samo_stanje'] = False
             cleaned['samo_slike'] = False
         if cleaned.get('samo_slike'):
             cleaned['azuriraj_postojece'] = True
             cleaned['ucitaj_slike'] = True
             cleaned['samo_stanje'] = False
+            cleaned['samo_naziv'] = False
         return cleaned
 
     def __init__(self, *args, odoo_category_choices=None, **kwargs):

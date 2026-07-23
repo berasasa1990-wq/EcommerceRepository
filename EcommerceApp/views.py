@@ -172,11 +172,32 @@ def _akcija_products_qs(products_qs):
 
 
 def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
+    """
+    QS iz kojeg se grade filteri veličina/dužina/debljina.
+    Mora pratiti aktivni kontekst (noviteti, akcija, brend, kategorija…)
+    da se npr. na Novitetima ne prikazuje „Debljina” ako ti artikli nemaju mm.
+    """
     qs = base_qs if base_qs is not None else _product_queryset(request)
     if filter_params.get('q'):
         qs = _apply_search_filter(qs, filter_params['q'])
     if filter_params.get('akcija'):
         qs = _akcija_products_qs(qs)
+    if filter_params.get('noviteti'):
+        qs = qs.filter(je_novitet=True)
+    if filter_params.get('brend'):
+        brand = Brand.objects.filter(slug=filter_params['brend']).first()
+        if brand:
+            qs = qs.filter(brend_id=brand.pk)
+        else:
+            qs = qs.none()
+    if filter_params.get('kategorija'):
+        category = Category.objects.filter(
+            slug=filter_params['kategorija'], aktivan=True,
+        ).first()
+        if category:
+            qs = qs.filter(kategorija_id__in=category.get_descendant_ids())
+        else:
+            qs = qs.none()
     return qs
 
 
