@@ -217,6 +217,10 @@
 {% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}
 {% endif %}
 
+{% if home_brand_showcases %}
+{% include 'partials/home_brand_showcase.html' with sections=home_brand_showcases %}
+{% endif %}
+
 {% if home_vlogs %}
 {% include 'partials/home_vlog.html' %}
 {% endif %}

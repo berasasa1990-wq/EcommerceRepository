@@ -51,6 +51,7 @@ from .models import (
     ChatConversation,
     ChatMessage,
     Coupon,
+    HomeBrandShowcase,
     HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeNovoProduct,
@@ -230,10 +231,38 @@ class HomeCategoryShowcaseInline(admin.TabularInline):
         return formset
 
 
+class HomeBrandShowcaseInline(admin.TabularInline):
+    model = HomeBrandShowcase
+    fk_name = 'postavke'
+    extra = 1
+    autocomplete_fields = ('brend',)
+    fields = ('brend', 'naslov', 'redoslijed', 'aktivan')
+    verbose_name = 'Brend (slide)'
+    verbose_name_plural = (
+        'Brendovi na početnoj — dodaj koliko hoćeš; svaki brend = slide karusel artikala '
+        '(kao Noviteti / HIT), ispod kategorija'
+    )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.base_fields['brend'].help_text = (
+            'Odaberi brend čiji artikli idu u karusel na početnoj.'
+        )
+        formset.form.base_fields['naslov'].help_text = (
+            'Opcionalno. Prazno = naziv brenda.'
+        )
+        return formset
+
+
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     readonly_fields = ('pregled_loga', 'pregled_favicona', 'pregled_badgea')
-    inlines = [HomeNovoProductInline, HomeFeaturedProductInline, HomeCategoryShowcaseInline]
+    inlines = [
+        HomeNovoProductInline,
+        HomeFeaturedProductInline,
+        HomeCategoryShowcaseInline,
+        HomeBrandShowcaseInline,
+    ]
     fieldsets = (
         ('Logo i ikona', {
             'fields': ('logo', 'pregled_loga', 'favicon', 'pregled_favicona'),

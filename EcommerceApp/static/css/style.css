@@ -1603,6 +1603,93 @@ main {
     padding-top: 48px;
 }
 
+/* Brend sekcije na početnoj (slide karusel, kao Noviteti / HIT) */
+.home-products--brand-showcase {
+    padding-top: 40px;
+    padding-bottom: 8px;
+}
+
+.home-products-header--brand-showcase {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px 20px;
+    margin-bottom: 18px;
+}
+
+/* Umjesto teksta (npr. FOX) — logo brenda */
+.home-brand-showcase-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    max-height: 72px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.home-brand-showcase-logo:hover {
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+    transform: translateY(-1px);
+}
+
+.home-brand-showcase-logo img {
+    display: block;
+    height: auto;
+    max-height: 52px;
+    width: auto;
+    max-width: min(220px, 70vw);
+    object-fit: contain;
+}
+
+.home-brand-showcase-title-fallback {
+    margin: 0;
+    font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    text-align: center;
+}
+
+.home-brand-showcase-title-fallback a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.home-brand-showcase-title-fallback a:hover {
+    color: #5BB805;
+}
+
+.home-brand-showcase-footer {
+    margin-top: 14px;
+    text-align: center;
+}
+
+.home-brand-showcase-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    text-decoration: none;
+    border: 1.5px solid #0f172a;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.home-brand-showcase-link:hover {
+    background: #0f172a;
+    color: #fff;
+}
+
 .home-products-header--novo h2 {
     color: #5BB805;
     font-size: 2.25rem;

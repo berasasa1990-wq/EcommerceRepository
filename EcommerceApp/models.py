@@ -1111,6 +1111,43 @@ class HomeCategoryShowcase(models.Model):
         return self.display_title()
 
 
+class HomeBrandShowcase(models.Model):
+    """Brend sekcija na početnoj — artikli brenda u slide/karuselu (kao Noviteti / HIT)."""
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='brendovi_na_pocetnoj',
+        default=1,
+        editable=False,
+    )
+    brend = models.ForeignKey(
+        'Brand',
+        on_delete=models.CASCADE,
+        related_name='pocetna_sekcije',
+        verbose_name='Brend',
+    )
+    naslov = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Naslov sekcije',
+        help_text='Prazno = naziv brenda.',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Brend na početnoj (slide)'
+        verbose_name_plural = 'Brendovi na početnoj (slide karusel)'
+        ordering = ['redoslijed', 'id']
+        unique_together = [('postavke', 'brend')]
+
+    def display_title(self):
+        return (self.naslov or '').strip() or self.brend.naziv
+
+    def __str__(self):
+        return self.display_title()
+
+
 class HomeVlog(models.Model):
     naslov = models.CharField(
         max_length=200,

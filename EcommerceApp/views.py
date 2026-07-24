@@ -77,6 +77,7 @@ from .models import (
     Banner,
     Brand,
     Category,
+    HomeBrandShowcase,
     HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeNovoProduct,
@@ -974,6 +975,37 @@ def _home_category_showcases(request=None):
     return sections
 
 
+def _home_brand_showcases(request=None):
+    """
+    Brend sekcije na početnoj — kao Noviteti / HIT: karusel artikala po brendu.
+    Admin: Postavke sajta → Brendovi na početnoj (slide).
+    """
+    entries = HomeBrandShowcase.objects.filter(
+        aktivan=True,
+    ).select_related('brend').order_by('redoslijed', 'id')
+
+    home_url = reverse('home')
+    sections = []
+    for entry in entries:
+        products = list(
+            _order_qs_by_lager_priority(
+                _product_queryset(request).filter(brend_id=entry.brend_id),
+                '-kreiran',
+            )[:HOME_SECTION_PRODUCT_LIMIT],
+        )
+        if not products:
+            continue
+        brand = entry.brend
+        brand_url = f'{home_url}?brend={brand.slug}#product-showcase'
+        sections.append({
+            'title': entry.display_title(),
+            'brand': brand,
+            'brand_url': brand_url,
+            'products': products,
+        })
+    return sections
+
+
 def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT, request=None):
     """Slični / povezani — ista kategorija, prednost redukovanju lagera."""
     if not product.kategorija_id:
@@ -1062,6 +1094,7 @@ def home(request):
     latest_products = []
     featured_products = []
     home_category_showcases = []
+    home_brand_showcases = []
     home_vlogs = []
     page_obj = None
     search_products = []
@@ -1136,6 +1169,7 @@ def home(request):
         latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
         home_category_showcases = _home_category_showcases(request)
+        home_brand_showcases = _home_brand_showcases(request)
         home_vlogs = _home_vlogs()
 
     first_hero = hero_banners.first()
@@ -1217,6 +1251,7 @@ def home(request):
         'latest_products': latest_products,
         'featured_products': featured_products,
         'home_category_showcases': home_category_showcases,
+        'home_brand_showcases': home_brand_showcases,
         'home_vlogs': home_vlogs,
         'showcase_brands': _showcase_brands() if not filters_active else [],
         'search_products': search_products,
