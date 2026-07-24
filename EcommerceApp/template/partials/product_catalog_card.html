@@ -61,8 +61,8 @@
         </div>
     </div>
 
-    <div class="product-card__brand-row">
-        {% if product.brend %}
+    <div class="product-card__brand-row{% if hide_brand %} product-card__brand-row--hidden{% endif %}">
+        {% if not hide_brand and product.brend %}
         {% include 'partials/brand_display.html' with brand=product.brend %}
         {% endif %}
     </div>

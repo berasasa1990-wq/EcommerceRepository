@@ -1564,9 +1564,12 @@ main {
 }
 
 .home-brand-strip-section {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 48px 48px 8px;
+    /* Ista vanjska širina kao Noviteti / Izdvojeni (full-bleed home-products) */
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 48px 0 8px;
+    box-sizing: border-box;
 }
 
 /* Odvoji brend ikone od sekcije Noviteti */
@@ -1580,9 +1583,11 @@ main {
     justify-content: center;
 }
 
+/* Brend logo traka: ista širina trake kao product karuseli, bez strelica */
 .home-product-carousel.home-brand-carousel {
     min-height: 0;
-    padding: 0 var(--home-product-inset);
+    /* Usklađeno s .home-product-carousel (inset + prostor strelica) radi iste širine kartica */
+    padding: 0 calc(var(--home-product-inset) + 40px);
 }
 
 .home-brand-carousel .showcase-brand-link {
@@ -1591,12 +1596,22 @@ main {
     padding: 6px 10px;
 }
 
-.home-brand-carousel .home-product-carousel__btn--prev {
-    left: 0;
+/* Karuseli bez strelica (brend logo strip + istaknuti brend artikli) */
+.home-product-carousel--no-arrows .home-product-carousel__btn {
+    display: none;
 }
 
-.home-brand-carousel .home-product-carousel__btn--next {
-    right: 0;
+.home-product-carousel--no-arrows .home-product-carousel__viewport {
+    cursor: grab;
+}
+
+.home-product-carousel--no-arrows.is-dragging .home-product-carousel__viewport {
+    cursor: grabbing;
+}
+
+/* Na brand showcase artiklima brend je već iznad — sakrij red brenda */
+.home-products--brand-showcase .product-card__brand-row--hidden {
+    display: none;
 }
 
 .home-products--novo {
@@ -2164,6 +2179,11 @@ main {
 
 .home-product-carousel--static .home-product-carousel__btn {
     display: none;
+}
+
+/* Bez strelica: ista unutrašnja širina trake kao Noviteti (ostaje +40px da se poravna) */
+.home-products--brand-showcase .home-product-carousel--no-arrows {
+    padding: 0 calc(var(--home-product-inset) + 40px);
 }
 
 .product-card--home-carousel {
@@ -9408,7 +9428,8 @@ button.nav-action-link {
     }
 
     .home-products--novo .home-product-carousel,
-    .home-products--izdvojeno .home-product-carousel {
+    .home-products--izdvojeno .home-product-carousel,
+    .home-products--brand-showcase .home-product-carousel {
         padding: 0;
         width: 100%;
         min-height: 0;
@@ -10639,12 +10660,17 @@ button.nav-action-link {
     }
 
     .home-brand-strip-section {
-        padding: 28px 24px 12px;
+        padding: 28px 0 12px;
     }
 
     .home-brand-strip-section + .home-products--novo {
         padding-top: 36px;
         margin-top: 4px;
+    }
+
+    .home-product-carousel.home-brand-carousel,
+    .home-products--brand-showcase .home-product-carousel--no-arrows {
+        padding: 0 calc(var(--home-product-inset) + 40px);
     }
 
     .home-product-catalog .product-grid,
@@ -11575,6 +11601,8 @@ button.nav-action-link {
     .home-brand-strip-section {
         padding-top: 16px;
         padding-bottom: 8px;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .home-brand-strip-section + .home-products.home-products--novo {
@@ -11582,8 +11610,11 @@ button.nav-action-link {
         margin-top: 4px;
     }
 
-    .home-brand-carousel .home-product-carousel__btn {
-        display: none;
+    /* Kao Noviteti/Izdvojeni na mobitelu: full width, bez bočnih strelica */
+    .home-product-carousel.home-brand-carousel,
+    .home-products--brand-showcase .home-product-carousel--no-arrows {
+        padding: 0;
+        width: 100%;
     }
 
     .product-detail-content {
@@ -11737,7 +11768,7 @@ button.nav-action-link {
     }
 
     .home-brand-strip-section {
-        padding: 12px 16px 8px;
+        padding: 12px 0 8px;
     }
 
     .home-brand-strip-section + .home-products.home-products--novo {

@@ -871,12 +871,13 @@ document.addEventListener('DOMContentLoaded', () => {
             root.addEventListener('focusin', () => clearInterval(autoplayTimer));
             root.addEventListener('focusout', startAutoplay);
 
-            // Swipe prstom lijevo/desno — radi i preko <a> (brend logo / kartice)
+            // Swipe prstom / drag mišem lijevo/desno — radi i preko <a> (brend logo / kartice)
             let touchStartX = 0;
             let touchStartY = 0;
             let touchActive = false;
             let didSwipe = false;
             const SWIPE_MIN = 36;
+            const noArrows = root.classList.contains('home-product-carousel--no-arrows');
 
             function suppressNextClick() {
                 const onClick = (ev) => {
@@ -888,6 +889,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.setTimeout(() => {
                     viewport.removeEventListener('click', onClick, true);
                 }, 450);
+            }
+
+            function stepFromDelta(dx) {
+                // lijevo prevuci (dx > 0) → sljedeći; desno → prethodni
+                if (dx > 0) {
+                    if (index >= maxIndex()) goTo(0, { animate: false });
+                    else goTo(index + 1);
+                } else {
+                    if (index <= 0) goTo(maxIndex(), { animate: false });
+                    else goTo(index - 1);
+                }
+                resetAutoplay();
             }
 
             viewport.addEventListener('touchstart', (e) => {
@@ -923,15 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dx = touchStartX - t.clientX;
                 const dy = touchStartY - t.clientY;
                 if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
-                // lijevo prevuci (dx > 0) → sljedeći; desno → prethodni
-                if (dx > 0) {
-                    if (index >= maxIndex()) goTo(0, { animate: false });
-                    else goTo(index + 1);
-                } else {
-                    if (index <= 0) goTo(maxIndex(), { animate: false });
-                    else goTo(index - 1);
-                }
-                resetAutoplay();
+                stepFromDelta(dx);
                 didSwipe = true;
                 suppressNextClick();
             }, { passive: true });
@@ -939,6 +944,63 @@ document.addEventListener('DOMContentLoaded', () => {
             viewport.addEventListener('touchcancel', () => {
                 touchActive = false;
             }, { passive: true });
+
+            // Desktop: ručno prevlačenje (posebno korisno bez strelica)
+            let pointerActive = false;
+            let pointerStartX = 0;
+            let pointerStartY = 0;
+            let pointerDidDrag = false;
+
+            viewport.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                if (e.button !== 0) return;
+                if (e.target && e.target.closest('button, [data-catalog-add], .catalog-variation-modal')) {
+                    return;
+                }
+                pointerActive = true;
+                pointerDidDrag = false;
+                pointerStartX = e.clientX;
+                pointerStartY = e.clientY;
+                root.classList.add('is-dragging');
+                try {
+                    viewport.setPointerCapture(e.pointerId);
+                } catch (_) { /* ignore */ }
+            });
+
+            viewport.addEventListener('pointermove', (e) => {
+                if (!pointerActive) return;
+                const dx = e.clientX - pointerStartX;
+                const dy = e.clientY - pointerStartY;
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_MIN) {
+                    pointerDidDrag = true;
+                }
+            });
+
+            function endPointerDrag(e) {
+                if (!pointerActive) return;
+                pointerActive = false;
+                root.classList.remove('is-dragging');
+                try {
+                    viewport.releasePointerCapture(e.pointerId);
+                } catch (_) { /* ignore */ }
+                if (!pointerDidDrag) return;
+                const dx = pointerStartX - e.clientX;
+                const dy = pointerStartY - e.clientY;
+                if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
+                stepFromDelta(dx);
+                suppressNextClick();
+            }
+
+            viewport.addEventListener('pointerup', endPointerDrag);
+            viewport.addEventListener('pointercancel', () => {
+                pointerActive = false;
+                root.classList.remove('is-dragging');
+            });
+
+            // Bez strelica: i dalje autoplay, ali miš na hover pauzira (već postoji)
+            if (noArrows) {
+                root.classList.add('home-product-carousel--manual-friendly');
+            }
 
             window.addEventListener('resize', updateLayout);
             updateLayout();

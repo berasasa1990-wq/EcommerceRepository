@@ -1,10 +1,6 @@
 {% if brands %}
-<div class="home-product-carousel home-brand-carousel" data-visible-desktop="8" data-visible-mobile="4" data-autoplay-ms="4500">
-    <button type="button" class="home-product-carousel__btn home-product-carousel__btn--prev" aria-label="Prethodni brendovi" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <polyline points="15 18 9 12 15 6"/>
-        </svg>
-    </button>
+{# Ista širina kao Noviteti / Izdvojeni — bez strelica, ručni swipe/drag #}
+<div class="home-product-carousel home-brand-carousel home-product-carousel--no-arrows" data-visible-desktop="8" data-visible-mobile="4" data-autoplay-ms="4500">
     <div class="home-product-carousel__viewport">
         <div class="home-product-carousel__track">
             {% for brand in brands %}
@@ -18,10 +14,5 @@
             {% endfor %}
         </div>
     </div>
-    <button type="button" class="home-product-carousel__btn home-product-carousel__btn--next" aria-label="Sljedeći brendovi">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <polyline points="9 18 15 12 9 6"/>
-        </svg>
-    </button>
 </div>
 {% endif %}
