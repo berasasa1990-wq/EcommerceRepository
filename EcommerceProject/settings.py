@@ -357,6 +357,17 @@ ODOO_DB = _env('ODOO_DB', '')
 ODOO_USERNAME = _env('ODOO_USERNAME', '')
 ODOO_API_KEY = _env('ODOO_API_KEY', '')
 
+# xAI / SpaceXAI — pametna pretraga artikala (opciono; bez ključa radi lokalni rječnik sinonima)
+XAI_API_KEY = _env('XAI_API_KEY', '')
+XAI_API_BASE = _env('XAI_API_BASE', 'https://api.x.ai/v1').rstrip('/')
+XAI_MODEL = _env('XAI_MODEL', 'grok-4-1-fast-non-reasoning')
+XAI_SEARCH_MODEL = _env('XAI_SEARCH_MODEL', XAI_MODEL)
+XAI_SEARCH_TIMEOUT = float(_env('XAI_SEARCH_TIMEOUT', '2.5') or '2.5')
+# True = lokalni sinonimi + LLM proširenje ako postoji XAI_API_KEY
+PRODUCT_SEARCH_AI_ENABLED = _env('PRODUCT_SEARCH_AI_ENABLED', 'true').lower() in (
+    'true', '1', 'yes',
+)
+
 # Cloudflare Turnstile (https://developers.cloudflare.com/turnstile/)
 TURNSTILE_SITE_KEY = _env('TURNSTILE_SITE_KEY', '')
 TURNSTILE_SECRET_KEY = _env('TURNSTILE_SECRET_KEY', '')

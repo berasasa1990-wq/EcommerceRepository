@@ -489,16 +489,11 @@ def _showcase_brands():
 
 
 def _apply_search_filter(products_qs, query):
+    """Pametna pretraga: sinonimi (štap/prut/motka…), multi-token, opcioni xAI."""
     if not query:
         return products_qs
-    return products_qs.filter(
-        Q(naziv__icontains=query)
-        | Q(sifra__icontains=query)
-        | Q(tagovi__naziv__icontains=query)
-        | Q(varijacije__sifra__icontains=query)
-        | Q(kategorija__naziv__icontains=query)
-        | Q(kategorija__roditelj__naziv__icontains=query),
-    ).distinct()
+    from .product_search import apply_search
+    return apply_search(products_qs, query)
 
 
 def _product_lager_priority(product):
@@ -511,45 +506,21 @@ def _product_lager_priority(product):
 
 def _search_relevance_score(product, query):
     """Veći = bolje poklapanje (unutar već filtriranih rezultata)."""
-    q = (query or '').strip().lower()
-    if not q:
-        return 0
-    score = 0
-    name = (product.naziv or '').lower()
-    sifra = (product.sifra or '').lower()
-    tokens = [t for t in re.split(r'\s+', q) if t]
-
-    if sifra and (sifra == q or q in sifra):
-        score += 120
-    if name == q:
-        score += 100
-    elif name.startswith(q):
-        score += 80
-    elif q in name:
-        score += 50
-
-    for tok in tokens:
-        if tok in name:
-            score += 12
-        if sifra and tok in sifra:
-            score += 18
-
-    cat = getattr(product, 'kategorija', None)
-    if cat is not None:
-        cat_name = (getattr(cat, 'naziv', None) or '').lower()
-        if cat_name and (q in cat_name or any(t in cat_name for t in tokens)):
-            score += 20
-    return score
+    from .product_search import relevance_score
+    return relevance_score(product, query)
 
 
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
     Katalog / pretraga / kategorija:
-    1) Hit redukovanje lagera → Favorizuj → Normal
-    2) Unutar nivoa: cijena rastuće (jeftinije → skuplje), osim opadajuce.
+    1) Ako ima pretragu: relevance score (najbolji match prvo)
+    2) Hit redukovanje lagera → Favorizuj → Normal
+    3) Unutar nivoa: cijena rastuće (jeftinije → skuplje), osim opadajuce.
     """
     if not products:
         return products
+
+    q = (query or '').strip()
 
     def key(p):
         prio = _product_lager_priority(p)
@@ -558,11 +529,12 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
             price = float(_effective_product_price(p) or 0)
         except Exception:
             price = 0.0
+        rel = _search_relevance_score(p, q) if q else 0
         # Opadajuća: prioritet, pa skuplje → jeftinije
         if price_sort == 'opadajuca':
-            return (-prio, -price, name)
-        # Zadano + rastuća: prioritet, pa jeftinije → skuplje
-        return (-prio, price, name)
+            return (-rel, -prio, -price, name)
+        # Zadano + rastuća: relevance, prioritet, pa jeftinije → skuplje
+        return (-rel, -prio, price, name)
 
     return sorted(products, key=key)
 

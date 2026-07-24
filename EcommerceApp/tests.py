@@ -4,6 +4,13 @@ from django.test import SimpleTestCase, TestCase
 
 from .models import Product, ProductVariation
 from .pricing import _loyalty_osnovica_iz_korpe
+from .product_search import (
+    expand_token,
+    normalize_text,
+    term_matches_text,
+    concept_groups_for_query,
+    build_search_q,
+)
 
 
 class LoyaltyCouponPricingTests(SimpleTestCase):
@@ -45,6 +52,44 @@ class LoyaltyCouponPricingTests(SimpleTestCase):
             },
         ]
         self.assertEqual(_loyalty_osnovica_iz_korpe(cart_items), Decimal('20.00'))
+
+
+class ProductSmartSearchTests(SimpleTestCase):
+    """Pametna pretraga: sinonimi, dijakritici, soft word-boundary."""
+
+    def test_diacritics_normalize(self):
+        self.assertEqual(normalize_text('Štap'), 'stap')
+        self.assertEqual(normalize_text('mašinica'), 'masinica')
+
+    def test_rod_synonyms(self):
+        for word in ('prut', 'motka', 'štap', 'stap', 'rod'):
+            group = expand_token(word)
+            self.assertIn('stap', group)
+            self.assertIn('rod', group)
+
+    def test_reel_synonyms(self):
+        for word in ('rola', 'mašinica', 'masina', 'reel'):
+            group = expand_token(word)
+            self.assertIn('masinica', group)
+            self.assertIn('reel', group)
+
+    def test_carp_does_not_match_carpologija(self):
+        self.assertTrue(term_matches_text('carp', 'CLINE BLACK CARP 3.6M stap'))
+        self.assertFalse(term_matches_text('carp', 'Carpologija Lure Box'))
+
+    def test_stem_matches_category_plural(self):
+        self.assertTrue(term_matches_text('stap', 'saranski stapovi'))
+
+    def test_multi_concept_groups(self):
+        groups = concept_groups_for_query('šaran štap')
+        self.assertEqual(len(groups), 2)
+        flat = set().union(*groups)
+        self.assertIn('carp', flat)
+        self.assertIn('rod', flat)
+
+    def test_build_search_q_not_empty(self):
+        q = build_search_q('prut', use_llm=False)
+        self.assertTrue(bool(q))
 
 
 class ProductPakovanjeKatalogHintTests(TestCase):
