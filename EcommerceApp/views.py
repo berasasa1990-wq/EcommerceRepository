@@ -4908,6 +4908,84 @@ def staff_product_quick_edit(request, slug):
         tags = list(Tag.objects.filter(pk__in=tag_ids))
         product.tagovi.set(tags)
         messages.success(request, f'Tagovi ažurirani ({len(tags)}).')
+    elif action == 'activate_akcija':
+        # JSON: iz objave (Akcija) — postavi isti % popust + opcionalni rok
+        wants_json = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or 'application/json' in (request.headers.get('Accept') or '')
+        )
+
+        def _akcija_json(ok, message, **extra):
+            status = 200 if ok else 400
+            payload = {'ok': ok, 'message': message, **extra}
+            return JsonResponse(payload, status=status)
+
+        raw_pct = (request.POST.get('akcija_postotak') or request.POST.get('percent') or '').strip().replace(',', '.')
+        try:
+            pct = Decimal(raw_pct)
+        except (InvalidOperation, ValueError, TypeError):
+            msg = 'Unesi ispravan popust % (npr. 15 ili 20).'
+            if wants_json:
+                return _akcija_json(False, msg)
+            messages.error(request, msg)
+            return redirect('product_detail', slug=slug)
+        if pct <= 0 or pct >= 100:
+            msg = 'Popust mora biti između 0 i 100 %.'
+            if wants_json:
+                return _akcija_json(False, msg)
+            messages.error(request, msg)
+            return redirect('product_detail', slug=slug)
+
+        akcija_do = None
+        raw_days = (request.POST.get('akcija_dana') or request.POST.get('days') or '').strip()
+        raw_date = (request.POST.get('akcija_do') or '').strip()
+        if raw_date:
+            try:
+                from datetime import date as date_cls
+                akcija_do = date_cls.fromisoformat(raw_date)
+            except ValueError:
+                msg = 'Datum trajanja akcije nije ispravan (YYYY-MM-DD).'
+                if wants_json:
+                    return _akcija_json(False, msg)
+                messages.error(request, msg)
+                return redirect('product_detail', slug=slug)
+        elif raw_days:
+            try:
+                days = int(raw_days)
+            except (TypeError, ValueError):
+                days = 0
+            if days > 0:
+                from datetime import timedelta
+                akcija_do = timezone.localdate() + timedelta(days=days)
+
+        product.akcija_postotak = pct.quantize(Decimal('0.01'))
+        product.akcijska_cijena = None  # save() računa iz postotka
+        product.akcija_do = akcija_do
+        product.save()
+        # refresh computed sale price
+        product.refresh_from_db()
+        sale = product.akcijska_cijena or product.prikazna_cijena
+        if akcija_do:
+            msg = (
+                f'Akcija aktivirana na „{product.naziv}”: −{product.akcija_postotak}% '
+                f'({sale} KM), važi do {akcija_do.strftime("%d.%m.%Y.")}.'
+            )
+        else:
+            msg = (
+                f'Akcija aktivirana na „{product.naziv}”: −{product.akcija_postotak}% '
+                f'({sale} KM), bez roka.'
+            )
+        if wants_json:
+            return _akcija_json(
+                True,
+                msg,
+                akcija_postotak=str(product.akcija_postotak),
+                akcijska_cijena=str(sale),
+                akcija_do=akcija_do.isoformat() if akcija_do else None,
+                prikazna_cijena=str(product.prikazna_cijena),
+            )
+        messages.success(request, msg)
+        return redirect('product_detail', slug=slug)
     else:
         messages.error(request, 'Nepoznata akcija.')
     return redirect('product_detail', slug=slug)

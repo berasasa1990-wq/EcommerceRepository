@@ -66,6 +66,50 @@
         });
     }
 
+    /**
+     * Ponovo nacrta rub templatea PREKO artikla da bijela pozadina slike
+     * ne prekrije zelene mrlje. "Rupa" u sredini ostaje za artikal.
+     */
+    function compositeTemplateFrameOver(ctx, template, W, H, hole) {
+        if (!template) {
+            drawFrameSplashes(ctx, W, H);
+            return;
+        }
+        const off = document.createElement('canvas');
+        off.width = W;
+        off.height = H;
+        const octx = off.getContext('2d');
+        octx.drawImage(template, 0, 0, W, H);
+        // izreži središte (malo manje od hole da mrlje pređu preko rubova slike)
+        const padX = Math.max(8, Math.round((hole.w || 0) * 0.06));
+        const padY = Math.max(8, Math.round((hole.h || 0) * 0.06));
+        const hx = (hole.x || 0) + padX;
+        const hy = (hole.y || 0) + padY;
+        const hw = Math.max(40, (hole.w || W) - padX * 2);
+        const hh = Math.max(40, (hole.h || H) - padY * 2);
+        octx.globalCompositeOperation = 'destination-out';
+        octx.fillStyle = '#000';
+        // blago zaobljeni cutout
+        const r = 24;
+        octx.beginPath();
+        octx.moveTo(hx + r, hy);
+        octx.arcTo(hx + hw, hy, hx + hw, hy + hh, r);
+        octx.arcTo(hx + hw, hy + hh, hx, hy + hh, r);
+        octx.arcTo(hx, hy + hh, hx, hy, r);
+        octx.arcTo(hx, hy, hx + hw, hy, r);
+        octx.closePath();
+        octx.fill();
+        octx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(off, 0, 0);
+    }
+
+    function getCsrfToken() {
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        if (match) return decodeURIComponent(match[1]);
+        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        return input && input.value ? input.value : '';
+    }
+
     function wrapText(ctx, text, maxWidth) {
         const words = String(text || '').split(/\s+/).filter(Boolean);
         const lines = [];
@@ -456,10 +500,9 @@
             ctx.fillText('AKCIJA PONUDA', W / 2, 90);
         }
 
-        // --- Naziv artikla (iznad praznog polja / ispod headera) ---
+        // --- Artikal prvo (naziv ide POSLIJE frame overlay-a da ne nestane) ---
         const nameUpper = String(name || 'ARTIKAL').toUpperCase();
         ctx.font = '900 26px "Segoe UI", Inter, system-ui, sans-serif';
-        // do 3 linije za duža imena
         const nameLines3 = (() => {
             const words = String(nameUpper || '').split(/\s+/).filter(Boolean);
             const lines = [];
@@ -477,11 +520,39 @@
             if (line) lines.push(line);
             return lines.slice(0, 3);
         })();
-        const nameY0 = 172;
+        const nameY0 = 198;
         const lineH = 30;
+        const nameExtra = (nameLines3.length - 1) * 12;
+        const imgBox = {
+            x: 100,
+            y: 255 + nameExtra,
+            w: 600,
+            h: 340 - nameExtra,
+        };
+        const img = await loadImage(imageUrl);
+        let drawnImgRect = { ...imgBox };
+        if (img) {
+            const scale = Math.min(imgBox.w / img.naturalWidth, imgBox.h / img.naturalHeight) * 0.98;
+            const dw = img.naturalWidth * scale;
+            const dh = img.naturalHeight * scale;
+            const dx = imgBox.x + (imgBox.w - dw) / 2;
+            const dy = imgBox.y + (imgBox.h - dh) / 2;
+            ctx.drawImage(img, dx, dy, dw, dh);
+            drawnImgRect = { x: dx, y: dy, w: dw, h: dh };
+        } else {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '600 18px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Nema slike artikla', W / 2, imgBox.y + imgBox.h / 2);
+        }
+
+        // Mrlje / template rub PREKO bijele pozadine artikla
+        compositeTemplateFrameOver(ctx, template, W, H, drawnImgRect);
+
+        // Naziv (iznad artikla, poslije frame-a)
         const blockH = nameLines3.length * lineH + 12;
         ctx.save();
-        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
         roundRect(ctx, W * 0.12, nameY0 - 20, W * 0.76, blockH, 10);
         ctx.fill();
         ctx.restore();
@@ -492,30 +563,6 @@
         nameLines3.forEach((line, i) => {
             ctx.fillText(line, W / 2, nameY0 + i * lineH);
         });
-
-        // --- Artikal u središnjem praznom polju (malo veći) ---
-        const nameExtra = (nameLines3.length - 1) * 12;
-        const imgBox = {
-            x: 100,
-            y: 235 + nameExtra,
-            w: 600,
-            h: 360 - nameExtra,
-        };
-        const img = await loadImage(imageUrl);
-        if (img) {
-            // skoro puni box — veći artikal u kadru
-            const scale = Math.min(imgBox.w / img.naturalWidth, imgBox.h / img.naturalHeight) * 0.98;
-            const dw = img.naturalWidth * scale;
-            const dh = img.naturalHeight * scale;
-            const dx = imgBox.x + (imgBox.w - dw) / 2;
-            const dy = imgBox.y + (imgBox.h - dh) / 2;
-            ctx.drawImage(img, dx, dy, dw, dh);
-        } else {
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '600 18px "Segoe UI", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Nema slike artikla', W / 2, imgBox.y + imgBox.h / 2);
-        }
 
         // --- % sa lijeve i desne strane (preko template krugova) ---
         function drawPctBadge(cx, cy, r) {
@@ -645,7 +692,7 @@
             ctx.fillText('PONUDA', W / 2, 120);
         }
 
-        // --- Naziv ispod NOVO PONUDA ---
+        // --- Veliki artikal u sredini; naziv + cijena poslije frame overlay-a ---
         const nameUpper = String(name || 'ARTIKAL').toUpperCase();
         ctx.font = '900 26px "Segoe UI", Inter, system-ui, sans-serif';
         const nameLines = (() => {
@@ -666,37 +713,17 @@
             return lines.slice(0, 3);
         })();
 
-        const nameY0 = 168;
+        const nameY0 = 194;
         const lineH = 30;
-        const blockH = nameLines.length * lineH + 14;
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        roundRect(ctx, W * 0.1, nameY0 - 20, W * 0.8, blockH, 12);
-        ctx.fill();
-        // tanki zeleni rub
-        ctx.strokeStyle = hexAlpha(GREEN, 0.45);
-        ctx.lineWidth = 2;
-        roundRect(ctx, W * 0.1, nameY0 - 20, W * 0.8, blockH, 12);
-        ctx.stroke();
-        ctx.restore();
-
-        ctx.fillStyle = BLACK;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '900 25px "Segoe UI", Inter, system-ui, sans-serif';
-        nameLines.forEach((line, i) => {
-            ctx.fillText(line, W / 2, nameY0 + i * lineH);
-        });
-
-        // --- Veliki artikal u sredini (nema % sa strana — puni prostor) ---
         const nameExtra = (nameLines.length - 1) * 12;
         const imgBox = {
             x: 70,
-            y: 230 + nameExtra,
+            y: 250 + nameExtra,
             w: 660,
-            h: 390 - nameExtra,
+            h: 370 - nameExtra,
         };
         const img = await loadImage(imageUrl);
+        let drawnImgRect = { ...imgBox };
         if (img) {
             const scale = Math.min(imgBox.w / img.naturalWidth, imgBox.h / img.naturalHeight) * 0.98;
             const dw = img.naturalWidth * scale;
@@ -704,12 +731,35 @@
             const dx = imgBox.x + (imgBox.w - dw) / 2;
             const dy = imgBox.y + (imgBox.h - dh) / 2;
             ctx.drawImage(img, dx, dy, dw, dh);
+            drawnImgRect = { x: dx, y: dy, w: dw, h: dh };
         } else {
             ctx.fillStyle = '#94a3b8';
             ctx.font = '600 18px "Segoe UI", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('Nema slike artikla', W / 2, imgBox.y + imgBox.h / 2);
         }
+
+        // Mrlje / template rub PREKO bijele pozadine artikla
+        compositeTemplateFrameOver(ctx, template, W, H, drawnImgRect);
+
+        // Naziv ispod NOVO PONUDA
+        const blockH = nameLines.length * lineH + 14;
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        roundRect(ctx, W * 0.1, nameY0 - 20, W * 0.8, blockH, 12);
+        ctx.fill();
+        ctx.strokeStyle = hexAlpha(GREEN, 0.45);
+        ctx.lineWidth = 2;
+        roundRect(ctx, W * 0.1, nameY0 - 20, W * 0.8, blockH, 12);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = BLACK;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '900 25px "Segoe UI", Inter, system-ui, sans-serif';
+        nameLines.forEach((line, i) => {
+            ctx.fillText(line, W / 2, nameY0 + i * lineH);
+        });
 
         // --- Iznos ispod template natpisa CIJENA (čitljiva "kartica") ---
         const priceText = formatPrice(basePrice);
@@ -960,6 +1010,10 @@
         const downloadLink = $('staffObjavaDownload');
         const canvas = $('staffObjavaCanvas');
         const status = $('staffObjavaStatus');
+        const activateWrap = $('staffObjavaActivateWrap');
+        const activateBtn = $('staffObjavaActivate');
+        const daysInput = $('staffObjavaDays');
+        const untilInput = $('staffObjavaUntil');
 
         const productName = btn.dataset.productName || 'Artikal';
         const productSlug = btn.dataset.productSlug || 'artikal';
@@ -967,16 +1021,21 @@
         const imageUrl = btn.dataset.productImage || '';
         const akcijaTemplateUrl = btn.dataset.akcijaTemplate || '/static/img/objava-akcija-template-800.png';
         const regularTemplateUrl = btn.dataset.regularTemplate || '/static/img/objava-regular-template-800.png';
+        const activateUrl = btn.dataset.activateUrl || '';
+        let lastGeneratedPct = null;
 
         function currentMode() {
             if (modeRegular && modeRegular.checked) return 'regularno';
             return 'akcija';
         }
 
+        function setActivateVisible(show) {
+            if (activateWrap) activateWrap.hidden = !show;
+        }
+
         function syncModeUi() {
             const mode = currentMode();
             const isAkcija = mode === 'akcija';
-            // % samo za Akciju — Regularno nema popust / % badge
             if (pctField) pctField.hidden = !isAkcija;
             if (pctReq) {
                 pctReq.textContent = isAkcija ? '(obavezno za akciju)' : '';
@@ -986,6 +1045,14 @@
                 pctInput.required = isAkcija;
                 if (!isAkcija) pctInput.value = '';
             }
+            if (!isAkcija) {
+                setActivateVisible(false);
+                lastGeneratedPct = null;
+            } else if (lastGeneratedPct != null) {
+                setActivateVisible(true);
+            } else {
+                setActivateVisible(false);
+            }
         }
 
         function open() {
@@ -993,7 +1060,11 @@
             document.body.classList.add('popup-open');
             if (modeAkcija) modeAkcija.checked = true;
             if (pctInput) pctInput.value = '';
+            if (daysInput) daysInput.value = '';
+            if (untilInput) untilInput.value = '';
             if (downloadLink) downloadLink.hidden = true;
+            lastGeneratedPct = null;
+            setActivateVisible(false);
             if (status) {
                 status.hidden = true;
                 status.textContent = '';
@@ -1034,6 +1105,8 @@
                     status.hidden = false;
                     status.textContent = 'Za Akciju unesi popust % (npr. 15 ili 20).';
                 }
+                setActivateVisible(false);
+                lastGeneratedPct = null;
                 pctInput && pctInput.focus();
                 return;
             }
@@ -1070,10 +1143,16 @@
                     downloadLink.hidden = false;
                     downloadLink.textContent = 'Preuzmi PNG 800×800';
                 }
-                if (status) {
-                    if (mode === 'akcija') {
-                        status.textContent = `Spremno — Akcija −${percent}% (template, % sa strana, cijene).`;
-                    } else {
+                if (mode === 'akcija') {
+                    lastGeneratedPct = percent;
+                    setActivateVisible(true);
+                    if (status) {
+                        status.textContent = `Spremno — Akcija −${percent}%. Možeš preuzeti PNG ili aktivirati akciju na artiklu.`;
+                    }
+                } else {
+                    lastGeneratedPct = null;
+                    setActivateVisible(false);
+                    if (status) {
                         status.textContent = 'Spremno — NOVO PONUDA (naziv, veliki artikal, cijena — bez %).';
                     }
                 }
@@ -1082,6 +1161,68 @@
                 console.error(err);
             } finally {
                 if (genBtn) genBtn.disabled = false;
+            }
+        }
+
+        async function activateAkcija() {
+            if (!activateUrl) {
+                if (status) {
+                    status.hidden = false;
+                    status.textContent = 'Nedostaje URL za aktivaciju akcije.';
+                }
+                return;
+            }
+            const percent = parsePct() != null ? parsePct() : lastGeneratedPct;
+            if (percent == null) {
+                if (status) {
+                    status.hidden = false;
+                    status.textContent = 'Unesi popust % pa generiši preview.';
+                }
+                return;
+            }
+            const body = new URLSearchParams();
+            body.set('action', 'activate_akcija');
+            body.set('akcija_postotak', String(percent));
+            body.set('csrfmiddlewaretoken', getCsrfToken());
+            const daysRaw = ((daysInput && daysInput.value) || '').trim();
+            const untilRaw = ((untilInput && untilInput.value) || '').trim();
+            if (untilRaw) {
+                body.set('akcija_do', untilRaw);
+            } else if (daysRaw) {
+                body.set('akcija_dana', daysRaw);
+            }
+
+            if (activateBtn) activateBtn.disabled = true;
+            if (status) {
+                status.hidden = false;
+                status.textContent = 'Aktiviram akciju na artiklu…';
+            }
+            try {
+                const res = await fetch(activateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        Accept: 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: body.toString(),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    throw new Error(data.message || 'Aktivacija akcije nije uspjela.');
+                }
+                if (status) status.textContent = data.message || 'Akcija aktivirana.';
+                // osvježi cijene na stranici nakon kratke pauze
+                window.setTimeout(() => {
+                    window.location.reload();
+                }, 900);
+            } catch (err) {
+                if (status) status.textContent = err.message || 'Greška pri aktivaciji.';
+                console.error(err);
+            } finally {
+                if (activateBtn) activateBtn.disabled = false;
             }
         }
 
@@ -1097,6 +1238,7 @@
             if (e.key === 'Escape' && !overlay.hidden) close();
         });
         genBtn && genBtn.addEventListener('click', generate);
+        activateBtn && activateBtn.addEventListener('click', activateAkcija);
         pctInput && pctInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -1105,6 +1247,15 @@
         });
         modeAkcija && modeAkcija.addEventListener('change', syncModeUi);
         modeRegular && modeRegular.addEventListener('change', syncModeUi);
+        // Ako se unese datum, očisti “dana” i obrnuto radi jasnog izbora
+        if (daysInput && untilInput) {
+            daysInput.addEventListener('input', () => {
+                if (daysInput.value) untilInput.value = '';
+            });
+            untilInput.addEventListener('input', () => {
+                if (untilInput.value) daysInput.value = '';
+            });
+        }
         syncModeUi();
     }
 

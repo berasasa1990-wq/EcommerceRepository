@@ -4525,6 +4525,70 @@ body.catalog-variation-modal-open {
     display: none !important;
 }
 
+.staff-objava-akcija-activate {
+    margin: 0 0 14px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(225, 29, 72, 0.28);
+    background: #fff5f7;
+}
+
+.staff-objava-akcija-activate[hidden] {
+    display: none !important;
+}
+
+.staff-objava-duration {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.staff-objava-duration input[type="number"],
+.staff-objava-duration input[type="date"] {
+    flex: 1 1 120px;
+    min-height: 42px;
+    padding: 8px 10px;
+    border: 1.5px solid rgba(91, 184, 5, 0.35);
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.staff-objava-duration__or {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.staff-objava-duration__hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.staff-objava-activate-btn {
+    width: 100%;
+    margin-top: 4px;
+    background: #e11d48 !important;
+    color: #fff !important;
+    border: none !important;
+    font-weight: 800 !important;
+}
+
+.staff-objava-activate-btn:hover {
+    background: #be123c !important;
+}
+
+.staff-objava-activate-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
 .staff-objava-modal__field input {
     width: 100%;
     min-height: 44px;

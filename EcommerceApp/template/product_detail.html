@@ -127,6 +127,7 @@
                             data-product-image="{% if product.prikazna_slika %}{{ product.prikazna_slika.url }}{% endif %}"
                             data-akcija-template="{% static 'img/objava-akcija-template-800.png' %}"
                             data-regular-template="{% static 'img/objava-regular-template-800.png' %}"
+                            data-activate-url="{% url 'staff_product_quick_edit' product.slug %}"
                             title="Generiši sliku 800×800 za objavu (Akcija / Regularno)">
                         Objava
                     </button>
@@ -172,6 +173,20 @@
                             <span>Popust % <em id="staffObjavaPctReq">(obavezno za akciju)</em></span>
                             <input type="number" id="staffObjavaPct" min="0.01" max="99.99" step="0.01" inputmode="decimal" placeholder="npr. 20">
                         </label>
+                        <div class="staff-objava-akcija-activate" id="staffObjavaActivateWrap" hidden>
+                            <label class="staff-objava-modal__field">
+                                <span>Trajanje akcije (opcionalno)</span>
+                                <div class="staff-objava-duration">
+                                    <input type="number" id="staffObjavaDays" min="1" max="365" step="1" inputmode="numeric" placeholder="dana (npr. 7)">
+                                    <span class="staff-objava-duration__or">ili</span>
+                                    <input type="date" id="staffObjavaUntil" aria-label="Akcija važi do">
+                                </div>
+                                <small class="staff-objava-duration__hint">Prazno = akcija bez roka. Isti % kao u previewu.</small>
+                            </label>
+                            <button type="button" class="btn btn-sm staff-product-btn staff-objava-activate-btn" id="staffObjavaActivate">
+                                Aktiviraj akciju na artiklu
+                            </button>
+                        </div>
                         <div class="staff-objava-modal__actions">
                             <button type="button" class="btn btn-sm staff-product-btn" id="staffObjavaGenerate">Generiši preview</button>
                             <a class="btn btn-sm staff-product-btn staff-objava-btn--download" id="staffObjavaDownload" hidden download>Preuzmi PNG</a>
@@ -543,7 +558,7 @@
 {% block extra_js %}
 <script src="{% static 'js/product-detail.min.js' %}?v=20260722v13" defer></script>
 {% if staff_product_tools %}
-<script src="{% static 'js/staff-product-objava.js' %}?v=20260725v3" defer></script>
+<script src="{% static 'js/staff-product-objava.js' %}?v=20260725v5" defer></script>
 {% endif %}
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
