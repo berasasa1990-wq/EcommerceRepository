@@ -126,6 +126,7 @@
                             data-product-price="{{ product.cijena }}"
                             data-product-image="{% if product.prikazna_slika %}{{ product.prikazna_slika.url }}{% endif %}"
                             data-akcija-template="{% static 'img/objava-akcija-template-800.png' %}"
+                            data-regular-template="{% static 'img/objava-regular-template-800.png' %}"
                             title="Generiši sliku 800×800 za objavu (Akcija / Regularno)">
                         Objava
                     </button>
@@ -153,8 +154,9 @@
                             <button type="button" class="staff-objava-modal__close" id="staffObjavaClose" aria-label="Zatvori">×</button>
                         </div>
                         <p class="staff-objava-modal__hint">
-                            Izaberi tip objave. <strong>Akcija</strong> koristi uploadovani template (artikal u sredini, % sa strana, cijene na dnu).
-                            <strong>Regularno</strong> je klasična promo slika. Izlaz: <strong>800×800</strong> PNG.
+                            <strong>Akcija</strong> — template s popustom % (strane + precrtana/crvena cijena).
+                            <strong>Regularno</strong> — NOVO PONUDA (naziv, veliki artikal, cijena ispod, bez %).
+                            Izlaz: <strong>800×800</strong> PNG.
                         </p>
                         <div class="staff-objava-mode" role="radiogroup" aria-label="Tip objave">
                             <label class="staff-objava-mode__opt">
@@ -541,7 +543,7 @@
 {% block extra_js %}
 <script src="{% static 'js/product-detail.min.js' %}?v=20260722v13" defer></script>
 {% if staff_product_tools %}
-<script src="{% static 'js/staff-product-objava.js' %}?v=20260725v2" defer></script>
+<script src="{% static 'js/staff-product-objava.js' %}?v=20260725v3" defer></script>
 {% endif %}
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
