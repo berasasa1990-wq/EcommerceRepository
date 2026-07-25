@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260725v6" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260725v6">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260725v10" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260725v10">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -401,7 +401,9 @@
             var root = document.documentElement;
             var promo = document.querySelector('.promo-bar');
             var header = document.getElementById('header');
+            var shell = header ? header.querySelector('.header-shell') : null;
             var primary = header ? header.querySelector('.header-row--primary') : null;
+            var categories = header ? header.querySelector('.header-row--categories') : null;
 
             // Edit banner uklonjen — ne pomiči header
             var staffH = 0;
@@ -419,9 +421,16 @@
 
             var headerH = 56;
             if (isVisible(header)) {
-                // Samo primarni red (logo/meni/search) — ne uključuj zatvoreni meni panel
-                if (primary) {
-                    headerH = Math.max(48, Math.round(primary.offsetHeight) || 56);
+                // Cijeli shell (logo red + kategorije) — bez mega-menu panela
+                // Prije se mjerio samo primary → baner je ulazio ispod nav reda i izgledao isječen
+                if (shell) {
+                    headerH = Math.max(48, Math.round(shell.getBoundingClientRect().height) || shell.offsetHeight || 56);
+                } else if (primary) {
+                    var primaryH = Math.round(primary.offsetHeight) || 56;
+                    var catH = (categories && isVisible(categories))
+                        ? (Math.round(categories.offsetHeight) || 0)
+                        : 0;
+                    headerH = Math.max(48, primaryH + catH);
                 } else {
                     headerH = Math.max(48, Math.round(header.offsetHeight) || 56);
                 }
@@ -441,7 +450,10 @@
                         Math.max(promoH, promoBottom - staffH) + 'px'
                     );
                     void header.offsetHeight;
-                    if (primary) {
+                    if (shell) {
+                        headerH = Math.max(48, Math.round(shell.getBoundingClientRect().height) || headerH);
+                        root.style.setProperty('--header-height', headerH + 'px');
+                    } else if (primary) {
                         headerH = Math.max(48, Math.round(primary.offsetHeight) || headerH);
                         root.style.setProperty('--header-height', headerH + 'px');
                     }
@@ -467,10 +479,14 @@
                 var ro = new ResizeObserver(function () { syncSiteChromeOffset(); });
                 var h = document.getElementById('header');
                 var p = document.querySelector('.promo-bar');
+                var shellEl = h && h.querySelector('.header-shell');
                 var primary = h && h.querySelector('.header-row--primary');
+                var cats = h && h.querySelector('.header-row--categories');
                 if (h) ro.observe(h);
                 if (p) ro.observe(p);
+                if (shellEl) ro.observe(shellEl);
                 if (primary) ro.observe(primary);
+                if (cats) ro.observe(cats);
             } catch (e) {}
         }
     })();
