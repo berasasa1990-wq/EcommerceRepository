@@ -493,17 +493,18 @@
             ctx.fillText(line, W / 2, nameY0 + i * lineH);
         });
 
-        // --- Artikal u središnjem praznom polju ---
-        const nameExtra = (nameLines3.length - 1) * 14;
+        // --- Artikal u središnjem praznom polju (malo veći) ---
+        const nameExtra = (nameLines3.length - 1) * 12;
         const imgBox = {
-            x: 140,
-            y: 255 + nameExtra,
-            w: 520,
-            h: 300 - nameExtra,
+            x: 100,
+            y: 235 + nameExtra,
+            w: 600,
+            h: 360 - nameExtra,
         };
         const img = await loadImage(imageUrl);
         if (img) {
-            const scale = Math.min(imgBox.w / img.naturalWidth, imgBox.h / img.naturalHeight) * 0.92;
+            // skoro puni box — veći artikal u kadru
+            const scale = Math.min(imgBox.w / img.naturalWidth, imgBox.h / img.naturalHeight) * 0.98;
             const dw = img.naturalWidth * scale;
             const dh = img.naturalHeight * scale;
             const dx = imgBox.x + (imgBox.w - dw) / 2;
@@ -533,7 +534,6 @@
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            // npr. −20%
             const label = `−${pctLabel}%`;
             ctx.font = pctLabel.length > 2
                 ? '900 28px Impact, "Arial Black", "Segoe UI", sans-serif'
@@ -541,45 +541,81 @@
             ctx.fillText(label, cx, cy + 1);
             ctx.restore();
         }
-        // pozicije prilagođene templateu 800×800
         drawPctBadge(78, 520, 52);
         drawPctBadge(722, 500, 52);
 
-        // --- Cijene na dnu (gdje piše CIJENA) ---
-        // prekrij "CIJENA" badge i iscrtaj precrtanu redovnu + crvenu akcijsku
-        const priceY = 718;
+        // --- Cijene na dnu ---
+        // CIJENA natpis iznad; ispod: stara precrtana + pored veća crvena akcijska
+        const priceBlockY = 700;
+        const oldText = formatPrice(basePrice);
+        const saleText = formatPrice(salePrice);
+
+        // bijela podloga da se stari "CIJENA" iz templatea ne vidi
         ctx.save();
-        // zeleni brush iza cijena (u duhu templatea)
-        greenBrush(ctx, W * 0.22, priceY - 8, W * 0.56, 52);
+        ctx.fillStyle = 'rgba(255,255,255,0.94)';
+        roundRect(ctx, W * 0.12, priceBlockY - 36, W * 0.76, 118, 14);
+        ctx.fill();
         ctx.restore();
 
-        // precrtana redovna iznad
+        // Natpis CIJENA (iznad brojeva)
         ctx.save();
+        greenBrush(ctx, W / 2 - 110, priceBlockY - 28, 220, 36);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 22px "Segoe UI", Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = '700 24px "Segoe UI", Inter, system-ui, sans-serif';
-        const oldText = formatPrice(basePrice);
-        ctx.fillText(oldText, W / 2, priceY - 28);
-        const ow = ctx.measureText(oldText).width;
+        ctx.fillText('CIJENA', W / 2, priceBlockY - 8);
+        ctx.restore();
+
+        // Red cijena: stara precrtana | akcijska veća i upečatljiva
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const rowY = priceBlockY + 48;
+
+        ctx.font = '700 26px "Segoe UI", Inter, system-ui, sans-serif';
+        const oldW = ctx.measureText(oldText).width;
+        ctx.font = '900 52px Impact, "Arial Black", "Segoe UI", sans-serif';
+        const saleW = ctx.measureText(saleText).width;
+        const gap = 22;
+        const totalW = oldW + gap + saleW;
+        let x = W / 2 - totalW / 2;
+
+        // stara precrtana (manja, siva)
+        ctx.font = '700 26px "Segoe UI", Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(oldText, x, rowY);
         ctx.strokeStyle = RED;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3.2;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(W / 2 - ow / 2 - 8, priceY - 20);
-        ctx.lineTo(W / 2 + ow / 2 + 8, priceY - 36);
+        ctx.moveTo(x - 4, rowY + 8);
+        ctx.lineTo(x + oldW + 4, rowY - 10);
         ctx.stroke();
-        ctx.restore();
+        x += oldW + gap;
 
-        // crvena bold akcijska (umjesto "CIJENA")
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        // akcijska — crvena, velika, bold, sa blagom sjenom
+        ctx.font = '900 52px Impact, "Arial Black", "Segoe UI", sans-serif';
+        ctx.shadowColor = 'rgba(225, 29, 72, 0.35)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
         ctx.fillStyle = RED;
-        ctx.font = '900 46px Impact, "Arial Black", "Segoe UI", sans-serif';
-        ctx.shadowColor = 'rgba(0,0,0,0.15)';
-        ctx.shadowBlur = 4;
-        ctx.fillText(formatPrice(salePrice), W / 2, priceY + 18);
+        ctx.fillText(saleText, x, rowY);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // mali "AKCIJA" chip pored/ ispod da se odmah vidi
+        const chipX = x + saleW / 2;
+        const chipY = rowY + 36;
+        ctx.font = '900 12px "Segoe UI", Inter, system-ui, sans-serif';
+        const chipText = 'AKCIJSKA CIJENA';
+        const chipW = ctx.measureText(chipText).width + 16;
+        roundRect(ctx, chipX - chipW / 2, chipY - 10, chipW, 20, 10);
+        ctx.fillStyle = RED;
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(chipText, chipX, chipY + 1);
         ctx.restore();
     }
 
