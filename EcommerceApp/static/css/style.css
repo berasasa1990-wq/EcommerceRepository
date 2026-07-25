@@ -4467,6 +4467,43 @@ body.catalog-variation-modal-open {
     color: #4b5563;
 }
 
+.staff-objava-mode {
+    display: flex;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.staff-objava-mode__opt {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1.5px solid rgba(91, 184, 5, 0.35);
+    border-radius: 10px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.staff-objava-mode__opt:has(input:checked) {
+    border-color: #5BB805;
+    background: #f3fce9;
+    box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.18);
+}
+
+.staff-objava-mode__opt input {
+    width: 16px;
+    height: 16px;
+    accent-color: #5BB805;
+}
+
 .staff-objava-modal__field {
     display: flex;
     flex-direction: column;
@@ -4475,6 +4512,17 @@ body.catalog-variation-modal-open {
     font-size: 13px;
     font-weight: 600;
     color: #334155;
+}
+
+.staff-objava-modal__field em {
+    font-style: normal;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.staff-objava-modal__field[hidden] {
+    display: none !important;
 }
 
 .staff-objava-modal__field input {
