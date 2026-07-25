@@ -1012,7 +1012,7 @@
         const status = $('staffObjavaStatus');
         const activateWrap = $('staffObjavaActivateWrap');
         const activateBtn = $('staffObjavaActivate');
-        const daysInput = $('staffObjavaDays');
+        const hoursInput = $('staffObjavaHours');
         const untilInput = $('staffObjavaUntil');
 
         const productName = btn.dataset.productName || 'Artikal';
@@ -1060,7 +1060,7 @@
             document.body.classList.add('popup-open');
             if (modeAkcija) modeAkcija.checked = true;
             if (pctInput) pctInput.value = '';
-            if (daysInput) daysInput.value = '';
+            if (hoursInput) hoursInput.value = '';
             if (untilInput) untilInput.value = '';
             if (downloadLink) downloadLink.hidden = true;
             lastGeneratedPct = null;
@@ -1184,12 +1184,13 @@
             body.set('action', 'activate_akcija');
             body.set('akcija_postotak', String(percent));
             body.set('csrfmiddlewaretoken', getCsrfToken());
-            const daysRaw = ((daysInput && daysInput.value) || '').trim();
+            // Samo sati ILI samo datum (ne oba)
+            const hoursRaw = ((hoursInput && hoursInput.value) || '').trim();
             const untilRaw = ((untilInput && untilInput.value) || '').trim();
-            if (untilRaw) {
+            if (hoursRaw) {
+                body.set('akcija_sati', hoursRaw);
+            } else if (untilRaw) {
                 body.set('akcija_do', untilRaw);
-            } else if (daysRaw) {
-                body.set('akcija_dana', daysRaw);
             }
 
             if (activateBtn) activateBtn.disabled = true;
@@ -1247,13 +1248,13 @@
         });
         modeAkcija && modeAkcija.addEventListener('change', syncModeUi);
         modeRegular && modeRegular.addEventListener('change', syncModeUi);
-        // Ako se unese datum, očisti “dana” i obrnuto radi jasnog izbora
-        if (daysInput && untilInput) {
-            daysInput.addEventListener('input', () => {
-                if (daysInput.value) untilInput.value = '';
+        // Sati ili datum — ne oba odjednom
+        if (hoursInput && untilInput) {
+            hoursInput.addEventListener('input', () => {
+                if (hoursInput.value) untilInput.value = '';
             });
             untilInput.addEventListener('input', () => {
-                if (untilInput.value) daysInput.value = '';
+                if (untilInput.value) hoursInput.value = '';
             });
         }
         syncModeUi();

@@ -4589,6 +4589,18 @@ body.catalog-variation-modal-open {
     cursor: default;
 }
 
+.staff-product-btn--clear-akcija {
+    background: #fff1f2 !important;
+    color: #be123c !important;
+    border: 1.5px solid rgba(225, 29, 72, 0.45) !important;
+    font-weight: 800 !important;
+}
+
+.staff-product-btn--clear-akcija:hover {
+    background: #ffe4e6 !important;
+    color: #9f1239 !important;
+}
+
 .staff-objava-modal__field input {
     width: 100%;
     min-height: 44px;

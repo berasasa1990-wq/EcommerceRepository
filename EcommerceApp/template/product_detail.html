@@ -111,6 +111,15 @@
                             {% if product.na_stanju %}Skini sa stanja{% else %}Vrati na stanje{% endif %}
                         </button>
                     </form>
+                    {% if product.na_akciji or product.akcija_postotak or product.akcijska_cijena %}
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form" onsubmit="return confirm('Skinuti akciju i vratiti redovnu cijenu?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="deactivate_akcija">
+                        <button type="submit" class="btn btn-sm staff-product-btn staff-product-btn--clear-akcija" title="Ukloni popust, vrati redovnu cijenu">
+                            Skini akciju{% if product.akcija_postotak_prikaz %} (−{{ product.akcija_postotak_prikaz }}%){% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
                     <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="toggle_japan">
@@ -175,13 +184,13 @@
                         </label>
                         <div class="staff-objava-akcija-activate" id="staffObjavaActivateWrap" hidden>
                             <label class="staff-objava-modal__field">
-                                <span>Trajanje akcije (opcionalno)</span>
+                                <span>Trajanje (opcionalno — sati <em>ili</em> datum, ne oba)</span>
                                 <div class="staff-objava-duration">
-                                    <input type="number" id="staffObjavaDays" min="1" max="365" step="1" inputmode="numeric" placeholder="dana (npr. 7)">
+                                    <input type="number" id="staffObjavaHours" min="1" max="8760" step="1" inputmode="numeric" placeholder="sati (npr. 24)">
                                     <span class="staff-objava-duration__or">ili</span>
                                     <input type="date" id="staffObjavaUntil" aria-label="Akcija važi do">
                                 </div>
-                                <small class="staff-objava-duration__hint">Prazno = akcija bez roka. Isti % kao u previewu.</small>
+                                <small class="staff-objava-duration__hint">Unesi samo sate ili samo datum. Prazno = bez roka. Isti % kao u previewu.</small>
                             </label>
                             <button type="button" class="btn btn-sm staff-product-btn staff-objava-activate-btn" id="staffObjavaActivate">
                                 Aktiviraj akciju na artiklu
@@ -558,7 +567,7 @@
 {% block extra_js %}
 <script src="{% static 'js/product-detail.min.js' %}?v=20260722v13" defer></script>
 {% if staff_product_tools %}
-<script src="{% static 'js/staff-product-objava.js' %}?v=20260725v5" defer></script>
+<script src="{% static 'js/staff-product-objava.js' %}?v=20260725v6" defer></script>
 {% endif %}
 {% if dwell_flash_config and dwell_flash_config.active %}
 {{ dwell_flash_config|json_script:"dwellFlashConfigData" }}

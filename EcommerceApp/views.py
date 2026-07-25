@@ -4936,10 +4936,30 @@ def staff_product_quick_edit(request, slug):
             messages.error(request, msg)
             return redirect('product_detail', slug=slug)
 
+        # Trajanje: samo sati ILI samo datum (ne oba obavezno; prazno = bez roka)
         akcija_do = None
-        raw_days = (request.POST.get('akcija_dana') or request.POST.get('days') or '').strip()
+        raw_hours = (
+            request.POST.get('akcija_sati')
+            or request.POST.get('hours')
+            or request.POST.get('akcija_dana')  # legacy
+            or ''
+        ).strip()
         raw_date = (request.POST.get('akcija_do') or '').strip()
-        if raw_date:
+        if raw_date and raw_hours:
+            # preferiraj ono što je eksplicitno poslato kao primarno — UI šalje jedno
+            # ako oba dođu, datum ima prioritet samo ako hours prazan; ovdje: sati prvi
+            pass
+        if raw_hours and not raw_date:
+            try:
+                hours = int(raw_hours)
+            except (TypeError, ValueError):
+                hours = 0
+            if hours > 0:
+                from datetime import timedelta
+                # DateField: krajnji dan = dan kada sati isteknu
+                end_dt = timezone.now() + timedelta(hours=hours)
+                akcija_do = timezone.localtime(end_dt).date()
+        elif raw_date:
             try:
                 from datetime import date as date_cls
                 akcija_do = date_cls.fromisoformat(raw_date)
@@ -4949,23 +4969,19 @@ def staff_product_quick_edit(request, slug):
                     return _akcija_json(False, msg)
                 messages.error(request, msg)
                 return redirect('product_detail', slug=slug)
-        elif raw_days:
-            try:
-                days = int(raw_days)
-            except (TypeError, ValueError):
-                days = 0
-            if days > 0:
-                from datetime import timedelta
-                akcija_do = timezone.localdate() + timedelta(days=days)
 
         product.akcija_postotak = pct.quantize(Decimal('0.01'))
         product.akcijska_cijena = None  # save() računa iz postotka
         product.akcija_do = akcija_do
         product.save()
-        # refresh computed sale price
         product.refresh_from_db()
         sale = product.akcijska_cijena or product.prikazna_cijena
-        if akcija_do:
+        if raw_hours and not raw_date and akcija_do:
+            msg = (
+                f'Akcija aktivirana na „{product.naziv}”: −{product.akcija_postotak}% '
+                f'({sale} KM), oko {raw_hours} h (do {akcija_do.strftime("%d.%m.%Y.")}).'
+            )
+        elif akcija_do:
             msg = (
                 f'Akcija aktivirana na „{product.naziv}”: −{product.akcija_postotak}% '
                 f'({sale} KM), važi do {akcija_do.strftime("%d.%m.%Y.")}.'
@@ -4985,6 +5001,16 @@ def staff_product_quick_edit(request, slug):
                 prikazna_cijena=str(product.prikazna_cijena),
             )
         messages.success(request, msg)
+        return redirect('product_detail', slug=slug)
+    elif action == 'deactivate_akcija':
+        product.akcija_postotak = None
+        product.akcijska_cijena = None
+        product.akcija_do = None
+        product.save(update_fields=['akcija_postotak', 'akcijska_cijena', 'akcija_do'])
+        messages.success(
+            request,
+            f'Akcija skinuta s „{product.naziv}”. Vraćena redovna cijena {product.cijena} KM.',
+        )
         return redirect('product_detail', slug=slug)
     else:
         messages.error(request, 'Nepoznata akcija.')
