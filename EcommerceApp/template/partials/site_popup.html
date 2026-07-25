@@ -125,39 +125,22 @@
         </div>
 
         {% elif akcija.tip == 'bundle' %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260722v1">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260725v5">
         {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary unit_count=akcija.bundle_unit_count %}
-        {# Desktop: 2 po redu (4 = 2×2, veće slike). unit_count ≥ 2 #}
+        {# Jedan SET: slike artikala bez pojedinačnih cijena + jedna velika snizena cijena #}
         {% if unit_count >= 2 and bundle_items %}
-        <div class="site-popup-akcija site-popup-bundle-pack">
-            <p class="bundle-pack-kicker">🔥 Specijalna cijena seta</p>
-
-            {% if pricing and pricing.has_discount %}
-            <div class="bundle-pack-deal bundle-pack-deal--hero" aria-label="Usporedba cijena seta">
-                <div class="bundle-pack-deal-col">
-                    <span class="bundle-pack-deal-label">Inače</span>
-                    <span class="bundle-pack-deal-was">{{ pricing.total_bazna }} KM</span>
-                </div>
-                <span class="bundle-pack-deal-arrow" aria-hidden="true">→</span>
-                <div class="bundle-pack-deal-col bundle-pack-deal-col--now">
-                    <span class="bundle-pack-deal-label bundle-pack-deal-label--now">Cijena set</span>
-                    <span class="bundle-pack-deal-now">{{ pricing.total_snizena }} KM</span>
-                </div>
-                {% if pricing.pct_label %}
-                <div class="bundle-pack-deal-pct" aria-label="Popust">
-                    <span class="bundle-pack-deal-pct-label">Akcija do</span>
-                    <span class="bundle-pack-deal-pct-val">-{{ pricing.pct_label|cut:"do "|cut:" " }}%</span>
-                </div>
-                {% endif %}
+        <div class="site-popup-akcija site-popup-bundle-pack site-popup-bundle-pack--set-only">
+            <div class="bundle-set-badge-row" aria-hidden="true">
+                <span class="bundle-set-badge is-pulse">KOMPLET SET</span>
+                <span class="bundle-set-badge bundle-set-badge--akcija is-pulse">AKCIJA</span>
             </div>
-            {% else %}
-            <h3 class="bundle-pack-title">Kompletan set za tebe</h3>
-            {% endif %}
+            <h3 class="bundle-set-title">Sve u jednom setu</h3>
+            <p class="bundle-set-sub">{{ unit_count }} artikla · ne kupuješ pojedinačno</p>
 
-            <div class="bundle-pack-row bundle-pack-row--n{{ bundle_items|length }}{% if bundle_items|length == 1 %} bundle-pack-row--single{% endif %}{% if bundle_items|length == 2 %} bundle-pack-row--pair{% endif %}"
+            <div class="bundle-pack-row bundle-pack-row--set bundle-pack-row--n{{ bundle_items|length }}{% if bundle_items|length == 3 %} bundle-pack-row--triple{% endif %}"
                  data-count="{{ bundle_items|length }}">
                 {% for item in bundle_items %}
-                <article class="bundle-pack-card">
+                <article class="bundle-pack-card bundle-pack-card--set">
                     <div class="bundle-pack-media">
                         <div class="bundle-pack-card-img">
                             {% if item.product.prikazna_slika %}
@@ -167,39 +150,34 @@
                             {% else %}
                             <span class="bundle-pack-card-ph" aria-hidden="true">📦</span>
                             {% endif %}
-                            {# % gore desno — ne prekriva centar proizvoda #}
-                            {% if item.has_discount and item.pct_label %}
-                            <span class="bundle-pack-card-badge">-{{ item.pct_label }}%</span>
-                            {% endif %}
-                            {# ×N samo kad je >1 (za 2 ukupno već prošireno u 2 kartice) #}
                             {% if item.quantity > 1 %}
                             <span class="bundle-pack-card-qty" aria-label="{{ item.quantity }} u setu">×{{ item.quantity }}</span>
                             {% endif %}
                         </div>
                     </div>
                     <p class="bundle-pack-card-name">{{ item.product.naziv }}</p>
-                    {% if item.product.je_pakovanje %}
-                    <p class="bundle-pack-card-pack">📦 {{ item.product.pakovanje_label }}</p>
-                    {% endif %}
-                    <p class="bundle-pack-card-price">
-                        {% if item.has_discount %}
-                        <span class="bundle-pack-was">
-                            {% if item.quantity > 1 %}{{ item.line_bazna }}{% else %}{{ item.bazna }}{% endif %} KM
-                        </span>
-                        <span class="bundle-pack-now">
-                            {% if item.quantity > 1 %}{{ item.line_snizena }}{% else %}{{ item.snizena }}{% endif %} KM
-                        </span>
-                        {% else %}
-                        <span class="bundle-pack-now">
-                            {% if item.quantity > 1 %}{{ item.line_bazna }}{% else %}{{ item.bazna }}{% endif %} KM
-                        </span>
-                        {% endif %}
-                    </p>
                 </article>
                 {% if not forloop.last %}
                 <div class="bundle-pack-plus" aria-hidden="true">+</div>
                 {% endif %}
                 {% endfor %}
+            </div>
+
+            {# Jedna cijena za cijeli set — bijelo/zelena podloga, crveno snizeno pulse #}
+            <div class="bundle-set-price-box{% if pricing and pricing.has_discount %} bundle-set-price-box--sale{% endif %}"
+                 aria-label="Cijena kompletnog seta">
+                <span class="bundle-set-price-kicker is-pulse">CIJENA SETA</span>
+                {% if pricing and pricing.has_discount %}
+                <span class="bundle-set-price-tag is-pulse">SNIŽENO</span>
+                <span class="bundle-set-price-now is-pulse">{{ pricing.total_snizena }} KM</span>
+                {% if pricing.pct_label %}
+                <span class="bundle-set-price-pct is-pulse">−{{ pricing.pct_label|cut:"do "|cut:" " }}%</span>
+                {% endif %}
+                {% elif pricing %}
+                <span class="bundle-set-price-now is-pulse">{{ pricing.total_snizena|default:pricing.total_bazna }} KM</span>
+                {% else %}
+                <span class="bundle-set-price-now is-pulse">—</span>
+                {% endif %}
             </div>
 
             <div class="bundle-pack-footer">
@@ -222,7 +200,7 @@
                             class="btn btn-primary site-popup-cta bundle-pack-cta"
                             style="--popup-btn-bg: {{ akcija.boja_dugmeta }}; width:100%;">
                         {% if pricing and pricing.has_discount %}
-                        {% if akcija.tekst_dugmeta %}{{ akcija.tekst_dugmeta }}{% else %}Uzmi set za {{ pricing.total_snizena }} KM{% endif %}
+                        {% if akcija.tekst_dugmeta %}{{ akcija.tekst_dugmeta }}{% else %}Uzmi kompletan set · {{ pricing.total_snizena }} KM{% endif %}
                         {% else %}
                         {{ akcija.tekst_dugmeta|default:"Dodaj set u korpu" }}
                         {% endif %}

@@ -345,6 +345,10 @@ SYNC_TIMEOUT = int(_env('SYNC_TIMEOUT', '15'))
 # Ako želiš, možeš postaviti RENDER=true u environment za custom logiku.
 SYNC_ENABLED = bool(SYNC_REMOTE_URL and SYNC_API_KEY)
 
+# Catalog Sync API — daj partneru ovaj ključ da vuče artikle/kategorije/brendove (read-only)
+# Header: X-Api-Key: ...  ili  Authorization: Bearer ...
+CATALOG_SYNC_API_KEY = _env('CATALOG_SYNC_API_KEY', '') or SYNC_API_KEY
+
 # OLX.ba / Pik (isti API — profil CarpologijaBH)
 OLX_API_TOKEN = _env('OLX_API_TOKEN', '')
 OLX_CITY_ID = int(_env('OLX_CITY_ID', '77'))

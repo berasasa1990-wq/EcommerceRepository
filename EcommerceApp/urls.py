@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import views_catalog_api
 from . import views_feed
 from . import views_site_prep
 from . import views_sync
@@ -9,6 +10,17 @@ urlpatterns = [
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
+
+    # Catalog Sync API — partner vuče katalog (read-only, API key)
+    path('api/v1/ping/', views_catalog_api.catalog_api_ping, name='catalog_api_ping'),
+    path('api/v1/products/', views_catalog_api.catalog_api_products, name='catalog_api_products'),
+    path(
+        'api/v1/products/<slug:slug>/',
+        views_catalog_api.catalog_api_product_detail,
+        name='catalog_api_product_detail',
+    ),
+    path('api/v1/categories/', views_catalog_api.catalog_api_categories, name='catalog_api_categories'),
+    path('api/v1/brands/', views_catalog_api.catalog_api_brands, name='catalog_api_brands'),
 
     path('facebook-feed.xml', views_feed.facebook_feed, name='facebook_feed'),
 
