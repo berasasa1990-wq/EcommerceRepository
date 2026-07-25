@@ -496,6 +496,11 @@ class AkcijaBundleLineInline(admin.TabularInline):
     )
     classes = ('akcija-inline-bundle-lines',)
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'product':
+            kwargs['queryset'] = Product.objects.filter(aktivan=True).order_by('naziv')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
         original_clean = formset.clean
@@ -1514,15 +1519,25 @@ class ProductAdmin(admin.ModelAdmin):
 
     def get_search_results(self, request, queryset, search_term):
         """
-        Autocomplete za početničke setove: samo artikli na stanju.
-        (model_name=advisorbeginnersetitem u /admin/autocomplete/)
+        Autocomplete filteri po kontekstu (model_name u /admin/autocomplete/).
+        - advisor set / dwell: samo na stanju
+        - bundle linije: aktivni artikli (mogu se dodati u set)
         """
         queryset, use_distinct = super().get_search_results(
             request, queryset, search_term,
         )
         model_name = (request.GET.get('model_name') or '').lower()
-        if model_name == 'advisorbeginnersetitem':
+        if model_name in (
+            'advisorbeginnersetitem',
+            'productdwellitem',
+        ):
             queryset = queryset.filter(aktivan=True, na_stanju=True)
+        elif model_name in (
+            'akcijbundleline',
+            'akcijabundleline',
+        ):
+            # Bundle set: omogući pretragu aktivnih artikala
+            queryset = queryset.filter(aktivan=True)
         return queryset, use_distinct
 
     prepopulated_fields = {'slug': ('naziv',)}

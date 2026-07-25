@@ -43,6 +43,20 @@ form .module.akcija-section-hidden {
     overflow: visible !important;
 }
 
+/* Bundle SET inline — polja artikla uvijek dostupna kad je grupa vidljiva */
+.inline-group.akcija-inline-bundle-lines:not(.akcija-section-hidden) .form-row,
+.inline-group.akcija-inline-bundle-lines:not(.akcija-section-hidden) tr.form-row,
+.inline-group.akcija-inline-bundle-lines:not(.akcija-section-hidden) td.field-product,
+.inline-group.akcija-inline-bundle-lines:not(.akcija-section-hidden) .related-widget-wrapper,
+.akcija-inline-bundle-lines:not(.akcija-section-hidden) .form-row {
+    display: revert !important;
+    visibility: visible !important;
+}
+
+.inline-group.akcija-inline-bundle-lines:not([hidden]) {
+    display: block !important;
+}
+
 /* AI dwell inline — uvijek čitljiv kad je tip AI */
 .inline-group.akcija-inline-dwell-items:not(.akcija-section-hidden),
 .akcija-inline-dwell-items:not(.akcija-section-hidden) {

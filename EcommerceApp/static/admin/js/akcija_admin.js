@@ -208,8 +208,27 @@
     }
 
     function isBundleInline($el) {
-        var s = (($el.attr('id') || '') + ' ' + ($el.attr('class') || '') + ' ' + $el.text().slice(0, 200)).toLowerCase();
-        return s.indexOf('bundle') !== -1 || s.indexOf('stavk') !== -1;
+        if ($el.hasClass('akcija-inline-bundle-lines') || $el.find('.akcija-inline-bundle-lines').length) {
+            return true;
+        }
+        if ($el.closest('.akcija-inline-bundle-lines').length) {
+            return true;
+        }
+        var s = (
+            ($el.attr('id') || '') +
+            ' ' +
+            ($el.attr('class') || '') +
+            ' ' +
+            $el.find('h2, h3, caption, .inline-heading').first().text() +
+            ' ' +
+            $el.text().slice(0, 200)
+        ).toLowerCase();
+        return (
+            s.indexOf('bundle') !== -1 ||
+            s.indexOf('stavk') !== -1 ||
+            s.indexOf('setu') !== -1 ||
+            s.indexOf('bundle set') !== -1
+        );
     }
 
     function isDwellInline($el) {
@@ -249,8 +268,13 @@
         var isAi = tip === AI_PRODAJA_TIP;
 
         // 1) Polja — samo dozvoljena
+        // NE diraj redove unutar inline tabela (bundle set / dwell / qty):
+        // inače se sakrije cijeli red „product / količina” i ne možeš dodati artikle u set.
         allFormRows().each(function () {
             var $row = $(this);
+            if ($row.closest('.inline-group, .js-inline-admin-formset, .tabular').length) {
+                return;
+            }
             var name = rowFieldName($row);
             if (!name) {
                 return;
@@ -323,6 +347,20 @@
                 show = false;
             }
             setHidden($g, !show);
+            // Bundle set: forsira prikaz svih redova / autocomplete polja
+            if (show && isBundle && isBundleInline($g)) {
+                $g.find('.form-row, tr.form-row, td, .related-widget-wrapper').each(function () {
+                    var $el = $(this);
+                    $el.removeClass('akcija-section-hidden').removeAttr('hidden');
+                    if ($el.is('tr, td, .form-row, .related-widget-wrapper')) {
+                        $el.css('display', '');
+                    }
+                });
+                $g.find('select, input, .select2-container, .related-widget-wrapper').css({
+                    visibility: 'visible',
+                    pointerEvents: 'auto',
+                });
+            }
         });
 
         // 4) Dodatno: sakrij bilo šta s "AI dwell" u naslovu van AI moda
