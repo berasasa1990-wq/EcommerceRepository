@@ -871,13 +871,12 @@ document.addEventListener('DOMContentLoaded', () => {
             root.addEventListener('focusin', () => clearInterval(autoplayTimer));
             root.addEventListener('focusout', startAutoplay);
 
-            // Swipe prstom / drag mišem lijevo/desno — radi i preko <a> (brend logo / kartice)
+            // Swipe prstom lijevo/desno — klik na <a> / karticu ostaje normalan
+            // (ne koristimo setPointerCapture na pointerdown — to je gasilo klikove na brend/product)
             let touchStartX = 0;
             let touchStartY = 0;
             let touchActive = false;
-            let didSwipe = false;
             const SWIPE_MIN = 36;
-            const noArrows = root.classList.contains('home-product-carousel--no-arrows');
 
             function suppressNextClick() {
                 const onClick = (ev) => {
@@ -914,18 +913,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 touchStartX = t.clientX;
                 touchStartY = t.clientY;
                 touchActive = true;
-                didSwipe = false;
-            }, { passive: true });
-
-            viewport.addEventListener('touchmove', (e) => {
-                if (!touchActive || e.touches.length !== 1) return;
-                const t = e.touches[0];
-                const dx = t.clientX - touchStartX;
-                const dy = t.clientY - touchStartY;
-                // Horizontalni swipe (jači od vertikale) → pomakni traku
-                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_MIN) {
-                    didSwipe = true;
-                }
             }, { passive: true });
 
             viewport.addEventListener('touchend', (e) => {
@@ -935,9 +922,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!t) return;
                 const dx = touchStartX - t.clientX;
                 const dy = touchStartY - t.clientY;
+                // Samo pravi horizontalni swipe — inače pusti normalan tap/klik
                 if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
                 stepFromDelta(dx);
-                didSwipe = true;
                 suppressNextClick();
             }, { passive: true });
 
@@ -945,11 +932,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 touchActive = false;
             }, { passive: true });
 
-            // Desktop: ručno prevlačenje (posebno korisno bez strelica)
-            let pointerActive = false;
+            // Desktop drag: tek NAKON praga pomaka (klik na product/brend mora proći)
+            let pointerTracking = false;
+            let pointerDragging = false;
+            let pointerId = null;
             let pointerStartX = 0;
             let pointerStartY = 0;
-            let pointerDidDrag = false;
 
             viewport.addEventListener('pointerdown', (e) => {
                 if (e.pointerType === 'touch') return;
@@ -957,50 +945,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target && e.target.closest('button, [data-catalog-add], .catalog-variation-modal')) {
                     return;
                 }
-                pointerActive = true;
-                pointerDidDrag = false;
+                // Ne capturaj odmah — inače <a> i product kartice ne primaju click
+                pointerTracking = true;
+                pointerDragging = false;
+                pointerId = e.pointerId;
                 pointerStartX = e.clientX;
                 pointerStartY = e.clientY;
-                root.classList.add('is-dragging');
-                try {
-                    viewport.setPointerCapture(e.pointerId);
-                } catch (_) { /* ignore */ }
             });
 
             viewport.addEventListener('pointermove', (e) => {
-                if (!pointerActive) return;
+                if (!pointerTracking || e.pointerId !== pointerId) return;
                 const dx = e.clientX - pointerStartX;
                 const dy = e.clientY - pointerStartY;
-                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_MIN) {
-                    pointerDidDrag = true;
+                if (!pointerDragging) {
+                    if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
+                    // Tek sada je pravi drag — capturaj i spriječi text select
+                    pointerDragging = true;
+                    root.classList.add('is-dragging');
+                    try {
+                        viewport.setPointerCapture(e.pointerId);
+                    } catch (_) { /* ignore */ }
                 }
             });
 
             function endPointerDrag(e) {
-                if (!pointerActive) return;
-                pointerActive = false;
+                if (!pointerTracking || (pointerId != null && e.pointerId !== pointerId)) return;
+                const wasDragging = pointerDragging;
+                const startX = pointerStartX;
+                const startY = pointerStartY;
+                pointerTracking = false;
+                pointerDragging = false;
+                pointerId = null;
                 root.classList.remove('is-dragging');
                 try {
-                    viewport.releasePointerCapture(e.pointerId);
+                    if (wasDragging) viewport.releasePointerCapture(e.pointerId);
                 } catch (_) { /* ignore */ }
-                if (!pointerDidDrag) return;
-                const dx = pointerStartX - e.clientX;
-                const dy = pointerStartY - e.clientY;
+                if (!wasDragging) return; // običan klik — ne diraj linkove
+                const dx = startX - e.clientX;
+                const dy = startY - e.clientY;
                 if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
                 stepFromDelta(dx);
                 suppressNextClick();
             }
 
             viewport.addEventListener('pointerup', endPointerDrag);
-            viewport.addEventListener('pointercancel', () => {
-                pointerActive = false;
+            viewport.addEventListener('pointercancel', (e) => {
+                if (pointerId != null && e.pointerId !== pointerId) return;
+                pointerTracking = false;
+                pointerDragging = false;
+                pointerId = null;
                 root.classList.remove('is-dragging');
             });
-
-            // Bez strelica: i dalje autoplay, ali miš na hover pauzira (već postoji)
-            if (noArrows) {
-                root.classList.add('home-product-carousel--manual-friendly');
-            }
 
             window.addEventListener('resize', updateLayout);
             updateLayout();
