@@ -169,8 +169,8 @@ img.home-vlog-card-image {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
-    max-width: min(240px, 46vw);
+    gap: 8px;
+    max-width: min(200px, 42vw);
 }
 
 /* Sakrij Akcija/Noviteti dok su otvoreni rezultati live pretrage */
@@ -194,17 +194,17 @@ body.search-suggest-open .header-float-ctas {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 12px 20px 13px;
-    min-width: 176px;
+    gap: 2px;
+    padding: 7px 14px 8px;
+    min-width: 148px;
     color: #fff;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     text-decoration: none;
-    line-height: 1.2;
-    border-radius: 12px;
+    line-height: 1.15;
+    border-radius: 10px;
     transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -257,13 +257,13 @@ body.search-suggest-open .header-float-ctas {
 .header-akcija-cta__tag,
 .header-noviteti-cta__tag {
     display: inline-block;
-    padding: 2px 8px;
+    padding: 1px 6px;
     border-radius: 999px;
     background: #fff;
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 800;
     letter-spacing: 0.08em;
-    line-height: 1.25;
+    line-height: 1.2;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -282,7 +282,7 @@ body.search-suggest-open .header-float-ctas {
     position: relative;
     z-index: 1;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: 11px;
     text-align: center;
 }
 
@@ -5252,7 +5252,8 @@ body.catalog-variation-modal-open {
 .product-detail-page-badge {
     position: absolute;
     top: 24px;
-    right: var(--product-detail-side-inset);
+    /* Ulijevo od plutajućih Akcija/Noviteti dugmadi da se ne preklapaju */
+    right: calc(var(--product-detail-side-inset) + 180px);
     width: clamp(80px, 11vw, 140px);
     height: auto;
     max-height: 120px;
@@ -9025,13 +9026,13 @@ button.nav-action-link {
         display: none;
     }
 
-    /* Mobitel: manja dugmad, gore desno (nestanu samo dok se kuca u pretragu) */
+    /* Mobitel: manja/tanja dugmad, gore desno (nestanu samo dok se kuca u pretragu) */
     .header-float-ctas {
         top: calc(var(--site-chrome-top) + 6px);
         bottom: auto;
         right: max(10px, env(safe-area-inset-right, 0px));
-        gap: 7px;
-        max-width: 122px;
+        gap: 5px;
+        max-width: 104px;
         z-index: 1050;
     }
 
@@ -9046,21 +9047,21 @@ button.nav-action-link {
     .header-akcija-cta,
     .header-noviteti-cta {
         min-width: 0;
-        padding: 7px 10px 8px;
-        border-radius: 9px;
-        gap: 2px;
+        padding: 5px 8px 6px;
+        border-radius: 8px;
+        gap: 1px;
     }
 
     .header-akcija-cta__text,
     .header-noviteti-cta__text {
-        font-size: 10px;
+        font-size: 9px;
         letter-spacing: 0.04em;
     }
 
     .header-akcija-cta__tag,
     .header-noviteti-cta__tag {
-        font-size: 8px;
-        padding: 1px 6px;
+        font-size: 7px;
+        padding: 1px 5px;
     }
 
     .contact-float-group {
@@ -11787,7 +11788,8 @@ button.nav-action-link {
 
     .product-detail-page-badge {
         top: 16px;
-        right: var(--home-mobile-side-inset);
+        /* Ulijevo od plutajućih Akcija/Noviteti dugmadi */
+        right: calc(var(--home-mobile-side-inset) + 112px);
         width: clamp(64px, 18vw, 96px);
         max-height: 80px;
     }
