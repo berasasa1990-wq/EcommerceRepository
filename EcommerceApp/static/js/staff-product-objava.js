@@ -67,6 +67,59 @@
     }
 
     /**
+     * Bijela / skoro bijela pozadina artikla → transparentno,
+     * da se zelene mrlje templatea vide kroz praznine.
+     */
+    function imageWithTransparentBg(img, { hard = 248, soft = 18 } = {}) {
+        if (!img) return null;
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
+        if (!w || !h) return img;
+        const c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        const ix = c.getContext('2d', { willReadFrequently: true });
+        ix.drawImage(img, 0, 0);
+        let data;
+        try {
+            data = ix.getImageData(0, 0, w, h);
+        } catch (e) {
+            // CORS / tainted canvas — vrati original
+            return img;
+        }
+        const d = data.data;
+        const softStart = hard - soft;
+        for (let i = 0; i < d.length; i += 4) {
+            const r = d[i];
+            const g = d[i + 1];
+            const b = d[i + 2];
+            const a = d[i + 3];
+            if (a === 0) continue;
+            const avg = (r + g + b) / 3;
+            const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+            // samo svijetle, nisko-saturirane piksele (pozadina, ne jarke boje proizvoda)
+            if (avg >= softStart && chroma <= 28) {
+                if (avg >= hard) {
+                    d[i + 3] = 0;
+                } else {
+                    // meki prijelaz na rubu bijelog
+                    const t = (avg - softStart) / soft;
+                    d[i + 3] = Math.round(a * (1 - t));
+                }
+            }
+        }
+        ix.putImageData(data, 0, 0);
+        return c;
+    }
+
+    function drawProductTransparent(ctx, img, dx, dy, dw, dh) {
+        const layer = imageWithTransparentBg(img);
+        if (layer) {
+            ctx.drawImage(layer, dx, dy, dw, dh);
+        }
+    }
+
+    /**
      * Ponovo nacrta rub templatea PREKO artikla da bijela pozadina slike
      * ne prekrije zelene mrlje. "Rupa" u sredini ostaje za artikal.
      */
@@ -537,7 +590,7 @@
             const dh = img.naturalHeight * scale;
             const dx = imgBox.x + (imgBox.w - dw) / 2;
             const dy = imgBox.y + (imgBox.h - dh) / 2;
-            ctx.drawImage(img, dx, dy, dw, dh);
+            drawProductTransparent(ctx, img, dx, dy, dw, dh);
             drawnImgRect = { x: dx, y: dy, w: dw, h: dh };
         } else {
             ctx.fillStyle = '#94a3b8';
@@ -730,7 +783,7 @@
             const dh = img.naturalHeight * scale;
             const dx = imgBox.x + (imgBox.w - dw) / 2;
             const dy = imgBox.y + (imgBox.h - dh) / 2;
-            ctx.drawImage(img, dx, dy, dw, dh);
+            drawProductTransparent(ctx, img, dx, dy, dw, dh);
             drawnImgRect = { x: dx, y: dy, w: dw, h: dh };
         } else {
             ctx.fillStyle = '#94a3b8';
@@ -901,7 +954,7 @@
             const dh = img.naturalHeight * scale;
             const dx = imgBox.x + (imgBox.w - dw) / 2;
             const dy = imgBox.y + (imgBox.h - dh) / 2;
-            ctx.drawImage(img, dx, dy, dw, dh);
+            drawProductTransparent(ctx, img, dx, dy, dw, dh);
         } else {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(imgBox.x, imgBox.y, imgBox.w, imgBox.h);
