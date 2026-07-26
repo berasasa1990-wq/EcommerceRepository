@@ -3178,6 +3178,235 @@ def staff_order_detail(request, broj):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+def staff_order_print(request, broj):
+    """Štampa: račun + garantni list (poseban list) + packing lista (poseban list)."""
+    order = get_object_or_404(
+        Order.objects.prefetch_related('stavke'),
+        broj=broj,
+    )
+    packing_lines, odoo_error = _build_order_packing_lines(order)
+    # Artikli bez (pune) Odoo zalihe → mora se provjeriti u MP prije puštanja štampe
+    packing_missing = [
+        line for line in packing_lines
+        if line.get('check_mp') or not line.get('picks')
+    ]
+    context = {
+        **get_order_email_context(order),
+        'packing_lines': packing_lines,
+        'odoo_error': odoo_error,
+        'packing_missing': packing_missing,
+        'requires_mp_check': bool(packing_missing),
+        'mark_printed_url': reverse('staff_order_mark_printed', kwargs={'broj': order.broj}),
+    }
+    return render(request, 'staff/order_print.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_order_mark_printed(request, broj):
+    """Označi narudžbu kao odštampanu (zeleni check na listi)."""
+    from django.utils import timezone
+
+    order = get_object_or_404(Order, broj=broj)
+    if not order.odstampana:
+        order.odstampana = True
+        order.odstampana_at = timezone.now()
+        order.save(update_fields=['odstampana', 'odstampana_at'])
+    return JsonResponse({
+        'ok': True,
+        'broj': order.broj,
+        'odstampana': True,
+        'odstampana_at': order.odstampana_at.isoformat() if order.odstampana_at else None,
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_order_brza_posta(request, broj):
+    """Podaci za unos u Brzu poštu (ime, adresa, telefon, broj, iznos s dostavom)."""
+    from django.utils import timezone
+
+    order = get_object_or_404(Order, broj=broj)
+    created = timezone.localtime(order.kreirana)
+    context = {
+        'order': order,
+        'datum': created.strftime('%d.%m.%Y.'),
+        'vrijeme': created.strftime('%H:%M'),
+        'site_name': 'opremazaribolov.ba',
+        'iznos_sa_dostavom': order.ukupno,
+    }
+    return render(request, 'staff/order_brza_posta.html', context)
+
+
+
+
+def _order_item_odoo_product_id(item, template_variants):
+    """
+    Pronađi product.product id za stavku narudžbe.
+    1) varijacija.odoo_variant_id
+    2) artikal.odoo_template_id → varijante (match šifre ili prva ako je jedna)
+    """
+    variation = getattr(item, 'varijacija', None)
+    if variation and variation.odoo_variant_id:
+        return int(variation.odoo_variant_id)
+
+    product = getattr(item, 'artikal', None)
+    template_id = None
+    if variation and variation.odoo_template_id:
+        template_id = int(variation.odoo_template_id)
+    elif product and product.odoo_template_id:
+        template_id = int(product.odoo_template_id)
+
+    if not template_id:
+        return None
+
+    variants = template_variants.get(template_id) or []
+    if not variants:
+        return None
+    if len(variants) == 1:
+        return int(variants[0]['id'])
+
+    sifra = (getattr(item, 'sifra', None) or '').strip().casefold()
+    if sifra:
+        for variant in variants:
+            code = (variant.get('default_code') or '')
+            if str(code).strip().casefold() == sifra:
+                return int(variant['id'])
+    return None
+
+
+def _allocate_packing_locations(needed_qty, stock_locations):
+    """
+    Raspodijeli količinu po lokacijama sortiranima abecedno.
+    stock_locations: [{location_name, quantity}, ...] već sortirano.
+    """
+    remaining = max(0, int(needed_qty or 0))
+    picks = []
+    for loc in stock_locations or []:
+        if remaining <= 0:
+            break
+        on_hand = max(0, int(loc.get('quantity') or 0))
+        if on_hand <= 0:
+            continue
+        take = min(on_hand, remaining)
+        picks.append({
+            'location_name': loc.get('location_name') or '?',
+            'take': take,
+            'on_hand': on_hand,
+        })
+        remaining -= take
+    return picks, remaining
+
+
+def _build_order_packing_lines(order):
+    """
+    Stavke pakovanja s Odoo lokacijama (quantity on hand).
+    Lokacije se čiste abecedno; količina se uzima redom s prvih lokacija.
+    """
+    from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
+
+    items = list(
+        order.stavke.select_related('artikal', 'varijacija').all()
+    )
+    lines = []
+    odoo_error = None
+    stock_by_product = {}
+    template_variants = {}
+
+    if odoo_je_konfigurisan() and items:
+        try:
+            client = OdooClient.from_settings()
+            template_ids = set()
+            direct_product_ids = set()
+
+            for item in items:
+                variation = item.varijacija
+                if variation and variation.odoo_variant_id:
+                    direct_product_ids.add(int(variation.odoo_variant_id))
+                if variation and variation.odoo_template_id:
+                    template_ids.add(int(variation.odoo_template_id))
+                elif item.artikal and item.artikal.odoo_template_id:
+                    template_ids.add(int(item.artikal.odoo_template_id))
+
+            if template_ids:
+                template_variants = client.get_product_ids_for_templates(list(template_ids))
+                for variants in template_variants.values():
+                    for variant in variants:
+                        direct_product_ids.add(int(variant['id']))
+
+            if direct_product_ids:
+                # for_packing: bez „Prenos u MP” i sličnih transfer lokacija
+                stock_by_product = client.get_internal_stock_quants(
+                    list(direct_product_ids),
+                    for_packing=True,
+                )
+        except OdooError as exc:
+            odoo_error = str(exc)
+        except Exception as exc:
+            odoo_error = f'Odoo greška: {exc}'
+
+    for index, item in enumerate(items, start=1):
+        odoo_product_id = _order_item_odoo_product_id(item, template_variants)
+        stock_locations = stock_by_product.get(odoo_product_id, []) if odoo_product_id else []
+        # Lokacije već dolaze abecedno; pick redoslijed = abecedni
+        picks, shortfall = _allocate_packing_locations(item.kolicina, stock_locations)
+        if picks:
+            picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
+        # Ako ima Odoo zalihe: lokacija + koliko uzimaš; inače (ili ostatak) → Provjeri u MP
+        if picks:
+            pick_parts = [
+                f"{p['take']}× {p['location_name']}"
+                for p in picks
+            ]
+            if shortfall > 0:
+                pick_parts.append('Provjeri u MP')
+            pick_text = ' · '.join(pick_parts)
+        else:
+            pick_text = 'Provjeri u MP'
+
+        display_name = item.product_naziv or item.naziv
+        if item.varijacija_naziv:
+            display_name = f'{display_name} — {item.varijacija_naziv}'
+
+        lines.append({
+            'rb': index,
+            'naziv': display_name,
+            'sifra': item.sifra or '',
+            'kolicina': item.kolicina,
+            'odoo_product_id': odoo_product_id,
+            'picks': picks,
+            'pick_text': pick_text,
+            'shortfall': shortfall,
+            'check_mp': not picks or shortfall > 0,
+            'stock_locations': stock_locations,
+        })
+
+    return lines, odoo_error
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_order_packing(request, broj):
+    """Pakovanje: artikli narudžbe + Odoo lokacije (abecedno, quantity on hand)."""
+    from django.utils import timezone
+
+    order = get_object_or_404(Order, broj=broj)
+    packing_lines, odoo_error = _build_order_packing_lines(order)
+    created = timezone.localtime(order.kreirana)
+    context = {
+        'order': order,
+        'packing_lines': packing_lines,
+        'odoo_error': odoo_error,
+        'datum': created.strftime('%d.%m.%Y.'),
+        'vrijeme': created.strftime('%H:%M'),
+        'site_name': 'opremazaribolov.ba',
+    }
+    return render(request, 'staff/order_packing.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 @require_POST
 def staff_toggle_edit_mode(request):
     """Uključi/isključi edit mode na sajtu (superuser)."""

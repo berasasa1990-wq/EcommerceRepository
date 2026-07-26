@@ -2997,6 +2997,17 @@ class Order(models.Model):
     ukupno = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NOVA)
     kreirana = models.DateTimeField(auto_now_add=True)
+    odstampana = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Odštampana',
+        help_text='Staff je odštampao narudžbu (račun + garancija + packing).',
+    )
+    odstampana_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Odštampana u',
+    )
 
     class Meta:
         verbose_name = 'Narudžba'

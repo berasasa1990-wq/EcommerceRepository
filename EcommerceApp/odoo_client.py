@@ -289,6 +289,167 @@ class OdooClient:
                     images[record['id']] = image
         return images
 
+    def get_product_ids_for_templates(self, template_ids):
+        """Vrati mapu template_id → lista product.product id-eva."""
+        if not template_ids:
+            return {}
+        template_ids = [int(t) for t in template_ids if t]
+        if not template_ids:
+            return {}
+
+        records = []
+        for offset in range(0, len(template_ids), VARIANT_BATCH_SIZE):
+            chunk = template_ids[offset:offset + VARIANT_BATCH_SIZE]
+            records.extend(
+                self.search_read(
+                    'product.product',
+                    [('product_tmpl_id', 'in', chunk)],
+                    ['id', 'product_tmpl_id', 'default_code'],
+                )
+            )
+
+        by_template = {}
+        for record in records:
+            tmpl = record.get('product_tmpl_id')
+            tmpl_id = tmpl[0] if isinstance(tmpl, (list, tuple)) else tmpl
+            if tmpl_id is None:
+                continue
+            by_template.setdefault(int(tmpl_id), []).append(record)
+        return by_template
+
+    def get_internal_stock_quants(self, product_ids, *, for_packing=False):
+        """
+        stock.quant na internim lokacijama s količinom > 0.
+        Vraća mapu product_id → lista {location_name, quantity}.
+
+        for_packing=True: isključi transfer/tranzit lokacije (npr. „Prenos u MP”)
+        da se za skladište uzimaju stvarne police (Vrata-2, …).
+        """
+        if not product_ids:
+            return {}
+        product_ids = sorted({int(pid) for pid in product_ids if pid})
+        if not product_ids:
+            return {}
+
+        fields_candidates = [
+            ['product_id', 'location_id', 'quantity', 'available_quantity', 'reserved_quantity'],
+            ['product_id', 'location_id', 'quantity', 'reserved_quantity'],
+            ['product_id', 'location_id', 'quantity'],
+        ]
+        domain = [
+            ('product_id', 'in', product_ids),
+            ('location_id.usage', '=', 'internal'),
+            ('quantity', '>', 0),
+        ]
+
+        records = None
+        last_error = None
+        for fields in fields_candidates:
+            try:
+                records = self.search_read(
+                    'stock.quant',
+                    domain,
+                    fields,
+                    order='location_id asc',
+                )
+                break
+            except OdooError as exc:
+                last_error = exc
+                continue
+        if records is None:
+            raise last_error or OdooError('Nije moguće pročitati stock.quant iz Odoa.')
+
+        by_product = {}
+        for record in records:
+            product = record.get('product_id')
+            product_id = product[0] if isinstance(product, (list, tuple)) else product
+            if product_id is None:
+                continue
+
+            location = record.get('location_id')
+            if isinstance(location, (list, tuple)) and len(location) >= 2:
+                location_path = str(location[1] or '').strip()
+            else:
+                location_path = str(location or '').strip()
+            if for_packing and not _is_packing_pick_location(location_path):
+                continue
+            location_name = _short_location_name(location_path)
+            if not location_name:
+                continue
+
+            qty = _quant_on_hand(record)
+            if qty <= 0:
+                continue
+
+            buckets = by_product.setdefault(int(product_id), {})
+            buckets[location_name] = buckets.get(location_name, 0) + qty
+
+        result = {}
+        for product_id, locations in by_product.items():
+            result[product_id] = [
+                {'location_name': name, 'quantity': qty}
+                for name, qty in sorted(locations.items(), key=lambda item: item[0].casefold())
+            ]
+        return result
+
+
+# Lokacije koje nisu police za pakovanje online narudžbi (transfer, kupci, virtualno…)
+_PACKING_LOCATION_EXCLUDE_KEYWORDS = (
+    'prenos',
+    'transfer',
+    'transit',
+    'output',
+    'input',
+    'inventory adjustment',
+    'scrap',
+    'vendor',
+    'kupci',
+    'customers',
+    'partners',
+)
+
+
+def _is_packing_pick_location(location_path):
+    """True ako je lokacija pogodna za listu pakovanja (stvarna polica)."""
+    path = (location_path or '').strip()
+    if not path:
+        return False
+    text = path.casefold()
+    for keyword in _PACKING_LOCATION_EXCLUDE_KEYWORDS:
+        if keyword in text:
+            return False
+    return True
+
+
+def _short_location_name(name):
+    """WH/Stock/A2 → A2; ostavi kratko ime lokacije za pakovanje."""
+    name = (name or '').strip()
+    if not name:
+        return ''
+    if '/' in name:
+        name = name.rsplit('/', 1)[-1].strip()
+    return name
+
+
+def _quant_on_hand(record):
+    """Preferiraj available_quantity, inače quantity − reserved."""
+    if not record:
+        return 0
+    if 'available_quantity' in record and record.get('available_quantity') is not False:
+        try:
+            return max(0, int(float(record.get('available_quantity') or 0)))
+        except (TypeError, ValueError):
+            pass
+    try:
+        qty = float(record.get('quantity') or 0)
+    except (TypeError, ValueError):
+        qty = 0
+    try:
+        reserved = float(record.get('reserved_quantity') or 0)
+    except (TypeError, ValueError):
+        reserved = 0
+    return max(0, int(qty - reserved)) if reserved else max(0, int(qty))
+
 
 def odoo_je_konfigurisan():
     return bool(

@@ -89,10 +89,16 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('broj', 'korisnik', 'ime_prezime', 'email', 'telefon', 'ukupno', 'status', 'kreirana')
-    list_filter = ('status', 'kreirana')
+    list_display = (
+        'broj', 'korisnik', 'ime_prezime', 'email', 'telefon',
+        'ukupno', 'status', 'odstampana', 'kreirana',
+    )
+    list_filter = ('status', 'odstampana', 'kreirana')
     search_fields = ('broj', 'ime_prezime', 'email', 'telefon', 'korisnik__email')
-    readonly_fields = ('broj', 'kreirana', 'medjuzbir', 'dostava', 'popust', 'ukupno', 'popust_detalji')
+    readonly_fields = (
+        'broj', 'kreirana', 'medjuzbir', 'dostava', 'popust',
+        'ukupno', 'popust_detalji', 'odstampana', 'odstampana_at',
+    )
     autocomplete_fields = ('korisnik',)
     inlines = [OrderItemInline]
     fieldsets = (
@@ -100,6 +106,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': (
                 'broj', 'status', 'medjuzbir', 'popust', 'kupon_kod',
                 'popust_detalji', 'dostava', 'ukupno', 'kreirana',
+                'odstampana', 'odstampana_at',
             ),
         }),
         ('Kupac', {'fields': ('korisnik', 'ime_prezime', 'email', 'telefon')}),

@@ -73,6 +73,20 @@ urlpatterns = [
     path('nalog/narudzba/<str:broj>/', views.account_order_detail, name='account_order_detail'),
     path('nalog/provjera-narudzbi/', views.staff_order_lookup, name='staff_order_lookup'),
     path('nalog/provjera-narudzbi/<str:broj>/', views.staff_order_detail, name='staff_order_detail'),
+    path('nalog/provjera-narudzbi/<str:broj>/stampaj/', views.staff_order_print, name='staff_order_print'),
+    path(
+        'nalog/provjera-narudzbi/<str:broj>/odstampano/',
+        views.staff_order_mark_printed,
+        name='staff_order_mark_printed',
+    ),
+    path('nalog/provjera-narudzbi/<str:broj>/pakovanje/', views.staff_order_packing, name='staff_order_packing'),
+    path(
+        'nalog/provjera-narudzbi/<str:broj>/brza-posta/',
+        views.staff_order_brza_posta,
+        name='staff_order_brza_posta',
+    ),
+
+
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),

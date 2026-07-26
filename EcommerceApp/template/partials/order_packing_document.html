@@ -1,0 +1,61 @@
+<div class="packing-section">
+    <div class="packing-sheet">
+        <div class="packing-head">
+            <div>
+                <h2 class="packing-title">Pakovanje</h2>
+                <p class="packing-subtitle">{{ site_name }} · lista za skladište</p>
+            </div>
+            <div class="packing-meta">
+                <strong>Narudžba #{{ order.broj }}</strong>
+                <span>{% if datum %}{{ datum }}{% endif %}{% if vrijeme %} {{ vrijeme }}{% endif %}</span>
+            </div>
+        </div>
+
+        <p class="packing-customer">
+            <strong>Kupac:</strong> {{ order.ime_prezime }}
+            · {{ order.telefon }}
+            · {{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}
+        </p>
+
+        {% if odoo_error %}
+        <div class="packing-alert">Odoo: {{ odoo_error }}</div>
+        {% endif %}
+
+        <table class="pack-table" role="table">
+            <thead>
+                <tr>
+                    <th class="col-rb">#</th>
+                    <th>Artikal</th>
+                    <th class="col-qty">Nar.</th>
+                    <th>Lokacija / količina</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in packing_lines %}
+                <tr class="{% if line.check_mp %}has-shortfall{% endif %}">
+                    <td class="col-rb">{{ line.rb }}</td>
+                    <td>
+                        <span class="item-name">{{ line.naziv }}</span>
+                        {% if line.sifra %}
+                        <span class="item-sifra">Šifra: {{ line.sifra }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-qty">{{ line.kolicina }}</td>
+                    <td>
+                        <span class="pick-main">{{ line.pick_text }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">Nema stavki u narudžbi.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="packing-hint">
+            Lokacije se uzimaju abecedno iz Odoa (npr. 2 kom, 1 na A2 i 1 na A3 → 1× A2 · 1× A3).
+            Ako artikal nema zalihe u Odoo skladištu → <strong>Provjeri u MP</strong>.
+        </p>
+    </div>
+</div>
