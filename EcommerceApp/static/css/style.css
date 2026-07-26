@@ -13867,29 +13867,15 @@ button.nav-action-link {
     border-radius: 8px;
 }
 
-/* Odštampana narudžba — cijeli red zeleno (završeno) */
+/* Odštampana narudžba — samo zelena boja (bez teksta „Odštampano”) */
 .staff-online-order-row.is-printed {
-    background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
-    border-color: #86efac;
-    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.12);
+    background: linear-gradient(180deg, #ecfdf5 0%, #bbf7d0 100%);
+    border-color: #4ade80;
+    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.15);
 }
 
 .staff-online-order-row.is-printed .staff-online-order-number {
     color: #14532d;
-}
-
-.staff-badge-printed {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: #16a34a;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
 }
 
 .staff-online-order-id {

@@ -54,23 +54,21 @@
         {% endif %}
         <div class="staff-online-orders-list">
             {% for order in orders %}
-            <article class="staff-online-order-row{% if order.odstampana %} is-printed{% endif %}">
+            <article class="staff-online-order-row{% if order.odstampana %} is-printed{% endif %}"{% if order.odstampana %} title="Odštampano{% if order.odstampana_at %} {{ order.odstampana_at|date:'d.m.Y. H:i' }}{% endif %}"{% endif %}>
                 <div class="staff-online-order-id">
                     <span class="staff-online-order-number">#{{ order.broj }}</span>
-                    {% if order.odstampana %}
-                    <span class="staff-badge-printed" title="Odštampano{% if order.odstampana_at %} {{ order.odstampana_at|date:'d.m.Y. H:i' }}{% endif %}">Odštampano ✓</span>
-                    {% elif order.status == 'nova' %}
+                    {% if order.status == 'nova' and not order.odstampana %}
                     <span class="staff-badge-nova">NOVA</span>
                     {% endif %}
                 </div>
                 <div class="staff-online-order-actions">
                     <a href="{% url 'staff_order_detail' broj=order.broj %}" class="order-card-link">Pregled računa</a>
-                    <div class="staff-print-order-wrap">
-                        {% if order.odstampana %}
-                        <span class="staff-print-done-check" title="Odštampano{% if order.odstampana_at %} {{ order.odstampana_at|date:'d.m.Y. H:i' }}{% endif %}" aria-label="Odštampano">✓</span>
-                        {% endif %}
-                        <a href="{% url 'staff_order_print' broj=order.broj %}" class="btn btn-sm staff-print-order-btn" target="_blank" rel="noopener">Štampanje narudžbe</a>
-                    </div>
+                    <a href="{% url 'staff_order_print' broj=order.broj %}"
+                       class="btn btn-sm staff-print-order-btn"
+                       target="_blank"
+                       rel="noopener"
+                       data-order-print
+                       data-already-printed="{% if order.odstampana %}1{% else %}0{% endif %}">Štampanje narudžbe</a>
                     <a href="{% url 'staff_order_brza_posta' broj=order.broj %}" class="btn btn-sm staff-brza-posta-btn" target="_blank" rel="noopener">Unos u Brzu poštu</a>
                     {% if order.status == 'nova' %}
                     <form method="post" action="{% url 'staff_online_orders' %}{% if searched %}?q={{ search_query|urlencode }}{% elif filter_status != 'nove' %}?filter={{ filter_status }}{% endif %}" class="staff-complete-form">
@@ -106,6 +104,15 @@
 document.querySelectorAll('.staff-complete-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
         if (!window.confirm('Želite li završiti narudžbu?')) {
+            event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('[data-order-print]').forEach(function (link) {
+    link.addEventListener('click', function (event) {
+        if (link.getAttribute('data-already-printed') !== '1') return;
+        var ok = window.confirm('Narudžba je već odštampana. Želite li je ponovo odštampati?');
+        if (!ok) {
             event.preventDefault();
         }
     });

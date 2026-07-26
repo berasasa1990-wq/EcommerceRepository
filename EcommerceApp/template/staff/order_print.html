@@ -475,16 +475,19 @@
 
         @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 8mm;
         }
 
         @media print {
             body {
                 background: #ffffff;
                 padding: 0;
+                font-size: 10px;
+                line-height: 1.3;
             }
             .print-toolbar,
-            .page-separator {
+            .page-separator,
+            .mp-check-overlay {
                 display: none !important;
             }
             .invoice-section {
@@ -497,6 +500,90 @@
                 padding: 0;
                 border: none;
                 border-radius: 0;
+            }
+            /* Kompaktniji račun — više artikala, čitljivo */
+            .doc-logo {
+                max-height: 36px !important;
+                height: 36px !important;
+            }
+            .doc-title {
+                font-size: 15px !important;
+            }
+            .doc-meta {
+                font-size: 10px !important;
+                line-height: 1.35 !important;
+            }
+            .doc-meta p {
+                margin: 0 0 2px !important;
+            }
+            .parties-table {
+                margin: 8px 0 6px !important;
+            }
+            .parties-table td {
+                font-size: 10px !important;
+                line-height: 1.35 !important;
+                padding-right: 8px !important;
+            }
+            .party-label {
+                margin-bottom: 3px !important;
+                font-size: 9px !important;
+            }
+            .items-table {
+                margin-top: 4px !important;
+            }
+            .items-table th {
+                padding: 3px 2px !important;
+                font-size: 8px !important;
+                letter-spacing: 0.02em !important;
+            }
+            .items-table td {
+                padding: 3px 2px !important;
+                font-size: 9.5px !important;
+                line-height: 1.25 !important;
+            }
+            .items-table .col-name { width: 54% !important; }
+            .items-table .col-qty { width: 8% !important; }
+            .items-table .col-price { width: 18% !important; }
+            .items-table .col-total { width: 20% !important; }
+            .item-name {
+                font-size: 9.5px !important;
+                font-weight: 600 !important;
+            }
+            .item-variation {
+                font-size: 8.5px !important;
+                margin-top: 1px !important;
+            }
+            .items-table td.col-price div,
+            .items-table td.col-price span {
+                font-size: 8.5px !important;
+            }
+            /* Iznos sa PDV-om, dostava, ukupno — uvijek zajedno na istom listu */
+            .invoice-totals-block,
+            .totals-wrap {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                page-break-before: avoid;
+                break-before: avoid;
+                margin-top: 8px !important;
+            }
+            .totals-table {
+                width: 240px !important;
+            }
+            .totals-table td {
+                padding: 2px 0 !important;
+                font-size: 10px !important;
+            }
+            .totals-table tr.total-row td {
+                padding-top: 6px !important;
+                font-size: 11px !important;
+            }
+            .order-footer {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin-top: 10px !important;
+                padding-top: 6px !important;
+                font-size: 8.5px !important;
+                line-height: 1.35 !important;
             }
             .warranty-section {
                 page-break-before: always !important;
@@ -529,12 +616,14 @@
                 border: none;
                 border-radius: 0;
             }
+            .pack-table th,
+            .pack-table td {
+                padding: 5px 4px !important;
+                font-size: 11px !important;
+            }
             .pack-table th {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-            }
-            .mp-check-overlay {
-                display: none !important;
             }
         }
 
@@ -631,7 +720,10 @@
         }
     </style>
 </head>
-<body data-requires-mp-check="{% if requires_mp_check %}1{% else %}0{% endif %}">
+<body
+    data-requires-mp-check="{% if requires_mp_check %}1{% else %}0{% endif %}"
+    data-already-printed="{% if order.odstampana %}1{% else %}0{% endif %}"
+>
     {% if requires_mp_check %}
     <div class="mp-check-overlay no-print" id="mpCheckOverlay" role="dialog" aria-modal="true" aria-labelledby="mpCheckTitle">
         <div class="mp-check-dialog">
@@ -689,7 +781,9 @@
     <script>
     (function () {
         var requiresMp = document.body.getAttribute('data-requires-mp-check') === '1';
+        var alreadyPrinted = document.body.getAttribute('data-already-printed') === '1';
         var released = !requiresMp;
+        var reprintOk = !alreadyPrinted;
         var overlay = document.getElementById('mpCheckOverlay');
         var releaseBtn = document.getElementById('releaseOrderBtn');
         var printBtn = document.getElementById('printOrderBtn');
@@ -718,17 +812,31 @@
             }
         }
 
+        function confirmReprintIfNeeded() {
+            if (!alreadyPrinted || reprintOk) return true;
+            var ok = window.confirm('Narudžba je već odštampana. Želite li je ponovo odštampati?');
+            if (ok) {
+                reprintOk = true;
+            }
+            return ok;
+        }
+
         function doPrint() {
+            if (!confirmReprintIfNeeded()) return;
             markPrinted();
             window.print();
         }
 
         function releaseAndPrint() {
+            if (!confirmReprintIfNeeded()) return;
             released = true;
             if (overlay) {
                 overlay.style.display = 'none';
             }
-            window.setTimeout(doPrint, 150);
+            window.setTimeout(function () {
+                markPrinted();
+                window.print();
+            }, 150);
         }
 
         if (releaseBtn) {
@@ -753,11 +861,15 @@
             markPrinted();
         });
 
-        // Auto-print samo ako je sve u Odoo na stanju
+        // Auto-print samo ako je sve u Odoo na stanju i nije već odštampana
+        // (ako jeste — traži potvrdu)
         window.addEventListener('load', function () {
-            if (!requiresMp) {
-                window.setTimeout(doPrint, 250);
-            }
+            if (requiresMp) return;
+            if (alreadyPrinted && !confirmReprintIfNeeded()) return;
+            window.setTimeout(function () {
+                markPrinted();
+                window.print();
+            }, 250);
         });
     })();
     </script>

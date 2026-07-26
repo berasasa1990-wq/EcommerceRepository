@@ -19,12 +19,12 @@
                 <button type="submit" class="btn btn-secondary btn-sm staff-complete-btn">Završi</button>
             </form>
             {% endif %}
-            <div class="staff-print-order-wrap">
-                {% if order.odstampana %}
-                <span class="staff-print-done-check" title="Odštampano" aria-label="Odštampano">✓</span>
-                {% endif %}
-                <a href="{% url 'staff_order_print' broj=order.broj %}" class="btn btn-sm staff-print-order-btn" target="_blank" rel="noopener">Štampanje narudžbe</a>
-            </div>
+            <a href="{% url 'staff_order_print' broj=order.broj %}"
+               class="btn btn-sm staff-print-order-btn"
+               target="_blank"
+               rel="noopener"
+               data-order-print
+               data-already-printed="{% if order.odstampana %}1{% else %}0{% endif %}">Štampanje narudžbe</a>
             <a href="{% url 'staff_order_brza_posta' broj=order.broj %}" class="btn btn-sm staff-brza-posta-btn" target="_blank" rel="noopener">Unos u Brzu poštu</a>
         </div>
     </div>
@@ -50,6 +50,15 @@
 document.querySelectorAll('.staff-complete-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
         if (!window.confirm('Želite li završiti narudžbu?')) {
+            event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('[data-order-print]').forEach(function (link) {
+    link.addEventListener('click', function (event) {
+        if (link.getAttribute('data-already-printed') !== '1') return;
+        var ok = window.confirm('Narudžba je već odštampana. Želite li je ponovo odštampati?');
+        if (!ok) {
             event.preventDefault();
         }
     });

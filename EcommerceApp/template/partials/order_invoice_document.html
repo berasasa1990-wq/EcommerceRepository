@@ -42,10 +42,10 @@
     <table class="items-table" role="presentation" cellpadding="0" cellspacing="0">
         <thead>
             <tr>
-                <th class="col-name" style="width: 46%;">Naziv</th>
-                <th class="col-qty" style="width: 14%;">Količina</th>
-                <th class="col-price" style="width: 20%;">Cijena</th>
-                <th class="col-total" style="width: 20%;">Ukupno sa PDV-om</th>
+                <th class="col-name" style="width: 52%;">Naziv</th>
+                <th class="col-qty" style="width: 10%;">Kol.</th>
+                <th class="col-price" style="width: 18%;">Cijena</th>
+                <th class="col-total" style="width: 20%;">Ukupno s PDV</th>
             </tr>
         </thead>
         <tbody>
@@ -86,37 +86,40 @@
         </tbody>
     </table>
 
-    <div class="totals-wrap">
-        <table class="totals-table" role="presentation" cellpadding="0" cellspacing="0">
-            <tr>
-                <td>Iznos sa PDV-om</td>
-                <td>{{ summary.medjuzbir }} KM</td>
-            </tr>
-            {% if summary.popust %}
-            <tr>
-                <td>Popust</td>
-                <td>-{{ summary.popust }} KM</td>
-            </tr>
-            {% endif %}
-            <tr>
-                <td>Dostava{% if dostava_naziv %} — {{ dostava_naziv }}{% endif %}</td>
-                <td>{% if summary.besplatna_dostava %}Besplatno{% else %}{{ summary.dostava }} KM{% endif %}</td>
-            </tr>
-            <tr class="total-row">
-                <td>UKUPNO ZA PLATITI</td>
-                <td>{{ summary.ukupno }} KM</td>
-            </tr>
-        </table>
-    </div>
+    {# totals + footer zajedno — ne lome se preko stranica pri štampi #}
+    <div class="invoice-totals-block">
+        <div class="totals-wrap">
+            <table class="totals-table" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>Iznos sa PDV-om</td>
+                    <td>{{ summary.medjuzbir }} KM</td>
+                </tr>
+                {% if summary.popust %}
+                <tr>
+                    <td>Popust</td>
+                    <td>-{{ summary.popust }} KM</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td>Dostava{% if dostava_naziv %} — {{ dostava_naziv }}{% endif %}</td>
+                    <td>{% if summary.besplatna_dostava %}Besplatno{% else %}{{ summary.dostava }} KM{% endif %}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>UKUPNO ZA PLATITI</td>
+                    <td>{{ summary.ukupno }} KM</td>
+                </tr>
+            </table>
+        </div>
 
-    <div class="order-footer">
-        Način plaćanja: pouzećem pri preuzimanju pošiljke.<br>
-        Hvala vam na kupovini na <a href="{{ site_url }}">{{ site_name }}</a>.
-        {% if store_phone or store_email %}
-        <br>Kontakt:
-        {% if store_phone %}{{ store_phone }}{% endif %}
-        {% if store_phone and store_email %}, {% endif %}
-        {% if store_email %}<a href="mailto:{{ store_email }}">{{ store_email }}</a>{% endif %}
-        {% endif %}
+        <div class="order-footer">
+            Način plaćanja: pouzećem pri preuzimanju pošiljke.<br>
+            Hvala vam na kupovini na <a href="{{ site_url }}">{{ site_name }}</a>.
+            {% if store_phone or store_email %}
+            <br>Kontakt:
+            {% if store_phone %}{{ store_phone }}{% endif %}
+            {% if store_phone and store_email %}, {% endif %}
+            {% if store_email %}<a href="mailto:{{ store_email }}">{{ store_email }}</a>{% endif %}
+            {% endif %}
+        </div>
     </div>
 </div>
