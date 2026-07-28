@@ -46,6 +46,14 @@ class SiteSettings(models.Model):
         verbose_name='Logo sajta',
         help_text='Prikazuje se u headeru umjesto teksta. Čuva se kao PNG s bijelom pozadinom (max 640×128px).',
     )
+    logo_glavni_sajt = models.ImageField(
+        upload_to='site/', blank=True, null=True,
+        verbose_name='Logo glavnog sajta',
+        help_text=(
+            'Prikazuje se u headeru ispod glavnog loga uz tekst „by” '
+            '(pod-sajt / Carpologija BH). Automatski se skalira na ~200×48px PNG.'
+        ),
+    )
     favicon = models.ImageField(
         upload_to='site/', blank=True, null=True,
         verbose_name='Ikona sajta (favicon)',
@@ -529,6 +537,7 @@ class SiteSettings(models.Model):
         self.pk = 1
         from .utils.images import (
             apply_image_processing,
+            process_brand_logo,
             process_product_detail_badge,
             process_site_favicon,
             process_site_logo,
@@ -536,6 +545,8 @@ class SiteSettings(models.Model):
 
         if self.logo:
             apply_image_processing(self, 'logo', post_process=process_site_logo)
+        if self.logo_glavni_sajt:
+            apply_image_processing(self, 'logo_glavni_sajt', post_process=process_brand_logo)
         if self.favicon:
             apply_image_processing(self, 'favicon', post_process=process_site_favicon)
         if self.badge_product_detail:
@@ -2944,6 +2955,16 @@ class UserProfile(models.Model):
         related_name='profil',
     )
     telefon = models.CharField(max_length=30, blank=True)
+    telefon_verifikovan = models.BooleanField(
+        default=False,
+        verbose_name='Telefon verifikovan (Viber)',
+        help_text='Potvrđeno da broj pripada kupcu (kod poslan preko Vibera).',
+    )
+    telefon_verifikovan_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Telefon verifikovan u',
+    )
     adresa = models.CharField(max_length=300, blank=True)
     grad = models.CharField(max_length=100, blank=True)
     postanski_broj = models.CharField(max_length=20, blank=True)
@@ -3007,6 +3028,17 @@ class Order(models.Model):
         null=True,
         blank=True,
         verbose_name='Odštampana u',
+    )
+    stanje_skinuto = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Stanje skinuto',
+        help_text='Zaliha skinuta iz Odoa (zapakovano i poslato — Brza pošta).',
+    )
+    stanje_skinuto_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Stanje skinuto u',
     )
 
     class Meta:

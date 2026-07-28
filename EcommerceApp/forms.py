@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
@@ -583,6 +584,24 @@ class BannerAdminForm(forms.ModelForm):
         return instance
 
 
+def _turnstile_enabled():
+    return bool(
+        getattr(settings, 'TURNSTILE_SITE_KEY', '')
+        and getattr(settings, 'TURNSTILE_SECRET_KEY', '')
+    )
+
+
+def _configure_turnstile_field(form):
+    """Turnstile obavezan samo kad je konfigurisan (preskočen lokalno / DEBUG)."""
+    field = form.fields.get('cf_turnstile_response')
+    if not field:
+        return
+    if _turnstile_enabled():
+        field.required = True
+    else:
+        field.required = False
+
+
 class RegisterForm(forms.Form):
     ime_prezime = forms.CharField(
         label='Ime i prezime',
@@ -609,12 +628,16 @@ class RegisterForm(forms.Form):
         widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Ponovite lozinku'}),
     )
     cf_turnstile_response = forms.CharField(
-        required=True,
+        required=False,
         widget=forms.HiddenInput(),
         error_messages={
             'required': 'Molimo potvrdite da niste robot (Turnstile).'
         }
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _configure_turnstile_field(self)
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()
@@ -641,7 +664,7 @@ class LoginForm(forms.Form):
         widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Lozinka'}),
     )
     cf_turnstile_response = forms.CharField(
-        required=True,
+        required=False,
         widget=forms.HiddenInput(),
         error_messages={
             'required': 'Molimo potvrdite da niste robot (Turnstile).'
@@ -652,6 +675,7 @@ class LoginForm(forms.Form):
         self.request = request
         self.user = None
         super().__init__(*args, **kwargs)
+        _configure_turnstile_field(self)
 
     def clean(self):
         cleaned = super().clean()

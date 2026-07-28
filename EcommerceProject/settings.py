@@ -325,6 +325,8 @@ ORDER_NOTIFICATION_EMAIL = _env(
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
 SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')
+# Viber broj s kojeg se šalju loyalty kodovi za provjeru kupca (BA format 00… ili +…)
+LOYALTY_VIBER_FROM_PHONE = _env('LOYALTY_VIBER_FROM_PHONE', '0038765838653')
 MESSENGER_PAGE = _env('MESSENGER_PAGE', 'opremazaribolov.ba')
 STORE_EMAIL = _env('STORE_EMAIL', 'narudzbe@opremazaribolov.ba')
 
@@ -375,3 +377,10 @@ elif _site_prep_env in ('true', '1', 'yes'):
 else:
     SITE_PREP_ENABLED = bool(SITE_PREP_PASSWORD)
 SITE_PREP_SESSION_KEY = 'site_prep_unlocked'
+
+# Lokalni runserver (DEBUG=True, npr. http://127.0.0.1:8000):
+# bez site-prep lozinke i bez Cloudflare Turnstile — produkcija (DEBUG=False) ostaje zaštićena.
+if DEBUG:
+    SITE_PREP_ENABLED = False
+    TURNSTILE_SITE_KEY = ''
+    TURNSTILE_SECRET_KEY = ''

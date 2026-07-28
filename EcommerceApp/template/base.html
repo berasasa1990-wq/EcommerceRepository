@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260725v10" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260725v10">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260728v3" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260728v3">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -186,21 +186,31 @@
                     </svg>
                 </button>
 
-                <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
-                    {% if site_settings.logo %}
-                    <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
-                    {% else %}
-                    <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-                        <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M10 22c4-6 8-9 14-10-2 4-2 8 0 12-5-1-9-1-14-2z" fill="currentColor"/>
-                        <path d="M24 12c2 2 3 5 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        <circle cx="13" cy="19" r="1" fill="currentColor"/>
-                    </svg>
-                    <span class="logo-text">
-                        <span class="logo-name">opremaza<span class="logo-accent">ribolov</span></span><span class="logo-tld">.ba</span>
-                    </span>
+                <div class="logo-brand">
+                    <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
+                        {% if site_settings.logo %}
+                        <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
+                        {% else %}
+                        <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                            <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M10 22c4-6 8-9 14-10-2 4-2 8 0 12-5-1-9-1-14-2z" fill="currentColor"/>
+                            <path d="M24 12c2 2 3 5 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <circle cx="13" cy="19" r="1" fill="currentColor"/>
+                        </svg>
+                        <span class="logo-text">
+                            <span class="logo-name">opremaza<span class="logo-accent">ribolov</span></span><span class="logo-tld">.ba</span>
+                        </span>
+                        {% endif %}
+                    </a>
+                    {% if site_settings.logo_glavni_sajt %}
+                    <div class="logo-byline">
+                        <span class="logo-by">by</span>
+                        <a href="https://www.carpologijabh.ba" class="logo-parent" target="_blank" rel="noopener noreferrer" aria-label="Carpologija BH">
+                            <img src="{{ site_settings.logo_glavni_sajt.url }}" alt="Carpologija BH" class="logo-parent-image" width="120" height="28" loading="eager" decoding="async">
+                        </a>
+                    </div>
                     {% endif %}
-                </a>
+                </div>
 
                 <div class="header-search" id="headerSearch">
                     <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">

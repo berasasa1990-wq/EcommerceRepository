@@ -105,10 +105,10 @@
                     {% endif %}
 
                     {% if selected_card and loyalty %}
-                    <div class="loyalty-customer">
+                    <div class="loyalty-customer" id="loyaltyCustomerPanel">
                         {% if newly_issued %}
                         <div class="loyalty-success-banner" role="status">
-                            Kartica uspješno registrovana. Možete je odštampati ili poslati na Viber.
+                            Kartica uspješno registrovana. Možete je odštampati ili poslati kupcu na Viber.
                         </div>
                         {% endif %}
 
@@ -125,11 +125,21 @@
                                 <button type="submit" class="btn btn-primary btn-sm">Aktiviraj nalog</button>
                             </form>
                             {% endif %}
+                            <span class="loyalty-account-badge loyalty-account-badge--tier">
+                                {{ loyalty.tier.label }} · {{ loyalty.tier.postotak }}%
+                            </span>
+                            {% if loyalty.next_tier and loyalty.preostalo_do_sljedeceg is not None %}
+                            <span class="loyalty-account-badge loyalty-account-badge--next">
+                                Još {{ loyalty.preostalo_do_sljedeceg|floatformat:0 }} KM do {{ loyalty.next_tier.label }}
+                            </span>
+                            {% else %}
+                            <span class="loyalty-account-badge loyalty-account-badge--next">Najviši nivo</span>
+                            {% endif %}
                         </div>
 
                         <div class="loyalty-preview-section">
                             <div class="loyalty-preview-header">
-                                <h3>Fizička kartica</h3>
+                                <h3>Loyalty kartica</h3>
                                 <div class="loyalty-preview-actions">
                                     <button type="button" class="btn btn-print-card" onclick="window.print()">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -149,13 +159,20 @@
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                             <path d="M12 2C6.5 2 2 5.9 2 10.7c0 2.8 1.5 5.3 3.9 6.9L5 22l4.7-1.5c.8.2 1.5.3 2.3.3 5.5 0 10-3.9 10-8.7S17.5 2 12 2zm5.1 11.3c-.2.5-1.1.9-1.5 1-.4 0-.7.2-2.3-.5-1.9-.9-3.1-2.9-3.2-3.1-.1-.1-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4.2.4.7 1.6.7 1.7.1.1.1.3 0 .5-.1.2-.2.3-.3.4-.1.1-.3.3-.1.6.1.3.6 1 1.3 1.6.9.8 1.6 1 1.8 1.1.2.1.4.1.5-.1.1-.1.6-.7.8-.9.2-.2.3-.2.5-.1.2.1 1.3.6 1.5.7.2.1.4.2.4.3.1.2 0 .7-.2 1.2z"/>
                                         </svg>
-                                        Pošalji na Viber
+                                        Pošalji karticu na Viber
                                     </button>
                                     {% else %}
                                     <span class="staff-loyalty-muted-hint" title="Dodajte telefon u ličnim podacima">Viber nedostupan (nema telefona)</span>
                                     {% endif %}
                                 </div>
                             </div>
+                            <p class="loyalty-preview-hint">
+                                Kartica prikazuje nivo, popust i koliko KM fali do sljedećeg nivoa.
+                                {% if loyalty.viber_url %}Pošaljite je kupcu na Viber (slika + tekst).{% endif %}
+                            </p>
+                            {% if loyalty.viber_caption %}
+                            {{ loyalty.viber_caption|json_script:"loyaltyViberCaption" }}
+                            {% endif %}
                             <div class="loyalty-print-preview">
                                 {% include 'partials/loyalty_card_print.html' %}
                             </div>
@@ -260,9 +277,6 @@
 {% block extra_js %}
 <script>
 (function () {
-    const btn = document.getElementById('loyaltyViberSendBtn');
-    if (!btn) return;
-
     function showToast(message) {
         let toast = document.querySelector('.cart-toast');
         if (!toast) {
@@ -277,16 +291,30 @@
         }, 4200);
     }
 
-    btn.addEventListener('click', async function () {
-        const imageUrl = btn.dataset.imageUrl;
-        const viberUrl = btn.dataset.viberUrl;
-        const code = btn.dataset.cardCode || '';
-        const phone = (btn.dataset.phone || '').trim();
+    function getViberCaption() {
+        const el = document.getElementById('loyaltyViberCaption');
+        if (!el) return '';
+        try {
+            return JSON.parse(el.textContent);
+        } catch (e) {
+            return el.textContent || '';
+        }
+    }
+
+    // Pošalji sliku loyalty kartice na Viber (nivo, %, do sljedećeg)
+    const cardBtn = document.getElementById('loyaltyViberSendBtn');
+    if (!cardBtn) return;
+
+    cardBtn.addEventListener('click', async function () {
+        const imageUrl = cardBtn.dataset.imageUrl;
+        const viberUrl = cardBtn.dataset.viberUrl;
+        const code = cardBtn.dataset.cardCode || '';
+        const phone = (cardBtn.dataset.phone || '').trim();
         if (!imageUrl || !viberUrl) {
-            alert('Nedostaje telefon kupca ili slika kartice. Unesite telefon u ličnim podacima.');
+            alert('Nedostaje telefon kupca. Unesite telefon u ličnim podacima.');
             return;
         }
-        btn.disabled = true;
+        cardBtn.disabled = true;
         try {
             const response = await fetch(imageUrl, {
                 credentials: 'same-origin',
@@ -297,16 +325,17 @@
             }
             const blob = await response.blob();
             const fileName = 'loyalty-' + code + '.png';
+            const caption = getViberCaption();
 
-            // 1) Odmah otvori Viber chat na broj kupca (automatski)
-            //    viber://chat?number=%2B387… dolazi iz data-viber-url
+            if (caption && navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(caption).catch(function () {});
+            }
+
             const viberWin = window.open(viberUrl, '_blank');
             if (!viberWin) {
-                // fallback ako popup blocker
                 window.location.href = viberUrl;
             }
 
-            // 2) Preuzmi PNG da se može priložiti u chat
             const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = objectUrl;
@@ -318,15 +347,14 @@
                 URL.revokeObjectURL(objectUrl);
             }, 4000);
 
-            const phoneLabel = phone || 'kupca';
             showToast(
-                'Viber chat otvoren za ' + phoneLabel +
-                '. Slikа kartice je preuzeta — priložite je u chat (📎).',
+                'Viber otvoren za ' + (phone || 'kupca') +
+                '. Tekst je kopiran, slika preuzeta — zalijepite tekst i priložite sliku (📎).',
             );
         } catch (err) {
             alert(err.message || 'Slanje na Viber nije uspjelo.');
         } finally {
-            btn.disabled = false;
+            cardBtn.disabled = false;
         }
     });
 })();

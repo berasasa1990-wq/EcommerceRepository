@@ -17,24 +17,26 @@
         <div class="loyalty-physical-card__discount">
             <span class="loyalty-physical-card__discount-value">{{ loyalty.tier.postotak }}%</span>
             <span class="loyalty-physical-card__discount-label">vaš popust</span>
+            <span class="loyalty-physical-card__discount-tier">{{ loyalty.tier.label }}</span>
         </div>
-        <div class="loyalty-physical-card__tiers">
-            <span class="loyalty-physical-card__tiers-title">Nivoi</span>
-            <ul class="loyalty-physical-card__tiers-list">
-                {% for tier in loyalty.tiers %}
-                <li class="{% if tier.nivo == loyalty.tier.nivo %}is-active{% endif %}">
-                    <span>{{ tier.label }}</span>
-                    <span>{{ tier.postotak }}%</span>
-                    <span>
-                        {% if tier.do %}
-                        {{ tier.od|floatformat:0 }}–{{ tier.do|floatformat:0 }} KM
-                        {% else %}
-                        {{ tier.od|floatformat:0 }}+ KM
-                        {% endif %}
-                    </span>
-                </li>
-                {% endfor %}
-            </ul>
+        <div class="loyalty-physical-card__progress">
+            <span class="loyalty-physical-card__tiers-title">Do sljedećeg nivoa</span>
+            {% if loyalty.next_tier and loyalty.preostalo_do_sljedeceg is not None %}
+            <p class="loyalty-physical-card__progress-value">
+                Još <strong>{{ loyalty.preostalo_do_sljedeceg|floatformat:0 }} KM</strong>
+            </p>
+            <p class="loyalty-physical-card__progress-next">
+                do {{ loyalty.next_tier.label }} ({{ loyalty.next_tier.postotak }}%)
+            </p>
+            {% else %}
+            <p class="loyalty-physical-card__progress-value">
+                <strong>Najviši nivo</strong>
+            </p>
+            <p class="loyalty-physical-card__progress-next">maksimalni popust</p>
+            {% endif %}
+            <p class="loyalty-physical-card__progress-spent">
+                Potrošnja: {{ loyalty.kartica.ukupna_potrosnja }} KM
+            </p>
         </div>
     </div>
 
@@ -69,7 +71,7 @@
     </div>
 
     <footer class="loyalty-physical-card__footer">
-        <span>Potrošnja: {{ loyalty.kartica.ukupna_potrosnja }} KM</span>
+        <span>{{ loyalty.tier.label }} · {{ loyalty.tier.postotak }}%</span>
         <span>Loyalty program</span>
     </footer>
 </div>

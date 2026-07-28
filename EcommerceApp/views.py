@@ -3221,13 +3221,152 @@ def staff_order_mark_printed(request, broj):
     })
 
 
+def _deduct_order_stock_from_packing(order):
+    """
+    Skini zalihu iz Odoa po packing lokacijama (abecedno, kao na listi pakovanja).
+    Vraća (ok, message, details).
+    """
+    from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
+
+    if order.stanje_skinuto:
+        return False, 'Stanje je već skinuto za ovu narudžbu.', []
+
+    packing_lines, odoo_error = _build_order_packing_lines(order)
+    if odoo_error and not packing_lines:
+        return False, f'Odoo: {odoo_error}', []
+
+    picks = []
+    skipped = []
+    for line in packing_lines:
+        product_id = line.get('odoo_product_id')
+        line_picks = line.get('picks') or []
+        if not product_id or not line_picks:
+            skipped.append({
+                'naziv': line.get('naziv'),
+                'sifra': line.get('sifra'),
+                'reason': line.get('pick_text') or 'Provjeri u MP',
+            })
+            continue
+        for pick in line_picks:
+            loc_id = pick.get('location_id')
+            if not loc_id:
+                skipped.append({
+                    'naziv': line.get('naziv'),
+                    'sifra': line.get('sifra'),
+                    'reason': f"Nema location_id za {pick.get('location_name')}",
+                })
+                continue
+            picks.append({
+                'product_id': product_id,
+                'location_id': loc_id,
+                'location_name': pick.get('location_name'),
+                'take': pick.get('take'),
+                'naziv': line.get('naziv'),
+                'sifra': line.get('sifra'),
+            })
+
+    if not picks:
+        return False, 'Nema Odoo lokacija za skidanje (sve je „Provjeri u MP” ili nema zalihe).', skipped
+
+    if not odoo_je_konfigurisan():
+        return False, 'Odoo nije konfigurisan.', []
+
+    try:
+        client = OdooClient.from_settings()
+        results = client.deduct_stock_picks(
+            picks,
+            origin=f'Online narudžba #{order.broj}',
+        )
+    except OdooError as exc:
+        return False, str(exc), []
+    except Exception as exc:
+        return False, f'Odoo greška: {exc}', []
+
+    ok_results = [r for r in results if r.get('ok')]
+    fail_results = [r for r in results if not r.get('ok')]
+
+    # Ažuriraj lokalno stanje artikala (samo uspješno skinute količine)
+    from .models import Product, ProductVariation
+
+    qty_by_product = {}
+    for pick, res in zip(picks, results):
+        if not res.get('ok'):
+            continue
+        pid = pick.get('product_id')
+        qty_by_product[pid] = qty_by_product.get(pid, 0) + int(res.get('quantity') or 0)
+
+    for odoo_pid, qty in qty_by_product.items():
+        variation = ProductVariation.objects.filter(odoo_variant_id=odoo_pid).select_related('artikal').first()
+        if variation:
+            variation.stanje = max(0, int(variation.stanje or 0) - qty)
+            if variation.stanje == 0:
+                variation.na_stanju = False
+            variation.save(update_fields=['stanje', 'na_stanju'])
+            continue
+        product = Product.objects.filter(odoo_template_id=odoo_pid).first()
+        if product:
+            product.stanje = max(0, int(product.stanje or 0) - qty)
+            if product.stanje == 0:
+                product.na_stanju = False
+            product.save(update_fields=['stanje', 'na_stanju'])
+
+    details = {
+        'ok': ok_results,
+        'fail': fail_results,
+        'skipped': skipped,
+    }
+
+    if not ok_results:
+        msg = 'Ništa nije skinuto iz Odoa.'
+        if fail_results:
+            msg += ' ' + '; '.join(
+                f"{f.get('location_name')}: {f.get('error')}" for f in fail_results[:5]
+            )
+        return False, msg, details
+
+    # Označi gotovo čim je nešto skinuto — da se ne dupla pri ponovnom kliku
+    from django.utils import timezone
+    order.stanje_skinuto = True
+    order.stanje_skinuto_at = timezone.now()
+    order.save(update_fields=['stanje_skinuto', 'stanje_skinuto_at'])
+
+    msg = f'Skinuto {len(ok_results)} stavk(e/i) sa Odoo lokacija.'
+    if fail_results:
+        msg += (
+            f' Greške ({len(fail_results)}): '
+            + '; '.join(f"{f.get('location_name')}: {f.get('error')}" for f in fail_results[:3])
+            + ' — provjeri ručno u Odoo (ne skidaj ponovo ovdje).'
+        )
+    if skipped:
+        msg += f' Preskočeno (MP/bez zalihe): {len(skipped)}.'
+    return True, msg, details
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_order_brza_posta(request, broj):
-    """Podaci za unos u Brzu poštu (ime, adresa, telefon, broj, iznos s dostavom)."""
+    """Podaci za unos u Brzu poštu + dugme Skini sa stanja (Odoo lokacije)."""
     from django.utils import timezone
+    from django.contrib import messages as dj_messages
 
     order = get_object_or_404(Order, broj=broj)
+    deduct_details = None
+    deduct_ok = None
+
+    if request.method == 'POST' and request.POST.get('action') == 'skini_stanje':
+        if order.stanje_skinuto:
+            dj_messages.warning(request, 'Stanje je već skinuto za ovu narudžbu.')
+        else:
+            ok, msg, details = _deduct_order_stock_from_packing(order)
+            deduct_ok = ok
+            deduct_details = details
+            order.refresh_from_db()
+            if ok:
+                dj_messages.success(request, msg)
+            else:
+                dj_messages.error(request, msg)
+
+    packing_lines, packing_error = _build_order_packing_lines(order)
     created = timezone.localtime(order.kreirana)
     context = {
         'order': order,
@@ -3235,6 +3374,10 @@ def staff_order_brza_posta(request, broj):
         'vrijeme': created.strftime('%H:%M'),
         'site_name': 'opremazaribolov.ba',
         'iznos_sa_dostavom': order.ukupno,
+        'packing_lines': packing_lines,
+        'packing_error': packing_error,
+        'deduct_details': deduct_details,
+        'deduct_ok': deduct_ok,
     }
     return render(request, 'staff/order_brza_posta.html', context)
 
@@ -3292,6 +3435,7 @@ def _allocate_packing_locations(needed_qty, stock_locations):
         take = min(on_hand, remaining)
         picks.append({
             'location_name': loc.get('location_name') or '?',
+            'location_id': loc.get('location_id'),
             'take': take,
             'on_hand': on_hand,
         })
@@ -5351,7 +5495,11 @@ def staff_post_product_olx(request, slug):
 @user_passes_test(_staff_required)
 def staff_loyalty_system(request):
     from decimal import InvalidOperation
-    from .loyalty import azuriraj_loyalty_karticu, loyalty_kontekst, osiguraj_loyalty_karticu
+    from .loyalty import (
+        azuriraj_loyalty_karticu,
+        loyalty_kontekst,
+        osiguraj_loyalty_karticu,
+    )
 
     issue_form = LoyaltyIssueForm()
     newly_issued = request.GET.get('issued') == '1'
@@ -5503,6 +5651,8 @@ def staff_loyalty_system(request):
                         'postanski_broj': profil.postanski_broj,
                     })
                 edit_form = ProfileForm(initial=initial)
+
+            loyalty_ctx = loyalty_kontekst(selected_card)
 
     context = {
         **_base_context(),

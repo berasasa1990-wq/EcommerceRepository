@@ -263,7 +263,7 @@ class HomeBrandShowcaseInline(admin.TabularInline):
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
-    readonly_fields = ('pregled_loga', 'pregled_favicona', 'pregled_badgea')
+    readonly_fields = ('pregled_loga', 'pregled_loga_glavnog_sajta', 'pregled_favicona', 'pregled_badgea')
     inlines = [
         HomeNovoProductInline,
         HomeFeaturedProductInline,
@@ -272,8 +272,15 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     ]
     fieldsets = (
         ('Logo i ikona', {
-            'fields': ('logo', 'pregled_loga', 'favicon', 'pregled_favicona'),
-            'description': 'Logo u headeru i ikona u tabu preglednika (favicon).',
+            'fields': (
+                'logo', 'pregled_loga',
+                'logo_glavni_sajt', 'pregled_loga_glavnog_sajta',
+                'favicon', 'pregled_favicona',
+            ),
+            'description': (
+                'Logo u headeru, logo glavnog sajta (prikaz „by” ispod loga) '
+                'i ikona u tabu preglednika (favicon).'
+            ),
         }),
         ('Kontakt', {
             'fields': ('kontakt_telefon', 'kontakt_messenger'),
@@ -392,6 +399,15 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 obj.logo.url,
             )
         return 'Nema loga — prikazuje se tekstualni logo opremazaribolov.ba. Upload skalira logo i dodaje bijelu pozadinu.'
+
+    @admin.display(description='Pregled loga glavnog sajta')
+    def pregled_loga_glavnog_sajta(self, obj):
+        if obj and obj.logo_glavni_sajt:
+            return format_html(
+                '<img src="{}" style="height:28px;max-width:200px;object-fit:contain;border:1px solid #eee;border-radius:4px;" />',
+                obj.logo_glavni_sajt.url,
+            )
+        return 'Nema loga — red „by + logo” se ne prikazuje u headeru dok ne uploadujete sliku.'
 
     @admin.display(description='Pregled favicona (32px)')
     def pregled_favicona(self, obj):
