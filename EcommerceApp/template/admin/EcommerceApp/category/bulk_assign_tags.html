@@ -75,18 +75,21 @@
     <a href="{% url 'admin:index' %}">Početna</a>
     &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
     &rsaquo; <a href="{% url 'admin:EcommerceApp_category_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
-    &rsaquo; Bulk dodaj tagove
+    &rsaquo; Bulk dodaj tagove u podkategorije
 </div>
 {% endblock %}
 
 {% block content %}
 <div id="content-main">
-    <h1>Bulk dodaj tagove u kategorije</h1>
+    <h1>Bulk dodaj tagove u podkategorije</h1>
     <p class="help-intro">
-        Za svaku označenu kategoriju unesi search tagove odvojene zarezom
+        Tagovi i pretraga po tagovima važe <strong>samo za podkategorije</strong>, ne za glavne kategorije.
+        Za svaku podkategoriju unesi tagove odvojene zarezom
         (npr. <strong>masinica, masince, rola, role</strong>).
-        Klikni <strong>SAVE</strong> da sačuvaš unose. Tagovi ulaze u pretragu na sajtu
-        (zajedno s nazivom, šifrom i brendom artikla).
+        Klikni <strong>SAVE</strong> da sačuvaš unose.
+        {% if main_skipped %}
+        <br><em>{{ main_skipped }} glavn(a/e) kategorij(a/e) preskočen(a/e).</em>
+        {% endif %}
     </p>
 
     <form method="post" class="bulk-tags-form">

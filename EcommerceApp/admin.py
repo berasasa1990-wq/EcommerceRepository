@@ -446,12 +446,13 @@ class CategoryAdmin(admin.ModelAdmin):
             'description': 'Ostavite roditelja praznog za glavnu kategoriju u meniju (npr. Men, Women). '
                            'Za podkategoriju izaberite roditelja. Za sub-podkategoriju izaberite podkategoriju kao roditelja.',
         }),
-        ('Search tagovi', {
+        ('Search tagovi (samo podkategorije)', {
             'fields': ('search_tagovi',),
             'description': (
-                'Riječi odvojene zarezom koje ulaze u pretragu na sajtu '
+                'Samo za podkategorije (ne za glavne kategorije u meniju). '
+                'Riječi odvojene zarezom ulaze u pretragu na sajtu '
                 '(npr. masinica, masince, rola, role). '
-                'Možeš i masovno: označi kategorije → akcija „Bulk dodaj tagove u kategorije”.'
+                'Masovno: označi podkategorije → akcija „Bulk dodaj tagove u podkategorije”.'
             ),
         }),
         ('Prikaz', {
@@ -469,6 +470,21 @@ class CategoryAdmin(admin.ModelAdmin):
         }),
     )
 
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = list(super().get_fieldsets(request, obj))
+        # Sakrij search tagove za glavne kategorije (bez roditelja)
+        if obj is not None and not obj.roditelj_id:
+            fieldsets = [
+                fs for fs in fieldsets
+                if fs[0] != 'Search tagovi (samo podkategorije)'
+            ]
+        return fieldsets
+
+    def save_model(self, request, obj, form, change):
+        if not obj.roditelj_id:
+            obj.search_tagovi = ''
+        super().save_model(request, obj, form, change)
+
     @admin.display(description='Nivo')
     def nivo_prikaz(self, obj):
         levels = ['Glavna', 'Podkategorija', 'Sub-podkategorija']
@@ -476,6 +492,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
     @admin.display(description='Search tagovi')
     def search_tagovi_kratko(self, obj):
+        if not obj.roditelj_id:
+            return '—'
         raw = (obj.search_tagovi or '').strip()
         if not raw:
             return '—'
@@ -485,6 +503,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
     def bulk_assign_search_tags(self, request, queryset):
         queryset = queryset.select_related('roditelj').order_by('redoslijed', 'naziv')
+        subcategories = queryset.filter(roditelj__isnull=False)
+        main_skipped = queryset.filter(roditelj__isnull=True).count()
 
         if request.method == 'POST' and 'apply' in request.POST:
             selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
@@ -496,12 +516,19 @@ class CategoryAdmin(admin.ModelAdmin):
                 except (TypeError, ValueError):
                     skipped += 1
                     continue
+                # Samo podkategorije
+                cat = Category.objects.filter(pk=pk, roditelj__isnull=False).first()
+                if not cat:
+                    skipped += 1
+                    continue
                 raw = request.POST.get(f'search_tagovi_{pk}', None)
                 if raw is None:
                     skipped += 1
                     continue
                 normalized = Category.normalize_search_tagovi(raw)
-                updated = Category.objects.filter(pk=pk).update(search_tagovi=normalized)
+                updated = Category.objects.filter(pk=pk, roditelj__isnull=False).update(
+                    search_tagovi=normalized,
+                )
                 if updated:
                     count += 1
                 else:
@@ -510,21 +537,32 @@ class CategoryAdmin(admin.ModelAdmin):
             if count:
                 self.message_user(
                     request,
-                    f'Search tagovi sačuvani za {count} kategorij(e).',
+                    f'Search tagovi sačuvani za {count} podkategorij(e).',
                     messages.SUCCESS,
                 )
             if skipped and not count:
                 self.message_user(
                     request,
-                    'Nijedna kategorija nije ažurirana.',
+                    'Nijedna podkategorija nije ažurirana. '
+                    'Tagovi se odnose samo na podkategorije, ne na glavne.',
                     messages.WARNING,
                 )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_category_changelist'))
 
+        if not subcategories.exists():
+            self.message_user(
+                request,
+                'Označi barem jednu podkategoriju. '
+                'Search tagovi ne važe za glavne kategorije.',
+                messages.WARNING,
+            )
+            return HttpResponseRedirect(reverse('admin:EcommerceApp_category_changelist'))
+
         context = {
             **self.admin_site.each_context(request),
-            'title': 'Bulk dodaj tagove u kategorije',
-            'queryset': queryset,
+            'title': 'Bulk dodaj tagove u podkategorije',
+            'queryset': subcategories,
+            'main_skipped': main_skipped,
             'opts': self.model._meta,
             'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
             'action_name': 'bulk_assign_search_tags',
@@ -535,7 +573,7 @@ class CategoryAdmin(admin.ModelAdmin):
             context,
         )
 
-    bulk_assign_search_tags.short_description = 'Bulk dodaj tagove u kategorije'
+    bulk_assign_search_tags.short_description = 'Bulk dodaj tagove u podkategorije'
 
 
 @admin.register(Tag)

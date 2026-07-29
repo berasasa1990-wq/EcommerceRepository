@@ -780,9 +780,10 @@ class Category(models.Model):
         blank=True,
         verbose_name='Search tagovi',
         help_text=(
+            'Samo za podkategorije (ne za glavne kategorije). '
             'Riječi za pretragu na sajtu, odvojene zarezom '
             '(npr. masinica, masince, rola, role). '
-            'Vrijedi za ovu kategoriju/podkategoriju i artikle u njoj.'
+            'Vrijedi za artikle u ovoj podkategoriji.'
         ),
     )
 
@@ -825,7 +826,10 @@ class Category(models.Model):
                 slug = f'{base_slug}-{counter}'
                 counter += 1
             self.slug = slug
-        if self.search_tagovi:
+        # Search tagovi važe samo za podkategorije (imaju roditelja)
+        if not self.roditelj_id:
+            self.search_tagovi = ''
+        elif self.search_tagovi:
             self.search_tagovi = self.normalize_search_tagovi(self.search_tagovi)
         super().save(*args, **kwargs)
 

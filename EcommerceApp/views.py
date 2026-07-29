@@ -495,7 +495,7 @@ def _apply_search_filter(products_qs, query):
     - šifra (artikal + varijacije)
     - brend
     - tagovi proizvoda
-    - tagovi kategorije i podkategorije (search_tagovi)
+    - tagovi podkategorije (search_tagovi) — samo podkategorije, ne glavne
     - naziv kategorije / roditelja
     """
     if not query:
@@ -521,8 +521,11 @@ def _apply_search_filter(products_qs, query):
             | Q(varijacije__sifra__icontains=term)
             | Q(kategorija__naziv__icontains=term)
             | Q(kategorija__roditelj__naziv__icontains=term)
-            | Q(kategorija__search_tagovi__icontains=term)
-            | Q(kategorija__roditelj__search_tagovi__icontains=term)
+            # Search tagovi samo na podkategorijama (imaju roditelja)
+            | (
+                Q(kategorija__roditelj__isnull=False)
+                & Q(kategorija__search_tagovi__icontains=term)
+            )
         )
     return products_qs.filter(match).distinct()
 
@@ -574,14 +577,12 @@ def _search_relevance_score(product, query):
         cat_name = (getattr(cat, 'naziv', None) or '').lower()
         if cat_name and (q in cat_name or any(t in cat_name for t in tokens)):
             score += 20
-        cat_tags = (getattr(cat, 'search_tagovi', None) or '').lower()
-        if cat_tags and (q in cat_tags or any(t in cat_tags for t in tokens)):
-            score += 35
         parent = getattr(cat, 'roditelj', None)
+        # Search tagovi samo za podkategorije (imaju roditelja)
         if parent is not None:
-            parent_tags = (getattr(parent, 'search_tagovi', None) or '').lower()
-            if parent_tags and (q in parent_tags or any(t in parent_tags for t in tokens)):
-                score += 28
+            cat_tags = (getattr(cat, 'search_tagovi', None) or '').lower()
+            if cat_tags and (q in cat_tags or any(t in cat_tags for t in tokens)):
+                score += 35
             parent_name = (getattr(parent, 'naziv', None) or '').lower()
             if parent_name and (q in parent_name or any(t in parent_name for t in tokens)):
                 score += 15

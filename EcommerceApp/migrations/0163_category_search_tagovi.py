@@ -14,9 +14,10 @@ class Migration(migrations.Migration):
             field=models.TextField(
                 blank=True,
                 help_text=(
+                    'Samo za podkategorije (ne za glavne kategorije). '
                     'Riječi za pretragu na sajtu, odvojene zarezom '
                     '(npr. masinica, masince, rola, role). '
-                    'Vrijedi za ovu kategoriju/podkategoriju i artikle u njoj.'
+                    'Vrijedi za artikle u ovoj podkategoriji.'
                 ),
                 verbose_name='Search tagovi',
             ),
