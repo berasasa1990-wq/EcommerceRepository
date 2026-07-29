@@ -488,46 +488,101 @@ def _showcase_brands():
     ).exclude(slika='').distinct().order_by('naziv')
 
 
+def _search_query_terms(query):
+    """Tokeni za pretragu (min. 2 znaka). Više riječi = AND (sve moraju pogoditi)."""
+    q = (query or '').strip()
+    if not q:
+        return []
+    tokens = [t for t in re.split(r'[\s,;]+', q) if len(t) >= 2]
+    if tokens:
+        return tokens
+    return [q] if len(q) >= 2 else []
+
+
+def _parse_category_search_tags(raw):
+    """Lista tagova iz polja podkategorije (zarez/točka-zarez)."""
+    if not raw:
+        return []
+    return [
+        part.strip()
+        for part in str(raw).replace(';', ',').split(',')
+        if part.strip()
+    ]
+
+
+def _tag_token_matches(tag, term):
+    """
+    Tačan match taga (case-insensitive), ne substring usred druge riječi.
+    Dozvoli prefiks od 3+ znaka: „pru” → „prut”.
+    """
+    tag_cf = (tag or '').casefold()
+    term_cf = (term or '').casefold()
+    if not tag_cf or not term_cf:
+        return False
+    if tag_cf == term_cf:
+        return True
+    # Prefiks samo ako je upit dovoljno dug (izbjegava „pr” → sve)
+    if len(term_cf) >= 3 and tag_cf.startswith(term_cf):
+        return True
+    return False
+
+
+def _subcategory_ids_for_search_term(term):
+    """
+    ID-evi podkategorija čiji search_tagovi sadrže term kao cijeli tag.
+    Ne koristi icontains na cijelom stringu (npr. „rut” ne smije pogoditi „prut”).
+    """
+    if not term or len(term.strip()) < 2:
+        return []
+    ids = []
+    qs = (
+        Category.objects
+        .filter(roditelj__isnull=False)
+        .exclude(search_tagovi='')
+        .only('id', 'search_tagovi')
+    )
+    for cat in qs.iterator(chunk_size=200):
+        for tag in _parse_category_search_tags(cat.search_tagovi):
+            if _tag_token_matches(tag, term):
+                ids.append(cat.pk)
+                break
+    return ids
+
+
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga na sajtu:
+    Pretraga na sajtu (samo ovo):
     - naziv proizvoda
     - šifra (artikal + varijacije)
     - brend
-    - tagovi proizvoda
-    - tagovi podkategorije (search_tagovi) — samo podkategorije, ne glavne
-    - naziv kategorije / roditelja
+    - tagovi podkategorije (cijeli tagovi, samo podkategorije)
+
+    Ne pretražuje nazive glavnih kategorija (to je vuklo sve štapove itd.).
+    Više riječi u upitu = AND (svaka riječ mora negdje pogoditi).
     """
-    if not query:
-        return products_qs
-    q = query.strip()
-    if not q:
+    terms = _search_query_terms(query)
+    if not terms:
         return products_qs
 
-    # Cijeli upit + pojedinačni tokeni (npr. "shimano masinica")
-    tokens = [t for t in re.split(r'[\s,;]+', q) if len(t) >= 2]
-    terms = [q]
-    for tok in tokens:
-        if tok.casefold() != q.casefold() and tok not in terms:
-            terms.append(tok)
-
-    match = Q()
+    combined = Q()
+    first = True
     for term in terms:
-        match |= (
+        term_q = (
             Q(naziv__icontains=term)
             | Q(sifra__icontains=term)
             | Q(brend__naziv__icontains=term)
-            | Q(tagovi__naziv__icontains=term)
             | Q(varijacije__sifra__icontains=term)
-            | Q(kategorija__naziv__icontains=term)
-            | Q(kategorija__roditelj__naziv__icontains=term)
-            # Search tagovi samo na podkategorijama (imaju roditelja)
-            | (
-                Q(kategorija__roditelj__isnull=False)
-                & Q(kategorija__search_tagovi__icontains=term)
-            )
         )
-    return products_qs.filter(match).distinct()
+        subcat_ids = _subcategory_ids_for_search_term(term)
+        if subcat_ids:
+            term_q |= Q(kategorija_id__in=subcat_ids)
+        if first:
+            combined = term_q
+            first = False
+        else:
+            combined &= term_q
+
+    return products_qs.filter(combined).distinct()
 
 
 def _product_lager_priority(product):
@@ -540,14 +595,14 @@ def _product_lager_priority(product):
 
 def _search_relevance_score(product, query):
     """Veći = bolje poklapanje (unutar već filtriranih rezultata)."""
-    q = (query or '').strip().lower()
-    if not q:
+    terms = _search_query_terms(query)
+    if not terms:
         return 0
+    q = ' '.join(terms).lower()
     score = 0
     name = (product.naziv or '').lower()
     sifra = (product.sifra or '').lower()
     brand = (getattr(getattr(product, 'brend', None), 'naziv', None) or '').lower()
-    tokens = [t for t in re.split(r'[\s,;]+', q) if t]
 
     if sifra and (sifra == q or q in sifra):
         score += 120
@@ -561,37 +616,32 @@ def _search_relevance_score(product, query):
     if brand:
         if brand == q:
             score += 70
-        elif q in brand or brand in q:
+        elif q in brand:
             score += 40
 
-    for tok in tokens:
-        if tok in name:
+    for tok in terms:
+        tok_l = tok.lower()
+        if tok_l in name:
             score += 12
-        if sifra and tok in sifra:
+        if sifra and tok_l in sifra:
             score += 18
-        if brand and tok in brand:
+        if brand and tok_l in brand:
             score += 14
 
     cat = getattr(product, 'kategorija', None)
-    if cat is not None:
-        cat_name = (getattr(cat, 'naziv', None) or '').lower()
-        if cat_name and (q in cat_name or any(t in cat_name for t in tokens)):
-            score += 20
-        parent = getattr(cat, 'roditelj', None)
-        # Search tagovi samo za podkategorije (imaju roditelja)
-        if parent is not None:
-            cat_tags = (getattr(cat, 'search_tagovi', None) or '').lower()
-            if cat_tags and (q in cat_tags or any(t in cat_tags for t in tokens)):
-                score += 35
-            parent_name = (getattr(parent, 'naziv', None) or '').lower()
-            if parent_name and (q in parent_name or any(t in parent_name for t in tokens)):
-                score += 15
+    if cat is not None and getattr(cat, 'roditelj_id', None):
+        tags = _parse_category_search_tags(getattr(cat, 'search_tagovi', None) or '')
+        for tok in terms:
+            if any(_tag_token_matches(tag, tok) for tag in tags):
+                score += 40
+                break
     return score
 
 
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
     Katalog / pretraga / kategorija:
+    0) Ako ima search upit: relevantnost (naziv/šifra/brend/tag) prvo
     1) Hit redukovanje lagera → Favorizuj → Normal
     2) Unutar nivoa: cijena rastuće (jeftinije → skuplje), osim opadajuce.
     """
@@ -599,6 +649,7 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
         return products
 
     def key(p):
+        rel = -_search_relevance_score(p, query) if query else 0
         prio = _product_lager_priority(p)
         name = (p.naziv or '').lower()
         try:
@@ -607,9 +658,9 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
             price = 0.0
         # Opadajuća: prioritet, pa skuplje → jeftinije
         if price_sort == 'opadajuca':
-            return (-prio, -price, name)
+            return (rel, -prio, -price, name)
         # Zadano + rastuća: prioritet, pa jeftinije → skuplje
-        return (-prio, price, name)
+        return (rel, -prio, price, name)
 
     return sorted(products, key=key)
 
