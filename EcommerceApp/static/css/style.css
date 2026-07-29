@@ -15,7 +15,7 @@
     --gray-600: #707072;
     --footer-muted: #a3a3a3;
     /* Fiksni chrome: JS (syncSiteChromeOffset) mjeri stvarne visine i overwrite-a */
-    --header-top-height: 80px;
+    --header-top-height: 100px;
     --header-nav-height: 48px;
     --header-height: calc(var(--header-top-height) + var(--header-nav-height));
     --promo-height: 40px;
@@ -71,9 +71,21 @@ img.home-vlog-card-image {
     max-width: none;
 }
 
+/* Bijeli sloj ispod promo + headera — sprječava da se sadržaj vidi u procijepu pri scrollu */
+.site-chrome-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--site-chrome-top);
+    background: #ffffff;
+    z-index: 999;
+    pointer-events: none;
+}
+
 /* Promo Bar — UVJEK iznad sadržaja, ISPOD headera (logo/meni ne smiju biti ispod trake) */
 .promo-bar {
-    background: var(--gray-100);
+    background: #ffffff;
     text-align: center;
     padding: 6px 12px;
     font-size: 12px;
@@ -90,6 +102,8 @@ img.home-vlog-card-image {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    /* Blagi rub prema headeru — bez sive rupe */
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
 .promo-bar p {
@@ -105,12 +119,15 @@ img.home-vlog-card-image {
 /* Header — IZNAD promo trake (z-index), top = ispod pune visine promo */
 .header {
     position: fixed;
-    top: calc(var(--staff-edit-banner-height) + var(--promo-height));
+    /* -2px preklapanje s promo trakom da nema procijepa kroz koji se vidi sadržaj */
+    top: calc(var(--staff-edit-banner-height) + var(--promo-height) - 2px);
     left: 0;
     right: 0;
     z-index: 1002;
-    background: var(--white);
+    background: #ffffff;
     transition: box-shadow var(--transition);
+    /* Bijeli „most” prema gore ako još ima subpixel razmaka */
+    box-shadow: 0 -6px 0 0 #ffffff;
 }
 
 .header > .mega-menu-panel {
@@ -138,7 +155,7 @@ img.home-vlog-card-image {
     grid-template-areas: "logo search actions";
     align-items: center;
     gap: 20px;
-    padding: 6px 24px;
+    padding: 2px 24px;
     min-height: var(--header-top-height);
     position: relative;
     z-index: 2;
@@ -354,11 +371,15 @@ body.search-suggest-open .header-float-ctas {
     display: inline-flex;
     flex-direction: column;
     align-items: stretch;
+    justify-content: center;
     gap: 0;
     flex-shrink: 0;
     min-width: 0;
     width: max-content;
     max-width: 100%;
+    align-self: stretch;
+    height: 100%;
+    min-height: calc(var(--header-top-height) - 4px);
 }
 
 .logo {
@@ -369,6 +390,8 @@ body.search-suggest-open .header-float-ctas {
     color: var(--black);
     width: max-content;
     max-width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .logo-byline {
@@ -377,8 +400,9 @@ body.search-suggest-open .header-float-ctas {
     justify-content: flex-end;
     gap: 5px;
     width: 100%;
-    margin-top: 1px;
+    margin-top: 2px;
     line-height: 1;
+    flex-shrink: 0;
 }
 
 .logo-by {
@@ -437,12 +461,20 @@ body.search-suggest-open .header-float-ctas {
 }
 
 .logo-image {
-    height: 64px;
+    /* Puni bijeli header red od vrha do dna (malo zraka za padding) */
+    height: calc(var(--header-top-height) - 8px);
+    max-height: calc(var(--header-top-height) - 8px);
     width: auto;
-    max-width: 380px;
+    max-width: min(480px, 42vw);
     object-fit: contain;
     object-position: left center;
     background: transparent;
+}
+
+/* Kad postoji „by Carpologija” red, logo ostavlja mjesta ispod */
+.logo-brand:has(.logo-byline) .logo-image {
+    height: calc(var(--header-top-height) - 28px);
+    max-height: calc(var(--header-top-height) - 28px);
 }
 
 .header-row--primary .logo-brand {
@@ -715,8 +747,14 @@ body.search-suggest-open .header-float-ctas {
     }
 
     .logo-image {
-        height: 56px;
-        max-width: 300px;
+        height: calc(var(--header-top-height) - 8px);
+        max-height: calc(var(--header-top-height) - 8px);
+        max-width: min(480px, 40vw);
+    }
+
+    .logo-brand:has(.logo-byline) .logo-image {
+        height: calc(var(--header-top-height) - 28px);
+        max-height: calc(var(--header-top-height) - 28px);
     }
 
     .header-row--categories .nav-chevron {
@@ -7975,35 +8013,120 @@ body.mobile-nav-open {
 .footer {
     background: var(--black);
     color: var(--white);
-    padding: 48px 48px 24px;
+    padding: 52px 48px 28px;
 }
 
 .footer-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1fr);
+    gap: 40px 48px;
     max-width: 1440px;
-    margin: 0 auto 48px;
+    margin: 0 auto 40px;
+    align-items: start;
 }
 
-.footer-contact-title {
-    font-size: 13px;
+.footer-column--company {
+    min-width: 0;
+}
+
+.footer-brand {
+    display: inline-block;
+    margin: 0 0 8px;
+    font-size: 16px;
     font-weight: 700;
-    margin-bottom: 16px;
+    letter-spacing: -0.02em;
     color: var(--white);
+    line-height: 1.3;
+    transition: opacity var(--transition);
+}
+
+.footer-brand:hover {
+    opacity: 0.85;
+    color: var(--white);
+}
+
+.footer-tagline {
+    margin: 0 0 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--footer-muted);
+    line-height: 1.45;
+    max-width: 36ch;
+}
+
+.footer-company-details {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.footer-company-details li {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px 14px;
+    align-items: baseline;
+    margin: 0;
+    line-height: 1.45;
+}
+
+.footer-detail-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #737373;
+}
+
+.footer-detail-value {
+    font-size: 13px;
+    color: var(--footer-muted);
+    min-width: 0;
+}
+
+.footer-detail-value a {
+    font-size: 13px;
+    color: var(--footer-muted);
+    line-height: 1.45;
+    transition: color var(--transition);
+}
+
+.footer-detail-value a:hover {
+    color: var(--white);
+}
+
+.footer-detail-sep {
+    margin: 0 4px;
+    color: #555;
+}
+
+.footer-section-title {
+    margin: 0 0 14px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--white);
+    line-height: 1.4;
 }
 
 .footer-nav-list {
     list-style: none;
     margin: 0;
-    padding: 28px 0 0;
+    padding: 0;
+}
+
+.footer-nav-list li {
+    margin: 0 0 4px;
+    line-height: 1.5;
 }
 
 .footer-nav-list a {
     font-size: 13px;
     font-weight: 600;
     color: var(--footer-muted);
-    line-height: 2;
+    line-height: 1.9;
     transition: color var(--transition);
 }
 
@@ -8011,33 +8134,38 @@ body.mobile-nav-open {
     color: var(--white);
 }
 
-.footer-column--support {
-    text-align: right;
+.footer-sites-list {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
 }
 
-.footer-support-title {
-    margin: 0 0 12px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--white);
+.footer-sites-list li {
+    margin: 0 0 6px;
     line-height: 1.5;
 }
 
-.footer-support-email {
-    margin: 0;
-    font-size: 12px;
+.footer-sites-list a {
+    font-size: 13px;
+    font-weight: 600;
     color: var(--footer-muted);
-    line-height: 1.6;
+    line-height: 1.9;
+    transition: color var(--transition);
 }
 
-.footer-support-email a {
-    color: var(--footer-muted);
-}
-
-.footer-support-email a:hover {
+.footer-sites-list a:hover {
     color: var(--white);
+}
+
+.footer-support-note {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: #737373;
+    line-height: 1.5;
+}
+
+.footer-facebook-wrap {
+    margin: 0;
 }
 
 .footer-column a {
@@ -8066,8 +8194,9 @@ body.mobile-nav-open {
 .footer-facebook-link {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     font-size: 12px;
+    font-weight: 600;
     color: var(--gray-400);
     transition: color var(--transition);
 }
@@ -8078,8 +8207,8 @@ body.mobile-nav-open {
 
 .footer-facebook-icon {
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 
 .footer-bottom {
@@ -8925,11 +9054,16 @@ button.nav-action-link {
 /* Responsive */
 @media (max-width: 1024px) {
     :root {
-        /* Default dok JS ne izmjeri — ne pretjerano veliko da ne gura layout */
-        --header-top-height: 96px;
+        /* Default dok JS ne izmjeri — veći bijeli header da logo puni visinu */
+        --header-top-height: 112px;
         --header-nav-height: 0px;
         --header-height: var(--header-top-height);
         --promo-height: 36px;
+    }
+
+    .site-chrome-backdrop {
+        height: var(--site-chrome-top);
+        background: #ffffff;
     }
 
     .promo-bar {
@@ -8937,6 +9071,7 @@ button.nav-action-link {
         padding: 5px 10px;
         font-size: 11px;
         line-height: 1.3;
+        background: #ffffff;
     }
 
     .promo-bar p {
@@ -8949,6 +9084,12 @@ button.nav-action-link {
 
     .header {
         z-index: 1002;
+        background: #ffffff;
+        box-shadow: 0 -8px 0 0 #ffffff;
+    }
+
+    .header-shell {
+        background: #ffffff;
     }
 
     .header-row--primary {
@@ -8964,26 +9105,36 @@ button.nav-action-link {
     }
 
     .logo-brand {
-        align-items: stretch;
+        align-items: center;
+        min-height: 0;
+        align-self: stretch;
     }
 
     .logo-byline {
-        justify-content: flex-end;
+        justify-content: center;
     }
 
     .logo-parent-image {
-        height: 11px;
-        max-width: 68px;
-        object-position: right center;
+        height: 12px;
+        max-width: 72px;
+        object-position: center;
     }
 
     .logo-image {
-        max-height: 52px;
-        height: 52px;
+        /* Mobitel: logo red ~56–64px + search ispod; logo puni gornji red */
+        height: 58px;
+        max-height: 58px;
         width: auto;
-        max-width: min(52vw, 200px);
+        max-width: min(58vw, 240px);
         object-fit: contain;
-        object-position: left center;
+        object-position: center center;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .logo-brand:has(.logo-byline) .logo-image {
+        height: 48px;
+        max-height: 48px;
     }
 
     .product-catalog--full .catalog-products {
@@ -9064,13 +9215,15 @@ button.nav-action-link {
     }
 
     .header-row--primary {
-        grid-template-columns: 44px minmax(0, 1fr) auto;
+        /* 1fr | auto | 1fr → logo tačno na sredini ekrana */
+        grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr);
         grid-template-areas:
             "toggle logo actions"
             "search search search";
-        gap: 8px;
-        padding: 8px 12px 10px;
+        gap: 6px 8px;
+        padding: 4px 12px 8px;
         min-height: 0;
+        align-items: center;
     }
 
     .header-row--categories {
@@ -9192,16 +9345,22 @@ button.nav-action-link {
     .header-row--primary .logo-brand {
         grid-area: logo;
         min-width: 0;
-        max-width: 100%;
-        align-items: stretch;
-        justify-self: start;
-        margin-left: 2px;
+        max-width: min(58vw, 240px);
+        width: max-content;
+        align-items: center;
+        justify-self: center;
+        justify-content: center;
+        margin-left: 0;
+        margin-right: 0;
     }
 
     .header-row--primary .logo {
         min-width: 0;
         max-width: 100%;
-        justify-content: flex-start;
+        width: max-content;
+        justify-content: center;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .header-row--primary .nav-actions {
@@ -10037,15 +10196,21 @@ button.nav-action-link {
     }
 
     .logo-image {
-        height: 48px;
-        max-height: 48px;
-        max-width: min(48vw, 180px);
-        object-position: left center;
+        height: 54px;
+        max-height: 54px;
+        max-width: min(54vw, 210px);
+        object-position: center center;
+    }
+
+    .logo-brand:has(.logo-byline) .logo-image {
+        height: 44px;
+        max-height: 44px;
     }
 
     .logo-parent-image {
-        height: 10px;
-        max-width: 60px;
+        height: 11px;
+        max-width: 64px;
+        object-position: center;
     }
 
     .product-showcase .product-catalog--compact .product-image {
@@ -11133,12 +11298,15 @@ button.nav-action-link {
 
     .footer-grid {
         grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        gap: 28px 24px;
     }
 
-    .footer-column--support {
-        text-align: left;
+    .footer-column--company {
         grid-column: 1 / -1;
+    }
+
+    .footer-company-details li {
+        grid-template-columns: 68px minmax(0, 1fr);
     }
 
     .footer-nav-list {
@@ -12224,17 +12392,23 @@ button.nav-action-link {
     }
 
     .logo-image {
-        max-width: min(48vw, 160px);
-        height: 44px;
-        max-height: 44px;
+        max-width: min(56vw, 200px);
+        height: 52px;
+        max-height: 52px;
         width: auto;
         object-fit: contain;
-        object-position: left center;
+        object-position: center center;
+    }
+
+    .logo-brand:has(.logo-byline) .logo-image {
+        height: 42px;
+        max-height: 42px;
     }
 
     .logo-parent-image {
         height: 10px;
-        max-width: 56px;
+        max-width: 58px;
+        object-position: center;
     }
 
     .hero-carousel .carousel-track {
@@ -12351,7 +12525,14 @@ button.nav-action-link {
     }
 
     .logo-image {
-        height: 58px;
+        height: 50px;
+        max-height: 50px;
+        max-width: min(58vw, 200px);
+    }
+
+    .logo-brand:has(.logo-byline) .logo-image {
+        height: 40px;
+        max-height: 40px;
     }
 
     .nav-actions {

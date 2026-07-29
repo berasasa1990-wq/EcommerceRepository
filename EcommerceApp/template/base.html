@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260728v3" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260728v3">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260729v1" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260729v1">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -168,6 +168,9 @@
     {% endif %}
 </head>
 <body class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}">
+    {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
+    <div class="site-chrome-backdrop" aria-hidden="true"></div>
+
     <div class="promo-bar">
         <p>
             <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>

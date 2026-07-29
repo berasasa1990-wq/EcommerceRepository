@@ -1,21 +1,40 @@
 <footer class="footer">
     <div class="footer-grid">
-        <div class="footer-column footer-column--contact">
-            <p class="footer-contact-title">Kontaktirajte nas:</p>
-            <ul>
+        <div class="footer-column footer-column--company">
+            <a href="{{ site_url }}/" class="footer-brand">www.opremazaribolov.ba</a>
+            <p class="footer-tagline">Službeni web shop kompanije Carpologija BH d.o.o.</p>
+            <ul class="footer-company-details">
                 <li>
-                    <a href="mailto:opremazaribolov.ba@gmail.com">opremazaribolov.ba@gmail.com</a>
+                    <span class="footer-detail-label">Adresa</span>
+                    <span class="footer-detail-value">Raje Banjičića 76, Bijeljina, BiH</span>
                 </li>
                 <li>
-                    <a href="{{ site_url }}/">www.opremazaribolov.ba</a>
+                    <span class="footer-detail-label">Telefon</span>
+                    <span class="footer-detail-value">
+                        <a href="tel:+38765838653">065/838-653</a>
+                        <span class="footer-detail-sep" aria-hidden="true">·</span>
+                        <a href="tel:+38765497431">065/497-431</a>
+                    </span>
                 </li>
                 <li>
-                    <a href="https://www.facebook.com/opremazaribolov.ba" target="_blank" rel="noopener noreferrer">www.facebook.com/opremazaribolov.ba</a>
+                    <span class="footer-detail-label">Email</span>
+                    <span class="footer-detail-value">
+                        <a href="mailto:carpologijabh@gmail.ba">carpologijabh@gmail.ba</a>
+                    </span>
+                </li>
+                <li>
+                    <span class="footer-detail-label">JIB</span>
+                    <span class="footer-detail-value">4403936680005</span>
+                </li>
+                <li>
+                    <span class="footer-detail-label">Osnovano</span>
+                    <span class="footer-detail-value">2015.</span>
                 </li>
             </ul>
         </div>
 
         <div class="footer-column footer-column--nav">
+            <p class="footer-section-title">Navigacija</p>
             <ul class="footer-nav-list">
                 <li><a href="{% url 'about_us' %}">O nama</a></li>
                 <li><a href="{% url 'payment_methods' %}">Način plaćanja</a></li>
@@ -23,14 +42,32 @@
             </ul>
         </div>
 
-        <div class="footer-column footer-column--support">
-            <p class="footer-support-title">Dostupnost 24/7 online podrška</p>
-            <p class="footer-support-email">
-                Email: <a href="mailto:opremazaribolov.ba@gmail.com">opremazaribolov.ba</a>
+        <div class="footer-column footer-column--sites">
+            <p class="footer-section-title">Naši službeni sajtovi</p>
+            <ul class="footer-sites-list">
+                <li>
+                    <a href="https://www.carpologijabh.ba" target="_blank" rel="noopener noreferrer">
+                        www.carpologijabh.ba
+                    </a>
+                </li>
+                <li>
+                    <a href="https://www.opremazaribolov.ba" target="_blank" rel="noopener noreferrer">
+                        www.opremazaribolov.ba
+                    </a>
+                </li>
+            </ul>
+            <p class="footer-support-note">Dostupnost 24/7 online podrška</p>
+            <p class="footer-facebook-wrap">
+                <a href="https://www.facebook.com/opremazaribolov.ba" class="footer-facebook-link" target="_blank" rel="noopener noreferrer">
+                    <svg class="footer-facebook-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M22 12.07C22 6.48 17.52 2 11.93 2S1.86 6.48 1.86 12.07c0 5.02 3.66 9.18 8.44 9.93v-7.02H7.9v-2.91h2.4V9.84c0-2.37 1.41-3.68 3.57-3.68 1.03 0 2.11.18 2.11.18v2.32h-1.19c-1.17 0-1.54.73-1.54 1.48v1.78h2.62l-.42 2.91h-2.2V22c4.78-.75 8.44-4.91 8.44-9.93z"/>
+                    </svg>
+                    Facebook
+                </a>
             </p>
         </div>
     </div>
     <div class="footer-bottom">
-        <p>&copy; {% now "Y" %} opremazaribolov.ba. Sva prava zadržana.</p>
+        <p>&copy; {% now "Y" %} opremazaribolov.ba · Carpologija BH d.o.o. Sva prava zadržana.</p>
     </div>
 </footer>
