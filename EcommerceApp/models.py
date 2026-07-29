@@ -776,11 +776,43 @@ class Category(models.Model):
         verbose_name='Meta opis',
         help_text='Opcionalno. Kratak opis za Google i društvene mreže.',
     )
+    search_tagovi = models.TextField(
+        blank=True,
+        verbose_name='Search tagovi',
+        help_text=(
+            'Riječi za pretragu na sajtu, odvojene zarezom '
+            '(npr. masinica, masince, rola, role). '
+            'Vrijedi za ovu kategoriju/podkategoriju i artikle u njoj.'
+        ),
+    )
 
     class Meta:
         verbose_name = 'Kategorija'
         verbose_name_plural = 'Kategorije'
         ordering = ['redoslijed', 'naziv']
+
+    @staticmethod
+    def normalize_search_tagovi(raw):
+        """Normalizuj zarezom odvojene tagove (bez duplikata, trim)."""
+        if not raw:
+            return ''
+        seen = set()
+        out = []
+        for part in str(raw).replace(';', ',').split(','):
+            tag = part.strip()
+            if not tag:
+                continue
+            key = tag.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(tag)
+        return ', '.join(out)
+
+    def search_tagovi_list(self):
+        if not self.search_tagovi:
+            return []
+        return [t.strip() for t in self.search_tagovi.split(',') if t.strip()]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -793,6 +825,8 @@ class Category(models.Model):
                 slug = f'{base_slug}-{counter}'
                 counter += 1
             self.slug = slug
+        if self.search_tagovi:
+            self.search_tagovi = self.normalize_search_tagovi(self.search_tagovi)
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):

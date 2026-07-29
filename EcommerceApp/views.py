@@ -102,7 +102,7 @@ def _in_stock_variations_qs():
 
 
 def _prefetch_product_cards(qs):
-    return qs.select_related('kategorija', 'brend').annotate(
+    return qs.select_related('kategorija', 'kategorija__roditelj', 'brend').annotate(
         variation_count=Count('varijacije'),
     ).prefetch_related(
         Prefetch('varijacije', queryset=_in_stock_variations_qs()),
@@ -489,16 +489,42 @@ def _showcase_brands():
 
 
 def _apply_search_filter(products_qs, query):
+    """
+    Pretraga na sajtu:
+    - naziv proizvoda
+    - šifra (artikal + varijacije)
+    - brend
+    - tagovi proizvoda
+    - tagovi kategorije i podkategorije (search_tagovi)
+    - naziv kategorije / roditelja
+    """
     if not query:
         return products_qs
-    return products_qs.filter(
-        Q(naziv__icontains=query)
-        | Q(sifra__icontains=query)
-        | Q(tagovi__naziv__icontains=query)
-        | Q(varijacije__sifra__icontains=query)
-        | Q(kategorija__naziv__icontains=query)
-        | Q(kategorija__roditelj__naziv__icontains=query),
-    ).distinct()
+    q = query.strip()
+    if not q:
+        return products_qs
+
+    # Cijeli upit + pojedinačni tokeni (npr. "shimano masinica")
+    tokens = [t for t in re.split(r'[\s,;]+', q) if len(t) >= 2]
+    terms = [q]
+    for tok in tokens:
+        if tok.casefold() != q.casefold() and tok not in terms:
+            terms.append(tok)
+
+    match = Q()
+    for term in terms:
+        match |= (
+            Q(naziv__icontains=term)
+            | Q(sifra__icontains=term)
+            | Q(brend__naziv__icontains=term)
+            | Q(tagovi__naziv__icontains=term)
+            | Q(varijacije__sifra__icontains=term)
+            | Q(kategorija__naziv__icontains=term)
+            | Q(kategorija__roditelj__naziv__icontains=term)
+            | Q(kategorija__search_tagovi__icontains=term)
+            | Q(kategorija__roditelj__search_tagovi__icontains=term)
+        )
+    return products_qs.filter(match).distinct()
 
 
 def _product_lager_priority(product):
@@ -517,7 +543,8 @@ def _search_relevance_score(product, query):
     score = 0
     name = (product.naziv or '').lower()
     sifra = (product.sifra or '').lower()
-    tokens = [t for t in re.split(r'\s+', q) if t]
+    brand = (getattr(getattr(product, 'brend', None), 'naziv', None) or '').lower()
+    tokens = [t for t in re.split(r'[\s,;]+', q) if t]
 
     if sifra and (sifra == q or q in sifra):
         score += 120
@@ -528,17 +555,36 @@ def _search_relevance_score(product, query):
     elif q in name:
         score += 50
 
+    if brand:
+        if brand == q:
+            score += 70
+        elif q in brand or brand in q:
+            score += 40
+
     for tok in tokens:
         if tok in name:
             score += 12
         if sifra and tok in sifra:
             score += 18
+        if brand and tok in brand:
+            score += 14
 
     cat = getattr(product, 'kategorija', None)
     if cat is not None:
         cat_name = (getattr(cat, 'naziv', None) or '').lower()
         if cat_name and (q in cat_name or any(t in cat_name for t in tokens)):
             score += 20
+        cat_tags = (getattr(cat, 'search_tagovi', None) or '').lower()
+        if cat_tags and (q in cat_tags or any(t in cat_tags for t in tokens)):
+            score += 35
+        parent = getattr(cat, 'roditelj', None)
+        if parent is not None:
+            parent_tags = (getattr(parent, 'search_tagovi', None) or '').lower()
+            if parent_tags and (q in parent_tags or any(t in parent_tags for t in tokens)):
+                score += 28
+            parent_name = (getattr(parent, 'naziv', None) or '').lower()
+            if parent_name and (q in parent_name or any(t in parent_name for t in tokens)):
+                score += 15
     return score
 
 

@@ -1,0 +1,126 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .bulk-tags-form {
+        max-width: 820px;
+        margin-top: 16px;
+    }
+    .help-intro {
+        color: #555;
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 8px 0 18px;
+        max-width: 820px;
+    }
+    .category-tag-row {
+        margin-bottom: 14px;
+        padding: 14px 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+    }
+    .category-tag-row h3 {
+        margin: 0 0 6px;
+        font-size: 15px;
+        font-weight: 600;
+    }
+    .category-meta {
+        color: #777;
+        font-size: 12px;
+        margin: 0 0 10px;
+    }
+    .category-tag-row label {
+        display: block;
+        font-weight: 600;
+        font-size: 12px;
+        margin-bottom: 6px;
+        color: #333;
+    }
+    .category-tag-row textarea {
+        width: 100%;
+        min-height: 64px;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+        font-family: inherit;
+    }
+    .category-tag-row textarea:focus {
+        border-color: #417690;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.18);
+    }
+    .field-hint {
+        color: #888;
+        font-size: 11px;
+        margin-top: 6px;
+    }
+    .bulk-tags-actions {
+        margin-top: 22px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_category_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Bulk dodaj tagove
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Bulk dodaj tagove u kategorije</h1>
+    <p class="help-intro">
+        Za svaku označenu kategoriju unesi search tagove odvojene zarezom
+        (npr. <strong>masinica, masince, rola, role</strong>).
+        Klikni <strong>SAVE</strong> da sačuvaš unose. Tagovi ulaze u pretragu na sajtu
+        (zajedno s nazivom, šifrom i brendom artikla).
+    </p>
+
+    <form method="post" class="bulk-tags-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for category in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ category.pk }}">
+        {% endfor %}
+
+        {% for category in queryset %}
+        <div class="category-tag-row">
+            <h3>{{ category }}</h3>
+            <p class="category-meta">
+                {% if category.roditelj %}
+                    Podkategorija · roditelj: {{ category.roditelj.naziv }}
+                {% else %}
+                    Glavna kategorija
+                {% endif %}
+            </p>
+            <label for="tags-{{ category.pk }}">Tagovi (zarezom)</label>
+            <textarea
+                id="tags-{{ category.pk }}"
+                name="search_tagovi_{{ category.pk }}"
+                placeholder="npr. masinica, masince, rola, role"
+                rows="2"
+            >{{ category.search_tagovi }}</textarea>
+            <p class="field-hint">Postojeći tagovi su već u polju — možeš ih dopuniti ili izmijeniti.</p>
+        </div>
+        {% endfor %}
+
+        <div class="bulk-tags-actions">
+            <input type="submit" name="apply" value="SAVE" class="default">
+            <a href="{% url 'admin:EcommerceApp_category_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

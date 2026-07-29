@@ -430,17 +430,29 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('naziv', 'roditelj', 'nivo_prikaz', 'meta_title', 'redoslijed', 'prikazi_u_meniju', 'aktivan')
+    list_display = (
+        'naziv', 'roditelj', 'nivo_prikaz', 'search_tagovi_kratko',
+        'meta_title', 'redoslijed', 'prikazi_u_meniju', 'aktivan',
+    )
     list_filter = ('aktivan', 'prikazi_u_meniju', 'roditelj')
     list_editable = ('redoslijed', 'prikazi_u_meniju', 'aktivan')
     prepopulated_fields = {'slug': ('naziv',)}
-    search_fields = ('naziv', 'slug', 'meta_title', 'meta_description')
+    search_fields = ('naziv', 'slug', 'meta_title', 'meta_description', 'search_tagovi')
     autocomplete_fields = ('roditelj',)
+    actions = ['bulk_assign_search_tags']
     fieldsets = (
         ('Osnovno', {
             'fields': ('naziv', 'slug', 'roditelj'),
             'description': 'Ostavite roditelja praznog za glavnu kategoriju u meniju (npr. Men, Women). '
                            'Za podkategoriju izaberite roditelja. Za sub-podkategoriju izaberite podkategoriju kao roditelja.',
+        }),
+        ('Search tagovi', {
+            'fields': ('search_tagovi',),
+            'description': (
+                'Riječi odvojene zarezom koje ulaze u pretragu na sajtu '
+                '(npr. masinica, masince, rola, role). '
+                'Možeš i masovno: označi kategorije → akcija „Bulk dodaj tagove u kategorije”.'
+            ),
         }),
         ('Prikaz', {
             'fields': ('redoslijed', 'prikazi_u_meniju', 'aktivan'),
@@ -461,6 +473,69 @@ class CategoryAdmin(admin.ModelAdmin):
     def nivo_prikaz(self, obj):
         levels = ['Glavna', 'Podkategorija', 'Sub-podkategorija']
         return levels[min(obj.nivo, 2)]
+
+    @admin.display(description='Search tagovi')
+    def search_tagovi_kratko(self, obj):
+        raw = (obj.search_tagovi or '').strip()
+        if not raw:
+            return '—'
+        if len(raw) > 48:
+            return raw[:45] + '…'
+        return raw
+
+    def bulk_assign_search_tags(self, request, queryset):
+        queryset = queryset.select_related('roditelj').order_by('redoslijed', 'naziv')
+
+        if request.method == 'POST' and 'apply' in request.POST:
+            selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
+            count = 0
+            skipped = 0
+            for pk_str in selected_ids:
+                try:
+                    pk = int(pk_str)
+                except (TypeError, ValueError):
+                    skipped += 1
+                    continue
+                raw = request.POST.get(f'search_tagovi_{pk}', None)
+                if raw is None:
+                    skipped += 1
+                    continue
+                normalized = Category.normalize_search_tagovi(raw)
+                updated = Category.objects.filter(pk=pk).update(search_tagovi=normalized)
+                if updated:
+                    count += 1
+                else:
+                    skipped += 1
+
+            if count:
+                self.message_user(
+                    request,
+                    f'Search tagovi sačuvani za {count} kategorij(e).',
+                    messages.SUCCESS,
+                )
+            if skipped and not count:
+                self.message_user(
+                    request,
+                    'Nijedna kategorija nije ažurirana.',
+                    messages.WARNING,
+                )
+            return HttpResponseRedirect(reverse('admin:EcommerceApp_category_changelist'))
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Bulk dodaj tagove u kategorije',
+            'queryset': queryset,
+            'opts': self.model._meta,
+            'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            'action_name': 'bulk_assign_search_tags',
+        }
+        return render(
+            request,
+            'admin/EcommerceApp/category/bulk_assign_tags.html',
+            context,
+        )
+
+    bulk_assign_search_tags.short_description = 'Bulk dodaj tagove u kategorije'
 
 
 @admin.register(Tag)
