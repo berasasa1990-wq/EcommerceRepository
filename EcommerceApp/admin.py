@@ -450,8 +450,8 @@ class CategoryAdmin(admin.ModelAdmin):
             'fields': ('search_tagovi',),
             'description': (
                 'Samo za podkategorije (ne za glavne kategorije u meniju). '
-                'Riječi odvojene zarezom ulaze u pretragu na sajtu '
-                '(npr. masinica, masince, rola, role). '
+                'Neograničen broj tagova — odvoji zarezom ili novim redom '
+                '(npr. masinica, masince, rola, role, prut, štap). '
                 'Masovno: označi podkategorije → akcija „Bulk dodaj tagove u podkategorije”.'
             ),
         }),
@@ -469,6 +469,21 @@ class CategoryAdmin(admin.ModelAdmin):
             'description': 'ID Odoo product.category za automatsko mapiranje pri importu.',
         }),
     )
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == 'search_tagovi' and formfield is not None:
+            formfield.widget = forms.Textarea(attrs={
+                'rows': 8,
+                'cols': 80,
+                'style': 'width:100%;max-width:720px;font-family:monospace;',
+                'placeholder': 'masinica, masince, rola, role, prut, štap, …\n(neograničen broj — zarez ili novi red)',
+            })
+            formfield.help_text = (
+                'Neograničen broj tagova. Odvoji zarezom ili novim redom. '
+                'Svaki tag se pretražuje na sajtu za artikle u ovoj podkategoriji.'
+            )
+        return formfield
 
     def get_fieldsets(self, request, obj=None):
         fieldsets = list(super().get_fieldsets(request, obj))

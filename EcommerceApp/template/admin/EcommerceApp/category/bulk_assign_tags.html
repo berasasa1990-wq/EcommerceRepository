@@ -40,14 +40,15 @@
     }
     .category-tag-row textarea {
         width: 100%;
-        min-height: 64px;
+        min-height: 140px;
         box-sizing: border-box;
-        padding: 8px 10px;
+        padding: 10px 12px;
         font-size: 14px;
         border: 1px solid #ccc;
         border-radius: 4px;
         resize: vertical;
-        font-family: inherit;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        line-height: 1.45;
     }
     .category-tag-row textarea:focus {
         border-color: #417690;
@@ -83,10 +84,11 @@
 <div id="content-main">
     <h1>Bulk dodaj tagove u podkategorije</h1>
     <p class="help-intro">
-        Tagovi i pretraga po tagovima važe <strong>samo za podkategorije</strong>, ne za glavne kategorije.
-        Za svaku podkategoriju unesi tagove odvojene zarezom
-        (npr. <strong>masinica, masince, rola, role</strong>).
-        Klikni <strong>SAVE</strong> da sačuvaš unose.
+        Tagovi važe <strong>samo za podkategorije</strong> (ne glavne).
+        <strong>Neograničen broj tagova</strong> — odvoji <strong>zarezom</strong> ili <strong>novim redom</strong>
+        (npr. masinica, masince, rola, role, prut, štap…).
+        Artikli moraju biti u toj podkategoriji da bi se pojavili na search.
+        Klikni <strong>SAVE</strong> da sačuvaš sve.
         {% if main_skipped %}
         <br><em>{{ main_skipped }} glavn(a/e) kategorij(a/e) preskočen(a/e).</em>
         {% endif %}
@@ -109,14 +111,14 @@
                     Glavna kategorija
                 {% endif %}
             </p>
-            <label for="tags-{{ category.pk }}">Tagovi (zarezom)</label>
+            <label for="tags-{{ category.pk }}">Tagovi (neograničeno — zarez ili novi red)</label>
             <textarea
                 id="tags-{{ category.pk }}"
                 name="search_tagovi_{{ category.pk }}"
-                placeholder="npr. masinica, masince, rola, role"
-                rows="2"
+                placeholder="masinica, masince, rola, role, prut, štap, …&#10;može i svaki tag u novom redu"
+                rows="8"
             >{{ category.search_tagovi }}</textarea>
-            <p class="field-hint">Postojeći tagovi su već u polju — možeš ih dopuniti ili izmijeniti.</p>
+            <p class="field-hint">Postojeći tagovi su u polju — dopuni ili izmijeni. Nema limita broja tagova.</p>
         </div>
         {% endfor %}
 

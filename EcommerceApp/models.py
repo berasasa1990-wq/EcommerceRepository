@@ -781,9 +781,9 @@ class Category(models.Model):
         verbose_name='Search tagovi',
         help_text=(
             'Samo za podkategorije (ne za glavne kategorije). '
-            'Riječi za pretragu na sajtu, odvojene zarezom '
-            '(npr. masinica, masince, rola, role). '
-            'Vrijedi za artikle u ovoj podkategoriji.'
+            'Neograničen broj riječi za pretragu — odvoji zarezom ili novim redom '
+            '(npr. masinica, masince, rola, role, feeder, štap). '
+            'Vrijedi za artikle u ovoj podkategoriji i njenim podnivoima.'
         ),
     )
 
@@ -794,12 +794,17 @@ class Category(models.Model):
 
     @staticmethod
     def normalize_search_tagovi(raw):
-        """Normalizuj zarezom odvojene tagove (bez duplikata, trim)."""
+        """
+        Normalizuj tagove (zarez / novi red / | / ;).
+        Bez limita broja tagova, bez skraćivanja.
+        """
         if not raw:
             return ''
+        text = str(raw).replace('\r\n', '\n').replace('\r', '\n')
+        text = text.replace(';', ',').replace('|', ',').replace('\n', ',')
         seen = set()
         out = []
-        for part in str(raw).replace(';', ',').split(','):
+        for part in text.split(','):
             tag = part.strip()
             if not tag:
                 continue
@@ -813,7 +818,11 @@ class Category(models.Model):
     def search_tagovi_list(self):
         if not self.search_tagovi:
             return []
-        return [t.strip() for t in self.search_tagovi.split(',') if t.strip()]
+        return [
+            t.strip()
+            for t in self.search_tagovi.replace(';', ',').split(',')
+            if t.strip()
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:

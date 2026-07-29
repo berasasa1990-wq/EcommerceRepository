@@ -257,6 +257,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
+# Bulk admin akcije (npr. tagovi na mnogo podkategorija) šalju puno POST polja
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
+
 TIME_ZONE = 'Europe/Sarajevo'
 
 USE_I18N = True

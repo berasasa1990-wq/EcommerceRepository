@@ -488,8 +488,22 @@ def _showcase_brands():
     ).exclude(slika='').distinct().order_by('naziv')
 
 
+# BH/HR dijakritici → ASCII (štap ≈ stap, mašinica ≈ masinica)
+_SEARCH_DIACRITIC_MAP = str.maketrans({
+    'š': 's', 'đ': 'd', 'č': 'c', 'ć': 'c', 'ž': 'z',
+    'Š': 's', 'Đ': 'd', 'Č': 'c', 'Ć': 'c', 'Ž': 'z',
+})
+
+
+def _search_fold(value):
+    """Lowercase + skidanje dijakritika za usporedbu tagova/upita."""
+    if not value:
+        return ''
+    return str(value).casefold().translate(_SEARCH_DIACRITIC_MAP)
+
+
 def _search_query_terms(query):
-    """Tokeni za pretragu (min. 2 znaka). Više riječi = AND (sve moraju pogoditi)."""
+    """Tokeni za pretragu po nazivu/šifri/brendu (min. 2 znaka)."""
     q = (query or '').strip()
     if not q:
         return []
@@ -500,89 +514,142 @@ def _search_query_terms(query):
 
 
 def _parse_category_search_tags(raw):
-    """Lista tagova iz polja podkategorije (zarez/točka-zarez)."""
+    """
+    Lista tagova iz polja podkategorije.
+    Separatori: zarez, točka-zarez, novi red, | — neograničen broj tagova.
+    """
     if not raw:
         return []
-    return [
-        part.strip()
-        for part in str(raw).replace(';', ',').split(',')
-        if part.strip()
-    ]
+    text = str(raw).replace('\r\n', '\n').replace('\r', '\n')
+    text = text.replace(';', ',').replace('|', ',').replace('\n', ',')
+    return [part.strip() for part in text.split(',') if part.strip()]
 
 
 def _tag_token_matches(tag, term):
     """
-    Tačan match taga (case-insensitive), ne substring usred druge riječi.
-    Dozvoli prefiks od 3+ znaka: „pru” → „prut”.
+    Match taga i upita (case + dijakritici):
+    - tačan match
+    - prefiks (pru → prut, prut → prutovi)
+    - cijela riječ unutar višerječnog taga (npr. tag „feeder stap”, upit „feeder”)
     """
-    tag_cf = (tag or '').casefold()
-    term_cf = (term or '').casefold()
+    tag_cf = _search_fold(tag)
+    term_cf = _search_fold(term)
     if not tag_cf or not term_cf:
         return False
     if tag_cf == term_cf:
         return True
-    # Prefiks samo ako je upit dovoljno dug (izbjegava „pr” → sve)
-    if len(term_cf) >= 3 and tag_cf.startswith(term_cf):
+    # Prefiks u oba smjera (min 2 znaka da svi uneseni tagovi rade)
+    if len(term_cf) >= 2 and tag_cf.startswith(term_cf):
         return True
+    if len(tag_cf) >= 2 and term_cf.startswith(tag_cf):
+        return True
+    # Višerječni tag: bilo koja riječ = upit
+    tag_words = [w for w in re.split(r'[\s/+\-]+', tag_cf) if w]
+    for word in tag_words:
+        if word == term_cf:
+            return True
+        if len(term_cf) >= 2 and word.startswith(term_cf):
+            return True
+        if len(word) >= 2 and term_cf.startswith(word):
+            return True
     return False
 
 
-def _subcategory_ids_for_search_term(term):
+def _subcategory_ids_for_search_terms(terms):
     """
-    ID-evi podkategorija čiji search_tagovi sadrže term kao cijeli tag.
-    Ne koristi icontains na cijelom stringu (npr. „rut” ne smije pogoditi „prut”).
+    ID-evi podkategorija (i njihovih potomaka) čiji search_tagovi
+    poklapaju bilo koji od termova. Tag se tretira kao cijeli unos, ne substring.
     """
-    if not term or len(term.strip()) < 2:
+    clean_terms = [t.strip() for t in (terms or []) if t and len(t.strip()) >= 1]
+    if not clean_terms:
         return []
-    ids = []
+
+    matched_ids = []
     qs = (
         Category.objects
         .filter(roditelj__isnull=False)
         .exclude(search_tagovi='')
-        .only('id', 'search_tagovi')
+        .only('id', 'search_tagovi', 'roditelj_id')
     )
     for cat in qs.iterator(chunk_size=200):
-        for tag in _parse_category_search_tags(cat.search_tagovi):
-            if _tag_token_matches(tag, term):
-                ids.append(cat.pk)
-                break
-    return ids
+        tags = _parse_category_search_tags(cat.search_tagovi)
+        if not tags:
+            continue
+        if any(
+            _tag_token_matches(tag, term)
+            for tag in tags
+            for term in clean_terms
+        ):
+            matched_ids.append(cat.pk)
+
+    if not matched_ids:
+        return []
+
+    # Uključi pod-podkategorije (artikli često vise dublje)
+    all_ids = set()
+    cats = Category.objects.filter(pk__in=matched_ids).prefetch_related('podkategorije')
+    for cat in cats:
+        try:
+            all_ids.update(cat.get_descendant_ids())
+        except Exception:
+            all_ids.add(cat.pk)
+    return list(all_ids)
 
 
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga na sajtu (samo ovo):
+    Pretraga na sajtu:
     - naziv proizvoda
     - šifra (artikal + varijacije)
     - brend
-    - tagovi podkategorije (cijeli tagovi, samo podkategorije)
+    - svi uneseni tagovi podkategorije (neograničen broj)
 
-    Ne pretražuje nazive glavnih kategorija (to je vuklo sve štapove itd.).
-    Više riječi u upitu = AND (svaka riječ mora negdje pogoditi).
+    Tag match je OR (bilo koji tag/upit), naziv/šifra/brend za više riječi = AND.
     """
-    terms = _search_query_terms(query)
-    if not terms:
+    raw = (query or '').strip()
+    if not raw:
         return products_qs
 
-    combined = Q()
-    first = True
-    for term in terms:
-        term_q = (
-            Q(naziv__icontains=term)
-            | Q(sifra__icontains=term)
-            | Q(brend__naziv__icontains=term)
-            | Q(varijacije__sifra__icontains=term)
-        )
-        subcat_ids = _subcategory_ids_for_search_term(term)
-        if subcat_ids:
-            term_q |= Q(kategorija_id__in=subcat_ids)
-        if first:
-            combined = term_q
-            first = False
-        else:
-            combined &= term_q
+    terms = _search_query_terms(raw)
+    # Cijeli upit kao jedan tag-term (npr. „feeder stap” kao fraza)
+    tag_terms = list(terms)
+    if raw not in tag_terms:
+        tag_terms.append(raw)
 
-    return products_qs.filter(combined).distinct()
+    # 1) Tagovi podkategorije — OR preko svih termova
+    subcat_ids = _subcategory_ids_for_search_terms(tag_terms)
+    tag_q = Q(kategorija_id__in=subcat_ids) if subcat_ids else Q(pk__in=[])
+
+    # 2) Naziv / šifra / brend — AND po tokenima
+    if terms:
+        field_q = Q()
+        first = True
+        for term in terms:
+            part = (
+                Q(naziv__icontains=term)
+                | Q(sifra__icontains=term)
+                | Q(brend__naziv__icontains=term)
+                | Q(varijacije__sifra__icontains=term)
+            )
+            # ASCII fold varijanta (štap u bazi, korisnik kuca stap)
+            folded = _search_fold(term)
+            if folded and folded != term.casefold():
+                part |= (
+                    Q(naziv__icontains=folded)
+                    | Q(sifra__icontains=folded)
+                    | Q(brend__naziv__icontains=folded)
+                    | Q(varijacije__sifra__icontains=folded)
+                )
+            if first:
+                field_q = part
+                first = False
+            else:
+                field_q &= part
+        return products_qs.filter(field_q | tag_q).distinct()
+
+    if subcat_ids:
+        return products_qs.filter(tag_q).distinct()
+    return products_qs.none()
 
 
 def _product_lager_priority(product):
@@ -631,6 +698,11 @@ def _search_relevance_score(product, query):
     cat = getattr(product, 'kategorija', None)
     if cat is not None and getattr(cat, 'roditelj_id', None):
         tags = _parse_category_search_tags(getattr(cat, 'search_tagovi', None) or '')
+        # tagovi na ovoj podkategoriji ili (ako prazno) na roditelju koji je takođe podkategorija
+        if not tags:
+            parent = getattr(cat, 'roditelj', None)
+            if parent is not None and getattr(parent, 'roditelj_id', None):
+                tags = _parse_category_search_tags(getattr(parent, 'search_tagovi', None) or '')
         for tok in terms:
             if any(_tag_token_matches(tag, tok) for tag in tags):
                 score += 40
