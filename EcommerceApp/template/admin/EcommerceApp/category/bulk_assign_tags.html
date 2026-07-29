@@ -85,9 +85,9 @@
     <h1>Bulk dodaj tagove u podkategorije</h1>
     <p class="help-intro">
         Tagovi važe <strong>samo za podkategorije</strong> (ne glavne).
-        <strong>Neograničen broj tagova</strong> — odvoji <strong>zarezom</strong> ili <strong>novim redom</strong>
-        (npr. masinica, masince, rola, role, prut, štap…).
-        Artikli moraju biti u toj podkategoriji da bi se pojavili na search.
+        <strong>Neograničen broj tagova</strong> — odvoji <strong>zarezom</strong> ili <strong>novim redom</strong>.
+        <strong>Duga rečenica je jedan tag</strong> (npr. <em>stap za pecanje sarana</em>) —
+        search izlistava artikle te podkategorije. Artikli moraju biti u toj podkategoriji.
         Klikni <strong>SAVE</strong> da sačuvaš sve.
         {% if main_skipped %}
         <br><em>{{ main_skipped }} glavn(a/e) kategorij(a/e) preskočen(a/e).</em>
@@ -115,7 +115,7 @@
             <textarea
                 id="tags-{{ category.pk }}"
                 name="search_tagovi_{{ category.pk }}"
-                placeholder="masinica, masince, rola, role, prut, štap, …&#10;može i svaki tag u novom redu"
+                placeholder="masinica, masince&#10;stap za pecanje sarana&#10;prut, štap&#10;(duga rečenica = jedan tag)"
                 rows="8"
             >{{ category.search_tagovi }}</textarea>
             <p class="field-hint">Postojeći tagovi su u polju — dopuni ili izmijeni. Nema limita broja tagova.</p>

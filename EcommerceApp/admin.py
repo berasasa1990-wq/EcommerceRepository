@@ -477,11 +477,17 @@ class CategoryAdmin(admin.ModelAdmin):
                 'rows': 8,
                 'cols': 80,
                 'style': 'width:100%;max-width:720px;font-family:monospace;',
-                'placeholder': 'masinica, masince, rola, role, prut, štap, …\n(neograničen broj — zarez ili novi red)',
+                'placeholder': (
+                    'masinica, masince, rola\n'
+                    'stap za pecanje sarana\n'
+                    'prut, štap\n'
+                    '(svaka linija ili zarez = tag; duga rečenica = jedan tag)'
+                ),
             })
             formfield.help_text = (
-                'Neograničen broj tagova. Odvoji zarezom ili novim redom. '
-                'Svaki tag se pretražuje na sajtu za artikle u ovoj podkategoriji.'
+                'Neograničen broj tagova. Zarez ili novi red dijele tagove. '
+                'Duga rečenica (npr. „stap za pecanje sarana”) je jedan tag — '
+                'search je izlistava kao tu podkategoriju.'
             )
         return formfield
 

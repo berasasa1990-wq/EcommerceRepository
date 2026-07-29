@@ -1,3 +1,4 @@
+import re
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
@@ -780,10 +781,9 @@ class Category(models.Model):
         blank=True,
         verbose_name='Search tagovi',
         help_text=(
-            'Samo za podkategorije (ne za glavne kategorije). '
-            'Neograničen broj riječi za pretragu — odvoji zarezom ili novim redom '
-            '(npr. masinica, masince, rola, role, feeder, štap). '
-            'Vrijedi za artikle u ovoj podkategoriji i njenim podnivoima.'
+            'Samo za podkategorije. Neograničen broj tagova — odvoji zarezom ili novim redom. '
+            'Duga rečenica je JEDAN tag (razmaci ostaju), npr. „stap za pecanje sarana”. '
+            'Zarez tek dijeli sljedeći tag. Vrijedi za artikle u ovoj podkategoriji i podnivoima.'
         ),
     )
 
@@ -796,23 +796,25 @@ class Category(models.Model):
     def normalize_search_tagovi(raw):
         """
         Normalizuj tagove (zarez / novi red / | / ;).
+        Razmaci unutar taga OSTAJU — duga rečenica je jedan tag.
         Bez limita broja tagova, bez skraćivanja.
         """
         if not raw:
             return ''
         text = str(raw).replace('\r\n', '\n').replace('\r', '\n')
-        text = text.replace(';', ',').replace('|', ',').replace('\n', ',')
+        text = text.replace(';', '\n').replace('|', '\n')
         seen = set()
         out = []
-        for part in text.split(','):
-            tag = part.strip()
-            if not tag:
-                continue
-            key = tag.casefold()
-            if key in seen:
-                continue
-            seen.add(key)
-            out.append(tag)
+        for line in text.split('\n'):
+            for part in line.split(','):
+                tag = re.sub(r'\s+', ' ', part.strip())
+                if not tag:
+                    continue
+                key = tag.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append(tag)
         return ', '.join(out)
 
     def search_tagovi_list(self):
