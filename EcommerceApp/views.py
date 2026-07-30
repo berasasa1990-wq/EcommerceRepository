@@ -528,55 +528,27 @@ def _parse_category_search_tags(raw):
 
 def _tag_matches_query(tag, query):
     """
-    STRIKTNI match taga podkategorije i search upita:
-    - tačan match (npr. multiplikator == multiplikator)
-    - prefiks upita na tag (multiplik → multiplikator), min 3 znaka
-    - duga rečenica: tačan match ili tag počinje upitom
-    - riječ unutar višerječnog taga samo ako je TAČNA riječ (ne substring)
+    Čita TAČAN tag — cijeli string, i kad ima više riječi.
+
+    Match SAMO ako je upit identičan cijelom tagu
+    (nakon trim, suženih razmaka i dijakritika).
+
+    Primjeri:
+    - tag „multiplikator” ← upit „multiplikator” ✓
+    - tag „stap za pecanje sarana” ← upit „stap za pecanje sarana” ✓
+    - upit „stap” ili „sarana” ← NE (nije cijeli tag)
     """
     tag_f = _search_fold(_normalize_phrase(tag))
     q_f = _search_fold(_normalize_phrase(query))
-    if not tag_f or not q_f or len(q_f) < 2:
+    if not tag_f or not q_f:
         return False
-
-    # 1) Cijeli tag == cijeli upit
-    if tag_f == q_f:
-        return True
-
-    # 2) Upit je prefiks taga (kucanje: multiplik → multiplikator)
-    if len(q_f) >= 3 and tag_f.startswith(q_f):
-        return True
-
-    # 3) Tag je prefiks upita samo za duže tagove (prut → prutovi)
-    if len(tag_f) >= 4 and q_f.startswith(tag_f) and ' ' not in tag_f:
-        return True
-
-    tag_words = tag_f.split()
-    q_words = q_f.split()
-
-    # 4) Višerječni tag + jednorječni upit: samo tačna riječ u tagu
-    if len(q_words) == 1 and len(tag_words) > 1:
-        qw = q_words[0]
-        if len(qw) < 3:
-            return False
-        return any(tw == qw for tw in tag_words)
-
-    # 5) Višerječni upit: tačna fraza ili tag počinje frazom
-    if len(q_words) >= 2:
-        if tag_f.startswith(q_f) and len(q_f) >= 4:
-            return True
-        # sve riječi upita (len>=3) moraju biti tačne riječi u tagu
-        significant = [w for w in q_words if len(w) >= 3]
-        if significant and all(w in tag_words for w in significant):
-            return True
-
-    return False
+    return tag_f == q_f
 
 
 def _subcategory_ids_matching_query(query):
     """
-    Samo podkategorije (i njihovi potomci) s tagom koji STRIKTNO
-    odgovara upitu. Ne širi na druge kategorije.
+    Podkategorije (i potomci) s TAČNIM tagom = upit.
+    Upit se uspoređuje s cijelim tagom (više riječi ostaje jedan tag).
     """
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
@@ -607,9 +579,8 @@ def _subcategory_ids_matching_query(query):
 def _apply_search_filter(products_qs, query):
     """
     Pretraga:
-    1) Ako upit pogodi TAG podkategorije → SAMO artikli te podkategorije
-       (striktno, bez miješanja s drugim štapovima po nazivu).
-    2) Inače → naziv + šifra (artikal i varijacije).
+    1) Ako upit = TAČAN tag podkategorije (i višerječni) → SAMO ta podkategorija
+    2) Inače → naziv + šifra artikla
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -617,12 +588,12 @@ def _apply_search_filter(products_qs, query):
     if len(raw) < 2:
         return products_qs.none()
 
-    # --- TAG: striktno samo podkategorije s tim tagom ---
+    # --- TAČAN TAG (cijeli, i s više riječi) → samo ta podkategorija ---
     subcat_ids = _subcategory_ids_matching_query(raw)
     if subcat_ids:
         return products_qs.filter(kategorija_id__in=subcat_ids).distinct()
 
-    # --- Naziv + šifra (cijeli upit, ne lomiti na riječi da ne vuče smeće) ---
+    # --- Naziv + šifra ---
     match = (
         Q(naziv__icontains=raw)
         | Q(sifra__icontains=raw)
