@@ -598,41 +598,26 @@ def _tag_matches_query(tag, query):
     return False
 
 
-def _subcategory_ids_for_tag_query(query):
-    """Podkategorije (i potomci) s unesenim tagom koji odgovara upitu."""
+def _product_tag_ids_for_query(query):
+    """ID-evi Tag modela na artiklima koji odgovaraju upitu (±1–3 slova)."""
+    from .models import Tag
+
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return []
-
-    matched_ids = []
-    qs = (
-        Category.objects
-        .filter(roditelj__isnull=False)
-        .exclude(search_tagovi='')
-        .only('id', 'search_tagovi')
-    )
-    for cat in qs.iterator(chunk_size=300):
-        for tag in _parse_category_search_tags(cat.search_tagovi):
-            if _tag_matches_query(tag, q):
-                matched_ids.append(cat.pk)
-                break
-
-    if not matched_ids:
-        return []
-
-    all_ids = set()
-    for cat in Category.objects.filter(pk__in=matched_ids).prefetch_related('podkategorije'):
-        try:
-            all_ids.update(cat.get_descendant_ids())
-        except Exception:
-            all_ids.add(cat.pk)
-    return list(all_ids)
+    ids = []
+    for tag in Tag.objects.only('id', 'naziv').iterator(chunk_size=300):
+        if _tag_matches_query(tag.naziv or '', q):
+            ids.append(tag.pk)
+    return ids
 
 
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga: naziv, šifra (+ varijacije), tag podkategorije
-    → artikli te podkategorije.
+    Pretraga na sajtu:
+    1) naziv artikla
+    2) šifra artikla (+ šifre varijacija)
+    3) tagovi na artiklima (bulk / M2M tagovi)
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -644,6 +629,7 @@ def _apply_search_filter(products_qs, query):
         Q(naziv__icontains=raw)
         | Q(sifra__icontains=raw)
         | Q(varijacije__sifra__icontains=raw)
+        | Q(tagovi__naziv__icontains=raw)
     )
     folded_raw = _search_fold(raw)
     if folded_raw and folded_raw != raw.casefold():
@@ -651,11 +637,12 @@ def _apply_search_filter(products_qs, query):
             Q(naziv__icontains=folded_raw)
             | Q(sifra__icontains=folded_raw)
             | Q(varijacije__sifra__icontains=folded_raw)
+            | Q(tagovi__naziv__icontains=folded_raw)
         )
 
-    subcat_ids = _subcategory_ids_for_tag_query(raw)
-    if subcat_ids:
-        match |= Q(kategorija_id__in=subcat_ids)
+    tag_ids = _product_tag_ids_for_query(raw)
+    if tag_ids:
+        match |= Q(tagovi__id__in=tag_ids)
 
     return products_qs.filter(match).distinct()
 
@@ -687,11 +674,17 @@ def _search_relevance_score(product, query):
     elif q in name:
         score += 50
 
-    cat = getattr(product, 'kategorija', None)
-    if cat is not None and getattr(cat, 'roditelj_id', None):
-        tags = _parse_category_search_tags(getattr(cat, 'search_tagovi', None) or '')
-        if any(_tag_matches_query(tag, raw) for tag in tags):
-            score += 60
+    try:
+        for t in product.tagovi.all():
+            if _tag_matches_query(getattr(t, 'naziv', '') or '', raw):
+                score += 55
+                break
+            tname = (getattr(t, 'naziv', '') or '').lower()
+            if tname and (q in tname or tname in q):
+                score += 40
+                break
+    except Exception:
+        pass
     return score
 
 
