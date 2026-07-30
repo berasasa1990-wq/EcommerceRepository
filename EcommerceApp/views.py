@@ -605,74 +605,31 @@ def _tag_matches_query(tag, query):
     return False
 
 
-def _iter_subcategory_tags():
-    """Svi uneseni tagovi na podkategorijama: (tag, category)."""
-    qs = (
-        Category.objects
-        .filter(roditelj__isnull=False)
-        .exclude(search_tagovi='')
-        .select_related('roditelj')
-        .only('id', 'naziv', 'slug', 'search_tagovi', 'roditelj_id', 'roditelj__naziv')
-    )
-    for cat in qs.iterator(chunk_size=300):
-        for tag in _parse_category_search_tags(cat.search_tagovi):
-            yield tag, cat
-
-
-def _tag_matches_for_suggest(tag, query):
+def _subcategory_ids_for_tag_query(query):
     """
-    Za dropdown: tačan/±3 match ILI prefiks (dok korisnik kuca),
-    da se vide svi uneseni tagovi podkategorija.
-    """
-    if _tag_matches_query(tag, query):
-        return True
-    tag_f = _search_fold(_normalize_phrase(tag))
-    q_f = _search_fold(_normalize_phrase(query))
-    if not tag_f or not q_f or len(q_f) < 2:
-        return False
-    # Prefiks cijelog taga ili bilo koje riječi u tagu
-    if tag_f.startswith(q_f):
-        return True
-    return any(w.startswith(q_f) for w in tag_f.split() if w)
-
-
-def _matching_tags_for_query(query, *, limit=20, for_suggest=False):
-    """
-    Lista unesenih tagova podkategorija koji odgovaraju upitu.
-    Svaki tag se prikazuje zasebno (može biti više podkategorija s istim tagom).
+    ID-evi podkategorija (i njihovih potomaka) na kojima je unesen
+    search tag koji odgovara upitu. Samo podkategorije (imaju roditelja).
     """
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return []
-    seen = set()
-    out = []
-    match_fn = _tag_matches_for_suggest if for_suggest else _tag_matches_query
-    for tag, cat in _iter_subcategory_tags():
-        if not match_fn(tag, q):
-            continue
-        key = (_search_fold(tag), cat.pk)
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append({
-            'tag': tag,
-            'category_id': cat.pk,
-            'category_name': str(cat),
-            'category_url': cat.get_absolute_url(),
-        })
-    # Sort: abecedno po tagu
-    out.sort(key=lambda item: (_search_fold(item['tag']), item['category_name'].lower()))
-    if limit is not None:
-        out = out[:limit]
-    return out
 
+    matched_ids = []
+    qs = (
+        Category.objects
+        .filter(roditelj__isnull=False)
+        .exclude(search_tagovi='')
+        .only('id', 'search_tagovi')
+    )
+    for cat in qs.iterator(chunk_size=300):
+        for tag in _parse_category_search_tags(cat.search_tagovi):
+            if _tag_matches_query(tag, q):
+                matched_ids.append(cat.pk)
+                break
 
-def _subcategory_ids_matching_query(query):
-    """Podkategorije (i potomci) čiji tag odgovara upitu (≤3 slova / po riječima)."""
-    matched_tags = _matching_tags_for_query(query, limit=None, for_suggest=False)
-    if not matched_tags:
+    if not matched_ids:
         return []
-    matched_ids = list({item['category_id'] for item in matched_tags})
+
     all_ids = set()
     for cat in Category.objects.filter(pk__in=matched_ids).prefetch_related('podkategorije'):
         try:
@@ -684,11 +641,11 @@ def _subcategory_ids_matching_query(query):
 
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga SAMO:
-    1) SVI uneseni tagovi podkategorija (odstupanje do ±3 slova / po riječima)
-       → artikli tih podkategorija
-    2) naziv artikla
-    3) šifra artikla (+ varijacije)
+    Pretraga na sajtu — samo:
+    1) naziv artikla
+    2) šifra artikla (+ šifre varijacija)
+    3) tag unesen na podkategoriji → izlistaj artikle te podkategorije
+       (tag match: tačan ili ±1–3 slova / po riječima)
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -696,6 +653,7 @@ def _apply_search_filter(products_qs, query):
     if len(raw) < 2:
         return products_qs.none()
 
+    # 1–2) Naziv + šifra
     match = (
         Q(naziv__icontains=raw)
         | Q(sifra__icontains=raw)
@@ -709,7 +667,8 @@ def _apply_search_filter(products_qs, query):
             | Q(varijacije__sifra__icontains=folded_raw)
         )
 
-    subcat_ids = _subcategory_ids_matching_query(raw)
+    # 3) Tag podkategorije → svi artikli u toj podkategoriji
+    subcat_ids = _subcategory_ids_for_tag_query(raw)
     if subcat_ids:
         match |= Q(kategorija_id__in=subcat_ids)
 
