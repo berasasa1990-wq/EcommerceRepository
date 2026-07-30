@@ -5,7 +5,7 @@ import re
 import uuid
 import requests
 from decimal import Decimal, InvalidOperation
-from urllib.parse import urlencode, urlparse
+from urllib.parse import quote, urlencode, urlparse
 
 from django.conf import settings
 from .models import SiteSettings
@@ -526,11 +526,22 @@ def _parse_category_search_tags(raw):
     return tags
 
 
-# Tag: dozvoljeno odstupanje do ±3 slova (Levenshtein)
+# Tag: max ±3 slova, ali manje na kratkim riječima (sprječava crna≈bronz)
 _TAG_MAX_EDIT_DISTANCE = 3
 
 
-def _edit_distance(a, b):
+def _allowed_edit_distance_for_len(n):
+    """Kratke riječi: 1 slovo; srednje: 2; duge: do 3."""
+    if n <= 0:
+        return 0
+    if n <= 4:
+        return 1
+    if n <= 8:
+        return 2
+    return _TAG_MAX_EDIT_DISTANCE
+
+
+def _edit_distance(a, b, *, max_dist=None):
     """Levenshtein udaljenost (insert/delete/replace = 1)."""
     if a == b:
         return 0
@@ -538,9 +549,9 @@ def _edit_distance(a, b):
         return len(b)
     if not b:
         return len(a)
-    # Optimizacija: ako se dužine razlikuju za više od max, odmah veliki broj
-    if abs(len(a) - len(b)) > _TAG_MAX_EDIT_DISTANCE:
-        return _TAG_MAX_EDIT_DISTANCE + 1
+    cap = max_dist if max_dist is not None else max(len(a), len(b))
+    if abs(len(a) - len(b)) > cap:
+        return cap + 1
     prev = list(range(len(b) + 1))
     for i, ca in enumerate(a, start=1):
         curr = [i]
@@ -550,17 +561,28 @@ def _edit_distance(a, b):
             sub = prev[j - 1] + (0 if ca == cb else 1)
             curr.append(min(ins, delete, sub))
         prev = curr
+        # Rana prekida ako cijeli red prelazi cap (opcionalno)
     return prev[-1]
+
+
+def _words_within_edit(tag_words, q_words):
+    """Svaka riječ upita ≈ odgovarajuća riječ taga (ista pozicija, ±dozvoljeno)."""
+    if len(tag_words) != len(q_words) or not q_words:
+        return False
+    for tw, qw in zip(tag_words, q_words):
+        allow = _allowed_edit_distance_for_len(max(len(tw), len(qw)))
+        if _edit_distance(tw, qw, max_dist=allow) > allow:
+            return False
+    return True
 
 
 def _tag_matches_query(tag, query):
     """
     Tag podkategorije (1 riječ ili fraza) ≈ upit.
 
-    1) Cijeli string: tačan match ili ±3 slova (Levenshtein)
-    2) Po riječima: ista broj riječi, svaka riječ smije odstupati ±3 slova
+    1) Cijeli string: tačan match ili ±1–3 slova (ovisno o dužini)
+    2) Po riječima: ista broj riječi, SVAKA riječ smije odstupati ±1–3
        npr. tag „teleskopski stap”, upit „teleskop stap” → OK
-       (teleskop≈teleskopski, stap≈stap)
 
     Redoslijed riječi mora biti isti.
     """
@@ -570,46 +592,89 @@ def _tag_matches_query(tag, query):
         return False
     if tag_f == q_f:
         return True
-    # Cijeli tag odjednom
-    if _edit_distance(tag_f, q_f) <= _TAG_MAX_EDIT_DISTANCE:
+
+    allow_full = _allowed_edit_distance_for_len(max(len(tag_f), len(q_f)))
+    if _edit_distance(tag_f, q_f, max_dist=allow_full) <= allow_full:
         return True
 
     tag_words = [w for w in tag_f.split() if w]
     q_words = [w for w in q_f.split() if w]
-    if not tag_words or not q_words:
-        return False
-
-    # Ista broj riječi → svaka riječ ±3 slova (bilo koja pozicija, ne samo zadnja)
-    if len(tag_words) == len(q_words):
-        return all(
-            _edit_distance(tw, qw) <= _TAG_MAX_EDIT_DISTANCE
-            for tw, qw in zip(tag_words, q_words)
-        )
+    if _words_within_edit(tag_words, q_words):
+        return True
 
     return False
 
 
-def _subcategory_ids_matching_query(query):
-    """Podkategorije (i potomci) čiji tag odgovara upitu (≤3 slova razlike)."""
-    q = _normalize_phrase(query)
-    if not q or len(q) < 2:
-        return []
-    matched = []
+def _iter_subcategory_tags():
+    """Svi uneseni tagovi na podkategorijama: (tag, category)."""
     qs = (
         Category.objects
         .filter(roditelj__isnull=False)
         .exclude(search_tagovi='')
-        .only('id', 'search_tagovi')
+        .select_related('roditelj')
+        .only('id', 'naziv', 'slug', 'search_tagovi', 'roditelj_id', 'roditelj__naziv')
     )
     for cat in qs.iterator(chunk_size=300):
         for tag in _parse_category_search_tags(cat.search_tagovi):
-            if _tag_matches_query(tag, q):
-                matched.append(cat.pk)
-                break
-    if not matched:
+            yield tag, cat
+
+
+def _tag_matches_for_suggest(tag, query):
+    """
+    Za dropdown: tačan/±3 match ILI prefiks (dok korisnik kuca),
+    da se vide svi uneseni tagovi podkategorija.
+    """
+    if _tag_matches_query(tag, query):
+        return True
+    tag_f = _search_fold(_normalize_phrase(tag))
+    q_f = _search_fold(_normalize_phrase(query))
+    if not tag_f or not q_f or len(q_f) < 2:
+        return False
+    # Prefiks cijelog taga ili bilo koje riječi u tagu
+    if tag_f.startswith(q_f):
+        return True
+    return any(w.startswith(q_f) for w in tag_f.split() if w)
+
+
+def _matching_tags_for_query(query, *, limit=20, for_suggest=False):
+    """
+    Lista unesenih tagova podkategorija koji odgovaraju upitu.
+    Svaki tag se prikazuje zasebno (može biti više podkategorija s istim tagom).
+    """
+    q = _normalize_phrase(query)
+    if not q or len(q) < 2:
         return []
+    seen = set()
+    out = []
+    match_fn = _tag_matches_for_suggest if for_suggest else _tag_matches_query
+    for tag, cat in _iter_subcategory_tags():
+        if not match_fn(tag, q):
+            continue
+        key = (_search_fold(tag), cat.pk)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({
+            'tag': tag,
+            'category_id': cat.pk,
+            'category_name': str(cat),
+            'category_url': cat.get_absolute_url(),
+        })
+    # Sort: abecedno po tagu
+    out.sort(key=lambda item: (_search_fold(item['tag']), item['category_name'].lower()))
+    if limit is not None:
+        out = out[:limit]
+    return out
+
+
+def _subcategory_ids_matching_query(query):
+    """Podkategorije (i potomci) čiji tag odgovara upitu (≤3 slova / po riječima)."""
+    matched_tags = _matching_tags_for_query(query, limit=None, for_suggest=False)
+    if not matched_tags:
+        return []
+    matched_ids = list({item['category_id'] for item in matched_tags})
     all_ids = set()
-    for cat in Category.objects.filter(pk__in=matched).prefetch_related('podkategorije'):
+    for cat in Category.objects.filter(pk__in=matched_ids).prefetch_related('podkategorije'):
         try:
             all_ids.update(cat.get_descendant_ids())
         except Exception:
@@ -620,7 +685,8 @@ def _subcategory_ids_matching_query(query):
 def _apply_search_filter(products_qs, query):
     """
     Pretraga SAMO:
-    1) tag podkategorije (odstupanje do ±3 slova) → artikli te podkategorije
+    1) SVI uneseni tagovi podkategorija (odstupanje do ±3 slova / po riječima)
+       → artikli tih podkategorija
     2) naziv artikla
     3) šifra artikla (+ varijacije)
     """
@@ -746,7 +812,22 @@ STAFF_LOOKUP_LIMIT = 25
 def search_suggest(request):
     query = request.GET.get('q', '').strip()
     if not query:
-        return JsonResponse({'results': [], 'query': '', 'has_more': False})
+        return JsonResponse({'results': [], 'tags': [], 'query': '', 'has_more': False})
+
+    # Svi uneseni tagovi podkategorija koji odgovaraju upitu (prikaz u dropdownu)
+    tag_hits = _matching_tags_for_query(query, limit=12, for_suggest=True)
+    tags_payload = []
+    for item in tag_hits:
+        # Klik na tag → pretraga s tačnim tagom (izlistaj artikle te podkategorije)
+        search_url = f'/?q={quote(item["tag"])}#product-showcase'
+        tags_payload.append({
+            'type': 'tag',
+            'tag': item['tag'],
+            'label': item['tag'],
+            'category': item['category_name'],
+            'url': search_url,
+            'category_url': item['category_url'],
+        })
 
     products_qs = _apply_search_filter(_product_queryset(request), query)
     products = list(products_qs[: max(SEARCH_SUGGEST_LIMIT * 4, 24)])
@@ -757,6 +838,7 @@ def search_suggest(request):
     for product in products:
         price = _effective_product_price(product)
         results.append({
+            'type': 'product',
             'naziv': product.naziv,
             'url': product.get_absolute_url(),
             'image': product.prikazna_slika.url if product.prikazna_slika else '',
@@ -764,7 +846,12 @@ def search_suggest(request):
             'on_sale': _product_is_on_sale(product),
         })
 
-    return JsonResponse({'results': results, 'query': query, 'has_more': has_more})
+    return JsonResponse({
+        'results': results,
+        'tags': tags_payload,
+        'query': query,
+        'has_more': has_more,
+    })
 
 
 

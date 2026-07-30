@@ -1079,6 +1079,54 @@ body.search-suggest-open .header-float-ctas {
     color: var(--gray-500);
 }
 
+.search-suggestions-section-label {
+    padding: 10px 4px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.search-suggestion--tag {
+    background: #f8fafc;
+}
+
+.search-suggestion-thumb--tag {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f766e;
+    background: #ccfbf1;
+}
+
+.search-suggestion-tag-text {
+    display: block;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-suggestion-tag-cat {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--gray-500);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-suggestion-meta {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #0f766e;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 /* Main offset for fixed header + promo (+ staff edit banner) */
 main {
     padding-top: var(--site-chrome-top);
