@@ -5,7 +5,7 @@ import re
 import uuid
 import requests
 from decimal import Decimal, InvalidOperation
-from urllib.parse import quote, urlencode, urlparse
+from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
 from .models import SiteSettings
@@ -812,23 +812,9 @@ STAFF_LOOKUP_LIMIT = 25
 def search_suggest(request):
     query = request.GET.get('q', '').strip()
     if not query:
-        return JsonResponse({'results': [], 'tags': [], 'query': '', 'has_more': False})
+        return JsonResponse({'results': [], 'query': '', 'has_more': False})
 
-    # Svi uneseni tagovi podkategorija koji odgovaraju upitu (prikaz u dropdownu)
-    tag_hits = _matching_tags_for_query(query, limit=12, for_suggest=True)
-    tags_payload = []
-    for item in tag_hits:
-        # Klik na tag → pretraga s tačnim tagom (izlistaj artikle te podkategorije)
-        search_url = f'/?q={quote(item["tag"])}#product-showcase'
-        tags_payload.append({
-            'type': 'tag',
-            'tag': item['tag'],
-            'label': item['tag'],
-            'category': item['category_name'],
-            'url': search_url,
-            'category_url': item['category_url'],
-        })
-
+    # Samo artikli u dropdownu; tagovi rade u pozadini preko _apply_search_filter
     products_qs = _apply_search_filter(_product_queryset(request), query)
     products = list(products_qs[: max(SEARCH_SUGGEST_LIMIT * 4, 24)])
     products = _sort_products_by_lager_priority(products, query=query)
@@ -838,7 +824,6 @@ def search_suggest(request):
     for product in products:
         price = _effective_product_price(product)
         results.append({
-            'type': 'product',
             'naziv': product.naziv,
             'url': product.get_absolute_url(),
             'image': product.prikazna_slika.url if product.prikazna_slika else '',
@@ -846,12 +831,7 @@ def search_suggest(request):
             'on_sale': _product_is_on_sale(product),
         })
 
-    return JsonResponse({
-        'results': results,
-        'tags': tags_payload,
-        'query': query,
-        'has_more': has_more,
-    })
+    return JsonResponse({'results': results, 'query': query, 'has_more': has_more})
 
 
 

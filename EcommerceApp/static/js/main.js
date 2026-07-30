@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setSearchSuggestActive(false);
     }
 
-    function renderSearchSuggestions(results, query, hasMore = false, tags = []) {
+    function renderSearchSuggestions(results, query, hasMore = false) {
         if (!searchSuggestions) return;
 
         if (!query) {
@@ -369,51 +369,25 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const tagList = Array.isArray(tags) ? tags : [];
-        const productList = Array.isArray(results) ? results : [];
-
-        if (!tagList.length && !productList.length) {
-            searchSuggestions.innerHTML = `<div role="status" class="search-suggestions-empty">Nema rezultata za „${escapeHtml(query)}".</div>`;
+        if (!results.length) {
+            searchSuggestions.innerHTML = `<div role="status" class="search-suggestions-empty">Nema artikala za „${escapeHtml(query)}".</div>`;
             searchSuggestions.hidden = false;
             setSuggestionsExpanded(true);
             setSearchSuggestActive(true);
             return;
         }
 
-        let html = '';
-
-        if (tagList.length) {
-            html += `<div class="search-suggestions-section-label" role="presentation">Tagovi podkategorija</div>`;
-            html += tagList.map((item) => {
-                const tagLabel = escapeHtml(item.tag || item.label || '');
-                const catLabel = item.category ? escapeHtml(item.category) : '';
-                return `<a href="${escapeHtml(item.url)}" class="search-suggestion search-suggestion--tag" role="option" data-tag="${tagLabel}">
-                    <span class="search-suggestion-thumb search-suggestion-thumb--tag" aria-hidden="true">#</span>
-                    <span class="search-suggestion-name">
-                        <span class="search-suggestion-tag-text">${tagLabel}</span>
-                        ${catLabel ? `<span class="search-suggestion-tag-cat">${catLabel}</span>` : ''}
-                    </span>
-                    <span class="search-suggestion-price search-suggestion-meta">Tag</span>
-                </a>`;
-            }).join('');
-        }
-
-        if (productList.length) {
-            if (tagList.length) {
-                html += `<div class="search-suggestions-section-label" role="presentation">Artikli</div>`;
-            }
-            html += productList.map((item) => {
-                const thumb = item.image
-                    ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
-                    : placeholderThumbSvg;
-                const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
-                return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
-                    <span class="search-suggestion-thumb">${thumb}</span>
-                    <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
-                    <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>
-                </a>`;
-            }).join('');
-        }
+        const items = results.map((item) => {
+            const thumb = item.image
+                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
+                : placeholderThumbSvg;
+            const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
+            return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
+                <span class="search-suggestion-thumb">${thumb}</span>
+                <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
+                <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>
+            </a>`;
+        }).join('');
 
         const base = searchForm?.getAttribute('action') || '/';
         const allResultsUrl = `${base}?q=${encodeURIComponent(query)}#product-showcase`;
@@ -421,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">Vidi sve rezultate za „${escapeHtml(query)}"</a></p>`
             : '';
 
-        searchSuggestions.innerHTML = html + footer;
+        searchSuggestions.innerHTML = items + footer;
         searchSuggestions.hidden = false;
         setSuggestionsExpanded(true);
         setSearchSuggestActive(true);
@@ -454,12 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Search failed');
             const data = await response.json();
             if (searchInput?.value.trim() !== query) return;
-            renderSearchSuggestions(
-                data.results || [],
-                data.query || query,
-                Boolean(data.has_more),
-                data.tags || [],
-            );
+            renderSearchSuggestions(data.results || [], data.query || query, Boolean(data.has_more));
         } catch (error) {
             if (error.name === 'AbortError') return;
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
