@@ -888,14 +888,40 @@ class Tag(models.Model):
         ordering = ['roditelj__naziv', 'naziv']
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.naziv)
+        # Unique slug uvijek (slugify više naziva može dati isti slug)
+        base = (self.slug and self.slug.strip()) or slugify(self.naziv) or 'tag'
+        base = slugify(base) or 'tag'
+        slug = base
+        counter = 1
+        while Tag.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug = f'{base}-{counter}'
+            counter += 1
+        self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
         if self.roditelj:
             return f'{self.roditelj.naziv} → {self.naziv}'
         return self.naziv
+
+    @classmethod
+    def get_or_create_by_name(cls, name):
+        """
+        Pronađi tag po nazivu (case-insensitive) ili kreiraj novi
+        s jedinstvenim slugom.
+        """
+        name = (name or '').strip()
+        if not name:
+            raise ValueError('Prazan naziv taga')
+        # max_length=50 na naziv
+        name = name[:50]
+        existing = cls.objects.filter(naziv__iexact=name).first()
+        if existing:
+            return existing, False
+        # Ako postoji isti slug od drugog naziva — save() rješava unique
+        tag = cls(naziv=name)
+        tag.save()
+        return tag, True
 
     def get_all_descendants(self, include_self=False):
         """Return all sub-tags recursively (for bulk/group assignment)."""

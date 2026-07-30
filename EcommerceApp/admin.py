@@ -2304,11 +2304,8 @@ class ProductAdmin(admin.ModelAdmin):
 
             tags = []
             for name in tag_names:
-                existing = Tag.objects.filter(naziv__iexact=name).first()
-                if existing:
-                    tags.append(existing)
-                else:
-                    tags.append(Tag.objects.create(naziv=name))
+                tag, _created = Tag.get_or_create_by_name(name)
+                tags.append(tag)
 
             count = 0
             skipped = 0
