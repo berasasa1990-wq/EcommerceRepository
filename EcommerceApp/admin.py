@@ -2274,23 +2274,32 @@ class ProductAdmin(admin.ModelAdmin):
 
         if request.method == 'POST' and 'apply' in request.POST:
             selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
-            raw_tags = (request.POST.get('bulk_tags') or '').strip()
+            # 1) Predloženi tagovi s označenih (checkbox) — dovoljno Save bez unosa u polje
+            # 2) Novo polje bulk_tags — opcionalni novi tagovi
             tag_names = []
             seen = set()
-            for part in raw_tags.replace(';', ',').replace('\n', ',').split(','):
-                name = part.strip()
+
+            def _add_name(name):
+                name = (name or '').strip()
                 if not name:
-                    continue
+                    return
                 key = name.casefold()
                 if key in seen:
-                    continue
+                    return
                 seen.add(key)
                 tag_names.append(name)
+
+            for name in request.POST.getlist('suggested_tag'):
+                _add_name(name)
+
+            raw_tags = (request.POST.get('bulk_tags') or '').strip()
+            for part in raw_tags.replace(';', ',').replace('\n', ',').split(','):
+                _add_name(part)
 
             if not tag_names:
                 self.message_user(
                     request,
-                    'Unesi barem jedan tag (odvoji više tagova zarezom).',
+                    'Nema tagova za primjenu. Ostavi predložene označene ili unesi nove u polje.',
                     messages.ERROR,
                 )
                 return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
@@ -2362,13 +2371,12 @@ class ProductAdmin(admin.ModelAdmin):
                 )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
 
-        # Predloži tagove koji već postoje na nekom od označenih artikala
+        # Predloži tagove koji već postoje na nekom od označenih → Save ih da svima
         suggested_tags = list(
             Tag.objects.filter(artikli__in=queryset)
             .distinct()
             .order_by('naziv')
         )
-        suggested_text = ', '.join(t.naziv for t in suggested_tags)
 
         context = {
             **self.admin_site.each_context(request),
@@ -2379,7 +2387,6 @@ class ProductAdmin(admin.ModelAdmin):
             'action_name': 'bulk_assign_tags',
             'product_count': queryset.count(),
             'suggested_tags': suggested_tags,
-            'suggested_text': suggested_text,
         }
         return render(request, 'admin/EcommerceApp/product/bulk_assign_tags.html', context)
 
