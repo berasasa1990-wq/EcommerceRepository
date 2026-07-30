@@ -528,40 +528,56 @@ def _parse_category_search_tags(raw):
 
 def _tag_matches_query(tag, query):
     """
-    Da li uneseni tag podkategorije odgovara search upitu.
-    - tačan match (uključujući dugu rečenicu)
-    - prefiks (pru → prut; „stap za pecanje” → „stap za pecanje sarana”)
-    - jedna riječ upita = riječ unutar višerječnog taga
+    STRIKTNI match taga podkategorije i search upita:
+    - tačan match (npr. multiplikator == multiplikator)
+    - prefiks upita na tag (multiplik → multiplikator), min 3 znaka
+    - duga rečenica: tačan match ili tag počinje upitom
+    - riječ unutar višerječnog taga samo ako je TAČNA riječ (ne substring)
     """
     tag_f = _search_fold(_normalize_phrase(tag))
     q_f = _search_fold(_normalize_phrase(query))
     if not tag_f or not q_f or len(q_f) < 2:
         return False
+
+    # 1) Cijeli tag == cijeli upit
     if tag_f == q_f:
         return True
-    if tag_f.startswith(q_f) or q_f.startswith(tag_f):
+
+    # 2) Upit je prefiks taga (kucanje: multiplik → multiplikator)
+    if len(q_f) >= 3 and tag_f.startswith(q_f):
         return True
-    # Riječi unutar dugog taga (npr. tag „stap za pecanje sarana”, upit „sarana”)
+
+    # 3) Tag je prefiks upita samo za duže tagove (prut → prutovi)
+    if len(tag_f) >= 4 and q_f.startswith(tag_f) and ' ' not in tag_f:
+        return True
+
     tag_words = tag_f.split()
     q_words = q_f.split()
-    if len(q_words) == 1:
+
+    # 4) Višerječni tag + jednorječni upit: samo tačna riječ u tagu
+    if len(q_words) == 1 and len(tag_words) > 1:
         qw = q_words[0]
-        for tw in tag_words:
-            if tw == qw or (len(qw) >= 2 and tw.startswith(qw)) or (len(tw) >= 2 and qw.startswith(tw)):
-                return True
-    elif len(q_words) >= 2:
-        # Sve značajne riječi upita (len>=3, ili sve ako su kraće) u tagu
-        significant = [w for w in q_words if len(w) >= 3] or q_words
-        if all(
-            any(tw == w or tw.startswith(w) or w.startswith(tw) for tw in tag_words)
-            for w in significant
-        ):
+        if len(qw) < 3:
+            return False
+        return any(tw == qw for tw in tag_words)
+
+    # 5) Višerječni upit: tačna fraza ili tag počinje frazom
+    if len(q_words) >= 2:
+        if tag_f.startswith(q_f) and len(q_f) >= 4:
             return True
+        # sve riječi upita (len>=3) moraju biti tačne riječi u tagu
+        significant = [w for w in q_words if len(w) >= 3]
+        if significant and all(w in tag_words for w in significant):
+            return True
+
     return False
 
 
 def _subcategory_ids_matching_query(query):
-    """Podkategorije ( + potomci) čiji search_tagovi poklapaju upit."""
+    """
+    Samo podkategorije (i njihovi potomci) s tagom koji STRIKTNO
+    odgovara upitu. Ne širi na druge kategorije.
+    """
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return []
@@ -590,39 +606,28 @@ def _subcategory_ids_matching_query(query):
 
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga na sajtu (OR — bilo šta od ovoga):
-    1) naziv artikla
-    2) šifra artikla (+ šifre varijacija)
-    3) tagovi podkategorije koje si unio (uključujući duge rečenice)
+    Pretraga:
+    1) Ako upit pogodi TAG podkategorije → SAMO artikli te podkategorije
+       (striktno, bez miješanja s drugim štapovima po nazivu).
+    2) Inače → naziv + šifra (artikal i varijacije).
     """
     raw = _normalize_phrase(query)
-    if not raw or len(raw) < 2:
-        return products_qs if not raw else products_qs.none()
+    if not raw:
+        return products_qs
+    if len(raw) < 2:
+        return products_qs.none()
 
+    # --- TAG: striktno samo podkategorije s tim tagom ---
+    subcat_ids = _subcategory_ids_matching_query(raw)
+    if subcat_ids:
+        return products_qs.filter(kategorija_id__in=subcat_ids).distinct()
+
+    # --- Naziv + šifra (cijeli upit, ne lomiti na riječi da ne vuče smeće) ---
     match = (
         Q(naziv__icontains=raw)
         | Q(sifra__icontains=raw)
         | Q(varijacije__sifra__icontains=raw)
     )
-
-    # Pojedinačne riječi takođe u nazivu/šifri (OR, ne AND)
-    tokens = [t for t in re.split(r'[\s,;]+', raw) if len(t) >= 2]
-    for term in tokens:
-        if term == raw:
-            continue
-        match |= (
-            Q(naziv__icontains=term)
-            | Q(sifra__icontains=term)
-            | Q(varijacije__sifra__icontains=term)
-        )
-        folded = _search_fold(term)
-        if folded and folded != term.casefold():
-            match |= (
-                Q(naziv__icontains=folded)
-                | Q(sifra__icontains=folded)
-                | Q(varijacije__sifra__icontains=folded)
-            )
-
     folded_raw = _search_fold(raw)
     if folded_raw and folded_raw != raw.casefold():
         match |= (
@@ -630,18 +635,6 @@ def _apply_search_filter(products_qs, query):
             | Q(sifra__icontains=folded_raw)
             | Q(varijacije__sifra__icontains=folded_raw)
         )
-
-    # Tagovi podkategorija
-    subcat_ids = _subcategory_ids_matching_query(raw)
-    # i po pojedinačnim riječima (npr. upit „sarana” → tag „stap za pecanje sarana”)
-    for term in tokens:
-        if term == raw:
-            continue
-        subcat_ids = list({*subcat_ids, *_subcategory_ids_matching_query(term)})
-
-    if subcat_ids:
-        match |= Q(kategorija_id__in=subcat_ids)
-
     return products_qs.filter(match).distinct()
 
 
@@ -659,7 +652,6 @@ def _search_relevance_score(product, query):
     if not raw or len(raw) < 2:
         return 0
     q = raw.lower()
-    terms = [t for t in re.split(r'[\s,;]+', raw) if len(t) >= 2] or [raw]
     score = 0
     name = (product.naziv or '').lower()
     sifra = (product.sifra or '').lower()
@@ -673,23 +665,11 @@ def _search_relevance_score(product, query):
     elif q in name:
         score += 50
 
-    for tok in terms:
-        tok_l = tok.lower()
-        if tok_l in name:
-            score += 12
-        if sifra and tok_l in sifra:
-            score += 18
-
     cat = getattr(product, 'kategorija', None)
     if cat is not None and getattr(cat, 'roditelj_id', None):
         tags = _parse_category_search_tags(getattr(cat, 'search_tagovi', None) or '')
         if any(_tag_matches_query(tag, raw) for tag in tags):
-            score += 45
-        else:
-            for tok in terms:
-                if any(_tag_matches_query(tag, tok) for tag in tags):
-                    score += 40
-                    break
+            score += 60
     return score
 
 
