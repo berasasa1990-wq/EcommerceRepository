@@ -2266,10 +2266,11 @@ class ProductAdmin(admin.ModelAdmin):
 
     def bulk_assign_tags(self, request, queryset):
         """
-        Jedno polje za tagove (zarezom) → Primjeni na sve označene artikle.
-        Tagovi se kreiraju ako ne postoje (get_or_create po nazivu).
+        Jedno polje za tagove → Primjeni na označene artikle.
+        Ako neki označeni već imaju tagove, automatski se predlože.
+        Dodaje se samo artiklima koji taj tag još nemaju (bez duplikata).
         """
-        queryset = queryset.order_by('naziv')
+        queryset = queryset.prefetch_related('tagovi').order_by('naziv')
 
         if request.method == 'POST' and 'apply' in request.POST:
             selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
@@ -2307,7 +2308,9 @@ class ProductAdmin(admin.ModelAdmin):
                 tag, _created = Tag.get_or_create_by_name(name)
                 tags.append(tag)
 
-            count = 0
+            products_updated = 0
+            tags_added_total = 0
+            already_ok = 0
             skipped = 0
             for pk_str in selected_ids:
                 try:
@@ -2316,19 +2319,34 @@ class ProductAdmin(admin.ModelAdmin):
                     skipped += 1
                     continue
                 try:
-                    product = Product.objects.get(pk=pk)
+                    product = Product.objects.prefetch_related('tagovi').get(pk=pk)
                 except Product.DoesNotExist:
                     skipped += 1
                     continue
-                product.tagovi.add(*tags)
-                count += 1
+                existing_ids = set(product.tagovi.values_list('pk', flat=True))
+                to_add = [t for t in tags if t.pk not in existing_ids]
+                if not to_add:
+                    already_ok += 1
+                    continue
+                product.tagovi.add(*to_add)
+                products_updated += 1
+                tags_added_total += len(to_add)
 
             tag_label = ', '.join(t.naziv for t in tags)
-            if count:
+            if products_updated:
                 self.message_user(
                     request,
-                    f'Tagovi „{tag_label}” primijenjeni na {count} artikal/a.',
+                    (
+                        f'Tagovi „{tag_label}”: dodano na {products_updated} artikal/a '
+                        f'({tags_added_total} dodjela bez duplikata).'
+                    ),
                     messages.SUCCESS,
+                )
+            if already_ok:
+                self.message_user(
+                    request,
+                    f'{already_ok} artikal/a već ima sve te tagove — preskočeno (bez duplikata).',
+                    messages.INFO,
                 )
             if skipped:
                 self.message_user(
@@ -2336,7 +2354,21 @@ class ProductAdmin(admin.ModelAdmin):
                     f'{skipped} artikal/a preskočeno.',
                     messages.WARNING,
                 )
+            if not products_updated and not already_ok:
+                self.message_user(
+                    request,
+                    'Nijedan artikal nije ažuriran.',
+                    messages.WARNING,
+                )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+
+        # Predloži tagove koji već postoje na nekom od označenih artikala
+        suggested_tags = list(
+            Tag.objects.filter(artikli__in=queryset)
+            .distinct()
+            .order_by('naziv')
+        )
+        suggested_text = ', '.join(t.naziv for t in suggested_tags)
 
         context = {
             **self.admin_site.each_context(request),
@@ -2346,6 +2378,8 @@ class ProductAdmin(admin.ModelAdmin):
             'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
             'action_name': 'bulk_assign_tags',
             'product_count': queryset.count(),
+            'suggested_tags': suggested_tags,
+            'suggested_text': suggested_text,
         }
         return render(request, 'admin/EcommerceApp/product/bulk_assign_tags.html', context)
 

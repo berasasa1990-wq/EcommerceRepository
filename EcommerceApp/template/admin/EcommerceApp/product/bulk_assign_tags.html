@@ -48,6 +48,44 @@
         font-size: 12px;
         margin-top: 8px;
     }
+    .suggested-box {
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        background: #f0f7fb;
+        border: 1px solid #c5dce8;
+        border-radius: 6px;
+    }
+    .suggested-box h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e4a63;
+    }
+    .suggested-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .suggested-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        background: #fff;
+        border: 1px solid #9ec3d6;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .suggested-chip input {
+        margin: 0;
+    }
+    .suggested-chip:has(input:checked) {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        font-weight: 600;
+    }
     .product-list {
         margin: 16px 0 0;
         padding: 12px 14px;
@@ -69,6 +107,10 @@
     .product-list li {
         margin-bottom: 4px;
         font-size: 13px;
+    }
+    .product-list .has-tags {
+        color: #666;
+        font-size: 12px;
     }
     .bulk-tag-actions {
         margin-top: 20px;
@@ -94,13 +136,12 @@
 <div id="content-main">
     <h1>Bulk tag</h1>
     <p class="help-intro">
-        Unesi tagove u <strong>jedno polje</strong> (odvoji zarezom ako ih ima više).
-        Klikni <strong>Primjeni</strong> — tagovi se dodaju na svih
-        <strong>{{ product_count }}</strong> označenih artikala.
-        Postojeći tagovi se ne brišu.
+        Tagovi se dodaju na <strong>{{ product_count }}</strong> označenih artikala.
+        <strong>Bez duplikata</strong> — artiklu se dodaje samo tag koji još nema.
+        Ako neki označeni već imaju tagove, predloženi su ispod (možeš ih zadržati ili dopuniti).
     </p>
 
-    <form method="post" class="bulk-tag-form">
+    <form method="post" class="bulk-tag-form" id="bulk-tag-form">
         {% csrf_token %}
         <input type="hidden" name="action" value="{{ action_name }}">
         {% for product in queryset %}
@@ -108,24 +149,49 @@
         {% endfor %}
 
         <div class="bulk-tag-field">
-            <label for="bulk_tags">Tagovi</label>
+            {% if suggested_tags %}
+            <div class="suggested-box">
+                <h3>Tagovi već na nekim označenim artiklima — predloženo</h3>
+                <div class="suggested-chips" id="suggested-chips">
+                    {% for tag in suggested_tags %}
+                    <label class="suggested-chip">
+                        <input type="checkbox" class="suggested-tag-cb" value="{{ tag.naziv }}" checked>
+                        {{ tag.naziv }}
+                    </label>
+                    {% endfor %}
+                </div>
+                <p class="field-hint" style="margin-top:10px;margin-bottom:0;">
+                    Odštikliraj ako ne želiš neki predloženi tag. Polje ispod se ažurira automatski.
+                </p>
+            </div>
+            {% endif %}
+
+            <label for="bulk_tags">Tagovi (zarezom)</label>
             <input
                 type="text"
                 id="bulk_tags"
                 name="bulk_tags"
+                value="{{ suggested_text }}"
                 placeholder="npr. multiplikator, casting, baitcaster"
                 autocomplete="off"
                 autofocus
             >
             <p class="field-hint">
-                Više tagova odvoji zarezom. Ako tag ne postoji, kreira se automatski.
+                Možeš dodati i nove tagove u polje. Ako tag ne postoji, kreira se automatski.
             </p>
 
             <div class="product-list">
                 <h3>Označeni artikli ({{ product_count }})</h3>
                 <ul>
                     {% for product in queryset %}
-                    <li>{{ product.naziv }}{% if product.sifra %} <span style="color:#888">({{ product.sifra }})</span>{% endif %}</li>
+                    <li>
+                        {{ product.naziv }}{% if product.sifra %} <span style="color:#888">({{ product.sifra }})</span>{% endif %}
+                        {% with tags=product.tagovi.all %}
+                        {% if tags %}
+                        <span class="has-tags">— već: {% for t in tags %}{{ t.naziv }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                        {% endif %}
+                        {% endwith %}
+                    </li>
                     {% endfor %}
                 </ul>
             </div>
@@ -137,4 +203,32 @@
         </div>
     </form>
 </div>
+
+<script>
+(function () {
+    var input = document.getElementById('bulk_tags');
+    var chips = document.querySelectorAll('.suggested-tag-cb');
+    if (!input || !chips.length) return;
+
+    function syncFromChips() {
+        var names = [];
+        chips.forEach(function (cb) {
+            if (cb.checked) names.push(cb.value);
+        });
+        // Zadrži ručno dodate tagove koji nisu u predloženim
+        var suggested = {};
+        chips.forEach(function (cb) { suggested[cb.value.toLowerCase()] = true; });
+        var manual = (input.value || '').split(/[,;\n]/).map(function (s) {
+            return s.trim();
+        }).filter(function (s) {
+            return s && !suggested[s.toLowerCase()];
+        });
+        input.value = names.concat(manual).join(', ');
+    }
+
+    chips.forEach(function (cb) {
+        cb.addEventListener('change', syncFromChips);
+    });
+})();
+</script>
 {% endblock %}
