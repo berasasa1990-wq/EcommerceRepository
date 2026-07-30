@@ -2265,11 +2265,51 @@ class ProductAdmin(admin.ModelAdmin):
     bulk_assign_pakovanje.short_description = 'Bulk pakovanje (po artiklu + jedan Save)'
 
     def bulk_assign_tags(self, request, queryset):
-        queryset = queryset.prefetch_related('tagovi')
-        grouped_tags, flat_tags = self._bulk_tag_groups()
+        """
+        Jedno polje za tagove (zarezom) → Primjeni na sve označene artikle.
+        Tagovi se kreiraju ako ne postoje (get_or_create po nazivu).
+        """
+        queryset = queryset.order_by('naziv')
 
         if request.method == 'POST' and 'apply' in request.POST:
             selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
+            raw_tags = (request.POST.get('bulk_tags') or '').strip()
+            tag_names = []
+            seen = set()
+            for part in raw_tags.replace(';', ',').replace('\n', ',').split(','):
+                name = part.strip()
+                if not name:
+                    continue
+                key = name.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                tag_names.append(name)
+
+            if not tag_names:
+                self.message_user(
+                    request,
+                    'Unesi barem jedan tag (odvoji više tagova zarezom).',
+                    messages.ERROR,
+                )
+                return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+
+            if not selected_ids:
+                self.message_user(
+                    request,
+                    'Nijedan artikal nije označen.',
+                    messages.ERROR,
+                )
+                return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+
+            tags = []
+            for name in tag_names:
+                existing = Tag.objects.filter(naziv__iexact=name).first()
+                if existing:
+                    tags.append(existing)
+                else:
+                    tags.append(Tag.objects.create(naziv=name))
+
             count = 0
             skipped = 0
             for pk_str in selected_ids:
@@ -2278,60 +2318,41 @@ class ProductAdmin(admin.ModelAdmin):
                 except (TypeError, ValueError):
                     skipped += 1
                     continue
-                tag_ids = [
-                    int(tag_id)
-                    for tag_id in request.POST.getlist(f'tagovi_{pk}')
-                    if str(tag_id).isdigit()
-                ]
-                if not tag_ids:
-                    skipped += 1
-                    continue
                 try:
                     product = Product.objects.get(pk=pk)
                 except Product.DoesNotExist:
                     skipped += 1
                     continue
-                tags = list(Tag.objects.filter(pk__in=tag_ids))
-                if not tags:
-                    skipped += 1
-                    continue
                 product.tagovi.add(*tags)
                 count += 1
 
+            tag_label = ', '.join(t.naziv for t in tags)
             if count:
                 self.message_user(
                     request,
-                    f'Tagovi dodani na {count} artikal/a.',
+                    f'Tagovi „{tag_label}” primijenjeni na {count} artikal/a.',
                     messages.SUCCESS,
                 )
             if skipped:
                 self.message_user(
                     request,
-                    f'{skipped} artikal/a preskočeno (nije odabran nijedan tag).',
+                    f'{skipped} artikal/a preskočeno.',
                     messages.WARNING,
-                )
-            if not count and not skipped:
-                self.message_user(
-                    request,
-                    'Nije odabran nijedan tag.',
-                    messages.ERROR,
                 )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
-            'title': 'Dodjela tagova',
-            'grouped_tags': grouped_tags,
-            'flat_tags': flat_tags,
+            'title': 'Bulk tag — primijeni na označene artikle',
             'queryset': queryset,
             'opts': self.model._meta,
             'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
             'action_name': 'bulk_assign_tags',
-            'submit_label': 'Primjeni tagove',
+            'product_count': queryset.count(),
         }
         return render(request, 'admin/EcommerceApp/product/bulk_assign_tags.html', context)
 
-    bulk_assign_tags.short_description = 'Dodaj tagove'
+    bulk_assign_tags.short_description = 'Bulk tag (jedno polje → svi označeni)'
 
     def bulk_proizvedeno_u_japanu(self, request, queryset):
         count = queryset.update(proizvedeno_u_japanu=True)
