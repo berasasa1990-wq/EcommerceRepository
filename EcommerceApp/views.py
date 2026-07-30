@@ -526,8 +526,8 @@ def _parse_category_search_tags(raw):
     return tags
 
 
-# Tag: dozvoljeno odstupanje 1–2 slova (Levenshtein)
-_TAG_MAX_EDIT_DISTANCE = 2
+# Tag: dozvoljeno odstupanje do ±3 slova (Levenshtein)
+_TAG_MAX_EDIT_DISTANCE = 3
 
 
 def _edit_distance(a, b):
@@ -556,13 +556,13 @@ def _edit_distance(a, b):
 def _tag_matches_query(tag, query):
     """
     Tag podkategorije (1 riječ ili fraza) ≈ upit.
-    - tačan match, ili
-    - odstupanje najviše 1–2 slova (tipfeler / jedno slovo manje-više)
 
-    Primjeri:
-    - tag „stap za soma”, upit „stap za som” → OK (1 slovo)
-    - tag „multiplikator”, upit „multiplikatr” → OK (1 slovo)
-    - tag „teleskopski stap”, upit „teleskopski” → NE (previše razlike)
+    1) Cijeli string: tačan match ili ±3 slova (Levenshtein)
+    2) Po riječima: ista broj riječi, svaka riječ smije odstupati ±3 slova
+       npr. tag „teleskopski stap”, upit „teleskop stap” → OK
+       (teleskop≈teleskopski, stap≈stap)
+
+    Redoslijed riječi mora biti isti.
     """
     tag_f = _search_fold(_normalize_phrase(tag))
     q_f = _search_fold(_normalize_phrase(query))
@@ -570,11 +570,27 @@ def _tag_matches_query(tag, query):
         return False
     if tag_f == q_f:
         return True
-    return _edit_distance(tag_f, q_f) <= _TAG_MAX_EDIT_DISTANCE
+    # Cijeli tag odjednom
+    if _edit_distance(tag_f, q_f) <= _TAG_MAX_EDIT_DISTANCE:
+        return True
+
+    tag_words = [w for w in tag_f.split() if w]
+    q_words = [w for w in q_f.split() if w]
+    if not tag_words or not q_words:
+        return False
+
+    # Ista broj riječi → svaka riječ ±3 slova (bilo koja pozicija, ne samo zadnja)
+    if len(tag_words) == len(q_words):
+        return all(
+            _edit_distance(tw, qw) <= _TAG_MAX_EDIT_DISTANCE
+            for tw, qw in zip(tag_words, q_words)
+        )
+
+    return False
 
 
 def _subcategory_ids_matching_query(query):
-    """Podkategorije (i potomci) čiji tag odgovara upitu (≤2 slova razlike)."""
+    """Podkategorije (i potomci) čiji tag odgovara upitu (≤3 slova razlike)."""
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return []
@@ -604,7 +620,7 @@ def _subcategory_ids_matching_query(query):
 def _apply_search_filter(products_qs, query):
     """
     Pretraga SAMO:
-    1) tag podkategorije (odstupanje do 1–2 slova) → artikli te podkategorije
+    1) tag podkategorije (odstupanje do ±3 slova) → artikli te podkategorije
     2) naziv artikla
     3) šifra artikla (+ varijacije)
     """
