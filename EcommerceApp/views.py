@@ -526,23 +526,59 @@ def _parse_category_search_tags(raw):
     return tags
 
 
+# Minimalni udio taga koji upit mora pokriti (npr. 0.60 = 60%)
+_TAG_MATCH_MIN_COVERAGE = 0.60
+
+
 def _tag_matches_query(tag, query):
     """
-    Čita TAČAN tag — cijeli string, i kad ima više riječi.
+    Match taga podkategorije (1 riječ ili fraza) s upitom.
 
-    Match SAMO ako je upit identičan cijelom tagu
-    (nakon trim, suženih razmaka i dijakritika).
+    Pravila (nakon trim / razmaci / dijakritici):
+    1) Tačan match cijelog taga
+    2) Upit je prefiks taga i pokriva ≥ 60% dužine taga
+       npr. „teleskopski” → „teleskopski stap” (~69%)
+       npr. „stap za som” → „stap za soma” (~92%)
+    3) Sličnost (SequenceMatcher) ≥ 60% — tipfeler / skraćen kraj riječi
+       npr. „stap za som” ≈ „stap za soma”
 
-    Primjeri:
-    - tag „multiplikator” ← upit „multiplikator” ✓
-    - tag „stap za pecanje sarana” ← upit „stap za pecanje sarana” ✓
-    - upit „stap” ili „sarana” ← NE (nije cijeli tag)
+    Kratki djelomični upiti ispod 60% (npr. samo „stap” na dugom tagu) — NE.
     """
+    from difflib import SequenceMatcher
+
     tag_f = _search_fold(_normalize_phrase(tag))
     q_f = _search_fold(_normalize_phrase(query))
-    if not tag_f or not q_f:
+    if not tag_f or not q_f or len(q_f) < 2:
         return False
-    return tag_f == q_f
+
+    # 1) Identican cijeli tag
+    if tag_f == q_f:
+        return True
+
+    tag_len = len(tag_f)
+    q_len = len(q_f)
+    if tag_len <= 0:
+        return False
+
+    # 2) Prefiks cijelog taga s pokrivenošću ≥ 60%
+    #    „teleskopski” pokriva „teleskopski stap”; „stap” na istom tagu — ne
+    if tag_f.startswith(q_f):
+        if (q_len / tag_len) >= _TAG_MATCH_MIN_COVERAGE:
+            return True
+        return False
+
+    # 3) Upit počinje cijelim tagom (korisnik dodao višak) — OK
+    if q_f.startswith(tag_f):
+        return True
+
+    # 4) Sličnost cijelih stringova ≥ 60% (npr. som / soma na kraju)
+    ratio = SequenceMatcher(None, tag_f, q_f).ratio()
+    if ratio >= _TAG_MATCH_MIN_COVERAGE:
+        # Zaštita: prekratak upit ne smije „pogoditi” dug tag samom sličnošću
+        if q_len / tag_len >= (_TAG_MATCH_MIN_COVERAGE * 0.85):
+            return True
+
+    return False
 
 
 def _subcategory_ids_matching_query(query):
@@ -579,7 +615,9 @@ def _subcategory_ids_matching_query(query):
 def _apply_search_filter(products_qs, query):
     """
     Pretraga:
-    1) Ako upit = TAČAN tag podkategorije (i višerječni) → SAMO ta podkategorija
+    1) Ako upit pokriva ≥ 60% taga podkategorije → SAMO ta podkategorija
+       (npr. „teleskopski” → tag „teleskopski stap”;
+        „stap za som” → tag „stap za soma”)
     2) Inače → naziv + šifra artikla
     """
     raw = _normalize_phrase(query)
@@ -588,7 +626,7 @@ def _apply_search_filter(products_qs, query):
     if len(raw) < 2:
         return products_qs.none()
 
-    # --- TAČAN TAG (cijeli, i s više riječi) → samo ta podkategorija ---
+    # --- TAG (≥ 60% pokrivenosti cijelog taga) → samo ta podkategorija ---
     subcat_ids = _subcategory_ids_matching_query(raw)
     if subcat_ids:
         return products_qs.filter(kategorija_id__in=subcat_ids).distinct()
