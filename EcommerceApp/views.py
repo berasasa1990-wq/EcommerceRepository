@@ -488,193 +488,6 @@ def _showcase_brands():
     ).exclude(slika='').distinct().order_by('naziv')
 
 
-# BH/HR dijakritici → ASCII (štap ≈ stap)
-_SEARCH_DIACRITIC_MAP = str.maketrans({
-    'š': 's', 'đ': 'd', 'č': 'c', 'ć': 'c', 'ž': 'z',
-    'Š': 's', 'Đ': 'd', 'Č': 'c', 'Ć': 'c', 'Ž': 'z',
-})
-
-
-def _search_fold(value):
-    if not value:
-        return ''
-    return str(value).casefold().translate(_SEARCH_DIACRITIC_MAP)
-
-
-def _normalize_phrase(value):
-    """Suzi višestruke razmake."""
-    if not value:
-        return ''
-    return re.sub(r'\s+', ' ', str(value).strip())
-
-
-def _parse_category_search_tags(raw):
-    """
-    Tagovi podkategorije. Separatori: zarez, novi red, ;, | .
-    Razmaci OSTAJU — duga rečenica je jedan tag.
-    """
-    if not raw:
-        return []
-    text = str(raw).replace('\r\n', '\n').replace('\r', '\n')
-    text = text.replace(';', '\n').replace('|', '\n')
-    tags = []
-    for line in text.split('\n'):
-        for part in line.split(','):
-            tag = _normalize_phrase(part)
-            if tag:
-                tags.append(tag)
-    return tags
-
-
-# Tag: max ±3 slova, ali manje na kratkim riječima (sprječava crna≈bronz)
-_TAG_MAX_EDIT_DISTANCE = 3
-
-
-def _allowed_edit_distance_for_len(n):
-    """Kratke riječi: 1 slovo; srednje: 2; duge: do 3."""
-    if n <= 0:
-        return 0
-    if n <= 4:
-        return 1
-    if n <= 8:
-        return 2
-    return _TAG_MAX_EDIT_DISTANCE
-
-
-def _edit_distance(a, b, *, max_dist=None):
-    """Levenshtein udaljenost (insert/delete/replace = 1)."""
-    if a == b:
-        return 0
-    if not a:
-        return len(b)
-    if not b:
-        return len(a)
-    cap = max_dist if max_dist is not None else max(len(a), len(b))
-    if abs(len(a) - len(b)) > cap:
-        return cap + 1
-    prev = list(range(len(b) + 1))
-    for i, ca in enumerate(a, start=1):
-        curr = [i]
-        for j, cb in enumerate(b, start=1):
-            ins = curr[j - 1] + 1
-            delete = prev[j] + 1
-            sub = prev[j - 1] + (0 if ca == cb else 1)
-            curr.append(min(ins, delete, sub))
-        prev = curr
-        # Rana prekida ako cijeli red prelazi cap (opcionalno)
-    return prev[-1]
-
-
-def _words_within_edit(tag_words, q_words):
-    """Svaka riječ upita ≈ odgovarajuća riječ taga (ista pozicija, ±dozvoljeno)."""
-    if len(tag_words) != len(q_words) or not q_words:
-        return False
-    for tw, qw in zip(tag_words, q_words):
-        allow = _allowed_edit_distance_for_len(max(len(tw), len(qw)))
-        if _edit_distance(tw, qw, max_dist=allow) > allow:
-            return False
-    return True
-
-
-def _tag_matches_query(tag, query):
-    """
-    Tag podkategorije (1 riječ ili fraza) ≈ upit.
-
-    1) Cijeli string: tačan match ili ±1–3 slova (ovisno o dužini)
-    2) Po riječima: ista broj riječi, SVAKA riječ smije odstupati ±1–3
-       npr. tag „teleskopski stap”, upit „teleskop stap” → OK
-
-    Redoslijed riječi mora biti isti.
-    """
-    tag_f = _search_fold(_normalize_phrase(tag))
-    q_f = _search_fold(_normalize_phrase(query))
-    if not tag_f or not q_f or len(q_f) < 2:
-        return False
-    if tag_f == q_f:
-        return True
-
-    allow_full = _allowed_edit_distance_for_len(max(len(tag_f), len(q_f)))
-    if _edit_distance(tag_f, q_f, max_dist=allow_full) <= allow_full:
-        return True
-
-    tag_words = [w for w in tag_f.split() if w]
-    q_words = [w for w in q_f.split() if w]
-    if _words_within_edit(tag_words, q_words):
-        return True
-
-    return False
-
-
-def _subcategory_ids_for_tag_query(query):
-    """
-    ID-evi podkategorija (i njihovih potomaka) na kojima je unesen
-    search tag koji odgovara upitu. Samo podkategorije (imaju roditelja).
-    """
-    q = _normalize_phrase(query)
-    if not q or len(q) < 2:
-        return []
-
-    matched_ids = []
-    qs = (
-        Category.objects
-        .filter(roditelj__isnull=False)
-        .exclude(search_tagovi='')
-        .only('id', 'search_tagovi')
-    )
-    for cat in qs.iterator(chunk_size=300):
-        for tag in _parse_category_search_tags(cat.search_tagovi):
-            if _tag_matches_query(tag, q):
-                matched_ids.append(cat.pk)
-                break
-
-    if not matched_ids:
-        return []
-
-    all_ids = set()
-    for cat in Category.objects.filter(pk__in=matched_ids).prefetch_related('podkategorije'):
-        try:
-            all_ids.update(cat.get_descendant_ids())
-        except Exception:
-            all_ids.add(cat.pk)
-    return list(all_ids)
-
-
-def _apply_search_filter(products_qs, query):
-    """
-    Pretraga na sajtu — samo:
-    1) naziv artikla
-    2) šifra artikla (+ šifre varijacija)
-    3) tag unesen na podkategoriji → izlistaj artikle te podkategorije
-       (tag match: tačan ili ±1–3 slova / po riječima)
-    """
-    raw = _normalize_phrase(query)
-    if not raw:
-        return products_qs
-    if len(raw) < 2:
-        return products_qs.none()
-
-    # 1–2) Naziv + šifra
-    match = (
-        Q(naziv__icontains=raw)
-        | Q(sifra__icontains=raw)
-        | Q(varijacije__sifra__icontains=raw)
-    )
-    folded_raw = _search_fold(raw)
-    if folded_raw and folded_raw != raw.casefold():
-        match |= (
-            Q(naziv__icontains=folded_raw)
-            | Q(sifra__icontains=folded_raw)
-            | Q(varijacije__sifra__icontains=folded_raw)
-        )
-
-    # 3) Tag podkategorije → svi artikli u toj podkategoriji
-    subcat_ids = _subcategory_ids_for_tag_query(raw)
-    if subcat_ids:
-        match |= Q(kategorija_id__in=subcat_ids)
-
-    return products_qs.filter(match).distinct()
-
-
 def _product_lager_priority(product):
     """0=normal, 1=favorizuj, 2=hit redukovanje — samo za sort među relevantnim."""
     try:
@@ -683,56 +496,40 @@ def _product_lager_priority(product):
         return 0
 
 
-def _search_relevance_score(product, query):
-    """Veći = bolje poklapanje (unutar već filtriranih rezultata)."""
-    raw = _normalize_phrase(query)
-    if not raw or len(raw) < 2:
-        return 0
-    q = raw.lower()
-    score = 0
-    name = (product.naziv or '').lower()
-    sifra = (product.sifra or '').lower()
-
-    if sifra and (sifra == q or q in sifra):
-        score += 120
-    if name == q:
-        score += 100
-    elif name.startswith(q):
-        score += 80
-    elif q in name:
-        score += 50
-
-    cat = getattr(product, 'kategorija', None)
-    if cat is not None and getattr(cat, 'roditelj_id', None):
-        tags = _parse_category_search_tags(getattr(cat, 'search_tagovi', None) or '')
-        if any(_tag_matches_query(tag, raw) for tag in tags):
-            score += 60
-    return score
+def _apply_search_filter(products_qs, query):
+    """
+    Backend pretraga (PostgreSQL FTS + pg_trgm na Renderu; SQLite fallback).
+    Polja: šifra, naziv, brend, kategorija/podkategorija, search_tagovi, opis.
+    Frontend / URL-ovi nepromijenjeni.
+    """
+    from .product_search import apply_product_search
+    return apply_product_search(products_qs, query)
 
 
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
     Katalog / pretraga / kategorija:
-    0) Ako ima search upit: relevantnost (naziv/šifra/brend/tag) prvo
+    0) Ako ima search upit: FTS/trigram score (search_score) ili legacy score
     1) Hit redukovanje lagera → Favorizuj → Normal
-    2) Unutar nivoa: cijena rastuće (jeftinije → skuplje), osim opadajuce.
+    2) Unutar nivoa: cijena rastuće / opadajuće
     """
     if not products:
         return products
 
+    if query:
+        from .product_search import order_search_results
+        return order_search_results(products, query=query, price_sort=price_sort)
+
     def key(p):
-        rel = -_search_relevance_score(p, query) if query else 0
         prio = _product_lager_priority(p)
         name = (p.naziv or '').lower()
         try:
             price = float(_effective_product_price(p) or 0)
         except Exception:
             price = 0.0
-        # Opadajuća: prioritet, pa skuplje → jeftinije
         if price_sort == 'opadajuca':
-            return (rel, -prio, -price, name)
-        # Zadano + rastuća: prioritet, pa jeftinije → skuplje
-        return (rel, -prio, price, name)
+            return (-prio, -price, name)
+        return (-prio, price, name)
 
     return sorted(products, key=key)
 
