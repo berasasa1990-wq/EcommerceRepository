@@ -2378,14 +2378,6 @@ class Product(models.Model):
     )
     kreiran = models.DateTimeField(auto_now_add=True, verbose_name='Dodano')
     azuriran = models.DateTimeField(auto_now=True, verbose_name='Ažurirano')
-    # Denormalizirani tekst za PostgreSQL FTS + pg_trgm (i SQLite fallback)
-    search_document = models.TextField(
-        blank=True,
-        default='',
-        editable=False,
-        verbose_name='Search document',
-        help_text='Automatski: šifra, naziv, brend, kategorija, tagovi, opis, šifre varijacija.',
-    )
 
     class Meta:
         verbose_name = 'Artikal'

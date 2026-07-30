@@ -22,12 +22,6 @@ class EcommerceappConfig(AppConfig):
     def ready(self):
         connection_created.connect(_configure_sqlite)
 
-        # Product FTS / search_document indeksi
-        try:
-            from . import search_signals  # noqa: F401
-        except Exception as exc:
-            logger.warning('search_signals not loaded: %s', exc)
-
         from django.contrib import admin
 
         admin.site.site_header = 'opremazaribolov.ba Admin'
