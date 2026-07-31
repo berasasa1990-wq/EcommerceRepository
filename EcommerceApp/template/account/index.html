@@ -35,13 +35,13 @@
     <section class="account-loyalty-card-section" aria-label="Loyalty kartica">
         <div class="account-loyalty-card-header">
             <h2>Vaša loyalty kartica</h2>
-            <p>Kopirajte broj s kartice i unesite ga u korpi da ostvarite popust.</p>
+            <p>U korpi kliknite <strong>Primjeni Loyalty karticu</strong> — popust prema vašem nivou (ne vrijedi na akcije).</p>
         </div>
         <div class="account-loyalty-card-preview">
             {% include 'partials/loyalty_card_print.html' with loyalty=loyalty cardholder_name=cardholder_name %}
         </div>
         <div class="account-loyalty-card-actions">
-            <a href="{% url 'cart' %}" class="btn btn-primary">Unesi u korpu</a>
+            <a href="{% url 'cart' %}" class="btn btn-primary">Primjeni u korpi</a>
         </div>
     </section>
     {% endif %}

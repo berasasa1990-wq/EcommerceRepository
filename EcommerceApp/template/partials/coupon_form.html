@@ -1,47 +1,50 @@
 <div class="coupon-box">
     <h3 class="coupon-box-title">Loyalty kartica</h3>
-    <p class="loyalty-code-hint">Unesite <strong>broj kartice</strong> da ostvarite popust prema nivou kartice.</p>
 
-    {% if user.is_authenticated and loyalty_card %}
-    <div class="loyalty-code-display loyalty-code-display--cart">
-        <div class="loyalty-code-display-text">
-            <span class="loyalty-code-display-label">Vaš broj kartice</span>
-            <strong class="loyalty-code-display-value" id="loyaltyCodeValue">{{ loyalty_card.kod }}</strong>
-            <span class="loyalty-code-display-tier">{{ loyalty_card.get_nivo_display }} · {{ loyalty_card.postotak }}% popusta</span>
-        </div>
-        <button
-            type="button"
-            class="btn-copy-code"
-            data-copy-target="loyaltyCodeValue"
-            data-fill-input="{{ coupon_form.kod.id_for_label }}"
-            aria-label="Kopiraj broj kartice u polje"
-        >
-            Kopiraj
-        </button>
-    </div>
-    <p class="loyalty-code-hint loyalty-code-hint--compact">Kliknite <strong>Kopiraj</strong> pa <strong>Primijeni</strong> — broj se unosi u polje ispod.</p>
-    {% endif %}
-
-    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
-        <div class="coupon-form-row">
-            {{ coupon_form.kod }}
-            <button type="submit" class="btn btn-coupon">Primijeni</button>
-        </div>
-        {% for error in coupon_form.kod.errors %}
-        <p class="form-error">{{ error }}</p>
-        {% endfor %}
-    </form>
     {% if applied_coupon_code %}
     <form method="post" action="{% url 'remove_coupon' %}" class="coupon-remove-form">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
         <p class="coupon-applied">
-            Aktivan: <strong>{{ applied_coupon_code }}</strong>
-            {% if summary.kupon_postotak %}({{ summary.kupon_postotak }}%){% endif %}
+            Aktivan loyalty popust
+            {% if summary.kupon_postotak %}<strong>{{ summary.kupon_postotak }}%</strong>{% endif %}
+            {% if summary.kupon_popust %}(−{{ summary.kupon_popust }} KM){% endif %}
             <button type="submit" class="coupon-remove-btn">Ukloni</button>
         </p>
+    </form>
+    <p class="loyalty-code-hint loyalty-code-hint--compact">Ne vrijedi na artikle koji su na akciji.</p>
+
+    {% elif user.is_authenticated and loyalty_card %}
+    <p class="loyalty-code-hint">
+        Vaš nivo: <strong>{{ loyalty_card.get_nivo_display }}</strong>
+        · <strong>{{ loyalty_card.postotak }}%</strong> popusta
+        na artikle koji nisu na akciji.
+    </p>
+    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form coupon-form--loyalty-oneclick">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <input type="hidden" name="kod" value="{{ loyalty_card.kod }}">
+        <button type="submit" class="btn btn-coupon btn-coupon--full">Primjeni Loyalty karticu</button>
+    </form>
+
+    {% else %}
+    <p class="loyalty-code-hint">
+        {% if user.is_authenticated %}
+        Nemate loyalty karticu. Unesite broj kartice ako ga imate.
+        {% else %}
+        <a href="{% url 'login' %}?next={% url 'cart' %}">Prijavite se</a> da primijenite loyalty popust jednim klikom, ili unesite broj kartice.
+        {% endif %}
+    </p>
+    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <div class="coupon-form-row">
+            {{ coupon_form.kod }}
+            <button type="submit" class="btn btn-coupon">Primjeni</button>
+        </div>
+        {% for error in coupon_form.kod.errors %}
+        <p class="form-error">{{ error }}</p>
+        {% endfor %}
     </form>
     {% endif %}
 </div>

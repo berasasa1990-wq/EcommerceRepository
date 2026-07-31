@@ -17253,6 +17253,16 @@ button.nav-action-link {
     white-space: nowrap;
 }
 
+.btn-coupon--full {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+}
+
+.coupon-form--loyalty-oneclick {
+    margin-top: 4px;
+}
+
 .btn-coupon:hover {
     background: #333;
 }

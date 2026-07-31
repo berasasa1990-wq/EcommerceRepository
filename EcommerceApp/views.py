@@ -2768,10 +2768,19 @@ def apply_coupon(request):
         else:
             cart.set_coupon_code(coupon.kod)
             cart.mark_coupon_keep_after_apply()
-            messages.success(
-                request,
-                f'Broj kartice {coupon.kod} primijenjen — popust {coupon.postotak}%.',
-            )
+            pct = coupon.postotak
+            pct_label = int(pct) if pct == int(pct) else pct
+            if coupon.automatski or coupon.loyalty_kartica_id:
+                messages.success(
+                    request,
+                    f'Loyalty kartica primijenjena — popust {pct_label}% '
+                    f'(ne vrijedi na artikle na akciji).',
+                )
+            else:
+                messages.success(
+                    request,
+                    f'Kupon primijenjen — popust {pct_label}%.',
+                )
     else:
         for error in form.errors.get('kod', []):
             messages.error(request, error)
