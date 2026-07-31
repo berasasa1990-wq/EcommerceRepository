@@ -60,6 +60,180 @@ def _normalizuj_telefon(telefon):
     return re.sub(r'\D', '', telefon or '')
 
 
+# BH/HR dijakritici → ASCII za pretragu imena (Božan ≈ Bozan)
+_LOYALTY_DIACRITIC_MAP = str.maketrans({
+    'š': 's', 'đ': 'd', 'č': 'c', 'ć': 'c', 'ž': 'z',
+    'Š': 's', 'Đ': 'd', 'Č': 'c', 'Ć': 'c', 'Ž': 'z',
+})
+
+
+def loyalty_search_fold(value):
+    """casefold + bez dijakritika (ž→z, š→s, č/ć→c)."""
+    if not value:
+        return ''
+    return str(value).casefold().translate(_LOYALTY_DIACRITIC_MAP)
+
+
+def _loyalty_name_query_variants(term, *, max_variants=48):
+    """
+    Varijante upita za SQL icontains: bozan ↔ božan, cosic ↔ čosić…
+    Ograničeno da ne eksplodira broj OR grana.
+    """
+    term = (term or '').strip()
+    if not term:
+        return []
+    folded = loyalty_search_fold(term)
+    variants = {term, term.casefold(), folded}
+    # Proširi ASCII slova s mogućim dijakriticima
+    expand = {
+        's': 'sš', 'š': 'sš',
+        'z': 'zž', 'ž': 'zž',
+        'c': 'cčć', 'č': 'cčć', 'ć': 'cčć',
+        'd': 'dđ', 'đ': 'dđ',
+    }
+    base = folded
+    # generiši zamjene pozicija po jednoj (brzo, dovoljno za imena)
+    chars = list(base)
+    for i, ch in enumerate(chars):
+        opts = expand.get(ch)
+        if not opts:
+            continue
+        for alt in opts:
+            if alt == ch:
+                continue
+            trial = ''.join(chars[:i] + [alt] + chars[i + 1:])
+            variants.add(trial)
+            variants.add(trial.casefold())
+    # ako je upit kratak, pokušaj i dvostruke zamjene na prva 2 “osjetljiva” mjesta
+    sens = [i for i, ch in enumerate(chars) if ch in expand]
+    if len(sens) >= 2 and len(variants) < max_variants:
+        i, j = sens[0], sens[1]
+        for a in expand[chars[i]]:
+            for b in expand[chars[j]]:
+                trial = list(chars)
+                trial[i], trial[j] = a, b
+                variants.add(''.join(trial))
+                if len(variants) >= max_variants:
+                    break
+            if len(variants) >= max_variants:
+                break
+    out = []
+    seen = set()
+    for v in variants:
+        v = (v or '').strip()
+        if len(v) < 2:
+            continue
+        key = v.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(v)
+        if len(out) >= max_variants:
+            break
+    return out
+
+
+def search_loyalty_cards(query, *, limit=30):
+    """
+    Pretraga loyalty kupaca: kod, barkod, email, telefon, ime.
+    Dijakritici: ž≈z, š≈s, č/ć≈c (u oba smjera).
+    """
+    q = (query or '').strip()
+    if not q:
+        return []
+
+    name_q = Q()
+    for v in _loyalty_name_query_variants(q):
+        name_q |= Q(user__first_name__icontains=v) | Q(user__last_name__icontains=v)
+
+    phone_digits = _normalizuj_telefon(q)
+    phone_q = Q()
+    if len(phone_digits) >= 6:
+        # lokalni / međunarodni dijelovi
+        phone_q = (
+            Q(user__profil__telefon__icontains=phone_digits)
+            | Q(user__profil__telefon__icontains=phone_digits[-8:])
+        )
+        local = ba_mobile_local(q)
+        if local:
+            phone_q |= Q(user__profil__telefon__icontains=local)
+            phone_q |= Q(user__profil__telefon__icontains=local[1:])  # bez 0
+
+    filter_q = (
+        Q(kod__icontains=q)
+        | Q(barkod__icontains=q)
+        | Q(user__email__icontains=q)
+    )
+    if name_q:
+        filter_q |= name_q
+    if phone_q:
+        filter_q |= phone_q
+
+    cards_qs = list(
+        LoyaltyCard.objects.select_related('user', 'user__profil')
+        .filter(filter_q)
+        .order_by('-azurirana')[: max(limit * 3, 60)]
+    )
+
+    fold_q = loyalty_search_fold(q)
+    results = []
+    seen_ids = set()
+
+    def _card_match_rank(card):
+        user = card.user
+        full = f'{user.first_name or ""} {user.last_name or ""}'.strip()
+        email = user.email or ''
+        phone = ''
+        profil = getattr(user, 'profil', None)
+        if profil:
+            phone = profil.telefon or ''
+        hay_fold = loyalty_search_fold(
+            f'{card.kod} {card.barkod} {email} {full} {phone}'
+        )
+        ql = q.casefold()
+        raw_ok = (
+            ql in (card.kod or '').casefold()
+            or ql in (card.barkod or '').casefold()
+            or ql in email.casefold()
+            or ql in full.casefold()
+            or (phone_digits and phone_digits in _normalizuj_telefon(phone))
+        )
+        fold_ok = bool(fold_q and fold_q in hay_fold)
+        if raw_ok or fold_ok:
+            return 0
+        return 1
+
+    for card in cards_qs:
+        if card.pk in seen_ids:
+            continue
+        results.append((_card_match_rank(card), card))
+        seen_ids.add(card.pk)
+
+    # Dopuna: sken imena s dijakriticima (upit bez ž, ime s ž — i obrnuto)
+    if len(results) < limit and fold_q and len(fold_q) >= 2:
+        for card in (
+            LoyaltyCard.objects.select_related('user', 'user__profil')
+            .order_by('-azurirana')[:500]
+        ):
+            if card.pk in seen_ids:
+                continue
+            user = card.user
+            full = f'{user.first_name or ""} {user.last_name or ""}'.strip()
+            if fold_q in loyalty_search_fold(full):
+                results.append((0, card))
+                seen_ids.add(card.pk)
+            if len(results) >= limit * 2:
+                break
+
+    results.sort(
+        key=lambda row: (
+            row[0],
+            -(row[1].azurirana.timestamp() if row[1].azurirana else 0),
+        ),
+    )
+    return [c for _, c in results[:limit]]
+
+
 def normalizuj_email(email):
     return (email or '').strip().lower()
 

@@ -5899,17 +5899,10 @@ def staff_loyalty_system(request):
     searched = bool(q)
 
     if q:
-        # Search LoyaltyCard by kod/barkod or user fields
-        cards_qs = LoyaltyCard.objects.select_related('user', 'user__profil').filter(
-            Q(kod__icontains=q) |
-            Q(barkod__icontains=q) |
-            Q(user__email__icontains=q) |
-            Q(user__first_name__icontains=q) |
-            Q(user__last_name__icontains=q) |
-            Q(user__profil__telefon__icontains=q)
-        ).order_by('-azurirana')[:30]
+        from .loyalty import search_loyalty_cards
 
-        cards = list(cards_qs)
+        # Pretraga kupaca (kod / email / telefon / ime) — dijakritici ž≈z, š≈s, č/ć≈c
+        cards = search_loyalty_cards(q, limit=30)
 
         if cards:
             selected_card = cards[0]
@@ -6220,7 +6213,9 @@ def staff_loyalty_system(request):
 
     context = {
         **_base_context(),
-        'search_query': q,
+        # Prazno: ne puni header polje za pretragu ARTIKALA (context_processor koristi ?q=)
+        'search_query': '',
+        'loyalty_search_query': q,
         'searched': searched,
         'cards': cards,
         'selected_card': selected_card,

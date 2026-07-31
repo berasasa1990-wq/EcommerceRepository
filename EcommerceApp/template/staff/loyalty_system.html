@@ -12,12 +12,17 @@
     <div class="staff-loyalty-header">
         <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
         <h1>Loyalty System</h1>
-        <form method="get" class="staff-loyalty-search staff-loyalty-search--header" role="search">
+        <form method="get"
+              id="loyaltyCustomerSearchForm"
+              class="staff-loyalty-search staff-loyalty-search--header"
+              role="search"
+              action="{% url 'staff_loyalty_system' %}">
             <label class="staff-loyalty-search-label" for="loyaltySearchInput">Pretraga kupaca</label>
             <div class="search-input-group">
-                <input type="search" id="loyaltySearchInput" name="q" value="{{ search_query }}"
-                       placeholder="Broj kartice, telefon, email ili ime..."
-                       autocomplete="off">
+                <input type="search" id="loyaltySearchInput" name="q" value="{{ loyalty_search_query }}"
+                       placeholder="Broj kartice, telefon, email ili ime (ž≈z, š≈s, č≈c)…"
+                       autocomplete="off"
+                       autofocus>
                 <button type="submit" class="btn btn-primary">Pretraži</button>
             </div>
         </form>
@@ -124,7 +129,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="aktiviraj_nalog">
                                 <input type="hidden" name="user_id" value="{{ selected_card.user_id }}">
-                                <input type="hidden" name="q" value="{{ search_query }}">
+                                <input type="hidden" name="q" value="{{ loyalty_search_query }}">
                                 <button type="submit" class="btn btn-primary btn-sm">Aktiviraj nalog</button>
                             </form>
                             {% endif %}
@@ -219,7 +224,7 @@
                                 </div>
                                 {{ pending_otp.message|json_script:"loyaltyOtpMessage" }}
 
-                                <form method="post" class="purchase-form loyalty-otp-confirm-form" action="{{ request.path }}?q={{ search_query|urlencode }}">
+                                <form method="post" class="purchase-form loyalty-otp-confirm-form" action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="evidentiraj_kupovinu_potvrdi">
                                     <div class="form-inline">
@@ -237,14 +242,14 @@
                                 </form>
 
                                 <div class="loyalty-otp-admin-row">
-                                    <form method="post" class="purchase-form" action="{{ request.path }}?q={{ search_query|urlencode }}">
+                                    <form method="post" class="purchase-form" action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="evidentiraj_kupovinu_admin">
                                         <button type="submit" class="btn btn-outline loyalty-otp-admin-btn">
                                             Admin — nema internet (evidentiraj odmah)
                                         </button>
                                     </form>
-                                    <form method="post" class="purchase-form" action="{{ request.path }}?q={{ search_query|urlencode }}">
+                                    <form method="post" class="purchase-form" action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="evidentiraj_kupovinu_cancel">
                                         <button type="submit" class="btn btn-outline">Otkaži</button>
@@ -256,7 +261,7 @@
                             <form method="post"
                                   class="purchase-form"
                                   id="loyaltyOtpStartForm"
-                                  action="{{ request.path }}?q={{ search_query|urlencode }}">
+                                  action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="evidentiraj_kupovinu_start">
                                 <input type="hidden" name="ajax" value="1">
@@ -374,7 +379,7 @@
 
                 {% else %}
                     <div class="empty-state">
-                        <p>Nema rezultata za pretragu „{{ search_query }}“.</p>
+                        <p>Nema rezultata za pretragu „{{ loyalty_search_query }}“.</p>
                     </div>
                 {% endif %}
             {% else %}
