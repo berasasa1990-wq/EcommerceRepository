@@ -1,12 +1,19 @@
 import io
 import re
 import secrets
+import time
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.contrib.auth.models import User
 from django.db.models import Q, Sum
 
-from .models import Coupon, LoyaltyCard, Order, UserProfile
+from .models import Coupon, LoyaltyCard, LoyaltyPurchase, Order, UserProfile
+
+# Session key za pending OTP pri evidentiranju kupovine
+LOYALTY_PURCHASE_OTP_SESSION_KEY = 'loyalty_purchase_otp'
+LOYALTY_PURCHASE_OTP_TTL_SEC = 10 * 60  # 10 min
+LOYALTY_PURCHASE_OTP_MAX_ATTEMPTS = 5
 
 
 LOYALTY_TIERS = (
@@ -113,6 +120,173 @@ def viber_chat_url(telefon):
     if not digits:
         return ''
     return f'viber://chat?number=%2B{digits}'
+
+
+def whatsapp_chat_url(telefon, text=''):
+    """
+    Deep link WhatsApp chata (BA brojevi).
+    text se prefill-uje u poruci (wa.me podržava text=).
+    """
+    digits = _to_e164_digits(telefon)
+    if not digits:
+        return ''
+    url = f'https://wa.me/{digits}'
+    if text:
+        url = f'{url}?text={quote(text)}'
+    return url
+
+
+def _generate_otp_code():
+    """4-cifreni kod (1000–9999)."""
+    return f'{secrets.randbelow(9000) + 1000}'
+
+
+def purchase_otp_message(code, *, iznos=None):
+    """Tekst poruke za Viber/WhatsApp."""
+    lines = [
+        'opremazaribolov.ba — potvrda kupovine',
+        f'Vaš kod: {code}',
+    ]
+    if iznos is not None:
+        try:
+            lines.append(f'Iznos: {Decimal(str(iznos)).quantize(Decimal("0.01"))} KM')
+        except Exception:
+            lines.append(f'Iznos: {iznos} KM')
+    lines.append('Recite kod osoblju u prodavnici da se kupovina evidentira na loyalty karticu.')
+    return '\n'.join(lines)
+
+
+def start_purchase_otp(request, card, iznos, napomena=''):
+    """
+    Generiši OTP i sačuvaj pending kupovinu u sesiji.
+    Vraća dict za UI (code se ne šalje u HTML u produkciji — samo za deep-link poruku staffu).
+    """
+    if not request or not card:
+        raise ValueError('Kartica nije dostupna.')
+    profil = getattr(card.user, 'profil', None)
+    telefon = (profil.telefon if profil else '') or ''
+    if not _to_e164_digits(telefon):
+        raise ValueError(
+            'Kartica nema ispravan telefon. Unesite telefon u ličnim podacima '
+            'prije evidentiranja, ili koristite admin override.'
+        )
+    try:
+        iznos_d = Decimal(str(iznos)).quantize(Decimal('0.01'))
+    except Exception as exc:
+        raise ValueError('Neispravan iznos.') from exc
+    if iznos_d <= 0:
+        raise ValueError('Iznos mora biti veći od 0.')
+
+    code = _generate_otp_code()
+    payload = {
+        'card_id': card.pk,
+        'iznos': str(iznos_d),
+        'napomena': (napomena or '')[:200],
+        'code': code,
+        'created_ts': time.time(),
+        'attempts': 0,
+        'telefon': telefon,
+    }
+    request.session[LOYALTY_PURCHASE_OTP_SESSION_KEY] = payload
+    request.session.modified = True
+
+    msg = purchase_otp_message(code, iznos=iznos_d)
+    return {
+        'card_id': card.pk,
+        'iznos': iznos_d,
+        'napomena': payload['napomena'],
+        'telefon': telefon,
+        'message': msg,
+        'viber_url': viber_chat_url(telefon),
+        'whatsapp_url': whatsapp_chat_url(telefon, msg),
+        'ttl_minutes': LOYALTY_PURCHASE_OTP_TTL_SEC // 60,
+    }
+
+
+def get_pending_purchase_otp(request, card=None):
+    """Vrati pending OTP iz sesije (ili None ako nema / isteklo / pogrešna kartica)."""
+    data = request.session.get(LOYALTY_PURCHASE_OTP_SESSION_KEY)
+    if not isinstance(data, dict):
+        return None
+    try:
+        created = float(data.get('created_ts') or 0)
+    except (TypeError, ValueError):
+        created = 0
+    if not created or (time.time() - created) > LOYALTY_PURCHASE_OTP_TTL_SEC:
+        clear_pending_purchase_otp(request)
+        return None
+    if card is not None:
+        try:
+            if int(data.get('card_id') or 0) != int(card.pk):
+                return None
+        except (TypeError, ValueError):
+            return None
+    return data
+
+
+def clear_pending_purchase_otp(request):
+    if LOYALTY_PURCHASE_OTP_SESSION_KEY in request.session:
+        del request.session[LOYALTY_PURCHASE_OTP_SESSION_KEY]
+        request.session.modified = True
+
+
+def verify_purchase_otp(request, entered_code, card):
+    """
+    Provjeri kod. Vraća (True, payload) ili (False, error_message).
+    Ne kreira kupovinu — samo validira.
+    """
+    data = get_pending_purchase_otp(request, card=card)
+    if not data:
+        return False, 'Kod je istekao ili nije zatražen. Pošaljite novi kod.'
+    try:
+        attempts = int(data.get('attempts') or 0)
+    except (TypeError, ValueError):
+        attempts = 0
+    if attempts >= LOYALTY_PURCHASE_OTP_MAX_ATTEMPTS:
+        clear_pending_purchase_otp(request)
+        return False, 'Previše pogrešnih pokušaja. Zatražite novi kod.'
+
+    expected = str(data.get('code') or '').strip()
+    got = re.sub(r'\D', '', str(entered_code or ''))
+    if len(got) != 4 or got != expected:
+        data['attempts'] = attempts + 1
+        request.session[LOYALTY_PURCHASE_OTP_SESSION_KEY] = data
+        request.session.modified = True
+        left = LOYALTY_PURCHASE_OTP_MAX_ATTEMPTS - data['attempts']
+        if left <= 0:
+            clear_pending_purchase_otp(request)
+            return False, 'Pogrešan kod. Previše pokušaja — zatražite novi kod.'
+        return False, f'Pogrešan kod. Preostalo pokušaja: {left}.'
+    return True, data
+
+
+def commit_loyalty_purchase(
+    card,
+    iznos,
+    *,
+    napomena='',
+    verifikacija=LoyaltyPurchase.Verifikacija.OTP,
+    staff_user=None,
+):
+    """Upiši kupovinu + ažuriraj potrošnju/nivo kartice."""
+    try:
+        iznos_d = Decimal(str(iznos)).quantize(Decimal('0.01'))
+    except Exception as exc:
+        raise ValueError('Neispravan iznos.') from exc
+    if iznos_d <= 0:
+        raise ValueError('Iznos mora biti veći od 0.')
+
+    purchase = LoyaltyPurchase.objects.create(
+        kartica=card,
+        iznos=iznos_d,
+        napomena=(napomena or '')[:200],
+        verifikacija=verifikacija,
+        kreirao=staff_user if getattr(staff_user, 'is_authenticated', False) else None,
+    )
+    card.ukupna_potrosnja = (card.ukupna_potrosnja or Decimal('0')) + iznos_d
+    card.save(update_fields=['ukupna_potrosnja'])
+    azuriraj_loyalty_karticu(card)
+    return purchase
 
 
 def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):

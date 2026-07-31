@@ -16735,6 +16735,70 @@ button.nav-action-link {
     );
 }
 
+/* Evidentiraj kupovinu — OTP potvrda */
+.loyalty-otp-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.loyalty-otp-lead {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: #0f172a;
+}
+.loyalty-otp-send-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.loyalty-otp-input {
+    max-width: 9rem;
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    font-size: 1.15rem;
+    text-align: center;
+}
+.loyalty-otp-admin-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--gray-200);
+}
+.loyalty-otp-admin-btn {
+    color: #9a3412 !important;
+    border-color: #fdba74 !important;
+}
+.loyalty-otp-admin-details {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--gray-100);
+    font-size: 0.9rem;
+    color: #64748b;
+}
+.loyalty-otp-admin-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #9a3412;
+    margin-bottom: 8px;
+}
+.loyalty-otp-admin-details .purchase-form {
+    margin-top: 8px;
+}
+.staff-loyalty-page .purchase-form .form-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.staff-loyalty-page .purchase-form .form-inline .form-input {
+    flex: 1 1 120px;
+    min-width: 0;
+}
+
 .staff-loyalty-page .section-header {
     margin-bottom: 16px;
     padding-bottom: 12px;

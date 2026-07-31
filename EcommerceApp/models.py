@@ -2993,6 +2993,10 @@ class LoyaltyPurchase(models.Model):
     Evidentirana (ručna / u prodavnici) kupovina na loyalty kartici.
     Online narudžbe se vode preko Order — ovo je istorija „Evidentiraj kupovinu”.
     """
+    class Verifikacija(models.TextChoices):
+        OTP = 'otp', 'Kod (Viber/WhatsApp)'
+        ADMIN = 'admin', 'Admin override (bez koda)'
+
     kartica = models.ForeignKey(
         LoyaltyCard,
         on_delete=models.CASCADE,
@@ -3008,6 +3012,13 @@ class LoyaltyPurchase(models.Model):
         max_length=200,
         blank=True,
         verbose_name='Napomena',
+    )
+    verifikacija = models.CharField(
+        max_length=10,
+        choices=Verifikacija.choices,
+        default=Verifikacija.OTP,
+        verbose_name='Način potvrde',
+        help_text='otp = 4-cifreni kod poslan kupcu; admin = bez koda (nema internet).',
     )
     kreirao = models.ForeignKey(
         settings.AUTH_USER_MODEL,

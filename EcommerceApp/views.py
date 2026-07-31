@@ -5895,6 +5895,7 @@ def staff_loyalty_system(request):
     loyalty_ctx = None
     edit_form = None
     cardholder_name = ''
+    pending_otp = None
     searched = bool(q)
 
     if q:
@@ -5943,12 +5944,16 @@ def staff_loyalty_system(request):
                     'note': '',
                 })
             for pur in manual_purchases:
+                if getattr(pur, 'verifikacija', '') == LoyaltyPurchase.Verifikacija.ADMIN:
+                    status_label = 'Prodavnica · admin (bez koda)'
+                else:
+                    status_label = 'Prodavnica · kod'
                 purchase_timeline.append({
                     'kind': 'manual',
                     'date': pur.kreirano,
                     'amount': pur.iznos,
                     'label': 'Evidentirano',
-                    'status': 'Prodavnica / ručno',
+                    'status': status_label,
                     'status_code': 'manual',
                     'order': None,
                     'note': pur.napomena or '',
@@ -5962,29 +5967,96 @@ def staff_loyalty_system(request):
 
             profil = getattr(selected_card.user, 'profil', None)
 
-            # Evidentiraj kupovinu (manual purchase)
-            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu':
+            from .loyalty import (
+                clear_pending_purchase_otp,
+                commit_loyalty_purchase,
+                get_pending_purchase_otp,
+                start_purchase_otp,
+                verify_purchase_otp,
+            )
+
+            # 1) Start: generiši 4-cifreni kod + deep link Viber/WhatsApp
+            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_start':
                 try:
                     iznos = Decimal(request.POST.get('iznos', '0'))
                     napomena = (request.POST.get('napomena') or '').strip()[:200]
-                    if iznos > 0:
-                        LoyaltyPurchase.objects.create(
-                            kartica=selected_card,
-                            iznos=iznos,
-                            napomena=napomena,
-                            kreirao=request.user if request.user.is_authenticated else None,
-                        )
-                        selected_card.ukupna_potrosnja += iznos
-                        selected_card.save(update_fields=['ukupna_potrosnja'])
-                        azuriraj_loyalty_karticu(selected_card)
-                        selected_card = osiguraj_loyalty_karticu(selected_card.user)
-                        loyalty_ctx = loyalty_kontekst(selected_card)
-                        messages.success(request, f'Kupovina od {iznos} KM evidentirana.')
-                        return redirect(f"{request.path}?q={q}")
-                    else:
-                        messages.error(request, 'Iznos mora biti veći od 0.')
-                except (InvalidOperation, ValueError):
+                    start_purchase_otp(request, selected_card, iznos, napomena)
+                    messages.info(
+                        request,
+                        'Kod je generisan. Pošaljite ga kupcu na Viber ili WhatsApp, '
+                        'zatim unesite kod koji vam kaže.',
+                    )
+                    return redirect(f"{request.path}?q={q}&otp=1")
+                except ValueError as exc:
+                    messages.error(request, str(exc))
+                except (InvalidOperation, TypeError):
                     messages.error(request, 'Neispravan iznos.')
+
+            # 2) Potvrda kodom
+            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_potvrdi':
+                code = (request.POST.get('otp_code') or '').strip()
+                ok, result = verify_purchase_otp(request, code, selected_card)
+                if not ok:
+                    messages.error(request, result)
+                    return redirect(f"{request.path}?q={q}&otp=1")
+                try:
+                    purchase = commit_loyalty_purchase(
+                        selected_card,
+                        result.get('iznos'),
+                        napomena=result.get('napomena') or '',
+                        verifikacija=LoyaltyPurchase.Verifikacija.OTP,
+                        staff_user=request.user,
+                    )
+                    clear_pending_purchase_otp(request)
+                    selected_card = osiguraj_loyalty_karticu(selected_card.user)
+                    loyalty_ctx = loyalty_kontekst(selected_card)
+                    messages.success(
+                        request,
+                        f'Kupovina od {purchase.iznos} KM evidentirana (potvrđeno kodom).',
+                    )
+                    return redirect(f"{request.path}?q={q}")
+                except ValueError as exc:
+                    messages.error(request, str(exc))
+                    return redirect(f"{request.path}?q={q}&otp=1")
+
+            # 3) Admin override — kupac nema internet / ne može primiti kod
+            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_admin':
+                try:
+                    pending = get_pending_purchase_otp(request, card=selected_card)
+                    if pending:
+                        iznos = Decimal(str(pending.get('iznos') or '0'))
+                        napomena = (pending.get('napomena') or '').strip()[:200]
+                    else:
+                        iznos = Decimal(request.POST.get('iznos', '0'))
+                        napomena = (request.POST.get('napomena') or '').strip()[:200]
+                    if iznos <= 0:
+                        messages.error(request, 'Iznos mora biti veći od 0.')
+                        return redirect(f"{request.path}?q={q}")
+                    purchase = commit_loyalty_purchase(
+                        selected_card,
+                        iznos,
+                        napomena=napomena or 'Admin override (bez koda)',
+                        verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
+                        staff_user=request.user,
+                    )
+                    clear_pending_purchase_otp(request)
+                    selected_card = osiguraj_loyalty_karticu(selected_card.user)
+                    loyalty_ctx = loyalty_kontekst(selected_card)
+                    messages.warning(
+                        request,
+                        f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).',
+                    )
+                    return redirect(f"{request.path}?q={q}")
+                except ValueError as exc:
+                    messages.error(request, str(exc))
+                except (InvalidOperation, TypeError):
+                    messages.error(request, 'Neispravan iznos.')
+
+            # 4) Otkaži pending OTP
+            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_cancel':
+                clear_pending_purchase_otp(request)
+                messages.info(request, 'Potvrda kupovine je otkazana.')
+                return redirect(f"{request.path}?q={q}")
 
             if request.method == 'POST' and request.POST.get('action') == 'update_profile':
                 edit_form = StaffLoyaltyProfileForm(
@@ -6042,6 +6114,34 @@ def staff_loyalty_system(request):
 
             loyalty_ctx = loyalty_kontekst(selected_card)
 
+            # Pending OTP UI (poslije svih POST redirecta)
+            try:
+                from .loyalty import (
+                    get_pending_purchase_otp,
+                    purchase_otp_message,
+                    whatsapp_chat_url,
+                    viber_chat_url,
+                )
+                raw_pending = get_pending_purchase_otp(request, card=selected_card)
+                if raw_pending:
+                    code = raw_pending.get('code') or ''
+                    iznos_p = raw_pending.get('iznos')
+                    tel = raw_pending.get('telefon') or (
+                        (getattr(selected_card.user, 'profil', None).telefon
+                         if getattr(selected_card.user, 'profil', None) else '') or ''
+                    )
+                    msg = purchase_otp_message(code, iznos=iznos_p)
+                    pending_otp = {
+                        'iznos': iznos_p,
+                        'napomena': raw_pending.get('napomena') or '',
+                        'telefon': tel,
+                        'message': msg,
+                        'viber_url': viber_chat_url(tel),
+                        'whatsapp_url': whatsapp_chat_url(tel, msg),
+                    }
+            except Exception:
+                pending_otp = None
+
     context = {
         **_base_context(),
         'search_query': q,
@@ -6055,6 +6155,7 @@ def staff_loyalty_system(request):
         'issue_form': issue_form,
         'newly_issued': newly_issued,
         'cardholder_name': cardholder_name,
+        'pending_otp': pending_otp if selected_card else None,
     }
     return render(request, 'staff/loyalty_system.html', context)
 

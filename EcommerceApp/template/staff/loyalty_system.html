@@ -182,15 +182,108 @@
                             <div class="section-header">
                                 <h3>Evidentiraj kupovinu</h3>
                             </div>
+                            {% if pending_otp %}
+                            <div class="loyalty-otp-panel" id="loyaltyOtpPanel">
+                                <p class="loyalty-otp-lead">
+                                    Potrebna je potvrda kodom na telefon
+                                    <strong>{{ pending_otp.telefon|default:"(nema broja)" }}</strong>
+                                    za iznos <strong>{{ pending_otp.iznos }} KM</strong>.
+                                </p>
+                                <p class="hint">
+                                    1) Pošaljite 4-cifreni kod kupcu na Viber ili WhatsApp<br>
+                                    2) Kupac vam kaže kod<br>
+                                    3) Unesite kod ispod i potvrdite
+                                </p>
+                                <div class="loyalty-otp-send-row">
+                                    {% if pending_otp.viber_url %}
+                                    <button type="button"
+                                            class="btn btn-viber-card"
+                                            id="loyaltyOtpViberBtn"
+                                            data-viber-url="{{ pending_otp.viber_url }}">
+                                        Pošalji na Viber
+                                    </button>
+                                    {% endif %}
+                                    {% if pending_otp.whatsapp_url %}
+                                    <a href="{{ pending_otp.whatsapp_url }}"
+                                       class="btn btn-primary"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       id="loyaltyOtpWhatsappBtn">
+                                        Pošalji na WhatsApp
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {{ pending_otp.message|json_script:"loyaltyOtpMessage" }}
+
+                                <form method="post" class="purchase-form loyalty-otp-confirm-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="evidentiraj_kupovinu_potvrdi">
+                                    <div class="form-inline">
+                                        <input type="text"
+                                               name="otp_code"
+                                               inputmode="numeric"
+                                               pattern="[0-9]{4}"
+                                               maxlength="4"
+                                               placeholder="4-cifreni kod"
+                                               autocomplete="one-time-code"
+                                               required
+                                               class="form-input loyalty-otp-input">
+                                        <button type="submit" class="btn btn-primary">Potvrdi i evidentiraj</button>
+                                    </div>
+                                </form>
+
+                                <div class="loyalty-otp-admin-row">
+                                    <form method="post" class="purchase-form"
+                                          onsubmit="return confirm('Kupac nema internet / ne može primiti kod?\nEvidentirati {{ pending_otp.iznos }} KM BEZ potvrde koda?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="evidentiraj_kupovinu_admin">
+                                        <button type="submit" class="btn btn-outline loyalty-otp-admin-btn">
+                                            Zadnja opcija: admin (bez koda)
+                                        </button>
+                                    </form>
+                                    <form method="post" class="purchase-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="evidentiraj_kupovinu_cancel">
+                                        <button type="submit" class="btn btn-outline">Otkaži</button>
+                                    </form>
+                                </div>
+                                <small class="hint">
+                                    Admin override koristi samo ako kupac nema internet ili ne može primiti poruku.
+                                    Evidentiranje se bilježi kao „admin (bez koda)”.
+                                </small>
+                            </div>
+                            {% else %}
                             <form method="post" class="purchase-form">
                                 {% csrf_token %}
-                                <input type="hidden" name="action" value="evidentiraj_kupovinu">
+                                <input type="hidden" name="action" value="evidentiraj_kupovinu_start">
                                 <div class="form-inline">
-                                    <input type="number" name="iznos" step="0.01" min="0.01" placeholder="Iznos u KM (npr. 125.50)" required>
-                                    <button type="submit" class="btn btn-primary">Evidentiraj kupovinu</button>
+                                    <input type="number" name="iznos" step="0.01" min="0.01"
+                                           placeholder="Iznos u KM (npr. 125.50)" required class="form-input">
+                                    <input type="text" name="napomena" maxlength="200"
+                                           placeholder="Napomena (opcionalno)" class="form-input">
+                                    <button type="submit" class="btn btn-primary">Pošalji kod kupcu</button>
                                 </div>
-                                <small class="hint">Dodaje potrošnju na karticu i ažurira nivo automatski.</small>
+                                <small class="hint">
+                                    Generiše 4-cifreni kod i otvara slanje na Viber/WhatsApp broj s kartice.
+                                    Kupovina se upisuje tek nakon potvrde koda (ili admin override).
+                                </small>
                             </form>
+                            <details class="loyalty-otp-admin-details">
+                                <summary>Zadnja opcija: admin (bez koda / nema internet)</summary>
+                                <form method="post" class="purchase-form"
+                                      onsubmit="return confirm('Evidentirati BEZ potvrde koda? Koristi samo ako kupac nema internet.');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="evidentiraj_kupovinu_admin">
+                                    <div class="form-inline">
+                                        <input type="number" name="iznos" step="0.01" min="0.01"
+                                               placeholder="Iznos u KM" required class="form-input">
+                                        <input type="text" name="napomena" maxlength="200"
+                                               placeholder="Razlog (opcionalno)" class="form-input">
+                                        <button type="submit" class="btn btn-outline">Evidentiraj bez koda</button>
+                                    </div>
+                                </form>
+                            </details>
+                            {% endif %}
                         </div>
 
                         <div class="customer-details">
@@ -318,6 +411,33 @@
         } catch (e) {
             return el.textContent || '';
         }
+    }
+
+    function getOtpMessage() {
+        const el = document.getElementById('loyaltyOtpMessage');
+        if (!el) return '';
+        try {
+            return JSON.parse(el.textContent);
+        } catch (e) {
+            return el.textContent || '';
+        }
+    }
+
+    // Pošalji OTP na Viber (kopiraj tekst + otvori chat)
+    const otpViberBtn = document.getElementById('loyaltyOtpViberBtn');
+    if (otpViberBtn) {
+        otpViberBtn.addEventListener('click', async function () {
+            const msg = getOtpMessage();
+            const viberUrl = otpViberBtn.dataset.viberUrl;
+            if (msg && navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(msg).catch(function () {});
+            }
+            if (viberUrl) {
+                const w = window.open(viberUrl, '_blank');
+                if (!w) window.location.href = viberUrl;
+            }
+            showToast('Tekst s kodom je kopiran. Zalijepi u Viber chat s kupcem.');
+        });
     }
 
     // Pošalji sliku loyalty kartice na Viber (nivo, %, do sljedećeg)
