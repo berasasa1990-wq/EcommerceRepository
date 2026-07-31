@@ -5,7 +5,7 @@ Pravila:
 - Max 2 popup ponude po posjeti
 - Razmak min ~3 min između 1. i 2. ponude
 - 1 ili 2 artikla (zavisi od gledanja)
-- Popust nikad preko 10%
+- Popust % iz admina (0 = samo ponuda bez sniženja)
 - Prva: kad AI osjeti namjeru (~40 s high-intent / ~2 min inače)
 """
 
@@ -32,7 +32,8 @@ AUTO_BROWSE_CODE = 'AUTO-BROWSE'  # legacy / staff tracking
 AI_PRODAJA_CODE = 'AI-PRODAJA'
 
 DEFAULT_DISCOUNT = Decimal('10')
-AI_MAX_DISCOUNT = Decimal('10')
+# Admin može 0 (samo ponuda, bez popusta) do ovog max-a
+AI_MAX_DISCOUNT = Decimal('50')
 MIN_PRODUCT_VIEWS_PRIORITY = 2
 MIN_CATEGORY_VIEWS = 1
 # Uvijek max 2 artikla u jednoj AI ponudi
@@ -83,9 +84,13 @@ def _rec_limit(request=None, visitor=None):
 
 
 def _clamp_percent(value):
-    """AI prodaja: nikad preko 10%."""
+    """AI prodaja: 0% = bez popusta (samo ponuda), max AI_MAX_DISCOUNT."""
     try:
-        percent = Decimal(str(value or 0))
+        # Ne koristiti `or 0` — Decimal('0') mora ostati 0
+        if value is None or value == '':
+            percent = Decimal('0')
+        else:
+            percent = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
         percent = Decimal('0')
     if percent < 0:
@@ -98,9 +103,11 @@ def _clamp_percent(value):
 def _settings():
     postavke = SiteSettings.load()
     aktivan = bool(getattr(postavke, 'browse_interest_popup_aktivan', True))
-    percent = _clamp_percent(
-        getattr(postavke, 'browse_interest_popust', None) or DEFAULT_DISCOUNT,
-    )
+    raw = getattr(postavke, 'browse_interest_popust', None)
+    if raw is None:
+        percent = _clamp_percent(DEFAULT_DISCOUNT)
+    else:
+        percent = _clamp_percent(raw)
     return aktivan, percent
 
 
@@ -1116,7 +1123,7 @@ def maybe_create_browse_interest_offer(request, visitor=None):
     AI prodaja — glavni auto-popup:
     - prati gledanje / skoro-korpu / korpu
     - max 2 ponude, min 3 min razmaka
-    - 1–2 artikla, popust ≤ 10%
+    - 1–2 artikla, popust % iz admina (0 = samo ponuda)
     """
     if not request or _blocked_path(request):
         return None
@@ -1128,7 +1135,7 @@ def maybe_create_browse_interest_offer(request, visitor=None):
         return None
 
     aktivan, percent = _settings()
-    if not aktivan or percent <= 0:
+    if not aktivan:
         return None
 
     if _has_active_staff_offer(request):
@@ -1163,13 +1170,20 @@ def maybe_create_browse_interest_offer(request, visitor=None):
     if viewed_count >= 1 and not state.get('first_product_ts'):
         state['first_product_ts'] = now_ts
 
-    # % iz postavki, hard cap 10%
+    # % iz admin postavki (0 = samo ponuda bez popusta)
     intent = compute_purchase_intent_score(visitor, request)
-    try:
-        from .ai_conversion import auto_offer_discount
-        offer_percent = _clamp_percent(auto_offer_discount(percent, intent))
-    except Exception:
-        offer_percent = _clamp_percent(percent)
+    if percent <= 0:
+        offer_percent = Decimal('0')
+    else:
+        try:
+            from .ai_conversion import auto_offer_discount
+            # Nikad iznad admin postavke
+            offer_percent = min(
+                _clamp_percent(percent),
+                _clamp_percent(auto_offer_discount(percent, intent)),
+            )
+        except Exception:
+            offer_percent = _clamp_percent(percent)
 
     active = state.get('active')
     if active and active.get('show'):
@@ -1319,6 +1333,15 @@ def build_browse_interest_payload(request):
         _complete_active_offer(request, state, outcome='dismiss')
         return None
 
+    # % iz aktivne session ponude (uključujući 0), inače admin postavke
+    try:
+        session_pct = data.get('discount_percent')
+        if session_pct is not None and str(session_pct).strip() != '':
+            percent = _clamp_percent(session_pct)
+    except Exception:
+        pass
+    percent = _clamp_percent(percent)
+
     products = list(
         Product.objects.filter(pk__in=product_ids, aktivan=True)
         .select_related('kategorija', 'brend')
@@ -1339,7 +1362,7 @@ def build_browse_interest_payload(request):
     state = _get_state(request)
     active = state.get('active') or data
     active['product_ids'] = [c['product_id'] for c in cards][:limit]
-    active['discount_percent'] = str(_clamp_percent(percent))
+    active['discount_percent'] = str(percent)
     active['show'] = True
     active['mobile_limit'] = True
     active['ai_prodaja'] = True
@@ -1348,22 +1371,26 @@ def build_browse_interest_payload(request):
         state['tracking_offer_id'] = active['tracking_offer_id']
     _save_state(request, state)
 
-    pct = _percent_display(_clamp_percent(percent))
+    pct = _percent_display(percent)
     top_category = (active.get('top_category') or '').strip()
     wave = int(active.get('wave') or 1)
 
-    kicker = 'AI ponuda za tebe'
-    title = 'Posebna cijena baš za tebe'
+    if pct:
+        kicker = 'AI ponuda za tebe'
+        title = 'Posebna cijena baš za tebe'
+    else:
+        kicker = 'Preporuka za tebe'
+        title = 'Preporuka baš za tebe'
     if len(cards) > 1:
         if pct:
             message = f'Samo sada — {pct}% popusta. Izaberite artikal:'
         else:
-            message = 'Samo sada — izaberite artikal:'
+            message = 'Izaberite artikal iz preporuke (redovna cijena):'
     else:
         if pct:
             message = f'Samo sada — {pct}% popusta na ovaj artikal.'
         else:
-            message = 'Samo sada — specijalna cijena na ovaj artikal.'
+            message = 'Preporučeni artikal za tebe — redovna cijena.'
 
     timer = _timer_seconds(active)
     if timer <= 0:
@@ -1402,8 +1429,16 @@ def apply_browse_interest_offer(request, cart):
         return False, 'Ponuda više nije dostupna.'
 
     aktivan, percent = _settings()
-    if not aktivan or percent <= 0:
+    if not aktivan:
         return False, 'Ponuda više nije dostupna.'
+
+    # Preferiraj % iz aktivne session ponude (može biti 0)
+    try:
+        session_pct = data.get('discount_percent')
+        if session_pct is not None and str(session_pct).strip() != '':
+            percent = _clamp_percent(session_pct)
+    except Exception:
+        pass
 
     try:
         product_id = int(request.POST.get('product_id') or 0)
@@ -1438,15 +1473,23 @@ def apply_browse_interest_offer(request, cart):
 
     base_price = variation.prikazna_cijena if variation else product.prikazna_cijena
     final_price = _discounted_price(base_price, percent)
-    cart.add(
-        product,
-        variation=variation,
-        quantity=1,
-        custom_price=final_price,
-        promo_bazna=base_price,
-        discount_source=f'AI prodaja / browse ponuda (−{percent}%)',
-        discount_percent=percent,
-    )
+    if percent > 0:
+        cart.add(
+            product,
+            variation=variation,
+            quantity=1,
+            custom_price=final_price,
+            promo_bazna=base_price,
+            discount_source=f'AI prodaja / browse ponuda (−{percent}%)',
+            discount_percent=percent,
+        )
+    else:
+        cart.add(
+            product,
+            variation=variation,
+            quantity=1,
+            discount_source='AI prodaja / browse ponuda (bez popusta)',
+        )
 
     _mark_claimed(request, product_id)
     state = _get_state(request)
@@ -1476,7 +1519,9 @@ def apply_browse_interest_offer(request, cart):
 
     label = f'{product.naziv}' + (f' — {variation.naziv}' if variation else '')
     pct = _percent_display(percent)
-    return True, f'"{label}" je dodato u korpu s popustom od {pct}%.'
+    if pct:
+        return True, f'"{label}" je dodato u korpu s popustom od {pct}%.'
+    return True, f'"{label}" je dodato u korpu.'
 
 
 def dismiss_browse_interest_offer(request):

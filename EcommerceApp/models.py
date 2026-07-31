@@ -109,15 +109,18 @@ class SiteSettings(models.Model):
         null=True,
         blank=True,
         verbose_name='Exit popup popust (%)',
-        help_text='Opcionalno. Smanjuje cijenu odabranog artikla pri dodavanju iz popupa (max 50%).',
+        help_text=(
+            'Opcionalno (0–50). Prazno ili 0 = ponuda bez popusta '
+            '(nema −% / „akcija” teksta). Unesi % samo ako želiš sniženje.'
+        ),
     )
     browse_interest_popup_aktivan = models.BooleanField(
         default=True,
         verbose_name='AI prodaja aktivna',
         help_text=(
             'AI prati kupca (šta gleda, koliko dugo, skoro-korpa) i u pravom trenutku '
-            'šalje popup s popustom na 1–2 artikla. Max 2 ponude po posjeti, s razmakom. '
-            'Popust nikad preko 10%.'
+            'šalje popup ponudu na 1–2 artikla. Max 2 ponude po posjeti, s razmakom. '
+            'Popust % podesi ispod — 0 = ponuda bez popusta.'
         ),
     )
     browse_interest_popust = models.DecimalField(
@@ -126,8 +129,12 @@ class SiteSettings(models.Model):
         default=Decimal('10.00'),
         null=True,
         blank=True,
-        verbose_name='AI prodaja — max popust (%)',
-        help_text='Maksimalni popust na AI ponudu (preporučeno 10, hard cap 10%).',
+        verbose_name='AI prodaja — popust (%)',
+        help_text=(
+            'Popust na automatsku ponudu (0–50). '
+            '0 = samo preporuka / ponuda, bez sniženja cijene. '
+            'Npr. 5, 10, 15…'
+        ),
     )
     product_dwell_popup_aktivan = models.BooleanField(
         default=False,
@@ -147,8 +154,9 @@ class SiteSettings(models.Model):
         blank=True,
         verbose_name='AI dwell — default popust (%)',
         help_text=(
-            'Fallback % ako unos u tabeli artikala nema popust. '
-            'Flash radi samo na artiklima dodanim u tabelu „AI dwell artikli”. Max 50%.'
+            'Fallback % ako unos u tabeli artikala nema popust (0–50). '
+            'Prazno ili 0 = bez popusta (nema −% / precrtane cijene). '
+            'Flash samo na artiklima u tabeli „AI dwell artikli”.'
         ),
     )
     product_dwell_flash_seconds = models.PositiveIntegerField(
@@ -723,8 +731,13 @@ class ProductDwellItem(models.Model):
         max_digits=5,
         decimal_places=2,
         default=Decimal('10.00'),
+        null=True,
+        blank=True,
         verbose_name='Popust (%)',
-        help_text='Flash popust samo za ovaj artikal (0.01–50).',
+        help_text=(
+            '0–50. Prazno = default iz AI dwell postavki. '
+            '0 = bez popusta (nema −% / precrtane cijene).'
+        ),
     )
 
     class Meta:
@@ -734,6 +747,10 @@ class ProductDwellItem(models.Model):
         unique_together = [('settings', 'product')]
 
     def __str__(self):
+        if self.popust is None:
+            return f'{self.product} (default %)'
+        if self.popust <= 0:
+            return f'{self.product} (bez popusta)'
         return f'{self.product} (−{self.popust}%)'
 
     def clean(self):
@@ -748,8 +765,8 @@ class ProductDwellItem(models.Model):
                     'product': 'Ne možeš dodati artikal koji nije na stanju.',
                 })
         if self.popust is not None:
-            if self.popust <= 0:
-                raise ValidationError({'popust': 'Popust mora biti veći od 0.'})
+            if self.popust < 0:
+                raise ValidationError({'popust': 'Popust ne može biti negativan.'})
             if self.popust > 50:
                 raise ValidationError({'popust': 'Maksimalni popust je 50%.'})
 

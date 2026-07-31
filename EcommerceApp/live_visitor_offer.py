@@ -31,15 +31,17 @@ AUTO_DWELL_CODE = 'AUTO-DWELL'
 
 
 def _product_dwell_settings():
-    """(aktivan, default popust %) iz SiteSettings — AI dwell, max 50%."""
+    """(aktivan, default popust %) iz SiteSettings — 0 = bez popusta."""
     try:
         from .models import SiteSettings
 
         s = SiteSettings.load()
         aktivan = bool(getattr(s, 'product_dwell_popup_aktivan', False))
-        percent = _clamp_percent(
-            getattr(s, 'product_dwell_popust', None) or PRODUCT_DWELL_DISCOUNT_DEFAULT,
-        )
+        raw = getattr(s, 'product_dwell_popust', None)
+        if raw is None:
+            percent = _clamp_percent(PRODUCT_DWELL_DISCOUNT_DEFAULT)
+        else:
+            percent = _clamp_percent(raw)
         return aktivan, percent
     except Exception:
         return False, PRODUCT_DWELL_DISCOUNT_DEFAULT
@@ -97,7 +99,8 @@ def get_dwell_percent_for_product(product_id):
             .only('popust')
             .first()
         )
-        if item and item.popust is not None and item.popust > 0:
+        # Ručni unos (uključujući 0 = bez popusta); None = default iz postavki
+        if item is not None and item.popust is not None:
             return _clamp_percent(item.popust)
     except Exception:
         pass
@@ -210,9 +213,11 @@ def _welcome_reg_settings():
 
         s = SiteSettings.load()
         aktivan = bool(getattr(s, 'welcome_reg_popup_aktivan', False))
-        percent = _clamp_percent(
-            getattr(s, 'welcome_reg_popust', None) or Decimal('10'),
-        )
+        raw_pct = getattr(s, 'welcome_reg_popust', None)
+        if raw_pct is None:
+            percent = _clamp_percent(Decimal('10'))
+        else:
+            percent = _clamp_percent(raw_pct)
         try:
             raw_delay = getattr(s, 'welcome_reg_delay_seconds', None)
             if raw_delay is None:
@@ -227,9 +232,12 @@ def _welcome_reg_settings():
 
 
 def _clamp_percent(value):
-    """Opšti clamp; AI/dwell koriste max 10 preko SiteSettings + AI_MAX."""
+    """None/prazno/0 = bez popusta; max 50%."""
     try:
-        percent = Decimal(str(value or 0))
+        if value is None or value == '':
+            percent = Decimal('0')
+        else:
+            percent = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
         percent = Decimal('0')
     if percent < 0:
@@ -574,8 +582,9 @@ def activate_product_dwell_flash(request, product_id, *, force=False):
         return None, 'AI dwell nije uključen za ovaj artikal.'
 
     dwell_percent = get_dwell_percent_for_product(pid)
+    # 0% = bez flash sniženja (regularna cijena, nema −% UI)
     if dwell_percent <= 0:
-        return None, 'Popust za ovaj artikal nije postavljen.'
+        return None, 'Bez popusta — prikaz regularne cijene.'
 
     # Već aktivna flash — vrati istu (povratak na artikal dok traje)
     active = get_active_dwell_flash(request, pid)
@@ -599,7 +608,7 @@ def activate_product_dwell_flash(request, product_id, *, force=False):
         return None, 'Cijena nije dostupna.'
     sale_d = _discounted_price(base_d, dwell_percent)
     if sale_d >= base_d:
-        return None, 'Popust ne smanjuje cijenu.'
+        return None, 'Bez popusta — prikaz regularne cijene.'
 
     flash_seconds = get_dwell_flash_seconds()
     expires = timezone.now().timestamp() + flash_seconds

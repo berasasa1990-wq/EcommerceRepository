@@ -16,7 +16,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Case, Count, Max, Prefetch, Q, When
+from django.db.models import Case, Count, Exists, IntegerField, Max, OuterRef, Prefetch, Q, Value, When
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -147,9 +147,20 @@ def _product_queryset(request=None):
     return _prefetch_product_cards(qs)
 
 
+def _bind_variation_parents(product):
+    """Poveži prefetched varijacije s parentom — bez N+1 na variation.artikal."""
+    try:
+        for variation in product.varijacije.all():
+            variation.artikal = product
+    except Exception:
+        pass
+
+
 def _effective_product_price(product):
     variations = list(product.varijacije.all())
     if variations:
+        for variation in variations:
+            variation.artikal = product
         return min(variation.prikazna_cijena for variation in variations)
     return product.prikazna_cijena
 
@@ -157,6 +168,8 @@ def _effective_product_price(product):
 def _product_is_on_sale(product):
     variations = list(product.varijacije.all())
     if variations:
+        for variation in variations:
+            variation.artikal = product
         return any(variation.na_akciji for variation in variations)
     return product.na_akciji
 
@@ -598,18 +611,53 @@ def _tag_matches_query(tag, query):
     return False
 
 
+_TAG_CACHE = None
+_TAG_CACHE_AT = 0.0
+_TAG_CACHE_TTL_SEC = 60.0
+
+
+def _cached_tags():
+    """In-memory lista tagova (id, naziv) — izbjegava full scan DB po svakom keystroke-u."""
+    global _TAG_CACHE, _TAG_CACHE_AT
+    import time
+
+    now = time.monotonic()
+    if _TAG_CACHE is None or (now - _TAG_CACHE_AT) > _TAG_CACHE_TTL_SEC:
+        from .models import Tag
+
+        _TAG_CACHE = list(Tag.objects.only('id', 'naziv'))
+        _TAG_CACHE_AT = now
+    return _TAG_CACHE
+
+
 def _product_tag_ids_for_query(query):
     """ID-evi Tag modela na artiklima koji odgovaraju upitu (±1–3 slova)."""
-    from .models import Tag
-
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return []
-    ids = []
-    for tag in Tag.objects.only('id', 'naziv').iterator(chunk_size=300):
-        if _tag_matches_query(tag.naziv or '', q):
-            ids.append(tag.pk)
-    return ids
+    return [tag.pk for tag in _cached_tags() if _tag_matches_query(tag.naziv or '', q)]
+
+
+def _search_exists_match(raw):
+    """
+    EXISTS podupiti umjesto JOIN + DISTINCT (mnogo brže na većim katalogima).
+    Match: naziv, šifra, šifra varijacije, tag naziv.
+    """
+    through = Product.tagovi.through
+    variation_sifra = ProductVariation.objects.filter(
+        artikal_id=OuterRef('pk'),
+        sifra__icontains=raw,
+    )
+    tag_name = through.objects.filter(
+        product_id=OuterRef('pk'),
+        tag__naziv__icontains=raw,
+    )
+    return (
+        Q(naziv__icontains=raw)
+        | Q(sifra__icontains=raw)
+        | Exists(variation_sifra)
+        | Exists(tag_name)
+    )
 
 
 def _apply_search_filter(products_qs, query):
@@ -625,26 +673,22 @@ def _apply_search_filter(products_qs, query):
     if len(raw) < 2:
         return products_qs.none()
 
-    match = (
-        Q(naziv__icontains=raw)
-        | Q(sifra__icontains=raw)
-        | Q(varijacije__sifra__icontains=raw)
-        | Q(tagovi__naziv__icontains=raw)
-    )
+    match = _search_exists_match(raw)
     folded_raw = _search_fold(raw)
     if folded_raw and folded_raw != raw.casefold():
-        match |= (
-            Q(naziv__icontains=folded_raw)
-            | Q(sifra__icontains=folded_raw)
-            | Q(varijacije__sifra__icontains=folded_raw)
-            | Q(tagovi__naziv__icontains=folded_raw)
-        )
+        match |= _search_exists_match(folded_raw)
 
     tag_ids = _product_tag_ids_for_query(raw)
     if tag_ids:
-        match |= Q(tagovi__id__in=tag_ids)
+        through = Product.tagovi.through
+        match |= Exists(
+            through.objects.filter(
+                product_id=OuterRef('pk'),
+                tag_id__in=tag_ids,
+            )
+        )
 
-    return products_qs.filter(match).distinct()
+    return products_qs.filter(match)
 
 
 def _product_lager_priority(product):
@@ -698,6 +742,21 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     if not products:
         return products
 
+    # Jedan prefetch tagova umjesto N+1 u _search_relevance_score
+    if query:
+        try:
+            sample = products[0]
+            already = (
+                hasattr(sample, '_prefetched_objects_cache')
+                and 'tagovi' in sample._prefetched_objects_cache
+            )
+            if not already:
+                from django.db.models import prefetch_related_objects
+
+                prefetch_related_objects(list(products), 'tagovi')
+        except Exception:
+            pass
+
     def key(p):
         rel = -_search_relevance_score(p, query) if query else 0
         prio = _product_lager_priority(p)
@@ -741,32 +800,127 @@ def _weighted_home_product_order(products):
 
 
 SEARCH_SUGGEST_LIMIT = 6
+SEARCH_SUGGEST_CANDIDATE_POOL = 18
 STAFF_LOOKUP_LIMIT = 25
+
+
+def _suggest_product_queryset(request=None):
+    """
+    Lagani queryset samo za autocomplete dropdown.
+    Bez Count annotate i bez teških select_related (kategorija/brend nisu potrebni).
+    """
+    qs = Product.objects.filter(aktivan=True)
+    if not _can_view_out_of_stock(request):
+        qs = qs.filter(na_stanju=True)
+    # defer(opis) umjesto only() — varijacije.prikazna_cijena čita artikal.* bez deferred grešaka
+    return qs.defer('opis', 'meta_title', 'meta_description', 'olx_listing_url', 'olx_listing_slug').prefetch_related(
+        Prefetch(
+            'varijacije',
+            queryset=ProductVariation.objects.filter(na_stanju=True).only(
+                'id',
+                'artikal_id',
+                'cijena',
+                'akcijska_cijena',
+                'akcija_postotak',
+                'slika',
+                'na_stanju',
+            ),
+        ),
+        Prefetch('tagovi', queryset=Tag.objects.only('id', 'naziv')),
+    )
+
+
+def _suggest_thumb_url(image_field):
+    """
+    120w thumb URL bez storage.exists() (sporo na cloud storage-u).
+    Konvencija processiranja: {base}-120w.avif / .jpg / …
+    """
+    if not image_field or not getattr(image_field, 'name', None):
+        return ''
+    name = image_field.name
+    if '/' in name:
+        folder, filename = name.rsplit('/', 1)
+    else:
+        folder, filename = '', name
+    base = filename.rsplit('.', 1)[0]
+    storage = image_field.storage
+    # Prefer avif (glavni format u pipeline-u), pa ista ekstenzija glavne slike
+    candidates = [f'{base}-120w.avif']
+    if '.' in filename:
+        ext = filename.rsplit('.', 1)[-1].lower()
+        if ext != 'avif':
+            candidates.append(f'{base}-120w.{ext}')
+    for variant in candidates:
+        path = f'{folder}/{variant}' if folder else variant
+        try:
+            return storage.url(path)
+        except Exception:
+            continue
+    try:
+        return image_field.url
+    except Exception:
+        return ''
+
+
+def _suggest_relevance_annotation(query):
+    """SQL prioritet relevantnosti za brži ORDER BY (manji candidate pool)."""
+    raw = _normalize_phrase(query)
+    if not raw or len(raw) < 2:
+        return Value(0, output_field=IntegerField())
+    folded = _search_fold(raw)
+    terms = [raw]
+    if folded and folded != raw.casefold():
+        terms.append(folded)
+    whens = []
+    for term in terms:
+        whens.extend([
+            When(sifra__iexact=term, then=Value(120)),
+            When(naziv__iexact=term, then=Value(100)),
+            When(naziv__istartswith=term, then=Value(80)),
+            When(naziv__icontains=term, then=Value(50)),
+            When(sifra__icontains=term, then=Value(40)),
+        ])
+    return Case(*whens, default=Value(10), output_field=IntegerField())
 
 
 def search_suggest(request):
     query = request.GET.get('q', '').strip()
     if not query:
         return JsonResponse({'results': [], 'query': '', 'has_more': False})
+    if len(_normalize_phrase(query)) < 2:
+        return JsonResponse({'results': [], 'query': query, 'has_more': False})
 
-    # Samo artikli u dropdownu; tagovi rade u pozadini preko _apply_search_filter
-    products_qs = _apply_search_filter(_product_queryset(request), query)
-    products = list(products_qs[: max(SEARCH_SUGGEST_LIMIT * 4, 24)])
-    products = _sort_products_by_lager_priority(products, query=query)
-    has_more = len(products) > SEARCH_SUGGEST_LIMIT
-    products = products[:SEARCH_SUGGEST_LIMIT]
+    # Lagani path: bez teškog _product_queryset (Count + select_related)
+    products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
+    products_qs = products_qs.annotate(
+        _suggest_rel=_suggest_relevance_annotation(query),
+    ).order_by('-_suggest_rel', '-prioritet_lagera', 'naziv')
+
+    # has_more: uzmi limit+1; Python re-sort radi fina relevantnost (tagovi)
+    pool = list(products_qs[: max(SEARCH_SUGGEST_CANDIDATE_POOL, SEARCH_SUGGEST_LIMIT + 1)])
+    has_more = len(pool) > SEARCH_SUGGEST_LIMIT
+    # Izbjegni variation.artikal N+1 (prikazna_cijena/na_akciji čitaju parent)
+    for product in pool:
+        for variation in product.varijacije.all():
+            variation.artikal = product
+    products = _sort_products_by_lager_priority(pool, query=query)[:SEARCH_SUGGEST_LIMIT]
+
     results = []
     for product in products:
         price = _effective_product_price(product)
+        image_field = product.prikazna_slika
         results.append({
             'naziv': product.naziv,
             'url': product.get_absolute_url(),
-            'image': product.prikazna_slika.url if product.prikazna_slika else '',
+            'image': _suggest_thumb_url(image_field) if image_field else '',
             'price': f'{price:.2f}',
             'on_sale': _product_is_on_sale(product),
         })
 
-    return JsonResponse({'results': results, 'query': query, 'has_more': has_more})
+    response = JsonResponse({'results': results, 'query': query, 'has_more': has_more})
+    # Kratki browser cache smanjuje ponovljene keystroke hitove (isti q)
+    response['Cache-Control'] = 'private, max-age=15'
+    return response
 
 
 
@@ -1828,21 +1982,24 @@ def add_to_cart(request, slug):
     promo_bazna = None
     promo_akcija = None
     exit_popup_percent = None
+    is_exit_popup_add = request.POST.get('exit_popup') == '1'
 
-    # AI dwell flash cijena (2 min snizenje na product page, bez popupa)
-    try:
-        from .live_visitor_offer import get_active_dwell_flash, _discounted_price
-        dwell_deal = get_active_dwell_flash(request, product.pk)
-        if dwell_deal and dwell_deal.get('percent'):
-            base = variation.prikazna_cijena if variation else product.prikazna_cijena
-            custom_price = _discounted_price(base, dwell_deal['percent'])
-            promo_bazna = base
-            # mark for cart — source set at cart.add below
-            request._dwell_discount_percent = dwell_deal['percent']
-    except Exception:
-        pass
+    # AI dwell flash cijena (2 min snizenje na product page, bez popupa).
+    # Ne primjenjuj na exit-popup add — exit ima svoj % (0 = redovna cijena).
+    if not is_exit_popup_add:
+        try:
+            from .live_visitor_offer import get_active_dwell_flash, _discounted_price
+            dwell_deal = get_active_dwell_flash(request, product.pk)
+            if dwell_deal and dwell_deal.get('percent'):
+                base = variation.prikazna_cijena if variation else product.prikazna_cijena
+                custom_price = _discounted_price(base, dwell_deal['percent'])
+                promo_bazna = base
+                # mark for cart — source set at cart.add below
+                request._dwell_discount_percent = dwell_deal['percent']
+        except Exception:
+            pass
 
-    if request.POST.get('exit_popup') == '1':
+    if is_exit_popup_add:
         from .cart_exit_popup import resolve_exit_popup_add
 
         exit_popup_add = resolve_exit_popup_add(request, product, variation)
@@ -1854,9 +2011,13 @@ def add_to_cart(request, slug):
             return redirect('product_detail', slug=slug)
         if exit_popup_add.get('variation') and variation is None:
             variation = exit_popup_add['variation']
+        # 0% / bez popusta → custom_price ostaje None (redovna cijena)
         if exit_popup_add.get('custom_price') is not None:
             custom_price = exit_popup_add['custom_price']
             promo_bazna = exit_popup_add['promo_bazna']
+        else:
+            custom_price = None
+            promo_bazna = None
         exit_popup_percent = exit_popup_add.get('percent')
     from .gratis import (
         _add_discounted_gratis_line,

@@ -392,8 +392,18 @@
         });
     }
 
+    function hasBrowseDiscount(offer, product) {
+        // 0 / null / '' = ponuda bez popusta (admin može isključiti %)
+        if (product && product.has_discount) return true;
+        const raw = offer && offer.discount_percent;
+        if (raw === null || raw === undefined || raw === '' || raw === false) return false;
+        const n = Number(raw);
+        return !Number.isNaN(n) && n > 0;
+    }
+
     function buildBrowseProductCard(product, offer) {
         const pct = offer.discount_percent;
+        const withDiscount = hasBrowseDiscount(offer, product);
         const imageHtml = product.image_url
             ? '<img src="' + escapeHtml(product.image_url) + '" alt="' + escapeHtml(product.product_name) +
               '" class="browse-offer-card-image" width="120" height="120" loading="eager" decoding="async">'
@@ -421,7 +431,7 @@
                 escapeHtml(product.variation_id || '') + '">';
         }
 
-        const pricesHtml = product.has_discount
+        const pricesHtml = (withDiscount && product.has_discount)
             ? (
                 '<span class="live-offer-price-original browse-offer-price-original">' +
                 escapeHtml(product.display_base_price) + ' KM</span>' +
@@ -430,14 +440,18 @@
             )
             : (
                 '<span class="live-offer-price-final">' +
-                escapeHtml(product.display_base_price) + ' KM</span>'
+                escapeHtml(product.display_base_price || product.display_final_price) + ' KM</span>'
             );
+
+        const ctaLabel = withDiscount
+            ? ('Uzmi -' + escapeHtml(pct) + '%')
+            : 'Dodaj u korpu';
 
         return (
             '<article class="browse-offer-card" data-product-id="' + product.product_id + '">' +
             '<a href="' + escapeHtml(product.product_url) + '" class="browse-offer-card-media">' +
             imageHtml +
-            (pct ? '<span class="browse-offer-badge">-' + escapeHtml(pct) + '%</span>' : '') +
+            (withDiscount && pct ? '<span class="browse-offer-badge">-' + escapeHtml(pct) + '%</span>' : '') +
             '</a>' +
             '<div class="browse-offer-card-body">' +
             '<h4 class="browse-offer-card-name">' +
@@ -449,7 +463,7 @@
             '<input type="hidden" name="product_id" value="' + product.product_id + '">' +
             variationsHtml +
             '<button type="submit" class="btn btn-primary site-popup-cta live-offer-cta browse-offer-cta">' +
-            'Uzmi -' + escapeHtml(pct || '10') + '%</button>' +
+            ctaLabel + '</button>' +
             '</form></div></article>'
         );
     }

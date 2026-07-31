@@ -322,9 +322,9 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'korpa_exit_popup_popust',
             ),
             'description': (
-                '„Poslednji minut” — samo kad kupac hoće da izađe (kursor prema zatvaranju taba). '
-                'Artikal se bira automatski: 1) skoro dodao u korpu (hover bez klika), '
-                '2) prema gledanju, 3) artikal ispod kao fallback. Popust % na cijenu u popupu.'
+                '„Poslednji minut” — kad kupac hoće da izađe. '
+                'Artikal: 1) skoro-korpa, 2) gledanje, 3) fallback artikal. '
+                'Popust %: prazno/0 = ponuda bez −% (regularna cijena); unesi % samo za sniženje.'
             ),
         }),
         ('Registracija i nagradna igra', {
@@ -772,9 +772,9 @@ class ProductDwellItemInline(admin.TabularInline):
     extra = 1
     autocomplete_fields = ('product',)
     fields = ('product', 'popust')
-    verbose_name = 'Artikal s popustom'
+    verbose_name = 'Artikal (AI dwell)'
     verbose_name_plural = (
-        'AI dwell artikli — samo na stanju; unesi popust % (npr. 8, 12, 20)'
+        'AI dwell artikli — popust %: 0 = bez popusta; npr. 8, 12, 20 = snizenje'
     )
     classes = ('akcija-inline-dwell-items',)
 
@@ -1077,13 +1077,17 @@ class AkcijaAdmin(admin.ModelAdmin):
         }),
     )
     _FS_AI = (
-        ('AI prodaja (popup)', {
+        ('AI prodaja — automatski popup (prati kupca)', {
             'fields': (
                 'browse_interest_popup_aktivan',
                 'browse_interest_popust',
             ),
             'description': (
-                'AI prati kupca i šalje do 2 popup-a (1–2 artikla), razmak ~3 min, max 10%.'
+                'Uključi/isključi automatski popup koji prati kupca '
+                '(gledanje, skoro-korpa) i iskače s 1–2 artikla. '
+                'Do 2 ponude po posjeti, razmak ~3 min. '
+                'Popust %: unesi 0 za ponudu BEZ sniženja (samo preporuka); '
+                'npr. 5–15 za popust. Max 50%.'
             ),
         }),
         ('AI dwell — uključeno / popust / tajmer', {
@@ -1094,9 +1098,10 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'product_dwell_sale_pulse',
             ),
             'description': (
-                'Uključi AI dwell, postavi default % i tajmer. '
-                'Artikle za snizenje dodaj u ZELENOJ TABELI ispod forme '
-                '(„AI dwell artikli”) — pretraži artikal i unesi popust %.'
+                'Flash cijena na product page (ne popup). '
+                'Artikle dodaj u tabeli „AI dwell artikli”. '
+                'Popust %: 0 = bez −% / precrtane cijene; '
+                'npr. 8–15 = flash snizenje.'
             ),
         }),
         ('AI dwell — tekstovi', {

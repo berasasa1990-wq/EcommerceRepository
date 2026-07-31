@@ -14,19 +14,21 @@
                 <span class="cart-exit-urgency-text">Poslednji minut · nestaje čim zatvoriš</span>
             </div>
 
-            <p class="cart-exit-kicker">🔥 Ekskluzivna cijena samo za tebe</p>
+            <p class="cart-exit-kicker">{% if cart_exit_popup.discount_percent_label %}🔥 Ekskluzivna cijena samo za tebe{% else %}🔥 Poslednji minut ponuda{% endif %}</p>
             <h2 id="cartExitTitle" class="cart-exit-title">
                 {% if cart_exit_popup.discount_percent_label %}
                 Ne odlazi bez <span class="cart-exit-title-pct">-{{ cart_exit_popup.discount_percent_label }}%</span>
                 {% else %}
-                Poslednji minut ponuda
+                Prije nego odeš — pogledaj ovo
                 {% endif %}
             </h2>
             <p class="cart-exit-sub">
                 {% if cart_exit_popup.usteda %}
                 Uštedi <strong>{{ cart_exit_popup.usteda }} KM</strong> — ova cijena se ne ponavlja.
-                {% else %}
+                {% elif cart_exit_popup.discount_percent_label %}
                 Specijalna cijena samo sada — nećeš je vidjeti opet.
+                {% else %}
+                Odabrani artikal za tebe — redovna cijena, samo sada u ovoj posjeti.
                 {% endif %}
             </p>
 
@@ -94,7 +96,7 @@
                         {% if cart_exit_popup.discount_percent_label %}
                         Uzmi s -{{ cart_exit_popup.discount_percent_label }}% popusta
                         {% else %}
-                        Dodaj u korpu po specijalnoj cijeni
+                        Dodaj u korpu
                         {% endif %}
                     </button>
                 </form>
@@ -103,12 +105,16 @@
                     {% if cart_exit_popup.discount_percent_label %}
                     Uzmi s -{{ cart_exit_popup.discount_percent_label }}% popusta
                     {% else %}
-                    Pogledaj specijalnu cijenu
+                    Pogledaj artikal
                     {% endif %}
                 </a>
                 {% endif %}
                 <button type="button" class="cart-exit-stay" data-cart-exit-stay>
+                    {% if cart_exit_popup.discount_percent_label %}
                     Ne, hvala — odustajem od popusta
+                    {% else %}
+                    Ne, hvala
+                    {% endif %}
                 </button>
             </div>
         </div>

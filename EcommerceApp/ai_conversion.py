@@ -1,7 +1,7 @@
 """
-AI prodaja — prati kupca i automatski šalje % na artikal koji će najvjerovatnije kupiti.
+AI prodaja — prati kupca i automatski šalje ponudu / % na artikal.
 
-Max popust: 10%. Staff se obavještava kad kupac prihvati.
+Popust % iz admina (0 = samo ponuda). Staff se obavještava kad kupac prihvati.
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ HIGH_INTENT_SECONDS = 40
 NORMAL_INTENT_SECONDS = 120
 FOLLOWUP_SECONDS = 240
 
-# AI prodaja hard cap
-AI_MAX_DISCOUNT = Decimal('10')
+# AI prodaja hard cap (admin može 0 = bez popusta)
+AI_MAX_DISCOUNT = Decimal('50')
 AI_OFFER_CODE = 'AI-PRODAJA'
 AI_SESSION_SENT_KEY = 'ai_prodaja_sent_ids'
 AI_MAX_AUTO_OFFERS = 2
@@ -209,13 +209,23 @@ def auto_offer_delay_seconds(intent_score):
 
 
 def auto_offer_discount(base_percent, intent_score):
-    """Dinamički % prema intentu — nikad preko 10%."""
-    base = min(AI_MAX_DISCOUNT, _d(base_percent, Decimal('10')))
+    """
+    Dinamički % prema intentu.
+    - 0 iz admina = uvijek 0 (samo ponuda, bez popusta)
+    - inače nikad iznad admin postavke (base)
+    """
+    base = _d(base_percent, Decimal('0'))
+    if base < 0:
+        base = Decimal('0')
+    base = min(AI_MAX_DISCOUNT, base)
+    if base <= 0:
+        return Decimal('0')
+    # Blago smanji za niži intent, ali ne preko admin max-a
     if intent_score >= INTENT_HOT:
-        return min(AI_MAX_DISCOUNT, max(base, Decimal('10')))
+        return base.quantize(Decimal('0.01'))
     if intent_score >= INTENT_WARM:
-        return min(AI_MAX_DISCOUNT, max(base, Decimal('8')))
-    return min(AI_MAX_DISCOUNT, max(Decimal('5'), base))
+        return min(base, max(base * Decimal('0.85'), Decimal('1'))).quantize(Decimal('0.01'))
+    return min(base, max(base * Decimal('0.7'), Decimal('1'))).quantize(Decimal('0.01'))
 
 
 def staff_ai_payload(visitor, request=None):

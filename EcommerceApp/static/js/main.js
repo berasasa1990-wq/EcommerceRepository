@@ -377,9 +377,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const items = results.map((item) => {
+        const items = results.map((item, index) => {
+            // Prvih nekoliko slika eager (dropdown je “above the fold”); ostale lazy
+            const loadAttr = index < 4 ? 'eager' : 'lazy';
+            const fetchAttr = index < 2 ? ' fetchpriority="high"' : '';
             const thumb = item.image
-                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
+                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="${loadAttr}" decoding="async"${fetchAttr}>`
                 : placeholderThumbSvg;
             const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
             return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
@@ -444,7 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
             clearSearchSuggestions();
             return;
         }
-        searchDebounceTimer = window.setTimeout(() => fetchSearchSuggestions(value), 200);
+        // Kratki upiti (2–3 znaka) malo duži debounce; duži upiti brži odziv
+        const delay = value.length <= 3 ? 180 : 120;
+        searchDebounceTimer = window.setTimeout(() => fetchSearchSuggestions(value), delay);
     }
 
     function openSearchOverlay() {

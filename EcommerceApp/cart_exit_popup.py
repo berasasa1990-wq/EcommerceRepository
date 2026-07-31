@@ -20,8 +20,12 @@ CART_ABANDON_DISMISSED_KEY = 'cart_abandon_exit_dismissed'
 
 
 def _clamp_percent(value):
+    """None/prazno/0 = bez popusta (samo ponuda)."""
     try:
-        percent = Decimal(str(value or 0))
+        if value is None or value == '':
+            percent = Decimal('0')
+        else:
+            percent = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
         percent = Decimal('0')
     if percent < 0:
@@ -131,9 +135,9 @@ def get_cart_exit_popup_context(request, cart):
     request.session[EXIT_PRODUCT_SESSION_KEY] = product.pk
     request.session.modified = True
 
-    percent = _clamp_percent(postavke.korpa_exit_popup_popust)
-    if percent <= 0:
-        percent = Decimal('10')
+    # Prazno / 0 / None = samo ponuda artikla, BEZ sniženja (nikad forsira 10%)
+    raw_pct = getattr(postavke, 'korpa_exit_popup_popust', None)
+    percent = _clamp_percent(raw_pct)
 
     in_stock_variations = list(
         product.varijacije.filter(na_stanju=True).order_by('redoslijed', 'id'),
@@ -189,9 +193,8 @@ def resolve_exit_popup_add(request, product, variation=None):
     elif not allowed_id and settings_id and product.pk != settings_id:
         return None
 
-    percent = _clamp_percent(postavke.korpa_exit_popup_popust)
-    if percent <= 0:
-        percent = Decimal('10')
+    # 0 / prazno = bez custom_price (redovna cijena u korpi)
+    percent = _clamp_percent(getattr(postavke, 'korpa_exit_popup_popust', None))
     resolved_variation = variation
 
     if product.varijacije.exists():
@@ -211,7 +214,8 @@ def resolve_exit_popup_add(request, product, variation=None):
         'variation': resolved_variation,
         'percent': percent,
     }
-    if prices['has_discount']:
+    # Samo ako % > 0 i stvarno snizuje — inače nema custom_price / akcije
+    if percent > 0 and prices.get('has_discount'):
         result['custom_price'] = prices['snizena']
         result['promo_bazna'] = prices['bazna']
     return result

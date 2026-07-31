@@ -292,7 +292,43 @@ class AkcijaAdminForm(forms.ModelForm):
             for name in AI_SETTINGS_FIELD_NAMES:
                 if name not in self.fields:
                     continue
-                self.fields[name].initial = getattr(site, name, None)
+                val = getattr(site, name, None)
+                # None na % poljima → prikaži efektivni default (10) da admin vidi stvarno ponašanje
+                if name in ('browse_interest_popust', 'product_dwell_popust') and val is None:
+                    val = Decimal('10.00')
+                self.fields[name].initial = val
+
+        # Jasne labele za AI popup / popust (0 = bez snizenja)
+        if 'browse_interest_popup_aktivan' in self.fields:
+            self.fields['browse_interest_popup_aktivan'].label = (
+                'AI prodaja aktivna (automatski popup)'
+            )
+            self.fields['browse_interest_popup_aktivan'].help_text = (
+                'Uključeno: AI prati kupca i šalje popup ponudu (1–2 artikla). '
+                'Isključeno: nema automatskog popupa.'
+            )
+        if 'browse_interest_popust' in self.fields:
+            f = self.fields['browse_interest_popust']
+            f.label = 'AI prodaja — popust (%)'
+            f.help_text = (
+                '0 = ponuda BEZ popusta (samo preporuka, redovna cijena). '
+                'Npr. 5, 10, 15 = sniženje. Max 50.'
+            )
+            f.required = False
+            if hasattr(f, 'min_value'):
+                f.min_value = Decimal('0')
+            if hasattr(f, 'max_value'):
+                f.max_value = Decimal('50')
+        if 'product_dwell_popust' in self.fields:
+            f = self.fields['product_dwell_popust']
+            f.label = 'AI dwell — default popust (%)'
+            f.help_text = (
+                'Fallback % za artikle bez unosa u tabeli. '
+                '0 = bez popusta. Max 50.'
+            )
+            f.required = False
+            if hasattr(f, 'min_value'):
+                f.min_value = Decimal('0')
 
     def save_ai_settings(self):
         """Snimi AI polja u SiteSettings (singleton)."""

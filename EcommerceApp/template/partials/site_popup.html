@@ -132,7 +132,9 @@
         <div class="site-popup-akcija site-popup-bundle-pack site-popup-bundle-pack--set-only">
             <div class="bundle-set-badge-row" aria-hidden="true">
                 <span class="bundle-set-badge is-pulse">KOMPLET SET</span>
+                {% if pricing and pricing.has_discount %}
                 <span class="bundle-set-badge bundle-set-badge--akcija is-pulse">AKCIJA</span>
+                {% endif %}
             </div>
             <h3 class="bundle-set-title">Sve u jednom setu</h3>
             <p class="bundle-set-sub">{{ unit_count }} artikla · ne kupuješ pojedinačno</p>
@@ -320,14 +322,23 @@
             <p class="site-popup-akcija-label" style="color: '{{ akcija.boja_opisa }}';">Akcija ističe za</p>
             <div class="site-popup-countdown" data-popup-countdown aria-live="polite">--:--:--</div>
 
-            {% if akcija.tip == 'timer' and akcija.popust_postotak %}
+            {% if akcija.tip == 'timer' and akcija.popust_postotak and akcija.popust_postotak > 0 %}
             <div class="site-popup-akcija-promo" style="color: '{{ akcija.boja_opisa }}';">
                 <strong>{{ akcija.popust_postotak|floatformat:0 }}% popusta</strong> — dodaj u korpu po akcijskoj cijeni
             </div>
-            {% elif akcija.tip == 'uslov' and akcija.popust_postotak and akcija.prag_korpe_km %}
+            {% elif akcija.tip == 'timer' %}
+            <div class="site-popup-akcija-promo" style="color: '{{ akcija.boja_opisa }}';">
+                Posebna ponuda — dodaj u korpu
+            </div>
+            {% elif akcija.tip == 'uslov' and akcija.popust_postotak and akcija.popust_postotak > 0 and akcija.prag_korpe_km %}
             <div class="site-popup-akcija-promo" style="color: '{{ akcija.boja_opisa }}';">
                 <strong>{{ akcija.popust_postotak|floatformat:0 }}% POPUSTA</strong> NA OVAJ ARTIKAL<br>
                 KAD UKUPNO U KORPI PREDJE IZNOS OD <strong>{{ akcija.prag_korpe_km }} KM</strong>
+            </div>
+            {% elif akcija.tip == 'uslov' and akcija.prag_korpe_km %}
+            <div class="site-popup-akcija-promo" style="color: '{{ akcija.boja_opisa }}';">
+                Posebna ponuda na ovaj artikal<br>
+                kad ukupno u korpi pređe <strong>{{ akcija.prag_korpe_km }} KM</strong>
             </div>
             {% endif %}
 
