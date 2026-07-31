@@ -190,28 +190,42 @@
                                     — iznos <strong>{{ pending_otp.iznos }} KM</strong>.
                                 </p>
                                 <p class="hint">
-                                    Pošalji kod na Viber/WhatsApp, pa unesi 4 cifre ispod.
+                                    WhatsApp otvara chat s već upisanim kodom — samo klikni <strong>Pošalji</strong>.
+                                    Zatim unesi 4 cifre koje ti kupac potvrdi.
                                 </p>
                                 <div class="loyalty-otp-send-row">
-                                    {% if pending_otp.viber_url %}
-                                    <button type="button"
-                                            class="btn btn-viber-card"
-                                            id="loyaltyOtpViberBtn"
-                                            data-viber-url="{{ pending_otp.viber_url }}">
-                                        Pošalji na Viber
-                                    </button>
-                                    {% endif %}
                                     {% if pending_otp.whatsapp_url %}
                                     <a href="{{ pending_otp.whatsapp_url }}"
                                        class="btn btn-primary"
                                        target="_blank"
                                        rel="noopener noreferrer"
-                                       id="loyaltyOtpWhatsappBtn">
+                                       id="loyaltyOtpWhatsappBtn"
+                                       data-whatsapp-url="{{ pending_otp.whatsapp_url }}">
                                         Pošalji na WhatsApp
+                                    </a>
+                                    {% endif %}
+                                    {% if pending_otp.viber_url %}
+                                    <a href="{{ pending_otp.viber_url }}"
+                                       class="btn btn-viber-card"
+                                       id="loyaltyOtpViberBtn"
+                                       data-viber-url="{{ pending_otp.viber_url }}"
+                                       data-whatsapp-url="{{ pending_otp.whatsapp_url }}">
+                                        Otvori Viber
+                                    </a>
+                                    {% endif %}
+                                    {% if pending_otp.sms_url %}
+                                    <a href="{{ pending_otp.sms_url }}"
+                                       class="btn btn-outline"
+                                       id="loyaltyOtpSmsBtn"
+                                       data-sms-url="{{ pending_otp.sms_url }}">
+                                        Pošalji SMS
                                     </a>
                                     {% endif %}
                                 </div>
                                 {{ pending_otp.message|json_script:"loyaltyOtpMessage" }}
+                                {% if pending_otp.auto_open_wa %}
+                                <span id="loyaltyOtpAutoOpenWa" hidden data-url="{{ pending_otp.whatsapp_url }}"></span>
+                                {% endif %}
 
                                 <form method="post" class="purchase-form loyalty-otp-confirm-form">
                                     {% csrf_token %}
@@ -251,19 +265,22 @@
                                 </small>
                             </div>
                             {% else %}
-                            <form method="post" class="purchase-form">
+                            <form method="post" class="purchase-form" id="loyaltyOtpStartForm">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="evidentiraj_kupovinu_start">
+                                <input type="hidden" name="ajax" value="1">
                                 <div class="form-inline">
                                     <input type="number" name="iznos" step="0.01" min="0.01"
                                            placeholder="Iznos u KM (npr. 125.50)" required class="form-input">
                                     <input type="text" name="napomena" maxlength="200"
                                            placeholder="Napomena (opcionalno)" class="form-input">
-                                    <button type="submit" class="btn btn-primary">Pošalji kod kupcu</button>
+                                    <button type="submit" class="btn btn-primary" id="loyaltyOtpStartBtn">
+                                        Pošalji kod (WhatsApp)
+                                    </button>
                                 </div>
                                 <small class="hint">
-                                    Generiše 4-cifreni kod i otvara slanje na Viber/WhatsApp broj s kartice.
-                                    Kupovina se upisuje tek nakon potvrde koda (ili admin override).
+                                    Generiše kod i otvara WhatsApp s već upisanom porukom — ti samo klikneš Pošalji.
+                                    Kupovina se upisuje tek kad uneseš kod (ili admin override).
                                 </small>
                             </form>
                             <details class="loyalty-otp-admin-details">
@@ -421,104 +438,236 @@
         }
     }
 
-    // Pošalji OTP na Viber (kopiraj tekst + otvori chat)
-    const otpViberBtn = document.getElementById('loyaltyOtpViberBtn');
-    if (otpViberBtn) {
-        otpViberBtn.addEventListener('click', async function () {
-            const msg = getOtpMessage();
-            const viberUrl = otpViberBtn.dataset.viberUrl;
-            if (msg && navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(msg).catch(function () {});
+    /**
+     * Poravnaj „Evidentiraj kupovinu” tačno ispod fiksiranog headera
+     * (kao na screenshotu: naslov sekcije gore, forma ispod — bez skrola na vrh stranice).
+     */
+    function pinEvidentirajKupovinu(opts) {
+        const options = opts || {};
+        const focusInput = options.focusInput !== false;
+        const anchor = document.getElementById('evidentiraj-kupovinu');
+        if (!anchor) return;
+
+        const root = document.documentElement;
+        let chrome = parseFloat(
+            getComputedStyle(root).getPropertyValue('--site-chrome-top'),
+        );
+        if (!Number.isFinite(chrome) || chrome < 40) {
+            // fallback: promo + header
+            const promo = document.querySelector('.promo-bar');
+            const header = document.querySelector('header.site-header, .site-header, header');
+            chrome = (promo ? promo.offsetHeight : 0) + (header ? header.offsetHeight : 120);
+        }
+        const gap = 12;
+        const y = Math.max(
+            0,
+            Math.round(anchor.getBoundingClientRect().top + window.pageYOffset - chrome - gap),
+        );
+        window.scrollTo(0, y);
+        if (focusInput) {
+            const otpInput = document.querySelector('.loyalty-otp-input');
+            if (otpInput && typeof otpInput.focus === 'function') {
+                try {
+                    otpInput.focus({ preventScroll: true });
+                } catch (e) {
+                    otpInput.focus();
+                }
             }
-            if (viberUrl) {
-                const w = window.open(viberUrl, '_blank');
-                if (!w) window.location.href = viberUrl;
+        }
+    }
+
+    function getCsrfToken() {
+        const inp = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (inp && inp.value) return inp.value;
+        const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    function openPrefillChat(url) {
+        if (!url) return false;
+        // Isti tab na mobilnom često pouzdaniji; desktop — novi tab
+        const w = window.open(url, '_blank');
+        if (!w) {
+            window.location.href = url;
+            return true;
+        }
+        return true;
+    }
+
+    // „Pošalji kod” — AJAX + odmah WhatsApp s prefilled tekstom (bez paste)
+    const startForm = document.getElementById('loyaltyOtpStartForm');
+    if (startForm) {
+        startForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('loyaltyOtpStartBtn');
+            if (btn) btn.disabled = true;
+
+            // Otvori prozor u istom user gesture-u (anti popup-block), pa napuni URL
+            let waWin = null;
+            try {
+                waWin = window.open('about:blank', '_blank');
+            } catch (err) {
+                waWin = null;
             }
-            showToast('Tekst s kodom je kopiran. Zalijepi u Viber chat s kupcem.');
-            // Ostani na formi za unos koda
-            const anchor = document.getElementById('evidentiraj-kupovinu');
-            if (anchor) {
-                anchor.scrollIntoView({ block: 'start', behavior: 'smooth' });
+
+            try {
+                const body = new URLSearchParams(new FormData(startForm));
+                body.set('ajax', '1');
+                const response = await fetch(startForm.action || window.location.pathname, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                });
+                const data = await response.json().catch(function () { return {}; });
+                if (!response.ok || !data.ok) {
+                    if (waWin) waWin.close();
+                    showToast(data.message || 'Slanje koda nije uspjelo.');
+                    if (btn) btn.disabled = false;
+                    return;
+                }
+                const waUrl = data.whatsapp_url || '';
+                if (waUrl) {
+                    if (waWin && !waWin.closed) {
+                        waWin.location = waUrl;
+                    } else {
+                        openPrefillChat(waUrl);
+                    }
+                    showToast('WhatsApp otvoren — poruka je već upisana, samo klikni Pošalji.');
+                } else if (waWin) {
+                    waWin.close();
+                }
+                // Ostani na OTP formi (pin skrola)
+                window.location.assign(data.redirect || (window.location.pathname + window.location.search));
+            } catch (err) {
+                if (waWin) try { waWin.close(); } catch (e2) { /* ignore */ }
+                showToast(err.message || 'Greška pri slanju koda.');
+                if (btn) btn.disabled = false;
             }
         });
     }
 
-    // Nakon „Pošalji kod” / greške — ostani na Evidentiraj (ne na vrh stranice)
+    // Viber: otvori chat (prefill često ne radi) + u pozadini ponudi WhatsApp s tekstom
+    const otpViberBtn = document.getElementById('loyaltyOtpViberBtn');
+    if (otpViberBtn) {
+        otpViberBtn.addEventListener('click', function (e) {
+            // default <a href=viber> — OK; ako Viber ne radi, fallback WhatsApp s prefill
+            const wa = otpViberBtn.dataset.whatsappUrl;
+            window.setTimeout(function () {
+                // Ako Viber app nije instaliran, korisnik može kliknuti WhatsApp
+                if (wa) {
+                    /* ostavi WA dugme — ne forsiraj */
+                }
+            }, 300);
+            pinEvidentirajKupovinu({ focusInput: true });
+        });
+    }
+
+    // Nakon „Pošalji kod” — pin na Evidentiraj + auto WhatsApp ako open=wa
     (function scrollToPurchaseSection() {
         const params = new URLSearchParams(window.location.search || '');
         const wantOtp = params.get('otp') === '1' || window.location.hash === '#evidentiraj-kupovinu';
         const panel = document.getElementById('loyaltyOtpPanel');
-        const anchor = document.getElementById('evidentiraj-kupovinu');
         if (!wantOtp && !panel) return;
-        if (!anchor) return;
-        const otpInput = document.querySelector('.loyalty-otp-input');
-        function go() {
-            anchor.scrollIntoView({ block: 'start', behavior: 'auto' });
-            if (otpInput) otpInput.focus();
+
+        if ('scrollRestoration' in history) {
+            try {
+                history.scrollRestoration = 'manual';
+            } catch (e) { /* ignore */ }
         }
-        // Nakon layouta headera
+
+        function go() {
+            pinEvidentirajKupovinu({ focusInput: true });
+        }
+        go();
         requestAnimationFrame(function () {
             requestAnimationFrame(go);
         });
-        window.setTimeout(go, 80);
+        window.setTimeout(go, 50);
+        window.setTimeout(go, 200);
+        window.setTimeout(go, 450);
+        window.addEventListener('load', go, { once: true });
+
+        // Auto-open WhatsApp s već upisanim kodom (samo jednom po loadu)
+        const autoEl = document.getElementById('loyaltyOtpAutoOpenWa');
+        const waBtn = document.getElementById('loyaltyOtpWhatsappBtn');
+        const waUrl = (autoEl && autoEl.dataset.url) || (waBtn && waBtn.dataset.whatsappUrl) || (waBtn && waBtn.href) || '';
+        if (params.get('open') === 'wa' && waUrl) {
+            const key = 'loyalty_otp_wa_' + (params.get('q') || '') + '_' + (document.querySelector('.loyalty-otp-lead') || {}).textContent;
+            // Ne spamaj na svaki refresh — sessionStorage
+            try {
+                if (!sessionStorage.getItem(key)) {
+                    sessionStorage.setItem(key, '1');
+                    window.setTimeout(function () {
+                        openPrefillChat(waUrl);
+                        showToast('WhatsApp: poruka je upisana — samo Pošalji.');
+                    }, 120);
+                }
+            } catch (e) {
+                window.setTimeout(function () { openPrefillChat(waUrl); }, 120);
+            }
+        }
     })();
 
     // Pošalji sliku loyalty kartice na Viber (nivo, %, do sljedećeg)
     const cardBtn = document.getElementById('loyaltyViberSendBtn');
-    if (!cardBtn) return;
-
-    cardBtn.addEventListener('click', async function () {
-        const imageUrl = cardBtn.dataset.imageUrl;
-        const viberUrl = cardBtn.dataset.viberUrl;
-        const code = cardBtn.dataset.cardCode || '';
-        const phone = (cardBtn.dataset.phone || '').trim();
-        if (!imageUrl || !viberUrl) {
-            alert('Nedostaje telefon kupca. Unesite telefon u ličnim podacima.');
-            return;
-        }
-        cardBtn.disabled = true;
-        try {
-            const response = await fetch(imageUrl, {
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-            if (!response.ok) {
-                throw new Error('Preuzimanje slike nije uspjelo.');
+    if (cardBtn) {
+        cardBtn.addEventListener('click', async function () {
+            const imageUrl = cardBtn.dataset.imageUrl;
+            const viberUrl = cardBtn.dataset.viberUrl;
+            const code = cardBtn.dataset.cardCode || '';
+            const phone = (cardBtn.dataset.phone || '').trim();
+            if (!imageUrl || !viberUrl) {
+                alert('Nedostaje telefon kupca. Unesite telefon u ličnim podacima.');
+                return;
             }
-            const blob = await response.blob();
-            const fileName = 'loyalty-' + code + '.png';
-            const caption = getViberCaption();
+            cardBtn.disabled = true;
+            try {
+                const response = await fetch(imageUrl, {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok) {
+                    throw new Error('Preuzimanje slike nije uspjelo.');
+                }
+                const blob = await response.blob();
+                const fileName = 'loyalty-' + code + '.png';
+                const caption = getViberCaption();
 
-            if (caption && navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(caption).catch(function () {});
+                if (caption && navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(caption).catch(function () {});
+                }
+
+                const viberWin = window.open(viberUrl, '_blank');
+                if (!viberWin) {
+                    window.location.href = viberUrl;
+                }
+
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(function () {
+                    URL.revokeObjectURL(objectUrl);
+                }, 4000);
+
+                showToast(
+                    'Viber otvoren za ' + (phone || 'kupca') +
+                    '. Tekst je kopiran, slika preuzeta — zalijepite tekst i priložite sliku (📎).',
+                );
+            } catch (err) {
+                alert(err.message || 'Slanje na Viber nije uspjelo.');
+            } finally {
+                cardBtn.disabled = false;
             }
-
-            const viberWin = window.open(viberUrl, '_blank');
-            if (!viberWin) {
-                window.location.href = viberUrl;
-            }
-
-            const objectUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = objectUrl;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.setTimeout(function () {
-                URL.revokeObjectURL(objectUrl);
-            }, 4000);
-
-            showToast(
-                'Viber otvoren za ' + (phone || 'kupca') +
-                '. Tekst je kopiran, slika preuzeta — zalijepite tekst i priložite sliku (📎).',
-            );
-        } catch (err) {
-            alert(err.message || 'Slanje na Viber nije uspjelo.');
-        } finally {
-            cardBtn.disabled = false;
-        }
-    });
+        });
+    }
 })();
 </script>
 {% endblock %}

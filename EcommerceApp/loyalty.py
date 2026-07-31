@@ -111,29 +111,44 @@ def _to_e164_digits(telefon):
     return digits
 
 
-def viber_chat_url(telefon):
+def viber_chat_url(telefon, text=''):
     """
-    Deep link za otvaranje Viber chata s kupcem (BA brojevi).
-    Koristi se u staff loyalty — otvara chat tačno na uneseni broj.
+    Deep link Viber chata (BA brojevi).
+    Napomena: Viber često ne podržava prefill teksta u 1:1 chatu —
+    za poruku s kodom koristi whatsapp_chat_url (text= radi pouzdano).
     """
     digits = _to_e164_digits(telefon)
     if not digits:
         return ''
+    # number bez + u nekim klijentima radi bolje s %2B
     return f'viber://chat?number=%2B{digits}'
 
 
 def whatsapp_chat_url(telefon, text=''):
     """
-    Deep link WhatsApp chata (BA brojevi).
-    text se prefill-uje u poruci (wa.me podržava text=).
+    Deep link WhatsApp — poruka se unaprijed popuni (staff samo klikne Pošalji).
+    Koristi api.whatsapp.com (pouzdanije od wa.me na desktopu).
     """
     digits = _to_e164_digits(telefon)
     if not digits:
         return ''
-    url = f'https://wa.me/{digits}'
+    # api.whatsapp.com/send bolje puni tekst na desktop + mobilnom
+    url = f'https://api.whatsapp.com/send?phone={digits}'
     if text:
-        url = f'{url}?text={quote(text)}'
+        url = f'{url}&text={quote(text)}'
     return url
+
+
+def sms_chat_url(telefon, text=''):
+    """SMS deep link s prefilled body (mobilni)."""
+    digits = _to_e164_digits(telefon)
+    if not digits:
+        return ''
+    # iOS: sms:+387...&body=  / Android: sms:+387...?body=
+    body = quote(text) if text else ''
+    if body:
+        return f'sms:+{digits}?&body={body}'
+    return f'sms:+{digits}'
 
 
 def _generate_otp_code():
@@ -196,8 +211,9 @@ def start_purchase_otp(request, card, iznos, napomena=''):
         'napomena': payload['napomena'],
         'telefon': telefon,
         'message': msg,
-        'viber_url': viber_chat_url(telefon),
+        'viber_url': viber_chat_url(telefon, msg),
         'whatsapp_url': whatsapp_chat_url(telefon, msg),
+        'sms_url': sms_chat_url(telefon, msg),
         'ttl_minutes': LOYALTY_PURCHASE_OTP_TTL_SEC // 60,
     }
 

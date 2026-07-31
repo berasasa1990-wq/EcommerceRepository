@@ -16735,9 +16735,9 @@ button.nav-action-link {
     );
 }
 
-/* Evidentiraj kupovinu — OTP potvrda */
+/* Evidentiraj kupovinu — pin skrola (JS računa offset headera) */
 #evidentiraj-kupovinu {
-    scroll-margin-top: calc(var(--site-chrome-top, 120px) + 16px);
+    scroll-margin-top: 0;
 }
 .loyalty-otp-panel {
     display: flex;

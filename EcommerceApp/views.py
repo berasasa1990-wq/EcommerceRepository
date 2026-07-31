@@ -5980,16 +5980,37 @@ def staff_loyalty_system(request):
 
             # 1) Start: generiši 4-cifreni kod + deep link Viber/WhatsApp
             if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_start':
+                wants_json = (
+                    request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+                    or request.POST.get('ajax') == '1'
+                )
                 try:
                     iznos = Decimal(request.POST.get('iznos', '0'))
                     napomena = (request.POST.get('napomena') or '').strip()[:200]
-                    start_purchase_otp(request, selected_card, iznos, napomena)
-                    # Bez flash poruke na vrhu — UI ispod vodi korak 2
-                    return redirect(f"{request.path}?q={q}&otp=1{_purchase_anchor}")
+                    otp_info = start_purchase_otp(request, selected_card, iznos, napomena)
+                    if wants_json:
+                        # JS već otvara WhatsApp u istom kliku — samo pin na OTP formu
+                        redirect_url = f"{request.path}?q={q}&otp=1{_purchase_anchor}"
+                        return JsonResponse({
+                            'ok': True,
+                            'redirect': redirect_url,
+                            'iznos': str(otp_info['iznos']),
+                            'telefon': otp_info.get('telefon') or '',
+                            'message': otp_info.get('message') or '',
+                            'whatsapp_url': otp_info.get('whatsapp_url') or '',
+                            'viber_url': otp_info.get('viber_url') or '',
+                            'sms_url': otp_info.get('sms_url') or '',
+                        })
+                    # Bez JS: open=wa na reloadu
+                    return redirect(f"{request.path}?q={q}&otp=1&open=wa{_purchase_anchor}")
                 except ValueError as exc:
+                    if wants_json:
+                        return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
                     messages.error(request, str(exc))
                     return redirect(f"{request.path}?q={q}{_purchase_anchor}")
                 except (InvalidOperation, TypeError):
+                    if wants_json:
+                        return JsonResponse({'ok': False, 'message': 'Neispravan iznos.'}, status=400)
                     messages.error(request, 'Neispravan iznos.')
                     return redirect(f"{request.path}?q={q}{_purchase_anchor}")
 
@@ -6126,6 +6147,7 @@ def staff_loyalty_system(request):
                 )
                 raw_pending = get_pending_purchase_otp(request, card=selected_card)
                 if raw_pending:
+                    from .loyalty import sms_chat_url
                     code = raw_pending.get('code') or ''
                     iznos_p = raw_pending.get('iznos')
                     tel = raw_pending.get('telefon') or (
@@ -6138,8 +6160,10 @@ def staff_loyalty_system(request):
                         'napomena': raw_pending.get('napomena') or '',
                         'telefon': tel,
                         'message': msg,
-                        'viber_url': viber_chat_url(tel),
+                        'viber_url': viber_chat_url(tel, msg),
                         'whatsapp_url': whatsapp_chat_url(tel, msg),
+                        'sms_url': sms_chat_url(tel, msg),
+                        'auto_open_wa': request.GET.get('open') == 'wa',
                     }
             except Exception:
                 pending_otp = None
