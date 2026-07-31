@@ -524,6 +524,7 @@
     {% include 'partials/cart_exit_popup.html' %}
     {% include 'partials/live_visitor_offer_popup.html' %}
     {% include 'partials/gratis_offer_modal.html' %}
+    {% include 'partials/qty_deal_offer_modal.html' %}
     {% include 'partials/online_gift.html' %}
     {% include 'partials/social_proof_toast.html' %}
 
@@ -560,7 +561,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.js' %}?v=20260731searchfast" defer></script>
+    <script src="{% static 'js/main.js' %}?v=20260731qtyDeal" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}

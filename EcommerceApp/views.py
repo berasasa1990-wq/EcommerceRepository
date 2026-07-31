@@ -69,6 +69,7 @@ from .forms import (
     LoginForm,
     LoyaltyIssueForm,
     ProfileForm,
+    StaffLoyaltyProfileForm,
     RegisterForm,
 )
 from .models import (
@@ -1806,6 +1807,11 @@ def product_detail(request, slug):
         # Samo tekstualni hint pored dugmeta; popup pri svakom dodavanju u korpu
         context['gratis_akcija_hint'] = True
 
+    from .gratis import get_active_qty_deal_for_product
+    qty_deal_akcija_hint = get_active_qty_deal_for_product(product)
+    if qty_deal_akcija_hint:
+        context['qty_deal_hint'] = True
+
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
     context['meta_view_content_event_id'] = view_content_event_id
     track_view_content(request, product, event_id=view_content_event_id)
@@ -2029,6 +2035,8 @@ def add_to_cart(request, slug):
         build_gratis_popup_message,
         build_popup_bundle_message,
         build_qty_deal_message,
+        build_qty_deal_offer_response,
+        get_active_qty_deal_for_product,
         get_active_gratis_akcija_for_product,
     )
 
@@ -2312,7 +2320,24 @@ def add_to_cart(request, slug):
                 return redirect('cart')
             return redirect('product_detail', slug=slug)
 
+    qty_deal_choice = (request.POST.get('qty_deal_choice') or '').strip().lower()
+
     if stay_on_page and not gratis_choice and not akcija_id:
+        # 1) Kupi više: iskači tek pri dodavanju u korpu (bez 1 kom u modalu)
+        if qty_deal_choice not in ('no', 'skip'):
+            qty_offer_akcija = get_active_qty_deal_for_product(product)
+            if qty_offer_akcija:
+                qty_offer = build_qty_deal_offer_response(qty_offer_akcija)
+                if qty_offer:
+                    return JsonResponse({
+                        'ok': True,
+                        'requires_qty_deal_choice': True,
+                        'qty_deal_offer': qty_offer,
+                        'pending_quantity': quantity,
+                        'cart_count': len(cart),
+                        'message': 'Imaš količinsku ponudu za ovaj artikal.',
+                    })
+        # 2) + Ponuda (nakon odbijanja kupi više ili ako nema qty deala)
         offer_akcija = get_active_gratis_akcija_for_product(product)
         # Uvijek iskači dok je + Ponuda aktivna (ne gasimo po sesiji)
         if offer_akcija:
@@ -5809,6 +5834,8 @@ def staff_loyalty_system(request):
         osiguraj_loyalty_karticu,
     )
 
+    from .models import LoyaltyPurchase
+
     issue_form = LoyaltyIssueForm()
     newly_issued = request.GET.get('issued') == '1'
 
@@ -5846,7 +5873,7 @@ def staff_loyalty_system(request):
                     issue_form.cleaned_data['ime'],
                     issue_form.cleaned_data['prezime'],
                     issue_form.cleaned_data['telefon'],
-                    issue_form.cleaned_data['email'],
+                    issue_form.cleaned_data.get('email') or '',
                 )
             except ValueError as exc:
                 messages.error(request, str(exc))
@@ -5858,12 +5885,13 @@ def staff_loyalty_system(request):
                 )
                 return redirect(f"{request.path}?q={card.kod}&issued=1")
         else:
-            messages.error(request, 'Provjerite unesene podatke i pokušajte ponovo.')
+            messages.error(request, 'Provjerite unesene podatke (dupli email/telefon nisu dozvoljeni).')
 
     q = (request.GET.get('q') or '').strip()
     cards = []
     selected_card = None
     user_orders = []
+    purchase_timeline = []
     loyalty_ctx = None
     edit_form = None
     cardholder_name = ''
@@ -5891,7 +5919,46 @@ def staff_loyalty_system(request):
                 or (selected_card.user.email or '').strip().lower()
             )
 
-            user_orders = Order.objects.filter(korisnik=selected_card.user).prefetch_related('stavke').order_by('-kreirana')[:50]
+            user_orders = list(
+                Order.objects.filter(korisnik=selected_card.user)
+                .prefetch_related('stavke')
+                .order_by('-kreirana')[:50]
+            )
+            manual_purchases = list(
+                LoyaltyPurchase.objects.filter(kartica=selected_card)
+                .select_related('kreirao')
+                .order_by('-kreirano')[:50]
+            )
+
+            # Timeline: online narudžbe + evidentirane kupovine
+            for order in user_orders:
+                purchase_timeline.append({
+                    'kind': 'online',
+                    'date': order.kreirana,
+                    'amount': order.ukupno,
+                    'label': f'#{order.broj}',
+                    'status': order.get_status_label() if hasattr(order, 'get_status_label') else order.status,
+                    'status_code': order.status,
+                    'order': order,
+                    'note': '',
+                })
+            for pur in manual_purchases:
+                purchase_timeline.append({
+                    'kind': 'manual',
+                    'date': pur.kreirano,
+                    'amount': pur.iznos,
+                    'label': 'Evidentirano',
+                    'status': 'Prodavnica / ručno',
+                    'status_code': 'manual',
+                    'order': None,
+                    'note': pur.napomena or '',
+                    'purchase': pur,
+                })
+            from django.utils import timezone as dj_tz
+            purchase_timeline.sort(
+                key=lambda row: row['date'] or dj_tz.now(),
+                reverse=True,
+            )
 
             profil = getattr(selected_card.user, 'profil', None)
 
@@ -5899,7 +5966,14 @@ def staff_loyalty_system(request):
             if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu':
                 try:
                     iznos = Decimal(request.POST.get('iznos', '0'))
+                    napomena = (request.POST.get('napomena') or '').strip()[:200]
                     if iznos > 0:
+                        LoyaltyPurchase.objects.create(
+                            kartica=selected_card,
+                            iznos=iznos,
+                            napomena=napomena,
+                            kreirao=request.user if request.user.is_authenticated else None,
+                        )
                         selected_card.ukupna_potrosnja += iznos
                         selected_card.save(update_fields=['ukupna_potrosnja'])
                         azuriraj_loyalty_karticu(selected_card)
@@ -5913,52 +5987,58 @@ def staff_loyalty_system(request):
                     messages.error(request, 'Neispravan iznos.')
 
             if request.method == 'POST' and request.POST.get('action') == 'update_profile':
-                edit_form = ProfileForm(request.POST)
+                edit_form = StaffLoyaltyProfileForm(
+                    request.POST,
+                    exclude_user_id=selected_card.user_id,
+                )
                 if edit_form.is_valid():
-                    from .loyalty import email_vec_registrovan, telefon_vec_registrovan
-
                     u = selected_card.user
-                    new_email = edit_form.cleaned_data.get('email', u.email).strip().lower()
-                    new_phone = edit_form.cleaned_data.get('telefon', '')
-                    if email_vec_registrovan(new_email, exclude_user_id=u.pk):
-                        messages.error(request, 'Ovaj email je već registrovan na drugoj kartici.')
-                        return redirect(f"{request.path}?q={q}")
-                    if new_phone and telefon_vec_registrovan(new_phone, exclude_user_id=u.pk):
-                        messages.error(request, 'Ovaj broj telefona je već registrovan na drugoj kartici.')
-                        return redirect(f"{request.path}?q={q}")
-
-                    ime_prezime = edit_form.cleaned_data.get('ime_prezime', '').strip()
+                    # Nijedno polje nije obavezno — prazno = obriši / ostavi prazno
+                    ime_prezime = (edit_form.cleaned_data.get('ime_prezime') or '').strip()
                     if ime_prezime:
                         parts = ime_prezime.split(maxsplit=1)
                         u.first_name = parts[0]
                         u.last_name = parts[1] if len(parts) > 1 else ''
+                    else:
+                        # Dozvoli prazno ime ako staff tako unese
+                        u.first_name = u.first_name or ''
+                        u.last_name = u.last_name or ''
+                    new_email = (edit_form.cleaned_data.get('email') or '').strip().lower()
                     u.email = new_email
                     u.save(update_fields=['first_name', 'last_name', 'email'])
 
-                    if profil:
-                        profil.telefon = new_phone
-                        profil.adresa = edit_form.cleaned_data.get('adresa', '')
-                        profil.grad = edit_form.cleaned_data.get('grad', '')
-                        profil.postanski_broj = edit_form.cleaned_data.get('postanski_broj', '')
-                        profil.save()
+                    profil, _ = UserProfile.objects.get_or_create(user=u)
+                    profil.telefon = (edit_form.cleaned_data.get('telefon') or '').strip()
+                    profil.adresa = (edit_form.cleaned_data.get('adresa') or '').strip()
+                    profil.grad = (edit_form.cleaned_data.get('grad') or '').strip()
+                    profil.postanski_broj = (
+                        edit_form.cleaned_data.get('postanski_broj') or ''
+                    ).strip()
+                    profil.save()
 
                     messages.success(request, 'Podaci su ažurirani.')
                     return redirect(f"{request.path}?q={q}")
                 else:
-                    messages.error(request, 'Greška pri ažuriranju.')
+                    messages.error(
+                        request,
+                        'Greška pri ažuriranju (provjeri dupli email/telefon).',
+                    )
             else:
                 initial = {
                     'ime_prezime': selected_card.user.get_full_name() or selected_card.user.first_name,
-                    'email': selected_card.user.email,
+                    'email': selected_card.user.email or '',
                 }
                 if profil:
                     initial.update({
-                        'telefon': profil.telefon,
-                        'adresa': profil.adresa,
-                        'grad': profil.grad,
-                        'postanski_broj': profil.postanski_broj,
+                        'telefon': profil.telefon or '',
+                        'adresa': profil.adresa or '',
+                        'grad': profil.grad or '',
+                        'postanski_broj': profil.postanski_broj or '',
                     })
-                edit_form = ProfileForm(initial=initial)
+                edit_form = StaffLoyaltyProfileForm(
+                    initial=initial,
+                    exclude_user_id=selected_card.user_id,
+                )
 
             loyalty_ctx = loyalty_kontekst(selected_card)
 
@@ -5969,6 +6049,7 @@ def staff_loyalty_system(request):
         'cards': cards,
         'selected_card': selected_card,
         'user_orders': user_orders,
+        'purchase_timeline': purchase_timeline,
         'loyalty': loyalty_ctx,
         'edit_form': edit_form,
         'issue_form': issue_form,

@@ -1952,6 +1952,151 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('popup-open');
     }
 
+    /* —— Kupi više (katalog / kartice) —— */
+    const qtyDealOverlayMain = document.getElementById('qtyDealOfferOverlay');
+    const qtyDealCloseMain = document.getElementById('qtyDealOfferClose');
+    const qtyDealDeclineMain = document.getElementById('qtyDealOfferDecline');
+    const qtyDealTitleMain = document.getElementById('qtyDealOfferTitle');
+    const qtyDealKickerMain = document.getElementById('qtyDealOfferKicker');
+    const qtyDealMessageMain = document.getElementById('qtyDealOfferMessage');
+    const qtyDealSaveMain = document.getElementById('qtyDealOfferSave');
+    const qtyDealBaseMain = document.getElementById('qtyDealOfferBase');
+    const qtyDealImageMain = document.getElementById('qtyDealOfferImage');
+    const qtyDealTiersMain = document.getElementById('qtyDealOfferTiers');
+    let pendingQtyDeal = null;
+
+    function closeQtyDealOfferModal() {
+        if (!qtyDealOverlayMain) return;
+        qtyDealOverlayMain.classList.remove('is-visible');
+        qtyDealOverlayMain.hidden = true;
+        document.body.classList.remove('popup-open');
+        pendingQtyDeal = null;
+        if (qtyDealTiersMain) qtyDealTiersMain.innerHTML = '';
+    }
+
+    function openQtyDealOfferModal(offer, slug, variationId, extraFields) {
+        if (!qtyDealOverlayMain || !offer || !slug) return;
+        // Product detail ima vlastiti handler u product-detail.js
+        if (document.getElementById('mainAddToCartForm') || document.getElementById('productDetailInfo')) {
+            return;
+        }
+        pendingQtyDeal = {
+            offer,
+            slug,
+            variationId: variationId || '',
+            extraFields: extraFields || {},
+        };
+        if (qtyDealKickerMain) {
+            qtyDealKickerMain.textContent = offer.headline || 'Kupi više — veći popust';
+        }
+        if (qtyDealTitleMain) qtyDealTitleMain.textContent = offer.product_name || '';
+        if (qtyDealMessageMain) {
+            qtyDealMessageMain.textContent = offer.message
+                || 'Uzmi veću količinu i uštedi. Ili nastavi s onim što si već izabrao.';
+        }
+        if (qtyDealBaseMain) {
+            qtyDealBaseMain.textContent = offer.base_price
+                ? `Regularna cijena: ${offer.base_price} KM / kom`
+                : '';
+        }
+        if (qtyDealSaveMain) {
+            if (offer.best_usteda) {
+                qtyDealSaveMain.hidden = false;
+                qtyDealSaveMain.textContent = `Uštedi do ${offer.best_usteda} KM`;
+            } else {
+                qtyDealSaveMain.hidden = true;
+            }
+        }
+        if (qtyDealImageMain) {
+            if (offer.image_url) {
+                qtyDealImageMain.src = offer.image_url;
+                qtyDealImageMain.alt = offer.product_name || '';
+                qtyDealImageMain.hidden = false;
+            } else {
+                qtyDealImageMain.removeAttribute('src');
+                qtyDealImageMain.hidden = true;
+            }
+        }
+        if (qtyDealDeclineMain) {
+            qtyDealDeclineMain.textContent = offer.decline_label
+                || 'Ne, hvala — dodaj samo moju količinu';
+        }
+        if (qtyDealTiersMain) {
+            const options = offer.options || [];
+            qtyDealTiersMain.innerHTML = options.map((opt) => {
+                const bestClass = opt.is_best ? ' is-best' : '';
+                const bestTag = opt.is_best
+                    ? '<span class="qty-deal-offer-tier-best-tag">Najbolja ušteda</span>'
+                    : '';
+                return (
+                    `<button type="button" class="qty-deal-offer-tier${bestClass}" ` +
+                    `data-tier-id="${opt.id}" data-quantity="${opt.quantity}">` +
+                    bestTag +
+                    `<span class="qty-deal-offer-tier-top">` +
+                    `<span class="qty-deal-offer-tier-qty">×${opt.quantity}</span>` +
+                    `<span class="qty-deal-offer-tier-badge">-${opt.pct_label}%</span>` +
+                    `</span>` +
+                    `<span class="qty-deal-offer-tier-price">` +
+                    `<span class="qty-deal-offer-tier-was">${opt.line_bazna} KM</span>` +
+                    `<span class="qty-deal-offer-tier-now">${opt.line_snizena} KM</span>` +
+                    `</span>` +
+                    `<span class="qty-deal-offer-tier-meta">` +
+                    `Ušteda ${opt.usteda} KM · ${opt.unit_snizena} KM / kom` +
+                    `</span></button>`
+                );
+            }).join('');
+            qtyDealTiersMain.querySelectorAll('.qty-deal-offer-tier').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const tierId = btn.getAttribute('data-tier-id') || '';
+                    const qty = btn.getAttribute('data-quantity') || '2';
+                    submitQtyDealTier(tierId, qty);
+                });
+            });
+        }
+        qtyDealOverlayMain.hidden = false;
+        requestAnimationFrame(() => {
+            qtyDealOverlayMain.classList.add('is-visible');
+        });
+        document.body.classList.add('popup-open');
+    }
+
+    async function submitQtyDealTier(tierId, quantity) {
+        if (!pendingQtyDeal) return;
+        const { offer, slug, variationId } = pendingQtyDeal;
+        closeQtyDealOfferModal();
+        await catalogAddProductToCart(slug, variationId, {
+            akcija_id: String(offer.akcija_id),
+            tier_id: String(tierId),
+            quantity: String(quantity),
+        });
+    }
+
+    async function submitQtyDealDecline() {
+        if (!pendingQtyDeal) return;
+        const { slug, variationId, extraFields } = pendingQtyDeal;
+        closeQtyDealOfferModal();
+        await catalogAddProductToCart(slug, variationId, {
+            ...(extraFields || {}),
+            qty_deal_choice: 'no',
+        });
+    }
+
+    // Na product detail product-detail.js vodi modal — ne veži duple handlere
+    const onProductDetailPage = !!(
+        document.getElementById('mainAddToCartForm')
+        || document.getElementById('productDetailInfo')
+    );
+    if (!onProductDetailPage) {
+        if (qtyDealDeclineMain && !qtyDealDeclineMain.dataset.qtyDealBound) {
+            qtyDealDeclineMain.dataset.qtyDealBound = '1';
+            qtyDealDeclineMain.addEventListener('click', () => submitQtyDealDecline());
+        }
+        if (qtyDealCloseMain && !qtyDealCloseMain.dataset.qtyDealBound) {
+            qtyDealCloseMain.dataset.qtyDealBound = '1';
+            qtyDealCloseMain.addEventListener('click', () => submitQtyDealDecline());
+        }
+    }
+
     async function submitPonudaChoice(choice) {
         if (!pendingPonuda) return;
         const { offer, slug, variationId } = pendingPonuda;
@@ -2031,6 +2176,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
         if (!response.ok || !data.ok) {
             throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
+        }
+        if (data.requires_qty_deal_choice && data.qty_deal_offer) {
+            openQtyDealOfferModal(data.qty_deal_offer, slug, variationId, extraFields);
+            return data;
         }
         if (data.requires_gratis_choice && data.gratis_offer) {
             // Uvijek iskači dok je + Ponuda aktivna

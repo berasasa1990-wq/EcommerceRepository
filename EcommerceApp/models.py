@@ -1314,7 +1314,8 @@ class Akcija(models.Model):
     # Tipovi u listi Akcije (admin)
     ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AI_PRODAJA)
     # Samo ovi idu u popup queue na sajtu (site_popup kašnjenje)
-    POPUP_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL)
+    # Kupi više (qty_deal) NIJE page popup — iskače tek kad kupac doda artikal u korpu
+    POPUP_TIPS = (Tip.BUNDLE,)
     # Add-to-cart cross-sell (modal DA/NE)
     CART_OFFER_TIPS = (Tip.PONUDA, Tip.GRATIS)
 
@@ -1790,13 +1791,8 @@ class Akcija(models.Model):
             if trigger == self.BundleTrigger.TRIGGER_PRODUCT and not self.artikal_id:
                 return False
         elif self.tip == self.Tip.QTY_DEAL:
-            if not self.artikal_id:
-                return False
-            if self.pk and not self.qty_deal_tiers():
-                return False
-            # Prikaži na stranici tog artikla (ili bilo gdje ako nema request path check)
-            if request is not None and not self.qty_deal_trigger_matches(request):
-                return False
+            # Ne ide u site_popup queue — modal pri dodavanju u korpu
+            return False
         elif self.tip in {self.Tip.X_PLUS_1, self.Tip.KORPA_NUDJENJE}:
             return False
         if self.tip == self.Tip.SLIKA and not self.slika:
@@ -1953,29 +1949,14 @@ class Akcija(models.Model):
 
     def qty_deal_display_options(self):
         """
-        Opcije za popup: uvijek 1 kom po regularnoj cijeni, zatim tierovi 2/3/… s %.
+        Opcije za modal „Kupi više”: samo tierovi 2/3/… s % (bez 1 kom —
+        kupac je već dodao artikal u korpu s odabranom količinom).
         """
         product = self.artikal
         if not product or self.tip != self.Tip.QTY_DEAL:
             return []
         bazna = product.prikazna_cijena
         options = []
-        # 1 kom — regularna cijena (bez popusta), da kupac može uzeti i samo jedan
-        if bazna is not None:
-            options.append({
-                'id': None,
-                'quantity': 1,
-                'popust_postotak': Decimal('0'),
-                'pct_label': 0,
-                'unit_bazna': bazna,
-                'unit_snizena': bazna,
-                'line_bazna': bazna.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                if hasattr(bazna, 'quantize') else bazna,
-                'line_snizena': bazna.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                if hasattr(bazna, 'quantize') else bazna,
-                'usteda': Decimal('0.00'),
-                'is_single': True,
-            })
         for row in self.qty_deal_tiers():
             pct = row['popust_postotak']
             snizena = _izracunaj_akcijsku_od_postotka(bazna, pct)
@@ -2004,7 +1985,7 @@ class Akcija(models.Model):
         # Najveća ušteda u KM (za „UŠTEDI DO”) — među tierovima 2+
         opts = [
             o for o in self.qty_deal_display_options()
-            if not o.get('is_single') and int(o.get('quantity') or 0) >= 2
+            if int(o.get('quantity') or 0) >= 2
         ]
         if not opts:
             return None
@@ -2049,6 +2030,8 @@ class AkcijaBundleLine(models.Model):
         on_delete=models.CASCADE,
         related_name='akcija_bundle_lines',
         verbose_name='Artikal',
+        # Samo aktivni i na stanju — autocomplete / dropdown
+        limit_choices_to={'aktivan': True, 'na_stanju': True},
     )
     quantity = models.PositiveSmallIntegerField(
         default=1,
@@ -3003,6 +2986,46 @@ class LoyaltyCard(models.Model):
 
     def __str__(self):
         return f'{self.user} — {self.get_nivo_display()} ({self.kod})'
+
+
+class LoyaltyPurchase(models.Model):
+    """
+    Evidentirana (ručna / u prodavnici) kupovina na loyalty kartici.
+    Online narudžbe se vode preko Order — ovo je istorija „Evidentiraj kupovinu”.
+    """
+    kartica = models.ForeignKey(
+        LoyaltyCard,
+        on_delete=models.CASCADE,
+        related_name='evidentirane_kupovine',
+        verbose_name='Loyalty kartica',
+    )
+    iznos = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name='Iznos (KM)',
+    )
+    napomena = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Napomena',
+    )
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='loyalty_evidentirane_kupovine',
+        verbose_name='Evidentirao',
+    )
+    kreirano = models.DateTimeField(auto_now_add=True, verbose_name='Datum')
+
+    class Meta:
+        verbose_name = 'Evidentirana loyalty kupovina'
+        verbose_name_plural = 'Evidentirane loyalty kupovine'
+        ordering = ['-kreirano']
+
+    def __str__(self):
+        return f'{self.iznos} KM — {self.kartica_id}'
 
 
 class Coupon(models.Model):

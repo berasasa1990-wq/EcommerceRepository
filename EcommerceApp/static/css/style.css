@@ -6276,6 +6276,178 @@ body.catalog-variation-modal-open {
     text-align: center;
 }
 
+/* Kupi više — plavi/zeleni ton da se razlikuje od +Ponuda */
+.pd-ponuda-hint--qty {
+    border-color: color-mix(in srgb, #0d9488 35%, #ccfbf1);
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%);
+    box-shadow: 0 4px 16px rgba(13, 148, 136, 0.16);
+}
+.pd-ponuda-hint--qty .pd-ponuda-hint__pulse {
+    border-color: rgba(13, 148, 136, 0.4);
+}
+.pd-ponuda-hint--qty .pd-ponuda-hint__badge {
+    background: linear-gradient(145deg, #2dd4bf, #0d9488 55%, #0f766e);
+}
+.pd-ponuda-hint--qty .pd-ponuda-hint__text {
+    color: #115e59;
+}
+
+/* Modal: Kupi više (nakon dodavanja u korpu) */
+.qty-deal-offer-overlay {
+    z-index: 12050;
+}
+.qty-deal-offer-popup {
+    max-width: 420px;
+    width: min(94vw, 420px);
+    padding: 20px 18px 16px;
+}
+.qty-deal-offer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.qty-deal-offer-kicker {
+    margin: 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #0d9488;
+}
+.qty-deal-offer-product {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.qty-deal-offer-image {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+.qty-deal-offer-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #0f172a;
+}
+.qty-deal-offer-base {
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+.qty-deal-offer-message {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #334155;
+    text-align: center;
+    line-height: 1.4;
+}
+.qty-deal-offer-save {
+    margin: 0;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #be123c;
+}
+.qty-deal-offer-tiers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.qty-deal-offer-tier {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.qty-deal-offer-tier:hover,
+.qty-deal-offer-tier:focus-visible {
+    border-color: #0d9488;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.15);
+    outline: none;
+}
+.qty-deal-offer-tier.is-best {
+    border-color: #e11d48;
+    background: linear-gradient(180deg, #fff1f2 0%, #fff 60%);
+}
+.qty-deal-offer-tier-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.qty-deal-offer-tier-qty {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0f172a;
+}
+.qty-deal-offer-tier-badge {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: #fff;
+    background: #e11d48;
+}
+.qty-deal-offer-tier-best-tag {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #be123c;
+}
+.qty-deal-offer-tier-price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.qty-deal-offer-tier-was {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-decoration: line-through;
+}
+.qty-deal-offer-tier-now {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #e11d48;
+}
+.qty-deal-offer-tier-meta {
+    font-size: 0.82rem;
+    color: #64748b;
+}
+.qty-deal-offer-decline {
+    margin-top: 4px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.qty-deal-offer-decline:hover {
+    color: #0f172a;
+}
+
 .product-detail-variations-block .pd-ponuda-preview,
 .product-detail-variations-block .pd-ponuda-hint {
     margin-top: 12px;

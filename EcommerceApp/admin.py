@@ -638,8 +638,28 @@ class BrandAdmin(admin.ModelAdmin):
         return 'Nema loga — prikazuje se naziv brenda'
 
 
+class AkcijaBundleLineForm(forms.ModelForm):
+    """Bundle: samo aktivni artikli na stanju."""
+
+    class Meta:
+        model = AkcijaBundleLine
+        fields = '__all__'
+
+    def clean_product(self):
+        product = self.cleaned_data.get('product')
+        if product and not getattr(product, 'aktivan', False):
+            raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
+        if product and not getattr(product, 'na_stanju', False):
+            raise forms.ValidationError(
+                'Ne možeš dodati artikal koji nije na stanju. '
+                'Izaberi samo artikle dostupne na sajtu.'
+            )
+        return product
+
+
 class AkcijaBundleLineInline(admin.TabularInline):
     model = AkcijaBundleLine
+    form = AkcijaBundleLineForm
     extra = 2
     min_num = 0
     autocomplete_fields = ('product',)
@@ -647,15 +667,17 @@ class AkcijaBundleLineInline(admin.TabularInline):
     ordering = ('redoslijed', 'id')
     verbose_name = 'Stavka seta'
     verbose_name_plural = (
-        'BUNDLE SET — artikal + količina (+ opcionalno % samo za taj artikal). '
-        'Količina 2 = jedna slika ×2 u popup-u. '
-        'Prazan % na liniji = koristi % kompletnog seta.'
+        'BUNDLE SET — samo artikli NA STANJU. '
+        'Artikal + količina (+ opcionalno % po artiklu). '
+        'Količina 2 = jedna slika ×2. Prazan % na liniji = % seta.'
     )
     classes = ('akcija-inline-bundle-lines',)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'product':
-            kwargs['queryset'] = Product.objects.filter(aktivan=True).order_by('naziv')
+            kwargs['queryset'] = Product.objects.filter(
+                aktivan=True, na_stanju=True,
+            ).order_by('naziv')
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_formset(self, request, obj=None, **kwargs):
@@ -685,6 +707,12 @@ class AkcijaBundleLineInline(admin.TabularInline):
                 product = form.cleaned_data.get('product')
                 if not product:
                     continue
+                if not getattr(product, 'na_stanju', False) or not getattr(product, 'aktivan', False):
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError(
+                        f'„{product.naziv}” nije na stanju / nije aktivan — '
+                        'u bundle možeš dodati samo dostupne artikle.'
+                    )
                 qty = form.cleaned_data.get('quantity') or 1
                 total_units += max(1, int(qty))
             if total_units < 2:
@@ -1028,7 +1056,7 @@ class AkcijaAdmin(admin.ModelAdmin):
                 '1) Trigger = artikal koji kupac doda u korpu → iskače popup; '
                 '2) Popust % (opcionalno) na drugi artikal; prazno = redovna cijena; '
                 '3) Ponuda artikal = što se nudi u popupu. '
-                '—— Kupi više: samo Trigger. '
+                '—— Kupi više: Trigger artikal; modal pri dodavanju u korpu (samo 2+ kom). '
                 '—— Bundle: % seta; trigger artikal samo ako je trigger „odabrani artikal”.'
             ),
         }),
@@ -1058,8 +1086,10 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'qty_6_popust',
             ),
             'description': (
-                'Npr. 10 pored „Kupi 2 komada” (= -10% za 2 kom). '
-                'Prazno = ta opcija se ne nudi.'
+                'Modal iskače tek kad kupac doda artikal u korpu (ne page popup). '
+                'Nudi se samo 2+ kom s % — nema opcije „1 kom”. '
+                'Ako odbije (X / Ne, hvala) — u korpu ide količina koju je unio. '
+                'Npr. 10 pored „Kupi 2 komada” (= -10% za 2 kom). Prazno = opcija se ne nudi.'
             ),
         }),
     )
@@ -1698,8 +1728,8 @@ class ProductAdmin(admin.ModelAdmin):
             'akcijbundleline',
             'akcijabundleline',
         ):
-            # Bundle set: omogući pretragu aktivnih artikala
-            queryset = queryset.filter(aktivan=True)
+            # Bundle set: samo aktivni + na stanju (ne nudi rasprodato)
+            queryset = queryset.filter(aktivan=True, na_stanju=True)
         return queryset, use_distinct
 
     prepopulated_fields = {'slug': ('naziv',)}

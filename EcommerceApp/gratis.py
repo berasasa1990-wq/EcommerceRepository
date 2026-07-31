@@ -54,6 +54,79 @@ def get_active_gratis_akcija_for_product(product):
     return None
 
 
+def get_active_qty_deal_for_product(product):
+    """
+    Aktivna „Kupi više” akcija za artikal.
+    Modal se prikazuje tek kad kupac doda taj artikal u korpu (ne page popup).
+    """
+    if not product:
+        return None
+    for akcija in (
+        Akcija.objects.filter(
+            aktivan=True,
+            tip=Akcija.Tip.QTY_DEAL,
+            artikal=product,
+        )
+        .prefetch_related('qty_tiers')
+        .select_related('artikal')
+        .order_by('redoslijed', '-id')
+    ):
+        if not akcija.jos_traje():
+            continue
+        if not akcija.qty_deal_tiers():
+            continue
+        return akcija
+    return None
+
+
+def build_qty_deal_offer_response(akcija):
+    """
+    JSON za modal „Kupi više” — samo tierovi 2+ (bez 1 kom).
+    """
+    if not akcija or akcija.tip != Akcija.Tip.QTY_DEAL:
+        return None
+    product = akcija.artikal
+    if not product or not product.aktivan:
+        return None
+    options = akcija.qty_deal_display_options()
+    if not options:
+        return None
+    best = akcija.qty_deal_best_option()
+    image_url = ''
+    if product.prikazna_slika:
+        try:
+            image_url = product.prikazna_slika.url
+        except Exception:
+            image_url = ''
+    serial_opts = []
+    for opt in options:
+        serial_opts.append({
+            'id': opt['id'],
+            'quantity': opt['quantity'],
+            'pct_label': opt['pct_label'],
+            'line_bazna': str(opt['line_bazna']),
+            'line_snizena': str(opt['line_snizena']),
+            'unit_snizena': str(opt['unit_snizena']),
+            'usteda': str(opt['usteda']),
+            'is_best': bool(best and opt.get('id') == best.get('id')),
+        })
+    best_usteda = str(best['usteda']) if best else ''
+    best_pct = best['pct_label'] if best else ''
+    return {
+        'akcija_id': akcija.id,
+        'product_name': product.naziv or '',
+        'product_slug': product.slug or '',
+        'image_url': image_url,
+        'base_price': str(product.prikazna_cijena),
+        'options': serial_opts,
+        'best_usteda': best_usteda,
+        'best_pct': best_pct,
+        'headline': 'Kupi više — veći popust',
+        'message': 'Uzmi veću količinu i uštedi. Ili nastavi s onim što si već izabrao.',
+        'decline_label': 'Ne, hvala — dodaj samo moju količinu',
+    }
+
+
 PONUDA_ANSWERED_SESSION_KEY = 'ponuda_answered_ids'
 
 

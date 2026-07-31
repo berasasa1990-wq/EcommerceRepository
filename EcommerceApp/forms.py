@@ -787,7 +787,10 @@ class LoyaltyIssueForm(forms.Form):
         if len(digits) < 8:
             raise forms.ValidationError('Unesite ispravan broj telefona.')
         if telefon_vec_registrovan(telefon):
-            raise forms.ValidationError('Ovaj broj telefona je već registrovan.')
+            raise forms.ValidationError(
+                'Ovaj broj telefona je već registrovan na loyalty karticu — '
+                'dupli telefon nije dozvoljen.'
+            )
         return telefon
 
     def clean_email(self):
@@ -797,11 +800,34 @@ class LoyaltyIssueForm(forms.Form):
         if not email:
             return ''
         if email_vec_registrovan(email):
-            raise forms.ValidationError('Ovaj email je već registrovan.')
+            raise forms.ValidationError(
+                'Ovaj email je već registrovan na loyalty karticu — '
+                'dupli email nije dozvoljen.'
+            )
         return email
+
+    def clean(self):
+        cleaned = super().clean()
+        # Dodatna provjera (zavisno šta je uneseno)
+        from .loyalty import email_vec_registrovan, telefon_vec_registrovan
+
+        telefon = (cleaned.get('telefon') or '').strip()
+        email = (cleaned.get('email') or '').strip().lower()
+        if telefon and telefon_vec_registrovan(telefon):
+            self.add_error(
+                'telefon',
+                'Ovaj broj telefona je već registrovan — dupli telefon nije dozvoljen.',
+            )
+        if email and email_vec_registrovan(email):
+            self.add_error(
+                'email',
+                'Ovaj email je već registrovan — dupli email nije dozvoljen.',
+            )
+        return cleaned
 
 
 class ProfileForm(forms.Form):
+    """Korisnički nalog — email obavezan."""
     ime_prezime = forms.CharField(
         label='Ime i prezime',
         max_length=200,
@@ -834,6 +860,96 @@ class ProfileForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-input'}),
     )
+
+
+class StaffLoyaltyProfileForm(forms.Form):
+    """
+    Staff: lični podaci na loyalty kartici — nijedno polje nije obavezno.
+    Prazno = ne mijenjaj / sačuvaj prazno (osim kad se postavlja nova vrijednost).
+    """
+    ime_prezime = forms.CharField(
+        label='Ime i prezime',
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Opcionalno',
+        }),
+    )
+    email = forms.EmailField(
+        label='Email',
+        required=False,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Opcionalno',
+        }),
+    )
+    telefon = forms.CharField(
+        label='Telefon',
+        max_length=30,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Opcionalno',
+        }),
+    )
+    adresa = forms.CharField(
+        label='Adresa',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Opcionalno',
+        }),
+    )
+    grad = forms.CharField(
+        label='Grad',
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Opcionalno',
+        }),
+    )
+    postanski_broj = forms.CharField(
+        label='Poštanski broj',
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Opcionalno',
+        }),
+    )
+
+    def __init__(self, *args, exclude_user_id=None, **kwargs):
+        self.exclude_user_id = exclude_user_id
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        from .loyalty import email_vec_registrovan
+
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            return ''
+        if email_vec_registrovan(email, exclude_user_id=self.exclude_user_id):
+            raise forms.ValidationError(
+                'Ovaj email je već na drugoj loyalty kartici — dupli email nije dozvoljen.'
+            )
+        return email
+
+    def clean_telefon(self):
+        from .loyalty import telefon_vec_registrovan
+
+        telefon = (self.cleaned_data.get('telefon') or '').strip()
+        if not telefon:
+            return ''
+        digits = ''.join(ch for ch in telefon if ch.isdigit())
+        if digits and len(digits) < 8:
+            raise forms.ValidationError('Unesite ispravan broj telefona (min. 8 cifara).')
+        if telefon and telefon_vec_registrovan(telefon, exclude_user_id=self.exclude_user_id):
+            raise forms.ValidationError(
+                'Ovaj telefon je već na drugoj loyalty kartici — dupli telefon nije dozvoljen.'
+            )
+        return telefon
 
 
 class CouponForm(forms.Form):

@@ -196,25 +196,41 @@
                         <div class="customer-details">
                             <div class="section-card">
                                 <div class="section-header">
-                                    <h3>Narudžbe ({{ user_orders|length }})</h3>
+                                    <h3>Kupovine ({{ purchase_timeline|length }})</h3>
                                 </div>
-                                {% if user_orders %}
+                                <p class="hint" style="margin:0 0 12px;">
+                                    Online narudžbe + ručno evidentirane kupovine (prodavnica).
+                                </p>
+                                {% if purchase_timeline %}
                                 <div class="orders-list">
-                                    {% for order in user_orders %}
-                                    <div class="order-item">
+                                    {% for row in purchase_timeline %}
+                                    <div class="order-item order-item--{{ row.kind }}">
                                         <div class="order-info">
                                             <div>
-                                                <strong>#{{ order.broj }}</strong>
-                                                <span class="order-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</span>
+                                                <strong>
+                                                    {% if row.kind == 'online' %}
+                                                    Online {{ row.label }}
+                                                    {% else %}
+                                                    {{ row.label }}
+                                                    {% endif %}
+                                                </strong>
+                                                <span class="order-date">{{ row.date|date:"d.m.Y. H:i" }}</span>
                                             </div>
                                             <div class="order-meta">
-                                                <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
-                                                <span class="order-amount">{{ order.ukupno }} KM</span>
+                                                {% if row.kind == 'online' %}
+                                                <span class="order-status order-status--{{ row.status_code }}">{{ row.status }}</span>
+                                                {% else %}
+                                                <span class="order-status order-status--manual">{{ row.status }}</span>
+                                                {% endif %}
+                                                <span class="order-amount">{{ row.amount }} KM</span>
                                             </div>
+                                            {% if row.note %}
+                                            <div class="order-note" style="font-size:0.85rem;color:#64748b;margin-top:4px;">{{ row.note }}</div>
+                                            {% endif %}
                                         </div>
-                                        {% if user.is_superuser %}
+                                        {% if row.kind == 'online' and row.order and user.is_superuser %}
                                         <div class="order-actions">
-                                            <a href="{% url 'staff_order_detail' broj=order.broj %}"
+                                            <a href="{% url 'staff_order_detail' broj=row.order.broj %}"
                                                class="btn btn-sm btn-outline" target="_blank">
                                                 Pregled računa
                                             </a>
@@ -224,7 +240,7 @@
                                     {% endfor %}
                                 </div>
                                 {% else %}
-                                <p class="empty-text">Nema narudžbi za ovog kupca.</p>
+                                <p class="empty-text">Nema online narudžbi ni evidentiranih kupovina.</p>
                                 {% endif %}
                             </div>
 
@@ -232,14 +248,17 @@
                                 <div class="section-header">
                                     <h3>Lični podaci</h3>
                                 </div>
+                                <p class="hint" style="margin:0 0 12px;">
+                                    Nijedno polje nije obavezno. Email i telefon moraju biti jedinstveni ako se unesu.
+                                </p>
                                 {% if edit_form %}
-                                <form method="post" class="profile-edit-form">
+                                <form method="post" class="profile-edit-form" novalidate>
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="update_profile">
 
                                     {% for field in edit_form %}
                                     <div class="form-field">
-                                        <label>{{ field.label }}</label>
+                                        <label>{{ field.label }} <span class="staff-loyalty-optional">(opcionalno)</span></label>
                                         {{ field }}
                                         {% if field.errors %}
                                         <div class="field-error">{{ field.errors.0 }}</div>

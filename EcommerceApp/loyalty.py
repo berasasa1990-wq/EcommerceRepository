@@ -116,7 +116,11 @@ def viber_chat_url(telefon):
 
 
 def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
-    """Registruje kupca i izdaje loyalty karticu. Telefon je obavezan; email opcionalan."""
+    """
+    Registruje kupca i izdaje loyalty karticu.
+    Telefon je obavezan; email opcionalan.
+    Nikad ne dozvoli dupli telefon ili (ako je unesen) dupli email.
+    """
     ime = (ime or '').strip()
     prezime = (prezime or '').strip()
     telefon = (telefon or '').strip()
@@ -127,10 +131,23 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
     if not telefon or len(_normalizuj_telefon(telefon)) < 8:
         raise ValueError('Unesite ispravan broj telefona.')
 
+    # Duplikati: zavisno šta se unosi
     if telefon_vec_registrovan(telefon):
-        raise ValueError('Ovaj broj telefona je već registrovan na loyalty karticu.')
-    if email and email_vec_registrovan(email):
-        raise ValueError('Ovaj email je već registrovan na loyalty karticu.')
+        raise ValueError(
+            'Ovaj broj telefona je već registrovan na loyalty karticu — '
+            'dupli telefon nije dozvoljen.'
+        )
+    if email:
+        if email_vec_registrovan(email):
+            raise ValueError(
+                'Ovaj email je već registrovan na loyalty karticu — '
+                'dupli email nije dozvoljen.'
+            )
+        # username = email na nekim nalogima
+        if User.objects.filter(username__iexact=email).exists():
+            raise ValueError(
+                'Ovaj email je već u upotrebi — dupli email nije dozvoljen.'
+            )
 
     digits = _normalizuj_telefon(telefon) or secrets.token_hex(4)
     username = f'loy_{digits}'
