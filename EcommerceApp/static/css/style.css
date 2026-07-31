@@ -6293,18 +6293,29 @@ body.catalog-variation-modal-open {
 }
 
 /* Modal: Kupi više (nakon dodavanja u korpu) */
-.qty-deal-offer-overlay {
+.qty-deal-offer-overlay.site-popup-overlay {
     z-index: 12050;
 }
-.qty-deal-offer-popup {
-    max-width: 420px;
-    width: min(94vw, 420px);
-    padding: 20px 18px 16px;
+.qty-deal-offer-overlay[hidden] {
+    display: none !important;
+}
+.qty-deal-offer-overlay.site-popup-overlay.is-visible {
+    display: flex !important;
+}
+.site-popup.qty-deal-offer-popup,
+.site-popup--qty-deal-offer {
+    max-width: min(94vw, 420px);
+    width: 100%;
+    padding: 22px 18px 16px;
+    text-align: left;
+    box-sizing: border-box;
 }
 .qty-deal-offer-inner {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
 }
 .qty-deal-offer-kicker {
     margin: 0;
@@ -6320,6 +6331,10 @@ body.catalog-variation-modal-open {
     align-items: center;
     gap: 12px;
 }
+.qty-deal-offer-product-meta {
+    min-width: 0;
+    flex: 1;
+}
 .qty-deal-offer-image {
     width: 72px;
     height: 72px;
@@ -6328,6 +6343,9 @@ body.catalog-variation-modal-open {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     flex-shrink: 0;
+}
+.qty-deal-offer-image[hidden] {
+    display: none !important;
 }
 .qty-deal-offer-title {
     margin: 0;
@@ -6355,10 +6373,14 @@ body.catalog-variation-modal-open {
     font-weight: 800;
     color: #be123c;
 }
+.qty-deal-offer-save[hidden] {
+    display: none !important;
+}
 .qty-deal-offer-tiers {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    width: 100%;
 }
 .qty-deal-offer-tier {
     display: flex;
@@ -6373,6 +6395,10 @@ body.catalog-variation-modal-open {
     cursor: pointer;
     text-align: left;
     font: inherit;
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
     transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 .qty-deal-offer-tier:hover,
@@ -6432,6 +6458,8 @@ body.catalog-variation-modal-open {
     color: #64748b;
 }
 .qty-deal-offer-decline {
+    display: block;
+    width: 100%;
     margin-top: 4px;
     padding: 12px;
     border: none;
@@ -6443,9 +6471,20 @@ body.catalog-variation-modal-open {
     cursor: pointer;
     text-decoration: underline;
     text-underline-offset: 3px;
+    text-align: center;
 }
 .qty-deal-offer-decline:hover {
     color: #0f172a;
+}
+@media (max-width: 480px) {
+    .site-popup.qty-deal-offer-popup,
+    .site-popup--qty-deal-offer {
+        max-width: 100%;
+        padding: 18px 14px 14px;
+    }
+    .qty-deal-offer-tier {
+        padding: 11px 12px;
+    }
 }
 
 .product-detail-variations-block .pd-ponuda-preview,
