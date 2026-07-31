@@ -16736,6 +16736,9 @@ button.nav-action-link {
 }
 
 /* Evidentiraj kupovinu — OTP potvrda */
+#evidentiraj-kupovinu {
+    scroll-margin-top: calc(var(--site-chrome-top, 120px) + 16px);
+}
 .loyalty-otp-panel {
     display: flex;
     flex-direction: column;

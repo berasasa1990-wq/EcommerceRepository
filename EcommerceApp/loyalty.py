@@ -142,7 +142,7 @@ def _generate_otp_code():
 
 
 def purchase_otp_message(code, *, iznos=None):
-    """Tekst poruke za Viber/WhatsApp."""
+    """Tekst poruke za Viber/WhatsApp (samo kod + iznos)."""
     lines = [
         'opremazaribolov.ba — potvrda kupovine',
         f'Vaš kod: {code}',
@@ -152,7 +152,6 @@ def purchase_otp_message(code, *, iznos=None):
             lines.append(f'Iznos: {Decimal(str(iznos)).quantize(Decimal("0.01"))} KM')
         except Exception:
             lines.append(f'Iznos: {iznos} KM')
-    lines.append('Recite kod osoblju u prodavnici da se kupovina evidentira na loyalty karticu.')
     return '\n'.join(lines)
 
 

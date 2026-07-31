@@ -178,21 +178,19 @@
                             </div>
                         </div>
 
-                        <div class="section-card purchase-section">
+                        <div class="section-card purchase-section" id="evidentiraj-kupovinu">
                             <div class="section-header">
                                 <h3>Evidentiraj kupovinu</h3>
                             </div>
                             {% if pending_otp %}
                             <div class="loyalty-otp-panel" id="loyaltyOtpPanel">
                                 <p class="loyalty-otp-lead">
-                                    Potrebna je potvrda kodom na telefon
+                                    Unesite kod s telefona
                                     <strong>{{ pending_otp.telefon|default:"(nema broja)" }}</strong>
-                                    za iznos <strong>{{ pending_otp.iznos }} KM</strong>.
+                                    — iznos <strong>{{ pending_otp.iznos }} KM</strong>.
                                 </p>
                                 <p class="hint">
-                                    1) Pošaljite 4-cifreni kod kupcu na Viber ili WhatsApp<br>
-                                    2) Kupac vam kaže kod<br>
-                                    3) Unesite kod ispod i potvrdite
+                                    Pošalji kod na Viber/WhatsApp, pa unesi 4 cifre ispod.
                                 </p>
                                 <div class="loyalty-otp-send-row">
                                     {% if pending_otp.viber_url %}
@@ -437,8 +435,33 @@
                 if (!w) window.location.href = viberUrl;
             }
             showToast('Tekst s kodom je kopiran. Zalijepi u Viber chat s kupcem.');
+            // Ostani na formi za unos koda
+            const anchor = document.getElementById('evidentiraj-kupovinu');
+            if (anchor) {
+                anchor.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
         });
     }
+
+    // Nakon „Pošalji kod” / greške — ostani na Evidentiraj (ne na vrh stranice)
+    (function scrollToPurchaseSection() {
+        const params = new URLSearchParams(window.location.search || '');
+        const wantOtp = params.get('otp') === '1' || window.location.hash === '#evidentiraj-kupovinu';
+        const panel = document.getElementById('loyaltyOtpPanel');
+        const anchor = document.getElementById('evidentiraj-kupovinu');
+        if (!wantOtp && !panel) return;
+        if (!anchor) return;
+        const otpInput = document.querySelector('.loyalty-otp-input');
+        function go() {
+            anchor.scrollIntoView({ block: 'start', behavior: 'auto' });
+            if (otpInput) otpInput.focus();
+        }
+        // Nakon layouta headera
+        requestAnimationFrame(function () {
+            requestAnimationFrame(go);
+        });
+        window.setTimeout(go, 80);
+    })();
 
     // Pošalji sliku loyalty kartice na Viber (nivo, %, do sljedećeg)
     const cardBtn = document.getElementById('loyaltyViberSendBtn');

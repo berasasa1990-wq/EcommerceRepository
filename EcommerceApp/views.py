@@ -5975,22 +5975,23 @@ def staff_loyalty_system(request):
                 verify_purchase_otp,
             )
 
+            # Anchor da ostanemo na „Evidentiraj kupovinu” (ne skrola na vrh)
+            _purchase_anchor = '#evidentiraj-kupovinu'
+
             # 1) Start: generiši 4-cifreni kod + deep link Viber/WhatsApp
             if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_start':
                 try:
                     iznos = Decimal(request.POST.get('iznos', '0'))
                     napomena = (request.POST.get('napomena') or '').strip()[:200]
                     start_purchase_otp(request, selected_card, iznos, napomena)
-                    messages.info(
-                        request,
-                        'Kod je generisan. Pošaljite ga kupcu na Viber ili WhatsApp, '
-                        'zatim unesite kod koji vam kaže.',
-                    )
-                    return redirect(f"{request.path}?q={q}&otp=1")
+                    # Bez flash poruke na vrhu — UI ispod vodi korak 2
+                    return redirect(f"{request.path}?q={q}&otp=1{_purchase_anchor}")
                 except ValueError as exc:
                     messages.error(request, str(exc))
+                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
                 except (InvalidOperation, TypeError):
                     messages.error(request, 'Neispravan iznos.')
+                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
 
             # 2) Potvrda kodom
             if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_potvrdi':
@@ -5998,7 +5999,7 @@ def staff_loyalty_system(request):
                 ok, result = verify_purchase_otp(request, code, selected_card)
                 if not ok:
                     messages.error(request, result)
-                    return redirect(f"{request.path}?q={q}&otp=1")
+                    return redirect(f"{request.path}?q={q}&otp=1{_purchase_anchor}")
                 try:
                     purchase = commit_loyalty_purchase(
                         selected_card,
@@ -6014,10 +6015,10 @@ def staff_loyalty_system(request):
                         request,
                         f'Kupovina od {purchase.iznos} KM evidentirana (potvrđeno kodom).',
                     )
-                    return redirect(f"{request.path}?q={q}")
+                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
                 except ValueError as exc:
                     messages.error(request, str(exc))
-                    return redirect(f"{request.path}?q={q}&otp=1")
+                    return redirect(f"{request.path}?q={q}&otp=1{_purchase_anchor}")
 
             # 3) Admin override — kupac nema internet / ne može primiti kod
             if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_admin':
@@ -6031,7 +6032,7 @@ def staff_loyalty_system(request):
                         napomena = (request.POST.get('napomena') or '').strip()[:200]
                     if iznos <= 0:
                         messages.error(request, 'Iznos mora biti veći od 0.')
-                        return redirect(f"{request.path}?q={q}")
+                        return redirect(f"{request.path}?q={q}{_purchase_anchor}")
                     purchase = commit_loyalty_purchase(
                         selected_card,
                         iznos,
@@ -6046,17 +6047,18 @@ def staff_loyalty_system(request):
                         request,
                         f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).',
                     )
-                    return redirect(f"{request.path}?q={q}")
+                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
                 except ValueError as exc:
                     messages.error(request, str(exc))
+                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
                 except (InvalidOperation, TypeError):
                     messages.error(request, 'Neispravan iznos.')
+                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
 
             # 4) Otkaži pending OTP
             if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_cancel':
                 clear_pending_purchase_otp(request)
-                messages.info(request, 'Potvrda kupovine je otkazana.')
-                return redirect(f"{request.path}?q={q}")
+                return redirect(f"{request.path}?q={q}{_purchase_anchor}")
 
             if request.method == 'POST' and request.POST.get('action') == 'update_profile':
                 edit_form = StaffLoyaltyProfileForm(
