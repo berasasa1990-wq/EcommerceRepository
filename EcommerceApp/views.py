@@ -5978,21 +5978,76 @@ def staff_loyalty_system(request):
             # Anchor da ostanemo na „Evidentiraj kupovinu” (ne skrola na vrh)
             _purchase_anchor = '#evidentiraj-kupovinu'
 
-            # 1) Start: generiši 4-cifreni kod + deep link Viber/WhatsApp
-            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_start':
-                wants_json = (
+            def _wants_json():
+                return (
                     request.headers.get('X-Requested-With') == 'XMLHttpRequest'
                     or request.POST.get('ajax') == '1'
                 )
+
+            # 1) Start: Viber/WhatsApp → OTP; Admin → odmah evidentiraj
+            if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_start':
+                wants_json = _wants_json()
+                channel = (request.POST.get('channel') or 'whatsapp').strip().lower()
+                if channel not in ('viber', 'whatsapp', 'admin'):
+                    channel = 'whatsapp'
                 try:
                     iznos = Decimal(request.POST.get('iznos', '0'))
                     napomena = (request.POST.get('napomena') or '').strip()[:200]
-                    otp_info = start_purchase_otp(request, selected_card, iznos, napomena)
+                except (InvalidOperation, TypeError, ValueError):
                     if wants_json:
-                        # JS već otvara WhatsApp u istom kliku — samo pin na OTP formu
-                        redirect_url = f"{request.path}?q={q}&otp=1{_purchase_anchor}"
+                        return JsonResponse({'ok': False, 'message': 'Neispravan iznos.'}, status=400)
+                    messages.error(request, 'Neispravan iznos.')
+                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
+
+                # Admin: odmah evidentiraj, bez koda i bez potvrde
+                if channel == 'admin':
+                    try:
+                        purchase = commit_loyalty_purchase(
+                            selected_card,
+                            iznos,
+                            napomena=napomena or 'Admin — nema internet (bez koda)',
+                            verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
+                            staff_user=request.user,
+                        )
+                        clear_pending_purchase_otp(request)
+                        redirect_url = f"{request.path}?q={q}{_purchase_anchor}"
+                        if wants_json:
+                            return JsonResponse({
+                                'ok': True,
+                                'admin': True,
+                                'redirect': redirect_url,
+                                'message': f'Kupovina od {purchase.iznos} KM evidentirana (admin).',
+                            })
+                        messages.warning(
+                            request,
+                            f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).',
+                        )
+                        return redirect(redirect_url)
+                    except ValueError as exc:
+                        if wants_json:
+                            return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
+                        messages.error(request, str(exc))
+                        return redirect(f"{request.path}?q={q}{_purchase_anchor}")
+
+                # Viber / WhatsApp: generiši kod
+                try:
+                    otp_info = start_purchase_otp(request, selected_card, iznos, napomena)
+                    # zapamti kanal u sesiji (za UI)
+                    pending = get_pending_purchase_otp(request, card=selected_card) or {}
+                    pending['channel'] = channel
+                    from .loyalty import LOYALTY_PURCHASE_OTP_SESSION_KEY
+                    request.session[LOYALTY_PURCHASE_OTP_SESSION_KEY] = pending
+                    request.session.modified = True
+
+                    open_q = 'wa' if channel == 'whatsapp' else 'viber'
+                    redirect_url = (
+                        f"{request.path}?q={q}&otp=1&open={open_q}{_purchase_anchor}"
+                    )
+                    if wants_json:
                         return JsonResponse({
                             'ok': True,
+                            'admin': False,
+                            'channel': channel,
                             'redirect': redirect_url,
                             'iznos': str(otp_info['iznos']),
                             'telefon': otp_info.get('telefon') or '',
@@ -6001,17 +6056,11 @@ def staff_loyalty_system(request):
                             'viber_url': otp_info.get('viber_url') or '',
                             'sms_url': otp_info.get('sms_url') or '',
                         })
-                    # Bez JS: open=wa na reloadu
-                    return redirect(f"{request.path}?q={q}&otp=1&open=wa{_purchase_anchor}")
+                    return redirect(redirect_url)
                 except ValueError as exc:
                     if wants_json:
                         return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
                     messages.error(request, str(exc))
-                    return redirect(f"{request.path}?q={q}{_purchase_anchor}")
-                except (InvalidOperation, TypeError):
-                    if wants_json:
-                        return JsonResponse({'ok': False, 'message': 'Neispravan iznos.'}, status=400)
-                    messages.error(request, 'Neispravan iznos.')
                     return redirect(f"{request.path}?q={q}{_purchase_anchor}")
 
             # 2) Potvrda kodom
@@ -6041,7 +6090,7 @@ def staff_loyalty_system(request):
                     messages.error(request, str(exc))
                     return redirect(f"{request.path}?q={q}&otp=1{_purchase_anchor}")
 
-            # 3) Admin override — kupac nema internet / ne može primiti kod
+            # 3) Admin override (iz OTP panela ili direktno)
             if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_admin':
                 try:
                     pending = get_pending_purchase_otp(request, card=selected_card)
@@ -6057,7 +6106,7 @@ def staff_loyalty_system(request):
                     purchase = commit_loyalty_purchase(
                         selected_card,
                         iznos,
-                        napomena=napomena or 'Admin override (bez koda)',
+                        napomena=napomena or 'Admin — nema internet (bez koda)',
                         verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
                         staff_user=request.user,
                     )
@@ -6160,10 +6209,11 @@ def staff_loyalty_system(request):
                         'napomena': raw_pending.get('napomena') or '',
                         'telefon': tel,
                         'message': msg,
+                        'channel': raw_pending.get('channel') or request.GET.get('open') or '',
                         'viber_url': viber_chat_url(tel, msg),
                         'whatsapp_url': whatsapp_chat_url(tel, msg),
                         'sms_url': sms_chat_url(tel, msg),
-                        'auto_open_wa': request.GET.get('open') == 'wa',
+                        'auto_open': request.GET.get('open') or '',
                     }
             except Exception:
                 pending_otp = None

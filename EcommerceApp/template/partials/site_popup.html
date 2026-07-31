@@ -125,7 +125,7 @@
         </div>
 
         {% elif akcija.tip == 'bundle' %}
-        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260725v5">
+        <link rel="stylesheet" href="{% static 'css/popup-bundle.css' %}?v=20260731bundleMob">
         {% with bundle_items=akcija.bundle_display_items pricing=akcija.bundle_pricing_summary unit_count=akcija.bundle_unit_count %}
         {# Jedan SET: slike artikala bez pojedinačnih cijena + jedna velika snizena cijena #}
         {% if unit_count >= 2 and bundle_items %}

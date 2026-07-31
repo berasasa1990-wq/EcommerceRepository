@@ -31,7 +31,18 @@ def site_prep_unlock(request):
             return redirect(next_url)
         error = 'Pogrešna lozinka. Pokušajte ponovo.'
 
+    logo_url = ''
+    try:
+        from .models import SiteSettings
+        site = SiteSettings.load()
+        if site and site.logo:
+            logo_url = site.logo.url
+    except Exception:
+        logo_url = ''
+
     return render(request, 'site_prep.html', {
         'error': error,
         'next_url': next_url,
+        'logo_url': logo_url,
+        'meta_pixel_id': getattr(settings, 'META_PIXEL_ID', '') or '',
     })

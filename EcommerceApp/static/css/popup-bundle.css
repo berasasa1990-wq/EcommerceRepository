@@ -1642,27 +1642,69 @@
     max-width: 160px;
   }
 
-  /* Set-only mobilni: svi artikli u jednom redu, 1:1, veće slike, contain */
-  .site-popup-bundle-pack--set-only .bundle-pack-row--set,
-  .site-popup-bundle-pack--set-only .bundle-pack-row--n3,
-  .site-popup-bundle-pack--set-only .bundle-pack-row--n4 {
+  /* Set-only mobilni: 2 artikla u redu; 3–4 prelomi u 2×2 radi čitljivosti */
+  .site-popup-bundle-pack--set-only {
+    padding: 12px 10px 10px !important;
+    overflow-x: hidden;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-title {
+    font-size: 16px !important;
+    margin: 4px 0 2px !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-sub {
+    font-size: 12px !important;
+    margin: 0 0 10px !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-badge-row {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n2,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--pair {
     display: flex !important;
     flex-wrap: nowrap !important;
-    grid-template-columns: none !important;
     align-items: stretch;
-    gap: 4px;
+    gap: 6px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n3,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n4,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--triple {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px 6px !important;
+    flex-wrap: unset !important;
   }
 
   .site-popup-bundle-pack--set-only .bundle-pack-row--n3 .bundle-pack-card:last-of-type,
   .site-popup-bundle-pack--set-only .bundle-pack-row--triple .bundle-pack-card:last-of-type {
-    grid-column: auto;
-    max-width: 31% !important;
+    grid-column: 1 / -1;
+    max-width: 52% !important;
+    justify-self: center;
+  }
+
+  /* Plus između kartica u gridu sakrij da ne lomi layout */
+  .site-popup-bundle-pack--set-only .bundle-pack-row--n3 .bundle-pack-plus,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--n4 .bundle-pack-plus,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--triple .bundle-pack-plus {
+    display: none !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-card--set {
+    min-width: 0;
+    max-width: 100% !important;
+    padding: 6px 4px 8px;
   }
 
   .site-popup-bundle-pack--set-only .bundle-pack-card-img {
     aspect-ratio: 1 / 1 !important;
     width: 100% !important;
-    max-height: none !important;
+    max-height: min(38vw, 140px) !important;
   }
 
   .site-popup-bundle-pack--set-only .bundle-pack-card-img img {
@@ -1672,11 +1714,47 @@
     max-height: none !important;
   }
 
-  .site-popup-bundle-pack--set-only .bundle-pack-row--set .bundle-pack-plus {
+  .site-popup-bundle-pack--set-only .bundle-pack-card--set .bundle-pack-card-name {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    min-height: 2.5em;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n2 .bundle-pack-plus,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--pair .bundle-pack-plus {
     display: flex !important;
-    width: 18px;
-    height: 18px;
-    font-size: 14px;
+    width: 20px;
+    height: 20px;
+    font-size: 13px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-price-box {
+    margin: 8px 0 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-price-now {
+    font-size: 22px !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-footer {
+    margin-top: 4px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-cta {
+    min-height: 48px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-qty-row {
+    margin-bottom: 8px;
+    justify-content: center;
   }
 
   .bundle-pack-row--pair .bundle-pack-plus,

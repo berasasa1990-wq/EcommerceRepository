@@ -2,23 +2,350 @@
 <!DOCTYPE html>
 <html lang="bs">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5GVT50WMXB"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-5GVT50WMXB');
-    </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
-    <title>Sajt u pripremi — opremazaribolov.ba</title>
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260703s">
+    <meta name="theme-color" content="#0b3d2e">
+    <title>Uskoro dostupno — opremazaribolov.ba</title>
+    {% if logo_url %}
+    <link rel="icon" href="{{ logo_url }}">
+    {% endif %}
+    <style>
+        :root {
+            --prep-deep: #06281f;
+            --prep-green: #0b3d2e;
+            --prep-mid: #145a43;
+            --prep-accent: #5BB805;
+            --prep-accent-soft: #8fd94a;
+            --prep-water: #1a6b8a;
+            --prep-sand: #f4f7f2;
+            --prep-card: rgba(255, 255, 255, 0.96);
+            --prep-text: #0f172a;
+            --prep-muted: #475569;
+            --prep-radius: 20px;
+            --prep-shadow: 0 24px 60px rgba(4, 30, 22, 0.35);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            min-height: 100%;
+            font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+            color: var(--prep-text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+            background:
+                radial-gradient(ellipse 80% 50% at 10% 0%, rgba(91, 184, 5, 0.22) 0%, transparent 55%),
+                radial-gradient(ellipse 70% 45% at 90% 100%, rgba(26, 107, 138, 0.28) 0%, transparent 50%),
+                linear-gradient(165deg, var(--prep-deep) 0%, var(--prep-green) 42%, #0a4a38 72%, #083528 100%);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Blagi “vodeni” valovi u pozadini */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            inset: auto -10% -8% -10%;
+            height: 42vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.35;
+            background:
+                radial-gradient(ellipse 120% 80% at 50% 100%, rgba(91, 184, 5, 0.15) 0%, transparent 60%);
+        }
+        body::after {
+            height: 28vh;
+            opacity: 0.25;
+            animation: prepWave 9s ease-in-out infinite alternate;
+            background:
+                radial-gradient(ellipse 100% 60% at 30% 100%, rgba(26, 107, 138, 0.35) 0%, transparent 55%),
+                radial-gradient(ellipse 90% 50% at 75% 100%, rgba(91, 184, 5, 0.2) 0%, transparent 50%);
+        }
+        @keyframes prepWave {
+            from { transform: translateY(0); }
+            to { transform: translateY(-12px); }
+        }
+
+        .prep-wrap {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .prep-card {
+            background: var(--prep-card);
+            border-radius: var(--prep-radius);
+            box-shadow: var(--prep-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            padding: 28px 24px 22px;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .prep-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--prep-accent), var(--prep-water), var(--prep-accent-soft));
+            background-size: 200% 100%;
+            animation: prepBar 4s linear infinite;
+        }
+        @keyframes prepBar {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .prep-logo {
+            width: min(220px, 72vw);
+            height: auto;
+            max-height: 64px;
+            object-fit: contain;
+            margin: 4px auto 14px;
+            display: block;
+        }
+
+        .prep-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #14532d;
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            border: 1px solid rgba(91, 184, 5, 0.35);
+            margin-bottom: 14px;
+        }
+        .prep-badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--prep-accent);
+            box-shadow: 0 0 0 0 rgba(91, 184, 5, 0.55);
+            animation: prepPulse 1.6s ease-out infinite;
+        }
+        @keyframes prepPulse {
+            0% { box-shadow: 0 0 0 0 rgba(91, 184, 5, 0.55); }
+            70% { box-shadow: 0 0 0 10px rgba(91, 184, 5, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(91, 184, 5, 0); }
+        }
+
+        .prep-title {
+            font-size: clamp(1.55rem, 5vw, 1.9rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            color: var(--prep-text);
+            margin: 0 0 10px;
+        }
+
+        .prep-lead {
+            font-size: 1rem;
+            line-height: 1.55;
+            color: var(--prep-muted);
+            margin: 0 0 18px;
+            max-width: 36em;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .prep-lead strong {
+            color: var(--prep-mid);
+            font-weight: 700;
+        }
+
+        .prep-features {
+            display: grid;
+            gap: 10px;
+            text-align: left;
+            margin: 0 0 20px;
+        }
+        .prep-feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+            border: 1px solid rgba(91, 184, 5, 0.18);
+        }
+        .prep-feature-icon {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: linear-gradient(145deg, #5BB805, #3d8c04);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(91, 184, 5, 0.35);
+        }
+        .prep-feature h3 {
+            font-size: 0.92rem;
+            font-weight: 800;
+            margin: 0 0 2px;
+            color: var(--prep-text);
+        }
+        .prep-feature p {
+            font-size: 0.82rem;
+            line-height: 1.4;
+            color: var(--prep-muted);
+            margin: 0;
+        }
+
+        .prep-progress {
+            margin: 0 0 8px;
+        }
+        .prep-progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--prep-mid);
+            margin-bottom: 6px;
+        }
+        .prep-progress-track {
+            height: 8px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+        .prep-progress-bar {
+            height: 100%;
+            width: 72%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--prep-accent), var(--prep-water));
+            background-size: 200% 100%;
+            animation: prepBar 2.4s linear infinite;
+        }
+
+        .prep-soon {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--prep-green);
+            margin: 14px 0 0;
+        }
+
+        /* Staff ulaz — diskretan */
+        .prep-staff {
+            margin-top: 18px;
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 14px;
+        }
+        .prep-staff summary {
+            cursor: pointer;
+            list-style: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #64748b;
+            user-select: none;
+        }
+        .prep-staff summary::-webkit-details-marker { display: none; }
+        .prep-staff summary:hover { color: var(--prep-mid); }
+        .prep-staff[open] summary { margin-bottom: 12px; color: var(--prep-mid); }
+
+        .prep-form {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .prep-form label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--prep-muted);
+        }
+        .prep-form input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #fff;
+        }
+        .prep-form input:focus {
+            outline: none;
+            border-color: var(--prep-accent);
+            box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.2);
+        }
+        .prep-error {
+            font-size: 0.85rem;
+            color: #b91c1c;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 8px 12px;
+        }
+        .prep-submit {
+            display: block;
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 13px 16px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            font-family: inherit;
+            color: #fff;
+            cursor: pointer;
+            background: linear-gradient(145deg, #5BB805, #3d8c04);
+            box-shadow: 0 6px 18px rgba(91, 184, 5, 0.35);
+        }
+        .prep-submit:hover {
+            filter: brightness(1.05);
+        }
+
+        .prep-footer {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.72);
+            position: relative;
+            z-index: 1;
+        }
+        .prep-footer a {
+            color: #bbf7d0;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 480px) {
+            .prep-card {
+                padding: 22px 16px 18px;
+                border-radius: 16px;
+            }
+            .prep-feature {
+                padding: 10px 12px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .prep-badge-dot,
+            .prep-progress-bar,
+            .prep-card::before,
+            body::after {
+                animation: none !important;
+            }
+        }
+    </style>
 
     {% if meta_pixel_id %}
-    <!-- Meta Pixel Code -->
     <script data-cfasync="false">
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -31,44 +358,88 @@
     fbq('init', '{{ meta_pixel_id }}');
     fbq('track', 'PageView');
     </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id={{ meta_pixel_id }}&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- End Meta Pixel Code -->
     {% endif %}
 </head>
 <body>
-    <section class="auth-page site-prep-page">
-        <div class="auth-card site-prep-card">
-            <h1>Sajt u pripremi</h1>
-            <p class="auth-lead">Unesite lozinku za pristup dok radimo na novoj verziji trgovine.</p>
+    <div class="prep-wrap">
+        <div class="prep-card">
+            {% if logo_url %}
+            <img src="{{ logo_url }}" alt="opremazaribolov.ba" class="prep-logo" width="220" height="64">
+            {% endif %}
 
-            <form method="post" class="auth-form">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{{ next_url }}">
+            <div class="prep-badge">
+                <span class="prep-badge-dot" aria-hidden="true"></span>
+                U pripremi
+            </div>
 
-                {% if error %}
-                <div class="form-errors">
-                    <p class="form-error">{{ error }}</p>
+            <h1 class="prep-title">Radimo na još boljoj trgovini za ribare</h1>
+            <p class="prep-lead">
+                Trenutno unapređujemo sajt da bude <strong>brži, jasniji i ugodniji</strong> za
+                pretragu opreme, naručivanje i kupovinu. Uskoro smo ponovo online —
+                hvala na strpljenju.
+            </p>
+
+            <div class="prep-features" role="list">
+                <div class="prep-feature" role="listitem">
+                    <span class="prep-feature-icon" aria-hidden="true">⚡</span>
+                    <div>
+                        <h3>Brže učitavanje</h3>
+                        <p>Optimizacija slika, pretrage i stranica artikala.</p>
+                    </div>
                 </div>
-                {% endif %}
+                <div class="prep-feature" role="listitem">
+                    <span class="prep-feature-icon" aria-hidden="true">🎣</span>
+                    <div>
+                        <h3>Bolje iskustvo za ribare</h3>
+                        <p>Lakši pregled kategorija, ponuda i preporuka opreme.</p>
+                    </div>
+                </div>
+                <div class="prep-feature" role="listitem">
+                    <span class="prep-feature-icon" aria-hidden="true">🛒</span>
+                    <div>
+                        <h3>Jednostavnija kupovina</h3>
+                        <p>Korpa, ponude i checkout prilagođeni mobilnom.</p>
+                    </div>
+                </div>
+            </div>
 
-                <div class="form-group">
+            <div class="prep-progress" aria-hidden="true">
+                <div class="prep-progress-label">
+                    <span>Priprema u toku</span>
+                    <span>uskoro</span>
+                </div>
+                <div class="prep-progress-track">
+                    <div class="prep-progress-bar"></div>
+                </div>
+            </div>
+
+            <p class="prep-soon">Uskoro dostupno — opremazaribolov.ba</p>
+
+            <details class="prep-staff">
+                <summary>Pristup za tim (lozinka)</summary>
+                <form method="post" class="prep-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+                    {% if error %}
+                    <div class="prep-error" role="alert">{{ error }}</div>
+                    {% endif %}
                     <label for="sitePrepPassword">Lozinka</label>
                     <input
                         type="password"
                         id="sitePrepPassword"
                         name="lozinka"
-                        class="form-input"
                         autocomplete="current-password"
                         required
-                        autofocus
+                        {% if error %}autofocus{% endif %}
                     >
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block">Ulaz</button>
-            </form>
+                    <button type="submit" class="prep-submit">Ulaz na sajt</button>
+                </form>
+            </details>
         </div>
-    </section>
+
+        <p class="prep-footer">
+            © opremazaribolov.ba · ribolovačka oprema
+        </p>
+    </div>
 </body>
 </html>
