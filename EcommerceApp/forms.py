@@ -757,8 +757,12 @@ class LoyaltyIssueForm(forms.Form):
         }),
     )
     telefon = forms.CharField(
-        label='Telefon (Viber)',
+        label='Mobilni telefon',
         max_length=30,
+        help_text=(
+            'Obavezno mobilni broj (06…). '
+            'Isti broj: 065666666 = +38765666666 = 0038765666666.'
+        ),
         widget=forms.TextInput(attrs={
             'class': 'form-input',
             'placeholder': 'npr. 061 123 456',
@@ -778,20 +782,20 @@ class LoyaltyIssueForm(forms.Form):
     )
 
     def clean_telefon(self):
-        from .loyalty import telefon_vec_registrovan
+        from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
 
         telefon = self.cleaned_data.get('telefon', '').strip()
-        if not telefon:
-            raise forms.ValidationError('Telefon je obavezan.')
-        digits = ''.join(ch for ch in telefon if ch.isdigit())
-        if len(digits) < 8:
-            raise forms.ValidationError('Unesite ispravan broj telefona.')
-        if telefon_vec_registrovan(telefon):
+        try:
+            local, _e164 = validiraj_ba_mobilni(telefon)
+        except ValueError as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        if telefon_vec_registrovan(local):
             raise forms.ValidationError(
-                'Ovaj broj telefona je već registrovan na loyalty karticu — '
-                'dupli telefon nije dozvoljen.'
+                'Ovaj broj je već na loyalty kartici '
+                '(uključujući format +387 / 00387).'
             )
-        return telefon
+        # Vrati normalizirani 06… za spremanje
+        return local
 
     def clean_email(self):
         from .loyalty import email_vec_registrovan
@@ -808,7 +812,6 @@ class LoyaltyIssueForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        # Dodatna provjera (zavisno šta je uneseno)
         from .loyalty import email_vec_registrovan, telefon_vec_registrovan
 
         telefon = (cleaned.get('telefon') or '').strip()
@@ -816,7 +819,7 @@ class LoyaltyIssueForm(forms.Form):
         if telefon and telefon_vec_registrovan(telefon):
             self.add_error(
                 'telefon',
-                'Ovaj broj telefona je već registrovan — dupli telefon nije dozvoljen.',
+                'Ovaj broj je već registrovan (+387 / 00387 / 06… = isti).',
             )
         if email and email_vec_registrovan(email):
             self.add_error(
@@ -937,19 +940,21 @@ class StaffLoyaltyProfileForm(forms.Form):
         return email
 
     def clean_telefon(self):
-        from .loyalty import telefon_vec_registrovan
+        from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
 
         telefon = (self.cleaned_data.get('telefon') or '').strip()
         if not telefon:
             return ''
-        digits = ''.join(ch for ch in telefon if ch.isdigit())
-        if digits and len(digits) < 8:
-            raise forms.ValidationError('Unesite ispravan broj telefona (min. 8 cifara).')
-        if telefon and telefon_vec_registrovan(telefon, exclude_user_id=self.exclude_user_id):
+        try:
+            local, _e164 = validiraj_ba_mobilni(telefon)
+        except ValueError as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        if telefon_vec_registrovan(local, exclude_user_id=self.exclude_user_id):
             raise forms.ValidationError(
-                'Ovaj telefon je već na drugoj loyalty kartici — dupli telefon nije dozvoljen.'
+                'Ovaj telefon je već na drugoj loyalty kartici '
+                '(06… / +387… / 00387… = isti broj).'
             )
-        return telefon
+        return local
 
 
 class CouponForm(forms.Form):

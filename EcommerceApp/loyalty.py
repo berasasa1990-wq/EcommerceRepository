@@ -56,6 +56,7 @@ TIER_COLORS = {
 
 
 def _normalizuj_telefon(telefon):
+    """Samo cifre (bez +, razmaka, crtica…)."""
     return re.sub(r'\D', '', telefon or '')
 
 
@@ -63,12 +64,80 @@ def normalizuj_email(email):
     return (email or '').strip().lower()
 
 
-def _pronadji_korisnika_po_telefonu(telefon):
+def _ba_national_digits(telefon):
+    """
+    Nacionalni dio BA broja BEZ vodeće 0.
+    Primjeri (svi → 65666666):
+      065666666, 0038765666666, +38765666666, 38765666666
+    """
     digits = _normalizuj_telefon(telefon)
-    if len(digits) < 8:
+    if not digits:
+        return ''
+    if digits.startswith('00'):
+        digits = digits[2:]
+    if digits.startswith('387'):
+        return digits[3:]
+    if digits.startswith('0'):
+        return digits[1:]
+    # Već nacionalni bez 0 (npr. 65666666)
+    return digits
+
+
+def ba_mobile_e164(telefon):
+    """
+    Kanonski ključ za usporedbu: 387 + nacionalni (npr. 38765666666).
+    Prazno ako nije valjan BA mobilni (06…).
+    """
+    national = _ba_national_digits(telefon)
+    if not national:
+        return ''
+    # Mobilni: lokalno 06X… → nacionalni počinje s 6 (60–67)
+    if not national.startswith('6'):
+        return ''
+    # Standard BA mobilni: 8–9 cifara nacionalno (06X XXX XXX)
+    if len(national) < 8 or len(national) > 9:
+        return ''
+    return '387' + national
+
+
+def ba_mobile_local(telefon):
+    """
+    Lokalni prikaz za spremanje: 06XXXXXXXX
+    (isti broj kao +387 / 00387).
+    """
+    e164 = ba_mobile_e164(telefon)
+    if not e164 or not e164.startswith('387'):
+        return ''
+    return '0' + e164[3:]
+
+
+def validiraj_ba_mobilni(telefon):
+    """
+    Validacija za izdavanje kartice.
+    Vraća (local_06, e164) ili diže ValueError s porukom.
+    """
+    raw = (telefon or '').strip()
+    if not raw:
+        raise ValueError('Telefon je obavezan.')
+    local = ba_mobile_local(raw)
+    e164 = ba_mobile_e164(raw)
+    if not local or not e164 or not local.startswith('06'):
+        raise ValueError(
+            'Unesite ispravan mobilni broj koji počinje sa 06 '
+            '(npr. 061 123 456). Isti broj u formatu +387… ili 00387… '
+            'također se prihvata i tretira kao isti.'
+        )
+    return local, e164
+
+
+def _pronadji_korisnika_po_telefonu(telefon):
+    """Pronađi user-a po telefonu — svi formati istog broja se tretiraju kao isti."""
+    key = ba_mobile_e164(telefon) or _to_e164_digits(telefon)
+    if not key or len(key) < 10:
         return None
     for profil in UserProfile.objects.select_related('user').exclude(telefon=''):
-        if _normalizuj_telefon(profil.telefon) == digits:
+        other = ba_mobile_e164(profil.telefon) or _to_e164_digits(profil.telefon)
+        if other and other == key:
             return profil.user
     return None
 
@@ -93,13 +162,18 @@ def email_vec_registrovan(email, *, exclude_user_id=None):
 
 
 def _to_e164_digits(telefon):
-    """Normalizuj BA broj u cifre s pozivnim (387…), bez +."""
+    """
+    Normalizuj BA broj u cifre s pozivnim (387…), bez +.
+    Za mobilne koristi ba_mobile_e164; ovo je širi fallback (i fiksni).
+    """
+    mobile = ba_mobile_e164(telefon)
+    if mobile:
+        return mobile
     digits = _normalizuj_telefon(telefon)
     if not digits:
         return ''
     if digits.startswith('00'):
         digits = digits[2:]
-    # BA: 061… → 38761… ; 387… ostaje
     if digits.startswith('387'):
         pass
     elif digits.startswith('0') and len(digits) >= 8:
@@ -307,24 +381,24 @@ def commit_loyalty_purchase(
 def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
     """
     Registruje kupca i izdaje loyalty karticu.
-    Telefon je obavezan; email opcionalan.
-    Nikad ne dozvoli dupli telefon ili (ako je unesen) dupli email.
+    Telefon: obavezan BA mobilni (06…); +387 / 00387 se tretiraju kao isti broj.
+    Email: opcionalan, bez duplikata.
     """
     ime = (ime or '').strip()
     prezime = (prezime or '').strip()
-    telefon = (telefon or '').strip()
     email = normalizuj_email(email)
 
     if not ime or not prezime:
         raise ValueError('Ime i prezime su obavezni.')
-    if not telefon or len(_normalizuj_telefon(telefon)) < 8:
-        raise ValueError('Unesite ispravan broj telefona.')
 
-    # Duplikati: zavisno šta se unosi
-    if telefon_vec_registrovan(telefon):
+    # Normalizuj na 06… i provjeri da je mobilni
+    telefon_local, e164 = validiraj_ba_mobilni(telefon)
+
+    # Duplikati: 065… == +38765… == 0038765…
+    if telefon_vec_registrovan(telefon_local) or telefon_vec_registrovan(e164):
         raise ValueError(
             'Ovaj broj telefona je već registrovan na loyalty karticu — '
-            'dupli telefon nije dozvoljen.'
+            'dupli telefon nije dozvoljen (uključujući +387 / 00387 format).'
         )
     if email:
         if email_vec_registrovan(email):
@@ -332,13 +406,12 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
                 'Ovaj email je već registrovan na loyalty karticu — '
                 'dupli email nije dozvoljen.'
             )
-        # username = email na nekim nalogima
         if User.objects.filter(username__iexact=email).exists():
             raise ValueError(
                 'Ovaj email je već u upotrebi — dupli email nije dozvoljen.'
             )
 
-    digits = _normalizuj_telefon(telefon) or secrets.token_hex(4)
+    digits = e164 or _normalizuj_telefon(telefon_local) or secrets.token_hex(4)
     username = f'loy_{digits}'
     while User.objects.filter(username=username).exists():
         username = f'loy_{digits}_{secrets.token_hex(2)}'
@@ -351,7 +424,8 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
         last_name=prezime,
         is_active=True,
     )
-    UserProfile.objects.create(user=user, telefon=telefon)
+    # Uvijek spremi lokalni oblik 06…
+    UserProfile.objects.create(user=user, telefon=telefon_local)
 
     card = osiguraj_loyalty_karticu(user)
     return card, user
