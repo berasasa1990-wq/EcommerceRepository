@@ -1197,37 +1197,39 @@ main {
     color: #111 !important;
 }
 
-/* Hero Carousel — omjer = procesirani hero (1920×560), contain = cijela slika bez cropa */
+/* Hero Carousel — 1920×420; cover = puna širina bez bijelih traka */
 .hero-carousel {
     position: relative;
     width: 100%;
     max-width: 100vw;
     overflow: hidden;
-    background: var(--white);
+    background: #0a0a0a;
     border-bottom: 1px solid var(--gray-200);
-    margin-top: 8px;
+    margin-top: 0;
+    margin-bottom: 0;
+    line-height: 0;
 }
 
 .carousel-track {
     width: 100%;
-    /* 1920×560 — isti omjer kao upload/process hero banera */
-    aspect-ratio: 1920 / 560;
+    /* 1920×420 — isti omjer kao upload/process hero banera */
+    aspect-ratio: 1920 / 420;
     position: relative;
     height: auto;
 }
 
 @media (min-width: 1025px) {
     .hero-carousel {
-        margin-top: 12px;
+        margin-top: 0;
     }
 
     .hero-carousel .carousel-track {
-        aspect-ratio: 1920 / 560;
+        aspect-ratio: 1920 / 420;
     }
 
     .hero-carousel .slide-image-img,
     .hero-carousel .slide-image-video {
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
     }
 }
@@ -1261,7 +1263,7 @@ main {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #ffffff;
+    background: #0a0a0a;
 }
 
 .slide-image-link {
@@ -1281,10 +1283,10 @@ main {
     width: 100%;
     height: 100%;
     max-width: none;
-    /* contain: uvijek cijela slika u kadru (bez cropa pri skrolu/resize) */
-    object-fit: contain;
+    /* cover: popuni hero (1920×420), bez bijelih traka */
+    object-fit: cover;
     object-position: center center;
-    background: #ffffff;
+    background: #0a0a0a;
 }
 
 .slide-image-video {
@@ -1292,9 +1294,9 @@ main {
     width: 100%;
     height: 100%;
     max-width: none;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center center;
-    background: #ffffff;
+    background: #0a0a0a;
 }
 
 .banner-media-video {
@@ -1429,9 +1431,10 @@ main {
     border-top: 1px solid var(--gray-200);
 }
 
+/* Hero → 4×2: samo tanka linija (border-bottom na hero), bez bijelog razmaka */
 .hero-carousel + .grid-banners {
     border-top: none;
-    margin-top: 16px;
+    margin-top: 0;
 }
 
 /* Ako nema hero-a, grid i dalje malo odmaknut od headera */
@@ -8208,11 +8211,11 @@ body.mobile-nav-open {
 /* Mobile adjustments */
 @media (max-width: 768px) {
     .subcategory-page {
-        padding: 28px 12px 48px;
+        padding: 28px 16px 48px max(20px, env(safe-area-inset-left, 0px) + 12px);
     }
 
     .subcategory-container {
-        padding: 0 12px;
+        padding: 0 4px 0 max(8px, env(safe-area-inset-left, 0px));
     }
 
     .subcategory-header {
@@ -9542,8 +9545,11 @@ button.nav-action-link {
     }
 
     .scroll-top-btn {
-        right: max(14px, env(safe-area-inset-right, 0px));
-        bottom: max(18px, env(safe-area-inset-bottom, 0px));
+        /* Sakriven na mobitelu — zaklanja chat / floating dugmad */
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
     }
 
     .contact-float-menu {
@@ -9713,7 +9719,7 @@ button.nav-action-link {
         flex-shrink: 0;
         justify-content: flex-end;
         align-items: center;
-        padding: 6px 16px 0;
+        padding: 6px 20px 0 max(24px, env(safe-area-inset-left, 0px));
         min-height: 36px;
     }
 
@@ -9751,7 +9757,8 @@ button.nav-action-link {
         max-height: none;
         margin: 0;
         background: transparent;
-        padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+        /* Više prostora s lijeve — kategorije nisu „zalijepljene” uz rub */
+        padding: 8px 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(28px, env(safe-area-inset-left, 0px) + 16px);
         transform: none;
         gap: 0;
         overflow-y: auto;
@@ -9776,7 +9783,7 @@ button.nav-action-link {
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 12px 0;
+        padding: 13px 4px 13px 2px;
         font-size: 15px;
         font-weight: 500;
         line-height: 1.35;
@@ -9856,16 +9863,70 @@ button.nav-action-link {
         width: 100%;
         z-index: 1202;
         background: #ffffff;
-        padding: 0 16px 24px;
+        padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(28px, env(safe-area-inset-left, 0px) + 16px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
+        transform: translate3d(100%, 0, 0);
+        opacity: 0;
+        box-shadow: -12px 0 32px rgba(15, 23, 42, 0.08);
+        will-change: transform, opacity;
     }
 
     .mobile-nav-subview.is-open {
         display: flex;
         pointer-events: auto;
+        animation: mobileNavSubviewIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .mobile-nav-subview.is-closing {
+        display: flex;
+        pointer-events: none;
+        animation: mobileNavSubviewOut 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+
+    @keyframes mobileNavSubviewIn {
+        from {
+            transform: translate3d(18%, 0, 0);
+            opacity: 0;
+        }
+        to {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes mobileNavSubviewOut {
+        from {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+        }
+        to {
+            transform: translate3d(12%, 0, 0);
+            opacity: 0;
+        }
+    }
+
+    @keyframes mobileNavSubItemIn {
+        from {
+            opacity: 0;
+            transform: translate3d(12px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .mobile-nav-subview.is-open,
+        .mobile-nav-subview.is-closing,
+        .mobile-nav-subview.is-open .mobile-nav-subview-list > li {
+            animation: none !important;
+            transform: none !important;
+            opacity: 1 !important;
+        }
     }
 
     .mobile-nav-back {
@@ -9873,7 +9934,7 @@ button.nav-action-link {
         align-items: center;
         gap: 6px;
         margin: 12px 0 8px;
-        padding: 0;
+        padding: 4px 0;
         border: none;
         background: none;
         font-size: 14px;
@@ -9885,10 +9946,15 @@ button.nav-action-link {
     .mobile-nav-back__icon {
         font-size: 22px;
         line-height: 1;
+        transition: transform 0.2s ease;
+    }
+
+    .mobile-nav-back:active .mobile-nav-back__icon {
+        transform: translateX(-3px);
     }
 
     .mobile-nav-subview-title {
-        margin: 0 0 12px;
+        margin: 0 0 14px;
         font-size: 17px;
         font-weight: 600;
         color: #111111;
@@ -9903,9 +9969,23 @@ button.nav-action-link {
         padding: 0;
     }
 
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li {
+        animation: mobileNavSubItemIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(1) { animation-delay: 0.04s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(2) { animation-delay: 0.07s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(3) { animation-delay: 0.1s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(4) { animation-delay: 0.13s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(5) { animation-delay: 0.16s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(6) { animation-delay: 0.19s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(7) { animation-delay: 0.22s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(8) { animation-delay: 0.25s; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(n+9) { animation-delay: 0.28s; }
+
     .mobile-nav-subview-link {
         display: block;
-        padding: 12px 0;
+        padding: 13px 4px 13px 2px;
         border-bottom: 1px solid #ececec;
         font-size: 14px;
         font-weight: 500;
@@ -9913,6 +9993,12 @@ button.nav-action-link {
         text-decoration: none;
         letter-spacing: -0.01em;
         line-height: 1.35;
+        transition: background 0.15s ease, color 0.15s ease;
+        border-radius: 6px;
+    }
+
+    .mobile-nav-subview-link:active {
+        background: #f3f4f6;
     }
 
     .mobile-nav-subview-link--all {
@@ -9921,7 +10007,7 @@ button.nav-action-link {
     }
 
     .mobile-nav-subview-link--child {
-        padding-left: 14px;
+        padding-left: 18px;
         font-size: 13px;
         font-weight: 400;
         color: #555555;
@@ -9950,8 +10036,8 @@ button.nav-action-link {
 
     .nav-menu.mobile-open > .nav-item.mega-open {
         background: var(--gray-100);
-        margin: 0 -16px;
-        padding: 0 16px;
+        margin: 0 -20px 0 calc(-1 * max(28px, env(safe-area-inset-left, 0px) + 16px));
+        padding: 0 20px 0 max(28px, env(safe-area-inset-left, 0px) + 16px);
         border-left: 3px solid #28403d;
         border-bottom-color: var(--gray-300);
     }
@@ -10413,11 +10499,11 @@ button.nav-action-link {
     }
 
     .hero-carousel {
-        background: var(--white);
+        background: #0a0a0a;
     }
 
     .carousel-track {
-        aspect-ratio: 1920 / 560;
+        aspect-ratio: 1920 / 420;
         height: auto;
         padding-bottom: 0;
     }
@@ -10441,9 +10527,9 @@ button.nav-action-link {
         width: 100%;
         height: 100%;
         max-width: none;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
-        background: #ffffff;
+        background: #0a0a0a;
     }
 
     .carousel-dots {
@@ -12671,7 +12757,7 @@ button.nav-action-link {
     }
 
     .hero-carousel .carousel-track {
-        aspect-ratio: 1920 / 560;
+        aspect-ratio: 1920 / 420;
         padding-bottom: 0;
         height: auto;
     }

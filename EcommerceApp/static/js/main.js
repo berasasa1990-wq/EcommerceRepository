@@ -119,12 +119,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mobileNavSubview) mobileNavSubview.scrollTop = 0;
     }
 
-    function closeMobileNavSubview() {
-        mobileNavSubview?.classList.remove('is-open');
-        mobileNavSubview?.setAttribute('aria-hidden', 'true');
-        navLinks?.classList.remove('mobile-nav-sub-open');
-        megaItems.forEach((el) => el.classList.remove('mega-open'));
-        syncMobileNavExpanded();
+    let mobileNavSubviewCloseTimer = null;
+
+    function closeMobileNavSubview(immediate) {
+        if (!mobileNavSubview) return;
+        if (mobileNavSubviewCloseTimer) {
+            clearTimeout(mobileNavSubviewCloseTimer);
+            mobileNavSubviewCloseTimer = null;
+        }
+        const wasOpen = mobileNavSubview.classList.contains('is-open')
+            || mobileNavSubview.classList.contains('is-closing');
+        const finish = () => {
+            mobileNavSubview.classList.remove('is-open', 'is-closing');
+            mobileNavSubview.setAttribute('aria-hidden', 'true');
+            navLinks?.classList.remove('mobile-nav-sub-open');
+            megaItems.forEach((el) => el.classList.remove('mega-open'));
+            syncMobileNavExpanded();
+            mobileNavSubviewCloseTimer = null;
+        };
+        if (!wasOpen || immediate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            finish();
+            return;
+        }
+        // Glatki izlaz: slide + fade, pa skloni panel
+        mobileNavSubview.classList.remove('is-open');
+        mobileNavSubview.classList.add('is-closing');
+        mobileNavSubview.setAttribute('aria-hidden', 'true');
+        mobileNavSubviewCloseTimer = setTimeout(finish, 260);
     }
 
     function buildMobileNavSubLink(anchor, className) {
@@ -167,8 +188,17 @@ document.addEventListener('DOMContentLoaded', () => {
         megaItems.forEach((el) => el.classList.remove('mega-open'));
         item.classList.add('mega-open');
         navLinks?.classList.add('mobile-nav-sub-open');
+        if (mobileNavSubviewCloseTimer) {
+            clearTimeout(mobileNavSubviewCloseTimer);
+            mobileNavSubviewCloseTimer = null;
+        }
+        // Restart CSS animacije pri svakom otvaranju
+        mobileNavSubview.classList.remove('is-open', 'is-closing');
+        // force reflow so animation runs again
+        void mobileNavSubview.offsetWidth;
         mobileNavSubview.classList.add('is-open');
         mobileNavSubview.setAttribute('aria-hidden', 'false');
+        mobileNavSubview.scrollTop = 0;
         syncMobileNavExpanded();
     }
 
@@ -187,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Samo overflow lock — NE position:fixed na body (iOS lomi fixed panel)
             document.body.style.width = '100%';
             closeSearchOverlay();
-            closeMobileNavSubview();
+            closeMobileNavSubview(true);
             syncMobileNavLayout();
             requestAnimationFrame(() => {
                 syncMobileNavLayout();
@@ -203,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.documentElement.style.removeProperty('--mobile-nav-panel-top');
             resetMobileNavScroll();
             closeMegaMenu();
-            closeMobileNavSubview();
+            closeMobileNavSubview(true);
             // Vrati scroll bez skoka ako nismo mijenjali position
             if (Math.abs((window.scrollY || 0) - mobileNavScrollLockY) > 2) {
                 window.scrollTo(0, mobileNavScrollLockY);
@@ -1085,6 +1115,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 badge.className = 'cart-badge';
                 cartBtn.appendChild(badge);
             }
+            badge.hidden = false;
+            badge.style.display = '';
             badge.textContent = nextCount;
             if (nextCount > previousCount) {
                 triggerCartAddPulse(cartBtn);
@@ -1096,7 +1128,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         cartBtn.dataset.cartCount = String(nextCount);
+        cartBtn.setAttribute('data-cart-count', String(nextCount));
     }
+    // Dostupno i drugim skriptama (npr. chat „Dodaj u korpu”)
+    window.updateCartBadge = updateCartBadge;
 
     function showCartToast(message) {
         let toast = document.querySelector('.cart-toast');

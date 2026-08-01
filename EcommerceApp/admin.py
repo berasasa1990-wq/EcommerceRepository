@@ -340,6 +340,19 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 '2) Nagradna igra — mali pulsirajući popup sa strane (treba aktivna kampanja Online nagrada).'
             ),
         }),
+        ('Chat sa kupcem', {
+            'fields': (
+                'chat_sa_kupcem_aktivan',
+                'chat_delay_seconds',
+                'chat_pozdrav_poruka',
+            ),
+            'description': (
+                'Proaktivni live chat: na sajtu se NE prikazuje dok ne istekne vrijeme. '
+                'Zatim se otvori, pošalje pozdrav i pita da li treba pomoć / preporuka. '
+                'Kupac odgovara odmah — bez registracije i bez unosa imena. '
+                'Staff u inboxu može slati i artikle (slika + dodaj u korpu, opcionalni %).'
+            ),
+        }),
         ('Savjetnik i online posjetioci', {
             'fields': (
                 'savjetnik_aktivan',
@@ -1583,7 +1596,7 @@ class BannerAdmin(admin.ModelAdmin):
             'description': (
                 'Klik na banner vodi na kategoriju ili link (ako su postavljeni). '
                 'Obavezna je slika ili video. '
-                'Upload slike: Hero → JPEG 1920×560 (24:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
+                'Upload slike: Hero → JPEG 1920×420 (32:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
                 'Video: MP4/WebM/MOV, najviše 6 sekundi (max 20 MB). Ako je video postavljen, prikazuje se umjesto slike; '
                 'slika može služiti kao poster kad je video aktivan. '
                 'Tip „Hero Carousel” za karusel, „Grid Kartica” za 8 kartica ispod (4×2 desktop, 6 mobilni).'

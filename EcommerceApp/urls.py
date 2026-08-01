@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import views
 from . import views_catalog_api
+from . import views_chat
 from . import views_feed
 from . import views_site_prep
 from . import views_sync
@@ -10,6 +11,48 @@ urlpatterns = [
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
+
+    # Live chat (kupac ↔ podrška)
+    path('api/chat/config/', views_chat.chat_config, name='chat_config'),
+    path('api/chat/', views_chat.chat_state, name='chat_state'),
+    path('api/chat/guest/', views_chat.chat_guest_info, name='chat_guest_info'),
+    path('api/chat/send/', views_chat.chat_send, name='chat_send'),
+    path('api/chat/badge/', views_chat.chat_badge, name='chat_badge'),
+    path('api/chat/poll/', views_chat.chat_poll, name='chat_poll'),
+    path('api/chat/leave/', views_chat.chat_leave, name='chat_leave'),
+    path('api/chat/add-product/', views_chat.chat_add_product, name='chat_add_product'),
+    path('api/chat/staff/ping/', views_chat.chat_staff_ping, name='chat_staff_ping'),
+    path('api/chat/staff/inbox/', views_chat.chat_staff_inbox, name='chat_staff_inbox'),
+    path(
+        'api/chat/staff/products/',
+        views_chat.chat_staff_product_search,
+        name='chat_staff_product_search',
+    ),
+    path(
+        'api/chat/staff/<int:pk>/',
+        views_chat.chat_staff_conversation,
+        name='chat_staff_conversation',
+    ),
+    path(
+        'api/chat/staff/<int:pk>/send/',
+        views_chat.chat_staff_send,
+        name='chat_staff_send',
+    ),
+    path(
+        'api/chat/staff/<int:pk>/send-product/',
+        views_chat.chat_staff_send_product,
+        name='chat_staff_send_product',
+    ),
+    path(
+        'api/chat/staff/<int:pk>/read/',
+        views_chat.chat_staff_read,
+        name='chat_staff_read',
+    ),
+    path(
+        'api/chat/staff/<int:pk>/close/',
+        views_chat.chat_staff_close,
+        name='chat_staff_close',
+    ),
 
     # Catalog Sync API — partner vuče katalog (read-only, API key)
     path('api/v1/ping/', views_catalog_api.catalog_api_ping, name='catalog_api_ping'),

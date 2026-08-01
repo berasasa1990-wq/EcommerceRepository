@@ -335,6 +335,31 @@ class SiteSettings(models.Model):
             'Isključeno: savjetnik se ne prikazuje na sajtu.'
         ),
     )
+    # —— Chat sa kupcem (proaktivni live chat) ——
+    chat_sa_kupcem_aktivan = models.BooleanField(
+        default=True,
+        verbose_name='Chat sa kupcem aktivan',
+        help_text=(
+            'Uključeno: poslije određenog vremena na sajtu automatski se otvara chat, '
+            'pozdravlja kupca i nudi pomoć. Chat se ne prikazuje dok ne istekne vrijeme. '
+            'Isključeno: nema proaktivnog chata (staff i dalje može imati inbox).'
+        ),
+    )
+    chat_delay_seconds = models.PositiveIntegerField(
+        default=120,
+        verbose_name='Chat — vrijeme do pojave (sekunde)',
+        help_text='Koliko sekundi posjetilac mora biti na sajtu prije nego chat iskoči. Npr. 120 = 2 minute.',
+    )
+    chat_pozdrav_poruka = models.TextField(
+        blank=True,
+        default=(
+            'Zdravo! 👋 Dobrodošli na opremazaribolov.ba.\n\n'
+            'Treba li vam pomoć ili preporuka pri kupovini?\n'
+            'Pišite nam — tu smo da pomognemo.'
+        ),
+        verbose_name='Chat — automatska pozdrav poruka',
+        help_text='Poruka koju sistem šalje kad se chat otvori. Kupac odmah može odgovoriti (bez registracije).',
+    )
     javno_online_posjetioci = models.BooleanField(
         default=False,
         verbose_name='Javno prikaži ko je na sajtu',
@@ -3336,7 +3361,38 @@ class ChatMessage(models.Model):
         blank=True,
         related_name='chat_replies',
     )
-    body = models.TextField(max_length=2000)
+    body = models.TextField(max_length=2000, blank=True)
+    # Ponuda artikla u chatu (staff → kupac)
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='chat_messages',
+        verbose_name='Artikal (ponuda)',
+    )
+    product_popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust na artikal (%)',
+        help_text='Opcionalno. Prazno ili 0 = regularna cijena.',
+    )
+    product_cijena = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Cijena ponude (KM)',
+    )
+    product_bazna_cijena = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Regularna cijena (KM)',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     read_by_staff = models.BooleanField(default=False)
     read_by_customer = models.BooleanField(default=False)
@@ -3346,8 +3402,14 @@ class ChatMessage(models.Model):
         verbose_name_plural = 'Chat poruke'
         ordering = ['created_at']
 
+    @property
+    def is_product_offer(self):
+        return bool(self.product_id)
+
     def __str__(self):
-        return f'{self.get_sender_type_display()}: {self.body[:40]}'
+        if self.product_id:
+            return f'{self.get_sender_type_display()}: artikal #{self.product_id}'
+        return f'{self.get_sender_type_display()}: {(self.body or "")[:40]}'
 
 
 class MarketingEmailCampaign(models.Model):

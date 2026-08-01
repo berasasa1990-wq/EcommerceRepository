@@ -1113,7 +1113,7 @@ def _banner_actions(banner):
     return actions
 
 
-def _banner_media_meta(banner, *, tip='hero', default=(1920, 560)):
+def _banner_media_meta(banner, *, tip='hero', default=(1920, 420)):
     from .utils.images import banner_image_responsive_meta
 
     image_meta = {
@@ -1140,7 +1140,7 @@ def _banner_media_meta(banner, *, tip='hero', default=(1920, 560)):
 
 
 def _banner_to_hero_slide(banner):
-    media = _banner_media_meta(banner, tip='hero', default=(1920, 560))
+    media = _banner_media_meta(banner, tip='hero', default=(1920, 420))
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
@@ -1488,7 +1488,7 @@ def home(request):
             hero_lcp = banner_image_responsive_meta(
                 first_hero.slika,
                 tip='hero',
-                default=(1920, 560),
+                default=(1920, 420),
             )
             lcp_image_url = request.build_absolute_uri(
                 hero_lcp.get('preload_src') or hero_lcp['src'],
