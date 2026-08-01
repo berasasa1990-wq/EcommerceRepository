@@ -1223,11 +1223,13 @@ class SearchIntentTests(TestCase):
         r = self.client.get(reverse('search_results'), {'q': 'som'})
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'Direktni rezultati')
-        self.assertContains(r, 'Možda će vam trebati i')
         self.assertContains(r, 'Za lov na soma preporučujemo')
         self.assertContains(r, 'preporuke, ne potpuno poklapanje')
-        # related product card appears
+        # related product card appears; no category/brand facet chips
         self.assertContains(r, 'Jaka mašinica za soma')
+        self.assertNotContains(r, 'search-related-facets')
+        self.assertNotContains(r, 'Preporučene kategorije')
+        self.assertNotContains(r, 'Povezani brendovi')
 
     def test_inactive_rule_ignored(self):
         from .search.intent import invalidate_intent_cache, match_intent_rules

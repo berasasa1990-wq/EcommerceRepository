@@ -41,39 +41,6 @@
                 </div>
                 {% endif %}
 
-                {% if related_categories or related_brands %}
-                <div class="search-related-facets">
-                    {% if related_categories %}
-                    <div class="search-related-facets__group">
-                        <span class="search-related-facets__title">Kategorije</span>
-                        <div class="search-related-facets__list">
-                            {% for cat in related_categories %}
-                            <a class="search-related-facet"
-                               href="{{ filter_action }}?{% if filter_params.q %}q={{ filter_params.q|urlencode }}&{% endif %}{% if cat.is_sub %}potkategorija{% else %}kategorija{% endif %}={{ cat.slug|urlencode }}{% if filter_params.sort %}&sort={{ filter_params.sort|urlencode }}{% endif %}">
-                                {{ cat.naziv }}
-                                <span class="search-related-facet__count">{{ cat.count }}</span>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if related_brands %}
-                    <div class="search-related-facets__group">
-                        <span class="search-related-facets__title">Brendovi</span>
-                        <div class="search-related-facets__list">
-                            {% for b in related_brands %}
-                            <a class="search-related-facet"
-                               href="{{ filter_action }}?{% if filter_params.q %}q={{ filter_params.q|urlencode }}&{% endif %}brend={{ b.slug|urlencode }}{% if filter_params.sort %}&sort={{ filter_params.sort|urlencode }}{% endif %}">
-                                {{ b.naziv }}
-                                <span class="search-related-facet__count">{{ b.count }}</span>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-
                 <div class="search-results-toolbar">
                     <form class="search-sort-form" method="get" action="{{ filter_action }}">
                         {% if filter_params.q %}<input type="hidden" name="q" value="{{ filter_params.q }}">{% endif %}
@@ -124,8 +91,8 @@
                 </p>
                 {% endif %}
 
-                {# —— Intent preporuke (odvojeno od rankinga) —— #}
-                {% if intent_rec and intent_rec.has_content %}
+                {# —— Intent preporuke (samo artikli; kategorije/brendovi su u filteru) —— #}
+                {% if intent_rec and intent_rec.products %}
                 <section class="search-intent-section" aria-label="Preporuke prema namjeri">
                     {% if intent_rec.titles %}
                     <h2 class="search-section-title search-section-title--intent">
@@ -142,59 +109,11 @@
                     <p class="search-intent-badge" role="note">
                         Ovo su preporuke, ne potpuno poklapanje s upitom.
                     </p>
-
-                    {% if intent_rec.categories or intent_rec.tags or intent_rec.brands %}
-                    <div class="search-intent-groups">
-                        {% if intent_rec.categories %}
-                        <div class="search-intent-groups__block">
-                            <span class="search-intent-groups__label">Preporučene kategorije</span>
-                            <div class="search-related-facets__list">
-                                {% for cat in intent_rec.categories %}
-                                <a class="search-related-facet search-related-facet--intent"
-                                   href="{% url 'category' cat.slug %}">
-                                    {% if cat.roditelj %}{{ cat.roditelj.naziv }} → {% endif %}{{ cat.naziv }}
-                                </a>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% if intent_rec.tags %}
-                        <div class="search-intent-groups__block">
-                            <span class="search-intent-groups__label">Povezani tagovi / grupe</span>
-                            <div class="search-related-facets__list">
-                                {% for t in intent_rec.tags %}
-                                <a class="search-related-facet search-related-facet--intent"
-                                   href="{{ filter_action }}?{% if filter_params.q %}q={{ filter_params.q|urlencode }}&{% endif %}tehnika={{ t.slug|urlencode }}">
-                                    {{ t.naziv }}
-                                </a>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% if intent_rec.brands %}
-                        <div class="search-intent-groups__block">
-                            <span class="search-intent-groups__label">Povezani brendovi</span>
-                            <div class="search-related-facets__list">
-                                {% for b in intent_rec.brands %}
-                                <a class="search-related-facet search-related-facet--intent"
-                                   href="{{ filter_action }}?{% if filter_params.q %}q={{ filter_params.q|urlencode }}&{% endif %}brend={{ b.slug|urlencode }}">
-                                    {{ b.naziv }}
-                                </a>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-
-                    {% if intent_rec.products %}
-                    <h3 class="search-intent-maybe-title">Možda će vam trebati i</h3>
                     <div class="product-grid product-grid--catalog product-grid--intent">
                         {% for product in intent_rec.products %}
                         {% include 'partials/product_catalog_card.html' with product=product hide_variations=True %}
                         {% endfor %}
                     </div>
-                    {% endif %}
                 </section>
                 {% endif %}
 

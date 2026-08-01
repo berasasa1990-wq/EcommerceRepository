@@ -773,8 +773,6 @@ def search_results(request):
         SORT_CHOICES,
         build_active_filters,
         normalize_sort,
-        related_brands_from_products,
-        related_categories_from_products,
         search_page_query_string,
     )
 
@@ -786,8 +784,6 @@ def search_results(request):
     filter_action = reverse('search_results')
     products = []
     did_you_mean = None
-    related_brands = []
-    related_categories = []
     active_filters = []
     filter_categories = _filter_categories()
     filter_brands = list(Brand.objects.order_by('naziv')[:200])
@@ -804,9 +800,6 @@ def search_results(request):
         )
         params['sort'] = 'relevance' if sort_mode == 'relevance' else sort_mode
         result_count = len(products)
-
-        related_brands = related_brands_from_products(products)
-        related_categories = related_categories_from_products(products)
 
         # Intent recommendations (separate from main ranking)
         try:
@@ -945,8 +938,6 @@ def search_results(request):
         'result_count': result_count,
         'did_you_mean': did_you_mean,
         'intent_rec': intent_rec,
-        'related_brands': related_brands,
-        'related_categories': related_categories,
         'active_filters': active_filters,
         'sort_choices': SORT_CHOICES,
         'sort_mode': sort_mode,
