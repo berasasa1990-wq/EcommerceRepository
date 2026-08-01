@@ -25,6 +25,7 @@ from .chat import (
     serialize_conversations_list,
     serialize_message,
     set_guest_info,
+    soft_leave_customer_chat,
     staff_unread_total,
 )
 from .models import ChatConversation, ChatMessage, Product
@@ -187,9 +188,23 @@ def chat_poll(request):
 @csrf_exempt
 @require_POST
 def chat_leave(request):
-    """Kupac napušta sajt — zatvori chat za obje strane."""
-    closed = close_customer_conversations(request)
-    return JsonResponse({'ok': True, 'closed': int(closed)})
+    """
+    Poziva se na pagehide. NE zatvara razgovor — inače navigacija
+    (kategorija, korpa…) briše chat. Razgovor ostaje OPEN;
+    online/offline za staff ide preko LiveVisitor presence.
+    Hard close: staff dugme ili eksplicitni ?hard=1.
+    """
+    hard = False
+    try:
+        data = _json_body(request)
+        hard = bool(data.get('hard'))
+    except Exception:
+        hard = (request.GET.get('hard') or '') in ('1', 'true', 'yes')
+    if hard:
+        closed = close_customer_conversations(request)
+        return JsonResponse({'ok': True, 'closed': int(closed), 'hard': True})
+    soft_leave_customer_chat(request)
+    return JsonResponse({'ok': True, 'closed': 0, 'hard': False})
 
 
 @require_POST

@@ -98,6 +98,29 @@ def get_customer_conversation(request, *, create=True):
     if not create:
         return None
 
+    ensure_session_key(request)
+    # Ponovo otvori zadnji zatvoreni razgovor u ovoj sesiji
+    # (npr. greškom zatvoren pagehide-om pri navigaciji) — zadrži poruke
+    reopen_q = ChatConversation.objects.filter(
+        status=ChatConversation.Status.CLOSED,
+        session_key=request.session.session_key,
+    )
+    if request.user.is_authenticated:
+        reopen_q = ChatConversation.objects.filter(
+            status=ChatConversation.Status.CLOSED,
+        ).filter(
+            Q(session_key=request.session.session_key) | Q(user=request.user),
+        )
+    closed = reopen_q.order_by('-last_message_at').first()
+    if closed:
+        closed.status = ChatConversation.Status.OPEN
+        if request.user.is_authenticated and not closed.user_id:
+            closed.user = request.user
+            closed.save(update_fields=['status', 'user'])
+        else:
+            closed.save(update_fields=['status'])
+        return closed
+
     return ChatConversation.objects.create(
         session_key=request.session.session_key,
         user=request.user if request.user.is_authenticated else None,
@@ -132,7 +155,13 @@ def ensure_proactive_greeting(conversation):
 
 
 def close_customer_conversations(request):
-    """Zatvori sve otvorene chat razgovore za ovog posjetioca (odlazak sa sajta)."""
+    """
+    Zatvori otvorene chat razgovore za posjetioca.
+
+    Napomena: ne zovi ovo na svaki pagehide — multi-page navigacija
+    (kategorija, korpa…) bi resetovala chat. Hard close samo kad
+    stvarno napusti sesiju (opcionalno) ili staff ručno zatvori.
+    """
     ensure_session_key(request)
     qs = ChatConversation.objects.filter(status=ChatConversation.Status.OPEN)
     if request.user.is_authenticated:
@@ -142,6 +171,16 @@ def close_customer_conversations(request):
     else:
         qs = qs.filter(session_key=request.session.session_key)
     return qs.update(status=ChatConversation.Status.CLOSED)
+
+
+def soft_leave_customer_chat(request):
+    """
+    Soft leave: ne zatvara razgovor (ostaje OPEN za navigaciju po sajtu).
+    Samo bilježi da je tab možda zatvoren — online status ide preko LiveVisitor.
+    """
+    ensure_session_key(request)
+    # Razgovor ostaje otvoren da se pri promjeni kategorije/korpe ne resetuje.
+    return 0
 
 
 def _default_guest_name(request):

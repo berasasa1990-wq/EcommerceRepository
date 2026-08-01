@@ -1,7 +1,7 @@
 {% load static %}
 {# Live chat: kupac (proaktivni) ili superuser/staff (samo chat sa kupcima) #}
 {% if site_settings.chat_sa_kupcem_aktivan or user.is_authenticated and user.is_staff %}
-<link rel="stylesheet" href="{% static 'css/site-chat.css' %}?v=20260801chat7">
+<link rel="stylesheet" href="{% static 'css/site-chat.css' %}?v=20260801chat8">
 
 <div class="site-chat" id="siteChat" hidden>
     {# —— Kupac panel (NE za staff/superuser — oni imaju samo chat sa kupcima) —— #}
@@ -177,5 +177,5 @@
     "autoOpenOnCustomerMessage": true
 }
 </script>
-<script src="{% static 'js/chat.js' %}?v=20260801chat7" defer></script>
+<script src="{% static 'js/chat.js' %}?v=20260801chat8" defer></script>
 {% endif %}

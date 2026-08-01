@@ -699,17 +699,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (staffAutoOpenBusy) return;
 
         const unread = Number(unreadCount) || 0;
-        // Otvori čim ima online nepročitanih — i kad panel nije otvoren
-        const shouldOpen = unread > 0 && (unread > lastStaffUnreadTotal || !staffOpen);
+        const prev = lastStaffUnreadTotal;
+        // Nova poruka (porast unread) ili prvi put dok panel nije otvoren
+        const isNew = unread > prev;
+        const shouldOpen = unread > 0 && (isNew || (!staffOpen && prev < 0));
         lastStaffUnreadTotal = unread;
 
         if (!shouldOpen || unread <= 0) return;
 
         staffAutoOpenBusy = true;
         try {
-            if (!staffOpen) {
-                await openStaffPanel();
-            }
             let list = conversations;
             if (!list) {
                 const inbox = await apiFetch('/api/chat/staff/inbox/');
@@ -723,6 +722,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = onlineList.find((c) => (c.staff_unread_count || 0) > 0)
                 || onlineList[0];
             if (!target) return;
+
+            // Upozorenje superuseru
+            if (isNew || prev < 0) {
+                showStaffNewMessageAlert(target.display_name);
+            }
+
+            if (!staffOpen) {
+                await openStaffPanel();
+            }
             if (target.id !== activeStaffConversationId) {
                 await openStaffConversation(target.id);
             }
@@ -791,8 +799,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function startStaffTimers() {
         clearInterval(staffPollTimer);
         clearInterval(staffPingTimer);
-        // Brzi poll (2s) — chat iskače superuseru bez refresha
-        const interval = staffOpen ? 2500 : 2000;
+        // Brzi poll (1.5–2s) — chat iskače superuseru bez refresha
+        const interval = staffOpen ? 2000 : 1500;
         staffPollTimer = setInterval(pollStaffInbox, interval);
     }
 
@@ -979,11 +987,14 @@ document.addEventListener('DOMContentLoaded', () => {
             || sessionStorage.getItem(STORAGE_PROACTIVE) === '1';
         if (alreadyActive) {
             revealCustomerLauncher();
-            // Ako je panel bio otvoren — vrati ga (ne gasi se pri promjeni stranice)
-            if (sessionStorage.getItem(STORAGE_PANEL_OPEN) === '1') {
-                await openCustomerChat({ proactive: false });
-            } else {
+            // Jednom kad iskoci — ostaje: panel otvoren ili minimiziran (ikona)
+            // Default: ako je ikad bio aktivan, vrati panel (osim ako je eksplicitno smanjen)
+            const panelPref = sessionStorage.getItem(STORAGE_PANEL_OPEN);
+            if (panelPref === '0') {
                 startMinimizedCustomerPolling();
+            } else {
+                // panelPref === '1' ili null (stari state) → otvori
+                await openCustomerChat({ proactive: false });
             }
             return;
         }
@@ -1028,10 +1039,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }, wait);
     }
 
-    /* —— Zatvaranje kad napusti sajt —— */
+    /* —— Navigacija po sajtu: chat se NE gasi —— */
     function markInternalNavigation() {
         try {
             sessionStorage.setItem(STORAGE_INTERNAL_NAV, '1');
+            // Sačuvaj da je chat aktivan i prije pagehide
+            if (customerChatRevealed || sessionStorage.getItem(STORAGE_PROACTIVE) === '1') {
+                sessionStorage.setItem(STORAGE_VISIBLE, '1');
+                sessionStorage.setItem(STORAGE_PROACTIVE, '1');
+                if (customerOpen) {
+                    sessionStorage.setItem(STORAGE_PANEL_OPEN, '1');
+                }
+            }
         } catch (e) { /* ignore */ }
     }
 
@@ -1053,41 +1072,86 @@ document.addEventListener('DOMContentLoaded', () => {
         markInternalNavigation();
     }, true);
 
+    /**
+     * pagehide se pali i pri navigaciji (kategorija, korpa…).
+     * NE brišemo sessionStorage i NE zatvaramo razgovor.
+     * Soft leave na serveru je no-op (razgovor ostaje OPEN).
+     */
     function sendChatLeave() {
-        if (leaveSent) return;
         try {
-            if (sessionStorage.getItem(STORAGE_INTERNAL_NAV) === '1') {
-                sessionStorage.removeItem(STORAGE_INTERNAL_NAV);
-                return;
+            // Uvijek sačuvaj stanje chata prije navigacije
+            if (customerOpen) {
+                sessionStorage.setItem(STORAGE_PANEL_OPEN, '1');
+                sessionStorage.setItem(STORAGE_VISIBLE, '1');
+                sessionStorage.setItem(STORAGE_PROACTIVE, '1');
+            } else if (customerChatRevealed || sessionStorage.getItem(STORAGE_VISIBLE) === '1') {
+                sessionStorage.setItem(STORAGE_VISIBLE, '1');
+                sessionStorage.setItem(STORAGE_PROACTIVE, '1');
             }
         } catch (e) { /* ignore */ }
 
-        leaveSent = true;
+        // Soft leave — ne zatvara razgovor (vidi views_chat.chat_leave)
         const url = config.leaveUrl || '/api/chat/leave/';
         try {
             if (navigator.sendBeacon) {
                 const blob = new Blob(['{}'], { type: 'application/json' });
                 navigator.sendBeacon(url, blob);
-            } else {
-                fetch(url, {
-                    method: 'POST',
-                    body: '{}',
-                    headers: { 'Content-Type': 'application/json' },
-                    keepalive: true,
-                    credentials: 'same-origin',
-                }).catch(() => {});
             }
-        } catch (e) { /* ignore */ }
-        try {
-            sessionStorage.removeItem(STORAGE_PROACTIVE);
-            sessionStorage.removeItem(STORAGE_ENTER);
-            sessionStorage.removeItem(STORAGE_VISIBLE);
-            sessionStorage.removeItem(STORAGE_PANEL_OPEN);
         } catch (e) { /* ignore */ }
     }
 
     window.addEventListener('pagehide', sendChatLeave);
-    window.addEventListener('beforeunload', sendChatLeave);
+
+    /** Toast + zvuk za superusera kad stigne poruka */
+    function showStaffNewMessageAlert(name) {
+        const label = name || 'Kupac';
+        let toast = document.getElementById('staffChatToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'staffChatToast';
+            toast.className = 'site-chat-staff-toast';
+            toast.setAttribute('role', 'status');
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = `<strong>Nova poruka</strong><span>${label} ti je napisao/la u chatu</span>`;
+        toast.classList.add('is-visible');
+        clearTimeout(showStaffNewMessageAlert._t);
+        showStaffNewMessageAlert._t = setTimeout(() => {
+            toast.classList.remove('is-visible');
+        }, 6000);
+
+        // Kratki bip (Web Audio) — tih
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            const ctx = new Ctx();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.value = 880;
+            g.gain.value = 0.04;
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.start();
+            setTimeout(() => {
+                o.stop();
+                ctx.close();
+            }, 160);
+        } catch (e) { /* ignore */ }
+
+        // Browser notification (ako je dozvoljeno)
+        try {
+            if (window.Notification && Notification.permission === 'granted') {
+                // eslint-disable-next-line no-new
+                new Notification('Nova chat poruka', {
+                    body: `${label} ti je napisao/la`,
+                    tag: 'site-chat-staff',
+                });
+            } else if (window.Notification && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+        } catch (e) { /* ignore */ }
+    }
 
     /* init — staff: samo chat sa kupcima; kupac: proaktivni chat */
     if (customerBtn) customerBtn.hidden = true;
