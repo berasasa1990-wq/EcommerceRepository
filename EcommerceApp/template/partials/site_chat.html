@@ -1,7 +1,7 @@
 {% load static %}
 {# Live chat: kupac (proaktivni) ili superuser/staff (samo chat sa kupcima) #}
 {% if site_settings.chat_sa_kupcem_aktivan or user.is_authenticated and user.is_staff %}
-<link rel="stylesheet" href="{% static 'css/site-chat.css' %}?v=20260801chat9">
+<link rel="stylesheet" href="{% static 'css/site-chat.css' %}?v=20260801chat12">
 
 <div class="site-chat" id="siteChat" hidden>
     {# —— Kupac panel (NE za staff/superuser — oni imaju samo chat sa kupcima) —— #}
@@ -76,20 +76,20 @@
                 </svg>
             </button>
         </header>
-        <div class="site-chat-staff-layout">
-            <aside class="site-chat-inbox" id="staffChatInbox" aria-label="Lista kupaca">
-                <div class="site-chat-inbox-head">
+        <div class="site-chat-staff-layout site-chat-staff-layout--dots">
+            {# Traka tačaka IZNAD razgovora — samo online (ili offline ako uključeno) koji su pisali #}
+            <div class="site-chat-dots-bar" id="staffChatInbox" aria-label="Kupci online">
+                <div class="site-chat-dots-bar-row">
                     <span class="site-chat-inbox-head-title">Kupci</span>
+                    <div class="site-chat-online-dots" id="staffChatInboxList" role="tablist"></div>
                     <span class="site-chat-inbox-head-count" id="staffInboxCount" hidden>0</span>
+                    <label class="site-chat-offline-toggle site-chat-offline-toggle--inline" for="staffShowOfflineChats" title="Prikaži i offline">
+                        <input type="checkbox" id="staffShowOfflineChats">
+                        <span>Offline</span>
+                    </label>
                 </div>
-                <label class="site-chat-offline-toggle" for="staffShowOfflineChats">
-                    <input type="checkbox" id="staffShowOfflineChats">
-                    <span>Offline chat</span>
-                </label>
-                <div class="site-chat-inbox-list" id="staffChatInboxList">
-                    <p class="site-chat-inbox-empty" id="staffInboxEmpty">Nema online kupaca.</p>
-                </div>
-            </aside>
+                <p class="site-chat-inbox-empty" id="staffInboxEmpty" hidden>Nema kupaca koji su pisali.</p>
+            </div>
             <div class="site-chat-thread" id="staffChatThread" hidden>
                 <div class="site-chat-thread-meta" id="staffThreadMeta"></div>
                 <div class="site-chat-messages site-chat-messages--staff-thread" id="staffChatMessages"></div>
@@ -177,5 +177,5 @@
     "autoOpenOnCustomerMessage": true
 }
 </script>
-<script src="{% static 'js/chat.js' %}?v=20260801chat9" defer></script>
+<script src="{% static 'js/chat.js' %}?v=20260801chat12" defer></script>
 {% endif %}

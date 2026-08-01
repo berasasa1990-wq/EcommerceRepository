@@ -214,9 +214,9 @@
     pointer-events: none;
 }
 
-/* Staff panel širi root kad je otvoren staff chat */
+/* Staff panel kad je otvoren */
 .site-chat:has(.site-chat-panel--staff:not([hidden])) {
-    width: min(680px, calc(100vw - 20px));
+    width: min(420px, calc(100vw - 20px));
     max-height: min(640px, calc(100dvh - 72px));
     bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 78px));
 }
@@ -570,9 +570,9 @@
     color: #fff;
 }
 
-/* Staff layout — širi panel, lista kupaca + isti chat izgled */
+/* Staff layout — traka tačaka gore + thread ispod (cijeli panel za poruke) */
 .site-chat-panel--staff {
-    width: min(680px, calc(100vw - 20px));
+    width: min(420px, calc(100vw - 20px));
     max-height: min(640px, calc(100dvh - 72px));
     display: flex;
     flex-direction: column;
@@ -582,9 +582,10 @@
     flex-shrink: 0;
 }
 
-.site-chat-staff-layout {
-    display: grid;
-    grid-template-columns: minmax(180px, 34%) 1fr;
+.site-chat-staff-layout,
+.site-chat-staff-layout--dots {
+    display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
     max-height: none;
@@ -592,79 +593,197 @@
     position: relative;
 }
 
-.site-chat-inbox {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    border-right: 1px solid #e2e8f0;
+/* Traka: Kupci + male tačke (iznad razgovora) */
+.site-chat-dots-bar {
+    flex-shrink: 0;
     background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 8px 10px 6px;
 }
 
-.site-chat-inbox-head {
+.site-chat-dots-bar-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
-    padding: 10px 12px 6px;
+    min-height: 28px;
+}
+
+.site-chat-online-dots {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.site-chat-dot {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: #22c55e;
+    cursor: pointer;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.site-chat-dot.is-online {
+    background: #22c55e;
+}
+
+.site-chat-dot.is-offline {
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
+}
+
+.site-chat-dot.is-active {
+    border-color: #0f766e;
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.28);
+}
+
+.site-chat-dot.is-unread {
+    animation: siteChatDotPulse 1.4s ease-out infinite;
+}
+
+.site-chat-dot-initial {
+    font-size: 9px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+
+.site-chat-dot-pip {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fbbf24;
+    border: 1.5px solid #fff;
+}
+
+@keyframes siteChatDotPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25); }
+    50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.12); }
 }
 
 .site-chat-offline-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 0 10px 8px;
-    padding: 6px 8px;
-    border-radius: 8px;
+    gap: 4px;
+    margin: 0;
+    padding: 3px 6px;
+    border-radius: 6px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    color: #475569;
+    color: #64748b;
     cursor: pointer;
     user-select: none;
     flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.site-chat-offline-toggle--inline {
+    margin-left: auto;
 }
 
 .site-chat-offline-toggle input {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     accent-color: #0f766e;
     cursor: pointer;
 }
 
-.site-chat-inbox-status {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 12px;
-    height: 12px;
+.site-chat-inbox-head-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.site-chat-inbox-head-count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #0f766e;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.site-chat-dots-bar .site-chat-inbox-empty {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: left;
+}
+
+/* Thread zauzima sav preostali prostor */
+.site-chat-staff-layout--dots .site-chat-thread {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.site-chat-staff-layout--dots .site-chat-thread-placeholder {
+    flex: 1 1 auto;
+    grid-column: unset;
+    grid-row: unset;
+}
+
+/* Veliki status krug — online (zeleni) / offline (crveni) */
+.site-chat-inbox-status-lg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    border: 2px solid #fff;
-    z-index: 2;
     box-sizing: border-box;
 }
 
-.site-chat-inbox-status--online {
+.site-chat-inbox-status-lg--online {
     background: #22c55e;
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+    box-shadow:
+        0 0 0 3px rgba(34, 197, 94, 0.22),
+        0 0 0 1px rgba(34, 197, 94, 0.5);
 }
 
-.site-chat-inbox-status--offline {
+.site-chat-inbox-status-lg--offline {
     background: #ef4444;
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
 }
 
 .site-chat-inbox-item.is-offline {
-    opacity: 0.78;
+    opacity: 0.72;
 }
 
-.site-chat-inbox-item.is-offline .site-chat-inbox-avatar {
-    background: linear-gradient(145deg, #64748b, #94a3b8);
-}
-
-.site-chat-inbox-item.is-offline .site-chat-inbox-pulse {
-    display: none;
+.site-chat-inbox-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 auto;
+    text-align: left;
 }
 
 .site-chat-inbox-head-title {
@@ -706,12 +825,10 @@
 }
 
 .site-chat-inbox-item {
-    display: grid;
-    grid-template-columns: 44px 1fr auto;
-    grid-template-rows: auto auto;
-    column-gap: 10px;
-    row-gap: 2px;
+    display: flex;
+    flex-direction: row;
     align-items: center;
+    gap: 10px;
     width: 100%;
     text-align: left;
     padding: 10px 10px;
@@ -798,7 +915,6 @@
 }
 
 .site-chat-inbox-item strong {
-    grid-column: 2;
     font-size: 13px;
     font-weight: 700;
     color: #0f172a;
@@ -806,6 +922,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+    display: block;
 }
 
 .site-chat-inbox-item.is-unread strong {
@@ -813,7 +930,6 @@
 }
 
 .site-chat-inbox-preview {
-    grid-column: 2;
     font-size: 11px;
     color: #64748b;
     max-width: 100%;
@@ -821,6 +937,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
+    display: block;
 }
 
 .site-chat-inbox-item.is-unread .site-chat-inbox-preview {
@@ -829,13 +946,12 @@
 }
 
 .site-chat-inbox-meta {
-    grid-column: 3;
-    grid-row: 1 / span 2;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
     flex-shrink: 0;
+    margin-left: auto;
 }
 
 .site-chat-inbox-badge {
@@ -1085,6 +1201,20 @@
         max-height: min(80dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px));
     }
 
+    .site-chat-staff-layout--dots {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .site-chat-dots-bar {
+        padding: 8px 10px 6px;
+    }
+
+    .site-chat-dot {
+        width: 24px;
+        height: 24px;
+    }
+
     .site-chat-header {
         padding: 12px 12px 10px 14px;
         flex-shrink: 0;
@@ -1138,36 +1268,19 @@
     }
 
     .site-chat-staff-layout {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto minmax(0, 1fr);
         max-height: none;
         flex: 1 1 auto;
         min-height: 0;
     }
 
-    .site-chat-inbox {
-        border-right: none;
-        border-bottom: 1px solid #e2e8f0;
-        max-height: 132px;
-        flex-shrink: 0;
-    }
-
-    .site-chat-inbox-list {
-        max-height: 88px;
-    }
-
     .site-chat-thread-placeholder {
-        grid-column: 1;
         padding: 20px 16px;
-    }
-
-    .site-chat-staff-layout.has-thread .site-chat-inbox {
-        max-height: 110px;
     }
 
     .site-chat-thread {
         min-height: 0;
         max-height: none;
+        flex: 1 1 auto;
     }
 
     .site-chat-staff-footer {
@@ -1523,6 +1636,85 @@ body.mobile-nav-open .site-chat-launchers {
 body.popup-open .site-chat-launchers {
     opacity: 0.35;
     pointer-events: none;
+}
+
+/* Kupac — popup kad se chat prvi put pojavi */
+.site-chat-customer-popup {
+    position: fixed;
+    left: 50%;
+    bottom: max(100px, calc(env(safe-area-inset-bottom, 0px) + 90px));
+    transform: translateX(-50%) translateY(16px);
+    z-index: 1290;
+    width: min(320px, calc(100vw - 32px));
+    padding: 18px 18px 16px;
+    border-radius: 16px;
+    background: #fff;
+    color: #0f172a;
+    box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.18),
+        0 0 0 1px rgba(15, 118, 110, 0.12);
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s ease;
+    font-family: inherit;
+}
+
+.site-chat-customer-popup.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.site-chat-customer-popup__close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.site-chat-customer-popup__close:hover {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.site-chat-customer-popup__icon {
+    font-size: 28px;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.site-chat-customer-popup__title {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f766e;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+}
+
+.site-chat-customer-popup__text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #64748b;
+}
+
+@media (max-width: 768px) {
+    .site-chat-customer-popup {
+        bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+        width: min(300px, calc(100vw - 24px));
+    }
 }
 
 /* Superuser toast — nova poruka od kupca */

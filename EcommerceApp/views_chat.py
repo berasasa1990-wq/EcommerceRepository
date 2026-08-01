@@ -295,15 +295,17 @@ def chat_staff_inbox(request):
         ).order_by('-last_message_at')[:100]
     )
     serialized = serialize_conversations_list(conversations, include_preview=True)
+    # Samo razgovori gdje je kupac stvarno pisao (ne samo otvoren chat / auto-pozdrav)
+    active = [c for c in serialized if c.get('has_customer_message')]
     online_unread = sum(
-        1 for c in serialized
+        1 for c in active
         if c.get('is_online') and (c.get('staff_unread_count') or 0) > 0
     )
     return JsonResponse({
         'ok': True,
         'unread_conversations': staff_unread_total(),
         'online_unread_conversations': online_unread,
-        'conversations': serialized,
+        'conversations': active,
     })
 
 

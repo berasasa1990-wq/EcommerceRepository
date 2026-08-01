@@ -1197,17 +1197,21 @@ main {
     color: #111 !important;
 }
 
-/* Hero Carousel — 1920×420; cover = puna širina bez bijelih traka */
+/* Hero Carousel — 1920×420; edge-to-edge full bleed */
 .hero-carousel {
     position: relative;
     width: 100%;
-    max-width: 100vw;
+    max-width: none;
     overflow: hidden;
     background: #0a0a0a;
     border-bottom: 1px solid var(--gray-200);
     margin-top: 0;
     margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
     line-height: 0;
+    box-sizing: border-box;
 }
 
 .carousel-track {
@@ -1216,6 +1220,9 @@ main {
     aspect-ratio: 1920 / 420;
     position: relative;
     height: auto;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 @media (min-width: 1025px) {
@@ -9757,8 +9764,8 @@ button.nav-action-link {
         max-height: none;
         margin: 0;
         background: transparent;
-        /* Više prostora s lijeve — kategorije nisu „zalijepljene” uz rub */
-        padding: 8px 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(28px, env(safe-area-inset-left, 0px) + 16px);
+        /* Više prostora s lijeve — kategorije odmaknute od ruba */
+        padding: 8px 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(40px, env(safe-area-inset-left, 0px) + 24px);
         transform: none;
         gap: 0;
         overflow-y: auto;
@@ -9863,7 +9870,7 @@ button.nav-action-link {
         width: 100%;
         z-index: 1202;
         background: #ffffff;
-        padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(28px, env(safe-area-inset-left, 0px) + 16px);
+        padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(40px, env(safe-area-inset-left, 0px) + 24px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -10036,8 +10043,8 @@ button.nav-action-link {
 
     .nav-menu.mobile-open > .nav-item.mega-open {
         background: var(--gray-100);
-        margin: 0 -20px 0 calc(-1 * max(28px, env(safe-area-inset-left, 0px) + 16px));
-        padding: 0 20px 0 max(28px, env(safe-area-inset-left, 0px) + 16px);
+        margin: 0 -20px 0 calc(-1 * max(40px, env(safe-area-inset-left, 0px) + 24px));
+        padding: 0 20px 0 max(40px, env(safe-area-inset-left, 0px) + 24px);
         border-left: 3px solid #28403d;
         border-bottom-color: var(--gray-300);
     }
@@ -10500,12 +10507,22 @@ button.nav-action-link {
 
     .hero-carousel {
         background: #0a0a0a;
+        /* Max razvučen od ruba do ruba na telefonu */
+        width: 100vw;
+        max-width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+        left: 0;
+        right: 0;
+        box-sizing: border-box;
     }
 
     .carousel-track {
         aspect-ratio: 1920 / 420;
+        width: 100%;
         height: auto;
         padding-bottom: 0;
+        min-height: 110px;
     }
 
     .carousel-slide {
@@ -10515,6 +10532,12 @@ button.nav-action-link {
         right: 0;
         bottom: 0;
         height: 100%;
+        width: 100%;
+    }
+
+    .slide-image {
+        width: 100%;
+        height: 100%;
     }
 
     .slide-image-link {
@@ -10523,11 +10546,12 @@ button.nav-action-link {
         height: 100%;
     }
 
-    .slide-image-img {
-        width: 100%;
-        height: 100%;
-        max-width: none;
-        object-fit: cover;
+    .slide-image-img,
+    .slide-image-video {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        object-fit: cover !important;
         object-position: center center;
         background: #0a0a0a;
     }

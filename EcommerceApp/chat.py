@@ -334,9 +334,14 @@ def serialize_conversation_summary(
     *,
     include_preview=False,
     is_online=None,
+    has_customer_message=None,
 ):
     if is_online is None:
         is_online = _online_lookup_for_conversations([conversation]).get(conversation.pk, False)
+    if has_customer_message is None:
+        has_customer_message = conversation.messages.filter(
+            sender_type=ChatMessage.Sender.CUSTOMER,
+        ).exists()
     data = {
         'id': conversation.pk,
         'display_name': conversation.display_name,
@@ -347,10 +352,18 @@ def serialize_conversation_summary(
         'last_message_at': timezone.localtime(conversation.last_message_at).isoformat(),
         'status': conversation.status,
         'is_online': bool(is_online),
+        'has_customer_message': bool(has_customer_message),
         'session_key': conversation.session_key or '',
     }
     if include_preview:
-        last_message = conversation.messages.order_by('-created_at').first()
+        last_message = (
+            conversation.messages
+            .filter(sender_type=ChatMessage.Sender.CUSTOMER)
+            .order_by('-created_at')
+            .first()
+        )
+        if not last_message:
+            last_message = conversation.messages.order_by('-created_at').first()
         if last_message:
             if last_message.product_id:
                 data['preview'] = f'📦 {last_message.product.naziv if last_message.product_id else "Artikal"}'
@@ -362,13 +375,30 @@ def serialize_conversation_summary(
 
 
 def serialize_conversations_list(conversations, *, include_preview=True):
+    from django.db.models import Count, Q
+
     convs = list(conversations)
+    if not convs:
+        return []
+
+    # Batch: koliko poruka je napisao kupac (ne brojimo samo auto-pozdrav)
+    counts = dict(
+        ChatConversation.objects.filter(pk__in=[c.pk for c in convs])
+        .annotate(
+            customer_msg_count=Count(
+                'messages',
+                filter=Q(messages__sender_type=ChatMessage.Sender.CUSTOMER),
+            ),
+        )
+        .values_list('pk', 'customer_msg_count')
+    )
     online_map = _online_lookup_for_conversations(convs)
     return [
         serialize_conversation_summary(
             c,
             include_preview=include_preview,
             is_online=online_map.get(c.pk, False),
+            has_customer_message=bool(counts.get(c.pk, 0)),
         )
         for c in convs
     ]

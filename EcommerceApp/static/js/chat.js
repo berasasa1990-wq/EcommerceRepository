@@ -398,7 +398,64 @@ document.addEventListener('DOMContentLoaded', () => {
         return data;
     }
 
-    async function openCustomerChat({ proactive = false } = {}) {
+    function playCustomerChatSound() {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            const ctx = new Ctx();
+            const now = ctx.currentTime;
+            const notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+            notes.forEach((freq, i) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine';
+                o.frequency.value = freq;
+                g.gain.setValueAtTime(0.0001, now);
+                g.gain.exponentialRampToValueAtTime(0.07, now + 0.02 + i * 0.08);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + 0.22 + i * 0.1);
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.start(now + i * 0.09);
+                o.stop(now + 0.35 + i * 0.1);
+            });
+            setTimeout(() => {
+                try { ctx.close(); } catch (e) { /* ignore */ }
+            }, 800);
+        } catch (e) { /* ignore */ }
+    }
+
+    function showCustomerChatAppearPopup() {
+        let popup = document.getElementById('customerChatAppearPopup');
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'customerChatAppearPopup';
+            popup.className = 'site-chat-customer-popup';
+            popup.setAttribute('role', 'status');
+            popup.innerHTML = `
+                <button type="button" class="site-chat-customer-popup__close" aria-label="Zatvori">×</button>
+                <div class="site-chat-customer-popup__icon" aria-hidden="true">💬</div>
+                <strong class="site-chat-customer-popup__title">Tu smo da pomognemo!</strong>
+                <p class="site-chat-customer-popup__text">Imate pitanje ili trebate preporuku? Pišite nam u chatu.</p>
+            `;
+            document.body.appendChild(popup);
+            popup.querySelector('.site-chat-customer-popup__close')?.addEventListener('click', () => {
+                popup.classList.remove('is-visible');
+            });
+            popup.addEventListener('click', (e) => {
+                if (e.target === popup) popup.classList.remove('is-visible');
+            });
+        }
+        // restart animacije
+        popup.classList.remove('is-visible');
+        void popup.offsetWidth;
+        popup.classList.add('is-visible');
+        clearTimeout(showCustomerChatAppearPopup._t);
+        showCustomerChatAppearPopup._t = setTimeout(() => {
+            popup.classList.remove('is-visible');
+        }, 5500);
+    }
+
+    async function openCustomerChat({ proactive = false, announce = false } = {}) {
         if (!customerPanel) return;
         revealCustomerLauncher();
         customerOpen = true;
@@ -413,6 +470,11 @@ document.addEventListener('DOMContentLoaded', () => {
             startCustomerPolling();
             // Bez auto-fokusa na mobitelu (ne otvara tastaturu / ne zumira)
             safeFocus(customerInput);
+            // Zvuk + popup samo kad se chat prvi put pojavi (proaktivno)
+            if (announce) {
+                playCustomerChatSound();
+                showCustomerChatAppearPopup();
+            }
         } catch (error) {
             console.error(error);
         }
@@ -542,71 +604,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function filterConversationsForDisplay(conversations) {
-        const list = conversations || [];
-        if (showOfflineChats) return list;
-        return list.filter((c) => c.is_online);
+        // Samo oni koji su pisali (backend već filtrira has_customer_message)
+        let list = (conversations || []).filter((c) => c.has_customer_message !== false);
+        if (!showOfflineChats) {
+            list = list.filter((c) => c.is_online);
+        }
+        return list;
     }
 
-    function renderInboxItem(conversation) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'site-chat-inbox-item';
-        if (conversation.staff_unread_count > 0) button.classList.add('is-unread');
-        if (conversation.id === activeStaffConversationId) button.classList.add('is-active');
-        if (!conversation.is_online) button.classList.add('is-offline');
+    /** Mala tačka za prebacivanje razgovora (iznad KUPCI) */
+    function renderInboxDot(conversation) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'site-chat-dot';
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute(
+            'aria-label',
+            `${conversation.display_name || 'Kupac'}${conversation.staff_unread_count ? ', nova poruka' : ''}`,
+        );
+        btn.title = conversation.display_name || 'Kupac';
 
-        const avatarWrap = document.createElement('span');
-        avatarWrap.className = 'site-chat-inbox-avatar-wrap';
-        const pulse = document.createElement('span');
-        pulse.className = 'site-chat-inbox-pulse';
-        pulse.setAttribute('aria-hidden', 'true');
-        const avatar = document.createElement('span');
-        avatar.className = 'site-chat-inbox-avatar';
-        avatar.textContent = initialsFromName(conversation.display_name);
-        avatarWrap.append(pulse, avatar);
-
-        // Online zeleni / offline crveni krug
-        const statusDot = document.createElement('span');
-        statusDot.className = conversation.is_online
-            ? 'site-chat-inbox-status site-chat-inbox-status--online'
-            : 'site-chat-inbox-status site-chat-inbox-status--offline';
-        statusDot.title = conversation.is_online ? 'Online' : 'Offline';
-        statusDot.setAttribute('aria-label', conversation.is_online ? 'Online' : 'Offline');
-        avatarWrap.appendChild(statusDot);
-
-        const title = document.createElement('strong');
-        title.textContent = conversation.display_name || 'Gost';
-
-        const preview = document.createElement('span');
-        preview.className = 'site-chat-inbox-preview';
-        const offlineTag = conversation.is_online ? '' : ' · offline';
-        preview.textContent = (conversation.preview || 'Novi razgovor') + offlineTag;
-
-        const meta = document.createElement('span');
-        meta.className = 'site-chat-inbox-meta';
+        if (conversation.is_online) {
+            btn.classList.add('is-online');
+        } else {
+            btn.classList.add('is-offline');
+        }
         if (conversation.staff_unread_count > 0) {
-            const badge = document.createElement('span');
-            badge.className = 'site-chat-inbox-badge';
-            badge.textContent = conversation.staff_unread_count > 9
-                ? '9+'
-                : String(conversation.staff_unread_count);
-            meta.appendChild(badge);
-        } else if (conversation.is_online) {
-            const live = document.createElement('span');
-            live.className = 'site-chat-inbox-dot-live';
-            live.title = 'Online';
-            meta.appendChild(live);
+            btn.classList.add('is-unread');
+        }
+        if (conversation.id === activeStaffConversationId) {
+            btn.classList.add('is-active');
         }
 
-        button.append(avatarWrap, title, preview, meta);
-        button.addEventListener('click', () => openStaffConversation(conversation.id));
-        return button;
+        // Inicijal u tački (sitno)
+        const initial = document.createElement('span');
+        initial.className = 'site-chat-dot-initial';
+        const name = (conversation.display_name || 'G').trim();
+        initial.textContent = name.charAt(0).toUpperCase();
+        btn.appendChild(initial);
+
+        if (conversation.staff_unread_count > 0) {
+            const pip = document.createElement('span');
+            pip.className = 'site-chat-dot-pip';
+            pip.setAttribute('aria-hidden', 'true');
+            btn.appendChild(pip);
+        }
+
+        btn.addEventListener('click', () => openStaffConversation(conversation.id));
+        return btn;
     }
 
     function paintStaffInboxList(conversations) {
         const listRoot = staffInboxList || staffInbox;
         if (!listRoot) return;
-        listRoot.querySelectorAll('.site-chat-inbox-item').forEach((item) => item.remove());
+        listRoot.querySelectorAll('.site-chat-dot, .site-chat-inbox-item').forEach((item) => item.remove());
 
         const visible = filterConversationsForDisplay(conversations);
         if (staffInboxCount) {
@@ -622,16 +673,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (staffInboxEmpty) {
                 staffInboxEmpty.hidden = false;
                 staffInboxEmpty.textContent = showOfflineChats
-                    ? 'Nema aktivnih razgovora.'
-                    : 'Nema online kupaca. Uključi „Offline chat” da vidiš offline.';
-                if (!staffInboxEmpty.parentElement) listRoot.appendChild(staffInboxEmpty);
+                    ? 'Nema kupaca koji su pisali.'
+                    : 'Nema online kupaca s porukom.';
             }
             return;
         }
 
         if (staffInboxEmpty) staffInboxEmpty.hidden = true;
         visible.forEach((conversation) => {
-            listRoot.appendChild(renderInboxItem(conversation));
+            listRoot.appendChild(renderInboxDot(conversation));
         });
     }
 
@@ -640,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await apiFetch('/api/chat/staff/inbox/');
         const all = data.conversations || [];
         const onlineUnread = data.online_unread_conversations
-            ?? all.filter((c) => c.is_online && (c.staff_unread_count || 0) > 0).length;
+            ?? all.filter((c) => c.is_online && c.has_customer_message !== false && (c.staff_unread_count || 0) > 0).length;
         // Pulse / badge: prioritet online nepročitani
         setBadge(staffBadge, onlineUnread || (showOfflineChats ? (data.unread_conversations || 0) : 0));
         setStaffPulse(onlineUnread > 0 || (showOfflineChats && (data.unread_conversations || 0) > 0));
@@ -732,11 +782,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const inbox = await apiFetch('/api/chat/staff/inbox/');
                 list = inbox.conversations || [];
                 const onlineUnread = inbox.online_unread_conversations
-                    ?? list.filter((c) => c.is_online && (c.staff_unread_count || 0) > 0).length;
+                    ?? list.filter((c) => c.is_online && c.has_customer_message !== false && (c.staff_unread_count || 0) > 0).length;
                 setBadge(staffBadge, onlineUnread);
                 lastStaffUnreadTotal = onlineUnread;
             }
-            const onlineList = (list || []).filter((c) => c.is_online);
+            const onlineList = (list || []).filter(
+                (c) => c.is_online && c.has_customer_message !== false,
+            );
             const target = onlineList.find((c) => (c.staff_unread_count || 0) > 0)
                 || onlineList[0];
             if (!target) return;
@@ -777,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Nova poruka od online kupca → prebaci na taj thread
                 const unreadConv = all.find(
-                    (c) => c.is_online && (c.staff_unread_count || 0) > 0,
+                    (c) => c.is_online && c.has_customer_message !== false && (c.staff_unread_count || 0) > 0,
                 );
                 if (
                     unreadConv
@@ -1053,7 +1105,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             sessionStorage.setItem(STORAGE_PROACTIVE, '1');
-            await openCustomerChat({ proactive: true });
+            // Prvo pojavljivanje: zvuk + popup
+            await openCustomerChat({ proactive: true, announce: true });
         }, wait);
     }
 
