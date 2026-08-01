@@ -111,10 +111,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function isTouchPhone() {
+        return window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)').matches;
+    }
+
     function autoResize(textarea) {
         if (!textarea) return;
         textarea.style.height = 'auto';
         textarea.style.height = `${Math.min(textarea.scrollHeight, 110)}px`;
+    }
+
+    /** Na telefonu ne fokusiraj polje — ne otvaraj tastaturu automatski */
+    function safeFocus(el) {
+        if (!el || isTouchPhone()) return;
+        try {
+            el.focus({ preventScroll: true });
+        } catch (e) {
+            try { el.focus(); } catch (err) { /* ignore */ }
+        }
     }
 
     /** Sigurno pretvori URL-ove u klikabilne linkove (http/https/www). */
@@ -342,6 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function syncLauncherState() {
         launchers?.classList.toggle('is-customer-open', customerOpen);
+        launchers?.classList.toggle('is-staff-open', staffOpen);
+        document.body.classList.toggle('site-chat-panel-open', customerOpen || staffOpen);
         if (siteChat) {
             siteChat.hidden = !(customerOpen || staffOpen);
         }
@@ -395,7 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await loadCustomerChat({ proactive });
             startCustomerPolling();
-            customerInput?.focus({ preventScroll: true });
+            // Bez auto-fokusa na mobitelu (ne otvara tastaturu / ne zumira)
+            safeFocus(customerInput);
         } catch (error) {
             console.error(error);
         }
@@ -673,7 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (staffChatStatusText) {
             staffChatStatusText.textContent = `U razgovoru s ${conversation.display_name || 'kupcem'}`;
         }
-        staffInput?.focus({ preventScroll: true });
+        // Bez auto-tastature na telefonu
+        safeFocus(staffInput);
         await loadStaffInbox();
     }
 
@@ -858,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staffProductToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
         staffProductToggle.classList.toggle('is-open', open);
         if (open) {
-            staffProductSearch?.focus({ preventScroll: true });
+            safeFocus(staffProductSearch);
         } else {
             selectedProduct = null;
             if (staffProductSearch) staffProductSearch.value = '';

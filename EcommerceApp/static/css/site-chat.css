@@ -474,18 +474,21 @@
 .site-chat-input {
     flex: 1 1 auto;
     resize: none;
-    min-height: 42px;
+    min-height: 44px;
     max-height: 110px;
     padding: 11px 14px;
     border: 1.5px solid #e2e8f0;
     border-radius: 12px;
-    font-size: 14px;
+    /* ≥16px sprječava iOS auto-zoom na focus */
+    font-size: 16px;
     font-family: inherit;
     line-height: 1.35;
     color: #0f172a;
     background: #f8fafc;
     outline: none;
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 .site-chat-input:focus {
@@ -1007,50 +1010,63 @@
 /* Mobile */
 @media (max-width: 768px) {
     .site-chat-launchers {
-        right: max(8px, env(safe-area-inset-right, 0px));
-        /* Contact float je sakriven na mobitelu */
-        bottom: max(14px, env(safe-area-inset-bottom, 0px));
+        right: max(10px, env(safe-area-inset-right, 0px));
+        bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        z-index: 1180;
     }
 
     .site-chat-launcher--customer.site-chat-launcher--fab {
-        width: 82px;
-        height: 82px;
+        width: 76px;
+        height: 76px;
     }
 
     .site-chat-launcher--staff.site-chat-launcher--fab {
-        width: 58px;
-        height: 58px;
+        width: 56px;
+        height: 56px;
     }
 
     .site-chat-fab-core {
-        width: 52px;
-        height: 52px;
+        width: 50px;
+        height: 50px;
     }
 
     .site-chat-fab-icon {
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
     }
 
     .site-chat-fab-ring-text {
-        font-size: 10.5px;
-        letter-spacing: 0.1em;
+        font-size: 10px;
+        letter-spacing: 0.08em;
     }
 
+    /* Bottom sheet — puni širinu, ništa ne prekriva sadržaj iza FAB-a dok je panel otvoren */
     .site-chat {
         right: 0;
         left: 0;
         bottom: 0;
         width: 100%;
-        max-height: min(78dvh, 640px);
+        max-height: none;
+        height: auto;
         padding: 0;
+        z-index: 1190;
+    }
+
+    .site-chat:has(.site-chat-panel--staff:not([hidden])),
+    .site-chat:has(.site-chat-panel--customer:not([hidden])) {
+        width: 100%;
+        max-height: none;
+        bottom: 0;
     }
 
     .site-chat-panel {
         width: 100%;
-        max-height: min(78dvh, 640px);
-        border-radius: 18px 18px 0 0;
+        max-height: min(72dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 12px));
+        border-radius: 16px 16px 0 0;
         animation-name: siteChatPanelInMobile;
+        /* Spriječi horizontalni overflow / “zoom” osjećaj */
+        overflow: hidden;
+        touch-action: pan-y;
     }
 
     @keyframes siteChatPanelInMobile {
@@ -1066,49 +1082,148 @@
 
     .site-chat-panel--staff {
         width: 100%;
-        max-height: min(88dvh, 720px);
+        max-height: min(80dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px));
+    }
+
+    .site-chat-header {
+        padding: 12px 12px 10px 14px;
+        flex-shrink: 0;
+    }
+
+    .site-chat-title {
+        font-size: 15px;
+    }
+
+    .site-chat-subtitle {
+        font-size: 11px;
+    }
+
+    .site-chat-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+    }
+
+    .site-chat-body {
+        min-height: 0;
+        flex: 1 1 auto;
+    }
+
+    .site-chat-messages {
+        max-height: none;
+        min-height: 100px;
+        flex: 1 1 auto;
+        padding: 12px 12px 8px;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    .site-chat-composer {
+        padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+        flex-shrink: 0;
+        gap: 8px;
+    }
+
+    .site-chat-input {
+        font-size: 16px !important;
+        min-height: 44px;
+        /* iOS: sprječi zoom i čudne skokove */
+        transform: translateZ(0);
+    }
+
+    .site-chat-send {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
     }
 
     .site-chat-staff-layout {
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-        max-height: min(78dvh, 640px);
+        grid-template-rows: auto minmax(0, 1fr);
+        max-height: none;
+        flex: 1 1 auto;
+        min-height: 0;
     }
 
     .site-chat-inbox {
         border-right: none;
         border-bottom: 1px solid #e2e8f0;
-        max-height: 150px;
+        max-height: 132px;
+        flex-shrink: 0;
+    }
+
+    .site-chat-inbox-list {
+        max-height: 88px;
     }
 
     .site-chat-thread-placeholder {
         grid-column: 1;
-        padding: 24px 16px;
+        padding: 20px 16px;
     }
 
     .site-chat-staff-layout.has-thread .site-chat-inbox {
-        max-height: 120px;
+        max-height: 110px;
     }
 
-    .site-chat-messages {
+    .site-chat-thread {
+        min-height: 0;
         max-height: none;
-        min-height: 160px;
+    }
+
+    .site-chat-staff-footer {
+        flex-shrink: 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .site-chat-product-search,
+    .site-chat-product-pct {
+        font-size: 16px !important;
+    }
+
+    .site-chat-product-card {
+        max-width: 100%;
+    }
+
+    .site-chat-product-card__img {
+        width: 64px;
+        height: 64px;
+    }
+
+    /* Dok je chat panel otvoren — sakrij FAB da ništa ne prekriva panel */
+    .site-chat-launchers.is-customer-open,
+    .site-chat-launchers.is-staff-open {
+        visibility: hidden;
+        pointer-events: none;
+        opacity: 0;
     }
 
     /* Ne preklapaj savjetnik s lijeve */
     body.fish-advisor-open .site-chat-launchers {
         bottom: max(80px, env(safe-area-inset-bottom, 0px) + 64px);
     }
+
+    /* Dok je chat otvoren — smanji smetnje drugih floatova */
+    body.site-chat-panel-open .scroll-top-btn {
+        display: none !important;
+    }
+
+    body.site-chat-panel-open .fish-advisor {
+        opacity: 0.35;
+        pointer-events: none;
+    }
 }
 
-/* Dok je panel otvoren — blago utišana ikona */
-.site-chat-launchers.is-customer-open .site-chat-launcher--customer {
-    opacity: 0.88;
-}
+/* Desktop: dok je panel otvoren — blago utišana ikona (ne sakrivaj potpuno) */
+@media (min-width: 769px) {
+    .site-chat-launchers.is-customer-open .site-chat-launcher--customer,
+    .site-chat-launchers.is-staff-open .site-chat-launcher--staff {
+        opacity: 0.88;
+    }
 
-.site-chat-launchers.is-customer-open .site-chat-fab-ring {
-    animation-play-state: paused;
-    opacity: 0.75;
+    .site-chat-launchers.is-customer-open .site-chat-fab-ring {
+        animation-play-state: paused;
+        opacity: 0.75;
+    }
 }
 
 /* Dok chat još nije proaktivno otvoren — nema ni launcher dugmeta */
@@ -1284,11 +1399,14 @@
     border: 1.5px solid #e2e8f0;
     border-radius: 8px;
     padding: 7px 9px;
-    font-size: 12px;
+    /* ≥16px — bez iOS zooma */
+    font-size: 16px;
     font-family: inherit;
     background: #f8fafc;
-    min-height: 36px;
+    min-height: 40px;
     box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 .site-chat-product-pct {
@@ -1316,9 +1434,9 @@
 }
 
 .site-chat-composer--staff .site-chat-input {
-    min-height: 40px;
-    padding: 9px 12px;
-    font-size: 13px;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 16px;
 }
 
 .site-chat-composer--staff .site-chat-send {
