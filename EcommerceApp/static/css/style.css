@@ -9764,8 +9764,13 @@ button.nav-action-link {
         max-height: none;
         margin: 0;
         background: transparent;
-        /* Više prostora s lijeve — kategorije odmaknute od ruba */
-        padding: 8px 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(40px, env(safe-area-inset-left, 0px) + 24px);
+        /*
+         * Isti bočni razmak lijevo/desno:
+         * tekst kategorija od lijevog ruba = strelice od desnog ruba.
+         */
+        --mobile-nav-gutter: max(24px, env(safe-area-inset-left, 0px) + 16px);
+        --mobile-nav-gutter-end: max(24px, env(safe-area-inset-right, 0px) + 16px);
+        padding: 8px var(--mobile-nav-gutter-end) calc(24px + env(safe-area-inset-bottom, 0px)) var(--mobile-nav-gutter);
         transform: none;
         gap: 0;
         overflow-y: auto;
@@ -9775,6 +9780,7 @@ button.nav-action-link {
         box-shadow: none;
         font-family: inherit;
         -webkit-font-smoothing: inherit;
+        box-sizing: border-box;
     }
 
     .nav-menu.mobile-open > .nav-item:first-child {
@@ -9790,7 +9796,8 @@ button.nav-action-link {
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 13px 4px 13px 2px;
+        /* Bez dodatnog lijevo/desno — gutter je na listi */
+        padding: 14px 0;
         font-size: 15px;
         font-weight: 500;
         line-height: 1.35;
@@ -9820,7 +9827,8 @@ button.nav-action-link {
         justify-content: center;
         width: 36px;
         height: 36px;
-        margin: -8px -4px -8px 4px;
+        /* Ne vuci strelicu prema rubu — isti razmak kao lijevi tekst */
+        margin: -8px 0 -8px 8px;
         border-right: none;
         border-bottom: none;
         transform: none;
@@ -9870,7 +9878,8 @@ button.nav-action-link {
         width: 100%;
         z-index: 1202;
         background: #ffffff;
-        padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px)) max(40px, env(safe-area-inset-left, 0px) + 24px);
+        /* Isti gutter kao lista glavnih kategorija */
+        padding: 0 max(24px, env(safe-area-inset-right, 0px) + 16px) calc(24px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px) + 16px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -9992,7 +10001,7 @@ button.nav-action-link {
 
     .mobile-nav-subview-link {
         display: block;
-        padding: 13px 4px 13px 2px;
+        padding: 13px 0;
         border-bottom: 1px solid #ececec;
         font-size: 14px;
         font-weight: 500;
@@ -10043,10 +10052,11 @@ button.nav-action-link {
 
     .nav-menu.mobile-open > .nav-item.mega-open {
         background: var(--gray-100);
-        margin: 0 -20px 0 calc(-1 * max(40px, env(safe-area-inset-left, 0px) + 24px));
-        padding: 0 20px 0 max(40px, env(safe-area-inset-left, 0px) + 24px);
+        margin: 0 calc(-1 * var(--mobile-nav-gutter-end, 24px)) 0 calc(-1 * var(--mobile-nav-gutter, 24px));
+        padding: 0 var(--mobile-nav-gutter-end, 24px) 0 var(--mobile-nav-gutter, 24px);
         border-left: 3px solid #28403d;
         border-bottom-color: var(--gray-300);
+        box-sizing: border-box;
     }
 
     .nav-menu.mobile-open > .nav-item.mega-open > a {
