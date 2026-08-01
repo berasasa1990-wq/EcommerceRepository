@@ -9719,6 +9719,10 @@ button.nav-action-link {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
         -webkit-overflow-scrolling: touch;
+        /* Isti lijevi rub kao search: header-row--primary padding 12px */
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box;
     }
 
     .mobile-nav-panel.is-open .mobile-nav-panel__header {
@@ -9726,8 +9730,10 @@ button.nav-action-link {
         flex-shrink: 0;
         justify-content: flex-end;
         align-items: center;
-        padding: 6px 20px 0 max(24px, env(safe-area-inset-left, 0px));
+        /* Header primary: padding 4px 12px 8px → search na 12px */
+        padding: 6px 12px 0 12px !important;
         min-height: 36px;
+        box-sizing: border-box;
     }
 
     .mobile-nav-panel.is-open .mobile-nav-panel__back {
@@ -9762,15 +9768,16 @@ button.nav-action-link {
         min-height: 0;
         width: 100%;
         max-height: none;
-        margin: 0;
+        margin: 0 !important;
         background: transparent;
         /*
-         * Isti bočni razmak lijevo/desno:
-         * tekst kategorija od lijevog ruba = strelice od desnog ruba.
+         * KRITIČNO: poravnanje s search barom.
+         * .header-row--primary { padding: 4px 12px 8px } → search box na 12px od ruba.
+         * Padding na UL + !important da ga .nav-menu { padding:0 } ili cache ne pregazi.
          */
-        --mobile-nav-gutter: max(24px, env(safe-area-inset-left, 0px) + 16px);
-        --mobile-nav-gutter-end: max(24px, env(safe-area-inset-right, 0px) + 16px);
-        padding: 8px var(--mobile-nav-gutter-end) calc(24px + env(safe-area-inset-bottom, 0px)) var(--mobile-nav-gutter);
+        --mobile-nav-gutter: 12px;
+        --mobile-nav-gutter-end: 12px;
+        padding: 8px 12px calc(24px + env(safe-area-inset-bottom, 0px)) 12px !important;
         transform: none;
         gap: 0;
         overflow-y: auto;
@@ -9789,20 +9796,59 @@ button.nav-action-link {
 
     .nav-menu.mobile-open > .nav-item {
         border-bottom: 1px solid var(--gray-200);
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box;
     }
 
     .nav-menu.mobile-open > .nav-item > a {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        /* Bez dodatnog lijevo/desno — gutter je na listi */
-        padding: 14px 0;
+        justify-content: flex-start;
+        gap: 0;
+        /* Tekst kategorije kreće na istoj liniji kao lijevi rub search bara */
+        padding: 14px 0 !important;
+        margin: 0 !important;
         font-size: 15px;
         font-weight: 500;
         line-height: 1.35;
         letter-spacing: -0.01em;
         color: #111111;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    /*
+     * Bijeli „—” ispred naziva — ista širina kao u subview-u
+     * (Nazad / naslov / podkategorije na jednoj liniji).
+     */
+    .nav-menu.mobile-open {
+        --mobile-nav-text-indent: 1.6em;
+    }
+
+    .nav-menu.mobile-open > .nav-item > a::before {
+        content: '——';
+        display: inline-block;
+        width: var(--mobile-nav-text-indent, 1.6em);
+        color: #ffffff !important;
+        flex-shrink: 0;
+        font-weight: 400;
+        letter-spacing: 0;
+        margin-right: 0;
+        overflow: hidden;
+        pointer-events: none;
+        user-select: none;
+        box-sizing: border-box;
+    }
+
+    /* Strelica ostaje desno */
+    .nav-menu.mobile-open > .nav-item > a .nav-chevron {
+        margin-left: auto !important;
+    }
+
+    /* Ne diraj underline ::after na desktop stilovima — na mobitelu sakrij crtu ispod */
+    .nav-menu.mobile-open > .nav-item > a::after {
+        display: none !important;
     }
 
     .nav-menu.mobile-open > .nav-item:not(.has-mega-menu) > a {
@@ -9878,8 +9924,9 @@ button.nav-action-link {
         width: 100%;
         z-index: 1202;
         background: #ffffff;
-        /* Isti gutter kao lista glavnih kategorija */
-        padding: 0 max(24px, env(safe-area-inset-right, 0px) + 16px) calc(24px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px) + 16px);
+        /* Isti rub kao search bar (header primary 12px) */
+        padding: 0 12px calc(24px + env(safe-area-inset-bottom, 0px)) 12px !important;
+        box-sizing: border-box;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -9945,6 +9992,11 @@ button.nav-action-link {
         }
     }
 
+    /* Zajednički bijeli spacer — ista širina za Nazad, naslov i podkategorije */
+    .mobile-nav-subview {
+        --mobile-nav-text-indent: 1.6em;
+    }
+
     .mobile-nav-back {
         display: inline-flex;
         align-items: center;
@@ -9957,6 +10009,21 @@ button.nav-action-link {
         font-weight: 500;
         color: #28403d;
         cursor: pointer;
+    }
+
+    /* Bijeli „—” ispred Nazad — u liniji s podkategorijama */
+    .mobile-nav-back::before {
+        content: '——';
+        display: inline-block;
+        width: var(--mobile-nav-text-indent, 1.6em);
+        color: #ffffff !important;
+        letter-spacing: 0;
+        margin-right: 0;
+        overflow: hidden;
+        pointer-events: none;
+        user-select: none;
+        flex-shrink: 0;
+        box-sizing: border-box;
     }
 
     .mobile-nav-back__icon {
@@ -9977,6 +10044,20 @@ button.nav-action-link {
         text-transform: none;
         letter-spacing: -0.02em;
         line-height: 1.25;
+    }
+
+    /* Bijeli „—” ispred naziva glavne kategorije — ista linija kao podkategorije */
+    .mobile-nav-subview-title::before {
+        content: '——';
+        display: inline-block;
+        width: var(--mobile-nav-text-indent, 1.6em);
+        color: #ffffff !important;
+        letter-spacing: 0;
+        margin-right: 0;
+        overflow: hidden;
+        pointer-events: none;
+        user-select: none;
+        box-sizing: border-box;
     }
 
     .mobile-nav-subview-list {
@@ -10001,7 +10082,8 @@ button.nav-action-link {
 
     .mobile-nav-subview-link {
         display: block;
-        padding: 13px 0;
+        padding: 13px 0 !important;
+        margin: 0 !important;
         border-bottom: 1px solid #ececec;
         font-size: 14px;
         font-weight: 500;
@@ -10011,6 +10093,32 @@ button.nav-action-link {
         line-height: 1.35;
         transition: background 0.15s ease, color 0.15s ease;
         border-radius: 6px;
+        box-sizing: border-box;
+    }
+
+    /* Ista širina indent-a kao Nazad i naslov kategorije → jedna vertikalna linija */
+    .mobile-nav-subview-link::before {
+        content: '——';
+        display: inline-block;
+        width: var(--mobile-nav-text-indent, 1.6em);
+        color: #ffffff !important;
+        letter-spacing: 0;
+        margin-right: 0;
+        overflow: hidden;
+        pointer-events: none;
+        user-select: none;
+        box-sizing: border-box;
+        vertical-align: baseline;
+    }
+
+    /* Dublje u stablu: isti početak teksta + blagi dodatni razmak unutar */
+    .mobile-nav-subview-link--child::before {
+        content: '——';
+        width: var(--mobile-nav-text-indent, 1.6em);
+    }
+
+    .mobile-nav-subview-link--child {
+        padding-left: 0 !important;
     }
 
     .mobile-nav-subview-link:active {
@@ -10052,8 +10160,9 @@ button.nav-action-link {
 
     .nav-menu.mobile-open > .nav-item.mega-open {
         background: var(--gray-100);
-        margin: 0 calc(-1 * var(--mobile-nav-gutter-end, 24px)) 0 calc(-1 * var(--mobile-nav-gutter, 24px));
-        padding: 0 var(--mobile-nav-gutter-end, 24px) 0 var(--mobile-nav-gutter, 24px);
+        /* Ne vuci u negativ — zadrži 12px poravnanje s searchom */
+        margin: 0 !important;
+        padding: 0 !important;
         border-left: 3px solid #28403d;
         border-bottom-color: var(--gray-300);
         box-sizing: border-box;
