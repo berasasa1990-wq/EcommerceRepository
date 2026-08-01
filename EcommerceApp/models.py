@@ -976,6 +976,441 @@ class Tag(models.Model):
         return descendants
 
 
+class ProductAttribute(models.Model):
+    """
+    Structured product measure / characteristic for search ranking & filters.
+
+    Values are extracted offline (management command) or entered in admin.
+    Search never parses all product descriptions at request time.
+    """
+
+    class AttributeType(models.TextChoices):
+        LENGTH = 'length', 'Dužina'
+        WEIGHT = 'weight', 'Težina'
+        DIAMETER = 'diameter', 'Promjer'
+        REEL_SIZE = 'reel_size', 'Veličina mašinice'
+        CASTING_WEIGHT = 'casting_weight', 'Gramaža bacanja'
+        TEST_CURVE = 'test_curve', 'Test curve'
+        BAIT_SIZE = 'bait_size', 'Veličina mamca'
+        CAPACITY = 'capacity', 'Nosivost'
+        PIECES = 'pieces', 'Broj komada'
+        DIVING_DEPTH = 'diving_depth', 'Dubina ronjenja'
+
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='atributi',
+        verbose_name='Artikal',
+    )
+    attribute_type = models.CharField(
+        max_length=32,
+        choices=AttributeType.choices,
+        db_index=True,
+        verbose_name='Tip karakteristike',
+    )
+    text_value = models.CharField(
+        max_length=80,
+        blank=True,
+        verbose_name='Tekstualna vrijednost',
+        help_text='Originalni izraz npr. „3,60m” ili „150g”.',
+    )
+    numeric_value = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name='Numerička vrijednost',
+        help_text='Vrijednost u jedinici iz polja unit.',
+    )
+    unit = models.CharField(
+        max_length=16,
+        blank=True,
+        db_index=True,
+        verbose_name='Jedinica',
+        help_text='npr. m, cm, mm, g, lb, ft',
+    )
+    normalized_numeric_value = models.DecimalField(
+        max_digits=14,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name='Normalizovana vrijednost',
+        help_text='Kanon: dužina m, težina/gramaža g, promjer/mamac mm, test curve lb.',
+    )
+    aktivno = models.BooleanField(default=True, db_index=True, verbose_name='Aktivno')
+    izvor = models.CharField(
+        max_length=20,
+        blank=True,
+        default='manual',
+        verbose_name='Izvor',
+        help_text='manual | extract | import',
+    )
+    kreirano = models.DateTimeField(auto_now_add=True)
+    azurirano = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Karakteristika artikla'
+        verbose_name_plural = 'Karakteristike artikala'
+        ordering = ['product_id', 'attribute_type', 'id']
+        indexes = [
+            models.Index(
+                fields=['attribute_type', 'normalized_numeric_value'],
+                name='prodattr_type_norm_idx',
+            ),
+            models.Index(
+                fields=['attribute_type', 'unit'],
+                name='prodattr_type_unit_idx',
+            ),
+            models.Index(
+                fields=['numeric_value'],
+                name='prodattr_numeric_idx',
+            ),
+            models.Index(
+                fields=['product', 'attribute_type', 'aktivno'],
+                name='prodattr_prod_type_act_idx',
+            ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product', 'attribute_type', 'normalized_numeric_value', 'unit'],
+                name='uniq_prodattr_prod_type_norm_unit',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.get_attribute_type_display()}: {self.text_value or self.numeric_value}'
+
+    def save(self, *args, **kwargs):
+        if self.numeric_value is not None and self.attribute_type:
+            try:
+                from .search.measures import convert_to_canonical
+                norm, canon_u = convert_to_canonical(
+                    self.numeric_value,
+                    self.unit or '',
+                    self.attribute_type,
+                )
+                self.normalized_numeric_value = norm
+                if not self.unit and canon_u:
+                    self.unit = canon_u
+            except Exception:
+                pass
+        if not self.text_value and self.numeric_value is not None:
+            u = self.unit or ''
+            self.text_value = f'{self.numeric_value:f}'.rstrip('0').rstrip('.') + u
+        super().save(*args, **kwargs)
+
+
+class SearchQueryLog(models.Model):
+    """
+    Search analytics — one row per full search / autocomplete selection.
+    Never stores IP or other sensitive PII beyond optional user FK.
+    """
+
+    class Source(models.TextChoices):
+        FULL_PAGE = 'full_page', 'Stranica rezultata'
+        FORM = 'form', 'Search forma'
+        AUTOCOMPLETE = 'autocomplete', 'Autocomplete klik'
+
+    original_query = models.CharField(max_length=150, verbose_name='Originalni upit')
+    normalized_query = models.CharField(
+        max_length=150, db_index=True, blank=True, verbose_name='Normalizovani upit',
+    )
+    result_count = models.PositiveIntegerField(
+        default=0, db_index=True, verbose_name='Broj rezultata',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='search_query_logs',
+        verbose_name='Korisnik',
+    )
+    session_key = models.CharField(
+        max_length=40, blank=True, db_index=True, verbose_name='Sesija',
+    )
+    source = models.CharField(
+        max_length=20,
+        choices=Source.choices,
+        default=Source.FULL_PAGE,
+        blank=True,
+        verbose_name='Izvor',
+    )
+    selected_suggestion = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name='Odabrani prijedlog (Da li ste mislili / autocomplete)',
+    )
+    converted_to_cart = models.BooleanField(
+        default=False, db_index=True, verbose_name='Konverzija u korpu',
+    )
+    converted_to_order = models.BooleanField(
+        default=False, db_index=True, verbose_name='Konverzija u narudžbu',
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name='Vrijeme',
+    )
+
+    class Meta:
+        verbose_name = 'Search — upit (log)'
+        verbose_name_plural = 'Search — upiti (log)'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['normalized_query', '-created_at'], name='sqlog_norm_created_idx'),
+            models.Index(fields=['result_count', '-created_at'], name='sqlog_count_created_idx'),
+            models.Index(fields=['session_key', '-created_at'], name='sqlog_session_created_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.original_query!r} ({self.result_count})'
+
+
+class SearchClickLog(models.Model):
+    """Click on a product from search results or autocomplete."""
+
+    search_query = models.ForeignKey(
+        SearchQueryLog,
+        on_delete=models.CASCADE,
+        related_name='clicks',
+        verbose_name='Search upit',
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='search_clicks',
+        verbose_name='Artikal',
+    )
+    result_position = models.PositiveSmallIntegerField(
+        default=0, verbose_name='Pozicija u rezultatima (1-based)',
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name='Vrijeme',
+    )
+
+    class Meta:
+        verbose_name = 'Search — klik'
+        verbose_name_plural = 'Search — klikovi'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['product', '-created_at'], name='sclick_product_created_idx'),
+            models.Index(fields=['search_query', 'result_position'], name='sclick_query_pos_idx'),
+        ]
+
+    def __str__(self):
+        return f'klik #{self.result_position} → {self.product_id}'
+
+
+class SearchSynonymGroup(models.Model):
+    """
+    Grupa povezanih pojmova za pretragu (npr. štap / stap / rod).
+    Uređuje se u adminu; runtime koristi cache (EcommerceApp.search.synonyms).
+    """
+    naziv = models.CharField(max_length=100, unique=True, verbose_name='Naziv grupe')
+    aktivno = models.BooleanField(default=True, db_index=True, verbose_name='Aktivno')
+    prioritet = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name='Prioritet',
+        help_text='Veći broj = važnija grupa pri rješavanju preklapanja. Ne digne sinonim iznad tačne šifre/naziva.',
+    )
+    azurirano = models.DateTimeField(auto_now=True, verbose_name='Datum izmjene')
+
+    class Meta:
+        verbose_name = 'Search — grupa sinonima'
+        verbose_name_plural = 'Search — grupe sinonima'
+        ordering = ['-prioritet', 'naziv']
+
+    def __str__(self):
+        return self.naziv
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._invalidate_search_synonym_cache()
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        self._invalidate_search_synonym_cache()
+
+    @staticmethod
+    def _invalidate_search_synonym_cache():
+        try:
+            from .search.synonyms import invalidate_synonym_cache
+            invalidate_synonym_cache()
+        except Exception:
+            pass
+
+
+class SearchSynonym(models.Model):
+    """Jedan pojam unutar grupe sinonima (normalizovani oblik za match)."""
+    grupa = models.ForeignKey(
+        SearchSynonymGroup,
+        on_delete=models.CASCADE,
+        related_name='sinonimi',
+        verbose_name='Grupa',
+    )
+    pojam = models.CharField(max_length=80, verbose_name='Pojam')
+    normalizovani_pojam = models.CharField(
+        max_length=80,
+        db_index=True,
+        blank=True,
+        verbose_name='Normalizovani pojam',
+        help_text='Automatski se puni (mala slova, bez dijakritika).',
+    )
+
+    class Meta:
+        verbose_name = 'Search — sinonim'
+        verbose_name_plural = 'Search — sinonimi'
+        ordering = ['grupa__naziv', 'pojam']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['grupa', 'normalizovani_pojam'],
+                name='uniq_search_synonym_group_norm',
+            ),
+        ]
+
+    def __str__(self):
+        return self.pojam
+
+    def save(self, *args, **kwargs):
+        from .search.normalize import normalize_search_text
+        self.pojam = (self.pojam or '').strip()
+        self.normalizovani_pojam = normalize_search_text(self.pojam)[:80]
+        # Skip duplicate normalized forms in the same group (štap ≈ stap)
+        if self.grupa_id and self.normalizovani_pojam:
+            clash = type(self).objects.filter(
+                grupa_id=self.grupa_id,
+                normalizovani_pojam=self.normalizovani_pojam,
+            ).exclude(pk=self.pk).first()
+            if clash:
+                # Keep existing row; still refresh cache
+                try:
+                    from .search.synonyms import invalidate_synonym_cache
+                    invalidate_synonym_cache()
+                except Exception:
+                    pass
+                return
+        super().save(*args, **kwargs)
+        try:
+            from .search.synonyms import invalidate_synonym_cache
+            invalidate_synonym_cache()
+        except Exception:
+            pass
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        try:
+            from .search.synonyms import invalidate_synonym_cache
+            invalidate_synonym_cache()
+        except Exception:
+            pass
+
+
+class SearchIntentRule(models.Model):
+    """
+    Rule-based search intent (no paid AI).
+
+    When the query matches trigger phrases, show recommended categories/tags/brands
+    and related products in a SEPARATE section — never inject into main ranking.
+    """
+    naziv = models.CharField(max_length=120, verbose_name='Naziv pravila')
+    trigger_phrases = models.TextField(
+        verbose_name='Okidač fraze',
+        help_text=(
+            'Jedna fraza po redu (ili zarezom). Primjeri: som, početnički feeder set, '
+            'štap za Savu. Match je case/diakritic-insensitive (normalizacija).'
+        ),
+    )
+    povezane_kategorije = models.ManyToManyField(
+        Category,
+        blank=True,
+        related_name='search_intent_rules',
+        verbose_name='Povezane kategorije',
+    )
+    povezani_tagovi = models.ManyToManyField(
+        Tag,
+        blank=True,
+        related_name='search_intent_rules',
+        verbose_name='Povezani tagovi',
+    )
+    povezani_brendovi = models.ManyToManyField(
+        'Brand',
+        blank=True,
+        related_name='search_intent_rules',
+        verbose_name='Povezani brendovi',
+    )
+    povezani_proizvodi = models.ManyToManyField(
+        'Product',
+        blank=True,
+        related_name='search_intent_rules',
+        verbose_name='Povezani proizvodi',
+        help_text='Prikazuju se u sekciji „Možda će vam trebati i”, ne u glavnom rankingu.',
+    )
+    prioritet = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name='Prioritet',
+        help_text='Veći broj = prvo se prikazuje ako se više pravila poklopi.',
+    )
+    aktivno = models.BooleanField(default=True, db_index=True, verbose_name='Aktivno')
+    naslov_preporuke = models.CharField(
+        max_length=160,
+        blank=True,
+        verbose_name='Naslov preporuke',
+        help_text='npr. „Za lov na soma preporučujemo”',
+    )
+    objasnjenje = models.TextField(
+        blank=True,
+        verbose_name='Objašnjenje',
+        help_text='Kratko objašnjenje za kupca (zašto ove preporuke).',
+    )
+    azurirano = models.DateTimeField(auto_now=True, verbose_name='Ažurirano')
+
+    class Meta:
+        verbose_name = 'Search — intent pravilo'
+        verbose_name_plural = 'Search — intent pravila'
+        ordering = ['-prioritet', 'naziv']
+
+    def __str__(self):
+        return self.naziv
+
+    def trigger_list(self):
+        """Parse trigger phrases into clean list."""
+        raw = (self.trigger_phrases or '').replace(';', '\n').replace('|', '\n')
+        out = []
+        seen = set()
+        for line in raw.splitlines():
+            for part in line.split(','):
+                t = ' '.join(part.split()).strip()
+                if not t:
+                    continue
+                key = t.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append(t)
+        return out
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._invalidate_intent_cache()
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        self._invalidate_intent_cache()
+
+    @staticmethod
+    def _invalidate_intent_cache():
+        try:
+            from .search.intent import invalidate_intent_cache
+            invalidate_intent_cache()
+        except Exception:
+            pass
+
+
 class Brand(models.Model):
     naziv = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
@@ -2316,6 +2751,22 @@ class Product(models.Model):
         max_length=SIFRA_MAX_LENGTH, blank=True, null=True, unique=True, verbose_name='Šifra',
     )
     barkod = models.CharField(max_length=BARKOD_MAX_LENGTH, blank=True, verbose_name='Barkod')
+    # Denormalized search fields (ASCII-fold) — populated in save(); used by EcommerceApp.search
+    naziv_normalized = models.CharField(
+        max_length=220, blank=True, default='', db_index=True, editable=False,
+    )
+    sifra_normalized = models.CharField(
+        max_length=80, blank=True, default='', db_index=True, editable=False,
+    )
+    barkod_normalized = models.CharField(
+        max_length=80, blank=True, default='', db_index=True, editable=False,
+    )
+    search_document = models.TextField(
+        blank=True,
+        default='',
+        editable=False,
+        help_text='Normalizovani blob za pretragu (naziv, šifra, barkod, brend, kategorija, tagovi, varijacije).',
+    )
     opis = models.TextField(
         blank=True,
         verbose_name='Opis',
@@ -2434,6 +2885,71 @@ class Product(models.Model):
         verbose_name = 'Artikal'
         verbose_name_plural = 'Artikli'
         ordering = ['-kreiran']
+        indexes = [
+            models.Index(fields=['aktivan', 'na_stanju'], name='product_active_stock_idx'),
+        ]
+
+    def rebuild_search_document(self, *, save=False):
+        """
+        Refresh denormalized search fields for ORM search.
+
+        Includes existing data only: naziv, sifra, barkod, opis, brend,
+        kategorija (+ roditelj + search_tagovi), tagovi, varijacije (naziv/sifra).
+        No kratak_opis / variation barkod fields exist on this model.
+        """
+        from .search.normalize import normalize_measurements, normalize_search_text
+
+        def _norm_field(value, limit):
+            return normalize_search_text(normalize_measurements(value or ''))[:limit]
+
+        self.naziv_normalized = _norm_field(self.naziv, 220)
+        self.sifra_normalized = _norm_field(self.sifra, 80)
+        self.barkod_normalized = _norm_field(self.barkod, 80)
+
+        parts = [
+            self.naziv or '',
+            self.sifra or '',
+            self.barkod or '',
+            (self.opis or '')[:800],
+        ]
+        if self.brend_id:
+            try:
+                parts.append(self.brend.naziv or '')
+            except Exception:
+                pass
+        if self.kategorija_id:
+            try:
+                cat = self.kategorija
+                parts.append(cat.naziv or '')
+                if cat.roditelj_id and cat.roditelj:
+                    parts.append(cat.roditelj.naziv or '')
+                if cat.search_tagovi:
+                    parts.append(cat.search_tagovi)
+            except Exception:
+                pass
+        try:
+            for tag in self.tagovi.all():
+                parts.append(tag.naziv or '')
+        except Exception:
+            pass
+        try:
+            for var in self.varijacije.all():
+                parts.append(var.naziv or '')
+                parts.append(var.sifra or '')
+        except Exception:
+            pass
+
+        blob = ' '.join(p for p in parts if p)
+        blob = normalize_measurements(blob)
+        self.search_document = normalize_search_text(blob)
+
+        if save and self.pk:
+            type(self).objects.filter(pk=self.pk).update(
+                naziv_normalized=self.naziv_normalized,
+                sifra_normalized=self.sifra_normalized,
+                barkod_normalized=self.barkod_normalized,
+                search_document=self.search_document,
+            )
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2450,7 +2966,20 @@ class Product(models.Model):
         if self.slika:
             from .utils.images import apply_image_processing, process_product_image_manual
             apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+        try:
+            from .search.normalize import normalize_measurements, normalize_search_text
+            self.naziv_normalized = normalize_search_text(
+                normalize_measurements(self.naziv or ''),
+            )[:220]
+            self.sifra_normalized = normalize_search_text(self.sifra or '')[:80]
+            self.barkod_normalized = normalize_search_text(self.barkod or '')[:80]
+        except Exception:
+            pass
         super().save(*args, **kwargs)
+        try:
+            self.rebuild_search_document(save=True)
+        except Exception:
+            pass
 
     @property
     def na_akciji(self):
@@ -2722,6 +3251,12 @@ class ProductVariation(models.Model):
     sifra = models.CharField(
         max_length=SIFRA_MAX_LENGTH, blank=True, null=True, unique=True, verbose_name='Šifra',
     )
+    naziv_normalized = models.CharField(
+        max_length=120, blank=True, default='', db_index=True, editable=False,
+    )
+    sifra_normalized = models.CharField(
+        max_length=80, blank=True, default='', db_index=True, editable=False,
+    )
     slika = models.ImageField(upload_to='products/variations/', blank=True, null=True)
     cijena = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
@@ -2839,7 +3374,19 @@ class ProductVariation(models.Model):
         if self.slika:
             from .utils.images import apply_image_processing, process_product_image_manual
             apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+        try:
+            from .search.normalize import normalize_search_text
+            self.naziv_normalized = normalize_search_text(self.naziv or '')[:120]
+            self.sifra_normalized = normalize_search_text(self.sifra or '')[:80]
+        except Exception:
+            pass
         super().save(*args, **kwargs)
+        # Keep parent search blob in sync
+        try:
+            if self.artikal_id:
+                self.artikal.rebuild_search_document(save=True)
+        except Exception:
+            pass
 
     def __str__(self):
         return f'{self.artikal.naziv} — {self.naziv}'

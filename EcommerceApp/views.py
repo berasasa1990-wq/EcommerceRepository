@@ -399,16 +399,27 @@ def _product_matches_size(product, size_label):
 
 
 def _get_filter_params(request):
+    """Catalog + search GET params (accepts brand/in_stock aliases)."""
+    brend = (request.GET.get('brend') or request.GET.get('brand') or '').strip()
+    na_stanju = (request.GET.get('na_stanju') or request.GET.get('in_stock') or '').strip()
+    sort = (request.GET.get('sort') or '').strip()
+    # Map English sort aliases early
+    if sort in ('relevance', 'najrelevantnije', 'relevantnost'):
+        sort = 'relevance'
     return {
         'q': request.GET.get('q', '').strip(),
         'kategorija': request.GET.get('kategorija', '').strip(),
-        'brend': request.GET.get('brend', '').strip(),
+        'potkategorija': request.GET.get('potkategorija', '').strip(),
+        'brend': brend,
         'velicina': request.GET.get('velicina', '').strip(),
         'cijena_od': request.GET.get('cijena_od', '').strip(),
         'cijena_do': request.GET.get('cijena_do', '').strip(),
-        'sort': request.GET.get('sort', '').strip(),
+        'sort': sort,
         'akcija': request.GET.get('akcija', '').strip(),
         'noviteti': request.GET.get('noviteti', '').strip(),
+        'na_stanju': na_stanju,
+        'tehnika': request.GET.get('tehnika', '').strip(),
+        'vrsta_ribe': request.GET.get('vrsta_ribe', '').strip(),
     }
 
 
@@ -502,21 +513,21 @@ def _showcase_brands():
     ).exclude(slika='').distinct().order_by('naziv')
 
 
-# BH/HR dijakritici → ASCII (štap ≈ stap)
-_SEARCH_DIACRITIC_MAP = str.maketrans({
-    'š': 's', 'đ': 'd', 'č': 'c', 'ć': 'c', 'ž': 'z',
-    'Š': 's', 'Đ': 'd', 'Č': 'c', 'Ć': 'c', 'Ž': 'z',
-})
-
-
-def _search_fold(value):
-    if not value:
-        return ''
-    return str(value).casefold().translate(_SEARCH_DIACRITIC_MAP)
+# —— Search helpers (FAZA 1: EcommerceApp.search modul) ——
+from .search.normalize import (
+    normalize_search_text as _search_fold,
+    sanitize_search_query as _sanitize_search_query,
+)
+from .search.normalize import normalize_search_text  # noqa: F401 — tests / reuse
+from .search.query import apply_search_filter as _search_apply_filter
+from .search.ranking import apply_search_ranked as _search_apply_ranked
+from .search.ranking import score_product as _search_score_product
+from .search.ranking import sort_products_for_search as _search_sort_products
+from .search.suggest import SEARCH_SUGGEST_LIMIT, build_suggest_response
 
 
 def _normalize_phrase(value):
-    """Suzi višestruke razmake."""
+    """Suzi višestruke razmake (zadržano za size/filter helper-e)."""
     if not value:
         return ''
     return re.sub(r'\s+', ' ', str(value).strip())
@@ -540,156 +551,13 @@ def _parse_category_search_tags(raw):
     return tags
 
 
-# Tag: max ±3 slova, manje na kratkim riječima
-_TAG_MAX_EDIT_DISTANCE = 3
-
-
-def _allowed_edit_distance_for_len(n):
-    if n <= 0:
-        return 0
-    if n <= 4:
-        return 1
-    if n <= 8:
-        return 2
-    return _TAG_MAX_EDIT_DISTANCE
-
-
-def _edit_distance(a, b, *, max_dist=None):
-    """Levenshtein udaljenost (insert/delete/replace = 1)."""
-    if a == b:
-        return 0
-    if not a:
-        return len(b)
-    if not b:
-        return len(a)
-    cap = max_dist if max_dist is not None else max(len(a), len(b))
-    if abs(len(a) - len(b)) > cap:
-        return cap + 1
-    prev = list(range(len(b) + 1))
-    for i, ca in enumerate(a, start=1):
-        curr = [i]
-        for j, cb in enumerate(b, start=1):
-            ins = curr[j - 1] + 1
-            delete = prev[j] + 1
-            sub = prev[j - 1] + (0 if ca == cb else 1)
-            curr.append(min(ins, delete, sub))
-        prev = curr
-    return prev[-1]
-
-
-def _words_within_edit(tag_words, q_words):
-    if len(tag_words) != len(q_words) or not q_words:
-        return False
-    for tw, qw in zip(tag_words, q_words):
-        allow = _allowed_edit_distance_for_len(max(len(tw), len(qw)))
-        if _edit_distance(tw, qw, max_dist=allow) > allow:
-            return False
-    return True
-
-
-def _tag_matches_query(tag, query):
-    """
-    Tag podkategorije ≈ upit:
-    - tačan match ili ±1–3 slova (ovisno o dužini)
-    - po riječima: ista broj riječi, svaka ±1–3
-    """
-    tag_f = _search_fold(_normalize_phrase(tag))
-    q_f = _search_fold(_normalize_phrase(query))
-    if not tag_f or not q_f or len(q_f) < 2:
-        return False
-    if tag_f == q_f:
-        return True
-
-    allow_full = _allowed_edit_distance_for_len(max(len(tag_f), len(q_f)))
-    if _edit_distance(tag_f, q_f, max_dist=allow_full) <= allow_full:
-        return True
-
-    tag_words = [w for w in tag_f.split() if w]
-    q_words = [w for w in q_f.split() if w]
-    if _words_within_edit(tag_words, q_words):
-        return True
-
-    return False
-
-
-_TAG_CACHE = None
-_TAG_CACHE_AT = 0.0
-_TAG_CACHE_TTL_SEC = 60.0
-
-
-def _cached_tags():
-    """In-memory lista tagova (id, naziv) — izbjegava full scan DB po svakom keystroke-u."""
-    global _TAG_CACHE, _TAG_CACHE_AT
-    import time
-
-    now = time.monotonic()
-    if _TAG_CACHE is None or (now - _TAG_CACHE_AT) > _TAG_CACHE_TTL_SEC:
-        from .models import Tag
-
-        _TAG_CACHE = list(Tag.objects.only('id', 'naziv'))
-        _TAG_CACHE_AT = now
-    return _TAG_CACHE
-
-
-def _product_tag_ids_for_query(query):
-    """ID-evi Tag modela na artiklima koji odgovaraju upitu (±1–3 slova)."""
-    q = _normalize_phrase(query)
-    if not q or len(q) < 2:
-        return []
-    return [tag.pk for tag in _cached_tags() if _tag_matches_query(tag.naziv or '', q)]
-
-
-def _search_exists_match(raw):
-    """
-    EXISTS podupiti umjesto JOIN + DISTINCT (mnogo brže na većim katalogima).
-    Match: naziv, šifra, šifra varijacije, tag naziv.
-    """
-    through = Product.tagovi.through
-    variation_sifra = ProductVariation.objects.filter(
-        artikal_id=OuterRef('pk'),
-        sifra__icontains=raw,
-    )
-    tag_name = through.objects.filter(
-        product_id=OuterRef('pk'),
-        tag__naziv__icontains=raw,
-    )
-    return (
-        Q(naziv__icontains=raw)
-        | Q(sifra__icontains=raw)
-        | Exists(variation_sifra)
-        | Exists(tag_name)
-    )
-
-
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga na sajtu:
-    1) naziv artikla
-    2) šifra artikla (+ šifre varijacija)
-    3) tagovi na artiklima (bulk / M2M tagovi)
+    Osnovna multi-field pretraga (EcommerceApp.search).
+    Polja: naziv, šifra, barkod, opis, brend, kategorija/potkategorija,
+    tagovi, naziv/šifra varijacije. Prazan upit ne filtrira.
     """
-    raw = _normalize_phrase(query)
-    if not raw:
-        return products_qs
-    if len(raw) < 2:
-        return products_qs.none()
-
-    match = _search_exists_match(raw)
-    folded_raw = _search_fold(raw)
-    if folded_raw and folded_raw != raw.casefold():
-        match |= _search_exists_match(folded_raw)
-
-    tag_ids = _product_tag_ids_for_query(raw)
-    if tag_ids:
-        through = Product.tagovi.through
-        match |= Exists(
-            through.objects.filter(
-                product_id=OuterRef('pk'),
-                tag_id__in=tag_ids,
-            )
-        )
-
-    return products_qs.filter(match)
+    return _search_apply_filter(products_qs, query)
 
 
 def _product_lager_priority(product):
@@ -701,65 +569,53 @@ def _product_lager_priority(product):
 
 
 def _search_relevance_score(product, query):
-    """Veći = bolje poklapanje (unutar već filtriranih rezultata)."""
-    raw = _normalize_phrase(query)
-    if not raw or len(raw) < 2:
-        return 0
-    q = raw.lower()
-    score = 0
-    name = (product.naziv or '').lower()
-    sifra = (product.sifra or '').lower()
-
-    if sifra and (sifra == q or q in sifra):
-        score += 120
-    if name == q:
-        score += 100
-    elif name.startswith(q):
-        score += 80
-    elif q in name:
-        score += 50
-
-    try:
-        for t in product.tagovi.all():
-            if _tag_matches_query(getattr(t, 'naziv', '') or '', raw):
-                score += 55
-                break
-            tname = (getattr(t, 'naziv', '') or '').lower()
-            if tname and (q in tname or tname in q):
-                score += 40
-                break
-    except Exception:
-        pass
-    return score
+    """Veći = bolje poklapanje — novi score bandovi iz search.ranking."""
+    return _search_score_product(
+        product,
+        query,
+        on_sale=_product_is_on_sale(product) if product is not None else False,
+    )
 
 
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
     Katalog / pretraga / kategorija:
-    0) Ako ima search upit: relevantnost prvo
-    1) Hit redukovanje lagera → Favorizuj → Normal
+    0) Ako ima search upit: relevantnost prvo (score bandovi), pa na stanju
+    1) Bez upita: Hit redukovanje lagera → Favorizuj → Normal
     2) Unutar nivoa: cijena rastuće / opadajuće
     """
     if not products:
         return products
 
-    # Jedan prefetch tagova umjesto N+1 u _search_relevance_score
     if query:
         try:
             sample = products[0]
             already = (
                 hasattr(sample, '_prefetched_objects_cache')
-                and 'tagovi' in sample._prefetched_objects_cache
+                and 'tagovi' in getattr(sample, '_prefetched_objects_cache', {})
             )
             if not already:
                 from django.db.models import prefetch_related_objects
 
-                prefetch_related_objects(list(products), 'tagovi')
+                prefetch_related_objects(
+                    list(products),
+                    'tagovi',
+                    'varijacije',
+                    'brend',
+                    'kategorija',
+                    'kategorija__roditelj',
+                )
         except Exception:
             pass
+        return _search_sort_products(
+            list(products),
+            query,
+            price_sort=price_sort,
+            price_getter=_effective_product_price,
+            on_sale_getter=_product_is_on_sale,
+        )
 
     def key(p):
-        rel = -_search_relevance_score(p, query) if query else 0
         prio = _product_lager_priority(p)
         name = (p.naziv or '').lower()
         try:
@@ -767,8 +623,8 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
         except Exception:
             price = 0.0
         if price_sort == 'opadajuca':
-            return (rel, -prio, -price, name)
-        return (rel, -prio, price, name)
+            return (-prio, -price, name)
+        return (-prio, price, name)
 
     return sorted(products, key=key)
 
@@ -800,136 +656,432 @@ def _weighted_home_product_order(products):
     return ordered
 
 
-SEARCH_SUGGEST_LIMIT = 6
-SEARCH_SUGGEST_CANDIDATE_POOL = 18
 STAFF_LOOKUP_LIMIT = 25
 
 
-def _suggest_product_queryset(request=None):
-    """
-    Lagani queryset samo za autocomplete dropdown.
-    Bez Count annotate i bez teških select_related (kategorija/brend nisu potrebni).
-    """
-    qs = Product.objects.filter(aktivan=True)
-    if not _can_view_out_of_stock(request):
-        qs = qs.filter(na_stanju=True)
-    # defer(opis) umjesto only() — varijacije.prikazna_cijena čita artikal.* bez deferred grešaka
-    return qs.defer('opis', 'meta_title', 'meta_description', 'olx_listing_url', 'olx_listing_slug').prefetch_related(
-        Prefetch(
-            'varijacije',
-            queryset=ProductVariation.objects.filter(na_stanju=True).only(
-                'id',
-                'artikal_id',
-                'cijena',
-                'akcijska_cijena',
-                'akcija_postotak',
-                'slika',
-                'na_stanju',
-            ),
-        ),
-        Prefetch('tagovi', queryset=Tag.objects.only('id', 'naziv')),
-    )
-
-
-def _suggest_thumb_url(image_field):
-    """
-    120w thumb URL bez storage.exists() (sporo na cloud storage-u).
-    Konvencija processiranja: {base}-120w.avif / .jpg / …
-    """
-    if not image_field or not getattr(image_field, 'name', None):
-        return ''
-    name = image_field.name
-    if '/' in name:
-        folder, filename = name.rsplit('/', 1)
-    else:
-        folder, filename = '', name
-    base = filename.rsplit('.', 1)[0]
-    storage = image_field.storage
-    # Prefer avif (glavni format u pipeline-u), pa ista ekstenzija glavne slike
-    candidates = [f'{base}-120w.avif']
-    if '.' in filename:
-        ext = filename.rsplit('.', 1)[-1].lower()
-        if ext != 'avif':
-            candidates.append(f'{base}-120w.{ext}')
-    for variant in candidates:
-        path = f'{folder}/{variant}' if folder else variant
-        try:
-            return storage.url(path)
-        except Exception:
-            continue
-    try:
-        return image_field.url
-    except Exception:
-        return ''
-
-
-def _suggest_relevance_annotation(query):
-    """SQL prioritet relevantnosti za brži ORDER BY (manji candidate pool)."""
-    raw = _normalize_phrase(query)
-    if not raw or len(raw) < 2:
-        return Value(0, output_field=IntegerField())
-    folded = _search_fold(raw)
-    terms = [raw]
-    if folded and folded != raw.casefold():
-        terms.append(folded)
-    whens = []
-    for term in terms:
-        whens.extend([
-            When(sifra__iexact=term, then=Value(120)),
-            When(naziv__iexact=term, then=Value(100)),
-            When(naziv__istartswith=term, then=Value(80)),
-            When(naziv__icontains=term, then=Value(50)),
-            When(sifra__icontains=term, then=Value(40)),
-        ])
-    return Case(*whens, default=Value(10), output_field=IntegerField())
-
-
 def search_suggest(request):
-    query = request.GET.get('q', '').strip()
-    if not query:
-        return JsonResponse({'results': [], 'query': '', 'has_more': False})
-    if len(_normalize_phrase(query)) < 2:
-        return JsonResponse({'results': [], 'query': query, 'has_more': False})
+    """
+    Brzi autocomplete API — ista match/ranking logika kao puna pretraga.
 
-    # Lagani path: bez teškog _product_queryset (Count + select_related)
-    products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
-    products_qs = products_qs.annotate(
-        _suggest_rel=_suggest_relevance_annotation(query),
-    ).order_by('-_suggest_rel', '-prioritet_lagera', 'naziv')
+    GET /api/pretraga/?q=...
+    - min 2 znaka, max 150 znakova (sanitize)
+    - max 8 proizvoda, SQL order by search_rank + na stanju
+    - samo polja za dropdown (bez opisa)
+    """
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-    # has_more: uzmi limit+1; Python re-sort radi fina relevantnost (tagovi)
-    pool = list(products_qs[: max(SEARCH_SUGGEST_CANDIDATE_POOL, SEARCH_SUGGEST_LIMIT + 1)])
-    has_more = len(pool) > SEARCH_SUGGEST_LIMIT
-    # Izbjegni variation.artikal N+1 (prikazna_cijena/na_akciji čitaju parent)
-    for product in pool:
-        for variation in product.varijacije.all():
-            variation.artikal = product
-    products = _sort_products_by_lager_priority(pool, query=query)[:SEARCH_SUGGEST_LIMIT]
+    query = request.GET.get('q', '')
+    payload = build_suggest_response(
+        request,
+        query,
+        can_view_out_of_stock=_can_view_out_of_stock(request),
+        price_getter=_effective_product_price,
+        on_sale_getter=_product_is_on_sale,
+    )
+    response = JsonResponse(payload)
+    # Kratki private cache; debounce + AbortController smanjuju keystroke hitove
+    response['Cache-Control'] = 'private, max-age=10'
 
-    results = []
-    for product in products:
-        price = _effective_product_price(product)
-        image_field = product.prikazna_slika
-        results.append({
-            'naziv': product.naziv,
-            'url': product.get_absolute_url(),
-            'image': _suggest_thumb_url(image_field) if image_field else '',
-            'price': f'{price:.2f}',
-            'on_sale': _product_is_on_sale(product),
-        })
-
-    response = JsonResponse({'results': results, 'query': query, 'has_more': has_more})
-    # Kratki browser cache smanjuje ponovljene keystroke hitove (isti q)
-    response['Cache-Control'] = 'private, max-age=15'
+    response['X-Content-Type-Options'] = 'nosniff'
     return response
 
 
+@require_POST
+def search_analytics_click(request):
+    """
+    Lightweight click tracking for search / autocomplete.
+    Body: product_id, position, q, log_id (optional), source.
+    """
+    from .search.analytics import log_search_click
+    from .models import SearchQueryLog
 
+    try:
+        product_id = request.POST.get('product_id') or ''
+        position = request.POST.get('position') or request.POST.get('result_position') or '0'
+        query = request.POST.get('q') or ''
+        log_id = request.POST.get('log_id') or request.POST.get('search_log_id') or ''
+        source = request.POST.get('source') or SearchQueryLog.Source.FULL_PAGE
+        try:
+            product_id_int = int(product_id) if product_id else None
+        except (TypeError, ValueError):
+            product_id_int = None
+        try:
+            pos_int = int(position)
+        except (TypeError, ValueError):
+            pos_int = 0
+        try:
+            log_id_int = int(log_id) if log_id else None
+        except (TypeError, ValueError):
+            log_id_int = None
+
+        click = log_search_click(
+            request,
+            product_id=product_id_int,
+            result_position=pos_int,
+            query=query,
+            search_log_id=log_id_int,
+            source=source,
+        )
+        return JsonResponse({
+            'ok': True,
+            'click_id': click.pk if click else None,
+            'log_id': click.search_query_id if click else log_id_int,
+        })
+    except Exception:
+        return JsonResponse({'ok': False}, status=200)
+
+
+@require_POST
+def search_analytics_query(request):
+    """
+    Explicit search log for autocomplete selection / form events.
+    Not used per keystroke — only when client signals a committed search.
+    """
+    from .search.analytics import log_search_query
+    from .models import SearchQueryLog
+
+    query = request.POST.get('q') or ''
+    try:
+        result_count = int(request.POST.get('result_count') or 0)
+    except (TypeError, ValueError):
+        result_count = 0
+    source = request.POST.get('source') or SearchQueryLog.Source.FORM
+    suggestion = request.POST.get('selected_suggestion') or ''
+    log = log_search_query(
+        request,
+        query,
+        result_count=result_count,
+        source=source,
+        selected_suggestion=suggestion,
+    )
+    return JsonResponse({'ok': True, 'log_id': log.pk if log else None})
+
+
+
+
+def search_results(request):
+    """
+    Full search results page: /pretraga/?q=...&brand=...&sort=relevance
+
+    - noindex,follow
+    - relevance-first ranking (filters keep ranked order)
+    - GET params preserved across filters / pagination
+    """
+    from .search.fuzzy import suggest_did_you_mean
+    from .search.results import (
+        SORT_CHOICES,
+        build_active_filters,
+        normalize_sort,
+        related_brands_from_products,
+        related_categories_from_products,
+        search_page_query_string,
+    )
+
+    params = _get_filter_params(request)
+    search_q = _sanitize_search_query(params.get('q') or '')
+    sort_mode = normalize_sort(params.get('sort'))
+    params['sort'] = 'relevance' if sort_mode == 'relevance' else sort_mode
+
+    filter_action = reverse('search_results')
+    products = []
+    did_you_mean = None
+    related_brands = []
+    related_categories = []
+    active_filters = []
+    filter_categories = _filter_categories()
+    filter_brands = list(Brand.objects.order_by('naziv')[:200])
+    tehnika_tags = []
+    vrsta_ribe_tags = []
+    subcategories = []
+    result_count = 0
+    page_obj = None
+    intent_rec = None
+
+    if search_q:
+        products, params = _apply_product_filters(
+            _product_queryset(request), request,
+        )
+        params['sort'] = 'relevance' if sort_mode == 'relevance' else sort_mode
+        result_count = len(products)
+
+        related_brands = related_brands_from_products(products)
+        related_categories = related_categories_from_products(products)
+
+        # Intent recommendations (separate from main ranking)
+        try:
+            from .search.intent import resolve_intent_recommendations
+            intent_rec = resolve_intent_recommendations(
+                search_q,
+                exclude_product_ids={p.pk for p in products},
+                in_stock_only=not _can_view_out_of_stock(request),
+            )
+        except Exception:
+            intent_rec = None
+
+        tag_ids = set()
+        for p in products[:200]:
+            try:
+                for t in p.tagovi.all():
+                    tag_ids.add(t.pk)
+            except Exception:
+                pass
+        if tag_ids:
+            all_tags = list(
+                Tag.objects.filter(pk__in=tag_ids).select_related('roditelj'),
+            )
+            for t in all_tags:
+                parent = (
+                    t.roditelj.naziv if t.roditelj_id and t.roditelj else ''
+                ) or ''
+                parent_l = parent.casefold()
+                name_l = (t.naziv or '').casefold()
+                if any(
+                    k in parent_l or k in name_l
+                    for k in (
+                        'tehnika', 'feeder', 'spin', 'carp', 'method',
+                        'match', 'fider', 'varalic',
+                    )
+                ):
+                    tehnika_tags.append(t)
+                if any(
+                    k in parent_l or k in name_l
+                    for k in (
+                        'riba', 'ribe', 'saran', 'som', 'smud', 'stuka',
+                        'pastrmka', 'fish',
+                    )
+                ):
+                    vrsta_ribe_tags.append(t)
+            if not tehnika_tags and not vrsta_ribe_tags:
+                tehnika_tags = all_tags[:20]
+
+        if params.get('kategorija') and not params.get('potkategorija'):
+            parent = Category.objects.filter(
+                slug=params['kategorija'], aktivan=True,
+            ).first()
+            if parent:
+                subcategories = list(
+                    Category.objects.filter(roditelj=parent, aktivan=True)
+                    .order_by('redoslijed', 'naziv')[:40],
+                )
+
+        active_filters = build_active_filters(
+            params,
+            brands=filter_brands,
+            categories=list(filter_categories),
+            tags=tehnika_tags + vrsta_ribe_tags,
+        )
+
+        try:
+            did_you_mean = suggest_did_you_mean(search_q, result_count=result_count)
+        except Exception:
+            did_you_mean = None
+
+        # Analytics: log after results are ready (page 1 only — not each pagination hit)
+        page_num = request.GET.get('page', '1')
+        if page_num in ('', '1', 1):
+            try:
+                from .search.analytics import log_search_query
+                from .models import SearchQueryLog
+                log = log_search_query(
+                    request,
+                    search_q,
+                    result_count=result_count,
+                    source=SearchQueryLog.Source.FULL_PAGE,
+                    # selected_suggestion only when user clicks a suggestion (click API)
+                    selected_suggestion='',
+                )
+                search_log_id = log.pk if log else None
+            except Exception:
+                search_log_id = None
+        else:
+            search_log_id = None
+
+        page_obj = _paginate_catalog_products(request, products)
+        products = page_obj.object_list
+    else:
+        page_obj = _paginate_catalog_products(request, [])
+
+    catalog_query = search_page_query_string(params)
+    reset_params = {'q': search_q} if search_q else {}
+    filter_reset_url = filter_action
+    if reset_params:
+        filter_reset_url = f'{filter_action}?{urlencode(reset_params)}'
+
+    selected_brand = None
+    if params.get('brend'):
+        selected_brand = Brand.objects.filter(slug=params['brend']).first()
+
+    selected_category = None
+    if params.get('potkategorija') or params.get('kategorija'):
+        selected_category = Category.objects.filter(
+            slug=params.get('potkategorija') or params.get('kategorija'),
+            aktivan=True,
+        ).first()
+
+    context = {
+        **_base_context(),
+        'products': products,
+        'search_products': products,
+        'page_obj': page_obj,
+        'filter_params': params,
+        'filter_action': filter_action,
+        'filter_reset_url': filter_reset_url,
+        'filter_categories': filter_categories,
+        'filter_brands': filter_brands,
+        'filter_size_groups': [],
+        'catalog_title': (
+            f'Rezultati za: {search_q}' if search_q else 'Pretraga'
+        ),
+        'catalog_subtitle': (
+            f'Pronađeno {result_count} artikala.'
+            if search_q and result_count
+            else (
+                f'Nema artikala za „{search_q}".'
+                if search_q
+                else 'Unesite pojam za pretragu.'
+            )
+        ),
+        'result_count': result_count,
+        'did_you_mean': did_you_mean,
+        'intent_rec': intent_rec,
+        'related_brands': related_brands,
+        'related_categories': related_categories,
+        'active_filters': active_filters,
+        'sort_choices': SORT_CHOICES,
+        'sort_mode': sort_mode,
+        'tehnika_tags': tehnika_tags,
+        'vrsta_ribe_tags': vrsta_ribe_tags,
+        'subcategories': subcategories,
+        'selected_brand': selected_brand,
+        'selected_category': selected_category,
+        'catalog_query': catalog_query,
+        'elided_page_range': (
+            page_obj.paginator.get_elided_page_range(page_obj.number)
+            if page_obj and page_obj.paginator.num_pages
+            else []
+        ),
+        'search_noindex': True,
+        'search_log_id': locals().get('search_log_id'),
+        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('search_results'),
+        'filters_active': bool(search_q),
+        'hide_category_filter': False,
+        'catalog_compact': True,
+        'hide_variations': True,
+    }
+    return render(request, 'search_results.html', context)
 
 
 def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     params = _get_filter_params(request)
-    products_qs = _apply_search_filter(products_qs, params['q'])
+    search_q = _sanitize_search_query(params.get('q') or '')
+    sort_key = (params.get('sort') or '').strip()
+
+    # —— Search path: filter + rank in SQL (no Python sort of full catalog) ——
+    if search_q:
+        price_sort = None
+        if sort_key in ('opadajuca', 'price_desc'):
+            price_sort = 'opadajuca'
+        elif sort_key in ('rastuca', 'price_asc'):
+            price_sort = 'rastuca'
+
+        # Kupci: samo artikli na stanju (ne prikazuj rasprodato u search rezultatima).
+        # Staff u edit mode: _product_queryset već može uključiti van stanja.
+        if not _can_view_out_of_stock(request):
+            base_qs = _prefetch_product_cards(
+                Product.objects.filter(aktivan=True, na_stanju=True),
+            )
+        else:
+            base_qs = products_qs
+
+        # apply_search_ranked: Q/Exists match + Case/When score + order_by
+        # Filters applied after rank annotate still preserve relevance order
+        products_qs = _search_apply_ranked(
+            base_qs, search_q, price_sort=price_sort, sort=sort_key or 'relevance',
+        )
+        # Dodatni hard filter — nikad OOS za obične kupce
+        if not _can_view_out_of_stock(request):
+            products_qs = products_qs.filter(na_stanju=True)
+
+        # Secondary filters on QuerySet (order preserved)
+        if allowed_category_ids is not None:
+            products_qs = products_qs.filter(kategorija_id__in=list(allowed_category_ids))
+
+        # Category / subcategory
+        cat_slug = params.get('potkategorija') or params.get('kategorija')
+        if cat_slug:
+            category = Category.objects.filter(slug=cat_slug, aktivan=True).first()
+            if category:
+                if params.get('potkategorija'):
+                    category_ids = {category.pk}
+                else:
+                    category_ids = set(category.get_descendant_ids())
+                if allowed_category_ids is not None:
+                    category_ids &= set(allowed_category_ids)
+                products_qs = products_qs.filter(kategorija_id__in=list(category_ids))
+            else:
+                products_qs = products_qs.none()
+
+        if params['brend']:
+            brand = Brand.objects.filter(slug=params['brend']).first()
+            if brand:
+                products_qs = products_qs.filter(brend_id=brand.pk)
+            else:
+                products_qs = products_qs.none()
+
+        if params['noviteti']:
+            products_qs = products_qs.filter(je_novitet=True)
+
+        # "Samo na stanju" explicit (catalog already filters for non-staff)
+        if params.get('na_stanju') in ('1', 'true', 'da', 'yes'):
+            products_qs = products_qs.filter(na_stanju=True)
+
+        # Technique / fish type via tags (slug or name)
+        if params.get('tehnika'):
+            t = params['tehnika']
+            products_qs = products_qs.filter(
+                Q(tagovi__slug=t) | Q(tagovi__naziv__iexact=t),
+            ).distinct()
+        if params.get('vrsta_ribe'):
+            t = params['vrsta_ribe']
+            products_qs = products_qs.filter(
+                Q(tagovi__slug=t) | Q(tagovi__naziv__iexact=t),
+            ).distinct()
+
+        # Materialize matched+ranked rows; price/sale/size may need Python (variation prices)
+        products = list(products_qs)
+
+        # Deduplicate by pk (joins/tags must not duplicate cards)
+        seen = set()
+        unique = []
+        for p in products:
+            if p.pk in seen:
+                continue
+            seen.add(p.pk)
+            unique.append(p)
+        products = unique
+
+        price_min = _parse_decimal(params['cijena_od'])
+        price_max = _parse_decimal(params['cijena_do'])
+        if price_min is not None:
+            products = [
+                p for p in products if _effective_product_price(p) >= price_min
+            ]
+        if price_max is not None:
+            products = [
+                p for p in products if _effective_product_price(p) <= price_max
+            ]
+        if params['akcija']:
+            products = [p for p in products if _product_is_on_sale(p)]
+        if params['velicina']:
+            size_label = params['velicina']
+            products = [
+                p for p in products if _product_matches_size(p, size_label)
+            ]
+        # Ranking already applied — do not re-sort for filters
+        return products, params
+
+    # —— Non-search catalog filters (existing behaviour) ——
     products = list(products_qs)
 
     if allowed_category_ids is not None:
@@ -969,15 +1121,13 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             if _product_matches_size(product, size_label)
         ]
 
-    # Redukovanje lagera prvo, zatim cijena (zadano = rastuća)
-    if params['sort'] == 'opadajuca':
+    if sort_key == 'opadajuca':
         price_sort = 'opadajuca'
     else:
-        # prazno / rastuca / bilo šta drugo → rastuća cijena unutar prioriteta
         price_sort = 'rastuca'
     products = _sort_products_by_lager_priority(
         products,
-        query=params.get('q') or '',
+        query='',
         price_sort=price_sort,
     )
 
@@ -1375,6 +1525,11 @@ def _vlog_seo_description(sadrzaj, max_len=160):
 
 
 def home(request):
+    # Free-text search lives on /pretraga/ (keep old ?q= links working)
+    if (request.GET.get('q') or '').strip():
+        qs = request.GET.urlencode()
+        return redirect(f"{reverse('search_results')}?{qs}" if qs else reverse('search_results'))
+
     hero_banners = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.HERO, aktivan=True,
     ).order_by('redoslijed', '-id'))
@@ -1402,6 +1557,7 @@ def home(request):
     search_products = []
     catalog_title = None
     catalog_subtitle = None
+    did_you_mean = None
     filter_size_groups = []
     home_url = reverse('home')
 
@@ -1414,13 +1570,22 @@ def home(request):
         search_products = page_obj.object_list
         result_count = page_obj.paginator.count
         if filter_params.get('q'):
-            catalog_title = 'Rezultati pretrage'
+            catalog_title = f'Rezultati za: {filter_params["q"]}'
             if result_count:
                 catalog_subtitle = (
                     f'Pronađeno {result_count} artikala za „{filter_params["q"]}".'
                 )
             else:
                 catalog_subtitle = f'Nema artikala za „{filter_params["q"]}".'
+            # „Da li ste mislili“ — never auto-rewrites the query
+            try:
+                from .search.fuzzy import suggest_did_you_mean
+                did_you_mean = suggest_did_you_mean(
+                    filter_params['q'],
+                    result_count=result_count,
+                )
+            except Exception:
+                did_you_mean = None
         elif filter_params.get('akcija'):
             catalog_title = 'Akcija'
             if result_count:
@@ -1568,6 +1733,7 @@ def home(request):
         ),
         'catalog_title': catalog_title,
         'catalog_subtitle': catalog_subtitle,
+        'did_you_mean': did_you_mean,
         'catalog_query': _catalog_query_string(filter_params) if filters_active else '',
         'elided_page_range': (
             page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []
@@ -1576,6 +1742,8 @@ def home(request):
         'home_section_product_visible': HOME_SECTION_PRODUCT_VISIBLE,
         'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
         'canonical_url': settings.SITE_URL.rstrip('/') + '/',
+        # Free-text search pages should not be indexed
+        'search_noindex': bool(filter_params.get('q')),
     }
     return render(request, 'home.html', context)
 
@@ -2381,6 +2549,11 @@ def add_to_cart(request, slug):
         discount_source=disc_src,
         discount_percent=disc_pct,
     )
+    try:
+        from .search.analytics import mark_search_converted_to_cart
+        mark_search_converted_to_cart(request)
+    except Exception:
+        pass
     cart.clear_coupon()
     if request.POST.get('exit_popup') == '1':
         from .cart_exit_popup import dismiss_cart_exit_popup
@@ -2929,6 +3102,11 @@ def checkout(request):
                 popust_detalji=popust_detalji,
                 ukupno=summary['ukupno'],
             )
+            try:
+                from .search.analytics import mark_search_converted_to_order
+                mark_search_converted_to_order(request)
+            except Exception:
+                pass
             if request.user.is_authenticated:
                 _save_profile_from_checkout(request.user, form.cleaned_data)
             for item in cart:

@@ -82,8 +82,15 @@
         <div class="filter-group">
             <label class="filter-label" for="filter-sort">Sortiranje</label>
             <select id="filter-sort" name="sort" class="filter-input">
+                {% if filter_params.q %}
+                <option value=""{% if filter_params.sort != 'rastuca' and filter_params.sort != 'opadajuca' and filter_params.sort != 'najnovije' %} selected{% endif %}>Najrelevantnije (zadano)</option>
+                <option value="rastuca"{% if filter_params.sort == 'rastuca' %} selected{% endif %}>Cijena rastuća</option>
+                <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Cijena opadajuća</option>
+                <option value="najnovije"{% if filter_params.sort == 'najnovije' %} selected{% endif %}>Najnovije</option>
+                {% else %}
                 <option value=""{% if filter_params.sort != 'opadajuca' %} selected{% endif %}>Cijena rastuća (zadano)</option>
                 <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Opadajuća cijena</option>
+                {% endif %}
             </select>
         </div>
 

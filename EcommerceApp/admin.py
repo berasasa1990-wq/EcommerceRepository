@@ -64,8 +64,14 @@ from .models import (
     OnlineGiftClaim,
     OnlineGiftPush,
     Product,
+    ProductAttribute,
     ProductImage,
     ProductVariation,
+    SearchClickLog,
+    SearchIntentRule,
+    SearchQueryLog,
+    SearchSynonym,
+    SearchSynonymGroup,
     SiteSettings,
     Tag,
     UpsellOffer,
@@ -157,6 +163,35 @@ class ProductVariationInline(admin.TabularInline):
                 obj.slika.url,
             )
         return '—'
+
+
+class ProductAttributeInline(admin.TabularInline):
+    model = ProductAttribute
+    extra = 0
+    fields = (
+        'attribute_type', 'text_value', 'numeric_value', 'unit',
+        'normalized_numeric_value', 'aktivno', 'izvor',
+    )
+    readonly_fields = ('normalized_numeric_value',)
+    verbose_name = 'Karakteristika / mjera'
+    verbose_name_plural = 'Karakteristike (dužina, gramaža, promjer, veličina mašinice…)'
+    show_change_link = True
+
+
+@admin.register(ProductAttribute)
+class ProductAttributeAdmin(admin.ModelAdmin):
+    list_display = (
+        'product', 'attribute_type', 'text_value', 'numeric_value',
+        'unit', 'normalized_numeric_value', 'aktivno', 'izvor',
+    )
+    list_filter = ('attribute_type', 'unit', 'aktivno', 'izvor')
+    search_fields = (
+        'product__naziv', 'product__sifra', 'text_value', 'unit',
+    )
+    autocomplete_fields = ('product',)
+    list_editable = ('aktivno',)
+    ordering = ('-azurirano',)
+    list_select_related = ('product',)
 
 
 class ProductImageInline(admin.TabularInline):
@@ -608,6 +643,277 @@ class CategoryAdmin(admin.ModelAdmin):
         )
 
     bulk_assign_search_tags.short_description = 'Bulk dodaj tagove u podkategorije'
+
+
+class SearchClickLogInline(admin.TabularInline):
+    model = SearchClickLog
+    extra = 0
+    readonly_fields = ('product', 'result_position', 'created_at')
+    can_delete = False
+    max_num = 0
+    show_change_link = True
+
+
+class ZeroResultsFilter(admin.SimpleListFilter):
+    title = 'Rezultati'
+    parameter_name = 'results_bucket'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('zero', 'Bez rezultata (0)'),
+            ('low', 'Malo rezultata (1–3)'),
+            ('ok', 'Dovoljno (4+)'),
+        )
+
+    def queryset(self, request, queryset):
+        v = self.value()
+        if v == 'zero':
+            return queryset.filter(result_count=0)
+        if v == 'low':
+            return queryset.filter(result_count__gte=1, result_count__lte=3)
+        if v == 'ok':
+            return queryset.filter(result_count__gte=4)
+        return queryset
+
+
+@admin.register(SearchQueryLog)
+class SearchQueryLogAdmin(admin.ModelAdmin):
+    list_display = (
+        'original_query', 'normalized_query', 'result_count', 'source',
+        'converted_to_cart', 'converted_to_order', 'user', 'session_key_short',
+        'created_at',
+    )
+    list_filter = (
+        ZeroResultsFilter, 'source', 'converted_to_cart', 'converted_to_order',
+        'created_at',
+    )
+    search_fields = ('original_query', 'normalized_query', 'session_key', 'selected_suggestion')
+    readonly_fields = (
+        'original_query', 'normalized_query', 'result_count', 'user',
+        'session_key', 'source', 'selected_suggestion',
+        'converted_to_cart', 'converted_to_order', 'created_at',
+    )
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    inlines = [SearchClickLogInline]
+    list_per_page = 50
+    change_list_template = 'admin/EcommerceApp/searchquerylog/change_list.html'
+
+    @admin.display(description='Sesija')
+    def session_key_short(self, obj):
+        sk = obj.session_key or ''
+        return f'{sk[:8]}…' if len(sk) > 8 else sk
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                'dashboard/',
+                self.admin_site.admin_view(self.analytics_dashboard),
+                name='EcommerceApp_searchquerylog_dashboard',
+            ),
+        ]
+        return custom + urls
+
+    def analytics_dashboard(self, request):
+        from .search.analytics import (
+            LOW_RESULT_THRESHOLD,
+            low_result_queries,
+            top_clicked_products_annotated,
+            top_converting_queries,
+            top_queries_annotated,
+            zero_result_queries,
+        )
+        days = 30
+        try:
+            days = max(1, min(365, int(request.GET.get('days') or 30)))
+        except (TypeError, ValueError):
+            days = 30
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Search analitika',
+            'days': days,
+            'low_threshold': LOW_RESULT_THRESHOLD,
+            'top_queries': top_queries_annotated(limit=40, days=days),
+            'zero_queries': zero_result_queries(limit=40, days=days),
+            'low_queries': low_result_queries(limit=40, days=days),
+            'top_clicks': top_clicked_products_annotated(limit=40, days=days),
+            'top_conversion': top_converting_queries(limit=40, days=days),
+            'opts': self.model._meta,
+        }
+        return render(
+            request,
+            'admin/EcommerceApp/search_analytics_dashboard.html',
+            context,
+        )
+
+
+@admin.register(SearchClickLog)
+class SearchClickLogAdmin(admin.ModelAdmin):
+    list_display = (
+        'search_query', 'product', 'result_position', 'created_at',
+    )
+    list_filter = ('created_at',)
+    search_fields = (
+        'search_query__original_query', 'search_query__normalized_query',
+        'product__naziv', 'product__sifra',
+    )
+    readonly_fields = ('search_query', 'product', 'result_position', 'created_at')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    raw_id_fields = ('search_query', 'product')
+    list_select_related = ('search_query', 'product')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(SearchIntentRule)
+class SearchIntentRuleAdmin(admin.ModelAdmin):
+    list_display = (
+        'naziv', 'aktivno', 'prioritet', 'triggers_preview',
+        'cats_count', 'products_count', 'azurirano',
+    )
+    list_filter = ('aktivno',)
+    list_editable = ('aktivno', 'prioritet')
+    search_fields = ('naziv', 'trigger_phrases', 'naslov_preporuke', 'objasnjenje')
+    filter_horizontal = (
+        'povezane_kategorije', 'povezani_tagovi',
+        'povezani_brendovi', 'povezani_proizvodi',
+    )
+    readonly_fields = ('azurirano',)
+    ordering = ('-prioritet', 'naziv')
+    fieldsets = (
+        (None, {
+            'fields': ('naziv', 'aktivno', 'prioritet', 'azurirano'),
+        }),
+        ('Okidači', {
+            'fields': ('trigger_phrases',),
+            'description': (
+                'Fraze koje aktiviraju ovo pravilo (jedna po redu). '
+                'npr. som, početnički feeder set, štap za Savu. '
+                'Ne mijenja glavni ranking — samo preporuke.'
+            ),
+        }),
+        ('Tekst preporuke', {
+            'fields': ('naslov_preporuke', 'objasnjenje'),
+        }),
+        ('Povezan sadržaj (ručno)', {
+            'fields': (
+                'povezane_kategorije', 'povezani_tagovi',
+                'povezani_brendovi', 'povezani_proizvodi',
+            ),
+            'description': (
+                'Prikazuje se u sekciji „Možda će vam trebati i”. '
+                'Povezani proizvodi ne ulaze u glavni ranking.'
+            ),
+        }),
+    )
+
+    @admin.display(description='Okidači')
+    def triggers_preview(self, obj):
+        phrases = obj.trigger_list()[:4]
+        text = ', '.join(phrases)
+        if len(obj.trigger_list()) > 4:
+            text += '…'
+        return text or '—'
+
+    @admin.display(description='Kat.')
+    def cats_count(self, obj):
+        return obj.povezane_kategorije.count()
+
+    @admin.display(description='Art.')
+    def products_count(self, obj):
+        return obj.povezani_proizvodi.count()
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        try:
+            from .search.intent import invalidate_intent_cache
+            invalidate_intent_cache()
+        except Exception:
+            pass
+
+    def delete_queryset(self, request, queryset):
+        super().delete_queryset(request, queryset)
+        try:
+            from .search.intent import invalidate_intent_cache
+            invalidate_intent_cache()
+        except Exception:
+            pass
+
+
+class SearchSynonymInline(admin.TabularInline):
+    model = SearchSynonym
+    extra = 3
+    fields = ('pojam', 'normalizovani_pojam')
+    readonly_fields = ('normalizovani_pojam',)
+    verbose_name = 'Sinonim'
+    verbose_name_plural = 'Sinonimi u grupi'
+
+
+@admin.register(SearchSynonymGroup)
+class SearchSynonymGroupAdmin(admin.ModelAdmin):
+    list_display = (
+        'naziv',
+        'aktivno',
+        'prioritet',
+        'broj_sinonima',
+        'azurirano',
+    )
+    list_filter = ('aktivno',)
+    search_fields = ('naziv', 'sinonimi__pojam', 'sinonimi__normalizovani_pojam')
+    list_editable = ('aktivno', 'prioritet')
+    ordering = ('-prioritet', 'naziv')
+    inlines = [SearchSynonymInline]
+    readonly_fields = ('azurirano',)
+    fieldsets = (
+        (None, {
+            'fields': ('naziv', 'aktivno', 'prioritet', 'azurirano'),
+            'description': (
+                'Pojmovi u istoj grupi se tretiraju kao sinonimi u pretrazi. '
+                'Npr. grupa „Štap”: štap, stap, rod, pecaljka. '
+                'Sinonim ima manji ranking bod od tačne šifre/naziva.'
+            ),
+        }),
+    )
+
+    @admin.display(description='Broj sinonima')
+    def broj_sinonima(self, obj):
+        return obj.sinonimi.count()
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        try:
+            from .search.synonyms import invalidate_synonym_cache
+            invalidate_synonym_cache()
+        except Exception:
+            pass
+
+    def delete_queryset(self, request, queryset):
+        super().delete_queryset(request, queryset)
+        try:
+            from .search.synonyms import invalidate_synonym_cache
+            invalidate_synonym_cache()
+        except Exception:
+            pass
+
+
+@admin.register(SearchSynonym)
+class SearchSynonymAdmin(admin.ModelAdmin):
+    list_display = ('pojam', 'normalizovani_pojam', 'grupa', 'grupa_aktivna')
+    list_filter = ('grupa__aktivno', 'grupa')
+    search_fields = ('pojam', 'normalizovani_pojam', 'grupa__naziv')
+    autocomplete_fields = ('grupa',)
+    readonly_fields = ('normalizovani_pojam',)
+    ordering = ('grupa__naziv', 'pojam')
+
+    @admin.display(boolean=True, description='Grupa aktivna')
+    def grupa_aktivna(self, obj):
+        return bool(obj.grupa_id and obj.grupa.aktivno)
 
 
 @admin.register(Tag)
@@ -1751,7 +2057,7 @@ class ProductAdmin(admin.ModelAdmin):
         'pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview',
         'olx_objavi_info', 'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
     )
-    inlines = [ProductVariationInline, ProductImageInline]
+    inlines = [ProductVariationInline, ProductImageInline, ProductAttributeInline]
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)

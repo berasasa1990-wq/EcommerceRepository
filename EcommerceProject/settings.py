@@ -151,6 +151,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
+    # PostgreSQL helpers (TrigramSimilarity / TrigramExtension); harmless with SQLite
+    'django.contrib.postgres',
 ]
 
 MIDDLEWARE = [

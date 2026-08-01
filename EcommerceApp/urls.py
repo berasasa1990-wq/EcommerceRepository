@@ -11,6 +11,10 @@ urlpatterns = [
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
+    path('api/pretraga/click/', views.search_analytics_click, name='search_analytics_click'),
+    path('api/pretraga/log/', views.search_analytics_query, name='search_analytics_query'),
+    # Full search results page (HTML) — distinct from autocomplete API above
+    path('pretraga/', views.search_results, name='search_results'),
 
     # Live chat (kupac ↔ podrška)
     path('api/chat/config/', views_chat.chat_config, name='chat_config'),

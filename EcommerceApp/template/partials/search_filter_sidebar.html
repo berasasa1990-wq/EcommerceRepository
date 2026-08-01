@@ -1,0 +1,113 @@
+<aside class="catalog-sidebar search-filter-sidebar">
+    <form class="catalog-filter" method="get" action="{{ filter_action }}" id="searchFilterForm">
+        <h2 class="catalog-filter-title">Filter</h2>
+
+        {% if filter_params.q %}
+        <input type="hidden" name="q" value="{{ filter_params.q }}">
+        <p class="filter-search-hint">Pretraga: <strong>{{ filter_params.q }}</strong></p>
+        {% endif %}
+
+        <div class="filter-group filter-group--categories">
+            <label class="filter-label" for="filter-kategorija">Kategorija</label>
+            <select id="filter-kategorija" name="kategorija" class="filter-input">
+                <option value="">Sve kategorije</option>
+                {% for cat in filter_categories %}
+                <option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>
+                    {% if cat.nivo == 1 %}— {% elif cat.nivo == 2 %}—— {% endif %}{{ cat.naziv }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if subcategories %}
+        <div class="filter-group">
+            <label class="filter-label" for="filter-potkategorija">Potkategorija</label>
+            <select id="filter-potkategorija" name="potkategorija" class="filter-input">
+                <option value="">Sve potkategorije</option>
+                {% for sub in subcategories %}
+                <option value="{{ sub.slug }}"{% if filter_params.potkategorija == sub.slug %} selected{% endif %}>
+                    {{ sub.naziv }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% elif filter_params.potkategorija %}
+        <input type="hidden" name="potkategorija" value="{{ filter_params.potkategorija }}">
+        {% endif %}
+
+        <div class="filter-group">
+            <label class="filter-label" for="filter-brend">Brend</label>
+            <select id="filter-brend" name="brend" class="filter-input">
+                <option value="">Svi brendovi</option>
+                {% for b in filter_brands %}
+                <option value="{{ b.slug }}"{% if filter_params.brend == b.slug %} selected{% endif %}>{{ b.naziv }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <span class="filter-label">Cijena (KM)</span>
+            <div class="filter-price-row">
+                <input type="number" name="cijena_od" class="filter-input" placeholder="Od" min="0" step="0.01" value="{{ filter_params.cijena_od }}" inputmode="decimal">
+                <input type="number" name="cijena_do" class="filter-input" placeholder="Do" min="0" step="0.01" value="{{ filter_params.cijena_do }}" inputmode="decimal">
+            </div>
+        </div>
+
+        <div class="filter-group filter-group--checks">
+            <label class="filter-check">
+                <input type="checkbox" name="na_stanju" value="1"{% if filter_params.na_stanju == '1' or filter_params.na_stanju == 'true' or filter_params.na_stanju == 'yes' %} checked{% endif %}>
+                Samo na stanju
+            </label>
+            <label class="filter-check">
+                <input type="checkbox" name="akcija" value="1"{% if filter_params.akcija %} checked{% endif %}>
+                Samo akcija
+            </label>
+            <label class="filter-check">
+                <input type="checkbox" name="noviteti" value="1"{% if filter_params.noviteti %} checked{% endif %}>
+                Novitet
+            </label>
+        </div>
+
+        {% if tehnika_tags %}
+        <div class="filter-group">
+            <label class="filter-label" for="filter-tehnika">Tehnika ribolova</label>
+            <select id="filter-tehnika" name="tehnika" class="filter-input">
+                <option value="">Sve tehnike</option>
+                {% for t in tehnika_tags %}
+                <option value="{{ t.slug }}"{% if filter_params.tehnika == t.slug %} selected{% endif %}>{{ t.naziv }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% elif filter_params.tehnika %}
+        <input type="hidden" name="tehnika" value="{{ filter_params.tehnika }}">
+        {% endif %}
+
+        {% if vrsta_ribe_tags %}
+        <div class="filter-group">
+            <label class="filter-label" for="filter-vrsta-ribe">Vrsta ribe</label>
+            <select id="filter-vrsta-ribe" name="vrsta_ribe" class="filter-input">
+                <option value="">Sve vrste</option>
+                {% for t in vrsta_ribe_tags %}
+                <option value="{{ t.slug }}"{% if filter_params.vrsta_ribe == t.slug %} selected{% endif %}>{{ t.naziv }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% elif filter_params.vrsta_ribe %}
+        <input type="hidden" name="vrsta_ribe" value="{{ filter_params.vrsta_ribe }}">
+        {% endif %}
+
+        <div class="filter-group">
+            <label class="filter-label" for="filter-sort">Sortiranje</label>
+            <select id="filter-sort" name="sort" class="filter-input">
+                {% for value, label in sort_choices %}
+                <option value="{{ value }}"{% if sort_mode == value %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-filter">Primijeni</button>
+            <a href="{{ filter_reset_url }}" class="btn btn-secondary btn-filter">Obriši filtere</a>
+        </div>
+    </form>
+</aside>

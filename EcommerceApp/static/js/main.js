@@ -350,8 +350,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchCombobox = document.querySelector('.search-combobox');
     const searchSuggestions = document.getElementById('searchSuggestions');
     const searchSuggestUrl = '/api/pretraga/';
+    const SEARCH_DEBOUNCE_MS = 250;
+    const SEARCH_MIN_CHARS = 2;
+    const SEARCH_MAX_CHARS = 150;
     let searchDebounceTimer;
     let searchFetchController;
+    let searchActiveIndex = -1;
+    let searchOptionEls = [];
 
     const placeholderThumbSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`;
 
@@ -377,61 +382,73 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = searchCombobox || searchInput;
         if (!target) return;
         target.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        if (searchInput) {
+            searchInput.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        }
     }
 
     function setSearchSuggestActive(active) {
         document.body.classList.toggle('search-suggest-open', Boolean(active));
     }
 
+    function setActiveDescendant(optionEl) {
+        if (!searchInput) return;
+        if (optionEl?.id) {
+            searchInput.setAttribute('aria-activedescendant', optionEl.id);
+        } else {
+            searchInput.setAttribute('aria-activedescendant', '');
+        }
+    }
+
+    function clearSearchHighlight() {
+        searchOptionEls.forEach((el) => {
+            el.classList.remove('is-active');
+            el.setAttribute('aria-selected', 'false');
+        });
+        searchActiveIndex = -1;
+        setActiveDescendant(null);
+    }
+
     function clearSearchSuggestions() {
         if (!searchSuggestions) return;
         searchSuggestions.innerHTML = '';
         searchSuggestions.hidden = true;
+        searchOptionEls = [];
+        clearSearchHighlight();
         setSuggestionsExpanded(false);
         setSearchSuggestActive(false);
     }
 
-    function renderSearchSuggestions(results, query, hasMore = false) {
-        if (!searchSuggestions) return;
-
-        if (!query) {
-            clearSearchSuggestions();
+    function setSearchActiveIndex(index) {
+        if (!searchOptionEls.length) {
+            clearSearchHighlight();
             return;
         }
+        const max = searchOptionEls.length - 1;
+        let next = index;
+        if (next < 0) next = max;
+        if (next > max) next = 0;
+        searchOptionEls.forEach((el, i) => {
+            const active = i === next;
+            el.classList.toggle('is-active', active);
+            el.setAttribute('aria-selected', active ? 'true' : 'false');
+            if (active) {
+                setActiveDescendant(el);
+                el.scrollIntoView({ block: 'nearest' });
+            }
+        });
+        searchActiveIndex = next;
+    }
 
-        if (!results.length) {
-            searchSuggestions.innerHTML = `<div role="status" class="search-suggestions-empty">Nema artikala za „${escapeHtml(query)}".</div>`;
-            searchSuggestions.hidden = false;
-            setSuggestionsExpanded(true);
-            setSearchSuggestActive(true);
+    function collectSearchOptions() {
+        if (!searchSuggestions) {
+            searchOptionEls = [];
             return;
         }
-
-        const items = results.map((item, index) => {
-            // Prvih nekoliko slika eager (dropdown je “above the fold”); ostale lazy
-            const loadAttr = index < 4 ? 'eager' : 'lazy';
-            const fetchAttr = index < 2 ? ' fetchpriority="high"' : '';
-            const thumb = item.image
-                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="${loadAttr}" decoding="async"${fetchAttr}>`
-                : placeholderThumbSvg;
-            const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
-            return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
-                <span class="search-suggestion-thumb">${thumb}</span>
-                <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
-                <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>
-            </a>`;
-        }).join('');
-
-        const base = searchForm?.getAttribute('action') || '/';
-        const allResultsUrl = `${base}?q=${encodeURIComponent(query)}#product-showcase`;
-        const footer = hasMore
-            ? `<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">Vidi sve rezultate za „${escapeHtml(query)}"</a></p>`
-            : '';
-
-        searchSuggestions.innerHTML = items + footer;
-        searchSuggestions.hidden = false;
-        setSuggestionsExpanded(true);
-        setSearchSuggestActive(true);
+        searchOptionEls = Array.from(
+            searchSuggestions.querySelectorAll('[role="option"]'),
+        );
+        clearSearchHighlight();
     }
 
     function escapeHtml(value) {
@@ -442,44 +459,138 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/"/g, '&quot;');
     }
 
+    function renderSearchSuggestions(payload, query) {
+        if (!searchSuggestions) return;
+
+        if (!query) {
+            clearSearchSuggestions();
+            return;
+        }
+
+        const results = payload?.results || [];
+        const showAllUrl = payload?.show_all_url
+            || `${searchForm?.getAttribute('action') || '/'}?q=${encodeURIComponent(query)}`;
+        const showAllLabel = payload?.show_all_label
+            || `Prikaži sve rezultate za: ${query}`;
+        const showAllHref = `${showAllUrl}${showAllUrl.includes('#') ? '' : '#product-showcase'}`;
+
+        if (!results.length) {
+            searchSuggestions.innerHTML = `<div role="status" class="search-suggestions-empty">Nema artikala za „${escapeHtml(query)}”.</div>
+                <p class="search-suggestions-footer">
+                    <a href="${escapeHtml(showAllHref)}" class="search-suggestions-show-all" id="searchShowAll" role="option" data-search-option="show-all">${escapeHtml(showAllLabel)}</a>
+                </p>`;
+            searchSuggestions.hidden = false;
+            setSuggestionsExpanded(true);
+            setSearchSuggestActive(true);
+            collectSearchOptions();
+            return;
+        }
+
+        const productItems = results.map((item, index) => {
+            const optionId = `search-option-${index}`;
+            const loadAttr = index < 4 ? 'eager' : 'lazy';
+            const fetchAttr = index < 2 ? ' fetchpriority="high"' : '';
+            const thumb = item.image
+                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="${loadAttr}" decoding="async"${fetchAttr}>`
+                : placeholderThumbSvg;
+            const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
+            const oldPrice = item.old_price
+                ? `<span class="search-suggestion-old-price">${escapeHtml(item.old_price)} KM</span>`
+                : '';
+            const saleBadge = item.on_sale
+                ? '<span class="search-suggestion-badge search-suggestion-badge--sale">Akcija</span>'
+                : '';
+            const stockLabel = item.in_stock === false ? 'Nema na stanju' : 'Na stanju';
+            const stockClass = item.in_stock === false
+                ? ' search-suggestion-stock--oos'
+                : ' search-suggestion-stock--ok';
+            const oosClass = item.in_stock === false ? ' search-suggestion--oos' : '';
+            const sifra = item.sifra
+                ? `<span class="search-suggestion-sifra">${escapeHtml(item.sifra)}</span>`
+                : '';
+            const brand = item.brand
+                ? `<span class="search-suggestion-brand">${escapeHtml(item.brand)}</span>`
+                : '';
+            const category = item.category
+                ? `<span class="search-suggestion-category">${escapeHtml(item.category)}</span>`
+                : '';
+            const metaParts = [brand, sifra, category].filter(Boolean).join(
+                '<span class="search-suggestion-dot" aria-hidden="true">·</span>',
+            );
+            const meta = metaParts
+                ? `<span class="search-suggestion-sub">${metaParts}</span>`
+                : '';
+
+            return `<a href="${escapeHtml(item.url)}" class="search-suggestion${oosClass}" role="option" id="${optionId}" aria-selected="false" data-search-option="product" data-product-id="${escapeHtml(item.id || '')}" tabindex="-1">
+                <span class="search-suggestion-thumb">${thumb}</span>
+                <span class="search-suggestion-body">
+                    <span class="search-suggestion-name-row">
+                        <span class="search-suggestion-name-text">${escapeHtml(item.naziv)}</span>
+                        ${saleBadge}
+                    </span>
+                    ${meta}
+                    <span class="search-suggestion-stock${stockClass}">${stockLabel}</span>
+                </span>
+                <span class="search-suggestion-price${priceClass}">${oldPrice}<span class="search-suggestion-price-now">${escapeHtml(item.price)} KM</span></span>
+            </a>`;
+        }).join('');
+
+        const footer = `<p class="search-suggestions-footer">
+            <a href="${escapeHtml(showAllHref)}" class="search-suggestions-show-all" id="searchShowAll" role="option" aria-selected="false" data-search-option="show-all" tabindex="-1">${escapeHtml(showAllLabel)}</a>
+        </p>`;
+
+        searchSuggestions.innerHTML = productItems + footer;
+        searchSuggestions.hidden = false;
+        setSuggestionsExpanded(true);
+        setSearchSuggestActive(true);
+        collectSearchOptions();
+    }
+
     async function fetchSearchSuggestions(query) {
         if (!searchSuggestions) return;
 
         searchFetchController?.abort();
         searchFetchController = new AbortController();
 
-        searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretraga…</div>';
+        searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading" aria-live="polite">Pretraga…</div>';
         searchSuggestions.hidden = false;
+        searchOptionEls = [];
+        clearSearchHighlight();
         setSuggestionsExpanded(true);
         setSearchSuggestActive(true);
 
         try {
             const response = await fetch(`${searchSuggestUrl}?q=${encodeURIComponent(query)}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
                 signal: searchFetchController.signal,
+                credentials: 'same-origin',
             });
             if (!response.ok) throw new Error('Search failed');
             const data = await response.json();
-            if (searchInput?.value.trim() !== query) return;
-            renderSearchSuggestions(data.results || [], data.query || query, Boolean(data.has_more));
+            // Ignore stale responses if user kept typing
+            if ((searchInput?.value || '').trim().slice(0, SEARCH_MAX_CHARS) !== query) return;
+            renderSearchSuggestions(data || {}, data.query || query);
         } catch (error) {
             if (error.name === 'AbortError') return;
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
             searchSuggestions.hidden = false;
+            searchOptionEls = [];
             setSearchSuggestActive(true);
         }
     }
 
     function queueSearchSuggestions() {
         clearTimeout(searchDebounceTimer);
-        const value = searchInput?.value.trim() || '';
-        if (!value) {
+        const value = (searchInput?.value || '').trim().slice(0, SEARCH_MAX_CHARS);
+        if (!value || value.length < SEARCH_MIN_CHARS) {
+            searchFetchController?.abort();
             clearSearchSuggestions();
             return;
         }
-        // Kratki upiti (2–3 znaka) malo duži debounce; duži upiti brži odziv
-        const delay = value.length <= 3 ? 180 : 120;
-        searchDebounceTimer = window.setTimeout(() => fetchSearchSuggestions(value), delay);
+        // Fixed 250 ms debounce — never one request per keypress
+        searchDebounceTimer = window.setTimeout(() => {
+            fetchSearchSuggestions(value);
+        }, SEARCH_DEBOUNCE_MS);
     }
 
     function openSearchOverlay() {
@@ -490,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         header?.classList.add('header-search-open');
         setMobileNavOpen(false);
         scheduleSearchFocus();
-        if (searchInput?.value.trim()) {
+        if ((searchInput?.value || '').trim().length >= SEARCH_MIN_CHARS) {
             queueSearchSuggestions();
         }
     }
@@ -499,14 +610,15 @@ document.addEventListener('DOMContentLoaded', () => {
         header?.classList.remove('header-search-open');
         clearSearchSuggestions();
         searchFetchController?.abort();
+        clearTimeout(searchDebounceTimer);
     }
 
     function navigateToSearch(query) {
-        const trimmed = query.trim();
+        const trimmed = (query || '').trim().slice(0, SEARCH_MAX_CHARS);
         if (!trimmed || !searchForm) return;
-        const base = searchForm.getAttribute('action') || '/';
-        const target = `${base}?q=${encodeURIComponent(trimmed)}#product-showcase`;
-        if (`${window.location.pathname}${window.location.search}${window.location.hash}` === target) {
+        const base = searchForm.getAttribute('action') || '/pretraga/';
+        const target = `${base}?q=${encodeURIComponent(trimmed)}`;
+        if (`${window.location.pathname}${window.location.search}` === `${base}?q=${encodeURIComponent(trimmed)}`) {
             closeSearchOverlay();
             const showcase = document.getElementById('product-showcase');
             showcase?.scrollIntoView({ block: 'start' });
@@ -515,14 +627,78 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.assign(target);
     }
 
+    function activateSearchOption(optionEl) {
+        if (!optionEl) return;
+        const href = optionEl.getAttribute('href');
+        if (href) {
+            window.location.assign(href);
+        }
+    }
+
     searchClose?.addEventListener('click', closeSearchOverlay);
 
     searchForm?.addEventListener('submit', (e) => {
         e.preventDefault();
+        // Enter: open highlighted option if any, else full results
+        if (searchActiveIndex >= 0 && searchOptionEls[searchActiveIndex]) {
+            activateSearchOption(searchOptionEls[searchActiveIndex]);
+            return;
+        }
         navigateToSearch(searchInput?.value || '');
     });
 
     searchInput?.addEventListener('input', queueSearchSuggestions);
+
+    searchInput?.addEventListener('keydown', (e) => {
+        const open = searchSuggestions && !searchSuggestions.hidden;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            clearSearchSuggestions();
+            searchFetchController?.abort();
+            return;
+        }
+        if (!open || !searchOptionEls.length) {
+            if (e.key === 'ArrowDown' && (searchInput?.value || '').trim().length >= SEARCH_MIN_CHARS) {
+                queueSearchSuggestions();
+            }
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSearchActiveIndex(searchActiveIndex + 1);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSearchActiveIndex(searchActiveIndex - 1);
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            setSearchActiveIndex(0);
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            setSearchActiveIndex(searchOptionEls.length - 1);
+        } else if (e.key === 'Enter' && searchActiveIndex >= 0) {
+            e.preventDefault();
+            activateSearchOption(searchOptionEls[searchActiveIndex]);
+        }
+    });
+
+    // Click outside closes dropdown (keeps header layout)
+    document.addEventListener('click', (e) => {
+        const root = document.getElementById('headerSearch');
+        if (!root || !searchSuggestions || searchSuggestions.hidden) return;
+        if (root.contains(e.target)) return;
+        clearSearchSuggestions();
+        searchFetchController?.abort();
+    });
+
+    // Hover sync for keyboard/mouse highlight
+    searchSuggestions?.addEventListener('mousemove', (e) => {
+        const option = e.target.closest('[role="option"]');
+        if (!option || !searchOptionEls.length) return;
+        const idx = searchOptionEls.indexOf(option);
+        if (idx >= 0 && idx !== searchActiveIndex) {
+            setSearchActiveIndex(idx);
+        }
+    });
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeSearchQuery = urlParams.get('q')?.trim();
@@ -2423,3 +2599,84 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 
 });
+
+    // —— Search analytics: click tracking (results page + autocomplete) ——
+    (function initSearchAnalytics() {
+        const clickUrl = '/api/pretraga/click/';
+        const logUrl = '/api/pretraga/log/';
+
+        function csrfToken() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta?.content) return meta.content;
+            const m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+            return m ? decodeURIComponent(m[1]) : '';
+        }
+
+        function postAnalytics(url, data) {
+            try {
+                const body = new URLSearchParams(data);
+                // Prefer sendBeacon for unload-safe; fallback fetch keepalive
+                if (navigator.sendBeacon) {
+                    const blob = new Blob([body.toString()], {
+                        type: 'application/x-www-form-urlencoded',
+                    });
+                    // sendBeacon cannot set CSRF header — include in body if middleware allows
+                    // Django needs CSRF in header or form; use fetch keepalive instead
+                }
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                    keepalive: true,
+                }).catch(() => {});
+            } catch (e) { /* never block navigation */ }
+        }
+
+        // Full results page: product card click
+        document.addEventListener('click', (e) => {
+            const root = document.querySelector('[data-search-analytics]');
+            if (!root) return;
+            const item = e.target.closest('.search-result-item');
+            if (!item || !root.contains(item)) return;
+            const link = e.target.closest('a[href]');
+            if (!link) return;
+            const productId = item.getAttribute('data-product-id') || '';
+            const position = item.getAttribute('data-result-position') || '0';
+            const q = root.getAttribute('data-search-q') || '';
+            const logId = root.getAttribute('data-search-log-id') || '';
+            postAnalytics(clickUrl, {
+                product_id: productId,
+                position: position,
+                q: q,
+                log_id: logId,
+                source: 'full_page',
+            });
+        }, true);
+
+        // Autocomplete: when user clicks a product suggestion
+        const searchSuggestions = document.getElementById('searchSuggestions');
+        searchSuggestions?.addEventListener('click', (e) => {
+            const option = e.target.closest('[data-search-option="product"]');
+            if (!option) return;
+            const searchInput = document.getElementById('searchInput');
+            const q = (searchInput?.value || '').trim();
+            let position = '0';
+            const id = option.id || '';
+            const m = id.match(/search-option-(\d+)/);
+            if (m) position = String(Number(m[1]) + 1);
+            const productId = option.getAttribute('data-product-id') || '';
+            // Single call: creates SearchQueryLog (autocomplete) + SearchClickLog
+            postAnalytics(clickUrl, {
+                product_id: productId,
+                position: position,
+                q: q,
+                source: 'autocomplete',
+            });
+        });
+    })();
+

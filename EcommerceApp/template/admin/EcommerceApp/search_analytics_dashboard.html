@@ -1,0 +1,111 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p style="margin-bottom:1.5rem;color:#666;">Pregled search analitike (bez IP adresa). Zadnjih {{ days }} dana.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;">
+
+<section style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;">
+  <h2 style="margin-top:0;font-size:1.05rem;">Najčešće pretrage</h2>
+  <table style="width:100%;font-size:13px;">
+    <thead><tr><th>Upit</th><th>Hitova</th><th>Pros. rez.</th><th>Korpa</th><th>Narudžba</th></tr></thead>
+    <tbody>
+    {% for row in top_queries %}
+      <tr>
+        <td><code>{{ row.normalized_query }}</code></td>
+        <td>{{ row.hits }}</td>
+        <td>{{ row.avg_results|floatformat:1 }}</td>
+        <td>{{ row.cart_hits }}</td>
+        <td>{{ row.order_hits }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Nema podataka.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;">
+  <h2 style="margin-top:0;font-size:1.05rem;">Pretrage bez rezultata</h2>
+  <table style="width:100%;font-size:13px;">
+    <thead><tr><th>Upit</th><th>Hitova</th></tr></thead>
+    <tbody>
+    {% for row in zero_queries %}
+      <tr>
+        <td><code>{{ row.original_query|default:row.normalized_query }}</code></td>
+        <td>{{ row.hits }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="2">Nema podataka.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;">
+  <h2 style="margin-top:0;font-size:1.05rem;">Pretrage sa malo rezultata (≤{{ low_threshold }})</h2>
+  <table style="width:100%;font-size:13px;">
+    <thead><tr><th>Upit</th><th>Hitova</th><th>Pros. rez.</th></tr></thead>
+    <tbody>
+    {% for row in low_queries %}
+      <tr>
+        <td><code>{{ row.normalized_query }}</code></td>
+        <td>{{ row.hits }}</td>
+        <td>{{ row.avg_results|floatformat:1 }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3">Nema podataka.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;">
+  <h2 style="margin-top:0;font-size:1.05rem;">Najviše klikani proizvodi</h2>
+  <table style="width:100%;font-size:13px;">
+    <thead><tr><th>Artikal</th><th>Šifra</th><th>Klikova</th><th>Pros. poz.</th></tr></thead>
+    <tbody>
+    {% for row in top_clicks %}
+      <tr>
+        <td>{{ row.product__naziv }}</td>
+        <td><code>{{ row.product__sifra }}</code></td>
+        <td>{{ row.clicks }}</td>
+        <td>{{ row.avg_position|floatformat:1 }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Nema podataka.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;">
+  <h2 style="margin-top:0;font-size:1.05rem;">Upiti s najvećom konverzijom (narudžba)</h2>
+  <table style="width:100%;font-size:13px;">
+    <thead><tr><th>Upit</th><th>Narudžbi</th><th>Korpi</th><th>Ukupno logova*</th></tr></thead>
+    <tbody>
+    {% for row in top_conversion %}
+      <tr>
+        <td><code>{{ row.normalized_query }}</code></td>
+        <td>{{ row.order_hits }}</td>
+        <td>{{ row.cart_hits }}</td>
+        <td>{{ row.hits }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Nema podataka.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:#888;">* Samo logovi s barem jednom konverzijom u narudžbu.</p>
+</section>
+
+</div>
+
+<p style="margin-top:1.5rem;">
+  <a href="{% url 'admin:EcommerceApp_searchquerylog_changelist' %}">Svi upiti →</a>
+  &nbsp;·&nbsp;
+  <a href="{% url 'admin:EcommerceApp_searchclicklog_changelist' %}">Svi klikovi →</a>
+</p>
+{% endblock %}

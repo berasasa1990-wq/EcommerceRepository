@@ -102,8 +102,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260801navDashAlign" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260801navDashAlign">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260801searchPage" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260801searchPage">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -216,22 +216,42 @@
                 </div>
 
                 <div class="header-search" id="headerSearch">
-                    <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">
+                    <form class="header-search-form" method="get" action="{% url 'search_results' %}" id="searchForm" role="search">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <circle cx="11" cy="11" r="8"/>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
-                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu" autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-owns="searchSuggestions" aria-controls="searchSuggestions">
+                            <label for="searchInput" class="visually-hidden">Pretraga artikala</label>
+                            <input
+                                type="search"
+                                name="q"
+                                id="searchInput"
+                                value="{{ search_query }}"
+                                placeholder="Pretraži naziv, šifru, barkod, brend…"
+                                autocomplete="off"
+                                enterkeyhint="search"
+                                maxlength="150"
+                                aria-autocomplete="list"
+                                aria-controls="searchSuggestions"
+                                aria-activedescendant=""
+                                spellcheck="false"
+                            >
                         </div>
                         <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <line x1="18" y1="6" x2="6" y2="18"/>
                                 <line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
                         </button>
                     </form>
-                    <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
+                    <div
+                        class="search-suggestions"
+                        id="searchSuggestions"
+                        role="listbox"
+                        aria-label="Prijedlozi pretrage"
+                        hidden
+                    ></div>
                 </div>
 
                 <div class="nav-actions">
@@ -562,7 +582,7 @@
     }
     </script>
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.js' %}?v=20260801scrollChat" defer></script>
+    <script src="{% static 'js/main.js' %}?v=20260801searchPage" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}
