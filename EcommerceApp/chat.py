@@ -201,10 +201,8 @@ def _serialize_product_offer(message):
 
 def serialize_message(message):
     if message.sender_type == ChatMessage.Sender.STAFF:
-        if message.staff_user_id:
-            staff_name = message.staff_user.get_full_name().strip() or 'Podrška'
-        else:
-            staff_name = 'Podrška'
+        # Kupcu se ne prikazuje ime/email zaposlenika
+        staff_name = 'Zaposlenik'
     else:
         staff_name = ''
     product_offer = None

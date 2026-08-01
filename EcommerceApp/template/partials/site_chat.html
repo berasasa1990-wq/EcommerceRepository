@@ -1,7 +1,7 @@
 {% load static %}
 {# Live chat: kupac (proaktivni) ili superuser/staff (samo chat sa kupcima) #}
 {% if site_settings.chat_sa_kupcem_aktivan or user.is_authenticated and user.is_staff %}
-<link rel="stylesheet" href="{% static 'css/site-chat.css' %}?v=20260801chat6">
+<link rel="stylesheet" href="{% static 'css/site-chat.css' %}?v=20260801chat7">
 
 <div class="site-chat" id="siteChat" hidden>
     {# —— Kupac panel (NE za staff/superuser — oni imaju samo chat sa kupcima) —— #}
@@ -22,9 +22,9 @@
                     </p>
                 </div>
             </div>
-            <button type="button" class="site-chat-close" id="customerChatClose" aria-label="Zatvori chat">
+            <button type="button" class="site-chat-close" id="customerChatClose" aria-label="Smanji chat" title="Smanji — chat ostaje aktivan">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    <line x1="6" y1="12" x2="18" y2="12"/>
                 </svg>
             </button>
         </header>
@@ -177,5 +177,5 @@
     "autoOpenOnCustomerMessage": true
 }
 </script>
-<script src="{% static 'js/chat.js' %}?v=20260801chat6" defer></script>
+<script src="{% static 'js/chat.js' %}?v=20260801chat7" defer></script>
 {% endif %}

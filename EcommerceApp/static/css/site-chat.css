@@ -417,6 +417,30 @@
     letter-spacing: -0.01em;
 }
 
+.site-chat-message-body a.site-chat-link {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    word-break: break-all;
+}
+
+.site-chat-message--staff .site-chat-message-body a.site-chat-link {
+    color: #0f766e;
+}
+
+.site-chat-message--customer .site-chat-message-body a.site-chat-link {
+    color: #ecfdf5;
+}
+
+.site-chat-panel--staff .site-chat-message--staff .site-chat-message-body a.site-chat-link {
+    color: #ecfdf5;
+}
+
+.site-chat-panel--staff .site-chat-message--customer .site-chat-message-body a.site-chat-link {
+    color: #0f766e;
+}
+
 .site-chat-message--staff .site-chat-message-body {
     background: #ffffff;
     color: #0f172a;

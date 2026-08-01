@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const STORAGE_PROACTIVE = 'site_chat_proactive_done';
     const STORAGE_INTERNAL_NAV = 'site_chat_internal_nav';
     const STORAGE_VISIBLE = 'site_chat_launcher_visible';
+    const STORAGE_PANEL_OPEN = 'site_chat_panel_open';
     const STORAGE_SHOW_OFFLINE = 'site_chat_show_offline';
     let PROACTIVE_DELAY = Number(config.proactiveDelayMs) || 120000;
 
@@ -116,6 +117,46 @@ document.addEventListener('DOMContentLoaded', () => {
         textarea.style.height = `${Math.min(textarea.scrollHeight, 110)}px`;
     }
 
+    /** Sigurno pretvori URL-ove u klikabilne linkove (http/https/www). */
+    function fillMessageBodyWithLinks(el, text) {
+        if (!el) return;
+        el.textContent = '';
+        const raw = text || '';
+        const re = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+        let last = 0;
+        let match;
+        while ((match = re.exec(raw)) !== null) {
+            if (match.index > last) {
+                el.appendChild(document.createTextNode(raw.slice(last, match.index)));
+            }
+            let href = match[0];
+            // trim trailing punctuation common in sentences
+            let trailing = '';
+            const trailMatch = href.match(/[.,;:!?)]+$/);
+            if (trailMatch) {
+                trailing = trailMatch[0];
+                href = href.slice(0, -trailing.length);
+            }
+            const a = document.createElement('a');
+            a.className = 'site-chat-link';
+            a.href = href.startsWith('http') ? href : `https://${href}`;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = href;
+            el.appendChild(a);
+            if (trailing) {
+                el.appendChild(document.createTextNode(trailing));
+            }
+            last = match.index + match[0].length;
+        }
+        if (last < raw.length) {
+            el.appendChild(document.createTextNode(raw.slice(last)));
+        }
+        if (!raw) {
+            el.textContent = '';
+        }
+    }
+
     function revealCustomerLauncher() {
         customerChatRevealed = true;
         try {
@@ -123,6 +164,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { /* ignore */ }
         if (customerBtn) customerBtn.hidden = false;
         launchers?.classList.remove('is-customer-hidden');
+    }
+
+    function setCustomerPanelOpenState(open) {
+        try {
+            sessionStorage.setItem(STORAGE_PANEL_OPEN, open ? '1' : '0');
+        } catch (e) { /* ignore */ }
     }
 
     function buildProductOfferCard(offer, { interactive = true } = {}) {
@@ -250,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : (customerName || 'Kupac');
         } else {
             meta.textContent = message.sender_type === 'staff'
-                ? (message.staff_name || 'Podrška')
+                ? (message.staff_name || 'Zaposlenik')
                 : 'Vi';
         }
 
@@ -263,13 +310,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (message.body && !message.body.startsWith('Preporučujemo:')) {
                 const body = document.createElement('div');
                 body.className = 'site-chat-message-body';
-                body.textContent = message.body;
+                fillMessageBodyWithLinks(body, message.body);
                 item.appendChild(body);
             }
         } else {
             const body = document.createElement('div');
             body.className = 'site-chat-message-body';
-            body.textContent = message.body || '';
+            fillMessageBodyWithLinks(body, message.body || '');
             item.appendChild(body);
         }
 
@@ -339,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!customerPanel) return;
         revealCustomerLauncher();
         customerOpen = true;
+        setCustomerPanelOpenState(true);
         if (staffOpen) {
             staffOpen = false;
             togglePanel(staffPanel, false);
@@ -353,10 +401,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /** Minimiziraj — chat ostaje aktivan do izlaska sa sajta */
     function closeCustomerChat() {
         customerOpen = false;
+        setCustomerPanelOpenState(false);
         togglePanel(customerPanel, false);
+        // Polling ostaje radi badge-a za nove poruke zaposlenika
+        if (!customerPollTimer) {
+            startCustomerPolling();
+        }
+        // Poll even when minimized — need a lighter poll
         stopCustomerPolling();
+        startMinimizedCustomerPolling();
+    }
+
+    let customerMinimizedPollTimer = null;
+    function startMinimizedCustomerPolling() {
+        clearInterval(customerMinimizedPollTimer);
+        customerMinimizedPollTimer = setInterval(async () => {
+            if (customerOpen) return;
+            try {
+                const data = await apiFetch('/api/chat/badge/');
+                setBadge(customerBadge, data.customer_unread_count);
+            } catch (e) { /* ignore */ }
+        }, 5000);
+    }
+    function stopMinimizedCustomerPolling() {
+        clearInterval(customerMinimizedPollTimer);
+        customerMinimizedPollTimer = null;
     }
 
     async function pollCustomerChat() {
@@ -377,6 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function startCustomerPolling() {
+        stopMinimizedCustomerPolling();
         clearInterval(customerPollTimer);
         customerPollTimer = setInterval(pollCustomerChat, 3000);
     }
@@ -390,9 +463,11 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.setItem(STORAGE_PROACTIVE, '1');
         clearTimeout(proactiveTimer);
         if (customerOpen) {
+            // Minimize — ikona ostaje, može se opet otvoriti
             closeCustomerChat();
             return;
         }
+        stopMinimizedCustomerPolling();
         await openCustomerChat({ proactive: false });
     });
 
@@ -624,17 +699,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (staffAutoOpenBusy) return;
 
         const unread = Number(unreadCount) || 0;
-        const rose = unread > lastStaffUnreadTotal;
+        // Otvori čim ima online nepročitanih — i kad panel nije otvoren
+        const shouldOpen = unread > 0 && (unread > lastStaffUnreadTotal || !staffOpen);
         lastStaffUnreadTotal = unread;
 
-        if (!rose || unread <= 0) return;
+        if (!shouldOpen || unread <= 0) return;
 
         staffAutoOpenBusy = true;
         try {
             if (!staffOpen) {
                 await openStaffPanel();
             }
-            // Odaberi online razgovor s nepročitanim (offline se ne otvara automatski)
             let list = conversations;
             if (!list) {
                 const inbox = await apiFetch('/api/chat/staff/inbox/');
@@ -642,6 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const onlineUnread = inbox.online_unread_conversations
                     ?? list.filter((c) => c.is_online && (c.staff_unread_count || 0) > 0).length;
                 setBadge(staffBadge, onlineUnread);
+                lastStaffUnreadTotal = onlineUnread;
             }
             const onlineList = (list || []).filter((c) => c.is_online);
             const target = onlineList.find((c) => (c.staff_unread_count || 0) > 0)
@@ -663,12 +739,15 @@ document.addEventListener('DOMContentLoaded', () => {
     async function pollStaffInbox() {
         if (!config.isStaff) return;
         try {
+            const inbox = await apiFetch('/api/chat/staff/inbox/');
+            const all = inbox.conversations || [];
+            const onlineUnread = inbox.online_unread_conversations
+                ?? all.filter((c) => c.is_online && (c.staff_unread_count || 0) > 0).length;
+
             if (staffOpen) {
-                const inbox = await loadStaffInbox();
-                const all = (inbox && inbox.conversations) || [];
-                const onlineUnread = inbox?.online_unread_conversations
-                    ?? all.filter((c) => c.is_online && (c.staff_unread_count || 0) > 0).length;
-                lastStaffUnreadTotal = onlineUnread;
+                paintStaffInboxList(all);
+                setBadge(staffBadge, onlineUnread || (showOfflineChats ? (inbox.unread_conversations || 0) : 0));
+                setStaffPulse(onlineUnread > 0 || (showOfflineChats && (inbox.unread_conversations || 0) > 0));
 
                 // Nova poruka od online kupca → prebaci na taj thread
                 const unreadConv = all.find(
@@ -683,6 +762,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!typing) {
                         await openStaffConversation(unreadConv.id);
                     }
+                } else if (onlineUnread > lastStaffUnreadTotal && unreadConv) {
+                    // već na tom threadu — poruke se dohvate ispod
                 }
 
                 if (activeStaffConversationId) {
@@ -695,12 +776,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     });
                 }
+                lastStaffUnreadTotal = onlineUnread;
             } else {
-                // Brzi ping + full inbox radi is_online (za auto-open)
-                const inbox = await apiFetch('/api/chat/staff/inbox/');
-                const all = inbox.conversations || [];
-                const onlineUnread = inbox.online_unread_conversations
-                    ?? all.filter((c) => c.is_online && (c.staff_unread_count || 0) > 0).length;
                 setBadge(staffBadge, onlineUnread);
                 setStaffPulse(onlineUnread > 0);
                 if (staffBtn) staffBtn.hidden = false;
@@ -714,17 +791,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function startStaffTimers() {
         clearInterval(staffPollTimer);
         clearInterval(staffPingTimer);
-        // Brži poll kad je panel zatvoren — da chat odmah iskoči na poruku kupca
-        const interval = staffOpen ? 3500 : 4000;
+        // Brzi poll (2s) — chat iskače superuseru bez refresha
+        const interval = staffOpen ? 2500 : 2000;
         staffPollTimer = setInterval(pollStaffInbox, interval);
-        staffPingTimer = setInterval(async () => {
-            if (!config.isStaff || staffOpen) return;
-            try {
-                await pollStaffInbox();
-            } catch (error) {
-                console.error(error);
-            }
-        }, 20000);
     }
 
     staffShowOffline?.addEventListener('change', () => {
@@ -905,9 +974,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!config.chatEnabled) return;
         if (config.isStaff) return; // staff ne dobija auto popup kao kupac
 
-        // Ako je u ovoj sesiji već otvoren — samo pokaži launcher
-        if (sessionStorage.getItem(STORAGE_VISIBLE) === '1' || sessionStorage.getItem(STORAGE_PROACTIVE) === '1') {
+        // Chat već aktivan u ovoj sesiji (navigacija kategorija/stranica)
+        const alreadyActive = sessionStorage.getItem(STORAGE_VISIBLE) === '1'
+            || sessionStorage.getItem(STORAGE_PROACTIVE) === '1';
+        if (alreadyActive) {
             revealCustomerLauncher();
+            // Ako je panel bio otvoren — vrati ga (ne gasi se pri promjeni stranice)
+            if (sessionStorage.getItem(STORAGE_PANEL_OPEN) === '1') {
+                await openCustomerChat({ proactive: false });
+            } else {
+                startMinimizedCustomerPolling();
+            }
             return;
         }
 
@@ -931,6 +1008,9 @@ document.addEventListener('DOMContentLoaded', () => {
         proactiveTimer = setTimeout(async () => {
             if (sessionStorage.getItem(STORAGE_PROACTIVE) === '1') {
                 revealCustomerLauncher();
+                if (sessionStorage.getItem(STORAGE_PANEL_OPEN) === '1') {
+                    await openCustomerChat({ proactive: false });
+                }
                 return;
             }
             if (document.hidden) {
@@ -1002,6 +1082,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.removeItem(STORAGE_PROACTIVE);
             sessionStorage.removeItem(STORAGE_ENTER);
             sessionStorage.removeItem(STORAGE_VISIBLE);
+            sessionStorage.removeItem(STORAGE_PANEL_OPEN);
         } catch (e) { /* ignore */ }
     }
 
@@ -1013,16 +1094,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (config.isStaff) {
         if (staffBtn) staffBtn.hidden = false;
+        lastStaffUnreadTotal = -1; // forsira prvi auto-open ako ima unread
         startStaffTimers();
-        // Odmah provjeri ima li nepročitanih — otvori ako kupac već piše
-        (async () => {
-            try {
-                lastStaffUnreadTotal = 0; // forsira auto-open ako već ima online unread
-                await pollStaffInbox();
-            } catch (error) {
-                console.error(error);
-            }
-        })();
+        // Odmah provjeri ima li nepročitanih — otvori ako kupac piše (bez refresha)
+        pollStaffInbox().catch((error) => console.error(error));
     } else if (config.chatEnabled) {
         scheduleProactiveChat();
         setInterval(pollCustomerUnread, 20000);
