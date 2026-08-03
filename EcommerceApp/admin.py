@@ -1695,6 +1695,7 @@ class ProductAdmin(admin.ModelAdmin):
     actions = [
         'bulk_assign_category', 'bulk_assign_brand', 'bulk_assign_tags',
         'bulk_assign_pakovanje',
+        'bulk_rename_product_images',
         'bulk_proizvedeno_u_japanu', 'bulk_ukloni_japan', 'bulk_merge_products',
         'bulk_objavi_na_olx_pik',
     ]
@@ -2470,6 +2471,51 @@ class ProductAdmin(admin.ModelAdmin):
         return render(request, 'admin/EcommerceApp/product/bulk_assign_tags.html', context)
 
     bulk_assign_tags.short_description = 'Bulk tag (jedno polje → svi označeni)'
+
+    def bulk_rename_product_images(self, request, queryset):
+        """Preimenuj fajlove slika prema nazivu/slug-u artikla (bez novog uploada)."""
+        from .utils.images import rename_product_images_to_title
+
+        renamed = 0
+        skipped = 0
+        errors = 0
+        samples = []
+
+        qs = queryset.prefetch_related('dodatne_slike', 'varijacije')
+        for product in qs:
+            try:
+                results = rename_product_images_to_title(product)
+                for kind, label, result in results:
+                    if result.get('changed'):
+                        renamed += 1
+                        if len(samples) < 5:
+                            samples.append(
+                                f'{product.naziv}: {result["old_name"]} → {result["new_name"]}',
+                            )
+                    else:
+                        skipped += 1
+                if not results:
+                    skipped += 1
+            except Exception as exc:
+                errors += 1
+                logger.exception('Preimenovanje slika za product pk=%s', product.pk)
+                if len(samples) < 8:
+                    samples.append(f'{product.naziv}: greška — {exc}')
+
+        level = messages.SUCCESS if renamed and not errors else (
+            messages.WARNING if renamed or skipped else messages.ERROR
+        )
+        msg = (
+            f'Preimenovanje slika: {renamed} fajl(ova) preimenovano, '
+            f'{skipped} već u redu / bez slike, {errors} greška(ka).'
+        )
+        if samples:
+            msg += ' Primjeri: ' + ' · '.join(samples)
+        self.message_user(request, msg, level)
+
+    bulk_rename_product_images.short_description = (
+        'Preimenuj slike prema nazivu artikla (bez re-uploada)'
+    )
 
     def bulk_proizvedeno_u_japanu(self, request, queryset):
         count = queryset.update(proizvedeno_u_japanu=True)

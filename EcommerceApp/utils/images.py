@@ -1268,6 +1268,189 @@ def process_product_image_manual(image_field):
     return process_product_image(image_field)
 
 
+def product_image_filename_base(text, *, fallback='artikal', max_length=100):
+    """Slug za ime fajla slike (npr. naziv artikla → 'shimano-catana-fx')."""
+    from django.utils.text import slugify
+
+    base = slugify(text) or fallback
+    return base[:max_length].rstrip('-') or fallback
+
+
+def process_product_image_named(basename):
+    """Post-process za upload: izlazni fajl se zove prema basename (npr. slug artikla)."""
+    safe = product_image_filename_base(basename)
+
+    def _process(image_field):
+        return process_product_image(image_field, filename=f'{safe}.jpg')
+
+    # apply_image_processing prepoznaje ovo ime radi responsive varijanti
+    _process.__name__ = 'process_product_image_manual'
+    return _process
+
+
+def rename_stored_image_field(
+    image_field,
+    new_base,
+    *,
+    responsive_widths=PRODUCT_RESPONSIVE_WIDTHS,
+):
+    """
+    Preimenuje postojeći fajl slike (+ responsive *-120w …) bez re-uploada / re-encode.
+    Ažurira image_field.name. Vraća dict: changed, old_name, new_name, reason.
+    """
+    if not image_field or not getattr(image_field, 'name', None):
+        return {'changed': False, 'old_name': None, 'new_name': None, 'reason': 'empty'}
+
+    storage = image_field.storage
+    old_name = image_field.name
+    if not storage.exists(old_name):
+        return {'changed': False, 'old_name': old_name, 'new_name': old_name, 'reason': 'missing'}
+
+    if '/' in old_name:
+        folder, filename = old_name.rsplit('/', 1)
+    else:
+        folder, filename = '', old_name
+
+    if '.' in filename:
+        old_base, ext = filename.rsplit('.', 1)
+    else:
+        old_base, ext = filename, 'avif'
+
+    safe_base = product_image_filename_base(new_base, fallback=old_base or 'artikal')
+    if old_base == safe_base:
+        return {
+            'changed': False,
+            'old_name': old_name,
+            'new_name': old_name,
+            'reason': 'already',
+        }
+
+    new_filename = f'{safe_base}.{ext}'
+    desired = f'{folder}/{new_filename}' if folder else new_filename
+
+    try:
+        with storage.open(old_name, 'rb') as src:
+            data = src.read()
+    except Exception as exc:
+        logger.warning('Ne mogu pročitati sliku %s: %s', old_name, exc)
+        return {
+            'changed': False,
+            'old_name': old_name,
+            'new_name': old_name,
+            'reason': f'read_error:{exc}',
+        }
+
+    if not data:
+        return {
+            'changed': False,
+            'old_name': old_name,
+            'new_name': old_name,
+            'reason': 'empty_file',
+        }
+
+    # storage.save sam rješava kolizije imena (get_available_name)
+    saved_name = storage.save(desired, ContentFile(data, name=new_filename))
+
+    if '/' in saved_name:
+        _, saved_filename = saved_name.rsplit('/', 1)
+    else:
+        saved_filename = saved_name
+    saved_stem = saved_filename.rsplit('.', 1)[0] if '.' in saved_filename else saved_filename
+
+    for width in responsive_widths:
+        for variant_ext in ('avif', 'jpg', 'jpeg', 'png', 'webp'):
+            old_variant = (
+                f'{folder}/{old_base}-{width}w.{variant_ext}'
+                if folder
+                else f'{old_base}-{width}w.{variant_ext}'
+            )
+            if not storage.exists(old_variant):
+                continue
+            try:
+                with storage.open(old_variant, 'rb') as vf:
+                    vdata = vf.read()
+            except Exception:
+                logger.debug('Preskačem varijantu %s', old_variant, exc_info=True)
+                continue
+            new_variant = (
+                f'{folder}/{saved_stem}-{width}w.{variant_ext}'
+                if folder
+                else f'{saved_stem}-{width}w.{variant_ext}'
+            )
+            try:
+                if storage.exists(new_variant):
+                    storage.delete(new_variant)
+                storage.save(
+                    new_variant,
+                    ContentFile(vdata, name=new_variant.rsplit('/', 1)[-1]),
+                )
+                storage.delete(old_variant)
+            except Exception:
+                logger.warning(
+                    'Ne mogu preimenovati varijantu %s → %s',
+                    old_variant,
+                    new_variant,
+                    exc_info=True,
+                )
+
+    try:
+        if old_name != saved_name and storage.exists(old_name):
+            storage.delete(old_name)
+    except Exception:
+        logger.warning('Ne mogu obrisati stari fajl %s', old_name, exc_info=True)
+
+    image_field.name = saved_name
+    return {
+        'changed': True,
+        'old_name': old_name,
+        'new_name': saved_name,
+        'reason': 'renamed',
+    }
+
+
+def rename_product_images_to_title(product):
+    """
+    Preimenuje glavnu sliku, galeriju i slike varijacija prema nazivu/slug-u artikla.
+    Vraća listu rezultata (kind, label, result_dict).
+    """
+    results = []
+    base = (
+        (getattr(product, 'slug', None) or '').strip()
+        or product_image_filename_base(product.naziv)
+    )
+
+    if product.slika:
+        r = rename_stored_image_field(product.slika, base)
+        if r['changed']:
+            product.save(update_fields=['slika'])
+        results.append(('main', base, r))
+
+    extras = list(product.dodatne_slike.exclude(slika='').order_by('redoslijed', 'id'))
+    for idx, extra in enumerate(extras, start=1):
+        label = f'{base}-galerija-{idx}'
+        r = rename_stored_image_field(extra.slika, label)
+        if r['changed']:
+            extra.save(update_fields=['slika'])
+        results.append(('extra', label, r))
+
+    variations = list(
+        product.varijacije.exclude(slika='').exclude(slika=None).order_by('redoslijed', 'id'),
+    )
+    for var in variations:
+        var_part = product_image_filename_base(
+            var.naziv,
+            fallback=str(var.pk),
+            max_length=60,
+        )
+        label = f'{base}-{var_part}'
+        r = rename_stored_image_field(var.slika, label)
+        if r['changed']:
+            var.save(update_fields=['slika'])
+        results.append(('variation', label, r))
+
+    return results
+
+
 def reprocess_existing_image_file(image_field):
     if not image_field or not image_field.name:
         return None

@@ -2468,8 +2468,13 @@ class Product(models.Model):
                 self.cijena, self.akcija_postotak,
             )
         if self.slika:
-            from .utils.images import apply_image_processing, process_product_image_manual
-            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+            from .utils.images import apply_image_processing, process_product_image_named
+            image_base = (self.slug or '').strip() or self.naziv or 'artikal'
+            apply_image_processing(
+                self,
+                'slika',
+                post_process=process_product_image_named(image_base),
+            )
         # NOT NULL search kolone — nikad ne šalji NULL (Odoo import / bulk create)
         if self.search_keywords is None:
             self.search_keywords = ''
@@ -2766,8 +2771,20 @@ class ProductImage(models.Model):
 
     def save(self, *args, **kwargs):
         if self.slika:
-            from .utils.images import apply_image_processing, process_product_image_manual
-            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+            from .utils.images import apply_image_processing, process_product_image_named
+            product = self.product
+            base = (
+                (getattr(product, 'slug', None) or '').strip()
+                or getattr(product, 'naziv', None)
+                or 'artikal'
+            )
+            # redoslijed/id možda još nisu finalni pri create — galerija-N rješava rename komanda
+            label = f'{base}-galerija'
+            apply_image_processing(
+                self,
+                'slika',
+                post_process=process_product_image_named(label),
+            )
         super().save(*args, **kwargs)
 
     @property
@@ -2913,8 +2930,20 @@ class ProductVariation(models.Model):
                 self.bazna_cijena, self.akcija_postotak,
             )
         if self.slika:
-            from .utils.images import apply_image_processing, process_product_image_manual
-            apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+            from .utils.images import apply_image_processing, process_product_image_named
+            product = self.artikal
+            product_base = (
+                (getattr(product, 'slug', None) or '').strip()
+                or getattr(product, 'naziv', None)
+                or 'artikal'
+            )
+            var_part = self.naziv or str(self.pk or 'var')
+            label = f'{product_base}-{var_part}'
+            apply_image_processing(
+                self,
+                'slika',
+                post_process=process_product_image_named(label),
+            )
         super().save(*args, **kwargs)
 
     def __str__(self):
