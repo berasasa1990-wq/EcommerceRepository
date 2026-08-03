@@ -2411,6 +2411,26 @@ class Product(models.Model):
         verbose_name='Meta opis',
         help_text='Opcionalno — ostavi prazno za automatski opis koji počinje nazivom artikla.',
     )
+    # Denormalizovana polja za pretragu (NOT NULL u bazi — default '' da Odoo import ne padne)
+    search_keywords = models.TextField(
+        blank=True,
+        default='',
+        editable=False,
+        verbose_name='Search keywords',
+        help_text='Interni blob za pretragu (opcionalno).',
+    )
+    naziv_normalized = models.CharField(
+        max_length=220, blank=True, default='', db_index=True, editable=False,
+    )
+    sifra_normalized = models.CharField(
+        max_length=80, blank=True, default='', db_index=True, editable=False,
+    )
+    barkod_normalized = models.CharField(
+        max_length=80, blank=True, default='', db_index=True, editable=False,
+    )
+    search_document = models.TextField(
+        blank=True, default='', editable=False,
+    )
     olx_listing_id = models.PositiveIntegerField(
         blank=True, null=True, unique=True,
         verbose_name='OLX/Pik ID oglasa',
@@ -2450,6 +2470,17 @@ class Product(models.Model):
         if self.slika:
             from .utils.images import apply_image_processing, process_product_image_manual
             apply_image_processing(self, 'slika', post_process=process_product_image_manual)
+        # NOT NULL search kolone — nikad ne šalji NULL (Odoo import / bulk create)
+        if self.search_keywords is None:
+            self.search_keywords = ''
+        if self.naziv_normalized is None:
+            self.naziv_normalized = ''
+        if self.sifra_normalized is None:
+            self.sifra_normalized = ''
+        if self.barkod_normalized is None:
+            self.barkod_normalized = ''
+        if self.search_document is None:
+            self.search_document = ''
         super().save(*args, **kwargs)
 
     @property
