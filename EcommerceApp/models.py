@@ -3191,6 +3191,24 @@ class Order(models.Model):
         blank=True,
         verbose_name='Stanje skinuto u',
     )
+    odoo_sale_order_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name='Odoo sale.order ID',
+        help_text='ID Sales narudžbe kreirane u Odoo iz web narudžbe.',
+    )
+    odoo_sale_order_name = models.CharField(
+        max_length=40,
+        blank=True,
+        verbose_name='Odoo SO broj',
+        help_text='Npr. S00042 — broj u Odoo Sales.',
+    )
+    odoo_sale_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Odoo SO kreiran u',
+    )
 
     class Meta:
         verbose_name = 'Narudžba'

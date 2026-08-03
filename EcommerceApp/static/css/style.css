@@ -14818,8 +14818,43 @@ button.nav-action-link {
 }
 
 .staff-print-order-btn,
-.staff-brza-posta-btn {
+.staff-brza-posta-btn,
+.staff-odoo-order-btn {
     white-space: nowrap;
+}
+
+.staff-odoo-form {
+    margin: 0;
+}
+
+/* Odoo Sales — plavo dugme */
+.staff-odoo-order-btn {
+    background: #714b67 !important;
+    border: 1px solid #5c3d54 !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+}
+
+.staff-odoo-order-btn:hover {
+    background: #5c3d54 !important;
+    color: #fff !important;
+}
+
+.staff-odoo-order-btn.is-done {
+    background: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+    color: #6b7280 !important;
+}
+
+.staff-odoo-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #714b67;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 /* Štampanje / Brza pošta — crni tekst */

@@ -3509,6 +3509,36 @@ def staff_order_lookup(request):
     return redirect(url)
 
 
+def _create_odoo_sale_order_from_web(request, broj, *, force=False):
+    """Staff: kreiraj Odoo Sales narudžbu iz web narudžbe."""
+    from .odoo_client import OdooError
+    from .odoo_sales import create_odoo_sale_order_for_web_order
+
+    order = Order.objects.filter(broj=broj).prefetch_related('stavke').first()
+    if not order:
+        messages.error(request, f'Narudžba #{broj} nije pronađena.')
+        return None
+    force = force or (request.POST.get('force') in ('1', 'true', 'yes', 'on'))
+    try:
+        result = create_odoo_sale_order_for_web_order(order, force=force)
+    except OdooError as exc:
+        messages.error(request, f'Odoo greška: {exc}')
+        return None
+    except Exception as exc:
+        logger.exception('Odoo SO create failed for #%s', broj)
+        messages.error(request, f'Odoo greška: {exc}')
+        return None
+
+    if result.get('ok'):
+        if result.get('existing'):
+            messages.info(request, result.get('message') or 'Već postoji u Odoo.')
+        else:
+            messages.success(request, result.get('message') or 'Odoo narudžba kreirana.')
+    else:
+        messages.error(request, result.get('message') or 'Odoo narudžba nije kreirana.')
+    return result
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_order_detail(request, broj):
@@ -3517,9 +3547,14 @@ def staff_order_detail(request, broj):
         broj=broj,
     )
 
-    if request.method == 'POST' and request.POST.get('action') == 'zavrsi':
-        _mark_order_completed(request, broj)
-        return redirect('staff_online_orders')
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        if action == 'zavrsi':
+            _mark_order_completed(request, broj)
+            return redirect('staff_online_orders')
+        if action == 'odoo_narudzba':
+            _create_odoo_sale_order_from_web(request, broj)
+            return redirect('staff_order_detail', broj=broj)
 
     context = {
         **_base_context(),
@@ -5308,6 +5343,8 @@ def staff_online_orders(request):
         broj = (request.POST.get('broj') or '').strip()
         if action == 'zavrsi' and broj:
             _mark_order_completed(request, broj)
+        elif action == 'odoo_narudzba' and broj:
+            _create_odoo_sale_order_from_web(request, broj)
         params = {}
         if filter_status != 'nove':
             params['filter'] = filter_status

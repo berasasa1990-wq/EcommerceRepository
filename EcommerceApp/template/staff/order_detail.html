@@ -19,6 +19,11 @@
                 <button type="submit" class="btn btn-secondary btn-sm staff-complete-btn">Završi</button>
             </form>
             {% endif %}
+            <form method="post" action="{% url 'staff_order_detail' broj=order.broj %}" class="staff-odoo-form"{% if order.odoo_sale_order_id %} data-already-synced="1" data-odoo-name="{{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}"{% endif %}>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="odoo_narudzba">
+                <button type="submit" class="btn btn-sm staff-odoo-order-btn{% if order.odoo_sale_order_id %} is-done{% endif %}" title="{% if order.odoo_sale_order_id %}Već u Odoo: {{ order.odoo_sale_order_name }}{% else %}Kreiraj Sales narudžbu u Odoo{% endif %}">{% if order.odoo_sale_order_id %}Odoo ✓ {{ order.odoo_sale_order_name }}{% else %}Odoo narudžba{% endif %}</button>
+            </form>
             <a href="{% url 'staff_order_print' broj=order.broj %}"
                class="btn btn-sm staff-print-order-btn{% if order.odstampana %} is-done{% endif %}"
                target="_blank"
@@ -38,6 +43,9 @@
         · <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
         {% endif %}
         · Kreirana {{ order.kreirana|date:"d.m.Y. H:i" }}
+        {% if order.odoo_sale_order_id %}
+        · <span class="staff-odoo-badge">Odoo {{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}</span>
+        {% endif %}
     </p>
 
     <div class="staff-order-invoice">
@@ -61,6 +69,24 @@ document.querySelectorAll('[data-order-print]').forEach(function (link) {
         var ok = window.confirm('Već je odrađeno. Želite li ponovo?');
         if (!ok) {
             event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('.staff-odoo-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var already = form.getAttribute('data-already-synced') === '1';
+        var name = form.getAttribute('data-odoo-name') || '';
+        var msg = already
+            ? ('Već postoji u Odoo' + (name ? ' (' + name + ')' : '') + '. Nastaviti?')
+            : 'Kreirati Sales narudžbu u Odoo sa istim artiklima i količinama?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+            return;
+        }
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Odoo…';
         }
     });
 });

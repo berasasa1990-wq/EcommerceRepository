@@ -304,7 +304,7 @@ class OdooClient:
                 self.search_read(
                     'product.product',
                     [('product_tmpl_id', 'in', chunk)],
-                    ['id', 'product_tmpl_id', 'default_code'],
+                    ['id', 'product_tmpl_id', 'default_code', 'name', 'display_name'],
                 )
             )
 
@@ -316,6 +316,292 @@ class OdooClient:
                 continue
             by_template.setdefault(int(tmpl_id), []).append(record)
         return by_template
+
+    def find_product_by_default_code(self, code):
+        """product.product po default_code (šifra)."""
+        code = (code or '').strip()
+        if not code:
+            return None
+        rows = self.search_read(
+            'product.product',
+            [('default_code', '=', code), ('sale_ok', '=', True)],
+            ['id', 'name', 'display_name', 'default_code', 'lst_price', 'uom_id'],
+            limit=5,
+        )
+        if not rows:
+            rows = self.search_read(
+                'product.product',
+                [('default_code', 'ilike', code), ('sale_ok', '=', True)],
+                ['id', 'name', 'display_name', 'default_code', 'lst_price', 'uom_id'],
+                limit=5,
+            )
+        return rows[0] if rows else None
+
+    def find_product_by_name(self, name):
+        """
+        product.product po tačnom ili bliskom nazivu.
+        Isti nazivi artikala web ↔ Odoo.
+        """
+        name = (name or '').strip()
+        if not name:
+            return None
+        fields = ['id', 'name', 'display_name', 'default_code', 'lst_price', 'uom_id']
+        # Tačan name
+        rows = self.search_read(
+            'product.product',
+            [('name', '=', name), ('sale_ok', '=', True)],
+            fields,
+            limit=5,
+        )
+        if rows:
+            return rows[0]
+        # Tačan display_name
+        rows = self.search_read(
+            'product.product',
+            [('display_name', '=', name), ('sale_ok', '=', True)],
+            fields,
+            limit=5,
+        )
+        if rows:
+            return rows[0]
+        # product.template name → prva varijanta
+        templates = self.search_read(
+            'product.template',
+            [('name', '=', name), ('sale_ok', '=', True)],
+            ['id', 'name', 'product_variant_id'],
+            limit=3,
+        )
+        if templates:
+            tmpl = templates[0]
+            variant = tmpl.get('product_variant_id')
+            if isinstance(variant, (list, tuple)) and variant:
+                vid = int(variant[0])
+                vrows = self.search_read(
+                    'product.product',
+                    [('id', '=', vid)],
+                    fields,
+                    limit=1,
+                )
+                if vrows:
+                    return vrows[0]
+            variants = self.get_product_ids_for_templates([int(tmpl['id'])]).get(int(tmpl['id'])) or []
+            if variants:
+                return variants[0]
+        # Blago: ilike name
+        rows = self.search_read(
+            'product.product',
+            [('name', 'ilike', name), ('sale_ok', '=', True)],
+            fields,
+            limit=8,
+        )
+        if not rows:
+            return None
+        name_cf = name.casefold()
+        for row in rows:
+            for key in ('name', 'display_name'):
+                val = (row.get(key) or '').strip().casefold()
+                if val == name_cf:
+                    return row
+        # Ako je jedan rezultat — prihvati
+        if len(rows) == 1:
+            return rows[0]
+        return rows[0]
+
+    def find_or_create_customer(
+        self,
+        *,
+        name,
+        street='',
+        city='',
+        phone='',
+        email='',
+        zip_code='',
+        comment='',
+    ):
+        """
+        res.partner kupac:
+        name, street, city, phone (+ email/zip ako postoje).
+        Traži po emailu, pa telefonu, pa imenu+gradu; inače kreira.
+        """
+        name = (name or '').strip() or 'Kupac web'
+        street = (street or '').strip()
+        city = (city or '').strip()
+        phone = (phone or '').strip()
+        email = (email or '').strip().lower()
+        zip_code = (zip_code or '').strip()
+        comment = (comment or '').strip()
+
+        fields = [
+            'id', 'name', 'street', 'city', 'phone', 'mobile', 'email', 'zip',
+        ]
+        partner = None
+
+        if email:
+            rows = self.search_read(
+                'res.partner',
+                [('email', '=ilike', email), ('type', 'in', ['contact', 'invoice', 'delivery', 'other', False])],
+                fields,
+                limit=3,
+                order='id desc',
+            )
+            if not rows:
+                rows = self.search_read(
+                    'res.partner',
+                    [('email', '=ilike', email)],
+                    fields,
+                    limit=3,
+                    order='id desc',
+                )
+            if rows:
+                partner = rows[0]
+
+        if partner is None and phone:
+            # telefon može biti u phone ili mobile
+            phone_digits = ''.join(ch for ch in phone if ch.isdigit())
+            domain_phone = ['|', ('phone', 'ilike', phone), ('mobile', 'ilike', phone)]
+            if len(phone_digits) >= 8:
+                tail = phone_digits[-8:]
+                domain_phone = [
+                    '|', '|', '|',
+                    ('phone', 'ilike', phone),
+                    ('mobile', 'ilike', phone),
+                    ('phone', 'ilike', tail),
+                    ('mobile', 'ilike', tail),
+                ]
+            rows = self.search_read(
+                'res.partner',
+                domain_phone,
+                fields,
+                limit=5,
+                order='id desc',
+            )
+            if rows:
+                partner = rows[0]
+
+        if partner is None and name and city:
+            rows = self.search_read(
+                'res.partner',
+                [('name', '=ilike', name), ('city', '=ilike', city)],
+                fields,
+                limit=3,
+                order='id desc',
+            )
+            if rows:
+                partner = rows[0]
+
+        vals = {
+            'name': name[:200],
+            'street': street[:250],
+            'city': city[:100],
+            'phone': phone[:64],
+            'customer_rank': 1,
+        }
+        if email:
+            vals['email'] = email[:120]
+        if zip_code:
+            vals['zip'] = zip_code[:24]
+        if phone and not partner:
+            vals['mobile'] = phone[:64]
+        if comment:
+            vals['comment'] = comment[:2000]
+
+        if partner:
+            partner_id = int(partner['id'])
+            # Dopuni prazna polja (ne pregazi postojeće ako su popunjena)
+            write_vals = {}
+            for key in ('street', 'city', 'phone', 'email', 'zip'):
+                new_val = vals.get(key)
+                if not new_val:
+                    continue
+                old = partner.get(key)
+                if not old or old is False:
+                    write_vals[key] = new_val
+            if write_vals:
+                try:
+                    self.execute('res.partner', 'write', [partner_id], write_vals)
+                except OdooError:
+                    pass
+            return partner_id, False
+
+        partner_id = self.execute('res.partner', 'create', vals)
+        if isinstance(partner_id, list):
+            partner_id = partner_id[0] if partner_id else None
+        if not partner_id:
+            raise OdooError('res.partner create nije vratio id.')
+        return int(partner_id), True
+
+    def find_sale_order_by_web_ref(self, web_broj):
+        """Već postoji SO sa origin/client_order_ref = WEB-{broj}."""
+        ref = f'WEB-{web_broj}'
+        rows = self.search_read(
+            'sale.order',
+            ['|', ('client_order_ref', '=', ref), ('origin', '=', ref)],
+            ['id', 'name', 'state', 'partner_id', 'amount_total'],
+            limit=3,
+            order='id desc',
+        )
+        return rows[0] if rows else None
+
+    def create_sale_order(self, *, partner_id, lines, client_order_ref='', origin='', note=''):
+        """
+        Kreiraj draft sale.order.
+        lines: [{product_id, quantity, price_unit?, name?}, ...]
+        """
+        if not partner_id:
+            raise OdooError('partner_id je obavezan.')
+        if not lines:
+            raise OdooError('sale.order mora imati barem jednu stavku.')
+
+        order_lines = []
+        for line in lines:
+            product_id = int(line['product_id'])
+            qty = float(line.get('quantity') or line.get('product_uom_qty') or 1)
+            if qty <= 0:
+                continue
+            line_vals = {
+                'product_id': product_id,
+                'product_uom_qty': qty,
+            }
+            if line.get('price_unit') is not None:
+                try:
+                    line_vals['price_unit'] = float(line['price_unit'])
+                except (TypeError, ValueError):
+                    pass
+            if line.get('name'):
+                line_vals['name'] = str(line['name'])[:500]
+            order_lines.append((0, 0, line_vals))
+
+        if not order_lines:
+            raise OdooError('Nema validnih stavki za sale.order.')
+
+        vals = {
+            'partner_id': int(partner_id),
+            'partner_invoice_id': int(partner_id),
+            'partner_shipping_id': int(partner_id),
+            'order_line': order_lines,
+        }
+        if client_order_ref:
+            vals['client_order_ref'] = str(client_order_ref)[:64]
+        if origin:
+            vals['origin'] = str(origin)[:64]
+        if note:
+            vals['note'] = str(note)[:4000]
+
+        order_id = self.execute('sale.order', 'create', vals)
+        if isinstance(order_id, list):
+            order_id = order_id[0] if order_id else None
+        if not order_id:
+            raise OdooError('sale.order create nije vratio id.')
+
+        rows = self.search_read(
+            'sale.order',
+            [('id', '=', int(order_id))],
+            ['id', 'name', 'state', 'amount_total', 'partner_id'],
+            limit=1,
+        )
+        if not rows:
+            return {'id': int(order_id), 'name': str(order_id), 'state': 'draft'}
+        return rows[0]
 
     def get_internal_stock_quants(self, product_ids, *, for_packing=False):
         """
