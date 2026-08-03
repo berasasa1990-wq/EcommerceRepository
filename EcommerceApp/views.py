@@ -639,15 +639,126 @@ def _product_tag_ids_for_query(query):
     return [tag.pk for tag in _cached_tags() if _tag_matches_query(tag.naziv or '', q)]
 
 
+# —— Search score bands (veći = bolje; prvi / najjači match određuje rang) ——
+# Tačno poklapanje šifre uvijek na vrhu; zatim tačan naziv, startswith…
+SEARCH_SCORE = {
+    'exact_sifra': 1100,       # šifra tačno — uvijek na vrhu
+    'exact_barkod': 1100,
+    'exact_name': 1000,        # tačno poklapanje naziva
+    'name_startswith': 800,    # naziv počinje upitom
+    'sifra_partial': 900,      # šifra (djelomično) — i dalje vrlo visoko
+    'name_contains': 750,      # upit u nazivu (npr. „štap za soma”)
+    'product_tag': 700,        # tag artikla (npr. tag „som”)
+    'variation': 680,          # naziv/šifra varijacije
+    'category_tag': 790,       # search tagovi potkategorije (npr. „som”)
+    'brand': 500,              # brend
+    'category_name': 450,      # naziv kategorije / potkategorije
+    'short_desc': 250,         # meta / kratki opis
+    'full_desc': 100,          # puni opis
+}
+
+
+_CAT_SEARCH_TAG_CACHE = None
+_CAT_SEARCH_TAG_CACHE_AT = 0.0
+_CAT_SEARCH_TAG_CACHE_TTL_SEC = 60.0
+
+
+def _cached_category_search_tags():
+    """
+    Lista (category_id, parent_id, [search_tags], naziv) za brzo matchanje
+    category search_tagovi bez N+1.
+    """
+    global _CAT_SEARCH_TAG_CACHE, _CAT_SEARCH_TAG_CACHE_AT
+    import time
+
+    now = time.monotonic()
+    if (
+        _CAT_SEARCH_TAG_CACHE is None
+        or (now - _CAT_SEARCH_TAG_CACHE_AT) > _CAT_SEARCH_TAG_CACHE_TTL_SEC
+    ):
+        from .models import Category
+
+        rows = []
+        for cat in Category.objects.filter(aktivan=True).only(
+            'id', 'roditelj_id', 'search_tagovi', 'naziv',
+        ):
+            tags = []
+            if hasattr(cat, 'search_tagovi_list'):
+                raw_tags = cat.search_tagovi_list
+                if callable(raw_tags):
+                    raw_tags = raw_tags()
+                tags = list(raw_tags or [])
+            if not tags and cat.search_tagovi:
+                tags = _parse_category_search_tags(cat.search_tagovi)
+            rows.append({
+                'id': cat.pk,
+                'parent_id': cat.roditelj_id,
+                'tags': tags,
+                'naziv': cat.naziv or '',
+            })
+        _CAT_SEARCH_TAG_CACHE = rows
+        _CAT_SEARCH_TAG_CACHE_AT = now
+    return _CAT_SEARCH_TAG_CACHE
+
+
+def _category_ids_for_search_query(query):
+    """
+    Kategorije čiji search_tagovi odgovaraju upitu.
+    Uključuje i djecu (artikal u potkategoriji nasljeđuje tag roditelja).
+    """
+    q = _normalize_phrase(query)
+    if not q or len(q) < 2:
+        return set()
+
+    rows = _cached_category_search_tags()
+    direct = set()
+    for row in rows:
+        for tag in row['tags']:
+            if _tag_matches_query(tag, q):
+                direct.add(row['id'])
+                break
+            # i substring (npr. tag „somovski” / upit „som”)
+            tag_f = _search_fold(tag)
+            q_f = _search_fold(q)
+            if q_f and tag_f and (q_f in tag_f or tag_f in q_f):
+                direct.add(row['id'])
+                break
+
+    if not direct:
+        return set()
+
+    # Djeca: potkategorije čiji je roditelj matchan
+    children = {row['id'] for row in rows if row['parent_id'] in direct}
+    return direct | children
+
+
+def _text_has_query(haystack, query_folded, *, as_word=False):
+    """Da li folded haystack sadrži folded query (opcionalno kao riječ)."""
+    hay = _search_fold(haystack or '')
+    q = query_folded or ''
+    if not hay or not q or len(q) < 2:
+        return False
+    if as_word:
+        # riječ: granica (početak/kraj/razmak/interpunkcija)
+        return re.search(
+            rf'(?<![\w]){re.escape(q)}(?![\w])',
+            hay,
+            flags=re.UNICODE,
+        ) is not None
+    return q in hay
+
+
 def _search_exists_match(raw):
     """
-    EXISTS podupiti umjesto JOIN + DISTINCT (mnogo brže na većim katalogima).
-    Match: naziv, šifra, šifra varijacije, tag naziv.
+    EXISTS / Q match po svim search poljima:
+    naziv, šifra, barkod, tagovi, brend, kategorija, potkategorija,
+    kratki opis (meta), puni opis, varijacije.
     """
     through = Product.tagovi.through
-    variation_sifra = ProductVariation.objects.filter(
+    variation_match = ProductVariation.objects.filter(
         artikal_id=OuterRef('pk'),
-        sifra__icontains=raw,
+    ).filter(
+        Q(sifra__icontains=raw) | Q(naziv__icontains=raw),
     )
     tag_name = through.objects.filter(
         product_id=OuterRef('pk'),
@@ -656,17 +767,23 @@ def _search_exists_match(raw):
     return (
         Q(naziv__icontains=raw)
         | Q(sifra__icontains=raw)
-        | Exists(variation_sifra)
+        | Q(barkod__icontains=raw)
+        | Q(brend__naziv__icontains=raw)
+        | Q(kategorija__naziv__icontains=raw)
+        | Q(kategorija__roditelj__naziv__icontains=raw)
+        | Q(meta_description__icontains=raw)
+        | Q(opis__icontains=raw)
+        | Exists(variation_match)
         | Exists(tag_name)
     )
 
 
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga na sajtu:
-    1) naziv artikla
-    2) šifra artikla (+ šifre varijacija)
-    3) tagovi na artiklima (bulk / M2M tagovi)
+    Pretraga — polja (prioritet pri bodovanju, ne filteru):
+    1) naziv  2) šifra (tačno → vrh)  3) tagovi artikla
+    4) tagovi kategorija/potkategorija  5) brend
+    6) naziv kategorije/potkategorije  7) kratki opis  8) puni opis
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -689,6 +806,13 @@ def _apply_search_filter(products_qs, query):
             )
         )
 
+    cat_ids = _category_ids_for_search_query(raw)
+    if cat_ids:
+        match |= (
+            Q(kategorija_id__in=cat_ids)
+            | Q(kategorija__roditelj_id__in=cat_ids)
+        )
+
     return products_qs.filter(match)
 
 
@@ -701,60 +825,196 @@ def _product_lager_priority(product):
 
 
 def _search_relevance_score(product, query):
-    """Veći = bolje poklapanje (unutar već filtriranih rezultata)."""
+    """
+    Bodovanje pretrage (veći = bolje). Uzima se najjači match (max),
+    ne zbrajaju se svi tier-ovi — da npr. spominjanje u opisu ne digne
+    artikal iznad taga „som”.
+
+    Bandovi:
+      šifra tačno 1100 · naziv tačno 1000 · šifra djelomično 900
+      naziv počinje 800 · tag potkategorije 790 · naziv sadrži 750
+      tag artikla 700 · brend 500 · naziv kat. 450
+      kratki opis 250 · puni opis 100
+    """
     raw = _normalize_phrase(query)
     if not raw or len(raw) < 2:
         return 0
-    q = raw.lower()
-    score = 0
-    name = (product.naziv or '').lower()
-    sifra = (product.sifra or '').lower()
 
-    if sifra and (sifra == q or q in sifra):
-        score += 120
-    if name == q:
-        score += 100
-    elif name.startswith(q):
-        score += 80
-    elif q in name:
-        score += 50
+    q = raw.casefold()
+    qf = _search_fold(raw)
+    S = SEARCH_SCORE
+    best = 0
 
+    name = product.naziv or ''
+    name_l = name.casefold()
+    name_f = _search_fold(name)
+    sifra = (product.sifra or '').strip()
+    sifra_l = sifra.casefold()
+    sifra_f = _search_fold(sifra)
+    barkod = (getattr(product, 'barkod', None) or '').strip()
+    barkod_l = barkod.casefold()
+    barkod_f = _search_fold(barkod)
+
+    # —— Šifra / barkod (tačno uvijek na vrhu) ——
+    if sifra and (sifra_l == q or sifra_f == qf):
+        best = max(best, S['exact_sifra'])
+    elif barkod and (barkod_l == q or barkod_f == qf):
+        best = max(best, S['exact_barkod'])
+    elif sifra and (
+        q in sifra_l or qf in sifra_f
+        or sifra_l.startswith(q) or sifra_f.startswith(qf)
+    ):
+        best = max(best, S['sifra_partial'])
+    elif barkod and (q in barkod_l or qf in barkod_f):
+        best = max(best, S['sifra_partial'])
+
+    # —— Naziv ——
+    if name_l == q or name_f == qf:
+        best = max(best, S['exact_name'])
+    elif name_l.startswith(q) or name_f.startswith(qf):
+        best = max(best, S['name_startswith'])
+    elif _text_has_query(name, qf, as_word=(len(qf) <= 4)) or (
+        len(qf) > 4 and qf in name_f
+    ):
+        best = max(best, S['name_contains'])
+
+    # —— Tagovi artikla ——
     try:
         for t in product.tagovi.all():
-            if _tag_matches_query(getattr(t, 'naziv', '') or '', raw):
-                score += 55
+            tname = getattr(t, 'naziv', '') or ''
+            if _tag_matches_query(tname, raw):
+                best = max(best, S['product_tag'])
                 break
-            tname = (getattr(t, 'naziv', '') or '').lower()
-            if tname and (q in tname or tname in q):
-                score += 40
+            tf = _search_fold(tname)
+            if qf and tf and (qf in tf or tf in qf or qf == tf):
+                best = max(best, S['product_tag'])
                 break
     except Exception:
         pass
-    return score
+
+    # —— Varijacije (šifra / naziv) ——
+    try:
+        variations = list(product.varijacije.all()) if hasattr(product, 'varijacije') else []
+        for v in variations:
+            vs = (getattr(v, 'sifra', None) or '').strip()
+            vn = getattr(v, 'naziv', '') or ''
+            vs_f = _search_fold(vs)
+            vn_f = _search_fold(vn)
+            if vs and (vs.casefold() == q or vs_f == qf):
+                best = max(best, S['exact_sifra'])
+                break
+            if vs and (q in vs.casefold() or qf in vs_f):
+                best = max(best, S['sifra_partial'])
+            if vn_f and (qf == vn_f or vn_f.startswith(qf) or qf in vn_f):
+                best = max(best, S['variation'])
+    except Exception:
+        pass
+
+    # —— Tagovi kategorije / potkategorije (search_tagovi + nasljeđivanje) ——
+    try:
+        cat = getattr(product, 'kategorija', None)
+        if cat is not None:
+            cat_ids_match = _category_ids_for_search_query(raw)
+            if cat_ids_match:
+                if (
+                    product.kategorija_id in cat_ids_match
+                    or getattr(cat, 'roditelj_id', None) in cat_ids_match
+                ):
+                    best = max(best, S['category_tag'])
+            # Direktno na ovoj / roditelj kategoriji
+            for c in (cat, getattr(cat, 'roditelj', None)):
+                if c is None:
+                    continue
+                tags = []
+                if hasattr(c, 'search_tagovi_list'):
+                    raw_tags = c.search_tagovi_list
+                    if callable(raw_tags):
+                        raw_tags = raw_tags()
+                    tags = list(raw_tags or [])
+                elif getattr(c, 'search_tagovi', None):
+                    tags = _parse_category_search_tags(c.search_tagovi)
+                for tag in tags:
+                    if _tag_matches_query(tag, raw) or _text_has_query(tag, qf):
+                        best = max(best, S['category_tag'])
+                        break
+    except Exception:
+        pass
+
+    # —— Brend ——
+    try:
+        brand = getattr(product, 'brend', None)
+        bname = (getattr(brand, 'naziv', None) or '') if brand else ''
+        bf = _search_fold(bname)
+        if bf and (bf == qf or bf.startswith(qf) or qf in bf):
+            best = max(best, S['brand'])
+    except Exception:
+        pass
+
+    # —— Naziv kategorije / potkategorije ——
+    try:
+        cat = getattr(product, 'kategorija', None)
+        if cat is not None:
+            for c in (cat, getattr(cat, 'roditelj', None)):
+                if c is None:
+                    continue
+                cn = _search_fold(getattr(c, 'naziv', '') or '')
+                if cn and (cn == qf or cn.startswith(qf) or qf in cn):
+                    best = max(best, S['category_name'])
+                    break
+    except Exception:
+        pass
+
+    # —— Kratki opis (meta_description) ——
+    short = getattr(product, 'meta_description', None) or ''
+    if _text_has_query(short, qf, as_word=(len(qf) <= 4)) or (
+        len(qf) > 4 and qf in _search_fold(short)
+    ):
+        best = max(best, S['short_desc'])
+
+    # —— Puni opis (može biti deferred na queryset-u) ——
+    try:
+        full = product.opis or ''
+    except Exception:
+        full = ''
+    if full and (
+        _text_has_query(full, qf, as_word=(len(qf) <= 4))
+        or (len(qf) > 4 and qf in _search_fold(full))
+    ):
+        best = max(best, S['full_desc'])
+
+    return best
 
 
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
     Katalog / pretraga / kategorija:
-    0) Ako ima search upit: relevantnost prvo
+    0) Ako ima search upit: relevantnost (score bandovi) prvo
     1) Hit redukovanje lagera → Favorizuj → Normal
     2) Unutar nivoa: cijena rastuće / opadajuće
     """
     if not products:
         return products
 
-    # Jedan prefetch tagova umjesto N+1 u _search_relevance_score
+    # Prefetch za scoring (tagovi, brend, kategorija, varijacije)
     if query:
         try:
             sample = products[0]
-            already = (
-                hasattr(sample, '_prefetched_objects_cache')
-                and 'tagovi' in sample._prefetched_objects_cache
+            cache = getattr(sample, '_prefetched_objects_cache', {}) or {}
+            need = not (
+                'tagovi' in cache
+                and 'varijacije' in cache
             )
-            if not already:
+            if need:
                 from django.db.models import prefetch_related_objects
 
-                prefetch_related_objects(list(products), 'tagovi')
+                prefetch_related_objects(
+                    list(products),
+                    'tagovi',
+                    'varijacije',
+                    'brend',
+                    'kategorija',
+                    'kategorija__roditelj',
+                )
         except Exception:
             pass
 
@@ -766,9 +1026,11 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
             price = float(_effective_product_price(p) or 0)
         except Exception:
             price = 0.0
+        # Na stanju malo iznad OOS unutar iste relevantnosti
+        in_stock = 0 if getattr(p, 'na_stanju', False) else 1
         if price_sort == 'opadajuca':
-            return (rel, -prio, -price, name)
-        return (rel, -prio, price, name)
+            return (rel, in_stock, -prio, -price, name)
+        return (rel, in_stock, -prio, price, name)
 
     return sorted(products, key=key)
 
