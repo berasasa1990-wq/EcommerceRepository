@@ -587,26 +587,103 @@ def _words_within_edit(tag_words, q_words):
     return True
 
 
+def _word_fuzzy_eq(a, b):
+    """Dvije riječi jednake ili unutar dozvoljene edit distance."""
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    allow = _allowed_edit_distance_for_len(max(len(a), len(b)))
+    return _edit_distance(a, b, max_dist=allow) <= allow
+
+
 def _tag_matches_query(tag, query):
     """
-    Tag podkategorije ≈ upit:
-    - tačan match ili ±1–3 slova (ovisno o dužini)
-    - po riječima: ista broj riječi, svaka ±1–3
+    Tag (jedna ili više riječi) ≈ upit.
+
+    Primjeri:
+      tag „fider strune” + upit „fider strune” → da
+      tag „fider strune” + upit „fider”        → da
+      tag „fider strune” + upit „strune”       → da
+      tag „fider strune” + upit „feeder”       → da (fuzzy po riječi)
+      tag „som” + upit „som”                   → da
+
+    Višerječni tagovi se NE dijele zarezom — razmak ostaje unutar jednog taga.
     """
     tag_f = _search_fold(_normalize_phrase(tag))
     q_f = _search_fold(_normalize_phrase(query))
     if not tag_f or not q_f or len(q_f) < 2:
         return False
+
+    # 1) Tačan cijeli tag
     if tag_f == q_f:
         return True
 
+    # 2) Cijeli string ± edit distance (kratki tagovi)
     allow_full = _allowed_edit_distance_for_len(max(len(tag_f), len(q_f)))
-    if _edit_distance(tag_f, q_f, max_dist=allow_full) <= allow_full:
-        return True
+    # Za duge fraze ne forsiraj full-string fuzzy (previše labavo)
+    if max(len(tag_f), len(q_f)) <= 24:
+        if _edit_distance(tag_f, q_f, max_dist=allow_full) <= allow_full:
+            return True
 
     tag_words = [w for w in tag_f.split() if w]
     q_words = [w for w in q_f.split() if w]
+    if not tag_words or not q_words:
+        return False
+
+    # 3) Ista broj riječi, svaka riječ fuzzy (npr. „fider strune” ≈ „feeder strune”)
     if _words_within_edit(tag_words, q_words):
+        return True
+
+    # 4) Fraza: upit je podniz riječi taga (npr. „fider” u „fider strune”,
+    #    ili „fider strune” unutar duljeg taga)
+    n_t, n_q = len(tag_words), len(q_words)
+    if n_q <= n_t:
+        for i in range(n_t - n_q + 1):
+            window = tag_words[i:i + n_q]
+            if _words_within_edit(window, q_words):
+                return True
+
+    # 5) Fraza obrnuto: tag je podniz riječi upita
+    if n_t <= n_q:
+        for i in range(n_q - n_t + 1):
+            window = q_words[i:i + n_t]
+            if _words_within_edit(tag_words, window):
+                return True
+
+    # 6) Sve riječi upita postoje u tagu (bilo kojim redom), fuzzy
+    if n_q >= 1 and n_q <= n_t:
+        used = [False] * n_t
+        all_found = True
+        for qw in q_words:
+            found = False
+            for i, tw in enumerate(tag_words):
+                if used[i]:
+                    continue
+                if _word_fuzzy_eq(tw, qw):
+                    used[i] = True
+                    found = True
+                    break
+            if not found:
+                all_found = False
+                break
+        if all_found:
+            return True
+
+    # 7) Jedna riječ upita = jedna riječ taga (fuzzy) — „fider” / „strune”
+    #    samo ako je upit jedna riječ (inače bi previše labavo bilo)
+    if n_q == 1:
+        qw = q_words[0]
+        for tw in tag_words:
+            if _word_fuzzy_eq(tw, qw):
+                return True
+            # prefiks riječi (min 3 znaka) — „fid” ne, „fide” da za „fider”
+            if len(qw) >= 3 and (tw.startswith(qw) or qw.startswith(tw)):
+                return True
+
+    # 8) Podstring fraze (bez razbijanja riječi na slova u sredini)
+    #    „fider str” u „fider strune”
+    if len(q_f) >= 3 and (q_f in tag_f or tag_f in q_f):
         return True
 
     return False
@@ -632,11 +709,27 @@ def _cached_tags():
 
 
 def _product_tag_ids_for_query(query):
-    """ID-evi Tag modela na artiklima koji odgovaraju upitu (±1–3 slova)."""
+    """
+    ID-evi Tag modela na artiklima koji odgovaraju upitu.
+    Podržava višerječne tagove (npr. „fider strune”).
+    """
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return []
-    return [tag.pk for tag in _cached_tags() if _tag_matches_query(tag.naziv or '', q)]
+    return [
+        tag.pk
+        for tag in _cached_tags()
+        if _tag_matches_query(tag.naziv or '', q)
+    ]
+
+
+def _invalidate_search_tag_caches():
+    """Reset in-memory tag/category tag cache (npr. nakon admin izmjene)."""
+    global _TAG_CACHE, _TAG_CACHE_AT, _CAT_SEARCH_TAG_CACHE, _CAT_SEARCH_TAG_CACHE_AT
+    _TAG_CACHE = None
+    _TAG_CACHE_AT = 0.0
+    _CAT_SEARCH_TAG_CACHE = None
+    _CAT_SEARCH_TAG_CACHE_AT = 0.0
 
 
 # —— Search score bands (veći = bolje; prvi / najjači match određuje rang) ——
@@ -748,11 +841,11 @@ def _text_has_query(haystack, query_folded, *, as_word=False):
     return q in hay
 
 
-def _search_exists_match(raw):
+def _search_exists_match(raw, *, tag_ids=None):
     """
     EXISTS / Q match po svim search poljima:
-    naziv, šifra, barkod, tagovi, brend, kategorija, potkategorija,
-    kratki opis (meta), puni opis, varijacije.
+    naziv, šifra, barkod, tagovi (i višerječni), brend, kategorija,
+    potkategorija, kratki opis (meta), puni opis, varijacije.
     """
     through = Product.tagovi.through
     variation_match = ProductVariation.objects.filter(
@@ -760,10 +853,15 @@ def _search_exists_match(raw):
     ).filter(
         Q(sifra__icontains=raw) | Q(naziv__icontains=raw),
     )
-    tag_name = through.objects.filter(
-        product_id=OuterRef('pk'),
-        tag__naziv__icontains=raw,
-    )
+    # Fraza ili pojedinačne riječi u nazivu taga (višerječni tagovi)
+    tag_q = Q(tag__naziv__icontains=raw)
+    for word in raw.split():
+        w = word.strip()
+        if len(w) >= 2:
+            tag_q |= Q(tag__naziv__icontains=w)
+    if tag_ids:
+        tag_q |= Q(tag_id__in=tag_ids)
+    tag_name = through.objects.filter(product_id=OuterRef('pk')).filter(tag_q)
     return (
         Q(naziv__icontains=raw)
         | Q(sifra__icontains=raw)
@@ -791,12 +889,16 @@ def _apply_search_filter(products_qs, query):
     if len(raw) < 2:
         return products_qs.none()
 
-    match = _search_exists_match(raw)
+    tag_ids = _product_tag_ids_for_query(raw)
+    match = _search_exists_match(raw, tag_ids=tag_ids)
     folded_raw = _search_fold(raw)
     if folded_raw and folded_raw != raw.casefold():
-        match |= _search_exists_match(folded_raw)
+        # folded može biti drugačiji string (npr. š→s) — ponovi match
+        tag_ids_f = _product_tag_ids_for_query(folded_raw)
+        match |= _search_exists_match(folded_raw, tag_ids=tag_ids_f or tag_ids)
+        if tag_ids_f:
+            tag_ids = list(set(tag_ids) | set(tag_ids_f))
 
-    tag_ids = _product_tag_ids_for_query(raw)
     if tag_ids:
         through = Product.tagovi.through
         match |= Exists(
@@ -807,6 +909,8 @@ def _apply_search_filter(products_qs, query):
         )
 
     cat_ids = _category_ids_for_search_query(raw)
+    if folded_raw and folded_raw != raw.casefold():
+        cat_ids = cat_ids | _category_ids_for_search_query(folded_raw)
     if cat_ids:
         match |= (
             Q(kategorija_id__in=cat_ids)
