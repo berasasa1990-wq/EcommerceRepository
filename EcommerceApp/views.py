@@ -516,27 +516,47 @@ def _search_fold(value):
 
 
 def _normalize_phrase(value):
-    """Suzi višestruke razmake."""
+    """Suzi višestruke razmake (uklj. NBSP) — fraza ostaje jedan tag."""
     if not value:
         return ''
-    return re.sub(r'\s+', ' ', str(value).strip())
+    text = str(value).replace('\u00a0', ' ').replace('\u200b', '')
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    return re.sub(r'\s+', ' ', text.strip())
+
+
+def _phrase_key(value):
+    """
+    Kanonski ključ za usporedbu višerječnih tagova / upita.
+    „Varalica  za  more” == „varalica za more” (fold + razmaci).
+    Cijela fraza = JEDAN tag — ne dijeli se na riječi pri matchu.
+    """
+    phrase = _normalize_phrase(value)
+    if not phrase:
+        return ''
+    return _search_fold(phrase)
 
 
 def _parse_category_search_tags(raw):
     """
-    Tagovi podkategorije. Separatori: zarez, novi red, ;, | .
-    Razmaci OSTAJU — duga rečenica je jedan tag.
+    Tagovi podkategorije. Separatori: SAMO zarez, novi red, ;, | .
+    Razmaci OSTAJU — „varalica za more” je JEDAN tag, ne tri riječi.
     """
     if not raw:
         return []
-    text = str(raw).replace('\r\n', '\n').replace('\r', '\n')
+    text = str(raw).replace('\u00a0', ' ').replace('\r\n', '\n').replace('\r', '\n')
     text = text.replace(';', '\n').replace('|', '\n')
     tags = []
+    seen = set()
     for line in text.split('\n'):
         for part in line.split(','):
             tag = _normalize_phrase(part)
-            if tag:
-                tags.append(tag)
+            if not tag:
+                continue
+            key = _phrase_key(tag)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            tags.append(tag)
     return tags
 
 
@@ -736,9 +756,11 @@ def _invalidate_search_tag_caches():
 SEARCH_SCORE = {
     'exact_sifra': 1100,       # šifra tačno — uvijek na vrhu
     'exact_name': 1000,        # tačno poklapanje naziva
+    # Tačan search-tag potkategorije → cijela potkategorija (iznad djelomičnog naziva)
+    'exact_category_tag': 950,
     'sifra_partial': 900,      # šifra djelomično
     'name_startswith': 800,    # naziv počinje upitom
-    'category_tag': 790,       # search tagovi potkategorije (npr. „kapa”)
+    'category_tag': 790,       # fuzzy / djelomičan tag potkategorije
     'name_contains': 750,      # upit u nazivu
 }
 
@@ -786,35 +808,155 @@ def _cached_category_search_tags():
     return _CAT_SEARCH_TAG_CACHE
 
 
-def _category_ids_for_search_query(query):
+def _expand_category_ids_with_descendants(cat_ids):
+    """
+    Proširi skup ID-eva potkategorija na sve podnivoe
+    (cijelo stablo ispod matchane potkategorije).
+    """
+    if not cat_ids:
+        return set()
+    expanded = set(cat_ids)
+    rows = _cached_category_search_tags()
+    # BFS preko parent_id u cache-u (bez N+1 na get_descendant_ids)
+    by_parent = {}
+    for row in rows:
+        pid = row.get('parent_id')
+        if pid:
+            by_parent.setdefault(pid, []).append(row['id'])
+    queue = list(cat_ids)
+    seen = set(cat_ids)
+    while queue:
+        cur = queue.pop()
+        for child_id in by_parent.get(cur, ()):
+            if child_id not in seen:
+                seen.add(child_id)
+                expanded.add(child_id)
+                queue.append(child_id)
+    # Dopuna iz ORM (ako cache nema neke grane)
+    try:
+        from .models import Category
+        for cat in Category.objects.filter(pk__in=list(cat_ids), aktivan=True):
+            try:
+                expanded.update(cat.get_descendant_ids())
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return expanded
+
+
+def _is_multiword_phrase(value):
+    """True ako fraza ima 2+ riječi (višerječni tag / upit)."""
+    return len(_normalize_phrase(value).split()) >= 2
+
+
+def _subcategory_ids_for_exact_tag(query):
+    """
+    Potkategorije čiji je search-tag 100% jednak cijeloj frazi upita.
+
+    „varalica za more” = JEDAN tag (ne „varalica” + „za” + „more”).
+    „stalak za spod” ne vuče potkategorije sa tagom samo „spod”.
+    """
+    q = _normalize_phrase(query)
+    if not q or len(q) < 2:
+        return set()
+    q_key = _phrase_key(q)
+    if not q_key:
+        return set()
+
+    direct = set()
+    for row in _cached_category_search_tags():
+        # Potkategorija = ima roditelja; tagovi se čuvaju samo na potkategorijama
+        if not row.get('parent_id') or not row.get('tags'):
+            continue
+        for tag in row['tags']:
+            # Cijeli tag kao jedna fraza
+            if _phrase_key(tag) == q_key:
+                direct.add(row['id'])
+                break
+            # Blagi full-phrase typo (samo na cijeloj frazi, ne po riječima)
+            tag_key = _phrase_key(tag)
+            if (
+                tag_key
+                and len(q_key) >= 6
+                and abs(len(tag_key) - len(q_key)) <= 2
+            ):
+                allow = _allowed_edit_distance_for_len(max(len(tag_key), len(q_key)))
+                # Strože za fraze: max 2 greške
+                allow = min(allow, 2)
+                if _edit_distance(tag_key, q_key, max_dist=allow) <= allow:
+                    direct.add(row['id'])
+                    break
+    return _expand_category_ids_with_descendants(direct)
+
+
+def _tag_matches_category_search_tag(tag, query):
+    """
+    Match search-taga potkategorije.
+
+    Višerječni upit (npr. „varalica za more”):
+      - SAMO cijela fraza = cijeli tag (jedan tag)
+      - NIKAD: riječi varalica / za / more odvojeno
+      - NIKAD: kraći tag unutar duljeg upita
+
+    Jednorječni upit: fuzzy (_tag_matches_query).
+    """
+    tag_phrase = _normalize_phrase(tag)
+    q_phrase = _normalize_phrase(query)
+    if not tag_phrase or not q_phrase or len(q_phrase) < 2:
+        return False
+
+    # Višerječni upit → isključivo cjelovita fraza (jedan tag)
+    if _is_multiword_phrase(q_phrase):
+        q_key = _phrase_key(q_phrase)
+        tag_key = _phrase_key(tag_phrase)
+        if not q_key or not tag_key:
+            return False
+        if tag_key == q_key:
+            return True
+        # Samo blagi typo na CIJELOJ frazi (ne po riječima)
+        if len(q_key) >= 6 and abs(len(tag_key) - len(q_key)) <= 2:
+            allow = min(2, _allowed_edit_distance_for_len(max(len(tag_key), len(q_key))))
+            if _edit_distance(tag_key, q_key, max_dist=allow) <= allow:
+                return True
+        return False
+
+    # Jedna riječ upita — klasični fuzzy (kapa, spod, som…)
+    return _tag_matches_query(tag_phrase, q_phrase)
+
+
+def _category_ids_for_search_query(query, *, exact_only=False):
     """
     Potkategorije čiji search_tagovi odgovaraju upitu.
-    Samo kategorije s roditeljem (potkategorije) i popunjenim search_tagovi.
-    Uključuje i dublje podnivoe (djecu matchane potkategorije).
+
+    Višerječni upit: samo tačan višerječni tag (cijela fraza).
+    Jednorječni: fuzzy na jednorječne tagove.
     """
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return set()
 
+    # Uvijek prvo: cijela fraza = tag
+    exact = _subcategory_ids_for_exact_tag(q)
+    if exact_only or exact:
+        return exact
+
+    # Višerječni upit bez tačnog taga → NE fuzzy po riječima
+    if _is_multiword_phrase(q):
+        return set()
+
+    # Jedna riječ → fuzzy po tagovima potkategorije
     rows = _cached_category_search_tags()
     direct = set()
     for row in rows:
-        # Search tagovi važe samo za potkategorije
-        if not row.get('parent_id'):
-            continue
-        if not row.get('tags'):
+        if not row.get('parent_id') or not row.get('tags'):
             continue
         for tag in row['tags']:
-            if _tag_matches_query(tag, q):
+            if _tag_matches_category_search_tag(tag, q):
                 direct.add(row['id'])
                 break
 
-    if not direct:
-        return set()
-
-    # Djeca matchane potkategorije (dublji nivo)
-    children = {row['id'] for row in rows if row.get('parent_id') in direct}
-    return direct | children
+    return _expand_category_ids_with_descendants(direct)
 
 
 def _text_has_query(haystack, query_folded, *, as_word=False):
@@ -832,21 +974,62 @@ def _text_has_query(haystack, query_folded, *, as_word=False):
     return q in hay
 
 
-def _search_exists_match(raw):
-    """
-    Match SAMO:
-    - naziv artikla
-    - šifra artikla (+ šifra varijacije)
-    """
+# Kratke riječi koje se NE koriste same za OR match (inače „za” hvata sve)
+_SEARCH_STOPWORDS = frozenset({
+    'za', 'i', 'u', 'na', 'od', 'do', 'sa', 's', 'ili', 'the', 'a', 'an', 'of', 'to',
+})
+
+
+def _search_significant_words(raw):
+    """Riječi upita duže od 1 znaka, bez stop-riječi (za, i, na…)."""
+    words = []
+    for w in _normalize_phrase(raw).split():
+        w = w.strip()
+        if len(w) < 2:
+            continue
+        if _search_fold(w) in _SEARCH_STOPWORDS:
+            continue
+        words.append(w)
+    return words
+
+
+def _q_name_or_sifra_contains(term):
+    """Naziv ili šifra (artikal + varijacija) sadrži term."""
     variation_sifra = ProductVariation.objects.filter(
         artikal_id=OuterRef('pk'),
-        sifra__icontains=raw,
+        sifra__icontains=term,
     )
     return (
-        Q(naziv__icontains=raw)
-        | Q(sifra__icontains=raw)
+        Q(naziv__icontains=term)
+        | Q(sifra__icontains=term)
         | Exists(variation_sifra)
     )
+
+
+def _search_exists_match(raw):
+    """
+    Match naziv / šifra.
+
+    Višerječni upit: SAMO cijela fraza u nazivu/šifri
+    (ne OR/AND po riječima „varalica” / „za” / „more”).
+
+    Jednorječni: contains te riječi.
+    """
+    raw = _normalize_phrase(raw)
+    if not raw:
+        return Q(pk__in=[])
+
+    # Cijela fraza uvijek (i za 1 i za više riječi)
+    phrase_q = _q_name_or_sifra_contains(raw)
+
+    if _is_multiword_phrase(raw):
+        # Višerječno: isključivo fraza, ne dijeljenje na riječi
+        return phrase_q
+
+    words = _search_significant_words(raw)
+    if not words:
+        return phrase_q
+    return phrase_q | _q_name_or_sifra_contains(words[0])
 
 
 def _apply_search_filter(products_qs, query):
@@ -854,7 +1037,11 @@ def _apply_search_filter(products_qs, query):
     Pretraga vuce SAMO:
     1) naziv artikla
     2) šifra artikla (i šifre varijacija)
-    3) search tagovi potkategorije (artikli u toj potkategoriji)
+    3) search tagovi potkategorije (višerječni tag = JEDAN tag)
+
+    Primjer: upit „varalica za more”
+      → samo potkategorija s tagom „varalica za more”
+      → NE vuce tag „varalica”, riječ „za”, ni „more” odvojeno.
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -862,17 +1049,28 @@ def _apply_search_filter(products_qs, query):
     if len(raw) < 2:
         return products_qs.none()
 
-    match = _search_exists_match(raw)
     folded_raw = _search_fold(raw)
+
+    # Cijela fraza = tačan višerječni (ili jednorječni) tag?
+    exact_cat_ids = _subcategory_ids_for_exact_tag(raw)
+    if folded_raw and folded_raw != raw.casefold():
+        exact_cat_ids = exact_cat_ids | _subcategory_ids_for_exact_tag(folded_raw)
+
+    if exact_cat_ids:
+        # SAMO ta potkategorija — fraza je jedan tag
+        return products_qs.filter(kategorija_id__in=exact_cat_ids)
+
+    # Nema tačnog taga-fraze
+    match = _search_exists_match(raw)
     if folded_raw and folded_raw != raw.casefold():
         match |= _search_exists_match(folded_raw)
 
-    cat_ids = _category_ids_for_search_query(raw)
+    # Jednorječni fuzzy tagovi; višerječni bez tačnog taga → prazan fuzzy set
+    fuzzy_cat_ids = _category_ids_for_search_query(raw)
     if folded_raw and folded_raw != raw.casefold():
-        cat_ids = cat_ids | _category_ids_for_search_query(folded_raw)
-    if cat_ids:
-        # Artikal u potkategoriji s matchanim tagom (ne roditelj po imenu)
-        match |= Q(kategorija_id__in=cat_ids)
+        fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded_raw)
+    if fuzzy_cat_ids:
+        match |= Q(kategorija_id__in=fuzzy_cat_ids)
 
     return products_qs.filter(match)
 
@@ -885,27 +1083,36 @@ def _product_lager_priority(product):
         return 0
 
 
-def _product_has_subcategory_tag_match(product, query):
-    """True ako artikal pripada potkategoriji s matchanim search tagom."""
+def _product_subcategory_tag_match_level(product, query):
+    """
+    2 = artikal u potkategoriji s TAČNIM search-tagom (cijela potkategorija)
+    1 = fuzzy match taga potkategorije (strogo za višerječne upite)
+    0 = nema
+    """
     raw = _normalize_phrase(query)
     if not raw or len(raw) < 2:
-        return False
+        return 0
     cat = getattr(product, 'kategorija', None)
-    if cat is None:
-        return False
-    # Samo potkategorija artikla (ne roditelj po imenu)
-    if not getattr(cat, 'roditelj_id', None) and not getattr(cat, 'roditelj', None):
-        # Glavna kategorija bez roditelja — search_tagovi su prazni po pravilu
-        pass
+    if cat is None or not product.kategorija_id:
+        return 0
 
-    cat_ids = _category_ids_for_search_query(raw)
+    exact_ids = _subcategory_ids_for_exact_tag(raw)
     folded = _search_fold(raw)
     if folded and folded != raw.casefold():
-        cat_ids = cat_ids | _category_ids_for_search_query(folded)
-    if product.kategorija_id in cat_ids:
-        return True
+        exact_ids = exact_ids | _subcategory_ids_for_exact_tag(folded)
+    if product.kategorija_id in exact_ids:
+        return 2
 
-    # Direktna provjera tagova na potkategoriji artikla
+    # Ako postoji tačan tag negdje, fuzzy ne boduje druge potkategorije
+    if exact_ids:
+        return 0
+
+    fuzzy_ids = _category_ids_for_search_query(raw)
+    if folded and folded != raw.casefold():
+        fuzzy_ids = fuzzy_ids | _category_ids_for_search_query(folded)
+    if product.kategorija_id in fuzzy_ids:
+        return 1
+
     tags = []
     if hasattr(cat, 'search_tagovi_list'):
         raw_tags = cat.search_tagovi_list
@@ -914,20 +1121,25 @@ def _product_has_subcategory_tag_match(product, query):
         tags = list(raw_tags or [])
     elif getattr(cat, 'search_tagovi', None):
         tags = _parse_category_search_tags(cat.search_tagovi)
+    qf = _search_fold(raw)
     for tag in tags:
-        if _tag_matches_query(tag, raw):
-            return True
-        if folded and folded != raw.casefold() and _tag_matches_query(tag, folded):
-            return True
-    return False
+        tag_f = _search_fold(_normalize_phrase(tag))
+        if tag_f and qf and tag_f == qf:
+            return 2
+        if _tag_matches_category_search_tag(tag, raw):
+            return 1
+    return 0
 
 
 def _search_relevance_score(product, query):
     """
     Bodovanje — SAMO naziv, šifra, tag potkategorije.
 
-      šifra tačno 1100 · naziv tačno 1000 · šifra djelomično 900
-      naziv počinje 800 · tag potkategorije 790 · naziv sadrži 750
+      šifra tačno 1100 · naziv tačno 1000 · tačan tag potkategorije 950
+      šifra djelomično 900 · naziv počinje 800 · fuzzy tag 790 · naziv sadrži 750
+
+    Tačan tag „kapa” → svi artikli potkategorije „Kape i kačketi” na 950
+    (cijela potkategorija ispred slučajnih naziva s podstringom).
     """
     raw = _normalize_phrase(query)
     if not raw or len(raw) < 2:
@@ -979,9 +1191,12 @@ def _search_relevance_score(product, query):
     ):
         best = max(best, S['name_contains'])
 
-    # —— Tagovi potkategorije (search_tagovi) ——
+    # —— Tagovi potkategorije → cijela potkategorija ——
     try:
-        if _product_has_subcategory_tag_match(product, raw):
+        level = _product_subcategory_tag_match_level(product, raw)
+        if level >= 2:
+            best = max(best, S['exact_category_tag'])
+        elif level == 1:
             best = max(best, S['category_tag'])
     except Exception:
         pass
