@@ -2594,6 +2594,43 @@ class Product(models.Model):
         return 'Cijena na pakovanje / ne na komad'
 
     @property
+    def pakovanje_uz_cijenu(self):
+        """
+        Suffix pored cijene: „5 komada” ili „pakovanje”.
+        Prikaz: 15.55 KM - 5 komada
+        """
+        if not self.je_pakovanje:
+            return ''
+        n = self.pakovanje_jedinstvena_kolicina
+        if n > 1:
+            return f'{n} komada'
+        return 'pakovanje'
+
+    @property
+    def ima_varijacije(self):
+        """True ako artikal ima bar jednu varijaciju (koristi prefetch ako postoji)."""
+        try:
+            cache = getattr(self, '_prefetched_objects_cache', None) or {}
+            if 'varijacije' in cache:
+                return len(cache['varijacije']) > 0
+        except Exception:
+            pass
+        try:
+            return self.varijacije.exists()
+        except Exception:
+            return False
+
+    @property
+    def pakovanje_uz_cijenu_kartica(self):
+        """
+        Na početnoj/katalogu: „- N komada” SAMO ako artikal NEMA varijacije.
+        S varijacijama se pakovanje prikazuje tek na stranici artikla pored varijacija.
+        """
+        if self.ima_varijacije:
+            return ''
+        return self.pakovanje_uz_cijenu
+
+    @property
     def katalog_na_akciji(self):
         if self.na_akciji:
             return True
@@ -2853,6 +2890,14 @@ class ProductVariation(models.Model):
         if n <= 1:
             return ''
         return f'Cijena za {n} kom.'
+
+    @property
+    def pakovanje_uz_cijenu(self):
+        """Suffix pored cijene: „5 komada”."""
+        n = self.pakovanje_komada_prikaz
+        if n <= 1:
+            return ''
+        return f'{n} komada'
 
     @property
     def status_dostupnosti(self):

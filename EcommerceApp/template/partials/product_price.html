@@ -1,6 +1,8 @@
+{% with pack_suffix=item.pakovanje_uz_cijenu %}
 {% if item.na_akciji %}
-<span class="price-sale">{{ item.prikazna_cijena }} KM</span>
+<span class="price-sale">{{ item.prikazna_cijena }} KM{% if pack_suffix %} <span class="price-pack-suffix">- {{ pack_suffix }}</span>{% endif %}</span>
 <span class="price-original">{{ item.bazna_cijena }} KM</span>
 {% else %}
-<span class="price-current">{{ item.prikazna_cijena }} KM</span>
+<span class="price-current">{{ item.prikazna_cijena }} KM{% if pack_suffix %} <span class="price-pack-suffix">- {{ pack_suffix }}</span>{% endif %}</span>
 {% endif %}
+{% endwith %}

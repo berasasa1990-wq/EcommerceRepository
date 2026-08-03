@@ -8,7 +8,7 @@
         <span class="product-detail-variation-price product-price--detail card-dwell-deal is-active is-pulse product-sale-card-deal pd-var-sale--card">
             <span class="price-original card-dwell-was">{{ var.bazna_cijena }} KM</span>
             <span class="card-dwell-sale-cluster">
-                <span class="price-sale card-dwell-now">{{ var.prikazna_cijena }} KM</span>
+                <span class="price-sale card-dwell-now">{{ var.prikazna_cijena }} KM{% if var.pakovanje_uz_cijenu %} <span class="price-pack-suffix">- {{ var.pakovanje_uz_cijenu }}</span>{% elif product.pakovanje_uz_cijenu %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu }}</span>{% endif %}</span>
                 {% if var.akcija_postotak_prikaz %}
                 <span class="card-dwell-badge">−{{ var.akcija_postotak_prikaz }}%</span>
                 {% endif %}
@@ -18,12 +18,6 @@
         <span class="product-detail-variation-price product-price--detail">
             {% include 'partials/product_price.html' with item=var %}
         </span>
-        {% endif %}
-        {% if var.je_pakovanje and var.pakovanje_cijena_hint %}
-        <span class="product-pack-price-note product-pack-price-note--variation">{{ var.pakovanje_cijena_hint }}</span>
-        {% elif product.je_pakovanje and product.pakovanje_cijena_hint %}
-        {# Fallback: pakovanje na artiklu, varijacija bez svog broja #}
-        <span class="product-pack-price-note product-pack-price-note--variation">{{ product.pakovanje_cijena_hint }}</span>
         {% endif %}
     </span>
     <form method="post" action="{% url 'add_to_cart' product.slug %}" class="product-detail-variation-form">

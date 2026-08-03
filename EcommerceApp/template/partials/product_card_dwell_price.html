@@ -11,7 +11,7 @@
     <div class="product-price product-card__price card-dwell-prices" data-product-price data-dwell-price-block>
         <span class="price-original card-dwell-was">{{ deal.base }} KM</span>
         <div class="card-dwell-sale-cluster">
-            <span class="price-sale card-dwell-now">{{ deal.sale }} KM</span>
+            <span class="price-sale card-dwell-now">{{ deal.sale }} KM{% if product.pakovanje_uz_cijenu_kartica %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu_kartica }}</span>{% endif %}</span>
             {% if deal.percent %}
             <span class="card-dwell-badge">−{{ deal.percent }}%</span>
             {% endif %}
@@ -25,7 +25,7 @@
     <div class="product-price product-card__price card-dwell-prices" data-product-price>
         <span class="price-original card-dwell-was">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
         <div class="card-dwell-sale-cluster">
-            <span class="price-sale card-dwell-now">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+            <span class="price-sale card-dwell-now">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM{% if product.pakovanje_uz_cijenu_kartica %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu_kartica }}</span>{% endif %}</span>
             {% if product.katalog_akcija_postotak %}
             <span class="card-dwell-badge">−{{ product.katalog_akcija_postotak }}%</span>
             {% endif %}
@@ -34,7 +34,7 @@
 </div>
 {% else %}
 <div class="product-price product-card__price" data-product-price>
-    <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+    <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM{% if product.pakovanje_uz_cijenu_kartica %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu_kartica }}</span>{% endif %}</span>
 </div>
 {% endif %}
 {% endwith %}

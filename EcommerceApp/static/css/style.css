@@ -6726,19 +6726,33 @@ body.catalog-variation-modal-open {
     gap: 2px;
 }
 
+/* Cijena i „- N komada” — manji od naziva varijacije */
+.product-detail-variation-price .price-current,
+.product-detail-variation-price .price-sale,
+.product-detail-variation-price .price-pack-suffix {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: 0;
+}
+
 .product-detail-variation-price .price-current {
-    font-size: 14px;
-    font-weight: 600;
+    color: inherit;
 }
 
 .product-detail-variation-price .price-sale {
-    font-size: 15px;
-    font-weight: 700;
     color: #dc2626;
 }
 
+.product-detail-variation-price .price-pack-suffix {
+    color: inherit;
+    font-size: 10px;
+    font-weight: 500;
+}
+
 .product-detail-variation-price .price-original {
-    font-size: 12px;
+    font-size: 10px;
+    font-weight: 500;
     color: #9ca3af;
 }
 
@@ -6937,15 +6951,19 @@ body.catalog-variation-modal-open {
     margin: 0 !important;
 }
 .pd-var-sale--card .card-dwell-was {
-    font-size: 11px !important;
+    font-size: 10px !important;
 }
 .pd-var-sale--card .card-dwell-now {
-    font-size: 15px !important;
+    font-size: 11px !important;
+}
+.pd-var-sale--card .card-dwell-now .price-pack-suffix {
+    font-size: 10px !important;
+    font-weight: 500;
 }
 .pd-var-sale--card .card-dwell-badge {
-    font-size: 12px;
+    font-size: 10px;
     min-width: 2.2em;
-    padding: 4px 7px;
+    padding: 3px 6px;
 }
 .pd-var-sale--card .card-dwell-sale-cluster {
     justify-content: flex-end;
@@ -9708,19 +9726,26 @@ button.nav-action-link {
     }
 
     .product-pack-price-note--variation {
-        font-size: 10px;
-    }
-
-    .product-detail-variation-price .price-sale {
-        font-size: 14px;
-    }
-
-    .product-detail-variation-price .price-current {
         font-size: 13px;
     }
 
-    .product-detail-variation-price .price-original {
+    /* Mobilni: cijena / komada — malo veći radi čitljivosti */
+    .product-detail-variation-price .price-current,
+    .product-detail-variation-price .price-sale {
         font-size: 11px;
+        font-weight: 500;
+        line-height: 1.35;
+    }
+
+    .product-detail-variation-price .price-pack-suffix {
+        font-size: 10px;
+        font-weight: 500;
+        line-height: 1.35;
+    }
+
+    .product-detail-variation-price .price-original {
+        font-size: 10px;
+        font-weight: 500;
     }
 
     .product-detail-variation-form {
@@ -13215,16 +13240,22 @@ button.nav-action-link {
         flex: 0 0 auto;
     }
 
+    .product-detail-variation-price .price-current,
     .product-detail-variation-price .price-sale {
-        font-size: 13px;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.35;
     }
 
-    .product-detail-variation-price .price-current {
-        font-size: 12px;
+    .product-detail-variation-price .price-pack-suffix {
+        font-size: 10px;
+        font-weight: 500;
+        line-height: 1.35;
     }
 
     .product-detail-variation-price .price-original {
         font-size: 10px;
+        font-weight: 500;
     }
 
     .product-detail-variation-form {
@@ -19950,6 +19981,27 @@ body.og-side-open {
     font-size: 11px;
     font-weight: 600;
     color: #64748b;
+}
+
+/* Pakovanje uz cijenu: 15.55 KM - 5 komada */
+.price-pack-suffix {
+    font-weight: 600;
+    font-size: 0.88em;
+    color: #0369a1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+.price-sale .price-pack-suffix,
+.price-current .price-pack-suffix {
+    color: #0369a1;
+}
+.product-card--catalog .price-pack-suffix {
+    font-size: 0.85em;
+    font-weight: 700;
+}
+.product-price--detail .price-pack-suffix {
+    font-size: 0.82em;
+    font-weight: 700;
 }
 
 /* „Cijena za X kom.” / „Cijena na pakovanje…” — iznad cijene na karticama */

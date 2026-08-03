@@ -20,10 +20,7 @@
     {% if show_akcija_expiry and product.prikaz_akcija_istice %}
     <p class="product-sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
     {% endif %}
-    <div class="product-info__price-row{% if product.je_pakovanje %} product-info__price-row--pack{% endif %}">
-        {% if product.je_pakovanje and product.pakovanje_cijena_hint %}
-        <span class="product-pack-price-note">{{ product.pakovanje_cijena_hint }}</span>
-        {% endif %}
+    <div class="product-info__price-row{% if product.pakovanje_uz_cijenu_kartica %} product-info__price-row--pack{% endif %}">
         {% include 'partials/product_card_dwell_price.html' with product=product %}
     </div>
 </div>

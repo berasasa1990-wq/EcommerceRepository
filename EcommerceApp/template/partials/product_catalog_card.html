@@ -76,10 +76,7 @@
     </div>
     {% endif %}
 
-    <div class="product-card__price-block{% if product.je_pakovanje %} product-card__price-block--pack{% endif %}">
-        {% if product.je_pakovanje and product.pakovanje_cijena_hint %}
-        <span class="product-pack-price-note">{{ product.pakovanje_cijena_hint }}</span>
-        {% endif %}
+    <div class="product-card__price-block{% if product.pakovanje_uz_cijenu_kartica %} product-card__price-block--pack{% endif %}">
         {% if card_variations|length > 1 %}
         {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
         {% else %}

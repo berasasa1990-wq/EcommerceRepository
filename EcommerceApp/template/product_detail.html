@@ -377,7 +377,7 @@
                 <div class="product-price product-price--detail card-dwell-prices">
                     <span class="price-original card-dwell-was">{{ product.bazna_cijena }} KM</span>
                     <div class="card-dwell-sale-cluster">
-                        <span class="price-sale card-dwell-now">{{ product.prikazna_cijena }} KM</span>
+                        <span class="price-sale card-dwell-now">{{ product.prikazna_cijena }} KM{% if product.pakovanje_uz_cijenu %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu }}</span>{% endif %}</span>
                         {% if product.akcija_postotak_prikaz %}
                         <span class="card-dwell-badge">−{{ product.akcija_postotak_prikaz }}%</span>
                         {% endif %}
@@ -387,15 +387,10 @@
             {% else %}
             <div class="product-detail-price product-price--detail" id="detailPrice"
                  data-base-price="{{ product.prikazna_cijena }}"
+                 data-pack-suffix="{{ product.pakovanje_uz_cijenu|default:'' }}"
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
                 {% include 'partials/product_price.html' with item=product %}
             </div>
-            {% endif %}
-            {# Pakovanje: npr. „Cijena za 6 kom.” — da se ne misli da je po komadu #}
-            {% if product.je_pakovanje and product.pakovanje_cijena_hint %}
-            <p class="product-pack-price-note product-pack-price-note--detail" id="detailPackPriceNote">
-                {{ product.pakovanje_cijena_hint }}
-            </p>
             {% endif %}
             {# AI dwell: isti izgled kao na kartici + tajmer na product page #}
             <div class="card-dwell-deal pd-dwell-flash product-sale-deal--detail{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}"

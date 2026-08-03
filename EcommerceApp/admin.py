@@ -2158,34 +2158,22 @@ class ProductAdmin(admin.ModelAdmin):
             })
 
         if request.method == 'POST' and 'apply' in request.POST:
-            # Artikli koje je korisnik ostavio uključene (checkbox na formi)
-            include_ids = request.POST.getlist('include_product')
+            # Sačuvaj SVE artikle koji imaju odabranu kategoriju u formi
+            # (checkbox „U grupi” služi samo za batch dodjelu, ne za Save).
             original_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
             cat_count = 0
             cleared = 0
-            skipped = 0
-
-            valid_include = set()
-            for pk_str in include_ids:
-                try:
-                    valid_include.add(int(pk_str))
-                except (TypeError, ValueError):
-                    continue
+            unchanged = 0
 
             for pk_str in original_ids:
                 try:
                     pk = int(pk_str)
                 except (TypeError, ValueError):
-                    skipped += 1
-                    continue
-                if pk not in valid_include:
-                    skipped += 1
                     continue
 
                 raw_cat = (request.POST.get(f'kategorija_{pk}') or '').strip()
                 if not raw_cat:
-                    # eksplicitno: ostavi bez promjene ako prazno
-                    skipped += 1
+                    unchanged += 1
                     continue
                 if raw_cat in ('0', '__clear__'):
                     Product.objects.filter(pk=pk).update(kategorija=None)
@@ -2194,7 +2182,7 @@ class ProductAdmin(admin.ModelAdmin):
                 try:
                     category = Category.objects.get(pk=int(raw_cat), aktivan=True)
                 except (Category.DoesNotExist, TypeError, ValueError):
-                    skipped += 1
+                    unchanged += 1
                     continue
                 Product.objects.filter(pk=pk).update(kategorija=category)
                 cat_count += 1
@@ -2211,11 +2199,18 @@ class ProductAdmin(admin.ModelAdmin):
                     f'Kategorija uklonjena sa {cleared} artikal/a.',
                     messages.INFO,
                 )
-            if skipped and not cat_count and not cleared:
+            if unchanged and not cat_count and not cleared:
                 self.message_user(
                     request,
-                    'Nijedan artikal nije ažuriran (isključeni ili bez odabrane kategorije).',
+                    'Nijedan artikal nije ažuriran — nijedan nema odabranu novu kategoriju. '
+                    'Označi grupu → Dodijeli označenima (ili izaberi kategoriju po artiklu) → Save.',
                     messages.WARNING,
+                )
+            elif unchanged and (cat_count or cleared):
+                self.message_user(
+                    request,
+                    f'{unchanged} artikal/a ostavljen/o bez promjene (nema nove kategorije).',
+                    messages.INFO,
                 )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
 
@@ -2230,7 +2225,7 @@ class ProductAdmin(admin.ModelAdmin):
         }
         return render(request, 'admin/EcommerceApp/product/bulk_assign_category.html', context)
 
-    bulk_assign_category.short_description = 'Dodijeli kategoriju (po artiklu)'
+    bulk_assign_category.short_description = 'Dodijeli kategoriju (grupe / po artiklu)'
 
     def bulk_assign_brand(self, request, queryset):
         form = BulkAssignBrandForm(request.POST or None)
