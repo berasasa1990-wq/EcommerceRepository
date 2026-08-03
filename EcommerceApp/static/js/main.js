@@ -408,11 +408,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const items = results.map((item, index) => {
-            // Prvih nekoliko slika eager (dropdown je “above the fold”); ostale lazy
-            const loadAttr = index < 4 ? 'eager' : 'lazy';
-            const fetchAttr = index < 2 ? ' fetchpriority="high"' : '';
+            // Sve lazy — ne čekaj slike prije prikaza liste (brži osjećaj pretrage)
             const thumb = item.image
-                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="${loadAttr}" decoding="async"${fetchAttr}>`
+                ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
                 : placeholderThumbSvg;
             const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
             return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
@@ -448,21 +446,27 @@ document.addEventListener('DOMContentLoaded', () => {
         searchFetchController?.abort();
         searchFetchController = new AbortController();
 
-        searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretraga…</div>';
-        searchSuggestions.hidden = false;
-        setSuggestionsExpanded(true);
-        setSearchSuggestActive(true);
+        // Ne flashaj “Pretraga…” odmah — prikaži tek ako odgovor kasni
+        const loadingTimer = window.setTimeout(() => {
+            if (searchInput?.value.trim() !== query) return;
+            searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretraga…</div>';
+            searchSuggestions.hidden = false;
+            setSuggestionsExpanded(true);
+            setSearchSuggestActive(true);
+        }, 140);
 
         try {
             const response = await fetch(`${searchSuggestUrl}?q=${encodeURIComponent(query)}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                 signal: searchFetchController.signal,
             });
             if (!response.ok) throw new Error('Search failed');
             const data = await response.json();
             if (searchInput?.value.trim() !== query) return;
+            window.clearTimeout(loadingTimer);
             renderSearchSuggestions(data.results || [], data.query || query, Boolean(data.has_more));
         } catch (error) {
+            window.clearTimeout(loadingTimer);
             if (error.name === 'AbortError') return;
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
             searchSuggestions.hidden = false;
@@ -477,8 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
             clearSearchSuggestions();
             return;
         }
-        // Kratki upiti (2–3 znaka) malo duži debounce; duži upiti brži odziv
-        const delay = value.length <= 3 ? 180 : 120;
+        // Duži debounce = manje requestova dok se kuca (manje opterećenje)
+        const delay = value.length <= 3 ? 280 : 200;
         searchDebounceTimer = window.setTimeout(() => fetchSearchSuggestions(value), delay);
     }
 

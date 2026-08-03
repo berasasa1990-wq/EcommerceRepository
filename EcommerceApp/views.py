@@ -5,6 +5,7 @@ import re
 import uuid
 import requests
 from decimal import Decimal, InvalidOperation
+from functools import lru_cache
 from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
@@ -750,6 +751,12 @@ def _invalidate_search_tag_caches():
     _TAG_CACHE_AT = 0.0
     _CAT_SEARCH_TAG_CACHE = None
     _CAT_SEARCH_TAG_CACHE_AT = 0.0
+    # Query-level caches (exact/fuzzy cat ids per upit)
+    try:
+        _exact_cat_ids_for_query_cached.cache_clear()
+        _fuzzy_cat_ids_for_query_cached.cache_clear()
+    except Exception:
+        pass
 
 
 # —— Search score bands ——
@@ -856,41 +863,55 @@ def _is_multiword_phrase(value):
 def _subcategory_ids_for_exact_tag(query):
     """
     Potkategorije čiji je search-tag 100% jednak cijeloj frazi upita.
-
-    „varalica za more” = JEDAN tag (ne „varalica” + „za” + „more”).
-    „stalak za spod” ne vuče potkategorije sa tagom samo „spod”.
+    Cached po upitu — score po artiklu inače ponavlja isti scan.
     """
     q = _normalize_phrase(query)
     if not q or len(q) < 2:
         return set()
-    q_key = _phrase_key(q)
-    if not q_key:
-        return set()
+    return set(_exact_cat_ids_for_query_cached(_phrase_key(q) or q.casefold()))
+
+
+@lru_cache(maxsize=256)
+def _exact_cat_ids_for_query_cached(q_key: str) -> frozenset:
+    """Internal: exact multi/single-word tag → category ids (+ descendants)."""
+    if not q_key or len(q_key) < 2:
+        return frozenset()
 
     direct = set()
     for row in _cached_category_search_tags():
-        # Potkategorija = ima roditelja; tagovi se čuvaju samo na potkategorijama
         if not row.get('parent_id') or not row.get('tags'):
             continue
         for tag in row['tags']:
-            # Cijeli tag kao jedna fraza
-            if _phrase_key(tag) == q_key:
+            tag_key = _phrase_key(tag)
+            if tag_key == q_key:
                 direct.add(row['id'])
                 break
-            # Blagi full-phrase typo (samo na cijeloj frazi, ne po riječima)
-            tag_key = _phrase_key(tag)
             if (
                 tag_key
                 and len(q_key) >= 6
                 and abs(len(tag_key) - len(q_key)) <= 2
             ):
-                allow = _allowed_edit_distance_for_len(max(len(tag_key), len(q_key)))
-                # Strože za fraze: max 2 greške
-                allow = min(allow, 2)
+                allow = min(2, _allowed_edit_distance_for_len(max(len(tag_key), len(q_key))))
                 if _edit_distance(tag_key, q_key, max_dist=allow) <= allow:
                     direct.add(row['id'])
                     break
-    return _expand_category_ids_with_descendants(direct)
+    return frozenset(_expand_category_ids_with_descendants(direct))
+
+
+@lru_cache(maxsize=256)
+def _fuzzy_cat_ids_for_query_cached(q_key: str) -> frozenset:
+    """Jednorječni fuzzy tag match (cached)."""
+    if not q_key or len(q_key) < 2 or ' ' in q_key:
+        return frozenset()
+    direct = set()
+    for row in _cached_category_search_tags():
+        if not row.get('parent_id') or not row.get('tags'):
+            continue
+        for tag in row['tags']:
+            if _tag_matches_category_search_tag(tag, q_key):
+                direct.add(row['id'])
+                break
+    return frozenset(_expand_category_ids_with_descendants(direct))
 
 
 def _tag_matches_category_search_tag(tag, query):
@@ -930,7 +951,7 @@ def _tag_matches_category_search_tag(tag, query):
 
 def _category_ids_for_search_query(query, *, exact_only=False):
     """
-    Potkategorije čiji search_tagovi odgovaraju upitu.
+    Potkategorije čiji search_tagovi odgovaraju upitu (cached po upitu).
 
     Višerječni upit: samo tačan višerječni tag (cijela fraza).
     Jednorječni: fuzzy na jednorječne tagove.
@@ -939,27 +960,14 @@ def _category_ids_for_search_query(query, *, exact_only=False):
     if not q or len(q) < 2:
         return set()
 
-    # Uvijek prvo: cijela fraza = tag
     exact = _subcategory_ids_for_exact_tag(q)
     if exact_only or exact:
         return exact
 
-    # Višerječni upit bez tačnog taga → NE fuzzy po riječima
     if _is_multiword_phrase(q):
         return set()
 
-    # Jedna riječ → fuzzy po tagovima potkategorije
-    rows = _cached_category_search_tags()
-    direct = set()
-    for row in rows:
-        if not row.get('parent_id') or not row.get('tags'):
-            continue
-        for tag in row['tags']:
-            if _tag_matches_category_search_tag(tag, q):
-                direct.add(row['id'])
-                break
-
-    return _expand_category_ids_with_descendants(direct)
+    return set(_fuzzy_cat_ids_for_query_cached(_phrase_key(q) or q.casefold()))
 
 
 def _text_has_query(haystack, query_folded, *, as_word=False):
@@ -1102,49 +1110,27 @@ def _product_lager_priority(product):
 
 def _product_subcategory_tag_match_level(product, query):
     """
-    2 = artikal u potkategoriji s TAČNIM search-tagom (cijela potkategorija)
-    1 = fuzzy match taga potkategorije (strogo za višerječne upite)
+    2 = artikal u potkategoriji s TAČNIM search-tagom
+    1 = fuzzy match taga potkategorije
     0 = nema
+
+    Koristi cached set ID-eva — O(1) po artiklu.
     """
     raw = _normalize_phrase(query)
     if not raw or len(raw) < 2:
         return 0
-    cat = getattr(product, 'kategorija', None)
-    if cat is None or not product.kategorija_id:
+    if not getattr(product, 'kategorija_id', None):
         return 0
 
     exact_ids = _subcategory_ids_for_exact_tag(raw)
-    folded = _search_fold(raw)
-    if folded and folded != raw.casefold():
-        exact_ids = exact_ids | _subcategory_ids_for_exact_tag(folded)
     if product.kategorija_id in exact_ids:
         return 2
-
-    # Ako postoji tačan tag negdje, fuzzy ne boduje druge potkategorije
     if exact_ids:
         return 0
 
     fuzzy_ids = _category_ids_for_search_query(raw)
-    if folded and folded != raw.casefold():
-        fuzzy_ids = fuzzy_ids | _category_ids_for_search_query(folded)
     if product.kategorija_id in fuzzy_ids:
         return 1
-
-    tags = []
-    if hasattr(cat, 'search_tagovi_list'):
-        raw_tags = cat.search_tagovi_list
-        if callable(raw_tags):
-            raw_tags = raw_tags()
-        tags = list(raw_tags or [])
-    elif getattr(cat, 'search_tagovi', None):
-        tags = _parse_category_search_tags(cat.search_tagovi)
-    qf = _search_fold(raw)
-    for tag in tags:
-        tag_f = _search_fold(_normalize_phrase(tag))
-        if tag_f and qf and tag_f == qf:
-            return 2
-        if _tag_matches_category_search_tag(tag, raw):
-            return 1
     return 0
 
 
@@ -1281,29 +1267,29 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     if not products:
         return products
 
-    # Prefetch za scoring (kategorija + search tagovi, varijacije/šifre)
-    if query:
+    # Lagani prefetch — samo ako treba score (varijacije za cijenu, ne tagovi M2M)
+    if query or price_sort:
         try:
             from django.db.models import prefetch_related_objects
 
-            prefetch_related_objects(
-                list(products),
-                'varijacije',
-                'kategorija',
-                'kategorija__roditelj',
-            )
+            prefetch_related_objects(list(products), 'varijacije')
         except Exception:
             pass
+
+    # Cache cat-id setova za cijeli sort (1× po upitu, ne N× po artiklu)
+    if query:
+        _subcategory_ids_for_exact_tag(query)
+        _category_ids_for_search_query(query)
 
     def key(p):
         rel = -_search_relevance_score(p, query) if query else 0
         prio = _product_lager_priority(p)
         name = (p.naziv or '').lower()
         try:
+            _bind_variation_parents(p)
             price = float(_effective_product_price(p) or 0)
         except Exception:
             price = 0.0
-        # Na stanju malo iznad OOS unutar iste relevantnosti
         in_stock = 0 if getattr(p, 'na_stanju', False) else 1
         if price_sort == 'opadajuca':
             return (rel, in_stock, -prio, -price, name)
@@ -1340,20 +1326,23 @@ def _weighted_home_product_order(products):
 
 
 SEARCH_SUGGEST_LIMIT = 6
-SEARCH_SUGGEST_CANDIDATE_POOL = 18
+SEARCH_SUGGEST_CANDIDATE_POOL = 12
+# Max artikala za Python re-rank na punoj pretrazi (Enter) — ostalo SQL redoslijed
+SEARCH_FULL_RANK_POOL = 120
 STAFF_LOOKUP_LIMIT = 25
 
 
 def _suggest_product_queryset(request=None):
     """
-    Lagani queryset samo za autocomplete dropdown.
-    Bez Count annotate i bez teških select_related (kategorija/brend nisu potrebni).
+    Lagani queryset za autocomplete — minimum polja, bez tagova M2M.
     """
     qs = Product.objects.filter(aktivan=True)
     if not _can_view_out_of_stock(request):
         qs = qs.filter(na_stanju=True)
-    # defer(opis) umjesto only() — varijacije.prikazna_cijena čita artikal.* bez deferred grešaka
-    return qs.defer('opis', 'meta_title', 'meta_description', 'olx_listing_url', 'olx_listing_slug').prefetch_related(
+    return qs.defer(
+        'opis', 'meta_title', 'meta_description',
+        'olx_listing_url', 'olx_listing_slug', 'olx_listing_id',
+    ).prefetch_related(
         Prefetch(
             'varijacije',
             queryset=ProductVariation.objects.filter(na_stanju=True).only(
@@ -1362,11 +1351,9 @@ def _suggest_product_queryset(request=None):
                 'cijena',
                 'akcijska_cijena',
                 'akcija_postotak',
-                'slika',
                 'na_stanju',
             ),
         ),
-        Prefetch('tagovi', queryset=Tag.objects.only('id', 'naziv')),
     )
 
 
@@ -1430,25 +1417,22 @@ def search_suggest(request):
     if len(_normalize_phrase(query)) < 2:
         return JsonResponse({'results': [], 'query': query, 'has_more': False})
 
-    # Lagani path: bez teškog _product_queryset (Count + select_related)
+    # Brzi path: SQL filter + SQL order — bez teškog Python re-score po artiklu
     products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
     products_qs = products_qs.annotate(
         _suggest_rel=_suggest_relevance_annotation(query),
     ).order_by('-_suggest_rel', '-prioritet_lagera', 'naziv')
 
-    # has_more: uzmi limit+1; Python re-sort radi fina relevantnost (tagovi)
-    pool = list(products_qs[: max(SEARCH_SUGGEST_CANDIDATE_POOL, SEARCH_SUGGEST_LIMIT + 1)])
+    pool = list(products_qs[: SEARCH_SUGGEST_LIMIT + 1])
     has_more = len(pool) > SEARCH_SUGGEST_LIMIT
-    # Izbjegni variation.artikal N+1 (prikazna_cijena/na_akciji čitaju parent)
-    for product in pool:
-        for variation in product.varijacije.all():
-            variation.artikal = product
-    products = _sort_products_by_lager_priority(pool, query=query)[:SEARCH_SUGGEST_LIMIT]
+    products = pool[:SEARCH_SUGGEST_LIMIT]
 
     results = []
     for product in products:
+        _bind_variation_parents(product)
         price = _effective_product_price(product)
-        image_field = product.prikazna_slika
+        # prikazna_slika može dirati varijacije — parent već bound
+        image_field = getattr(product, 'slika', None) or product.prikazna_slika
         results.append({
             'naziv': product.naziv,
             'url': product.get_absolute_url(),
@@ -1458,8 +1442,7 @@ def search_suggest(request):
         })
 
     response = JsonResponse({'results': results, 'query': query, 'has_more': has_more})
-    # Kratki browser cache smanjuje ponovljene keystroke hitove (isti q)
-    response['Cache-Control'] = 'private, max-age=15'
+    response['Cache-Control'] = 'private, max-age=30'
     return response
 
 
@@ -1468,8 +1451,19 @@ def search_suggest(request):
 
 def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     params = _get_filter_params(request)
+    search_q = _normalize_phrase(params.get('q') or '')
+
     products_qs = _apply_search_filter(products_qs, params['q'])
-    products = list(products_qs)
+
+    # SQL pre-order za pretragu — manje posla u Pythonu
+    if search_q and len(search_q) >= 2:
+        products_qs = products_qs.annotate(
+            _search_sql_rel=_suggest_relevance_annotation(search_q),
+        ).order_by('-_search_sql_rel', '-prioritet_lagera', 'naziv')
+        # Ograniči pool za fine ranking (Enter na pretrazi)
+        products = list(products_qs[:SEARCH_FULL_RANK_POOL])
+    else:
+        products = list(products_qs)
 
     if allowed_category_ids is not None:
         allowed = set(allowed_category_ids)
@@ -1490,12 +1484,17 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
 
     price_min = _parse_decimal(params['cijena_od'])
     price_max = _parse_decimal(params['cijena_do'])
-    if price_min is not None:
-        products = [product for product in products if _effective_product_price(product) >= price_min]
-    if price_max is not None:
-        products = [product for product in products if _effective_product_price(product) <= price_max]
+    if price_min is not None or price_max is not None:
+        for product in products:
+            _bind_variation_parents(product)
+        if price_min is not None:
+            products = [product for product in products if _effective_product_price(product) >= price_min]
+        if price_max is not None:
+            products = [product for product in products if _effective_product_price(product) <= price_max]
 
     if params['akcija']:
+        for product in products:
+            _bind_variation_parents(product)
         products = [product for product in products if _product_is_on_sale(product)]
 
     if params['noviteti']:
@@ -1508,15 +1507,13 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             if _product_matches_size(product, size_label)
         ]
 
-    # Redukovanje lagera prvo, zatim cijena (zadano = rastuća)
     if params['sort'] == 'opadajuca':
         price_sort = 'opadajuca'
     else:
-        # prazno / rastuca / bilo šta drugo → rastuća cijena unutar prioriteta
         price_sort = 'rastuca'
     products = _sort_products_by_lager_priority(
         products,
-        query=params.get('q') or '',
+        query=search_q,
         price_sort=price_sort,
     )
 
