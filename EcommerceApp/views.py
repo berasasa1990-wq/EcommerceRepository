@@ -752,16 +752,19 @@ def _invalidate_search_tag_caches():
     _CAT_SEARCH_TAG_CACHE_AT = 0.0
 
 
-# —— Search score bands — SAMO: naziv, šifra, tagovi potkategorije ——
+# —— Search score bands ——
+# Prioritet: 1) šifra / naziv  2) tek onda tag potkategorije
 SEARCH_SCORE = {
-    'exact_sifra': 1100,       # šifra tačno — uvijek na vrhu
-    'exact_name': 1000,        # tačno poklapanje naziva
-    # Tačan search-tag potkategorije → cijela potkategorija (iznad djelomičnog naziva)
-    'exact_category_tag': 950,
-    'sifra_partial': 900,      # šifra djelomično
-    'name_startswith': 800,    # naziv počinje upitom
-    'category_tag': 790,       # fuzzy / djelomičan tag potkategorije
-    'name_contains': 750,      # upit u nazivu
+    'exact_sifra': 1100,       # šifra tačno
+    'exact_name': 1050,        # naziv tačno
+    'sifra_partial': 1000,     # šifra djelomično
+    'name_startswith': 950,    # naziv počinje upitom
+    # Sve riječi upita u nazivu, redoslijed nije bitan (itana feeder ⊆ … ITANA … Feeder …)
+    'name_all_words': 920,
+    'name_contains': 880,      # cijela fraza / podstring u nazivu
+    # Tagovi potkategorije — ispod naziva i šifre
+    'exact_category_tag': 750,
+    'category_tag': 700,
 }
 
 
@@ -1006,42 +1009,57 @@ def _q_name_or_sifra_contains(term):
     )
 
 
+def _name_or_sifra_has_all_words(raw):
+    """
+    Q: naziv/šifra sadrži SVE značajne riječi upita (redoslijed nije bitan).
+
+    Primjer: upit „itana feeder” → naziv
+    „MT13723 MATE ITANA Tournament Spin … Feeder …”
+    (nije potreban cijeli naziv ni riječ „Tournament” u upitu).
+    """
+    words = _search_significant_words(raw)
+    if not words:
+        return Q(pk__in=[])
+    if len(words) == 1:
+        return _q_name_or_sifra_contains(words[0])
+
+    # AND po riječima — redoslijed slobodan, riječi između se preskaču
+    and_q = Q()
+    for w in words:
+        and_q &= _q_name_or_sifra_contains(w)
+    return and_q
+
+
 def _search_exists_match(raw):
     """
-    Match naziv / šifra.
+    Match naziv / šifra:
 
-    Višerječni upit: SAMO cijela fraza u nazivu/šifri
-    (ne OR/AND po riječima „varalica” / „za” / „more”).
+    - cijela fraza u nazivu/šifri, ILI
+    - SVE značajne riječi upita u nazivu (AND, bilo kojim redom)
+      „itana feeder” ⊆ „… ITANA Tournament … Feeder …”
 
-    Jednorječni: contains te riječi.
+    Nije potreban 100% cijeli naziv — samo da su unesene riječi prisutne.
+    Stop-riječi (za, i, na…) se ignorišu.
+    Tagovi potkategorije: i dalje cijela fraza (odvojeno u filteru).
     """
     raw = _normalize_phrase(raw)
     if not raw:
         return Q(pk__in=[])
 
-    # Cijela fraza uvijek (i za 1 i za više riječi)
     phrase_q = _q_name_or_sifra_contains(raw)
-
-    if _is_multiword_phrase(raw):
-        # Višerječno: isključivo fraza, ne dijeljenje na riječi
-        return phrase_q
-
-    words = _search_significant_words(raw)
-    if not words:
-        return phrase_q
-    return phrase_q | _q_name_or_sifra_contains(words[0])
+    words_q = _name_or_sifra_has_all_words(raw)
+    return phrase_q | words_q
 
 
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga vuce SAMO:
-    1) naziv artikla
-    2) šifra artikla (i šifre varijacija)
-    3) search tagovi potkategorije (višerječni tag = JEDAN tag)
+    Pretraga:
+    1) naziv artikla — riječi u bilo kojem redoslijedu (AND)
+    2) šifra artikla / varijacije
+    3) search tagovi potkategorije (višerječni tag = JEDAN tag, tačna fraza)
 
-    Primjer: upit „varalica za more”
-      → samo potkategorija s tagom „varalica za more”
-      → NE vuce tag „varalica”, riječ „za”, ni „more” odvojeno.
+    Primjer naziv: „itana spin” → ITANA … Spin …
+    Primjer tag: „varalica za more” → samo potkategorija s tim tagom.
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -1051,26 +1069,25 @@ def _apply_search_filter(products_qs, query):
 
     folded_raw = _search_fold(raw)
 
-    # Cijela fraza = tačan višerječni (ili jednorječni) tag?
+    # Tačan višerječni/jednorječni tag potkategorije → cijela potkategorija
     exact_cat_ids = _subcategory_ids_for_exact_tag(raw)
     if folded_raw and folded_raw != raw.casefold():
         exact_cat_ids = exact_cat_ids | _subcategory_ids_for_exact_tag(folded_raw)
 
-    if exact_cat_ids:
-        # SAMO ta potkategorija — fraza je jedan tag
-        return products_qs.filter(kategorija_id__in=exact_cat_ids)
-
-    # Nema tačnog taga-fraze
+    # Naziv / šifra (riječi bilo kojim redom)
     match = _search_exists_match(raw)
     if folded_raw and folded_raw != raw.casefold():
         match |= _search_exists_match(folded_raw)
 
-    # Jednorječni fuzzy tagovi; višerječni bez tačnog taga → prazan fuzzy set
-    fuzzy_cat_ids = _category_ids_for_search_query(raw)
-    if folded_raw and folded_raw != raw.casefold():
-        fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded_raw)
-    if fuzzy_cat_ids:
-        match |= Q(kategorija_id__in=fuzzy_cat_ids)
+    if exact_cat_ids:
+        # Tag-fraza: potkategorija ILI match po nazivu/šifri
+        match |= Q(kategorija_id__in=exact_cat_ids)
+    else:
+        fuzzy_cat_ids = _category_ids_for_search_query(raw)
+        if folded_raw and folded_raw != raw.casefold():
+            fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded_raw)
+        if fuzzy_cat_ids:
+            match |= Q(kategorija_id__in=fuzzy_cat_ids)
 
     return products_qs.filter(match)
 
@@ -1131,15 +1148,63 @@ def _product_subcategory_tag_match_level(product, query):
     return 0
 
 
+def _tokenize_for_match(text):
+    """Riječi iz naziva/upita (slova, brojevi; razdvoji i interpunkciju)."""
+    folded = _search_fold(text or '')
+    if not folded:
+        return []
+    # 2.13m → 2, 13, m  ili zadrži alnum komade
+    parts = re.findall(r'[a-z0-9]+', folded, flags=re.UNICODE)
+    return [p for p in parts if p]
+
+
+def _name_has_all_significant_words(name, query):
+    """
+    Sve značajne riječi upita postoje u nazivu.
+    Redoslijed nije bitan; riječi između se preskaču.
+
+    Upit „itana feeder” na
+    „MT13723 MATE ITANA Tournament Spin … Feeder …” → True
+    (prva i treća / bilo koje pozicije — bitno da sve riječi upita postoje).
+    """
+    words = _search_significant_words(query)
+    if not words:
+        return False
+
+    name_f = _search_fold(name or '')
+    if not name_f:
+        return False
+
+    name_tokens = _tokenize_for_match(name)
+    name_token_set = set(name_tokens)
+
+    for w in words:
+        wf = _search_fold(w)
+        if not wf:
+            return False
+        # Tačan token
+        if wf in name_token_set:
+            continue
+        # Prefiks tokena (min 3 znaka) — npr. „itana” u tokenu
+        if len(wf) >= 3 and any(
+            tok == wf or tok.startswith(wf) or wf.startswith(tok)
+            for tok in name_tokens
+            if len(tok) >= 3
+        ):
+            continue
+        # Fallback: podstring u cijelom nazivu
+        if wf in name_f:
+            continue
+        return False
+    return True
+
+
 def _search_relevance_score(product, query):
     """
-    Bodovanje — SAMO naziv, šifra, tag potkategorije.
+    Bodovanje — prioritet: šifra i naziv, pa tag potkategorije.
 
-      šifra tačno 1100 · naziv tačno 1000 · tačan tag potkategorije 950
-      šifra djelomično 900 · naziv počinje 800 · fuzzy tag 790 · naziv sadrži 750
-
-    Tačan tag „kapa” → svi artikli potkategorije „Kape i kačketi” na 950
-    (cijela potkategorija ispred slučajnih naziva s podstringom).
+    „itana feeder” na „… ITANA Tournament … Feeder …” → name_all_words (920)
+    iznad tagova (750/700).
     """
     raw = _normalize_phrase(query)
     if not raw or len(raw) < 2:
@@ -1157,7 +1222,7 @@ def _search_relevance_score(product, query):
     sifra_l = sifra.casefold()
     sifra_f = _search_fold(sifra)
 
-    # —— Šifra artikla (tačno uvijek na vrhu) ——
+    # —— Šifra (prioritet) ——
     if sifra and (sifra_l == q or sifra_f == qf):
         best = max(best, S['exact_sifra'])
     elif sifra and (
@@ -1166,7 +1231,6 @@ def _search_relevance_score(product, query):
     ):
         best = max(best, S['sifra_partial'])
 
-    # Šifre varijacija
     try:
         for v in product.varijacije.all():
             vs = (getattr(v, 'sifra', None) or '').strip()
@@ -1181,17 +1245,20 @@ def _search_relevance_score(product, query):
     except Exception:
         pass
 
-    # —— Naziv ——
+    # —— Naziv (prioritet iznad taga) ——
     if name_l == q or name_f == qf:
         best = max(best, S['exact_name'])
     elif name_l.startswith(q) or name_f.startswith(qf):
         best = max(best, S['name_startswith'])
+    elif _name_has_all_significant_words(name, raw):
+        # itana feeder → ITANA … Tournament … Feeder (redoslijed slobodan)
+        best = max(best, S['name_all_words'])
     elif _text_has_query(name, qf, as_word=(len(qf) <= 4)) or (
         len(qf) > 4 and qf in name_f
     ):
         best = max(best, S['name_contains'])
 
-    # —— Tagovi potkategorije → cijela potkategorija ——
+    # —— Tag potkategorije (ispod naziva/šifre) ——
     try:
         level = _product_subcategory_tag_match_level(product, raw)
         if level >= 2:
