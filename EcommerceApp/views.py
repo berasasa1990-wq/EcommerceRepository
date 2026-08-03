@@ -3530,7 +3530,7 @@ def _create_odoo_sale_order_from_web(request, broj, *, force=False):
         return None
 
     if result.get('ok'):
-        if result.get('existing'):
+        if result.get('existing') and not force:
             messages.info(request, result.get('message') or 'Već postoji u Odoo.')
         else:
             messages.success(request, result.get('message') or 'Odoo narudžba kreirana.')

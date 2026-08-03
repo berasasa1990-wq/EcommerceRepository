@@ -16,6 +16,165 @@ from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
 
 logger = logging.getLogger(__name__)
 
+# Besplatna dostava od 250 KM (web pravilo); ispod → Brza pošta 11 KM u Odoo SO
+ODOO_FREE_SHIPPING_THRESHOLD = Decimal('250.00')
+ODOO_DELIVERY_PRICE = Decimal('11.00')
+ODOO_DELIVERY_LINE_NAME = 'Brza posta dostava'
+ODOO_DELIVERY_PRODUCT_NAMES = (
+    'Brza posta dostava',
+    'Brza pošta dostava',
+    'Brza pošta',
+    'Brza posta',
+    'Dostava Brza pošta',
+    'Dostava Brza posta',
+    'Dostava X-express',
+    'Dostava X express',
+    'Dostava',
+)
+
+
+def _order_goods_amount(order) -> Decimal:
+    """Iznos artikala (bez dostave) — prag za besplatnu dostavu."""
+    try:
+        medjuzbir = Decimal(str(getattr(order, 'medjuzbir', None) or 0))
+    except Exception:
+        medjuzbir = Decimal('0')
+    if medjuzbir > 0:
+        return medjuzbir
+    # Fallback: ukupno − dostava
+    try:
+        ukupno = Decimal(str(getattr(order, 'ukupno', None) or 0))
+        dostava = Decimal(str(getattr(order, 'dostava', None) or 0))
+        return max(Decimal('0'), ukupno - dostava)
+    except Exception:
+        return Decimal('0')
+
+
+def _should_add_brza_posta_delivery(order) -> bool:
+    """True ako je iznos ispod 250 KM → dodaj dostavu 11 KM u Odoo."""
+    try:
+        from .models import SiteSettings
+        settings = SiteSettings.load()
+        threshold = Decimal(str(
+            getattr(settings, 'besplatna_dostava_od', None)
+            or ODOO_FREE_SHIPPING_THRESHOLD
+        ))
+    except Exception:
+        threshold = ODOO_FREE_SHIPPING_THRESHOLD
+    if threshold <= 0:
+        threshold = ODOO_FREE_SHIPPING_THRESHOLD
+    return _order_goods_amount(order) < threshold
+
+
+def _delivery_unit_price(order) -> Decimal:
+    """Cijena dostave za Odoo liniju (default 11 KM)."""
+    try:
+        from .models import SiteSettings
+        settings = SiteSettings.load()
+        price = Decimal(str(
+            getattr(settings, 'dostava_cijena', None) or ODOO_DELIVERY_PRICE
+        ))
+        if price > 0:
+            return price.quantize(Decimal('0.01'))
+    except Exception:
+        pass
+    # Ako web naplaćuje dostavu, koristi taj iznos
+    try:
+        web_dostava = Decimal(str(getattr(order, 'dostava', None) or 0))
+        if web_dostava > 0:
+            return web_dostava.quantize(Decimal('0.01'))
+    except Exception:
+        pass
+    return ODOO_DELIVERY_PRICE
+
+
+def _find_brza_posta_delivery_product(client: OdooClient):
+    """
+    Pronađi Odoo artikal za dostavu.
+    Preferira „Brza posta dostava”; fallback npr. „Dostava X-express” (11 KM).
+    """
+    for name in ODOO_DELIVERY_PRODUCT_NAMES:
+        row = client.find_product_by_name(name)
+        if row:
+            return row
+    # Blaga pretraga: dostava / brza / express, preferiraj cijenu ~11
+    try:
+        rows = client.search_read(
+            'product.product',
+            [
+                ('sale_ok', '=', True),
+                '|', '|',
+                ('name', 'ilike', 'dostav'),
+                ('name', 'ilike', 'brza'),
+                ('name', 'ilike', 'express'),
+            ],
+            ['id', 'name', 'display_name', 'default_code', 'lst_price', 'uom_id'],
+            limit=30,
+        )
+    except OdooError:
+        rows = []
+
+    target = float(ODOO_DELIVERY_PRICE)
+    scored = []
+    for row in rows or []:
+        label = f"{row.get('name') or ''} {row.get('display_name') or ''}".casefold()
+        # Izbaci random artikle (npr. „Goal Post”)
+        if 'dostav' not in label and 'express' not in label and 'brza' not in label:
+            continue
+        if 'dostav' not in label and 'post' in label and 'brza' not in label:
+            continue
+        try:
+            price = float(row.get('lst_price') or 0)
+        except (TypeError, ValueError):
+            price = 0
+        score = 0
+        if 'brza' in label and ('post' in label or 'pošt' in label):
+            score += 100
+        if 'dostav' in label:
+            score += 50
+        if 'express' in label:
+            score += 30
+        if abs(price - target) < 0.05:
+            score += 40
+        elif abs(price - target) <= 1:
+            score += 10
+        scored.append((score, row))
+    if not scored:
+        return None
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return scored[0][1]
+
+
+def _maybe_append_delivery_line(client: OdooClient, order, matched_lines: list) -> tuple[list, str | None]:
+    """
+    Ako je iznos < 250 KM, dodaj liniju „Brza posta dostava” 11 KM.
+    Preko 250 KM — ništa.
+    Vraća (lines, warning_or_None). Ako dostava treba a artikal ne postoji → greška u warning.
+    """
+    if not _should_add_brza_posta_delivery(order):
+        return matched_lines, None
+
+    product = _find_brza_posta_delivery_product(client)
+    if not product:
+        return matched_lines, (
+            'Iznos je ispod 250 KM, ali u Odoo nije pronađen artikal za dostavu '
+            f'(npr. „{ODOO_DELIVERY_LINE_NAME}” ili „Dostava X-express”). '
+            'Kreirajte sale_ok artikal i pokušajte ponovo.'
+        )
+
+    price = float(_delivery_unit_price(order))
+    matched_lines.append({
+        'product_id': int(product['id']),
+        'quantity': 1,
+        'price_unit': price,
+        # Na SO liniji uvijek prikaži „Brza posta dostava” (čak i ako je
+        # Odoo artikal npr. Dostava X-express)
+        'name': ODOO_DELIVERY_LINE_NAME,
+        'matched_by': 'delivery_rule',
+        'web_item_id': None,
+    })
+    return matched_lines, None
+
 
 def _clean_item_name(item) -> str:
     """Naziv za match u Odoo — bez deal/popust napomena dodatih u checkout."""
@@ -109,7 +268,7 @@ def create_odoo_sale_order_for_web_order(order, *, force: bool = False) -> dict:
     if not order:
         return {'ok': False, 'message': 'Narudžba nije pronađena.'}
 
-    # Već sinhronizovano lokalno
+    # Već sinhronizovano lokalno — bez force ne kreira ponovo
     existing_id = getattr(order, 'odoo_sale_order_id', None)
     existing_name = getattr(order, 'odoo_sale_order_name', '') or ''
     if existing_id and not force:
@@ -120,26 +279,37 @@ def create_odoo_sale_order_for_web_order(order, *, force: bool = False) -> dict:
             'sale_order_name': existing_name or str(existing_id),
             'message': (
                 f'Narudžba je već u Odoo Sales kao {existing_name or existing_id}. '
-                f'Ponovno kreiranje nije pokrenuto.'
+                f'Za ponovni unos potvrdite „Odoo narudžba” ponovo.'
             ),
+            'can_force': True,
         }
 
     client = OdooClient.from_settings()
 
-    # Provjeri da li SO već postoji u Odoo po WEB ref
-    remote = client.find_sale_order_by_web_ref(order.broj)
-    if remote and not force:
-        _save_odoo_link(order, remote)
-        return {
-            'ok': True,
-            'existing': True,
-            'sale_order_id': int(remote['id']),
-            'sale_order_name': remote.get('name') or str(remote['id']),
-            'message': (
-                f'U Odoo već postoji Sales narudžba {remote.get("name")} '
-                f'(WEB-{order.broj}).'
-            ),
-        }
+    # Provjeri da li SO već postoji u Odoo po WEB ref (samo bez force)
+    remote = None
+    if not force:
+        remote = client.find_sale_order_by_web_ref(order.broj)
+        if remote:
+            _save_odoo_link(order, remote)
+            return {
+                'ok': True,
+                'existing': True,
+                'sale_order_id': int(remote['id']),
+                'sale_order_name': remote.get('name') or str(remote['id']),
+                'message': (
+                    f'U Odoo već postoji Sales narudžba {remote.get("name")} '
+                    f'(WEB-{order.broj}). Za ponovni unos potvrdite dugme ponovo.'
+                ),
+                'can_force': True,
+            }
+    else:
+        # Zapamti prethodnu vezu za napomenu na novoj SO
+        if not existing_id:
+            remote = client.find_sale_order_by_web_ref(order.broj)
+            if remote:
+                existing_id = int(remote['id'])
+                existing_name = remote.get('name') or str(existing_id)
 
     items = list(order.stavke.select_related('artikal', 'varijacija').all())
     if not items:
@@ -209,12 +379,44 @@ def create_odoo_sale_order_for_web_order(order, *, force: bool = False) -> dict:
             ),
         }
 
+    # Iznos < 250 KM → dodaj Brza posta dostava 11 KM; ≥ 250 → bez dostave
+    delivery_added = False
+    matched_lines, delivery_error = _maybe_append_delivery_line(
+        client, order, matched_lines,
+    )
+    if delivery_error:
+        return {
+            'ok': False,
+            'message': delivery_error,
+            'lines_matched': matched_lines,
+        }
+    delivery_added = any(
+        line.get('matched_by') == 'delivery_rule' for line in matched_lines
+    )
+
     note_parts = [
         f'Web narudžba #{order.broj}',
         f'Email: {order.email}',
     ]
+    if force and (existing_id or existing_name):
+        note_parts.append(
+            f'Ponovni unos iz weba (prethodni Odoo SO: '
+            f'{existing_name or existing_id}).'
+        )
     if order.napomena:
         note_parts.append(f'Napomena kupca: {order.napomena}')
+    goods = _order_goods_amount(order)
+    if delivery_added:
+        note_parts.append(
+            f'Dostava Odoo: Brza posta {_delivery_unit_price(order)} KM '
+            f'(iznos artikala {goods} KM < 250 KM)'
+        )
+    else:
+        note_parts.append(
+            f'Dostava Odoo: besplatna (iznos artikala {goods} KM ≥ 250 KM)'
+            if goods >= ODOO_FREE_SHIPPING_THRESHOLD
+            else f'Iznos artikala: {goods} KM'
+        )
     if order.dostava and Decimal(str(order.dostava)) > 0:
         note_parts.append(f'Dostava (web): {order.dostava} KM')
     if order.popust and Decimal(str(order.popust)) > 0:
@@ -242,26 +444,35 @@ def create_odoo_sale_order_for_web_order(order, *, force: bool = False) -> dict:
     _save_odoo_link(order, so)
 
     logger.info(
-        'Odoo sale.order %s kreiran iz web #%s (partner=%s, lines=%s)',
+        'Odoo sale.order %s kreiran iz web #%s (partner=%s, lines=%s, delivery=%s)',
         so.get('name'),
         order.broj,
         partner_id,
         len(matched_lines),
+        delivery_added,
     )
 
+    delivery_msg = (
+        f', + Brza posta {_delivery_unit_price(order)} KM'
+        if delivery_added
+        else ''
+    )
+    reenter_msg = ' (ponovni unos)' if force else ''
     return {
         'ok': True,
         'existing': False,
+        'reentered': bool(force),
         'sale_order_id': int(so['id']),
         'sale_order_name': so.get('name') or str(so['id']),
         'partner_id': partner_id,
         'partner_created': partner_created,
         'lines_matched': matched_lines,
         'missing': [],
+        'delivery_added': delivery_added,
         'amount_total': so.get('amount_total'),
         'message': (
-            f'Odoo Sales narudžba {so.get("name")} kreirana '
-            f'({len(matched_lines)} stavki'
+            f'Odoo Sales narudžba {so.get("name")} kreirana{reenter_msg} '
+            f'({len(matched_lines)} stavki{delivery_msg}'
             f'{", novi kupac" if partner_created else ""}).'
         ),
     }

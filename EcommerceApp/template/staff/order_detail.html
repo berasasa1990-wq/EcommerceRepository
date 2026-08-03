@@ -22,7 +22,8 @@
             <form method="post" action="{% url 'staff_order_detail' broj=order.broj %}" class="staff-odoo-form"{% if order.odoo_sale_order_id %} data-already-synced="1" data-odoo-name="{{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}"{% endif %}>
                 {% csrf_token %}
                 <input type="hidden" name="action" value="odoo_narudzba">
-                <button type="submit" class="btn btn-sm staff-odoo-order-btn{% if order.odoo_sale_order_id %} is-done{% endif %}" title="{% if order.odoo_sale_order_id %}Već u Odoo: {{ order.odoo_sale_order_name }}{% else %}Kreiraj Sales narudžbu u Odoo{% endif %}">{% if order.odoo_sale_order_id %}Odoo ✓ {{ order.odoo_sale_order_name }}{% else %}Odoo narudžba{% endif %}</button>
+                <input type="hidden" name="force" value="0" class="staff-odoo-force">
+                <button type="submit" class="btn btn-sm staff-odoo-order-btn{% if order.odoo_sale_order_id %} is-done{% endif %}" title="{% if order.odoo_sale_order_id %}Već u Odoo: {{ order.odoo_sale_order_name }} — klik za ponovni unos{% else %}Kreiraj Sales narudžbu u Odoo{% endif %}">{% if order.odoo_sale_order_id %}Odoo ↻ {{ order.odoo_sale_order_name }}{% else %}Odoo narudžba{% endif %}</button>
             </form>
             <a href="{% url 'staff_order_print' broj=order.broj %}"
                class="btn btn-sm staff-print-order-btn{% if order.odstampana %} is-done{% endif %}"
@@ -76,12 +77,17 @@ document.querySelectorAll('.staff-odoo-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
         var already = form.getAttribute('data-already-synced') === '1';
         var name = form.getAttribute('data-odoo-name') || '';
+        var forceInput = form.querySelector('.staff-odoo-force');
         var msg = already
-            ? ('Već postoji u Odoo' + (name ? ' (' + name + ')' : '') + '. Nastaviti?')
+            ? ('Narudžba je već unesena u Odoo' + (name ? ' (' + name + ')' : '') +
+               '.\n\nŽelite li kreirati NOVU Sales narudžbu (ponovni unos)?')
             : 'Kreirati Sales narudžbu u Odoo sa istim artiklima i količinama?';
         if (!window.confirm(msg)) {
             event.preventDefault();
             return;
+        }
+        if (forceInput) {
+            forceInput.value = already ? '1' : '0';
         }
         var btn = form.querySelector('button[type="submit"]');
         if (btn) {
