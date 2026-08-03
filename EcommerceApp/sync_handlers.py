@@ -222,13 +222,16 @@ def upsert_narudzba(payload):
             kolicina=item.get('kolicina', 1),
         )
 
-    if user:
-        card = getattr(user, 'loyalty_kartica', None)
-        if card:
-            from .loyalty import ukupna_potrosnja_korisnika, azuriraj_loyalty_karticu
-            card.ukupna_potrosnja = ukupna_potrosnja_korisnika(user)
-            card.save(update_fields=['ukupna_potrosnja'])
-            azuriraj_loyalty_karticu(card)
+    # Loyalty potrošnja i bez koda na narudžbi (email / telefon / korisnik)
+    try:
+        from .loyalty import azuriraj_loyalty_nakon_narudzbe
+        azuriraj_loyalty_nakon_narudzbe(order)
+    except Exception:
+        if user:
+            card = getattr(user, 'loyalty_kartica', None)
+            if card:
+                from .loyalty import preracunaj_potrosnju_kartice
+                preracunaj_potrosnju_kartice(card)
 
     return {'ok': True, 'broj': order.broj, 'created': created}
 

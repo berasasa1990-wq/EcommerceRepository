@@ -3068,17 +3068,27 @@ def checkout(request):
                     'Narudžba je sačuvana, ali email obavijest nije poslana. Kontaktirajte nas.',
                 )
 
-            # Sync loyalty nakon emaila — ne smije blokirati slanje narudžbe na mail
+            # Sync loyalty nakon emaila — ne smije blokirati slanje narudžbe na mail.
+            # Evidentiraj potrošnju i bez unesenog loyalty koda / popusta (email ili telefon).
             logger.info("Checkout završen, pripremam sync za narudžbu #%s", order.broj)
-            if request.user.is_authenticated:
-                azuriraj_loyalty_nakon_narudzbe(order)
-                card = getattr(request.user, 'loyalty_kartica', None)
+            try:
+                card = azuriraj_loyalty_nakon_narudzbe(order)
                 if card:
                     logger.info(
-                        "Automatski sync korisnik (kartica) za kupca %s nakon narudžbe",
-                        request.user.email,
+                        "Loyalty potrošnja ažurirana za karticu %s (narudžba #%s, kod nije obavezan)",
+                        card.kod,
+                        order.broj,
                     )
-                    sync_korisnik(request.user)
+                    sync_korisnik(card.user)
+                elif request.user.is_authenticated:
+                    card = getattr(request.user, 'loyalty_kartica', None)
+                    if card:
+                        sync_korisnik(request.user)
+            except Exception:
+                logger.exception(
+                    'Loyalty ažuriranje nije uspjelo za narudžbu #%s',
+                    order.broj,
+                )
             result = sync_narudzba(order)
             if result is None:
                 logger.warning("sync_narudzba vratio None (vjerovatno SYNC nije aktivan)")
@@ -5922,11 +5932,10 @@ def staff_loyalty_system(request):
                 or (selected_card.user.email or '').strip().lower()
             )
 
-            user_orders = list(
-                Order.objects.filter(korisnik=selected_card.user)
-                .prefetch_related('stavke')
-                .order_by('-kreirana')[:50]
-            )
+            from .loyalty import online_orders_for_loyalty_card
+
+            # Online (i gost) narudžbe po nalogu / emailu / telefonu — bez obaveznog koda
+            user_orders = online_orders_for_loyalty_card(selected_card, limit=50)
             manual_purchases = list(
                 LoyaltyPurchase.objects.filter(kartica=selected_card)
                 .select_related('kreirao')

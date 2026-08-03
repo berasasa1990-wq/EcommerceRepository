@@ -14626,6 +14626,15 @@ button.nav-action-link {
     border-radius: 8px;
 }
 
+.staff-online-order-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    min-width: 0;
+    flex: 1 1 220px;
+}
+
 .staff-online-order-id {
     display: flex;
     flex-wrap: wrap;
@@ -14639,11 +14648,173 @@ button.nav-action-link {
     color: #111;
 }
 
+.staff-online-order-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.staff-online-order-customer {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: min(280px, 55vw);
+}
+
+.staff-online-order-date {
+    font-size: 12px;
+    color: var(--gray-600);
+}
+
+.staff-online-order-amount {
+    font-size: 17px;
+    font-weight: 800;
+    color: #28403d;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+    margin-left: auto;
+}
+
 .staff-online-order-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+}
+
+.staff-order-preview-btn {
+    background: #28403d !important;
+    border: 1px solid #28403d !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+}
+
+.staff-order-preview-btn:hover {
+    background: #1e302e !important;
+    color: #fff !important;
+}
+
+@media (max-width: 768px) {
+    .staff-orders-page {
+        padding: 20px 12px 48px;
+    }
+
+    .staff-orders-header h1 {
+        font-size: 24px;
+    }
+
+    .staff-orders-search-row--input {
+        grid-template-columns: 1fr;
+    }
+
+    .staff-orders-search-row--input .btn {
+        width: 100%;
+    }
+
+    .staff-online-order-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px 12px;
+    }
+
+    .staff-online-order-main {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "id amount"
+            "meta amount";
+        column-gap: 12px;
+        row-gap: 4px;
+        align-items: start;
+        flex: none;
+        width: 100%;
+    }
+
+    .staff-online-order-id {
+        grid-area: id;
+    }
+
+    .staff-online-order-meta {
+        grid-area: meta;
+    }
+
+    .staff-online-order-amount {
+        grid-area: amount;
+        margin-left: 0;
+        align-self: center;
+        font-size: 18px;
+        text-align: right;
+    }
+
+    .staff-online-order-customer {
+        max-width: none;
+        white-space: normal;
+    }
+
+    .staff-online-order-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .staff-online-order-actions .btn,
+    .staff-online-order-actions .order-card-link,
+    .staff-online-order-actions .staff-complete-form,
+    .staff-online-order-actions .staff-complete-btn {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    .staff-online-order-actions .staff-complete-form {
+        grid-column: 1 / -1;
+    }
+
+    .staff-online-order-actions .staff-order-preview-btn {
+        grid-column: 1 / -1;
+    }
+
+    .staff-order-detail-page {
+        padding: 16px 10px 48px;
+        max-width: 100%;
+        overflow-x: clip;
+    }
+
+    .staff-order-detail-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .staff-order-detail-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .staff-order-detail-actions .btn,
+    .staff-order-detail-actions .staff-complete-form,
+    .staff-order-detail-actions .staff-complete-btn {
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .staff-order-detail-actions .staff-complete-form {
+        grid-column: 1 / -1;
+    }
+
+    .staff-order-detail-meta {
+        font-size: 13px;
+        line-height: 1.5;
+    }
 }
 
 .staff-print-order-btn,

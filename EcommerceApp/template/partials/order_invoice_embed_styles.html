@@ -143,6 +143,87 @@
     }
     .staff-order-invoice .order-footer a { color: #28403d; }
 
+    /* Mobilni pregled računa */
+    @media (max-width: 768px) {
+        .staff-order-invoice {
+            padding: 12px 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .staff-order-invoice .doc {
+            max-width: 100%;
+            min-width: 0;
+        }
+        .staff-order-invoice .doc-header-table,
+        .staff-order-invoice .parties-table {
+            display: block;
+            width: 100%;
+        }
+        .staff-order-invoice .doc-header-table tbody,
+        .staff-order-invoice .doc-header-table tr,
+        .staff-order-invoice .parties-table tbody,
+        .staff-order-invoice .parties-table tr {
+            display: block;
+            width: 100%;
+        }
+        .staff-order-invoice .doc-header-table td,
+        .staff-order-invoice .parties-table td {
+            display: block;
+            width: 100% !important;
+            padding-right: 0;
+            padding-bottom: 12px;
+            text-align: left !important;
+        }
+        .staff-order-invoice .doc-meta {
+            text-align: left;
+        }
+        .staff-order-invoice .doc-title {
+            font-size: 18px;
+        }
+        .staff-order-invoice .doc-logo {
+            max-height: 44px;
+        }
+        .staff-order-invoice .items-table {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #c4bc96;
+        }
+        .staff-order-invoice .items-table thead,
+        .staff-order-invoice .items-table tbody,
+        .staff-order-invoice .items-table tr {
+            width: 100%;
+        }
+        .staff-order-invoice .items-table th,
+        .staff-order-invoice .items-table td {
+            padding: 8px 6px;
+            font-size: 12px;
+        }
+        .staff-order-invoice .items-table th {
+            font-size: 10px;
+        }
+        .staff-order-invoice .totals-wrap {
+            margin-top: 14px;
+        }
+        .staff-order-invoice .totals-table {
+            width: 100%;
+            max-width: 100%;
+            margin-left: 0;
+        }
+        .staff-order-invoice .totals-table td {
+            font-size: 14px;
+        }
+        .staff-order-invoice .totals-table tr.total-row td {
+            font-size: 17px;
+        }
+        .staff-order-invoice .order-footer {
+            font-size: 11px;
+            margin-top: 18px;
+        }
+    }
+
     @media print {
         .staff-order-detail-toolbar,
         .account-back-link,

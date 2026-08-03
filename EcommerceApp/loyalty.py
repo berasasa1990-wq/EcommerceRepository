@@ -546,9 +546,8 @@ def commit_loyalty_purchase(
         verifikacija=verifikacija,
         kreirao=staff_user if getattr(staff_user, 'is_authenticated', False) else None,
     )
-    card.ukupna_potrosnja = (card.ukupna_potrosnja or Decimal('0')) + iznos_d
-    card.save(update_fields=['ukupna_potrosnja'])
-    azuriraj_loyalty_karticu(card)
+    # Preračunaj iz online + svih evidentiranih (uključujući ovu) — bez dvostrukog zbrajanja
+    preracunaj_potrosnju_kartice(card)
     return purchase
 
 
@@ -675,15 +674,152 @@ def tier_info(nivo):
     return LOYALTY_TIERS[0]
 
 
-def ukupna_potrosnja_korisnika(user):
-    if not user or not user.is_authenticated:
-        return Decimal('0')
-    total = (
-        Order.objects.filter(korisnik=user)
-        .exclude(status=Order.Status.OTKAZANA)
-        .aggregate(total=Sum('ukupno'))['total']
+def _orders_for_loyalty_user(user):
+    """
+    Online narudžbe koje pripadaju loyalty kupcu:
+    - povezane preko korisnik FK
+    - ili email (gost checkout s istim emailom)
+    - ili telefon (isti BA mobilni, bilo koji format)
+    Bez otkazanih. Distinct po id.
+    """
+    if not user or not getattr(user, 'pk', None):
+        return Order.objects.none()
+
+    base = Order.objects.exclude(status=Order.Status.OTKAZANA)
+    q = Q(korisnik=user)
+    email = normalizuj_email(getattr(user, 'email', '') or '')
+    if email:
+        q |= Q(email__iexact=email)
+
+    order_ids = set(
+        base.filter(q).values_list('pk', flat=True),
     )
+
+    profil = getattr(user, 'profil', None)
+    phone_key = ba_mobile_e164((profil.telefon if profil else '') or '')
+    if phone_key and phone_key.startswith('387') and len(phone_key) >= 11:
+        national = phone_key[3:]  # npr. 65666666
+        candidates = (
+            base.exclude(pk__in=order_ids)
+            .exclude(telefon='')
+            .filter(
+                Q(telefon__icontains=national)
+                | Q(telefon__icontains=f'0{national}')
+            )
+            .only('pk', 'telefon')
+        )
+        for order in candidates.iterator(chunk_size=200):
+            other = ba_mobile_e164(order.telefon)
+            if other and other == phone_key:
+                order_ids.add(order.pk)
+
+    if not order_ids:
+        return Order.objects.none()
+    return base.filter(pk__in=order_ids)
+
+
+def ukupna_potrosnja_korisnika(user):
+    """Samo online narudžbe (bez ručnih LoyaltyPurchase)."""
+    if not user or not getattr(user, 'pk', None):
+        return Decimal('0')
+    total = _orders_for_loyalty_user(user).aggregate(total=Sum('ukupno'))['total']
     return Decimal(total or 0)
+
+
+def ukupna_potrosnja_za_karticu(card):
+    """
+    Ukupna potrošnja kartice = online narudžbe (FK / email / telefon)
+    + evidentirane prodavnica kupovine (LoyaltyPurchase).
+    Ne ovisi o tome je li unesen loyalty kod / popust na narudžbi.
+    """
+    if not card:
+        return Decimal('0')
+    online = ukupna_potrosnja_korisnika(card.user)
+    manual = (
+        LoyaltyPurchase.objects.filter(kartica=card)
+        .aggregate(total=Sum('iznos'))['total']
+    )
+    return Decimal(online or 0) + Decimal(manual or 0)
+
+
+def online_orders_for_loyalty_card(card, *, limit=50):
+    """Lista online narudžbi za timeline na loyalty kartici."""
+    if not card:
+        return []
+    return list(
+        _orders_for_loyalty_user(card.user)
+        .prefetch_related('stavke')
+        .order_by('-kreirana')[:limit]
+    )
+
+
+def pronadji_loyalty_karticu_za_narudzbu(order):
+    """
+    Pronađi postojeću loyalty karticu za narudžbu — BEZ uslova da je unesen kod.
+    Redoslijed: korisnik → kupon/loyalty kod → email → telefon.
+    Ne kreira novu karticu.
+    """
+    if not order:
+        return None
+
+    # 1) Prijavljeni korisnik
+    if order.korisnik_id:
+        card = getattr(order.korisnik, 'loyalty_kartica', None)
+        if card:
+            return card
+
+    # 2) Unesen loyalty / kupon kod (ako postoji)
+    kod = (getattr(order, 'kupon_kod', None) or '').strip()
+    if kod:
+        card = _pronadji_loyalty_karticu_po_kodu(kod)
+        if card:
+            return card
+        coupon = (
+            Coupon.objects
+            .filter(kod__iexact=kod)
+            .select_related('loyalty_kartica', 'loyalty_kartica__user')
+            .first()
+        )
+        if coupon and coupon.loyalty_kartica_id:
+            return coupon.loyalty_kartica
+
+    # 3) Email
+    email = normalizuj_email(getattr(order, 'email', '') or '')
+    if email:
+        user = (
+            User.objects
+            .filter(email__iexact=email)
+            .select_related('loyalty_kartica')
+            .first()
+        )
+        if user:
+            card = getattr(user, 'loyalty_kartica', None)
+            if card:
+                return card
+
+    # 4) Telefon
+    phone_key = ba_mobile_e164(getattr(order, 'telefon', '') or '')
+    if phone_key:
+        for profil in UserProfile.objects.select_related(
+            'user', 'user__loyalty_kartica',
+        ).exclude(telefon=''):
+            other = ba_mobile_e164(profil.telefon)
+            if other and other == phone_key:
+                card = getattr(profil.user, 'loyalty_kartica', None)
+                if card:
+                    return card
+    return None
+
+
+def povezi_narudzbu_sa_loyalty_korisnikom(order, card):
+    """Ako je gost narudžba — veži na vlasnika kartice (za buduće sumiranje / timeline)."""
+    if not order or not card or not card.user_id:
+        return order
+    if order.korisnik_id:
+        return order
+    order.korisnik = card.user
+    order.save(update_fields=['korisnik'])
+    return order
 
 
 def sync_loyalty_coupon(card):
@@ -707,6 +843,17 @@ def azuriraj_loyalty_karticu(card):
     card.save(update_fields=['nivo', 'azurirana'])
     sync_loyalty_coupon(card)
     return card
+
+
+def preracunaj_potrosnju_kartice(card):
+    """Preračunaj ukupnu potrošnju i nivo iz narudžbi + evidentiranih kupovina."""
+    if not card:
+        return None
+    if not card.barkod:
+        card.barkod = card.kod
+    card.ukupna_potrosnja = ukupna_potrosnja_za_karticu(card)
+    card.save(update_fields=['ukupna_potrosnja', 'barkod', 'azurirana'])
+    return azuriraj_loyalty_karticu(card)
 
 
 def kreiraj_loyalty_karticu(user):
@@ -736,27 +883,29 @@ def kreiraj_loyalty_karticu(user):
 def osiguraj_loyalty_karticu(user):
     card = getattr(user, 'loyalty_kartica', None)
     if card:
-        return azuriraj_loyalty_karticu(card)
+        return preracunaj_potrosnju_kartice(card)
     return kreiraj_loyalty_karticu(user)
 
 
 def azuriraj_loyalty_nakon_narudzbe(order):
-    if not order.korisnik_id:
-        return
-    kod = _generisi_kod(order.korisnik)
-    card, _ = LoyaltyCard.objects.get_or_create(
-        user=order.korisnik,
-        defaults={
-            'kod': kod,
-            'barkod': kod,
-            'nivo': 'bronza',
-        },
-    )
-    if not card.barkod:
-        card.barkod = card.kod
-    card.ukupna_potrosnja = ukupna_potrosnja_korisnika(order.korisnik)
-    card.save(update_fields=['ukupna_potrosnja', 'barkod'])
-    azuriraj_loyalty_karticu(card)
+    """
+    Evidentiraj online kupovinu na loyalty kartici iako kupac
+    NIJE unio kod kartice i NIJE dobio popust.
+
+    Kartica se pronalazi po: prijavljenom nalogu, kupon kodu, emailu ili telefonu.
+    Ako kartica ne postoji — ne kreira se automatski (samo prijava / izdavanje).
+    """
+    if not order:
+        return None
+    card = pronadji_loyalty_karticu_za_narudzbu(order)
+    if not card:
+        # Prijavljeni korisnik bez kartice: izdaj karticu pa upiši potrošnju
+        if order.korisnik_id:
+            card = osiguraj_loyalty_karticu(order.korisnik)
+        else:
+            return None
+    povezi_narudzbu_sa_loyalty_korisnikom(order, card)
+    return preracunaj_potrosnju_kartice(card)
 
 
 def _pronadji_loyalty_karticu_po_kodu(kod):
