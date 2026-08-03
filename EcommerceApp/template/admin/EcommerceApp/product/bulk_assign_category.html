@@ -132,6 +132,7 @@
     .bulk-product-card.has-category {
         border-color: #86efac;
         box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.12);
+        opacity: 0.88;
     }
     .bulk-product-card__head {
         display: flex;
@@ -258,6 +259,26 @@
         font-size: 13px;
         color: #444;
     }
+    .bulk-section-label {
+        margin: 18px 0 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+    .bulk-section-label--pending {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #9a3412;
+    }
+    .bulk-section-label--ready {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        margin-top: 22px;
+    }
 </style>
 {% endblock %}
 
@@ -278,8 +299,8 @@
         <ol>
             <li>Označi (✓) samo one kojima treba <em>ista</em> kategorija (npr. prvih 10).</li>
             <li>Gore pronađi kategoriju → <strong>Dodijeli označenima</strong>.</li>
-            <li>Ponovi za sljedeću grupu (druga kategorija, drugi ✓).</li>
-            <li>Na kraju <strong>Save</strong> — snima se sve odjednom (ništa se ne gubi dok ne sačuvaš).</li>
+            <li>Ti artikli idu <strong>na dno</strong> (zeleno) — gore ostaju samo oni bez kategorije.</li>
+            <li>Ponovi za sljedeću grupu, pa na kraju <strong>Save</strong>.</li>
         </ol>
         Možeš i pojedinačno tražiti kategoriju ispod svakog artikla.
     </div>
@@ -317,8 +338,17 @@
             </div>
         </div>
 
+        <div class="bulk-section-label bulk-section-label--pending" id="sectionPending" hidden>
+            Još bez nove kategorije — radi na ovima prvo
+        </div>
+        <div id="bulkCardsPending" class="bulk-cards-group"></div>
+        <div class="bulk-section-label bulk-section-label--ready" id="sectionReady" hidden>
+            Već dodijeljeno (pomaknuto na dno — ne smetaju)
+        </div>
+        <div id="bulkCardsReady" class="bulk-cards-group"></div>
+
         {% for product in queryset %}
-        <div class="bulk-product-card" data-product-card="{{ product.pk }}">
+        <div class="bulk-product-card{% if product.kategorija %} bulk-product-card--had-cat{% endif %}" data-product-card="{{ product.pk }}" data-had-category="{% if product.kategorija %}1{% else %}0{% endif %}">
             <div class="bulk-product-card__head">
                 <label class="bulk-product-card__check" title="Samo za batch „Dodijeli označenima” — Save snima sve s odabranom kategorijom">
                     <input type="checkbox" name="include_product" value="{{ product.pk }}" checked class="include-check">
@@ -383,13 +413,55 @@
         }).slice(0, 50);
     }
 
-    function updateStats() {
+    function cardHasNewCategory(card) {
+        var hidden = card.querySelector('.cat-hidden-input');
+        return !!(hidden && hidden.value && hidden.value !== '0' && hidden.value !== '__clear__');
+    }
+
+    /**
+     * Kartice sa dodijeljenom (novom) kategorijom → dno.
+     * One bez → vrh. Tako uvijek vidiš prvo one kojima još treba kategorija.
+     */
+    function resortProductCards() {
+        var pendingHost = document.getElementById('bulkCardsPending');
+        var readyHost = document.getElementById('bulkCardsReady');
+        var sectionPending = document.getElementById('sectionPending');
+        var sectionReady = document.getElementById('sectionReady');
+        if (!pendingHost || !readyHost) return;
+
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.bulk-product-card'));
+        var pending = [];
+        var ready = [];
+        cards.forEach(function(card) {
+            if (cardHasNewCategory(card)) ready.push(card);
+            else pending.push(card);
+        });
+
+        // Stabilan redoslijed unutar grupe (originalni DOM red)
+        pending.forEach(function(card) { pendingHost.appendChild(card); });
+        ready.forEach(function(card) { readyHost.appendChild(card); });
+
+        if (sectionPending) {
+            sectionPending.hidden = pending.length === 0;
+            sectionPending.textContent = pending.length
+                ? ('Još bez nove kategorije (' + pending.length + ') — radi na ovima prvo')
+                : 'Svi imaju kategoriju';
+        }
+        if (sectionReady) {
+            sectionReady.hidden = ready.length === 0;
+            sectionReady.textContent = ready.length
+                ? ('Već dodijeljeno — ' + ready.length + ' na dnu (ne smetaju)')
+                : '';
+        }
+    }
+
+    function updateStats(opts) {
+        opts = opts || {};
         var total = 0, ready = 0, pending = 0, checked = 0;
         document.querySelectorAll('.bulk-product-card').forEach(function(card) {
             total += 1;
             var include = card.querySelector('.include-check');
-            var hidden = card.querySelector('.cat-hidden-input');
-            var hasCat = hidden && hidden.value && hidden.value !== '0';
+            var hasCat = cardHasNewCategory(card);
             var isOn = include && include.checked;
             if (isOn) checked += 1;
             if (hasCat) {
@@ -426,6 +498,9 @@
             saveBtn.value = ready
                 ? ('Save — sačuvaj ' + ready + ' dodjel(e)')
                 : 'Save — sačuvaj sve dodjele';
+        }
+        if (opts.resort !== false) {
+            resortProductCards();
         }
     }
 
@@ -516,29 +591,29 @@
     document.querySelectorAll('.cat-picker').forEach(bindPicker);
 
     document.querySelectorAll('.include-check').forEach(function(cb) {
-        cb.addEventListener('change', updateStats);
+        cb.addEventListener('change', function() {
+            updateStats({ resort: false });
+        });
     });
 
     document.getElementById('selectAllProducts')?.addEventListener('click', function() {
         document.querySelectorAll('.include-check').forEach(function(cb) {
             cb.checked = true;
         });
-        updateStats();
+        updateStats({ resort: false });
     });
     document.getElementById('deselectAllProducts')?.addEventListener('click', function() {
         document.querySelectorAll('.include-check').forEach(function(cb) {
             cb.checked = false;
         });
-        updateStats();
+        updateStats({ resort: false });
     });
     document.getElementById('selectWithoutCat')?.addEventListener('click', function() {
         document.querySelectorAll('.bulk-product-card').forEach(function(card) {
             var include = card.querySelector('.include-check');
-            var hidden = card.querySelector('.cat-hidden-input');
-            var hasCat = hidden && hidden.value;
-            if (include) include.checked = !hasCat;
+            if (include) include.checked = !cardHasNewCategory(card);
         });
-        updateStats();
+        updateStats({ resort: false });
     });
 
     var globalSearch = document.getElementById('globalCatSearch');
@@ -592,20 +667,26 @@
             alert('Nijedan artikal nije označen (✓ U grupi / batch).');
             return;
         }
-        // Skini ✓ s onih koji već imaju kategoriju — lakše biraš sljedeću grupu.
+        // Skini ✓ s onih koji već imaju kategoriju i pomakni ih na dno —
+        // gore ostaju samo oni kojima još treba kategorija.
         // Save i dalje snima SVE s odabranom kategorijom (ne ovisi o ✓).
         document.querySelectorAll('.bulk-product-card').forEach(function(card) {
             var include = card.querySelector('.include-check');
-            var hidden = card.querySelector('.cat-hidden-input');
-            if (include && hidden && hidden.value) {
+            if (include && cardHasNewCategory(card)) {
                 include.checked = false;
             }
         });
-        updateStats();
+        updateStats({ resort: true });
+        // Scroll na vrh liste (preostali bez kategorije)
+        var pendingHost = document.getElementById('bulkCardsPending');
+        if (pendingHost) {
+            pendingHost.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
         alert(
-            '„' + cat.label + '” postavljena na ' + n + ' artikala (zeleno „Spremno”).\n\n' +
-            'Sljedeća grupa: ✓ artikle → druga kategorija → Dodijeli označenima.\n' +
-            'Na kraju Save — snima sve spremne, i one bez ✓.'
+            '„' + cat.label + '” postavljena na ' + n + ' artikala.\n\n' +
+            'Ti su pomaknuti na dno. Gore su samo oni bez kategorije.\n' +
+            'Sljedeća grupa: ✓ → druga kategorija → Dodijeli označenima.\n' +
+            'Na kraju Save — snima sve spremne.'
         );
     });
 
@@ -624,7 +705,32 @@
         }
     });
 
-    updateStats();
+    // Početni redoslijed: prvo bez kategorije na sajtu, pa oni koji već imaju
+    (function initialOrder() {
+        var pendingHost = document.getElementById('bulkCardsPending');
+        var readyHost = document.getElementById('bulkCardsReady');
+        if (!pendingHost || !readyHost) return;
+        var form = document.getElementById('bulkCatForm');
+        if (!form) return;
+        var cards = Array.prototype.slice.call(form.querySelectorAll('.bulk-product-card'));
+        cards.forEach(function(card) {
+            // Na load još nema "nove" kategorije — sortiraj po trenutnoj na sajtu
+            // (bez kategorije gore, s postojećom blago ispod unutar pending)
+            pendingHost.appendChild(card);
+        });
+        // Unutar pending: prvo bez postojeće kategorije na sajtu
+        var without = [];
+        var withExisting = [];
+        Array.prototype.slice.call(pendingHost.querySelectorAll('.bulk-product-card')).forEach(function(card) {
+            if (card.getAttribute('data-had-category') === '1') withExisting.push(card);
+            else without.push(card);
+        });
+        without.concat(withExisting).forEach(function(card) {
+            pendingHost.appendChild(card);
+        });
+    })();
+
+    updateStats({ resort: true });
 })();
 </script>
 {% endblock %}

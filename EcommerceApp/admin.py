@@ -2137,9 +2137,18 @@ class ProductAdmin(admin.ModelAdmin):
         Lista svih označenih artikala → po artiklu biraš kategoriju
         (ili isključi artikal) → jedan Save na kraju.
         """
+        # Prvo artikli bez kategorije (treba dodjela), pa oni koji već imaju.
+        from django.db.models import Case, IntegerField, Value, When
+
         queryset = queryset.select_related(
             'kategorija', 'kategorija__roditelj', 'brend',
-        ).order_by('naziv')
+        ).annotate(
+            _needs_category=Case(
+                When(kategorija__isnull=True, then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            ),
+        ).order_by('_needs_category', 'naziv')
 
         categories = []
         for category in Category.objects.filter(aktivan=True).select_related(
