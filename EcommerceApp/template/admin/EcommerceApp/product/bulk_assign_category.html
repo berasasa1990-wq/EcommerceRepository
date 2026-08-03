@@ -3,34 +3,138 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-    .bulk-assign-form {
-        max-width: 980px;
-        margin-top: 20px;
+    .bulk-cat-page { max-width: 960px; margin-top: 12px; }
+    .bulk-cat-intro {
+        color: #555;
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 0 0 18px;
+        max-width: 720px;
+    }
+    .bulk-cat-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+        margin-bottom: 18px;
+        padding: 14px 16px;
+        background: #f7f9f8;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+    }
+    .bulk-cat-toolbar .field {
+        flex: 1 1 280px;
+        min-width: 0;
+    }
+    .bulk-cat-toolbar label {
+        display: block;
+        font-weight: 600;
+        font-size: 12px;
+        margin-bottom: 6px;
+        color: #333;
+    }
+    .bulk-cat-toolbar .cat-picker-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .bulk-cat-toolbar input[type="text"],
+    .bulk-product-card input[type="text"] {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-family: inherit;
+    }
+    .bulk-cat-toolbar input[type="text"]:focus,
+    .bulk-product-card input[type="text"]:focus {
+        border-color: #417690;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
+    }
+    .bulk-cat-toolbar .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .bulk-cat-toolbar button,
+    .bulk-product-card button.cat-search-btn,
+    .bulk-product-card button.cat-choose-btn {
+        padding: 7px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #417690;
+        background: #417690;
+        color: #fff;
+    }
+    .bulk-cat-toolbar button.secondary,
+    .bulk-product-card button.secondary {
+        background: #fff;
+        color: #333;
+        border-color: #bbb;
+    }
+    .bulk-meta {
+        margin: 0 0 14px;
+        font-size: 13px;
+        color: #444;
     }
     .bulk-product-card {
-        margin-bottom: 14px;
+        margin-bottom: 12px;
         padding: 14px 16px;
         border: 1px solid #e5e5e5;
         border-radius: 8px;
         background: #fff;
+        transition: opacity 0.15s ease, border-color 0.15s ease;
+    }
+    .bulk-product-card.is-excluded {
+        opacity: 0.55;
+        border-style: dashed;
+        background: #fafafa;
+    }
+    .bulk-product-card__head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+    .bulk-product-card__check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0;
+        cursor: pointer;
+        user-select: none;
+    }
+    .bulk-product-card__check input {
+        width: 16px;
+        height: 16px;
     }
     .bulk-product-card h3 {
-        margin: 0 0 4px;
+        margin: 0;
         font-size: 15px;
         font-weight: 600;
+        flex: 1 1 200px;
+    }
+    .bulk-product-card h3 .sifra {
+        color: #888;
+        font-weight: 400;
+        font-size: 13px;
     }
     .product-current-meta {
         color: #666;
         font-size: 12px;
-        margin: 0 0 12px;
+        margin: 0 0 10px;
+        width: 100%;
     }
-    .field-block {
-        margin-bottom: 12px;
-    }
-    .field-block:last-child {
-        margin-bottom: 0;
-    }
-    .field-block > label {
+    .field-block > .lbl {
         display: block;
         font-weight: 600;
         font-size: 12px;
@@ -41,72 +145,60 @@
         display: flex;
         gap: 8px;
         align-items: center;
-        max-width: 480px;
+        max-width: 560px;
     }
-    .cat-picker-row input[type="text"],
-    .tag-input {
-        flex: 1;
-        width: 100%;
-        max-width: 480px;
-        padding: 7px 10px;
-        font-size: 14px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-        font-family: inherit;
-    }
-    .cat-picker-row input[type="text"]:focus,
-    .tag-input:focus {
-        border-color: #417690;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
+    .cat-results {
+        margin-top: 6px;
     }
     .cat-results .cat-result {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 6px 8px;
+        gap: 10px;
+        padding: 7px 10px;
         border: 1px solid #ddd;
         margin-top: 4px;
         background: #fff;
-        border-radius: 3px;
-        max-width: 480px;
+        border-radius: 4px;
+        max-width: 560px;
     }
-    .cat-results .cat-result:hover {
-        background: #f9f9f9;
-    }
-    .cat-results .cat-result button {
-        padding: 3px 8px;
-        font-size: 12px;
-    }
+    .cat-results .cat-result:hover { background: #f9f9f9; }
     .cat-chosen {
         margin-top: 6px;
-        padding: 6px 8px;
+        padding: 8px 10px;
         background: #e8f5e9;
         border: 1px solid #4caf50;
-        border-radius: 3px;
+        border-radius: 4px;
         font-size: 13px;
-        max-width: 480px;
+        max-width: 560px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
     }
+    .cat-chosen strong { font-weight: 700; }
     .field-hint {
         color: #888;
         font-size: 11px;
-        margin-top: 5px;
+        margin: 6px 0 0;
     }
     .bulk-assign-actions {
         margin-top: 22px;
         display: flex;
+        flex-wrap: wrap;
         gap: 12px;
         align-items: center;
-        padding-top: 12px;
+        padding-top: 14px;
         border-top: 1px solid #eee;
+        position: sticky;
+        bottom: 0;
+        background: #f8f8f8;
+        padding: 14px 0;
+        z-index: 2;
     }
-    .help-intro {
-        color: #666;
-        font-size: 13px;
-        margin: 8px 0 16px;
-        max-width: 980px;
-        line-height: 1.45;
+    .bulk-assign-actions .default {
+        font-size: 14px;
+        padding: 10px 18px;
     }
 </style>
 {% endblock %}
@@ -116,70 +208,89 @@
     <a href="{% url 'admin:index' %}">Početna</a>
     &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
     &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
-    &rsaquo; Kategorija + tagovi
+    &rsaquo; Dodjela kategorije
 </div>
 {% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <h1>Dodjela kategorije i tagova</h1>
-    <p class="help-intro">
-        Za <strong>svaki artikal</strong> možeš odabrati kategoriju i/ili unijeti tagove (zarezom, više tagova).
-        Polja mogu ostati prazna. <strong>Save / Primjeni</strong> snima i kategoriju i tagove gdje si unio.
-        Tagovi se ne dupliraju ako artikal već ima taj tag.
+<div id="content-main" class="bulk-cat-page">
+    <h1>Dodjela kategorije po artiklu</h1>
+    <p class="bulk-cat-intro">
+        Ispod su svi artikli koje si označio. Za svaki možeš
+        <strong>uključiti/isključiti</strong> i odabrati <strong>svoju kategoriju</strong>.
+        Na kraju jedan <strong>Save</strong> snima sve.
+        Opcija „Primijeni na sve uključene” brzo stavlja istu kategoriju na sve označene, pa možeš pojedinačno mijenjati.
     </p>
 
-    <form method="post" class="bulk-assign-form">
+    <p class="bulk-meta"><strong>{{ queryset|length }}</strong> artikal/a u listi</p>
+
+    <form method="post" class="bulk-assign-form" id="bulkCatForm">
         {% csrf_token %}
         <input type="hidden" name="action" value="{{ action_name }}">
         {% for product in queryset %}
         <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
         {% endfor %}
 
+        <div class="bulk-cat-toolbar" id="bulkCatToolbar">
+            <div class="field">
+                <label>Brza kategorija (za sve uključene)</label>
+                <div class="cat-picker-row">
+                    <input type="text" id="globalCatSearch" placeholder="Pretraži kategorije…" autocomplete="off">
+                    <button type="button" id="globalCatSearchBtn">Nađi</button>
+                </div>
+                <div class="cat-results" id="globalCatResults"></div>
+                <input type="hidden" id="globalCatId" value="">
+            </div>
+            <div class="btn-row">
+                <button type="button" id="applyGlobalCat" class="secondary">Primijeni na sve uključene</button>
+                <button type="button" id="selectAllProducts" class="secondary">Uključi sve</button>
+                <button type="button" id="deselectAllProducts" class="secondary">Isključi sve</button>
+            </div>
+        </div>
+
         {% for product in queryset %}
-        <div class="bulk-product-card">
-            <h3>{{ product.naziv }}{% if product.sifra %} <span style="color:#888;font-weight:400;font-size:13px">({{ product.sifra }})</span>{% endif %}</h3>
+        <div class="bulk-product-card" data-product-card="{{ product.pk }}">
+            <div class="bulk-product-card__head">
+                <label class="bulk-product-card__check">
+                    <input type="checkbox" name="include_product" value="{{ product.pk }}" checked class="include-check">
+                    Uključi
+                </label>
+                <h3>
+                    {{ product.naziv }}
+                    {% if product.sifra %}<span class="sifra">({{ product.sifra }})</span>{% endif %}
+                </h3>
+            </div>
             <p class="product-current-meta">
-                {% if product.kategorija %}Kategorija: {{ product.kategorija }}{% else %}Bez kategorije{% endif %}
-                {% with tags=product.tagovi.all %}
-                {% if tags %}
-                · Tagovi: {% for t in tags %}{{ t.naziv }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                {% if product.kategorija %}
+                Trenutno: <strong>{{ product.kategorija }}</strong>
                 {% else %}
-                · Bez tagova
+                Trenutno: <em>bez kategorije</em>
                 {% endif %}
-                {% endwith %}
+                {% if product.brend %} · Brend: {{ product.brend.naziv }}{% endif %}
             </p>
 
             <div class="field-block">
-                <label>Kategorija (opcionalno)</label>
-                <input type="hidden" name="kategorija_{{ product.pk }}" value="" class="cat-hidden-input" data-product-id="{{ product.pk }}">
+                <span class="lbl">Nova kategorija</span>
+                <input type="hidden"
+                       name="kategorija_{{ product.pk }}"
+                       value=""
+                       class="cat-hidden-input"
+                       data-product-id="{{ product.pk }}">
                 <div class="cat-picker" data-product-id="{{ product.pk }}">
                     <div class="cat-picker-row">
-                        <input type="text" class="cat-search" placeholder="Pretraži kategorije (npr. štap, mašinica…)">
+                        <input type="text" class="cat-search" placeholder="Pretraži kategorije…" autocomplete="off">
                         <button type="button" class="cat-search-btn">Nađi</button>
+                        <button type="button" class="secondary cat-clear-btn" title="Bez promjene / obriši odabir">Obriši</button>
                     </div>
                     <div class="cat-results"></div>
                 </div>
-            </div>
-
-            <div class="field-block">
-                <label for="tagovi_{{ product.pk }}">Tagovi (opcionalno — više odvoji zarezom)</label>
-                <input
-                    type="text"
-                    class="tag-input"
-                    id="tagovi_{{ product.pk }}"
-                    name="tagovi_{{ product.pk }}"
-                    value=""
-                    placeholder="npr. multiplikator, casting — ili ostavi prazno"
-                    autocomplete="off"
-                >
-                <p class="field-hint">Prazno = ne mijenjaj tagove za ovaj artikal. Unos dodaje tagove (ne briše postojeće).</p>
+                <p class="field-hint">Prazno = ne mijenjaj kategoriju ovog artikla. Odaberi da postaviš novu.</p>
             </div>
         </div>
         {% endfor %}
 
         <div class="bulk-assign-actions">
-            <input type="submit" name="apply" value="Save / Primjeni" class="default">
+            <input type="submit" name="apply" value="Save — sačuvaj kategorije" class="default">
             <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
         </div>
     </form>
@@ -193,82 +304,161 @@
     if (!dataEl) return;
     var categories = JSON.parse(dataEl.textContent);
 
-    function showChosen(picker, hiddenInput, label) {
-        var resultsDiv = picker.querySelector('.cat-results');
+    function filterCategories(term) {
+        term = (term || '').toLowerCase().trim();
+        if (!term) return [];
+        return categories.filter(function(cat) {
+            return (cat.label || '').toLowerCase().indexOf(term) !== -1;
+        }).slice(0, 40);
+    }
+
+    function showChosen(resultsDiv, hiddenInput, label, onChange) {
         resultsDiv.innerHTML = '';
         var chosen = document.createElement('div');
         chosen.className = 'cat-chosen';
-        chosen.innerHTML = 'Odabrano: <strong></strong> <button type="button" style="margin-left:10px;padding:2px 6px;font-size:11px;">Promijeni</button>';
+        chosen.innerHTML = 'Odabrano: <strong></strong> <button type="button" class="secondary" style="padding:3px 8px;font-size:12px;">Promijeni</button>';
         chosen.querySelector('strong').textContent = label;
         chosen.querySelector('button').onclick = function() {
             hiddenInput.value = '';
             resultsDiv.innerHTML = '';
-            var searchInput = picker.querySelector('.cat-search');
-            searchInput.value = '';
-            searchInput.focus();
+            if (onChange) onChange();
         };
         resultsDiv.appendChild(chosen);
     }
 
-    document.querySelectorAll('.cat-picker').forEach(function(picker) {
+    function showResults(resultsDiv, matches, hiddenInput, onPick) {
+        resultsDiv.innerHTML = '';
+        if (!matches.length) {
+            var noRes = document.createElement('div');
+            noRes.style.cssText = 'color:#666;font-size:13px;margin-top:6px;';
+            noRes.textContent = 'Nema rezultata.';
+            resultsDiv.appendChild(noRes);
+            return;
+        }
+        matches.forEach(function(cat) {
+            var row = document.createElement('div');
+            row.className = 'cat-result';
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = cat.label;
+            nameSpan.style.flex = '1';
+            var chooseBtn = document.createElement('button');
+            chooseBtn.type = 'button';
+            chooseBtn.className = 'cat-choose-btn';
+            chooseBtn.textContent = 'Izaberi';
+            chooseBtn.onclick = function() {
+                hiddenInput.value = String(cat.id);
+                showChosen(resultsDiv, hiddenInput, cat.label);
+                if (onPick) onPick(cat);
+            };
+            row.appendChild(nameSpan);
+            row.appendChild(chooseBtn);
+            resultsDiv.appendChild(row);
+        });
+    }
+
+    function bindPicker(picker) {
         var productId = picker.dataset.productId;
+        var card = document.querySelector('[data-product-card="' + productId + '"]');
         var hiddenInput = document.querySelector('.cat-hidden-input[data-product-id="' + productId + '"]');
         var searchInput = picker.querySelector('.cat-search');
         var searchBtn = picker.querySelector('.cat-search-btn');
+        var clearBtn = picker.querySelector('.cat-clear-btn');
         var resultsDiv = picker.querySelector('.cat-results');
         if (!hiddenInput || !searchInput || !searchBtn || !resultsDiv) return;
 
-        function showResults(matches) {
-            resultsDiv.innerHTML = '';
-            if (!matches.length) {
-                var noRes = document.createElement('div');
-                noRes.style.color = '#666';
-                noRes.style.fontSize = '13px';
-                noRes.style.marginTop = '6px';
-                noRes.textContent = 'Nema rezultata za pretragu.';
-                resultsDiv.appendChild(noRes);
-                return;
-            }
-            matches.forEach(function(cat) {
-                var row = document.createElement('div');
-                row.className = 'cat-result';
-
-                var nameSpan = document.createElement('span');
-                nameSpan.textContent = cat.label;
-                nameSpan.style.flex = '1';
-
-                var chooseBtn = document.createElement('button');
-                chooseBtn.type = 'button';
-                chooseBtn.textContent = 'Izaberi';
-                chooseBtn.onclick = function() {
-                    hiddenInput.value = String(cat.id);
-                    showChosen(picker, hiddenInput, cat.label);
-                };
-
-                row.appendChild(nameSpan);
-                row.appendChild(chooseBtn);
-                resultsDiv.appendChild(row);
-            });
+        function runSearch() {
+            showResults(resultsDiv, filterCategories(searchInput.value), hiddenInput);
         }
-
-        searchBtn.onclick = function() {
-            var term = (searchInput.value || '').toLowerCase().trim();
-            if (!term) {
-                resultsDiv.innerHTML = '';
-                return;
-            }
-            var matches = categories.filter(function(cat) {
-                return cat.label.toLowerCase().indexOf(term) !== -1;
-            });
-            showResults(matches);
-        };
-
+        searchBtn.onclick = runSearch;
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                searchBtn.click();
+                runSearch();
             }
         });
+        if (clearBtn) {
+            clearBtn.onclick = function() {
+                hiddenInput.value = '';
+                searchInput.value = '';
+                resultsDiv.innerHTML = '';
+            };
+        }
+
+        // expose for bulk apply
+        picker._setCategory = function(cat) {
+            hiddenInput.value = String(cat.id);
+            searchInput.value = '';
+            showChosen(resultsDiv, hiddenInput, cat.label);
+        };
+    }
+
+    document.querySelectorAll('.cat-picker').forEach(bindPicker);
+
+    // Include checkbox → visual state
+    document.querySelectorAll('.include-check').forEach(function(cb) {
+        function sync() {
+            var card = cb.closest('.bulk-product-card');
+            if (card) card.classList.toggle('is-excluded', !cb.checked);
+        }
+        cb.addEventListener('change', sync);
+        sync();
+    });
+
+    document.getElementById('selectAllProducts')?.addEventListener('click', function() {
+        document.querySelectorAll('.include-check').forEach(function(cb) {
+            cb.checked = true;
+            cb.dispatchEvent(new Event('change'));
+        });
+    });
+    document.getElementById('deselectAllProducts')?.addEventListener('click', function() {
+        document.querySelectorAll('.include-check').forEach(function(cb) {
+            cb.checked = false;
+            cb.dispatchEvent(new Event('change'));
+        });
+    });
+
+    // Global category search + apply to all included
+    var globalSearch = document.getElementById('globalCatSearch');
+    var globalBtn = document.getElementById('globalCatSearchBtn');
+    var globalResults = document.getElementById('globalCatResults');
+    var globalId = document.getElementById('globalCatId');
+    var globalLabel = '';
+
+    function runGlobalSearch() {
+        showResults(globalResults, filterCategories(globalSearch.value), globalId, function(cat) {
+            globalLabel = cat.label;
+        });
+    }
+    globalBtn?.addEventListener('click', runGlobalSearch);
+    globalSearch?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            runGlobalSearch();
+        }
+    });
+
+    document.getElementById('applyGlobalCat')?.addEventListener('click', function() {
+        var id = (globalId && globalId.value) || '';
+        if (!id) {
+            alert('Prvo pronađi i izaberi kategoriju u gornjem polju.');
+            return;
+        }
+        var cat = categories.find(function(c) { return String(c.id) === String(id); });
+        if (!cat) {
+            alert('Kategorija nije pronađena.');
+            return;
+        }
+        var n = 0;
+        document.querySelectorAll('.bulk-product-card').forEach(function(card) {
+            var include = card.querySelector('.include-check');
+            if (!include || !include.checked) return;
+            var picker = card.querySelector('.cat-picker');
+            if (picker && picker._setCategory) {
+                picker._setCategory(cat);
+                n += 1;
+            }
+        });
+        alert('Kategorija „' + cat.label + '” primijenjena na ' + n + ' uključenih artikala. Klikni Save da sačuvaš.');
     });
 })();
 </script>

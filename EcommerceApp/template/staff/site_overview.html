@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Pregled sajta — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-site-overview">
+    <div class="staff-site-overview__header">
+        <div>
+            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+            <h1>Pregled sajta</h1>
+            <p class="staff-site-overview__subtitle">
+                Posjetioci, online kupovine i promet.
+                Ažurirano {{ generated_at|date:"d.m.Y. H:i" }}.
+            </p>
+        </div>
+    </div>
+
+    <div class="staff-stats-cards">
+        <article class="staff-stats-card">
+            <span class="staff-stats-card__label">Ukupno posjetilaca</span>
+            <strong class="staff-stats-card__value">{{ totals_all.visitors }}</strong>
+            <span class="staff-stats-card__hint">Sesije (prvi ulazak)</span>
+        </article>
+        <article class="staff-stats-card">
+            <span class="staff-stats-card__label">Kupaca (email)</span>
+            <strong class="staff-stats-card__value">{{ totals_all.buyers }}</strong>
+            <span class="staff-stats-card__hint">Jedinstveni email na narudžbama</span>
+        </article>
+        <article class="staff-stats-card">
+            <span class="staff-stats-card__label">Narudžbi online</span>
+            <strong class="staff-stats-card__value">{{ totals_all.orders }}</strong>
+            <span class="staff-stats-card__hint">Bez otkazanih</span>
+        </article>
+        <article class="staff-stats-card staff-stats-card--accent">
+            <span class="staff-stats-card__label">Promet online</span>
+            <strong class="staff-stats-card__value">{{ totals_all.revenue }} KM</strong>
+            <span class="staff-stats-card__hint">
+                Prosjek narudžbe {{ totals_all.avg_order }} KM
+                · konverzija {{ totals_all.conversion_visitors }}%
+            </span>
+        </article>
+    </div>
+
+    <div class="staff-stats-period-bar">
+        <h2>{{ period_label }}</h2>
+        <div class="staff-stats-period-tabs" role="tablist">
+            {% for key, label in period_choices %}
+            <a href="?period={{ key }}"
+               class="staff-stats-period-tab{% if period == key %} is-active{% endif %}"
+               role="tab"
+               aria-selected="{% if period == key %}true{% else %}false{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="staff-stats-period-summary">
+        <span><strong>{{ totals_period.visitors }}</strong> posjeta u prikazu</span>
+        <span><strong>{{ totals_period.orders }}</strong> narudžbi</span>
+        <span><strong>{{ totals_period.revenue }} KM</strong> prometa</span>
+        <span>konverzija <strong>{{ totals_period.conversion }}%</strong></span>
+    </div>
+
+    <div class="staff-stats-table-wrap">
+        <table class="staff-stats-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th class="num">Posjetioci</th>
+                    <th class="num">Kupci</th>
+                    <th class="num">Narudžbe</th>
+                    <th class="num">Promet (KM)</th>
+                    <th class="num">Prosjek (KM)</th>
+                    <th class="num">Konverzija</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td data-label="Period"><strong>{{ row.label }}</strong></td>
+                    <td class="num" data-label="Posjetioci">{{ row.visitors }}</td>
+                    <td class="num" data-label="Kupci">{{ row.buyers }}</td>
+                    <td class="num" data-label="Narudžbe">{{ row.orders }}</td>
+                    <td class="num" data-label="Promet">{{ row.revenue }}</td>
+                    <td class="num" data-label="Prosjek">{{ row.avg_order }}</td>
+                    <td class="num" data-label="Konverzija">{{ row.conversion }}%</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="staff-stats-empty">Nema podataka za odabrani period.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="staff-stats-footnote">
+        <strong>Posjetioci</strong> = sesije u uživo analyticsu (prvi ulazak na sajt).
+        <strong>Narudžbe / promet</strong> = online narudžbe bez statusa „Otkazana”.
+        <strong>Kupci</strong> = različiti emailovi na narudžbama (po periodu).
+        Konverzija = narudžbe ÷ posjetioci × 100.
+    </p>
+</section>
+{% endblock %}

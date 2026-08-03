@@ -1123,14 +1123,44 @@ class MergeProductsForm(forms.Form):
 
 
 class BulkAssignCategoryForm(forms.Form):
+    """
+    Jedna kategorija → svi označeni artikli (admin akcija).
+    Prikazuje putanju roditelj → potkategorija.
+    """
     kategorija = forms.ModelChoiceField(
-        label='Kategorija na sajtu',
+        label='Kategorija / potkategorija',
         queryset=Category.objects.filter(aktivan=True).select_related(
             'roditelj', 'roditelj__roditelj',
         ).order_by('redoslijed', 'naziv'),
-        widget=forms.Select(attrs={'class': 'odoo-select'}),
-        empty_label=None,
+        widget=forms.Select(attrs={
+            'class': 'odoo-select',
+            'style': 'min-width: min(100%, 520px); max-width: 100%;',
+        }),
+        empty_label='— Odaberi kategoriju —',
+        help_text=(
+            'Odabrana kategorija se dodjeljuje SVIM označenim artiklima. '
+            'Postojeća kategorija se zamjenjuje.'
+        ),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field = self.fields['kategorija']
+
+        def label_from_instance(obj):
+            parts = []
+            cur = obj
+            # roditelj → … → ova (max 3 nivoa)
+            chain = []
+            seen = set()
+            while cur is not None and cur.pk not in seen:
+                seen.add(cur.pk)
+                chain.append(cur.naziv or f'#{cur.pk}')
+                cur = getattr(cur, 'roditelj', None)
+            chain.reverse()
+            return ' → '.join(chain) if chain else str(obj)
+
+        field.label_from_instance = label_from_instance
 
 
 class BulkAssignBrandForm(forms.Form):

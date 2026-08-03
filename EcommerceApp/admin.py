@@ -15,6 +15,7 @@ from .forms import (
     AkcijaQtyTierForm,
     BannerAdminForm,
     BulkAssignBrandForm,
+    BulkAssignCategoryForm,
     MergeProductsForm,
     OdooImportForm,
     PopupAdminForm,
@@ -2132,115 +2133,95 @@ class ProductAdmin(admin.ModelAdmin):
 
     def bulk_assign_category(self, request, queryset):
         """
-        Po artiklu: kategorija (opcionalno) + tagovi (opcionalno, zarezom).
-        Save snima što je uneseno — kategoriju i/ili tagove (bez duplikata tagova).
+        Lista svih označenih artikala → po artiklu biraš kategoriju
+        (ili isključi artikal) → jedan Save na kraju.
         """
-        queryset = queryset.select_related('kategorija').prefetch_related('tagovi')
-        categories = [
-            {'id': category.pk, 'label': str(category)}
-            for category in Category.objects.filter(aktivan=True).select_related(
-                'roditelj', 'roditelj__roditelj',
-            ).order_by('redoslijed', 'naziv')
-        ]
+        queryset = queryset.select_related(
+            'kategorija', 'kategorija__roditelj', 'brend',
+        ).order_by('naziv')
 
-        if 'apply' in request.POST:
-            selected_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
+        categories = []
+        for category in Category.objects.filter(aktivan=True).select_related(
+            'roditelj', 'roditelj__roditelj',
+        ).order_by('redoslijed', 'naziv'):
+            parts = []
+            cur = category
+            seen = set()
+            while cur is not None and cur.pk not in seen:
+                seen.add(cur.pk)
+                parts.append(cur.naziv or f'#{cur.pk}')
+                cur = getattr(cur, 'roditelj', None)
+            parts.reverse()
+            categories.append({
+                'id': category.pk,
+                'label': ' → '.join(parts),
+            })
+
+        if request.method == 'POST' and 'apply' in request.POST:
+            # Artikli koje je korisnik ostavio uključene (checkbox na formi)
+            include_ids = request.POST.getlist('include_product')
+            original_ids = request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
             cat_count = 0
-            tag_count = 0
+            cleared = 0
             skipped = 0
 
-            def _parse_tag_names(raw):
-                names = []
-                seen = set()
-                for part in (raw or '').replace(';', ',').replace('\n', ',').split(','):
-                    name = part.strip()
-                    if not name:
-                        continue
-                    key = name.casefold()
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    names.append(name)
-                return names
+            valid_include = set()
+            for pk_str in include_ids:
+                try:
+                    valid_include.add(int(pk_str))
+                except (TypeError, ValueError):
+                    continue
 
-            for pk_str in selected_ids:
+            for pk_str in original_ids:
                 try:
                     pk = int(pk_str)
                 except (TypeError, ValueError):
                     skipped += 1
                     continue
-                try:
-                    product = Product.objects.prefetch_related('tagovi').get(pk=pk)
-                except Product.DoesNotExist:
+                if pk not in valid_include:
                     skipped += 1
                     continue
 
-                did_something = False
-
-                # Kategorija (opcionalno)
-                category_id = (request.POST.get(f'kategorija_{pk}') or '').strip()
-                if category_id:
-                    try:
-                        category = Category.objects.get(pk=int(category_id), aktivan=True)
-                    except (Category.DoesNotExist, TypeError, ValueError):
-                        category = None
-                    if category is not None:
-                        Product.objects.filter(pk=pk).update(kategorija=category)
-                        cat_count += 1
-                        did_something = True
-
-                # Tagovi po artiklu (opcionalno) — samo one koje još nema
-                tag_names = _parse_tag_names(request.POST.get(f'tagovi_{pk}', ''))
-                if tag_names:
-                    tags = []
-                    for name in tag_names:
-                        tag, _created = Tag.get_or_create_by_name(name)
-                        tags.append(tag)
-                    existing_ids = set(product.tagovi.values_list('pk', flat=True))
-                    to_add = [t for t in tags if t.pk not in existing_ids]
-                    if to_add:
-                        product.tagovi.add(*to_add)
-                        tag_count += 1
-                        did_something = True
-
-                if not did_something:
+                raw_cat = (request.POST.get(f'kategorija_{pk}') or '').strip()
+                if not raw_cat:
+                    # eksplicitno: ostavi bez promjene ako prazno
                     skipped += 1
+                    continue
+                if raw_cat in ('0', '__clear__'):
+                    Product.objects.filter(pk=pk).update(kategorija=None)
+                    cleared += 1
+                    continue
+                try:
+                    category = Category.objects.get(pk=int(raw_cat), aktivan=True)
+                except (Category.DoesNotExist, TypeError, ValueError):
+                    skipped += 1
+                    continue
+                Product.objects.filter(pk=pk).update(kategorija=category)
+                cat_count += 1
 
             if cat_count:
                 self.message_user(
                     request,
-                    f'Kategorija sačuvana za {cat_count} artikal/a.',
+                    f'Kategorija postavljena za {cat_count} artikal/a.',
                     messages.SUCCESS,
                 )
-            if tag_count:
+            if cleared:
                 self.message_user(
                     request,
-                    f'Tagovi dodani na {tag_count} artikal/a (bez duplikata).',
-                    messages.SUCCESS,
-                )
-            if skipped and not cat_count and not tag_count:
-                self.message_user(
-                    request,
-                    f'{skipped} artikal/a preskočeno (nema kategorije ni tagova).',
-                    messages.WARNING,
-                )
-            elif skipped and (cat_count or tag_count):
-                self.message_user(
-                    request,
-                    f'{skipped} artikal/a bez unosa (prazna kategorija i tagovi).',
+                    f'Kategorija uklonjena sa {cleared} artikal/a.',
                     messages.INFO,
                 )
-            if not cat_count and not tag_count and not skipped:
+            if skipped and not cat_count and not cleared:
                 self.message_user(
                     request,
-                    'Nije unesena nijedna kategorija ni tag.',
-                    messages.ERROR,
+                    'Nijedan artikal nije ažuriran (isključeni ili bez odabrane kategorije).',
+                    messages.WARNING,
                 )
             return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
-            'title': 'Dodjela kategorije i tagova',
+            'title': 'Dodjela kategorije po artiklu',
             'queryset': queryset,
             'categories': categories,
             'opts': self.model._meta,
@@ -2249,7 +2230,7 @@ class ProductAdmin(admin.ModelAdmin):
         }
         return render(request, 'admin/EcommerceApp/product/bulk_assign_category.html', context)
 
-    bulk_assign_category.short_description = 'Dodaj u postojeću kategoriju (+ tagovi)'
+    bulk_assign_category.short_description = 'Dodijeli kategoriju (po artiklu)'
 
     def bulk_assign_brand(self, request, queryset):
         form = BulkAssignBrandForm(request.POST or None)

@@ -7466,6 +7466,264 @@ body.mobile-nav-open {
     transform: none;
 }
 
+/* —— Pregled sajta (stats) —— */
+.staff-site-overview {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+    box-sizing: border-box;
+}
+
+.staff-site-overview__header h1 {
+    margin: 8px 0 6px;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.staff-site-overview__subtitle {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 14px;
+}
+
+.staff-stats-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin: 28px 0 32px;
+}
+
+.staff-stats-card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.staff-stats-card--accent {
+    border-color: #28403d;
+    background: linear-gradient(145deg, #f3faf6 0%, #fff 70%);
+}
+
+.staff-stats-card__label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-600);
+}
+
+.staff-stats-card__value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    word-break: break-word;
+}
+
+.staff-stats-card__hint {
+    font-size: 12px;
+    color: var(--gray-600);
+    line-height: 1.35;
+}
+
+.staff-stats-period-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    margin-bottom: 12px;
+}
+
+.staff-stats-period-bar h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.staff-stats-period-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.staff-stats-period-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--gray-300);
+    background: #fff;
+    color: var(--gray-700);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.staff-stats-period-tab:hover {
+    border-color: #28403d;
+    color: #111;
+}
+
+.staff-stats-period-tab.is-active {
+    background: #28403d;
+    border-color: #28403d;
+    color: #fff;
+}
+
+.staff-stats-period-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    background: var(--gray-100);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--gray-700);
+}
+
+.staff-stats-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.staff-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+    font-size: 14px;
+}
+
+.staff-stats-table th,
+.staff-stats-table td {
+    padding: 11px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.staff-stats-table th {
+    background: #f8faf9;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--gray-600);
+    white-space: nowrap;
+}
+
+.staff-stats-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.staff-stats-table tbody tr:hover td {
+    background: #fafafa;
+}
+
+.staff-stats-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.staff-stats-empty {
+    text-align: center !important;
+    color: var(--gray-600);
+    padding: 28px 14px !important;
+}
+
+.staff-stats-footnote {
+    margin: 18px 0 0;
+    font-size: 12px;
+    color: var(--gray-600);
+    line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+    .staff-stats-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .staff-site-overview {
+        padding: 20px 12px 48px;
+    }
+
+    .staff-stats-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .staff-stats-card__value {
+        font-size: 22px;
+    }
+
+    .staff-stats-period-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .staff-stats-period-tabs {
+        width: 100%;
+    }
+
+    .staff-stats-period-tab {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .staff-stats-table {
+        min-width: 0;
+        font-size: 13px;
+    }
+
+    .staff-stats-table thead {
+        display: none;
+    }
+
+    .staff-stats-table,
+    .staff-stats-table tbody,
+    .staff-stats-table tr,
+    .staff-stats-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .staff-stats-table tr {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .staff-stats-table td {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 4px 0;
+        border: none;
+        text-align: right;
+    }
+
+    .staff-stats-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--gray-600);
+        text-align: left;
+    }
+
+    .staff-stats-table .num {
+        text-align: right;
+    }
+}
+
 /* Staff Email Marketing */
 .staff-email-marketing-page {
     max-width: 1100px;

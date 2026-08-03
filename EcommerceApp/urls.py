@@ -131,6 +131,7 @@ urlpatterns = [
 
 
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('nalog/pregled-sajta/', views.staff_site_overview, name='staff_site_overview'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),
     path('nalog/aktiviraj-korisnika/', views.staff_activate_user, name='staff_activate_user'),

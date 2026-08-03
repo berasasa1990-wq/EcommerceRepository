@@ -72,11 +72,22 @@
 <div id="content-main">
     <h1>{{ title }}</h1>
 
+    {% if help_extra %}
+    <p class="helptext" style="margin: 8px 0 16px; max-width: 720px;">{{ help_extra }}</p>
+    {% endif %}
+
     <div class="bulk-assign-list">
         <strong>Odabrano artikala: {{ queryset|length }}</strong>
         <ul>
             {% for product in queryset %}
-            <li>{{ product.naziv }}</li>
+            <li>
+                {{ product.naziv }}{% if product.sifra %} <span style="color:#888">({{ product.sifra }})</span>{% endif %}
+                {% if product.kategorija %}
+                <span style="color:#666; font-size:12px;"> · sada: {{ product.kategorija }}</span>
+                {% else %}
+                <span style="color:#b45309; font-size:12px;"> · bez kategorije</span>
+                {% endif %}
+            </li>
             {% endfor %}
         </ul>
     </div>
@@ -96,6 +107,9 @@
             {% endif %}
             {% if form_field.errors %}
             <p class="errornote">{{ form_field.errors|join:', ' }}</p>
+            {% endif %}
+            {% if form.non_field_errors %}
+            <p class="errornote">{{ form.non_field_errors|join:', ' }}</p>
             {% endif %}
         </div>
 

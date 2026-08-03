@@ -4622,6 +4622,28 @@ def staff_admin_panel(request):
 
 
 @login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_site_overview(request):
+    """
+    Pregled sajta: posjetioci, kupovine, promet — po danima / mjesecima / godinama.
+    """
+    from .site_stats import build_site_overview
+
+    period = (request.GET.get('period') or 'day').strip().lower()
+    data = build_site_overview(period=period)
+    context = {
+        **_base_context(),
+        **data,
+        'period_choices': (
+            ('day', 'Dani'),
+            ('month', 'Mjeseci'),
+            ('year', 'Godine'),
+        ),
+    }
+    return render(request, 'staff/site_overview.html', context)
+
+
+@login_required(login_url='login')
 @user_passes_test(_staff_required)
 @require_POST
 def staff_activate_user(request):
