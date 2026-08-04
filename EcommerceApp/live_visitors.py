@@ -33,19 +33,95 @@ BOSNIA_HERZEGOVINA_COUNTRY_CODE = 'BA'
 MAX_TRACKED_CATEGORIES = 8
 MAX_TRACKED_PRODUCTS = 12
 
-SOURCE_FACEBOOK = 'facebook'
-SOURCE_GOOGLE = 'google'
-SOURCE_INSTAGRAM = 'instagram'
+# Ključevi izvora (max ~20 znakova u starijim DB; migracija širi na 32)
 SOURCE_DIRECT = 'direct'
+SOURCE_GOOGLE = 'google'              # organska Google pretraga (legacy key)
+SOURCE_GOOGLE_ADS = 'google_ads'
+SOURCE_FACEBOOK = 'facebook'          # organski Facebook
+SOURCE_FACEBOOK_ADS = 'facebook_ads'
+SOURCE_INSTAGRAM = 'instagram'        # organski Instagram
+SOURCE_INSTAGRAM_ADS = 'instagram_ads'
 SOURCE_OTHER = 'other'
 
 SOURCE_LABELS = {
-    SOURCE_FACEBOOK: 'Facebook',
-    SOURCE_GOOGLE: 'Google',
-    SOURCE_INSTAGRAM: 'Instagram',
-    SOURCE_DIRECT: 'Direktno',
+    SOURCE_DIRECT: 'Direktno (ukucan sajt)',
+    SOURCE_GOOGLE: 'Google pretraga',
+    SOURCE_GOOGLE_ADS: 'Google Ads',
+    SOURCE_FACEBOOK: 'Facebook (organski)',
+    SOURCE_FACEBOOK_ADS: 'Facebook Ads',
+    SOURCE_INSTAGRAM: 'Instagram (organski)',
+    SOURCE_INSTAGRAM_ADS: 'Instagram Ads',
     SOURCE_OTHER: 'Ostalo',
 }
+
+# Redoslijed prikaza u analitici
+SOURCE_DISPLAY_ORDER = (
+    SOURCE_DIRECT,
+    SOURCE_GOOGLE,
+    SOURCE_GOOGLE_ADS,
+    SOURCE_FACEBOOK,
+    SOURCE_FACEBOOK_ADS,
+    SOURCE_INSTAGRAM,
+    SOURCE_INSTAGRAM_ADS,
+    SOURCE_OTHER,
+)
+
+# Kratke oznake za chipove / uski UI
+SOURCE_SHORT_LABELS = {
+    SOURCE_DIRECT: 'Direktno',
+    SOURCE_GOOGLE: 'Google',
+    SOURCE_GOOGLE_ADS: 'Google Ads',
+    SOURCE_FACEBOOK: 'Facebook',
+    SOURCE_FACEBOOK_ADS: 'FB Ads',
+    SOURCE_INSTAGRAM: 'Instagram',
+    SOURCE_INSTAGRAM_ADS: 'IG Ads',
+    SOURCE_OTHER: 'Ostalo',
+}
+
+_PAID_MEDIUMS = frozenset({
+    'cpc', 'ppc', 'paid', 'paid_social', 'paidsocial', 'paid-social',
+    'cpm', 'cpa', 'display', 'retargeting', 'remarketing', 'ads', 'ad',
+    'performance_max', 'pmax',
+})
+
+
+def normalize_traffic_source(raw) -> str:
+    """Mapiraj sirovi string na poznati ključ izvora."""
+    key = (raw or '').strip().lower()
+    if not key:
+        return SOURCE_DIRECT
+    if key in SOURCE_LABELS:
+        return key
+    # sinonimi / legacy
+    aliases = {
+        'fb': SOURCE_FACEBOOK,
+        'meta': SOURCE_FACEBOOK,
+        'fb_ad': SOURCE_FACEBOOK_ADS,
+        'fbads': SOURCE_FACEBOOK_ADS,
+        'facebook_ad': SOURCE_FACEBOOK_ADS,
+        'ig': SOURCE_INSTAGRAM,
+        'ig_ad': SOURCE_INSTAGRAM_ADS,
+        'igads': SOURCE_INSTAGRAM_ADS,
+        'instagram_ad': SOURCE_INSTAGRAM_ADS,
+        'gads': SOURCE_GOOGLE_ADS,
+        'adwords': SOURCE_GOOGLE_ADS,
+        'googleads': SOURCE_GOOGLE_ADS,
+        'google_ad': SOURCE_GOOGLE_ADS,
+        'organic': SOURCE_GOOGLE,
+        'seo': SOURCE_GOOGLE,
+        'none': SOURCE_DIRECT,
+        'typed': SOURCE_DIRECT,
+    }
+    if key in aliases:
+        return aliases[key]
+    return SOURCE_OTHER
+
+
+def traffic_source_label(raw, *, short=False) -> str:
+    key = normalize_traffic_source(raw)
+    if short:
+        return SOURCE_SHORT_LABELS.get(key, SOURCE_SHORT_LABELS[SOURCE_OTHER])
+    return SOURCE_LABELS.get(key, SOURCE_LABELS[SOURCE_OTHER])
 
 
 def _display_name(user):
@@ -282,33 +358,110 @@ def _merge_product_history(existing, product):
 
 def detect_traffic_source(request):
     """
-    Izvor dolaska: Facebook, Google, Instagram, direktno, ostalo.
-    UTM / click-id imaju prioritet nad HTTP Referer.
+    Izvor dolaska s razlikom organsko vs ads:
+      direct | google | google_ads | facebook | facebook_ads |
+      instagram | instagram_ads | other
+
+    Prioritet: click-id / UTM → HTTP Referer → direktno (ukucan URL).
     """
     get = request.GET
-    utm = (
-        (get.get('utm_source') or get.get('source') or get.get('utm_medium') or '')
-        .strip()
-        .lower()
-    )
-    if get.get('fbclid') or 'facebook' in utm or utm in ('fb', 'meta', 'ig', 'fb_ad', 'facebook_ads'):
-        if utm in ('ig', 'instagram') or 'instagram' in utm:
-            return SOURCE_INSTAGRAM
-        return SOURCE_FACEBOOK
-    if get.get('gclid') or get.get('gbraid') or get.get('wbraid') or 'google' in utm or utm in ('cpc', 'adwords', 'gads'):
-        return SOURCE_GOOGLE
-    if get.get('igshid') or 'instagram' in utm or utm in ('ig', 'ig_ad'):
-        return SOURCE_INSTAGRAM
+    utm_source = (get.get('utm_source') or get.get('source') or '').strip().lower()
+    utm_medium = (get.get('utm_medium') or '').strip().lower()
+    utm_campaign = (get.get('utm_campaign') or '').strip().lower()
+    utm_content = (get.get('utm_content') or '').strip().lower()
+    utm_blob = f'{utm_source} {utm_medium} {utm_campaign} {utm_content}'.strip()
 
+    is_paid_medium = (
+        utm_medium in _PAID_MEDIUMS
+        or any(token in utm_medium for token in ('paid', 'cpc', 'ppc', 'cpm', 'ads'))
+        or utm_source in (
+            'fbads', 'facebook_ads', 'fb_ad', 'igads', 'instagram_ads',
+            'googleads', 'google_ads', 'adwords', 'gads',
+        )
+    )
+
+    has_gclid = bool(get.get('gclid') or get.get('gbraid') or get.get('wbraid'))
+    has_fbclid = bool(get.get('fbclid'))
+    has_igshid = bool(get.get('igshid'))
+    has_msclkid = bool(get.get('msclkid'))
+    has_ttclid = bool(get.get('ttclid'))
+
+    def _is_ig_signal(text: str) -> bool:
+        t = text or ''
+        return (
+            'instagram' in t
+            or t in ('ig', 'ig_ad', 'igads', 'instagram_ads')
+            or 'ig_' in t
+        )
+
+    def _is_fb_signal(text: str) -> bool:
+        t = text or ''
+        return (
+            'facebook' in t
+            or 'meta' in t
+            or t in ('fb', 'fb_ad', 'fbads', 'facebook_ads')
+            or t.startswith('fb')
+        )
+
+    def _is_google_signal(text: str) -> bool:
+        t = text or ''
+        return (
+            'google' in t
+            or t in ('adwords', 'gads', 'googleads', 'google_ads', 'youtube')
+        )
+
+    # --- Click IDs (najjači signal za plaćene kanale) ---
+    if has_gclid:
+        return SOURCE_GOOGLE_ADS
+    if has_fbclid:
+        if _is_ig_signal(utm_blob) or _is_ig_signal(utm_source):
+            return SOURCE_INSTAGRAM_ADS
+        return SOURCE_FACEBOOK_ADS
+    if has_igshid and is_paid_medium:
+        return SOURCE_INSTAGRAM_ADS
+    if has_msclkid or has_ttclid:
+        return SOURCE_OTHER
+
+    # --- UTM ---
+    if utm_source or utm_medium:
+        if _is_ig_signal(utm_source) or _is_ig_signal(utm_blob):
+            return SOURCE_INSTAGRAM_ADS if is_paid_medium else SOURCE_INSTAGRAM
+        if _is_fb_signal(utm_source) or _is_fb_signal(utm_blob):
+            return SOURCE_FACEBOOK_ADS if is_paid_medium else SOURCE_FACEBOOK
+        if _is_google_signal(utm_source) or _is_google_signal(utm_blob):
+            return SOURCE_GOOGLE_ADS if is_paid_medium else SOURCE_GOOGLE
+        # cpc bez jasnog source-a često Google Ads
+        if utm_medium in ('cpc', 'ppc', 'paid') and not utm_source:
+            return SOURCE_GOOGLE_ADS
+        if is_paid_medium:
+            return SOURCE_OTHER
+        if utm_source:
+            return SOURCE_OTHER
+
+    # --- HTTP Referer (organski / vanjski link) ---
     referer = (request.META.get('HTTP_REFERER') or '').strip().lower()
     if referer:
-        if 'facebook.com' in referer or 'fb.com' in referer or 'fb.me' in referer or 'l.facebook' in referer:
+        if (
+            'facebook.com' in referer
+            or 'fb.com' in referer
+            or 'fb.me' in referer
+            or 'l.facebook' in referer
+            or 'lm.facebook' in referer
+            or 'm.facebook' in referer
+        ):
             return SOURCE_FACEBOOK
         if 'instagram.com' in referer or 'l.instagram' in referer:
             return SOURCE_INSTAGRAM
-        if 'google.' in referer or 'googleusercontent' in referer or 'googleapis' in referer:
+        if (
+            'google.' in referer
+            or 'googleusercontent' in referer
+            or 'googleapis' in referer
+            or 'ggpht.com' in referer
+            or 'youtube.com' in referer
+            or 'youtu.be' in referer
+        ):
+            # Organic search / YouTube referral (bez gclid = nije Ads click)
             return SOURCE_GOOGLE
-        # vanjski referer koji nije FB/Google/IG
         try:
             from urllib.parse import urlparse
             host = (urlparse(referer).netloc or '').lower()
@@ -317,6 +470,8 @@ def detect_traffic_source(request):
                 return SOURCE_OTHER
         except Exception:
             pass
+
+    # Nema referera ni UTM → korisnik je ukucao sajt / bookmark / app
     return SOURCE_DIRECT
 
 
@@ -780,7 +935,7 @@ def track_live_visitor(request):
         'site_visit_count': visit_count,
         'pregledane_kategorije': existing_categories,
         'pregledani_proizvodi': existing_products,
-        'izvor_dolaska': (traffic_source or '')[:20],
+        'izvor_dolaska': (traffic_source or '')[:32],
         'trenutna_putanja': page_path,
         'trenutno_gleda': page_label,
         'last_seen': now,
@@ -1926,10 +2081,8 @@ def _visitor_payload(
     if len(returned_products) > 3:
         returned_products_label = f'{returned_products_label}…'
 
-    source_key = (getattr(visitor, 'izvor_dolaska', None) or SOURCE_DIRECT).strip().lower()
-    if source_key not in SOURCE_LABELS:
-        source_key = SOURCE_OTHER if source_key else SOURCE_DIRECT
-    source_label = SOURCE_LABELS.get(source_key, SOURCE_LABELS[SOURCE_DIRECT])
+    source_key = normalize_traffic_source(getattr(visitor, 'izvor_dolaska', None))
+    source_label = traffic_source_label(source_key, short=True)
 
     if cart_value is None:
         cart_value = Decimal('0')

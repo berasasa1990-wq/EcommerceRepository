@@ -4625,7 +4625,8 @@ def staff_admin_panel(request):
 @user_passes_test(_superuser_required)
 def staff_site_overview(request):
     """
-    Pregled sajta: posjetioci, kupovine, promet — po danima / mjesecima / godinama.
+    Pregled sajta: posjetioci, izvori prometa (direktno / Google / Ads / Meta),
+    kupovine, engažman, chat — po danima / mjesecima / godinama.
     """
     from .site_stats import build_site_overview
 

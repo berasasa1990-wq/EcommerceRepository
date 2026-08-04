@@ -3811,10 +3811,14 @@ class LiveVisitor(models.Model):
         ),
     )
     izvor_dolaska = models.CharField(
-        max_length=20,
+        max_length=32,
         blank=True,
+        db_index=True,
         verbose_name='Izvor dolaska',
-        help_text='facebook / google / instagram / direct / other',
+        help_text=(
+            'direct | google | google_ads | facebook | facebook_ads | '
+            'instagram | instagram_ads | other'
+        ),
     )
     trenutna_putanja = models.CharField(
         max_length=300,
