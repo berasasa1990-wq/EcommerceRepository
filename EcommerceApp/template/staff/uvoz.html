@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Uvoz — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-uvoz-page">
+    <header class="staff-uvoz-hero">
+        <div class="staff-uvoz-hero__text">
+            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Admin panel</a>
+            <h1>Uvoz</h1>
+            <p>
+                Import iz Excel uvoznice (Artikal, Kolicina, Mpc brutto…).
+                Sačuvani uvozi možeš pregledati, mijenjati i brisati.
+            </p>
+        </div>
+        <div class="staff-uvoz-hero__badge" aria-hidden="true">📥</div>
+    </header>
+
+    <div class="staff-uvoz-layout">
+        {# —— Upload —— #}
+        <aside class="staff-uvoz-panel staff-uvoz-panel--upload">
+            <div class="staff-uvoz-panel__head">
+                <h2>Novi import</h2>
+                <span class="staff-uvoz-chip">.xlsx</span>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="staff-uvoz-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="import">
+
+                <label class="staff-uvoz-field">
+                    <span class="staff-uvoz-field__label">Naziv uvoza (opcionalno)</span>
+                    <input type="text" name="naziv" class="staff-uvoz-input" placeholder="npr. Uvoz 16.04.2026" maxlength="200" autocomplete="off">
+                </label>
+
+                <label class="staff-uvoz-drop" id="uvozDrop">
+                    <input type="file" name="excel_file" id="uvozFile" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                    <span class="staff-uvoz-drop__icon">📄</span>
+                    <span class="staff-uvoz-drop__title">Odaberi Excel fajl</span>
+                    <span class="staff-uvoz-drop__hint" id="uvozFileName">ili prevuci .xlsx ovdje</span>
+                </label>
+
+                <label class="staff-uvoz-check">
+                    <input type="checkbox" name="dry_run" value="1"{% if dry_run %} checked{% endif %}>
+                    <span>Samo pregled (ne snima u bazu ni u listu)</span>
+                </label>
+
+                <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--primary">Import uvoza</button>
+            </form>
+
+            <div class="staff-uvoz-help">
+                <strong>Pravila</strong>
+                <ul>
+                    <li>Samo redovi sa <em>Kolicina &gt; 0</em></li>
+                    <li>Isti naziv artikla (100%) → na stanju + cijena <em>Mpc brutto</em></li>
+                    <li>Nema u bazi → kreira se artikal</li>
+                </ul>
+            </div>
+        </aside>
+
+        {# —— Lista uvoza —— #}
+        <div class="staff-uvoz-panel staff-uvoz-panel--list">
+            <div class="staff-uvoz-panel__head">
+                <h2>Sačuvani uvozi</h2>
+                <span class="staff-uvoz-chip staff-uvoz-chip--muted">{{ uvozi|length }}</span>
+            </div>
+
+            {% if uvozi %}
+            <div class="staff-uvoz-list">
+                {% for u in uvozi %}
+                <article class="staff-uvoz-card">
+                    <div class="staff-uvoz-card__main">
+                        <a href="{% url 'staff_uvoz_detail' u.pk %}" class="staff-uvoz-card__title">{{ u.naziv }}</a>
+                        <div class="staff-uvoz-card__meta">
+                            <time datetime="{{ u.kreiran|date:'c' }}">{{ u.kreiran|date:"d.m.Y. H:i" }}</time>
+                            {% if u.fajl_naziv %}<span class="staff-uvoz-dot">·</span><span>{{ u.fajl_naziv }}</span>{% endif %}
+                            {% if u.kreirao %}<span class="staff-uvoz-dot">·</span><span>{{ u.kreirao.get_full_name|default:u.kreirao.email }}</span>{% endif %}
+                        </div>
+                        <div class="staff-uvoz-card__stats">
+                            <span title="Stavki"><strong>{{ u.stavke_n|default:u.broj_redova }}</strong> stavki</span>
+                            <span class="staff-uvoz-stat--ok" title="Ažurirano"><strong>{{ u.broj_azurirano }}</strong> ažur.</span>
+                            <span class="staff-uvoz-stat--new" title="Kreirano"><strong>{{ u.broj_kreirano }}</strong> novih</span>
+                            {% if u.broj_preskoceno %}<span class="staff-uvoz-stat--skip"><strong>{{ u.broj_preskoceno }}</strong> presk.</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="staff-uvoz-card__actions">
+                        <a href="{% url 'staff_uvoz_detail' u.pk %}" class="staff-uvoz-btn staff-uvoz-btn--ghost">Otvori</a>
+                        <form method="post" action="{% url 'staff_uvoz_detail' u.pk %}" onsubmit="return confirm('Obrisati uvoz „{{ u.naziv|escapejs }}” i sve stavke?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_uvoz">
+                            <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--danger-ghost">Obriši</button>
+                        </form>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="staff-uvoz-empty">
+                <div class="staff-uvoz-empty__icon">📂</div>
+                <p>Još nema sačuvanih uvoza.</p>
+                <p class="staff-uvoz-empty__hint">Importuj Excel s lijeve strane — pojavit će se ovdje za pregled i izmjene.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if result %}
+    <div class="staff-uvoz-panel staff-uvoz-panel--result">
+        <div class="staff-uvoz-panel__head">
+            <h2>Rezultat pregleda{% if dry_run %} (dry-run){% endif %}</h2>
+        </div>
+        <div class="staff-uvoz-stats-grid">
+            <div><span>Redova</span><strong>{{ result.rows_total }}</strong></div>
+            <div><span>Kol. &gt; 0</span><strong>{{ result.rows_qty_positive }}</strong></div>
+            <div><span>Ažurirano</span><strong>{{ result.updated }}</strong></div>
+            <div><span>Kreirano</span><strong>{{ result.created }}</strong></div>
+            <div><span>Preskočeno</span><strong>{{ result.skipped_qty }}</strong></div>
+            <div><span>Bez cijene</span><strong>{{ result.skipped_no_price }}</strong></div>
+        </div>
+        {% if result.details %}
+        <ul class="staff-uvoz-log">
+            {% for line in result.details %}
+            <li>{{ line }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+
+<script>
+(function () {
+    var input = document.getElementById('uvozFile');
+    var nameEl = document.getElementById('uvozFileName');
+    var drop = document.getElementById('uvozDrop');
+    if (!input || !nameEl) return;
+    input.addEventListener('change', function () {
+        nameEl.textContent = (input.files && input.files[0]) ? input.files[0].name : 'ili prevuci .xlsx ovdje';
+    });
+    if (drop) {
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            drop.addEventListener(ev, function (e) {
+                e.preventDefault();
+                drop.classList.add('is-drag');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+            drop.addEventListener(ev, function (e) {
+                e.preventDefault();
+                drop.classList.remove('is-drag');
+            });
+        });
+        drop.addEventListener('drop', function (e) {
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length) {
+                input.files = files;
+                nameEl.textContent = files[0].name;
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

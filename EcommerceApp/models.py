@@ -4275,6 +4275,107 @@ class OnlineGiftPush(models.Model):
     def __str__(self):
         return f'Push #{self.pk} → {self.session_key[:8]}…'
 
+
+class Uvoz(models.Model):
+    """Spremljeni uvoz iz Excel uvoznice (pregled / izmjena / brisanje)."""
+
+    naziv = models.CharField(max_length=200, verbose_name='Naziv uvoza')
+    fajl_naziv = models.CharField(max_length=255, blank=True, verbose_name='Ime fajla')
+    napomena = models.TextField(blank=True, verbose_name='Napomena')
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='uvozi',
+        verbose_name='Uvezao',
+    )
+    kreiran = models.DateTimeField(auto_now_add=True, verbose_name='Kreiran')
+    azuriran = models.DateTimeField(auto_now=True, verbose_name='Ažuriran')
+    broj_redova = models.PositiveIntegerField(default=0, verbose_name='Broj redova')
+    broj_azurirano = models.PositiveIntegerField(default=0, verbose_name='Ažurirano artikala')
+    broj_kreirano = models.PositiveIntegerField(default=0, verbose_name='Kreirano artikala')
+    broj_preskoceno = models.PositiveIntegerField(default=0, verbose_name='Preskočeno')
+    log_detalji = models.JSONField(default=list, blank=True, verbose_name='Log')
+
+    class Meta:
+        verbose_name = 'Uvoz'
+        verbose_name_plural = 'Uvozi'
+        ordering = ['-kreiran']
+
+    def __str__(self):
+        return self.naziv or f'Uvoz #{self.pk}'
+
+    @property
+    def stavke_count(self):
+        return self.stavke.count()
+
+
+class UvozStavka(models.Model):
+    """Jedan red uvoza (kao u Excelu)."""
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Na čekanju'
+        CREATED = 'created', 'Kreirano'
+        UPDATED = 'updated', 'Ažurirano'
+        SKIPPED = 'skipped', 'Preskočeno'
+        ERROR = 'error', 'Greška'
+
+    uvoz = models.ForeignKey(
+        Uvoz,
+        on_delete=models.CASCADE,
+        related_name='stavke',
+        verbose_name='Uvoz',
+    )
+    artikal_naziv = models.CharField(max_length=200, verbose_name='Artikal')
+    kolicina = models.DecimalField(
+        max_digits=12, decimal_places=3, null=True, blank=True, verbose_name='Količina',
+    )
+    fakturna = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='Fakturna',
+    )
+    nabavna = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='Nabavna',
+    )
+    vpc_netto = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='Vpc netto',
+    )
+    mpc_brutto = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True, verbose_name='Mpc brutto',
+    )
+    vpc_marza = models.DecimalField(
+        max_digits=12, decimal_places=6, null=True, blank=True, verbose_name='Vpc marža',
+    )
+    ukupno_fakturna = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Ukupno Fakturna',
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='uvoz_stavke',
+        verbose_name='Artikal na sajtu',
+    )
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+        verbose_name='Status',
+    )
+    poruka = models.CharField(max_length=300, blank=True, verbose_name='Poruka')
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Red')
+
+    class Meta:
+        verbose_name = 'Stavka uvoza'
+        verbose_name_plural = 'Stavke uvoza'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return f'{self.artikal_naziv} ({self.get_status_display()})'
+
+
 class AdvisorBeginnerFishType(models.Model):
     """
     Tip seta za savjetnik (Saranski set, Feeder set, Pečaljke za plovak…).

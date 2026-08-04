@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>{{ uvoz.naziv }} — Uvoz</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-uvoz-page staff-uvoz-page--detail">
+    <header class="staff-uvoz-hero staff-uvoz-hero--compact">
+        <div class="staff-uvoz-hero__text">
+            <a href="{% url 'staff_uvoz' %}" class="account-back-link">← Svi uvozi</a>
+            <h1>{{ uvoz.naziv }}</h1>
+            <p class="staff-uvoz-hero__meta">
+                {{ uvoz.kreiran|date:"d.m.Y. H:i" }}
+                {% if uvoz.fajl_naziv %} · {{ uvoz.fajl_naziv }}{% endif %}
+                {% if uvoz.kreirao %} · {{ uvoz.kreirao.get_full_name|default:uvoz.kreirao.email }}{% endif %}
+            </p>
+        </div>
+        <div class="staff-uvoz-hero__actions">
+            <form method="post" onsubmit="return confirm('Ponovo primijeniti sve stavke (kol. > 0) na sajt?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reapply_all">
+                <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--primary">Primijeni sve na sajt</button>
+            </form>
+            <form method="post" onsubmit="return confirm('Trajno obrisati ovaj uvoz i sve stavke?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_uvoz">
+                <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--danger">Obriši uvoz</button>
+            </form>
+        </div>
+    </header>
+
+    <div class="staff-uvoz-stats-grid staff-uvoz-stats-grid--detail">
+        <div><span>Stavki</span><strong>{{ stavke|length }}</strong></div>
+        <div class="is-new"><span>Kreirano</span><strong>{{ status_counts.created }}</strong></div>
+        <div class="is-ok"><span>Ažurirano</span><strong>{{ status_counts.updated }}</strong></div>
+        <div class="is-skip"><span>Preskočeno</span><strong>{{ status_counts.skipped }}</strong></div>
+        <div class="is-err"><span>Greške</span><strong>{{ status_counts.error }}</strong></div>
+        <div><span>Na čekanju</span><strong>{{ status_counts.pending }}</strong></div>
+    </div>
+
+    <div class="staff-uvoz-panel">
+        <div class="staff-uvoz-panel__head">
+            <h2>Naziv i napomena</h2>
+        </div>
+        <form method="post" class="staff-uvoz-meta-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_meta">
+            <label class="staff-uvoz-field">
+                <span class="staff-uvoz-field__label">Naziv</span>
+                <input type="text" name="naziv" class="staff-uvoz-input" value="{{ uvoz.naziv }}" maxlength="200" required>
+            </label>
+            <label class="staff-uvoz-field">
+                <span class="staff-uvoz-field__label">Napomena</span>
+                <textarea name="napomena" class="staff-uvoz-input staff-uvoz-textarea" rows="2" placeholder="Opcionalno…">{{ uvoz.napomena }}</textarea>
+            </label>
+            <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--ghost">Sačuvaj naziv</button>
+        </form>
+    </div>
+
+    <div class="staff-uvoz-panel">
+        <div class="staff-uvoz-panel__head">
+            <h2>Stavke</h2>
+            <span class="staff-uvoz-chip staff-uvoz-chip--muted">{{ stavke|length }} redova</span>
+        </div>
+
+        {% if stavke %}
+        <div class="staff-uvoz-table-wrap">
+            <table class="staff-uvoz-data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Artikal</th>
+                        <th class="num">Količina</th>
+                        <th class="num">Mpc brutto</th>
+                        <th class="num">Fakturna</th>
+                        <th class="num">Nabavna</th>
+                        <th>Status</th>
+                        <th>Sajt</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in stavke %}
+                    <tr class="staff-uvoz-row staff-uvoz-row--{{ s.status }}" data-stavka-row="{{ s.pk }}">
+                        <td class="muted">{{ forloop.counter }}</td>
+                        <td>
+                            <strong class="staff-uvoz-row__name">{{ s.artikal_naziv }}</strong>
+                            {% if s.poruka %}<div class="staff-uvoz-row__msg">{{ s.poruka }}</div>{% endif %}
+                        </td>
+                        <td class="num">{{ s.kolicina|default:"—" }}</td>
+                        <td class="num">{% if s.mpc_brutto %}{{ s.mpc_brutto }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{{ s.fakturna|default:"—" }}</td>
+                        <td class="num">{{ s.nabavna|default:"—" }}</td>
+                        <td>
+                            <span class="staff-uvoz-status staff-uvoz-status--{{ s.status }}">{{ s.get_status_display }}</span>
+                        </td>
+                        <td>
+                            {% if s.product %}
+                            <a href="{% url 'product_detail' s.product.slug %}" class="staff-uvoz-link" target="_blank" rel="noopener">Otvori</a>
+                            {% else %}
+                            <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="staff-uvoz-row__acts">
+                            <button type="button" class="staff-uvoz-btn staff-uvoz-btn--tiny" data-edit-toggle="{{ s.pk }}">Izmijeni</button>
+                        </td>
+                    </tr>
+                    <tr class="staff-uvoz-edit-row" id="edit-{{ s.pk }}" hidden>
+                        <td colspan="9">
+                            <form method="post" class="staff-uvoz-edit-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="save_stavka">
+                                <input type="hidden" name="stavka_id" value="{{ s.pk }}">
+                                <div class="staff-uvoz-edit-grid">
+                                    <label class="staff-uvoz-field">
+                                        <span class="staff-uvoz-field__label">Artikal</span>
+                                        <input type="text" name="artikal_naziv" class="staff-uvoz-input" value="{{ s.artikal_naziv }}" required>
+                                    </label>
+                                    <label class="staff-uvoz-field">
+                                        <span class="staff-uvoz-field__label">Količina</span>
+                                        <input type="text" name="kolicina" class="staff-uvoz-input" value="{{ s.kolicina|default_if_none:'' }}" inputmode="decimal">
+                                    </label>
+                                    <label class="staff-uvoz-field">
+                                        <span class="staff-uvoz-field__label">Mpc brutto</span>
+                                        <input type="text" name="mpc_brutto" class="staff-uvoz-input" value="{{ s.mpc_brutto|default_if_none:'' }}" inputmode="decimal">
+                                    </label>
+                                    <label class="staff-uvoz-field">
+                                        <span class="staff-uvoz-field__label">Fakturna</span>
+                                        <input type="text" name="fakturna" class="staff-uvoz-input" value="{{ s.fakturna|default_if_none:'' }}" inputmode="decimal">
+                                    </label>
+                                    <label class="staff-uvoz-field">
+                                        <span class="staff-uvoz-field__label">Nabavna</span>
+                                        <input type="text" name="nabavna" class="staff-uvoz-input" value="{{ s.nabavna|default_if_none:'' }}" inputmode="decimal">
+                                    </label>
+                                    <label class="staff-uvoz-field">
+                                        <span class="staff-uvoz-field__label">Vpc netto</span>
+                                        <input type="text" name="vpc_netto" class="staff-uvoz-input" value="{{ s.vpc_netto|default_if_none:'' }}" inputmode="decimal">
+                                    </label>
+                                </div>
+                                <div class="staff-uvoz-edit-actions">
+                                    <label class="staff-uvoz-check">
+                                        <input type="checkbox" name="apply" value="1" checked>
+                                        <span>Primijeni na sajt (stanje + cijena)</span>
+                                    </label>
+                                    <div class="staff-uvoz-edit-actions__btns">
+                                        <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--primary staff-uvoz-btn--sm">Sačuvaj</button>
+                                        <button type="button" class="staff-uvoz-btn staff-uvoz-btn--ghost staff-uvoz-btn--sm" data-edit-close="{{ s.pk }}">Otkaži</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="staff-uvoz-edit-side">
+                                <form method="post" class="inline" onsubmit="return confirm('Primijeniti samo ovu stavku na sajt?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reapply_stavka">
+                                    <input type="hidden" name="stavka_id" value="{{ s.pk }}">
+                                    <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--ghost staff-uvoz-btn--sm">Samo primijeni</button>
+                                </form>
+                                <form method="post" class="inline" onsubmit="return confirm('Obrisati stavku?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_stavka">
+                                    <input type="hidden" name="stavka_id" value="{{ s.pk }}">
+                                    <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--danger-ghost staff-uvoz-btn--sm">Obriši stavku</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="staff-uvoz-empty">
+            <p>Nema stavki u ovom uvozu.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+(function () {
+    document.querySelectorAll('[data-edit-toggle]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-edit-toggle');
+            var row = document.getElementById('edit-' + id);
+            if (!row) return;
+            var open = row.hidden;
+            document.querySelectorAll('.staff-uvoz-edit-row').forEach(function (r) { r.hidden = true; });
+            row.hidden = !open;
+            if (!row.hidden) {
+                var input = row.querySelector('input[name="artikal_naziv"]');
+                if (input) input.focus();
+            }
+        });
+    });
+    document.querySelectorAll('[data-edit-close]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-edit-close');
+            var row = document.getElementById('edit-' + id);
+            if (row) row.hidden = true;
+        });
+    });
+})();
+</script>
+{% endblock %}

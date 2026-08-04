@@ -4921,11 +4921,196 @@ def staff_admin_panel(request):
         nova_count = Order.objects.filter(status=Order.Status.NOVA).count()
     context = {
         **_base_context(),
-        'olx_chat_configured': olx_chat_configured(),
         'is_superuser_staff': request.user.is_superuser,
         'new_orders_count': nova_count,
     }
     return render(request, 'staff/admin_panel.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_uvoz(request):
+    """
+    Lista sačuvanih uvoza + upload novog Excel-a.
+    """
+    from .models import Uvoz
+    from .uvoz_import import apply_uvoz_import, create_uvoz_from_rows, parse_uvoz_excel
+
+    result = None
+    dry_run = False
+
+    if request.method == 'POST' and request.POST.get('action') == 'import':
+        dry_run = (request.POST.get('dry_run') or '').strip() in ('1', 'true', 'on', 'yes')
+        uploaded = request.FILES.get('excel_file')
+        custom_name = (request.POST.get('naziv') or '').strip()
+        if not uploaded:
+            messages.error(request, 'Odaberi Excel fajl (.xlsx).')
+        else:
+            try:
+                rows = parse_uvoz_excel(uploaded)
+                if not rows:
+                    messages.warning(
+                        request,
+                        'U fajlu nema redova artikala ispod zaglavlja Artikal / Mpc brutto.',
+                    )
+                elif dry_run:
+                    result = apply_uvoz_import(rows, dry_run=True)
+                    messages.info(
+                        request,
+                        f'Pregled (nije snimljeno): {result["updated"]} ažuriranja, '
+                        f'{result["created"]} novih, {result["rows_qty_positive"]} sa količinom > 0.',
+                    )
+                else:
+                    uvoz, result = create_uvoz_from_rows(
+                        rows,
+                        fajl_naziv=getattr(uploaded, 'name', '') or '',
+                        naziv=custom_name,
+                        user=request.user,
+                        apply_to_products=True,
+                    )
+                    messages.success(
+                        request,
+                        f'Uvoz „{uvoz.naziv}” sačuvan: {result["updated"]} ažurirano, '
+                        f'{result["created"]} kreirano.',
+                    )
+                    if result.get('errors'):
+                        messages.warning(
+                            request,
+                            f'{len(result["errors"])} greška(ka) — vidi detalje uvoza.',
+                        )
+                    return redirect('staff_uvoz_detail', pk=uvoz.pk)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            except Exception as exc:
+                logger.exception('Uvoz Excel nije uspio')
+                messages.error(request, f'Uvoz nije uspio: {exc}')
+
+    uvozi = (
+        Uvoz.objects.select_related('kreirao')
+        .annotate(stavke_n=Count('stavke'))
+        .order_by('-kreiran')[:100]
+    )
+    context = {
+        **_base_context(),
+        'uvozi': uvozi,
+        'result': result,
+        'dry_run': dry_run,
+    }
+    return render(request, 'staff/uvoz.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_uvoz_detail(request, pk):
+    """Pregled / izmjena stavki uvoza / brisanje / re-apply."""
+    from .models import Uvoz, UvozStavka
+    from .uvoz_import import parse_money, parse_qty, reapply_stavka
+
+    uvoz = get_object_or_404(Uvoz.objects.select_related('kreirao'), pk=pk)
+    stavke = list(uvoz.stavke.select_related('product').all())
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+
+        if action == 'delete_uvoz':
+            name = uvoz.naziv
+            uvoz.delete()
+            messages.success(request, f'Uvoz „{name}” je obrisan.')
+            return redirect('staff_uvoz')
+
+        if action == 'save_meta':
+            uvoz.naziv = (request.POST.get('naziv') or uvoz.naziv).strip()[:200] or uvoz.naziv
+            uvoz.napomena = (request.POST.get('napomena') or '').strip()
+            uvoz.save(update_fields=['naziv', 'napomena', 'azuriran'])
+            messages.success(request, 'Naziv i napomena sačuvani.')
+            return redirect('staff_uvoz_detail', pk=uvoz.pk)
+
+        if action == 'delete_stavka':
+            try:
+                sid = int(request.POST.get('stavka_id') or 0)
+            except (TypeError, ValueError):
+                sid = 0
+            deleted, _ = UvozStavka.objects.filter(pk=sid, uvoz=uvoz).delete()
+            if deleted:
+                uvoz.broj_redova = uvoz.stavke.count()
+                uvoz.save(update_fields=['broj_redova', 'azuriran'])
+                messages.success(request, 'Stavka obrisana.')
+            else:
+                messages.error(request, 'Stavka nije pronađena.')
+            return redirect('staff_uvoz_detail', pk=uvoz.pk)
+
+        if action == 'save_stavka':
+            try:
+                sid = int(request.POST.get('stavka_id') or 0)
+            except (TypeError, ValueError):
+                sid = 0
+            stavka = UvozStavka.objects.filter(pk=sid, uvoz=uvoz).first()
+            if not stavka:
+                messages.error(request, 'Stavka nije pronađena.')
+                return redirect('staff_uvoz_detail', pk=uvoz.pk)
+
+            stavka.artikal_naziv = (request.POST.get('artikal_naziv') or stavka.artikal_naziv).strip()[:200]
+            stavka.kolicina = parse_qty(request.POST.get('kolicina'))
+            stavka.mpc_brutto = parse_money(request.POST.get('mpc_brutto'))
+            stavka.fakturna = parse_money(request.POST.get('fakturna'))
+            stavka.nabavna = parse_money(request.POST.get('nabavna'))
+            stavka.vpc_netto = parse_money(request.POST.get('vpc_netto'))
+            stavka.ukupno_fakturna = parse_money(request.POST.get('ukupno_fakturna'))
+            stavka.save()
+
+            apply_now = (request.POST.get('apply') or '').strip() in ('1', 'true', 'on', 'yes')
+            if apply_now:
+                reapply_stavka(stavka)
+                messages.success(request, f'Stavka sačuvana i primijenjena: {stavka.poruka}')
+            else:
+                messages.success(request, 'Stavka sačuvana (nije primijenjena na sajt).')
+            return redirect('staff_uvoz_detail', pk=uvoz.pk)
+
+        if action == 'reapply_all':
+            ok = 0
+            err = 0
+            for stavka in uvoz.stavke.all():
+                if stavka.kolicina is None or stavka.kolicina <= 0:
+                    continue
+                if not stavka.mpc_brutto or stavka.mpc_brutto <= 0:
+                    continue
+                reapply_stavka(stavka)
+                if stavka.status == UvozStavka.Status.ERROR:
+                    err += 1
+                else:
+                    ok += 1
+            uvoz.broj_azurirano = uvoz.stavke.filter(status=UvozStavka.Status.UPDATED).count()
+            uvoz.broj_kreirano = uvoz.stavke.filter(status=UvozStavka.Status.CREATED).count()
+            uvoz.save(update_fields=['broj_azurirano', 'broj_kreirano', 'azuriran'])
+            messages.success(request, f'Ponovo primijenjeno: {ok} stavki' + (f', grešaka {err}' if err else '') + '.')
+            return redirect('staff_uvoz_detail', pk=uvoz.pk)
+
+        if action == 'reapply_stavka':
+            try:
+                sid = int(request.POST.get('stavka_id') or 0)
+            except (TypeError, ValueError):
+                sid = 0
+            stavka = UvozStavka.objects.filter(pk=sid, uvoz=uvoz).first()
+            if not stavka:
+                messages.error(request, 'Stavka nije pronađena.')
+            else:
+                reapply_stavka(stavka)
+                messages.success(request, f'Primijenjeno: {stavka.poruka}')
+            return redirect('staff_uvoz_detail', pk=uvoz.pk)
+
+    context = {
+        **_base_context(),
+        'uvoz': uvoz,
+        'stavke': stavke,
+        'status_counts': {
+            'created': sum(1 for s in stavke if s.status == 'created'),
+            'updated': sum(1 for s in stavke if s.status == 'updated'),
+            'skipped': sum(1 for s in stavke if s.status == 'skipped'),
+            'error': sum(1 for s in stavke if s.status == 'error'),
+            'pending': sum(1 for s in stavke if s.status == 'pending'),
+        },
+    }
+    return render(request, 'staff/uvoz_detail.html', context)
 
 
 @login_required(login_url='login')

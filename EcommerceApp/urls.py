@@ -174,6 +174,8 @@ urlpatterns = [
         name='staff_loyalty_card_barcode',
     ),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
+    path('nalog/uvoz/', views.staff_uvoz, name='staff_uvoz'),
+    path('nalog/uvoz/<int:pk>/', views.staff_uvoz_detail, name='staff_uvoz_detail'),
     path('nalog/olx-poruke/', views.staff_olx_messages, name='staff_olx_messages'),
     path('nalog/pretraga-kategorija/', views.staff_category_search, name='staff_category_search'),
     path('nalog/pretraga-brendova/', views.staff_brand_search, name='staff_brand_search'),
