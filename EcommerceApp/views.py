@@ -769,6 +769,9 @@ SEARCH_SCORE = {
     # Sve riječi upita u nazivu, redoslijed nije bitan (itana feeder ⊆ … ITANA … Feeder …)
     'name_all_words': 920,
     'name_contains': 880,      # cijela fraza / podstring u nazivu
+    # Tagovi artikla (M2M) — ispod naziva/šifre, iznad tagova potkategorije
+    'exact_product_tag': 800,
+    'product_tag': 760,
     # Tagovi potkategorije — ispod naziva i šifre
     'exact_category_tag': 750,
     'category_tag': 700,
@@ -970,6 +973,115 @@ def _category_ids_for_search_query(query, *, exact_only=False):
     return set(_fuzzy_cat_ids_for_query_cached(_phrase_key(q) or q.casefold()))
 
 
+# —— Tagovi artikla (Product.tagovi M2M) ——
+_PRODUCT_TAG_CACHE = None
+_PRODUCT_TAG_CACHE_AT = 0.0
+_PRODUCT_TAG_CACHE_TTL_SEC = 45.0
+
+
+def _cached_product_tags():
+    """Lista {id, naziv} svih Tag zapisa (brzo matchanje bez N+1)."""
+    global _PRODUCT_TAG_CACHE, _PRODUCT_TAG_CACHE_AT
+    import time
+
+    now = time.monotonic()
+    if (
+        _PRODUCT_TAG_CACHE is None
+        or (now - _PRODUCT_TAG_CACHE_AT) > _PRODUCT_TAG_CACHE_TTL_SEC
+    ):
+        from .models import Tag
+
+        _PRODUCT_TAG_CACHE = [
+            {'id': tid, 'naziv': name or ''}
+            for tid, name in Tag.objects.values_list('id', 'naziv')
+        ]
+        _PRODUCT_TAG_CACHE_AT = now
+    return _PRODUCT_TAG_CACHE
+
+
+def invalidate_product_tag_search_cache():
+    global _PRODUCT_TAG_CACHE, _PRODUCT_TAG_CACHE_AT
+    _PRODUCT_TAG_CACHE = None
+    _PRODUCT_TAG_CACHE_AT = 0.0
+    _product_ids_for_tag_query_cached.cache_clear()
+
+
+@lru_cache(maxsize=256)
+def _product_ids_for_tag_query_cached(q_key: str) -> frozenset:
+    """
+    Artikli čiji M2M tag odgovara upitu (isti match engine kao potkategorija tagovi).
+    q_key = _phrase_key(upit) — već foldan.
+    """
+    if not q_key or len(q_key) < 2:
+        return frozenset()
+
+    # Match funkcije same rade fold/normalize — prosljeđujemo q_key kao upit
+    query = q_key
+    matching_tag_ids = []
+    for row in _cached_product_tags():
+        name = row.get('naziv') or ''
+        if not name:
+            continue
+        if _tag_matches_category_search_tag(name, query):
+            matching_tag_ids.append(row['id'])
+            continue
+        # Jednorječni: širi fuzzy (npr. „shimano” ≈ „Shimano”)
+        if ' ' not in query and _tag_matches_query(name, query):
+            matching_tag_ids.append(row['id'])
+
+    if not matching_tag_ids:
+        return frozenset()
+
+    from .models import Product
+
+    return frozenset(
+        Product.objects.filter(tagovi__id__in=matching_tag_ids)
+        .values_list('id', flat=True)
+        .distinct(),
+    )
+
+
+def _product_ids_for_product_tag_query(query):
+    raw = _normalize_phrase(query)
+    if not raw or len(raw) < 2:
+        return set()
+    key = _phrase_key(raw) or raw.casefold()
+    ids = set(_product_ids_for_tag_query_cached(key))
+    # Dopuna: folded drugačiji od raw (diakritika)
+    folded_raw = _search_fold(raw)
+    if folded_raw and folded_raw != key:
+        ids |= set(_product_ids_for_tag_query_cached(folded_raw))
+    return ids
+
+
+def _product_tag_match_level(product, query):
+    """
+    2 = tačan match taga artikla
+    1 = fuzzy / djelomični match taga artikla
+    0 = nema
+    """
+    raw = _normalize_phrase(query)
+    if not raw or len(raw) < 2:
+        return 0
+    try:
+        tags = list(product.tagovi.all())
+    except Exception:
+        return 0
+    if not tags:
+        return 0
+
+    best = 0
+    q_key = _phrase_key(raw) or raw.casefold()
+    for tag in tags:
+        name = getattr(tag, 'naziv', None) or str(tag)
+        name_key = _phrase_key(name) or (name or '').casefold()
+        if name_key and q_key and name_key == q_key:
+            return 2
+        if _tag_matches_category_search_tag(name, raw) or _tag_matches_query(name, raw):
+            best = max(best, 1)
+    return best
+
+
 def _text_has_query(haystack, query_folded, *, as_word=False):
     """Da li folded haystack sadrži folded query (opcionalno kao riječ)."""
     hay = _search_fold(haystack or '')
@@ -1064,10 +1176,12 @@ def _apply_search_filter(products_qs, query):
     Pretraga:
     1) naziv artikla — riječi u bilo kojem redoslijedu (AND)
     2) šifra artikla / varijacije
-    3) search tagovi potkategorije (višerječni tag = JEDAN tag, tačna fraza)
+    3) tagovi artikla (M2M Tag)
+    4) search tagovi potkategorije (višerječni tag = JEDAN tag, tačna fraza)
 
     Primjer naziv: „itana spin” → ITANA … Spin …
-    Primjer tag: „varalica za more” → samo potkategorija s tim tagom.
+    Primjer tag artikla: „som” → artikli s tagom Som
+    Primjer tag potkategorije: „varalica za more” → potkategorija s tim tagom.
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -1087,6 +1201,11 @@ def _apply_search_filter(products_qs, query):
     if folded_raw and folded_raw != raw.casefold():
         match |= _search_exists_match(folded_raw)
 
+    # Tagovi artikla (M2M)
+    product_tag_ids = _product_ids_for_product_tag_query(raw)
+    if product_tag_ids:
+        match |= Q(pk__in=product_tag_ids)
+
     if exact_cat_ids:
         # Tag-fraza: potkategorija ILI match po nazivu/šifri
         match |= Q(kategorija_id__in=exact_cat_ids)
@@ -1097,7 +1216,10 @@ def _apply_search_filter(products_qs, query):
         if fuzzy_cat_ids:
             match |= Q(kategorija_id__in=fuzzy_cat_ids)
 
-    return products_qs.filter(match)
+    # icontains na tag nazivu kao brzi SQL fallback (ako cache/fuzzy ne uhvati)
+    match |= Q(tagovi__naziv__icontains=raw)
+
+    return products_qs.filter(match).distinct()
 
 
 def _product_lager_priority(product):
@@ -1244,6 +1366,16 @@ def _search_relevance_score(product, query):
     ):
         best = max(best, S['name_contains'])
 
+    # —— Tagovi artikla (M2M) ——
+    try:
+        ptag = _product_tag_match_level(product, raw)
+        if ptag >= 2:
+            best = max(best, S['exact_product_tag'])
+        elif ptag == 1:
+            best = max(best, S['product_tag'])
+    except Exception:
+        pass
+
     # —— Tag potkategorije (ispod naziva/šifre) ——
     try:
         level = _product_subcategory_tag_match_level(product, raw)
@@ -1267,19 +1399,23 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     if not products:
         return products
 
-    # Lagani prefetch — samo ako treba score (varijacije za cijenu, ne tagovi M2M)
+    # Prefetch za score (varijacije + tagovi artikla)
     if query or price_sort:
         try:
             from django.db.models import prefetch_related_objects
 
-            prefetch_related_objects(list(products), 'varijacije')
+            relations = ['varijacije']
+            if query:
+                relations.append('tagovi')
+            prefetch_related_objects(list(products), *relations)
         except Exception:
             pass
 
-    # Cache cat-id setova za cijeli sort (1× po upitu, ne N× po artiklu)
+    # Cache cat/tag setova za cijeli sort (1× po upitu, ne N× po artiklu)
     if query:
         _subcategory_ids_for_exact_tag(query)
         _category_ids_for_search_query(query)
+        _product_ids_for_product_tag_query(query)
 
     def key(p):
         rel = -_search_relevance_score(p, query) if query else 0
@@ -1406,6 +1542,8 @@ def _suggest_relevance_annotation(query):
             When(naziv__istartswith=term, then=Value(80)),
             When(naziv__icontains=term, then=Value(50)),
             When(sifra__icontains=term, then=Value(40)),
+            When(tagovi__naziv__iexact=term, then=Value(55)),
+            When(tagovi__naziv__icontains=term, then=Value(35)),
         ])
     return Case(*whens, default=Value(10), output_field=IntegerField())
 
@@ -4003,6 +4141,66 @@ def _staff_parse_tag_ids(request):
     return tag_ids
 
 
+def _staff_parse_tag_names(raw_text):
+    """
+    Ručni unos tagova: zarez / novi red / ; / | dijeli tagove.
+    Razmaci unutar taga ostaju (npr. „fider strune”).
+    """
+    if not raw_text:
+        return []
+    text = str(raw_text).replace('\u00a0', ' ').replace('\r\n', '\n').replace('\r', '\n')
+    text = text.replace(';', '\n').replace('|', '\n')
+    names = []
+    seen = set()
+    for line in text.split('\n'):
+        for part in line.split(','):
+            name = re.sub(r'\s+', ' ', (part or '').strip())
+            if not name:
+                continue
+            key = name.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            names.append(name[:50])
+    return names
+
+
+def _staff_resolve_product_tags(request):
+    """
+    Spoji chipove (tag_ids) + ručni unos (tag_names / tagovi_tekst).
+    Novi nazivi se kreiraju (get_or_create).
+    """
+    from .models import Tag
+
+    by_id = {}
+    for tid in _staff_parse_tag_ids(request):
+        tag = Tag.objects.filter(pk=tid).first()
+        if tag:
+            by_id[tag.pk] = tag
+
+    free_chunks = []
+    free_chunks.extend(request.POST.getlist('tag_names'))
+    free_chunks.append(request.POST.get('tagovi_tekst') or '')
+    created_any = False
+    for chunk in free_chunks:
+        for name in _staff_parse_tag_names(chunk):
+            try:
+                tag, created = Tag.get_or_create_by_name(name)
+            except ValueError:
+                continue
+            by_id[tag.pk] = tag
+            if created:
+                created_any = True
+
+    if created_any:
+        try:
+            invalidate_product_tag_search_cache()
+        except Exception:
+            pass
+
+    return list(by_id.values())
+
+
 def _normalize_phone_query(value):
     return re.sub(r'\D', '', value or '')
 
@@ -6088,11 +6286,17 @@ def staff_product_quick_edit(request, slug):
                     redoslijed=max_order + index,
                 )
                 extra_n += 1
-        # Tagovi
-        if 'tag_ids' in request.POST or request.POST.get('set_tags_with_save'):
-            tag_ids = _staff_parse_tag_ids(request)
-            tags = list(Tag.objects.filter(pk__in=tag_ids))
+        # Tagovi (chipovi + ručni unos zarezom)
+        tags_touched = (
+            'tag_ids' in request.POST
+            or 'tag_names' in request.POST
+            or 'tagovi_tekst' in request.POST
+            or request.POST.get('set_tags_with_save')
+        )
+        if tags_touched:
+            tags = _staff_resolve_product_tags(request)
             product.tagovi.set(tags)
+            changed.append('tagovi')
 
         parts = []
         if 'cijena' in changed:
@@ -6114,6 +6318,8 @@ def staff_product_quick_edit(request, slug):
                 parts.append(f'pakovanje {product.pakovanje_komada} kom.')
             else:
                 parts.append('pakovanje isključeno')
+        if 'tagovi' in changed:
+            parts.append(f'tagovi ({product.tagovi.count()})')
         if extra_n:
             parts.append(f'+{extra_n} slika')
         messages.success(
@@ -6225,8 +6431,7 @@ def staff_product_quick_edit(request, slug):
         image.delete()
         messages.success(request, 'Dodatna slika je uklonjena.')
     elif action == 'set_tags':
-        tag_ids = _staff_parse_tag_ids(request)
-        tags = list(Tag.objects.filter(pk__in=tag_ids))
+        tags = _staff_resolve_product_tags(request)
         product.tagovi.set(tags)
         messages.success(request, f'Tagovi ažurirani ({len(tags)}).')
     elif action == 'activate_akcija':

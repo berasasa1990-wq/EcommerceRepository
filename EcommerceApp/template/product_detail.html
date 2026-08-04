@@ -313,6 +313,7 @@
                         <div class="staff-product-bar-section">
                             <h3 class="staff-product-section-title">Tagovi</h3>
                             <div class="staff-tag-picker" data-staff-tag-picker>
+                                <input type="hidden" name="set_tags_with_save" value="1">
                                 <div class="staff-tag-chips" data-tag-chips>
                                     {% for tag in product.tagovi.all %}
                                     <span class="staff-tag-chip" data-tag-id="{{ tag.pk }}">
@@ -323,18 +324,29 @@
                                 </div>
                                 <div data-tag-hidden-inputs>
                                     {% for tag in product.tagovi.all %}
-                                    <input type="hidden" name="tag_ids" value="{{ tag.pk }}">
+                                    <input type="hidden" name="tag_ids" value="{{ tag.pk }}" data-tag-id="{{ tag.pk }}">
                                     {% endfor %}
                                 </div>
                                 <div class="staff-lookup staff-lookup--tags" data-staff-tag-search data-search-url="{% url 'staff_tag_search' %}">
                                     <label class="staff-product-price-label">
-                                        <span>Dodaj tag</span>
+                                        <span>Pretraži postojeći tag</span>
                                         <div class="staff-lookup-field">
-                                            <input type="text" class="staff-lookup-input" data-tag-search-input placeholder="Pretraži tag…" autocomplete="off" inputmode="search">
+                                            <input type="text" class="staff-lookup-input" data-tag-search-input placeholder="Pretraži tag… (Enter = dodaj)" autocomplete="off" inputmode="search">
                                             <div class="staff-lookup-list" data-tag-search-list hidden role="listbox"></div>
                                         </div>
                                     </label>
                                 </div>
+                                <label class="staff-product-price-label staff-tag-manual">
+                                    <span>Ručni unos (zarezom)</span>
+                                    <textarea
+                                        name="tagovi_tekst"
+                                        rows="2"
+                                        class="staff-product-textarea"
+                                        data-tag-manual-input
+                                        placeholder="npr. som, fider strune, varalica za more"
+                                        autocomplete="off"></textarea>
+                                    <small class="staff-field-hint">Odvoji tagove zarezom ili novim redom. Novi se kreiraju automatski. Enter u polju pretrage također dodaje tag.</small>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -731,16 +743,31 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
         var input = searchRoot && searchRoot.querySelector('[data-tag-search-input]');
         var list = searchRoot && searchRoot.querySelector('[data-tag-search-list]');
         var searchUrl = searchRoot && searchRoot.getAttribute('data-search-url');
+        var manualInput = root.querySelector('[data-tag-manual-input]');
         var debounceTimer = null;
         var fetchController = null;
         if (!chipsWrap || !hiddenWrap || !input || !list || !searchUrl) return;
 
-        function hasTag(id) {
+        function hasTagId(id) {
             return !!root.querySelector('.staff-tag-chip[data-tag-id="' + id + '"]');
         }
 
+        function hasTagName(name) {
+            var key = (name || '').trim().toLowerCase();
+            if (!key) return false;
+            var found = false;
+            root.querySelectorAll('.staff-tag-chip').forEach(function (chip) {
+                var label = (chip.querySelector('.staff-tag-chip-label') || {}).textContent || '';
+                var chipName = chip.getAttribute('data-tag-name') || '';
+                if (label.trim().toLowerCase() === key || chipName.trim().toLowerCase() === key) {
+                    found = true;
+                }
+            });
+            return found;
+        }
+
         function addTag(id, label) {
-            if (!id || hasTag(id)) return;
+            if (!id || hasTagId(id)) return;
             var chip = document.createElement('span');
             chip.className = 'staff-tag-chip';
             chip.setAttribute('data-tag-id', id);
@@ -758,11 +785,51 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
             closeList();
         }
 
-        function removeTag(id) {
-            var chip = root.querySelector('.staff-tag-chip[data-tag-id="' + id + '"]');
-            if (chip) chip.remove();
-            var hidden = hiddenWrap.querySelector('input[data-tag-id="' + id + '"]');
-            if (hidden) hidden.remove();
+        function addTagByName(name) {
+            name = (name || '').replace(/\s+/g, ' ').trim();
+            if (!name || hasTagName(name)) return false;
+            var chip = document.createElement('span');
+            chip.className = 'staff-tag-chip staff-tag-chip--new';
+            chip.setAttribute('data-tag-name', name);
+            chip.innerHTML =
+                '<span class="staff-tag-chip-label">' + escapeHtml(name) + '</span>' +
+                '<button type="button" class="staff-tag-chip-remove" aria-label="Ukloni tag">×</button>';
+            chipsWrap.appendChild(chip);
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'tag_names';
+            hidden.value = name;
+            hidden.setAttribute('data-tag-name', name);
+            hiddenWrap.appendChild(hidden);
+            return true;
+        }
+
+        function addNamesFromText(text) {
+            if (!text) return 0;
+            var parts = String(text).split(/[,;\n|]+/);
+            var n = 0;
+            parts.forEach(function (part) {
+                if (addTagByName(part)) n += 1;
+            });
+            return n;
+        }
+
+        function removeTag(chip) {
+            if (!chip) return;
+            var id = chip.getAttribute('data-tag-id');
+            var name = chip.getAttribute('data-tag-name');
+            chip.remove();
+            if (id) {
+                var hiddenId = hiddenWrap.querySelector('input[data-tag-id="' + id + '"]');
+                if (hiddenId) hiddenId.remove();
+            }
+            if (name) {
+                hiddenWrap.querySelectorAll('input[name="tag_names"]').forEach(function (el) {
+                    if ((el.value || '').trim().toLowerCase() === name.trim().toLowerCase()) {
+                        el.remove();
+                    }
+                });
+            }
         }
 
         function closeList() {
@@ -770,17 +837,26 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
             list.innerHTML = '';
         }
 
-        function renderResults(results) {
-            if (!results.length) {
-                list.innerHTML = '<div class="staff-lookup-empty" role="status">Nema rezultata.</div>';
-                list.hidden = false;
-                return;
+        function renderResults(results, query) {
+            var html = '';
+            if (results.length) {
+                html = results.map(function (item) {
+                    return '<button type="button" class="staff-lookup-option" role="option" data-id="' +
+                        escapeHtml(item.id) + '" data-label="' + escapeHtml(item.label) + '">' +
+                        escapeHtml(item.label) + '</button>';
+                }).join('');
             }
-            list.innerHTML = results.map(function (item) {
-                return '<button type="button" class="staff-lookup-option" role="option" data-id="' +
-                    escapeHtml(item.id) + '" data-label="' + escapeHtml(item.label) + '">' +
-                    escapeHtml(item.label) + '</button>';
-            }).join('');
+            var q = (query || '').trim();
+            if (q) {
+                html +=
+                    '<button type="button" class="staff-lookup-option staff-lookup-option--create" role="option" data-create-name="' +
+                    escapeHtml(q) + '">+ Dodaj „' + escapeHtml(q) + '”</button>';
+            }
+            if (!html) {
+                list.innerHTML = '<div class="staff-lookup-empty" role="status">Nema rezultata.</div>';
+            } else {
+                list.innerHTML = html;
+            }
             list.hidden = false;
         }
 
@@ -798,12 +874,12 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
                     return response.json();
                 })
                 .then(function (data) {
-                    renderResults(data.results || []);
+                    renderResults(data.results || [], query);
                 })
                 .catch(function (error) {
                     if (error && error.name === 'AbortError') return;
-                    list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga nije dostupna.</div>';
-                    list.hidden = false;
+                    // I bez API-ja omogući ručni unos
+                    renderResults([], query);
                 });
         }
 
@@ -811,8 +887,7 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
             var removeBtn = event.target.closest('.staff-tag-chip-remove');
             if (!removeBtn) return;
             var chip = removeBtn.closest('.staff-tag-chip');
-            if (!chip) return;
-            removeTag(chip.getAttribute('data-tag-id'));
+            removeTag(chip);
         });
 
         input.addEventListener('focus', function () {
@@ -820,17 +895,68 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
         });
 
         input.addEventListener('input', function () {
+            // Zarez u polju pretrage → odmah dodaj prethodni tag
+            var val = input.value;
+            if (val.indexOf(',') !== -1 || val.indexOf(';') !== -1) {
+                var parts = val.split(/[,;]+/);
+                var last = parts.pop();
+                parts.forEach(function (p) { addTagByName(p); });
+                input.value = last || '';
+            }
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(function () {
                 fetchResults(input.value.trim());
             }, 220);
         });
 
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                var val = input.value.trim();
+                if (!val) return;
+                // Ako ima tačan match u listi — uzmi prvi; inače kreiraj po imenu
+                var firstOpt = list.querySelector('.staff-lookup-option:not(.staff-lookup-option--create)');
+                var createOpt = list.querySelector('.staff-lookup-option--create');
+                if (firstOpt && (firstOpt.getAttribute('data-label') || '').toLowerCase() === val.toLowerCase()) {
+                    addTag(firstOpt.getAttribute('data-id'), firstOpt.getAttribute('data-label'));
+                } else if (val.indexOf(',') !== -1) {
+                    addNamesFromText(val);
+                    input.value = '';
+                    closeList();
+                } else {
+                    addTagByName(val);
+                    input.value = '';
+                    closeList();
+                }
+            }
+        });
+
         list.addEventListener('click', function (event) {
+            var createBtn = event.target.closest('.staff-lookup-option--create');
+            if (createBtn) {
+                addTagByName(createBtn.getAttribute('data-create-name'));
+                input.value = '';
+                closeList();
+                return;
+            }
             var option = event.target.closest('.staff-lookup-option');
             if (!option) return;
             addTag(option.getAttribute('data-id'), option.getAttribute('data-label'));
         });
+
+        if (manualInput) {
+            manualInput.addEventListener('blur', function () {
+                var n = addNamesFromText(manualInput.value);
+                if (n) manualInput.value = '';
+            });
+            manualInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    var n = addNamesFromText(manualInput.value);
+                    if (n) manualInput.value = '';
+                }
+            });
+        }
 
         document.addEventListener('click', function (event) {
             if (!searchRoot.contains(event.target)) {

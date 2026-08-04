@@ -370,6 +370,14 @@ ODOO_API_KEY = _env('ODOO_API_KEY', '')
 TURNSTILE_SITE_KEY = _env('TURNSTILE_SITE_KEY', '')
 TURNSTILE_SECRET_KEY = _env('TURNSTILE_SECRET_KEY', '')
 
+# IP adrese koje se NE broje u live analytics / pregled sajta (vlasnik, ured, …).
+# Zarezom odvojeno, npr. LIVE_VISITOR_EXCLUDE_IPS=1.2.3.4,5.6.7.8
+# Kad se staff/superuser uloguje, njegov IP se automatski pamti (cache) i isključuje.
+_exclude_ips_raw = _env('LIVE_VISITOR_EXCLUDE_IPS', '127.0.0.1,::1')
+LIVE_VISITOR_EXCLUDE_IPS = tuple(
+    ip.strip() for ip in _exclude_ips_raw.split(',') if ip.strip()
+)
+
 # Zaštita sajta dok je u pripremi (SITE_PREP_ENABLED=false kad završiš lansiranje)
 SITE_PREP_PASSWORD = _env('SITE_PREP_PASSWORD', 'OpremaZaribolov2026')
 _site_prep_env = _env('SITE_PREP_ENABLED', '').lower()

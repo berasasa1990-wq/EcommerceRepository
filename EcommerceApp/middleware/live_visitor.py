@@ -16,6 +16,18 @@ class LiveVisitorMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Staff/superuser: zapamti IP da se ne broji u analyticsu (ni kad nije ulogovan)
+        try:
+            from EcommerceApp.live_visitors import remember_owner_ip
+
+            user = getattr(request, 'user', None)
+            if user and getattr(user, 'is_authenticated', False) and (
+                user.is_superuser or user.is_staff
+            ):
+                remember_owner_ip(request)
+        except Exception:
+            logger.exception('Live visitor owner IP remember failed')
+
         # Kreiraj sesiju PRIJE rendera da visitor-presence.js ima session_key u HTML-u
         try:
             if should_track_visitor(request) and not request.session.session_key:
@@ -41,7 +53,7 @@ class LiveVisitorMiddleware:
         response = self.get_response(request)
         try:
             # POST / ostalo — ili ako early track nije uspio
-            if not tracked_early:
+            if not tracked_early and should_track_visitor(request):
                 track_live_visitor(request)
         except Exception:
             logger.exception('Live visitor tracking failed')

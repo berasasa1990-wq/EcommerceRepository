@@ -25,12 +25,12 @@ from .live_visitors import (
     SOURCE_OTHER,
     normalize_traffic_source,
     traffic_source_label,
+    visitors_analytics_qs,
 )
 from .models import (
     ActiveCartItem,
     ChatConversation,
     ChatMessage,
-    LiveVisitor,
     Order,
     StaffSiteEvent,
 )
@@ -106,7 +106,7 @@ def _pct(part, whole) -> float:
 
 def summary_totals(*, start=None, end=None) -> dict:
     """Ukupni brojevi za period (ili all-time ako start/end None)."""
-    visitors = LiveVisitor.objects.all()
+    visitors = visitors_analytics_qs()
     orders = _orders_qs()
     if start is not None:
         visitors = visitors.filter(first_seen__gte=start)
@@ -146,7 +146,7 @@ def traffic_source_breakdown(*, start=None, end=None) -> list[dict]:
     Posjetioci po izvoru dolaska + udio.
     Uključuje sve poznate kanale (0 ako nema podataka).
     """
-    qs = LiveVisitor.objects.all()
+    qs = visitors_analytics_qs()
     if start is not None:
         qs = qs.filter(first_seen__gte=start)
     if end is not None:
@@ -177,7 +177,8 @@ def traffic_source_breakdown(*, start=None, end=None) -> list[dict]:
 def _visitor_source_by_email(*, start=None, end=None) -> dict[str, str]:
     """email (lower) → izvor (first-touch u periodu, najraniji first_seen)."""
     qs = (
-        LiveVisitor.objects.exclude(email='')
+        visitors_analytics_qs()
+        .exclude(email='')
         .exclude(email__isnull=True)
         .order_by('first_seen')
         .values_list('email', 'izvor_dolaska')
@@ -197,7 +198,9 @@ def _visitor_source_by_email(*, start=None, end=None) -> dict[str, str]:
 
 
 def _visitor_source_by_session(*, start=None, end=None) -> dict[str, str]:
-    qs = LiveVisitor.objects.order_by('first_seen').values_list('session_key', 'izvor_dolaska')
+    qs = visitors_analytics_qs().order_by('first_seen').values_list(
+        'session_key', 'izvor_dolaska',
+    )
     if start is not None:
         qs = qs.filter(first_seen__gte=start)
     if end is not None:
@@ -275,7 +278,7 @@ def orders_by_traffic_source(*, start=None, end=None) -> list[dict]:
 
 def engagement_stats(*, start=None, end=None) -> dict:
     """Interakcije: korpa, pregledi, skoro-korpa, savjetnik, ponude, online."""
-    visitors = LiveVisitor.objects.all()
+    visitors = visitors_analytics_qs()
     events = StaffSiteEvent.objects.all()
     if start is not None:
         visitors = visitors.filter(first_seen__gte=start)
@@ -377,7 +380,8 @@ def _bucket_rows(trunc_fn, *, start, end, label_fmt, period: str) -> list[dict]:
     Spoji posjetioce (first_seen) i narudžbe (kreirana) po bucketu.
     """
     visitors = (
-        LiveVisitor.objects.filter(first_seen__gte=start, first_seen__lte=end)
+        visitors_analytics_qs()
+        .filter(first_seen__gte=start, first_seen__lte=end)
         .annotate(bucket=trunc_fn('first_seen'))
         .values('bucket')
         .annotate(visitors=Count('id'))

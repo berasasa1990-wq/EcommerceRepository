@@ -15964,6 +15964,30 @@ button.nav-action-link {
     width: 100%;
 }
 
+.staff-tag-manual {
+    margin-top: 12px;
+    display: block;
+}
+.staff-tag-manual .staff-field-hint,
+.staff-field-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+    font-weight: 400;
+}
+.staff-tag-chip--new {
+    border-style: dashed;
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+.staff-lookup-option--create {
+    font-weight: 700;
+    color: #15803d;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 2px;
+}
 .staff-tag-chips {
     display: flex;
     flex-wrap: wrap;

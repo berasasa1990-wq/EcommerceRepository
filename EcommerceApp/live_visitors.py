@@ -1,4 +1,5 @@
 import calendar
+import logging
 import random
 import re
 from collections import Counter
@@ -6,6 +7,8 @@ from datetime import datetime, time, timedelta
 
 from django.db.models import Count
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 from .models import ActiveCartItem, Category, CityVisitTotal, LiveVisitor, Product
 from .visitor_geo import (
@@ -499,9 +502,123 @@ def is_background_request_path(path):
     return any(path.startswith(prefix) for prefix in BACKGROUND_PATH_PREFIXES)
 
 
-def should_track_visitor(request):
-    if getattr(request, 'user', None) and request.user.is_authenticated and request.user.is_superuser:
+OWNER_IP_CACHE_PREFIX = 'live_visitor_owner_ip:'
+OWNER_IP_CACHE_TTL = 90 * 24 * 3600  # 90 dana
+
+
+def _normalize_ip(ip: str) -> str:
+    ip = (ip or '').strip()
+    if not ip:
+        return ''
+    # IPv4-mapped IPv6 → IPv4
+    if ip.startswith('::ffff:'):
+        ip = ip[7:]
+    return ip
+
+
+def get_configured_exclude_ips() -> set[str]:
+    """IP-ovi iz settings (LIVE_VISITOR_EXCLUDE_IPS) + localhost."""
+    from django.conf import settings
+
+    raw = getattr(settings, 'LIVE_VISITOR_EXCLUDE_IPS', ()) or ()
+    ips = {_normalize_ip(ip) for ip in raw if _normalize_ip(ip)}
+    ips.update({'127.0.0.1', '::1', 'localhost'})
+    return ips
+
+
+def remember_owner_ip(request) -> str:
+    """
+    Zapamti IP staff/superusera da se ne broji u analyticsu ni kad nije ulogovan.
+    Briše eventualne LiveVisitor redove s tim IP-om.
+    """
+    from django.core.cache import cache
+
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        return ''
+    if not (user.is_superuser or user.is_staff):
+        return ''
+
+    ip = _normalize_ip(get_client_ip(request))
+    if not ip or ip in ('unknown',):
+        return ''
+
+    cache_key = f'{OWNER_IP_CACHE_PREFIX}{ip}'
+    already = cache.get(cache_key)
+    cache.set(cache_key, 1, OWNER_IP_CACHE_TTL)
+
+    # Očisti postojeće „lažne” posjete s vlasničkog IP-a (jednom po TTL ciklusu)
+    if not already:
+        try:
+            deleted, _ = LiveVisitor.objects.filter(ip_adresa=ip).delete()
+            if deleted:
+                logger.info(
+                    'Uklonjeno %s LiveVisitor redova za vlasnički IP %s',
+                    deleted,
+                    ip,
+                )
+        except Exception:
+            pass
+    return ip
+
+
+def visitors_analytics_qs():
+    """
+    LiveVisitor queryset za analitiku — bez staff naloga i isključenih IP-ova.
+    (Cache owner IP-ovi se ne filtriraju ovdje; već se ne evidentiraju.)
+    """
+    qs = LiveVisitor.objects.all()
+    qs = qs.exclude(user__is_staff=True).exclude(user__is_superuser=True)
+    exclude_ips = get_configured_exclude_ips()
+    if exclude_ips:
+        qs = qs.exclude(ip_adresa__in=list(exclude_ips))
+    # loopback / prazan staff šum
+    qs = qs.exclude(ip_adresa__in=['127.0.0.1', '::1'])
+    return qs
+
+
+def is_excluded_visitor_ip(ip: str) -> bool:
+    """True ako se IP ne smije evidentirati kao posjet / izvor dolaska."""
+    ip = _normalize_ip(ip)
+    if not ip:
         return False
+    if ip in get_configured_exclude_ips():
+        return True
+    try:
+        from django.core.cache import cache
+        if cache.get(f'{OWNER_IP_CACHE_PREFIX}{ip}'):
+            return True
+    except Exception:
+        pass
+    # Privatni / loopback (lokalni dev, LAN ured) — ne broji kao „kupac”
+    try:
+        import ipaddress
+        parsed = ipaddress.ip_address(ip)
+        if parsed.is_loopback or parsed.is_link_local:
+            return True
+    except ValueError:
+        pass
+    return False
+
+
+def should_track_visitor(request):
+    """
+    Ne prati: staff/superuser, isključene IP adrese (vlasnik), admin/static putanje.
+    """
+    user = getattr(request, 'user', None)
+    if user and getattr(user, 'is_authenticated', False):
+        if user.is_superuser or user.is_staff:
+            # Zapamti IP da se ne broji ni kad izloguje
+            try:
+                remember_owner_ip(request)
+            except Exception:
+                pass
+            return False
+
+    ip = _normalize_ip(get_client_ip(request))
+    if ip and is_excluded_visitor_ip(ip):
+        return False
+
     path = request.path or ''
     skip_prefixes = (
         '/admin/',
@@ -810,8 +927,8 @@ def _touch_visitor_identity(request, session_key):
 
 def track_live_visitor(request):
     """
-    Evidentiraj svakog posjetioca na sajtu (live analitika).
-    Superuser se ne prati. Strani IP se i dalje bilježi (sa svojom državom).
+    Evidentiraj posjetioca (live analitika).
+    Ne prati: staff/superuser, isključene IP-ove (vlasnik), admin putanje.
     """
     if not should_track_visitor(request):
         return
