@@ -75,6 +75,7 @@
                         <th>Artikal</th>
                         <th class="num">Količina</th>
                         <th class="num">Mpc brutto</th>
+                        <th class="num">Vpc marža</th>
                         <th class="num">Fakturna</th>
                         <th class="num">Nabavna</th>
                         <th>Status</th>
@@ -92,6 +93,7 @@
                         </td>
                         <td class="num">{{ s.kolicina|default:"—" }}</td>
                         <td class="num">{% if s.mpc_brutto %}{{ s.mpc_brutto }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{% if s.vpc_marza_pct_display %}{{ s.vpc_marza_pct_display }}{% else %}—{% endif %}</td>
                         <td class="num">{{ s.fakturna|default:"—" }}</td>
                         <td class="num">{{ s.nabavna|default:"—" }}</td>
                         <td>
@@ -109,7 +111,7 @@
                         </td>
                     </tr>
                     <tr class="staff-uvoz-edit-row" id="edit-{{ s.pk }}" hidden>
-                        <td colspan="9">
+                        <td colspan="10">
                             <form method="post" class="staff-uvoz-edit-form">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="save_stavka">
@@ -126,6 +128,10 @@
                                     <label class="staff-uvoz-field">
                                         <span class="staff-uvoz-field__label">Mpc brutto</span>
                                         <input type="text" name="mpc_brutto" class="staff-uvoz-input" value="{{ s.mpc_brutto|default_if_none:'' }}" inputmode="decimal">
+                                    </label>
+                                    <label class="staff-uvoz-field">
+                                        <span class="staff-uvoz-field__label">Vpc marža (%)</span>
+                                        <input type="text" name="vpc_marza" class="staff-uvoz-input" value="{% if s.vpc_marza_pct %}{{ s.vpc_marza_pct }}{% endif %}" inputmode="decimal" placeholder="npr. 69.18">
                                     </label>
                                     <label class="staff-uvoz-field">
                                         <span class="staff-uvoz-field__label">Fakturna</span>

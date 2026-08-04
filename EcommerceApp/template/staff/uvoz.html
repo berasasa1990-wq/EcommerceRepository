@@ -20,6 +20,95 @@
         <div class="staff-uvoz-hero__badge" aria-hidden="true">📥</div>
     </header>
 
+    {# —— Pretraga artikala kroz sve uvoze —— #}
+    <div class="staff-uvoz-panel staff-uvoz-panel--search">
+        <div class="staff-uvoz-panel__head">
+            <h2>Pretraga artikala</h2>
+            <span class="staff-uvoz-chip staff-uvoz-chip--muted">svi uvozi</span>
+        </div>
+        <form method="get" action="{% url 'staff_uvoz' %}" class="staff-uvoz-search-form">
+            <label class="staff-uvoz-field staff-uvoz-search-field">
+                <span class="staff-uvoz-field__label">Naziv artikla</span>
+                <div class="staff-uvoz-search-row">
+                    <input type="search" name="q" value="{{ search_q }}" class="staff-uvoz-input" placeholder="npr. shimano, fider strune…" autocomplete="off" minlength="2">
+                    <button type="submit" class="staff-uvoz-btn staff-uvoz-btn--primary">Traži</button>
+                    {% if search_q %}
+                    <a href="{% url 'staff_uvoz' %}" class="staff-uvoz-btn staff-uvoz-btn--ghost">Očisti</a>
+                    {% endif %}
+                </div>
+            </label>
+            <p class="staff-uvoz-search-hint">Pretražuje sve sačuvane uvoze. Ako je artikal uvezen više puta, vidiš historiju i izmjene (cijena, količina, marža…).</p>
+        </form>
+
+        {% if search_q %}
+        <div class="staff-uvoz-search-results">
+            {% if search_results %}
+            <p class="staff-uvoz-search-count">Pronađeno <strong>{{ search_results|length }}</strong> artik(a)l(a) za „{{ search_q }}”.</p>
+            {% for group in search_results %}
+            <article class="staff-uvoz-history">
+                <header class="staff-uvoz-history__head">
+                    <div>
+                        <h3 class="staff-uvoz-history__title">{{ group.naziv }}</h3>
+                        <p class="staff-uvoz-history__meta">
+                            {{ group.count }}× u uvozima
+                            {% if group.has_changes %} · <span class="staff-uvoz-history__changed">ima izmjena</span>{% endif %}
+                            {% if group.product %}
+                             · <a href="{% url 'product_detail' group.product.slug %}" class="staff-uvoz-link" target="_blank" rel="noopener">na sajtu</a>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if group.latest.mpc_brutto %}
+                    <div class="staff-uvoz-history__latest">
+                        <span>Zadnji Mpc</span>
+                        <strong>{{ group.latest.mpc_brutto }} KM</strong>
+                        {% if group.latest.vpc_marza_pct_display %}
+                        <span class="staff-uvoz-history__marza">{{ group.latest.vpc_marza_pct_display }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </header>
+                <ol class="staff-uvoz-timeline">
+                    {% for entry in group.timeline %}
+                    <li class="staff-uvoz-timeline__item{% if entry.changes %} is-changed{% endif %}">
+                        <div class="staff-uvoz-timeline__when">
+                            <a href="{% url 'staff_uvoz_detail' entry.stavka.uvoz_id %}" class="staff-uvoz-link">{{ entry.stavka.uvoz.naziv }}</a>
+                            <time datetime="{{ entry.stavka.uvoz.kreiran|date:'c' }}">{{ entry.stavka.uvoz.kreiran|date:"d.m.Y. H:i" }}</time>
+                        </div>
+                        <div class="staff-uvoz-timeline__vals">
+                            <span>Kol. <strong>{{ entry.stavka.kolicina|default:"—" }}</strong></span>
+                            <span>Mpc <strong>{% if entry.stavka.mpc_brutto %}{{ entry.stavka.mpc_brutto }} KM{% else %}—{% endif %}</strong></span>
+                            <span>Marža <strong>{% if entry.stavka.vpc_marza_pct_display %}{{ entry.stavka.vpc_marza_pct_display }}{% else %}—{% endif %}</strong></span>
+                            <span>Nab. <strong>{% if entry.stavka.nabavna %}{{ entry.stavka.nabavna }}{% else %}—{% endif %}</strong></span>
+                            <span class="staff-uvoz-status staff-uvoz-status--{{ entry.stavka.status }}">{{ entry.stavka.get_status_display }}</span>
+                        </div>
+                        {% if entry.changes %}
+                        <ul class="staff-uvoz-changes">
+                            {% for ch in entry.changes %}
+                            <li>
+                                <strong>{{ ch.field }}:</strong>
+                                <span class="from">{{ ch.from }}</span>
+                                <span class="arrow">→</span>
+                                <span class="to">{{ ch.to }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% elif entry.is_first %}
+                        <p class="staff-uvoz-timeline__first">Prvi uvoz ovog artikla</p>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ol>
+            </article>
+            {% endfor %}
+            {% else %}
+            <div class="staff-uvoz-empty staff-uvoz-empty--sm">
+                <p>Nema artikala s nazivom koji sadrži „{{ search_q }}” u uvozima.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
     <div class="staff-uvoz-layout">
         {# —— Upload —— #}
         <aside class="staff-uvoz-panel staff-uvoz-panel--upload">

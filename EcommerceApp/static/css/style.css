@@ -7820,6 +7820,144 @@ body.mobile-nav-open {
     border-top: 1px dashed #c5d9d0;
 }
 .staff-uvoz-edit-side .inline { display: inline; margin: 0; }
+
+
+/* Uvoz — pretraga artikala + historija */
+.staff-uvoz-panel--search { margin-bottom: 18px; }
+.staff-uvoz-search-form { margin-bottom: 4px; }
+.staff-uvoz-search-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.staff-uvoz-search-row .staff-uvoz-input {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+.staff-uvoz-search-hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #6b7f78;
+    line-height: 1.4;
+}
+.staff-uvoz-search-results { margin-top: 16px; }
+.staff-uvoz-search-count {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #4a5c56;
+}
+.staff-uvoz-history {
+    border: 1px solid #e5ebe8;
+    border-radius: 12px;
+    padding: 14px 14px 10px;
+    margin-bottom: 12px;
+    background: linear-gradient(180deg, #fcfdfc 0%, #f7faf8 100%);
+}
+.staff-uvoz-history__head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin-bottom: 10px;
+}
+.staff-uvoz-history__title {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 750;
+    color: #0f3d36;
+}
+.staff-uvoz-history__meta {
+    margin: 0;
+    font-size: 12px;
+    color: #6b7f78;
+}
+.staff-uvoz-history__changed {
+    color: #b45309;
+    font-weight: 700;
+}
+.staff-uvoz-history__latest {
+    text-align: right;
+    font-size: 11px;
+    color: #6b7f78;
+}
+.staff-uvoz-history__latest strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+    color: #14352f;
+}
+.staff-uvoz-history__marza {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e8f5f1;
+    color: #0f5c4c;
+    font-size: 11px;
+    font-weight: 700;
+}
+.staff-uvoz-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid #eef2f0;
+}
+.staff-uvoz-timeline__item {
+    padding: 10px 0;
+    border-bottom: 1px solid #eef2f0;
+}
+.staff-uvoz-timeline__item:last-child { border-bottom: none; }
+.staff-uvoz-timeline__item.is-changed {
+    background: #fffbeb;
+    margin: 0 -10px;
+    padding: 10px;
+    border-radius: 8px;
+    border-bottom-color: transparent;
+}
+.staff-uvoz-timeline__when {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: baseline;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+.staff-uvoz-timeline__when time { color: #6b7f78; }
+.staff-uvoz-timeline__vals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 12px;
+    color: #4a5c56;
+    align-items: center;
+}
+.staff-uvoz-timeline__vals strong { color: #14352f; font-weight: 750; }
+.staff-uvoz-changes {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    font-size: 12px;
+}
+.staff-uvoz-changes li {
+    margin: 0 0 4px;
+    color: #9a3412;
+}
+.staff-uvoz-changes li:last-child { margin-bottom: 0; }
+.staff-uvoz-changes .from { text-decoration: line-through; opacity: 0.75; }
+.staff-uvoz-changes .arrow { margin: 0 4px; opacity: 0.6; }
+.staff-uvoz-changes .to { font-weight: 750; color: #166534; }
+.staff-uvoz-timeline__first {
+    margin: 6px 0 0;
+    font-size: 11px;
+    color: #6b7f78;
+    font-style: italic;
+}
+.staff-uvoz-empty--sm { padding: 20px 12px; }
+
 @media (max-width: 900px) {
     .staff-uvoz-layout { grid-template-columns: 1fr; }
     .staff-uvoz-hero { flex-direction: column; }

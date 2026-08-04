@@ -4927,17 +4927,131 @@ def staff_admin_panel(request):
     return render(request, 'staff/admin_panel.html', context)
 
 
+def _uvoz_search_articles(query: str) -> list[dict]:
+    """
+    Pretraga artikala kroz SVE uvoze po nazivu.
+    Grupiše po nazivu i prikaže historiju (cijena, količina, marža) s izmjenama.
+    """
+    from collections import OrderedDict
+
+    from .models import UvozStavka
+
+    q = (query or '').strip()
+    if len(q) < 2:
+        return []
+
+    stavke = list(
+        UvozStavka.objects.filter(artikal_naziv__icontains=q)
+        .select_related('uvoz', 'product')
+        .order_by('artikal_naziv', 'uvoz__kreiran', 'id')
+    )
+    if not stavke:
+        return []
+
+    groups: OrderedDict[str, list] = OrderedDict()
+    for s in stavke:
+        key = (s.artikal_naziv or '').strip()
+        groups.setdefault(key, []).append(s)
+
+    def _fmt_money(v):
+        if v is None:
+            return '—'
+        return f'{v} KM'
+
+    def _fmt_qty(v):
+        if v is None:
+            return '—'
+        try:
+            if v == v.to_integral_value():
+                return str(int(v))
+        except Exception:
+            pass
+        return str(v)
+
+    results = []
+    for name, items in groups.items():
+        timeline = []
+        prev = None
+        for s in items:
+            changes = []
+            if prev is not None:
+                if s.mpc_brutto != prev.mpc_brutto:
+                    changes.append({
+                        'field': 'Mpc brutto',
+                        'from': _fmt_money(prev.mpc_brutto),
+                        'to': _fmt_money(s.mpc_brutto),
+                    })
+                if s.kolicina != prev.kolicina:
+                    changes.append({
+                        'field': 'Količina',
+                        'from': _fmt_qty(prev.kolicina),
+                        'to': _fmt_qty(s.kolicina),
+                    })
+                if s.vpc_marza != prev.vpc_marza:
+                    changes.append({
+                        'field': 'Vpc marža',
+                        'from': prev.vpc_marza_pct_display or '—',
+                        'to': s.vpc_marza_pct_display or '—',
+                    })
+                if s.nabavna != prev.nabavna:
+                    changes.append({
+                        'field': 'Nabavna',
+                        'from': _fmt_money(prev.nabavna),
+                        'to': _fmt_money(s.nabavna),
+                    })
+                if s.fakturna != prev.fakturna:
+                    changes.append({
+                        'field': 'Fakturna',
+                        'from': _fmt_money(prev.fakturna),
+                        'to': _fmt_money(s.fakturna),
+                    })
+                if s.vpc_netto != prev.vpc_netto:
+                    changes.append({
+                        'field': 'Vpc netto',
+                        'from': _fmt_money(prev.vpc_netto),
+                        'to': _fmt_money(s.vpc_netto),
+                    })
+            timeline.append({
+                'stavka': s,
+                'changes': changes,
+                'is_first': prev is None,
+            })
+            prev = s
+
+        # prikaži novije prvo u UI
+        timeline_newest_first = list(reversed(timeline))
+        product = None
+        for s in reversed(items):
+            if s.product_id:
+                product = s.product
+                break
+        results.append({
+            'naziv': name,
+            'count': len(items),
+            'product': product,
+            'timeline': timeline_newest_first,
+            'latest': items[-1],
+            'has_changes': any(t['changes'] for t in timeline),
+        })
+
+    # više pogodaka / više uvoza gore
+    results.sort(key=lambda r: (-r['count'], r['naziv'].casefold()))
+    return results
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_uvoz(request):
     """
-    Lista sačuvanih uvoza + upload novog Excel-a.
+    Lista sačuvanih uvoza + upload novog Excel-a + pretraga artikala kroz uvoze.
     """
     from .models import Uvoz
     from .uvoz_import import apply_uvoz_import, create_uvoz_from_rows, parse_uvoz_excel
 
     result = None
     dry_run = False
+    search_q = (request.GET.get('q') or '').strip()
+    search_results = _uvoz_search_articles(search_q) if search_q else []
 
     if request.method == 'POST' and request.POST.get('action') == 'import':
         dry_run = (request.POST.get('dry_run') or '').strip() in ('1', 'true', 'on', 'yes')
@@ -4995,6 +5109,8 @@ def staff_uvoz(request):
         'uvozi': uvozi,
         'result': result,
         'dry_run': dry_run,
+        'search_q': search_q,
+        'search_results': search_results,
     }
     return render(request, 'staff/uvoz.html', context)
 
@@ -5056,6 +5172,18 @@ def staff_uvoz_detail(request, pk):
             stavka.nabavna = parse_money(request.POST.get('nabavna'))
             stavka.vpc_netto = parse_money(request.POST.get('vpc_netto'))
             stavka.ukupno_fakturna = parse_money(request.POST.get('ukupno_fakturna'))
+            # Vpc marža: unos u % (npr. 69.18) ili udeo (0.69)
+            raw_marza = (request.POST.get('vpc_marza') or '').strip()
+            if raw_marza == '':
+                stavka.vpc_marza = None
+            else:
+                marza_val = parse_qty(raw_marza.replace('%', ''))
+                if marza_val is not None and marza_val > 2:
+                    # uneseno kao % → snimi kao udeo radi konzistentnosti s Excelom
+                    from decimal import Decimal
+                    stavka.vpc_marza = (marza_val / Decimal('100'))
+                else:
+                    stavka.vpc_marza = marza_val
             stavka.save()
 
             apply_now = (request.POST.get('apply') or '').strip() in ('1', 'true', 'on', 'yes')

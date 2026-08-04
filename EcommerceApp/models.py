@@ -4375,6 +4375,30 @@ class UvozStavka(models.Model):
     def __str__(self):
         return f'{self.artikal_naziv} ({self.get_status_display()})'
 
+    @property
+    def vpc_marza_pct(self):
+        """
+        Vpc marža kao postotak za prikaz.
+        Excel često šalje udeo (0.69 → 69%), ponekad već %.
+        """
+        if self.vpc_marza is None:
+            return None
+        try:
+            val = Decimal(self.vpc_marza)
+        except Exception:
+            return None
+        # udeo 0–2 → pretvori u %; inače tretiraj kao već unesen %
+        if abs(val) <= 2:
+            val = val * Decimal('100')
+        return val.quantize(Decimal('0.01'))
+
+    @property
+    def vpc_marza_pct_display(self):
+        pct = self.vpc_marza_pct
+        if pct is None:
+            return ''
+        return f'{pct}%'
+
 
 class AdvisorBeginnerFishType(models.Model):
     """
