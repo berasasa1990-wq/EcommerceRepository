@@ -2433,18 +2433,87 @@ def category_detail(request, slug):
     return render(request, 'category.html', context)
 
 
+def _safe_internal_path(url, request=None):
+    """
+    Dozvoli samo interni path (open-redirect safe).
+    Vraća '/putanja?query' ili ''.
+    """
+    url = (url or '').strip()
+    if not url:
+        return ''
+    # već relativan path
+    if url.startswith('/') and not url.startswith('//'):
+        # blokiraj protocol-relative i javascript
+        if url.lower().startswith('/\\') or '\n' in url or '\r' in url:
+            return ''
+        return url
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return ''
+    if parsed.scheme and parsed.scheme not in ('http', 'https'):
+        return ''
+    host = ''
+    if request is not None:
+        host = (request.get_host() or '').split(':')[0].lower()
+    netloc = (parsed.netloc or '').split(':')[0].lower()
+    if netloc and host and netloc != host and not netloc.endswith('.' + host):
+        return ''
+    if netloc and not host:
+        # bez requesta — samo relativni
+        return ''
+    path = parsed.path or '/'
+    if parsed.query:
+        path = f'{path}?{parsed.query}'
+    if not path.startswith('/'):
+        path = '/' + path
+    return path
+
+
 def _product_back_url(request, product):
+    """
+    Stranica s koje je kupac/staff došao na artikal (katalog, pretraga…).
+    Preferira ?next=, zatim Referer, pa kategoriju / početnu.
+    """
+    product_path = product.get_absolute_url()
+
+    next_q = _safe_internal_path(request.GET.get('next') or '', request)
+    if next_q and product_path not in next_q.split('?')[0]:
+        return next_q
+
     referer = request.META.get('HTTP_REFERER', '')
-    current_url = request.build_absolute_uri()
-    if referer:
-        ref = urlparse(referer)
-        cur = urlparse(current_url)
-        if ref.netloc == cur.netloc and referer.rstrip('/') != current_url.rstrip('/'):
-            if product.get_absolute_url() not in ref.path:
-                return referer
+    ref_path = _safe_internal_path(referer, request)
+    if ref_path:
+        ref_base = ref_path.split('?')[0].rstrip('/')
+        prod_base = product_path.rstrip('/')
+        if ref_base != prod_base and product_path not in ref_base:
+            return ref_path
+
+    # Sesija: zapamti zadnji „van artikla” URL u edit modu
+    session_back = _safe_internal_path(
+        request.session.get('staff_product_return_url') or '',
+        request,
+    )
+    if session_back and product_path not in session_back.split('?')[0]:
+        return session_back
+
     if product.kategorija_id:
-        return request.build_absolute_uri(product.kategorija.get_absolute_url())
-    return request.build_absolute_uri(reverse('home'))
+        return product.kategorija.get_absolute_url()
+    return reverse('home')
+
+
+def _staff_product_edit_redirect(request, slug, *, stay_on_error=False):
+    """
+    Nakon uspješnog staff save-a: vrati na prethodnu listu (next),
+    inače ostani na artiklu.
+    """
+    next_url = _safe_internal_path(request.POST.get('next') or '', request)
+    product_path = reverse('product_detail', kwargs={'slug': slug})
+    if next_url:
+        next_base = next_url.split('?')[0].rstrip('/')
+        if next_base != product_path.rstrip('/') and product_path not in next_base:
+            return redirect(next_url)
+    return redirect('product_detail', slug=slug)
 
 
 def product_detail(request, slug):
@@ -2496,6 +2565,17 @@ def product_detail(request, slug):
         ),
         'product_back_url': _product_back_url(request, product),
     }
+    # Zapamti povratak za staff edit (Save → nazad na listu/pretragu)
+    back = context['product_back_url']
+    back_path = _safe_internal_path(back, request) or back
+    context['staff_edit_return_url'] = back_path
+    if (
+        _staff_edit_mode_enabled(request)
+        and back_path
+        and product.get_absolute_url() not in (back_path.split('?')[0] or '')
+    ):
+        request.session['staff_product_return_url'] = back_path
+        request.session.modified = True
 
     # X+1 deal promo for product detail (pulsating red box)
     from .upsell import get_deal_promo_data
@@ -6191,6 +6271,7 @@ def staff_product_quick_edit(request, slug):
         product.save(update_fields=['na_stanju'])
         status = 'na stanju' if product.na_stanju else 'nije na stanju'
         messages.success(request, f'Artikal „{product.naziv}” sada je {status}.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'toggle_japan':
         product.proizvedeno_u_japanu = not product.proizvedeno_u_japanu
         product.save(update_fields=['proizvedeno_u_japanu'])
@@ -6198,6 +6279,7 @@ def staff_product_quick_edit(request, slug):
             messages.success(request, f'„{product.naziv}” označen kao Made in Japan.')
         else:
             messages.success(request, f'Made in Japan uklonjen sa „{product.naziv}”.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'save_all':
         # Jedan Save: brend, kategorija, opis, cijena, glavna slika, noviteti
         changed = []
@@ -6296,6 +6378,7 @@ def staff_product_quick_edit(request, slug):
         if errors:
             for err in errors:
                 messages.error(request, err)
+            # Greška → ostani na artiklu da ispraviš
             return redirect('product_detail', slug=slug)
 
         product.save()
@@ -6355,6 +6438,7 @@ def staff_product_quick_edit(request, slug):
             request,
             'Sačuvano: ' + (', '.join(parts) if parts else 'bez izmjena') + '.',
         )
+        return _staff_product_edit_redirect(request, slug)
     # Legacy single-field actions (zadržano radi kompatibilnosti)
     elif action == 'set_price':
         raw_price = (request.POST.get('cijena') or '').strip().replace(',', '.')
@@ -6371,6 +6455,7 @@ def staff_product_quick_edit(request, slug):
             product.akcijska_cijena = None
         product.save()
         messages.success(request, f'Cijena ažurirana na {new_price} KM.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'set_category':
         raw_id = (request.POST.get('kategorija_id') or '').strip()
         if not raw_id:
@@ -6390,6 +6475,7 @@ def staff_product_quick_edit(request, slug):
             product.kategorija = category
             product.save(update_fields=['kategorija'])
             messages.success(request, f'Kategorija postavljena na „{category}”.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'set_brand':
         raw_id = (request.POST.get('brend_id') or '').strip()
         if not raw_id:
@@ -6409,10 +6495,12 @@ def staff_product_quick_edit(request, slug):
             product.brend = brand
             product.save(update_fields=['brend'])
             messages.success(request, f'Brend postavljen na „{brand.naziv}”.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'set_opis':
         product.opis = (request.POST.get('opis') or '').strip()
         product.save(update_fields=['opis'])
         messages.success(request, 'Opis artikla je ažuriran.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'upload_main_image':
         uploaded = request.FILES.get('glavna_slika')
         if not uploaded:
@@ -6424,6 +6512,7 @@ def staff_product_quick_edit(request, slug):
         product.slika = uploaded
         product.save()
         messages.success(request, 'Glavna slika je ažurirana.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'upload_extra_images':
         uploads = request.FILES.getlist('dodatne_slike')
         if not uploads:
@@ -6446,6 +6535,7 @@ def staff_product_quick_edit(request, slug):
             messages.error(request, 'Nijedna odabrana datoteka nije validna slika.')
             return redirect('product_detail', slug=slug)
         messages.success(request, f'Dodano {created} dodatnih slika.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'delete_extra_image':
         raw_image_id = (request.POST.get('image_id') or '').strip()
         try:
@@ -6459,10 +6549,12 @@ def staff_product_quick_edit(request, slug):
             return redirect('product_detail', slug=slug)
         image.delete()
         messages.success(request, 'Dodatna slika je uklonjena.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'set_tags':
         tags = _staff_resolve_product_tags(request)
         product.tagovi.set(tags)
         messages.success(request, f'Tagovi ažurirani ({len(tags)}).')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'activate_akcija':
         # JSON: iz objave (Akcija) — postavi isti % popust + opcionalni rok
         wants_json = (
@@ -6556,7 +6648,7 @@ def staff_product_quick_edit(request, slug):
                 prikazna_cijena=str(product.prikazna_cijena),
             )
         messages.success(request, msg)
-        return redirect('product_detail', slug=slug)
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'deactivate_akcija':
         product.akcija_postotak = None
         product.akcijska_cijena = None
@@ -6566,7 +6658,7 @@ def staff_product_quick_edit(request, slug):
             request,
             f'Akcija skinuta s „{product.naziv}”. Vraćena redovna cijena {product.cijena} KM.',
         )
-        return redirect('product_detail', slug=slug)
+        return _staff_product_edit_redirect(request, slug)
     else:
         messages.error(request, 'Nepoznata akcija.')
     return redirect('product_detail', slug=slug)

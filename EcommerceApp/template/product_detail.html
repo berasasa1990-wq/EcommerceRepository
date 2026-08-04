@@ -107,6 +107,7 @@
                     <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="toggle_stock">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
                         <button type="submit" class="btn btn-sm staff-product-btn">
                             {% if product.na_stanju %}Skini sa stanja{% else %}Vrati na stanje{% endif %}
                         </button>
@@ -115,6 +116,7 @@
                     <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form" onsubmit="return confirm('Skinuti akciju i vratiti redovnu cijenu?');">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="deactivate_akcija">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
                         <button type="submit" class="btn btn-sm staff-product-btn staff-product-btn--clear-akcija" title="Ukloni popust, vrati redovnu cijenu">
                             Skini akciju{% if product.akcija_postotak_prikaz %} (−{{ product.akcija_postotak_prikaz }}%){% endif %}
                         </button>
@@ -123,6 +125,7 @@
                     <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="toggle_japan">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
                         <button type="submit" class="btn btn-sm staff-product-btn{% if product.proizvedeno_u_japanu %} staff-product-btn--japan-on{% endif %}">
                             {% if product.proizvedeno_u_japanu %}✓ Made in Japan{% else %}Made in Japan{% endif %}
                         </button>
@@ -212,6 +215,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="save_all">
                     <input type="hidden" name="set_tags_with_save" value="1">
+                    <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
 
                     <div class="staff-product-bar-sections">
                         <div class="staff-product-bar-section">
@@ -367,6 +371,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="delete_extra_image">
                                 <input type="hidden" name="image_id" value="{{ img.pk }}">
+                                <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
                                 <button type="submit" class="staff-image-delete-btn" title="Ukloni sliku" aria-label="Ukloni sliku">×</button>
                             </form>
                         </div>
