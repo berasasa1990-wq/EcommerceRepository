@@ -1201,7 +1201,8 @@ def _apply_search_filter(products_qs, query):
     if folded_raw and folded_raw != raw.casefold():
         match |= _search_exists_match(folded_raw)
 
-    # Tagovi artikla (M2M)
+    # Tagovi artikla (M2M) — SAMO preko pk__in (nikad JOIN na tagovi__,
+    # jer M2M JOIN duplicira isti artikal u rezultatima).
     product_tag_ids = _product_ids_for_product_tag_query(raw)
     if product_tag_ids:
         match |= Q(pk__in=product_tag_ids)
@@ -1216,9 +1217,7 @@ def _apply_search_filter(products_qs, query):
         if fuzzy_cat_ids:
             match |= Q(kategorija_id__in=fuzzy_cat_ids)
 
-    # icontains na tag nazivu kao brzi SQL fallback (ako cache/fuzzy ne uhvati)
-    match |= Q(tagovi__naziv__icontains=raw)
-
+    # distinct() za svaki slučaj (varijacije / stari JOIN-ovi)
     return products_qs.filter(match).distinct()
 
 
@@ -1526,7 +1525,10 @@ def _suggest_thumb_url(image_field):
 
 
 def _suggest_relevance_annotation(query):
-    """SQL prioritet relevantnosti za brži ORDER BY (manji candidate pool)."""
+    """
+    SQL prioritet relevantnosti za brži ORDER BY (manji candidate pool).
+    Bez JOIN-a na tagovi__ (M2M) — koristi pk__in da ne duplicira redove.
+    """
     raw = _normalize_phrase(query)
     if not raw or len(raw) < 2:
         return Value(0, output_field=IntegerField())
@@ -1542,9 +1544,14 @@ def _suggest_relevance_annotation(query):
             When(naziv__istartswith=term, then=Value(80)),
             When(naziv__icontains=term, then=Value(50)),
             When(sifra__icontains=term, then=Value(40)),
-            When(tagovi__naziv__iexact=term, then=Value(55)),
-            When(tagovi__naziv__icontains=term, then=Value(35)),
         ])
+    # Tag match bez M2M JOIN-a
+    try:
+        tag_product_ids = _product_ids_for_product_tag_query(raw)
+        if tag_product_ids:
+            whens.append(When(pk__in=list(tag_product_ids), then=Value(55)))
+    except Exception:
+        pass
     return Case(*whens, default=Value(10), output_field=IntegerField())
 
 
@@ -1562,6 +1569,15 @@ def search_suggest(request):
     ).order_by('-_suggest_rel', '-prioritet_lagera', 'naziv')
 
     pool = list(products_qs[: SEARCH_SUGGEST_LIMIT + 1])
+    # Dedup po pk (zaštita ako JOIN ikad procuri)
+    seen = set()
+    unique_pool = []
+    for p in pool:
+        if p.pk in seen:
+            continue
+        seen.add(p.pk)
+        unique_pool.append(p)
+    pool = unique_pool
     has_more = len(pool) > SEARCH_SUGGEST_LIMIT
     products = pool[:SEARCH_SUGGEST_LIMIT]
 
@@ -1602,6 +1618,19 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
+
+    # Zaštita od duplikata (isti pk više puta u listi)
+    if products:
+        seen_pks = set()
+        unique_products = []
+        for product in products:
+            pk = getattr(product, 'pk', None)
+            if pk in seen_pks:
+                continue
+            if pk is not None:
+                seen_pks.add(pk)
+            unique_products.append(product)
+        products = unique_products
 
     if allowed_category_ids is not None:
         allowed = set(allowed_category_ids)
