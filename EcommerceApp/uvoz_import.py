@@ -161,7 +161,10 @@ def parse_uvoz_excel(file_obj) -> list[dict]:
     try:
         from openpyxl import load_workbook
     except ImportError as exc:
-        raise ValueError('openpyxl nije instaliran na serveru.') from exc
+        raise ValueError(
+            'openpyxl nije instaliran na serveru. '
+            'Dodaj paket u requirements i redeploy: pip install "openpyxl>=3.1.0"',
+        ) from exc
 
     name = (getattr(file_obj, 'name', '') or '').lower()
     if name and not (name.endswith('.xlsx') or name.endswith('.xlsm')):
