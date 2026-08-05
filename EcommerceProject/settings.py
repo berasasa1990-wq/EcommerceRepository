@@ -285,29 +285,139 @@ MEDIA_CACHE_MAX_AGE = int(_env('MEDIA_CACHE_MAX_AGE', '31536000'))
 WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ('jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'ico')
 
 # Media files
-# Local dev: ./media/
-# On Render: use attached Disk (set RENDER_DISK_PATH in environment variables)
+# Local / Render disk (fallback) OR Cloudflare R2 when R2_* env vars are set.
+# R2 = S3-compatible object storage + Cloudflare CDN (brže od Render diska).
 MEDIA_URL = _env('MEDIA_URL', '/media/')
-if not MEDIA_URL.startswith('/'):
-    MEDIA_URL = '/' + MEDIA_URL.lstrip('/')
 if render_disk_path:
     MEDIA_ROOT = Path(render_disk_path) / 'media'
 else:
     MEDIA_ROOT = BASE_DIR / 'media'
 
-# Ensure media directory and common subdirectories exist (important for disk on Render)
-# This runs safely even if the disk is not yet mounted.
-try:
-    MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
-    for sub in ['products', 'products/variations', 'site', 'banners', 'popups', 'upsell', 'brands']:
-        (MEDIA_ROOT / sub).mkdir(parents=True, exist_ok=True)
-except (PermissionError, OSError):
-    # On Render the disk may not be mounted yet, or in local dev without write perms.
-    # Ignore silently; first upload will try to create dirs.
-    if render_disk_path and not os.path.exists(render_disk_path):
-        print(f"WARNING: RENDER_DISK_PATH={render_disk_path} is set but the directory does not exist yet. "
-              "Attach the disk in Render and redeploy.")
-    pass
+# —— Cloudflare R2 (opcionalno; kad je upaljeno, upload ide na R2 umjesto diska) ——
+R2_ACCOUNT_ID = _env('R2_ACCOUNT_ID', '').strip()
+R2_ACCESS_KEY_ID = _env('R2_ACCESS_KEY_ID', '').strip()
+R2_SECRET_ACCESS_KEY = _env('R2_SECRET_ACCESS_KEY', '').strip()
+R2_BUCKET_NAME = _env('R2_BUCKET_NAME', '').strip()
+# Javni URL: custom domen (preporučeno) npr. media.opremazaribolov.ba
+# ili R2 public bucket URL (*.r2.dev)
+R2_CUSTOM_DOMAIN = _env('R2_CUSTOM_DOMAIN', '').strip()  # host ili full https://...
+R2_PUBLIC_BASE_URL = _env('R2_PUBLIC_BASE_URL', '').strip().rstrip('/')  # full https://...
+R2_LOCATION = _env('R2_LOCATION', '').strip().strip('/')  # opcionalni prefix u bucketu
+
+USE_R2_MEDIA = bool(
+    R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_BUCKET_NAME
+)
+
+
+def _normalize_media_host(value: str) -> str:
+    value = (value or '').strip()
+    if not value:
+        return ''
+    if '://' in value:
+        return (urlparse(value).netloc or value).split('/')[0]
+    return value.split('/')[0]
+
+
+if USE_R2_MEDIA:
+    _r2_endpoint = f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
+    _r2_domain = _normalize_media_host(R2_CUSTOM_DOMAIN)
+    if _r2_domain:
+        MEDIA_URL = f'https://{_r2_domain}/'
+        if R2_LOCATION:
+            MEDIA_URL = f'{MEDIA_URL}{R2_LOCATION}/'
+    elif R2_PUBLIC_BASE_URL:
+        MEDIA_URL = R2_PUBLIC_BASE_URL + '/'
+        if R2_LOCATION and not MEDIA_URL.rstrip('/').endswith('/' + R2_LOCATION):
+            MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/' + R2_LOCATION + '/'
+    else:
+        # Fallback (često treba public access / custom domain za browsere)
+        MEDIA_URL = f'{_r2_endpoint}/{R2_BUCKET_NAME}/'
+        if R2_LOCATION:
+            MEDIA_URL = f'{MEDIA_URL}{R2_LOCATION}/'
+
+    # django-storages / boto3 (global AWS_* koje storages često čita)
+    AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY = R2_SECRET_ACCESS_KEY
+    AWS_STORAGE_BUCKET_NAME = R2_BUCKET_NAME
+    AWS_S3_ENDPOINT_URL = _r2_endpoint
+    AWS_S3_REGION_NAME = _env('R2_REGION', 'auto')
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': f'public, max-age={MEDIA_CACHE_MAX_AGE}, immutable',
+    }
+    if _r2_domain:
+        AWS_S3_CUSTOM_DOMAIN = _r2_domain
+
+    _r2_options = {
+        'bucket_name': R2_BUCKET_NAME,
+        'endpoint_url': _r2_endpoint,
+        'access_key': R2_ACCESS_KEY_ID,
+        'secret_key': R2_SECRET_ACCESS_KEY,
+        'region_name': AWS_S3_REGION_NAME,
+        'default_acl': None,
+        'querystring_auth': False,
+        'file_overwrite': False,
+        'addressing_style': 'path',
+        'signature_version': 's3v4',
+        'object_parameters': {
+            'CacheControl': f'public, max-age={MEDIA_CACHE_MAX_AGE}, immutable',
+        },
+    }
+    if _r2_domain:
+        _r2_options['custom_domain'] = _r2_domain
+    if R2_LOCATION:
+        _r2_options['location'] = R2_LOCATION
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+            'OPTIONS': _r2_options,
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+else:
+    # Lokalni /media/ path
+    if not MEDIA_URL.startswith('/'):
+        MEDIA_URL = '/' + MEDIA_URL.lstrip('/')
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+            'OPTIONS': {
+                'location': str(MEDIA_ROOT),
+                'base_url': MEDIA_URL,
+            },
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+
+# Ensure local media dirs exist only when not on R2 (or for sync/fallback)
+if not USE_R2_MEDIA:
+    try:
+        MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+        for sub in ['products', 'products/variations', 'site', 'banners', 'popups', 'upsell', 'brands']:
+            (MEDIA_ROOT / sub).mkdir(parents=True, exist_ok=True)
+    except (PermissionError, OSError):
+        if render_disk_path and not os.path.exists(render_disk_path):
+            print(
+                f'WARNING: RENDER_DISK_PATH={render_disk_path} is set but the directory does not exist yet. '
+                'Attach the disk in Render and redeploy.',
+            )
+        pass
+else:
+    # MEDIA_ROOT ostaje za management komande (sync sa diska → R2)
+    try:
+        MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+    except (PermissionError, OSError):
+        pass
 
 # Email — ProtonMail SMTP (EMAIL_APP_PASSWORD ili EMAIL_HOST_PASSWORD = SMTP token)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

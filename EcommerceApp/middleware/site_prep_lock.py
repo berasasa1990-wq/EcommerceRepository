@@ -38,10 +38,13 @@ class SitePrepLockMiddleware:
 
     def _is_exempt(self, path):
         static_url = settings.STATIC_URL
-        media_url = settings.MEDIA_URL
+        media_url = settings.MEDIA_URL or ''
         if static_url and path.startswith(static_url):
             return True
-        if media_url and path.startswith(media_url):
+        # Lokalni /media/ (kad R2 nije aktivan). Vanjski https://media… se ne matcha na path.
+        if media_url.startswith('/') and path.startswith(media_url):
+            return True
+        if path.startswith('/media/'):
             return True
         if path.startswith('/admin/'):
             return True

@@ -28,9 +28,21 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('sitemap.xml', sitemap, {'sitemaps': app_sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
-    # Always serve media files (from persistent disk on Render, even in production).
-    # Using explicit re_path + serve so it works both locally (runserver) and on Render.
-    re_path(r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')), serve_media),
 ] + [
     path('', include('EcommerceApp.urls')),
 ]
+
+# Lokalni /media/ servis (Render disk / dev). Kad je Cloudflare R2 aktivan,
+# MEDIA_URL je https://… i slike idu direktno sa R2/CDN — ne servira Django.
+_media_url = getattr(settings, 'MEDIA_URL', '') or ''
+if (
+    not getattr(settings, 'USE_R2_MEDIA', False)
+    and _media_url.startswith('/')
+    and '://' not in _media_url
+):
+    urlpatterns = [
+        re_path(
+            r'^%s(?P<path>.*)$' % re.escape(_media_url.lstrip('/')),
+            serve_media,
+        ),
+    ] + urlpatterns

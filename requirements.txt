@@ -3,6 +3,8 @@ Pillow>=11.0
 qrcode[pil]>=8.0
 python-barcode>=0.15
 openpyxl>=3.1.0
+django-storages[s3]>=1.14
+boto3>=1.34
 
 requests>=2.32
 dj-database-url>=2.2
