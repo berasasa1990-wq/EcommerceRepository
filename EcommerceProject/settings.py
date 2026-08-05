@@ -399,7 +399,7 @@ if USE_R2_MEDIA:
     AWS_S3_ADDRESSING_STYLE = 'path'
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_FILE_OVERWRITE = True  # bez exists() prije svakog uploada
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': f'public, max-age={MEDIA_CACHE_MAX_AGE}, immutable',
     }
@@ -414,7 +414,7 @@ if USE_R2_MEDIA:
         'region_name': AWS_S3_REGION_NAME,
         'default_acl': None,
         'querystring_auth': False,
-        'file_overwrite': False,
+        'file_overwrite': True,
         'addressing_style': 'path',
         'signature_version': 's3v4',
         'object_parameters': {

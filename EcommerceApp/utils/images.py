@@ -97,8 +97,25 @@ def is_new_upload(image_field):
     return hasattr(image_field, 'file') and isinstance(image_field.file, UploadedFile)
 
 
+def _is_remote_storage(storage) -> bool:
+    """R2/S3 storage — ne raditi exists()/open() na svakom page renderu."""
+    if storage is None:
+        return False
+    name = storage.__class__.__name__
+    module = getattr(storage.__class__, '__module__', '') or ''
+    if 'S3' in name or 'R2' in name or 'Cloudflare' in name:
+        return True
+    if 'storages' in module or 'boto' in module:
+        return True
+    return False
+
+
 def image_field_dimensions(image_field, *, default=(1600, 900)):
     if not image_field or not image_field.name:
+        return default
+    # R2/S3: ne downloadaj cijelu sliku samo zbog width/height (ubija Render workere)
+    storage = getattr(image_field, 'storage', None)
+    if _is_remote_storage(storage):
         return default
     try:
         image_field.open('rb')
@@ -567,16 +584,36 @@ save_processed_product_image = save_processed_image
 
 
 def _responsive_variant_url(storage, main_name, width):
+    if not main_name:
+        return None
     if '/' in main_name:
         folder, filename = main_name.rsplit('/', 1)
     else:
         folder, filename = '', main_name
-    base = filename.rsplit('.', 1)[0]
-    for ext in ('avif', 'jpg', 'jpeg', 'webp', 'png'):
+    if '.' not in filename:
+        return None
+    base, main_ext = filename.rsplit('.', 1)
+    main_ext = main_ext.lower()
+
+    # R2/S3: NE zovi storage.exists() (HEAD request) — 4 širine × 5 ext = desetine
+    # mrežnih poziva po slici → boto3 hang → gunicorn ubija worker → sajt “mrtav”.
+    if _is_remote_storage(storage):
+        # Ista ekstenzija kao glavni fajl (upload pipeline kreira npr. -320w.avif)
+        variant = f'{base}-{width}w.{main_ext}'
+        path = f'{folder}/{variant}' if folder else variant
+        try:
+            return storage.url(path)
+        except Exception:
+            return None
+
+    for ext in (main_ext, 'avif', 'jpg', 'jpeg', 'webp', 'png'):
         variant = f'{base}-{width}w.{ext}'
         path = f'{folder}/{variant}' if folder else variant
-        if storage.exists(path):
-            return storage.url(path)
+        try:
+            if storage.exists(path):
+                return storage.url(path)
+        except Exception:
+            continue
     return None
 
 
