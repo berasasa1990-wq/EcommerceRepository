@@ -63,15 +63,24 @@ DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 # ALLOWED_HOSTS: env + production domains + Render hostname
 # (DisallowedHost / “Invalid HTTP_HOST” ako custom domain nije na listi)
+def _normalize_allowed_host(h: str) -> str:
+    """Django: subdomain wildcard je '.example.com', ne '*.example.com'."""
+    h = (h or '').strip()
+    if not h:
+        return ''
+    if '://' in h:
+        h = urlparse(h).hostname or h
+    h = h.strip()
+    # Render / Cloudflare često stavlja *.onrender.com — pretvori u .onrender.com
+    if h.startswith('*.'):
+        h = h[1:]  # *.onrender.com → .onrender.com
+    return h
+
+
 _allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1,')
 ALLOWED_HOSTS = ['192.168.1.103']
 for h in _allowed.split(','):
-    h = h.strip()
-    if not h:
-        continue
-    # Strip scheme if someone put full URL by mistake (e.g. https://...)
-    if '://' in h:
-        h = urlparse(h).hostname or h
+    h = _normalize_allowed_host(h)
     if h:
         ALLOWED_HOSTS.append(h)
 
@@ -229,8 +238,13 @@ if database_url:
             default=database_url,
             conn_max_age=600,
             ssl_require=True,  # Render Postgres requires SSL
+            conn_health_checks=True,
         )
     }
+    # Ne drži request zauvijek ako Postgres ne odgovara (inače cijeli sajt “visi”)
+    _db_opts = dict(DATABASES['default'].get('OPTIONS') or {})
+    _db_opts.setdefault('connect_timeout', 10)
+    DATABASES['default']['OPTIONS'] = _db_opts
 else:
     DATABASES = {
         'default': {

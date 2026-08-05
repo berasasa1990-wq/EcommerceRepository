@@ -627,8 +627,9 @@ def should_track_visitor(request):
         '/media/',
         '/nalog/',
         '/priprema-pristup/',
+        '/healthz',
     )
-    if path == '/facebook-feed.xml':
+    if path in ('/facebook-feed.xml', '/healthz', '/healthz/'):
         return False
     if any(path.startswith(prefix) for prefix in skip_prefixes):
         return False
