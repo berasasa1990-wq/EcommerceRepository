@@ -319,7 +319,19 @@ def _normalize_media_host(value: str) -> str:
 
 
 if USE_R2_MEDIA:
-    _r2_endpoint = f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
+    # Endpoint:
+    #  - standard: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+    #  - EU jurisdiction bucket: https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com
+    #  - ili puni URL preko R2_ENDPOINT_URL
+    _r2_jurisdiction = _env('R2_JURISDICTION', '').strip().lower()  # npr. eu
+    _r2_endpoint_override = _env('R2_ENDPOINT_URL', '').strip().rstrip('/')
+    if _r2_endpoint_override:
+        _r2_endpoint = _r2_endpoint_override
+    elif _r2_jurisdiction:
+        _r2_endpoint = f'https://{R2_ACCOUNT_ID}.{_r2_jurisdiction}.r2.cloudflarestorage.com'
+    else:
+        _r2_endpoint = f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
+
     _r2_domain = _normalize_media_host(R2_CUSTOM_DOMAIN)
     if _r2_domain:
         MEDIA_URL = f'https://{_r2_domain}/'
@@ -336,6 +348,7 @@ if USE_R2_MEDIA:
             MEDIA_URL = f'{MEDIA_URL}{R2_LOCATION}/'
 
     # django-storages / boto3 (global AWS_* koje storages često čita)
+    # R2 NE podržava ACL — AWS_DEFAULT_ACL mora biti None (bez public-read)
     AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY = R2_SECRET_ACCESS_KEY
     AWS_STORAGE_BUCKET_NAME = R2_BUCKET_NAME
@@ -374,14 +387,14 @@ if USE_R2_MEDIA:
 
     STORAGES = {
         'default': {
-            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+            'BACKEND': 'EcommerceApp.storage_backends.CloudflareR2Storage',
             'OPTIONS': _r2_options,
         },
         'staticfiles': {
             'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
         },
     }
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    DEFAULT_FILE_STORAGE = 'EcommerceApp.storage_backends.CloudflareR2Storage'
 else:
     # Lokalni /media/ path
     if not MEDIA_URL.startswith('/'):
