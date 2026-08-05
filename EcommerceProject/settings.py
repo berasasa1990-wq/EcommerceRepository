@@ -61,8 +61,8 @@ SECRET_KEY = _env('SECRET_KEY', 'django-insecure-_73#1@hjsxhlmfx4+&85s10a(cyb9i*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-# ALLOWED_HOSTS: always support local development even if .env has production values
-# (e.g. ALLOWED_HOSTS from Render .env section)
+# ALLOWED_HOSTS: env + production domains + Render hostname
+# (DisallowedHost / “Invalid HTTP_HOST” ako custom domain nije na listi)
 _allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1,')
 ALLOWED_HOSTS = ['192.168.1.103']
 for h in _allowed.split(','):
@@ -72,7 +72,23 @@ for h in _allowed.split(','):
     # Strip scheme if someone put full URL by mistake (e.g. https://...)
     if '://' in h:
         h = urlparse(h).hostname or h
-    ALLOWED_HOSTS.append(h)
+    if h:
+        ALLOWED_HOSTS.append(h)
+
+# Produkcijski domeni (uvijek — da Cloudflare → Render ne padne na host grešku)
+for _prod_host in (
+    'opremazaribolov.ba',
+    'www.opremazaribolov.ba',
+    'media.opremazaribolov.ba',
+):
+    if _prod_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_prod_host)
+
+# Host iz SITE_URL env (ako je drugačiji custom domain)
+_site_url_early = _env('SITE_URL', 'https://www.opremazaribolov.ba')
+_site_host = urlparse(_site_url_early).hostname if _site_url_early else None
+if _site_host and _site_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_site_host)
 
 if DEBUG:
     # Ensure local runserver works (127.0.0.1:8000, localhost, etc.)
@@ -80,15 +96,15 @@ if DEBUG:
         if local not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(local)
 
-# Remove duplicates while preserving order
-ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS))
-
 # Render specific: add the service hostname if provided.
-# Render automatski injektuje RENDER_EXTERNAL_HOSTNAME za svaki Web Service.
-# Nema potrebe da ga ručno postavljaš (Render to radi sam).
-# Kod ga koristi da doda u ALLOWED_HOSTS.
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    # npr. ecommercerepository.onrender.com
+    if RENDER_EXTERNAL_HOSTNAME.endswith('.onrender.com'):
+        ALLOWED_HOSTS.append('.onrender.com')
+
+# Remove duplicates while preserving order
+ALLOWED_HOSTS = list(dict.fromkeys([h for h in ALLOWED_HOSTS if h]))
 
 # CSRF trusted origins - important for Render + local dev
 CSRF_TRUSTED_ORIGINS = []
@@ -105,10 +121,21 @@ if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 # Always trust all .onrender.com subdomains when on Render
-# This makes it work even if RENDER_EXTERNAL_HOSTNAME is not set yet
 if _env('RENDER_EXTERNAL_HOSTNAME') or _env('RENDER', '') or render_disk_path:
     if 'https://*.onrender.com' not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
+
+# Produkcijski CSRF (Cloudflare custom domain)
+for _origin in (
+    'https://opremazaribolov.ba',
+    'https://www.opremazaribolov.ba',
+):
+    if _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+if _site_host:
+    _site_origin = f'https://{_site_host}'
+    if _site_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_site_origin)
 
 # Always allow common local development origins when DEBUG=True
 if DEBUG:
