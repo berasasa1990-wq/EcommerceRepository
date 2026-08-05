@@ -32,10 +32,13 @@ python manage.py runserver
    - **Build Command:**
      ```bash
      pip install -r requirements.txt && \
+     python scripts/minify_assets.py && \
      python manage.py collectstatic --noinput && \
-     python manage.py migrate && \
-     python manage.py createsuperuser --noinput || true
+     python manage.py migrate --noinput
      ```
+     (Ne stavljaj `createsuperuser` u build — ako nalog već postoji, dobiješ
+     `CommandError: That username is already taken.` Superuser napravi jednom
+     ručno u Shell: `python manage.py createsuperuser`.)
    - **Start Command:**
      ```bash
      gunicorn EcommerceProject.wsgi:application
