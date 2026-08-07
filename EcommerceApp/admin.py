@@ -2179,10 +2179,10 @@ class ProductAdmin(admin.ModelAdmin):
             if google_query else ''
         )
 
-        # ChatGPT — samo naziv + „opis za ovaj artikal i tagove”
+        # ChatGPT — naziv + veći opis + tagovi
         chatgpt_url = ''
         if google_query:
-            chatgpt_prompt = f'{google_query} opis za ovaj artikal i tagove'
+            chatgpt_prompt = f'{google_query} veci opis za ovaj artikal i tagove'
             chatgpt_url = 'https://chatgpt.com/?q=' + quote_plus(chatgpt_prompt)
 
         context = {

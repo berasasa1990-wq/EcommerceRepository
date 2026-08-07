@@ -290,7 +290,7 @@ def activate_product(
     if opis is not None:
         product.opis = (opis or '').strip()
 
-    # Prvo polja bez re-encode preko Product.save image hooka
+    # Prvo polja (bez otvaranja stare slike ako fajl fali na disku)
     if image_upload and not keep_existing_image:
         base = unique_product_image_basename(
             (product.slug or product.naziv or 'artikal'),
@@ -299,9 +299,20 @@ def activate_product(
         safe_name = f'{base}.jpg'
         processed = process_quick_activation_image(image_upload, filename=safe_name)
         prepared = prepared_product_image_payload(processed)
-        # Sačuvaj polja (bez nove UploadedFile na slika — izbjegni dvostruku obradu)
+        # Sačuvaj polja prvo, pa novu sliku (save_prepared briše staru putanju ako postoji)
         product.save()
-        save_prepared_product_image(product.slika, prepared)
+        try:
+            save_prepared_product_image(product.slika, prepared)
+        except FileNotFoundError:
+            # Stara putanja u bazi bez fajla — očisti ime i snimi novu
+            logger.warning(
+                'Stara slika ne postoji na disku (%s); snimam novu.',
+                getattr(product.slika, 'name', None),
+            )
+            product.slika.name = ''
+            product.slika._file = None
+            product.slika._committed = True
+            save_prepared_product_image(product.slika, prepared)
         product.save(update_fields=['slika', 'azuriran'])
     else:
         product.save()

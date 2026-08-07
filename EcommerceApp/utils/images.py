@@ -94,7 +94,26 @@ BANNER_AVIF_SETTINGS = {
 
 
 def is_new_upload(image_field):
-    return hasattr(image_field, 'file') and isinstance(image_field.file, UploadedFile)
+    """
+    True samo za svježi browser/API upload.
+
+    VAŽNO: ne diraj image_field.file / hasattr(..., 'file') — FieldFile.file
+    otvara fajl iz storage-a. Ako DB ima putanju a fajl fali na disku/R2
+    (često Odoo import), padne s File does not exist / FileNotFoundError.
+    """
+    if image_field is None:
+        return False
+    try:
+        # _file je UploadedFile prije commit-a, bez storage.open()
+        f = getattr(image_field, '_file', None)
+        if f is not None:
+            return isinstance(f, UploadedFile)
+        # Još nije snimljen u storage
+        if getattr(image_field, '_committed', True) is False:
+            return True
+    except Exception:
+        return False
+    return False
 
 
 def _is_remote_storage(storage) -> bool:

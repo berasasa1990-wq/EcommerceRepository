@@ -422,37 +422,41 @@
         Otvori u ChatGPT-u
       </a>
       <p class="bu-chatgpt-hint">
-        U ChatGPT ide: naziv + „opis za ovaj artikal i tagove”.
+        U ChatGPT ide: naziv + „veci opis za ovaj artikal i tagove”.
+        Zatim zalijepi zasebno u Opis i Tagove (Copy dugmad pored polja).
       </p>
       {% endif %}
 
       <div class="bu-field">
         <div class="bu-field-head">
           <label for="id_opis">Opis</label>
-          <button type="button" class="bu-btn-copy" data-copy-target="id_opis">Copy tekst</button>
+          <button type="button" class="bu-btn-copy" data-copy-target="id_opis">Copy opis</button>
         </div>
         <textarea
           name="opis"
           id="id_opis"
           rows="5"
-          placeholder="Zalijepi opis iz ChatGPT-a…"
+          placeholder="Zalijepi veći opis iz ChatGPT-a…"
         >{{ form_data.opis }}</textarea>
         <p class="help">Zalijepi opis iz ChatGPT-a ili upiši ručno.</p>
       </div>
 
       <div class="bu-field">
-        <label for="id_tagovi">Tagovi</label>
+        <div class="bu-field-head">
+          <label for="id_tagovi">Tagovi</label>
+          <button type="button" class="bu-btn-copy" data-copy-target="id_tagovi">Copy tagovi</button>
+        </div>
         <input
           type="text"
           name="tagovi"
           id="id_tagovi"
           value="{{ form_data.tagovi }}"
-          placeholder="Zalijepi TAGOVI iz ChatGPT-a (zarez)…"
+          placeholder="Zalijepi tagove iz ChatGPT-a (zarez)…"
           autocomplete="off"
           autocapitalize="off"
         >
         <p class="help">
-          Dio „TAGOVI:” — zarezom. Prazno = ne mijenja postojeće tagove.
+          Tagovi zarezom. Prazno = ne mijenja postojeće tagove.
         </p>
       </div>
 
@@ -588,8 +592,9 @@
     btnCamera.addEventListener('click', function () { fileCamera.click(); });
   }
 
-  // Copy tekst — zasebno za Opis i SEO
+  // Copy — zasebno za Opis i Tagove
   document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+    var defaultLabel = btn.textContent;
     btn.addEventListener('click', function () {
       var id = btn.getAttribute('data-copy-target');
       var el = id ? document.getElementById(id) : null;
@@ -597,7 +602,7 @@
       var text = (el.value || '').trim();
       if (!text) {
         btn.textContent = 'Prazno';
-        setTimeout(function () { btn.textContent = 'Copy tekst'; }, 1200);
+        setTimeout(function () { btn.textContent = defaultLabel; }, 1200);
         return;
       }
       function ok() {
@@ -605,7 +610,7 @@
         btn.textContent = 'Kopirano';
         setTimeout(function () {
           btn.classList.remove('is-ok');
-          btn.textContent = 'Copy tekst';
+          btn.textContent = defaultLabel;
         }, 1400);
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
