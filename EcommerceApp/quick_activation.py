@@ -18,8 +18,8 @@ from .models import Brand, Product
 from .utils.images import (
     prepared_product_image_payload,
     process_quick_activation_image,
-    product_image_filename_base,
     save_prepared_product_image,
+    unique_product_image_basename,
 )
 
 logger = logging.getLogger(__name__)
@@ -260,8 +260,7 @@ def activate_product(
 
     # Prvo polja bez re-encode preko Product.save image hooka
     if image_upload and not keep_existing_image:
-        filename = getattr(image_upload, 'name', None) or 'telefon.jpg'
-        base = product_image_filename_base(
+        base = unique_product_image_basename(
             (product.slug or product.naziv or 'artikal'),
             fallback='artikal',
         )

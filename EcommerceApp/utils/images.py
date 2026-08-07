@@ -539,6 +539,20 @@ def _build_responsive_variants(
     return variants
 
 
+def _safe_storage_delete(storage, path):
+    if not path or storage is None:
+        return
+    try:
+        # R2/S3: ne zovi exists() — odmah delete (OK ako fajl ne postoji)
+        if _is_remote_storage(storage):
+            storage.delete(path)
+            return
+        if storage.exists(path):
+            storage.delete(path)
+    except Exception:
+        logger.debug('Brisanje storage fajla nije uspjelo: %s', path, exc_info=True)
+
+
 def delete_responsive_variants(storage, main_name, widths):
     if not main_name:
         return
@@ -551,8 +565,15 @@ def delete_responsive_variants(storage, main_name, widths):
         for ext in ('avif', 'jpg', 'jpeg', 'png', 'webp'):
             variant = f'{base}-{width}w.{ext}'
             path = f'{folder}/{variant}' if folder else variant
-            if storage.exists(path):
-                storage.delete(path)
+            _safe_storage_delete(storage, path)
+
+
+def delete_stored_image_and_variants(storage, main_name, widths=PRODUCT_RESPONSIVE_WIDTHS):
+    """Obriši glavnu sliku + responsive varijante (pri zamjeni)."""
+    if not main_name:
+        return
+    delete_responsive_variants(storage, main_name, widths)
+    _safe_storage_delete(storage, main_name)
 
 
 def save_responsive_variants(storage, main_name, variants):
@@ -560,8 +581,7 @@ def save_responsive_variants(storage, main_name, variants):
         return
     for width, content in variants.items():
         variant_name = _responsive_variant_name(main_name, width)
-        if storage.exists(variant_name):
-            storage.delete(variant_name)
+        _safe_storage_delete(storage, variant_name)
         storage.save(variant_name, content)
 
 
@@ -571,11 +591,23 @@ def save_processed_image(image_field, processed, *, responsive_widths=()):
         variants = processed.get('variants', {})
         storage = image_field.storage
         old_name = image_field.name
+        # Prije snimanja: obriši staru glavnu + varijante (inače CDN/browser
+        # drži staru sliku jer je URL isti + Cache-Control: immutable).
         if old_name:
-            delete_responsive_variants(storage, old_name, responsive_widths)
+            delete_stored_image_and_variants(storage, old_name, responsive_widths)
         image_field.save(main.name, main, save=False)
+        # Ako storage prepiše isto ime, OK; ako doda novi unique name, stare smo obrisali.
+        new_name = image_field.name
+        if old_name and new_name and old_name != new_name:
+            # Osiguraj da staro ime nije ostalo (npr. local FS rename)
+            delete_stored_image_and_variants(storage, old_name, responsive_widths)
         save_responsive_variants(storage, image_field.name, variants)
         return image_field
+    old_name = getattr(image_field, 'name', None) or ''
+    if old_name:
+        delete_stored_image_and_variants(
+            image_field.storage, old_name, responsive_widths or PRODUCT_RESPONSIVE_WIDTHS,
+        )
     image_field.save(processed.name, processed, save=False)
     return image_field
 
@@ -1380,9 +1412,26 @@ def product_image_filename_base(text, *, fallback='artikal', max_length=100):
     return base[:max_length].rstrip('-') or fallback
 
 
+def unique_product_image_basename(text, *, fallback='artikal', max_length=100):
+    """
+    Jedinstveno ime pri svakom uploadu.
+
+    Isti slug + Cache-Control immutable (1 god) → preglednik/CDN zadrži STARU
+    sliku i nakon zamjene. Novi URL rješava to odmah na sajtu.
+    """
+    import secrets
+    import time
+
+    # ostavi mjesta za -xxxxxxxx (do 12 znakova)
+    room = max(12, max_length - 12)
+    base = product_image_filename_base(text, fallback=fallback, max_length=room)
+    token = f'{int(time.time()) % 100000000:x}{secrets.token_hex(2)}'
+    return f'{base}-{token}'
+
+
 def process_product_image_named(basename):
-    """Post-process za upload: izlazni fajl se zove prema basename (npr. slug artikla)."""
-    safe = product_image_filename_base(basename)
+    """Post-process za upload: izlazni fajl se zove prema basename + unique token."""
+    safe = unique_product_image_basename(basename)
 
     def _process(image_field):
         return process_product_image(image_field, filename=f'{safe}.jpg')
