@@ -148,6 +148,36 @@
     line-height: 1.35;
     text-align: center;
   }
+  .bu-field-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .bu-field-head label {
+    margin-bottom: 0;
+  }
+  .bu-btn-copy {
+    appearance: none;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 800;
+    font-size: .78rem;
+    padding: 6px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .bu-btn-copy:active {
+    background: #e2e8f0;
+  }
+  .bu-btn-copy.is-ok {
+    border-color: #86efac;
+    background: #dcfce7;
+    color: #166534;
+  }
   .bu-price-wrap {
     position: relative;
   }
@@ -381,30 +411,33 @@
         <p class="help">Redovna cijena na webshopu (npr. 12.90).</p>
       </div>
 
+      {% if chatgpt_url %}
+      <a
+        class="bu-btn-chatgpt"
+        href="{{ chatgpt_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        id="bu-chatgpt"
+      >
+        Otvori u ChatGPT-u
+      </a>
+      <p class="bu-chatgpt-hint">
+        U ChatGPT ide: naziv + „opis za ovaj artikal i tagove”.
+      </p>
+      {% endif %}
+
       <div class="bu-field">
-        <label for="id_opis">Opis</label>
-        {% if chatgpt_url %}
-        <a
-          class="bu-btn-chatgpt"
-          href="{{ chatgpt_url }}"
-          target="_blank"
-          rel="noopener noreferrer"
-          id="bu-chatgpt"
-        >
-          Otvori u ChatGPT-u
-        </a>
-        <p class="bu-chatgpt-hint">
-          Otvara ChatGPT samo s nazivom artikla.
-          Kopiraj odgovor → zalijepi ispod.
-        </p>
-        {% endif %}
+        <div class="bu-field-head">
+          <label for="id_opis">Opis</label>
+          <button type="button" class="bu-btn-copy" data-copy-target="id_opis">Copy tekst</button>
+        </div>
         <textarea
           name="opis"
           id="id_opis"
           rows="5"
-          placeholder="Zalijepi opis iz ChatGPT-a ili upiši ručno…"
+          placeholder="Zalijepi opis iz ChatGPT-a…"
         >{{ form_data.opis }}</textarea>
-        <p class="help">ChatGPT: kopiraj → zalijepi, ili upiši ručno.</p>
+        <p class="help">Zalijepi opis iz ChatGPT-a ili upiši ručno.</p>
       </div>
 
       <div class="bu-field">
@@ -414,13 +447,12 @@
           name="tagovi"
           id="id_tagovi"
           value="{{ form_data.tagovi }}"
-          placeholder="npr. casting, feeder, štap"
+          placeholder="Zalijepi TAGOVI iz ChatGPT-a (zarez)…"
           autocomplete="off"
           autocapitalize="off"
         >
         <p class="help">
-          Unesi nove tagove odvojene zarezom (npr. casting, feeder, štap).
-          Prazno polje = ne mijenja tagove.
+          Dio „TAGOVI:” — zarezom. Prazno = ne mijenja postojeće tagove.
         </p>
       </div>
 
@@ -555,6 +587,40 @@
   if (btnCamera && fileCamera) {
     btnCamera.addEventListener('click', function () { fileCamera.click(); });
   }
+
+  // Copy tekst — zasebno za Opis i SEO
+  document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-copy-target');
+      var el = id ? document.getElementById(id) : null;
+      if (!el) return;
+      var text = (el.value || '').trim();
+      if (!text) {
+        btn.textContent = 'Prazno';
+        setTimeout(function () { btn.textContent = 'Copy tekst'; }, 1200);
+        return;
+      }
+      function ok() {
+        btn.classList.add('is-ok');
+        btn.textContent = 'Kopirano';
+        setTimeout(function () {
+          btn.classList.remove('is-ok');
+          btn.textContent = 'Copy tekst';
+        }, 1400);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok).catch(function () {
+          el.focus();
+          el.select();
+          try { document.execCommand('copy'); ok(); } catch (e) {}
+        });
+      } else {
+        el.focus();
+        el.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+      }
+    });
+  });
 
   if (form && submit) {
     form.addEventListener('submit', function () {
