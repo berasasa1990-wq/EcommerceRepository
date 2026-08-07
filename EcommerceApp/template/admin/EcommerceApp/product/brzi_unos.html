@@ -49,7 +49,7 @@
     border: 2px solid #5BB805 !important;
     letter-spacing: .02em;
   }
-  .bu-scan-row button,
+  .bu-scan-row button[type="submit"],
   .bu-btn {
     appearance: none;
     border: none;
@@ -62,8 +62,58 @@
     cursor: pointer;
     white-space: nowrap;
   }
-  .bu-scan-row button:active,
+  .bu-scan-row button[type="submit"]:active,
   .bu-btn:active { background: #4a9a04; }
+  .bu-btn-scan {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 10px;
+    appearance: none;
+    border: 2px solid #0f172a;
+    border-radius: 12px;
+    background: #0f172a;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 13px 14px;
+    cursor: pointer;
+  }
+  .bu-btn-scan:active { background: #1e293b; }
+  .bu-btn-scan.is-on {
+    background: #b91c1c;
+    border-color: #b91c1c;
+  }
+  .bu-scanner {
+    display: none;
+    margin-top: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #0f172a;
+    background: #000;
+  }
+  .bu-scanner.is-on { display: block; }
+  #bu-qr-reader {
+    width: 100%;
+    min-height: 240px;
+  }
+  #bu-qr-reader video {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+  .bu-scanner-status {
+    display: none;
+    margin-top: 8px;
+    font-size: .82rem;
+    color: #64748b;
+    text-align: center;
+    line-height: 1.35;
+  }
+  .bu-scanner-status.is-on { display: block; }
+  .bu-scanner-status.is-err { color: #b91c1c; }
   .bu-hint {
     margin-top: 10px;
     font-size: .82rem;
@@ -159,45 +209,56 @@
   <div class="bu-card">
     <h1>Brzi unos / Aktivacija</h1>
     <p class="bu-lead">
-      Skeniraj barkod ili upiši šifru. Sistem pronađe postojeći artikal —
-      ne kreira novi. Zatim upišeš cijenu, brend i sliku.
+      Skeniraj barkod, upiši šifru ili <strong>naziv</strong>.
+      Sistem pronađe postojeći artikal — ne kreira novi.
     </p>
 
     <form method="get" action="" id="bu-scan-form" autocomplete="off">
-      <label class="bu-label" for="id_q">Šifra ili barkod</label>
+      <label class="bu-label" for="id_q">Šifra, barkod ili naziv</label>
       <div class="bu-scan-row">
         <input
           type="text"
           name="q"
           id="id_q"
           value="{{ query }}"
-          inputmode="text"
+          inputmode="search"
           enterkeyhint="search"
           autocapitalize="off"
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"
-          placeholder="Skeniraj ili upiši…"
+          placeholder="Skeniraj, šifra ili naziv…"
           autofocus
         >
         <button type="submit">Pronađi</button>
       </div>
+
+      <button type="button" class="bu-btn-scan" id="bu-scan-toggle" aria-expanded="false">
+        Skeniraj barkod kamerom
+      </button>
+      <div class="bu-scanner" id="bu-scanner" aria-hidden="true">
+        <div id="bu-qr-reader"></div>
+      </div>
+      <p class="bu-scanner-status" id="bu-scanner-status"></p>
+
       <p class="bu-hint">
-        Na telefonu: dodirni polje i skeniraj barkod skenerom ili kamerom tastature.
-        Enter odmah traži artikal.
+        Kamerom skeniraj barkod na ambalaži, ili upiši dio naziva (npr. „fox rage”).
+        USB/Bluetooth skener i dalje radi u polju iznad (Enter = traži).
       </p>
     </form>
 
     {% if not_found %}
     <div class="bu-empty">
-      Nema artikla s tom šifrom/barkodom. Artikli se ne kreiraju ovdje —
-      moraju već postojati u bazi (npr. iz Odoo importa).
+      Nema artikla za „{{ query }}”. Traži po šifri, barkodu ili nazivu.
+      Artikli se ne kreiraju ovdje — moraju već postojati u bazi.
     </div>
     {% endif %}
 
     {% if matches %}
     <div class="bu-matches">
-      <p class="bu-label" style="margin-bottom:4px;">Više rezultata — odaberi artikal</p>
+      <p class="bu-label" style="margin-bottom:4px;">
+        {% if matches|length == 1 %}Pronađen artikal{% else %}{{ matches|length }} rezultata — odaberi artikal{% endif %}
+      </p>
       {% for p in matches %}
       <a class="bu-match" href="{% url 'admin:EcommerceApp_product_brzi_unos_aktivacija' p.pk %}">
         {% if p.slika %}
@@ -232,12 +293,135 @@
   <a class="bu-back" href="{% url 'admin:EcommerceApp_product_changelist' %}">← Nazad na listu artikala</a>
 </div>
 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function () {
   var input = document.getElementById('id_q');
-  if (!input) return;
-  // Skener šalje Enter — forma se submita. Fokus odmah za brzi rad u radnji.
-  setTimeout(function () { input.focus(); input.select(); }, 50);
+  var form = document.getElementById('bu-scan-form');
+  var toggle = document.getElementById('bu-scan-toggle');
+  var scannerBox = document.getElementById('bu-scanner');
+  var statusEl = document.getElementById('bu-scanner-status');
+  var html5Qr = null;
+  var scanning = false;
+  var handled = false;
+
+  if (input) {
+    setTimeout(function () { input.focus(); input.select(); }, 50);
+  }
+
+  function setStatus(msg, isErr) {
+    if (!statusEl) return;
+    statusEl.textContent = msg || '';
+    statusEl.classList.toggle('is-on', !!msg);
+    statusEl.classList.toggle('is-err', !!isErr);
+  }
+
+  function stopScanner() {
+    scanning = false;
+    handled = false;
+    if (toggle) {
+      toggle.classList.remove('is-on');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.textContent = 'Skeniraj barkod kamerom';
+    }
+    if (scannerBox) {
+      scannerBox.classList.remove('is-on');
+      scannerBox.setAttribute('aria-hidden', 'true');
+    }
+    if (html5Qr) {
+      var sc = html5Qr;
+      html5Qr = null;
+      sc.stop().then(function () {
+        try { sc.clear(); } catch (e) {}
+      }).catch(function () {
+        try { sc.clear(); } catch (e) {}
+      });
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    if (handled) return;
+    var code = (decodedText || '').replace(/[\r\n\t]+/g, '').trim();
+    if (!code) return;
+    handled = true;
+    if (input) input.value = code;
+    setStatus('Skenirano: ' + code + ' — tražim…', false);
+    stopScanner();
+    if (form) form.submit();
+  }
+
+  function startScanner() {
+    if (typeof Html5Qrcode === 'undefined') {
+      setStatus('Skener se nije učitao. Provjeri internet (CDN) i osvježi stranicu.', true);
+      return;
+    }
+    if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      setStatus('Kamera radi samo preko HTTPS (ili localhost).', true);
+      return;
+    }
+
+    scanning = true;
+    handled = false;
+    if (toggle) {
+      toggle.classList.add('is-on');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.textContent = 'Zaustavi skener';
+    }
+    if (scannerBox) {
+      scannerBox.classList.add('is-on');
+      scannerBox.setAttribute('aria-hidden', 'false');
+    }
+    setStatus('Usmjeri kameru na barkod…', false);
+
+    html5Qr = new Html5Qrcode('bu-qr-reader');
+    var config = {
+      fps: 10,
+      qrbox: function (viewfinderWidth, viewfinderHeight) {
+        var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        var size = Math.floor(minEdge * 0.85);
+        return { width: size, height: Math.floor(size * 0.55) };
+      },
+      aspectRatio: 1.333,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+    };
+
+    html5Qr.start(
+      { facingMode: 'environment' },
+      config,
+      onScanSuccess,
+      function () { /* ignore frame misses */ }
+    ).catch(function (err) {
+      scanning = false;
+      if (toggle) {
+        toggle.classList.remove('is-on');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = 'Skeniraj barkod kamerom';
+      }
+      if (scannerBox) {
+        scannerBox.classList.remove('is-on');
+        scannerBox.setAttribute('aria-hidden', 'true');
+      }
+      setStatus(
+        'Kamera nije dostupna: ' + (err && err.message ? err.message : err) +
+        '. Dozvoli pristup kameri u pregledniku.',
+        true
+      );
+      html5Qr = null;
+    });
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      if (scanning) {
+        stopScanner();
+        setStatus('', false);
+      } else {
+        startScanner();
+      }
+    });
+  }
+
+  window.addEventListener('pagehide', stopScanner);
 })();
 </script>
 {% endblock %}

@@ -38,57 +38,78 @@ def normalize_scan_code(value: str) -> str:
     return text.strip()
 
 
-def find_products_by_code(code: str, *, limit: int = 12):
+def find_products_by_code(code: str, *, limit: int = 20):
+    """Alias — pretraga po šifri, barkodu i nazivu."""
+    return find_products(code, limit=limit)
+
+
+def find_products(query: str, *, limit: int = 20):
     """
-    Pronađi artikle po šifri ili barkodu.
-    Prioritet: tačan match → match bez vodećih nula → sadrži.
+    Pronađi artikle po šifri, barkodu ili nazivu.
+    Prioritet: tačan kod → tačan naziv → djelomično (kod + naziv).
     """
-    code = normalize_scan_code(code)
-    if not code:
-        return Product.objects.none()
+    query = normalize_scan_code(query)
+    if not query:
+        return []
 
     base = Product.objects.select_related('brend', 'kategorija')
 
-    exact = list(
+    # 1) Tačan match šifra / barkod
+    exact_code = list(
         base.filter(
-            Q(sifra__iexact=code)
-            | Q(barkod__iexact=code)
-            | Q(sifra_normalized__iexact=code)
-            | Q(barkod_normalized__iexact=code)
+            Q(sifra__iexact=query)
+            | Q(barkod__iexact=query)
+            | Q(sifra_normalized__iexact=query)
+            | Q(barkod_normalized__iexact=query)
         )[:limit]
     )
-    if exact:
-        return exact
+    if exact_code:
+        return exact_code
 
     # Barkodovi često imaju vodeće nule
-    stripped = code.lstrip('0') or code
-    if stripped != code:
+    stripped = query.lstrip('0') or query
+    if stripped != query:
         exact_stripped = list(
             base.filter(
                 Q(sifra__iexact=stripped)
                 | Q(barkod__iexact=stripped)
-                | Q(barkod__iexact=code)
-                | Q(sifra__iexact=code)
+                | Q(barkod__iexact=query)
+                | Q(sifra__iexact=query)
             )[:limit]
         )
         if exact_stripped:
             return exact_stripped
 
-    # Partial (samo ako je kod dovoljno dug da ne bude šum)
-    if len(code) >= 3:
-        return list(
-            base.filter(
-                Q(sifra__icontains=code)
-                | Q(barkod__icontains=code)
-            ).order_by('naziv')[:limit]
-        )
+    # 2) Tačan naziv
+    exact_name = list(base.filter(naziv__iexact=query)[:limit])
+    if exact_name:
+        return exact_name
 
-    return []
+    # 3) Djelomično: šifra, barkod, naziv (min 2 znaka)
+    if len(query) < 2:
+        return []
+
+    q_filter = (
+        Q(sifra__icontains=query)
+        | Q(barkod__icontains=query)
+        | Q(naziv__icontains=query)
+        | Q(naziv_normalized__icontains=query)
+    )
+
+    # Više riječi u nazivu — sve moraju postojati (npr. "fox rage spinner")
+    words = [w for w in re.split(r'\s+', query) if len(w) >= 2]
+    if len(words) > 1:
+        name_and = Q()
+        for w in words:
+            name_and &= Q(naziv__icontains=w)
+        q_filter |= name_and
+
+    return list(base.filter(q_filter).order_by('naziv')[:limit])
 
 
 def find_single_product(code: str):
     """Vrati (product, None) ako je tačno jedan match, inače (None, lista)."""
-    matches = find_products_by_code(code)
+    matches = find_products(code)
     if len(matches) == 1:
         return matches[0], None
     return None, matches

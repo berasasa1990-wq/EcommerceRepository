@@ -2022,8 +2022,8 @@ class ProductAdmin(admin.ModelAdmin):
         return redirect('admin:EcommerceApp_product_changelist')
 
     def brzi_unos_view(self, request):
-        """Korak 1: skeniraj / unesi šifru ili barkod → pronađi postojeći artikal."""
-        from .quick_activation import find_products_by_code, find_single_product, normalize_scan_code
+        """Korak 1: sken / šifra / barkod / naziv → pronađi postojeći artikal."""
+        from .quick_activation import find_products, find_single_product, normalize_scan_code
 
         if not self.has_change_permission(request):
             messages.error(request, 'Nemate dozvolu za izmjenu artikala.')
@@ -2035,7 +2035,7 @@ class ProductAdmin(admin.ModelAdmin):
 
         if request.method == 'POST' or query:
             if not query:
-                messages.warning(request, 'Unesi ili skeniraj šifru / barkod.')
+                messages.warning(request, 'Unesi šifru, barkod ili naziv — ili skeniraj barkod.')
             else:
                 product, multi = find_single_product(query)
                 if product is not None:
@@ -2043,13 +2043,13 @@ class ProductAdmin(admin.ModelAdmin):
                         'admin:EcommerceApp_product_brzi_unos_aktivacija',
                         product_id=product.pk,
                     )
-                matches = multi if multi is not None else find_products_by_code(query)
+                matches = multi if multi is not None else find_products(query)
                 if not matches:
                     not_found = True
                     messages.error(
                         request,
                         f'Nijedan artikal nije pronađen za „{query}”. '
-                        'Artikal mora već postojati u bazi (šifra ili barkod).',
+                        'Traži po šifri, barkodu ili nazivu (artikal mora već postojati).',
                     )
                 elif len(matches) == 1:
                     return redirect(
