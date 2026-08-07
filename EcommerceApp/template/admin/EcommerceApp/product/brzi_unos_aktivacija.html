@@ -52,6 +52,36 @@
     color: #0f172a;
     word-break: break-word;
   }
+  .bu-stock-status {
+    display: inline-block;
+    font-size: .75rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 5px 11px;
+    border-radius: 999px;
+    line-height: 1.2;
+  }
+  .bu-stock-status.is-in {
+    color: #14532d;
+    background: #bbf7d0;
+    animation: bu-pulse-green 1.4s ease-in-out infinite;
+  }
+  .bu-stock-status.is-out {
+    color: #7f1d1d;
+    background: #fecaca;
+    animation: bu-pulse-red 1.4s ease-in-out infinite;
+  }
+  @keyframes bu-pulse-green {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, .55); transform: scale(1); }
+    50%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); transform: scale(1.04); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
+  }
+  @keyframes bu-pulse-red {
+    0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, .55); transform: scale(1); }
+    50%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); transform: scale(1.04); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+  }
   .bu-field { margin-bottom: 16px; }
   .bu-field label {
     display: block;
@@ -139,10 +169,46 @@
     text-align: center;
   }
   .bu-photo-zone input[type="file"] {
-    width: 100%;
-    font-size: .95rem;
-    margin-top: 8px;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
   }
+  .bu-photo-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .bu-photo-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 14px 16px;
+    cursor: pointer;
+    color: #fff;
+  }
+  .bu-photo-btn-gallery {
+    background: #5BB805;
+  }
+  .bu-photo-btn-gallery:active { background: #4a9a04; }
+  .bu-photo-btn-camera {
+    background: #0f172a;
+  }
+  .bu-photo-btn-camera:active { background: #1e293b; }
+
   .bu-preview {
     margin-top: 12px;
     display: none;
@@ -256,6 +322,14 @@
     <dl class="bu-meta-grid">
       <dt>Naziv</dt>
       <dd>{{ product.naziv }}</dd>
+      <dt>Stanje</dt>
+      <dd>
+        {% if product.na_stanju %}
+        <span class="bu-stock-status is-in">NA STANJU</span>
+        {% else %}
+        <span class="bu-stock-status is-out">NIJE NA STANJU</span>
+        {% endif %}
+      </dd>
       <dt>Šifra</dt>
       <dd>{{ product.sifra|default:"—" }}</dd>
       <dt>Barkod</dt>
@@ -334,7 +408,24 @@
       </div>
 
       <div class="bu-field">
-        <label for="id_slika">Slika artikla</label>
+        <label for="id_tagovi">Tagovi</label>
+        <input
+          type="text"
+          name="tagovi"
+          id="id_tagovi"
+          value="{{ form_data.tagovi }}"
+          placeholder="npr. casting, feeder, štap"
+          autocomplete="off"
+          autocapitalize="off"
+        >
+        <p class="help">
+          Unesi nove tagove odvojene zarezom (npr. casting, feeder, štap).
+          Prazno polje = ne mijenja tagove.
+        </p>
+      </div>
+
+      <div class="bu-field">
+        <label>Slika artikla</label>
         {% if google_images_url %}
         <a
           class="bu-btn-google"
@@ -357,17 +448,33 @@
         </p>
         {% endif %}
         <div class="bu-photo-zone">
-          <strong>Slikaj telefonom ili izaberi fotografiju</strong>
+          <strong>Izaberi iz galerije ili slikaj</strong>
+          <div class="bu-photo-btns">
+            <button type="button" class="bu-photo-btn bu-photo-btn-gallery" id="bu-pick-gallery">
+              Galerija telefona
+            </button>
+            <button type="button" class="bu-photo-btn bu-photo-btn-camera" id="bu-pick-camera">
+              Slikaj kamerom
+            </button>
+          </div>
+          {# Bez capture = galerija (i opcionalno kamera u meniju OS-a) #}
           <input
             type="file"
             name="slika"
             id="id_slika"
             accept="image/*"
+          >
+          {# capture = odmah kamera #}
+          <input
+            type="file"
+            name="slika_kamera"
+            id="id_slika_kamera"
+            accept="image/*"
             capture="environment"
           >
           <p class="help" style="margin-top:10px;">
             Sistem sam doradi sliku za webshop: bijela pozadina, centrirano,
-            blago posvijetli i izoštri. Ne mijenja sam artikal na slici.
+            blago posvijetli i izoštri.
           </p>
           <div class="bu-preview" id="bu-preview">
             <img id="bu-preview-img" alt="Pregled nove slike">
@@ -390,7 +497,7 @@
       </div>
 
       <p class="bu-note">
-        Klikom se postavlja: na stanju, cijena, brend, opis, slika (R2/lokalno),
+        Klikom se postavlja: na stanju, cijena, brend, opis, tagovi, slika,
         aktivan = da. Artikal odmah ide na webshop.
       </p>
     </form>
@@ -399,7 +506,10 @@
 
 <script>
 (function () {
-  var fileInput = document.getElementById('id_slika');
+  var fileGallery = document.getElementById('id_slika');
+  var fileCamera = document.getElementById('id_slika_kamera');
+  var btnGallery = document.getElementById('bu-pick-gallery');
+  var btnCamera = document.getElementById('bu-pick-camera');
   var preview = document.getElementById('bu-preview');
   var previewImg = document.getElementById('bu-preview-img');
   var form = document.getElementById('bu-activate-form');
@@ -409,19 +519,41 @@
     setTimeout(function () { price.focus(); price.select(); }, 80);
   }
 
-  if (fileInput && preview && previewImg) {
-    fileInput.addEventListener('change', function () {
-      var file = fileInput.files && fileInput.files[0];
+  function showPreview(file) {
+    if (!preview || !previewImg || !file) return;
+    var url = URL.createObjectURL(file);
+    previewImg.onload = function () { URL.revokeObjectURL(url); };
+    previewImg.src = url;
+    preview.classList.add('is-on');
+  }
+
+  function onFileChange(input, otherInput) {
+    return function () {
+      var file = input.files && input.files[0];
       if (!file) {
-        preview.classList.remove('is-on');
-        previewImg.removeAttribute('src');
+        if (preview) preview.classList.remove('is-on');
+        if (previewImg) previewImg.removeAttribute('src');
         return;
       }
-      var url = URL.createObjectURL(file);
-      previewImg.onload = function () { URL.revokeObjectURL(url); };
-      previewImg.src = url;
-      preview.classList.add('is-on');
-    });
+      // samo jedan izvor slike
+      if (otherInput) {
+        try { otherInput.value = ''; } catch (e) {}
+      }
+      showPreview(file);
+    };
+  }
+
+  if (fileGallery) {
+    fileGallery.addEventListener('change', onFileChange(fileGallery, fileCamera));
+  }
+  if (fileCamera) {
+    fileCamera.addEventListener('change', onFileChange(fileCamera, fileGallery));
+  }
+  if (btnGallery && fileGallery) {
+    btnGallery.addEventListener('click', function () { fileGallery.click(); });
+  }
+  if (btnCamera && fileCamera) {
+    btnCamera.addEventListener('click', function () { fileCamera.click(); });
   }
 
   if (form && submit) {

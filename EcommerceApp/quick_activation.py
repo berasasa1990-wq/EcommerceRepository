@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation
 import requests
 from django.db.models import Q
 
-from .models import Brand, Product
+from .models import Brand, Product, Tag
 from .utils.images import (
     prepared_product_image_payload,
     process_quick_activation_image,
@@ -233,6 +233,37 @@ def generate_product_description(
     return text
 
 
+def parse_tag_names(raw: str) -> list[str]:
+    """'casting, feeder, štap' → lista očišćenih naziva."""
+    if not raw:
+        return []
+    parts = re.split(r'[,;\n]+', str(raw))
+    names = []
+    seen = set()
+    for part in parts:
+        name = (part or '').strip()
+        if not name:
+            continue
+        key = name.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        names.append(name[:50])
+    return names
+
+
+def resolve_tags(raw: str) -> list[Tag]:
+    """Pronađi ili kreiraj tagove iz unosa (zarez / novi red)."""
+    tags = []
+    for name in parse_tag_names(raw):
+        try:
+            tag, _ = Tag.get_or_create_by_name(name)
+            tags.append(tag)
+        except Exception:
+            logger.exception('Brzi unos: tag nije kreiran: %s', name)
+    return tags
+
+
 def activate_product(
     product: Product,
     *,
@@ -241,10 +272,11 @@ def activate_product(
     image_upload=None,
     keep_existing_image: bool = False,
     opis: str | None = None,
+    tagovi: list[Tag] | None = None,
 ) -> Product:
     """
     Aktiviraj postojeći artikal za webshop:
-    - cijena, brend, opcionalno opis
+    - cijena, brend, opcionalno opis i tagovi
     - na_stanju=True, aktivan=True
     - stanje min 1 ako je bilo 0
     - opcionalno nova slika (dorada + upload na R2/local storage)
@@ -273,5 +305,9 @@ def activate_product(
         product.save(update_fields=['slika', 'azuriran'])
     else:
         product.save()
+
+    # Samo dodaj unesene tagove (ne briši postojeće ako je lista prazna)
+    if tagovi:
+        product.tagovi.add(*tagovi)
 
     return product

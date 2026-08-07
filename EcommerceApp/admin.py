@@ -2078,7 +2078,7 @@ class ProductAdmin(admin.ModelAdmin):
         from decimal import InvalidOperation
         from urllib.parse import quote_plus
 
-        from .quick_activation import activate_product, parse_price
+        from .quick_activation import activate_product, parse_price, resolve_tags
 
         if not self.has_change_permission(request):
             messages.error(request, 'Nemate dozvolu za izmjenu artikala.')
@@ -2086,6 +2086,7 @@ class ProductAdmin(admin.ModelAdmin):
 
         product = (
             Product.objects.select_related('brend', 'kategorija')
+            .prefetch_related('tagovi')
             .filter(pk=product_id)
             .first()
         )
@@ -2099,13 +2100,17 @@ class ProductAdmin(admin.ModelAdmin):
             'cijena': str(product.cijena) if product.cijena is not None else '',
             'brend_id': str(product.brend_id or ''),
             'opis': (product.opis or '').strip(),
+            # Polje prazno — samo ručni unos novih tagova zarezom
+            'tagovi': '',
         }
 
         if request.method == 'POST':
             form_data['cijena'] = (request.POST.get('cijena') or '').strip()
             form_data['brend_id'] = (request.POST.get('brend_id') or '').strip()
             form_data['opis'] = (request.POST.get('opis') or '').strip()
-            image_upload = request.FILES.get('slika')
+            form_data['tagovi'] = (request.POST.get('tagovi') or '').strip()
+            # Galerija ili kamera — oba file inputa dijele name="slika"
+            image_upload = request.FILES.get('slika') or request.FILES.get('slika_kamera')
             keep_image = request.POST.get('keep_existing_image') == '1'
 
             brend = None
@@ -2125,12 +2130,13 @@ class ProductAdmin(admin.ModelAdmin):
                 form_errors.append('Izaberi brend.')
 
             if not image_upload and not (product.slika and product.slika.name):
-                form_errors.append('Dodaj sliku artikla (foto ili galerija).')
+                form_errors.append('Dodaj sliku artikla (galerija ili kamera).')
             elif not image_upload and product.slika and product.slika.name:
                 keep_image = True
 
             if not form_errors and cijena is not None:
                 try:
+                    tagovi = resolve_tags(form_data['tagovi'])
                     activate_product(
                         product,
                         cijena=cijena,
@@ -2138,12 +2144,15 @@ class ProductAdmin(admin.ModelAdmin):
                         image_upload=image_upload,
                         keep_existing_image=keep_image and not image_upload,
                         opis=form_data['opis'],
+                        tagovi=tagovi,
                     )
+                    tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
                     messages.success(
                         request,
                         f'✓ „{product.naziv}” je aktivan na webshopu '
                         f'({cijena} KM'
                         f'{f", {brend.naziv}" if brend else ""}'
+                        f'{tag_note}'
                         f', na stanju).',
                     )
                     return redirect('admin:EcommerceApp_product_brzi_unos')

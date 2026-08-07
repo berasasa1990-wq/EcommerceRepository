@@ -180,7 +180,41 @@
   }
   .bu-badge-ok { background: #dcfce7; color: #166534; }
   .bu-badge-off { background: #fee2e2; color: #991b1b; }
-  .bu-badge-stock { background: #e0f2fe; color: #075985; }
+  .bu-stock-status {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    line-height: 1.2;
+  }
+  .bu-stock-status.is-in {
+    color: #14532d;
+    background: #bbf7d0;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, .55);
+    animation: bu-pulse-green 1.4s ease-in-out infinite;
+  }
+  .bu-stock-status.is-out {
+    color: #7f1d1d;
+    background: #fecaca;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, .55);
+    animation: bu-pulse-red 1.4s ease-in-out infinite;
+  }
+  @keyframes bu-pulse-green {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, .55); transform: scale(1); }
+    50%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); transform: scale(1.04); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
+  }
+  @keyframes bu-pulse-red {
+    0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, .55); transform: scale(1); }
+    50%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); transform: scale(1.04); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+  }
+  .bu-match.is-in-stock { border-color: #86efac; }
+  .bu-match.is-out-stock { border-color: #fca5a5; }
   .bu-empty {
     margin-top: 16px;
     padding: 14px;
@@ -260,7 +294,7 @@
         {% if matches|length == 1 %}Pronađen artikal{% else %}{{ matches|length }} rezultata — odaberi artikal{% endif %}
       </p>
       {% for p in matches %}
-      <a class="bu-match" href="{% url 'admin:EcommerceApp_product_brzi_unos_aktivacija' p.pk %}">
+      <a class="bu-match {% if p.na_stanju %}is-in-stock{% else %}is-out-stock{% endif %}" href="{% url 'admin:EcommerceApp_product_brzi_unos_aktivacija' p.pk %}">
         {% if p.slika %}
           <img src="{{ p.slika.url }}" alt="" loading="lazy">
         {% else %}
@@ -268,6 +302,11 @@
         {% endif %}
         <div class="bu-match-body">
           <strong>{{ p.naziv }}</strong>
+          {% if p.na_stanju %}
+          <span class="bu-stock-status is-in">NA STANJU</span>
+          {% else %}
+          <span class="bu-stock-status is-out">NIJE NA STANJU</span>
+          {% endif %}
           <div class="bu-match-meta">
             {% if p.sifra %}Šifra: {{ p.sifra }}{% endif %}
             {% if p.barkod %} · Barkod: {{ p.barkod }}{% endif %}
@@ -276,11 +315,6 @@
               <span class="bu-badge bu-badge-ok">aktivan</span>
             {% else %}
               <span class="bu-badge bu-badge-off">neaktivan</span>
-            {% endif %}
-            {% if p.na_stanju %}
-              <span class="bu-badge bu-badge-stock">na stanju</span>
-            {% else %}
-              <span class="bu-badge bu-badge-off">nema</span>
             {% endif %}
           </div>
         </div>
