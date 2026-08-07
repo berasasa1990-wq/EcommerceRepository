@@ -1,18 +1,13 @@
 {% if brands %}
-{# Ista širina kao Noviteti / Izdvojeni — bez strelica, ručni swipe/drag #}
-<div class="home-product-carousel home-brand-carousel home-product-carousel--no-arrows" data-visible-desktop="8" data-visible-mobile="4" data-autoplay-ms="4500">
-    <div class="home-product-carousel__viewport">
-        <div class="home-product-carousel__track">
-            {% for brand in brands %}
-            <div class="home-product-carousel__slide">
-                <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase"
-                   class="showcase-brand-link"
-                   title="{{ brand.naziv }}">
-                    <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" width="120" height="30" loading="lazy" decoding="async">
-                </a>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
+{# 2 reda brend logo-a — više brendova odjednom, uredno i čitljivo #}
+<div class="home-brand-grid" role="list">
+    {% for brand in brands %}
+    <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase"
+       class="showcase-brand-link home-brand-grid__item"
+       title="{{ brand.naziv }}"
+       role="listitem">
+        <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" width="120" height="30" loading="lazy" decoding="async">
+    </a>
+    {% endfor %}
 </div>
 {% endif %}
