@@ -1849,6 +1849,16 @@ class ProductAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.odoo_import_view),
                 name='EcommerceApp_product_odoo_import',
             ),
+            path(
+                'brzi-unos/',
+                self.admin_site.admin_view(self.brzi_unos_view),
+                name='EcommerceApp_product_brzi_unos',
+            ),
+            path(
+                'brzi-unos/<int:product_id>/',
+                self.admin_site.admin_view(self.brzi_unos_aktivacija_view),
+                name='EcommerceApp_product_brzi_unos_aktivacija',
+            ),
         ]
         return custom_urls + urls
 
@@ -2010,6 +2020,183 @@ class ProductAdmin(admin.ModelAdmin):
                 f'Greške ({len(stats["greske"])}): ' + '; '.join(stats['greske'][:5]),
             )
         return redirect('admin:EcommerceApp_product_changelist')
+
+    def brzi_unos_view(self, request):
+        """Korak 1: skeniraj / unesi šifru ili barkod → pronađi postojeći artikal."""
+        from .quick_activation import find_products_by_code, find_single_product, normalize_scan_code
+
+        if not self.has_change_permission(request):
+            messages.error(request, 'Nemate dozvolu za izmjenu artikala.')
+            return redirect('admin:EcommerceApp_product_changelist')
+
+        query = normalize_scan_code(request.GET.get('q') or request.POST.get('q') or '')
+        matches = []
+        not_found = False
+
+        if request.method == 'POST' or query:
+            if not query:
+                messages.warning(request, 'Unesi ili skeniraj šifru / barkod.')
+            else:
+                product, multi = find_single_product(query)
+                if product is not None:
+                    return redirect(
+                        'admin:EcommerceApp_product_brzi_unos_aktivacija',
+                        product_id=product.pk,
+                    )
+                matches = multi if multi is not None else find_products_by_code(query)
+                if not matches:
+                    not_found = True
+                    messages.error(
+                        request,
+                        f'Nijedan artikal nije pronađen za „{query}”. '
+                        'Artikal mora već postojati u bazi (šifra ili barkod).',
+                    )
+                elif len(matches) == 1:
+                    return redirect(
+                        'admin:EcommerceApp_product_brzi_unos_aktivacija',
+                        product_id=matches[0].pk,
+                    )
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Brzi unos / Aktivacija artikala',
+            'opts': self.model._meta,
+            'query': query,
+            'matches': matches,
+            'not_found': not_found,
+            'has_view_permission': self.has_view_permission(request),
+            'has_change_permission': self.has_change_permission(request),
+        }
+        return render(
+            request,
+            'admin/EcommerceApp/product/brzi_unos.html',
+            context,
+        )
+
+    def brzi_unos_aktivacija_view(self, request, product_id):
+        """Korak 2: cijena, brend, slika, AI opis → Aktiviraj artikal."""
+        from decimal import InvalidOperation
+        from urllib.parse import quote_plus
+
+        from .quick_activation import activate_product, parse_price
+
+        if not self.has_change_permission(request):
+            messages.error(request, 'Nemate dozvolu za izmjenu artikala.')
+            return redirect('admin:EcommerceApp_product_changelist')
+
+        product = (
+            Product.objects.select_related('brend', 'kategorija')
+            .filter(pk=product_id)
+            .first()
+        )
+        if product is None:
+            messages.error(request, 'Artikal nije pronađen.')
+            return redirect('admin:EcommerceApp_product_brzi_unos')
+
+        brands = Brand.objects.order_by('naziv')
+        form_errors = []
+        form_data = {
+            'cijena': str(product.cijena) if product.cijena is not None else '',
+            'brend_id': str(product.brend_id or ''),
+            'opis': (product.opis or '').strip(),
+        }
+
+        if request.method == 'POST':
+            form_data['cijena'] = (request.POST.get('cijena') or '').strip()
+            form_data['brend_id'] = (request.POST.get('brend_id') or '').strip()
+            form_data['opis'] = (request.POST.get('opis') or '').strip()
+            image_upload = request.FILES.get('slika')
+            keep_image = request.POST.get('keep_existing_image') == '1'
+
+            brend = None
+            if form_data['brend_id']:
+                brend = brands.filter(pk=form_data['brend_id']).first()
+
+            try:
+                cijena = parse_price(form_data['cijena'])
+            except (InvalidOperation, ValueError):
+                form_errors.append('Unesi ispravnu cijenu (npr. 12.90).')
+                cijena = None
+
+            if form_data['brend_id']:
+                if brend is None:
+                    form_errors.append('Odabrani brend ne postoji.')
+            else:
+                form_errors.append('Izaberi brend.')
+
+            if not image_upload and not (product.slika and product.slika.name):
+                form_errors.append('Dodaj sliku artikla (foto ili galerija).')
+            elif not image_upload and product.slika and product.slika.name:
+                keep_image = True
+
+            if not form_errors and cijena is not None:
+                try:
+                    activate_product(
+                        product,
+                        cijena=cijena,
+                        brend=brend,
+                        image_upload=image_upload,
+                        keep_existing_image=keep_image and not image_upload,
+                        opis=form_data['opis'],
+                    )
+                    messages.success(
+                        request,
+                        f'✓ „{product.naziv}” je aktivan na webshopu '
+                        f'({cijena} KM'
+                        f'{f", {brend.naziv}" if brend else ""}'
+                        f', na stanju).',
+                    )
+                    return redirect('admin:EcommerceApp_product_brzi_unos')
+                except Exception as exc:
+                    logger.exception(
+                        'Brzi unos: aktivacija nije uspjela za product_id=%s',
+                        product_id,
+                    )
+                    form_errors.append(f'Aktivacija nije uspjela: {exc}')
+
+        # Osvježi product (npr. nakon greške)
+        product.refresh_from_db()
+        current_image_url = ''
+        if product.slika and product.slika.name:
+            try:
+                current_image_url = product.slika.url
+            except Exception:
+                current_image_url = ''
+
+        # Google Images — samo naziv artikla
+        google_query = (product.naziv or '').strip()
+        google_images_url = (
+            'https://www.google.com/search?tbm=isch&q=' + quote_plus(google_query)
+            if google_query else ''
+        )
+
+        # ChatGPT — samo naziv artikla u polju za upit
+        chatgpt_url = (
+            'https://chatgpt.com/?q=' + quote_plus(google_query)
+            if google_query else ''
+        )
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': f'Aktivacija: {product.naziv}',
+            'opts': self.model._meta,
+            'product': product,
+            'brands': brands,
+            'form_data': form_data,
+            'form_errors': form_errors,
+            'current_image_url': current_image_url,
+            'google_images_url': google_images_url,
+            'google_query': google_query,
+            'chatgpt_url': chatgpt_url,
+            'has_view_permission': self.has_view_permission(request),
+            'has_change_permission': self.has_change_permission(request),
+            'scan_url': reverse('admin:EcommerceApp_product_brzi_unos'),
+        }
+        return render(
+            request,
+            'admin/EcommerceApp/product/brzi_unos_aktivacija.html',
+            context,
+        )
 
     def odoo_import_view(self, request):
         get_token(request)

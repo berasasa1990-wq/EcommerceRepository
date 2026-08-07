@@ -1,0 +1,435 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style>
+  .bu-wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 8px 4px 48px;
+  }
+  .bu-card {
+    background: var(--body-bg, #fff);
+    border: 1px solid var(--hairline-color, #e5e7eb);
+    border-radius: 14px;
+    padding: 18px 16px 22px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .bu-card h1 {
+    font-size: 1.15rem;
+    margin: 0 0 4px;
+    font-weight: 800;
+    color: #166534;
+    line-height: 1.3;
+  }
+  .bu-sub {
+    color: #64748b;
+    font-size: .88rem;
+    margin: 0 0 16px;
+    line-height: 1.4;
+  }
+  .bu-meta-grid {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 6px 10px;
+    font-size: .9rem;
+    margin-bottom: 18px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .bu-meta-grid dt {
+    color: #94a3b8;
+    font-weight: 600;
+    margin: 0;
+  }
+  .bu-meta-grid dd {
+    margin: 0;
+    font-weight: 700;
+    color: #0f172a;
+    word-break: break-word;
+  }
+  .bu-field { margin-bottom: 16px; }
+  .bu-field label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: .95rem;
+  }
+  .bu-field .help {
+    font-size: .8rem;
+    color: #94a3b8;
+    margin-top: 6px;
+    line-height: 1.35;
+  }
+  .bu-field input[type="text"],
+  .bu-field input[type="number"],
+  .bu-field select,
+  .bu-field textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 1.1rem !important;
+    padding: 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  .bu-field textarea {
+    min-height: 120px;
+    font-size: .98rem !important;
+    line-height: 1.45 !important;
+    resize: vertical;
+  }
+  .bu-field input:focus,
+  .bu-field select:focus,
+  .bu-field textarea:focus {
+    border-color: #5BB805 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(91, 184, 5, .2);
+  }
+  .bu-btn-chatgpt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    border: none;
+    border-radius: 12px;
+    background: #10a37f;
+    color: #fff !important;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 13px 14px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none !important;
+    margin-bottom: 10px;
+  }
+  .bu-btn-chatgpt:active { background: #0d8c6d; }
+  .bu-chatgpt-hint {
+    font-size: .8rem;
+    color: #64748b;
+    margin: -2px 0 10px;
+    line-height: 1.35;
+    text-align: center;
+  }
+  .bu-price-wrap {
+    position: relative;
+  }
+  .bu-price-wrap input { padding-right: 48px !important; }
+  .bu-price-suffix {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 800;
+    color: #64748b;
+    pointer-events: none;
+  }
+  .bu-photo-zone {
+    border: 2px dashed #5BB805;
+    border-radius: 12px;
+    padding: 14px;
+    background: #f7fcf2;
+    text-align: center;
+  }
+  .bu-photo-zone input[type="file"] {
+    width: 100%;
+    font-size: .95rem;
+    margin-top: 8px;
+  }
+  .bu-preview {
+    margin-top: 12px;
+    display: none;
+  }
+  .bu-preview.is-on { display: block; }
+  .bu-preview img,
+  .bu-current img {
+    max-width: 100%;
+    max-height: 240px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .bu-current {
+    margin-top: 10px;
+  }
+  .bu-current p {
+    font-size: .8rem;
+    color: #64748b;
+    margin: 0 0 6px;
+  }
+  .bu-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: .9rem;
+  }
+  .bu-errors ul { margin: 0; padding-left: 1.1rem; }
+  .bu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .bu-btn-primary {
+    appearance: none;
+    border: none;
+    border-radius: 12px;
+    background: #5BB805;
+    color: #fff !important;
+    font-weight: 800;
+    font-size: 1.1rem;
+    padding: 16px 18px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none !important;
+  }
+  .bu-btn-primary:active { background: #4a9a04; }
+  .bu-btn-secondary {
+    display: block;
+    text-align: center;
+    color: #64748b !important;
+    font-size: .95rem;
+    padding: 10px;
+    text-decoration: none !important;
+  }
+  .bu-btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    border: 2px solid #4285F4;
+    border-radius: 12px;
+    background: #fff;
+    color: #1a73e8 !important;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 13px 14px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none !important;
+    margin-bottom: 12px;
+  }
+  .bu-btn-google:active {
+    background: #e8f0fe;
+  }
+  .bu-btn-google svg {
+    flex-shrink: 0;
+  }
+  .bu-google-hint {
+    font-size: .8rem;
+    color: #64748b;
+    margin: -4px 0 14px;
+    line-height: 1.35;
+    text-align: center;
+  }
+  .bu-note {
+    margin-top: 14px;
+    font-size: .8rem;
+    color: #94a3b8;
+    line-height: 1.4;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bu-wrap">
+  <div class="bu-card">
+    <h1>Aktiviraj artikal</h1>
+    <p class="bu-sub">Dopuni cijenu, brend i sliku — artikal se odmah pojavi na webshopu.</p>
+
+    <dl class="bu-meta-grid">
+      <dt>Naziv</dt>
+      <dd>{{ product.naziv }}</dd>
+      <dt>Šifra</dt>
+      <dd>{{ product.sifra|default:"—" }}</dd>
+      <dt>Barkod</dt>
+      <dd>{{ product.barkod|default:"—" }}</dd>
+      {% if product.kategorija %}
+      <dt>Kategorija</dt>
+      <dd>{{ product.kategorija }}</dd>
+      {% endif %}
+    </dl>
+
+    {% if form_errors %}
+    <div class="bu-errors">
+      <ul>
+        {% for err in form_errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="bu-activate-form">
+      {% csrf_token %}
+
+      <div class="bu-field">
+        <label for="id_brend">Brend</label>
+        <select name="brend_id" id="id_brend" required>
+          <option value="">— izaberi brend —</option>
+          {% for b in brands %}
+          <option value="{{ b.pk }}"{% if form_data.brend_id == b.pk|stringformat:"s" %} selected{% endif %}>{{ b.naziv }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="bu-field">
+        <label for="id_cijena">Cijena</label>
+        <div class="bu-price-wrap">
+          <input
+            type="text"
+            name="cijena"
+            id="id_cijena"
+            value="{{ form_data.cijena }}"
+            inputmode="decimal"
+            placeholder="12.90"
+            required
+            autocomplete="off"
+          >
+          <span class="bu-price-suffix">KM</span>
+        </div>
+        <p class="help">Redovna cijena na webshopu (npr. 12.90).</p>
+      </div>
+
+      <div class="bu-field">
+        <label for="id_opis">Opis</label>
+        {% if chatgpt_url %}
+        <a
+          class="bu-btn-chatgpt"
+          href="{{ chatgpt_url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          id="bu-chatgpt"
+        >
+          Otvori u ChatGPT-u
+        </a>
+        <p class="bu-chatgpt-hint">
+          Otvara ChatGPT samo s nazivom artikla.
+          Kopiraj odgovor → zalijepi ispod.
+        </p>
+        {% endif %}
+        <textarea
+          name="opis"
+          id="id_opis"
+          rows="5"
+          placeholder="Zalijepi opis iz ChatGPT-a ili upiši ručno…"
+        >{{ form_data.opis }}</textarea>
+        <p class="help">ChatGPT: kopiraj → zalijepi, ili upiši ručno.</p>
+      </div>
+
+      <div class="bu-field">
+        <label for="id_slika">Slika artikla</label>
+        {% if google_images_url %}
+        <a
+          class="bu-btn-google"
+          href="{{ google_images_url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          id="bu-google-images"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Traži sliku na Googleu
+        </a>
+        <p class="bu-google-hint">
+          Otvara Google Images za „{{ google_query }}”.
+          Sačuvaj sliku, pa je ovdje uploaduj ispod.
+        </p>
+        {% endif %}
+        <div class="bu-photo-zone">
+          <strong>Slikaj telefonom ili izaberi fotografiju</strong>
+          <input
+            type="file"
+            name="slika"
+            id="id_slika"
+            accept="image/*"
+            capture="environment"
+          >
+          <p class="help" style="margin-top:10px;">
+            Sistem sam doradi sliku za webshop: bijela pozadina, centrirano,
+            blago posvijetli i izoštri. Ne mijenja sam artikal na slici.
+          </p>
+          <div class="bu-preview" id="bu-preview">
+            <img id="bu-preview-img" alt="Pregled nove slike">
+          </div>
+          {% if current_image_url %}
+          <div class="bu-current">
+            <p>Trenutna slika (ostaje ako ne dodaš novu):</p>
+            <img src="{{ current_image_url }}" alt="Trenutna slika">
+            <input type="hidden" name="keep_existing_image" value="1">
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="bu-actions">
+        <button type="submit" class="bu-btn-primary" name="action" value="activate" id="bu-submit">
+          Aktiviraj artikal
+        </button>
+        <a class="bu-btn-secondary" href="{{ scan_url }}">← Drugi artikal (sken)</a>
+      </div>
+
+      <p class="bu-note">
+        Klikom se postavlja: na stanju, cijena, brend, opis, slika (R2/lokalno),
+        aktivan = da. Artikal odmah ide na webshop.
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var fileInput = document.getElementById('id_slika');
+  var preview = document.getElementById('bu-preview');
+  var previewImg = document.getElementById('bu-preview-img');
+  var form = document.getElementById('bu-activate-form');
+  var submit = document.getElementById('bu-submit');
+  var price = document.getElementById('id_cijena');
+  if (price) {
+    setTimeout(function () { price.focus(); price.select(); }, 80);
+  }
+
+  if (fileInput && preview && previewImg) {
+    fileInput.addEventListener('change', function () {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        preview.classList.remove('is-on');
+        previewImg.removeAttribute('src');
+        return;
+      }
+      var url = URL.createObjectURL(file);
+      previewImg.onload = function () { URL.revokeObjectURL(url); };
+      previewImg.src = url;
+      preview.classList.add('is-on');
+    });
+  }
+
+  if (form && submit) {
+    form.addEventListener('submit', function () {
+      submit.disabled = true;
+      submit.textContent = 'Aktiviram…';
+    });
+  }
+})();
+</script>
+{% endblock %}

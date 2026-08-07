@@ -1247,6 +1247,73 @@ def process_product_image(image_source, *, filename='image.jpg'):
     )
 
 
+# Brzi unos / aktivacija: telefonska slika → dorada za webshop (ne mijenja sadržaj artikla)
+QUICK_ACTIVATION_CANVAS = 800
+QUICK_ACTIVATION_FILL_RATIO = 0.90
+
+
+def enhance_phone_product_photo(img):
+    """
+    Doradi snimak telefonom za webshop:
+    - EXIF orijentacija
+    - ukloni prazne bijele margine (crop na sadržaj)
+    - blago posvijetli ako je tamno
+    - blago pojača kontrast i izoštri
+    - centriraj na bijeloj 800×800 podlozi (artikal ostaje isti, samo format)
+    """
+    from PIL import ImageEnhance, ImageFilter, ImageStat
+
+    rgba = _ensure_rgba(img)
+    # Ukloni samo prazne ivice — ne dira sam artikal
+    cropped = _crop_to_content(rgba, white_threshold=PRODUCT_WHITE_THRESHOLD)
+    rgb = _image_to_rgb(cropped)
+
+    # Auto-posvjetljenje ako je prosjek piksela nizak
+    try:
+        mean = ImageStat.Stat(rgb).mean
+        avg = sum(mean[:3]) / 3.0 if mean else 180.0
+    except Exception:
+        avg = 180.0
+    if avg < 95:
+        rgb = ImageEnhance.Brightness(rgb).enhance(1.28)
+    elif avg < 130:
+        rgb = ImageEnhance.Brightness(rgb).enhance(1.14)
+    elif avg < 155:
+        rgb = ImageEnhance.Brightness(rgb).enhance(1.06)
+
+    # Blagi kontrast + oštrina (webshop kartice)
+    rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
+    rgb = rgb.filter(ImageFilter.UnsharpMask(radius=1.2, percent=120, threshold=2))
+
+    # Bijela 800×800, artikal centriran (~90% canvasa)
+    canvas = Image.new('RGB', (QUICK_ACTIVATION_CANVAS, QUICK_ACTIVATION_CANVAS), (255, 255, 255))
+    max_side = int(QUICK_ACTIVATION_CANVAS * QUICK_ACTIVATION_FILL_RATIO)
+    fitted = ImageOps.contain(rgb, (max_side, max_side), method=Image.Resampling.LANCZOS)
+    offset = (
+        (QUICK_ACTIVATION_CANVAS - fitted.width) // 2,
+        (QUICK_ACTIVATION_CANVAS - fitted.height) // 2,
+    )
+    canvas.paste(fitted, offset)
+    return canvas
+
+
+def process_quick_activation_image(image_source, *, filename='image.jpg'):
+    """
+    Telefonska / upload slika za brzi unos:
+    dorada (bijela pozadina, 800×800, oštrina) pa standardni product AVIF pipeline.
+    """
+    raw, filename = _read_image_source(image_source, filename=filename)
+    img = Image.open(BytesIO(raw))
+    rgb = enhance_phone_product_photo(img)
+    return _processed_image_result(
+        rgb,
+        filename,
+        widths=PRODUCT_RESPONSIVE_WIDTHS,
+        max_bytes_map=PRODUCT_VARIANT_MAX_BYTES,
+        main_max_dimension=PRODUCT_MAX_DIMENSION,
+    )
+
+
 def _ensure_rgba(img):
     img = ImageOps.exif_transpose(img)
     if img.mode == 'RGBA':

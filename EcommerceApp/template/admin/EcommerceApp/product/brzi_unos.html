@@ -1,0 +1,243 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  .bu-wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 8px 4px 40px;
+  }
+  .bu-card {
+    background: var(--body-bg, #fff);
+    border: 1px solid var(--hairline-color, #e5e7eb);
+    border-radius: 14px;
+    padding: 18px 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .bu-card h1 {
+    font-size: 1.25rem;
+    margin: 0 0 6px;
+    font-weight: 800;
+    color: #166534;
+  }
+  .bu-lead {
+    color: #64748b;
+    font-size: .92rem;
+    line-height: 1.45;
+    margin: 0 0 18px;
+  }
+  .bu-label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: .95rem;
+  }
+  .bu-scan-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .bu-scan-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.15rem !important;
+    padding: 14px 12px !important;
+    border-radius: 10px !important;
+    border: 2px solid #5BB805 !important;
+    letter-spacing: .02em;
+  }
+  .bu-scan-row button,
+  .bu-btn {
+    appearance: none;
+    border: none;
+    border-radius: 10px;
+    background: #5BB805;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 12px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .bu-scan-row button:active,
+  .bu-btn:active { background: #4a9a04; }
+  .bu-hint {
+    margin-top: 10px;
+    font-size: .82rem;
+    color: #94a3b8;
+    line-height: 1.4;
+  }
+  .bu-matches {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .bu-match {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    text-decoration: none !important;
+    color: inherit !important;
+    background: #f8fafc;
+  }
+  .bu-match:hover { border-color: #5BB805; background: #f0fdf4; }
+  .bu-match img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+  .bu-match-ph {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    background: #e2e8f0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: .7rem;
+  }
+  .bu-match-body { min-width: 0; flex: 1; }
+  .bu-match-body strong {
+    display: block;
+    font-size: .95rem;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .bu-match-meta {
+    font-size: .8rem;
+    color: #64748b;
+  }
+  .bu-badge {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-left: 4px;
+  }
+  .bu-badge-ok { background: #dcfce7; color: #166534; }
+  .bu-badge-off { background: #fee2e2; color: #991b1b; }
+  .bu-badge-stock { background: #e0f2fe; color: #075985; }
+  .bu-empty {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 10px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: .9rem;
+    line-height: 1.4;
+  }
+  .bu-back {
+    display: inline-block;
+    margin-top: 16px;
+    color: #64748b;
+    font-size: .9rem;
+  }
+  @media (max-width: 600px) {
+    #header, .breadcrumbs { font-size: 14px; }
+    .bu-wrap { padding: 4px 2px 32px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bu-wrap">
+  <div class="bu-card">
+    <h1>Brzi unos / Aktivacija</h1>
+    <p class="bu-lead">
+      Skeniraj barkod ili upiši šifru. Sistem pronađe postojeći artikal —
+      ne kreira novi. Zatim upišeš cijenu, brend i sliku.
+    </p>
+
+    <form method="get" action="" id="bu-scan-form" autocomplete="off">
+      <label class="bu-label" for="id_q">Šifra ili barkod</label>
+      <div class="bu-scan-row">
+        <input
+          type="text"
+          name="q"
+          id="id_q"
+          value="{{ query }}"
+          inputmode="text"
+          enterkeyhint="search"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          placeholder="Skeniraj ili upiši…"
+          autofocus
+        >
+        <button type="submit">Pronađi</button>
+      </div>
+      <p class="bu-hint">
+        Na telefonu: dodirni polje i skeniraj barkod skenerom ili kamerom tastature.
+        Enter odmah traži artikal.
+      </p>
+    </form>
+
+    {% if not_found %}
+    <div class="bu-empty">
+      Nema artikla s tom šifrom/barkodom. Artikli se ne kreiraju ovdje —
+      moraju već postojati u bazi (npr. iz Odoo importa).
+    </div>
+    {% endif %}
+
+    {% if matches %}
+    <div class="bu-matches">
+      <p class="bu-label" style="margin-bottom:4px;">Više rezultata — odaberi artikal</p>
+      {% for p in matches %}
+      <a class="bu-match" href="{% url 'admin:EcommerceApp_product_brzi_unos_aktivacija' p.pk %}">
+        {% if p.slika %}
+          <img src="{{ p.slika.url }}" alt="" loading="lazy">
+        {% else %}
+          <div class="bu-match-ph">nema</div>
+        {% endif %}
+        <div class="bu-match-body">
+          <strong>{{ p.naziv }}</strong>
+          <div class="bu-match-meta">
+            {% if p.sifra %}Šifra: {{ p.sifra }}{% endif %}
+            {% if p.barkod %} · Barkod: {{ p.barkod }}{% endif %}
+            · {{ p.cijena }} KM
+            {% if p.aktivan %}
+              <span class="bu-badge bu-badge-ok">aktivan</span>
+            {% else %}
+              <span class="bu-badge bu-badge-off">neaktivan</span>
+            {% endif %}
+            {% if p.na_stanju %}
+              <span class="bu-badge bu-badge-stock">na stanju</span>
+            {% else %}
+              <span class="bu-badge bu-badge-off">nema</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <a class="bu-back" href="{% url 'admin:EcommerceApp_product_changelist' %}">← Nazad na listu artikala</a>
+</div>
+
+<script>
+(function () {
+  var input = document.getElementById('id_q');
+  if (!input) return;
+  // Skener šalje Enter — forma se submita. Fokus odmah za brzi rad u radnji.
+  setTimeout(function () { input.focus(); input.select(); }, 50);
+})();
+</script>
+{% endblock %}
