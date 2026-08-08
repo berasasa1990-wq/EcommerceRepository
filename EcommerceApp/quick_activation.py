@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation
 import requests
 from django.db.models import Q
 
-from .models import Brand, Category, Product, Tag
+from .models import Brand, Category, Product, ProductImage, Tag
 from .utils.images import (
     prepared_product_image_payload,
     process_quick_activation_image,
@@ -285,6 +285,19 @@ def category_choices():
     return choices
 
 
+def take_off_stock(product: Product) -> Product:
+    """
+    Skini artikal sa stanja (jedan klik).
+    Samo na_stanju=False — ništa drugo se ne dira (cijena, slika, opis, stanje, aktivan…).
+    Kupcima nestaje iz liste i sa stranice artikla (filter na_stanju=True).
+    """
+    if not product.na_stanju:
+        return product
+    product.na_stanju = False
+    product.save(update_fields=['na_stanju', 'azuriran'])
+    return product
+
+
 def activate_product(
     product: Product,
     *,
@@ -295,13 +308,15 @@ def activate_product(
     keep_existing_image: bool = False,
     opis: str | None = None,
     tagovi: list[Tag] | None = None,
+    barkod: str | None = None,
+    extra_images=None,
 ) -> Product:
     """
     Aktiviraj postojeći artikal za webshop:
-    - cijena, brend, kategorija, opcionalno opis i tagovi
+    - cijena, brend, kategorija, opcionalno opis, tagovi, barkod
     - na_stanju=True, aktivan=True
     - stanje min 1 ako je bilo 0
-    - opcionalno nova slika (dorada + upload na R2/local storage)
+    - opcionalno nova glavna slika + dodatne slike (galerija)
     """
     product.cijena = cijena
     product.brend = brend
@@ -313,6 +328,8 @@ def activate_product(
         product.stanje = 1
     if opis is not None:
         product.opis = (opis or '').strip()
+    if barkod is not None:
+        product.barkod = (barkod or '').strip()[:50]
 
     # Prvo polja (bez otvaranja stare slike ako fajl fali na disku)
     if image_upload and not keep_existing_image:
@@ -344,5 +361,33 @@ def activate_product(
     # Samo dodaj unesene tagove (ne briši postojeće ako je lista prazna)
     if tagovi:
         product.tagovi.add(*tagovi)
+
+    # Dodatne slike (opcionalno) — ProductImage.save() radi image processing
+    uploads = list(extra_images or [])
+    if uploads:
+        from django.db.models import Max
+
+        max_order = (
+            product.dodatne_slike.aggregate(max_red=Max('redoslijed')).get('max_red') or 0
+        )
+        for index, upload in enumerate(uploads, start=1):
+            if not upload:
+                continue
+            content_type = (getattr(upload, 'content_type', None) or '').lower()
+            name = (getattr(upload, 'name', None) or '').lower()
+            if content_type and not content_type.startswith('image/'):
+                if not any(name.endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.heic')):
+                    continue
+            try:
+                ProductImage.objects.create(
+                    product=product,
+                    slika=upload,
+                    redoslijed=max_order + index,
+                )
+            except Exception:
+                logger.exception(
+                    'Brzi unos: dodatna slika nije snimljena za product_id=%s',
+                    product.pk,
+                )
 
     return product

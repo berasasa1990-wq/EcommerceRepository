@@ -5,40 +5,31 @@
 {{ block.super }}
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <style>
+  /* Admin chrome: manje mjesta odozgo */
+  #content { padding-top: 8px !important; }
+  #content > h1 { display: none !important; }
+
   .bu-wrap {
     max-width: 520px;
     margin: 0 auto;
-    padding: 8px 4px 48px;
+    padding: 0 4px 32px;
   }
   .bu-card {
     background: var(--body-bg, #fff);
     border: 1px solid var(--hairline-color, #e5e7eb);
-    border-radius: 14px;
-    padding: 18px 16px 22px;
+    border-radius: 12px;
+    padding: 12px 12px 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
-  }
-  .bu-card h1 {
-    font-size: 1.15rem;
-    margin: 0 0 4px;
-    font-weight: 800;
-    color: #166534;
-    line-height: 1.3;
-  }
-  .bu-sub {
-    color: #64748b;
-    font-size: .88rem;
-    margin: 0 0 16px;
-    line-height: 1.4;
   }
   .bu-meta-grid {
     display: grid;
-    grid-template-columns: 88px 1fr;
-    gap: 6px 10px;
-    font-size: .9rem;
-    margin-bottom: 18px;
-    padding: 12px;
+    grid-template-columns: 72px 1fr;
+    gap: 4px 8px;
+    font-size: .88rem;
+    margin: 0 0 12px;
+    padding: 8px 10px;
     background: #f8fafc;
-    border-radius: 10px;
+    border-radius: 8px;
     border: 1px solid #e2e8f0;
   }
   .bu-meta-grid dt {
@@ -52,13 +43,16 @@
     color: #0f172a;
     word-break: break-word;
   }
+  .bu-desktop-grid { display: block; }
+  .bu-row-2 { display: block; }
+  .bu-row-3 { display: block; }
   .bu-stock-status {
     display: inline-block;
-    font-size: .75rem;
+    font-size: .7rem;
     font-weight: 900;
     letter-spacing: .04em;
     text-transform: uppercase;
-    padding: 5px 11px;
+    padding: 3px 8px;
     border-radius: 999px;
     line-height: 1.2;
   }
@@ -74,26 +68,26 @@
   }
   @keyframes bu-pulse-green {
     0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, .55); transform: scale(1); }
-    50%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); transform: scale(1.04); }
+    50%  { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); transform: scale(1.03); }
     100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
   }
   @keyframes bu-pulse-red {
     0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, .55); transform: scale(1); }
-    50%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); transform: scale(1.04); }
+    50%  { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); transform: scale(1.03); }
     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
   }
-  .bu-field { margin-bottom: 16px; }
+  .bu-field { margin-bottom: 10px; }
   .bu-field label {
     display: block;
     font-weight: 700;
-    margin-bottom: 6px;
-    font-size: .95rem;
+    margin-bottom: 4px;
+    font-size: .9rem;
   }
   .bu-field .help {
-    font-size: .8rem;
+    font-size: .75rem;
     color: #94a3b8;
-    margin-top: 6px;
-    line-height: 1.35;
+    margin-top: 4px;
+    line-height: 1.3;
   }
   .bu-field input[type="text"],
   .bu-field input[type="number"],
@@ -102,15 +96,15 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    font-size: 1.1rem !important;
-    padding: 12px !important;
-    border-radius: 10px !important;
+    font-size: 1.05rem !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
     border: 1px solid #cbd5e1 !important;
   }
   .bu-field textarea {
-    min-height: 120px;
-    font-size: .98rem !important;
-    line-height: 1.45 !important;
+    min-height: 88px;
+    font-size: .95rem !important;
+    line-height: 1.4 !important;
     resize: vertical;
   }
   .bu-field input:focus,
@@ -124,28 +118,28 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
     box-sizing: border-box;
     appearance: none;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #10a37f;
     color: #fff !important;
     font-weight: 800;
-    font-size: 1rem;
-    padding: 13px 14px;
+    font-size: .95rem;
+    padding: 10px 12px;
     cursor: pointer;
     text-align: center;
     text-decoration: none !important;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .bu-btn-chatgpt:active { background: #0d8c6d; }
   .bu-chatgpt-hint {
-    font-size: .8rem;
+    font-size: .75rem;
     color: #64748b;
-    margin: -2px 0 10px;
-    line-height: 1.35;
+    margin: -4px 0 8px;
+    line-height: 1.3;
     text-align: center;
   }
   .bu-field-head {
@@ -153,11 +147,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
-  .bu-field-head label {
-    margin-bottom: 0;
-  }
+  .bu-field-head label { margin-bottom: 0; }
   .bu-btn-copy {
     appearance: none;
     border: 1px solid #cbd5e1;
@@ -165,31 +157,27 @@
     background: #f8fafc;
     color: #0f172a;
     font-weight: 800;
-    font-size: .78rem;
-    padding: 6px 10px;
+    font-size: .75rem;
+    padding: 5px 9px;
     cursor: pointer;
     white-space: nowrap;
   }
-  .bu-btn-copy:active {
-    background: #e2e8f0;
-  }
+  .bu-btn-copy:active { background: #e2e8f0; }
   .bu-btn-copy.is-ok {
     border-color: #86efac;
     background: #dcfce7;
     color: #166534;
   }
-  .bu-cat-search-wrap {
-    position: relative;
-  }
+  .bu-cat-search-wrap { position: relative; }
   .bu-cat-search-wrap input[type="search"] {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    font-size: 1.05rem !important;
-    padding: 12px !important;
-    border-radius: 10px !important;
+    font-size: 1rem !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
     border: 1px solid #cbd5e1 !important;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .bu-cat-search-wrap input[type="search"]:focus {
     border-color: #5BB805 !important;
@@ -198,12 +186,12 @@
   }
   .bu-cat-results {
     display: none;
-    max-height: 220px;
+    max-height: 180px;
     overflow-y: auto;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 8px;
     background: #fff;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .bu-cat-results.is-on { display: block; }
   .bu-cat-item {
@@ -214,8 +202,8 @@
     border: none;
     border-bottom: 1px solid #f1f5f9;
     background: #fff;
-    padding: 11px 12px;
-    font-size: .92rem;
+    padding: 9px 11px;
+    font-size: .9rem;
     font-weight: 600;
     color: #0f172a;
     cursor: pointer;
@@ -233,8 +221,8 @@
     border-radius: 2px;
   }
   .bu-cat-empty {
-    padding: 12px;
-    font-size: .88rem;
+    padding: 10px;
+    font-size: .85rem;
     color: #94a3b8;
   }
   .bu-cat-selected {
@@ -242,14 +230,14 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
     background: #f0fdf4;
     border: 1px solid #86efac;
-    font-size: .9rem;
+    font-size: .88rem;
     font-weight: 700;
     color: #166534;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   .bu-cat-selected.is-on { display: flex; }
   .bu-cat-clear {
@@ -257,15 +245,13 @@
     border: none;
     background: transparent;
     color: #64748b;
-    font-size: .8rem;
+    font-size: .78rem;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
   }
-  .bu-price-wrap {
-    position: relative;
-  }
-  .bu-price-wrap input { padding-right: 48px !important; }
+  .bu-price-wrap { position: relative; }
+  .bu-price-wrap input { padding-right: 44px !important; }
   .bu-price-suffix {
     position: absolute;
     right: 12px;
@@ -277,10 +263,13 @@
   }
   .bu-photo-zone {
     border: 2px dashed #5BB805;
-    border-radius: 12px;
-    padding: 14px;
+    border-radius: 10px;
+    padding: 10px;
     background: #f7fcf2;
     text-align: center;
+  }
+  .bu-photo-zone strong {
+    font-size: .9rem;
   }
   .bu-photo-zone input[type="file"] {
     position: absolute;
@@ -295,83 +284,127 @@
   .bu-photo-btns {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 10px;
+    gap: 8px;
+    margin-top: 8px;
   }
   .bu-photo-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
     box-sizing: border-box;
     appearance: none;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     font-weight: 800;
-    font-size: 1rem;
-    padding: 14px 16px;
+    font-size: .95rem;
+    padding: 11px 14px;
     cursor: pointer;
     color: #fff;
   }
-  .bu-photo-btn-gallery {
-    background: #5BB805;
-  }
+  .bu-photo-btn-gallery { background: #5BB805; }
   .bu-photo-btn-gallery:active { background: #4a9a04; }
-  .bu-photo-btn-camera {
-    background: #0f172a;
-  }
+  .bu-photo-btn-camera { background: #0f172a; }
   .bu-photo-btn-camera:active { background: #1e293b; }
+  .bu-photo-btn-extra { background: #334155; }
+  .bu-photo-btn-extra:active { background: #1e293b; }
 
   .bu-preview {
-    margin-top: 12px;
+    margin-top: 8px;
     display: none;
   }
   .bu-preview.is-on { display: block; }
   .bu-preview img,
   .bu-current img {
     max-width: 100%;
-    max-height: 240px;
+    max-height: 160px;
     width: auto;
     height: auto;
     object-fit: contain;
     background: #fff;
-    border-radius: 10px;
+    border-radius: 8px;
     border: 1px solid #e2e8f0;
   }
-  .bu-current {
-    margin-top: 10px;
-  }
+  .bu-current { margin-top: 8px; }
   .bu-current p {
-    font-size: .8rem;
+    font-size: .75rem;
     color: #64748b;
-    margin: 0 0 6px;
+    margin: 0 0 4px;
+  }
+  .bu-extra-zone {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #cbd5e1;
+    text-align: left;
+  }
+  .bu-extra-zone > strong {
+    display: block;
+    font-size: .88rem;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .bu-extra-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .bu-extra-thumbs:empty { display: none; }
+  .bu-extra-thumbs img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+  .bu-extra-existing {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .bu-extra-existing img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    opacity: .9;
+  }
+  .bu-extra-existing-label {
+    font-size: .72rem;
+    color: #94a3b8;
+    width: 100%;
+    margin: 0 0 2px;
   }
   .bu-errors {
     background: #fef2f2;
     border: 1px solid #fecaca;
     color: #991b1b;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 14px;
-    font-size: .9rem;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: .88rem;
   }
   .bu-errors ul { margin: 0; padding-left: 1.1rem; }
   .bu-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 8px;
+    margin-top: 12px;
   }
   .bu-btn-primary {
     appearance: none;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #5BB805;
     color: #fff !important;
     font-weight: 800;
-    font-size: 1.1rem;
-    padding: 16px 18px;
+    font-size: 1.05rem;
+    padding: 13px 16px;
     cursor: pointer;
     text-align: center;
     text-decoration: none !important;
@@ -381,48 +414,198 @@
     display: block;
     text-align: center;
     color: #64748b !important;
-    font-size: .95rem;
-    padding: 10px;
+    font-size: .9rem;
+    padding: 6px;
     text-decoration: none !important;
   }
   .bu-btn-google {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
     box-sizing: border-box;
     appearance: none;
     border: 2px solid #4285F4;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #fff;
     color: #1a73e8 !important;
     font-weight: 800;
-    font-size: 1rem;
-    padding: 13px 14px;
+    font-size: .95rem;
+    padding: 10px 12px;
     cursor: pointer;
     text-align: center;
     text-decoration: none !important;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
-  .bu-btn-google:active {
-    background: #e8f0fe;
-  }
-  .bu-btn-google svg {
-    flex-shrink: 0;
-  }
+  .bu-btn-google:active { background: #e8f0fe; }
+  .bu-btn-google svg { flex-shrink: 0; }
   .bu-google-hint {
-    font-size: .8rem;
+    font-size: .75rem;
     color: #64748b;
-    margin: -4px 0 14px;
-    line-height: 1.35;
+    margin: -2px 0 8px;
+    line-height: 1.3;
     text-align: center;
   }
-  .bu-note {
-    margin-top: 14px;
-    font-size: .8rem;
+  .bu-opt {
+    font-weight: 600;
     color: #94a3b8;
-    line-height: 1.4;
+    font-size: .78rem;
+  }
+  .bu-meta-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .bu-meta-top .bu-meta-grid {
+    flex: 1 1 220px;
+    margin-bottom: 0;
+  }
+  .bu-off-stock-form {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
+  }
+  .bu-btn-off-stock {
+    appearance: none;
+    border: none;
+    border-radius: 10px;
+    background: #b91c1c;
+    color: #fff !important;
+    font-weight: 800;
+    font-size: .95rem;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    align-self: stretch;
+    min-height: 100%;
+  }
+  .bu-btn-off-stock:hover,
+  .bu-btn-off-stock:active {
+    background: #991b1b;
+  }
+  .bu-btn-off-stock:disabled {
+    opacity: .55;
+    cursor: default;
+  }
+  .bu-btn-off-stock.is-already {
+    background: #94a3b8;
+  }
+
+  /* Desktop: puni ekran, 2 kolone, kompaktno bez skrola */
+  @media (min-width: 900px) {
+    #content {
+      max-width: none !important;
+      padding: 8px 16px 24px !important;
+    }
+    .bu-wrap {
+      max-width: min(1480px, calc(100vw - 40px));
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 8px 24px;
+      box-sizing: border-box;
+    }
+    .bu-card {
+      padding: 14px 18px 16px;
+      border-radius: 12px;
+    }
+    .bu-meta-top {
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: stretch;
+    }
+    .bu-meta-grid {
+      grid-template-columns: 100px 1fr 100px 1fr 100px 1fr;
+      gap: 6px 12px;
+      font-size: .92rem;
+      padding: 10px 14px;
+      margin-bottom: 0;
+    }
+    .bu-btn-off-stock {
+      font-size: 1.05rem;
+      padding: 12px 22px;
+      min-width: 180px;
+    }
+    .bu-desktop-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr);
+      gap: 14px 24px;
+      align-items: start;
+    }
+    .bu-form-main,
+    .bu-form-side { min-width: 0; }
+    .bu-form-side {
+      position: sticky;
+      top: 8px;
+    }
+    .bu-field { margin-bottom: 10px; }
+    .bu-field label { font-size: .95rem; }
+    .bu-field input[type="text"],
+    .bu-field input[type="number"],
+    .bu-field select,
+    .bu-field textarea {
+      font-size: 1.05rem !important;
+      padding: 10px 12px !important;
+    }
+    .bu-field textarea {
+      min-height: 100px;
+      font-size: .98rem !important;
+    }
+    .bu-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      margin-bottom: 10px;
+    }
+    .bu-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px 14px;
+      margin-bottom: 10px;
+    }
+    .bu-row-2 .bu-field,
+    .bu-row-3 .bu-field { margin-bottom: 0; }
+    .bu-cat-results { max-height: 200px; }
+    .bu-photo-btns {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .bu-photo-btn { flex: 1; min-width: 120px; padding: 10px 12px; }
+    .bu-preview img,
+    .bu-current img {
+      max-height: 180px;
+    }
+    .bu-extra-thumbs img {
+      width: 72px;
+      height: 72px;
+    }
+    .bu-actions { margin-top: 12px; gap: 6px; }
+    .bu-btn-primary {
+      font-size: 1.1rem;
+      padding: 14px 16px;
+    }
+    .bu-chatgpt-hint,
+    .bu-google-hint,
+    .bu-field .help {
+      display: none;
+    }
+  }
+  @media (min-width: 1200px) {
+    .bu-wrap {
+      max-width: min(1600px, calc(100vw - 48px));
+    }
+    .bu-desktop-grid {
+      grid-template-columns: minmax(0, 1.25fr) minmax(340px, .75fr);
+      gap: 16px 28px;
+    }
+  }
+  @media (min-height: 800px) and (min-width: 900px) {
+    .bu-field textarea { min-height: 120px; }
+    .bu-preview img,
+    .bu-current img { max-height: 220px; }
   }
 </style>
 {% endblock %}
@@ -430,29 +613,39 @@
 {% block content %}
 <div class="bu-wrap">
   <div class="bu-card">
-    <h1>Aktiviraj artikal</h1>
-    <p class="bu-sub">Dopuni cijenu, brend, kategoriju i sliku — artikal se odmah pojavi na webshopu.</p>
-
-    <dl class="bu-meta-grid">
-      <dt>Naziv</dt>
-      <dd>{{ product.naziv }}</dd>
-      <dt>Stanje</dt>
-      <dd>
-        {% if product.na_stanju %}
-        <span class="bu-stock-status is-in">NA STANJU</span>
-        {% else %}
-        <span class="bu-stock-status is-out">NIJE NA STANJU</span>
+    <div class="bu-meta-top">
+      <dl class="bu-meta-grid">
+        <dt>Naziv</dt>
+        <dd>{{ product.naziv }}</dd>
+        <dt>Stanje</dt>
+        <dd>
+          {% if product.na_stanju %}
+          <span class="bu-stock-status is-in">NA STANJU</span>
+          {% else %}
+          <span class="bu-stock-status is-out">NIJE NA STANJU</span>
+          {% endif %}
+        </dd>
+        <dt>Šifra</dt>
+        <dd>{{ product.sifra|default:"—" }}</dd>
+        {% if product.kategorija %}
+        <dt>Kat.</dt>
+        <dd>{{ product.kategorija }}</dd>
         {% endif %}
-      </dd>
-      <dt>Šifra</dt>
-      <dd>{{ product.sifra|default:"—" }}</dd>
-      <dt>Barkod</dt>
-      <dd>{{ product.barkod|default:"—" }}</dd>
-      {% if product.kategorija %}
-      <dt>Kategorija</dt>
-      <dd>{{ product.kategorija }}</dd>
-      {% endif %}
-    </dl>
+      </dl>
+      <form method="post" action="" class="bu-off-stock-form" id="bu-off-stock-form">
+        {% csrf_token %}
+        {# hidden — action mora stići i ako se dugme disable-uje pri submitu #}
+        <input type="hidden" name="action" value="off_stock">
+        <button
+          type="submit"
+          class="bu-btn-off-stock{% if not product.na_stanju %} is-already{% endif %}"
+          id="bu-off-stock"
+          {% if not product.na_stanju %}disabled title="Već nije na stanju"{% endif %}
+        >
+          {% if product.na_stanju %}Skini sa stanja{% else %}Već skinut{% endif %}
+        </button>
+      </form>
+    </div>
 
     {% if form_errors %}
     <div class="bu-errors">
@@ -466,189 +659,205 @@
 
     <form method="post" enctype="multipart/form-data" id="bu-activate-form">
       {% csrf_token %}
+      <input type="hidden" name="action" value="activate">
 
-      <div class="bu-field">
-        <label for="id_brend">Brend</label>
-        <select name="brend_id" id="id_brend" required>
-          <option value="">— izaberi brend —</option>
-          {% for b in brands %}
-          <option value="{{ b.pk }}"{% if form_data.brend_id == b.pk|stringformat:"s" %} selected{% endif %}>{{ b.naziv }}</option>
-          {% endfor %}
-        </select>
-      </div>
+      <div class="bu-desktop-grid">
+        <div class="bu-form-main">
+          <div class="bu-row-3">
+            <div class="bu-field">
+              <label for="id_brend">Brend</label>
+              <select name="brend_id" id="id_brend" required>
+                <option value="">— izaberi brend —</option>
+                {% for b in brands %}
+                <option value="{{ b.pk }}"{% if form_data.brend_id == b.pk|stringformat:"s" %} selected{% endif %}>{{ b.naziv }}</option>
+                {% endfor %}
+              </select>
+            </div>
 
-      <div class="bu-field">
-        <label for="id_kategorija_search">Kategorija</label>
-        <div class="bu-cat-search-wrap">
-          <input
-            type="search"
-            id="id_kategorija_search"
-            placeholder="Traži kategoriju (npr. feeder, trokuke)…"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            enterkeyhint="search"
-          >
-          <input
-            type="hidden"
-            name="kategorija_id"
-            id="id_kategorija"
-            value="{{ form_data.kategorija_id }}"
-            required
-          >
-          <div class="bu-cat-selected" id="bu-cat-selected">
-            <span id="bu-cat-selected-label"></span>
-            <button type="button" class="bu-cat-clear" id="bu-cat-clear">Promijeni</button>
+            <div class="bu-field">
+              <label for="id_cijena">Cijena</label>
+              <div class="bu-price-wrap">
+                <input
+                  type="text"
+                  name="cijena"
+                  id="id_cijena"
+                  value="{{ form_data.cijena }}"
+                  inputmode="decimal"
+                  placeholder="12.90"
+                  required
+                  autocomplete="off"
+                >
+                <span class="bu-price-suffix">KM</span>
+              </div>
+            </div>
+
+            <div class="bu-field">
+              <label for="id_barkod">Barkod <span class="bu-opt">(opcionalno)</span></label>
+              <input
+                type="text"
+                name="barkod"
+                id="id_barkod"
+                value="{{ form_data.barkod }}"
+                placeholder="Skeniraj ili upiši…"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+              >
+            </div>
           </div>
-          <div class="bu-cat-results" id="bu-cat-results" role="listbox" aria-label="Rezultati kategorija"></div>
-        </div>
-        <p class="help">Upiši dio naziva — lista se filtrira. Klikni rezultat da odabereš.</p>
-        {{ categories_json|json_script:"bu-categories-data" }}
-      </div>
 
-      <div class="bu-field">
-        <label for="id_cijena">Cijena</label>
-        <div class="bu-price-wrap">
-          <input
-            type="text"
-            name="cijena"
-            id="id_cijena"
-            value="{{ form_data.cijena }}"
-            inputmode="decimal"
-            placeholder="12.90"
-            required
-            autocomplete="off"
-          >
-          <span class="bu-price-suffix">KM</span>
-        </div>
-        <p class="help">Redovna cijena na webshopu (npr. 12.90).</p>
-      </div>
-
-      {% if chatgpt_url %}
-      <a
-        class="bu-btn-chatgpt"
-        href="{{ chatgpt_url }}"
-        target="_blank"
-        rel="noopener noreferrer"
-        id="bu-chatgpt"
-      >
-        Otvori u ChatGPT-u
-      </a>
-      <p class="bu-chatgpt-hint">
-        U ChatGPT ide: naziv + „veci opis za ovaj artikal i tagove”.
-        Zatim zalijepi zasebno u Opis i Tagove (Copy dugmad pored polja).
-      </p>
-      {% endif %}
-
-      <div class="bu-field">
-        <div class="bu-field-head">
-          <label for="id_opis">Opis</label>
-          <button type="button" class="bu-btn-copy" data-copy-target="id_opis">Copy opis</button>
-        </div>
-        <textarea
-          name="opis"
-          id="id_opis"
-          rows="5"
-          placeholder="Zalijepi veći opis iz ChatGPT-a…"
-        >{{ form_data.opis }}</textarea>
-        <p class="help">Zalijepi opis iz ChatGPT-a ili upiši ručno.</p>
-      </div>
-
-      <div class="bu-field">
-        <div class="bu-field-head">
-          <label for="id_tagovi">Tagovi</label>
-          <button type="button" class="bu-btn-copy" data-copy-target="id_tagovi">Copy tagovi</button>
-        </div>
-        <input
-          type="text"
-          name="tagovi"
-          id="id_tagovi"
-          value="{{ form_data.tagovi }}"
-          placeholder="Zalijepi tagove iz ChatGPT-a (zarez)…"
-          autocomplete="off"
-          autocapitalize="off"
-        >
-        <p class="help">
-          Tagovi zarezom. Prazno = ne mijenja postojeće tagove.
-        </p>
-      </div>
-
-      <div class="bu-field">
-        <label>Slika artikla</label>
-        {% if google_images_url %}
-        <a
-          class="bu-btn-google"
-          href="{{ google_images_url }}"
-          target="_blank"
-          rel="noopener noreferrer"
-          id="bu-google-images"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          Traži sliku na Googleu
-        </a>
-        <p class="bu-google-hint">
-          Otvara Google Images za „{{ google_query }}”.
-          Sačuvaj sliku, pa je ovdje uploaduj ispod.
-        </p>
-        {% endif %}
-        <div class="bu-photo-zone">
-          <strong>Izaberi iz galerije ili slikaj</strong>
-          <div class="bu-photo-btns">
-            <button type="button" class="bu-photo-btn bu-photo-btn-gallery" id="bu-pick-gallery">
-              Galerija telefona
-            </button>
-            <button type="button" class="bu-photo-btn bu-photo-btn-camera" id="bu-pick-camera">
-              Slikaj kamerom
-            </button>
+          <div class="bu-field">
+            <label for="id_kategorija_search">Kategorija</label>
+            <div class="bu-cat-search-wrap">
+              <input
+                type="search"
+                id="id_kategorija_search"
+                placeholder="Traži kategoriju…"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                enterkeyhint="search"
+              >
+              <input
+                type="hidden"
+                name="kategorija_id"
+                id="id_kategorija"
+                value="{{ form_data.kategorija_id }}"
+                required
+              >
+              <div class="bu-cat-selected" id="bu-cat-selected">
+                <span id="bu-cat-selected-label"></span>
+                <button type="button" class="bu-cat-clear" id="bu-cat-clear">Promijeni</button>
+              </div>
+              <div class="bu-cat-results" id="bu-cat-results" role="listbox" aria-label="Rezultati kategorija"></div>
+            </div>
+            {{ categories_json|json_script:"bu-categories-data" }}
           </div>
-          {# Bez capture = galerija (i opcionalno kamera u meniju OS-a) #}
-          <input
-            type="file"
-            name="slika"
-            id="id_slika"
-            accept="image/*"
+
+          {% if chatgpt_url %}
+          <a
+            class="bu-btn-chatgpt"
+            href="{{ chatgpt_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            id="bu-chatgpt"
           >
-          {# capture = odmah kamera #}
-          <input
-            type="file"
-            name="slika_kamera"
-            id="id_slika_kamera"
-            accept="image/*"
-            capture="environment"
-          >
-          <p class="help" style="margin-top:10px;">
-            Sistem sam doradi sliku za webshop: bijela pozadina, centrirano,
-            blago posvijetli i izoštri.
+            Otvori u ChatGPT-u
+          </a>
+          <p class="bu-chatgpt-hint">
+            Naziv + „veci opis za ovaj artikal i tagove” → zalijepi u Opis i Tagove.
           </p>
-          <div class="bu-preview" id="bu-preview">
-            <img id="bu-preview-img" alt="Pregled nove slike">
-          </div>
-          {% if current_image_url %}
-          <div class="bu-current">
-            <p>Trenutna slika (ostaje ako ne dodaš novu):</p>
-            <img src="{{ current_image_url }}" alt="Trenutna slika">
-            <input type="hidden" name="keep_existing_image" value="1">
-          </div>
           {% endif %}
+
+          <div class="bu-field">
+            <div class="bu-field-head">
+              <label for="id_opis">Opis</label>
+              <button type="button" class="bu-btn-copy" data-copy-target="id_opis">Copy</button>
+            </div>
+            <textarea
+              name="opis"
+              id="id_opis"
+              rows="4"
+              placeholder="Opis artikla…"
+            >{{ form_data.opis }}</textarea>
+          </div>
+
+          <div class="bu-field">
+            <div class="bu-field-head">
+              <label for="id_tagovi">Tagovi</label>
+              <button type="button" class="bu-btn-copy" data-copy-target="id_tagovi">Copy</button>
+            </div>
+            <input
+              type="text"
+              name="tagovi"
+              id="id_tagovi"
+              value="{{ form_data.tagovi }}"
+              placeholder="tag1, tag2, … (prazno = ne mijenja)"
+              autocomplete="off"
+              autocapitalize="off"
+            >
+          </div>
+        </div>
+
+        <div class="bu-form-side">
+          <div class="bu-field">
+            <label>Slika artikla</label>
+            {% if google_images_url %}
+            <a
+              class="bu-btn-google"
+              href="{{ google_images_url }}"
+              target="_blank"
+              rel="noopener noreferrer"
+              id="bu-google-images"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Google slike
+            </a>
+            <p class="bu-google-hint">Sačuvaj sliku pa uploaduj ispod.</p>
+            {% endif %}
+            <div class="bu-photo-zone">
+              <strong>Glavna slika</strong>
+              <div class="bu-photo-btns">
+                <button type="button" class="bu-photo-btn bu-photo-btn-gallery" id="bu-pick-gallery">
+                  Galerija
+                </button>
+                <button type="button" class="bu-photo-btn bu-photo-btn-camera" id="bu-pick-camera">
+                  Kamera
+                </button>
+              </div>
+              <input type="file" name="slika" id="id_slika" accept="image/*">
+              <input type="file" name="slika_kamera" id="id_slika_kamera" accept="image/*" capture="environment">
+              <div class="bu-preview" id="bu-preview">
+                <img id="bu-preview-img" alt="Pregled nove slike">
+              </div>
+              {% if current_image_url %}
+              <div class="bu-current">
+                <p>Trenutna (ostaje ako ne dodaš novu):</p>
+                <img src="{{ current_image_url }}" alt="Trenutna slika">
+                <input type="hidden" name="keep_existing_image" value="1">
+              </div>
+              {% endif %}
+
+              <div class="bu-extra-zone">
+                <strong>Dodatne slike <span class="bu-opt">(opcionalno)</span></strong>
+                {% if existing_extra_images %}
+                <div class="bu-extra-existing">
+                  <p class="bu-extra-existing-label">Već na artiklu:</p>
+                  {% for img in existing_extra_images %}
+                  <img src="{{ img.url }}" alt="Dodatna {{ forloop.counter }}">
+                  {% endfor %}
+                </div>
+                {% endif %}
+                <div class="bu-photo-btns">
+                  <button type="button" class="bu-photo-btn bu-photo-btn-extra" id="bu-pick-extra">
+                    + Dodaj još slika
+                  </button>
+                </div>
+                <input
+                  type="file"
+                  name="dodatne_slike"
+                  id="id_dodatne_slike"
+                  accept="image/*"
+                  multiple
+                >
+                <div class="bu-extra-thumbs" id="bu-extra-thumbs"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bu-actions">
+            <button type="submit" class="bu-btn-primary" id="bu-submit">
+              Aktiviraj artikal
+            </button>
+            <a class="bu-btn-secondary" href="{{ scan_url }}">← Drugi artikal</a>
+          </div>
         </div>
       </div>
-
-      <div class="bu-actions">
-        <button type="submit" class="bu-btn-primary" name="action" value="activate" id="bu-submit">
-          Aktiviraj artikal
-        </button>
-        <a class="bu-btn-secondary" href="{{ scan_url }}">← Drugi artikal (sken)</a>
-      </div>
-
-      <p class="bu-note">
-        Klikom se postavlja: na stanju, cijena, brend, kategorija, opis, tagovi, slika,
-        aktivan = da. Artikal odmah ide na webshop.
-      </p>
     </form>
   </div>
 </div>
@@ -657,10 +866,13 @@
 (function () {
   var fileGallery = document.getElementById('id_slika');
   var fileCamera = document.getElementById('id_slika_kamera');
+  var fileExtra = document.getElementById('id_dodatne_slike');
   var btnGallery = document.getElementById('bu-pick-gallery');
   var btnCamera = document.getElementById('bu-pick-camera');
+  var btnExtra = document.getElementById('bu-pick-extra');
   var preview = document.getElementById('bu-preview');
   var previewImg = document.getElementById('bu-preview-img');
+  var extraThumbs = document.getElementById('bu-extra-thumbs');
   var form = document.getElementById('bu-activate-form');
   var submit = document.getElementById('bu-submit');
   var price = document.getElementById('id_cijena');
@@ -745,7 +957,6 @@
         results.innerHTML = '';
         return;
       }
-      // Bez upita prikaži prvih 12 da se vidi da radi; s upitom filtriraj
       if (!q) {
         list = categories.slice(0, 12);
       } else {
@@ -770,17 +981,11 @@
       results.classList.add('is-on');
     }
 
-    // Inicijalno: ako već ima kategoriju (npr. postojeći artikal)
     var initial = findById(hidden.value);
-    if (initial) {
-      setSelected(initial);
-    }
+    if (initial) setSelected(initial);
 
-    search.addEventListener('focus', function () {
-      render(search.value);
-    });
+    search.addEventListener('focus', function () { render(search.value); });
     search.addEventListener('input', function () {
-      // Ako kuca, briši prethodni odabir da ne ostane stari ID
       if (hidden.value) {
         hidden.value = '';
         if (selectedBox) selectedBox.classList.remove('is-on');
@@ -810,7 +1015,6 @@
       });
     }
 
-    // Validacija: required na hidden ne radi svugdje — ručno
     if (form) {
       form.addEventListener('submit', function (ev) {
         if (!hidden.value) {
@@ -847,7 +1051,6 @@
         if (previewImg) previewImg.removeAttribute('src');
         return;
       }
-      // samo jedan izvor slike
       if (otherInput) {
         try { otherInput.value = ''; } catch (e) {}
       }
@@ -868,7 +1071,37 @@
     btnCamera.addEventListener('click', function () { fileCamera.click(); });
   }
 
-  // Copy — zasebno za Opis i Tagove
+  // Dodatne slike — multi preview
+  function renderExtraThumbs() {
+    if (!extraThumbs || !fileExtra) return;
+    extraThumbs.innerHTML = '';
+    var files = fileExtra.files;
+    if (!files || !files.length) return;
+    var max = Math.min(files.length, 12);
+    for (var i = 0; i < max; i++) {
+      var f = files[i];
+      if (!f || !f.type || f.type.indexOf('image/') !== 0) continue;
+      var img = document.createElement('img');
+      img.alt = f.name || ('slika ' + (i + 1));
+      img.src = URL.createObjectURL(f);
+      img.onload = (function (u) {
+        return function () { URL.revokeObjectURL(u); };
+      })(img.src);
+      extraThumbs.appendChild(img);
+    }
+    if (btnExtra) {
+      btnExtra.textContent = files.length
+        ? ('+ ' + files.length + ' slika odabrano')
+        : '+ Dodaj još slika';
+    }
+  }
+  if (btnExtra && fileExtra) {
+    btnExtra.addEventListener('click', function () { fileExtra.click(); });
+  }
+  if (fileExtra) {
+    fileExtra.addEventListener('change', renderExtraThumbs);
+  }
+
   document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
     var defaultLabel = btn.textContent;
     btn.addEventListener('click', function () {
@@ -883,7 +1116,7 @@
       }
       function ok() {
         btn.classList.add('is-ok');
-        btn.textContent = 'Kopirano';
+        btn.textContent = 'OK';
         setTimeout(function () {
           btn.classList.remove('is-ok');
           btn.textContent = defaultLabel;
@@ -907,6 +1140,15 @@
     form.addEventListener('submit', function () {
       submit.disabled = true;
       submit.textContent = 'Aktiviram…';
+    });
+  }
+
+  var offForm = document.getElementById('bu-off-stock-form');
+  var offBtn = document.getElementById('bu-off-stock');
+  if (offForm && offBtn && !offBtn.disabled) {
+    offForm.addEventListener('submit', function () {
+      offBtn.disabled = true;
+      offBtn.textContent = 'Skidam…';
     });
   }
 })();

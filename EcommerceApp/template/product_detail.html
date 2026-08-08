@@ -8,11 +8,15 @@
 {% endblock %}
 
 {% block page_title %}
-<title>{{ seo_title|default:product.seo_title }} — opremazaribolov.ba</title>
+<title>{% if not product_available %}Nije dostupno — {% endif %}{{ seo_title|default:product.seo_title }} — opremazaribolov.ba</title>
 {% endblock %}
 
 {% block meta_description %}
 <meta name="description" content="{{ seo_description|default:product.seo_description }}">
+{% endblock %}
+
+{% block meta_robots %}
+{% if meta_robots_content %}<meta name="robots" content="{{ meta_robots_content }}">{% endif %}
 {% endblock %}
 
 {% block og_type %}product{% endblock %}
@@ -79,6 +83,12 @@
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>
             <h1>{{ product.naziv }}</h1>
+            {% if not product_available %}
+            <div class="product-unavailable-banner" role="status">
+                <strong>Artikal više nije dostupan</strong>
+                <span>Ovaj artikal trenutno nije na stanju i ne može se naručiti. Link je i dalje otvoren da vidiš o čemu se radi.</span>
+            </div>
+            {% endif %}
             {% if product.proizvedeno_u_japanu %}
             <div class="made-in-japan made-in-japan--detail" role="note" aria-label="Proizvedeno u Japanu">
                 <span class="made-in-japan__flag" aria-hidden="true">
@@ -481,12 +491,15 @@
             </form>
             {% else %}
             <div class="add-to-cart-form">
-                <span class="sold-out-text">Rasprodato</span>
+                <div class="product-unavailable-cta">
+                    <span class="sold-out-text">Artikal više nije dostupan</span>
+                    <span class="product-unavailable-hint">Nije na stanju — naručivanje trenutno nije moguće.</span>
+                </div>
             </div>
             {% endif %}
             {% endif %}
 
-            {% if product.varijacije.count %}
+            {% if product.varijacije.count and product_available %}
             {% include 'partials/product_urgency.html' %}
             {# AI dwell: isti izgled kao na kartici + tajmer #}
             <div class="card-dwell-deal pd-dwell-flash product-sale-deal--detail{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}"
@@ -521,7 +534,10 @@
             </div>
             {% elif product.varijacije.count %}
             <div class="add-to-cart-form">
-                <span class="sold-out-text">Rasprodato</span>
+                <div class="product-unavailable-cta">
+                    <span class="sold-out-text">Artikal više nije dostupan</span>
+                    <span class="product-unavailable-hint">Nije na stanju — naručivanje trenutno nije moguće.</span>
+                </div>
             </div>
             {% endif %}
 

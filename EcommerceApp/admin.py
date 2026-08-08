@@ -2083,6 +2083,7 @@ class ProductAdmin(admin.ModelAdmin):
             category_choices,
             parse_price,
             resolve_tags,
+            take_off_stock,
         )
 
         if not self.has_change_permission(request):
@@ -2099,6 +2100,23 @@ class ProductAdmin(admin.ModelAdmin):
             messages.error(request, 'Artikal nije pronađen.')
             return redirect('admin:EcommerceApp_product_brzi_unos')
 
+        # Jedan klik: skini sa stanja — samo na_stanju=False, bez forme / validacije
+        post_action = (request.POST.get('action') or '').strip() if request.method == 'POST' else ''
+        if request.method == 'POST' and post_action == 'off_stock':
+            try:
+                take_off_stock(product)
+                messages.success(
+                    request,
+                    f'✓ „{product.naziv}” — nije na stanju (sakriven od kupaca).',
+                )
+            except Exception as exc:
+                logger.exception(
+                    'Brzi unos: skidanje sa stanja nije uspjelo product_id=%s',
+                    product_id,
+                )
+                messages.error(request, f'Skidanje sa stanja nije uspjelo: {exc}')
+            return redirect('admin:EcommerceApp_product_brzi_unos')
+
         brands = Brand.objects.order_by('naziv')
         categories = category_choices()
         form_errors = []
@@ -2109,17 +2127,21 @@ class ProductAdmin(admin.ModelAdmin):
             'opis': (product.opis or '').strip(),
             # Polje prazno — samo ručni unos novih tagova zarezom
             'tagovi': '',
+            'barkod': (product.barkod or '').strip(),
         }
 
-        if request.method == 'POST':
+        # Aktivacija: samo eksplicitni action=activate (ne diraj off_stock ni prazan POST)
+        if request.method == 'POST' and post_action == 'activate':
             form_data['cijena'] = (request.POST.get('cijena') or '').strip()
             form_data['brend_id'] = (request.POST.get('brend_id') or '').strip()
             form_data['kategorija_id'] = (request.POST.get('kategorija_id') or '').strip()
             form_data['opis'] = (request.POST.get('opis') or '').strip()
             form_data['tagovi'] = (request.POST.get('tagovi') or '').strip()
+            form_data['barkod'] = (request.POST.get('barkod') or '').strip()
             # Galerija ili kamera — oba file inputa dijele name="slika"
             image_upload = request.FILES.get('slika') or request.FILES.get('slika_kamera')
             keep_image = request.POST.get('keep_existing_image') == '1'
+            extra_images = request.FILES.getlist('dodatne_slike')
 
             brend = None
             if form_data['brend_id']:
@@ -2170,9 +2192,12 @@ class ProductAdmin(admin.ModelAdmin):
                         keep_existing_image=keep_image and not image_upload,
                         opis=form_data['opis'],
                         tagovi=tagovi,
+                        barkod=form_data['barkod'],
+                        extra_images=extra_images,
                     )
                     tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
                     cat_note = f', {kategorija.naziv}' if kategorija else ''
+                    extra_note = f', +{len(extra_images)} slika' if extra_images else ''
                     messages.success(
                         request,
                         f'✓ „{product.naziv}” je aktivan na webshopu '
@@ -2180,6 +2205,7 @@ class ProductAdmin(admin.ModelAdmin):
                         f'{f", {brend.naziv}" if brend else ""}'
                         f'{cat_note}'
                         f'{tag_note}'
+                        f'{extra_note}'
                         f', na stanju).',
                     )
                     return redirect('admin:EcommerceApp_product_brzi_unos')
@@ -2198,6 +2224,15 @@ class ProductAdmin(admin.ModelAdmin):
                 current_image_url = product.slika.url
             except Exception:
                 current_image_url = ''
+
+        existing_extra = []
+        for img in product.dodatne_slike.all().order_by('redoslijed', 'id')[:12]:
+            try:
+                url = img.slika.url if img.slika else ''
+            except Exception:
+                url = ''
+            if url:
+                existing_extra.append({'id': img.pk, 'url': url})
 
         # Google Images — samo naziv artikla
         google_query = (product.naziv or '').strip()
@@ -2223,6 +2258,7 @@ class ProductAdmin(admin.ModelAdmin):
             'form_data': form_data,
             'form_errors': form_errors,
             'current_image_url': current_image_url,
+            'existing_extra_images': existing_extra,
             'google_images_url': google_images_url,
             'google_query': google_query,
             'chatgpt_url': chatgpt_url,

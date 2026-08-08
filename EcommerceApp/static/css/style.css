@@ -7235,6 +7235,43 @@ body.catalog-variation-modal-open {
     display: inline-block;
 }
 
+/* Skinut sa stanja: stranica ostaje, bez 404 */
+.product-unavailable-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 10px 0 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #7f1d1d;
+    line-height: 1.4;
+}
+.product-unavailable-banner strong {
+    font-size: 1rem;
+    font-weight: 800;
+}
+.product-unavailable-banner span {
+    font-size: .9rem;
+    color: #991b1b;
+    font-weight: 500;
+}
+.product-unavailable-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+.product-unavailable-hint {
+    font-size: .88rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
 @media (min-width: 1024px) {
     :root {
         --product-detail-side-inset: 32px;

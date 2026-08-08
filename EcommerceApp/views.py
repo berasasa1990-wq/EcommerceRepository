@@ -2517,11 +2517,13 @@ def _staff_product_edit_redirect(request, slug, *, stay_on_error=False):
 
 
 def product_detail(request, slug):
-    # Edit mode ON → superuser vidi i neaktivne / van stanja; Edit OFF → kao kupac
+    # Edit mode ON → superuser vidi i neaktivne / van stanja.
+    # Kupci: aktivni artikli i kad nisu na stanju (stranica ostaje, poruka „nije dostupno”).
+    # Neaktivni (aktivan=False) → 404 za kupce.
     if _can_view_out_of_stock(request):
         product_qs = Product.objects.all()
     else:
-        product_qs = Product.objects.filter(aktivan=True, na_stanju=True)
+        product_qs = Product.objects.filter(aktivan=True)
     product = get_object_or_404(
         product_qs
         .select_related('kategorija', 'brend')
@@ -2533,6 +2535,7 @@ def product_detail(request, slug):
         slug=slug,
     )
     in_stock_variations = [v for v in product.varijacije.all() if v.na_stanju]
+    product_available = bool(product.na_stanju or in_stock_variations)
     lcp_image_url = None
     product_image_width, product_image_height = 800, 800
     if product.prikazna_slika:
@@ -2550,6 +2553,7 @@ def product_detail(request, slug):
         'product': product,
         'in_stock_variations': in_stock_variations,
         'ima_varijacije': bool(in_stock_variations),
+        'product_available': product_available,
         'related_products': related_products,
         'povezani_podnaslov': site_settings.format_povezani_podnaslov(kategorija_naziv),
         'lcp_image_url': lcp_image_url,
@@ -2564,6 +2568,8 @@ def product_detail(request, slug):
             if product.prikazna_slika else None
         ),
         'product_back_url': _product_back_url(request, product),
+        # Van stanja: ne indeksiraj (i dalje otvoren link za stare bookmarke)
+        'meta_robots_content': None if product_available else 'noindex, follow',
     }
     # Zapamti povratak za staff edit (Save → nazad na listu/pretragu)
     back = context['product_back_url']

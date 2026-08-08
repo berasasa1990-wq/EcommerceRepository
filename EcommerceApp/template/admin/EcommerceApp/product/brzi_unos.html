@@ -235,6 +235,139 @@
     #header, .breadcrumbs { font-size: 14px; }
     .bu-wrap { padding: 4px 2px 32px; }
   }
+
+  /* Desktop: puni ekran, što preglednije */
+  @media (min-width: 900px) {
+    #content {
+      max-width: none !important;
+    }
+    .bu-wrap {
+      max-width: min(1400px, calc(100vw - 48px));
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px 24px 56px;
+      box-sizing: border-box;
+    }
+    .bu-card {
+      padding: 28px 32px 32px;
+      border-radius: 16px;
+    }
+    .bu-card h1 {
+      font-size: 1.75rem;
+      margin-bottom: 8px;
+    }
+    .bu-lead {
+      font-size: 1.05rem;
+      max-width: 64ch;
+      margin-bottom: 24px;
+    }
+    .bu-label {
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+    }
+    .bu-scan-row {
+      gap: 12px;
+      max-width: 720px;
+    }
+    .bu-scan-row input[type="text"] {
+      font-size: 1.25rem !important;
+      padding: 16px 16px !important;
+    }
+    .bu-scan-row button[type="submit"] {
+      font-size: 1.1rem;
+      padding: 14px 28px;
+      min-width: 140px;
+    }
+    .bu-btn-scan {
+      max-width: 720px;
+      font-size: 1.05rem;
+      padding: 14px 18px;
+      margin-top: 14px;
+    }
+    .bu-scanner {
+      max-width: 720px;
+    }
+    #bu-qr-reader {
+      min-height: 320px;
+    }
+    .bu-hint {
+      font-size: .92rem;
+      max-width: 720px;
+      margin-top: 12px;
+    }
+    .bu-matches {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .bu-matches > .bu-label {
+      grid-column: 1 / -1;
+      margin-bottom: 0;
+      font-size: 1.1rem;
+    }
+    .bu-match {
+      gap: 16px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      border-width: 1.5px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .bu-match:hover {
+      box-shadow: 0 4px 14px rgba(91, 184, 5, .12);
+    }
+    .bu-match img,
+    .bu-match-ph {
+      width: 88px;
+      height: 88px;
+      border-radius: 10px;
+    }
+    .bu-match-body strong {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+      line-height: 1.35;
+    }
+    .bu-match-meta {
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+    .bu-stock-status {
+      font-size: .78rem;
+      padding: 5px 12px;
+      margin-top: 8px;
+    }
+    .bu-badge {
+      font-size: .75rem;
+      padding: 3px 9px;
+    }
+    .bu-empty {
+      max-width: 720px;
+      font-size: 1rem;
+      padding: 18px 20px;
+    }
+    .bu-back {
+      font-size: 1rem;
+      margin-top: 20px;
+    }
+  }
+  @media (min-width: 1200px) {
+    .bu-wrap {
+      max-width: min(1600px, calc(100vw - 64px));
+      padding: 20px 32px 64px;
+    }
+    .bu-card {
+      padding: 32px 40px 36px;
+    }
+    .bu-matches {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .bu-match img,
+    .bu-match-ph {
+      width: 96px;
+      height: 96px;
+    }
+  }
 </style>
 {% endblock %}
 
