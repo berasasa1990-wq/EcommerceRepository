@@ -178,6 +178,90 @@
     background: #dcfce7;
     color: #166534;
   }
+  .bu-cat-search-wrap {
+    position: relative;
+  }
+  .bu-cat-search-wrap input[type="search"] {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 1.05rem !important;
+    padding: 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid #cbd5e1 !important;
+    margin-bottom: 8px;
+  }
+  .bu-cat-search-wrap input[type="search"]:focus {
+    border-color: #5BB805 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(91, 184, 5, .2);
+  }
+  .bu-cat-results {
+    display: none;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    margin-bottom: 8px;
+  }
+  .bu-cat-results.is-on { display: block; }
+  .bu-cat-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    appearance: none;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fff;
+    padding: 11px 12px;
+    font-size: .92rem;
+    font-weight: 600;
+    color: #0f172a;
+    cursor: pointer;
+  }
+  .bu-cat-item:last-child { border-bottom: none; }
+  .bu-cat-item:hover,
+  .bu-cat-item:active {
+    background: #f0fdf4;
+    color: #166534;
+  }
+  .bu-cat-item mark {
+    background: #dcfce7;
+    color: inherit;
+    padding: 0 1px;
+    border-radius: 2px;
+  }
+  .bu-cat-empty {
+    padding: 12px;
+    font-size: .88rem;
+    color: #94a3b8;
+  }
+  .bu-cat-selected {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #166534;
+    margin-bottom: 4px;
+  }
+  .bu-cat-selected.is-on { display: flex; }
+  .bu-cat-clear {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
   .bu-price-wrap {
     position: relative;
   }
@@ -394,13 +478,32 @@
       </div>
 
       <div class="bu-field">
-        <label for="id_kategorija">Kategorija</label>
-        <select name="kategorija_id" id="id_kategorija" required>
-          <option value="">— izaberi kategoriju —</option>
-          {% for c in categories %}
-          <option value="{{ c.id }}"{% if form_data.kategorija_id == c.id|stringformat:"s" %} selected{% endif %}>{{ c.label }}</option>
-          {% endfor %}
-        </select>
+        <label for="id_kategorija_search">Kategorija</label>
+        <div class="bu-cat-search-wrap">
+          <input
+            type="search"
+            id="id_kategorija_search"
+            placeholder="Traži kategoriju (npr. feeder, trokuke)…"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="search"
+          >
+          <input
+            type="hidden"
+            name="kategorija_id"
+            id="id_kategorija"
+            value="{{ form_data.kategorija_id }}"
+            required
+          >
+          <div class="bu-cat-selected" id="bu-cat-selected">
+            <span id="bu-cat-selected-label"></span>
+            <button type="button" class="bu-cat-clear" id="bu-cat-clear">Promijeni</button>
+          </div>
+          <div class="bu-cat-results" id="bu-cat-results" role="listbox" aria-label="Rezultati kategorija"></div>
+        </div>
+        <p class="help">Upiši dio naziva — lista se filtrira. Klikni rezultat da odabereš.</p>
+        {{ categories_json|json_script:"bu-categories-data" }}
       </div>
 
       <div class="bu-field">
@@ -564,6 +667,169 @@
   if (price) {
     setTimeout(function () { price.focus(); price.select(); }, 80);
   }
+
+  // ——— Pretraga kategorija ———
+  (function initCategorySearch() {
+    var search = document.getElementById('id_kategorija_search');
+    var hidden = document.getElementById('id_kategorija');
+    var results = document.getElementById('bu-cat-results');
+    var selectedBox = document.getElementById('bu-cat-selected');
+    var selectedLabel = document.getElementById('bu-cat-selected-label');
+    var clearBtn = document.getElementById('bu-cat-clear');
+    var dataEl = document.getElementById('bu-categories-data');
+    if (!search || !hidden || !results || !dataEl) return;
+
+    var categories = [];
+    try {
+      categories = JSON.parse(dataEl.textContent || '[]') || [];
+    } catch (e) {
+      categories = [];
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function highlight(label, q) {
+      var safe = escapeHtml(label);
+      if (!q) return safe;
+      var idx = label.toLowerCase().indexOf(q.toLowerCase());
+      if (idx < 0) return safe;
+      var before = escapeHtml(label.slice(0, idx));
+      var mid = escapeHtml(label.slice(idx, idx + q.length));
+      var after = escapeHtml(label.slice(idx + q.length));
+      return before + '<mark>' + mid + '</mark>' + after;
+    }
+
+    function findById(id) {
+      id = String(id || '');
+      for (var i = 0; i < categories.length; i++) {
+        if (String(categories[i].id) === id) return categories[i];
+      }
+      return null;
+    }
+
+    function setSelected(cat) {
+      if (!cat) {
+        hidden.value = '';
+        if (selectedBox) selectedBox.classList.remove('is-on');
+        if (selectedLabel) selectedLabel.textContent = '';
+        search.value = '';
+        search.style.display = '';
+        return;
+      }
+      hidden.value = String(cat.id);
+      if (selectedLabel) selectedLabel.textContent = cat.label;
+      if (selectedBox) selectedBox.classList.add('is-on');
+      search.value = '';
+      search.style.display = 'none';
+      results.classList.remove('is-on');
+      results.innerHTML = '';
+    }
+
+    function render(q) {
+      q = (q || '').trim();
+      var list = categories;
+      if (q.length >= 1) {
+        var qLower = q.toLowerCase();
+        list = categories.filter(function (c) {
+          return (c.label || '').toLowerCase().indexOf(qLower) !== -1;
+        });
+      }
+      if (!q && !list.length) {
+        results.classList.remove('is-on');
+        results.innerHTML = '';
+        return;
+      }
+      // Bez upita prikaži prvih 12 da se vidi da radi; s upitom filtriraj
+      if (!q) {
+        list = categories.slice(0, 12);
+      } else {
+        list = list.slice(0, 40);
+      }
+      if (!list.length) {
+        results.innerHTML = '<div class="bu-cat-empty">Nema kategorije za „' + escapeHtml(q) + '”</div>';
+        results.classList.add('is-on');
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        html +=
+          '<button type="button" class="bu-cat-item" role="option" data-id="' +
+          escapeHtml(c.id) +
+          '">' +
+          highlight(c.label, q) +
+          '</button>';
+      }
+      results.innerHTML = html;
+      results.classList.add('is-on');
+    }
+
+    // Inicijalno: ako već ima kategoriju (npr. postojeći artikal)
+    var initial = findById(hidden.value);
+    if (initial) {
+      setSelected(initial);
+    }
+
+    search.addEventListener('focus', function () {
+      render(search.value);
+    });
+    search.addEventListener('input', function () {
+      // Ako kuca, briši prethodni odabir da ne ostane stari ID
+      if (hidden.value) {
+        hidden.value = '';
+        if (selectedBox) selectedBox.classList.remove('is-on');
+      }
+      render(search.value);
+    });
+    search.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') {
+        results.classList.remove('is-on');
+        search.blur();
+      }
+    });
+
+    results.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-id]');
+      if (!btn) return;
+      var cat = findById(btn.getAttribute('data-id'));
+      if (cat) setSelected(cat);
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        setSelected(null);
+        search.style.display = '';
+        search.focus();
+        render('');
+      });
+    }
+
+    // Validacija: required na hidden ne radi svugdje — ručno
+    if (form) {
+      form.addEventListener('submit', function (ev) {
+        if (!hidden.value) {
+          ev.preventDefault();
+          search.style.display = '';
+          search.focus();
+          render(search.value);
+          search.setCustomValidity('Izaberi kategoriju iz liste.');
+          search.reportValidity();
+          if (submit) {
+            submit.disabled = false;
+            submit.textContent = 'Aktiviraj artikal';
+          }
+        } else {
+          search.setCustomValidity('');
+        }
+      });
+    }
+  })();
 
   function showPreview(file) {
     if (!preview || !previewImg || !file) return;

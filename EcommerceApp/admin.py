@@ -2219,6 +2219,7 @@ class ProductAdmin(admin.ModelAdmin):
             'product': product,
             'brands': brands,
             'categories': categories,
+            'categories_json': categories,
             'form_data': form_data,
             'form_errors': form_errors,
             'current_image_url': current_image_url,
