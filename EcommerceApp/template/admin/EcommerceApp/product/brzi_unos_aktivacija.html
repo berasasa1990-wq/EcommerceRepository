@@ -347,7 +347,7 @@
 <div class="bu-wrap">
   <div class="bu-card">
     <h1>Aktiviraj artikal</h1>
-    <p class="bu-sub">Dopuni cijenu, brend i sliku — artikal se odmah pojavi na webshopu.</p>
+    <p class="bu-sub">Dopuni cijenu, brend, kategoriju i sliku — artikal se odmah pojavi na webshopu.</p>
 
     <dl class="bu-meta-grid">
       <dt>Naziv</dt>
@@ -389,6 +389,16 @@
           <option value="">— izaberi brend —</option>
           {% for b in brands %}
           <option value="{{ b.pk }}"{% if form_data.brend_id == b.pk|stringformat:"s" %} selected{% endif %}>{{ b.naziv }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="bu-field">
+        <label for="id_kategorija">Kategorija</label>
+        <select name="kategorija_id" id="id_kategorija" required>
+          <option value="">— izaberi kategoriju —</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}"{% if form_data.kategorija_id == c.id|stringformat:"s" %} selected{% endif %}>{{ c.label }}</option>
           {% endfor %}
         </select>
       </div>
@@ -533,7 +543,7 @@
       </div>
 
       <p class="bu-note">
-        Klikom se postavlja: na stanju, cijena, brend, opis, tagovi, slika,
+        Klikom se postavlja: na stanju, cijena, brend, kategorija, opis, tagovi, slika,
         aktivan = da. Artikal odmah ide na webshop.
       </p>
     </form>

@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation
 import requests
 from django.db.models import Q
 
-from .models import Brand, Product, Tag
+from .models import Brand, Category, Product, Tag
 from .utils.images import (
     prepared_product_image_payload,
     process_quick_activation_image,
@@ -264,11 +264,33 @@ def resolve_tags(raw: str) -> list[Tag]:
     return tags
 
 
+def category_choices():
+    """Lista kategorija za select: id + label s putanjom (Roditelj → Dijete)."""
+    choices = []
+    qs = (
+        Category.objects.filter(aktivan=True)
+        .select_related('roditelj', 'roditelj__roditelj')
+        .order_by('redoslijed', 'naziv')
+    )
+    for category in qs:
+        parts = []
+        cur = category
+        seen = set()
+        while cur is not None and cur.pk not in seen:
+            seen.add(cur.pk)
+            parts.append(cur.naziv or f'#{cur.pk}')
+            cur = getattr(cur, 'roditelj', None)
+        parts.reverse()
+        choices.append({'id': category.pk, 'label': ' → '.join(parts)})
+    return choices
+
+
 def activate_product(
     product: Product,
     *,
     cijena: Decimal,
     brend: Brand | None,
+    kategorija: Category | None = None,
     image_upload=None,
     keep_existing_image: bool = False,
     opis: str | None = None,
@@ -276,13 +298,15 @@ def activate_product(
 ) -> Product:
     """
     Aktiviraj postojeći artikal za webshop:
-    - cijena, brend, opcionalno opis i tagovi
+    - cijena, brend, kategorija, opcionalno opis i tagovi
     - na_stanju=True, aktivan=True
     - stanje min 1 ako je bilo 0
     - opcionalno nova slika (dorada + upload na R2/local storage)
     """
     product.cijena = cijena
     product.brend = brend
+    if kategorija is not None:
+        product.kategorija = kategorija
     product.na_stanju = True
     product.aktivan = True
     if not product.stanje or product.stanje < 1:

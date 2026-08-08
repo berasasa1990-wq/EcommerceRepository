@@ -2078,7 +2078,12 @@ class ProductAdmin(admin.ModelAdmin):
         from decimal import InvalidOperation
         from urllib.parse import quote_plus
 
-        from .quick_activation import activate_product, parse_price, resolve_tags
+        from .quick_activation import (
+            activate_product,
+            category_choices,
+            parse_price,
+            resolve_tags,
+        )
 
         if not self.has_change_permission(request):
             messages.error(request, 'Nemate dozvolu za izmjenu artikala.')
@@ -2095,10 +2100,12 @@ class ProductAdmin(admin.ModelAdmin):
             return redirect('admin:EcommerceApp_product_brzi_unos')
 
         brands = Brand.objects.order_by('naziv')
+        categories = category_choices()
         form_errors = []
         form_data = {
             'cijena': str(product.cijena) if product.cijena is not None else '',
             'brend_id': str(product.brend_id or ''),
+            'kategorija_id': str(product.kategorija_id or ''),
             'opis': (product.opis or '').strip(),
             # Polje prazno — samo ručni unos novih tagova zarezom
             'tagovi': '',
@@ -2107,6 +2114,7 @@ class ProductAdmin(admin.ModelAdmin):
         if request.method == 'POST':
             form_data['cijena'] = (request.POST.get('cijena') or '').strip()
             form_data['brend_id'] = (request.POST.get('brend_id') or '').strip()
+            form_data['kategorija_id'] = (request.POST.get('kategorija_id') or '').strip()
             form_data['opis'] = (request.POST.get('opis') or '').strip()
             form_data['tagovi'] = (request.POST.get('tagovi') or '').strip()
             # Galerija ili kamera — oba file inputa dijele name="slika"
@@ -2116,6 +2124,16 @@ class ProductAdmin(admin.ModelAdmin):
             brend = None
             if form_data['brend_id']:
                 brend = brands.filter(pk=form_data['brend_id']).first()
+
+            kategorija = None
+            if form_data['kategorija_id']:
+                try:
+                    kategorija = Category.objects.filter(
+                        pk=int(form_data['kategorija_id']),
+                        aktivan=True,
+                    ).first()
+                except (TypeError, ValueError):
+                    kategorija = None
 
             try:
                 cijena = parse_price(form_data['cijena'])
@@ -2129,6 +2147,12 @@ class ProductAdmin(admin.ModelAdmin):
             else:
                 form_errors.append('Izaberi brend.')
 
+            if form_data['kategorija_id']:
+                if kategorija is None:
+                    form_errors.append('Odabrana kategorija ne postoji.')
+            else:
+                form_errors.append('Izaberi kategoriju.')
+
             if not image_upload and not (product.slika and product.slika.name):
                 form_errors.append('Dodaj sliku artikla (galerija ili kamera).')
             elif not image_upload and product.slika and product.slika.name:
@@ -2141,17 +2165,20 @@ class ProductAdmin(admin.ModelAdmin):
                         product,
                         cijena=cijena,
                         brend=brend,
+                        kategorija=kategorija,
                         image_upload=image_upload,
                         keep_existing_image=keep_image and not image_upload,
                         opis=form_data['opis'],
                         tagovi=tagovi,
                     )
                     tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
+                    cat_note = f', {kategorija.naziv}' if kategorija else ''
                     messages.success(
                         request,
                         f'✓ „{product.naziv}” je aktivan na webshopu '
                         f'({cijena} KM'
                         f'{f", {brend.naziv}" if brend else ""}'
+                        f'{cat_note}'
                         f'{tag_note}'
                         f', na stanju).',
                     )
@@ -2191,6 +2218,7 @@ class ProductAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
             'product': product,
             'brands': brands,
+            'categories': categories,
             'form_data': form_data,
             'form_errors': form_errors,
             'current_image_url': current_image_url,
