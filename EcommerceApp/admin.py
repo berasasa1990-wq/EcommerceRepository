@@ -254,9 +254,9 @@ class SiteSettingsAdminForm(forms.ModelForm):
 
 
 class _HomeInlineMixin:
-    """Uvijek prikaži tabele na Podešavanjima (ne sakrivaj zbog permisija/templatea)."""
+    """Tabele na Podešavanjima — samo postojeći redovi (bez praznog „extra” reda)."""
 
-    extra = 1  # bar jedan prazan red da se sekcija vidi
+    extra = 0  # ne otvaraj prazan red automatski
     show_change_link = False
     can_delete = True
 
@@ -281,7 +281,8 @@ class HomeTrustItemInline(_HomeInlineMixin, admin.TabularInline):
     ordering = ('redoslijed', 'id')
     verbose_name = 'Trust stavka'
     verbose_name_plural = (
-        '① TRUST TRAKA (ispod hero banera) — Brza dostava, Sigurna kupovina…'
+        '① TRUST TRAKA (ispod hero banera) — Brza dostava, Sigurna kupovina… '
+        'Samo redovi koje dodaš (Add another). Prazan red se ne otvara sam.'
     )
 
 

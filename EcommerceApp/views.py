@@ -2004,9 +2004,12 @@ def _home_sale_products(request=None):
 
 
 def _home_trust_items():
+    """Samo aktivne stavke s naslovom — bez praznih / auto redova."""
     try:
         return list(
-            HomeTrustItem.objects.filter(aktivan=True).order_by('redoslijed', 'id')[:6],
+            HomeTrustItem.objects.filter(aktivan=True)
+            .exclude(naslov='')
+            .order_by('redoslijed', 'id')[:6],
         )
     except DatabaseError:
         return []
@@ -2049,21 +2052,23 @@ def _home_category_showcases(request=None):
 
 def _home_brand_showcases(request=None):
     """
-    Brend sekcije na početnoj — kao Noviteti / HIT: karusel artikala po brendu.
-    Admin: Postavke sajta → Brendovi na početnoj (slide).
+    Brend sekcije na početnoj — karusel do 10 artikala po brendu (vrte se).
+    Admin: Postavke sajta → ⑥ Brend karuseli.
     """
     entries = HomeBrandShowcase.objects.filter(
         aktivan=True,
     ).select_related('brend').order_by('redoslijed', 'id')
 
     home_url = reverse('home')
+    # Strogo max 10 artikala u karuselu
+    brand_limit = min(10, HOME_SECTION_PRODUCT_LIMIT)
     sections = []
     for entry in entries:
         products = list(
             _order_qs_by_lager_priority(
                 _product_queryset(request).filter(brend_id=entry.brend_id),
                 '-kreiran',
-            )[:HOME_SECTION_PRODUCT_LIMIT],
+            )[:brand_limit],
         )
         if not products:
             continue
@@ -2073,7 +2078,7 @@ def _home_brand_showcases(request=None):
             'title': entry.display_title(),
             'brand': brand,
             'brand_url': brand_url,
-            'products': products,
+            'products': products[:10],
         })
     return sections
 
