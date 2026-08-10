@@ -26,14 +26,19 @@ DEFAULT_PROACTIVE_GREETING = (
 
 def chat_settings():
     """Aktivnost, delay (ms) i pozdrav iz admina."""
-    s = SiteSettings.load()
-    delay_sec = int(getattr(s, 'chat_delay_seconds', 120) or 120)
+    try:
+        s = SiteSettings.load()
+    except Exception:
+        # Deploy/migrate lag — chat radi s defaultima umjesto 500
+        logger.exception('chat_settings: SiteSettings.load failed')
+        s = None
+    delay_sec = int(getattr(s, 'chat_delay_seconds', 120) or 120) if s is not None else 120
     delay_sec = max(10, min(delay_sec, 3600))
-    greeting = (getattr(s, 'chat_pozdrav_poruka', None) or '').strip()
+    greeting = (getattr(s, 'chat_pozdrav_poruka', None) or '').strip() if s is not None else ''
     if not greeting:
         greeting = DEFAULT_PROACTIVE_GREETING
     return {
-        'enabled': bool(getattr(s, 'chat_sa_kupcem_aktivan', True)),
+        'enabled': bool(getattr(s, 'chat_sa_kupcem_aktivan', True)) if s is not None else True,
         'delay_seconds': delay_sec,
         'delay_ms': delay_sec * 1000,
         'greeting': greeting,

@@ -98,10 +98,15 @@ def nav_categories(request):
     )
     active_akcija = popup_queue[0] if popup_queue else None
 
-    site_settings = SiteSettings.load()
-    contact_phone = (site_settings.kontakt_telefon or settings.STORE_PHONE or '').strip()
+    try:
+        site_settings = SiteSettings.load()
+    except Exception:
+        # Deploy/migrate lag ili privremeni DB error — ne ruši cijeli sajt
+        site_settings = SiteSettings()
+
+    contact_phone = (getattr(site_settings, 'kontakt_telefon', None) or settings.STORE_PHONE or '').strip()
     messenger_page = (
-        site_settings.kontakt_messenger
+        getattr(site_settings, 'kontakt_messenger', None)
         or getattr(settings, 'MESSENGER_PAGE', '')
         or 'opremazaribolov.ba'
     ).strip()

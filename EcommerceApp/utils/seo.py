@@ -429,12 +429,13 @@ def collection_page_json_ld(
 
 
 # —— Default SEO copy (seed) for key storefront pages ——
+# title max 70, meta_description max 160 (DB CharField limits — PostgreSQL rejectuje duže!)
 PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
     'home': {
         'seo_title': 'Oprema za ribolov | Online shop BiH — opremazaribolov.ba',
         'meta_description': (
-            'Online shop opreme za ribolov u BiH: štapovi, mašinice, varalice, najloni i pribor '
-            'poznatih brendova. Brza dostava, akcije i stručna podrška — opremazaribolov.ba.'
+            'Online shop opreme za ribolov u BiH: štapovi, mašinice, varalice, najloni i pribor. '
+            'Brza dostava, akcije i podrška — opremazaribolov.ba.'
         ),
         'h1_naslov': 'Oprema za ribolov — online shop',
         'seo_tekst_iznad': '',
@@ -520,6 +521,22 @@ PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
 }
 
 
+_FIELD_MAX = {
+    'seo_title': 70,
+    'meta_description': 160,
+    'h1_naslov': 200,
+}
+
+
+def _fit_field(field: str, value: str) -> str:
+    """Poštuj CharField max_length (PostgreSQL odbija duže vrijednosti)."""
+    value = (value or '').strip()
+    max_len = _FIELD_MAX.get(field)
+    if max_len and len(value) > max_len:
+        return _clip(value, max_len)
+    return value
+
+
 def apply_page_seo_defaults(only_empty: bool = True) -> int:
     """
     Upiši best-practice SEO defaults u PageSEO.
@@ -533,6 +550,7 @@ def apply_page_seo_defaults(only_empty: bool = True) -> int:
         for field, value in defaults.items():
             if not value:
                 continue
+            value = _fit_field(field, value)
             current = (getattr(obj, field, None) or '').strip()
             if only_empty and current:
                 continue

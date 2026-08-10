@@ -1,16 +1,28 @@
 from django.db import migrations, models
 
 
+def _clip(value, max_len):
+    """PostgreSQL varchar(N) odbija duže stringove — uvijek skratiti pri seedu."""
+    value = (value or '').strip()
+    if len(value) <= max_len:
+        return value
+    cut = value[: max_len - 1]
+    if ' ' in cut:
+        cut = cut.rsplit(' ', 1)[0]
+    return cut.rstrip(' ,;:-') + '…'
+
+
 def seed_seo_defaults(apps, schema_editor):
     PageSEO = apps.get_model('EcommerceApp', 'PageSEO')
     SiteSettings = apps.get_model('EcommerceApp', 'SiteSettings')
 
+    # title ≤70, meta_description ≤160 (CharField limits)
     defaults = {
         'home': {
             'seo_title': 'Oprema za ribolov | Online shop BiH — opremazaribolov.ba',
             'meta_description': (
-                'Online shop opreme za ribolov u BiH: štapovi, mašinice, varalice, najloni i pribor '
-                'poznatih brendova. Brza dostava, akcije i stručna podrška — opremazaribolov.ba.'
+                'Online shop opreme za ribolov u BiH: štapovi, mašinice, varalice, najloni i pribor. '
+                'Brza dostava, akcije i podrška — opremazaribolov.ba.'
             ),
             'h1_naslov': 'Oprema za ribolov — online shop',
             'seo_tekst_ispod': (
@@ -83,12 +95,21 @@ def seed_seo_defaults(apps, schema_editor):
         },
     }
 
+    field_max = {
+        'seo_title': 70,
+        'meta_description': 160,
+        'h1_naslov': 200,
+    }
+
     for key, fields in defaults.items():
         obj, _ = PageSEO.objects.get_or_create(page_key=key)
         changed = False
         for field, value in fields.items():
             current = (getattr(obj, field, None) or '').strip()
             if not current and value:
+                max_len = field_max.get(field)
+                if max_len:
+                    value = _clip(value, max_len)
                 setattr(obj, field, value)
                 changed = True
         if changed:
@@ -98,12 +119,15 @@ def seed_seo_defaults(apps, schema_editor):
     for ss in SiteSettings.objects.all():
         updated = False
         if not (ss.seo_title or '').strip():
-            ss.seo_title = 'Oprema za ribolov | Online shop BiH — opremazaribolov.ba'
+            ss.seo_title = _clip(
+                'Oprema za ribolov | Online shop BiH — opremazaribolov.ba', 70,
+            )
             updated = True
         if not (ss.meta_description or '').strip():
-            ss.meta_description = (
+            ss.meta_description = _clip(
                 'Online shop opreme za ribolov u BiH: štapovi, mašinice, varalice i pribor. '
-                'Brza dostava i akcije — opremazaribolov.ba.'
+                'Brza dostava, akcije i podrška — opremazaribolov.ba.',
+                160,
             )
             updated = True
         if updated:
