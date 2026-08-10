@@ -447,6 +447,24 @@ fieldset.module {
     box-shadow: 0 4px 16px rgba(91, 184, 5, 0.2) !important;
 }
 
+/* Podešavanja sajta: nikad ne sakrij inline tabele (trust, izdvojeni, noviteti…) */
+body.model-sitesettings .inline-group,
+body.model-sitesettings .js-inline-admin-formset {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    margin-top: 1.25rem !important;
+}
+body.model-sitesettings .inline-group.akcija-section-hidden,
+body.model-sitesettings .js-inline-admin-formset.akcija-section-hidden,
+body.model-sitesettings .inline-group[hidden] {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+}
+
 /* Related widget links */
 .related-widget-wrapper-link {
     opacity: 0.85;

@@ -1,9 +1,53 @@
 {% extends "admin/change_form.html" %}
-{% load i18n %}
+{% load i18n admin_urls static admin_modify %}
 
 {% block extrastyle %}
 {{ block.super }}
 <style>
+  /* —— Site settings: uvijek prikaži inline tabele (trust, izdvojeni, noviteti…) —— */
+  body.change-form.model-sitesettings .inline-group,
+  body.change-form.model-sitesettings .js-inline-admin-formset {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 1.25rem 0 !important;
+    padding: 0 !important;
+    border: 2px solid #5BB805 !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    opacity: 1 !important;
+  }
+  body.change-form.model-sitesettings .inline-group.akcija-section-hidden,
+  body.change-form.model-sitesettings .js-inline-admin-formset.akcija-section-hidden {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+  }
+  body.change-form.model-sitesettings .inline-group[hidden],
+  body.change-form.model-sitesettings .js-inline-admin-formset[hidden] {
+    display: block !important;
+  }
+  body.change-form.model-sitesettings .inline-group h2 {
+    background: linear-gradient(180deg, #eef8e6 0%, #e2f2d4 100%) !important;
+    color: #166534 !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    padding: 14px 16px !important;
+    border-bottom: 1px solid #c5e6a8 !important;
+  }
+  body.change-form.model-sitesettings .inline-related {
+    display: block !important;
+    visibility: visible !important;
+  }
+  body.change-form.model-sitesettings .tabular,
+  body.change-form.model-sitesettings .tabular table {
+    display: table !important;
+    width: 100% !important;
+  }
+
   body.change-form .ozr-sticky-save {
     position: sticky;
     bottom: 0;
@@ -25,14 +69,13 @@
     font-size: 0.9rem;
     font-weight: 600;
     color: #166534;
-    max-width: 32rem;
+    max-width: 36rem;
     line-height: 1.4;
   }
   body.change-form .ozr-sticky-save__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    align-items: center;
   }
   body.change-form .ozr-sticky-save__actions input[type="submit"] {
     border-radius: 999px !important;
@@ -40,26 +83,25 @@
     padding: 10px 20px !important;
     cursor: pointer;
     border: none !important;
-  }
-  body.change-form .ozr-sticky-save__actions input.default {
     background: #5BB805 !important;
     color: #fff !important;
-    box-shadow: 0 4px 14px rgba(91, 184, 5, 0.35);
-    font-size: 1rem !important;
   }
   body.change-form .ozr-sticky-save__actions input:not(.default) {
     background: #243d3a !important;
-    color: #fff !important;
   }
   body.change-form #content-main form > .submit-row {
     position: sticky;
     bottom: 0;
     z-index: 1000;
     background: #fff !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 12px !important;
   }
-  /* Greške — jasan crveni box na vrhu */
+  body.change-form #content-main form > .submit-row:first-of-type {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    z-index: 1001;
+    border: 2px solid #5BB805 !important;
+  }
   body.change-form .ozr-error-summary {
     background: #fef2f2;
     border: 2px solid #ef4444;
@@ -73,17 +115,17 @@
     font-size: 1.05rem;
     color: #b91c1c;
   }
-  body.change-form .ozr-error-summary ul {
-    margin: 0;
-    padding-left: 1.2rem;
+  body.change-form .ozr-inlines-banner {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 1rem 0 0.5rem;
+    color: #14532d;
+    font-size: 0.95rem;
+    line-height: 1.45;
   }
-  body.change-form .ozr-error-summary li {
-    margin: 4px 0;
-  }
-  /* Fieldset s greškom ne smije ostati sklopljen */
-  body.change-form fieldset.ozr-has-errors {
-    border-color: #ef4444 !important;
-  }
+  body.change-form .ozr-inlines-banner strong { color: #166534; }
 </style>
 {% endblock %}
 
@@ -91,7 +133,7 @@
 {{ block.super }}
 {% if errors %}
 <div class="ozr-error-summary" id="ozrErrorSummary" role="alert">
-  <h2>⚠️ Nije sačuvano — ispravi greške ispod</h2>
+  <h2>⚠️ Nije sačuvano — ispravi greške</h2>
   <ul>
     {% for error in adminform.form.non_field_errors %}
     <li>{{ error }}</li>
@@ -108,29 +150,45 @@
       {% endif %}
       {% for inline_form in inline_admin_formset %}
         {% if inline_form.form.errors %}
-        <li><strong>{{ inline_admin_formset.opts.verbose_name }} #{{ forloop.counter }}:</strong>
+        <li><strong>{{ inline_admin_formset.opts.verbose_name }}:</strong>
           {% for field in inline_form.form %}
             {% if field.errors %}{{ field.label }}: {{ field.errors|striptags }}; {% endif %}
           {% endfor %}
-          {{ inline_form.form.non_field_errors|striptags }}
         </li>
         {% endif %}
       {% endfor %}
     {% endfor %}
   </ul>
-  <p style="margin:10px 0 0;font-size:0.9rem;">
-    Skrolaj do crvenih polja ili otvori sklopljene sekcije. Zatim ponovo <strong>Save</strong>.
-  </p>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block after_field_sets %}
+{{ block.super }}
+<div class="ozr-inlines-banner">
+  <strong>Početna stranica — tabele ispod:</strong>
+  ① Trust traka · ② Izdvojeni artikli · ③ Noviteti · ④ Promo kartice · ⑤ Kategorije · ⑥ Brend karuseli.
+  Skrolaj dolje da ih vidiš. Ako su prazne, koristi „Add another…”.
+</div>
+{% endblock %}
+
+{# Eksplicitno renderuj inlines — ne oslanjaj se samo na default block #}
+{% block inline_field_sets %}
+{% for inline_admin_formset in inline_admin_formsets %}
+  {% include inline_admin_formset.opts.template %}
+{% empty %}
+  <div class="ozr-error-summary">
+    <h2>Upozorenje</h2>
+    <p>Inline tabele nisu učitane. Osvježi stranicu (hard refresh). Ako se ponovi — javi developeru.</p>
+  </div>
+{% endfor %}
 {% endblock %}
 
 {% block after_related_objects %}
 {{ block.super }}
 <div class="ozr-sticky-save" role="region" aria-label="{% translate 'Save' %}">
   <p class="ozr-sticky-save__hint">
-    💾 Sačuvaj sve promjene (logo, SEO, chat, tabele noviteta/izdvojenih/brendova…).
-    Save je i na <strong>vrhu</strong> stranice.
+    💾 Sačuvaj sve (uključujući tabele ①–⑥ ispod polja). Save je i na vrhu stranice.
   </p>
   <div class="ozr-sticky-save__actions">
     {% if has_change_permission %}
@@ -145,13 +203,98 @@
 {{ block.super }}
 <script>
 (function () {
-  // Otvori sve fieldset-e koji imaju greške (collapse)
+  function showAllInlines() {
+    document.querySelectorAll(
+      'body.model-sitesettings .inline-group, body.model-sitesettings .js-inline-admin-formset'
+    ).forEach(function (el) {
+      el.classList.remove('akcija-section-hidden', 'collapsed', 'hide');
+      el.removeAttribute('hidden');
+      el.style.display = 'block';
+      el.style.visibility = 'visible';
+      el.style.height = 'auto';
+      el.style.overflow = 'visible';
+      el.style.opacity = '1';
+      // re-enable any disabled management inputs
+      el.querySelectorAll('input, select, textarea').forEach(function (inp) {
+        if (inp.name && (inp.name.indexOf('TOTAL_FORMS') !== -1 || inp.name.indexOf('INITIAL_FORMS') !== -1 || inp.name.indexOf('MAX_NUM_FORMS') !== -1 || inp.name.indexOf('MIN_NUM_FORMS') !== -1)) {
+          inp.disabled = false;
+          inp.removeAttribute('disabled');
+        }
+      });
+    });
+  }
+
+  function ensureManagementForms() {
+    var form = document.getElementById('sitesettings_form');
+    if (!form) return;
+    var prefixes = [
+      'trust_stavke',
+      'istaknuti_artikli',
+      'noviteti_artikli',
+      'promo_kartice',
+      'kategorije_na_pocetnoj',
+      'brendovi_na_pocetnoj'
+    ];
+    prefixes.forEach(function (prefix) {
+      function ensure(name, value) {
+        var full = prefix + '-' + name;
+        var el = form.querySelector('[name="' + full + '"]');
+        if (!el) {
+          el = document.createElement('input');
+          el.type = 'hidden';
+          el.name = full;
+          form.appendChild(el);
+        }
+        el.disabled = false;
+        if (!el.value && el.value !== '0') {
+          el.value = value;
+        }
+      }
+      // Ako nedostaje TOTAL_FORMS, stavi 0 da ne padne validacija (prazan formset)
+      var total = form.querySelector('[name="' + prefix + '-TOTAL_FORMS"]');
+      if (!total) {
+        // pokušaj pročitati iz DOM redova
+        var rows = form.querySelectorAll('[name^="' + prefix + '-"][name$="-id"], [name^="' + prefix + '-"][name$="-naslov"], [name^="' + prefix + '-"][name$="-artikal"]');
+        var n = 0;
+        // bolje: broj INITIAL iz postojećih id polja
+        form.querySelectorAll('input[name^="' + prefix + '-"][name$="-id"]').forEach(function () { n += 1; });
+        ensure('TOTAL_FORMS', String(n));
+        ensure('INITIAL_FORMS', String(n));
+        ensure('MIN_NUM_FORMS', '0');
+        ensure('MAX_NUM_FORMS', '1000');
+      } else {
+        total.disabled = false;
+        var init = form.querySelector('[name="' + prefix + '-INITIAL_FORMS"]');
+        if (init) init.disabled = false;
+        var minf = form.querySelector('[name="' + prefix + '-MIN_NUM_FORMS"]');
+        if (minf) minf.disabled = false;
+        var maxf = form.querySelector('[name="' + prefix + '-MAX_NUM_FORMS"]');
+        if (maxf) maxf.disabled = false;
+      }
+    });
+  }
+
+  showAllInlines();
+  ensureManagementForms();
+  [100, 400, 1000, 2000].forEach(function (ms) {
+    setTimeout(function () {
+      showAllInlines();
+      ensureManagementForms();
+    }, ms);
+  });
+
+  var form = document.getElementById('sitesettings_form');
+  if (form) {
+    form.addEventListener('submit', function () {
+      showAllInlines();
+      ensureManagementForms();
+    }, true);
+  }
+
+  // Otvori fieldset-e s greškama
   document.querySelectorAll('fieldset').forEach(function (fs) {
     if (fs.querySelector('.errorlist, .errors')) {
       fs.classList.remove('collapsed');
-      fs.classList.add('ozr-has-errors');
-      var h2 = fs.querySelector('h2');
-      if (h2) h2.classList.remove('collapse-toggle');
     }
   });
   var firstErr = document.querySelector('.errorlist, .errors, .ozr-error-summary');

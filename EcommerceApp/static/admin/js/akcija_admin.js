@@ -185,7 +185,16 @@
     }
 
     function formRoot() {
-        return $('#akcija_form, form#akcija_form, #content-main form').first();
+        // SAMO forma Akcije — nikad SiteSettings / drugi admin (inače sakrije trust/izdvojene tabele)
+        var $a = $('#akcija_form, form#akcija_form');
+        if ($a.length) {
+            return $a.first();
+        }
+        // Fallback samo ako smo na change stranici modela Akcija
+        if (document.body && /model-akcija/.test(document.body.className || '')) {
+            return $('#content-main form').first();
+        }
+        return $(); // prazno — ne diraj druge admin forme
     }
 
     function allFormRows() {

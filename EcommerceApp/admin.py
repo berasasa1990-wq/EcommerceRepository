@@ -253,10 +253,29 @@ class SiteSettingsAdminForm(forms.ModelForm):
                 self.cleaned_data['korpa_exit_popup_artikal'] = None
 
 
-class HomeTrustItemInline(admin.TabularInline):
+class _HomeInlineMixin:
+    """Uvijek prikaži tabele na Podešavanjima (ne sakrivaj zbog permisija/templatea)."""
+
+    extra = 1  # bar jedan prazan red da se sekcija vidi
+    show_change_link = False
+    can_delete = True
+
+    def has_add_permission(self, request, obj=None):
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+    def has_view_permission(self, request, obj=None):
+        return True
+
+
+class HomeTrustItemInline(_HomeInlineMixin, admin.TabularInline):
     model = HomeTrustItem
     fk_name = 'postavke'
-    extra = 0
     max_num = 6
     fields = ('redoslijed', 'naslov', 'podnaslov', 'ikona', 'aktivan')
     ordering = ('redoslijed', 'id')
@@ -266,10 +285,9 @@ class HomeTrustItemInline(admin.TabularInline):
     )
 
 
-class HomeFeaturedProductInline(admin.TabularInline):
+class HomeFeaturedProductInline(_HomeInlineMixin, admin.TabularInline):
     model = HomeFeaturedProduct
     fk_name = 'postavke'
-    extra = 0
     max_num = 10
     autocomplete_fields = ('artikal',)
     fields = ('redoslijed', 'artikal', 'aktivan')
@@ -281,16 +299,17 @@ class HomeFeaturedProductInline(admin.TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        formset.form.base_fields['artikal'].help_text = (
-            'Pretraži postojeći artikal. Redoslijed = red u karuselu na početnoj.'
-        )
+        if 'artikal' in formset.form.base_fields:
+            formset.form.base_fields['artikal'].help_text = (
+                'Pretraži postojeći artikal. Redoslijed = red u karuselu na početnoj.'
+            )
+            formset.form.base_fields['artikal'].required = False
         return formset
 
 
-class HomeNovoProductInline(admin.TabularInline):
+class HomeNovoProductInline(_HomeInlineMixin, admin.TabularInline):
     model = HomeNovoProduct
     fk_name = 'postavke'
-    extra = 0
     max_num = 10
     autocomplete_fields = ('artikal',)
     fields = ('redoslijed', 'artikal', 'aktivan')
@@ -302,16 +321,17 @@ class HomeNovoProductInline(admin.TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        formset.form.base_fields['artikal'].help_text = (
-            'Pretraži artikal. Alternativa: označi „Noviteti” na samom artiklu.'
-        )
+        if 'artikal' in formset.form.base_fields:
+            formset.form.base_fields['artikal'].help_text = (
+                'Pretraži artikal. Alternativa: označi „Noviteti” na samom artiklu.'
+            )
+            formset.form.base_fields['artikal'].required = False
         return formset
 
 
-class HomePromoCardInline(admin.StackedInline):
+class HomePromoCardInline(_HomeInlineMixin, admin.StackedInline):
     model = HomePromoCard
     fk_name = 'postavke'
-    extra = 0
     max_num = 8
     fields = (
         'redoslijed', 'aktivan',
@@ -336,11 +356,17 @@ class HomePromoCardInline(admin.StackedInline):
             formfield.widget.attrs.setdefault('style', 'width: 4rem; height: 2rem; padding: 0;')
         return formfield
 
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        if 'naslov' in formset.form.base_fields:
+            # prazan extra red ne smije padati validaciju
+            formset.form.base_fields['naslov'].required = False
+        return formset
 
-class HomeCategoryShowcaseInline(admin.TabularInline):
+
+class HomeCategoryShowcaseInline(_HomeInlineMixin, admin.TabularInline):
     model = HomeCategoryShowcase
     fk_name = 'postavke'
-    extra = 0
     autocomplete_fields = ('kategorija',)
     fields = ('redoslijed', 'kategorija', 'naslov', 'aktivan')
     ordering = ('redoslijed', 'id')
@@ -349,17 +375,19 @@ class HomeCategoryShowcaseInline(admin.TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        formset.form.base_fields['kategorija'].help_text = (
-            'Kategorija čiji se artikli prikazuju.'
-        )
-        formset.form.base_fields['naslov'].help_text = 'Prazno = naziv kategorije.'
+        if 'kategorija' in formset.form.base_fields:
+            formset.form.base_fields['kategorija'].help_text = (
+                'Kategorija čiji se artikli prikazuju.'
+            )
+            formset.form.base_fields['kategorija'].required = False
+        if 'naslov' in formset.form.base_fields:
+            formset.form.base_fields['naslov'].help_text = 'Prazno = naziv kategorije.'
         return formset
 
 
-class HomeBrandShowcaseInline(admin.TabularInline):
+class HomeBrandShowcaseInline(_HomeInlineMixin, admin.TabularInline):
     model = HomeBrandShowcase
     fk_name = 'postavke'
-    extra = 0
     autocomplete_fields = ('brend',)
     fields = ('redoslijed', 'brend', 'naslov', 'aktivan')
     ordering = ('redoslijed', 'id')
@@ -368,8 +396,11 @@ class HomeBrandShowcaseInline(admin.TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        formset.form.base_fields['brend'].help_text = 'Brend za karusel artikala.'
-        formset.form.base_fields['naslov'].help_text = 'Prazno = naziv brenda.'
+        if 'brend' in formset.form.base_fields:
+            formset.form.base_fields['brend'].help_text = 'Brend za karusel artikala.'
+            formset.form.base_fields['brend'].required = False
+        if 'naslov' in formset.form.base_fields:
+            formset.form.base_fields['naslov'].help_text = 'Prazno = naziv brenda.'
         return formset
 
 
@@ -392,6 +423,15 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         HomeCategoryShowcaseInline,
         HomeBrandShowcaseInline,
     ]
+
+    class Media:
+        css = {
+            'all': ('admin/css/ozr_admin.css',),
+        }
+
+    def get_inline_instances(self, request, obj=None):
+        # Uvijek vrati svih 6 tabela (ne filtriraj)
+        return super().get_inline_instances(request, obj)
     fieldsets = (
         ('① Logo i izgled sajta', {
             'fields': (
