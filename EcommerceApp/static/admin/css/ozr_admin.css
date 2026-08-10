@@ -170,7 +170,8 @@ div.breadcrumbs a {
     border: 1px solid var(--ozr-border) !important;
     border-radius: var(--ozr-radius) !important;
     box-shadow: var(--ozr-shadow) !important;
-    overflow: hidden;
+    /* overflow:hidden rezao je tabele na Podešavanjima — ostavi visible */
+    overflow: visible;
 }
 
 .module h2,

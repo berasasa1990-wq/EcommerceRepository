@@ -431,7 +431,13 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     def get_inline_instances(self, request, obj=None):
         # Uvijek vrati svih 6 tabela (ne filtriraj)
-        return super().get_inline_instances(request, obj)
+        instances = super().get_inline_instances(request, obj)
+        # Ako bi nešto vratilo prazno, forsira rekonstrukciju
+        if not instances and self.inlines:
+            instances = [
+                inline(self.model, self.admin_site) for inline in self.inlines
+            ]
+        return instances
 
     def get_formset_kwargs(self, request, obj, inline, prefix):
         """
