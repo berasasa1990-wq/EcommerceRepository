@@ -51,18 +51,12 @@
                 {% if slide.subtitle %}
                 <p class="slide-subtitle">{{ slide.subtitle }}</p>
                 {% endif %}
-                {% if slide.actions and not slide.url %}
+                {% if slide.actions %}
                 <div class="slide-actions">
                     {% for action in slide.actions %}
-                    <a href="{{ action.url }}" class="btn btn-banner">
+                    <a href="{{ action.url|default:'#' }}" class="btn btn-banner"{% if slide.url and action.url == slide.url %} tabindex="-1"{% endif %}>
                         {{ action.label }}
                     </a>
-                    {% endfor %}
-                </div>
-                {% elif slide.actions and slide.url %}
-                <div class="slide-actions">
-                    {% for action in slide.actions %}
-                    <span class="btn btn-banner">{{ action.label }}</span>
                     {% endfor %}
                 </div>
                 {% endif %}

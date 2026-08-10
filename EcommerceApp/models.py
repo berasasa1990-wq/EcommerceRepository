@@ -1371,10 +1371,44 @@ class Banner(models.Model):
     def get_link_href(self):
         href = None
         if self.link:
-            if self.link.startswith(('http://', 'https://', '/')):
-                href = self.link
+            raw = (self.link or '').strip()
+            if raw.startswith(('http://', 'https://')):
+                # Apsolutni URL: ako je naš domen / localhost → koristi samo putanju
+                # (inače svi baneri s 127.0.0.1 ili starim domenom vode krivo)
+                from urllib.parse import urlparse
+                from django.conf import settings as dj_settings
+                parsed = urlparse(raw)
+                host = (parsed.hostname or '').lower()
+                site_host = ''
+                try:
+                    site_host = (urlparse(getattr(dj_settings, 'SITE_URL', '') or '').hostname or '').lower()
+                except Exception:
+                    site_host = ''
+                local_hosts = {
+                    'localhost', '127.0.0.1', '0.0.0.0',
+                    'www.opremazaribolov.ba', 'opremazaribolov.ba',
+                }
+                if site_host:
+                    local_hosts.add(site_host)
+                    if site_host.startswith('www.'):
+                        local_hosts.add(site_host[4:])
+                    else:
+                        local_hosts.add(f'www.{site_host}')
+                if host in local_hosts or host.endswith('.onrender.com'):
+                    path = parsed.path or '/'
+                    if parsed.query:
+                        path = f'{path}?{parsed.query}'
+                    if parsed.fragment:
+                        path = f'{path}#{parsed.fragment}'
+                    href = path
+                else:
+                    href = raw
+            elif raw.startswith('/'):
+                href = raw
+            elif raw.startswith('?'):
+                href = f'/{raw}'
             else:
-                href = f'/{self.link.strip("/")}/'
+                href = f'/{raw.strip("/")}/'
         elif self.kategorija_id:
             href = self.kategorija.get_absolute_url()
         if not href:

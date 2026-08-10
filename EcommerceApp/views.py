@@ -1824,11 +1824,45 @@ def _base_context():
 
 
 def _banner_secondary_href(link):
+    """Isti normalizator putanje kao Banner.get_link_href (bez price filtera)."""
     if not link:
         return None
-    if link.startswith(('http://', 'https://', '/')):
-        return link
-    return f'/{link.strip("/")}/'
+    raw = (link or '').strip()
+    if not raw:
+        return None
+    if raw.startswith(('http://', 'https://')):
+        from urllib.parse import urlparse
+        from django.conf import settings as dj_settings
+        parsed = urlparse(raw)
+        host = (parsed.hostname or '').lower()
+        site_host = ''
+        try:
+            site_host = (urlparse(getattr(dj_settings, 'SITE_URL', '') or '').hostname or '').lower()
+        except Exception:
+            pass
+        local_hosts = {
+            'localhost', '127.0.0.1', '0.0.0.0',
+            'www.opremazaribolov.ba', 'opremazaribolov.ba',
+        }
+        if site_host:
+            local_hosts.add(site_host)
+            if site_host.startswith('www.'):
+                local_hosts.add(site_host[4:])
+            else:
+                local_hosts.add(f'www.{site_host}')
+        if host in local_hosts or host.endswith('.onrender.com'):
+            path = parsed.path or '/'
+            if parsed.query:
+                path = f'{path}?{parsed.query}'
+            if parsed.fragment:
+                path = f'{path}#{parsed.fragment}'
+            return path
+        return raw
+    if raw.startswith('/'):
+        return raw
+    if raw.startswith('?'):
+        return f'/{raw}'
+    return f'/{raw.strip("/")}/'
 
 
 def _banner_actions(banner):

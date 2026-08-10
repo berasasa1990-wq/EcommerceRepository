@@ -1267,10 +1267,15 @@ main {
     inset: 0;
     opacity: 0;
     transition: opacity 0.8s ease;
+    /* Neaktivni slideovi su ispod i NE smiju hvati klik — inače svi linkovi vode na isti banner */
+    pointer-events: none;
+    z-index: 0;
 }
 
 .carousel-slide.active {
     opacity: 1;
+    pointer-events: auto;
+    z-index: 2;
 }
 
 .carousel-slide--has-content::after {
@@ -1343,7 +1348,8 @@ main {
     left: 48px;
     color: var(--white);
     max-width: 500px;
-    z-index: 2;
+    z-index: 3;
+    pointer-events: auto;
 }
 
 .slide-content h2 {

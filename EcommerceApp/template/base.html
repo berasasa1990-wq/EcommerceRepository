@@ -109,8 +109,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260810pageSeo" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260810pageSeo">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260810bannerLink" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260810bannerLink">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
