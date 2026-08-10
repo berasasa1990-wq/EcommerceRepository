@@ -1,0 +1,83 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  /* Ljepljiva Save traka — uvijek vidljiva na dugim Podešavanjima */
+  body.change-form .ozr-sticky-save {
+    position: sticky;
+    bottom: 0;
+    z-index: 1100;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin: 1.25rem 0 0.5rem;
+    padding: 14px 18px;
+    background: #fff;
+    border: 2px solid #5BB805;
+    border-radius: 12px;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(91, 184, 5, 0.18);
+  }
+  body.change-form .ozr-sticky-save__hint {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #166534;
+    max-width: 32rem;
+    line-height: 1.4;
+  }
+  body.change-form .ozr-sticky-save__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  body.change-form .ozr-sticky-save__actions input[type="submit"] {
+    border-radius: 999px !important;
+    font-weight: 700 !important;
+    padding: 10px 20px !important;
+    cursor: pointer;
+    border: none !important;
+  }
+  body.change-form .ozr-sticky-save__actions input.default {
+    background: #5BB805 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 14px rgba(91, 184, 5, 0.35);
+    font-size: 1rem !important;
+  }
+  body.change-form .ozr-sticky-save__actions input:not(.default) {
+    background: #243d3a !important;
+    color: #fff !important;
+  }
+  /* Default Django submit-row na dnu — sticky backup */
+  body.change-form #content-main form > .submit-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    box-shadow: 0 -2px 16px rgba(0,0,0,.06) !important;
+  }
+</style>
+{% endblock %}
+
+{% block after_related_objects %}
+{{ block.super }}
+{# Unutar <form> — normalni submit dugmići, ljepljivi na dnu ekrana #}
+<div class="ozr-sticky-save" role="region" aria-label="{% translate 'Save' %}">
+  <p class="ozr-sticky-save__hint">
+    💾 Sačuvaj sve promjene (logo, SEO, chat, tabele…).
+    Dugme <strong>Save</strong> je i na <strong>vrhu</strong> stranice.
+  </p>
+  <div class="ozr-sticky-save__actions">
+    {% if has_change_permission %}
+    <input type="submit" value="{% translate 'Save' %}" class="default" name="_save">
+    <input type="submit" value="{% translate 'Save and continue editing' %}" name="_continue">
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -303,6 +303,9 @@ class HomeBrandShowcaseInline(admin.TabularInline):
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
+    # Duga forma (inlines + SEO) — Save mora biti lako dostupan
+    save_on_top = True
+    change_form_template = 'admin/EcommerceApp/sitesettings/change_form.html'
     readonly_fields = (
         'pregled_loga', 'pregled_loga_glavnog_sajta', 'pregled_favicona',
         'pregled_badgea', 'pregled_chat_avatara',
@@ -542,6 +545,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(PageSEO)
 class PageSEOAdmin(admin.ModelAdmin):
+    save_on_top = True
     list_display = (
         'page_key', 'seo_title_kratko', 'h1_naslov',
         'ima_meta', 'ima_tekst_iznad', 'ima_tekst_ispod', 'azuriran',

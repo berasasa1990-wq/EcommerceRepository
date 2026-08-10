@@ -424,13 +424,27 @@ fieldset.module {
     background: var(--ozr-green) !important;
 }
 
-/* Submit row sticky-ish polish */
+/* Submit row — uvijek vidljiv na dugim formama (Podešavanja, SEO…) */
 .submit-row {
     background: #fff !important;
     border: 1px solid var(--ozr-border) !important;
     border-radius: var(--ozr-radius) !important;
     box-shadow: var(--ozr-shadow) !important;
     padding: 14px 16px !important;
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
+}
+
+/* Gornji Save (save_on_top) — lako uočljiv */
+#content-main form > .submit-row:first-of-type {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    z-index: 1001;
+    margin-bottom: 1rem;
+    border: 2px solid var(--ozr-green) !important;
+    box-shadow: 0 4px 16px rgba(91, 184, 5, 0.2) !important;
 }
 
 /* Related widget links */
