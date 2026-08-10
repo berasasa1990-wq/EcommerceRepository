@@ -1,8 +1,17 @@
+from django.core.cache import cache
+
 from .models import Category, Product
+
+_CACHE_KEY = 'category_ids_with_products_v1'
+_CACHE_TTL = 90  # sekundi — meni se ne mijenja na svaki request
 
 
 def get_category_ids_with_products():
     """Kategorije koje imaju barem jedan aktivan artikal na stanju (u sebi ili podstablu)."""
+    cached = cache.get(_CACHE_KEY)
+    if cached is not None:
+        return cached
+
     product_category_ids = Product.objects.filter(
         aktivan=True,
         na_stanju=True,
@@ -19,7 +28,14 @@ def get_category_ids_with_products():
         while current:
             populated.add(current)
             current = parent_map.get(current)
+
+    cache.set(_CACHE_KEY, populated, _CACHE_TTL)
     return populated
+
+
+def invalidate_category_product_cache():
+    cache.delete(_CACHE_KEY)
+    cache.delete('nav_categories_tree_v1')
 
 
 def filter_categories_with_products(queryset, populated_ids=None):

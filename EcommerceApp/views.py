@@ -509,12 +509,30 @@ def _filter_banners_for_empty_categories(banners, populated_ids=None):
 
 
 def _showcase_brands():
-    return Brand.objects.filter(
-        slika__isnull=False,
-        artikli__aktivan=True,
-    ).filter(
-        Q(artikli__na_stanju=True) | Q(artikli__varijacije__na_stanju=True),
-    ).exclude(slika='').distinct().order_by('naziv')
+    """Brendovi s logom + artiklima — cache da DISTINCT ne usporava svaki home load."""
+    from django.core.cache import cache
+
+    cache_key = 'showcase_brands_v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # Brži put: brendovi koji imaju logo, pa filter po postojanju artikla
+    brand_ids = (
+        Product.objects.filter(aktivan=True)
+        .filter(Q(na_stanju=True) | Q(varijacije__na_stanju=True))
+        .exclude(brend_id__isnull=True)
+        .values_list('brend_id', flat=True)
+        .distinct()
+    )
+    brands = list(
+        Brand.objects.filter(id__in=brand_ids)
+        .exclude(slika='')
+        .exclude(slika__isnull=True)
+        .order_by('naziv')
+    )
+    cache.set(cache_key, brands, 90)
+    return brands
 
 
 # BH/HR dijakritici → ASCII (štap ≈ stap)

@@ -712,6 +712,16 @@ class SiteSettings(models.Model):
         if self.chat_avatar_slika:
             apply_image_processing(self, 'chat_avatar_slika', post_process=process_chat_avatar)
         super().save(*args, **kwargs)
+        try:
+            from django.core.cache import cache
+            cache.delete('site_settings_singleton_v1')
+            cache.delete('nav_categories_tree_v1')
+            cache.delete('category_ids_with_products_v1')
+            cache.delete('seo_org_json_ld_v1')
+            cache.delete('seo_web_json_ld_v1')
+            cache.delete('showcase_brands_v1')
+        except Exception:
+            pass
 
     def format_povezani_podnaslov(self, kategorija_naziv=''):
         if not self.podnaslov_povezani:
@@ -723,7 +733,15 @@ class SiteSettings(models.Model):
 
     @classmethod
     def load(cls):
+        """Singleton postavki — cache da se ne radi 5–15× SELECT po requestu."""
+        from django.core.cache import cache
+
+        cache_key = 'site_settings_singleton_v1'
+        obj = cache.get(cache_key)
+        if obj is not None:
+            return obj
         obj, _ = cls.objects.get_or_create(pk=1)
+        cache.set(cache_key, obj, 60)
         return obj
 
     @property

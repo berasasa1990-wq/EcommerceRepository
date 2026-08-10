@@ -61,6 +61,16 @@ SECRET_KEY = _env('SECRET_KEY', 'django-insecure-_73#1@hjsxhlmfx4+&85s10a(cyb9i*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
+# Brzi in-memory cache (meni, SiteSettings, brendovi) — smanjuje DB load po requestu
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'ozb-site-cache',
+        'TIMEOUT': 120,
+        'OPTIONS': {'MAX_ENTRIES': 2000},
+    }
+}
+
 # ALLOWED_HOSTS: env + production domains + Render hostname
 # (DisallowedHost / “Invalid HTTP_HOST” ako custom domain nije na listi)
 def _normalize_allowed_host(h: str) -> str:

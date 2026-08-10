@@ -54,7 +54,15 @@ def meta_pixel(request):
     }
 
 
-def nav_categories(request):
+def _build_nav_categories():
+    """Meniji kategorija — skupo, pa se cache-ira."""
+    from django.core.cache import cache
+
+    cache_key = 'nav_categories_tree_v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     populated_category_ids = get_category_ids_with_products()
 
     sub_subcategories = filter_categories_with_products(
@@ -69,39 +77,59 @@ def nav_categories(request):
         Prefetch('podkategorije', queryset=sub_subcategories),
     )
 
-    categories = filter_categories_with_products(
-        Category.objects.filter(
-            roditelj__isnull=True, aktivan=True, prikazi_u_meniju=True,
-        ),
-        populated_category_ids,
-    ).order_by('redoslijed', 'naziv').prefetch_related(
-        Prefetch('podkategorije', queryset=subcategories),
+    categories = list(
+        filter_categories_with_products(
+            Category.objects.filter(
+                roditelj__isnull=True, aktivan=True, prikazi_u_meniju=True,
+            ),
+            populated_category_ids,
+        ).order_by('redoslijed', 'naziv').prefetch_related(
+            Prefetch('podkategorije', queryset=subcategories),
+        )
     )
+    # Evaluiraj queryset sada (dok je DB topao) pa stavi u cache
+    for cat in categories:
+        list(cat.podkategorije.all())
+        for sub in cat.podkategorije.all():
+            list(sub.podkategorije.all())
+
+    cache.set(cache_key, categories, 90)
+    return categories
+
+
+def nav_categories(request):
+    # Jeftin path za API / static-ish — manje posla
+    path = getattr(request, 'path', '') or ''
+    is_api = path.startswith('/api/') or path.startswith('/uzivo/')
+
+    categories = [] if is_api else _build_nav_categories()
 
     cart = Cart(request)
-    popup_queue = []
-    for akcija in Akcija.objects.filter(
-        aktivan=True,
-        tip__in=Akcija.POPUP_TIPS,
-    ).select_related(
-        'artikal', 'artikal__brend', 'kategorija',
-    ).prefetch_related(
-        'bundle_artikli',
-        'bundle_lines__product',
-        'qty_tiers',
-    ).order_by('redoslijed', '-id'):
-        if akcija.je_popup() and akcija.prikazi_korisniku(request.user, request=request):
-            popup_queue.append(akcija)
 
-    popup_queue.sort(
-        key=lambda a: (a.popup_delay_seconds or 0, a.redoslijed, -a.id),
-    )
-    active_akcija = popup_queue[0] if popup_queue else None
+    popup_queue = []
+    active_akcija = None
+    if not is_api:
+        for akcija in Akcija.objects.filter(
+            aktivan=True,
+            tip__in=Akcija.POPUP_TIPS,
+        ).select_related(
+            'artikal', 'artikal__brend', 'kategorija',
+        ).prefetch_related(
+            'bundle_artikli',
+            'bundle_lines__product',
+            'qty_tiers',
+        ).order_by('redoslijed', '-id')[:20]:
+            if akcija.je_popup() and akcija.prikazi_korisniku(request.user, request=request):
+                popup_queue.append(akcija)
+
+        popup_queue.sort(
+            key=lambda a: (a.popup_delay_seconds or 0, a.redoslijed, -a.id),
+        )
+        active_akcija = popup_queue[0] if popup_queue else None
 
     try:
         site_settings = SiteSettings.load()
     except Exception:
-        # Deploy/migrate lag ili privremeni DB error — ne ruši cijeli sajt
         site_settings = SiteSettings()
 
     contact_phone = (getattr(site_settings, 'kontakt_telefon', None) or settings.STORE_PHONE or '').strip()
@@ -137,47 +165,69 @@ def nav_categories(request):
         else ''
     )
 
-    # Exit s korpom: podsjetnik da završi narudžbu (prioritet nad product deal popupa)
-    cart_abandon_exit = get_cart_abandon_exit_context(request, cart)
-    cart_exit_popup = (
-        None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
-    )
+    cart_abandon_exit = None
+    cart_exit_popup = None
+    dwell_flash_by_id = {}
+    dwell_catalog_by_id = {}
+    dwell_ui = {
+        'active': False,
+        'tag_text': 'Ograničena ponuda',
+        'timer_label': 'Ističe za',
+        'catalog_label': '',
+        'flash_seconds': 120,
+        'sale_pulse': True,
+        'css_vars': '',
+    }
+    active_upsell = None
+    cart_recovery = None
+    live_offer = None
+    online_gift = None
+    gift_label = None
+    social_proof = None
 
-    # AI dwell: katalog sniženja + sesijski flash + UI (tekstovi/boje iz admina)
-    try:
-        from .live_visitor_offer import (
-            get_all_active_dwell_flashes,
-            get_dwell_catalog_map,
-            get_dwell_ui,
+    if not is_api:
+        cart_abandon_exit = get_cart_abandon_exit_context(request, cart)
+        cart_exit_popup = (
+            None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
         )
-        dwell_flash_by_id = get_all_active_dwell_flashes(request)
-        dwell_catalog_by_id = get_dwell_catalog_map(request)
-        dwell_ui = get_dwell_ui()
-    except Exception:
-        dwell_flash_by_id = {}
-        dwell_catalog_by_id = {}
-        dwell_ui = {
-            'active': False,
-            'tag_text': 'Ograničena ponuda',
-            'timer_label': 'Ističe za',
-            'catalog_label': '',
-            'flash_seconds': 120,
-            'sale_pulse': True,
-            'css_vars': '',
-        }
+        try:
+            from .live_visitor_offer import (
+                get_all_active_dwell_flashes,
+                get_dwell_catalog_map,
+                get_dwell_ui,
+            )
+            dwell_flash_by_id = get_all_active_dwell_flashes(request)
+            dwell_catalog_by_id = get_dwell_catalog_map(request)
+            dwell_ui = get_dwell_ui()
+        except Exception:
+            pass
+        active_upsell = get_active_upsell_offer(request)
+        cart_recovery = get_active_cart_recovery_alert(request, cart)
+        live_offer = build_live_visitor_offer_context(request)
+        online_gift = build_online_gift_context(request)
+        gift_label = active_reward_label(request)
+        social_proof = build_social_proof_context(request)
 
-    # Edit mode uklonjen iz UI — uvijek isključen
     staff_edit_mode = False
 
-    # SEO JSON-LD (Organization + WebSite/SearchAction) — globalno
+    # SEO JSON-LD — cache po SiteSettings id (isti za sve stranice)
     organization_json_ld = ''
     website_json_ld = ''
-    try:
-        from .utils.seo import json_ld, organization_json_ld as _org_ld, website_json_ld as _web_ld
-        organization_json_ld = json_ld(_org_ld(site_settings))
-        website_json_ld = json_ld(_web_ld(site_settings))
-    except Exception:
-        pass
+    if not is_api:
+        try:
+            from django.core.cache import cache
+            from .utils.seo import json_ld, organization_json_ld as _org_ld, website_json_ld as _web_ld
+            org_key = 'seo_org_json_ld_v1'
+            web_key = 'seo_web_json_ld_v1'
+            organization_json_ld = cache.get(org_key)
+            website_json_ld = cache.get(web_key)
+            if organization_json_ld is None or website_json_ld is None:
+                organization_json_ld = json_ld(_org_ld(site_settings))
+                website_json_ld = json_ld(_web_ld(site_settings))
+                cache.set(org_key, organization_json_ld, 120)
+                cache.set(web_key, website_json_ld, 120)
+        except Exception:
+            pass
 
     return {
         'site_url': settings.SITE_URL,
@@ -187,13 +237,13 @@ def nav_categories(request):
         'active_akcija': active_akcija,
         'active_popup': active_akcija,
         'popup_queue': popup_queue,
-        'active_upsell_offer': get_active_upsell_offer(request),
-        'cart_recovery_alert': get_active_cart_recovery_alert(request, cart),
+        'active_upsell_offer': active_upsell,
+        'cart_recovery_alert': cart_recovery,
         'cart_abandon_exit': cart_abandon_exit,
         'cart_exit_popup': cart_exit_popup,
-        'live_visitor_offer': build_live_visitor_offer_context(request),
-        'online_gift': build_online_gift_context(request),
-        'online_gift_reward_label': active_reward_label(request),
+        'live_visitor_offer': live_offer,
+        'online_gift': online_gift,
+        'online_gift_reward_label': gift_label,
         'search_query': request.GET.get('q', '').strip(),
         'contact_phone': contact_phone,
         'contact_phone_digits': _phone_digits(contact_phone),
@@ -201,7 +251,7 @@ def nav_categories(request):
         'contact_viber_url': contact_viber_url,
         'contact_messenger_url': contact_messenger_url,
         'theme_ui': theme_ui,
-        'social_proof': build_social_proof_context(request),
+        'social_proof': social_proof,
         'dwell_flash_by_id': dwell_flash_by_id,
         'dwell_catalog_by_id': dwell_catalog_by_id,
         'dwell_ui': dwell_ui,
