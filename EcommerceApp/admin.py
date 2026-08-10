@@ -432,6 +432,85 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     def get_inline_instances(self, request, obj=None):
         # Uvijek vrati svih 6 tabela (ne filtriraj)
         return super().get_inline_instances(request, obj)
+
+    def get_formset_kwargs(self, request, obj, inline, prefix):
+        """
+        Ako browser ne pošalje TOTAL_FORMS (tabele nisu u HTML-u / JS ih skine),
+        popuni POST iz baze — Save prođe i NE briše trust/promo/izdvojene.
+        """
+        kwargs = super().get_formset_kwargs(request, obj, inline, prefix)
+        if request.method != 'POST' or obj is None:
+            return kwargs
+        data = kwargs.get('data')
+        if data is None:
+            return kwargs
+        total_key = f'{prefix}-TOTAL_FORMS'
+        if total_key in data:
+            return kwargs
+        # Mutable copy
+        data = data.copy()
+        try:
+            self._inject_inline_management_from_db(data, request, obj, inline, prefix)
+            kwargs['data'] = data
+        except Exception:
+            logger.exception(
+                'SiteSettings: nije uspjelo injektovanje management forme za %s',
+                prefix,
+            )
+        return kwargs
+
+    def _inject_inline_management_from_db(self, data, request, obj, inline, prefix):
+        """Popuni TOTAL/INITIAL + polja postojećih redova iz baze."""
+        FormSet = inline.get_formset(request, obj)
+        fs = FormSet(
+            instance=obj,
+            prefix=prefix,
+            queryset=inline.get_queryset(request),
+        )
+        n = fs.initial_form_count()
+        data[f'{prefix}-TOTAL_FORMS'] = str(n)
+        data[f'{prefix}-INITIAL_FORMS'] = str(n)
+        data[f'{prefix}-MIN_NUM_FORMS'] = '0'
+        max_num = fs.max_num
+        data[f'{prefix}-MAX_NUM_FORMS'] = str(max_num if max_num is not None else 1000)
+
+        fk_name = getattr(fs, 'fk', None)
+        fk_name = fk_name.name if fk_name is not None else 'postavke'
+
+        for i, form in enumerate(fs.initial_forms):
+            inst = form.instance
+            if not inst or not inst.pk:
+                continue
+            data[f'{prefix}-{i}-id'] = str(inst.pk)
+            data[f'{prefix}-{i}-{fk_name}'] = str(obj.pk)
+            for name, field in form.fields.items():
+                key = f'{prefix}-{i}-{name}'
+                # FileField: ne diraj — ModelForm zadrži postojeću sliku
+                if isinstance(field, forms.FileField):
+                    continue
+                if isinstance(field, forms.BooleanField):
+                    if getattr(inst, name, False):
+                        data[key] = 'on'
+                    continue
+                val = getattr(inst, name, None)
+                if val is None:
+                    data[key] = ''
+                elif hasattr(val, 'pk'):
+                    data[key] = str(val.pk)
+                else:
+                    data[key] = str(val)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        # Osiguraj mutable POST prije formseta (QueryDict copy)
+        if request.method == 'POST':
+            try:
+                request.POST = request.POST.copy()
+            except Exception:
+                pass
+        return super().changeform_view(
+            request, object_id=object_id, form_url=form_url, extra_context=extra_context,
+        )
+
     fieldsets = (
         ('① Logo i izgled sajta', {
             'fields': (
