@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block page_title %}
-<title>{{ seo_title }} — opremazaribolov.ba</title>
+<title>{{ seo_title }}</title>
 {% endblock %}
 
 {% block meta_description %}
@@ -9,26 +9,12 @@
 {% endblock %}
 
 {% block structured_data %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Početna",
-      "item": "{{ site_url }}/"
-    },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "name": "{{ category.naziv|escapejs }}",
-      "item": "{{ site_url }}{{ category.get_absolute_url }}"
-    }
-  ]
-}
-</script>
+{% if collection_json_ld %}
+<script type="application/ld+json">{{ collection_json_ld|safe }}</script>
+{% endif %}
+{% if breadcrumb_json_ld %}
+<script type="application/ld+json">{{ breadcrumb_json_ld|safe }}</script>
+{% endif %}
 {% endblock %}
 
 {% block content %}

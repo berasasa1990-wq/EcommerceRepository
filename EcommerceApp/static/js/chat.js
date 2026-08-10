@@ -346,11 +346,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setBadge(el, count) {
         if (!el) return;
-        if (count > 0) {
-            el.textContent = count > 9 ? '9+' : String(count);
+        const n = Number(count) || 0;
+        const launcher = el === staffBadge ? staffBtn : (el === customerBadge ? customerBtn : null);
+        if (n > 0) {
+            el.textContent = n > 9 ? '9+' : String(n);
             el.hidden = false;
+            el.classList.add('is-pulse');
+            el.setAttribute('aria-label', n === 1 ? '1 nepročitana poruka' : `${n} nepročitanih poruka`);
+            launcher?.classList.add('has-unread');
         } else {
             el.hidden = true;
+            el.classList.remove('is-pulse');
+            el.removeAttribute('aria-label');
+            launcher?.classList.remove('has-unread');
         }
     }
 
@@ -370,10 +378,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showClosedNote() {
+        // Registrovan korisnik: istorija ostaje, može i dalje pisati (server reopen)
+        if (config.isAuthenticated) {
+            conversationClosed = false;
+            if (customerForm) {
+                customerForm.querySelector('textarea')?.removeAttribute('disabled');
+                customerForm.querySelector('button')?.removeAttribute('disabled');
+            }
+            return;
+        }
         if (!customerMessages || customerMessages.querySelector('.site-chat-closed-note')) return;
         const note = document.createElement('div');
         note.className = 'site-chat-closed-note';
-        note.textContent = 'Chat je zatvoren jer ste napustili sajt. Osvežite stranicu za novi razgovor.';
+        note.textContent = 'Chat je zatvoren. Osvežite stranicu za novi razgovor.';
         customerMessages.appendChild(note);
         if (customerForm) {
             customerForm.querySelector('textarea')?.setAttribute('disabled', 'disabled');
@@ -503,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await apiFetch('/api/chat/badge/');
                 setBadge(customerBadge, data.customer_unread_count);
             } catch (e) { /* ignore */ }
-        }, 5000);
+        }, config.isAuthenticated ? 3500 : 5000);
     }
     function stopMinimizedCustomerPolling() {
         clearInterval(customerMinimizedPollTimer);
@@ -1037,20 +1054,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function pollCustomerUnread() {
-        if (!config.chatEnabled || customerOpen || !customerChatRevealed) return;
+        if (!config.chatEnabled || customerOpen) return;
+        // Badge i kad ikona još nije “reveal” (registrovan s istorijom)
+        if (!customerChatRevealed && !config.isAuthenticated) return;
         try {
             const data = await apiFetch('/api/chat/badge/');
-            setBadge(customerBadge, data.customer_unread_count);
-            if (data.status === 'closed') conversationClosed = true;
+            const unread = data.customer_unread_count || 0;
+            if (data.has_history || data.has_conversation || unread > 0) {
+                revealCustomerLauncher();
+            }
+            setBadge(customerBadge, unread);
+            // Gost: closed = ne može pisati; registrovan: uvijek može
+            if (data.status === 'closed' && !config.isAuthenticated) {
+                conversationClosed = true;
+            }
         } catch (error) {
             /* tiho */
         }
     }
 
-    /* —— Proaktivni chat: NIKAKAV UI dok ne istekne delay —— */
+    /**
+     * Registrovan korisnik: chat ikona + istorija uvijek dostupni.
+     * Badge/unread se učitava odmah.
+     */
+    async function initRegisteredCustomerChat() {
+        if (!config.chatEnabled || config.isStaff || !config.isAuthenticated) return false;
+        revealCustomerLauncher();
+        try {
+            const data = await apiFetch('/api/chat/badge/');
+            const unread = data.customer_unread_count || 0;
+            setBadge(customerBadge, unread);
+            sessionStorage.setItem(STORAGE_VISIBLE, '1');
+            sessionStorage.setItem(STORAGE_PROACTIVE, '1');
+            const panelPref = sessionStorage.getItem(STORAGE_PANEL_OPEN);
+            if (unread > 0) {
+                // Nepročitano → otvori odmah da vidi poruku
+                await openCustomerChat({ proactive: false });
+            } else if (panelPref === '1') {
+                await openCustomerChat({ proactive: false });
+            } else {
+                // Minimiziran — ikona + brzi badge poll; istorija na klik
+                startMinimizedCustomerPolling();
+            }
+            return true;
+        } catch (e) {
+            // Fallback: ipak pokaži launcher
+            startMinimizedCustomerPolling();
+            return true;
+        }
+    }
+
+    /* —— Proaktivni chat: NIKAKAV UI dok ne istekne delay (gosti) —— */
     async function scheduleProactiveChat() {
         if (!config.chatEnabled) return;
         if (config.isStaff) return; // staff ne dobija auto popup kao kupac
+
+        // Registrovan: uvijek ima chat + istoriju (bez čekanja delay-a)
+        if (config.isAuthenticated) {
+            await initRegisteredCustomerChat();
+            return;
+        }
 
         // Chat već aktivan u ovoj sesiji (navigacija kategorija/stranica)
         const alreadyActive = sessionStorage.getItem(STORAGE_VISIBLE) === '1'
@@ -1235,12 +1298,16 @@ document.addEventListener('DOMContentLoaded', () => {
         pollStaffInbox().catch((error) => console.error(error));
     } else if (config.chatEnabled) {
         scheduleProactiveChat();
-        setInterval(pollCustomerUnread, 20000);
+        // Brži badge poll — nepročitano odmah (posebno registrovani)
+        setInterval(pollCustomerUnread, config.isAuthenticated ? 4000 : 12000);
     }
 
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && config.isStaff) {
+        if (document.visibilityState !== 'visible') return;
+        if (config.isStaff) {
             pollStaffInbox();
+        } else if (config.chatEnabled) {
+            pollCustomerUnread();
         }
     });
 });

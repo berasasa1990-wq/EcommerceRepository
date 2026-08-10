@@ -19,6 +19,25 @@
                 {% endif %}
                 {% if slide.has_video %}
                 <video class="slide-image-img slide-image-video" src="{{ slide.video }}" autoplay muted loop playsinline preload="metadata"{% if slide.image %} poster="{{ slide.image }}"{% endif %} width="{{ slide.image_width }}" height="{{ slide.image_height }}"></video>
+                {% elif slide.has_mobile_image %}
+                <picture>
+                    <source
+                        media="(max-width: 768px)"
+                        srcset="{% if slide.image_mobile_srcset %}{{ slide.image_mobile_srcset }}{% else %}{{ slide.image_mobile }}{% endif %}"
+                        sizes="100vw"
+                    >
+                    <img
+                        src="{{ slide.image }}"
+                        {% if slide.image_srcset %}srcset="{{ slide.image_srcset }}"{% endif %}
+                        alt="{{ slide.title|default:'Banner' }}"
+                        class="slide-image-img"
+                        width="{{ slide.image_width }}"
+                        height="{{ slide.image_height }}"
+                        sizes="100vw"
+                        {% if forloop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                        decoding="async"
+                    >
+                </picture>
                 {% else %}
                 <img src="{{ slide.image }}"{% if slide.image_srcset %} srcset="{{ slide.image_srcset }}"{% endif %} alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
                 {% endif %}
@@ -70,6 +89,10 @@
         {% endfor %}
     </div>
 </section>
+{% endif %}
+
+{% if home_trust_items %}
+{% include 'partials/home_trust_bar.html' %}
 {% endif %}
 
 {% if grid_banners %}
@@ -172,40 +195,24 @@
 
 {% if filters_active %}
 <section class="category-page home-search-results{% if filter_params.q %} home-search-results--search{% endif %}{% if filter_params.akcija %} home-search-results--akcija{% endif %}{% if filter_params.noviteti %} home-search-results--noviteti{% endif %}" id="product-showcase">
-    {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action filter_categories=filter_categories filter_reset_url=filter_reset_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_groups=filter_size_groups filter_params=filter_params selected_brand=selected_brand %}
+    {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action filter_categories=filter_categories filter_reset_url=filter_reset_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_groups=filter_size_groups filter_params=filter_params selected_brand=selected_brand seo_h1=seo_h1 seo_tekst_iznad=seo_tekst_iznad seo_tekst_ispod=seo_tekst_ispod %}
 </section>
 {% else %}
-{% if showcase_brands %}
-<section class="home-brand-strip-section">
-    {% include 'partials/home_brand_carousel.html' with brands=showcase_brands %}
-</section>
-{% endif %}
 
-{% if latest_products %}
-<section class="category-page home-products home-products--novo">
-    <div class="product-catalog product-catalog--compact home-product-catalog">
-        <div class="catalog-layout catalog-layout--full">
-            <div class="catalog-products">
-                <div class="home-products-header home-products-header--novo">
-                    <h2 data-site-edit="naslov_novo" data-site-edit-placeholder="Noviteti">{% if site_settings.naslov_novo %}{{ site_settings.naslov_novo }}{% endif %}</h2>
-                    <p data-site-edit="podnaslov_novo" data-site-edit-placeholder="Podnaslov (opcionalno)"{% if not site_settings.podnaslov_novo and not staff_edit_mode %} hidden{% endif %}>{% if site_settings.podnaslov_novo %}{{ site_settings.podnaslov_novo }}{% endif %}</p>
-                </div>
-                {% include 'partials/home_product_carousel.html' with products=latest_products eager_first_image=eager_first_novo_image home_section_badge='novo' %}
-            </div>
-        </div>
-    </div>
-</section>
+{% if seo_h1 %}
+<div class="seo-home-h1-wrap">
+    <h1 class="seo-home-h1">{{ seo_h1 }}</h1>
+</div>
 {% endif %}
+{% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
+{# —— 1) Izdvojeni (bivši TOP PROIZVODI) —— #}
 {% if featured_products %}
-<section class="category-page home-products home-products--izdvojeno">
+<section class="category-page home-products home-products--izdvojeno home-products--mockup">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                <div class="home-products-header home-products-header--izdvojeno">
-                    <h2 data-site-edit="naslov_izdvojeno" data-site-edit-placeholder="Izdvojeni artikli">{% if site_settings.naslov_izdvojeno %}{{ site_settings.naslov_izdvojeno }}{% endif %}</h2>
-                    <p data-site-edit="podnaslov_izdvojeno" data-site-edit-placeholder="Podnaslov (opcionalno)"{% if not site_settings.podnaslov_izdvojeno and not staff_edit_mode %} hidden{% endif %}>{% if site_settings.podnaslov_izdvojeno %}{{ site_settings.podnaslov_izdvojeno }}{% endif %}</p>
-                </div>
+                {% include 'partials/home_section_header.html' with title=site_settings.naslov_izdvojeno subtitle=site_settings.podnaslov_izdvojeno edit_title='naslov_izdvojeno' edit_title_placeholder='Izdvojeni' edit_subtitle='podnaslov_izdvojeno' header_mod='izdvojeno' %}
                 {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
             </div>
         </div>
@@ -213,6 +220,40 @@
 </section>
 {% endif %}
 
+{# —— 2) Noviteti —— #}
+{% if latest_products %}
+<section class="category-page home-products home-products--novo home-products--mockup">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title=site_settings.naslov_novo subtitle=site_settings.podnaslov_novo edit_title='naslov_novo' edit_title_placeholder='Noviteti' edit_subtitle='podnaslov_novo' header_mod='novo' see_all_url='/?noviteti=1' %}
+                {% include 'partials/home_product_carousel.html' with products=latest_products eager_first_image=eager_first_novo_image home_section_badge='novo' %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# —— 3) Akcijska ponuda —— #}
+{% if sale_products %}
+<section class="category-page home-products home-products--akcija home-products--mockup">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title=site_settings.naslov_akcija subtitle=site_settings.podnaslov_akcija edit_title='naslov_akcija' edit_title_placeholder='Akcijska ponuda' edit_subtitle='podnaslov_akcija' header_mod='akcija' see_all_url='/?akcija=1' %}
+                {% include 'partials/home_product_carousel.html' with products=sale_products home_section_badge='' %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# —— 4) Promo kartice —— #}
+{% if home_promo_cards %}
+{% include 'partials/home_promo_cards.html' %}
+{% endif %}
+
+{# —— 5) Kategorije / brend showcases (opcionalno iz admina) —— #}
 {% if home_category_showcases %}
 {% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}
 {% endif %}
@@ -221,8 +262,27 @@
 {% include 'partials/home_brand_showcase.html' with sections=home_brand_showcases %}
 {% endif %}
 
-{% if home_vlogs %}
+{# —— 6) Vlog / Blog + Newsletter —— #}
+{% if home_vlogs or site_settings.prikazi_newsletter %}
 {% include 'partials/home_vlog.html' %}
 {% endif %}
+
+{# —— 7) Naši brendovi —— #}
+{% if showcase_brands %}
+<section class="home-brand-strip-section home-brand-strip-section--mockup" id="brendovi">
+    {% if site_settings.naslov_brendovi %}
+    <div class="home-section-header home-section-header--brands">
+        <div class="home-section-header__text">
+            <h2 class="home-section-header__title"
+                data-site-edit="naslov_brendovi"
+                data-site-edit-placeholder="Naši brendovi">{{ site_settings.naslov_brendovi }}</h2>
+        </div>
+    </div>
+    {% endif %}
+    {% include 'partials/home_brand_carousel.html' with brands=showcase_brands %}
+</section>
+{% endif %}
+
+{% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
 {% endif %}
 {% endblock %}

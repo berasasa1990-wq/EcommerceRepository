@@ -69,6 +69,7 @@ urlpatterns = [
 
     path('priprema-pristup/', views_site_prep.site_prep_unlock, name='site_prep_unlock'),
     path('', views.home, name='home'),
+    path('api/newsletter/', views.newsletter_subscribe, name='newsletter_subscribe'),
     path('o-nama/', views.about_us, name='about_us'),
     path('nacin-placanja/', views.payment_methods, name='payment_methods'),
     path('vlog/', views.vlog_list, name='vlog_list'),

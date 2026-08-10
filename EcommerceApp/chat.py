@@ -57,50 +57,95 @@ def is_staff_online():
     return (time.time() - last_seen) < STAFF_ONLINE_TTL
 
 
-def find_open_customer_conversation(request):
-    """Pronađi otvoren razgovor bez kreiranja novog."""
+def find_customer_conversation(request, *, open_only=False):
+    """
+    Pronađi razgovor kupca (bez kreiranja).
+    Registrovan korisnik: uvijek po user_id (istorija ostaje kroz sesije).
+    Gost: po session_key.
+    """
     ensure_session_key(request)
     if request.user.is_authenticated:
-        by_user = (
+        qs = ChatConversation.objects.filter(user=request.user)
+        if open_only:
+            qs = qs.filter(status=ChatConversation.Status.OPEN)
+        by_user = qs.order_by('-last_message_at').first()
+        if by_user:
+            return by_user
+        # Session chat prije logina — veži ga ispod u get_customer_conversation
+        by_session = (
             ChatConversation.objects.filter(
-                user=request.user,
-                status=ChatConversation.Status.OPEN,
+                session_key=request.session.session_key,
+                user__isnull=True,
             )
             .order_by('-last_message_at')
             .first()
         )
-        if by_user:
-            return by_user
+        if by_session and not open_only:
+            return by_session
+        if by_session and open_only and by_session.status == ChatConversation.Status.OPEN:
+            return by_session
+        return None
 
-    return (
-        ChatConversation.objects.filter(
-            session_key=request.session.session_key,
-            status=ChatConversation.Status.OPEN,
-        )
-        .order_by('-last_message_at')
-        .first()
-    )
+    qs = ChatConversation.objects.filter(session_key=request.session.session_key)
+    if open_only:
+        qs = qs.filter(status=ChatConversation.Status.OPEN)
+    return qs.order_by('-last_message_at').first()
 
 
-def get_customer_conversation(request, *, create=True):
-    conversation = find_open_customer_conversation(request)
+def find_open_customer_conversation(request):
+    """Alias — otvoren razgovor (ili bilo koji za registrovanog pri badge/history)."""
+    return find_customer_conversation(request, open_only=True)
+
+
+def _attach_user_to_conversation(conversation, request):
+    """Veži razgovor na prijavljenog korisnika + ime/email ako fale."""
+    if not conversation or not request.user.is_authenticated:
+        return conversation
+    update_fields = []
+    if not conversation.user_id:
+        conversation.user = request.user
+        update_fields.append('user')
+    name = _default_guest_name(request)
+    email = _default_guest_email(request)
+    if name and not (conversation.guest_name or '').strip():
+        conversation.guest_name = name
+        update_fields.append('guest_name')
+    if email and not (conversation.guest_email or '').strip():
+        conversation.guest_email = email
+        update_fields.append('guest_email')
+    if update_fields:
+        conversation.save(update_fields=update_fields)
+    return conversation
+
+
+def get_customer_conversation(request, *, create=True, reopen=True):
+    """
+    Vrati razgovor za kupca.
+    Registrovan: ista nit poruka uvijek (i kad se status zatvori — reopen).
+    create=False: ne kreira novi; i dalje pronalazi zatvorene (za badge/istoriju).
+    """
+    ensure_session_key(request)
+
+    # 1) Preferiraj postojeći (uključujući zatvorene za registrovanog)
+    conversation = find_customer_conversation(request, open_only=False)
     if conversation:
-        # Ako je gost kasnije prijavljen, veži razgovor
+        conversation = _attach_user_to_conversation(conversation, request)
         if (
-            request.user.is_authenticated
-            and not conversation.user_id
-            and conversation.session_key == request.session.session_key
+            reopen
+            and create
+            and conversation.status != ChatConversation.Status.OPEN
         ):
-            conversation.user = request.user
-            conversation.save(update_fields=['user'])
+            # Registrovan korisnik: uvijek može nastaviti istu istoriju
+            # Gost: reopen zatvorenog u istoj sesiji
+            if request.user.is_authenticated or conversation.session_key == request.session.session_key:
+                conversation.status = ChatConversation.Status.OPEN
+                conversation.save(update_fields=['status'])
         return conversation
 
     if not create:
         return None
 
-    ensure_session_key(request)
-    # Ponovo otvori zadnji zatvoreni razgovor u ovoj sesiji
-    # (npr. greškom zatvoren pagehide-om pri navigaciji) — zadrži poruke
+    # 2) Zadnji zatvoreni (fallback) — zadrži poruke
     reopen_q = ChatConversation.objects.filter(
         status=ChatConversation.Status.CLOSED,
         session_key=request.session.session_key,
@@ -119,7 +164,7 @@ def get_customer_conversation(request, *, create=True):
             closed.save(update_fields=['status', 'user'])
         else:
             closed.save(update_fields=['status'])
-        return closed
+        return _attach_user_to_conversation(closed, request)
 
     return ChatConversation.objects.create(
         session_key=request.session.session_key,

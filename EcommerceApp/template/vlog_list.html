@@ -12,9 +12,11 @@
 <section class="vlog-list-page">
     <div class="vlog-list-inner">
         <header class="vlog-list-header">
-            <h1>Blog</h1>
+            <h1>{{ seo_h1|default:"Blog" }}</h1>
             <p>Savjeti, priče i novosti iz svijeta ribolova</p>
         </header>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
         {% if vlogs %}
         <div class="home-vlog-grid vlog-list-grid">
@@ -37,6 +39,8 @@
         {% else %}
         <p class="vlog-list-empty">Trenutno nema objava na blogu.</p>
         {% endif %}
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
     </div>
 </section>
 {% endblock %}

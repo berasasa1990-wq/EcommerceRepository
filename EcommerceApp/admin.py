@@ -56,6 +56,8 @@ from .models import (
     HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeNovoProduct,
+    HomePromoCard,
+    HomeTrustItem,
     HomeVlog,
     LoyaltyCard,
     Order,
@@ -64,6 +66,7 @@ from .models import (
     OnlineGiftCampaign,
     OnlineGiftClaim,
     OnlineGiftPush,
+    PageSEO,
     Product,
     ProductImage,
     ProductVariation,
@@ -178,20 +181,36 @@ class ProductImageInline(admin.TabularInline):
         return '—'
 
 
+class HomeTrustItemInline(admin.TabularInline):
+    model = HomeTrustItem
+    fk_name = 'postavke'
+    extra = 0
+    max_num = 6
+    fields = ('redoslijed', 'naslov', 'podnaslov', 'ikona', 'aktivan')
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Trust stavka'
+    verbose_name_plural = (
+        '① TRUST TRAKA (ispod hero banera) — Brza dostava, Sigurna kupovina…'
+    )
+
+
 class HomeFeaturedProductInline(admin.TabularInline):
     model = HomeFeaturedProduct
     fk_name = 'postavke'
     extra = 0
     max_num = 10
     autocomplete_fields = ('artikal',)
-    fields = ('artikal', 'redoslijed', 'aktivan')
-    verbose_name = 'Istaknuti artikal'
-    verbose_name_plural = 'Istaknuti artikli na početnoj (do 10, prikaz 6 + slide)'
+    fields = ('redoslijed', 'artikal', 'aktivan')
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Izdvojeni artikal'
+    verbose_name_plural = (
+        '② IZDVOJENI ARTIKLI (do 10) — ili označi artikal kao HIT na artiklu'
+    )
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
         formset.form.base_fields['artikal'].help_text = (
-            'Pretražite i odaberite postojeći artikal — ne kreirajte novi.'
+            'Pretraži postojeći artikal. Redoslijed = red u karuselu na početnoj.'
         )
         return formset
 
@@ -202,93 +221,151 @@ class HomeNovoProductInline(admin.TabularInline):
     extra = 0
     max_num = 10
     autocomplete_fields = ('artikal',)
-    fields = ('artikal', 'redoslijed', 'aktivan')
+    fields = ('redoslijed', 'artikal', 'aktivan')
+    ordering = ('redoslijed', 'id')
     verbose_name = 'Novitet'
     verbose_name_plural = (
-        'Noviteti na početnoj — ručni odabir (do 10). '
-        'Koristi se samo kad je način prikaza „Ručno”.'
+        '③ NOVITETI (ručni odabir, do 10) — samo ako je način prikaza „Ručno” iznad'
     )
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
         formset.form.base_fields['artikal'].help_text = (
-            'Pretražite i odaberite postojeći artikal. Redoslijed = red u karuselu.'
+            'Pretraži artikal. Alternativa: označi „Noviteti” na samom artiklu.'
         )
         return formset
+
+
+class HomePromoCardInline(admin.StackedInline):
+    model = HomePromoCard
+    fk_name = 'postavke'
+    extra = 0
+    max_num = 8
+    fields = (
+        'redoslijed', 'aktivan',
+        'naslov', 'boja_naslova',
+        'podnaslov', 'boja_podnaslova',
+        'badge', 'boja_isticanja',
+        'slika', 'ikona',
+        'link',
+    )
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Promo kartica'
+    verbose_name_plural = (
+        '④ PROMO KARTICE (ispod Akcijske ponude) — '
+        'boje teksta (hex picker), slika 200×200 PNG ili ikona. '
+        'Naslov: Enter za 2 reda. Badge: 150 KM / DO 10% / 50 KM…'
+    )
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name in ('boja_naslova', 'boja_podnaslova', 'boja_isticanja') and formfield:
+            formfield.widget.input_type = 'color'
+            formfield.widget.attrs.setdefault('style', 'width: 4rem; height: 2rem; padding: 0;')
+        return formfield
 
 
 class HomeCategoryShowcaseInline(admin.TabularInline):
     model = HomeCategoryShowcase
     fk_name = 'postavke'
-    extra = 1
+    extra = 0
     autocomplete_fields = ('kategorija',)
-    fields = ('kategorija', 'naslov', 'redoslijed', 'aktivan')
+    fields = ('redoslijed', 'kategorija', 'naslov', 'aktivan')
+    ordering = ('redoslijed', 'id')
     verbose_name = 'Kategorija (2×2)'
-    verbose_name_plural = (
-        'Kategorije na početnoj (ispod Izdvojenih) — 4 artikla, 2×2 na mobilnom'
-    )
+    verbose_name_plural = '⑤ KATEGORIJE NA POČETNOJ (opcionalno, 2×2 mobil)'
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
         formset.form.base_fields['kategorija'].help_text = (
-            'Odaberite kategoriju čiji se artikli prikazuju u mreži 2×2 na mobilnom.'
+            'Kategorija čiji se artikli prikazuju.'
         )
-        formset.form.base_fields['naslov'].help_text = (
-            'Opcionalno. Prazno = naziv kategorije.'
-        )
+        formset.form.base_fields['naslov'].help_text = 'Prazno = naziv kategorije.'
         return formset
 
 
 class HomeBrandShowcaseInline(admin.TabularInline):
     model = HomeBrandShowcase
     fk_name = 'postavke'
-    extra = 1
+    extra = 0
     autocomplete_fields = ('brend',)
-    fields = ('brend', 'naslov', 'redoslijed', 'aktivan')
+    fields = ('redoslijed', 'brend', 'naslov', 'aktivan')
+    ordering = ('redoslijed', 'id')
     verbose_name = 'Brend (slide)'
-    verbose_name_plural = (
-        'Brendovi na početnoj — dodaj koliko hoćeš; svaki brend = slide karusel artikala '
-        '(kao Noviteti / HIT), ispod kategorija'
-    )
+    verbose_name_plural = '⑥ BREND KARUSELI ARTIKALA (opcionalno)'
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        formset.form.base_fields['brend'].help_text = (
-            'Odaberi brend čiji artikli idu u karusel na početnoj.'
-        )
-        formset.form.base_fields['naslov'].help_text = (
-            'Opcionalno. Prazno = naziv brenda.'
-        )
+        formset.form.base_fields['brend'].help_text = 'Brend za karusel artikala.'
+        formset.form.base_fields['naslov'].help_text = 'Prazno = naziv brenda.'
         return formset
 
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
-    readonly_fields = ('pregled_loga', 'pregled_loga_glavnog_sajta', 'pregled_favicona', 'pregled_badgea')
+    readonly_fields = (
+        'pregled_loga', 'pregled_loga_glavnog_sajta', 'pregled_favicona',
+        'pregled_badgea', 'pregled_chat_avatara',
+    )
     inlines = [
-        HomeNovoProductInline,
+        HomeTrustItemInline,
         HomeFeaturedProductInline,
+        HomeNovoProductInline,
+        HomePromoCardInline,
         HomeCategoryShowcaseInline,
         HomeBrandShowcaseInline,
     ]
     fieldsets = (
-        ('Logo i ikona', {
+        ('① Logo i izgled sajta', {
             'fields': (
                 'logo', 'pregled_loga',
                 'logo_glavni_sajt', 'pregled_loga_glavnog_sajta',
                 'favicon', 'pregled_favicona',
             ),
             'description': (
-                'Logo u headeru, logo glavnog sajta (prikaz „by” ispod loga) '
-                'i ikona u tabu preglednika (favicon).'
+                'Logo u crnom headeru (originalna slika, max 640×128). '
+                'Preporuka: PNG s transparentnom pozadinom, bijela/zelena grafika.'
             ),
         }),
-        ('Kontakt', {
-            'fields': ('kontakt_telefon', 'kontakt_messenger'),
-            'description': 'Telefon za WhatsApp/Viber i Facebook stranica za Messenger u donjem desnom uglu.',
-        }),
-        ('Kontakt dugmad (plutajuća)', {
+        ('② Početna — naslovi sekcija (redom na stranici)', {
             'fields': (
+                'promo_bar_tekst', 'promo_bar_link_tekst',
+                'naslov_izdvojeno', 'podnaslov_izdvojeno',
+                'naslov_novo', 'podnaslov_novo', 'noviteti_mod',
+                'naslov_akcija', 'podnaslov_akcija', 'prikazi_akcijsku_sekciju',
+                'naslov_blog',
+                'naslov_brendovi',
+                'tekst_pogledaj_sve',
+            ),
+            'description': (
+                'Redoslijed na početnoj:\n'
+                'Hero baner → Trust traka (tabela ①) → Izdvojeni (②) → Noviteti (③) → '
+                'Akcijska ponuda → Promo kartice (④) → Blog + Newsletter → Brendovi.\n'
+                '• Naslov u 2 reda: stavi Enter u polju (npr. BESPLATNA ↵ DOSTAVA u promo karticama).\n'
+                '• Izdvojeni: HIT na artiklu ili tabela ②.\n'
+                '• Noviteti: je_novitet na artiklu / auto / ručno (③).\n'
+                '• Akcijska: artikli sa sniženom cijenom (uključi/isključi ispod).'
+            ),
+        }),
+        ('③ Početna — Newsletter (pored bloga)', {
+            'fields': (
+                'prikazi_newsletter',
+                'newsletter_naslov',
+                'newsletter_podnaslov',
+                'newsletter_placeholder',
+                'newsletter_dugme',
+                'newsletter_napomena',
+            ),
+            'description': (
+                'Tamni box pored Vlog/Blog kartica. '
+                'Prijave → Marketing → Pretplatnici. '
+                'Blog kartice: meni Vlogovi (naslov, slika, kratki opis, datum).'
+            ),
+        }),
+        ('④ Kontakt (header telefon + floating dugmad)', {
+            'fields': (
+                'kontakt_telefon',
+                'kontakt_messenger',
                 'kontakt_prikazi_whatsapp',
                 'kontakt_prikazi_viber',
                 'kontakt_prikazi_messenger',
@@ -296,25 +373,20 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'kontakt_boja_viber',
                 'kontakt_boja_messenger',
             ),
-            'description': (
-                'Odaberite koja dugmad se prikazuju u donjem desnom uglu i njihove boje (hex). '
-                'WhatsApp/Viber trebaju telefon; Messenger treba Facebook stranicu.'
-            ),
+            'description': 'Telefon se prikazuje u headeru. Floating WhatsApp/Viber/Messenger donje desno.',
         }),
-        ('Boje dugmadi na sajtu', {
+        ('⑤ Boje dugmadi', {
             'fields': (
                 'boja_dugme_korpa',
                 'boja_dugme_korpa_hover',
                 'boja_dugme_banner',
                 'boja_dugme_banner_hover',
             ),
-            'description': (
-                'Boje glavnih CTA dugmadi: „Dodaj u korpu” na karticama artikala i dugmad na bannerima.'
-            ),
+            'description': 'Zelena #5BB805 = mockup. Korpa na karticama + CTA na bannerima.',
         }),
-        ('Dostava', {
+        ('⑥ Dostava', {
             'fields': ('dostava_naziv', 'dostava_cijena', 'besplatna_dostava_od'),
-            'description': 'Postavke dostave prikazane u korpi i na checkoutu.',
+            'description': 'Cijena dostave i prag besplatne dostave (korpa / checkout / promo tekst).',
         }),
         ('Exit popup (cijeli sajt)', {
             'fields': (
@@ -327,6 +399,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'Artikal: 1) skoro-korpa, 2) gledanje, 3) fallback artikal. '
                 'Popust %: prazno/0 = ponuda bez −% (regularna cijena); unesi % samo za sniženje.'
             ),
+            'classes': ('collapse',),
         }),
         ('Registracija i nagradna igra', {
             'fields': (
@@ -340,18 +413,20 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 '1) Registracija + % na prvu narudžbu — gostu na početku. '
                 '2) Nagradna igra — mali pulsirajući popup sa strane (treba aktivna kampanja Online nagrada).'
             ),
+            'classes': ('collapse',),
         }),
         ('Chat sa kupcem', {
             'fields': (
                 'chat_sa_kupcem_aktivan',
                 'chat_delay_seconds',
                 'chat_pozdrav_poruka',
+                'chat_avatar_slika',
+                'pregled_chat_avatara',
             ),
             'description': (
-                'Proaktivni live chat: na sajtu se NE prikazuje dok ne istekne vrijeme. '
-                'Zatim se otvori, pošalje pozdrav i pita da li treba pomoć / preporuka. '
-                'Kupac odgovara odmah — bez registracije i bez unosa imena. '
-                'Staff u inboxu može slati i artikle (slika + dodaj u korpu, opcionalni %).'
+                'Proaktivni live chat: poslije delay-a iskoči kupcu. '
+                'Slika (avatar) se vidi na balonu i u headeru chata. '
+                'Preporuka: 256×256 px, kvadrat PNG/JPG.'
             ),
         }),
         ('Savjetnik i online posjetioci', {
@@ -363,6 +438,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 '1) Ribolovački savjetnik — uključi/isključi chat „Savjeti pri kupovini”. '
                 '2) Javni prikaz — svi na sajtu vide koliko je ljudi online (privatno: grad + gost/kupac).'
             ),
+            'classes': ('collapse',),
         }),
         ('Pogodnosti', {
             'fields': (
@@ -371,31 +447,43 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'novi_korisnik_popust_km',
             ),
             'description': 'Pogodnosti za registrovane korisnike na prvoj narudžbi. Popust u % i KM se mogu kombinovati.',
+            'classes': ('collapse',),
         }),
-        ('SEO (Google i društvene mreže)', {
-            'fields': ('seo_title', 'meta_description', 'og_image'),
-            'description': 'Naslov i opis za Google pretragu i kad se link dijeli (Facebook, WhatsApp, itd.). '
-                           'Og image treba biti široka slika (preporučeno 1200×630 px).',
-        }),
-        ('Početna stranica — tekstovi i noviteti', {
+        ('SEO — globalno (Google / društvene mreže)', {
             'fields': (
-                'naslov_novo', 'podnaslov_novo', 'noviteti_mod',
-                'naslov_izdvojeno', 'podnaslov_izdvojeno',
-                'naslov_blog',
+                'seo_organizacija_naziv',
+                'seo_email',
+                'seo_grad',
+                'seo_drzava',
+                'seo_facebook_url',
+                'seo_instagram_url',
+                'google_site_verification',
+                'seo_title_suffix',
+                'seo_title',
+                'meta_description',
+                'og_image',
             ),
             'description': (
-                'Naslovi sekcija Novo, Izdvojeno i Blog. Prazno polje = naslov se ne prikazuje. '
-                'Noviteti: Automatski = zadnjih 10 unesenih artikala; Ručno = unesite do 10 u tabeli ispod. '
-                'Izdvojeni artikli se uvijek biraju ručno u tabeli „Istaknuti”.'
+                '<strong>Prioritet unosa (webshop SEO):</strong><br>'
+                '1) <em>SEO stranica</em> meni — Početna, Akcija, Noviteti, O nama, Blog… '
+                '(title, description, H1, SEO tekst)<br>'
+                '2) Svaka <em>Kategorija</em> — unique title + description + tekst ispod liste<br>'
+                '3) Top / novi <em>Artikli</em> — ručni title/description kad želiš precizan ranking<br>'
+                '4) Ovdje: OG slika 1200×630, Search Console kod, FB/IG linkovi, naziv trgovine<br>'
+                '5) Sitemap: <code>/sitemap.xml</code> · Robots: <code>/robots.txt</code><br>'
+                '<em>Ne popunjavaj sve artikle ručno</em> — sistem automatski generiše title/opis; '
+                'ručno samo za prioritete i kategorije.'
             ),
         }),
         ('Stranica artikla — povezani artikli', {
             'fields': ('naslov_povezani', 'podnaslov_povezani'),
             'description': 'Naslov karusela povezanih artikala. U podnaslovu koristite {kategorija} za naziv kategorije.',
+            'classes': ('collapse',),
         }),
         ('Stranica artikla — badge i uslovi', {
             'fields': ('badge_product_detail', 'pregled_badgea', 'politika_dostava', 'politika_povrat', 'politika_garancija'),
             'description': 'Badge se prikazuje u gornjem lijevom uglu slike artikla (npr. garancija). Tekstovi ispod dugmeta „Dodaj u korpu”.',
+            'classes': ('collapse',),
         }),
     )
 
@@ -412,7 +500,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 '<img src="{}" style="height:64px;max-width:480px;object-fit:contain;border:1px solid #eee;border-radius:4px;" />',
                 obj.logo.url,
             )
-        return 'Nema loga — prikazuje se tekstualni logo opremazaribolov.ba. Upload skalira logo i dodaje bijelu pozadinu.'
+        return 'Nema loga — tekstualni logo. Upload: originalna slika (bez ofarbavanja). Za crni header: PNG, transparentna pozadina, bijela/zelena grafika.'
 
     @admin.display(description='Pregled loga glavnog sajta')
     def pregled_loga_glavnog_sajta(self, obj):
@@ -440,6 +528,75 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 obj.badge_product_detail.url,
             )
         return 'Nema badgea — upload PNG s transparentnom pozadinom (npr. garancija).'
+
+    @admin.display(description='Pregled chat slike')
+    def pregled_chat_avatara(self, obj):
+        if obj and obj.chat_avatar_slika:
+            return format_html(
+                '<img src="{}" style="width:72px;height:72px;object-fit:cover;border-radius:50%;'
+                'border:2px solid #0f766e;background:#f0fdfa;" />',
+                obj.chat_avatar_slika.url,
+            )
+        return 'Nema slike — default ikona balona. Upload 256×256 px kvadrat.'
+
+
+@admin.register(PageSEO)
+class PageSEOAdmin(admin.ModelAdmin):
+    list_display = (
+        'page_key', 'seo_title_kratko', 'h1_naslov',
+        'ima_meta', 'ima_tekst_iznad', 'ima_tekst_ispod', 'azuriran',
+    )
+    list_filter = ('page_key',)
+    search_fields = ('seo_title', 'meta_description', 'h1_naslov')
+    ordering = ('page_key',)
+    fieldsets = (
+        ('Stranica', {
+            'fields': ('page_key',),
+            'description': (
+                '<strong>Kako Google rangira webshop</strong><br>'
+                '• <b>Početna</b> — brand + glavne ključne riječi (oprema za ribolov, BiH)<br>'
+                '• <b>Akcija / Noviteti</b> — landing za te upite<br>'
+                '• <b>O nama / Plaćanje / Blog</b> — trust + sadržaj (E-E-A-T)<br>'
+                '• Korpa/checkout/prijava — manje bitno (noindex)<br><br>'
+                '<b>Title</b>: 50–60 znakova, ključna riječ ispred, brand na kraju<br>'
+                '<b>Meta description</b>: 140–160 znakova, benefit + CTA (ne ranking factor direktno, ali CTR da)<br>'
+                '<b>H1</b>: jedan jasan naslov, može blago drugačiji od title-a<br>'
+                '<b>SEO tekst</b>: 150–400 riječi na važnim landinzima (ne keyword stuffing)<br>'
+                'Artikli / kategorije / brendovi → SEO polja na njihovim formama.'
+            ),
+        }),
+        ('SEO title & meta description', {
+            'fields': ('seo_title', 'meta_description'),
+            'description': 'Ovo vidi Google u rezultatima pretrage. Unique po stranici.',
+        }),
+        ('H1 na stranici', {
+            'fields': ('h1_naslov',),
+        }),
+        ('SEO tekstovi (on-page sadržaj)', {
+            'fields': ('seo_tekst_iznad', 'seo_tekst_ispod'),
+            'description': (
+                'Tekst iznad / ispod proizvoda ili sadržaja. '
+                'Najviše vrijedi na: Početna (ispod), Akcija, Noviteti, kategorije.'
+            ),
+        }),
+    )
+
+    @admin.display(description='SEO title')
+    def seo_title_kratko(self, obj):
+        t = obj.seo_title or '—'
+        return t if len(t) <= 55 else t[:52] + '…'
+
+    @admin.display(description='Meta', boolean=True)
+    def ima_meta(self, obj):
+        return bool(obj.meta_description)
+
+    @admin.display(description='Iznad', boolean=True)
+    def ima_tekst_iznad(self, obj):
+        return bool(obj.seo_tekst_iznad)
+
+    @admin.display(description='Ispod', boolean=True)
+    def ima_tekst_ispod(self, obj):
+        return bool(obj.seo_tekst_ispod)
 
 
 @admin.register(Category)
@@ -472,10 +629,19 @@ class CategoryAdmin(admin.ModelAdmin):
         ('Prikaz', {
             'fields': ('redoslijed', 'prikazi_u_meniju', 'aktivan'),
         }),
-        ('SEO (Google i društvene mreže)', {
-            'fields': ('meta_title', 'meta_description'),
-            'description': 'Prilagođeni naslov i opis za ovu kategoriju u Google pretrazi. '
-                           'Ako ostaviš prazno, koristi se naziv kategorije + default opis.',
+        ('SEO (Google) — kategorija je ključna za ranking', {
+            'fields': (
+                'meta_title', 'meta_description', 'h1_naslov',
+                'seo_tekst_iznad', 'seo_tekst_ispod',
+            ),
+            'description': (
+                '<strong>Prioritet #1 poslije početne.</strong> Svaka kategorija treba unique sadržaj.<br>'
+                '• <b>SEO title</b> (50–60): npr. „Štapovi za šarana | Oprema za ribolov — opremazaribolov.ba”<br>'
+                '• <b>Meta description</b> (140–160): što nudiš + benefit + CTA<br>'
+                '• <b>H1</b>: npr. „Štapovi za šarana” (može kraće od title-a)<br>'
+                '• <b>SEO tekst ispod</b>: 2–4 pasusa o kategoriji (ne copy-paste isti tekst)<br>'
+                'Prazno = automatski title/opis (dobar default, ali ručno je bolje za top kategorije).'
+            ),
         }),
         ('Odoo', {
             'fields': ('odoo_category_id',),
@@ -627,11 +793,22 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
-    list_display = ('naziv', 'slug', 'pregled_loga')
+    list_display = ('naziv', 'slug', 'meta_title', 'pregled_loga')
     prepopulated_fields = {'slug': ('naziv',)}
-    search_fields = ('naziv',)
+    search_fields = ('naziv', 'meta_title', 'meta_description')
     readonly_fields = ('pregled_loga_veliki',)
-    fields = ('naziv', 'slug', 'slika', 'pregled_loga_veliki')
+    fieldsets = (
+        ('Osnovno', {
+            'fields': ('naziv', 'slug', 'slika', 'pregled_loga_veliki'),
+        }),
+        ('SEO (Google)', {
+            'fields': (
+                'meta_title', 'meta_description', 'h1_naslov',
+                'seo_tekst_iznad', 'seo_tekst_ispod',
+            ),
+            'description': 'Opcionalno. Koristi se kad se filtrira katalog po brendu.',
+        }),
+    )
 
     @admin.display(description='Logo')
     def pregled_loga(self, obj):
@@ -1543,23 +1720,28 @@ class UpsellOfferAdmin(admin.ModelAdmin):
 
 @admin.register(HomeVlog)
 class HomeVlogAdmin(admin.ModelAdmin):
-    list_display = ('naslov', 'aktivan', 'redoslijed', 'pregled_slike')
+    list_display = ('naslov', 'objavljeno', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('aktivan',)
     list_editable = ('aktivan', 'redoslijed')
-    search_fields = ('naslov', 'slug', 'sadrzaj')
+    search_fields = ('naslov', 'slug', 'sadrzaj', 'kratki_opis')
     prepopulated_fields = {'slug': ('naslov',)}
-    readonly_fields = ('pregled_slike_velika',)
+    readonly_fields = ('pregled_slike_velika', 'kreirano')
+    ordering = ('redoslijed', '-id')
     fieldsets = (
-        (None, {
-            'fields': ('naslov', 'slika', 'pregled_slike_velika', 'sadrzaj'),
+        ('Početna — Vlog / Blog kartica', {
+            'fields': (
+                'naslov', 'kratki_opis', 'objavljeno',
+                'slika', 'pregled_slike_velika', 'sadrzaj',
+            ),
             'description': (
-                'Vlogovi se prikazuju na početnoj ispod Izdvojeno (3 u redu). '
-                'Upload slike: konvertuje se u AVIF (max 30KB). Klik otvara stranicu s opisom.'
+                'Prikaz na početnoj (sekcija Vlog/Blog + newsletter). '
+                'Prva 3 aktivna po redoslijedu. '
+                'Naslov sekcije: Podešavanja → „naslov_blog”. '
+                'Upload slike: AVIF optimizacija.'
             ),
         }),
-        ('Podešavanja', {
-            'fields': ('slug', 'redoslijed', 'aktivan'),
-            'classes': ('collapse',),
+        ('Redoslijed i status', {
+            'fields': ('slug', 'redoslijed', 'aktivan', 'kreirano'),
         }),
     )
 
@@ -1590,17 +1772,22 @@ class BannerAdmin(admin.ModelAdmin):
     list_editable = ('aktivan', 'redoslijed')
     search_fields = ('naslov', 'podnaslov')
     autocomplete_fields = ('kategorija',)
-    readonly_fields = ('pregled_slike_velika', 'pregled_videa')
+    readonly_fields = ('pregled_slike_velika', 'pregled_slike_mobilne', 'pregled_videa')
     fieldsets = (
         ('Sadržaj', {
-            'fields': ('naslov', 'podnaslov', 'slika', 'pregled_slike_velika', 'video', 'pregled_videa'),
+            'fields': (
+                'naslov', 'podnaslov',
+                'slika', 'pregled_slike_velika',
+                'slika_mobilna', 'pregled_slike_mobilne',
+                'video', 'pregled_videa',
+            ),
             'description': (
                 'Klik na banner vodi na kategoriju ili link (ako su postavljeni). '
-                'Obavezna je slika ili video. '
-                'Upload slike: Hero → JPEG 1920×420 (32:7), Grid/Featured/Spotlight → AVIF ili JPEG. '
-                'Video: MP4/WebM/MOV, najviše 6 sekundi (max 20 MB). Ako je video postavljen, prikazuje se umjesto slike; '
-                'slika može služiti kao poster kad je video aktivan. '
-                'Tip „Hero Carousel” za karusel, „Grid Kartica” za 8 kartica ispod (4×2 desktop, 6 mobilni).'
+                'Obavezna je slika (desktop) ili video.\n'
+                '• Desktop hero: 1920×640 px (3:1)\n'
+                '• Mobilni hero: 1080×1350 px (4:5) — prikaz SAMO na telefonu (≤768px). '
+                'Ako nije uploadano, mobitel koristi desktop sliku.\n'
+                'Video: MP4/WebM/MOV, max 6 s. Tip „Hero Carousel” za karusel.'
             ),
         }),
         ('Odredište i filter', {
@@ -1628,14 +1815,23 @@ class BannerAdmin(admin.ModelAdmin):
             )
         return '—'
 
-    @admin.display(description='Pregled slike')
+    @admin.display(description='Pregled desktop slike')
     def pregled_slike_velika(self, obj):
         if obj and obj.slika:
             return format_html(
                 '<img src="{}" style="max-height:200px;border-radius:8px;" />',
                 obj.slika.url,
             )
-        return 'Nema slike'
+        return 'Nema desktop slike'
+
+    @admin.display(description='Pregled mobilne slike')
+    def pregled_slike_mobilne(self, obj):
+        if obj and obj.slika_mobilna:
+            return format_html(
+                '<img src="{}" style="max-height:220px;border-radius:8px;" />',
+                obj.slika_mobilna.url,
+            )
+        return 'Nema mobilne slike — na telefonu se koristi desktop'
 
     @admin.display(description='Pregled videa')
     def pregled_videa(self, obj):
@@ -1808,13 +2004,20 @@ class ProductAdmin(admin.ModelAdmin):
                 'relevantnim rezultatima pretrage, kategorije i preporuka (ne gura nerelevantne).'
             ),
         }),
-        ('SEO (Google i društvene mreže)', {
+        ('SEO (Google) — artikal', {
             'fields': (
                 'seo_title_preview', 'meta_title',
                 'seo_description_preview', 'meta_description',
+                'h1_naslov', 'seo_tekst_iznad', 'seo_tekst_ispod',
             ),
-            'description': 'Polja ispod služe samo za <strong>ručno preklapanje</strong>. '
-                           'Ako ih ostaviš prazna, sistem automatski koristi naziv artikla + opis ispod.',
+            'description': (
+                'Sva polja su <strong>opcionalna</strong>. Sistem automatski radi: '
+                '<em>Naziv | Brend | opremazaribolov.ba</em> + opis s benefitima.<br>'
+                '<strong>Ručno popuni samo</strong> za bestsellere / skupe / prioritetne artikle.<br>'
+                '• Title 50–60 znakova · Description 140–160 · H1 = kupcu jasno ime proizvoda<br>'
+                '• SEO tekst: rijetko potreban na artiklu (bolje dobar <em>Opis proizvoda</em>)<br>'
+                '• Rich results: cijena, stock, brand, SKU idu automatski u Product schema'
+            ),
         }),
         ('OLX / Pik', {
             'fields': (

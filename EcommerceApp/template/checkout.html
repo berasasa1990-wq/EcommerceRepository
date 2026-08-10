@@ -2,11 +2,16 @@
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
-{% block page_title %}<title>Narudžba — opremazaribolov.ba</title>{% endblock %}
+{% block page_title %}<title>{{ seo_title|default:"Narudžba — opremazaribolov.ba" }}</title>{% endblock %}
+
+{% block meta_description %}
+{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
+{% endblock %}
 
 {% block content %}
 <section class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ cart_count|default:0 }}" data-value="{{ cart_total }}"{% endif %}>
-    <h1>Narudžba</h1>
+    <h1>{{ seo_h1|default:"Narudžba" }}</h1>
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
     {% if not user.is_authenticated %}
     <p class="checkout-auth-note">
         <a href="{% url 'login' %}?next={% url 'checkout' %}">Prijavite se</a>
@@ -42,6 +47,8 @@
             </div>
         </aside>
     </div>
+
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
 
     <div id="order-loading" class="order-loading" style="display:none;">
         <div class="fish-animation">🐟</div>

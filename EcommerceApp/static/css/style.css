@@ -71,21 +71,22 @@ img.home-vlog-card-image {
     max-width: none;
 }
 
-/* Bijeli sloj ispod promo + headera — sprječava da se sadržaj vidi u procijepu pri scrollu */
+/* Crni sloj ispod promo + headera — sprječava da se sadržaj vidi u procijepu pri scrollu */
 .site-chrome-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     height: var(--site-chrome-top);
-    background: #ffffff;
+    background: #0a0a0a;
     z-index: 999;
     pointer-events: none;
 }
 
-/* Promo Bar — UVJEK iznad sadržaja, ISPOD headera (logo/meni ne smiju biti ispod trake) */
+/* Promo Bar — crna traka (besplatna dostava), usklađena s crnim headerom */
 .promo-bar {
-    background: #ffffff;
+    background: #0a0a0a;
+    color: rgba(255, 255, 255, 0.88);
     text-align: center;
     padding: 6px 12px;
     font-size: 12px;
@@ -102,18 +103,23 @@ img.home-vlog-card-image {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    /* Blagi rub prema headeru — bez sive rupe */
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .promo-bar p {
     margin: 0;
     max-width: 100%;
+    color: rgba(255, 255, 255, 0.88);
 }
 
 .promo-bar a {
     text-decoration: underline;
     margin-left: 4px;
+    color: #fff;
+}
+
+.promo-bar a:hover {
+    color: var(--ozr-green, #5BB805);
 }
 
 /* Header — IZNAD promo trake (z-index), top = ispod pune visine promo */
@@ -1039,6 +1045,21 @@ body.search-suggest-open .header-float-ctas {
     color: var(--gray-400);
 }
 
+.header .search-suggestion-name {
+    color: #f5f5f5;
+}
+
+.header .search-suggestion-price {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.header .search-suggestion-meta,
+.header .search-suggestions-empty,
+.header .search-suggestions-footer,
+.header .search-suggestions-section-label {
+    color: rgba(255, 255, 255, 0.55);
+}
+
 .search-suggestion-name {
     flex: 1;
     min-width: 0;
@@ -1197,7 +1218,7 @@ main {
     color: #111 !important;
 }
 
-/* Hero Carousel — 1920×420; edge-to-edge full bleed */
+/* Hero Carousel — 1920×640; edge-to-edge full bleed */
 .hero-carousel {
     position: relative;
     width: 100%;
@@ -1216,8 +1237,8 @@ main {
 
 .carousel-track {
     width: 100%;
-    /* 1920×420 — isti omjer kao upload/process hero banera */
-    aspect-ratio: 1920 / 420;
+    /* 1920×640 — isti omjer kao upload/process hero banera */
+    aspect-ratio: 1920 / 640;
     position: relative;
     height: auto;
     margin: 0;
@@ -1231,7 +1252,7 @@ main {
     }
 
     .hero-carousel .carousel-track {
-        aspect-ratio: 1920 / 420;
+        aspect-ratio: 1920 / 640;
     }
 
     .hero-carousel .slide-image-img,
@@ -1290,7 +1311,7 @@ main {
     width: 100%;
     height: 100%;
     max-width: none;
-    /* cover: popuni hero (1920×420), bez bijelih traka */
+    /* cover: popuni hero (1920×640), bez bijelih traka */
     object-fit: cover;
     object-position: center center;
     background: #0a0a0a;
@@ -1834,6 +1855,17 @@ main > .grid-banners:first-child {
     padding-top: 48px;
 }
 
+.home-products--novo.home-products--mockup,
+.home-products--izdvojeno.home-products--mockup,
+.home-products--akcija.home-products--mockup {
+    padding-top: 16px;
+    padding-bottom: 0;
+}
+
+.home-products--mockup + .home-products--mockup {
+    padding-top: 8px;
+}
+
 /* Brend sekcije na početnoj (slide karusel, kao Noviteti / HIT) */
 .home-products--brand-showcase {
     padding-top: 40px;
@@ -1937,6 +1969,11 @@ main > .grid-banners:first-child {
 }
 
 .home-products--izdvojeno {
+    padding-top: 16px;
+}
+
+/* Tighter stack when mockup sections follow each other */
+.home-products--izdvojeno.home-products--mockup {
     padding-top: 16px;
 }
 
@@ -10491,7 +10528,7 @@ button.nav-action-link {
 
     .site-chrome-backdrop {
         height: var(--site-chrome-top);
-        background: #ffffff;
+        background: #0a0a0a;
     }
 
     .promo-bar {
@@ -10499,7 +10536,8 @@ button.nav-action-link {
         padding: 5px 10px;
         font-size: 11px;
         line-height: 1.3;
-        background: #ffffff;
+        background: #0a0a0a;
+        color: rgba(255, 255, 255, 0.88);
     }
 
     .promo-bar p {
@@ -10512,17 +10550,17 @@ button.nav-action-link {
 
     .header {
         z-index: 1002;
-        background: #ffffff;
-        box-shadow: 0 -8px 0 0 #ffffff;
+        background: #0a0a0a;
+        box-shadow: 0 -8px 0 0 #0a0a0a;
     }
 
     .header-shell {
-        background: #ffffff;
+        background: #0a0a0a;
     }
 
     .header-row--primary {
-        background: #ffffff;
-        box-shadow: 0 1px 0 var(--gray-200);
+        background: #0a0a0a;
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
     .logo-brand,
@@ -11803,11 +11841,11 @@ button.nav-action-link {
     }
 
     .carousel-track {
-        aspect-ratio: 1920 / 420;
+        aspect-ratio: 1920 / 640;
         width: 100%;
         height: auto;
         padding-bottom: 0;
-        min-height: 110px;
+        min-height: 160px;
     }
 
     .carousel-slide {
@@ -14104,7 +14142,7 @@ button.nav-action-link {
     }
 
     .hero-carousel .carousel-track {
-        aspect-ratio: 1920 / 420;
+        aspect-ratio: 1920 / 640;
         padding-bottom: 0;
         height: auto;
     }
@@ -22569,4 +22607,4082 @@ body.fish-advisor-open .public-online {
     .public-online__dot {
         animation: none;
     }
+}
+
+/* ==========================================================================
+   Home mockup layout (trust bar, section headers, promo cards, newsletter)
+   Colors match design: green #5BB805, black cards, clean white sections
+   ========================================================================== */
+
+:root {
+    --ozr-green: #5BB805;
+    --ozr-green-hover: #4fa104;
+    --ozr-green-soft: #e8f8d4;
+    --ozr-dark: #0f0f0f;
+    --ozr-card-border: #ececec;
+}
+
+/* Hero CTA — zelena kao na mockupu, bijeli tekst */
+.slide-content .btn-banner,
+.grid-banner .card-actions .btn-banner,
+.featured-card .card-actions .btn-banner,
+.spotlight-content .btn-banner {
+    background: var(--btn-banner, var(--ozr-green));
+    color: #fff !important;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 22px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 16px rgba(91, 184, 5, 0.35);
+}
+
+.slide-content .btn-banner:hover,
+.grid-banner .card-actions .btn-banner:hover,
+.featured-card .card-actions .btn-banner:hover,
+.spotlight-content .btn-banner:hover {
+    background: var(--btn-banner-hover, var(--ozr-green-hover));
+    color: #fff !important;
+}
+
+.slide-content {
+    left: clamp(24px, 5vw, 64px);
+    bottom: clamp(48px, 10vw, 100px);
+    max-width: min(560px, 90%);
+}
+
+.slide-content h2 {
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+}
+
+.slide-subtitle {
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
+    font-size: clamp(14px, 1.6vw, 17px);
+    line-height: 1.45;
+}
+
+/* —— Trust bar ispod hero-a (kompletno crno, kao na mockupu) —— */
+.home-trust-bar {
+    background: #0a0a0a;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0;
+    color: #fff;
+    width: 100%;
+}
+
+.home-trust-bar__inner {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 18px 20px;
+}
+
+.home-trust-bar__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.home-trust-bar__item:last-child {
+    border-right: none;
+}
+
+.home-trust-bar__icon {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ozr-green, #5BB805);
+    background: rgba(91, 184, 5, 0.12);
+    border-radius: 10px;
+}
+
+.home-trust-bar__icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.home-trust-bar__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.home-trust-bar__title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.home-trust-bar__sub {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.62);
+    line-height: 1.3;
+}
+
+/* —— Section headers (Izdvojeni / Noviteti / Akcija) —— */
+.home-section-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 20px;
+    padding: 0 calc(var(--home-product-inset) + 8px);
+    box-sizing: border-box;
+}
+
+.home-section-header__text {
+    min-width: 0;
+}
+
+.home-section-header__title {
+    margin: 0;
+    font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ozr-dark);
+    line-height: 1.15;
+}
+
+.home-section-header__subtitle {
+    margin: 6px 0 0;
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.home-section-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.home-section-header__see-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gray-600);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+}
+
+.home-section-header__see-all svg {
+    width: 14px;
+    height: 14px;
+}
+
+.home-section-header__see-all:hover {
+    color: var(--ozr-green);
+}
+
+.home-section-header--novo .home-section-header__title {
+    color: var(--ozr-dark);
+}
+
+.home-section-header--izdvojeno .home-section-header__title {
+    color: var(--ozr-dark);
+}
+
+.home-section-header--akcija .home-section-header__title {
+    color: var(--ozr-dark);
+}
+
+.home-section-header--brands {
+    justify-content: center;
+    margin-bottom: 18px;
+    padding: 0 var(--home-product-inset);
+}
+
+.home-section-header--brands .home-section-header__title {
+    text-align: center;
+}
+
+/* Mockup product sections */
+.home-products--mockup {
+    padding-top: 20px;
+    padding-bottom: 0;
+}
+
+.home-products--mockup + .home-products--mockup {
+    padding-top: 12px;
+}
+
+.home-products--akcija {
+    padding-top: 12px;
+    padding-bottom: 4px;
+}
+
+/* Cleaner product cards on home */
+.home-products--mockup .product-card--catalog {
+    border: 1px solid var(--ozr-card-border);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+    transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+
+.home-products--mockup .product-card--catalog:hover {
+    border-color: #d4d4d4;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+}
+
+/* Override old colored italic headers when mockup header is used */
+.home-products--mockup .home-products-header--novo,
+.home-products--mockup .home-products-header--izdvojeno {
+    display: none;
+}
+
+/* —— Promo kartice (tamne) —— */
+.home-promo-cards {
+    padding: 36px var(--home-product-inset) 16px;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+.home-promo-cards__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.home-promo-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 128px;
+    padding: 22px 20px;
+    border-radius: 14px;
+    background: var(--ozr-dark);
+    color: #fff;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+a.home-promo-card {
+    text-decoration: none;
+    color: #fff;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+a.home-promo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+    color: #fff;
+}
+
+.home-promo-card__body {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.home-promo-card__title {
+    margin: 0 0 6px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1.25;
+}
+
+.home-promo-card__sub {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.home-promo-card__badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: var(--ozr-green);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.home-promo-card__icon {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.85);
+    opacity: 0.9;
+}
+
+.home-promo-card__icon svg {
+    width: 40px;
+    height: 40px;
+}
+
+/* —— Vlog + Newsletter —— */
+.home-vlog--mockup {
+    padding: 40px 0 24px;
+}
+
+.home-vlog__wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 var(--home-product-inset);
+    box-sizing: border-box;
+}
+
+.home-vlog--mockup .home-section-header {
+    padding: 0;
+}
+
+.home-vlog__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.home-vlog__layout--full {
+    grid-template-columns: 1fr;
+}
+
+.home-vlog-grid--cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.home-vlog-card--rich {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--ozr-card-border);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.home-vlog-card--rich:hover {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+}
+
+.home-vlog-card--rich .home-vlog-card-image-wrap {
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: #f3f3f3;
+}
+
+.home-vlog-card--rich .home-vlog-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.home-vlog-card__body {
+    padding: 14px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 auto;
+}
+
+.home-vlog-card__date {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    letter-spacing: 0.02em;
+}
+
+.home-vlog-card__title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ozr-dark);
+}
+
+.home-vlog-card__teaser {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--gray-600);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.home-vlog-card__more {
+    margin-top: auto;
+    padding-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ozr-green);
+}
+
+.home-vlog-card__more svg {
+    width: 14px;
+    height: 14px;
+}
+
+.home-newsletter {
+    background: var(--ozr-dark);
+    color: #fff;
+    border-radius: 14px;
+    padding: 28px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.home-newsletter__title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
+}
+
+.home-newsletter__sub {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.home-newsletter__form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.home-newsletter__input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+}
+
+.home-newsletter__input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.home-newsletter__input:focus {
+    border-color: var(--ozr-green);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.home-newsletter__btn {
+    border: none;
+    border-radius: 8px;
+    background: var(--ozr-green);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease;
+}
+
+.home-newsletter__btn:hover:not(:disabled) {
+    background: var(--ozr-green-hover);
+}
+
+.home-newsletter__btn:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.home-newsletter__note {
+    margin: 0;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.45);
+    line-height: 1.35;
+}
+
+.home-newsletter__msg {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.home-newsletter__msg.is-ok {
+    color: #86efac;
+}
+
+.home-newsletter__msg.is-err {
+    color: #fca5a5;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Brand strip with title */
+.home-brand-strip-section--mockup {
+    padding: 36px 0 48px;
+}
+
+.home-brand-strip-section--mockup .home-brand-grid {
+    /* single row scroll-feel on large: keep 2-row grid but more polished */
+    border-top: none;
+}
+
+/* NOVO ribbon green (mockup) */
+.product-home-ribbon--novo,
+.product-card-corner-badge--novitet {
+    background: var(--ozr-green) !important;
+    color: #fff !important;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .home-trust-bar__inner {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 0;
+        padding: 16px;
+    }
+
+    .home-trust-bar__item {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 10px 8px;
+    }
+
+    .home-trust-bar__item:nth-child(odd) {
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .home-trust-bar__item:nth-last-child(-n+2) {
+        border-bottom: none;
+    }
+
+    .home-promo-cards__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-vlog__layout {
+        grid-template-columns: 1fr;
+    }
+
+    .home-vlog-grid--cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .home-trust-bar__inner {
+        grid-template-columns: 1fr 1fr;
+        padding: 12px;
+    }
+
+    .home-section-header {
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 0 var(--home-mobile-side-inset);
+        margin-bottom: 14px;
+    }
+
+    .home-section-header__title {
+        font-size: 1.15rem;
+    }
+
+    .home-products--mockup {
+        padding-top: 28px;
+    }
+
+    .home-promo-cards {
+        padding: 24px var(--home-mobile-side-inset) 8px;
+    }
+
+    .home-promo-cards__grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .home-promo-card {
+        min-height: 110px;
+        padding: 16px 14px;
+        border-radius: 12px;
+    }
+
+    .home-promo-card__title {
+        font-size: 0.78rem;
+    }
+
+    .home-promo-card__icon {
+        flex-basis: 36px;
+        width: 36px;
+        height: 36px;
+    }
+
+    .home-promo-card__icon svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    .home-vlog__wrap {
+        padding: 0 var(--home-mobile-side-inset);
+    }
+
+    .home-vlog-grid--cards {
+        grid-template-columns: 1fr;
+    }
+
+    .home-vlog-grid--cards .home-vlog-card:nth-child(n+3) {
+        display: none;
+    }
+
+    .home-brand-strip-section--mockup {
+        padding: 28px 0 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-trust-bar__inner {
+        grid-template-columns: 1fr;
+    }
+
+    .home-trust-bar__item {
+        border-right: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .home-trust-bar__item:last-child {
+        border-bottom: none;
+    }
+
+    .home-promo-cards__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   Black header + category bar (mockup)
+   ========================================================================== */
+
+.site-chrome-backdrop {
+    background: #0a0a0a;
+}
+
+.promo-bar {
+    background: #0a0a0a;
+    color: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.promo-bar a {
+    color: #fff;
+}
+
+.header {
+    background: #0a0a0a;
+    box-shadow: 0 -6px 0 0 #0a0a0a;
+    color: #fff;
+}
+
+.header.scrolled {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.header.mega-active {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.header-shell {
+    background: #0a0a0a;
+}
+
+.header-row--primary {
+    background: #0a0a0a;
+    color: #fff;
+}
+
+.header-row--categories {
+    background: #0a0a0a;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Logo — bijeli / zelena accent na crnom headeru */
+.header .logo {
+    color: #ffffff;
+}
+
+.header .logo-name {
+    color: #ffffff;
+}
+
+.header .logo-accent {
+    color: var(--ozr-green, #5BB805);
+    font-weight: 700;
+}
+
+.header .logo-tld {
+    color: var(--ozr-green, #5BB805);
+}
+
+.header .logo-by {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.header .logo-icon {
+    color: #fff;
+}
+
+/* Ako logo slika ima bijelu pozadinu — blagi radius; ne forsiramo filter */
+.header .logo-image {
+    /* Transparent / light logo looks best on black header */
+    filter: none;
+}
+
+.header .search-close svg {
+    stroke: rgba(255, 255, 255, 0.7);
+}
+
+/* Search suggestion rows on dark panel */
+.header .header-search .search-suggestions a,
+.header .header-search .search-suggestions .search-suggestion,
+.header .header-search .search-suggestions [role="option"] {
+    color: #f5f5f5;
+}
+
+.header .header-search .search-suggestions a:hover,
+.header .header-search .search-suggestions .is-active {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+/* Search — tamna zaobljena traka kao na mockupu */
+.header .header-search-form {
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 10px 18px;
+}
+
+.header .header-search-form:focus-within {
+    border-color: rgba(91, 184, 5, 0.55);
+    box-shadow: 0 0 0 2px rgba(91, 184, 5, 0.15);
+}
+
+.header .header-search-form svg {
+    stroke: rgba(255, 255, 255, 0.55);
+}
+
+.header .header-search-form input {
+    color: #fff;
+}
+
+.header .header-search-form input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.header .header-search .search-suggestions {
+    background: #141414;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+/* Nav actions — bijele ikone */
+.header .nav-action-link {
+    color: #fff;
+}
+
+.header .nav-action-link svg {
+    stroke: #fff;
+}
+
+.header .nav-action-label {
+    color: #fff;
+}
+
+.header .nav-action-link:hover {
+    opacity: 0.8;
+}
+
+.header .header-phone {
+    gap: 8px;
+}
+
+.header .header-phone__num {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.header .staff-edit-mode-toggle {
+    color: #fff;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: inherit;
+    padding: 0;
+}
+
+.header .staff-edit-mode-toggle.is-on {
+    color: var(--ozr-green, #5BB805);
+}
+
+.header .staff-edit-mode-toggle.is-on svg {
+    stroke: var(--ozr-green, #5BB805);
+}
+
+.header .cart-badge {
+    background: var(--ozr-green, #5BB805);
+    color: #fff;
+}
+
+.header .nav-toggle {
+    color: #fff;
+}
+
+.header .nav-toggle svg {
+    stroke: #fff;
+}
+
+/* Kategorije — bijeli uppercase linkovi */
+.header-row--categories .nav-menu a {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 12px;
+}
+
+.header-row--categories .nav-menu a::after {
+    background: var(--ozr-green, #5BB805);
+    height: 2px;
+    bottom: 4px;
+}
+
+.header-row--categories .nav-item:hover > a,
+.header-row--categories .nav-item.mega-open > a {
+    color: var(--ozr-green, #5BB805);
+}
+
+/* AKCIJE — zelena (kao na mockupu), bez crvenog pill dugmeta */
+.header-row--categories .nav-item--akcija > a.nav-link-akcija {
+    background: transparent;
+    color: var(--ozr-green, #5BB805) !important;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    border-radius: 0;
+    box-shadow: none;
+    line-height: 1.3;
+}
+
+.header-row--categories .nav-item--akcija > a.nav-link-akcija:hover {
+    background: transparent;
+    color: #7ed321 !important;
+    transform: none;
+    box-shadow: none;
+}
+
+.header-row--categories .nav-item--akcija > a.nav-link-akcija::after {
+    display: none;
+}
+
+.header-row--categories .nav-item--brendovi > a.nav-link-brendovi {
+    color: #fff;
+}
+
+.header-row--categories .nav-item--brendovi > a.nav-link-brendovi:hover {
+    color: var(--ozr-green, #5BB805);
+}
+
+/* Chevron na crnom headeru */
+.header-row--categories .nav-chevron {
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+@media (min-width: 1025px) {
+    .header-row--categories .nav-menu {
+        gap: 2px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .header-row--categories .nav-menu a {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        padding: 12px 14px;
+        color: #fff;
+    }
+
+    .header-row--categories .nav-item--akcija > a.nav-link-akcija {
+        margin-left: 4px;
+        padding: 12px 14px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .header-row--categories .nav-item--noviteti > a.nav-link-noviteti {
+        /* desktop: noviteti u float CTA; u meniju sakrij ako ostane */
+    }
+
+    .header .nav-action-label {
+        color: #fff;
+        font-size: 13px;
+    }
+
+    .header .nav-action-link {
+        color: #fff;
+    }
+
+    .header .nav-action-link svg {
+        stroke: #fff;
+    }
+
+    .header .nav-action-link.cart-btn svg circle {
+        fill: #fff;
+    }
+}
+
+/* Mega menu ostaje bijeli dropdown ispod crnog bara */
+.mega-menu-panel {
+    background: #fff;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Mobile drawer: zadrži čitljiv panel; top bar i dalje crn */
+@media (max-width: 1024px) {
+    .header-row--primary {
+        background: #0a0a0a;
+    }
+
+    .header .header-search-form {
+        border-radius: 10px;
+    }
+
+    /* Mobilni full-screen meni kategorija — bijeli sadržaj, crni header red */
+    .mobile-nav-panel.is-open {
+        background: #0f0f0f;
+        color: #fff;
+    }
+
+    .mobile-nav-panel.is-open .mobile-nav-panel__header {
+        background: #0a0a0a;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .mobile-nav-panel.is-open .mobile-nav-panel__back {
+        color: #fff;
+    }
+
+    .header-row--categories .nav-menu.mobile-open a,
+    .mobile-nav-panel.is-open .nav-menu a {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .mobile-nav-panel.is-open .nav-link-akcija {
+        color: var(--ozr-green, #5BB805) !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+}
+
+
+.header .logo,
+.header .logo-brand,
+.header .logo-image {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.header .logo-image {
+    mix-blend-mode: normal;
+}
+
+/* ==========================================================================
+   Home mockup: product cards, footer, blog polish
+   ========================================================================== */
+
+/* —— Product cards on home sections —— */
+.home-products--mockup .product-card--catalog {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 12px 12px 14px;
+    border: 1px solid #ececec;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+    overflow: hidden;
+}
+
+.home-products--mockup .product-card--catalog:hover {
+    border-color: #ddd;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+    transform: translateY(-2px);
+}
+
+.home-products--mockup .product-card__top {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+}
+
+.home-products--mockup .product-card__media {
+    width: 100%;
+    max-width: none;
+}
+
+.home-products--mockup .product-image {
+    aspect-ratio: 1;
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.home-products--mockup .product-card__media-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.home-products--mockup .product-image img,
+.home-products--mockup .product-image .product-image-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
+.home-products--mockup .product-card__body {
+    margin-top: 10px;
+    padding: 0 2px;
+    width: 100%;
+}
+
+.home-products--mockup .product-card__title {
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #111;
+    min-height: 2.7em;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.home-products--mockup .product-card__stock,
+.home-products--mockup .product-card__origin-slot,
+.home-products--mockup .product-card__sale-expiry,
+.home-products--mockup .staff-stock-badge,
+.home-products--mockup .product-card__brand-row,
+.home-products--mockup .product-card__actions,
+.home-products--mockup .variation-swatches {
+    display: none !important;
+}
+
+.home-products--mockup .product-card__price-block {
+    margin-top: 8px;
+    padding: 0 2px;
+}
+
+.home-products--mockup .product-card__price {
+    gap: 6px 8px;
+}
+
+.home-products--mockup .price-current,
+.home-products--mockup .price-sale {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111;
+}
+
+.home-products--mockup .price-sale {
+    color: #dc2626;
+}
+
+.home-products--mockup .price-original {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    text-decoration: line-through;
+}
+
+/* Corner badges: NOVO green, sale red */
+.product-card-corner-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.product-card-corner-badge--novitet {
+    background: #5BB805 !important;
+    color: #fff !important;
+    animation: none !important;
+}
+
+.product-card-corner-badge--sale {
+    background: #dc2626;
+    color: #fff;
+}
+
+.product-card-corner-badge--hit {
+    background: #c2410c;
+    color: #fff;
+    animation: none !important;
+}
+
+.home-products--mockup .product-card-corner-badge {
+    top: 18px;
+    left: 18px;
+}
+
+/* Home carousel spacing */
+.home-products--mockup .home-product-carousel--catalog {
+    padding: 0 calc(var(--home-product-inset) + 36px);
+}
+
+.home-products--mockup .home-product-carousel__btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #e5e5e5;
+    background: #fff;
+    color: #111;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.home-products--mockup .home-product-carousel__btn:hover:not(:disabled) {
+    border-color: #5BB805;
+    color: #5BB805;
+}
+
+.home-products--mockup .home-section-header {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+}
+
+.home-products--mockup {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.home-products--mockup .home-product-catalog {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+
+/* —— Footer mockup (5 columns, dark) —— */
+.footer.footer--mockup {
+    background: #0a0a0a;
+    color: rgba(255, 255, 255, 0.72);
+    margin-top: 0;
+    padding: 0;
+}
+
+.footer--mockup .footer-main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 24px 36px;
+    box-sizing: border-box;
+}
+
+.footer-grid--mockup {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr 1.15fr;
+    gap: 32px 28px;
+    align-items: start;
+}
+
+.footer--mockup .footer-brand-title {
+    display: block;
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fff;
+    text-decoration: none;
+}
+
+.footer--mockup .footer-brand-desc {
+    margin: 0 0 18px;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.62);
+    max-width: 280px;
+}
+
+.footer--mockup .footer-contact-list {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.footer--mockup .footer-contact-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.footer--mockup .footer-contact-list svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--ozr-green, #5BB805);
+}
+
+.footer--mockup .footer-contact-list a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+}
+
+.footer--mockup .footer-contact-list a:hover {
+    color: #fff;
+}
+
+.footer--mockup .footer-social {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer--mockup .footer-social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.footer--mockup .footer-social a:hover {
+    background: var(--ozr-green, #5BB805);
+    color: #fff;
+}
+
+.footer--mockup .footer-social svg {
+    width: 16px;
+    height: 16px;
+}
+
+.footer--mockup .footer-section-title {
+    margin: 0 0 14px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.footer--mockup .footer-link-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.footer--mockup .footer-link-list a {
+    font-size: 0.84rem;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.footer--mockup .footer-link-list a:hover {
+    color: var(--ozr-green, #5BB805);
+}
+
+.footer--mockup .footer-pay-logos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.footer--mockup .footer-pay-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: #fff;
+    color: #111;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.footer--mockup .footer-secure-note {
+    margin: 0 0 14px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.footer--mockup .footer-ssl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(91, 184, 5, 0.35);
+    background: rgba(91, 184, 5, 0.08);
+    color: #fff;
+}
+
+.footer--mockup .footer-ssl-badge svg {
+    width: 22px;
+    height: 22px;
+    color: var(--ozr-green, #5BB805);
+    flex-shrink: 0;
+}
+
+.footer--mockup .footer-ssl-badge strong {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--ozr-green, #5BB805);
+}
+
+.footer--mockup .footer-ssl-badge span {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.footer-bottom--mockup {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px 24px;
+    text-align: center;
+    background: #050505;
+}
+
+.footer-bottom--mockup p {
+    margin: 0;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+/* —— Blog / brands polish —— */
+.home-vlog--mockup {
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+}
+
+.home-vlog-card--rich {
+    border-radius: 12px;
+    border: 1px solid #ececec;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.home-vlog-card__more {
+    color: #5BB805;
+    font-weight: 700;
+}
+
+.home-brand-strip-section--mockup {
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    padding: 40px 0 48px;
+}
+
+.home-brand-strip-section--mockup .home-brand-grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 16px 28px;
+    overflow-x: auto;
+    grid-template-rows: none;
+    grid-auto-flow: unset;
+    grid-auto-columns: unset;
+    align-items: center;
+    justify-content: flex-start;
+    scrollbar-width: thin;
+}
+
+.home-brand-strip-section--mockup .home-brand-grid__item {
+    flex: 0 0 auto;
+    height: 48px;
+    min-width: 100px;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 6px 10px;
+}
+
+.home-brand-strip-section--mockup .showcase-brand-logo {
+    max-height: 32px;
+    filter: grayscale(1);
+    opacity: 0.75;
+    transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.home-brand-strip-section--mockup .home-brand-grid__item:hover .showcase-brand-logo {
+    filter: none;
+    opacity: 1;
+}
+
+@media (max-width: 1024px) {
+    .footer-grid--mockup {
+        grid-template-columns: 1fr 1fr;
+        gap: 28px 20px;
+    }
+
+    .footer--mockup .footer-column--brand {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-products--mockup .home-product-carousel--catalog {
+        padding: 0 var(--home-mobile-side-inset);
+    }
+
+    .home-products--mockup .home-product-catalog {
+        padding: 0;
+    }
+
+    .home-products--mockup .product-card--catalog {
+        padding: 10px 8px 12px;
+        border-radius: 10px;
+    }
+
+    .home-products--mockup .product-card__title {
+        font-size: 0.78rem;
+    }
+
+    .footer--mockup .footer-main {
+        padding: 36px 16px 28px;
+    }
+
+    .footer-grid--mockup {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+
+    .footer--mockup .footer-brand-desc {
+        max-width: none;
+    }
+}
+
+/* ==========================================================================
+   Home product cards — exact mockup (NOVO / −% / heart / clean price)
+   ========================================================================== */
+
+.product-card--home-mockup {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 14px 12px 16px;
+    border: 1px solid #ebebeb;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    box-sizing: border-box;
+    transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+
+.product-card--home-mockup:hover {
+    border-color: #e0e0e0;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+    transform: translateY(-2px);
+}
+
+/* Badges top-left */
+.hm-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.hm-badge--novo {
+    background: #5BB805;
+    color: #fff;
+}
+
+.hm-badge--sale {
+    background: #e11d48;
+    color: #fff;
+}
+
+/* Wishlist heart top-right */
+.hm-wish {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #c4c4c4;
+    cursor: default;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.hm-wish svg {
+    width: 18px;
+    height: 18px;
+}
+
+.product-card--home-mockup:hover .hm-wish {
+    color: #999;
+}
+
+/* Image area */
+.hm-media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    margin: 4px 0 12px;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.hm-media img,
+.hm-media .product-image-placeholder,
+.hm-media picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
+.hm-media picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.hm-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 2px;
+}
+
+.hm-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.5em;
+    margin: 0;
+    font-size: 0.84rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #1a1a1a;
+    text-decoration: none;
+}
+
+.hm-title:hover {
+    color: #111;
+}
+
+.hm-price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 8px;
+    margin-top: auto;
+}
+
+.hm-price__now {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.01em;
+}
+
+.hm-price__old {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #a3a3a3;
+    text-decoration: line-through;
+}
+
+.hm-price__sale {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #dc2626;
+    letter-spacing: -0.01em;
+}
+
+/* Akcijska ponuda: nova cijena crvena (eksplicitno) */
+.home-products--akcija .hm-price__sale {
+    color: #dc2626;
+}
+
+/* Carousel layout for mockup cards */
+.home-product-carousel--mockup .home-product-carousel__slide {
+    display: flex;
+}
+
+.home-product-carousel--mockup .product-card--home-mockup {
+    width: 100%;
+    flex: 1 1 auto;
+}
+
+.home-products--mockup .home-product-carousel--mockup {
+    padding: 0 4px;
+}
+
+.home-products--mockup .home-product-carousel__btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    color: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.home-products--mockup .home-product-carousel__btn:hover:not(:disabled) {
+    border-color: #5BB805;
+    color: #5BB805;
+}
+
+.home-products--mockup .home-product-carousel__btn--prev {
+    left: 0;
+}
+
+.home-products--mockup .home-product-carousel__btn--next {
+    right: 0;
+}
+
+.home-products--mockup .home-product-catalog {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.home-products--mockup .home-section-header {
+    max-width: 1240px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.home-products--mockup {
+    padding-top: 20px;
+    padding-bottom: 0;
+}
+
+.home-products--mockup + .home-products--mockup {
+    padding-top: 12px;
+}
+
+.home-products--mockup .home-section-header {
+    margin-bottom: 12px;
+}
+
+/* Section title style like mockup */
+.home-products--mockup .home-section-header__title {
+    font-size: clamp(1.15rem, 2vw, 1.35rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #111;
+}
+
+.home-products--mockup .home-section-header__see-all {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #888;
+}
+
+.home-products--mockup .home-section-header__see-all:hover {
+    color: #5BB805;
+}
+
+/* Brand / category showcases keep catalog cards if needed */
+.home-products--brand-showcase .home-product-carousel--mockup .product-card--home-mockup,
+.home-products--category-showcase .product-card--home-mockup {
+    /* same mockup card is fine */
+}
+
+@media (max-width: 768px) {
+    .product-card--home-mockup {
+        padding: 10px 8px 12px;
+        border-radius: 10px;
+    }
+
+    .hm-title {
+        font-size: 0.78rem;
+        min-height: 2.4em;
+    }
+
+    .hm-price__now,
+    .hm-price__sale {
+        font-size: 0.88rem;
+    }
+
+    .hm-wish {
+        width: 28px;
+        height: 28px;
+        top: 6px;
+        right: 6px;
+    }
+
+    .hm-badge {
+        top: 8px;
+        left: 8px;
+        font-size: 0.58rem;
+        min-height: 20px;
+        padding: 2px 6px;
+    }
+
+    .home-products--mockup .home-product-catalog {
+        padding: 0 8px;
+    }
+
+    .home-products--mockup .home-section-header {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+/* Tighter home product sections + red sale price (final overrides) */
+.home-products--izdvojeno.home-products--mockup,
+.home-products--novo.home-products--mockup,
+.home-products--akcija.home-products--mockup {
+    padding-top: 14px !important;
+    padding-bottom: 0 !important;
+}
+
+.home-products--mockup + .home-products--mockup {
+    padding-top: 6px !important;
+}
+
+.home-products--mockup .home-section-header {
+    margin-bottom: 10px;
+}
+
+.hm-price__sale,
+.home-products--akcija .hm-price__sale,
+.home-products--mockup .price-sale {
+    color: #dc2626 !important;
+}
+
+@media (max-width: 768px) {
+    .home-products--izdvojeno.home-products--mockup,
+    .home-products--novo.home-products--mockup,
+    .home-products--akcija.home-products--mockup {
+        padding-top: 12px !important;
+        padding-bottom: 0 !important;
+    }
+
+    .home-products--mockup + .home-products--mockup {
+        padding-top: 4px !important;
+    }
+}
+
+/* Desktop: product rows edge-to-edge with small side margins */
+@media (min-width: 1025px) {
+    .home-products--mockup .home-product-catalog {
+        max-width: none !important;
+        width: 100%;
+        margin: 0;
+        padding: 0 28px;
+        box-sizing: border-box;
+    }
+
+    .home-products--mockup .home-section-header {
+        max-width: none !important;
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 28px;
+        padding-right: 28px;
+        box-sizing: border-box;
+    }
+
+    .home-products--mockup .home-product-carousel,
+    .home-products--mockup .home-product-carousel--catalog,
+    .home-products--mockup .home-product-carousel--mockup {
+        width: 100%;
+        max-width: none;
+        padding: 0 44px; /* prostor za strelice + mali margin */
+        box-sizing: border-box;
+    }
+
+    .home-products--mockup .home-product-carousel__btn--prev {
+        left: 6px;
+    }
+
+    .home-products--mockup .home-product-carousel__btn--next {
+        right: 6px;
+    }
+
+    .home-products--mockup .home-product-carousel__track {
+        gap: 14px;
+    }
+
+    .home-products--mockup .catalog-layout,
+    .home-products--mockup .catalog-layout--full,
+    .home-products--mockup .catalog-products {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+@media (min-width: 1440px) {
+    .home-products--mockup .home-product-catalog,
+    .home-products--mockup .home-section-header {
+        padding-left: 36px;
+        padding-right: 36px;
+    }
+
+    .home-products--mockup .home-product-carousel,
+    .home-products--mockup .home-product-carousel--mockup {
+        padding: 0 52px;
+    }
+
+    .home-products--mockup .home-product-carousel__track {
+        gap: 16px;
+    }
+}
+
+/* Home mockup card: price left + cart icon right */
+.hm-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: auto;
+    width: 100%;
+}
+
+.hm-footer .hm-price {
+    margin-top: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.hm-cart-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: var(--btn-cart, #5BB805);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.28);
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hm-cart-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.hm-cart-btn:hover:not(:disabled) {
+    background: var(--btn-cart-hover, #4fa104);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(91, 184, 5, 0.35);
+}
+
+.hm-cart-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.hm-cart-btn:disabled,
+.hm-cart-btn--disabled {
+    background: #d4d4d4;
+    color: #fff;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .hm-cart-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+    }
+
+    .hm-cart-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Shared horizontal margins: promo + blog + brands = product cards above */
+@media (min-width: 1025px) {
+    :root {
+        /* catalog 28 + carousel 44 = product card edge */
+        --home-mockup-edge: 72px;
+    }
+
+    .home-promo-cards {
+        max-width: none !important;
+        width: 100%;
+        padding-left: var(--home-mockup-edge) !important;
+        padding-right: var(--home-mockup-edge) !important;
+        padding-top: 28px;
+        padding-bottom: 12px;
+        box-sizing: border-box;
+    }
+
+    .home-promo-cards__grid {
+        max-width: none !important;
+        width: 100%;
+        margin: 0;
+    }
+
+    .home-vlog--mockup {
+        width: 100%;
+    }
+
+    .home-vlog--mockup .home-vlog__wrap {
+        max-width: none !important;
+        width: 100%;
+        margin: 0;
+        padding-left: var(--home-mockup-edge) !important;
+        padding-right: var(--home-mockup-edge) !important;
+        box-sizing: border-box;
+    }
+
+    .home-vlog--mockup .home-section-header {
+        padding-left: 0;
+        padding-right: 0;
+        max-width: none;
+        width: 100%;
+    }
+
+    .home-brand-strip-section--mockup {
+        width: 100%;
+        box-sizing: border-box;
+        padding-left: var(--home-mockup-edge) !important;
+        padding-right: var(--home-mockup-edge) !important;
+    }
+
+    .home-brand-strip-section--mockup .home-section-header,
+    .home-brand-strip-section--mockup .home-section-header--brands {
+        max-width: none !important;
+        width: 100%;
+        margin: 0 0 18px;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .home-brand-strip-section--mockup .home-brand-grid {
+        max-width: none !important;
+        width: 100%;
+        margin: 0;
+        padding: 0 !important;
+        box-sizing: border-box;
+    }
+}
+
+@media (min-width: 1440px) {
+    :root {
+        /* catalog 36 + carousel 52 */
+        --home-mockup-edge: 88px;
+    }
+}
+
+/* Mobile: same inset as product catalog */
+@media (max-width: 1024px) {
+    .home-promo-cards {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .home-promo-cards__grid {
+        max-width: none;
+        width: 100%;
+    }
+
+    .home-vlog--mockup .home-vlog__wrap {
+        max-width: none;
+        width: 100%;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .home-brand-strip-section--mockup {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .home-brand-strip-section--mockup .home-brand-grid {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-promo-cards {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .home-vlog--mockup .home-vlog__wrap {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .home-brand-strip-section--mockup {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+}
+
+/* Promo cards: zelene ikone kao na mockupu (vjernost, poklon, akcije) */
+.home-promo-card__visual {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    min-height: 72px;
+}
+
+.home-promo-card__icon {
+    color: var(--ozr-green, #5BB805) !important;
+    opacity: 1 !important;
+    width: 56px;
+    height: 56px;
+    flex: 0 0 56px;
+}
+
+.home-promo-card__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.home-promo-card__icon--truck {
+    width: 64px;
+    height: 48px;
+    flex-basis: 64px;
+}
+
+/* Pečat — Vjernost se isplati */
+.home-promo-card__seal {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ozr-green, #5BB805);
+}
+
+.home-promo-card__seal-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.home-promo-card__seal-text {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--ozr-green, #5BB805);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-align: center;
+    line-height: 1.15;
+    text-transform: uppercase;
+    padding: 6px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 14px rgba(91, 184, 5, 0.35);
+}
+
+/* Poklon kartica */
+.home-promo-card__gift {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-promo-card__gift-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 92px;
+    height: 64px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #6ed20a 0%, #5BB805 45%, #3d8a04 100%);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(91, 184, 5, 0.35);
+    transform: rotate(-6deg);
+}
+
+.home-promo-card__gift-icon {
+    width: 22px;
+    height: 22px;
+    color: #fff;
+}
+
+.home-promo-card__gift-label {
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+}
+
+.home-promo-card__gift-sub {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    opacity: 0.9;
+}
+
+/* Cjenovna etiketa — Akcije i popusti */
+.home-promo-card__tag {
+    width: 72px;
+    height: 72px;
+    color: var(--ozr-green, #5BB805);
+    filter: drop-shadow(0 4px 10px rgba(91, 184, 5, 0.35));
+    transform: rotate(12deg);
+}
+
+.home-promo-card__tag svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Hide old inline badge under title — visual has the highlight now */
+.home-promo-card--percent .home-promo-card__badge,
+.home-promo-card--gift .home-promo-card__badge,
+.home-promo-card--tag .home-promo-card__badge {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .home-promo-card__seal {
+        width: 72px;
+        height: 72px;
+    }
+
+    .home-promo-card__seal-text {
+        width: 52px;
+        height: 52px;
+        font-size: 0.62rem;
+    }
+
+    .home-promo-card__gift-card {
+        width: 76px;
+        height: 54px;
+    }
+
+    .home-promo-card__tag {
+        width: 58px;
+        height: 58px;
+    }
+
+    .home-promo-card__icon--truck {
+        width: 52px;
+        height: 40px;
+    }
+}
+
+/* ==========================================================================
+   Promo cards — exact match to reference (green titles + green icons)
+   ========================================================================== */
+
+.home-promo-cards__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.home-promo-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 118px;
+    padding: 20px 18px 20px 20px;
+    border-radius: 14px;
+    background: #0a0a0a;
+    color: #fff;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+a.home-promo-card {
+    text-decoration: none;
+    color: #fff;
+}
+
+a.home-promo-card:hover {
+    color: #fff;
+}
+
+.home-promo-card__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    z-index: 1;
+}
+
+/* Naslov — ZELENI kao na slici */
+.home-promo-card__title {
+    margin: 0 0 6px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    color: var(--ozr-green, #5BB805) !important;
+}
+
+/* Podnaslov — bijeli / sivo-bijeli */
+.home-promo-card__sub {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* Sakrij stari badge ispod teksta — info je u ikoni */
+.home-promo-card__badge {
+    display: none !important;
+}
+
+.home-promo-card__visual {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 76px;
+    color: var(--ozr-green, #5BB805);
+}
+
+/* Generic outline icons */
+.home-promo-icon {
+    display: block;
+    width: 56px;
+    height: 56px;
+    color: var(--ozr-green, #5BB805);
+}
+
+.home-promo-icon--truck {
+    width: 64px;
+    height: 48px;
+}
+
+.home-promo-icon--tag {
+    width: 64px;
+    height: 64px;
+    transform: rotate(8deg);
+    filter: drop-shadow(0 2px 8px rgba(91, 184, 5, 0.25));
+}
+
+/* Seal DO 10% */
+.home-promo-seal {
+    position: relative;
+    width: 86px;
+    height: 86px;
+    color: var(--ozr-green, #5BB805);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-promo-seal__ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.home-promo-seal__core {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--ozr-green, #5BB805);
+    box-shadow: 0 2px 10px rgba(91, 184, 5, 0.3);
+}
+
+.home-promo-seal__value {
+    color: #0a0a0a;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    text-align: center;
+    line-height: 1.1;
+    text-transform: uppercase;
+    padding: 4px;
+}
+
+/* Gift card */
+.home-promo-gift {
+    position: relative;
+    width: 100px;
+    height: 70px;
+    color: var(--ozr-green, #5BB805);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-promo-gift__shape {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.home-promo-gift__label {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding-top: 6px;
+    pointer-events: none;
+}
+
+.home-promo-gift__top {
+    font-size: 0.48rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--ozr-green, #5BB805);
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.home-promo-gift__amount {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--ozr-green, #5BB805);
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+}
+
+/* Stari stilovi ikona — prepiši u zeleno */
+.home-promo-card__icon {
+    color: var(--ozr-green, #5BB805) !important;
+    opacity: 1 !important;
+}
+
+.home-promo-card__seal,
+.home-promo-card__gift,
+.home-promo-card__tag {
+    color: var(--ozr-green, #5BB805);
+}
+
+@media (max-width: 1024px) {
+    .home-promo-cards__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .home-promo-card {
+        min-height: 104px;
+        padding: 16px 14px;
+        gap: 10px;
+    }
+
+    .home-promo-card__title {
+        font-size: 0.78rem;
+    }
+
+    .home-promo-card__sub {
+        font-size: 0.72rem;
+    }
+
+    .home-promo-seal {
+        width: 70px;
+        height: 70px;
+    }
+
+    .home-promo-seal__core {
+        width: 48px;
+        height: 48px;
+    }
+
+    .home-promo-seal__value {
+        font-size: 0.65rem;
+    }
+
+    .home-promo-gift {
+        width: 82px;
+        height: 58px;
+    }
+
+    .home-promo-icon--truck {
+        width: 52px;
+        height: 40px;
+    }
+
+    .home-promo-icon--tag {
+        width: 52px;
+        height: 52px;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-promo-cards__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Section titles: manji + poravnato s okvirom artikala */
+.home-products--mockup .home-section-header {
+    margin-bottom: 10px;
+}
+
+.home-products--mockup .home-section-header__title {
+    font-size: 0.95rem !important;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+
+.home-products--mockup .home-section-header__see-all {
+    font-size: 0.68rem !important;
+}
+
+@media (min-width: 1025px) {
+    /* Naslov = ista lijeva/desna linija kao kartice (catalog 28 + carousel 44) */
+    .home-products--mockup .home-section-header {
+        padding-left: 72px !important;
+        padding-right: 72px !important;
+        max-width: none !important;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+@media (min-width: 1440px) {
+    /* catalog 36 + carousel 52 */
+    .home-products--mockup .home-section-header {
+        padding-left: 88px !important;
+        padding-right: 88px !important;
+    }
+
+    .home-products--mockup .home-section-header__title {
+        font-size: 1rem !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .home-products--mockup .home-section-header {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .home-products--mockup .home-section-header__title {
+        font-size: 0.88rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-products--mockup .home-section-header {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .home-products--mockup .home-section-header__title {
+        font-size: 0.82rem !important;
+    }
+}
+
+/* Natpis u ravni s početkom okvira kartica
+   Header je UNUTAR .home-product-catalog (već ima 28/36px),
+   pa mu treba isti padding kao karusel (44/52px), ne 72/88. */
+@media (min-width: 1025px) {
+    .home-products--mockup .home-section-header {
+        padding-left: 44px !important;
+        padding-right: 44px !important;
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+@media (min-width: 1440px) {
+    .home-products--mockup .home-section-header {
+        padding-left: 52px !important;
+        padding-right: 52px !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    /* catalog + carousel na mobilnom — prati kartice */
+    .home-products--mockup .home-section-header {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .home-products--mockup .home-product-catalog {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .home-products--mockup .home-product-carousel--mockup {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-products--mockup .home-product-catalog {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+/* Blog / Vlog — isto kao product sekcije (mali naslov + u ravni s karticama) */
+.home-vlog--mockup .home-section-header {
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.home-vlog--mockup .home-section-header__title {
+    font-size: 0.95rem !important;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    color: #111;
+}
+
+.home-vlog--mockup .home-section-header__see-all {
+    font-size: 0.68rem !important;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #888;
+}
+
+.home-vlog--mockup .home-section-header__see-all:hover {
+    color: #5BB805;
+}
+
+/* Brands title same treatment */
+.home-brand-strip-section--mockup .home-section-header__title {
+    font-size: 0.95rem !important;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+@media (min-width: 1025px) {
+    /* Ista linija kao product kartice: 28 + 44 = 72px od ruba */
+    .home-vlog--mockup .home-vlog__wrap {
+        max-width: none !important;
+        width: 100%;
+        margin: 0;
+        padding-left: 72px !important;
+        padding-right: 72px !important;
+        box-sizing: border-box;
+    }
+
+    .home-vlog--mockup .home-section-header {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        width: 100%;
+        max-width: none;
+    }
+
+    .home-brand-strip-section--mockup {
+        padding-left: 72px !important;
+        padding-right: 72px !important;
+        box-sizing: border-box;
+    }
+
+    .home-brand-strip-section--mockup .home-section-header,
+    .home-brand-strip-section--mockup .home-section-header--brands {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: none !important;
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .home-brand-strip-section--mockup .home-brand-grid {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: none !important;
+        width: 100%;
+    }
+
+    /* Promo kartice ista linija */
+    .home-promo-cards {
+        padding-left: 72px !important;
+        padding-right: 72px !important;
+    }
+}
+
+@media (min-width: 1440px) {
+    .home-vlog--mockup .home-vlog__wrap,
+    .home-brand-strip-section--mockup,
+    .home-promo-cards {
+        padding-left: 88px !important;
+        padding-right: 88px !important;
+    }
+
+    .home-vlog--mockup .home-section-header__title,
+    .home-brand-strip-section--mockup .home-section-header__title {
+        font-size: 1rem !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .home-vlog--mockup .home-vlog__wrap,
+    .home-brand-strip-section--mockup,
+    .home-promo-cards {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .home-vlog--mockup .home-section-header__title {
+        font-size: 0.88rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-vlog--mockup .home-vlog__wrap,
+    .home-brand-strip-section--mockup,
+    .home-promo-cards {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .home-vlog--mockup .home-section-header__title {
+        font-size: 0.82rem !important;
+    }
+}
+
+/* Promo typography — identično referenci */
+.home-promo-card {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 132px;
+    padding: 22px 20px;
+    align-items: center;
+}
+
+.home-promo-card__title {
+    margin: 0 0 8px;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: 1.08;
+    color: #5BB805 !important;
+    white-space: pre-line; /* poštuje \n iz admina */
+}
+
+.home-promo-card__sub {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.9) !important;
+    white-space: pre-line;
+}
+
+/* Istaknuti iznos ispod (150 KM) */
+.home-promo-card__highlight {
+    margin: 4px 0 0;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+    color: #ffffff !important;
+}
+
+.home-promo-seal__value {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: #0a0a0a;
+    line-height: 1.05;
+}
+
+.home-promo-gift__top {
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 0.5rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+}
+
+.home-promo-gift__amount {
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+@media (min-width: 1200px) {
+    .home-promo-card__title {
+        font-size: 1.12rem;
+    }
+
+    .home-promo-card__sub {
+        font-size: 0.82rem;
+    }
+
+    .home-promo-card__highlight {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-promo-card__title {
+        font-size: 0.92rem;
+    }
+
+    .home-promo-card__sub {
+        font-size: 0.74rem;
+    }
+
+    .home-promo-card__highlight {
+        font-size: 1.05rem;
+    }
+}
+
+/* Uklonjena plutajuća dugmad Akcija / Noviteti (sekcije su na početnoj) */
+.header-float-ctas,
+#headerFloatCtas,
+.header-akcija-cta,
+.header-noviteti-cta {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Blog: kartice u ravni s naslovom „Vlog / Blog” (isti lijevi rub) */
+.home-vlog--mockup .home-section-header,
+.home-vlog--mockup .home-vlog__layout {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box;
+}
+
+.home-vlog--mockup .home-vlog-grid--cards {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Naslov i sadržaj dijele isti wrap padding — bez dodatnog pomaka */
+.home-vlog--mockup .home-section-header--blog {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+@media (min-width: 1025px) {
+    .home-vlog--mockup .home-vlog__wrap {
+        /* ista linija kao product kartice / naslovi artikala */
+        padding-left: 72px !important;
+        padding-right: 72px !important;
+    }
+
+    .home-vlog--mockup .home-section-header__title {
+        text-align: left;
+    }
+}
+
+@media (min-width: 1440px) {
+    .home-vlog--mockup .home-vlog__wrap {
+        padding-left: 88px !important;
+        padding-right: 88px !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .home-vlog--mockup .home-vlog__wrap {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-vlog--mockup .home-vlog__wrap {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+}
+
+/* Uploadana slika na promo kartici (desno) */
+.home-promo-card__img {
+    display: block;
+    width: 88px;
+    height: 88px;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
+.home-promo-card--has-image .home-promo-card__visual {
+    min-width: 88px;
+    min-height: 88px;
+}
+
+@media (max-width: 768px) {
+    .home-promo-card__img {
+        width: 68px;
+        height: 68px;
+    }
+}
+
+/* Naši brendovi: blizu jedan drugom, ali ne preblizu */
+.home-brand-strip-section--mockup .home-brand-grid {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px 28px !important; /* vertikalno 12, horizontalno 28 */
+    overflow-x: visible;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.home-brand-strip-section--mockup .home-brand-grid__item,
+.home-brand-strip-section--mockup .showcase-brand-link {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    height: 44px !important;
+    padding: 6px 12px !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.home-brand-strip-section--mockup .showcase-brand-logo {
+    display: block;
+    max-height: 28px;
+    width: auto;
+    max-width: 110px;
+    object-fit: contain;
+}
+
+@media (min-width: 1025px) {
+    .home-brand-strip-section--mockup .home-brand-grid {
+        gap: 14px 32px !important;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-brand-strip-section--mockup .home-brand-grid {
+        gap: 10px 20px !important;
+        justify-content: center;
+    }
+
+    .home-brand-strip-section--mockup .home-brand-grid__item {
+        height: 40px !important;
+        padding: 4px 8px !important;
+    }
+
+    .home-brand-strip-section--mockup .showcase-brand-logo {
+        max-height: 24px;
+        max-width: 90px;
+    }
+}
+
+/* Brendovi: još bliže + puna boja odmah (bez hover grayscale) */
+.home-brand-strip-section--mockup .home-brand-grid {
+    gap: 6px 14px !important;
+    justify-content: center !important;
+}
+
+.home-brand-strip-section--mockup .home-brand-grid__item,
+.home-brand-strip-section--mockup .showcase-brand-link {
+    padding: 4px 6px !important;
+    height: 40px !important;
+}
+
+.home-brand-strip-section--mockup .showcase-brand-logo {
+    max-height: 28px !important;
+    max-width: 100px !important;
+    filter: none !important;
+    opacity: 1 !important;
+    -webkit-filter: none !important;
+}
+
+.home-brand-strip-section--mockup .home-brand-grid__item:hover .showcase-brand-logo,
+.home-brand-strip-section--mockup .showcase-brand-link:hover .showcase-brand-logo {
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+@media (min-width: 1025px) {
+    .home-brand-strip-section--mockup .home-brand-grid {
+        gap: 8px 16px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-brand-strip-section--mockup .home-brand-grid {
+        gap: 4px 10px !important;
+    }
+}
+
+/* ==========================================================================
+   MOBILE homepage polish (max 768 / 480)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    /* —— Header crni + search —— */
+    .header .header-search-form {
+        background: #1a1a1a !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 999px !important;
+        padding: 10px 14px !important;
+    }
+
+    .header .header-search-form input {
+        color: #fff !important;
+        font-size: 16px !important;
+    }
+
+    .header .header-search-form input::placeholder {
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    .header .header-search-form svg {
+        stroke: rgba(255, 255, 255, 0.55);
+    }
+
+    .header .nav-toggle svg {
+        stroke: #fff;
+        color: #fff;
+    }
+
+    .header .nav-action-link,
+    .header .nav-action-link svg {
+        color: #fff;
+        stroke: #fff;
+    }
+
+    /* —— Hero: ne prevelik na telefonu —— */
+    .hero-carousel .carousel-track {
+        aspect-ratio: 16 / 9 !important;
+        min-height: 160px;
+        max-height: 52vh;
+    }
+
+    .slide-content {
+        left: 16px !important;
+        right: 16px !important;
+        bottom: 28px !important;
+        max-width: none !important;
+    }
+
+    .slide-content h2 {
+        font-size: 1.35rem !important;
+        margin-bottom: 6px;
+    }
+
+    .slide-subtitle {
+        font-size: 0.8rem !important;
+        margin-bottom: 12px !important;
+    }
+
+    .slide-content .btn-banner {
+        padding: 10px 16px !important;
+        font-size: 0.78rem !important;
+    }
+
+    .carousel-btn {
+        width: 36px !important;
+        height: 36px !important;
+        opacity: 0.85 !important;
+    }
+
+    .carousel-prev { left: 8px !important; }
+    .carousel-next { right: 8px !important; }
+
+    /* —— Trust traka —— */
+    .home-trust-bar__inner {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0 !important;
+        padding: 10px 8px !important;
+    }
+
+    .home-trust-bar__item {
+        padding: 10px 8px !important;
+        gap: 8px !important;
+    }
+
+    .home-trust-bar__icon {
+        width: 32px !important;
+        height: 32px !important;
+        flex-basis: 32px !important;
+        border-radius: 8px !important;
+    }
+
+    .home-trust-bar__icon svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+    .home-trust-bar__title {
+        font-size: 0.65rem !important;
+    }
+
+    .home-trust-bar__sub {
+        font-size: 0.62rem !important;
+    }
+
+    /* —— Product sekcije —— */
+    .home-products--izdvojeno.home-products--mockup,
+    .home-products--novo.home-products--mockup,
+    .home-products--akcija.home-products--mockup {
+        padding-top: 14px !important;
+        padding-bottom: 4px !important;
+    }
+
+    .home-products--mockup + .home-products--mockup {
+        padding-top: 6px !important;
+    }
+
+    .home-products--mockup .home-product-catalog {
+        padding: 0 10px !important;
+        max-width: none !important;
+    }
+
+    .home-products--mockup .home-section-header {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        margin-bottom: 8px !important;
+        gap: 8px;
+    }
+
+    .home-products--mockup .home-section-header__title {
+        font-size: 0.8rem !important;
+        letter-spacing: 0.04em;
+    }
+
+    .home-products--mockup .home-section-header__see-all {
+        font-size: 0.62rem !important;
+    }
+
+    .home-products--mockup .home-product-carousel,
+    .home-products--mockup .home-product-carousel--mockup {
+        padding: 0 !important;
+        min-height: 0 !important;
+    }
+
+    .home-products--mockup .home-product-carousel__btn {
+        display: none !important; /* swipe umjesto strelica */
+    }
+
+    .home-products--mockup .home-product-carousel__track {
+        gap: 8px !important;
+    }
+
+    /* Mockup product card mobile */
+    .product-card--home-mockup {
+        padding: 8px 6px 10px !important;
+        border-radius: 10px !important;
+        border: 1px solid #ececec !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+        background: #fff !important;
+    }
+
+    .product-card--home-mockup:hover {
+        transform: none !important;
+    }
+
+    .hm-media {
+        margin: 2px 0 8px !important;
+        border-radius: 6px !important;
+    }
+
+    .hm-title {
+        font-size: 0.72rem !important;
+        min-height: 2.3em !important;
+        line-height: 1.3 !important;
+    }
+
+    .hm-price__now,
+    .hm-price__sale {
+        font-size: 0.82rem !important;
+    }
+
+    .hm-price__old {
+        font-size: 0.68rem !important;
+    }
+
+    .hm-cart-btn {
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+        flex-shrink: 0;
+    }
+
+    .hm-cart-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+    .hm-badge {
+        top: 6px !important;
+        left: 6px !important;
+        font-size: 0.55rem !important;
+        min-height: 18px !important;
+        padding: 2px 5px !important;
+    }
+
+    .hm-wish {
+        top: 4px !important;
+        right: 4px !important;
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .hm-wish svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    .hm-footer {
+        gap: 6px !important;
+    }
+
+    /* —— Promo kartice: 1 kolona na uskom, 2 na širem mobitelu —— */
+    .home-promo-cards {
+        padding: 16px 10px 8px !important;
+    }
+
+    .home-promo-cards__grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .home-promo-card {
+        min-height: 100px !important;
+        padding: 14px 14px !important;
+        border-radius: 12px !important;
+        gap: 10px !important;
+    }
+
+    .home-promo-card__title {
+        font-size: 0.88rem !important;
+        line-height: 1.1 !important;
+        margin-bottom: 4px !important;
+    }
+
+    .home-promo-card__sub {
+        font-size: 0.72rem !important;
+    }
+
+    .home-promo-card__highlight {
+        font-size: 1rem !important;
+    }
+
+    .home-promo-card__img {
+        width: 64px !important;
+        height: 64px !important;
+    }
+
+    .home-promo-seal {
+        width: 64px !important;
+        height: 64px !important;
+    }
+
+    .home-promo-seal__core {
+        width: 44px !important;
+        height: 44px !important;
+    }
+
+    .home-promo-seal__value {
+        font-size: 0.58rem !important;
+    }
+
+    .home-promo-gift {
+        width: 72px !important;
+        height: 50px !important;
+    }
+
+    .home-promo-icon--truck {
+        width: 48px !important;
+        height: 36px !important;
+    }
+
+    .home-promo-icon--tag {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    /* —— Blog —— */
+    .home-vlog--mockup {
+        padding: 20px 0 16px !important;
+    }
+
+    .home-vlog--mockup .home-vlog__wrap {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .home-vlog--mockup .home-section-header {
+        margin-bottom: 10px !important;
+        padding: 0 !important;
+    }
+
+    .home-vlog--mockup .home-section-header__title {
+        font-size: 0.8rem !important;
+    }
+
+    .home-vlog__layout {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+    }
+
+    .home-vlog-grid--cards {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* pokaži do 3 kartice na mobitelu (ako je bilo hide) */
+    .home-vlog-grid--cards .home-vlog-card {
+        display: flex !important;
+    }
+
+    .home-vlog-grid .home-vlog-card:nth-child(n+3) {
+        display: flex !important; /* override old hide 3rd+ */
+    }
+
+    .home-vlog-grid--cards .home-vlog-card:nth-child(n+4) {
+        display: none !important;
+    }
+
+    .home-newsletter {
+        padding: 20px 16px !important;
+        border-radius: 12px !important;
+    }
+
+    .home-newsletter__title {
+        font-size: 1rem !important;
+    }
+
+    .home-newsletter__btn {
+        min-height: 44px;
+        font-size: 0.85rem !important;
+    }
+
+    /* —— Brendovi —— */
+    .home-brand-strip-section--mockup {
+        padding: 20px 10px 28px !important;
+    }
+
+    .home-brand-strip-section--mockup .home-section-header {
+        margin-bottom: 12px !important;
+        padding: 0 !important;
+    }
+
+    .home-brand-strip-section--mockup .home-section-header__title {
+        font-size: 0.8rem !important;
+    }
+
+    .home-brand-strip-section--mockup .home-brand-grid {
+        gap: 4px 8px !important;
+        justify-content: center !important;
+        padding: 0 !important;
+    }
+
+    /* —— Footer —— */
+    .footer--mockup .footer-main {
+        padding: 28px 16px 20px !important;
+    }
+
+    .footer-grid--mockup {
+        grid-template-columns: 1fr !important;
+        gap: 22px !important;
+    }
+
+    .footer--mockup .footer-brand-title {
+        font-size: 0.95rem !important;
+    }
+
+    .footer--mockup .footer-section-title {
+        font-size: 0.75rem !important;
+        margin-bottom: 10px !important;
+    }
+
+    .footer--mockup .footer-link-list {
+        gap: 6px !important;
+    }
+
+    .footer--mockup .footer-link-list a {
+        font-size: 0.82rem !important;
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .footer-bottom--mockup {
+        padding: 12px 16px !important;
+    }
+
+    .footer-bottom--mockup p {
+        font-size: 0.7rem !important;
+    }
+}
+
+/* Malo širi telefoni: promo 2 kolone */
+@media (min-width: 480px) and (max-width: 768px) {
+    .home-promo-cards__grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-trust-bar__inner {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .home-promo-cards__grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .slide-content h2 {
+        font-size: 1.2rem !important;
+    }
+}
+
+/* Hero: picture/mobile image fills frame */
+.hero-carousel .slide-image picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.hero-carousel .slide-image picture .slide-image-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+}
+
+@media (max-width: 768px) {
+    /* Bolje za portret mobilni banner (4:5) */
+    .hero-carousel .carousel-track {
+        aspect-ratio: 4 / 5 !important;
+        max-height: 70vh;
+        min-height: 280px;
+    }
+}
+
+/* ==========================================================================
+   Mobile category menu — bez linija / crtica, uredan fit (crna tema)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+    /* Sakrij „——” crtu ispred naziva */
+    .nav-menu.mobile-open > .nav-item > a::before,
+    .mobile-nav-back::before,
+    .mobile-nav-subview-title::before,
+    .mobile-nav-subview-list a::before {
+        content: none !important;
+        display: none !important;
+        width: 0 !important;
+    }
+
+    .nav-menu.mobile-open {
+        --mobile-nav-text-indent: 0 !important;
+        padding: 12px 16px calc(28px + env(safe-area-inset-bottom, 0px)) 16px !important;
+        gap: 0 !important;
+    }
+
+    /* Bez horizontalnih linija između stavki */
+    .nav-menu.mobile-open > .nav-item {
+        border: none !important;
+        border-bottom: none !important;
+        border-top: none !important;
+        margin: 0 !important;
+    }
+
+    .nav-menu.mobile-open > .nav-item > a {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 12px !important;
+        min-height: 48px !important;
+        padding: 12px 4px !important;
+        margin: 0 !important;
+        font-size: 0.92rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.04em !important;
+        text-transform: uppercase !important;
+        color: #ffffff !important;
+        line-height: 1.25 !important;
+        border: none !important;
+        border-radius: 8px !important;
+    }
+
+    .nav-menu.mobile-open > .nav-item > a:active {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-menu.mobile-open > .nav-item > a::after {
+        display: none !important;
+    }
+
+    /* Chevron desno, diskretan */
+    .nav-menu.mobile-open > .nav-item > a .nav-chevron {
+        margin-left: auto !important;
+        margin-right: 0 !important;
+        width: 28px !important;
+        height: 28px !important;
+        color: rgba(255, 255, 255, 0.55) !important;
+        flex-shrink: 0;
+    }
+
+    .nav-menu.mobile-open .nav-chevron::before {
+        width: 7px !important;
+        height: 7px !important;
+        border-right: 2px solid rgba(255, 255, 255, 0.55) !important;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.55) !important;
+    }
+
+    /* AKCIJE — zelena, lijevo, bez crvenog pill-a */
+    .nav-menu.mobile-open .nav-item--akcija > a.nav-link-akcija {
+        justify-content: flex-start !important;
+        margin: 4px 0 !important;
+        padding: 12px 4px !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        color: #5BB805 !important;
+        box-shadow: none !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.06em !important;
+        text-transform: uppercase !important;
+    }
+
+    .nav-menu.mobile-open .nav-item--akcija > a.nav-link-akcija::before {
+        display: none !important;
+    }
+
+    .nav-menu.mobile-open .nav-item--brendovi > a,
+    .nav-menu.mobile-open .nav-item--noviteti > a {
+        color: #fff !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        justify-content: flex-start !important;
+        padding: 12px 4px !important;
+    }
+
+    /* Panel header */
+    .mobile-nav-panel.is-open {
+        background: #0a0a0a !important;
+        color: #fff !important;
+    }
+
+    .mobile-nav-panel.is-open .mobile-nav-panel__header {
+        background: #0a0a0a !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 8px 16px !important;
+    }
+
+    .mobile-nav-panel.is-open .mobile-nav-panel__back {
+        color: #fff !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 8px 0 !important;
+    }
+
+    /* Subview (podkategorije) — ista crna tema, bez crtica */
+    .mobile-nav-subview {
+        background: #0a0a0a !important;
+        color: #fff !important;
+        padding: 0 16px calc(28px + env(safe-area-inset-bottom, 0px)) 16px !important;
+        box-shadow: none !important;
+        --mobile-nav-text-indent: 0 !important;
+    }
+
+    .mobile-nav-back {
+        color: #fff !important;
+        margin: 14px 0 10px !important;
+        padding: 8px 0 !important;
+        font-weight: 600 !important;
+        min-height: 44px;
+    }
+
+    .mobile-nav-subview-title {
+        color: #fff !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em !important;
+        text-transform: uppercase !important;
+        margin: 0 0 12px !important;
+        padding: 0 !important;
+    }
+
+    .mobile-nav-subview-list,
+    .mobile-nav-subview-list > li {
+        border: none !important;
+        border-bottom: none !important;
+        list-style: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .mobile-nav-subview-list a {
+        display: flex !important;
+        align-items: center !important;
+        min-height: 46px !important;
+        padding: 10px 4px !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        border: none !important;
+        border-bottom: none !important;
+    }
+
+    .mobile-nav-subview-list a:active {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .mobile-nav-subview-link,
+    .mobile-nav-subview-list a,
+    .mobile-nav-subview-list > li {
+        border-bottom: none !important;
+        border-top: none !important;
+        border: none !important;
+    }
+
+    .mobile-nav-subview-link {
+        padding: 12px 4px !important;
+        color: rgba(255, 255, 255, 0.92) !important;
+        min-height: 46px;
+        display: flex !important;
+        align-items: center;
+    }
+}
+
+/* ==========================================================================
+   Mobile nav: isti font glavne = podkategorije, animacija, bez bijele linije
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+    /* Zajednički font za glavne i podkategorije */
+    .nav-menu.mobile-open > .nav-item > a,
+    .mobile-nav-subview-link,
+    .mobile-nav-subview-list a {
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif !important;
+        font-size: 0.95rem !important;
+        font-weight: 500 !important;
+        letter-spacing: -0.01em !important;
+        text-transform: none !important;
+        line-height: 1.35 !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+        -webkit-tap-highlight-color: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .nav-menu.mobile-open > .nav-item > a {
+        min-height: 50px !important;
+        padding: 13px 8px !important;
+        border: none !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+        transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
+    }
+
+    /* Bez underline / focus linija (bijela crta nakon Nazad) */
+    .nav-menu.mobile-open > .nav-item > a:focus,
+    .nav-menu.mobile-open > .nav-item > a:focus-visible,
+    .nav-menu.mobile-open > .nav-item > a:active,
+    .nav-menu.mobile-open > .nav-item.mega-open > a,
+    .nav-menu.mobile-open > .nav-item.mega-open > a:focus,
+    .nav-menu.mobile-open > .nav-item.mega-open > a:active {
+        outline: none !important;
+        border: none !important;
+        border-bottom: none !important;
+        border-top: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        text-decoration: none !important;
+    }
+
+    .nav-menu.mobile-open > .nav-item > a::after,
+    .nav-menu.mobile-open > .nav-item.mega-open > a::after,
+    .nav-menu.mobile-open > .nav-item > a::before {
+        content: none !important;
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        opacity: 0 !important;
+    }
+
+    .nav-menu.mobile-open > .nav-item {
+        border: none !important;
+        outline: none !important;
+        background: transparent !important;
+    }
+
+    .nav-menu.mobile-open > .nav-item > a:active {
+        background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    /* Chevron */
+    .nav-menu.mobile-open > .nav-item > a .nav-chevron {
+        color: rgba(255, 255, 255, 0.5) !important;
+        transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    }
+
+    /* AKCIJE — ista tipografija, zelena boja */
+    .nav-menu.mobile-open .nav-item--akcija > a.nav-link-akcija {
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        text-transform: none !important;
+        letter-spacing: -0.01em !important;
+        color: #5BB805 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        justify-content: flex-start !important;
+        padding: 13px 8px !important;
+        min-height: 50px !important;
+    }
+
+    /* Podkategorije — isti font/padding */
+    .mobile-nav-subview-title {
+        font-family: "Inter", system-ui, sans-serif !important;
+        font-size: 1.05rem !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.02em !important;
+        text-transform: none !important;
+        color: #fff !important;
+        margin: 4px 0 12px !important;
+        padding: 0 8px !important;
+    }
+
+    .mobile-nav-back {
+        font-family: "Inter", system-ui, sans-serif !important;
+        font-size: 0.95rem !important;
+        font-weight: 500 !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        -webkit-tap-highlight-color: transparent !important;
+        outline: none !important;
+    }
+
+    .mobile-nav-subview-link,
+    .mobile-nav-subview-list a {
+        min-height: 50px !important;
+        padding: 13px 8px !important;
+        border: none !important;
+        border-bottom: none !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+        transition: background 0.2s ease, transform 0.2s ease !important;
+    }
+
+    .mobile-nav-subview-link:active,
+    .mobile-nav-subview-list a:active {
+        background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    /* Lijepa animacija ulaska/izlaska podkategorija */
+    .mobile-nav-subview {
+        transition: none;
+    }
+
+    .mobile-nav-subview.is-open {
+        animation: mobileNavSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+    }
+
+    .mobile-nav-subview.is-closing {
+        animation: mobileNavSlideOut 0.28s cubic-bezier(0.4, 0, 0.2, 1) both !important;
+    }
+
+    @keyframes mobileNavSlideIn {
+        from {
+            transform: translate3d(100%, 0, 0);
+            opacity: 0.6;
+        }
+        to {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes mobileNavSlideOut {
+        from {
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+        }
+        to {
+            transform: translate3d(100%, 0, 0);
+            opacity: 0.4;
+        }
+    }
+
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li {
+        animation: mobileNavItemFade 0.35s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+    }
+
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(1) { animation-delay: 0.05s !important; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(2) { animation-delay: 0.08s !important; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(3) { animation-delay: 0.11s !important; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(4) { animation-delay: 0.14s !important; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(5) { animation-delay: 0.17s !important; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(6) { animation-delay: 0.2s !important; }
+    .mobile-nav-subview.is-open .mobile-nav-subview-list > li:nth-child(n+7) { animation-delay: 0.23s !important; }
+
+    @keyframes mobileNavItemFade {
+        from {
+            opacity: 0;
+            transform: translate3d(16px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    /* Glavna lista: blagi fade kad se vraćaš */
+    .nav-menu.mobile-open {
+        animation: mobileNavMainIn 0.3s ease both;
+    }
+
+    @keyframes mobileNavMainIn {
+        from { opacity: 0.85; }
+        to { opacity: 1; }
+    }
+}
+
+/* Search suggestions: bijela pozadina (suggested proizvodi pri kucanju) */
+.header .header-search .search-suggestions,
+.header-search .search-suggestions {
+    background: #ffffff !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14) !important;
+    color: #111111 !important;
+    padding: 6px 0 !important;
+    overflow: hidden;
+}
+
+.header .header-search .search-suggestions a,
+.header .header-search .search-suggestions .search-suggestion,
+.header .header-search .search-suggestions [role="option"] {
+    color: #111111 !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    padding: 10px 12px !important;
+}
+
+.header .header-search .search-suggestions a:hover,
+.header .header-search .search-suggestions .search-suggestion:hover,
+.header .header-search .search-suggestions .is-active,
+.header .header-search .search-suggestions [role="option"]:hover {
+    background: #f5f5f5 !important;
+    color: #111111 !important;
+}
+
+.header .search-suggestion-name,
+.header .header-search .search-suggestion-name {
+    color: #111111 !important;
+    font-weight: 500;
+}
+
+.header .search-suggestion-price,
+.header .header-search .search-suggestion-price {
+    color: #111111 !important;
+    font-weight: 700;
+}
+
+.header .search-suggestion-price--sale,
+.header .header-search .search-suggestion-price--sale {
+    color: #dc2626 !important;
+}
+
+.header .search-suggestion-meta,
+.header .search-suggestions-empty,
+.header .search-suggestions-footer,
+.header .search-suggestions-section-label,
+.header .search-suggestions-loading,
+.header .header-search .search-suggestion-meta,
+.header .header-search .search-suggestions-empty,
+.header .header-search .search-suggestions-footer,
+.header .header-search .search-suggestions-section-label,
+.header .header-search .search-suggestions-loading {
+    color: #6b7280 !important;
+    background: transparent !important;
+}
+
+.header .search-suggestions-section-label {
+    border-bottom-color: #f0f0f0 !important;
+}
+
+.header .search-suggestion-thumb {
+    background: #f5f5f5 !important;
+}
+
+.header .search-suggestion--tag {
+    background: #f8fafc !important;
+}
+
+.header .search-suggestion-tag-cat {
+    color: #6b7280 !important;
+}
+
+.header .search-suggestions-footer a {
+    color: #111 !important;
+}
+
+/* —— SEO text blocks (PageSEO / entity SEO) —— */
+.seo-text-block {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px 16px 20px;
+    color: #374151;
+    font-size: 0.95rem;
+    line-height: 1.65;
+}
+.seo-text-block--above {
+    padding-top: 4px;
+    padding-bottom: 12px;
+}
+.seo-text-block--below {
+    padding-top: 20px;
+    padding-bottom: 28px;
+}
+.seo-text-block__inner p {
+    margin: 0 0 0.75em;
+}
+.seo-text-block__inner p:last-child {
+    margin-bottom: 0;
+}
+.catalog-products > .seo-text-block {
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+}
+.seo-home-h1-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 16px 0;
+}
+.seo-home-h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.02em;
+}
+.product-detail + .seo-text-block,
+.seo-text-block + .product-detail {
+    max-width: 1200px;
+}
+
+/* —— SEO text blocks (PageSEO / entity SEO) —— */
+.seo-text-block {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px 16px 20px;
+    color: #374151;
+    font-size: 0.95rem;
+    line-height: 1.65;
+}
+.seo-text-block--above {
+    padding-top: 4px;
+    padding-bottom: 12px;
+}
+.seo-text-block--below {
+    padding-top: 20px;
+    padding-bottom: 28px;
+}
+.seo-text-block__inner p {
+    margin: 0 0 0.75em;
+}
+.seo-text-block__inner p:last-child {
+    margin-bottom: 0;
+}
+.catalog-products > .seo-text-block {
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+}
+.seo-home-h1-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 16px 0;
+}
+.seo-home-h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.02em;
+}
+.product-detail + .seo-text-block,
+.seo-text-block + .product-detail {
+    max-width: 1200px;
 }

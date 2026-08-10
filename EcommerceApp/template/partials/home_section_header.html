@@ -1,0 +1,28 @@
+{# Naslov sekcije + Pogledaj sve (kao na mockupu). Prazan title u adminu = sakrij naslov (osim u staff edit modu). #}
+{% with see_all=see_all_url|default:'' %}
+{% if title or staff_edit_mode or see_all %}
+<div class="home-section-header{% if header_mod %} home-section-header--{{ header_mod }}{% endif %}">
+    <div class="home-section-header__text">
+        {% if title or staff_edit_mode and edit_title %}
+        <h2 class="home-section-header__title"
+            {% if edit_title %}data-site-edit="{{ edit_title }}" data-site-edit-placeholder="{{ edit_title_placeholder|default:'Naslov' }}"{% endif %}
+        >{% if title %}{{ title }}{% endif %}</h2>
+        {% endif %}
+        {% if subtitle or edit_subtitle and staff_edit_mode %}
+        <p class="home-section-header__subtitle"
+           {% if edit_subtitle %}data-site-edit="{{ edit_subtitle }}" data-site-edit-placeholder="Podnaslov (opcionalno)"{% endif %}
+           {% if not subtitle and not staff_edit_mode %} hidden{% endif %}
+        >{% if subtitle %}{{ subtitle }}{% endif %}</p>
+        {% endif %}
+    </div>
+    <div class="home-section-header__actions">
+        {% if see_all %}
+        <a href="{{ see_all }}" class="home-section-header__see-all">
+            {% if site_settings.tekst_pogledaj_sve %}{{ site_settings.tekst_pogledaj_sve }}{% else %}Pogledaj sve{% endif %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endwith %}

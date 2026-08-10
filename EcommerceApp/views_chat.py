@@ -73,10 +73,12 @@ def chat_state(request):
         if request.GET.get('proactive') == '1':
             return JsonResponse({'ok': False, 'error': 'Chat je isključen.', 'enabled': False}, status=403)
 
-    conversation = get_customer_conversation(request, create=True)
+    # Registrovan: uvijek ista nit; reopen da može nastaviti pisati
+    conversation = get_customer_conversation(request, create=True, reopen=True)
     if request.GET.get('proactive') == '1':
         ensure_proactive_greeting(conversation)
-    messages = list(_messages_qs(conversation)[:200])
+    # Do 500 poruka — registrovan treba cijelu istoriju
+    messages = list(_messages_qs(conversation)[:500])
     if request.GET.get('mark_read') == '1':
         mark_conversation_read_by_customer(conversation)
         customer_unread = 0
@@ -92,6 +94,7 @@ def chat_state(request):
         'display_email': conversation.display_email,
         'is_registered': conversation.is_registered,
         'customer_unread_count': customer_unread,
+        'has_history': len(messages) > 0,
         'messages': [serialize_message(message) for message in messages],
     })
 
@@ -126,13 +129,11 @@ def chat_send(request):
     if len(body) > 2000:
         return JsonResponse({'ok': False, 'error': 'Poruka je predugačka.'}, status=400)
 
-    conversation = get_customer_conversation(request, create=True)
+    # reopen=True — zatvoren chat se ponovo otvori (istorija ostaje, posebno za registrovane)
+    conversation = get_customer_conversation(request, create=True, reopen=True)
     if conversation.status != ChatConversation.Status.OPEN:
-        return JsonResponse({
-            'ok': False,
-            'error': 'Chat je zatvoren. Osvežite stranicu da započnete novi razgovor.',
-            'closed': True,
-        }, status=400)
+        conversation.status = ChatConversation.Status.OPEN
+        conversation.save(update_fields=['status'])
 
     message = add_customer_message(conversation, body)
     return JsonResponse({
@@ -143,19 +144,32 @@ def chat_send(request):
 
 @require_GET
 def chat_badge(request):
-    conversation = get_customer_conversation(request, create=False)
+    # create=False, reopen=False — samo status badge/istorije, ne diraj status
+    conversation = get_customer_conversation(request, create=False, reopen=False)
     if not conversation:
-        return JsonResponse({'customer_unread_count': 0, 'status': 'none'})
+        return JsonResponse({
+            'customer_unread_count': 0,
+            'status': 'none',
+            'has_conversation': False,
+            'has_history': False,
+            'is_registered': bool(request.user.is_authenticated and not request.user.is_staff),
+        })
+    has_history = conversation.messages.exists()
     return JsonResponse({
         'customer_unread_count': conversation.customer_unread_count,
         'status': conversation.status,
         'conversation_id': conversation.pk,
+        'has_conversation': True,
+        'has_history': has_history,
+        'is_registered': bool(
+            request.user.is_authenticated and not getattr(request.user, 'is_staff', False)
+        ),
     })
 
 
 @require_GET
 def chat_poll(request):
-    conversation = get_customer_conversation(request, create=False)
+    conversation = get_customer_conversation(request, create=False, reopen=False)
     if not conversation:
         return JsonResponse({
             'ok': True,
@@ -163,6 +177,7 @@ def chat_poll(request):
             'customer_unread_count': 0,
             'status': 'none',
             'closed': False,
+            'has_history': False,
         })
 
     after_id = int(request.GET.get('after_id', '0') or 0)
@@ -175,13 +190,15 @@ def chat_poll(request):
     else:
         customer_unread = conversation.customer_unread_count
 
-    closed = conversation.status != ChatConversation.Status.OPEN
+    # Za kupca panel ostaje „čitljiv” i kad je status closed (istorija)
+    closed = False
     return JsonResponse({
         'ok': True,
         'messages': [serialize_message(message) for message in new_messages],
         'customer_unread_count': customer_unread,
         'status': conversation.status,
         'closed': closed,
+        'has_history': True,
     })
 
 

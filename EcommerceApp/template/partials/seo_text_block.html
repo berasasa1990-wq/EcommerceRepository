@@ -1,0 +1,8 @@
+{# SEO tekst (iznad ili ispod). Koristi: include ... with text=seo_tekst_iznad placement='above' #}
+{% if text %}
+<div class="seo-text-block seo-text-block--{{ placement|default:'body' }}">
+    <div class="seo-text-block__inner">
+        {{ text|linebreaks }}
+    </div>
+</div>
+{% endif %}

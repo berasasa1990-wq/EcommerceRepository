@@ -2,7 +2,11 @@
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
-{% block page_title %}<title>Prijava — opremazaribolov.ba</title>{% endblock %}
+{% block page_title %}<title>{{ seo_title|default:"Prijava — opremazaribolov.ba" }}</title>{% endblock %}
+
+{% block meta_description %}
+{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
+{% endblock %}
 
 {% block extra_js %}
 {% if turnstile_site_key %}
@@ -13,7 +17,8 @@
 {% block content %}
 <section class="auth-page">
     <div class="auth-card">
-        <h1>Prijava</h1>
+        <h1>{{ seo_h1|default:"Prijava" }}</h1>
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
         <p class="auth-lead">Prijavite se da pratite narudžbe i brže završite kupovinu.</p>
 
         <form method="post" class="auth-form">

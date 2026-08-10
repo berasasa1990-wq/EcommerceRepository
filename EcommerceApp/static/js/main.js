@@ -134,6 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
             mobileNavSubview.setAttribute('aria-hidden', 'true');
             navLinks?.classList.remove('mobile-nav-sub-open');
             megaItems.forEach((el) => el.classList.remove('mega-open'));
+            // Ukloni focus da ne ostane bijela linija na glavnoj kategoriji
+            try {
+                if (document.activeElement && document.activeElement.blur) {
+                    document.activeElement.blur();
+                }
+            } catch (e) { /* ignore */ }
+            navLinks?.querySelectorAll('a').forEach((a) => {
+                try { a.blur(); } catch (e) { /* ignore */ }
+            });
             syncMobileNavExpanded();
             mobileNavSubviewCloseTimer = null;
         };
@@ -2309,7 +2318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 event.stopPropagation();
                 if (button.disabled) return;
 
-                const card = button.closest('.product-card--catalog');
+                const card = button.closest('.product-card--catalog, .product-card--home-mockup, .product-card');
                 const slug = button.dataset.productSlug || card?.dataset.productSlug || '';
 
                 if (button.dataset.pickVariation === '1') {

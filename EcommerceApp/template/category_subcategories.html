@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block page_title %}
-<title>{{ seo_title }} — opremazaribolov.ba</title>
+<title>{{ seo_title }}</title>
 {% endblock %}
 
 {% block meta_description %}
@@ -12,9 +12,11 @@
 <section class="subcategory-page">
     <div class="subcategory-container">
         <div class="subcategory-header">
-            <h1 class="subcategory-main-title">{{ category.naziv }}</h1>
+            <h1 class="subcategory-main-title">{{ seo_h1|default:category.naziv }}</h1>
             <p class="subcategory-subtitle">Odaberite podkategoriju</p>
         </div>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
         <div class="subcategory-grid">
             {% for sub in subcategories %}
@@ -33,6 +35,8 @@
                 Prikaži sve artikle u {{ category.naziv }}
             </a>
         </div>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
     </div>
 </section>
 {% endblock %}

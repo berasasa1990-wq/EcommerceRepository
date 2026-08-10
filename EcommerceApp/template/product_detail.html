@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block page_title %}
-<title>{% if not product_available %}Nije dostupno — {% endif %}{{ seo_title|default:product.seo_title }} — opremazaribolov.ba</title>
+<title>{% if not product_available %}Nije dostupno — {% endif %}{{ seo_title|default:product.seo_title }}</title>
 {% endblock %}
 
 {% block meta_description %}
@@ -16,12 +16,17 @@
 {% endblock %}
 
 {% block meta_robots %}
-{% if meta_robots_content %}<meta name="robots" content="{{ meta_robots_content }}">{% endif %}
+{% if meta_robots_content %}
+<meta name="robots" content="{{ meta_robots_content }}">
+{% else %}
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+{% endif %}
 {% endblock %}
 
 {% block og_type %}product{% endblock %}
 
 {% block content %}
+{% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 <section class="product-detail"{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
     {% include 'partials/product_detail_badge.html' %}
     <a href="{{ product_back_url }}" class="product-detail-back" id="productDetailBack" aria-label="Nazad na prethodnu stranicu">
@@ -82,7 +87,7 @@
             <div class="product-detail-brand">
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>
-            <h1>{{ product.naziv }}</h1>
+            <h1>{{ seo_h1|default:product.naziv }}</h1>
             {% if not product_available %}
             <div class="product-unavailable-banner" role="status">
                 <strong>Artikal više nije dostupan</strong>
@@ -592,6 +597,7 @@
     </div>
 </section>
 {% endif %}
+{% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
 {% endblock %}
 
 {% block extra_js %}
@@ -1011,58 +1017,10 @@ document.querySelectorAll('.staff-product-form').forEach(function (form) {
 {% endblock %}
 
 {% block structured_data %}
-{% if product %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org/",
-  "@type": "Product",
-  "name": "{{ product.naziv|escapejs }}",
-  "image": {% if product.slika %}"{{ site_url }}{{ product.slika.url }}"{% else %}"{{ site_url }}/static/img/placeholder.png"{% endif %},
-  "description": "{{ product.seo_description|escapejs }}",
-  {% if product.brend %}"brand": {
-    "@type": "Brand",
-    "name": "{{ product.brend.naziv|escapejs }}"
-  },{% endif %}
-  {% if product.sifra %}"sku": "{{ product.sifra|escapejs }}",{% endif %}
-  "offers": {
-    "@type": "Offer",
-    "url": "{{ canonical_url }}",
-    "priceCurrency": "BAM",
-    "price": "{{ product.prikazna_cijena }}",
-    "availability": "{% if product.na_stanju %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
-    "itemCondition": "https://schema.org/NewCondition"
-  }
-}
-</script>
+{% if product_json_ld %}
+<script type="application/ld+json">{{ product_json_ld|safe }}</script>
 {% endif %}
-
-{# Breadcrumbs #}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Početna",
-      "item": "{{ site_url }}/"
-    }
-    {% if product.kategorija %},
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "name": "{{ product.kategorija.naziv|escapejs }}",
-      "item": "{{ site_url }}{{ product.kategorija.get_absolute_url }}"
-    }
-    {% endif %},
-    {
-      "@type": "ListItem",
-      "position": {% if product.kategorija %}3{% else %}2{% endif %},
-      "name": "{{ product.naziv|escapejs }}",
-      "item": "{{ canonical_url }}"
-    }
-  ]
-}
-</script>
+{% if breadcrumb_json_ld %}
+<script type="application/ld+json">{{ breadcrumb_json_ld|safe }}</script>
+{% endif %}
 {% endblock %}

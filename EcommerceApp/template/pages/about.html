@@ -18,8 +18,10 @@
         </nav>
 
         <header class="info-page-header">
-            <h1>O nama</h1>
+            <h1>{{ seo_h1|default:"O nama" }}</h1>
         </header>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
         <div class="info-page-body">
             <p>
@@ -37,6 +39,8 @@
                 opremu koja mu odgovara i kojoj može vjerovati.
             </p>
         </div>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
     </div>
 </article>
 {% endblock %}

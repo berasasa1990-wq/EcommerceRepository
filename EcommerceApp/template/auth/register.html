@@ -2,7 +2,11 @@
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
-{% block page_title %}<title>Registracija — opremazaribolov.ba</title>{% endblock %}
+{% block page_title %}<title>{{ seo_title|default:"Registracija — opremazaribolov.ba" }}</title>{% endblock %}
+
+{% block meta_description %}
+{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
+{% endblock %}
 
 {% block extra_js %}
 {% if turnstile_site_key %}
@@ -13,7 +17,8 @@
 {% block content %}
 <section class="auth-page">
     <div class="auth-card">
-        <h1>Registracija</h1>
+        <h1>{{ seo_h1|default:"Registracija" }}</h1>
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
         <p class="auth-lead">Kreirajte nalog i pratite sve svoje narudžbe na jednom mjestu.</p>
 
         <form method="post" class="auth-form">

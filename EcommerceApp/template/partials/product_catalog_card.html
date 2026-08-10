@@ -7,20 +7,18 @@
     data-default-name="{{ product.naziv }}"
     data-default-price="{{ product.katalog_prikazna_cijena }}"
 >
-    {% if product.je_novitet %}
-    <span class="product-card-corner-badge product-card-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
-    {% elif product.je_hit %}
-    <span class="product-card-corner-badge product-card-corner-badge--hit is-pulse" aria-label="Hit ponuda">HIT PONUDA</span>
+    {% if product.je_novitet or home_section_badge == 'novo' %}
+    <span class="product-card-corner-badge product-card-corner-badge--novitet" aria-label="Novo">NOVO</span>
+    {% elif product.katalog_akcija_postotak %}
+    <span class="product-card-corner-badge product-card-corner-badge--sale" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    {% elif product.je_hit or home_section_badge == 'hit' %}
+    <span class="product-card-corner-badge product-card-corner-badge--hit" aria-label="Izdvojeno">HIT</span>
     {% endif %}
     <div class="product-card__top">
         <div class="product-card__media">
             <div class="product-image">
                 <a href="{{ product.get_absolute_url }}" class="product-card__media-link" aria-label="{{ product.naziv }}">
-                    {% if not product.je_novitet and not product.je_hit and home_section_badge == 'novo' %}
-                    <span class="product-home-ribbon product-home-ribbon--novo" aria-hidden="true">Novo</span>
-                    {% elif not product.je_novitet and not product.je_hit and home_section_badge == 'hit' %}
-                    <span class="product-home-ribbon product-home-ribbon--hit" aria-hidden="true">HIT PONUDA</span>
-                    {% elif not product.je_novitet and not product.je_hit %}
+                    {% if not product.je_novitet and not product.katalog_akcija_postotak and not product.je_hit and home_section_badge != 'novo' and home_section_badge != 'hit' %}
                     {% include 'partials/product_sale_ribbon.html' with product=product %}
                     {% endif %}
                     {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}

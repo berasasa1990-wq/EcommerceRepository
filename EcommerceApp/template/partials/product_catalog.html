@@ -9,14 +9,16 @@
 
             {% if category %}
             <div class="category-header">
-                <h1>{{ category.naziv }}</h1>
+                <h1>{{ seo_h1|default:category.naziv }}</h1>
             </div>
             {% elif catalog_title %}
             <div class="category-header">
-                <h1>{{ catalog_title }}</h1>
+                <h1>{{ seo_h1|default:catalog_title }}</h1>
                 {% if catalog_subtitle %}<p>{{ catalog_subtitle }}</p>{% endif %}
             </div>
             {% endif %}
+
+            {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
             {% if filter_params.velicina %}
             <p class="catalog-filter-active-hint">
@@ -46,6 +48,8 @@
             {% if page_obj %}
             {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='bottom' %}
             {% endif %}
+
+            {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
         </div>
     </div>
 </section>

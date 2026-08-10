@@ -62,6 +62,16 @@ from .meta_conversions import (
     track_view_content,
 )
 from .utils.images import image_field_dimensions
+from .utils.seo import (
+    auto_category_seo_description,
+    auto_category_seo_title,
+    breadcrumb_json_ld,
+    collection_page_json_ld,
+    entity_seo_context,
+    json_ld,
+    page_seo_context,
+    product_json_ld,
+)
 
 logger = logging.getLogger(__name__)
 from .forms import (
@@ -83,8 +93,11 @@ from .models import (
     HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeNovoProduct,
+    HomePromoCard,
+    HomeTrustItem,
     HomeVlog,
     LoyaltyCard,
+    MarketingSubscriber,
     Order,
     OrderItem,
     Product,
@@ -126,12 +139,9 @@ STAFF_EDIT_MODE_SESSION_KEY = 'staff_edit_mode'
 def _staff_edit_mode_enabled(request):
     """
     Superuser edit mode on the storefront.
-    Default True. When False, product pages hide admin tools (view as regular user).
+    Uklonjen iz UI — uvijek isključen.
     """
-    if not _request_is_superuser(request):
-        return False
-    # Missing key → on (backwards compatible)
-    return bool(request.session.get(STAFF_EDIT_MODE_SESSION_KEY, True))
+    return False
 
 
 def _can_view_out_of_stock(request=None):
@@ -1816,7 +1826,7 @@ def _banner_actions(banner):
     return actions
 
 
-def _banner_media_meta(banner, *, tip='hero', default=(1920, 420)):
+def _banner_media_meta(banner, *, tip='hero', default=(1920, 640)):
     from .utils.images import banner_image_responsive_meta
 
     image_meta = {
@@ -1843,13 +1853,35 @@ def _banner_media_meta(banner, *, tip='hero', default=(1920, 420)):
 
 
 def _banner_to_hero_slide(banner):
-    media = _banner_media_meta(banner, tip='hero', default=(1920, 420))
+    media = _banner_media_meta(banner, tip='hero', default=(1920, 640))
+    mobile = {
+        'image_mobile': '',
+        'image_mobile_srcset': '',
+        'image_mobile_width': 1080,
+        'image_mobile_height': 1350,
+        'has_mobile_image': False,
+    }
+    if getattr(banner, 'slika_mobilna', None):
+        from .utils.images import banner_image_responsive_meta
+        m = banner_image_responsive_meta(
+            banner.slika_mobilna,
+            tip='hero_mobile',
+            default=(1080, 1350),
+        )
+        mobile = {
+            'image_mobile': m['src'],
+            'image_mobile_srcset': m.get('srcset') or '',
+            'image_mobile_width': m.get('width') or 1080,
+            'image_mobile_height': m.get('height') or 1350,
+            'has_mobile_image': bool(m.get('src')),
+        }
     return {
         'title': banner.naslov,
         'subtitle': banner.podnaslov,
         'url': banner.get_link_href(),
         'actions': _banner_actions(banner),
         **media,
+        **mobile,
     }
 
 
@@ -1954,6 +1986,33 @@ def _home_featured_products(request=None):
     return [entry.artikal for entry in entries]
 
 
+def _home_sale_products(request=None):
+    """Akcijska ponuda na početnoj — artikli sa sniženom cijenom."""
+    base_qs = _product_queryset(request)
+    sale_qs = _akcija_products_qs(base_qs)
+    return list(
+        _order_qs_by_lager_priority(sale_qs, '-kreiran', '-id')[:HOME_SECTION_PRODUCT_LIMIT],
+    )
+
+
+def _home_trust_items():
+    try:
+        return list(
+            HomeTrustItem.objects.filter(aktivan=True).order_by('redoslijed', 'id')[:6],
+        )
+    except DatabaseError:
+        return []
+
+
+def _home_promo_cards():
+    try:
+        return list(
+            HomePromoCard.objects.filter(aktivan=True).order_by('redoslijed', 'id')[:8],
+        )
+    except DatabaseError:
+        return []
+
+
 def _home_category_showcases(request=None):
     entries = HomeCategoryShowcase.objects.filter(
         aktivan=True,
@@ -2051,10 +2110,16 @@ def _vlog_cards(limit=None):
         from .utils.images import vlog_image_responsive_meta
 
         image_meta = vlog_image_responsive_meta(vlog.slika, default=(360, 360))
+        display_date = getattr(vlog, 'display_date', None)
+        teaser = ''
+        if hasattr(vlog, 'short_teaser'):
+            teaser = vlog.short_teaser()
         vlogs.append({
             'id': vlog.pk,
             'slug': vlog.slug,
             'naslov': vlog.naslov,
+            'teaser': teaser,
+            'datum': display_date,
             'slika_url': image_meta['src'],
             'slika_srcset': image_meta['srcset'],
             'image_width': image_meta['width'],
@@ -2075,6 +2140,49 @@ def _vlog_seo_description(sadrzaj, max_len=160):
     if ' ' in trimmed:
         trimmed = trimmed.rsplit(' ', 1)[0]
     return f'{trimmed}…'
+
+
+@require_POST
+def newsletter_subscribe(request):
+    """AJAX pretplata na newsletter sa početne stranice."""
+    email = (request.POST.get('email') or '').strip().lower()
+    if not email or '@' not in email or '.' not in email.split('@')[-1]:
+        return JsonResponse(
+            {'ok': False, 'message': 'Unesite ispravnu e-mail adresu.'},
+            status=400,
+        )
+    if len(email) > 254:
+        return JsonResponse(
+            {'ok': False, 'message': 'E-mail adresa je preduga.'},
+            status=400,
+        )
+    try:
+        sub, created = MarketingSubscriber.objects.get_or_create(
+            email=email,
+            defaults={
+                'izvor': MarketingSubscriber.Source.MANUAL,
+                'aktivan': True,
+            },
+        )
+        if not created and not sub.aktivan:
+            sub.aktivan = True
+            sub.save(update_fields=['aktivan'])
+            created = True
+    except DatabaseError:
+        logger.exception('Newsletter pretplata nije uspjela')
+        return JsonResponse(
+            {'ok': False, 'message': 'Greška pri prijavi. Pokušajte ponovo.'},
+            status=500,
+        )
+    if created:
+        return JsonResponse({
+            'ok': True,
+            'message': 'Uspješno ste se prijavili na newsletter!',
+        })
+    return JsonResponse({
+        'ok': True,
+        'message': 'Već ste prijavljeni na newsletter. Hvala!',
+    })
 
 
 def home(request):
@@ -2098,6 +2206,9 @@ def home(request):
 
     latest_products = []
     featured_products = []
+    sale_products = []
+    home_trust_items = []
+    home_promo_cards = []
     home_category_showcases = []
     home_brand_showcases = []
     home_vlogs = []
@@ -2107,6 +2218,7 @@ def home(request):
     catalog_subtitle = None
     filter_size_groups = []
     home_url = reverse('home')
+    site_settings = SiteSettings.load()
 
     if filters_active:
         products, filter_params = _apply_product_filters(_product_queryset(request), request)
@@ -2173,6 +2285,10 @@ def home(request):
     else:
         latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
+        if site_settings.prikazi_akcijsku_sekciju:
+            sale_products = _home_sale_products(request)
+        home_trust_items = _home_trust_items()
+        home_promo_cards = _home_promo_cards()
         home_category_showcases = _home_category_showcases(request)
         home_brand_showcases = _home_brand_showcases(request)
         home_vlogs = _home_vlogs()
@@ -2191,7 +2307,7 @@ def home(request):
             hero_lcp = banner_image_responsive_meta(
                 first_hero.slika,
                 tip='hero',
-                default=(1920, 420),
+                default=(1920, 640),
             )
             lcp_image_url = request.build_absolute_uri(
                 hero_lcp.get('preload_src') or hero_lcp['src'],
@@ -2255,6 +2371,9 @@ def home(request):
         'spotlight': spotlight,
         'latest_products': latest_products,
         'featured_products': featured_products,
+        'sale_products': sale_products,
+        'home_trust_items': home_trust_items,
+        'home_promo_cards': home_promo_cards,
         'home_category_showcases': home_category_showcases,
         'home_brand_showcases': home_brand_showcases,
         'home_vlogs': home_vlogs,
@@ -2280,6 +2399,56 @@ def home(request):
         'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
         'canonical_url': settings.SITE_URL.rstrip('/') + '/',
     }
+    # SEO: početna ili filtrirani katalog (akcija / noviteti / pretraga / brend)
+    selected_brand = context['selected_brand']
+    if filters_active:
+        if filter_params.get('akcija'):
+            context.update(page_seo_context('akcija', defaults={
+                'seo_title': 'Akcija | Oprema za ribolov',
+                'seo_description': 'Artikli na sniženoj cijeni — opremazaribolov.ba',
+                'seo_h1': catalog_title or 'Akcija',
+            }))
+        elif filter_params.get('noviteti'):
+            context.update(page_seo_context('noviteti', defaults={
+                'seo_title': 'Noviteti | Oprema za ribolov',
+                'seo_description': 'Novi artikli u ponudi — opremazaribolov.ba',
+                'seo_h1': catalog_title or 'Noviteti',
+            }))
+        elif filter_params.get('q'):
+            context.update(page_seo_context('search', defaults={
+                'seo_title': f'Pretraga: {filter_params["q"]} | Oprema za ribolov',
+                'seo_description': f'Rezultati pretrage za „{filter_params["q"]}".',
+                'seo_h1': catalog_title or 'Rezultati pretrage',
+            }))
+        elif selected_brand:
+            context.update(entity_seo_context(
+                meta_title=selected_brand.meta_title,
+                meta_description=selected_brand.meta_description,
+                h1_naslov=selected_brand.h1_naslov,
+                seo_tekst_iznad=selected_brand.seo_tekst_iznad,
+                seo_tekst_ispod=selected_brand.seo_tekst_ispod,
+                default_title=f'{selected_brand.naziv} | Oprema za ribolov',
+                default_description=(
+                    f'{selected_brand.naziv} — kvalitetna oprema za ribolov. '
+                    f'Brza dostava širom BiH.'
+                ),
+                default_h1=selected_brand.naziv,
+            ))
+        else:
+            context.update(page_seo_context('search', defaults={
+                'seo_title': f'{catalog_title or "Rezultati"} | Oprema za ribolov',
+                'seo_description': catalog_subtitle or '',
+                'seo_h1': catalog_title or 'Rezultati',
+            }))
+        # Ako SEO H1 postoji, prepiši catalog_title da header prikaže H1
+        if context.get('seo_h1'):
+            context['catalog_title'] = context['seo_h1']
+    else:
+        context.update(page_seo_context('home', defaults={
+            'seo_title': site_settings.seo_title or '',
+            'seo_description': site_settings.meta_description or '',
+            'seo_h1': '',
+        }))
     return render(request, 'home.html', context)
 
 
@@ -2330,11 +2499,14 @@ def vlog_detail(request, slug):
 def about_us(request):
     context = {
         **_base_context(),
-        'seo_title': 'O nama — opremazaribolov.ba',
-        'seo_description': (
-            'Saznajte više o opremazaribolov.ba — dugogodišnje iskustvo u ribolovu '
-            'i opremi, sada u online prodaji za ribare u Bosni i Hercegovini.'
-        ),
+        **page_seo_context('about', defaults={
+            'seo_title': 'O nama — opremazaribolov.ba',
+            'seo_description': (
+                'Saznajte više o opremazaribolov.ba — dugogodišnje iskustvo u ribolovu '
+                'i opremi, sada u online prodaji za ribare u Bosni i Hercegovini.'
+            ),
+            'seo_h1': 'O nama',
+        }),
         'canonical_url': settings.SITE_URL.rstrip('/') + reverse('about_us'),
     }
     return render(request, 'pages/about.html', context)
@@ -2343,10 +2515,13 @@ def about_us(request):
 def payment_methods(request):
     context = {
         **_base_context(),
-        'seo_title': 'Način plaćanja — opremazaribolov.ba',
-        'seo_description': (
-            'Plaćanje prilikom preuzimanja, dostava brzom poštom u roku 48h i sigurno slanje pošiljki.'
-        ),
+        **page_seo_context('payment', defaults={
+            'seo_title': 'Način plaćanja — opremazaribolov.ba',
+            'seo_description': (
+                'Plaćanje prilikom preuzimanja, dostava brzom poštom u roku 48h i sigurno slanje pošiljki.'
+            ),
+            'seo_h1': 'Način plaćanja',
+        }),
         'canonical_url': settings.SITE_URL.rstrip('/') + reverse('payment_methods'),
     }
     return render(request, 'pages/payment.html', context)
@@ -2356,10 +2531,13 @@ def vlog_list(request):
     context = {
         **_base_context(),
         'vlogs': _vlog_cards(),
-        'seo_title': 'Blog — opremazaribolov.ba',
-        'seo_description': (
-            'Blog i vlog opremazaribolov.ba — savjeti, priče i novosti iz svijeta ribolova.'
-        ),
+        **page_seo_context('vlog', defaults={
+            'seo_title': 'Blog — opremazaribolov.ba',
+            'seo_description': (
+                'Blog i vlog opremazaribolov.ba — savjeti, priče i novosti iz svijeta ribolova.'
+            ),
+            'seo_h1': 'Blog',
+        }),
         'canonical_url': settings.SITE_URL.rstrip('/') + reverse('vlog_list'),
     }
     return render(request, 'vlog_list.html', context)
@@ -2384,14 +2562,41 @@ def category_detail(request, slug):
     show_all = request.GET.get('all') == '1'
     show_products = show_all or _filters_active(filter_params)
 
+    category_seo = entity_seo_context(
+        meta_title=category.meta_title,
+        meta_description=category.meta_description,
+        h1_naslov=category.h1_naslov,
+        seo_tekst_iznad=category.seo_tekst_iznad,
+        seo_tekst_ispod=category.seo_tekst_ispod,
+        default_title=auto_category_seo_title(category),
+        default_description=auto_category_seo_description(category),
+        default_h1=category.naziv,
+    )
+    cat_canonical = settings.SITE_URL.rstrip('/') + category.get_absolute_url()
+    category_ld = {
+        'collection_json_ld': json_ld(collection_page_json_ld(
+            name=category_seo['seo_h1'] or category.naziv,
+            description=category_seo['seo_description'],
+            url=cat_canonical,
+        )),
+        'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
+            {'name': 'Početna', 'url': settings.SITE_URL.rstrip('/') + '/'},
+            {'name': category.naziv, 'url': cat_canonical},
+        ])),
+    }
+
     if direct_subs and not show_products:
         context = {
             **_base_context(),
             'category': category,
             'subcategories': direct_subs,
-            'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
-            'seo_description': category.meta_description or f"Izaberite podkategoriju unutar {category.naziv}.",
-            'canonical_url': settings.SITE_URL.rstrip('/') + category.get_absolute_url(),
+            **category_seo,
+            'seo_description': (
+                category.meta_description
+                or f'Izaberite podkategoriju unutar {category.naziv}. {auto_category_seo_description(category)}'
+            )[:160],
+            'canonical_url': cat_canonical,
+            **category_ld,
         }
         return render(request, 'category_subcategories.html', context)
 
@@ -2425,10 +2630,9 @@ def category_detail(request, slug):
         'filter_reset_url': _filter_reset_url(category_url, catalog_url_params),
         'category_subnav': _category_subnav_items(category, show_all_active=show_all),
         'catalog_show_all': show_all,
-        # SEO
-        'seo_title': category.meta_title or f"{category.naziv} | Oprema za ribolov",
-        'seo_description': category.meta_description or f"{category.naziv} — kvalitetna oprema za ribolov po povoljnim cijenama. Brza dostava širom Bosne i Hercegovine.",
-        'canonical_url': settings.SITE_URL.rstrip('/') + category.get_absolute_url(),
+        **category_seo,
+        'canonical_url': cat_canonical,
+        **category_ld,
     }
     return render(request, 'category.html', context)
 
@@ -2560,8 +2764,16 @@ def product_detail(request, slug):
         'product_image_width': product_image_width,
         'product_image_height': product_image_height,
         # SEO
-        'seo_title': product.seo_title,
-        'seo_description': product.seo_description,
+        **entity_seo_context(
+            meta_title=product.meta_title,
+            meta_description=product.meta_description,
+            h1_naslov=product.h1_naslov,
+            seo_tekst_iznad=product.seo_tekst_iznad,
+            seo_tekst_ispod=product.seo_tekst_ispod,
+            default_title=product.seo_title,
+            default_description=product.seo_description,
+            default_h1=product.naziv,
+        ),
         'canonical_url': settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
         'og_image': (
             request.build_absolute_uri(product.prikazna_slika.url)
@@ -2570,6 +2782,25 @@ def product_detail(request, slug):
         'product_back_url': _product_back_url(request, product),
         # Van stanja: ne indeksiraj (i dalje otvoren link za stare bookmarke)
         'meta_robots_content': None if product_available else 'noindex, follow',
+        'product_json_ld': json_ld(product_json_ld(
+            product,
+            canonical_url=settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
+            site_settings=site_settings,
+        )),
+        'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
+            {'name': 'Početna', 'url': settings.SITE_URL.rstrip('/') + '/'},
+            *(
+                [{
+                    'name': product.kategorija.naziv,
+                    'url': settings.SITE_URL.rstrip('/') + product.kategorija.get_absolute_url(),
+                }]
+                if product.kategorija_id else []
+            ),
+            {
+                'name': product.naziv,
+                'url': settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
+            },
+        ])),
     }
     # Zapamti povratak za staff edit (Save → nazad na listu/pretragu)
     back = context['product_back_url']
@@ -3527,6 +3758,11 @@ def cart_view(request):
         **_cart_context(request, cart),
         'upsell_banners_above': get_cart_banner_upsell_offers(UpsellOffer.PrikazTip.BANNER_IZNAD),
         'upsell_banners_below': get_cart_banner_upsell_offers(UpsellOffer.PrikazTip.BANNER_ISPOD),
+        **page_seo_context('cart', defaults={
+            'seo_title': 'Korpa — opremazaribolov.ba',
+            'seo_description': 'Vaša korpa — opremazaribolov.ba',
+            'seo_h1': 'Korpa',
+        }),
     }
     return render(request, 'cart.html', context)
 
@@ -3900,6 +4136,11 @@ def checkout(request):
         **_cart_context(request, cart),
         'form': form,
         'upsell_checkout_offers': get_checkout_upsell_offers(cart),
+        **page_seo_context('checkout', defaults={
+            'seo_title': 'Narudžba — opremazaribolov.ba',
+            'seo_description': 'Završite narudžbu — opremazaribolov.ba',
+            'seo_h1': 'Narudžba',
+        }),
     }
     if request.method == 'GET':
         initiate_checkout_event_id = f'initiatecheckout-{uuid.uuid4().hex}'
@@ -3946,6 +4187,11 @@ def order_success(request, broj):
     context = {
         **_base_context(),
         'order': order,
+        **page_seo_context('order_success', defaults={
+            'seo_title': 'Narudžba primljena — opremazaribolov.ba',
+            'seo_description': '',
+            'seo_h1': 'Hvala na narudžbi!',
+        }),
         'track_purchase': track_purchase,
         'meta_purchase_event_id': purchase_event_id if track_purchase else None,
         'meta_purchase_num_items': sum(stavka.kolicina for stavka in stavke),
@@ -4068,6 +4314,11 @@ def register(request):
         **_base_context(),
         'form': form,
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
+        **page_seo_context('register', defaults={
+            'seo_title': 'Registracija — opremazaribolov.ba',
+            'seo_description': 'Kreirajte nalog — opremazaribolov.ba',
+            'seo_h1': 'Registracija',
+        }),
     }
     return render(request, 'auth/register.html', context)
 
@@ -4146,6 +4397,11 @@ def login_view(request):
         'form': form,
         'next_url': next_url,
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
+        **page_seo_context('login', defaults={
+            'seo_title': 'Prijava — opremazaribolov.ba',
+            'seo_description': 'Prijavite se — opremazaribolov.ba',
+            'seo_h1': 'Prijava',
+        }),
     }
     return render(request, 'auth/login.html', context)
 
@@ -4817,7 +5073,12 @@ def staff_toggle_edit_mode(request):
 _SITE_EDIT_TEXT_FIELDS = frozenset({
     'naslov_novo', 'podnaslov_novo',
     'naslov_izdvojeno', 'podnaslov_izdvojeno',
+    'naslov_akcija', 'podnaslov_akcija',
+    'naslov_brendovi',
+    'tekst_pogledaj_sve',
     'naslov_blog',
+    'newsletter_naslov', 'newsletter_podnaslov',
+    'newsletter_placeholder', 'newsletter_dugme', 'newsletter_napomena',
     'naslov_povezani', 'podnaslov_povezani',
     'promo_bar_tekst', 'promo_bar_link_tekst',
     'dostava_naziv',
@@ -4833,7 +5094,16 @@ _SITE_EDIT_MAX_LEN = {
     'podnaslov_novo': 200,
     'naslov_izdvojeno': 120,
     'podnaslov_izdvojeno': 200,
+    'naslov_akcija': 120,
+    'podnaslov_akcija': 200,
+    'naslov_brendovi': 120,
+    'tekst_pogledaj_sve': 40,
     'naslov_blog': 200,
+    'newsletter_naslov': 120,
+    'newsletter_podnaslov': 240,
+    'newsletter_placeholder': 80,
+    'newsletter_dugme': 40,
+    'newsletter_napomena': 160,
     'naslov_povezani': 120,
     'podnaslov_povezani': 200,
     'promo_bar_tekst': 200,

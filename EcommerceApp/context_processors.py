@@ -161,13 +161,18 @@ def nav_categories(request):
             'css_vars': '',
         }
 
+    # Edit mode uklonjen iz UI — uvijek isključen
     staff_edit_mode = False
-    if (
-        getattr(request, 'user', None)
-        and request.user.is_authenticated
-        and request.user.is_superuser
-    ):
-        staff_edit_mode = bool(request.session.get('staff_edit_mode', True))
+
+    # SEO JSON-LD (Organization + WebSite/SearchAction) — globalno
+    organization_json_ld = ''
+    website_json_ld = ''
+    try:
+        from .utils.seo import json_ld, organization_json_ld as _org_ld, website_json_ld as _web_ld
+        organization_json_ld = json_ld(_org_ld(site_settings))
+        website_json_ld = json_ld(_web_ld(site_settings))
+    except Exception:
+        pass
 
     return {
         'site_url': settings.SITE_URL,
@@ -186,6 +191,7 @@ def nav_categories(request):
         'online_gift_reward_label': active_reward_label(request),
         'search_query': request.GET.get('q', '').strip(),
         'contact_phone': contact_phone,
+        'contact_phone_digits': _phone_digits(contact_phone),
         'contact_whatsapp_url': contact_whatsapp_url,
         'contact_viber_url': contact_viber_url,
         'contact_messenger_url': contact_messenger_url,
@@ -195,4 +201,6 @@ def nav_categories(request):
         'dwell_catalog_by_id': dwell_catalog_by_id,
         'dwell_ui': dwell_ui,
         'staff_edit_mode': staff_edit_mode,
+        'organization_json_ld': organization_json_ld,
+        'website_json_ld': website_json_ld,
     }

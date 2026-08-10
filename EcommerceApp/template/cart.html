@@ -3,11 +3,16 @@
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
-{% block page_title %}<title>Korpa — opremazaribolov.ba</title>{% endblock %}
+{% block page_title %}<title>{{ seo_title|default:"Korpa — opremazaribolov.ba" }}</title>{% endblock %}
+
+{% block meta_description %}
+{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
+{% endblock %}
 
 {% block content %}
 <section class="cart-page">
-    <h1>Korpa</h1>
+    <h1>{{ seo_h1|default:"Korpa" }}</h1>
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
     {% if cart_items %}
     {% if online_gift_reward_label %}
@@ -113,6 +118,7 @@
     <p class="cart-empty">Korpa je prazna.</p>
     <a href="{% url 'home' %}" class="btn btn-primary">Nastavi kupovinu</a>
     {% endif %}
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
 </section>
 {% endblock %}
 

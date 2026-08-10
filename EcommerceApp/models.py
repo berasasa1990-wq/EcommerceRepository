@@ -45,7 +45,7 @@ class SiteSettings(models.Model):
     logo = models.ImageField(
         upload_to='site/', blank=True, null=True,
         verbose_name='Logo sajta',
-        help_text='Prikazuje se u headeru umjesto teksta. Čuva se kao PNG s bijelom pozadinom (max 640×128px).',
+        help_text='Prikazuje se u headeru (crna pozadina). Originalna slika se ne ofarbava — samo max ~640×128. Preporuka: PNG, transparentna pozadina, bijela/zelena grafika.',
     )
     logo_glavni_sajt = models.ImageField(
         upload_to='site/', blank=True, null=True,
@@ -360,6 +360,16 @@ class SiteSettings(models.Model):
         verbose_name='Chat — automatska pozdrav poruka',
         help_text='Poruka koju sistem šalje kad se chat otvori. Kupac odmah može odgovoriti (bez registracije).',
     )
+    chat_avatar_slika = models.ImageField(
+        upload_to='site/chat/',
+        blank=True,
+        null=True,
+        verbose_name='Chat — slika (avatar / balon)',
+        help_text=(
+            'Slika koja se prikazuje na chat balonu i u headeru chata kad iskoči kupcu. '
+            'Preporučeno: 256×256 px, PNG/JPG (kvadrat). Ako je prazno — default ikona.'
+        ),
+    )
     javno_online_posjetioci = models.BooleanField(
         default=False,
         verbose_name='Javno prikaži ko je na sajtu',
@@ -403,18 +413,72 @@ class SiteSettings(models.Model):
     )
     seo_title = models.CharField(
         max_length=70, blank=True,
-        verbose_name='SEO naslov (početna)',
-        help_text='Preporučeno 50-60 znakova. Ostavi prazno za default.',
+        verbose_name='SEO title (početna) — fallback',
+        help_text=(
+            'Fallback <title> ako „SEO stranica → Početna” nije popunjena. '
+            'Preporuka: 50–60 znakova, ključne riječi ispred (npr. Oprema za ribolov | Online shop BiH).'
+        ),
     )
     meta_description = models.CharField(
         max_length=160, blank=True,
-        verbose_name='Meta opis (početna)',
-        help_text='Preporučeno do 155-160 znakova. Prikazuje se u Google rezultatima.',
+        verbose_name='Meta description (početna) — fallback',
+        help_text=(
+            'Fallback opis za Google ako „SEO stranica → Početna” nije popunjena. '
+            'Preporuka: 140–160 znakova, jasan benefit + CTA (dostava, brendovi, BiH).'
+        ),
     )
     og_image = models.ImageField(
         upload_to='site/', blank=True, null=True,
         verbose_name='Social share slika (OG image)',
-        help_text='Preporučeno 1200×630px ili veća. Prikazuje se kad se link dijeli na Facebooku, WhatsAppu itd.',
+        help_text='Preporučeno 1200×630px. Kad se link dijeli na Facebook / WhatsApp / Viber.',
+    )
+    # —— SEO / Google (organizacija, verifikacija, društvene mreže) ——
+    seo_organizacija_naziv = models.CharField(
+        max_length=120, blank=True, default='opremazaribolov.ba',
+        verbose_name='Naziv trgovine (schema.org)',
+        help_text='Prikazuje se u Google Knowledge / Organization JSON-LD.',
+    )
+    seo_email = models.EmailField(
+        blank=True, default='opremazaribolov.ba@gmail.com',
+        verbose_name='SEO / kontakt email',
+        help_text='Za schema.org ContactPoint (customer service).',
+    )
+    seo_grad = models.CharField(
+        max_length=80, blank=True, default='',
+        verbose_name='Grad (lokalni SEO)',
+        help_text='Opcionalno. Npr. Sarajevo — pomaže lokalnim upitima.',
+    )
+    seo_drzava = models.CharField(
+        max_length=2, blank=True, default='BA',
+        verbose_name='Država (ISO, npr. BA)',
+        help_text='Dvoslovni kod za schema.org (BA = BiH).',
+    )
+    seo_facebook_url = models.URLField(
+        blank=True, default='https://www.facebook.com/opremazaribolov.ba',
+        verbose_name='Facebook URL',
+        help_text='Puni link na Facebook stranicu (schema sameAs).',
+    )
+    seo_instagram_url = models.URLField(
+        blank=True, default='',
+        verbose_name='Instagram URL',
+        help_text='Opcionalno. Puni link na Instagram profil.',
+    )
+    google_site_verification = models.CharField(
+        max_length=120, blank=True, default='',
+        verbose_name='Google Search Console — verification code',
+        help_text=(
+            'Samo sadržaj content=„…“ iz Google meta taga '
+            '(Search Console → Ownership → HTML tag). '
+            'Npr. abc123XYZ — bez cijelog <meta> taga.'
+        ),
+    )
+    seo_title_suffix = models.CharField(
+        max_length=40, blank=True, default='opremazaribolov.ba',
+        verbose_name='Sufiks u title tagu',
+        help_text=(
+            'Dodaje se na kraju title-a kad nije već unesen (npr. „Naziv artikla | opremazaribolov.ba”). '
+            'Prazno = bez sufiksa.'
+        ),
     )
     politika_dostava = models.TextField(
         default='Dostava brzom poštom u roku od 48h.',
@@ -438,13 +502,13 @@ class SiteSettings(models.Model):
         MANUAL = 'manual', 'Ručno — odaberi do 10 artikala'
 
     naslov_novo = models.CharField(
-        max_length=120, default='Novo', blank=True,
-        verbose_name='Novo — naslov',
+        max_length=120, default='Noviteti', blank=True,
+        verbose_name='Noviteti — naslov',
         help_text='Ostavite prazno da se naslov ne prikazuje.',
     )
     podnaslov_novo = models.CharField(
-        max_length=200, default='Najnoviji artikli na sajtu', blank=True,
-        verbose_name='Novo — podnaslov',
+        max_length=200, default='', blank=True,
+        verbose_name='Noviteti — podnaslov',
         help_text='Ostavite prazno da se podnaslov ne prikazuje.',
     )
     noviteti_mod = models.CharField(
@@ -458,14 +522,67 @@ class SiteSettings(models.Model):
         ),
     )
     naslov_izdvojeno = models.CharField(
-        max_length=120, default='Izdvojeno', blank=True,
-        verbose_name='Izdvojeno — naslov',
-        help_text='Ostavite prazno da se naslov ne prikazuje.',
+        max_length=120, default='Izdvojeni', blank=True,
+        verbose_name='Izdvojeni — naslov',
+        help_text='Sekcija „Izdvojeni” na početnoj. Ostavite prazno da se naslov ne prikazuje.',
     )
     podnaslov_izdvojeno = models.CharField(
-        max_length=200, default='Odabrani artikli za vas', blank=True,
-        verbose_name='Izdvojeno — podnaslov',
+        max_length=200, default='', blank=True,
+        verbose_name='Izdvojeni — podnaslov',
         help_text='Ostavite prazno da se podnaslov ne prikazuje.',
+    )
+    naslov_akcija = models.CharField(
+        max_length=120, default='Akcijska ponuda', blank=True,
+        verbose_name='Akcijska ponuda — naslov',
+        help_text='Sekcija sniženih artikala na početnoj. Ostavite prazno da se naslov ne prikazuje.',
+    )
+    podnaslov_akcija = models.CharField(
+        max_length=200, default='', blank=True,
+        verbose_name='Akcijska ponuda — podnaslov',
+        help_text='Ostavite prazno da se podnaslov ne prikazuje.',
+    )
+    prikazi_akcijsku_sekciju = models.BooleanField(
+        default=True,
+        verbose_name='Prikaži sekciju „Akcijska ponuda”',
+        help_text='Ako je uključeno, na početnoj se prikazuju artikli na akciji (kad ih ima).',
+    )
+    naslov_brendovi = models.CharField(
+        max_length=120, default='Naši brendovi', blank=True,
+        verbose_name='Brendovi — naslov',
+        help_text='Naslov trake brendova na dnu početne. Prazno = sakrij naslov.',
+    )
+    tekst_pogledaj_sve = models.CharField(
+        max_length=40, default='Pogledaj sve', blank=True,
+        verbose_name='Tekst linka „Pogledaj sve”',
+        help_text='Link desno od naslova sekcija proizvoda na početnoj.',
+    )
+    newsletter_naslov = models.CharField(
+        max_length=120, default='Prijavi se na newsletter', blank=True,
+        verbose_name='Newsletter — naslov',
+    )
+    newsletter_podnaslov = models.CharField(
+        max_length=240,
+        default='Budi prvi koji će saznati za nove proizvode, akcije i savjete iz svijeta ribolova.',
+        blank=True,
+        verbose_name='Newsletter — podnaslov',
+    )
+    newsletter_placeholder = models.CharField(
+        max_length=80, default='Unesite e-mail adresu', blank=True,
+        verbose_name='Newsletter — placeholder u polju',
+    )
+    newsletter_dugme = models.CharField(
+        max_length=40, default='Prijavi se', blank=True,
+        verbose_name='Newsletter — tekst dugmeta',
+    )
+    newsletter_napomena = models.CharField(
+        max_length=160,
+        default='Nećemo spamovati. Odjavi se u bilo kom trenutku.',
+        blank=True,
+        verbose_name='Newsletter — napomena ispod forme',
+    )
+    prikazi_newsletter = models.BooleanField(
+        default=True,
+        verbose_name='Prikaži newsletter box na početnoj',
     )
     naslov_povezani = models.CharField(
         max_length=120, default='Povezani artikli', blank=True,
@@ -478,7 +595,7 @@ class SiteSettings(models.Model):
         help_text='Koristite {kategorija} za naziv kategorije. Ostavite prazno da se podnaslov ne prikazuje.',
     )
     naslov_blog = models.CharField(
-        max_length=200, default='Blogovi — Klik na željeni',
+        max_length=200, default='Vlog / Blog',
         verbose_name='Blog — naslov',
     )
     promo_bar_tekst = models.CharField(
@@ -553,14 +670,14 @@ class SiteSettings(models.Model):
         help_text='Boja na prelazak miša. Hex npr. #4fa104',
     )
     boja_dugme_banner = models.CharField(
-        max_length=7, default='#ff9500', blank=True,
+        max_length=7, default='#5BB805', blank=True,
         verbose_name='Boja dugmadi na bannerima',
-        help_text='CTA na hero/grid/featured bannerima. Hex npr. #ff9500',
+        help_text='CTA na hero/grid/featured bannerima. Hex npr. #5BB805 (zelena kao na mockupu).',
     )
     boja_dugme_banner_hover = models.CharField(
-        max_length=7, default='#e68600', blank=True,
+        max_length=7, default='#4fa104', blank=True,
         verbose_name='Boja banner dugmadi hover',
-        help_text='Hex npr. #e68600',
+        help_text='Hex npr. #4fa104',
     )
 
     class Meta:
@@ -572,6 +689,7 @@ class SiteSettings(models.Model):
         from .utils.images import (
             apply_image_processing,
             process_brand_logo,
+            process_chat_avatar,
             process_product_detail_badge,
             process_site_favicon,
             process_site_logo,
@@ -585,6 +703,8 @@ class SiteSettings(models.Model):
             apply_image_processing(self, 'favicon', post_process=process_site_favicon)
         if self.badge_product_detail:
             apply_image_processing(self, 'badge_product_detail', post_process=process_product_detail_badge)
+        if self.chat_avatar_slika:
+            apply_image_processing(self, 'chat_avatar_slika', post_process=process_chat_avatar)
         super().save(*args, **kwargs)
 
     def format_povezani_podnaslov(self, kategorija_naziv=''):
@@ -620,8 +740,8 @@ class SiteSettings(models.Model):
         hx = self._dwell_hex
         cart = hx(self.boja_dugme_korpa, '#5BB805')
         cart_hover = hx(self.boja_dugme_korpa_hover, '#4fa104')
-        banner = hx(self.boja_dugme_banner, '#ff9500')
-        banner_hover = hx(self.boja_dugme_banner_hover, '#e68600')
+        banner = hx(self.boja_dugme_banner, '#5BB805')
+        banner_hover = hx(self.boja_dugme_banner_hover, '#4fa104')
         wa = hx(self.kontakt_boja_whatsapp, '#25d366')
         viber = hx(self.kontakt_boja_viber, '#665cac')
         msg = hx(self.kontakt_boja_messenger, '#0084ff')
@@ -733,6 +853,73 @@ class AIProdajaSettings(SiteSettings):
         verbose_name_plural = 'AI prodaja / AI dwell'
 
 
+class PageSEO(models.Model):
+    """
+    SEO za fiksne stranice sajta (početna, korpa, o nama…).
+    Sva polja su opcionalna — prazno = default / postojeći naslov u templateu.
+    Za artikle, kategorije i brendove SEO se uređuje na njihovim formama.
+    """
+
+    class PageKey(models.TextChoices):
+        HOME = 'home', 'Početna'
+        CART = 'cart', 'Korpa'
+        CHECKOUT = 'checkout', 'Narudžba (checkout)'
+        ABOUT = 'about', 'O nama'
+        PAYMENT = 'payment', 'Način plaćanja'
+        VLOG = 'vlog', 'Blog / Vlog'
+        AKCIJA = 'akcija', 'Akcija (katalog)'
+        NOVITETI = 'noviteti', 'Noviteti (katalog)'
+        SEARCH = 'search', 'Pretraga (rezultati)'
+        LOGIN = 'login', 'Prijava'
+        REGISTER = 'register', 'Registracija'
+        ADVISOR = 'advisor', 'Savjetnik'
+        ORDER_SUCCESS = 'order_success', 'Uspješna narudžba'
+
+    page_key = models.CharField(
+        max_length=40,
+        choices=PageKey.choices,
+        unique=True,
+        verbose_name='Stranica',
+    )
+    seo_title = models.CharField(
+        max_length=70,
+        blank=True,
+        verbose_name='SEO title',
+        help_text='Opcionalno. <title> i og:title. Preporučeno 50–60 znakova.',
+    )
+    meta_description = models.CharField(
+        max_length=160,
+        blank=True,
+        verbose_name='Meta description',
+        help_text='Opcionalno. Opis u Google rezultatima. Do ~155–160 znakova.',
+    )
+    h1_naslov = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='H1 naslov',
+        help_text='Opcionalno. Glavni naslov na stranici. Prazno = default tekst.',
+    )
+    seo_tekst_iznad = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst iznad sadržaja / proizvoda',
+        help_text='Opcionalno. Tekst iznad liste proizvoda ili glavnog sadržaja.',
+    )
+    seo_tekst_ispod = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst ispod sadržaja / proizvoda',
+        help_text='Opcionalno. Tekst ispod liste proizvoda ili glavnog sadržaja.',
+    )
+    azuriran = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'SEO stranice'
+        verbose_name_plural = 'SEO stranica'
+        ordering = ['page_key']
+
+    def __str__(self):
+        return self.get_page_key_display()
+
+
 class ProductDwellItem(models.Model):
     """
     Artikal s ručnim flash popustom za AI dwell.
@@ -811,13 +998,28 @@ class Category(models.Model):
     )
     meta_title = models.CharField(
         max_length=70, blank=True,
-        verbose_name='SEO naslov',
+        verbose_name='SEO title',
         help_text='Opcionalno. Ako ostaviš prazno koristi se naziv kategorije.',
     )
     meta_description = models.CharField(
         max_length=160, blank=True,
-        verbose_name='Meta opis',
+        verbose_name='Meta description',
         help_text='Opcionalno. Kratak opis za Google i društvene mreže.',
+    )
+    h1_naslov = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='H1 naslov',
+        help_text='Opcionalno. Prazno = naziv kategorije.',
+    )
+    seo_tekst_iznad = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst iznad proizvoda',
+        help_text='Opcionalno. Tekst iznad liste artikala.',
+    )
+    seo_tekst_ispod = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst ispod proizvoda',
+        help_text='Opcionalno. Tekst ispod liste artikala.',
     )
     search_tagovi = models.TextField(
         blank=True,
@@ -984,6 +1186,31 @@ class Brand(models.Model):
         verbose_name='Logo slika',
         help_text='Prikazuje se umjesto naziva. Automatski se skalira na 200×48px (logo popunjava 80% prostora).',
     )
+    meta_title = models.CharField(
+        max_length=70, blank=True,
+        verbose_name='SEO title',
+        help_text='Opcionalno. Prazno = naziv brenda.',
+    )
+    meta_description = models.CharField(
+        max_length=160, blank=True,
+        verbose_name='Meta description',
+        help_text='Opcionalno. Opis za Google kad se filtrira po brendu.',
+    )
+    h1_naslov = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='H1 naslov',
+        help_text='Opcionalno. Prazno = naziv brenda.',
+    )
+    seo_tekst_iznad = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst iznad proizvoda',
+        help_text='Opcionalno.',
+    )
+    seo_tekst_ispod = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst ispod proizvoda',
+        help_text='Opcionalno.',
+    )
 
     class Meta:
         verbose_name = 'Brend'
@@ -1015,7 +1242,24 @@ class Banner(models.Model):
 
     naslov = models.CharField(max_length=200, blank=True, default='')
     podnaslov = models.CharField(max_length=300, blank=True)
-    slika = models.ImageField(upload_to='banners/', blank=True, null=True)
+    slika = models.ImageField(
+        upload_to='banners/',
+        blank=True,
+        null=True,
+        verbose_name='Slika (desktop)',
+        help_text='Hero: 1920×640 px (3:1). Ostali tipovi po potrebi.',
+    )
+    slika_mobilna = models.ImageField(
+        upload_to='banners/mobile/',
+        blank=True,
+        null=True,
+        verbose_name='Slika (mobilni)',
+        help_text=(
+            'Opcionalno — prikazuje se SAMO na telefonu (≤768px). '
+            'Preporučeno 1080×1350 px (4:5) ili 800×1000. '
+            'Ako je prazno, na mobitelu se koristi desktop slika.'
+        ),
+    )
     video = models.FileField(
         upload_to='banners/videos/',
         blank=True,
@@ -1087,6 +1331,16 @@ class Banner(models.Model):
                 'slika',
                 post_process=partial(process_banner_image_for_admin, tip=self.tip),
             )
+        if self.slika_mobilna:
+            from functools import partial
+            from .utils.images import apply_image_processing, process_banner_image_for_admin
+            # hero_mobile: uža/viša obrada za telefone
+            mobile_tip = 'hero_mobile' if self.tip == self.BannerType.HERO else self.tip
+            apply_image_processing(
+                self,
+                'slika_mobilna',
+                post_process=partial(process_banner_image_for_admin, tip=mobile_tip),
+            )
         super().save(*args, **kwargs)
 
     def get_link_href(self):
@@ -1148,6 +1402,173 @@ class Banner(models.Model):
         return f'{self.get_tip_display()} — {label}'
 
 
+class HomeTrustItem(models.Model):
+    """USP traka ispod hero banera (Brza dostava, Sigurna kupovina…)."""
+
+    class Icon(models.TextChoices):
+        TRUCK = 'truck', 'Dostava / kamion'
+        SHIELD = 'shield', 'Štit / sigurnost'
+        BADGE = 'badge', 'Značka / original'
+        SUPPORT = 'support', 'Podrška / slušalice'
+        GIFT = 'gift', 'Poklon'
+        STAR = 'star', 'Zvijezda'
+        CHECK = 'check', 'Kvačica'
+        TAG = 'tag', 'Cjenovni tag'
+
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='trust_stavke',
+        default=1,
+        editable=False,
+    )
+    naslov = models.CharField(max_length=80, verbose_name='Naslov')
+    podnaslov = models.CharField(max_length=120, blank=True, verbose_name='Podnaslov')
+    ikona = models.CharField(
+        max_length=20,
+        choices=Icon.choices,
+        default=Icon.CHECK,
+        verbose_name='Ikona',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Trust stavka (početna)'
+        verbose_name_plural = 'Trust traka (početna)'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return self.naslov
+
+
+class HomePromoCard(models.Model):
+    """Tamne promo kartice na početnoj (Besplatna dostava, Vjernost, Poklon…)."""
+
+    class Icon(models.TextChoices):
+        TRUCK = 'truck', 'Dostava / kamion'
+        PERCENT = 'percent', 'Popust %'
+        GIFT = 'gift', 'Poklon / kartice'
+        TAG = 'tag', 'Akcije / tag'
+        STAR = 'star', 'Zvijezda / vjernost'
+        SHIELD = 'shield', 'Štit'
+        SUPPORT = 'support', 'Podrška'
+
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='promo_kartice',
+        default=1,
+        editable=False,
+    )
+    naslov = models.CharField(
+        max_length=80,
+        verbose_name='Naslov',
+        help_text='Zeleni naslov. Za 2 reda stavi Enter (npr. BESPLATNA ↵ DOSTAVA).',
+    )
+    podnaslov = models.CharField(max_length=160, blank=True, verbose_name='Podnaslov')
+    badge = models.CharField(
+        max_length=40,
+        blank=True,
+        verbose_name='Badge / isticanje',
+        help_text=(
+            'Npr. „DO 10%”, „50 KM”, „150 KM”. '
+            'Za dostavu (truck) prikazuje se kao veliki broj ispod teksta; '
+            'za pečat/poklon ide u ikonu ako nema uploadane slike.'
+        ),
+    )
+    slika = models.ImageField(
+        upload_to='promo/',
+        blank=True,
+        null=True,
+        verbose_name='Slika (desno na kartici)',
+        help_text=(
+            'Tvoja slika umjesto ugrađene ikone. '
+            'Preporučeno: 200×200 px (ili 240×160), PNG s transparentnom pozadinom, zelena grafika. '
+            'Ako je prazno — koristi se SVG ikona (polje „Ikona”).'
+        ),
+    )
+    ikona = models.CharField(
+        max_length=20,
+        choices=Icon.choices,
+        default=Icon.STAR,
+        verbose_name='Ikona (fallback)',
+        help_text='Koristi se samo ako nema uploadane slike.',
+    )
+    boja_naslova = models.CharField(
+        max_length=7,
+        default='#5BB805',
+        blank=True,
+        verbose_name='Boja naslova',
+        help_text='Hex npr. #5BB805 (zelena) ili #ffffff (bijela).',
+    )
+    boja_podnaslova = models.CharField(
+        max_length=7,
+        default='#FFFFFF',
+        blank=True,
+        verbose_name='Boja podnaslova',
+        help_text='Hex npr. #FFFFFF ili #CCCCCC.',
+    )
+    boja_isticanja = models.CharField(
+        max_length=7,
+        default='#FFFFFF',
+        blank=True,
+        verbose_name='Boja isticanja (npr. 150 KM)',
+        help_text='Boja velikog broja ispod teksta (dostava). Hex npr. #FFFFFF.',
+    )
+    link = models.CharField(
+        max_length=300,
+        blank=True,
+        verbose_name='Link (URL ili putanja)',
+        help_text='Npr. /?akcija=1 ili https://… Prazno = bez linka.',
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Promo kartica (početna)'
+        verbose_name_plural = 'Promo kartice (početna)'
+        ordering = ['redoslijed', 'id']
+
+    @staticmethod
+    def _hex_color(value, default):
+        import re
+        v = (value or '').strip()
+        if re.fullmatch(r'#[0-9A-Fa-f]{6}', v) or re.fullmatch(r'#[0-9A-Fa-f]{3}', v):
+            if len(v) == 4:
+                return '#' + ''.join(c * 2 for c in v[1:])
+            return v
+        return default
+
+    def css_boja_naslova(self):
+        return self._hex_color(self.boja_naslova, '#5BB805')
+
+    def css_boja_podnaslova(self):
+        return self._hex_color(self.boja_podnaslova, '#FFFFFF')
+
+    def css_boja_isticanja(self):
+        return self._hex_color(self.boja_isticanja, '#FFFFFF')
+
+    def save(self, *args, **kwargs):
+        if self.slika:
+            from .utils.images import apply_image_processing, process_promo_card_image
+            apply_image_processing(
+                self, 'slika', post_process=process_promo_card_image,
+            )
+        super().save(*args, **kwargs)
+
+    def get_link_href(self):
+        url = (self.link or '').strip()
+        if not url:
+            return ''
+        if url.startswith(('http://', 'https://', '/', '?', '#')):
+            return url
+        return f'/{url.lstrip("/")}'
+
+    def __str__(self):
+        return self.naslov
+
+
 class HomeFeaturedProduct(models.Model):
     postavke = models.ForeignKey(
         SiteSettings,
@@ -1167,8 +1588,8 @@ class HomeFeaturedProduct(models.Model):
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
 
     class Meta:
-        verbose_name = 'Istaknuti artikal (početna)'
-        verbose_name_plural = 'Istaknuti artikli (početna)'
+        verbose_name = 'Izdvojeni artikal (početna)'
+        verbose_name_plural = 'Izdvojeni artikli (početna)'
         ordering = ['redoslijed', 'id']
 
     def __str__(self):
@@ -1292,13 +1713,46 @@ class HomeVlog(models.Model):
         verbose_name='Opis vloga',
         help_text='Puni tekst koji se prikazuje kad korisnik otvori vlog. Može HTML: <p>, <a href="/...">link</a>.',
     )
+    kratki_opis = models.CharField(
+        max_length=220,
+        blank=True,
+        verbose_name='Kratki opis (početna)',
+        help_text='Jedna rečenica ispod naslova na početnoj. Prazno = prvih ~120 znakova iz sadržaja.',
+    )
+    objavljeno = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Datum objave',
+        help_text='Prikazuje se na kartici vloga (npr. 05.08.2025). Prazno = datum kreiranja.',
+    )
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
     aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+    kreirano = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Vlog'
         verbose_name_plural = 'Vlogovi'
         ordering = ['redoslijed', '-id']
+
+    @property
+    def display_date(self):
+        if self.objavljeno:
+            return self.objavljeno
+        if self.kreirano:
+            return timezone.localtime(self.kreirano).date()
+        return None
+
+    def short_teaser(self, max_len=140):
+        text = (self.kratki_opis or '').strip()
+        if not text:
+            from django.utils.html import strip_tags
+            text = strip_tags(self.sadrzaj or '').strip()
+        if len(text) <= max_len:
+            return text
+        trimmed = text[: max_len - 1]
+        if ' ' in trimmed:
+            trimmed = trimmed.rsplit(' ', 1)[0]
+        return f'{trimmed}…'
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2403,13 +2857,28 @@ class Product(models.Model):
     )
     meta_title = models.CharField(
         max_length=70, blank=True,
-        verbose_name='SEO naslov',
+        verbose_name='SEO title',
         help_text='Opcionalno — ostavi prazno za automatski (naziv artikla).',
     )
     meta_description = models.CharField(
         max_length=160, blank=True,
-        verbose_name='Meta opis',
+        verbose_name='Meta description',
         help_text='Opcionalno — ostavi prazno za automatski opis koji počinje nazivom artikla.',
+    )
+    h1_naslov = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='H1 naslov',
+        help_text='Opcionalno — prazno = naziv artikla.',
+    )
+    seo_tekst_iznad = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst iznad proizvoda',
+        help_text='Opcionalno. Tekst iznad detalja artikla.',
+    )
+    seo_tekst_ispod = models.TextField(
+        blank=True,
+        verbose_name='SEO tekst ispod proizvoda',
+        help_text='Opcionalno. Tekst ispod detalja artikla (npr. ispod opisa / povezanih).',
     )
     # Denormalizovana polja za pretragu (NOT NULL u bazi — default '' da Odoo import ne padne)
     search_keywords = models.TextField(
@@ -2725,18 +3194,22 @@ class Product(models.Model):
 
     @property
     def seo_title(self):
-        """Koristi se za <title> i og:title kad meta_title nije unesen."""
-        return self.meta_title or self.naziv
+        """
+        <title> / og:title.
+        Ručni meta_title ima prednost; inače: Naziv | Brend | shop (max ~60–70).
+        """
+        if self.meta_title:
+            return self.meta_title.strip()
+        from .utils.seo import auto_product_seo_title
+        return auto_product_seo_title(self)
 
     @property
     def seo_description(self):
-        """Koristi se za meta description kad meta_description nije unesen."""
+        """Meta description — ručni ili pametni default s benefitima + brand/kategorija."""
         if self.meta_description:
-            return self.meta_description
-        return (
-            f"{self.naziv}. Kupite kvalitetnu ribolovačku opremu online u Bosni i Hercegovini. "
-            "Štapovi, mašinice, varalice, najloni, hranilice, pribor i oprema poznatih svjetskih brendova po odličnim cijenama."
-        )
+            return self.meta_description.strip()
+        from .utils.seo import auto_product_seo_description
+        return auto_product_seo_description(self)
 
     def get_absolute_url(self):
         return reverse('product_detail', kwargs={'slug': self.slug})

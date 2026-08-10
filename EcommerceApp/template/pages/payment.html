@@ -18,8 +18,10 @@
         </nav>
 
         <header class="info-page-header">
-            <h1>Način plaćanja</h1>
+            <h1>{{ seo_h1|default:"Način plaćanja" }}</h1>
         </header>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
         <div class="info-page-body">
             <ul class="info-page-list">
@@ -28,6 +30,8 @@
                 <li>Sigurnost slanja je visoka — svaka pošiljka pažljivo se pakuje i šalje provjerenim kurirskim uslugama.</li>
             </ul>
         </div>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
     </div>
 </article>
 {% endblock %}

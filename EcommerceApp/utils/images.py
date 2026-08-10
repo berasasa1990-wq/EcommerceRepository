@@ -24,13 +24,15 @@ VLOG_MAX_DIMENSION = 360
 VLOG_RESPONSIVE_WIDTHS = (200, 280, 320)
 BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 1920
-HERO_BANNER_MAX_HEIGHT = 420
-HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280)
-MAX_BANNER_UPLOAD_BYTES = 40 * 1024
+# Viši hero (mockup) — cijela upload slika se bolje vidi (ranije 420, sada 640)
+HERO_BANNER_MAX_HEIGHT = 640
+HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280, 1600)
+MAX_BANNER_UPLOAD_BYTES = 72 * 1024
 HERO_JPEG_VARIANT_MAX_BYTES = {
-    640: 28 * 1024,
-    960: 36 * 1024,
-    1280: MAX_BANNER_UPLOAD_BYTES,
+    640: 36 * 1024,
+    960: 48 * 1024,
+    1280: 60 * 1024,
+    1600: MAX_BANNER_UPLOAD_BYTES,
 }
 MAX_GRID_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
 GRID_BANNER_MAX_DIMENSION = 360
@@ -70,6 +72,10 @@ BANNER_WIDE_VARIANT_MAX_BYTES = {
     1200: MAX_BANNER_UPLOAD_BYTES,
 }
 
+# Mobilni hero: 4:5 portret (1080×1350)
+HERO_MOBILE_MAX_WIDTH = 1080
+HERO_MOBILE_MAX_HEIGHT = 1350
+
 BANNER_AVIF_SETTINGS = {
     'grid': {
         'max_bytes': MAX_GRID_BANNER_AVIF_BYTES,
@@ -80,6 +86,12 @@ BANNER_AVIF_SETTINGS = {
         'max_bytes': MAX_HERO_BANNER_AVIF_BYTES,
         'max_width': HERO_BANNER_MAX_WIDTH,
         'max_height': HERO_BANNER_MAX_HEIGHT,
+        'crop': True,
+    },
+    'hero_mobile': {
+        'max_bytes': MAX_HERO_BANNER_AVIF_BYTES,
+        'max_width': HERO_MOBILE_MAX_WIDTH,
+        'max_height': HERO_MOBILE_MAX_HEIGHT,
         'crop': True,
     },
     'featured': {
@@ -733,16 +745,23 @@ def vlog_image_responsive_meta(image_field, *, default=(360, 360)):
 
 def banner_image_responsive_meta(image_field, *, tip='grid', default=None):
     if default is None:
-        default = (360, 360) if tip == 'grid' else (1200, 800)
+        if tip == 'grid':
+            default = (360, 360)
+        elif tip == 'hero_mobile':
+            default = (HERO_MOBILE_MAX_WIDTH, HERO_MOBILE_MAX_HEIGHT)
+        else:
+            default = (1200, 800)
     widths = {
         'grid': BANNER_GRID_RESPONSIVE_WIDTHS,
         'hero': HERO_BANNER_RESPONSIVE_WIDTHS,
+        'hero_mobile': (480, 720, 1080),
         'featured': FEATURED_BANNER_RESPONSIVE_WIDTHS,
         'spotlight': SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS,
     }.get(tip, FEATURED_BANNER_RESPONSIVE_WIDTHS)
     max_dimension = {
         'grid': GRID_BANNER_MAX_DIMENSION,
         'hero': HERO_BANNER_MAX_WIDTH,
+        'hero_mobile': HERO_MOBILE_MAX_WIDTH,
         'featured': BANNER_MAX_WIDTH,
         'spotlight': BANNER_MAX_WIDTH,
     }.get(tip, BANNER_MAX_WIDTH)
@@ -1757,6 +1776,62 @@ def _logo_target_size(canvas_size, fill_ratio=1.0):
     )
 
 
+def _logo_has_white_background(rgba_img, *, white_threshold=248):
+    """True ako su uglovi bijeli (logo na bijeloj podlozi)."""
+    rgba = rgba_img.convert('RGBA')
+    w, h = rgba.size
+    if w < 4 or h < 4:
+        return False
+    corners = ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2))
+    white = 0
+    transparent = 0
+    for x, y in corners:
+        r, g, b, a = rgba.getpixel((x, y))
+        if a < 20:
+            transparent += 1
+        elif r >= white_threshold and g >= white_threshold and b >= white_threshold:
+            white += 1
+    # Već transparentan logo — ne diraj bijeli tekst
+    if transparent >= 3:
+        return False
+    return white >= 3
+
+
+def _rgba_logo_for_dark_header(rgba_img, *, white_threshold=248):
+    """
+    Priprema loga za crni header:
+    - ako je logo na bijeloj podlozi: bijelo → transparentno, crno/sivo → bijelo
+    - boja (npr. zelena) ostaje
+    - ako je logo već s transparentnom pozadinom: ne diraj (ne briši bijeli tekst)
+    """
+    rgba = rgba_img.convert('RGBA')
+    if not _logo_has_white_background(rgba, white_threshold=white_threshold):
+        return rgba
+
+    pixels = rgba.load()
+    w, h = rgba.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = pixels[x, y]
+            if a == 0:
+                continue
+            # Bijela pozadina van loga
+            if r >= white_threshold and g >= white_threshold and b >= white_threshold:
+                pixels[x, y] = (255, 255, 255, 0)
+                continue
+            # Grayscale (crni/sivi logo) → bijeli na crnom headeru
+            if abs(r - g) <= 18 and abs(g - b) <= 18 and abs(r - b) <= 18:
+                lum = (r + g + b) // 3
+                new_a = min(a, 255 - lum)
+                if new_a < 8:
+                    pixels[x, y] = (255, 255, 255, 0)
+                else:
+                    pixels[x, y] = (255, 255, 255, new_a)
+                continue
+            # U boji (npr. zelena) — ostavi
+    return rgba
+
+
 def _fit_logo_to_canvas(
     image_field,
     canvas_size,
@@ -1764,6 +1839,7 @@ def _fit_logo_to_canvas(
     white_background=False,
     fill_ratio=1.0,
     trim_content=False,
+    dark_header=False,
 ):
     img = Image.open(image_field)
     img = ImageOps.exif_transpose(img)
@@ -1773,6 +1849,11 @@ def _fit_logo_to_canvas(
     else:
         img = img.convert('RGB')
 
+    # Prvo dark-header (bijelo→transparentno, crno→bijelo) dok su uglovi još bijeli;
+    # tek onda trim sadržaja.
+    if dark_header and not white_background:
+        img = _rgba_logo_for_dark_header(_ensure_rgba(img))
+
     if trim_content:
         img = _crop_to_content(_ensure_rgba(img))
 
@@ -1780,10 +1861,9 @@ def _fit_logo_to_canvas(
 
     if white_background:
         canvas = Image.new('RGB', canvas_size, (255, 255, 255))
-    elif img.mode == 'RGBA':
-        canvas = Image.new('RGBA', canvas_size, (255, 255, 255, 0))
     else:
-        canvas = Image.new('RGB', canvas_size, (255, 255, 255))
+        # Transparentna podloga — logo na crnom headeru bez bijelog okvira
+        canvas = Image.new('RGBA', canvas_size, (0, 0, 0, 0))
 
     fitted = ImageOps.contain(img, target_size, method=Image.Resampling.LANCZOS)
     offset = (
@@ -1797,8 +1877,11 @@ def _fit_logo_to_canvas(
             canvas = white_layer
         else:
             canvas.paste(fitted, offset, fitted)
-    else:
+    elif white_background:
         canvas.paste(fitted, offset)
+    else:
+        # RGB logo na transparentnoj podlozi
+        canvas.paste(fitted.convert('RGBA'), offset)
 
     buffer = BytesIO()
     compress_level = 3 if canvas_size == SITE_LOGO_SIZE else 6
@@ -1810,7 +1893,87 @@ def _fit_logo_to_canvas(
 
 
 def process_site_logo(image_field):
-    return _fit_logo_to_canvas(image_field, SITE_LOGO_SIZE, white_background=True)
+    """
+    Header logo — originalna upload slika, bez ofarbavanja.
+    Samo smanji ako je veća od 640×128. Boje i prozirnost ostaju kako su.
+    Header je crn: za najbolji izgled uploadaj PNG s transparentnom pozadinom
+    i bijelim/zelenim logom.
+    """
+    img = Image.open(image_field)
+    img = ImageOps.exif_transpose(img)
+
+    if img.mode in ('RGBA', 'LA'):
+        img = img.convert('RGBA')
+    elif img.mode == 'P':
+        img = img.convert('RGBA' if 'transparency' in img.info else 'RGB')
+    elif img.mode not in ('RGB', 'RGBA'):
+        img = img.convert('RGB')
+
+    max_w, max_h = SITE_LOGO_SIZE
+    if img.width > max_w or img.height > max_h:
+        img = ImageOps.contain(img, SITE_LOGO_SIZE, method=Image.Resampling.LANCZOS)
+
+    buffer = BytesIO()
+    img.save(buffer, format='PNG', compress_level=3)
+    buffer.seek(0)
+    name = _png_filename(image_field.name if hasattr(image_field, 'name') else 'logo.png')
+    return ContentFile(buffer.read(), name=name)
+
+
+PROMO_CARD_IMAGE_MAX = (200, 200)
+CHAT_AVATAR_SIZE = (256, 256)
+
+
+def process_chat_avatar(image_field):
+    """Chat balon / header avatar — kvadrat max 256×256, PNG."""
+    img = Image.open(image_field)
+    img = ImageOps.exif_transpose(img)
+    if img.mode in ('RGBA', 'LA'):
+        img = img.convert('RGBA')
+    elif img.mode == 'P':
+        img = img.convert('RGBA' if 'transparency' in img.info else 'RGB')
+    else:
+        img = img.convert('RGB')
+    # Centrirani crop na kvadrat pa thumbnail
+    w, h = img.size
+    side = min(w, h)
+    left = (w - side) // 2
+    top = (h - side) // 2
+    img = img.crop((left, top, left + side, top + side))
+    img = img.resize(CHAT_AVATAR_SIZE, Image.Resampling.LANCZOS)
+    buffer = BytesIO()
+    img.save(buffer, format='PNG', compress_level=4)
+    buffer.seek(0)
+    name = _png_filename(
+        image_field.name if hasattr(image_field, 'name') else 'chat-avatar.png',
+    )
+    return ContentFile(buffer.read(), name=name)
+
+
+def process_promo_card_image(image_field):
+    """
+    Slika desno na promo kartici početne.
+    Max 200×200, PNG (čuva prozirnost). Preporuka upload 200×200.
+    """
+    img = Image.open(image_field)
+    img = ImageOps.exif_transpose(img)
+
+    if img.mode in ('RGBA', 'LA'):
+        img = img.convert('RGBA')
+    elif img.mode == 'P':
+        img = img.convert('RGBA' if 'transparency' in img.info else 'RGB')
+    elif img.mode not in ('RGB', 'RGBA'):
+        img = img.convert('RGB')
+
+    img.thumbnail(PROMO_CARD_IMAGE_MAX, Image.Resampling.LANCZOS)
+
+    buffer = BytesIO()
+    img.save(buffer, format='PNG', compress_level=4)
+    buffer.seek(0)
+    name = _png_filename(
+        image_field.name if hasattr(image_field, 'name') else 'promo.png',
+    )
+    return ContentFile(buffer.read(), name=name)
 
 
 def process_site_favicon(image_field):

@@ -34,9 +34,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="facebook-domain-verification" content="kqrup8bjdtrxwf6mmy8bu5qp01g4tn" />
-    {% block meta_robots %}{% endblock %}
+    {% if site_settings.google_site_verification %}
+    <meta name="google-site-verification" content="{{ site_settings.google_site_verification }}">
+    {% endif %}
+    {% block meta_robots %}
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    {% endblock %}
 
-    {% with site_name="opremazaribolov.ba" %}
+    {% with site_name=site_settings.seo_organizacija_naziv|default:"opremazaribolov.ba" %}
     {% block page_title %}
     <title>{{ seo_title|default:site_settings.seo_title|default:site_name }}</title>
     {% endblock %}
@@ -74,6 +79,8 @@
     {% elif site_settings.og_image %}
     <meta property="og:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
     <meta property="og:image:secure_url" content="{{ site_url }}{{ site_settings.og_image.url }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     {% endif %}
     {% endblock %}
     <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
@@ -102,8 +109,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260807brandsFull" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260807brandsFull">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260810pageSeo" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260810pageSeo">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -246,23 +253,14 @@
                         <span class="nav-action-label">Admin Panel</span>
                     </a>
                     {% endif %}
-                    {% if user.is_authenticated and user.is_superuser %}
-                    <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="staff-edit-mode-form nav-action-link">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ request.path }}">
-                        <input type="hidden" name="enabled" value="{% if staff_edit_mode %}0{% else %}1{% endif %}">
-                        <button type="submit"
-                                class="staff-edit-mode-toggle{% if staff_edit_mode %} is-on{% else %} is-off{% endif %}"
-                                title="{% if staff_edit_mode %}Edit mode uključen — klikni da isključiš{% else %}Edit mode isključen — klikni da uključiš{% endif %}"
-                                aria-label="{% if staff_edit_mode %}Isključi edit mode{% else %}Uključi edit mode{% endif %}"
-                                aria-pressed="{% if staff_edit_mode %}true{% else %}false{% endif %}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path d="M12 20h9"/>
-                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-                            </svg>
-                            <span class="nav-action-label">{% if staff_edit_mode %}Edit ON{% else %}Edit OFF{% endif %}</span>
-                        </button>
-                    </form>
+
+                    {% if contact_phone %}
+                    <a href="tel:{{ contact_phone_digits|default:contact_phone }}" class="nav-action-link header-phone" aria-label="Telefon {{ contact_phone }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <span class="nav-action-label header-phone__num">{{ contact_phone }}</span>
+                    </a>
                     {% endif %}
 
                     {% if user.is_authenticated %}
@@ -334,8 +332,11 @@
                         {% endif %}
                     </li>
                     {% endfor %}
-                    <li class="nav-item nav-item--akcija nav-item--akcija-mobile">
-                        <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJSKA PONUDA</a>
+                    <li class="nav-item nav-item--akcija">
+                        <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJE</a>
+                    </li>
+                    <li class="nav-item nav-item--brendovi">
+                        <a href="{% url 'home' %}#brendovi" class="nav-link-brendovi">BRENDOVI</a>
                     </li>
                     <li class="nav-item nav-item--noviteti nav-item--akcija-mobile">
                         <a href="{% url 'home' %}?noviteti=1#product-showcase" class="nav-link-noviteti">NOVITETI</a>
@@ -352,24 +353,7 @@
                 </div>
             </nav>
 
-            <div class="header-float-ctas" id="headerFloatCtas" aria-label="Brzi filteri">
-                <a href="{% url 'home' %}?akcija=1#product-showcase" class="header-akcija-cta" id="headerAkcijaCta">
-                    <span class="header-akcija-cta__ring" aria-hidden="true"></span>
-                    <span class="header-akcija-cta__tag" aria-hidden="true">SNIŽENO</span>
-                    <span class="header-akcija-cta__text">
-                        <span class="header-float-ctas__full">Akcijska ponuda</span>
-                        <span class="header-float-ctas__short">Akcija</span>
-                    </span>
-                </a>
-                <a href="{% url 'home' %}?noviteti=1#product-showcase" class="header-noviteti-cta" id="headerNovitetiCta">
-                    <span class="header-noviteti-cta__ring" aria-hidden="true"></span>
-                    <span class="header-noviteti-cta__tag" aria-hidden="true">NOVO</span>
-                    <span class="header-noviteti-cta__text">
-                        <span class="header-float-ctas__full">Noviteti</span>
-                        <span class="header-float-ctas__short">Noviteti</span>
-                    </span>
-                </a>
-            </div>
+            {# Plutajuća dugmad Akcija/Noviteti uklonjena — sekcije su na početnoj #}
         </div>
 
         <div class="mega-menu-panel" id="megaMenuPanel">
@@ -546,23 +530,14 @@
         </svg>
     </button>
 
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "opremazaribolov.ba",
-      "url": "{{ site_url }}/",
-      "logo": "{% if site_settings.logo %}{{ site_url }}{{ site_settings.logo.url }}{% else %}{{ site_url }}/static/img/logo.png{% endif %}",
-      "sameAs": ["https://www.facebook.com/opremazaribolov.ba"],
-      "contactPoint": [{
-        "@type": "ContactPoint",
-        "contactType": "customer service",
-        "email": "opremazaribolov.ba@gmail.com"
-      }]
-    }
-    </script>
+    {% if organization_json_ld %}
+    <script type="application/ld+json">{{ organization_json_ld|safe }}</script>
+    {% endif %}
+    {% if website_json_ld %}
+    <script type="application/ld+json">{{ website_json_ld|safe }}</script>
+    {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.js' %}?v=20260803searchFast" defer></script>
+    <script src="{% static 'js/main.js' %}?v=20260810cartBtn" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}
