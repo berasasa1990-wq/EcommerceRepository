@@ -289,6 +289,11 @@ document.addEventListener('DOMContentLoaded', () => {
         megaCloseTimer = setTimeout(closeMegaMenu, 180);
     }
 
+    function forceCloseMegaMenu() {
+        clearTimeout(megaCloseTimer);
+        closeMegaMenu();
+    }
+
     if (window.innerWidth > 1024) {
         syncMegaPanelHeight();
 
@@ -298,13 +303,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.querySelectorAll('[data-nav-item]:not(.has-mega-menu)').forEach((item) => {
             item.addEventListener('mouseenter', () => {
-                clearTimeout(megaCloseTimer);
-                closeMegaMenu();
+                forceCloseMegaMenu();
             });
         });
 
-        header?.addEventListener('mouseenter', () => clearTimeout(megaCloseTimer));
-        header?.addEventListener('mouseleave', scheduleMegaClose);
+        // Drži mega meni samo dok je kursor na kategorijama ili panela —
+        // ne na cijelom headeru (pretraga / logo / akcije inače ostave meni otvoren).
+        const categoriesRow = header?.querySelector('.header-row--categories');
+        const megaKeepOpenZones = [categoriesRow, megaMenuPanel].filter(Boolean);
+        megaKeepOpenZones.forEach((zone) => {
+            zone.addEventListener('mouseenter', () => clearTimeout(megaCloseTimer));
+            zone.addEventListener('mouseleave', scheduleMegaClose);
+        });
+
+        // Brzi prelaz na pretragu / logo / desne akcije → odmah zatvori kategoriju
+        const megaCloseOnHover = [
+            headerSearch,
+            header?.querySelector('.logo-brand'),
+            header?.querySelector('.nav-actions'),
+            header?.querySelector('.header-row--primary'),
+        ].filter(Boolean);
+        megaCloseOnHover.forEach((el) => {
+            el.addEventListener('mouseenter', forceCloseMegaMenu);
+        });
     }
 
     window.addEventListener('load', syncMegaPanelHeight);
@@ -496,6 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openSearchOverlay() {
+        forceCloseMegaMenu();
         if (window.innerWidth > 1024) {
             focusSearchInput();
             return;
@@ -534,6 +556,11 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         navigateToSearch(searchInput?.value || '');
     });
+
+    // Focus / klik u pretragu — zatvori otvorenu kategoriju (ne ostaje "zaglavljena")
+    searchInput?.addEventListener('focus', forceCloseMegaMenu);
+    searchInput?.addEventListener('pointerdown', forceCloseMegaMenu);
+    headerSearch?.addEventListener('mouseenter', forceCloseMegaMenu);
 
     searchInput?.addEventListener('input', queueSearchSuggestions);
 

@@ -1559,6 +1559,11 @@ def _suggest_thumb_url(image_field):
 def _suggest_relevance_annotation(query):
     """
     SQL prioritet relevantnosti za brži ORDER BY (manji candidate pool).
+
+    Prioritet (Case = prvi match pobjedi):
+      1) šifra / naziv (tačno → djelomično → sve riječi)
+      2) tek onda tag artikla / tag potkategorije
+
     Bez JOIN-a na tagovi__ (M2M) — koristi pk__in da ne duplicira redove.
     """
     raw = _normalize_phrase(query)
@@ -1568,22 +1573,56 @@ def _suggest_relevance_annotation(query):
     terms = [raw]
     if folded and folded != raw.casefold():
         terms.append(folded)
+
+    # Case uzima PRVI matching When — stavi više skorove prvo
     whens = []
     for term in terms:
         whens.extend([
             When(sifra__iexact=term, then=Value(120)),
-            When(naziv__iexact=term, then=Value(100)),
-            When(naziv__istartswith=term, then=Value(80)),
-            When(naziv__icontains=term, then=Value(50)),
-            When(sifra__icontains=term, then=Value(40)),
+            When(naziv__iexact=term, then=Value(110)),
+            When(sifra__istartswith=term, then=Value(100)),
+            When(naziv__istartswith=term, then=Value(95)),
+            When(sifra__icontains=term, then=Value(90)),
+            When(naziv__icontains=term, then=Value(88)),  # cijela fraza u nazivu
         ])
-    # Tag match bez M2M JOIN-a
+
+    # Višerječni upit: sve značajne riječi u nazivu (bilo kojim redom)
+    # npr. „itana feeder” ⊆ „… ITANA … Feeder …” — ispod fraze, iznad tagova
+    words = _search_significant_words(raw)
+    if len(words) >= 2:
+        name_all_words = Q()
+        for w in words:
+            name_all_words &= Q(naziv__icontains=w)
+        whens.append(When(name_all_words, then=Value(85)))
+        sifra_all_words = Q()
+        for w in words:
+            sifra_all_words &= Q(sifra__icontains=w)
+        whens.append(When(sifra_all_words, then=Value(84)))
+
+    # Tagovi artikla (M2M) — ispod naziva/šifre
     try:
         tag_product_ids = _product_ids_for_product_tag_query(raw)
         if tag_product_ids:
-            whens.append(When(pk__in=list(tag_product_ids), then=Value(55)))
+            whens.append(When(pk__in=list(tag_product_ids), then=Value(50)))
     except Exception:
         pass
+
+    # Tag potkategorije — najniži match band (ispod naziva/šifre/taga artikla)
+    try:
+        exact_cat_ids = _subcategory_ids_for_exact_tag(raw)
+        if folded and folded != raw.casefold():
+            exact_cat_ids = exact_cat_ids | _subcategory_ids_for_exact_tag(folded)
+        if exact_cat_ids:
+            whens.append(When(kategorija_id__in=list(exact_cat_ids), then=Value(40)))
+        else:
+            fuzzy_cat_ids = _category_ids_for_search_query(raw)
+            if folded and folded != raw.casefold():
+                fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded)
+            if fuzzy_cat_ids:
+                whens.append(When(kategorija_id__in=list(fuzzy_cat_ids), then=Value(30)))
+    except Exception:
+        pass
+
     return Case(*whens, default=Value(10), output_field=IntegerField())
 
 
@@ -1594,13 +1633,13 @@ def search_suggest(request):
     if len(_normalize_phrase(query)) < 2:
         return JsonResponse({'results': [], 'query': query, 'has_more': False})
 
-    # Brzi path: SQL filter + SQL order — bez teškog Python re-score po artiklu
+    # SQL filter + SQL order (širi pool), pa Python re-rank: naziv/šifra > tag
     products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
     products_qs = products_qs.annotate(
         _suggest_rel=_suggest_relevance_annotation(query),
     ).order_by('-_suggest_rel', '-prioritet_lagera', 'naziv')
 
-    pool = list(products_qs[: SEARCH_SUGGEST_LIMIT + 1])
+    pool = list(products_qs[: max(SEARCH_SUGGEST_CANDIDATE_POOL, SEARCH_SUGGEST_LIMIT + 1)])
     # Dedup po pk (zaštita ako JOIN ikad procuri)
     seen = set()
     unique_pool = []
@@ -1610,6 +1649,22 @@ def search_suggest(request):
         seen.add(p.pk)
         unique_pool.append(p)
     pool = unique_pool
+
+    # Fini re-rank po stvarnom score-u (šifra/naziv ispred tagova)
+    try:
+        from django.db.models import prefetch_related_objects
+        prefetch_related_objects(pool, 'varijacije', 'tagovi')
+    except Exception:
+        pass
+    pool = sorted(
+        pool,
+        key=lambda p: (
+            -_search_relevance_score(p, query),
+            -_product_lager_priority(p),
+            (p.naziv or '').lower(),
+        ),
+    )
+
     has_more = len(pool) > SEARCH_SUGGEST_LIMIT
     products = pool[:SEARCH_SUGGEST_LIMIT]
 
