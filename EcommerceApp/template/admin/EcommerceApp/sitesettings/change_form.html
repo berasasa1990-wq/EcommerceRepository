@@ -4,7 +4,6 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  /* Ljepljiva Save traka — uvijek vidljiva na dugim Podešavanjima */
   body.change-form .ozr-sticky-save {
     position: sticky;
     bottom: 0;
@@ -52,7 +51,6 @@
     background: #243d3a !important;
     color: #fff !important;
   }
-  /* Default Django submit-row na dnu — sticky backup */
   body.change-form #content-main form > .submit-row {
     position: sticky;
     bottom: 0;
@@ -60,18 +58,79 @@
     background: #fff !important;
     border: 1px solid #e5e7eb !important;
     border-radius: 12px !important;
-    box-shadow: 0 -2px 16px rgba(0,0,0,.06) !important;
+  }
+  /* Greške — jasan crveni box na vrhu */
+  body.change-form .ozr-error-summary {
+    background: #fef2f2;
+    border: 2px solid #ef4444;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 0 0 1rem;
+    color: #991b1b;
+  }
+  body.change-form .ozr-error-summary h2 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    color: #b91c1c;
+  }
+  body.change-form .ozr-error-summary ul {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+  body.change-form .ozr-error-summary li {
+    margin: 4px 0;
+  }
+  /* Fieldset s greškom ne smije ostati sklopljen */
+  body.change-form fieldset.ozr-has-errors {
+    border-color: #ef4444 !important;
   }
 </style>
 {% endblock %}
 
+{% block form_top %}
+{{ block.super }}
+{% if errors %}
+<div class="ozr-error-summary" id="ozrErrorSummary" role="alert">
+  <h2>⚠️ Nije sačuvano — ispravi greške ispod</h2>
+  <ul>
+    {% for error in adminform.form.non_field_errors %}
+    <li>{{ error }}</li>
+    {% endfor %}
+    {% for field in adminform.form %}
+      {% if field.errors %}
+      <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
+      {% endif %}
+    {% endfor %}
+    {% for inline_admin_formset in inline_admin_formsets %}
+      {% if inline_admin_formset.formset.non_form_errors %}
+      <li><strong>{{ inline_admin_formset.opts.verbose_name_plural }}:</strong>
+        {{ inline_admin_formset.formset.non_form_errors|striptags }}</li>
+      {% endif %}
+      {% for inline_form in inline_admin_formset %}
+        {% if inline_form.form.errors %}
+        <li><strong>{{ inline_admin_formset.opts.verbose_name }} #{{ forloop.counter }}:</strong>
+          {% for field in inline_form.form %}
+            {% if field.errors %}{{ field.label }}: {{ field.errors|striptags }}; {% endif %}
+          {% endfor %}
+          {{ inline_form.form.non_field_errors|striptags }}
+        </li>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </ul>
+  <p style="margin:10px 0 0;font-size:0.9rem;">
+    Skrolaj do crvenih polja ili otvori sklopljene sekcije. Zatim ponovo <strong>Save</strong>.
+  </p>
+</div>
+{% endif %}
+{% endblock %}
+
 {% block after_related_objects %}
 {{ block.super }}
-{# Unutar <form> — normalni submit dugmići, ljepljivi na dnu ekrana #}
 <div class="ozr-sticky-save" role="region" aria-label="{% translate 'Save' %}">
   <p class="ozr-sticky-save__hint">
-    💾 Sačuvaj sve promjene (logo, SEO, chat, tabele…).
-    Dugme <strong>Save</strong> je i na <strong>vrhu</strong> stranice.
+    💾 Sačuvaj sve promjene (logo, SEO, chat, tabele noviteta/izdvojenih/brendova…).
+    Save je i na <strong>vrhu</strong> stranice.
   </p>
   <div class="ozr-sticky-save__actions">
     {% if has_change_permission %}
@@ -80,4 +139,25 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+(function () {
+  // Otvori sve fieldset-e koji imaju greške (collapse)
+  document.querySelectorAll('fieldset').forEach(function (fs) {
+    if (fs.querySelector('.errorlist, .errors')) {
+      fs.classList.remove('collapsed');
+      fs.classList.add('ozr-has-errors');
+      var h2 = fs.querySelector('h2');
+      if (h2) h2.classList.remove('collapse-toggle');
+    }
+  });
+  var firstErr = document.querySelector('.errorlist, .errors, .ozr-error-summary');
+  if (firstErr) {
+    try { firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+  }
+})();
+</script>
 {% endblock %}

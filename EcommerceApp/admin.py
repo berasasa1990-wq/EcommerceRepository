@@ -181,6 +181,78 @@ class ProductImageInline(admin.TabularInline):
         return '—'
 
 
+class SiteSettingsAdminForm(forms.ModelForm):
+    """
+    Snimanje Podešavanja: opciona polja ne smiju blokirati Save,
+    URL-ovi se čiste, predugački SEO se skraćuje s jasnom porukom.
+    """
+
+    class Meta:
+        model = SiteSettings
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Nikad ne blokiraj Save zbog ovih tekstova (sklopljeni fieldset)
+        for name in (
+            'politika_dostava', 'politika_povrat', 'politika_garancija',
+            'seo_title', 'meta_description', 'seo_organizacija_naziv',
+            'seo_email', 'seo_grad', 'seo_drzava',
+            'seo_facebook_url', 'seo_instagram_url',
+            'google_site_verification', 'seo_title_suffix',
+            'korpa_exit_popup_naslov', 'korpa_exit_popup_tekst',
+        ):
+            if name in self.fields:
+                self.fields[name].required = False
+        if 'korpa_exit_popup_artikal' in self.fields:
+            self.fields['korpa_exit_popup_artikal'].required = False
+            self.fields['korpa_exit_popup_artikal'].help_text = (
+                'Opcionalno. Ako artikal više ne postoji, ostavi prazno i snimi.'
+            )
+
+    def _clean_optional_url(self, field_name):
+        value = (self.cleaned_data.get(field_name) or '').strip()
+        if not value:
+            return ''
+        if value.startswith(('http://', 'https://')):
+            return value
+        # Dozvoli unose bez scheme (instagram.com/… → https://…)
+        if '.' in value and ' ' not in value:
+            return 'https://' + value.lstrip('/')
+        raise forms.ValidationError(
+            'Unesi puni URL (npr. https://www.facebook.com/tvoja-stranica) ili ostavi prazno.',
+        )
+
+    def clean_seo_facebook_url(self):
+        return self._clean_optional_url('seo_facebook_url')
+
+    def clean_seo_instagram_url(self):
+        return self._clean_optional_url('seo_instagram_url')
+
+    def clean_seo_title(self):
+        value = (self.cleaned_data.get('seo_title') or '').strip()
+        if len(value) > 70:
+            value = value[:70]
+        return value
+
+    def clean_meta_description(self):
+        value = (self.cleaned_data.get('meta_description') or '').strip()
+        if len(value) > 160:
+            value = value[:160]
+        return value
+
+    def clean_korpa_exit_popup_artikal(self):
+        return self.cleaned_data.get('korpa_exit_popup_artikal')
+
+    def full_clean(self):
+        super().full_clean()
+        # Nevažeći exit-artikal (obrisan / van izbora) ne smije blokirati Save
+        if self._errors and 'korpa_exit_popup_artikal' in self._errors:
+            self._errors.pop('korpa_exit_popup_artikal', None)
+            if hasattr(self, 'cleaned_data'):
+                self.cleaned_data['korpa_exit_popup_artikal'] = None
+
+
 class HomeTrustItemInline(admin.TabularInline):
     model = HomeTrustItem
     fk_name = 'postavke'
@@ -304,8 +376,10 @@ class HomeBrandShowcaseInline(admin.TabularInline):
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     # Duga forma (inlines + SEO) — Save mora biti lako dostupan
+    form = SiteSettingsAdminForm
     save_on_top = True
     change_form_template = 'admin/EcommerceApp/sitesettings/change_form.html'
+    autocomplete_fields = ('korpa_exit_popup_artikal',)
     readonly_fields = (
         'pregled_loga', 'pregled_loga_glavnog_sajta', 'pregled_favicona',
         'pregled_badgea', 'pregled_chat_avatara',
@@ -485,8 +559,11 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
         ('Stranica artikla — badge i uslovi', {
             'fields': ('badge_product_detail', 'pregled_badgea', 'politika_dostava', 'politika_povrat', 'politika_garancija'),
-            'description': 'Badge se prikazuje u gornjem lijevom uglu slike artikla (npr. garancija). Tekstovi ispod dugmeta „Dodaj u korpu”.',
-            'classes': ('collapse',),
+            'description': (
+                'Badge se prikazuje u gornjem lijevom uglu slike artikla (npr. garancija). '
+                'Tekstovi ispod dugmeta „Dodaj u korpu”. Sva polja su opcionalna.'
+            ),
+            # NE collapse — greške na ovim poljima su bile nevidljive i blokirale Save
         }),
     )
 
@@ -495,6 +572,14 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        messages.success(
+            request,
+            'Podešavanja su sačuvana. Ako mijenjaš početnu (noviteti / akcija / brendovi), '
+            'osvježi početnu stranicu (hard refresh).',
+        )
 
     @admin.display(description='Pregled loga (64px visina)')
     def pregled_loga(self, obj):

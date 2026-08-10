@@ -481,16 +481,22 @@ class SiteSettings(models.Model):
         ),
     )
     politika_dostava = models.TextField(
+        blank=True,
         default='Dostava brzom poštom u roku od 48h.',
         verbose_name='Uslovi dostave — tekst',
+        help_text='Opcionalno. Tekst na stranici artikla ispod dugmeta korpe.',
     )
     politika_povrat = models.TextField(
+        blank=True,
         default='Ukoliko je roba oštećena ili ne odgovara poručenoj, vršimo povrat.',
         verbose_name='Povrat robe — tekst',
+        help_text='Opcionalno.',
     )
     politika_garancija = models.TextField(
+        blank=True,
         default='Garancija na kvalitet.',
         verbose_name='Garancija — tekst',
+        help_text='Opcionalno.',
     )
     badge_product_detail = models.ImageField(
         upload_to='site/', blank=True, null=True,

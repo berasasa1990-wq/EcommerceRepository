@@ -155,7 +155,10 @@ def _can_view_out_of_stock(request=None):
 def _product_queryset(request=None):
     qs = Product.objects.filter(aktivan=True)
     if not _can_view_out_of_stock(request):
-        qs = qs.filter(na_stanju=True)
+        # Parent na_stanju ILI barem jedna varijacija na stanju
+        qs = qs.filter(
+            Q(na_stanju=True) | Q(varijacije__na_stanju=True),
+        ).distinct()
     return _prefetch_product_cards(qs)
 
 
@@ -509,7 +512,8 @@ def _showcase_brands():
     return Brand.objects.filter(
         slika__isnull=False,
         artikli__aktivan=True,
-        artikli__na_stanju=True,
+    ).filter(
+        Q(artikli__na_stanju=True) | Q(artikli__varijacije__na_stanju=True),
     ).exclude(slika='').distinct().order_by('naziv')
 
 
@@ -1937,7 +1941,9 @@ def _home_latest_products(request=None):
             artikal__aktivan=True,
         )
         if not _can_view_out_of_stock(request):
-            entries_qs = entries_qs.filter(artikal__na_stanju=True)
+            entries_qs = entries_qs.filter(
+                Q(artikal__na_stanju=True) | Q(artikal__varijacije__na_stanju=True),
+            ).distinct()
         entries = entries_qs.select_related(
             'artikal', 'artikal__kategorija', 'artikal__brend',
         ).prefetch_related(
@@ -1975,7 +1981,9 @@ def _home_featured_products(request=None):
         artikal__aktivan=True,
     )
     if not _can_view_out_of_stock(request):
-        entries_qs = entries_qs.filter(artikal__na_stanju=True)
+        entries_qs = entries_qs.filter(
+            Q(artikal__na_stanju=True) | Q(artikal__varijacije__na_stanju=True),
+        ).distinct()
     entries = entries_qs.select_related(
         'artikal', 'artikal__kategorija', 'artikal__brend',
     ).prefetch_related(
