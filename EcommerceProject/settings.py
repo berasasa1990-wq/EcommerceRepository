@@ -87,12 +87,15 @@ def _normalize_allowed_host(h: str) -> str:
     return h
 
 
-_allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1,')
-ALLOWED_HOSTS = ['192.168.1.103']
+_allowed = _env('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.103')
+ALLOWED_HOSTS = []
 for h in _allowed.split(','):
     h = _normalize_allowed_host(h)
     if h:
         ALLOWED_HOSTS.append(h)
+# Lokalna mreža (dev telefon / LAN) — ne smije biti jedini host u produkciji
+if '192.168.1.103' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('192.168.1.103')
 
 # Produkcijski domeni (uvijek — da Cloudflare → Render ne padne na host grešku)
 for _prod_host in (

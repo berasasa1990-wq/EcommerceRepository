@@ -1879,8 +1879,8 @@ def _banner_to_hero_slide(banner):
     mobile = {
         'image_mobile': '',
         'image_mobile_srcset': '',
-        'image_mobile_width': 1080,
-        'image_mobile_height': 1350,
+        'image_mobile_width': 720,
+        'image_mobile_height': 900,
         'has_mobile_image': False,
     }
     if getattr(banner, 'slika_mobilna', None):
@@ -1888,13 +1888,13 @@ def _banner_to_hero_slide(banner):
         m = banner_image_responsive_meta(
             banner.slika_mobilna,
             tip='hero_mobile',
-            default=(1080, 1350),
+            default=(720, 900),
         )
         mobile = {
             'image_mobile': m['src'],
             'image_mobile_srcset': m.get('srcset') or '',
-            'image_mobile_width': m.get('width') or 1080,
-            'image_mobile_height': m.get('height') or 1350,
+            'image_mobile_width': m.get('width') or 720,
+            'image_mobile_height': m.get('height') or 900,
             'has_mobile_image': bool(m.get('src')),
         }
     return {

@@ -72,9 +72,11 @@ BANNER_WIDE_VARIANT_MAX_BYTES = {
     1200: MAX_BANNER_UPLOAD_BYTES,
 }
 
-# Mobilni hero: 4:5 portret (1080×1350)
-HERO_MOBILE_MAX_WIDTH = 1080
-HERO_MOBILE_MAX_HEIGHT = 1350
+# Mobilni hero: 4:5 portret — manje dimenzije radi Render free (512 MB RAM)
+# 720×900 dovoljno za telefone, ~3× manje memorije od 1080×1350
+HERO_MOBILE_MAX_WIDTH = 720
+HERO_MOBILE_MAX_HEIGHT = 900
+MAX_HERO_MOBILE_BYTES = 100 * 1024  # ~100 KB
 
 BANNER_AVIF_SETTINGS = {
     'grid': {
@@ -89,7 +91,7 @@ BANNER_AVIF_SETTINGS = {
         'crop': True,
     },
     'hero_mobile': {
-        'max_bytes': MAX_HERO_BANNER_AVIF_BYTES,
+        'max_bytes': MAX_HERO_MOBILE_BYTES,
         'max_width': HERO_MOBILE_MAX_WIDTH,
         'max_height': HERO_MOBILE_MAX_HEIGHT,
         'crop': True,
@@ -372,10 +374,32 @@ def _finalize_banner_result(result, raw_original, original_filename, *, needs_re
     )
 
 
-def _load_banner_rgb_from_raw(raw_bytes):
+def _load_banner_rgb_from_raw(raw_bytes, *, max_decode_side=2048):
+    """
+    Učitaj RGB s ranim downscale-om — veliki phone JPG (12 MP+) inače
+    potroši stotine MB i ubije gunicorn worker (OOM / WORKER TIMEOUT).
+    """
     with Image.open(BytesIO(raw_bytes)) as img:
+        try:
+            img = ImageOps.exif_transpose(img)
+        except Exception:
+            pass
+        # JPEG draft: dekodiraj manje ako je moguće
+        try:
+            if img.format == 'JPEG' and hasattr(img, 'draft'):
+                img.draft('RGB', (max_decode_side, max_decode_side))
+        except Exception:
+            pass
         img.load()
-        return _image_to_rgb(img)
+        rgb = _image_to_rgb(img)
+    # Odmah smanji prije crop/encode petlji
+    if max(rgb.size) > max_decode_side:
+        rgb = ImageOps.contain(
+            rgb,
+            (max_decode_side, max_decode_side),
+            method=Image.Resampling.BILINEAR,
+        )
+    return rgb
 
 
 def _encode_avif_under_budget(
@@ -754,7 +778,8 @@ def banner_image_responsive_meta(image_field, *, tip='grid', default=None):
     widths = {
         'grid': BANNER_GRID_RESPONSIVE_WIDTHS,
         'hero': HERO_BANNER_RESPONSIVE_WIDTHS,
-        'hero_mobile': (480, 720, 1080),
+        # Jedna mobilna slika — bez srcset varijanti (manje storage + brži home)
+        'hero_mobile': (),
         'featured': FEATURED_BANNER_RESPONSIVE_WIDTHS,
         'spotlight': SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS,
     }.get(tip, FEATURED_BANNER_RESPONSIVE_WIDTHS)
@@ -925,28 +950,46 @@ def _encode_banner_jpeg_fallback(
     crop=False,
     quality=88,
     max_bytes=None,
+    fast=False,
 ):
     """Pouzdan JPEG format za banere (posebno Hero)."""
-    working = _fit_banner_dimensions(
-        img,
-        max_width=max_width,
-        max_height=max_height,
-        crop=crop,
-    )
+    # Na free tieru: BILINEAR je dovoljan i štedi CPU/RAM
+    method = Image.Resampling.BILINEAR if fast else Image.Resampling.LANCZOS
+    rgb = _image_to_rgb(img) if not isinstance(img, Image.Image) or img.mode != 'RGB' else img
+    if max_height is not None and crop:
+        if rgb.width > max_width or rgb.height > max_height:
+            working = ImageOps.fit(
+                rgb, (max_width, max_height), method=method, centering=(0.5, 0.5),
+            )
+        else:
+            working = rgb
+    else:
+        working = _fit_banner_dimensions(
+            rgb,
+            max_width=max_width,
+            max_height=max_height,
+            crop=crop,
+        )
     qualities = []
-    for q in (quality, 85, 78, 70, 62, 54, 48, 42, 36):
+    # Manje petlji kvaliteta = manje memorije (posebno mobilni)
+    quality_steps = (quality, 78, 68, 58, 48) if fast else (
+        quality, 85, 78, 70, 62, 54, 48, 42, 36,
+    )
+    for q in quality_steps:
         if q not in qualities:
             qualities.append(q)
 
     best_data = None
-    save_kwargs = {'subsampling': 0} if crop and max_height is not None else {}
+    save_kwargs = {}
+    if crop and max_height is not None and not fast:
+        save_kwargs['subsampling'] = 0
     for q in qualities:
         buffer = BytesIO()
         working.save(
             buffer,
             format='JPEG',
             quality=q,
-            optimize=True,
+            optimize=not fast,
             progressive=True,
             **save_kwargs,
         )
@@ -1020,6 +1063,8 @@ def banner_responsive_widths(tip='grid'):
     return {
         'grid': BANNER_GRID_RESPONSIVE_WIDTHS,
         'hero': HERO_BANNER_RESPONSIVE_WIDTHS,
+        # Mobilni: bez responsive fajlova (jedna optimizovana slika)
+        'hero_mobile': (),
         'featured': FEATURED_BANNER_RESPONSIVE_WIDTHS,
         'spotlight': SPOTLIGHT_BANNER_RESPONSIVE_WIDTHS,
     }.get(tip, FEATURED_BANNER_RESPONSIVE_WIDTHS)
@@ -1038,6 +1083,19 @@ def process_banner_image(image_field, tip='hero'):
         raise ValueError(
             f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG.',
         ) from exc
+
+    # Mobilni: uvijek lagani JPEG (bez AVIF petlji)
+    if tip == 'hero_mobile':
+        return _encode_banner_jpeg_fallback(
+            source,
+            filename,
+            max_width=settings['max_width'],
+            max_height=settings.get('max_height'),
+            crop=settings.get('crop', True),
+            quality=80,
+            max_bytes=settings.get('max_bytes', MAX_HERO_MOBILE_BYTES),
+            fast=True,
+        )
 
     jpeg_quality = 90 if tip == 'hero' else 88
     use_jpeg = tip == 'hero' or not _avif_supported()
@@ -1081,10 +1139,13 @@ def process_banner_image_for_admin(image_field, tip='hero'):
     })
     try:
         raw_original, filename = _read_image_source(image_field, filename=filename)
-        source = _load_banner_rgb_from_raw(raw_original)
+        # Mobilni: još agresivniji early downscale (phone foto često 8–12 MP)
+        decode_side = 1600 if tip == 'hero_mobile' else 2048
+        source = _load_banner_rgb_from_raw(raw_original, max_decode_side=decode_side)
     except Exception as exc:
         raise ValueError(
-            f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG.',
+            f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG '
+            f'(preporuka: max 2–3 MB, mobilni 1080×1350).',
         ) from exc
 
     upload_byte_cap = len(raw_original)
@@ -1096,6 +1157,48 @@ def process_banner_image_for_admin(image_field, tip='hero'):
     )
     settings = dict(settings)
     settings['max_bytes'] = _cap_byte_budget(settings['max_bytes'], upload_byte_cap)
+
+    # —— Mobilni hero: lagana putanja (1 JPEG, bez responsive varijanti) ——
+    # Ovo je bio glavni uzrok WORKER TIMEOUT / OOM na Render free planu.
+    if tip == 'hero_mobile':
+        try:
+            main = _encode_banner_jpeg_fallback(
+                source,
+                filename,
+                max_width=settings['max_width'],
+                max_height=settings.get('max_height'),
+                crop=settings.get('crop', True),
+                quality=80,
+                max_bytes=min(upload_byte_cap, MAX_HERO_MOBILE_BYTES),
+                fast=True,
+            )
+            # Oslobodi source što prije
+            try:
+                source.close()
+            except Exception:
+                pass
+            return _finalize_banner_result(
+                main,
+                raw_original,
+                filename,
+                needs_resize=True,
+            )
+        except Exception as exc:
+            logger.exception('hero_mobile obrada pala, čuvam smanjeni JPEG: %s', exc)
+            try:
+                small = ImageOps.contain(
+                    source,
+                    (HERO_MOBILE_MAX_WIDTH, HERO_MOBILE_MAX_HEIGHT),
+                    method=Image.Resampling.BILINEAR,
+                )
+                buf = BytesIO()
+                small.save(buf, format='JPEG', quality=70, optimize=True)
+                return ContentFile(buf.getvalue(), name=_jpeg_filename(filename))
+            except Exception as exc2:
+                raise ValueError(
+                    f'Mobilni banner je prevelik za server ({exc2}). '
+                    f'Uploadaj manju sliku (npr. 720×900 JPG).',
+                ) from exc2
 
     if not needs_resize:
         main = _original_content_file(raw_original, filename)

@@ -1279,9 +1279,10 @@ class Banner(models.Model):
         null=True,
         verbose_name='Slika (mobilni)',
         help_text=(
-            'Opcionalno — prikazuje se SAMO na telefonu (≤768px). '
-            'Preporučeno 1080×1350 px (4:5) ili 800×1000. '
-            'Ako je prazno, na mobitelu se koristi desktop slika.'
+            'Opcionalno — SAMO na telefonu (≤768px). '
+            'Preporuka: JPG 720×900 (4:5), max ~2 MB. '
+            'Server automatski smanjuje; prevelike slike mogu srušiti free hosting. '
+            'Ako je prazno — koristi se desktop slika.'
         ),
     )
     video = models.FileField(
