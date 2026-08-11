@@ -18,10 +18,9 @@ import re
 
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path, re_path
 from django.views.generic.base import TemplateView
-from EcommerceApp.sitemaps import sitemaps as app_sitemaps
+from EcommerceApp.sitemaps import sitemap_view, sitemaps as app_sitemaps
 from EcommerceApp.views_media import serve_media
 
 from django.http import HttpResponse
@@ -36,7 +35,8 @@ urlpatterns = [
     path('healthz', healthz, name='healthz'),
     path('healthz/', healthz),
     path('admin/', admin.site.urls),
-    path('sitemap.xml', sitemap, {'sitemaps': app_sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+    # Wrapper uklanja Django-ov X-Robots-Tag: noindex sa sitemap.xml
+    path('sitemap.xml', sitemap_view, {'sitemaps': app_sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
 ] + [
     path('', include('EcommerceApp.urls')),

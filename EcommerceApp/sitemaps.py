@@ -1,10 +1,44 @@
 from django.contrib.sitemaps import Sitemap
+from django.contrib.sitemaps.views import sitemap as django_sitemap_view
 from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 
 from .category_visibility import filter_categories_with_products
 from .models import Brand, Category, HomeVlog, Product
+
+
+def sitemap_view(request, sitemaps, section=None, template_name='sitemap.xml', content_type='application/xml'):
+    """
+    Django sitemap view + uklanjanje X-Robots-Tag: noindex.
+
+    django.contrib.sitemaps.views.sitemap ima @x_robots_tag koji postavlja
+    „noindex, noodp, noarchive” na HTTP odgovor. To je namjerno u Django-u
+    (da se URL sitemapa ne indeksira kao stranica), ali alatke / Search Console
+    često očekuju čist sitemap bez noindex headera.
+
+    Ostale stranice (korpa, nalog, staff…) zadržavaju svoj meta noindex.
+    """
+    response = django_sitemap_view(
+        request,
+        sitemaps=sitemaps,
+        section=section,
+        template_name=template_name,
+        content_type=content_type,
+    )
+    # Ukloni header koji postavlja @x_robots_tag (HttpResponse.headers / _headers)
+    try:
+        del response.headers['X-Robots-Tag']
+    except KeyError:
+        pass
+    try:
+        # Stariji / alternativni pristup
+        if hasattr(response, 'delete_header'):
+            response.delete_header('X-Robots-Tag')
+    except Exception:
+        pass
+    return response
+
 
 
 class StaticViewSitemap(Sitemap):
