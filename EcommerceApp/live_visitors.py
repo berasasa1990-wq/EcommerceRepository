@@ -513,16 +513,39 @@ def _normalize_ip(ip: str) -> str:
     # IPv4-mapped IPv6 → IPv4
     if ip.startswith('::ffff:'):
         ip = ip[7:]
+    # Hostname nije IP — mapiraj na loopback (ne šalji "localhost" u Postgres inet)
+    if ip.lower() in ('localhost', 'localhost.', 'ip6-localhost'):
+        return '127.0.0.1'
     return ip
 
 
+def _is_valid_db_ip(ip: str) -> bool:
+    """True samo za vrijednosti koje Postgres GenericIPAddressField (inet) prihvata."""
+    ip = _normalize_ip(ip)
+    if not ip:
+        return False
+    try:
+        import ipaddress
+        ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False
+
+
 def get_configured_exclude_ips() -> set[str]:
-    """IP-ovi iz settings (LIVE_VISITOR_EXCLUDE_IPS) + localhost."""
+    """
+    IP-ovi iz settings (LIVE_VISITOR_EXCLUDE_IPS) + loopback.
+    Vraća samo validne IP adrese (bez hostnamenova tipa „localhost”).
+    """
     from django.conf import settings
 
     raw = getattr(settings, 'LIVE_VISITOR_EXCLUDE_IPS', ()) or ()
-    ips = {_normalize_ip(ip) for ip in raw if _normalize_ip(ip)}
-    ips.update({'127.0.0.1', '::1', 'localhost'})
+    ips = set()
+    for item in raw:
+        ip = _normalize_ip(item)
+        if _is_valid_db_ip(ip):
+            ips.add(ip)
+    ips.update({'127.0.0.1', '::1'})
     return ips
 
 
@@ -540,7 +563,7 @@ def remember_owner_ip(request) -> str:
         return ''
 
     ip = _normalize_ip(get_client_ip(request))
-    if not ip or ip in ('unknown',):
+    if not ip or ip in ('unknown',) or not _is_valid_db_ip(ip):
         return ''
 
     cache_key = f'{OWNER_IP_CACHE_PREFIX}{ip}'
@@ -569,11 +592,10 @@ def visitors_analytics_qs():
     """
     qs = LiveVisitor.objects.all()
     qs = qs.exclude(user__is_staff=True).exclude(user__is_superuser=True)
-    exclude_ips = get_configured_exclude_ips()
+    # Samo validni IP-ovi — Postgres inet odbija "localhost" i slične hostnamove
+    exclude_ips = [ip for ip in get_configured_exclude_ips() if _is_valid_db_ip(ip)]
     if exclude_ips:
-        qs = qs.exclude(ip_adresa__in=list(exclude_ips))
-    # loopback / prazan staff šum
-    qs = qs.exclude(ip_adresa__in=['127.0.0.1', '::1'])
+        qs = qs.exclude(ip_adresa__in=exclude_ips)
     return qs
 
 
@@ -597,7 +619,8 @@ def is_excluded_visitor_ip(ip: str) -> bool:
         if parsed.is_loopback or parsed.is_link_local:
             return True
     except ValueError:
-        pass
+        # Nevalidan IP / hostname — ne evidentiraj kao posjet
+        return True
     return False
 
 
