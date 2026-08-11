@@ -1149,14 +1149,25 @@ def _search_significant_words(raw):
 
 
 def _q_name_or_sifra_contains(term):
-    """Naziv ili šifra (artikal + varijacija) sadrži term."""
+    """
+    Naziv ili šifra (artikal + varijacija) sadrži term (case-insensitive).
+
+    Primjer: upit „MATE” → svi artikli gdje naziv sadrži „mate” / „MATE” / „Mate”.
+    """
+    term = (term or '').strip()
+    if not term:
+        return Q(pk__in=[])
     variation_sifra = ProductVariation.objects.filter(
         artikal_id=OuterRef('pk'),
         sifra__icontains=term,
     )
+    # naziv + normalizirani naziv + keywords + šifra
     return (
         Q(naziv__icontains=term)
+        | Q(naziv_normalized__icontains=term)
+        | Q(search_keywords__icontains=term)
         | Q(sifra__icontains=term)
+        | Q(sifra_normalized__icontains=term)
         | Exists(variation_sifra)
     )
 
@@ -1184,36 +1195,46 @@ def _name_or_sifra_has_all_words(raw):
 
 def _search_exists_match(raw):
     """
-    Match naziv / šifra:
+    Match naziv / šifra (PRIMARNO):
 
-    - cijela fraza u nazivu/šifri, ILI
+    - podstring u nazivu/šifri (icontains, case-insensitive)
+      „MATE” → svi nazivi koji sadrže mate/MATE/Mate
     - SVE značajne riječi upita u nazivu (AND, bilo kojim redom)
       „itana feeder” ⊆ „… ITANA Tournament … Feeder …”
 
-    Nije potreban 100% cijeli naziv — samo da su unesene riječi prisutne.
-    Stop-riječi (za, i, na…) se ignorišu.
-    Tagovi potkategorije: i dalje cijela fraza (odvojeno u filteru).
+    Tagovi potkategorije se ne traže ovdje (odvojeno u filteru).
     """
     raw = _normalize_phrase(raw)
     if not raw:
         return Q(pk__in=[])
 
-    phrase_q = _q_name_or_sifra_contains(raw)
-    words_q = _name_or_sifra_has_all_words(raw)
-    return phrase_q | words_q
+    # original + lower + fold (diakritika) — pokrije sva pisanja
+    terms = []
+    for t in (raw, raw.casefold(), _search_fold(raw)):
+        t = (t or '').strip()
+        if t and t not in terms:
+            terms.append(t)
+
+    match = Q()
+    for t in terms:
+        match |= _q_name_or_sifra_contains(t)
+    # multi-word AND (bilo kojim redom)
+    match |= _name_or_sifra_has_all_words(raw)
+    folded = _search_fold(raw)
+    if folded and folded != raw.casefold():
+        match |= _name_or_sifra_has_all_words(folded)
+    return match
 
 
 def _apply_search_filter(products_qs, query):
     """
-    Pretraga:
-    1) naziv artikla — riječi u bilo kojem redoslijedu (AND)
+    Pretraga (prioritet):
+    1) naziv artikla — podstring / riječi (AND)
     2) šifra artikla / varijacije
     3) tagovi artikla (M2M Tag)
-    4) search tagovi potkategorije (višerječni tag = JEDAN tag, tačna fraza)
+    4) search tagovi potkategorije
 
-    Primjer naziv: „itana spin” → ITANA … Spin …
-    Primjer tag artikla: „som” → artikli s tagom Som
-    Primjer tag potkategorije: „varalica za more” → potkategorija s tim tagom.
+    Primjer: „MATE” → svi artikli s „mate” u nazivu.
     """
     raw = _normalize_phrase(query)
     if not raw:
@@ -1223,33 +1244,33 @@ def _apply_search_filter(products_qs, query):
 
     folded_raw = _search_fold(raw)
 
-    # Tačan višerječni/jednorječni tag potkategorije → cijela potkategorija
-    exact_cat_ids = _subcategory_ids_for_exact_tag(raw)
-    if folded_raw and folded_raw != raw.casefold():
-        exact_cat_ids = exact_cat_ids | _subcategory_ids_for_exact_tag(folded_raw)
-
-    # Naziv / šifra (riječi bilo kojim redom)
+    # 1–2) Naziv / šifra — UVJEK primarno
     match = _search_exists_match(raw)
-    if folded_raw and folded_raw != raw.casefold():
-        match |= _search_exists_match(folded_raw)
 
-    # Tagovi artikla (M2M) — SAMO preko pk__in (nikad JOIN na tagovi__,
-    # jer M2M JOIN duplicira isti artikal u rezultatima).
-    product_tag_ids = _product_ids_for_product_tag_query(raw)
-    if product_tag_ids:
-        match |= Q(pk__in=product_tag_ids)
+    # 3) Tagovi artikla (M2M) — SAMO preko pk__in
+    try:
+        product_tag_ids = _product_ids_for_product_tag_query(raw)
+        if product_tag_ids:
+            match |= Q(pk__in=product_tag_ids)
+    except Exception:
+        pass
 
-    if exact_cat_ids:
-        # Tag-fraza: potkategorija ILI match po nazivu/šifri
-        match |= Q(kategorija_id__in=exact_cat_ids)
-    else:
-        fuzzy_cat_ids = _category_ids_for_search_query(raw)
+    # 4) Tagovi potkategorije
+    try:
+        exact_cat_ids = _subcategory_ids_for_exact_tag(raw)
         if folded_raw and folded_raw != raw.casefold():
-            fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded_raw)
-        if fuzzy_cat_ids:
-            match |= Q(kategorija_id__in=fuzzy_cat_ids)
+            exact_cat_ids = exact_cat_ids | _subcategory_ids_for_exact_tag(folded_raw)
+        if exact_cat_ids:
+            match |= Q(kategorija_id__in=exact_cat_ids)
+        else:
+            fuzzy_cat_ids = _category_ids_for_search_query(raw)
+            if folded_raw and folded_raw != raw.casefold():
+                fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded_raw)
+            if fuzzy_cat_ids:
+                match |= Q(kategorija_id__in=fuzzy_cat_ids)
+    except Exception:
+        pass
 
-    # distinct() za svaki slučaj (varijacije / stari JOIN-ovi)
     return products_qs.filter(match).distinct()
 
 
@@ -1492,10 +1513,10 @@ def _weighted_home_product_order(products):
     return ordered
 
 
-SEARCH_SUGGEST_LIMIT = 6
-SEARCH_SUGGEST_CANDIDATE_POOL = 12
+SEARCH_SUGGEST_LIMIT = 8
+SEARCH_SUGGEST_CANDIDATE_POOL = 24
 # Max artikala za Python re-rank na punoj pretrazi (Enter) — ostalo SQL redoslijed
-SEARCH_FULL_RANK_POOL = 120
+SEARCH_FULL_RANK_POOL = 200
 STAFF_LOOKUP_LIMIT = 25
 
 
@@ -1575,6 +1596,7 @@ def _suggest_relevance_annotation(query):
         terms.append(folded)
 
     # Case uzima PRVI matching When — stavi više skorove prvo
+    # Naziv/šifra UVJEK iznad tagova (MATE u nazivu > tag match)
     whens = []
     for term in terms:
         whens.extend([
@@ -1583,16 +1605,19 @@ def _suggest_relevance_annotation(query):
             When(sifra__istartswith=term, then=Value(100)),
             When(naziv__istartswith=term, then=Value(95)),
             When(sifra__icontains=term, then=Value(90)),
-            When(naziv__icontains=term, then=Value(88)),  # cijela fraza u nazivu
+            When(naziv__icontains=term, then=Value(88)),  # npr. MATE u „… MATE ITANA …”
+            When(naziv_normalized__icontains=term, then=Value(87)),
+            When(search_keywords__icontains=term, then=Value(86)),
         ])
 
     # Višerječni upit: sve značajne riječi u nazivu (bilo kojim redom)
-    # npr. „itana feeder” ⊆ „… ITANA … Feeder …” — ispod fraze, iznad tagova
     words = _search_significant_words(raw)
     if len(words) >= 2:
         name_all_words = Q()
         for w in words:
-            name_all_words &= Q(naziv__icontains=w)
+            name_all_words &= (
+                Q(naziv__icontains=w) | Q(naziv_normalized__icontains=w)
+            )
         whens.append(When(name_all_words, then=Value(85)))
         sifra_all_words = Q()
         for w in words:
