@@ -11163,8 +11163,8 @@ button.nav-action-link {
         justify-content: flex-end;
         align-items: center;
         /* Header primary: padding 4px 12px 8px → search na 12px */
-        padding: 6px 12px 0 12px !important;
-        min-height: 36px;
+        padding: 2px 12px 0 12px !important;
+        min-height: 28px;
         box-sizing: border-box;
     }
 
@@ -11174,10 +11174,10 @@ button.nav-action-link {
         gap: 6px;
         border: none;
         background: none;
-        padding: 6px 2px;
-        font-size: 15px;
+        padding: 4px 2px;
+        font-size: 13px;
         font-weight: 500;
-        line-height: 1.2;
+        line-height: 1.15;
         color: #28403d;
         cursor: pointer;
         font-family: inherit;
@@ -11209,7 +11209,8 @@ button.nav-action-link {
          */
         --mobile-nav-gutter: 12px;
         --mobile-nav-gutter-end: 12px;
-        padding: 8px 12px calc(24px + env(safe-area-inset-bottom, 0px)) 12px !important;
+        /* Kompaktniji vertikalni razmak — više kategorija vidljivo bez skrola */
+        padding: 4px 12px calc(16px + env(safe-area-inset-bottom, 0px)) 12px !important;
         transform: none;
         gap: 0;
         overflow-y: auto;
@@ -11227,7 +11228,7 @@ button.nav-action-link {
     }
 
     .nav-menu.mobile-open > .nav-item {
-        border-bottom: 1px solid var(--gray-200);
+        border-bottom: 1px solid #ececec;
         margin: 0 !important;
         padding: 0 !important;
         box-sizing: border-box;
@@ -11239,15 +11240,16 @@ button.nav-action-link {
         justify-content: flex-start;
         gap: 0;
         /* Tekst kategorije kreće na istoj liniji kao lijevi rub search bara */
-        padding: 14px 0 !important;
+        padding: 8px 0 !important;
         margin: 0 !important;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 500;
-        line-height: 1.35;
+        line-height: 1.25;
         letter-spacing: -0.01em;
         color: #111111;
         box-sizing: border-box;
         width: 100%;
+        min-height: 0;
     }
 
     /*
@@ -11289,9 +11291,9 @@ button.nav-action-link {
 
     .nav-menu.mobile-open .nav-item--akcija > a.nav-link-akcija {
         justify-content: center;
-        margin: 8px 0 4px;
-        padding: 14px 20px;
-        font-size: 14px;
+        margin: 6px 0 2px;
+        padding: 10px 16px;
+        font-size: 13px;
         letter-spacing: 0.06em;
         border-radius: 8px;
         background: #dc2626;
@@ -11303,17 +11305,17 @@ button.nav-action-link {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         /* Ne vuci strelicu prema rubu — isti razmak kao lijevi tekst */
-        margin: -8px 0 -8px 8px;
+        margin: -4px 0 -4px 4px;
         border-right: none;
         border-bottom: none;
         transform: none;
         transition: transform var(--transition);
         flex-shrink: 0;
         position: relative;
-        /* veća zona za dodir — otvara podkategorije */
+        /* zona za dodir — otvara podkategorije */
     }
 
     .nav-menu.mobile-open .nav-chevron::before {
@@ -11334,7 +11336,7 @@ button.nav-action-link {
 
     .nav-menu.mobile-open .nav-item.mega-open > a .nav-chevron {
         transform: none;
-        margin-top: -8px;
+        margin-top: -4px;
     }
 
     .nav-menu.mobile-open .nav-submenu {
@@ -11433,11 +11435,11 @@ button.nav-action-link {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        margin: 12px 0 8px;
-        padding: 4px 0;
+        margin: 8px 0 4px;
+        padding: 2px 0;
         border: none;
         background: none;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: #28403d;
         cursor: pointer;
@@ -11469,13 +11471,13 @@ button.nav-action-link {
     }
 
     .mobile-nav-subview-title {
-        margin: 0 0 14px;
-        font-size: 17px;
+        margin: 0 0 8px;
+        font-size: 15px;
         font-weight: 600;
         color: #111111;
         text-transform: none;
         letter-spacing: -0.02em;
-        line-height: 1.25;
+        line-height: 1.2;
     }
 
     /* Bijeli „—” ispred naziva glavne kategorije — ista linija kao podkategorije */
@@ -11514,15 +11516,15 @@ button.nav-action-link {
 
     .mobile-nav-subview-link {
         display: block;
-        padding: 13px 0 !important;
+        padding: 8px 0 !important;
         margin: 0 !important;
         border-bottom: 1px solid #ececec;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: #111111;
         text-decoration: none;
         letter-spacing: -0.01em;
-        line-height: 1.35;
+        line-height: 1.25;
         transition: background 0.15s ease, color 0.15s ease;
         border-radius: 6px;
         box-sizing: border-box;
@@ -26517,7 +26519,7 @@ a.home-promo-card:hover {
 
     .nav-menu.mobile-open {
         --mobile-nav-text-indent: 0 !important;
-        padding: 12px 16px calc(28px + env(safe-area-inset-bottom, 0px)) 16px !important;
+        padding: 2px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px !important;
         gap: 0 !important;
     }
 
@@ -26533,18 +26535,18 @@ a.home-promo-card:hover {
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        gap: 12px !important;
-        min-height: 48px !important;
-        padding: 12px 4px !important;
+        gap: 8px !important;
+        min-height: 0 !important;
+        padding: 6px 4px !important;
         margin: 0 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.88rem !important;
         font-weight: 600 !important;
         letter-spacing: 0.04em !important;
         text-transform: uppercase !important;
         color: #ffffff !important;
-        line-height: 1.25 !important;
+        line-height: 1.2 !important;
         border: none !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
     }
 
     .nav-menu.mobile-open > .nav-item > a:active {
@@ -26575,9 +26577,10 @@ a.home-promo-card:hover {
     /* AKCIJE — zelena, lijevo, bez crvenog pill-a */
     .nav-menu.mobile-open .nav-item--akcija > a.nav-link-akcija {
         justify-content: flex-start !important;
-        margin: 4px 0 !important;
-        padding: 12px 4px !important;
-        border-radius: 8px !important;
+        margin: 2px 0 !important;
+        padding: 6px 4px !important;
+        min-height: 0 !important;
+        border-radius: 6px !important;
         background: transparent !important;
         color: #5BB805 !important;
         box-shadow: none !important;
@@ -26683,9 +26686,9 @@ a.home-promo-card:hover {
     }
 
     .mobile-nav-subview-link {
-        padding: 12px 4px !important;
+        padding: 5px 6px !important;
         color: rgba(255, 255, 255, 0.92) !important;
-        min-height: 46px;
+        min-height: 0 !important;
         display: flex !important;
         align-items: center;
     }
@@ -26696,16 +26699,16 @@ a.home-promo-card:hover {
    ========================================================================== */
 
 @media (max-width: 1024px) {
-    /* Zajednički font za glavne i podkategorije */
+    /* Zajednički font za glavne i podkategorije — kompaktno da stane više bez skrola */
     .nav-menu.mobile-open > .nav-item > a,
     .mobile-nav-subview-link,
     .mobile-nav-subview-list a {
         font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif !important;
-        font-size: 0.95rem !important;
+        font-size: 0.88rem !important;
         font-weight: 500 !important;
         letter-spacing: -0.01em !important;
         text-transform: none !important;
-        line-height: 1.35 !important;
+        line-height: 1.2 !important;
         color: rgba(255, 255, 255, 0.95) !important;
         -webkit-tap-highlight-color: transparent !important;
         outline: none !important;
@@ -26713,10 +26716,10 @@ a.home-promo-card:hover {
     }
 
     .nav-menu.mobile-open > .nav-item > a {
-        min-height: 50px !important;
-        padding: 13px 8px !important;
+        min-height: 0 !important;
+        padding: 5px 6px !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 6px !important;
         background: transparent !important;
         transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
     }
@@ -26767,7 +26770,7 @@ a.home-promo-card:hover {
 
     /* AKCIJE — ista tipografija, zelena boja */
     .nav-menu.mobile-open .nav-item--akcija > a.nav-link-akcija {
-        font-size: 0.95rem !important;
+        font-size: 0.88rem !important;
         font-weight: 600 !important;
         text-transform: none !important;
         letter-spacing: -0.01em !important;
@@ -26775,38 +26778,40 @@ a.home-promo-card:hover {
         background: transparent !important;
         box-shadow: none !important;
         justify-content: flex-start !important;
-        padding: 13px 8px !important;
-        min-height: 50px !important;
+        padding: 5px 6px !important;
+        min-height: 0 !important;
     }
 
     /* Podkategorije — isti font/padding */
     .mobile-nav-subview-title {
         font-family: "Inter", system-ui, sans-serif !important;
-        font-size: 1.05rem !important;
+        font-size: 0.92rem !important;
         font-weight: 600 !important;
         letter-spacing: -0.02em !important;
         text-transform: none !important;
         color: #fff !important;
-        margin: 4px 0 12px !important;
-        padding: 0 8px !important;
+        margin: 2px 0 6px !important;
+        padding: 0 6px !important;
     }
 
     .mobile-nav-back {
         font-family: "Inter", system-ui, sans-serif !important;
-        font-size: 0.95rem !important;
+        font-size: 0.85rem !important;
         font-weight: 500 !important;
         color: rgba(255, 255, 255, 0.9) !important;
         -webkit-tap-highlight-color: transparent !important;
         outline: none !important;
+        margin: 4px 0 2px !important;
+        padding: 2px 6px !important;
     }
 
     .mobile-nav-subview-link,
     .mobile-nav-subview-list a {
-        min-height: 50px !important;
-        padding: 13px 8px !important;
+        min-height: 0 !important;
+        padding: 5px 6px !important;
         border: none !important;
         border-bottom: none !important;
-        border-radius: 10px !important;
+        border-radius: 6px !important;
         background: transparent !important;
         transition: background 0.2s ease, transform 0.2s ease !important;
     }
@@ -27085,4 +27090,284 @@ a.home-promo-card:hover {
 }
 .seo-text-block.is-expanded .seo-text-block__full {
     display: block !important;
+}
+
+/* ==========================================================================
+   Staff dashboard — Pregled sajta (premium, lagan)
+   ========================================================================== */
+.staff-dash {
+    max-width: none;
+    margin: 0;
+    padding: 0 0 48px;
+}
+
+.staff-dash__body {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 0;
+    box-sizing: border-box;
+}
+
+.staff-dash-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.staff-dash-kpi {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 18px 18px;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    min-width: 0;
+}
+
+.staff-dash-kpi::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--btn-cart, #5BB805);
+}
+
+.staff-dash-kpi--orders::before { background: #0ea5e9; }
+.staff-dash-kpi--revenue::before { background: #111; }
+
+.staff-dash-kpi__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--btn-cart, #5BB805) 14%, #fff);
+    color: #3d8f04;
+}
+
+.staff-dash-kpi--orders .staff-dash-kpi__icon {
+    background: color-mix(in srgb, #0ea5e9 14%, #fff);
+    color: #0284c7;
+}
+
+.staff-dash-kpi--revenue .staff-dash-kpi__icon {
+    background: #f3f4f6;
+    color: #111;
+}
+
+.staff-dash-kpi__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-600);
+}
+
+.staff-dash-kpi__value {
+    font-size: clamp(28px, 4vw, 36px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: #111;
+}
+
+.staff-dash-kpi__unit {
+    font-size: 0.55em;
+    font-weight: 700;
+    color: var(--gray-600);
+    letter-spacing: 0;
+}
+
+.staff-dash-kpi__hint {
+    font-size: 12px;
+    color: var(--gray-600);
+    line-height: 1.4;
+}
+
+.staff-dash-panel {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    padding: 20px 20px 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.staff-dash-panel__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.staff-dash-panel__title {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #111;
+}
+
+.staff-dash-panel__desc {
+    margin: 0;
+    font-size: 13px;
+    color: var(--gray-600);
+    line-height: 1.45;
+}
+
+.staff-dash-panel__badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #0a0a0a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.staff-dash-sources {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.staff-dash-source {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+}
+
+.staff-dash-source__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.staff-dash-source__name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.01em;
+}
+
+.staff-dash-source__meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+.staff-dash-source__meta strong {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111;
+}
+
+.staff-dash-source__bar {
+    height: 6px;
+    border-radius: 999px;
+    background: #e8e8e8;
+    overflow: hidden;
+}
+
+.staff-dash-source__bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #5BB805 0%, #3d8f04 100%);
+    min-width: 0;
+    max-width: 100%;
+}
+
+.staff-dash-source--google .staff-dash-source__bar > span,
+.staff-dash-source--google_ads .staff-dash-source__bar > span {
+    background: linear-gradient(90deg, #4285f4 0%, #1a73e8 100%);
+}
+
+.staff-dash-source--facebook .staff-dash-source__bar > span,
+.staff-dash-source--facebook_ads .staff-dash-source__bar > span {
+    background: linear-gradient(90deg, #1877f2 0%, #0d5dbf 100%);
+}
+
+.staff-dash-source--instagram .staff-dash-source__bar > span,
+.staff-dash-source--instagram_ads .staff-dash-source__bar > span {
+    background: linear-gradient(90deg, #e1306c 0%, #c13584 100%);
+}
+
+.staff-dash-source--direct .staff-dash-source__bar > span {
+    background: linear-gradient(90deg, #111 0%, #444 100%);
+}
+
+.staff-dash-source__label {
+    margin: 6px 0 0;
+    font-size: 11px;
+    color: var(--gray-600);
+    line-height: 1.35;
+}
+
+.staff-dash-empty {
+    text-align: center;
+    padding: 36px 16px 40px;
+    color: var(--gray-600);
+}
+
+.staff-dash-empty p {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+
+.staff-dash-empty span {
+    font-size: 13px;
+}
+
+.staff-dash-footnote {
+    margin: 18px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--gray-600);
+}
+
+@media (max-width: 720px) {
+    .staff-dash-kpis {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .staff-dash__body {
+        padding: 16px 14px 0;
+    }
+
+    .staff-dash-kpi {
+        padding: 16px 14px;
+        border-radius: 14px;
+    }
+
+    .staff-dash-kpi__value {
+        font-size: 28px;
+    }
+
+    .staff-dash-panel {
+        padding: 16px 14px 10px;
+        border-radius: 14px;
+    }
 }

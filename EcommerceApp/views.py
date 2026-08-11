@@ -5642,21 +5642,15 @@ def staff_uvoz_detail(request, pk):
 @user_passes_test(_superuser_required)
 def staff_site_overview(request):
     """
-    Pregled sajta: posjetioci, izvori prometa (direktno / Google / Ads / Meta),
-    kupovine, engažman, chat — po danima / mjesecima / godinama.
+    Lagani dnevni pregled: posjetioci danas, kupovine, izvori dolaska.
+    Namjerno bez teških all-time / chat / engagement upita (0.5 CPU).
     """
     from .site_stats import build_site_overview
 
-    period = (request.GET.get('period') or 'day').strip().lower()
-    data = build_site_overview(period=period)
+    data = build_site_overview()
     context = {
         **_base_context(),
         **data,
-        'period_choices': (
-            ('day', 'Dani'),
-            ('month', 'Mjeseci'),
-            ('year', 'Godine'),
-        ),
     }
     return render(request, 'staff/site_overview.html', context)
 

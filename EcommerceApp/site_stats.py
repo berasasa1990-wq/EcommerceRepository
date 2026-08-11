@@ -507,75 +507,89 @@ def stats_by_year(*, years: int = 5, end_date: date | None = None) -> list[dict]
 
 def build_site_overview(*, period: str = 'day') -> dict:
     """
-    Kompletan payload za staff dashboard.
-    period: day | month | year
+    Lagani dnevni pregled (CPU-friendly, 0.5 CPU plan).
+
+    Samo DANAS:
+      - koliko je ljudi ušlo na sajt
+      - koliko je kupilo (narudžbe + promet)
+      - odakle su ušli (izvor dolaska)
+
+    ~3 lagana SQL upita + cache 45s. Bez chat/engagement/all-time/period tabela.
     """
-    period = (period or 'day').strip().lower()
-    if period not in ('day', 'month', 'year'):
-        period = 'day'
+    from django.core.cache import cache
 
-    if period == 'month':
-        rows = stats_by_month(months=24)
-        period_label = 'Po mjesecima (zadnja 24)'
-    elif period == 'year':
-        rows = stats_by_year(years=8)
-        period_label = 'Po godinama'
-    else:
-        rows = stats_by_day(days=31)
-        period_label = 'Po danima (zadnjih 31)'
+    # period zadržan radi kompatibilnosti URL-a — uvijek radimo „danas”
+    _ = period
+    cache_key = f'staff_today_overview_v2:{timezone.localdate().isoformat()}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        # osvježi vrijeme prikaza
+        cached = dict(cached)
+        cached['generated_at'] = timezone.localtime()
+        cached['from_cache'] = True
+        return cached
 
-    window_start, window_end, window_label = _period_window(period)
-
-    totals_all = summary_totals()
-    totals_window = summary_totals(start=window_start, end=window_end)
-
-    period_visitors = sum(r['visitors'] for r in rows)
-    period_orders = sum(r['orders'] for r in rows)
-    period_buyers = sum(r['buyers'] for r in rows)
-    period_revenue = sum((r['revenue'] for r in rows), Decimal('0.00'))
-
-    sources = traffic_source_breakdown(start=window_start, end=window_end)
-    sources_all = traffic_source_breakdown()
-    sources_orders = orders_by_traffic_source(start=window_start, end=window_end)
-    engagement = engagement_stats(start=window_start, end=window_end)
-    chat = chat_stats(start=window_start, end=window_end)
-
-    # Brzi danas / jučer
     today = timezone.localdate()
-    yesterday = today - timedelta(days=1)
-    t0, t1 = _day_bounds(today)
-    y0, y1 = _day_bounds(yesterday)
-    today_stats = summary_totals(start=t0, end=t1)
-    yesterday_stats = summary_totals(start=y0, end=y1)
+    start, end = _day_bounds(today)
 
-    # Highlight kartice izvora (top kanali)
-    top_sources = [s for s in sources if s['visitors'] > 0][:6]
+    # 1) Posjetioci danas (sesije, first_seen danas)
+    visitors_qs = visitors_analytics_qs().filter(
+        first_seen__gte=start,
+        first_seen__lte=end,
+    )
+    visitors_count = visitors_qs.count()
 
-    return {
-        'period': period,
-        'period_label': period_label,
-        'window_label': window_label,
-        'rows': rows,
-        'totals_all': totals_all,
-        'totals_window': totals_window,
-        'totals_period': {
-            'visitors': period_visitors,
-            'orders': period_orders,
-            'buyers': period_buyers,
-            'revenue': _money(period_revenue),
-            'avg_order': (
-                _money(period_revenue / period_orders) if period_orders else Decimal('0.00')
-            ),
-            'conversion': _pct(period_orders, period_visitors),
-        },
-        'today': today_stats,
-        'yesterday': yesterday_stats,
-        'traffic_sources': sources,
-        'traffic_sources_all': sources_all,
-        'traffic_sources_orders': sources_orders,
-        'top_sources': top_sources,
-        'engagement': engagement,
-        'chat': chat,
+    # 2) Izvori — jedan GROUP BY (bez Python petlji po redovima)
+    raw_sources = (
+        visitors_qs.values('izvor_dolaska')
+        .annotate(visitors=Count('id'))
+    )
+    counts: dict[str, int] = {k: 0 for k in SOURCE_DISPLAY_ORDER}
+    for row in raw_sources:
+        key = normalize_traffic_source(row['izvor_dolaska'])
+        counts[key] = counts.get(key, 0) + int(row['visitors'] or 0)
+    total_src = sum(counts.values()) or visitors_count
+    traffic_sources = []
+    for key in SOURCE_DISPLAY_ORDER:
+        n = counts.get(key, 0)
+        if n <= 0:
+            continue
+        traffic_sources.append({
+            'key': key,
+            'label': traffic_source_label(key),
+            'short_label': traffic_source_label(key, short=True),
+            'visitors': n,
+            'share': _pct(n, total_src),
+        })
+    traffic_sources.sort(key=lambda r: -r['visitors'])
+
+    # 3) Kupovine danas — jedan aggregate
+    orders_qs = _orders_qs().filter(kreirana__gte=start, kreirana__lte=end)
+    agg = orders_qs.aggregate(
+        orders=Count('id'),
+        revenue=Sum('ukupno'),
+        buyers=Count('email', distinct=True, filter=~Q(email='')),
+    )
+    orders_n = int(agg['orders'] or 0)
+    revenue = _money(agg['revenue'])
+    buyers_n = int(agg['buyers'] or 0)
+    avg_order = _money(revenue / orders_n) if orders_n else Decimal('0.00')
+    conversion = _pct(orders_n, visitors_count)
+
+    payload = {
+        'today_label': today.strftime('%d.%m.%Y.'),
+        'visitors': visitors_count,
+        'orders': orders_n,
+        'buyers': buyers_n,
+        'revenue': revenue,
+        'avg_order': avg_order,
+        'conversion': conversion,
+        'traffic_sources': traffic_sources,
         'source_labels': SOURCE_LABELS,
         'generated_at': timezone.localtime(),
+        'from_cache': False,
+        'cache_seconds': 45,
     }
+    # Cache bez generated_at drift — spremamo snapshot
+    cache.set(cache_key, {**payload, 'from_cache': True}, 45)
+    return payload

@@ -42,28 +42,7 @@
                 </div>
             </div>
 
-            {# 2 — Kategorije #}
-            <div class="footer-column">
-                <p class="footer-section-title">Kategorije</p>
-                <ul class="footer-link-list">
-                    {% for category in nav_categories %}
-                    {% if forloop.counter <= 8 %}
-                    <li><a href="{{ category.get_absolute_url }}">{{ category.naziv }}</a></li>
-                    {% endif %}
-                    {% empty %}
-                    <li><a href="{% url 'home' %}">Štapovi</a></li>
-                    <li><a href="{% url 'home' %}">Mašinice</a></li>
-                    <li><a href="{% url 'home' %}">Varalice</a></li>
-                    <li><a href="{% url 'home' %}">Silikonci</a></li>
-                    <li><a href="{% url 'home' %}">Strune i najloni</a></li>
-                    <li><a href="{% url 'home' %}">Udice</a></li>
-                    <li><a href="{% url 'home' %}">Pribor</a></li>
-                    <li><a href="{% url 'home' %}">Odjeća i obuća</a></li>
-                    {% endfor %}
-                </ul>
-            </div>
-
-            {# 3 — Korisni linkovi #}
+            {# Korisni linkovi #}
             <div class="footer-column">
                 <p class="footer-section-title">Korisni linkovi</p>
                 <ul class="footer-link-list">
