@@ -79,12 +79,23 @@ def _session_key(request):
 
 
 def get_active_campaign():
-    return (
+    """Aktivna kampanja — kratki cache (smanjuje N queryja po HTML requestu)."""
+    from django.core.cache import cache
+
+    cache_key = 'online_gift_active_campaign_v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        # sentinel za „nema kampanje”
+        return cached if cached is not False else None
+
+    campaign = (
         OnlineGiftCampaign.objects.filter(aktivan=True)
         .select_related('product')
         .order_by('-azurirano', '-id')
         .first()
     )
+    cache.set(cache_key, campaign if campaign is not None else False, 20)
+    return campaign
 
 
 def _is_tracked_online(request):

@@ -649,6 +649,9 @@ def should_track_visitor(request):
         '/static/',
         '/media/',
         '/nalog/',
+        '/sitemap',
+        '/robots.txt',
+        '/favicon',
         '/priprema-pristup/',
         '/healthz',
     )

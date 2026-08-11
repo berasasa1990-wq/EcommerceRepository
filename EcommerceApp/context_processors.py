@@ -97,19 +97,26 @@ def _build_nav_categories():
     return categories
 
 
-def nav_categories(request):
-    # Jeftin path za API / static-ish — manje posla
-    path = getattr(request, 'path', '') or ''
-    is_api = path.startswith('/api/') or path.startswith('/uzivo/')
+def _is_light_request_path(path: str) -> bool:
+    """Putanje bez menija/popupova/marketing contexta (brži TTFB)."""
+    path = path or ''
+    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/')):
+        return True
+    if path.startswith(('/sitemap', '/robots.txt', '/healthz', '/favicon', '/feeds/')):
+        return True
+    return False
 
-    categories = [] if is_api else _build_nav_categories()
 
-    cart = Cart(request)
+def _cached_popup_akcije():
+    """Lista aktivnih popup akcija — cache 30s (filter po useru ostaje u Pythonu)."""
+    from django.core.cache import cache
 
-    popup_queue = []
-    active_akcija = None
-    if not is_api:
-        for akcija in Akcija.objects.filter(
+    cache_key = 'active_popup_akcije_v2'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    rows = list(
+        Akcija.objects.filter(
             aktivan=True,
             tip__in=Akcija.POPUP_TIPS,
         ).select_related(
@@ -118,14 +125,75 @@ def nav_categories(request):
             'bundle_artikli',
             'bundle_lines__product',
             'qty_tiers',
-        ).order_by('redoslijed', '-id')[:20]:
-            if akcija.je_popup() and akcija.prikazi_korisniku(request.user, request=request):
-                popup_queue.append(akcija)
+        ).order_by('redoslijed', '-id')[:20]
+    )
+    cache.set(cache_key, rows, 30)
+    return rows
 
-        popup_queue.sort(
-            key=lambda a: (a.popup_delay_seconds or 0, a.redoslijed, -a.id),
-        )
-        active_akcija = popup_queue[0] if popup_queue else None
+
+def nav_categories(request):
+    # Jeftin path za API / sitemap / health — manje posla na svakom requestu
+    path = getattr(request, 'path', '') or ''
+    is_light = _is_light_request_path(path)
+
+    if is_light:
+        try:
+            site_settings = SiteSettings.load()
+        except Exception:
+            site_settings = SiteSettings()
+        return {
+            'site_url': settings.SITE_URL,
+            'nav_categories': [],
+            'site_settings': site_settings,
+            'cart_count': 0,
+            'active_akcija': None,
+            'active_popup': None,
+            'popup_queue': [],
+            'active_upsell_offer': None,
+            'cart_recovery_alert': None,
+            'cart_abandon_exit': None,
+            'cart_exit_popup': None,
+            'live_visitor_offer': None,
+            'online_gift': None,
+            'online_gift_reward_label': None,
+            'search_query': '',
+            'contact_phone': '',
+            'contact_phone_digits': '',
+            'contact_whatsapp_url': '',
+            'contact_viber_url': '',
+            'contact_messenger_url': '',
+            'theme_ui': {},
+            'social_proof': None,
+            'dwell_flash_by_id': {},
+            'dwell_catalog_by_id': {},
+            'dwell_ui': {
+                'active': False,
+                'tag_text': 'Ograničena ponuda',
+                'timer_label': 'Ističe za',
+                'catalog_label': '',
+                'flash_seconds': 120,
+                'sale_pulse': True,
+                'css_vars': '',
+            },
+            'staff_edit_mode': False,
+            'organization_json_ld': '',
+            'website_json_ld': '',
+        }
+
+    categories = _build_nav_categories()
+
+    cart = Cart(request)
+
+    popup_queue = []
+    active_akcija = None
+    for akcija in _cached_popup_akcije():
+        if akcija.je_popup() and akcija.prikazi_korisniku(request.user, request=request):
+            popup_queue.append(akcija)
+
+    popup_queue.sort(
+        key=lambda a: (a.popup_delay_seconds or 0, a.redoslijed, -a.id),
+    )
+    active_akcija = popup_queue[0] if popup_queue else None
 
     try:
         site_settings = SiteSettings.load()
@@ -185,49 +253,47 @@ def nav_categories(request):
     gift_label = None
     social_proof = None
 
-    if not is_api:
-        cart_abandon_exit = get_cart_abandon_exit_context(request, cart)
-        cart_exit_popup = (
-            None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
+    cart_abandon_exit = get_cart_abandon_exit_context(request, cart)
+    cart_exit_popup = (
+        None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
+    )
+    try:
+        from .live_visitor_offer import (
+            get_all_active_dwell_flashes,
+            get_dwell_catalog_map,
+            get_dwell_ui,
         )
-        try:
-            from .live_visitor_offer import (
-                get_all_active_dwell_flashes,
-                get_dwell_catalog_map,
-                get_dwell_ui,
-            )
-            dwell_flash_by_id = get_all_active_dwell_flashes(request)
-            dwell_catalog_by_id = get_dwell_catalog_map(request)
-            dwell_ui = get_dwell_ui()
-        except Exception:
-            pass
-        active_upsell = get_active_upsell_offer(request)
-        cart_recovery = get_active_cart_recovery_alert(request, cart)
-        live_offer = build_live_visitor_offer_context(request)
-        online_gift = build_online_gift_context(request)
-        gift_label = active_reward_label(request)
-        social_proof = build_social_proof_context(request)
+        dwell_flash_by_id = get_all_active_dwell_flashes(request)
+        dwell_catalog_by_id = get_dwell_catalog_map(request)
+        dwell_ui = get_dwell_ui()
+    except Exception:
+        pass
+    active_upsell = get_active_upsell_offer(request)
+    cart_recovery = get_active_cart_recovery_alert(request, cart)
+    live_offer = build_live_visitor_offer_context(request)
+    online_gift = build_online_gift_context(request)
+    gift_label = active_reward_label(request)
+    social_proof = build_social_proof_context(request)
 
     staff_edit_mode = False
 
-    # SEO JSON-LD — cache po SiteSettings id (isti za sve stranice)
+    # SEO JSON-LD — cache (isti za sve HTML stranice)
     organization_json_ld = ''
     website_json_ld = ''
-    if not is_api:
-        try:
-            from django.core.cache import cache
-            from .utils.seo import json_ld, organization_json_ld as _org_ld, website_json_ld as _web_ld
-            org_key = 'seo_org_json_ld_v1'
-            web_key = 'seo_web_json_ld_v1'
-            organization_json_ld = cache.get(org_key)
-            website_json_ld = cache.get(web_key)
-            if organization_json_ld is None or website_json_ld is None:
-                organization_json_ld = json_ld(_org_ld(site_settings))
-                website_json_ld = json_ld(_web_ld(site_settings))
-                cache.set(org_key, organization_json_ld, 120)
-                cache.set(web_key, website_json_ld, 120)
-        except Exception:
-            pass
+    try:
+        from django.core.cache import cache
+        from .utils.seo import json_ld, organization_json_ld as _org_ld, website_json_ld as _web_ld
+        org_key = 'seo_org_json_ld_v1'
+        web_key = 'seo_web_json_ld_v1'
+        organization_json_ld = cache.get(org_key)
+        website_json_ld = cache.get(web_key)
+        if organization_json_ld is None or website_json_ld is None:
+            organization_json_ld = json_ld(_org_ld(site_settings))
+            website_json_ld = json_ld(_web_ld(site_settings))
+            cache.set(org_key, organization_json_ld, 120)
+            cache.set(web_key, website_json_ld, 120)
+    except Exception:
+        pass
 
     return {
         'site_url': settings.SITE_URL,

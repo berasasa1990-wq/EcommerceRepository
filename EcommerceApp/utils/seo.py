@@ -210,15 +210,48 @@ def site_url_base() -> str:
     return (getattr(settings, 'SITE_URL', '') or '').rstrip('/')
 
 
-def absolute_url(path_or_url: str) -> str:
-    if not path_or_url:
+def absolute_url(path_or_url: str, *, request=None) -> str:
+    """
+    Jedan validan apsolutni URL (za JSON-LD / OG / SEO).
+
+    - Ako je već http(s)://… (npr. Cloudflare R2: https://media.opremazaribolov.ba/…)
+      → vrati kako jeste, bez dodavanja SITE_URL.
+    - Ako je //host/path → dodaj scheme.
+    - Ako je relativan (/media/… ili media/…) → apsolutni preko request.build_absolute_uri
+      ili SITE_URL.
+    """
+    raw = (path_or_url or '').strip()
+    if not raw:
+        if request is not None:
+            try:
+                return request.build_absolute_uri('/')
+            except Exception:
+                pass
         return site_url_base() + '/'
-    if path_or_url.startswith('http://') or path_or_url.startswith('https://'):
-        return path_or_url
+
+    lower = raw.lower()
+    # Već potpun URL (R2 / CDN / eksterni) — NIKAD ne prefixaj domen sajta
+    if lower.startswith('https://') or lower.startswith('http://'):
+        return raw
+
+    # Protocol-relative: //media.example.com/path
+    if raw.startswith('//'):
+        scheme = 'https'
+        if request is not None:
+            try:
+                scheme = request.scheme or 'https'
+            except Exception:
+                scheme = 'https'
+        return f'{scheme}:{raw}'
+
+    path = raw if raw.startswith('/') else f'/{raw}'
+    if request is not None:
+        try:
+            return request.build_absolute_uri(path)
+        except Exception:
+            pass
     base = site_url_base()
-    if not path_or_url.startswith('/'):
-        path_or_url = '/' + path_or_url
-    return urljoin(base + '/', path_or_url.lstrip('/'))
+    return urljoin(base + '/', path.lstrip('/'))
 
 
 def json_ld(data: dict | list) -> str:
@@ -307,23 +340,45 @@ def website_json_ld(site_settings) -> dict:
     }
 
 
-def product_json_ld(product, *, canonical_url: str, site_settings=None) -> dict:
-    """Product + Offer — rich results (cijena, stock, brand)."""
-    base = site_url_base()
+def product_json_ld(product, *, canonical_url: str, site_settings=None, request=None) -> dict:
+    """Product + Offer — rich results (cijena, stock, brand).
+
+    ``image`` mora biti apsolutni URL. Za R2 (https://media.…) ne smije se
+    dodati SITE_URL ispred — inače nastaje
+    ``https://www…bahttps://media…``.
+    """
     images = []
     try:
         if product.prikazna_slika:
-            images.append(absolute_url(product.prikazna_slika.url))
+            images.append(absolute_url(product.prikazna_slika.url, request=request))
     except Exception:
         pass
     try:
         for img in product.dodatne_slike.all()[:5]:
             if img.slika:
-                images.append(absolute_url(img.slika.url))
+                images.append(absolute_url(img.slika.url, request=request))
     except Exception:
         pass
+    # Dedup + odbaci prazne / očito pokvarene (dvostruki scheme)
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for u in images:
+        u = (u or '').strip()
+        if not u or u in seen:
+            continue
+        # Zaštita: https://site.comhttps://cdn... → zadrži CDN dio
+        if 'https://' in u[8:]:
+            idx = u.find('https://', 8)
+            u = u[idx:]
+        elif 'http://' in u[7:]:
+            idx = u.find('http://', 7)
+            u = u[idx:]
+        if u not in seen:
+            seen.add(u)
+            cleaned.append(u)
+    images = cleaned
     if not images:
-        images = [absolute_url('/static/img/placeholder.png')]
+        images = [absolute_url('/static/img/placeholder.png', request=request)]
 
     # availability: product or any variation in stock
     in_stock = bool(getattr(product, 'na_stanju', False))
@@ -339,16 +394,19 @@ def product_json_ld(product, *, canonical_url: str, site_settings=None) -> dict:
     except Exception:
         price_str = str(price or '0')
 
+    # Canonical ostaje onaj koji je proslijeđen iz view-a (ne diramo ga).
+    product_url = canonical_url or absolute_url(product.get_absolute_url(), request=request)
+
     data: dict[str, Any] = {
         '@context': 'https://schema.org/',
         '@type': 'Product',
         'name': product.naziv,
         'description': product.seo_description,
         'image': images if len(images) > 1 else images[0],
-        'url': canonical_url or absolute_url(product.get_absolute_url()),
+        'url': product_url,
         'offers': {
             '@type': 'Offer',
-            'url': canonical_url or absolute_url(product.get_absolute_url()),
+            'url': product_url,
             'priceCurrency': 'BAM',
             'price': price_str,
             'availability': (

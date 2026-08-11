@@ -16,6 +16,11 @@ class LiveVisitorMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        path = getattr(request, 'path', '') or ''
+        # Sitemap / robots / health — nula tracking overheada
+        if path.startswith(('/sitemap', '/robots.txt', '/healthz', '/favicon', '/static/', '/media/')):
+            return self.get_response(request)
+
         # Staff/superuser: zapamti IP da se ne broji u analyticsu (ni kad nije ulogovan)
         try:
             from EcommerceApp.live_visitors import remember_owner_ip
@@ -36,10 +41,9 @@ class LiveVisitorMiddleware:
             logger.exception('Live visitor session bootstrap failed')
 
         # Track ODMAH na GET stranicama — staff live vidi kupca čim stigne request
-        # (ne čeka kraj rendera HTML-a)
+        # (ne čeka kraj rendera HTML-a). Geo je sada samo header/cache — ne blokira TTFB.
         tracked_early = False
         try:
-            path = getattr(request, 'path', '') or ''
             if (
                 should_track_visitor(request)
                 and request.method in ('GET', 'HEAD')

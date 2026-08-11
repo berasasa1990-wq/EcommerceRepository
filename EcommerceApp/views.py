@@ -2906,6 +2906,7 @@ def product_detail(request, slug):
             product,
             canonical_url=settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
             site_settings=site_settings,
+            request=request,
         )),
         'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
             {'name': 'Početna', 'url': settings.SITE_URL.rstrip('/') + '/'},

@@ -65,11 +65,22 @@ def _is_public_ip(ip):
     )
 
 
-def _lookup_geo_api(ip):
+def _lookup_geo_api(ip, *, allow_network=True):
+    """
+    Geo lookup za IP.
+
+    allow_network=False (default na request hot-pathu):
+      samo cache + Cloudflare headere — NIKAD HTTP prema vanjskim API-ima.
+      Inače prvi posjet javnog IP-a može blokirati TTFB do 3×3s.
+    """
     cache_key = f'visitor_geo:bih:v4:{ip}'
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
+
+    if not allow_network:
+        # Ne cache-aj prazno dugo — header/cache mogu stići kasnije
+        return {'country': '', 'city': ''}
 
     result = {'country': '', 'city': ''}
 
@@ -102,7 +113,7 @@ def _normalize_geo_result(country_code, city=''):
 
 
 def _fetch_ipwho_is(ip):
-    response = requests.get(f'https://ipwho.is/{ip}', timeout=3)
+    response = requests.get(f'https://ipwho.is/{ip}', timeout=1.2)
     response.raise_for_status()
     data = response.json()
     if not data.get('success'):
@@ -111,7 +122,7 @@ def _fetch_ipwho_is(ip):
 
 
 def _fetch_ipapi_co(ip):
-    response = requests.get(f'https://ipapi.co/{ip}/json/', timeout=3)
+    response = requests.get(f'https://ipapi.co/{ip}/json/', timeout=1.2)
     response.raise_for_status()
     data = response.json()
     if data.get('error'):
@@ -123,7 +134,7 @@ def _fetch_ip_api_com(ip):
     response = requests.get(
         f'http://ip-api.com/json/{ip}',
         params={'fields': 'status,city,countryCode'},
-        timeout=3,
+        timeout=1.2,
     )
     response.raise_for_status()
     data = response.json()
@@ -132,7 +143,8 @@ def _fetch_ip_api_com(ip):
     return _normalize_geo_result(data.get('countryCode'), data.get('city'))
 
 
-def resolve_visitor_country(request, *, ip=None):
+def resolve_visitor_country(request, *, ip=None, allow_network=False):
+    """Država posjetioca. Na page requestu samo CF headeri + cache (bez HTTP)."""
     country = _country_from_headers(request)
     if country:
         return country
@@ -140,19 +152,20 @@ def resolve_visitor_country(request, *, ip=None):
     ip = ip or get_client_ip(request)
     if not _is_public_ip(ip):
         return ''
-    return _lookup_geo_api(ip)['country']
+    return _lookup_geo_api(ip, allow_network=allow_network)['country']
 
 
-def is_known_foreign_visitor(request, *, ip=None):
-    country = resolve_visitor_country(request, ip=ip)
+def is_known_foreign_visitor(request, *, ip=None, allow_network=False):
+    country = resolve_visitor_country(request, ip=ip, allow_network=allow_network)
     return bool(country) and not _is_bosnia_herzegovina_country(country)
 
 
-def is_visitor_from_bosnia_herzegovina(request, *, ip=None):
-    return not is_known_foreign_visitor(request, ip=ip)
+def is_visitor_from_bosnia_herzegovina(request, *, ip=None, allow_network=False):
+    return not is_known_foreign_visitor(request, ip=ip, allow_network=allow_network)
 
 
-def resolve_visitor_city(request, *, ip=None):
+def resolve_visitor_city(request, *, ip=None, allow_network=False):
+    """Grad posjetioca. Na page requestu samo CF headeri + cache (bez HTTP)."""
     header_city = _city_from_headers(request)
     if header_city:
         return header_city
@@ -160,4 +173,4 @@ def resolve_visitor_city(request, *, ip=None):
     ip = ip or get_client_ip(request)
     if not _is_public_ip(ip):
         return ''
-    return _lookup_geo_api(ip)['city']
+    return _lookup_geo_api(ip, allow_network=allow_network)['city']
