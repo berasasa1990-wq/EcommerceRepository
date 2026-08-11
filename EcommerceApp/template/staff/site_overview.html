@@ -13,16 +13,40 @@
     <header class="staff-page-hero">
         <div class="staff-page-hero__inner">
             <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
-            <p class="staff-page-kicker">Live · danas</p>
+            <p class="staff-page-kicker">Analitika</p>
             <h1 class="staff-page-title">Pregled sajta</h1>
             <p class="staff-page-subtitle">
-                {{ today_label }} · posjetioci, kupovine i izvor dolaska.
+                {{ period_label }} · jedinstveni posjetioci, kupovine, izvor dolaska.
                 Ažurirano {{ generated_at|date:"H:i" }}{% if from_cache %} · cache{% endif %}.
             </p>
         </div>
     </header>
 
     <div class="staff-dash__body">
+        {# —— Period filter —— #}
+        <nav class="staff-dash-periods" aria-label="Period">
+            <a href="?period=day"
+               class="staff-dash-period{% if period == 'day' %} is-active{% endif %}">Danas</a>
+            <a href="?period=month"
+               class="staff-dash-period{% if period == 'month' %} is-active{% endif %}">Ovaj mjesec</a>
+            <a href="?period=year"
+               class="staff-dash-period{% if period == 'year' %} is-active{% endif %}">Ova godina</a>
+            <span class="staff-dash-period staff-dash-period--label{% if period == 'range' %} is-active{% endif %}">Datumi</span>
+        </nav>
+
+        <form class="staff-dash-range" method="get" action="">
+            <input type="hidden" name="period" value="range">
+            <label class="staff-dash-range__field">
+                <span>Od</span>
+                <input type="date" name="from" value="{{ date_from }}" required>
+            </label>
+            <label class="staff-dash-range__field">
+                <span>Do</span>
+                <input type="date" name="to" value="{{ date_to }}" required>
+            </label>
+            <button type="submit" class="staff-dash-range__btn">Prikaži</button>
+        </form>
+
         {# —— KPI kartice —— #}
         <div class="staff-dash-kpis">
             <article class="staff-dash-kpi staff-dash-kpi--visitors">
@@ -31,7 +55,15 @@
                 </span>
                 <span class="staff-dash-kpi__label">Ušlo na sajt</span>
                 <strong class="staff-dash-kpi__value">{{ visitors }}</strong>
-                <span class="staff-dash-kpi__hint">sesija danas</span>
+                <span class="staff-dash-kpi__hint">
+                    jedinstvenih (cookie/IP)
+                    {% if sessions_raw and sessions_raw != visitors %}
+                    · {{ sessions_raw }} sesija
+                    {% endif %}
+                    {% if bots_filtered %}
+                    · −{{ bots_filtered }} bot
+                    {% endif %}
+                </span>
             </article>
 
             <article class="staff-dash-kpi staff-dash-kpi--orders">
@@ -61,9 +93,9 @@
             <div class="staff-dash-panel__head">
                 <div>
                     <h2 class="staff-dash-panel__title">Odakle su ušli</h2>
-                    <p class="staff-dash-panel__desc">Prvi ulazak u sesiji (direct, Google, Ads, Meta…)</p>
+                    <p class="staff-dash-panel__desc">{{ period_label }} · first-touch (direct, Google, Ads, Meta…)</p>
                 </div>
-                <span class="staff-dash-panel__badge">{{ visitors }} ukupno</span>
+                <span class="staff-dash-panel__badge">{{ visitors }} ljudi</span>
             </div>
 
             {% if traffic_sources %}
@@ -86,15 +118,15 @@
             </ul>
             {% else %}
             <div class="staff-dash-empty">
-                <p>Danas još nema zabilježenih posjeta.</p>
-                <span>Čim neko uđe na sajt, ovdje će se pojaviti izvor dolaska.</span>
+                <p>Nema posjeta u ovom periodu.</p>
+                <span>Promijeni period ili sačekaj nove posjetioce.</span>
             </div>
             {% endif %}
         </section>
 
         <p class="staff-dash-footnote">
-            Lagani pregled · osvježava se svakih ~45 s (cache) da štedi CPU.
-            Posjetilac = sesija (prvi ulazak danas). Narudžbe = online, bez otkazanih.
+            Posjetilac = <strong>jedinstvena osoba</strong> (cookie ili IP). Botovi (UA) se ne bilježe;
+            sesije bez IP/tokena se ne broje. Custom raspon max 92 dana · cache ~45 s.
         </p>
     </div>
 </section>

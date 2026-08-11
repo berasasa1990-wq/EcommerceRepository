@@ -624,9 +624,34 @@ def is_excluded_visitor_ip(ip: str) -> bool:
     return False
 
 
+# User-Agent markeri botova / scrapera — ne bilježi se u LiveVisitor
+_BOT_UA_MARKERS = (
+    'bot', 'spider', 'crawler', 'slurp', 'scrapy', 'curl/', 'wget/',
+    'python-requests', 'python-urllib', 'go-http-client', 'httpclient',
+    'libwww', 'java/', 'apache-http', 'okhttp', 'headless', 'phantom',
+    'selenium', 'puppeteer', 'playwright',
+    'googlebot', 'bingbot', 'yandex', 'baiduspider', 'duckduckbot',
+    'facebookexternalhit', 'facebot', 'meta-externalagent', 'twitterbot',
+    'linkedinbot', 'pinterest', 'whatsapp', 'telegrambot', 'discordbot',
+    'slackbot', 'applebot', 'semrush', 'ahrefs', 'mj12bot', 'dotbot',
+    'petalbot', 'bytespider', 'gptbot', 'chatgpt', 'claudebot', 'anthropic',
+    'amazonbot', 'ia_archiver', 'archive.org', 'screaming frog',
+    'lighthouse', 'gtmetrix', 'pingdom', 'uptime', 'statuscake',
+    'render', 'better uptime', 'hetzner', 'monitor',
+)
+
+
+def is_bot_user_agent(ua: str) -> bool:
+    """True za poznate crawler/bot User-Agent stringove."""
+    ua = (ua or '').strip().lower()
+    if not ua or ua in ('-', 'null', 'undefined'):
+        return True
+    return any(m in ua for m in _BOT_UA_MARKERS)
+
+
 def should_track_visitor(request):
     """
-    Ne prati: staff/superuser, isključene IP adrese (vlasnik), admin/static putanje.
+    Ne prati: staff/superuser, isključene IP, botove (UA), admin/static putanje.
     """
     user = getattr(request, 'user', None)
     if user and getattr(user, 'is_authenticated', False):
@@ -640,6 +665,10 @@ def should_track_visitor(request):
 
     ip = _normalize_ip(get_client_ip(request))
     if ip and is_excluded_visitor_ip(ip):
+        return False
+
+    ua = request.META.get('HTTP_USER_AGENT') or ''
+    if is_bot_user_agent(ua):
         return False
 
     path = request.path or ''
@@ -2463,76 +2492,142 @@ def _fishing_advisor_payload(visitor):
     }
 
 
-def get_live_visitor_snapshot():
+def get_live_visitor_snapshot_lite(*, limit: int = 60):
+    """
+    Lagani live snapshot za staff (0.5 CPU).
+
+    Samo tko je online sada: ime, šta gleda, odakle je došao.
+    Bez korpi, AI, gift, registered list, traffic stats, offline prozora.
+    """
     now = timezone.now()
-    window_cutoff = now - timedelta(minutes=WINDOW_MINUTES)
+    online_cutoff = now - timedelta(minutes=ONLINE_MINUTES)
 
-    # Svi posjetioci u prozoru (ne samo BA) — ko je na sajtu, vidi se live
-    window_qs = LiveVisitor.objects.filter(
-        last_seen__gte=window_cutoff,
-    ).select_related('user__profil').order_by('-last_seen')
-    visitor_rows = list(window_qs)
-    actions_bundle = _build_recent_offer_map(visitor_rows, now=now)
-    (
-        sessions_with_cart,
-        users_with_cart,
-        cart_value_by_session,
-        cart_value_by_user,
-        cart_items_by_session,
-        cart_items_by_user,
-    ) = _build_cart_presence_map(visitor_rows)
-    (
-        buyer_user_ids,
-        buyer_emails,
-        purchase_count_by_user,
-        purchase_count_by_email,
-    ) = _build_site_buyer_stats(visitor_rows)
+    exclude_ips = [ip for ip in get_configured_exclude_ips() if _is_valid_db_ip(ip)]
+    qs = (
+        LiveVisitor.objects.filter(last_seen__gte=online_cutoff)
+        .exclude(user__is_staff=True)
+        .exclude(user__is_superuser=True)
+        .exclude(session_key='')
+    )
+    if exclude_ips:
+        qs = qs.exclude(ip_adresa__in=exclude_ips)
+    qs = qs.only(
+        'session_key',
+        'ime',
+        'email',
+        'grad',
+        'izvor_dolaska',
+        'trenutna_putanja',
+        'trenutno_gleda',
+        'last_seen',
+        'first_seen',
+        'visitor_token',
+        'ip_adresa',
+        'user_id',
+    ).order_by('-last_seen')[: max(20, min(int(limit or 60), 80))]
 
-    window_visitors = []
-    for row in visitor_rows:
-        has_purchased, purchase_count = _visitor_purchase_info(
-            row,
-            buyer_user_ids,
-            buyer_emails,
-            purchase_count_by_user,
-            purchase_count_by_email,
+    # person_key → najnoviji red (dedupe bot/više tabova)
+    by_person: dict[str, dict] = {}
+    for row in qs:
+        sk = (row.session_key or '').strip()
+        if not sk or is_visitor_marked_left(sk):
+            continue
+        seconds_ago = (
+            max(0, int((now - row.last_seen).total_seconds()))
+            if row.last_seen
+            else 9999
         )
-        # is_online se računa unutar payload — privremeno za actions
-        seconds_ago = max(0, int((now - row.last_seen).total_seconds())) if row.last_seen else 9999
-        is_online_tmp = seconds_ago < ONLINE_MINUTES * 60
-        staff_actions = _staff_actions_for_visitor(
-            row, actions_bundle, visitor_online=is_online_tmp, now=now,
-        )
-        window_visitors.append(
-            _visitor_payload(
-                row,
-                now=now,
-                offer=_lookup_recent_offer(actions_bundle, row),
-                staff_actions=staff_actions,
-                has_cart=_visitor_has_cart(row, sessions_with_cart, users_with_cart),
-                cart_value=_visitor_cart_value(row, cart_value_by_session, cart_value_by_user),
-                cart_items=_visitor_cart_items(row, cart_items_by_session, cart_items_by_user),
-                has_purchased=has_purchased,
-                purchase_count=purchase_count,
-            )
-        )
+        if seconds_ago >= ONLINE_MINUTES * 60:
+            continue
 
-    online_visitors = [row for row in window_visitors if row['is_online']]
-    registered_online = [row for row in online_visitors if row.get('is_registered')]
-    registered_window = [row for row in window_visitors if row.get('is_registered')]
+        token = (row.visitor_token or '').strip()
+        ip = row.ip_adresa
+        if token:
+            person = f't:{token}'
+        elif ip:
+            person = f'ip:{ip}'
+        else:
+            person = f's:{sk}'
+
+        source_key = normalize_traffic_source(getattr(row, 'izvor_dolaska', None))
+        doing = (row.trenutno_gleda or '').strip() or (row.trenutna_putanja or '').strip() or 'Na sajtu'
+        # Preskoči čisti poll/API šum
+        path = (row.trenutna_putanja or '').strip()
+        if path.startswith(('/api/', '/uzivo/', '/healthz', '/static/', '/admin/')):
+            continue
+
+        ime = (row.ime or '').strip()
+        if not ime:
+            email = (row.email or '').strip()
+            ime = email.split('@', 1)[0] if email else 'Gost'
+        if seconds_ago < 15:
+            ago_label = 'sada'
+        elif seconds_ago < 60:
+            ago_label = f'prije {seconds_ago} s'
+        else:
+            ago_label = f'prije {seconds_ago // 60} min'
+
+        payload = {
+            'session_key': sk,
+            'ime': ime[:80],
+            'grad': (row.grad or '').strip()[:80],
+            'current_page': doing[:200],
+            'path': path[:200],
+            'source_key': source_key,
+            'source_label': traffic_source_label(source_key, short=True),
+            'source_label_full': traffic_source_label(source_key),
+            'seconds_ago': seconds_ago,
+            'ago_label': ago_label,
+            'is_online': True,
+        }
+        prev = by_person.get(person)
+        if prev is None or payload['seconds_ago'] < prev['seconds_ago']:
+            by_person[person] = payload
+
+    online_visitors = sorted(by_person.values(), key=lambda r: r['seconds_ago'])
+
+    # Sažetak izvora među online
+    source_counts: dict[str, int] = {}
+    for v in online_visitors:
+        k = v['source_key']
+        source_counts[k] = source_counts.get(k, 0) + 1
+    sources = [
+        {
+            'key': k,
+            'label': traffic_source_label(k, short=True),
+            'count': n,
+        }
+        for k, n in sorted(source_counts.items(), key=lambda x: -x[1])
+    ]
 
     return {
         'online_count': len(online_visitors),
-        'window_count': len(window_visitors),
-        'registered_online_count': len(registered_online),
-        'registered_window_count': len(registered_window),
         'online_visitors': online_visitors,
-        'window_visitors': window_visitors,
-        'registered_online_visitors': registered_online,
-        'registered_window_visitors': registered_window,
+        'sources': sources,
         'online_minutes': ONLINE_MINUTES,
-        'window_minutes': WINDOW_MINUTES,
         'generated_at': now,
+    }
+
+
+def get_live_visitor_snapshot():
+    """
+    Kompatibilni alias — staff UI sada koristi lite snapshot.
+    (Stari teški path s korpama/AI/gift je uklonjen s hot-patha.)
+    """
+    lite = get_live_visitor_snapshot_lite()
+    return {
+        'online_count': lite['online_count'],
+        'window_count': lite['online_count'],
+        'registered_online_count': 0,
+        'registered_window_count': 0,
+        'online_visitors': lite['online_visitors'],
+        'window_visitors': lite['online_visitors'],
+        'registered_online_visitors': [],
+        'registered_window_visitors': [],
+        'sources': lite.get('sources') or [],
+        'online_minutes': lite['online_minutes'],
+        'window_minutes': lite['online_minutes'],
+        'generated_at': lite['generated_at'],
     }
 
 

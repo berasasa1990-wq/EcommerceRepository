@@ -505,50 +505,144 @@ def stats_by_year(*, years: int = 5, end_date: date | None = None) -> list[dict]
     return _bucket_rows(TruncYear, start=start, end=end, label_fmt='%Y.', period='year')
 
 
-def build_site_overview(*, period: str = 'day') -> dict:
+def _person_key(visitor_token: str, ip_adresa, session_key: str = '') -> str:
     """
-    Lagani dnevni pregled (CPU-friendly, 0.5 CPU plan).
+    Identitet jedne osobe.
 
-    Samo DANAS:
-      - koliko je ljudi ušlo na sajt
-      - koliko je kupilo (narudžbe + promet)
-      - odakle su ušli (izvor dolaska)
-
-    ~3 lagana SQL upita + cache 45s. Bez chat/engagement/all-time/period tabela.
+    1) Trajni cookie token (ozb_vid)
+    2) IP adresa (spaja više sesija / botova s istog IP-a)
+    Session-only (bez token/IP) = vjerojatno bot → ne brojimo.
     """
-    from django.core.cache import cache
+    token = (visitor_token or '').strip()
+    if token:
+        return f't:{token}'
+    if ip_adresa:
+        return f'ip:{ip_adresa}'
+    return ''
 
-    # period zadržan radi kompatibilnosti URL-a — uvijek radimo „danas”
-    _ = period
-    cache_key = f'staff_today_overview_v2:{timezone.localdate().isoformat()}'
-    cached = cache.get(cache_key)
-    if cached is not None:
-        # osvježi vrijeme prikaza
-        cached = dict(cached)
-        cached['generated_at'] = timezone.localtime()
-        cached['from_cache'] = True
-        return cached
 
+def _period_bounds(
+    *,
+    period: str = 'day',
+    date_from: str = '',
+    date_to: str = '',
+) -> tuple:
+    """
+    Vrati (start_dt, end_dt, label, period_key, date_from_iso, date_to_iso).
+
+    period: day | month | year | range
+    """
     today = timezone.localdate()
-    start, end = _day_bounds(today)
+    period = (period or 'day').strip().lower()
+    if period not in ('day', 'month', 'year', 'range'):
+        period = 'day'
 
-    # 1) Posjetioci danas (sesije, first_seen danas)
-    visitors_qs = visitors_analytics_qs().filter(
+    def _parse(s: str):
+        s = (s or '').strip()[:10]
+        if not s:
+            return None
+        try:
+            return date.fromisoformat(s)
+        except ValueError:
+            return None
+
+    if period == 'month':
+        start_d = today.replace(day=1)
+        end_d = today
+        label = f'{start_d.strftime("%m.%Y.")} (do danas)'
+    elif period == 'year':
+        start_d = date(today.year, 1, 1)
+        end_d = today
+        label = f'{today.year}. (do danas)'
+    elif period == 'range':
+        start_d = _parse(date_from) or today
+        end_d = _parse(date_to) or today
+        if end_d < start_d:
+            start_d, end_d = end_d, start_d
+        # Cap 92 dana — štiti CPU na 0.5 planu
+        if (end_d - start_d).days > 92:
+            start_d = end_d - timedelta(days=92)
+        label = f'{start_d.strftime("%d.%m.%Y.")} – {end_d.strftime("%d.%m.%Y.")}'
+        period = 'range'
+    else:
+        start_d = today
+        end_d = today
+        label = today.strftime('%d.%m.%Y.')
+        period = 'day'
+
+    start_dt, _ = _day_bounds(start_d)
+    _, end_dt = _day_bounds(end_d)
+    return (
+        start_dt,
+        end_dt,
+        label,
+        period,
+        start_d.isoformat(),
+        end_d.isoformat(),
+    )
+
+
+def _visitors_in_range_qs(start, end):
+    """
+    Sesije s first_seen u periodu.
+
+    Filtrira bot/šum:
+    - staff / excluded IP
+    - prazan session
+    - health/api/admin/static putanje
+    - mora imati IP ili visitor_token (session-only ≈ bot)
+    """
+    qs = visitors_analytics_qs().filter(
         first_seen__gte=start,
         first_seen__lte=end,
-    )
-    visitors_count = visitors_qs.count()
+    ).exclude(session_key='')
 
-    # 2) Izvori — jedan GROUP BY (bez Python petlji po redovima)
-    raw_sources = (
-        visitors_qs.values('izvor_dolaska')
-        .annotate(visitors=Count('id'))
+    qs = qs.exclude(
+        Q(trenutna_putanja__startswith='/healthz')
+        | Q(trenutna_putanja__startswith='/api/')
+        | Q(trenutna_putanja__startswith='/uzivo/')
+        | Q(trenutna_putanja__startswith='/admin/')
+        | Q(trenutna_putanja__startswith='/static/')
+        | Q(trenutna_putanja='/favicon.ico')
+        | Q(trenutna_putanja='/robots.txt')
+        | Q(trenutna_putanja='/sitemap.xml')
+        | Q(trenutna_putanja='/facebook-feed.xml')
     )
+    # Session-only bez IP/tokena — botovi / headless bez cookie-a
+    qs = qs.exclude(
+        Q(visitor_token='') | Q(visitor_token__isnull=True),
+        ip_adresa__isnull=True,
+    )
+    return qs
+
+
+def _unique_people_and_sources(rows) -> tuple[int, list[dict], int]:
+    """
+    Iz liste {token, ip, session, izvor}:
+    - broj jedinstvenih ljudi (token/IP)
+    - izvori po ljudima
+    - broj odbačenih session-only redova (bot signal)
+    """
+    person_source: dict[str, str] = {}
+    skipped_bot = 0
+    for row in rows:
+        key = _person_key(
+            row.get('visitor_token') or '',
+            row.get('ip_adresa'),
+            row.get('session_key') or '',
+        )
+        if not key:
+            skipped_bot += 1
+            continue
+        if key in person_source:
+            continue
+        person_source[key] = normalize_traffic_source(row.get('izvor_dolaska'))
+
+    visitors_count = len(person_source)
     counts: dict[str, int] = {k: 0 for k in SOURCE_DISPLAY_ORDER}
-    for row in raw_sources:
-        key = normalize_traffic_source(row['izvor_dolaska'])
-        counts[key] = counts.get(key, 0) + int(row['visitors'] or 0)
-    total_src = sum(counts.values()) or visitors_count
+    for src in person_source.values():
+        counts[src] = counts.get(src, 0) + 1
+
     traffic_sources = []
     for key in SOURCE_DISPLAY_ORDER:
         n = counts.get(key, 0)
@@ -559,11 +653,48 @@ def build_site_overview(*, period: str = 'day') -> dict:
             'label': traffic_source_label(key),
             'short_label': traffic_source_label(key, short=True),
             'visitors': n,
-            'share': _pct(n, total_src),
+            'share': _pct(n, visitors_count),
         })
     traffic_sources.sort(key=lambda r: -r['visitors'])
+    return visitors_count, traffic_sources, skipped_bot
 
-    # 3) Kupovine danas — jedan aggregate
+
+def build_site_overview(
+    *,
+    period: str = 'day',
+    date_from: str = '',
+    date_to: str = '',
+) -> dict:
+    """
+    Lagani pregled (0.5 CPU): jedinstveni posjetioci + kupovine + izvori.
+
+    period: day | month | year | range (+ date_from/date_to YYYY-MM-DD)
+    """
+    from django.core.cache import cache
+
+    start, end, label, period_key, from_iso, to_iso = _period_bounds(
+        period=period,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    cache_key = f'staff_overview_v5:{period_key}:{from_iso}:{to_iso}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        cached = dict(cached)
+        cached['generated_at'] = timezone.localtime()
+        cached['from_cache'] = True
+        return cached
+
+    # Jedan SELECT potrebnih polja (cap radi CPU-a)
+    visitors_qs = _visitors_in_range_qs(start, end)
+    rows = list(
+        visitors_qs.order_by('first_seen').values(
+            'visitor_token', 'ip_adresa', 'session_key', 'izvor_dolaska',
+        )[:25000]
+    )
+    visitors_count, traffic_sources, bots_skipped = _unique_people_and_sources(rows)
+    sessions_raw = len(rows)
+
     orders_qs = _orders_qs().filter(kreirana__gte=start, kreirana__lte=end)
     agg = orders_qs.aggregate(
         orders=Count('id'),
@@ -577,8 +708,14 @@ def build_site_overview(*, period: str = 'day') -> dict:
     conversion = _pct(orders_n, visitors_count)
 
     payload = {
-        'today_label': today.strftime('%d.%m.%Y.'),
+        'period': period_key,
+        'period_label': label,
+        'date_from': from_iso,
+        'date_to': to_iso,
+        'today_label': label,
         'visitors': visitors_count,
+        'sessions_raw': sessions_raw,
+        'bots_filtered': bots_skipped,
         'orders': orders_n,
         'buyers': buyers_n,
         'revenue': revenue,
@@ -589,7 +726,12 @@ def build_site_overview(*, period: str = 'day') -> dict:
         'generated_at': timezone.localtime(),
         'from_cache': False,
         'cache_seconds': 45,
+        'period_choices': (
+            ('day', 'Danas'),
+            ('month', 'Ovaj mjesec'),
+            ('year', 'Ova godina'),
+            ('range', 'Datumi'),
+        ),
     }
-    # Cache bez generated_at drift — spremamo snapshot
     cache.set(cache_key, {**payload, 'from_cache': True}, 45)
     return payload

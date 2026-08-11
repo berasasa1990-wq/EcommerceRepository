@@ -5642,12 +5642,19 @@ def staff_uvoz_detail(request, pk):
 @user_passes_test(_superuser_required)
 def staff_site_overview(request):
     """
-    Lagani dnevni pregled: posjetioci danas, kupovine, izvori dolaska.
-    Namjerno bez teških all-time / chat / engagement upita (0.5 CPU).
+    Lagani pregled: posjetioci / kupovine / izvori.
+    period=day|month|year|range (+ from/to datumi). Bez teških all-time upita.
     """
     from .site_stats import build_site_overview
 
-    data = build_site_overview()
+    period = (request.GET.get('period') or 'day').strip().lower()
+    date_from = (request.GET.get('from') or request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('to') or request.GET.get('date_to') or '').strip()
+    data = build_site_overview(
+        period=period,
+        date_from=date_from,
+        date_to=date_to,
+    )
     context = {
         **_base_context(),
         **data,
@@ -5715,61 +5722,31 @@ def staff_activate_user(request):
 
 
 def _live_analytics_context(request):
-    from .live_visitors import (
-        get_live_visitor_snapshot,
-        get_registered_customers,
-        get_visitor_traffic_stats,
-        parse_traffic_filters,
-    )
-    from .online_gift import get_online_gift_staff_feed
+    """
+    Lagani live context — samo online kupci, šta rade, odakle dolaze.
+    Bez gift/registered/traffic/AI/korpa mapa (CPU).
+    """
+    from django.core.cache import cache
+    from django.utils import timezone as dj_tz
 
-    snapshot = get_live_visitor_snapshot()
-    traffic_filters = parse_traffic_filters(request)
-    traffic_stats = get_visitor_traffic_stats(
-        daily_from=traffic_filters['daily_from_date'],
-        daily_to=traffic_filters['daily_to_date'],
-        monthly_from=traffic_filters['monthly_from_date'],
-        monthly_to=traffic_filters['monthly_to_date'],
-    )
-    online_user_ids = {
-        row.get('user_id')
-        for row in (snapshot.get('registered_online_visitors') or [])
-        if row.get('user_id')
-    }
-    registered_customers = get_registered_customers(online_user_ids=online_user_ids)
-    gift_feed = get_online_gift_staff_feed()
-    from .online_gift import get_campaign_staff_status
-    gift_campaign = get_campaign_staff_status()
-    generated_at = snapshot['generated_at']
-    online_visitors = snapshot['online_visitors'] or []
-    window_visitors = snapshot['window_visitors'] or []
-    offline_visitors = [row for row in window_visitors if not row.get('is_online')]
+    from .live_visitors import get_live_visitor_snapshot_lite
+
+    # Kratki cache 3s — poll svakih 5s ne udara DB dva puta u istom trenutku
+    cache_key = 'staff_live_snapshot_lite_v1'
+    snapshot = cache.get(cache_key)
+    if snapshot is None:
+        snapshot = get_live_visitor_snapshot_lite()
+        cache.set(cache_key, snapshot, 3)
+
+    generated_at = snapshot.get('generated_at') or dj_tz.now()
+    if hasattr(generated_at, 'astimezone'):
+        generated_at = dj_tz.localtime(generated_at)
+    online_visitors = snapshot.get('online_visitors') or []
     return {
-        'online_count': snapshot['online_count'],
-        'window_count': snapshot['window_count'],
-        'offline_count': len(offline_visitors),
-        'registered_online_count': snapshot.get('registered_online_count', 0),
-        'registered_window_count': snapshot.get('registered_window_count', 0),
-        'registered_customers_count': len(registered_customers),
-        'registered_customers': registered_customers,
+        'online_count': snapshot.get('online_count') or len(online_visitors),
         'online_visitors': online_visitors,
-        'window_visitors': window_visitors,
-        'offline_visitors': offline_visitors,
-        'registered_online_visitors': snapshot.get('registered_online_visitors') or [],
-        'registered_window_visitors': snapshot.get('registered_window_visitors') or [],
-        'online_minutes': snapshot['online_minutes'],
-        'window_minutes': snapshot['window_minutes'],
-        'daily_stats': traffic_stats['daily'],
-        'monthly_stats': traffic_stats['monthly'],
-        'city_stats': traffic_stats['by_city'],
-        'city_stats_json': traffic_stats['by_city'],
-        'traffic_filters': traffic_filters,
-        'gift_winners': gift_feed.get('winners') or [],
-        'gift_winners_count': gift_feed.get('winners_count') or 0,
-        'gift_ordered_count': gift_feed.get('ordered_count') or 0,
-        'gift_online_winners_count': gift_feed.get('online_winners_count') or 0,
-        'gift_feed_hours': gift_feed.get('hours') or 48,
-        'gift_campaign': gift_campaign,
+        'sources': snapshot.get('sources') or [],
+        'online_minutes': snapshot.get('online_minutes') or 1,
         'generated_at': generated_at,
         'generated_at_label': generated_at.strftime('%H:%M:%S'),
     }
@@ -6661,27 +6638,24 @@ def live_visitor_leave(request):
 @user_passes_test(_superuser_required)
 @require_GET
 def staff_live_analytics_data(request):
+    """JSON poll — lagani payload (online lista + izvori)."""
     from django.utils import timezone
 
     payload = _live_analytics_context(request)
-    payload['generated_at'] = timezone.localtime(payload['generated_at']).isoformat()
-    for key in (
-        'online_visitors',
-        'window_visitors',
-        'offline_visitors',
-        'registered_online_visitors',
-        'registered_window_visitors',
-    ):
-        for row in payload.get(key) or []:
-            if row.get('last_seen') and hasattr(row['last_seen'], 'isoformat'):
-                row['last_seen'] = timezone.localtime(row['last_seen']).isoformat()
-    for row in payload.get('gift_winners') or []:
-        if row.get('won_at') and hasattr(row['won_at'], 'isoformat'):
-            row['won_at'] = timezone.localtime(row['won_at']).isoformat()
-    # Cache-bust headers — staff live poll mora uvijek dobiti svježe stanje
-    response = JsonResponse(payload)
-    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response['Pragma'] = 'no-cache'
+    generated = payload.get('generated_at')
+    if generated and hasattr(generated, 'isoformat'):
+        payload['generated_at'] = timezone.localtime(generated).isoformat()
+    # Samo potrebna polja klijentu
+    slim = {
+        'online_count': payload.get('online_count') or 0,
+        'online_visitors': payload.get('online_visitors') or [],
+        'sources': payload.get('sources') or [],
+        'online_minutes': payload.get('online_minutes') or 1,
+        'generated_at': payload.get('generated_at'),
+        'generated_at_label': payload.get('generated_at_label') or '',
+    }
+    response = JsonResponse(slim)
+    response['Cache-Control'] = 'private, max-age=2'
     return response
 
 
