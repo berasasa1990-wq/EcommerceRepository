@@ -26692,3 +26692,35 @@ a.home-promo-card:hover {
 .seo-text-block + .product-detail {
     max-width: 1200px;
 }
+
+/* SEO text: sažetak (≈200 znakova) + „Prikaži više” */
+.seo-text-block__toggle {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #0f766e;
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.seo-text-block__toggle:hover {
+    color: #115e59;
+}
+.seo-text-block__toggle:focus-visible {
+    outline: 2px solid #0f766e;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+.seo-text-block.is-expanded .seo-text-block__preview {
+    display: none !important;
+}
+.seo-text-block.is-expanded .seo-text-block__full {
+    display: block !important;
+}

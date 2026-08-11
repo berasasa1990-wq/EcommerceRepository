@@ -29,6 +29,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // SEO tekst iznad/ispod: sažetak do 200 znakova + „Prikaži više”
+    document.querySelectorAll('[data-seo-collapse]').forEach((block) => {
+        const toggle = block.querySelector('[data-seo-toggle]');
+        const preview = block.querySelector('[data-seo-preview]');
+        const full = block.querySelector('[data-seo-full]');
+        if (!toggle || !preview || !full) return;
+
+        toggle.addEventListener('click', () => {
+            const expanded = block.classList.toggle('is-expanded');
+            block.classList.toggle('is-collapsed', !expanded);
+            if (expanded) {
+                full.hidden = false;
+                preview.hidden = true;
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.textContent = 'Prikaži manje';
+            } else {
+                full.hidden = true;
+                preview.hidden = false;
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.textContent = 'Prikaži više';
+            }
+        });
+    });
+
     const header = document.getElementById('header');
     const navToggle = document.getElementById('navToggle');
     const navLinks = document.getElementById('navLinks');
