@@ -1515,8 +1515,11 @@ def _weighted_home_product_order(products):
 
 SEARCH_SUGGEST_LIMIT = 8
 SEARCH_SUGGEST_CANDIDATE_POOL = 24
-# Max artikala za Python re-rank na punoj pretrazi (Enter) — ostalo SQL redoslijed
-SEARCH_FULL_RANK_POOL = 200
+# Max artikala za punu pretragu (Enter). RANIJE 200 je sjekao rezultate
+# (admin 915 MATE, sajt samo 200). 5000 = sigurnosni strop radi CPU-a.
+SEARCH_FULL_RANK_POOL = 5000
+# Fine Python re-rank samo prvih N (SQL score već drži naziv gore)
+SEARCH_FINE_RANK_TOP = 400
 STAFF_LOOKUP_LIMIT = 25
 
 
@@ -1721,12 +1724,11 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
 
     products_qs = _apply_search_filter(products_qs, params['q'])
 
-    # SQL pre-order za pretragu — manje posla u Pythonu
+    # SQL pre-order za pretragu — naziv/šifra gore; NE sijeći na 200 (fali ostatak)
     if search_q and len(search_q) >= 2:
         products_qs = products_qs.annotate(
             _search_sql_rel=_suggest_relevance_annotation(search_q),
         ).order_by('-_search_sql_rel', '-prioritet_lagera', 'naziv')
-        # Ograniči pool za fine ranking (Enter na pretrazi)
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
@@ -1790,11 +1792,21 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         price_sort = 'opadajuca'
     else:
         price_sort = 'rastuca'
-    products = _sort_products_by_lager_priority(
-        products,
-        query=search_q,
-        price_sort=price_sort,
-    )
+    # Fine re-rank: za pretragu samo vrh liste (SQL već drži naziv gore);
+    # ostatak ostaje po SQL score — štedi CPU kad ima 500–1000+ pogodaka.
+    if search_q and len(search_q) >= 2 and len(products) > SEARCH_FINE_RANK_TOP:
+        head = _sort_products_by_lager_priority(
+            products[:SEARCH_FINE_RANK_TOP],
+            query=search_q,
+            price_sort=price_sort,
+        )
+        products = head + products[SEARCH_FINE_RANK_TOP:]
+    else:
+        products = _sort_products_by_lager_priority(
+            products,
+            query=search_q,
+            price_sort=price_sort,
+        )
 
     return products, params
 
