@@ -2537,7 +2537,11 @@ class ProductAdmin(admin.ModelAdmin):
 
         brands = Brand.objects.order_by('naziv')
         categories = category_choices()
+        from django.conf import settings as django_settings
+
+        olx_configured = bool(getattr(django_settings, 'OLX_API_TOKEN', None))
         form_errors = []
+        pack_n = product.pakovanje_komada or 0
         form_data = {
             'cijena': str(product.cijena) if product.cijena is not None else '',
             'brend_id': str(product.brend_id or ''),
@@ -2546,6 +2550,10 @@ class ProductAdmin(admin.ModelAdmin):
             # Polje prazno — samo ručni unos novih tagova zarezom
             'tagovi': '',
             'barkod': (product.barkod or '').strip(),
+            'je_pakovanje': '1' if pack_n and pack_n > 1 else '',
+            'pakovanje_komada': str(pack_n) if pack_n and pack_n > 1 else '',
+            'proizvedeno_u_japanu': '1' if product.proizvedeno_u_japanu else '',
+            'objavi_olx': '',
         }
 
         # Aktivacija: samo eksplicitni action=activate (ne diraj off_stock ni prazan POST)
@@ -2556,6 +2564,27 @@ class ProductAdmin(admin.ModelAdmin):
             form_data['opis'] = (request.POST.get('opis') or '').strip()
             form_data['tagovi'] = (request.POST.get('tagovi') or '').strip()
             form_data['barkod'] = (request.POST.get('barkod') or '').strip()
+            form_data['je_pakovanje'] = (
+                '1'
+                if (request.POST.get('je_pakovanje') or '').strip()
+                in ('1', 'true', 'on', 'yes')
+                else ''
+            )
+            form_data['pakovanje_komada'] = (
+                request.POST.get('pakovanje_komada') or ''
+            ).strip()
+            form_data['proizvedeno_u_japanu'] = (
+                '1'
+                if (request.POST.get('proizvedeno_u_japanu') or '').strip()
+                in ('1', 'true', 'on', 'yes')
+                else ''
+            )
+            form_data['objavi_olx'] = (
+                '1'
+                if (request.POST.get('objavi_olx') or '').strip()
+                in ('1', 'true', 'on', 'yes')
+                else ''
+            )
             # Galerija ili kamera — oba file inputa dijele name="slika"
             image_upload = request.FILES.get('slika') or request.FILES.get('slika_kamera')
             keep_image = request.POST.get('keep_existing_image') == '1'
@@ -2598,6 +2627,19 @@ class ProductAdmin(admin.ModelAdmin):
             elif not image_upload and product.slika and product.slika.name:
                 keep_image = True
 
+            pack_value = None
+            if form_data['je_pakovanje']:
+                raw_pack = form_data['pakovanje_komada']
+                try:
+                    pack_value = int(raw_pack) if raw_pack else 0
+                except (TypeError, ValueError):
+                    pack_value = 0
+                    form_errors.append('Pakovanje: unesi cijeli broj komada (npr. 9).')
+                if pack_value and pack_value <= 1:
+                    form_errors.append('Pakovanje: količina mora biti najmanje 2 komada.')
+                    pack_value = None
+            # bez checkboxa = isključi pakovanje (po komadu)
+
             if not form_errors and cijena is not None:
                 try:
                     tagovi = resolve_tags(form_data['tagovi'])
@@ -2612,10 +2654,17 @@ class ProductAdmin(admin.ModelAdmin):
                         tagovi=tagovi,
                         barkod=form_data['barkod'],
                         extra_images=extra_images,
+                        set_pakovanje=True,
+                        pakovanje_komada=pack_value if form_data['je_pakovanje'] else None,
+                        proizvedeno_u_japanu=bool(form_data['proizvedeno_u_japanu']),
                     )
                     tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
                     cat_note = f', {kategorija.naziv}' if kategorija else ''
                     extra_note = f', +{len(extra_images)} slika' if extra_images else ''
+                    pack_note = ''
+                    if form_data['je_pakovanje'] and pack_value and pack_value > 1:
+                        pack_note = f', pakovanje {pack_value} kom.'
+                    japan_note = ', Made in Japan' if form_data['proizvedeno_u_japanu'] else ''
                     messages.success(
                         request,
                         f'✓ „{product.naziv}” je aktivan na webshopu '
@@ -2624,8 +2673,66 @@ class ProductAdmin(admin.ModelAdmin):
                         f'{cat_note}'
                         f'{tag_note}'
                         f'{extra_note}'
+                        f'{pack_note}'
+                        f'{japan_note}'
                         f', na stanju).',
                     )
+
+                    # Opcionalno: odmah objavi na OLX/Pik
+                    if form_data['objavi_olx']:
+                        if not olx_configured:
+                            messages.warning(
+                                request,
+                                'OLX nije konfigurisan (OLX_API_TOKEN) — artikal je aktivan, ali nije objavljen.',
+                            )
+                        else:
+                            try:
+                                from django.utils import timezone as dj_tz
+
+                                from .olx_api import OlxApiError, publish_product_to_olx
+
+                                olx_result = publish_product_to_olx(product)
+                                product.olx_listing_id = olx_result['id']
+                                product.olx_listing_slug = olx_result.get('slug', '') or ''
+                                product.olx_listing_url = olx_result.get('url', '') or ''
+                                product.olx_objavljen = dj_tz.now()
+                                product.save(
+                                    update_fields=[
+                                        'olx_listing_id',
+                                        'olx_listing_slug',
+                                        'olx_listing_url',
+                                        'olx_objavljen',
+                                    ]
+                                )
+                                olx_url = olx_result.get('url') or ''
+                                if olx_result.get('status') == 'active':
+                                    messages.success(
+                                        request,
+                                        f'Objavljeno na OLX/Pik. {olx_url}'.strip(),
+                                    )
+                                else:
+                                    messages.warning(
+                                        request,
+                                        'OLX oglas poslan, ali nije aktivan — provjeri Neaktivne u Pik/OLX. '
+                                        f'{olx_url}'.strip(),
+                                    )
+                            except OlxApiError as olx_exc:
+                                messages.error(
+                                    request,
+                                    f'Artikal je aktivan, ali OLX objava nije uspjela: {olx_exc}',
+                                )
+                                logger.warning(
+                                    'Brzi unos OLX %s: %s', product.slug, olx_exc
+                                )
+                            except Exception as olx_exc:
+                                logger.exception(
+                                    'Brzi unos OLX neočekivano product_id=%s', product_id
+                                )
+                                messages.error(
+                                    request,
+                                    f'Artikal je aktivan, ali OLX objava nije uspjela: {olx_exc}',
+                                )
+
                     return redirect('admin:EcommerceApp_product_brzi_unos')
                 except Exception as exc:
                     logger.exception(
@@ -2680,6 +2787,7 @@ class ProductAdmin(admin.ModelAdmin):
             'google_images_url': google_images_url,
             'google_query': google_query,
             'chatgpt_url': chatgpt_url,
+            'olx_configured': olx_configured,
             'has_view_permission': self.has_view_permission(request),
             'has_change_permission': self.has_change_permission(request),
             'scan_url': reverse('admin:EcommerceApp_product_brzi_unos'),

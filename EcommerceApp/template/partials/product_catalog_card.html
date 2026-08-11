@@ -74,24 +74,27 @@
     </div>
     {% endif %}
 
-    <div class="product-card__price-block{% if product.pakovanje_uz_cijenu_kartica %} product-card__price-block--pack{% endif %}">
-        {% if card_variations|length > 1 %}
-        {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
-        {% else %}
-        {% include 'partials/product_card_dwell_price.html' with product=product %}
-        {% endif %}
-    </div>
+    {# Cijena lijevo + ikona korpe desno (kao na početnoj) #}
+    <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
+        <div class="product-card__price-block">
+            {% if card_variations|length > 1 %}
+            {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
+            {% else %}
+            {% include 'partials/product_card_dwell_price.html' with product=product %}
+            {% endif %}
+        </div>
 
-    <div class="product-card__actions">
         {% if product.na_stanju %}
         <button
             type="button"
-            class="product-card-add-btn"
+            class="product-card-cart-icon"
             data-catalog-add
             data-product-slug="{{ product.slug }}"
             data-product-id="{{ product.pk }}"
             data-product-name="{{ product.naziv }}"
             data-almost-cart
+            title="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}"
+            aria-label="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }} — {{ product.naziv }}"
             {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
             {% if card_variations|length == 1 %}
                 {% for variation in card_variations %}
@@ -99,21 +102,19 @@
                 {% endfor %}
             {% endif %}
         >
-            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
                 <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
                 <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
             </svg>
-            <span>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</span>
         </button>
         {% else %}
-        <button type="button" class="product-card-add-btn" disabled>
-            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button type="button" class="product-card-cart-icon product-card-cart-icon--disabled" disabled title="Rasprodato" aria-label="Rasprodato">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
                 <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
                 <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
             </svg>
-            <span>{{ site_settings.tekst_dugme_rasprodato|default:"Rasprodato" }}</span>
         </button>
         {% endif %}
     </div>

@@ -310,10 +310,14 @@ def activate_product(
     tagovi: list[Tag] | None = None,
     barkod: str | None = None,
     extra_images=None,
+    pakovanje_komada: int | None = None,
+    set_pakovanje: bool = False,
+    proizvedeno_u_japanu: bool | None = None,
 ) -> Product:
     """
     Aktiviraj postojeći artikal za webshop:
     - cijena, brend, kategorija, opcionalno opis, tagovi, barkod
+    - pakovanje (komada) i Made in Japan kad se proslijede
     - na_stanju=True, aktivan=True
     - stanje min 1 ako je bilo 0
     - opcionalno nova glavna slika + dodatne slike (galerija)
@@ -330,6 +334,12 @@ def activate_product(
         product.opis = (opis or '').strip()
     if barkod is not None:
         product.barkod = (barkod or '').strip()[:50]
+    if set_pakovanje:
+        # None / 0 / 1 = po komadu (bez pakovanja)
+        n = int(pakovanje_komada or 0)
+        product.pakovanje_komada = n if n > 1 else None
+    if proizvedeno_u_japanu is not None:
+        product.proizvedeno_u_japanu = bool(proizvedeno_u_japanu)
 
     # Prvo polja (bez otvaranja stare slike ako fajl fali na disku)
     if image_upload and not keep_existing_image:

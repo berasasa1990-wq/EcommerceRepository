@@ -3943,8 +3943,20 @@ body.search-results-active main {
     width: 100%;
 }
 
-.product-card--catalog .product-card__price-block {
+/* Cijena + ikona korpe (kao home mockup) */
+.product-card--catalog .product-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     width: 100%;
+    margin-top: auto;
+}
+
+.product-card--catalog .product-card__price-block {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -3957,6 +3969,59 @@ body.search-results-active main {
     flex: 0 1 auto;
     min-width: 0;
     width: 100%;
+}
+
+.product-card--catalog .product-card-cart-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: var(--btn-cart, #5BB805);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.28);
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.product-card--catalog .product-card-cart-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.product-card--catalog .product-card-cart-icon:hover:not(:disabled) {
+    background: var(--btn-cart-hover, #4fa104);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(91, 184, 5, 0.35);
+}
+
+.product-card--catalog .product-card-cart-icon:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.product-card--catalog .product-card-cart-icon:disabled,
+.product-card--catalog .product-card-cart-icon--disabled {
+    background: #d4d4d4;
+    color: #fff;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .product-card--catalog .product-card-cart-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+    }
+
+    .product-card--catalog .product-card-cart-icon svg {
+        width: 18px;
+        height: 18px;
+    }
 }
 
 .product-card--catalog .product-card__price {
@@ -3985,7 +4050,7 @@ body.search-results-active main {
 }
 
 .product-card--catalog .product-card__actions {
-    display: none;
+    display: none; /* stari full-width CTA — zamijenjen ikonom pored cijene */
 }
 
 .product-card--catalog .product-card__brand-row {

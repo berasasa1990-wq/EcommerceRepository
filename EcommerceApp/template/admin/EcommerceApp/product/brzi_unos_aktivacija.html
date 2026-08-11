@@ -493,6 +493,125 @@
   .bu-btn-off-stock.is-already {
     background: #94a3b8;
   }
+  .bu-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0 4px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+  .bu-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: .92rem;
+    color: #0f172a;
+    margin: 0;
+  }
+  .bu-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: #5BB805;
+  }
+  .bu-check small {
+    display: block;
+    font-weight: 500;
+    font-size: .75rem;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .bu-check--japan input:checked + span {
+    color: #b91c1c;
+  }
+  .bu-pack-qty {
+    margin: 0 0 0 28px;
+  }
+  .bu-pack-qty[hidden] { display: none !important; }
+  .bu-pack-qty label {
+    font-size: .85rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .bu-pack-qty input {
+    width: 120px !important;
+    max-width: 100%;
+  }
+  .bu-objava-box {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #1f1f1f;
+    background: #0a0a0a;
+    color: #fff;
+  }
+  .bu-objava-box h3 {
+    margin: 0 0 6px;
+    font-size: .95rem;
+    font-weight: 800;
+    color: #5BB805;
+    letter-spacing: .02em;
+  }
+  .bu-objava-box p {
+    margin: 0 0 10px;
+    font-size: .78rem;
+    color: #94a3b8;
+    line-height: 1.35;
+  }
+  .bu-objava-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .bu-btn-objava {
+    appearance: none;
+    border: none;
+    border-radius: 8px;
+    background: #5BB805;
+    color: #0a0a0a !important;
+    font-weight: 800;
+    font-size: .88rem;
+    padding: 9px 12px;
+    cursor: pointer;
+    text-decoration: none !important;
+  }
+  .bu-btn-objava:active { background: #4a9a04; }
+  .bu-btn-objava-dl {
+    background: transparent;
+    border: 2px solid #5BB805;
+    color: #5BB805 !important;
+  }
+  .bu-btn-objava-dl[hidden] { display: none !important; }
+  .bu-objava-preview {
+    display: none;
+    margin-top: 8px;
+    text-align: center;
+  }
+  .bu-objava-preview.is-on { display: block; }
+  .bu-objava-preview canvas {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: #0a0a0a;
+  }
+  .bu-objava-status {
+    font-size: .78rem;
+    color: #94a3b8;
+    margin: 6px 0 0;
+    min-height: 1.2em;
+  }
+  .bu-objava-status.is-err { color: #fca5a5; }
+  .bu-objava-status.is-ok { color: #86efac; }
 
   /* Desktop: puni ekran, 2 kolone, kompaktno bez skrola */
   @media (min-width: 900px) {
@@ -777,6 +896,72 @@
               autocapitalize="off"
             >
           </div>
+
+          <div class="bu-checks">
+            <label class="bu-check" for="id_je_pakovanje">
+              <input
+                type="checkbox"
+                name="je_pakovanje"
+                id="id_je_pakovanje"
+                value="1"
+                {% if form_data.je_pakovanje %}checked{% endif %}
+              >
+              <span>
+                Pakovanje
+                <small>Cijena je za više komada, ne po komadu</small>
+              </span>
+            </label>
+            <div class="bu-pack-qty" id="bu-pack-qty"{% if not form_data.je_pakovanje %} hidden{% endif %}>
+              <label for="id_pakovanje_komada">Količina u pakovanju (komada)</label>
+              <input
+                type="number"
+                name="pakovanje_komada"
+                id="id_pakovanje_komada"
+                min="2"
+                max="999"
+                step="1"
+                inputmode="numeric"
+                value="{{ form_data.pakovanje_komada }}"
+                placeholder="npr. 9"
+              >
+            </div>
+
+            <label class="bu-check bu-check--japan" for="id_proizvedeno_u_japanu">
+              <input
+                type="checkbox"
+                name="proizvedeno_u_japanu"
+                id="id_proizvedeno_u_japanu"
+                value="1"
+                {% if form_data.proizvedeno_u_japanu %}checked{% endif %}
+              >
+              <span>
+                Made in Japan
+                <small>Prikazuje oznaku na kartici i detalju artikla</small>
+              </span>
+            </label>
+
+            {% if olx_configured %}
+            <label class="bu-check" for="id_objavi_olx">
+              <input
+                type="checkbox"
+                name="objavi_olx"
+                id="id_objavi_olx"
+                value="1"
+                {% if form_data.objavi_olx %}checked{% endif %}
+              >
+              <span>
+                Objavi na OLX / Pik
+                <small>Nakon aktivacije šalje oglas na OLX{% if product.olx_listing_url %} (već postoji — ažurira){% endif %}</small>
+              </span>
+            </label>
+            {% if product.olx_listing_url %}
+            <p class="bu-field help" style="margin:0 0 0 28px">
+              Trenutni oglas:
+              <a href="{{ product.olx_listing_url }}" target="_blank" rel="noopener">otvori na OLX</a>
+            </p>
+            {% endif %}
+            {% endif %}
+          </div>
         </div>
 
         <div class="bu-form-side">
@@ -848,6 +1033,26 @@
                 <div class="bu-extra-thumbs" id="bu-extra-thumbs"></div>
               </div>
             </div>
+          </div>
+
+          <div class="bu-objava-box" id="bu-objava-box"
+               data-product-name="{{ product.naziv|escape }}"
+               data-product-slug="{{ product.slug }}"
+               data-product-price="{{ product.cijena }}"
+               data-product-image="{{ current_image_url }}">
+            <h3>Objava banner (boje sajta)</h3>
+            <p>
+              800×800 PNG u bojama headera (#0a0a0a + #5BB805) — naziv, slika, cijena.
+              Koristi trenutnu ili novo odabranu sliku i cijenu iz forme.
+            </p>
+            <div class="bu-objava-actions">
+              <button type="button" class="bu-btn-objava" id="bu-objava-gen">Generiši banner</button>
+              <a class="bu-btn-objava bu-btn-objava-dl" id="bu-objava-dl" hidden download>Preuzmi PNG</a>
+            </div>
+            <div class="bu-objava-preview" id="bu-objava-preview">
+              <canvas id="bu-objava-canvas" width="800" height="800" aria-label="Preview objave"></canvas>
+            </div>
+            <p class="bu-objava-status" id="bu-objava-status"></p>
           </div>
 
           <div class="bu-actions">
@@ -1142,6 +1347,279 @@
       submit.textContent = 'Aktiviram…';
     });
   }
+
+  // ——— Pakovanje: prikaži količinu kad je checkbox uključen ———
+  (function initPakovanje() {
+    var chk = document.getElementById('id_je_pakovanje');
+    var qty = document.getElementById('bu-pack-qty');
+    if (!chk || !qty) return;
+    function sync() {
+      if (chk.checked) {
+        qty.hidden = false;
+      } else {
+        qty.hidden = true;
+      }
+    }
+    chk.addEventListener('change', sync);
+    sync();
+  })();
+
+  // ——— Objava banner u bojama headera (#0a0a0a / #5BB805) ———
+  (function initObjavaBanner() {
+    var box = document.getElementById('bu-objava-box');
+    var btnGen = document.getElementById('bu-objava-gen');
+    var btnDl = document.getElementById('bu-objava-dl');
+    var canvas = document.getElementById('bu-objava-canvas');
+    var preview = document.getElementById('bu-objava-preview');
+    var statusEl = document.getElementById('bu-objava-status');
+    if (!box || !btnGen || !canvas) return;
+
+    var HEADER_BG = '#0a0a0a';
+    var GREEN = '#5BB805';
+    var GREEN_DARK = '#3d8a04';
+    var WHITE = '#ffffff';
+    var MUTED = '#a3a3a3';
+    var SIZE = 800;
+
+    function setStatus(msg, kind) {
+      if (!statusEl) return;
+      statusEl.textContent = msg || '';
+      statusEl.classList.remove('is-err', 'is-ok');
+      if (kind) statusEl.classList.add(kind);
+    }
+
+    function parsePrice(raw) {
+      var n = parseFloat(String(raw || '0').replace(',', '.'));
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    }
+
+    function formatPrice(n) {
+      var v = Math.round(n * 100) / 100;
+      var parts = v.toFixed(2).split('.');
+      return parts[0] + ',' + parts[1] + ' KM';
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      var radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
+    function loadImage(url) {
+      return new Promise(function (resolve) {
+        if (!url) {
+          resolve(null);
+          return;
+        }
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { resolve(null); };
+        img.src = url;
+      });
+    }
+
+    function wrapText(ctx, text, maxW, maxLines) {
+      var words = String(text || '').split(/\s+/).filter(Boolean);
+      var lines = [];
+      var line = '';
+      for (var i = 0; i < words.length; i++) {
+        var test = line ? line + ' ' + words[i] : words[i];
+        if (ctx.measureText(test).width > maxW && line) {
+          lines.push(line);
+          line = words[i];
+          if (lines.length >= maxLines) break;
+        } else {
+          line = test;
+        }
+      }
+      if (line && lines.length < maxLines) lines.push(line);
+      return lines;
+    }
+
+    // returns {url, revoke}
+    function resolveImageUrl() {
+      // 1) Nova odabrana slika (galerija/kamera preview) — ne revoke (preview koristi URL)
+      var previewImg = document.getElementById('bu-preview-img');
+      var imgPreview = document.getElementById('bu-preview');
+      if (previewImg && previewImg.src && imgPreview && imgPreview.classList.contains('is-on')) {
+        return { url: previewImg.src, revoke: false };
+      }
+      // 2) File input object URL — privremeni, može se revoke nakon loada
+      var fileGallery = document.getElementById('id_slika');
+      var fileCamera = document.getElementById('id_slika_kamera');
+      var file = (fileGallery && fileGallery.files && fileGallery.files[0]) ||
+                 (fileCamera && fileCamera.files && fileCamera.files[0]);
+      if (file) {
+        return { url: URL.createObjectURL(file), revoke: true };
+      }
+      // 3) Trenutna sa artikla
+      return { url: box.getAttribute('data-product-image') || '', revoke: false };
+    }
+
+    function resolvePrice() {
+      var priceInput = document.getElementById('id_cijena');
+      var fromForm = priceInput ? parsePrice(priceInput.value) : 0;
+      if (fromForm > 0) return fromForm;
+      return parsePrice(box.getAttribute('data-product-price'));
+    }
+
+    async function drawBanner() {
+      var ctx = canvas.getContext('2d');
+      var W = SIZE;
+      var H = SIZE;
+      var name = (box.getAttribute('data-product-name') || 'Artikal').trim();
+      var price = resolvePrice();
+      var imgRef = resolveImageUrl();
+      var imageUrl = imgRef.url;
+      var shouldRevoke = !!imgRef.revoke;
+
+      // Pozadina — crni header sajta
+      ctx.fillStyle = HEADER_BG;
+      ctx.fillRect(0, 0, W, H);
+
+      // Gornja zelena traka
+      ctx.fillStyle = GREEN;
+      ctx.fillRect(0, 0, W, 8);
+      // Donja zelena traka
+      ctx.fillRect(0, H - 8, W, 8);
+
+      // Suptilni zeleni glow / uglovi
+      var grad = ctx.createRadialGradient(W * 0.15, H * 0.1, 0, W * 0.15, H * 0.1, W * 0.55);
+      grad.addColorStop(0, 'rgba(91,184,5,0.18)');
+      grad.addColorStop(1, 'rgba(91,184,5,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+      var grad2 = ctx.createRadialGradient(W * 0.85, H * 0.9, 0, W * 0.85, H * 0.9, W * 0.5);
+      grad2.addColorStop(0, 'rgba(91,184,5,0.12)');
+      grad2.addColorStop(1, 'rgba(91,184,5,0)');
+      ctx.fillStyle = grad2;
+      ctx.fillRect(0, 0, W, H);
+
+      // Site brand
+      ctx.fillStyle = GREEN;
+      ctx.font = '800 18px "Segoe UI", Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('www.opremazaribolov.ba', W / 2, 36);
+
+      // Badge
+      roundRect(ctx, W / 2 - 110, 58, 220, 34, 17);
+      ctx.fillStyle = GREEN;
+      ctx.fill();
+      ctx.fillStyle = HEADER_BG;
+      ctx.font = '900 14px "Segoe UI", Inter, system-ui, sans-serif';
+      ctx.fillText('NOVA PONUDA', W / 2, 76);
+
+      // Naziv
+      ctx.fillStyle = WHITE;
+      ctx.font = '900 28px "Segoe UI", Inter, system-ui, sans-serif';
+      var nameLines = wrapText(ctx, name.toUpperCase(), W * 0.86, 3);
+      var nameY0 = 120;
+      var lineH = 34;
+      nameLines.forEach(function (line, i) {
+        ctx.fillText(line, W / 2, nameY0 + i * lineH);
+      });
+
+      // Kartica za sliku
+      var nameExtra = Math.max(0, (nameLines.length - 1) * lineH);
+      var imgBox = {
+        x: 70,
+        y: 150 + nameExtra,
+        w: 660,
+        h: 420 - nameExtra
+      };
+      roundRect(ctx, imgBox.x, imgBox.y, imgBox.w, imgBox.h, 18);
+      ctx.fillStyle = '#111111';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(91,184,5,0.45)';
+      roundRect(ctx, imgBox.x, imgBox.y, imgBox.w, imgBox.h, 18);
+      ctx.stroke();
+
+      var img = await loadImage(imageUrl);
+      if (shouldRevoke && imageUrl) {
+        try { URL.revokeObjectURL(imageUrl); } catch (e) {}
+      }
+      if (img) {
+        var pad = 24;
+        var maxW = imgBox.w - pad * 2;
+        var maxH = imgBox.h - pad * 2;
+        var scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+        var dw = img.naturalWidth * scale;
+        var dh = img.naturalHeight * scale;
+        var dx = imgBox.x + (imgBox.w - dw) / 2;
+        var dy = imgBox.y + (imgBox.h - dh) / 2;
+        // bijeli "prozor" ispod artikla da se vidi kao na sajtu
+        roundRect(ctx, dx - 8, dy - 8, dw + 16, dh + 16, 12);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.drawImage(img, dx, dy, dw, dh);
+      } else {
+        ctx.fillStyle = MUTED;
+        ctx.font = '600 18px "Segoe UI", sans-serif';
+        ctx.fillText('Nema slike artikla', W / 2, imgBox.y + imgBox.h / 2);
+      }
+
+      // Cijena kartica
+      var priceText = price > 0 ? formatPrice(price) : '—';
+      var priceY = 700 + Math.min(20, nameExtra * 0.2);
+      ctx.font = '900 52px Impact, "Arial Black", "Segoe UI", sans-serif';
+      var tw = ctx.measureText(priceText).width;
+      var cardW = Math.min(W * 0.78, Math.max(220, tw + 56));
+      var cardH = 72;
+      var cardX = W / 2 - cardW / 2;
+      var cardY = priceY - cardH / 2;
+
+      roundRect(ctx, cardX, cardY, cardW, cardH, 16);
+      ctx.fillStyle = GREEN;
+      ctx.fill();
+      ctx.fillStyle = HEADER_BG;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '900 48px Impact, "Arial Black", "Segoe UI", sans-serif';
+      ctx.fillText(priceText, W / 2, priceY + 2);
+
+      // Footer hint
+      ctx.fillStyle = MUTED;
+      ctx.font = '600 13px "Segoe UI", Inter, system-ui, sans-serif';
+      ctx.fillText('Oprema za ribolov  ·  brza dostava', W / 2, H - 28);
+    }
+
+    btnGen.addEventListener('click', function () {
+      setStatus('Generišem…', '');
+      btnGen.disabled = true;
+      drawBanner()
+        .then(function () {
+          if (preview) preview.classList.add('is-on');
+          if (btnDl) {
+            try {
+              var dataUrl = canvas.toDataURL('image/png');
+              var slug = (box.getAttribute('data-product-slug') || 'artikal')
+                .replace(/[^\w\-]+/g, '_');
+              btnDl.href = dataUrl;
+              btnDl.download = 'objava-banner-' + slug + '-800x800.png';
+              btnDl.hidden = false;
+            } catch (e) {
+              setStatus('Banner je spreman, ali preuzimanje nije moguće (CORS slike).', 'is-err');
+              btnGen.disabled = false;
+              return;
+            }
+          }
+          setStatus('Spremno — preuzmi PNG.', 'is-ok');
+          btnGen.disabled = false;
+        })
+        .catch(function (err) {
+          setStatus('Greška pri generisanju: ' + (err && err.message ? err.message : err), 'is-err');
+          btnGen.disabled = false;
+        });
+    });
+  })();
 
   var offForm = document.getElementById('bu-off-stock-form');
   var offBtn = document.getElementById('bu-off-stock');
