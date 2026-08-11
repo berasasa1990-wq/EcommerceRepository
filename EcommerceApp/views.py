@@ -531,7 +531,7 @@ def _showcase_brands():
         .exclude(slika__isnull=True)
         .order_by('naziv')
     )
-    cache.set(cache_key, brands, 90)
+    cache.set(cache_key, brands, 300)
     return brands
 
 
@@ -2149,23 +2149,39 @@ def _home_sale_products(request=None):
 
 def _home_trust_items():
     """Samo aktivne stavke s naslovom — bez praznih / auto redova."""
+    from django.core.cache import cache
+
+    cache_key = 'home_trust_items_v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        return list(
+        rows = list(
             HomeTrustItem.objects.filter(aktivan=True)
             .exclude(naslov='')
             .order_by('redoslijed', 'id')[:6],
         )
     except DatabaseError:
-        return []
+        rows = []
+    cache.set(cache_key, rows, 180)
+    return rows
 
 
 def _home_promo_cards():
+    from django.core.cache import cache
+
+    cache_key = 'home_promo_cards_v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        return list(
+        rows = list(
             HomePromoCard.objects.filter(aktivan=True).order_by('redoslijed', 'id')[:8],
         )
     except DatabaseError:
-        return []
+        rows = []
+    cache.set(cache_key, rows, 180)
+    return rows
 
 
 def _home_category_showcases(request=None):
@@ -2286,7 +2302,15 @@ def _vlog_cards(limit=None):
 
 
 def _home_vlogs():
-    return _vlog_cards(HOME_VLOG_LIMIT)
+    from django.core.cache import cache
+
+    cache_key = f'home_vlogs_v1:{HOME_VLOG_LIMIT}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    rows = _vlog_cards(HOME_VLOG_LIMIT)
+    cache.set(cache_key, rows, 180)
+    return rows
 
 
 def _vlog_seo_description(sadrzaj, max_len=160):
@@ -2450,9 +2474,11 @@ def home(request):
         home_brand_showcases = _home_brand_showcases(request)
         home_vlogs = _home_vlogs()
 
-    first_hero = hero_banners.first()
+    # Evaluiraj banere jednom (izbjegni .exists() + .first() = 2× query)
+    hero_banners_list = list(hero_banners)
+    first_hero = hero_banners_list[0] if hero_banners_list else None
     first_grid_banner = grid_banners[0] if grid_banners else None
-    has_hero_slides = bool(not filters_active and hero_banners.exists())
+    has_hero_slides = bool(not filters_active and hero_banners_list)
     lcp_image_url = None
     lcp_image_srcset = None
     lcp_image_sizes = None
@@ -2522,7 +2548,7 @@ def home(request):
         'lcp_image_sizes': lcp_image_sizes,
         'has_hero_slides': has_hero_slides,
         'eager_first_novo_image': eager_first_novo_image,
-        'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners],
+        'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners_list],
         'grid_banners': [_banner_to_card(b) for b in grid_banners],
         'featured_cards': [_banner_to_card(b) for b in featured_banners],
         'spotlight': spotlight,

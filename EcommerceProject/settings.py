@@ -61,13 +61,13 @@ SECRET_KEY = _env('SECRET_KEY', 'django-insecure-_73#1@hjsxhlmfx4+&85s10a(cyb9i*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-# Brzi in-memory cache (meni, SiteSettings, brendovi) — smanjuje DB load po requestu
+# Brzi in-memory cache (meni, SiteSettings, brendovi, home sekcije)
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'ozb-site-cache',
-        'TIMEOUT': 120,
-        'OPTIONS': {'MAX_ENTRIES': 2000},
+        'TIMEOUT': 180,
+        'OPTIONS': {'MAX_ENTRIES': 4000},
     }
 }
 
@@ -204,6 +204,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # HTML/JSON kompresija (manji payload, brži transfer) — bez promjene UI-a
+    'django.middleware.gzip.GZipMiddleware',
     # WhiteNoise for static files (must be right after SecurityMiddleware)
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -219,11 +221,21 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'EcommerceProject.urls'
 
+_TEMPLATE_LOADERS = [
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
+]
+# Produkcija: keširani template loader (brži render, isti HTML)
+if not DEBUG:
+    _TEMPLATE_LOADERS = [
+        ('django.template.loaders.cached.Loader', _TEMPLATE_LOADERS),
+    ]
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'EcommerceApp' / 'template'],
-        'APP_DIRS': True,
+        'APP_DIRS': False if not DEBUG else True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
@@ -233,9 +245,13 @@ TEMPLATES = [
                 'EcommerceApp.context_processors.nav_categories',
                 'EcommerceApp.context_processors.meta_pixel',
             ],
+            **({} if DEBUG else {'loaders': _TEMPLATE_LOADERS}),
         },
     },
 ]
+# Kad loaders nisu u OPTIONS (DEBUG), APP_DIRS=True; kad loaders jesu, APP_DIRS mora False
+if not DEBUG:
+    TEMPLATES[0]['OPTIONS']['loaders'] = _TEMPLATE_LOADERS
 
 WSGI_APPLICATION = 'EcommerceProject.wsgi.application'
 

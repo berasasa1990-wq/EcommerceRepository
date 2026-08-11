@@ -3,7 +3,7 @@ from django.core.cache import cache
 from .models import Category, Product
 
 _CACHE_KEY = 'category_ids_with_products_v1'
-_CACHE_TTL = 90  # sekundi — meni se ne mijenja na svaki request
+_CACHE_TTL = 300  # 5 min — meni se rijetko mijenja
 
 
 def get_category_ids_with_products():

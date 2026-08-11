@@ -93,7 +93,7 @@ def _build_nav_categories():
         for sub in cat.podkategorije.all():
             list(sub.podkategorije.all())
 
-    cache.set(cache_key, categories, 90)
+    cache.set(cache_key, categories, 300)
     return categories
 
 
@@ -127,7 +127,7 @@ def _cached_popup_akcije():
             'qty_tiers',
         ).order_by('redoslijed', '-id')[:20]
     )
-    cache.set(cache_key, rows, 30)
+    cache.set(cache_key, rows, 60)
     return rows
 
 
@@ -290,8 +290,8 @@ def nav_categories(request):
         if organization_json_ld is None or website_json_ld is None:
             organization_json_ld = json_ld(_org_ld(site_settings))
             website_json_ld = json_ld(_web_ld(site_settings))
-            cache.set(org_key, organization_json_ld, 120)
-            cache.set(web_key, website_json_ld, 120)
+            cache.set(org_key, organization_json_ld, 300)
+            cache.set(web_key, website_json_ld, 300)
     except Exception:
         pass
 

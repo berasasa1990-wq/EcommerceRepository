@@ -994,10 +994,26 @@ def track_live_visitor(request):
 
     ip = get_client_ip(request)
     from .visitor_geo import _is_public_ip
+    from django.core.cache import cache as _cache
 
     is_local_ip = not _is_public_ip(ip)
     user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
     now = timezone.now()
+    path = getattr(request, 'path', '') or ''
+
+    # Throttle: ista putanja unutar 15 s → samo last_seen (isti live UI, manje CPU/DB)
+    throttle_key = f'lv_track:{session_key}'
+    last_path = _cache.get(throttle_key)
+    if (
+        last_path is not None
+        and last_path == path
+        and not is_background_request_path(path)
+    ):
+        LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+        touch_visitor_presence(session_key)
+        return
+    if not is_background_request_path(path):
+        _cache.set(throttle_key, path, 15)
 
     # Svaki posjetilac se prati — lokalni = BA, javni = geo ili BA ako nepoznato
     if is_local_ip:
@@ -1008,7 +1024,7 @@ def track_live_visitor(request):
             country = BOSNIA_HERZEGOVINA_COUNTRY_CODE
 
     # Poll / heartbeat / AJAX — samo last_seen (+ kreiraj red ako nedostaje)
-    if is_background_request_path(getattr(request, 'path', '') or ''):
+    if is_background_request_path(path):
         updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
         if not updated:
             try:
