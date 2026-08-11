@@ -157,15 +157,52 @@ img.home-vlog-card-image {
 
 .header-row--primary {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "logo search actions";
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "leading logo search actions";
     align-items: center;
-    gap: 20px;
+    gap: 16px 20px;
     padding: 2px 24px;
     min-height: var(--header-top-height);
     position: relative;
     z-index: 2;
     background: var(--white);
+}
+
+/* Lijevo: hamburger (mobitel) + Admin Panel — lijevo od loga */
+.header-leading {
+    grid-area: leading;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.header-leading .nav-toggle {
+    display: none;
+}
+
+.header-leading .staff-admin-nav-btn .nav-action-label {
+    display: none;
+}
+
+.header-leading .staff-admin-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+}
+
+.header-row--primary .logo-brand {
+    grid-area: logo;
+}
+
+.header-row--primary .header-search {
+    grid-area: search;
+}
+
+.header-row--primary .nav-actions {
+    grid-area: actions;
 }
 
 .header-row--categories {
@@ -8104,55 +8141,208 @@ body.mobile-nav-open {
 }
 
 /* ========================================
+   STAFF SHELL — Admin + Loyalty (match site header)
+   ======================================== */
+.staff-shell-page {
+    background: #f4f5f4;
+}
+
+.staff-page-hero {
+    background: #0a0a0a;
+    color: #fff;
+    margin: 0 0 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.staff-page-hero__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 24px 32px;
+    box-sizing: border-box;
+}
+
+.staff-page-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.62);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.staff-page-back:hover {
+    color: var(--btn-cart, #5BB805);
+}
+
+.staff-page-kicker {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--btn-cart, #5BB805);
+}
+
+.staff-page-title {
+    margin: 0 0 8px;
+    font-size: clamp(26px, 4vw, 34px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: #fff;
+}
+
+.staff-page-subtitle {
+    margin: 0;
+    max-width: 54ch;
+    font-size: 14px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.62);
+}
+
+/* ========================================
    STAFF ADMIN PANEL
    ======================================== */
 .staff-admin-page {
-    max-width: 900px;
+    max-width: none;
     width: 100%;
-    margin: 40px auto;
-    padding: 20px;
+    margin: 0 auto 48px;
+    padding: 0 0 40px;
     box-sizing: border-box;
 }
+
+.staff-admin-page .admin-buttons {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
 .staff-admin-header {
     margin-bottom: 40px;
 }
+
 .admin-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+    gap: 16px;
     width: 100%;
 }
+
 .admin-btn {
     display: flex;
     align-items: center;
-    padding: 24px;
-    border: 2px solid #e5e5e5;
-    border-radius: 12px;
+    gap: 16px;
+    padding: 20px 18px;
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
     text-decoration: none;
-    color: #111;
-    transition: all 0.2s ease;
-    background: white;
+    color: var(--black);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    background: var(--white);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    position: relative;
+    overflow: hidden;
 }
+
+.admin-btn::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--btn-cart, #5BB805);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
 .admin-btn:hover {
-    border-color: #111;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: color-mix(in srgb, var(--btn-cart, #5BB805) 45%, var(--gray-200));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
     transform: translateY(-2px);
 }
-.admin-btn-icon {
-    font-size: 42px;
-    margin-right: 20px;
+
+.admin-btn:hover::before {
+    opacity: 1;
 }
+
+.admin-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-right: 0;
+    flex-shrink: 0;
+    border-radius: 12px;
+    font-size: 22px;
+    line-height: 1;
+    /* Svijetla zelena podloga — ikone se jasno vide (ne crna) */
+    background: color-mix(in srgb, var(--btn-cart, #5BB805) 16%, #fff);
+    color: #3d8f04;
+    border: 1px solid color-mix(in srgb, var(--btn-cart, #5BB805) 32%, transparent);
+}
+
+.admin-btn-icon svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+    stroke: currentColor;
+}
+
+.admin-btn:hover .admin-btn-icon {
+    background: color-mix(in srgb, var(--btn-cart, #5BB805) 24%, #fff);
+    color: #2f7003;
+    border-color: color-mix(in srgb, var(--btn-cart, #5BB805) 48%, transparent);
+}
+
+.admin-btn-icon--loyalty { color: #3d8f04; }
+.admin-btn-icon--orders { color: #15803d; }
+.admin-btn-icon--carts { color: #0f766e; }
+.admin-btn-icon--stats { color: #1d4ed8; }
+.admin-btn-icon--live { color: #c2410c; }
+.admin-btn-icon--import { color: #7c3aed; }
+.admin-btn-icon--locked { color: #6b7280; }
+
+.admin-btn-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .admin-btn-text strong {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    font-size: 18px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     margin-bottom: 4px;
+    color: var(--black);
 }
+
 .admin-btn-text span:not(.admin-orders-badge) {
     font-size: 13px;
-    color: #666;
+    line-height: 1.45;
+    color: var(--gray-600);
+}
+
+.admin-btn-arrow {
+    flex-shrink: 0;
+    color: var(--gray-400);
+    font-size: 18px;
+    font-weight: 600;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.admin-btn:hover .admin-btn-arrow {
+    color: var(--btn-cart, #5BB805);
+    transform: translateX(3px);
 }
 
 /* Zeleni broj novih online narudžbi */
@@ -8192,14 +8382,22 @@ body.mobile-nav-open {
     animation-duration: 1s;
 }
 .admin-btn--locked {
-    opacity: 0.55;
+    opacity: 0.6;
     cursor: not-allowed;
     pointer-events: none;
-    background: #f8f8f8;
+    background: #f7f7f7;
     border-style: dashed;
 }
+.admin-btn--locked::before {
+    display: none;
+}
+.admin-btn--locked .admin-btn-icon {
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+}
 .admin-btn--locked:hover {
-    border-color: #e5e5e5;
+    border-color: var(--gray-200);
     box-shadow: none;
     transform: none;
 }
@@ -10694,15 +10892,41 @@ button.nav-action-link {
     }
 
     .header-row--primary {
-        /* 1fr | auto | 1fr → logo tačno na sredini ekrana */
-        grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr);
+        /* leading (menu+admin) | logo | actions → admin lijevo od loga */
+        grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
         grid-template-areas:
-            "toggle logo actions"
+            "leading logo actions"
             "search search search";
         gap: 6px 8px;
         padding: 4px 12px 8px;
         min-height: 0;
         align-items: center;
+    }
+
+    .header-leading {
+        grid-area: leading;
+        justify-self: start;
+        gap: 0;
+        position: relative;
+        z-index: 1300;
+    }
+
+    .header-leading .nav-toggle {
+        display: flex !important;
+    }
+
+    .header-leading .staff-admin-nav-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-width: 40px;
+        min-height: 44px;
+        padding: 6px;
+    }
+
+    .header-leading .staff-admin-nav-btn svg {
+        width: 22px;
+        height: 22px;
     }
 
     .header-row--categories {
@@ -10807,16 +11031,14 @@ button.nav-action-link {
     }
 
     .nav-toggle {
-        grid-area: toggle;
         display: flex !important;
-        justify-self: start;
         align-items: center;
         justify-content: center;
         position: relative;
         z-index: 1300;
-        min-width: 44px;
+        min-width: 40px;
         min-height: 44px;
-        padding: 8px;
+        padding: 6px;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
         cursor: pointer;
@@ -13526,7 +13748,19 @@ button.nav-action-link {
 
     .staff-admin-page {
         margin: 0;
-        padding: 20px var(--home-mobile-side-inset, 16px) 40px;
+        padding: 0 0 40px;
+    }
+
+    .staff-page-hero__inner {
+        padding: 20px var(--home-mobile-side-inset, 16px) 24px;
+    }
+
+    .staff-page-title {
+        font-size: 26px;
+    }
+
+    .staff-admin-page .admin-buttons {
+        padding: 0 var(--home-mobile-side-inset, 16px);
     }
 
     .staff-admin-header {
@@ -13539,21 +13773,35 @@ button.nav-action-link {
 
     .admin-buttons {
         grid-template-columns: 1fr;
-        gap: 14px;
+        gap: 12px;
     }
 
     .admin-btn {
-        padding: 18px 16px;
+        padding: 16px 14px;
+        gap: 12px;
+        border-radius: 12px;
     }
 
     .admin-btn-icon {
-        font-size: 32px;
-        margin-right: 14px;
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+        margin-right: 0;
         flex-shrink: 0;
+        border-radius: 10px;
+    }
+
+    .admin-btn-icon svg {
+        width: 22px;
+        height: 22px;
     }
 
     .admin-btn-text strong {
-        font-size: 16px;
+        font-size: 15px;
+    }
+
+    .admin-btn-arrow {
+        display: none;
     }
 
     .staff-email-marketing-page {
@@ -17002,9 +17250,31 @@ button.nav-action-link {
     color: var(--gray-600);
 }
 
-.nav-action-link.staff-orders-btn svg {
-    stroke: #1a6b4a;
-    color: #1a6b4a;
+.nav-action-link.staff-orders-btn svg,
+.header .staff-admin-nav-btn svg {
+    stroke: var(--btn-cart, #5BB805);
+    color: var(--btn-cart, #5BB805);
+}
+
+.header .staff-admin-nav-btn:hover {
+    opacity: 1;
+}
+
+.header .staff-admin-nav-btn:hover svg {
+    stroke: #6fd00a;
+    color: #6fd00a;
+}
+
+/* Desktop: bez Admin dugmeta nema praznog leading stupca */
+@media (min-width: 1025px) {
+    .header-leading:not(:has(.staff-admin-nav-btn)) {
+        display: none;
+    }
+
+    .header-row--primary:not(:has(.staff-admin-nav-btn)) {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "logo search actions";
+    }
 }
 
 /* Account */
@@ -17522,12 +17792,12 @@ button.nav-action-link {
     font-size: 12px;
 }
 
-/* Staff Loyalty System — site style (clean black / white / green) */
+/* Staff Loyalty System — usklađeno s crnim headerom sajta */
 .staff-loyalty-page {
-    max-width: 1200px;
+    max-width: none;
     width: 100%;
-    margin: 40px auto;
-    padding: 20px 20px 64px;
+    margin: 0 auto;
+    padding: 0 0 64px;
     box-sizing: border-box;
 }
 
@@ -17565,6 +17835,52 @@ button.nav-action-link {
     border: 1px solid var(--gray-200);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+/* Pretraga unutar crnog hero traka — kao header search */
+.staff-loyalty-search--hero {
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    box-shadow: none;
+}
+
+.staff-loyalty-search--hero .staff-loyalty-search-label {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.staff-loyalty-search--hero .search-input-group input {
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    color: #fff;
+    padding: 12px 18px;
+}
+
+.staff-loyalty-search--hero .search-input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.staff-loyalty-search--hero .search-input-group input:focus {
+    border-color: rgba(91, 184, 5, 0.55);
+    box-shadow: 0 0 0 2px rgba(91, 184, 5, 0.15);
+    outline: none;
+}
+
+.staff-loyalty-search--hero .search-input-group .btn {
+    background: var(--btn-cart, #5BB805);
+    color: #fff;
+    border-radius: 999px;
+    min-height: 46px;
+    padding: 0 22px;
+    font-weight: 700;
+}
+
+.staff-loyalty-search--hero .search-input-group .btn:hover {
+    background: var(--btn-cart-hover, #4fa104);
+    transform: translateY(-1px);
 }
 
 .staff-loyalty-search-label {
@@ -17606,8 +17922,8 @@ button.nav-action-link {
 .staff-loyalty-search .search-input-group input:focus,
 .staff-loyalty-search--header .search-input-group input:focus {
     outline: none;
-    border-color: var(--black);
-    box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+    border-color: var(--btn-cart, #5BB805);
+    box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.18);
 }
 
 .staff-loyalty-search .search-input-group .btn,
@@ -17618,7 +17934,7 @@ button.nav-action-link {
     border-radius: 10px;
     font-weight: 600;
     font-size: 14px;
-    background: var(--black);
+    background: var(--btn-cart, #5BB805);
     color: var(--white);
     border: none;
     cursor: pointer;
@@ -17627,7 +17943,7 @@ button.nav-action-link {
 
 .staff-loyalty-search .search-input-group .btn:hover,
 .staff-loyalty-search--header .search-input-group .btn:hover {
-    background: #2a2a2a;
+    background: var(--btn-cart-hover, #4fa104);
     transform: translateY(-1px);
 }
 
@@ -17636,25 +17952,36 @@ button.nav-action-link {
     grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
     gap: 24px;
     align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 8px 24px 0;
+    box-sizing: border-box;
 }
 
-/* Issue card — light panel, site borders */
+/* Issue card — light panel + dark accent (header look) */
 .staff-loyalty-issue-card {
     position: sticky;
     top: calc(var(--site-chrome-top, 120px) + 16px);
     padding: 0;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--white);
-    border: 2px solid var(--gray-200);
+    border: 1px solid var(--gray-200);
     color: var(--black);
-    box-shadow: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     overflow: hidden;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .staff-loyalty-issue-card:hover {
-    border-color: #d4d4d4;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border-color: color-mix(in srgb, var(--btn-cart, #5BB805) 40%, var(--gray-200));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* Hover ne smije pretvoriti bijeli tekst u crni na crnom headeru */
+.staff-loyalty-issue-card:hover .staff-loyalty-issue-header,
+.staff-loyalty-issue-card:hover .staff-loyalty-issue-header h2,
+.staff-loyalty-issue-card:hover .staff-loyalty-issue-header p {
+    color: inherit;
 }
 
 .staff-loyalty-issue-header {
@@ -17662,9 +17989,23 @@ button.nav-action-link {
     gap: 14px;
     align-items: flex-start;
     margin: 0;
-    padding: 22px 22px 18px;
-    border-bottom: 1px solid var(--gray-100);
-    background: linear-gradient(180deg, #fafafa 0%, var(--white) 100%);
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0a0a0a;
+    color: #fff;
+}
+
+.staff-loyalty-issue-header h2,
+.staff-loyalty-issue-header p {
+    color: inherit;
+}
+
+.staff-loyalty-issue-header h2 {
+    color: #fff !important;
+}
+
+.staff-loyalty-issue-header p {
+    color: rgba(255, 255, 255, 0.68) !important;
 }
 
 .staff-loyalty-issue-icon {
@@ -17674,18 +18015,29 @@ button.nav-action-link {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: color-mix(in srgb, var(--btn-cart, #5BB805) 14%, transparent);
-    color: var(--btn-cart, #5BB805);
+    background: rgba(91, 184, 5, 0.18);
+    color: #8dff2e;
     font-size: 18px;
     flex-shrink: 0;
-    border: 1px solid color-mix(in srgb, var(--btn-cart, #5BB805) 28%, transparent);
+    border: 1px solid rgba(91, 184, 5, 0.45);
+}
+
+.staff-loyalty-issue-icon svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+}
+
+.staff-loyalty-issue-card:hover .staff-loyalty-issue-icon {
+    color: #a6ff4d;
+    background: rgba(91, 184, 5, 0.22);
 }
 
 .staff-loyalty-issue-header h2 {
     margin: 0 0 4px;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
-    color: var(--black);
     letter-spacing: -0.02em;
 }
 
@@ -17693,7 +18045,6 @@ button.nav-action-link {
     margin: 0;
     font-size: 13px;
     line-height: 1.5;
-    color: var(--gray-600);
 }
 
 .staff-loyalty-issue-form {
@@ -17814,15 +18165,21 @@ button.nav-action-link {
 }
 
 .result-card:hover {
-    border-color: var(--black);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    border-color: color-mix(in srgb, var(--btn-cart, #5BB805) 55%, var(--gray-200));
+    background: color-mix(in srgb, var(--btn-cart, #5BB805) 6%, #fff);
+    box-shadow: 0 6px 16px rgba(91, 184, 5, 0.1);
     transform: translateY(-1px);
+    color: inherit;
+}
+
+.result-card:hover .result-name {
+    color: var(--black);
 }
 
 .result-card.active {
-    border-color: var(--black);
-    background: var(--gray-100);
-    box-shadow: inset 0 0 0 1px var(--black);
+    border-color: var(--btn-cart, #5BB805);
+    background: color-mix(in srgb, var(--btn-cart, #5BB805) 10%, #fff);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--btn-cart, #5BB805) 35%, transparent);
 }
 
 .result-name {
@@ -18779,11 +19136,12 @@ button.nav-action-link {
 
 @media (max-width: 960px) {
     .staff-loyalty-page {
-        margin-top: 24px;
+        margin-top: 0;
     }
 
     .staff-loyalty-layout {
         grid-template-columns: 1fr;
+        padding: 8px var(--home-mobile-side-inset, 16px) 0;
     }
 
     .staff-loyalty-issue-card {
@@ -18797,12 +19155,16 @@ button.nav-action-link {
 
 @media (max-width: 640px) {
     .staff-loyalty-page {
-        padding-left: 14px;
-        padding-right: 14px;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .staff-loyalty-search--header {
         padding: 12px;
+    }
+
+    .staff-loyalty-search--hero .search-input-group {
+        flex-direction: column;
     }
 
     .staff-loyalty-search .search-input-group,

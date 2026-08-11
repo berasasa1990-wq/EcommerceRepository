@@ -109,8 +109,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260811seoClamp" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260811seoClamp">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260811staffIcons" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260811staffIcons">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -188,13 +188,26 @@
     <header class="header" id="header">
         <div class="header-shell">
             <div class="header-row header-row--primary">
-                <button class="nav-toggle" id="navToggle" aria-label="Otvori meni">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="6" x2="21" y2="6"/>
-                        <line x1="3" y1="12" x2="21" y2="12"/>
-                        <line x1="3" y1="18" x2="21" y2="18"/>
-                    </svg>
-                </button>
+                <div class="header-leading">
+                    <button class="nav-toggle" id="navToggle" aria-label="Otvori meni">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                    {% if user.is_superuser or user.is_staff %}
+                    <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn staff-admin-nav-btn" aria-label="Admin Panel" title="Admin Panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                        <span class="nav-action-label">Admin Panel</span>
+                    </a>
+                    {% endif %}
+                </div>
 
                 <div class="logo-brand">
                     <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
@@ -242,18 +255,6 @@
                 </div>
 
                 <div class="nav-actions">
-                    {% if user.is_superuser or user.is_staff %}
-                    <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn" aria-label="Admin Panel" title="Admin Panel">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="3" y="3" width="7" height="7" rx="1"/>
-                            <rect x="14" y="3" width="7" height="7" rx="1"/>
-                            <rect x="3" y="14" width="7" height="7" rx="1"/>
-                            <rect x="14" y="14" width="7" height="7" rx="1"/>
-                        </svg>
-                        <span class="nav-action-label">Admin Panel</span>
-                    </a>
-                    {% endif %}
-
                     {% if contact_phone %}
                     <a href="tel:{{ contact_phone_digits|default:contact_phone }}" class="nav-action-link header-phone" aria-label="Telefon {{ contact_phone }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

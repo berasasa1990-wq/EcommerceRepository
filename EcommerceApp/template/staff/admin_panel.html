@@ -6,32 +6,48 @@
 <title>Admin panel — opremazaribolov.ba</title>
 {% endblock %}
 
+{% block body_class %}staff-shell-page{% endblock %}
+
 {% block content %}
 <section class="staff-admin-page">
-    <div class="staff-admin-header">
-        <a href="{% url 'account' %}" class="account-back-link">← Nazad na nalog</a>
-        <h1>Admin panel</h1>
-        <p class="staff-admin-subtitle">
-            {% if user.is_superuser %}
-            Odaberite sekciju
-            {% else %}
-            Staff pristup — Loyalty System
-            {% endif %}
-        </p>
-    </div>
+    <header class="staff-page-hero">
+        <div class="staff-page-hero__inner">
+            <a href="{% url 'account' %}" class="staff-page-back">← Nazad na nalog</a>
+            <p class="staff-page-kicker">Staff</p>
+            <h1 class="staff-page-title">Admin panel</h1>
+            <p class="staff-page-subtitle">
+                {% if user.is_superuser %}
+                Odaberite sekciju za rad sa sajtom, narudžbama i loyalty programom.
+                {% else %}
+                Staff pristup — Loyalty System
+                {% endif %}
+            </p>
+        </div>
+    </header>
 
     <div class="admin-buttons">
         <a href="{% url 'staff_loyalty_system' %}" class="admin-btn">
-            <div class="admin-btn-icon">⭐</div>
+            <div class="admin-btn-icon admin-btn-icon--loyalty" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+            </div>
             <div class="admin-btn-text">
                 <strong>Loyalty System</strong>
                 <span>Pretraga kupaca i loyalty kartica</span>
             </div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
 
         {% if user.is_superuser %}
         <a href="{% url 'staff_online_orders' %}" class="admin-btn admin-btn--orders" id="adminOnlineOrdersBtn">
-            <div class="admin-btn-icon">🛒</div>
+            <div class="admin-btn-icon admin-btn-icon--orders" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2h12l1 7H5L6 2z"/>
+                    <path d="M5 9h14l-1.2 10.2A2 2 0 0 1 15.81 21H8.19a2 2 0 0 1-1.99-1.8L5 9z"/>
+                    <path d="M9 13h6"/>
+                </svg>
+            </div>
             <div class="admin-btn-text">
                 <strong>
                     Online narudžbe
@@ -43,42 +59,80 @@
                 </strong>
                 <span>Pregled novih narudžbi sa sajta</span>
             </div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
 
         <a href="{% url 'staff_active_carts' %}" class="admin-btn">
-            <div class="admin-btn-icon">🧺</div>
+            <div class="admin-btn-icon admin-btn-icon--carts" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                    <circle cx="9" cy="20" r="1.5"/>
+                    <circle cx="17" cy="20" r="1.5"/>
+                </svg>
+            </div>
             <div class="admin-btn-text">
                 <strong>Aktivne korpe</strong>
                 <span>Koji artikli su trenutno u korpama posjetilaca</span>
             </div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
 
         <a href="{% url 'staff_site_overview' %}" class="admin-btn">
-            <div class="admin-btn-icon">📊</div>
+            <div class="admin-btn-icon admin-btn-icon--stats" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19V5"/>
+                    <path d="M4 19h16"/>
+                    <rect x="7" y="10" width="3" height="6" rx="0.5"/>
+                    <rect x="12" y="7" width="3" height="9" rx="0.5"/>
+                    <rect x="17" y="12" width="3" height="4" rx="0.5"/>
+                </svg>
+            </div>
             <div class="admin-btn-text">
                 <strong>Pregled sajta</strong>
                 <span>Posjetioci, kupovine i promet — po danima / mjesecima / godinama</span>
             </div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
 
         <a href="{% url 'staff_live_analytics' %}" class="admin-btn">
-            <div class="admin-btn-icon">📡</div>
+            <div class="admin-btn-icon admin-btn-icon--live" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="2.5"/>
+                    <path d="M16.24 7.76a6 6 0 0 1 0 8.48"/>
+                    <path d="M7.76 16.24a6 6 0 0 1 0-8.48"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    <path d="M4.93 19.07a10 10 0 0 1 0-14.14"/>
+                </svg>
+            </div>
             <div class="admin-btn-text">
                 <strong>Uživo analitika</strong>
                 <span>Ko je trenutno na sajtu i u zadnjih 30 minuta</span>
             </div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
 
         <a href="{% url 'staff_uvoz' %}" class="admin-btn">
-            <div class="admin-btn-icon">📥</div>
+            <div class="admin-btn-icon admin-btn-icon--import" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3v12"/>
+                    <path d="M7 10l5 5 5-5"/>
+                    <path d="M4 19h16"/>
+                </svg>
+            </div>
             <div class="admin-btn-text">
                 <strong>Uvoz</strong>
                 <span>Import artikala i stanja iz Excel uvoznice</span>
             </div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
         {% else %}
         <div class="admin-btn admin-btn--locked" title="Dostupno samo superuseru" aria-disabled="true">
-            <div class="admin-btn-icon">🔒</div>
+            <div class="admin-btn-icon admin-btn-icon--locked" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="11" width="16" height="10" rx="2"/>
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                </svg>
+            </div>
             <div class="admin-btn-text">
                 <strong>Ostale sekcije</strong>
                 <span>Online narudžbe, korpe, analitika — samo superuser</span>

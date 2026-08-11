@@ -7,32 +7,43 @@
 <title>Loyalty System — Admin — opremazaribolov.ba</title>
 {% endblock %}
 
+{% block body_class %}staff-shell-page{% endblock %}
+
 {% block content %}
 <section class="staff-loyalty-page">
-    <div class="staff-loyalty-header">
-        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
-        <h1>Loyalty System</h1>
-        <form method="get"
-              id="loyaltyCustomerSearchForm"
-              class="staff-loyalty-search staff-loyalty-search--header"
-              role="search"
-              action="{% url 'staff_loyalty_system' %}">
-            <label class="staff-loyalty-search-label" for="loyaltySearchInput">Pretraga kupaca</label>
-            <div class="search-input-group">
-                <input type="search" id="loyaltySearchInput" name="q" value="{{ loyalty_search_query }}"
-                       placeholder="Broj kartice, telefon, email ili ime (ž≈z, š≈s, č≈c)…"
-                       autocomplete="off"
-                       autofocus>
-                <button type="submit" class="btn btn-primary">Pretraži</button>
-            </div>
-        </form>
-    </div>
+    <header class="staff-page-hero">
+        <div class="staff-page-hero__inner">
+            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
+            <p class="staff-page-kicker">Admin</p>
+            <h1 class="staff-page-title">Loyalty System</h1>
+            <p class="staff-page-subtitle">Pretraga kupaca, izdavanje kartica i praćenje potrošnje.</p>
+
+            <form method="get"
+                  id="loyaltyCustomerSearchForm"
+                  class="staff-loyalty-search staff-loyalty-search--header staff-loyalty-search--hero"
+                  role="search"
+                  action="{% url 'staff_loyalty_system' %}">
+                <label class="staff-loyalty-search-label" for="loyaltySearchInput">Pretraga kupaca</label>
+                <div class="search-input-group">
+                    <input type="search" id="loyaltySearchInput" name="q" value="{{ loyalty_search_query }}"
+                           placeholder="Broj kartice, telefon, email ili ime (ž≈z, š≈s, č≈c)…"
+                           autocomplete="off"
+                           autofocus>
+                    <button type="submit" class="btn btn-primary">Pretraži</button>
+                </div>
+            </form>
+        </div>
+    </header>
 
     <div class="staff-loyalty-layout">
         <aside class="staff-loyalty-issue-panel">
             <div class="staff-loyalty-issue-card">
                 <div class="staff-loyalty-issue-header">
-                    <span class="staff-loyalty-issue-icon" aria-hidden="true">✦</span>
+                    <span class="staff-loyalty-issue-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    </span>
                     <div>
                         <h2>Izdaj karticu</h2>
                         <p>Unesite podatke kupca — kartica se generiše automatski.</p>

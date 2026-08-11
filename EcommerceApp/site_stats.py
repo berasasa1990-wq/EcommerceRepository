@@ -375,6 +375,31 @@ def chat_stats(*, start=None, end=None) -> dict:
     }
 
 
+def _bucket_key(value):
+    """
+    Normalizuj Trunc* vrijednost u date radi stabilnog spajanja i sortiranja.
+
+    Postgres/SQLite mogu vratiti date ili datetime (aware/naive) za isti bucket —
+    miješanje tipova u dict ključu i sorted() baca TypeError (500 na pregledu).
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        local = _as_local(value) or value
+        try:
+            return local.date()
+        except Exception:
+            return date(local.year, local.month, local.day)
+    if isinstance(value, date):
+        return value
+    # string / ostalo — pokušaj parsirati
+    try:
+        text = str(value)[:10]
+        return date.fromisoformat(text)
+    except Exception:
+        return None
+
+
 def _bucket_rows(trunc_fn, *, start, end, label_fmt, period: str) -> list[dict]:
     """
     Spoji posjetioce (first_seen) i narudžbe (kreirana) po bucketu.
@@ -400,10 +425,9 @@ def _bucket_rows(trunc_fn, *, start, end, label_fmt, period: str) -> list[dict]:
 
     by_bucket: dict = {}
     for row in visitors:
-        b = row['bucket']
-        if b is None:
+        key = _bucket_key(row['bucket'])
+        if key is None:
             continue
-        key = _as_local(b) if hasattr(b, 'tzinfo') else b
         by_bucket[key] = {
             'bucket': key,
             'visitors': int(row['visitors'] or 0),
@@ -413,10 +437,9 @@ def _bucket_rows(trunc_fn, *, start, end, label_fmt, period: str) -> list[dict]:
         }
 
     for row in orders:
-        b = row['bucket']
-        if b is None:
+        key = _bucket_key(row['bucket'])
+        if key is None:
             continue
-        key = _as_local(b) if hasattr(b, 'tzinfo') else b
         entry = by_bucket.setdefault(
             key,
             {
@@ -435,21 +458,16 @@ def _bucket_rows(trunc_fn, *, start, end, label_fmt, period: str) -> list[dict]:
     for key in sorted(by_bucket.keys(), reverse=True):
         e = by_bucket[key]
         b = e['bucket']
-        if isinstance(b, datetime):
+        try:
             label = b.strftime(label_fmt)
-            sort_key = b
-        elif isinstance(b, date):
-            label = b.strftime(label_fmt)
-            sort_key = b
-        else:
+        except Exception:
             label = str(b)
-            sort_key = b
         orders_n = e['orders']
         rev = e['revenue']
         rows.append({
             'period': period,
             'label': label,
-            'sort_key': sort_key,
+            'sort_key': b,
             'visitors': e['visitors'],
             'buyers': e['buyers'],
             'orders': orders_n,
