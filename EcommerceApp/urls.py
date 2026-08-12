@@ -164,6 +164,12 @@ urlpatterns = [
         views.staff_loyalty_card_image,
         name='staff_loyalty_card_image',
     ),
+    # Javni PNG (token) — kupac otvara sliku kartice iz WhatsApp/Viber poruke
+    path(
+        'loyalty/kartica/<int:card_id>/<str:token>.png',
+        views.public_loyalty_card_image,
+        name='public_loyalty_card_image',
+    ),
     path(
         'nalog/loyalty/kartica/<int:card_id>/qr.png',
         views.staff_loyalty_card_qr,

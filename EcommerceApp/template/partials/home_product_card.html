@@ -31,13 +31,16 @@
         <a href="{{ product.get_absolute_url }}" class="hm-title" data-product-name>{{ product.naziv }}</a>
 
         <div class="hm-footer">
-            <div class="hm-price" data-product-price>
-                {% if product.katalog_na_akciji %}
-                <span class="hm-price__old">{{ product.katalog_bazna_cijena }} KM</span>
-                <span class="hm-price__sale">{{ product.katalog_prikazna_cijena }} KM</span>
-                {% else %}
-                <span class="hm-price__now">{{ product.katalog_prikazna_cijena }} KM</span>
-                {% endif %}
+            <div class="hm-price-col">
+                <div class="hm-price" data-product-price>
+                    {% if product.katalog_na_akciji %}
+                    <span class="hm-price__old">{{ product.katalog_bazna_cijena }} KM</span>
+                    <span class="hm-price__sale">{{ product.katalog_prikazna_cijena }} KM</span>
+                    {% else %}
+                    <span class="hm-price__now">{{ product.katalog_prikazna_cijena }} KM</span>
+                    {% endif %}
+                </div>
+                {% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena compact=True %}
             </div>
 
             {% if card_variations|length > 1 %}

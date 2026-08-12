@@ -59,4 +59,7 @@ class SitePrepLockMiddleware:
             return True
         if path.startswith('/uzivo/'):
             return True
+        # Javna slika loyalty kartice (link iz WhatsApp/Viber poruke)
+        if path.startswith('/loyalty/kartica/'):
+            return True
         return False

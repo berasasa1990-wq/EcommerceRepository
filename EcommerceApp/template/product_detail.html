@@ -444,6 +444,7 @@
                     </div>
                 </div>
             </div>
+            {% include 'partials/product_loyalty_points.html' with product=product price=product.prikazna_cijena tip_suffix='detail' %}
 
             {% include 'partials/product_urgency.html' %}
 
@@ -526,6 +527,7 @@
                     </div>
                 </div>
             </div>
+            {% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena tip_suffix='detail-var' %}
             {% endif %}
 
             {% if in_stock_variations %}

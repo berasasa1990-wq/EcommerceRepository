@@ -18430,7 +18430,8 @@ button.nav-action-link {
 }
 
 .btn-print-card,
-.btn-viber-card {
+.btn-viber-card,
+.btn-whatsapp-card {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -18469,10 +18470,26 @@ button.nav-action-link {
     color: var(--white);
 }
 
-.btn-viber-card:disabled {
+.btn-viber-card:disabled,
+.btn-whatsapp-card:disabled,
+.loyalty-card-send-btn:disabled {
     opacity: 0.65;
     cursor: wait;
     transform: none;
+}
+
+.btn-whatsapp-card {
+    background: var(--contact-whatsapp, #25d366);
+    border-color: var(--contact-whatsapp, #25d366);
+    color: #fff;
+}
+
+.btn-whatsapp-card:hover {
+    background: #1ebe57;
+    border-color: #1ebe57;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.28);
+    color: #fff;
 }
 
 .staff-loyalty-optional {
@@ -18507,60 +18524,354 @@ button.nav-action-link {
     border: 1px dashed var(--gray-200);
 }
 
+.loyalty-card-sides {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: min(100%, 560px);
+}
+
 .loyalty-physical-card {
     position: relative;
     display: flex;
     flex-direction: column;
-    /* Šira / duža kao prava bankovna kartica (~85.6 × 54 mm) */
-    width: min(100%, 560px);
-    min-height: 352px;
-    /* Ne forsiraj fiksnu visinu — barkod se ne smije sjeći */
+    /* Boje loga / headera: crna + zelena */
+    width: 100%;
+    min-height: 320px;
     height: auto;
     padding: 22px 26px 16px;
     border-radius: 18px;
-    overflow: visible;
+    overflow: hidden;
     color: #fff;
-    background: linear-gradient(145deg, #4a3226 0%, #8b5a3c 42%, #c4895a 100%);
+    background:
+        linear-gradient(165deg, #0a0a0a 0%, #111111 48%, #0d0d0d 100%);
+    border: 1px solid rgba(91, 184, 5, 0.22);
     box-shadow:
-        0 22px 44px rgba(0, 0, 0, 0.24),
-        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        0 24px 48px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        inset 3px 0 0 #5BB805;
     box-sizing: border-box;
 }
 
+.loyalty-physical-card::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 0%, #5BB805 35%, #7ed321 65%, transparent 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.loyalty-physical-card__logo {
+    display: block;
+    height: 40px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
+}
+
+.loyalty-physical-card__logo--sm {
+    height: 32px;
+    max-width: 140px;
+}
+
+/* Prednja: čista crna kao logo/header pozadina + logo u centru */
+.loyalty-physical-card--front {
+    min-height: 260px;
+    justify-content: space-between;
+    background: #0a0a0a !important;
+    border: 1px solid #1a1a1a;
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.loyalty-physical-card--front::after {
+    display: none; /* bez zelenog gornjeg ruba — čista crna */
+}
+
+.loyalty-physical-card--front .loyalty-physical-card__bg-pattern,
+.loyalty-physical-card--front .loyalty-physical-card__shine {
+    display: none;
+}
+
+.loyalty-physical-card__header--front {
+    justify-content: flex-end;
+    margin-bottom: 0;
+}
+
+.loyalty-physical-card--front .loyalty-physical-card__side-tag {
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.45);
+    background: transparent;
+}
+
+.loyalty-physical-card__logo-hero {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 20px;
+    min-height: 160px;
+    background: #0a0a0a;
+}
+
+.loyalty-physical-card__logo-big {
+    display: block;
+    width: min(90%, 380px);
+    height: auto;
+    max-height: 150px;
+    object-fit: contain;
+}
+
+.loyalty-physical-card__logo-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.loyalty-physical-card__footer--front {
+    margin-top: 8px;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 10px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.loyalty-physical-card__footer--front .loyalty-physical-card__tier {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Tanka zadnja strana (bez QR) */
+.loyalty-physical-card--slim {
+    min-height: 0;
+    padding: 16px 18px 12px;
+}
+
+.loyalty-physical-card__slim-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.loyalty-physical-card__discount--compact {
+    min-width: 88px;
+    padding: 8px 10px;
+}
+
+.loyalty-physical-card__discount--compact .loyalty-physical-card__discount-value {
+    font-size: 28px;
+}
+
+.loyalty-physical-card__codes--slim {
+    padding: 8px 10px 10px;
+    gap: 6px;
+}
+
+/* Barkod skener modal */
+.loyalty-scan-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(91, 184, 5, 0.55);
+    background: rgba(91, 184, 5, 0.12);
+    color: #5BB805;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.loyalty-scan-btn:hover {
+    background: #5BB805;
+    color: #fff;
+    border-color: #5BB805;
+}
+
+.loyalty-scan-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.loyalty-scan-modal[hidden] {
+    display: none !important;
+}
+
+.loyalty-scan-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.loyalty-scan-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 420px);
+    max-height: min(92vh, 640px);
+    overflow: auto;
+    padding: 18px 16px 16px;
+    border-radius: 16px;
+    background: #111;
+    color: #fff;
+    border: 1px solid rgba(91, 184, 5, 0.35);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+.loyalty-scan-modal__panel h2 {
+    margin: 0 0 6px;
+    font-size: 1.15rem;
+}
+
+.loyalty-scan-modal__hint {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    color: #a3a3a3;
+    line-height: 1.4;
+}
+
+.loyalty-scan-modal__reader {
+    width: 100%;
+    min-height: 240px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+}
+
+.loyalty-scan-modal__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.loyalty-scan-modal__status {
+    margin: 10px 0 0;
+    font-size: 0.8rem;
+    color: #9fef5a;
+    min-height: 1.2em;
+}
+
+.staff-loyalty-search--hero .search-input-group {
+    flex-wrap: wrap;
+}
+
+.loyalty-physical-card__side-tag {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(91, 184, 5, 0.55);
+    color: #5BB805;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.loyalty-physical-card__back-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    margin: 8px 0 12px;
+    align-items: start;
+}
+
+.loyalty-physical-card__qr-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.loyalty-physical-card__qr-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    background: #fff;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+.loyalty-physical-card__tiers-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+}
+
+.loyalty-physical-card__tiers-mini li {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.loyalty-physical-card__tiers-mini li.is-active {
+    background: #5BB805;
+    border-color: #5BB805;
+    color: #fff;
+}
+
+/* Tier accent — samo badge / popust, baza ostaje crna */
 .loyalty-physical-card--bronza {
-    background: linear-gradient(145deg, #4a3226 0%, #8b5a3c 42%, #c4895a 100%);
+    --loyalty-tier-accent: #c49a6c;
+    --loyalty-tier-soft: #e8d5b5;
 }
-
 .loyalty-physical-card--srebrna {
-    background: linear-gradient(145deg, #3f3f46 0%, #71717a 48%, #d4d4d8 100%);
+    --loyalty-tier-accent: #d1d5db;
+    --loyalty-tier-soft: #f3f4f6;
 }
-
 .loyalty-physical-card--zlatna {
-    background: linear-gradient(145deg, #713f12 0%, #ca8a04 48%, #facc15 100%);
+    --loyalty-tier-accent: #fbbf24;
+    --loyalty-tier-soft: #fde68a;
 }
-
 .loyalty-physical-card--platinum {
-    background: linear-gradient(145deg, #0f172a 0%, #1e293b 48%, #64748b 100%);
+    --loyalty-tier-accent: #a5b4fc;
+    --loyalty-tier-soft: #e0e7ff;
 }
 
 .loyalty-physical-card__bg-pattern {
     position: absolute;
     inset: 0;
-    opacity: 0.16;
+    opacity: 0.22;
     background-image:
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.45) 0 1px, transparent 1px),
-        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.35) 0 1px, transparent 1px);
-    background-size: 18px 18px, 24px 24px;
+        radial-gradient(circle at 18% 22%, rgba(91, 184, 5, 0.18) 0 1px, transparent 1px),
+        radial-gradient(circle at 82% 68%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px);
+    background-size: 20px 20px, 26px 26px;
     pointer-events: none;
 }
 
 .loyalty-physical-card__shine {
     position: absolute;
-    top: -40%;
-    right: -20%;
-    width: 70%;
-    height: 140%;
-    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
+    top: -45%;
+    right: -18%;
+    width: 68%;
+    height: 150%;
+    background: linear-gradient(
+        120deg,
+        transparent 28%,
+        rgba(91, 184, 5, 0.07) 48%,
+        rgba(255, 255, 255, 0.08) 52%,
+        transparent 72%
+    );
     transform: rotate(18deg);
     pointer-events: none;
 }
@@ -18587,20 +18898,36 @@ button.nav-action-link {
 .loyalty-physical-card__brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+}
+
+.loyalty-physical-card__brand-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.loyalty-physical-card__brand-sub {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5BB805;
 }
 
 .loyalty-physical-card__brand-mark {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.18);
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: #5BB805;
+    color: #fff;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.04em;
+    box-shadow: 0 2px 8px rgba(91, 184, 5, 0.35);
 }
 
 .loyalty-physical-card__brand-text {
@@ -18608,13 +18935,15 @@ button.nav-action-link {
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    opacity: 0.92;
+    opacity: 0.95;
 }
 
 .loyalty-physical-card__tier {
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid color-mix(in srgb, var(--loyalty-tier-accent, #5BB805) 55%, transparent);
+    color: var(--loyalty-tier-soft, #e8e8e8);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -18659,17 +18988,20 @@ button.nav-action-link {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px 8px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.24);
+    padding: 12px 8px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     text-align: center;
 }
 
 .loyalty-physical-card__discount-value {
-    font-size: 34px;
+    font-size: 36px;
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.02em;
+    color: #5BB805;
+    text-shadow: 0 0 24px rgba(91, 184, 5, 0.25);
 }
 
 .loyalty-physical-card__discount-label {
@@ -18687,16 +19019,17 @@ button.nav-action-link {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    opacity: 0.95;
+    color: var(--loyalty-tier-soft, rgba(255, 255, 255, 0.9));
 }
 
 .loyalty-physical-card__progress {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.2);
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     min-width: 0;
 }
 
@@ -18741,9 +19074,10 @@ button.nav-action-link {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 10px 12px 12px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.22);
+    padding: 12px 14px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     margin-top: 4px;
     min-width: 0;
     flex-shrink: 0;
@@ -18764,22 +19098,23 @@ button.nav-action-link {
 .loyalty-physical-card__copy-btn {
     flex-shrink: 0;
     padding: 4px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(91, 184, 5, 0.45);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
+    background: rgba(91, 184, 5, 0.12);
+    color: #9fef5a;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     cursor: pointer;
     line-height: 1.2;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .loyalty-physical-card__copy-btn:hover {
-    background: rgba(255, 255, 255, 0.26);
-    border-color: rgba(255, 255, 255, 0.7);
+    background: #5BB805;
+    border-color: #5BB805;
+    color: #fff;
 }
 
 .loyalty-physical-card__barcode-block {
@@ -18841,12 +19176,17 @@ button.nav-action-link {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 9px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    opacity: 0.8;
+    color: rgba(255, 255, 255, 0.55);
     flex-shrink: 0;
+}
+
+.loyalty-physical-card__footer span:first-child {
+    color: #5BB805;
+    font-weight: 700;
 }
 
 .customer-details {
@@ -19259,7 +19599,8 @@ button.nav-action-link {
     }
 
     .btn-print-card,
-    .btn-viber-card {
+    .btn-viber-card,
+    .btn-whatsapp-card {
         justify-content: center;
         flex: 1 1 auto;
     }
@@ -19301,18 +19642,27 @@ button.nav-action-link {
     #loyaltyPrintCard {
         position: fixed;
         left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        top: 8mm;
+        transform: translateX(-50%);
         width: 85.6mm;
         height: auto;
-        min-height: 53.98mm;
         margin: 0;
-        padding: 3.5mm 4mm 3mm;
-        border-radius: 3.5mm;
+        padding: 0;
+        gap: 6mm;
         box-shadow: none;
         overflow: visible;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+
+    #loyaltyPrintCard .loyalty-physical-card {
+        width: 85.6mm;
+        min-height: 53.98mm;
+        padding: 3.5mm 4mm 3mm;
+        border-radius: 3.5mm;
+        box-shadow: none;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     #loyaltyPrintCard .loyalty-physical-card__name {
@@ -25011,17 +25361,187 @@ a.home-promo-card:hover {
 /* Home mockup card: price left + cart icon right */
 .hm-footer {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 10px;
     margin-top: auto;
     width: 100%;
 }
 
-.hm-footer .hm-price {
-    margin-top: 0;
+.hm-footer .hm-price-col {
     flex: 1 1 auto;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.hm-footer .hm-price {
+    margin-top: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+/* ── Loyalty bodovi (1 bod = 1 KM, samo registrovani) ── */
+.loyalty-points {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 4px;
+    z-index: 2;
+}
+
+.loyalty-points--compact {
+    margin-top: 2px;
+}
+
+.loyalty-points__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px 2px 9px;
+    border: 1px solid rgba(91, 184, 5, 0.55);
+    border-radius: 999px;
+    background: #fff;
+    color: #4fa104;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    cursor: default;
+    user-select: none;
+}
+
+.loyalty-points--compact .loyalty-points__badge {
+    font-size: 0.68rem;
+    padding: 1px 7px 1px 8px;
+    gap: 4px;
+}
+
+.loyalty-points__value {
+    color: #4fa104;
+}
+
+.loyalty-points__info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border: 1px solid rgba(91, 184, 5, 0.65);
+    border-radius: 50%;
+    background: #f3faf0;
+    color: #4fa104;
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-style: italic;
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.loyalty-points--compact .loyalty-points__info {
+    width: 13px;
+    height: 13px;
+    font-size: 0.58rem;
+}
+
+.loyalty-points__info:hover,
+.loyalty-points__info[aria-expanded="true"] {
+    background: #5BB805;
+    border-color: #5BB805;
+    color: #fff;
+}
+
+.loyalty-points__tooltip {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px);
+    width: min(240px, 72vw);
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #1a1a1a;
+    color: #f5f5f5;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.45;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    z-index: 40;
+}
+
+.loyalty-points__tooltip::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 100%;
+    border: 6px solid transparent;
+    border-top-color: #1a1a1a;
+}
+
+.loyalty-points__tooltip p {
+    margin: 0 0 6px;
+}
+
+.loyalty-points__tooltip p:last-child {
+    margin-bottom: 0;
+}
+
+.loyalty-points__tooltip a {
+    color: #9fef5a;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.loyalty-points__tooltip a:hover {
+    color: #c4f78a;
+}
+
+.loyalty-points__tooltip[hidden] {
+    display: none !important;
+}
+
+/* Product detail: malo veći badge */
+.product-detail-info > .loyalty-points {
+    margin: 8px 0 4px;
+}
+
+.product-detail-info > .loyalty-points .loyalty-points__badge {
+    font-size: 0.8rem;
+    padding: 4px 10px 4px 11px;
+}
+
+.product-detail-info > .loyalty-points .loyalty-points__info {
+    width: 15px;
+    height: 15px;
+    font-size: 0.65rem;
+}
+
+/* Catalog card price block */
+.product-card--catalog .product-card__price-block .loyalty-points,
+.product-info__price-row .loyalty-points {
+    margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+    .loyalty-points__badge {
+        font-size: 0.66rem;
+        padding: 1px 6px 1px 7px;
+    }
+
+    .loyalty-points--compact .loyalty-points__badge {
+        font-size: 0.62rem;
+    }
+
+    .loyalty-points__tooltip {
+        width: min(210px, 78vw);
+        font-size: 0.72rem;
+    }
 }
 
 .hm-cart-btn {

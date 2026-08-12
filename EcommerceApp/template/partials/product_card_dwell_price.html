@@ -17,6 +17,7 @@
             {% endif %}
         </div>
     </div>
+    {% include 'partials/product_loyalty_points.html' with product=product price=deal.sale compact=True tip_suffix='dwell' %}
 </div>
 {% elif product.katalog_na_akciji %}
 {# Redovna akcija — isti vizuelni jezik kao AI dwell (bez tajmera) #}
@@ -31,10 +32,12 @@
             {% endif %}
         </div>
     </div>
+    {% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena compact=True tip_suffix='sale' %}
 </div>
 {% else %}
 <div class="product-price product-card__price" data-product-price>
     <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM{% if product.pakovanje_uz_cijenu_kartica %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu_kartica }}</span>{% endif %}</span>
 </div>
+{% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena compact=True %}
 {% endif %}
 {% endwith %}

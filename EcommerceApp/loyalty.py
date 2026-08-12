@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import io
 import re
 import secrets
@@ -5,6 +7,7 @@ import time
 from decimal import Decimal
 from urllib.parse import quote
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Q, Sum
 
@@ -47,12 +50,18 @@ LOYALTY_TIERS = (
     },
 )
 
+# (accent, accent_soft, accent_text) — premium kartica je uvijek crna kao site header
 TIER_COLORS = {
-    'bronza': ('#8B5E3C', '#C49A6C', '#5C3A21'),
-    'srebrna': ('#6B7280', '#D1D5DB', '#374151'),
-    'zlatna': ('#B45309', '#FBBF24', '#78350F'),
-    'platinum': ('#1F2937', '#9CA3AF', '#0B1220'),
+    'bronza': ('#C49A6C', '#8B5E3C', '#E8D5B5'),
+    'srebrna': ('#D1D5DB', '#9CA3AF', '#F3F4F6'),
+    'zlatna': ('#FBBF24', '#D97706', '#FDE68A'),
+    'platinum': ('#A5B4FC', '#818CF8', '#E0E7FF'),
 }
+
+# Brend boje sajta (header)
+LOYALTY_CARD_BG = '#0A0A0A'
+LOYALTY_CARD_BG_MID = '#111111'
+LOYALTY_CARD_GREEN = '#5BB805'
 
 
 def _normalizuj_telefon(telefon):
@@ -361,30 +370,33 @@ def _to_e164_digits(telefon):
 
 def viber_chat_url(telefon, text=''):
     """
-    Deep link Viber chata (BA brojevi).
-    Napomena: Viber često ne podržava prefill teksta u 1:1 chatu —
-    za poruku s kodom koristi whatsapp_chat_url (text= radi pouzdano).
+    Deep link Viber chata na tačan broj (BA).
+    Otvara chat s kontaktom — staff samo pošalje.
+    Napomena: Viber 1:1 često ne prefill-uje tekst; draft= je best-effort.
     """
     digits = _to_e164_digits(telefon)
     if not digits:
         return ''
-    # number bez + u nekim klijentima radi bolje s %2B
-    return f'viber://chat?number=%2B{digits}'
+    # %2B + broj pouzdanije otvara tačan chat na desktop/mobilnom
+    url = f'viber://chat?number=%2B{digits}'
+    if text:
+        # draft / text — ovisi o klijentu; ako ne radi, poruka je u clipboardu (JS)
+        url = f'{url}&draft={quote(text)}'
+    return url
 
 
 def whatsapp_chat_url(telefon, text=''):
     """
-    Deep link WhatsApp — poruka se unaprijed popuni (staff samo klikne Pošalji).
-    Koristi api.whatsapp.com (pouzdanije od wa.me na desktopu).
+    Deep link WhatsApp — otvara chat s brojem i unaprijed ispunjenom porukom.
+    Staff samo klikne Pošalji. wa.me pouzdano otvara app / web.
     """
     digits = _to_e164_digits(telefon)
     if not digits:
         return ''
-    # api.whatsapp.com/send bolje puni tekst na desktop + mobilnom
-    url = f'https://api.whatsapp.com/send?phone={digits}'
+    # wa.me najbolje otvara instaliranu app; text= je unaprijed upisan
     if text:
-        url = f'{url}&text={quote(text)}'
-    return url
+        return f'https://wa.me/{digits}?text={quote(text)}'
+    return f'https://wa.me/{digits}'
 
 
 def sms_chat_url(telefon, text=''):
@@ -405,10 +417,11 @@ def _generate_otp_code():
 
 
 def purchase_otp_message(code, *, iznos=None):
-    """Tekst poruke za Viber/WhatsApp (samo kod + iznos)."""
+    """Tekst poruke za Viber/WhatsApp — kupac izdiktira kod prodavcu."""
     lines = [
         'opremazaribolov.ba — potvrda kupovine',
         f'Vaš kod: {code}',
+        'Recite ovaj kod prodavcu da se kupovina evidentira.',
     ]
     if iznos is not None:
         try:
@@ -986,7 +999,56 @@ def validiraj_kupon(kod, user=None):
     return coupon, None
 
 
-def loyalty_kontekst(card):
+def loyalty_card_share_token(card):
+    """HMAC token za javni link slike kartice (kupac vidi PNG bez logina)."""
+    if not card or not getattr(card, 'pk', None):
+        return ''
+    secret = (getattr(settings, 'SECRET_KEY', '') or 'loyalty').encode('utf-8')
+    payload = f'loyalty-card-img:{card.pk}:{card.kod}:{card.barkod or ""}'.encode('utf-8')
+    return hmac.new(secret, payload, hashlib.sha256).hexdigest()[:40]
+
+
+def verify_loyalty_card_share_token(card, token):
+    expected = loyalty_card_share_token(card)
+    if not expected or not token:
+        return False
+    return hmac.compare_digest(str(token), str(expected))
+
+
+def loyalty_card_caption(card, *, share_image_url=''):
+    """
+    Tekst poruke za WhatsApp / Viber.
+    Samo tekst (nivo, %, broj) — bez linka slike i bez naziva fajla.
+    Slika se skida na računar, staff je priloži ručno.
+    """
+    del share_image_url  # namjerno se ne šalje u poruci
+    tier = tier_info(card.nivo)
+    next_tier = None
+    for index, item in enumerate(LOYALTY_TIERS):
+        if item['nivo'] == card.nivo and index + 1 < len(LOYALTY_TIERS):
+            next_tier = LOYALTY_TIERS[index + 1]
+            break
+    preostalo = None
+    if next_tier:
+        preostalo = max(Decimal('0'), next_tier['od'] - card.ukupna_potrosnja)
+    if next_tier and preostalo is not None:
+        next_line = (
+            f'Još {preostalo.quantize(Decimal("0.01"))} KM do nivoa '
+            f'{next_tier["label"]} ({next_tier["postotak"]}%)'
+        )
+    else:
+        next_line = 'Najviši nivo — maksimalni popust'
+
+    return '\n'.join([
+        'Vaša loyalty kartica — opremazaribolov.ba',
+        f'Nivo: {tier["label"]} · Popust: {tier["postotak"]}%',
+        next_line,
+        f'Broj kartice: {card.kod}',
+    ])
+
+
+
+def loyalty_kontekst(card, *, share_image_url=''):
     tier = tier_info(card.nivo)
     next_tier = None
     for index, item in enumerate(LOYALTY_TIERS):
@@ -1001,7 +1063,6 @@ def loyalty_kontekst(card):
     profil = getattr(card.user, 'profil', None)
     telefon = (profil.telefon if profil else '') or ''
 
-    # Kratki tekst uz sliku kartice (npr. Viber caption)
     if next_tier and preostalo is not None:
         next_line = (
             f'Još {preostalo.quantize(Decimal("0.01"))} KM do nivoa '
@@ -1010,12 +1071,7 @@ def loyalty_kontekst(card):
     else:
         next_line = 'Najviši nivo — maksimalni popust'
 
-    viber_caption = (
-        f'Vaša loyalty kartica opremazaribolov.ba\n'
-        f'Nivo: {tier["label"]} · Popust: {tier["postotak"]}%\n'
-        f'{next_line}\n'
-        f'Broj kartice: {card.kod}'
-    )
+    card_caption = loyalty_card_caption(card, share_image_url=share_image_url)
 
     return {
         'kartica': card,
@@ -1025,8 +1081,12 @@ def loyalty_kontekst(card):
         'barkod_trake': _barkod_iz_koda(card.barkod or card.kod),
         'tiers': LOYALTY_TIERS,
         'telefon': telefon,
-        'viber_url': viber_chat_url(telefon),
-        'viber_caption': viber_caption,
+        'viber_url': viber_chat_url(telefon, card_caption),
+        'whatsapp_url': whatsapp_chat_url(telefon, card_caption),
+        'viber_caption': card_caption,
+        'card_caption': card_caption,
+        'share_image_url': share_image_url or '',
+        'share_token': loyalty_card_share_token(card),
         'next_line': next_line,
     }
 
@@ -1072,20 +1132,131 @@ def _load_font(size, bold=False):
     return ImageFont.load_default()
 
 
-def generisi_loyalty_card_image(card, *, cardholder_name=None):
-    """Generiše PNG sliku loyalty kartice: nivo, % popusta, do sljedećeg nivoa."""
+def _load_site_logo_rgba(max_w=280, max_h=72):
+    """Učitaj trenutni site logo (boje brenda) — RGBA, skaliran."""
+    from PIL import Image
+
+    try:
+        from .models import SiteSettings
+        settings_obj = SiteSettings.objects.first()
+        field = None
+        if settings_obj:
+            field = settings_obj.logo or getattr(settings_obj, 'logo_glavni_sajt', None)
+        if not field:
+            return None
+        path = getattr(field, 'path', None)
+        if path:
+            logo = Image.open(path).convert('RGBA')
+        else:
+            field.open('rb')
+            try:
+                logo = Image.open(io.BytesIO(field.read())).convert('RGBA')
+            finally:
+                try:
+                    field.close()
+                except Exception:
+                    pass
+        try:
+            resample = Image.Resampling.LANCZOS
+        except AttributeError:
+            resample = Image.LANCZOS
+        logo.thumbnail((max_w, max_h), resample)
+        return logo
+    except Exception:
+        return None
+
+
+def _fill_card_bg(draw, width, height, bg_top, bg_bot, green):
+    """Crna podloga + zeleni brend rub (boje loga/headera)."""
+    for y in range(height):
+        ratio = y / max(height - 1, 1)
+        color = tuple(int(bg_top[i] * (1 - ratio) + bg_bot[i] * ratio) for i in range(3))
+        draw.line([(0, y), (width, y)], fill=color)
+    draw.rectangle([0, 0, width, 6], fill=green)
+    draw.rectangle([0, height - 6, width, height], fill=green)
+    # lijevi zeleni accent
+    draw.rectangle([0, 0, 6, height], fill=green)
+
+
+def _paste_logo(img, logo, xy):
+    if not logo:
+        return
+    if logo.mode == 'RGBA':
+        img.paste(logo, xy, logo)
+    else:
+        img.paste(logo, xy)
+
+
+def _draw_front_side(card, *, cardholder_name=None):
+    """
+    Prednja strana: čista crna pozadina kao header/logo podloga,
+    veliki logo centriran na sredini.
+    """
     from PIL import Image, ImageDraw
 
-    card = osiguraj_loyalty_karticu(card.user)
+    del cardholder_name  # na prednjoj strani nije potreban
+    ctx = loyalty_kontekst(card)
+    tier = ctx['tier']
+
+    # Čista crna kao logo pozadina / site header (#0a0a0a)
+    black = (10, 10, 10)
+    green = _hex_to_rgb(LOYALTY_CARD_GREEN)
+    muted = (140, 140, 140)
+
+    width, height = 1000, 560
+    img = Image.new('RGB', (width, height), black)
+    draw = ImageDraw.Draw(img)
+
+    font_brand = _load_font(26, bold=True)
+    font_micro = _load_font(12)
+    font_tier = _load_font(14, bold=True)
+
+    # Veliki logo — centriran na crnoj pozadini (kao na headeru)
+    logo = _load_site_logo_rgba(max_w=780, max_h=300)
+    if logo:
+        lx = (width - logo.width) // 2
+        ly = (height - logo.height) // 2 - 16
+        _paste_logo(img, logo, (lx, ly))
+        draw = ImageDraw.Draw(img)
+    else:
+        draw.text((width // 2 - 170, height // 2 - 20), 'opremazaribolov.ba', fill='white', font=font_brand)
+
+    # Minimalan footer na crnoj
+    draw.text((width // 2 - 72, height - 48), 'LOYALTY', fill=green, font=font_tier)
+    tier_label = tier['label'].upper()
+    # nivo desno od LOYALTY
+    draw.text((width // 2 + 20, height - 48), tier_label, fill=muted, font=font_tier)
+    draw.text((width // 2 - 70, height - 26), 'opremazaribolov.ba', fill=(90, 90, 90), font=font_micro)
+
+    return img
+
+
+def _draw_back_side(card, *, cardholder_name=None):
+    """
+    Zadnja (jedina) strana za slanje: tanka, pregledna —
+    vlasnik, %, broj, barkod, nivoi. Bez QR koda.
+    """
+    from PIL import Image, ImageDraw
+
     ctx = loyalty_kontekst(card)
     tier = ctx['tier']
     next_tier = ctx['next_tier']
     preostalo = ctx['preostalo_do_sljedeceg']
+    kod = card.kod
+    barkod = card.barkod or card.kod
+    potrosnja = card.ukupna_potrosnja
 
-    bg_hex, accent_hex, dark_hex = TIER_COLORS.get(card.nivo, TIER_COLORS['bronza'])
-    bg = _hex_to_rgb(bg_hex)
+    accent_hex, _soft, accent_text_hex = TIER_COLORS.get(card.nivo, TIER_COLORS['bronza'])
     accent = _hex_to_rgb(accent_hex)
-    dark = _hex_to_rgb(dark_hex)
+    accent_text = _hex_to_rgb(accent_text_hex)
+    green = _hex_to_rgb(LOYALTY_CARD_GREEN)
+    bg_top = _hex_to_rgb(LOYALTY_CARD_BG)
+    bg_bot = _hex_to_rgb(LOYALTY_CARD_BG_MID)
+    panel = (18, 18, 18)
+    panel_border = (40, 40, 40)
+    muted = (150, 150, 150)
+    soft = (220, 220, 220)
+
     name = (
         cardholder_name
         or card.user.get_full_name()
@@ -1093,93 +1264,115 @@ def generisi_loyalty_card_image(card, *, cardholder_name=None):
         or 'Kupac'
     ).strip()
     name_is_email = '@' in name
-    name_display = (name.lower() if name_is_email else name.upper())[:40]
-    kod = card.kod
-    barkod = card.barkod or card.kod
-    potrosnja = card.ukupna_potrosnja
-
+    name_display = (name.lower() if name_is_email else name.upper())[:36]
+    pct = str(tier['postotak']).rstrip('0').rstrip('.') if '.' in str(tier['postotak']) else str(tier['postotak'])
+    if not pct:
+        pct = str(tier['postotak'])
     if next_tier and preostalo is not None:
         next_text = (
-            f'Još {preostalo.quantize(Decimal("1"))} KM do {next_tier["label"]} '
+            f'Još {preostalo.quantize(Decimal("1"))} KM → {next_tier["label"]} '
             f'({next_tier["postotak"]}%)'
         )
     else:
-        next_text = 'Najviši nivo — maksimalni popust'
+        next_text = 'Najviši nivo'
 
-    width, height = 980, 620
-    img = Image.new('RGB', (width, height), bg)
+    # Tanka kartica ~ omjer bankovne (≈ 1.586)
+    width, height = 1000, 560
+    img = Image.new('RGB', (width, height), bg_top)
     draw = ImageDraw.Draw(img)
+    _fill_card_bg(draw, width, height, bg_top, bg_bot, green)
 
-    for y in range(height):
-        ratio = y / max(height - 1, 1)
-        color = tuple(int(bg[i] * (1 - ratio * 0.35) + dark[i] * (ratio * 0.35)) for i in range(3))
-        draw.line([(0, y), (width, y)], fill=color)
-
-    draw.rectangle([0, 0, width, 12], fill=accent)
-    draw.rectangle([0, height - 12, width, height], fill=accent)
-
-    font_brand = _load_font(22, bold=True)
-    font_small = _load_font(16)
-    font_name = _load_font(28 if name_is_email else 34, bold=True)
+    font_small = _load_font(14)
+    font_name = _load_font(20 if name_is_email else 24, bold=True)
     font_code = _load_font(26, bold=True)
-    font_label = _load_font(13)
-    font_pct = _load_font(48, bold=True)
-    font_tier = _load_font(20, bold=True)
+    font_label = _load_font(11)
+    font_pct = _load_font(44, bold=True)
+    font_tier = _load_font(13, bold=True)
+    font_micro = _load_font(11)
 
-    draw.text((40, 34), 'OZ  opremazaribolov.ba', fill='white', font=font_brand)
-    draw.text((width - 220, 38), tier['label'].upper(), fill=accent, font=font_tier)
+    # Header: vlasnik lijevo, % desno
+    draw.text((28, 20), 'VLASNIK', fill=muted, font=font_label)
+    draw.text((28, 36), name_display, fill='white', font=font_name)
 
-    draw.text((40, 88), 'VLASNIK KARTICE', fill=(230, 230, 230), font=font_label)
-    draw.text((40, 110), name_display, fill='white', font=font_name)
+    draw.rounded_rectangle([720, 16, 972, 120], radius=14, fill=panel, outline=green, width=1)
+    draw.text((744, 28), 'POPUST', fill=muted, font=font_label)
+    draw.text((744, 48), f'{pct}%', fill=green, font=font_pct)
+    draw.text((744, 98), f'{tier["label"]}', fill=accent_text, font=font_tier)
 
-    # Nivo + popust + do sljedećeg
-    draw.rounded_rectangle([40, 170, 500, 300], radius=16, fill=(0, 0, 0))
-    draw.text((64, 186), 'VAŠ NIVO', fill=(200, 200, 200), font=font_label)
-    draw.text((64, 208), tier['label'].upper(), fill=accent, font=font_tier)
-    draw.text((64, 242), f'{tier["postotak"]}%', fill='white', font=font_pct)
-    draw.text((200, 268), 'POPUSTA', fill=(220, 220, 220), font=font_small)
-
-    draw.rounded_rectangle([520, 170, 940, 300], radius=16, fill=(0, 0, 0))
-    draw.text((544, 186), 'DO SLJEDEĆEG NIVOA', fill=(200, 200, 200), font=font_label)
-    draw.text((544, 220), next_text, fill='white', font=font_small)
+    # Srednji red: potrošnja + broj
+    draw.rounded_rectangle([28, 100, 700, 180], radius=12, fill=panel, outline=panel_border, width=1)
+    draw.text((48, 114), 'BROJ KARTICE', fill=muted, font=font_label)
+    draw.text((48, 136), kod, fill='white', font=font_code)
     draw.text(
-        (544, 258),
-        f'Potrošnja: {potrosnja.quantize(Decimal("0.01"))} KM',
-        fill=accent,
-        font=font_small,
+        (48, 168),
+        f'{next_text}  ·  potrošnja {potrosnja.quantize(Decimal("0.01"))} KM',
+        fill=soft,
+        font=font_micro,
     )
 
-    # Broj kartice + barkod
-    draw.rounded_rectangle([40, 320, 640, 580], radius=18, fill=(0, 0, 0))
-    draw.text((64, 342), 'BROJ KARTICE', fill=(200, 200, 200), font=font_label)
-    draw.text((64, 368), kod, fill='white', font=font_code)
-    draw.text(
-        (64, 408),
-        f'{tier["label"]} · {tier["postotak"]}%  ·  LOYALTY',
-        fill=accent,
-        font=font_small,
-    )
-
+    # Barkod — puni širinu, bez QR
+    draw.rounded_rectangle([28, 198, 972, 400], radius=12, fill=panel, outline=panel_border, width=1)
+    draw.text((48, 210), 'BARKOD', fill=muted, font=font_label)
     try:
         barcode_img = _barcode_image(barkod)
-        max_w = 530
+        max_w = 880
         ratio = max_w / max(barcode_img.width, 1)
-        new_h = max(48, int(barcode_img.height * ratio))
+        new_h = max(56, min(90, int(barcode_img.height * ratio * 0.85)))
         barcode_img = barcode_img.resize((max_w, new_h))
-        img.paste(barcode_img, (64, 450))
+        pad_x, pad_y = 14, 12
+        frame = Image.new('RGB', (max_w + pad_x * 2, new_h + pad_y * 2), (255, 255, 255))
+        frame.paste(barcode_img, (pad_x, pad_y))
+        img.paste(frame, (48, 240))
         draw = ImageDraw.Draw(img)
-        draw.text((64, 520), barkod, fill=(210, 210, 210), font=font_label)
+        # centriran tekst barkoda
+        draw.text((48, 240 + new_h + pad_y * 2 + 8), barkod, fill=soft, font=font_label)
     except Exception:
-        draw.text((64, 470), f'BARKOD: {barkod}', fill='white', font=font_small)
+        draw.text((48, 280), barkod, fill='white', font=font_small)
 
-    # QR panel
-    qr = _qr_image(kod, box_size=7, border=2).resize((190, 190))
-    draw.rounded_rectangle([670, 320, 940, 580], radius=18, fill='white')
-    img.paste(qr, (710, 360))
-    draw = ImageDraw.Draw(img)
-    draw.text((745, 332), 'QR KOD', fill='#111111', font=font_label)
-    draw.text((715, 560), 'Skeniraj za kod', fill='#444444', font=font_label)
+    # Nivoi u jednom redu
+    draw.rounded_rectangle([28, 420, 972, 530], radius=12, fill=panel, outline=panel_border, width=1)
+    draw.text((48, 432), 'NIVOI', fill=muted, font=font_label)
+    x = 48
+    for t in LOYALTY_TIERS:
+        active = t['nivo'] == card.nivo
+        label = f'{t["label"]} {t["postotak"]}%'
+        tw = max(110, 8 * len(label) + 20)
+        fill = green if active else (32, 32, 32)
+        outline = green if active else (55, 55, 55)
+        draw.rounded_rectangle([x, 458, x + tw, 498], radius=10, fill=fill, outline=outline, width=1)
+        draw.text((x + 10, 470), label, fill='white' if active else soft, font=font_tier)
+        x += tw + 10
+    draw.text(
+        (48, 510),
+        'Unesi broj u korpi za popust · ne vrijedi na akcije · opremazaribolov.ba',
+        fill=muted,
+        font=font_micro,
+    )
 
+    return img
+
+
+def generisi_loyalty_card_image(card, *, cardholder_name=None, fmt='JPEG'):
+    """
+    JPG/PNG zadnje strane kartice (tanka, s barkodom, bez QR).
+    fmt: 'JPEG' (default za slanje) ili 'PNG'.
+    """
+    card = osiguraj_loyalty_karticu(card.user)
+    name = (
+        cardholder_name
+        or card.user.get_full_name()
+        or (card.user.email or '').strip().lower()
+        or 'Kupac'
+    ).strip()
+
+    img = _draw_back_side(card, cardholder_name=name)
     buffer = io.BytesIO()
-    img.save(buffer, format='PNG', optimize=True)
+    fmt_u = (fmt or 'JPEG').upper()
+    if fmt_u in ('JPG', 'JPEG'):
+        # JPEG ne voli RGBA
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        img.save(buffer, format='JPEG', quality=90, optimize=True)
+    else:
+        img.save(buffer, format='PNG', optimize=True)
     return buffer.getvalue()

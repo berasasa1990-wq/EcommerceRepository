@@ -7510,13 +7510,27 @@ def staff_post_product_olx(request, slug):
 @user_passes_test(_staff_required)
 def staff_loyalty_system(request):
     from decimal import InvalidOperation
+    from django.urls import reverse
     from .loyalty import (
         azuriraj_loyalty_karticu,
+        loyalty_card_share_token,
         loyalty_kontekst,
         osiguraj_loyalty_karticu,
     )
 
     from .models import LoyaltyPurchase
+
+    def _loyalty_ctx(card):
+        """Loyalty kontekst s javnim URL-om slike (za WhatsApp/Viber)."""
+        token = loyalty_card_share_token(card)
+        share_url = ''
+        if token:
+            path = reverse(
+                'public_loyalty_card_image',
+                kwargs={'card_id': card.pk, 'token': token},
+            )
+            share_url = request.build_absolute_uri(path)
+        return loyalty_kontekst(card, share_image_url=share_url)
 
     issue_form = LoyaltyIssueForm()
     newly_issued = request.GET.get('issued') == '1'
@@ -7589,7 +7603,7 @@ def staff_loyalty_system(request):
         if cards:
             selected_card = cards[0]
             selected_card = osiguraj_loyalty_karticu(selected_card.user)
-            loyalty_ctx = loyalty_kontekst(selected_card)
+            loyalty_ctx = _loyalty_ctx(selected_card)
             cardholder_name = (
                 selected_card.user.get_full_name().strip()
                 or (selected_card.user.email or '').strip().lower()
@@ -7754,7 +7768,7 @@ def staff_loyalty_system(request):
                     )
                     clear_pending_purchase_otp(request)
                     selected_card = osiguraj_loyalty_karticu(selected_card.user)
-                    loyalty_ctx = loyalty_kontekst(selected_card)
+                    loyalty_ctx = _loyalty_ctx(selected_card)
                     messages.success(
                         request,
                         f'Kupovina od {purchase.iznos} KM evidentirana (potvrđeno kodom).',
@@ -7786,7 +7800,7 @@ def staff_loyalty_system(request):
                     )
                     clear_pending_purchase_otp(request)
                     selected_card = osiguraj_loyalty_karticu(selected_card.user)
-                    loyalty_ctx = loyalty_kontekst(selected_card)
+                    loyalty_ctx = _loyalty_ctx(selected_card)
                     messages.warning(
                         request,
                         f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).',
@@ -7858,7 +7872,7 @@ def staff_loyalty_system(request):
                     exclude_user_id=selected_card.user_id,
                 )
 
-            loyalty_ctx = loyalty_kontekst(selected_card)
+            loyalty_ctx = _loyalty_ctx(selected_card)
 
             # Pending OTP UI (poslije svih POST redirecta)
             try:
@@ -7916,7 +7930,7 @@ def staff_loyalty_system(request):
 @user_passes_test(_staff_required)
 @require_GET
 def staff_loyalty_card_image(request, card_id):
-    """PNG slika loyalty kartice s QR kodom i barkodom (za Viber / preuzimanje)."""
+    """JPG zadnje strane kartice (barkod, bez QR) — za preuzimanje / ručno slanje."""
     from django.http import HttpResponse
     from .loyalty import generisi_loyalty_card_image
 
@@ -7925,10 +7939,32 @@ def staff_loyalty_card_image(request, card_id):
         pk=card_id,
     )
     name = card.user.get_full_name().strip() or (card.user.email or '').strip().lower()
-    png = generisi_loyalty_card_image(card, cardholder_name=name)
-    response = HttpResponse(png, content_type='image/png')
-    response['Content-Disposition'] = f'inline; filename="loyalty-{card.kod}.png"'
+    data = generisi_loyalty_card_image(card, cardholder_name=name, fmt='JPEG')
+    response = HttpResponse(data, content_type='image/jpeg')
+    response['Content-Disposition'] = f'attachment; filename="kartica-{card.kod}.jpg"'
     response['Cache-Control'] = 'private, max-age=60'
+    return response
+
+
+@require_GET
+def public_loyalty_card_image(request, card_id, token):
+    """Javni JPG zadnje strane (HMAC token)."""
+    from django.http import Http404, HttpResponse
+
+    from .loyalty import generisi_loyalty_card_image, verify_loyalty_card_share_token
+
+    card = get_object_or_404(
+        LoyaltyCard.objects.select_related('user', 'user__profil'),
+        pk=card_id,
+    )
+    if not verify_loyalty_card_share_token(card, token):
+        raise Http404('Kartica nije pronađena.')
+    name = card.user.get_full_name().strip() or (card.user.email or '').strip().lower()
+    data = generisi_loyalty_card_image(card, cardholder_name=name, fmt='JPEG')
+    response = HttpResponse(data, content_type='image/jpeg')
+    response['Content-Disposition'] = f'inline; filename="kartica-{card.kod}.jpg"'
+    response['Cache-Control'] = 'public, max-age=300'
+    response['X-Content-Type-Options'] = 'nosniff'
     return response
 
 

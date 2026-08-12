@@ -1296,6 +1296,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<span class="price-current">${formatted} KM</span>`;
     }
 
+    /** 1 bod = 1 KM (zaokruženo); ažurira badge na kartici pri promjeni cijene. */
+    function updateLoyaltyPoints(card, price) {
+        if (!card) return;
+        const wrap = card.querySelector('[data-loyalty-points]');
+        if (!wrap) return;
+        const n = Number(price);
+        if (!Number.isFinite(n) || n <= 0) {
+            wrap.hidden = true;
+            return;
+        }
+        const bodovi = Math.round(n);
+        wrap.hidden = false;
+        wrap.dataset.loyaltyPrice = String(n);
+        const valueEl = wrap.querySelector('.loyalty-points__value');
+        if (valueEl) valueEl.textContent = `+${bodovi} bodova`;
+        const tipStrong = wrap.querySelector('.loyalty-points__tooltip p strong');
+        if (tipStrong) tipStrong.textContent = `+${bodovi} bodova`;
+    }
+
     /**
      * Globalni red popupova — strogo jedan po jedan.
      * Prvi koji izađe ostaje; svi ostali čekaju i ne propadaju.
@@ -2428,6 +2447,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const livePriceEl = card.querySelector('[data-product-price]:not([hidden])');
                 if (livePriceEl && price) {
                     livePriceEl.innerHTML = buildPriceHtml(price, originalPrice, onSale);
+                    updateLoyaltyPoints(card, price);
                 }
 
                 if (cartOnSwatch && swatch.dataset.productSlug && swatch.dataset.variationId) {
@@ -2438,6 +2458,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    /* Loyalty bodovi: info tooltip (1 bod = 1 KM, samo registrovani) */
+    (function initLoyaltyPointsTooltips() {
+        const closeAll = (except) => {
+            document.querySelectorAll('[data-loyalty-points-info][aria-expanded="true"]').forEach((btn) => {
+                if (except && btn === except) return;
+                btn.setAttribute('aria-expanded', 'false');
+                const tip = btn.closest('[data-loyalty-points]')?.querySelector('[data-loyalty-points-tooltip]');
+                if (tip) tip.hidden = true;
+            });
+        };
+
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-loyalty-points-info]');
+            if (btn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const wrap = btn.closest('[data-loyalty-points]');
+                const tip = wrap && wrap.querySelector('[data-loyalty-points-tooltip]');
+                if (!tip) return;
+                const open = btn.getAttribute('aria-expanded') === 'true';
+                closeAll(btn);
+                btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+                tip.hidden = open;
+                return;
+            }
+            if (!e.target.closest('[data-loyalty-points]')) {
+                closeAll();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeAll();
+        });
+    })();
 
     /* AI dwell flash na karticama (početna / katalog) — odbrojavanje, pa regularna cijena */
     (function initCardDwellFlashTimers() {

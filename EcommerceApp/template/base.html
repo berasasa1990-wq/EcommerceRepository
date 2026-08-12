@@ -109,8 +109,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260811catSpace" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260811catSpace">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260812loyaltyScan" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260812loyaltyScan">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -538,7 +538,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260811overviewRange" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260812loyaltyPts" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}
