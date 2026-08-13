@@ -7,7 +7,7 @@ from collections import defaultdict
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from decimal import Decimal
@@ -342,8 +342,10 @@ def apply_movement(
 
 
 def magacin_products_qs():
-    """Samo artikli koji su povučeni Sync-om iz Odoa u Magacin."""
-    return Product.objects.filter(magacin_sync_at__isnull=False)
+    """Isti artikli kao na sajtu iz Odoa — bez drugog kataloga."""
+    return Product.objects.filter(
+        Q(magacin_sync_at__isnull=False) | Q(odoo_template_id__isnull=False)
+    )
 
 
 def magacin_in_stock_q():
@@ -375,6 +377,41 @@ def _product_search_q(query):
         | Q(varijacije__naziv_normalized__icontains=folded)
         | Q(varijacije__sifra_normalized__icontains=folded)
     )
+
+
+def local_odoo_template_ids():
+    """Odoo template ID-jevi artikala koji već postoje na sajtu."""
+    ids = set(
+        Product.objects.exclude(odoo_template_id=None)
+        .values_list('odoo_template_id', flat=True)
+    )
+    ids.update(
+        ProductVariation.objects.exclude(odoo_template_id=None)
+        .values_list('odoo_template_id', flat=True)
+    )
+    return sorted(int(item) for item in ids if item)
+
+
+def attach_site_odoo_products_to_magacin(*, when=None):
+    """Označi postojeće Odoo artikle sa sajta kao Magacin — ne kreira nove."""
+    when = when or timezone.now()
+    product_ids = set(
+        Product.objects.exclude(odoo_template_id=None).values_list('pk', flat=True)
+    )
+    product_ids.update(
+        ProductVariation.objects.exclude(odoo_template_id=None)
+        .values_list('artikal_id', flat=True)
+    )
+    product_ids.update(
+        ProductVariation.objects.exclude(odoo_variant_id=None)
+        .values_list('artikal_id', flat=True)
+    )
+    if not product_ids:
+        return 0
+    return Product.objects.filter(
+        pk__in=product_ids,
+        magacin_sync_at__isnull=True,
+    ).update(magacin_sync_at=when)
 
 
 def mark_magacin_synced(template_ids, *, when=None):
@@ -741,8 +778,8 @@ def _update_log_progress(log, started, poruka, *, artikala=0, lokacija=0):
 
 def start_full_sync(*, user=None, product=None):
     """
-    Pokreni puni Odoo → Magacin sync (katalog + lokacije + zalihe).
-    Vraća session job dict; radi se u chunkovima preko run_sync_chunk.
+    Pokreni Odoo → Magacin sync za artikle koji već postoje na sajtu.
+    Nikad ne kreira nove artikle. Vraća session job dict (chunkovi).
     """
     from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
 
@@ -759,6 +796,8 @@ def start_full_sync(*, user=None, product=None):
     client = OdooClient.from_settings()
     incremental = False
     stock_extra_ids = []
+    attach_site_odoo_products_to_magacin()
+    local_ids = set(local_odoo_template_ids())
     try:
         if product is not None:
             template_id = getattr(product, 'odoo_template_id', None)
@@ -773,19 +812,13 @@ def start_full_sync(*, user=None, product=None):
                 since = previous.started_at - timedelta(minutes=2)
                 try:
                     changed = set(client.get_sale_template_ids(since=since))
-                    known = set(
-                        Product.objects.exclude(odoo_template_id=None)
-                        .values_list('odoo_template_id', flat=True)
-                    )
-                    all_ids = set(client.get_all_sale_template_ids())
-                    missing = all_ids - known
-                    template_ids = sorted(changed | missing)
+                    template_ids = sorted(changed & local_ids)
                     stock_extra_ids = client.get_quant_product_ids_changed_since(since)
                 except OdooError:
                     incremental = False
-                    template_ids = client.get_all_sale_template_ids()
+                    template_ids = sorted(local_ids)
             else:
-                template_ids = client.get_all_sale_template_ids()
+                template_ids = sorted(local_ids)
     except OdooError as exc:
         _fail_log(log, started, str(exc))
         raise MagacinError(str(exc)) from exc
@@ -823,7 +856,7 @@ def start_full_sync(*, user=None, product=None):
         phase = 'catalog'
         progress = (
             f'Katalog: 0 / {len(template_ids)} '
-            f'({"samo izmjene" if incremental else "puni sync"})…'
+            f'({"samo izmjene" if incremental else "postojeći artikli sa sajta"})…'
         )
 
     _update_log_progress(log, started, progress)

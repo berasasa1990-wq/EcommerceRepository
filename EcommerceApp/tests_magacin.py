@@ -11,9 +11,12 @@ from .magacin import (
     _apply_quant_batch,
     _odoo_id_to_local,
     apply_movement,
+    attach_site_odoo_products_to_magacin,
     cancel_order_stock,
     deduct_for_order,
+    local_odoo_template_ids,
     location_rows,
+    magacin_products_qs,
     reserve_for_order,
     seed_default_locations,
     stock_totals,
@@ -387,6 +390,48 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertEqual(product.sifra, 'NEW-88')
         self.assertEqual(product.barkod, 'BAR-88')
         self.assertEqual(product.odoo_template_id, 888)
+
+    def test_site_odoo_products_are_magacin_without_duplicate(self):
+        site = Product.objects.create(
+            naziv='Fox braid shop',
+            sifra='FOX-SHOP',
+            cijena=Decimal('11.00'),
+            odoo_template_id=1201,
+        )
+        web_only = Product.objects.create(
+            naziv='Samo web',
+            sifra='WEB-ONLY',
+            cijena=Decimal('2.00'),
+        )
+        self.assertIn(site, magacin_products_qs())
+        self.assertNotIn(web_only, magacin_products_qs())
+        self.assertEqual(local_odoo_template_ids(), [1201])
+        marked = attach_site_odoo_products_to_magacin()
+        self.assertEqual(marked, 1)
+        site.refresh_from_db()
+        self.assertIsNotNone(site.magacin_sync_at)
+        client = FakeOdooClient([{
+            'id': 1201,
+            'name': 'Fox braid shop',
+            'default_code': 'FOX-SHOP',
+            'barcode': '',
+            'list_price': '11.00',
+            'qty_available': 4,
+            'product_variant_ids': [1201],
+        }, {
+            'id': 9999,
+            'name': 'Nepoznat u shopu',
+            'default_code': 'GHOST-9',
+            'barcode': '',
+            'list_price': '1.00',
+            'qty_available': 9,
+            'product_variant_ids': [9999],
+        }])
+        stats = sync_catalog_chunk(client, [1201, 9999], start=0, limit=10)
+        self.assertEqual(stats['kreirano'], 0)
+        self.assertEqual(Product.objects.filter(sifra='GHOST-9').count(), 0)
+        self.assertEqual(Product.objects.filter(odoo_template_id=1201).count(), 1)
+        self.assertEqual(Product.objects.count(), 2)
 
     def test_skips_image_download_when_product_already_has_image(self):
         product = Product.objects.create(
