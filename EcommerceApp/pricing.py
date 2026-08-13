@@ -217,9 +217,35 @@ def izracunaj_sazetak(
     }
 
 
+def _standardna_dostava(medjuzbir, postavke=None):
+    """11 KM ispod praga, 0 KM preko 250 KM (ili postavke sajta)."""
+    postavke = postavke or SiteSettings.load()
+    cijena = _kvantiziraj(postavke.dostava_cijena)
+    prag = _kvantiziraj(postavke.besplatna_dostava_od)
+    goods = _kvantiziraj(medjuzbir)
+    if prag > 0 and goods >= prag:
+        return Decimal('0.00'), True, cijena, prag
+    return cijena, False, cijena, prag
+
+
 def sazetak_iz_narudzbe(order):
+    from .models import Order
+
     postavke = SiteSettings.load()
-    ukupno_prije_popusta = _kvantiziraj(order.medjuzbir + order.dostava)
+    dostava = _kvantiziraj(order.dostava)
+    ukupno = _kvantiziraj(order.ukupno)
+    popust = _kvantiziraj(order.popust)
+    goods = _kvantiziraj(order.medjuzbir - popust)
+    std_dostava, std_free, dostava_cijena, prag = _standardna_dostava(goods, postavke)
+    # Ručne Magacin narudžbe: na računu uvijek 11 KM / besplatno preko 250 KM
+    if getattr(order, 'izvor', '') == Order.Izvor.MAGACIN and dostava == Decimal('0.00') and not std_free:
+        dostava = std_dostava
+        ukupno = _kvantiziraj(goods + dostava)
+    elif dostava > 0:
+        std_free = False
+    else:
+        std_free = dostava == Decimal('0.00')
+    ukupno_prije_popusta = _kvantiziraj(order.medjuzbir + dostava)
     return {
         'medjuzbir': order.medjuzbir,
         'pdv_artikli': izracunaj_pdv(order.medjuzbir),
@@ -231,13 +257,14 @@ def sazetak_iz_narudzbe(order):
         'pogodnosti': [],
         'ima_novu_pogodnost': False,
         'pogodnosti_dostupne_gostu': False,
-        'dostava': order.dostava,
+        'dostava': dostava,
         'dostava_naziv': postavke.dostava_naziv,
-        'besplatna_dostava': order.dostava == Decimal('0.00'),
-        'besplatna_dostava_od': postavke.besplatna_dostava_od,
+        'dostava_cijena': dostava_cijena,
+        'besplatna_dostava': std_free,
+        'besplatna_dostava_od': prag,
         'preostalo_do_besplatne': Decimal('0.00'),
         'ukupno_prije_popusta': ukupno_prije_popusta,
-        'ukupno': order.ukupno,
+        'ukupno': ukupno,
         'pdv': order.pdv_pregled,
         'kupon_kod': order.kupon_kod,
     }

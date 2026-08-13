@@ -1,0 +1,1384 @@
+(function () {
+    var app = document.getElementById('mgApp');
+    var navBtn = document.getElementById('mgNavToggle');
+    var navBackdrop = document.getElementById('mgNavBackdrop');
+    function setMagacinNav(open) {
+        if (!app) return;
+        app.classList.toggle('nav-open', !!open);
+        if (navBackdrop) navBackdrop.hidden = !open;
+        if (navBtn) navBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('mg-nav-lock', !!open);
+    }
+    if (navBtn && app) {
+        navBtn.setAttribute('aria-expanded', 'false');
+        navBtn.addEventListener('click', function () {
+            setMagacinNav(!app.classList.contains('nav-open'));
+        });
+        app.querySelectorAll('.mg-nav a').forEach(function (link) {
+            link.addEventListener('click', function () { setMagacinNav(false); });
+        });
+    }
+    if (navBackdrop) {
+        navBackdrop.addEventListener('click', function () { setMagacinNav(false); });
+    }
+
+    var user = document.getElementById('mgUser');
+    if (user) {
+        user.addEventListener('click', function (event) {
+            event.stopPropagation();
+            user.classList.toggle('is-open');
+        });
+        document.addEventListener('click', function () {
+            user.classList.remove('is-open');
+        });
+    }
+
+    var syncForm = document.getElementById('mgSyncContinue');
+    if (syncForm) {
+        window.setTimeout(function () { syncForm.submit(); }, 400);
+    }
+
+    initManualOrderForm();
+    initOrderBulkPrint();
+    initTransferPage();
+    initArticleScanner();
+
+    var modal = document.getElementById('mgMoveModal');
+    if (!modal) return;
+
+    var modeInput = document.getElementById('mgLocMode');
+    var title = document.getElementById('mgMoveTitle');
+    var updateField = document.getElementById('mgLocUpdateField');
+    var addField = document.getElementById('mgLocAddField');
+    var locSelect = document.getElementById('mgMoveLocation');
+    var addSelect = document.getElementById('mgAddLocation');
+    var addQuery = document.getElementById('mgAddLocationQuery');
+    var addList = document.getElementById('mgAddLocationList');
+    var qtyInput = document.getElementById('mgQtyInput');
+
+    function resetAddSearch() {
+        if (addSelect) addSelect.value = '';
+        if (addQuery) addQuery.value = '';
+        filterAddLocations('');
+        if (addList) addList.hidden = true;
+    }
+
+    function filterAddLocations(query) {
+        if (!addList) return 0;
+        var q = (query || '').trim().toLowerCase();
+        var shown = 0;
+        addList.querySelectorAll('li').forEach(function (item) {
+            if (item.getAttribute('data-empty')) {
+                item.hidden = !!q;
+                return;
+            }
+            var label = (item.getAttribute('data-label') || item.textContent || '').toLowerCase();
+            var match = !q || label.indexOf(q) !== -1;
+            item.hidden = !match;
+            item.classList.remove('is-active');
+            if (match) shown += 1;
+        });
+        addList.hidden = false;
+        return shown;
+    }
+
+    function pickAddLocation(item) {
+        if (!item || item.getAttribute('data-empty')) return;
+        if (addSelect) addSelect.value = item.getAttribute('data-id') || '';
+        if (addQuery) addQuery.value = item.getAttribute('data-label') || item.textContent || '';
+        if (addList) addList.hidden = true;
+    }
+
+    if (addQuery) {
+        addQuery.addEventListener('focus', function () { filterAddLocations(addQuery.value); });
+        addQuery.addEventListener('input', function () {
+            if (addSelect) addSelect.value = '';
+            filterAddLocations(addQuery.value);
+        });
+        addQuery.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                var first = addList && addList.querySelector('li:not([hidden]):not([data-empty])');
+                if (first) {
+                    event.preventDefault();
+                    pickAddLocation(first);
+                }
+            }
+        });
+    }
+    if (addList) {
+        addList.addEventListener('mousedown', function (event) {
+            var item = event.target.closest('li');
+            if (item) pickAddLocation(item);
+        });
+    }
+
+    function fillUpdateQty() {
+        if (!qtyInput || !locSelect) return;
+        var opt = locSelect.options[locSelect.selectedIndex];
+        var qty = opt && opt.getAttribute('data-qty');
+        if (qty != null) qtyInput.value = qty;
+    }
+
+    function syncMode(mode) {
+        var isAdd = mode === 'add';
+        if (modeInput) modeInput.value = isAdd ? 'add' : 'update';
+        if (title) title.textContent = isAdd ? 'Dodaj na novu lokaciju' : 'Ažuriraj postojeću lokaciju';
+        if (updateField) updateField.hidden = isAdd;
+        if (addField) addField.hidden = !isAdd;
+        if (locSelect) locSelect.required = !isAdd;
+        if (addSelect) addSelect.required = isAdd;
+        if (!isAdd) fillUpdateQty();
+        else {
+            resetAddSearch();
+            if (qtyInput) qtyInput.value = '';
+        }
+    }
+
+    if (locSelect) locSelect.addEventListener('change', fillUpdateQty);
+
+    function openModal(locationId, mode) {
+        syncMode(mode || 'update');
+        if (locationId && locSelect && mode !== 'add') {
+            locSelect.value = String(locationId);
+            fillUpdateQty();
+        }
+        modal.hidden = false;
+    }
+    function closeModal() {
+        modal.hidden = true;
+    }
+
+    document.querySelectorAll('[data-mg-open-move]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            if (el.disabled) return;
+            openModal(el.getAttribute('data-location-id'), el.getAttribute('data-mode') || 'update');
+        });
+    });
+    document.querySelectorAll('[data-mg-close]').forEach(function (el) {
+        el.addEventListener('click', closeModal);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') closeModal();
+    });
+    var form = modal.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            if (modeInput && modeInput.value === 'add' && addSelect && !addSelect.value) {
+                event.preventDefault();
+                if (addQuery) addQuery.focus();
+                filterAddLocations(addQuery ? addQuery.value : '');
+            }
+        });
+    }
+})();
+
+function initManualOrderForm() {
+    var form = document.getElementById('mgOrderForm');
+    if (!form) return;
+
+    var search = document.getElementById('mgOrderSearch');
+    var qtyInput = document.getElementById('mgOrderQty');
+    var pickLabel = document.getElementById('mgOrderPickLabel');
+    var qtyHint = document.getElementById('mgOrderQtyHint');
+    var list = document.getElementById('mgOrderSuggest');
+    var body = document.getElementById('mgOrderLines');
+    var empty = document.getElementById('mgOrderEmpty');
+    var totalEl = document.getElementById('mgOrderTotal');
+    var mpModal = document.getElementById('mgMpModal');
+    var mpText = document.getElementById('mgMpText');
+    var lookupUrl = form.getAttribute('data-lookup-url') || '';
+    var shipFee = parseFloat(form.getAttribute('data-dostava-cijena')) || 11;
+    var shipFreeFrom = parseFloat(form.getAttribute('data-besplatna-od')) || 250;
+    var shipEl = document.getElementById('mgOrderShip');
+    var timer = null;
+    var pending = null;
+    var pick = null;
+    var lastResults = [];
+
+    function money(n) {
+        return (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
+    }
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+    function lineCount() {
+        return body ? body.querySelectorAll('tr[data-line]').length : 0;
+    }
+    function refreshTotal() {
+        var sum = 0;
+        if (!body) return;
+        body.querySelectorAll('tr[data-line]').forEach(function (row) {
+            var qty = parseInt(row.querySelector('[name="kolicina"]').value, 10) || 0;
+            var price = parseFloat(row.getAttribute('data-cijena')) || 0;
+            var lineTotal = qty * price;
+            var cell = row.querySelector('[data-line-total]');
+            if (cell) cell.textContent = money(lineTotal) + ' KM';
+            sum += lineTotal;
+        });
+        var ship = (sum > 0 && sum < shipFreeFrom) ? shipFee : 0;
+        if (shipEl) {
+            shipEl.textContent = ship > 0
+                ? ('Dostava ' + money(ship) + ' KM')
+                : (sum > 0 ? 'Dostava besplatna' : ('Dostava ' + money(shipFee) + ' KM'));
+        }
+        if (totalEl) totalEl.textContent = money(sum + ship) + ' KM';
+        if (empty) empty.hidden = lineCount() > 0;
+    }
+    function availableOf(item, variation) {
+        if (variation) return Number(variation.na_stanju) || 0;
+        return Number(item.dostupno != null ? item.dostupno : item.na_stanju) || 0;
+    }
+    function findRow(pid, vid) {
+        return body.querySelector('tr[data-pid="' + pid + '"][data-vid="' + (vid || '') + '"]');
+    }
+    function pickName(item, variation) {
+        return item.naziv + (variation ? ' — ' + variation.naziv : '');
+    }
+    function stockHtml(qty) {
+        var n = Number(qty) || 0;
+        var cls = n > 0 ? 'mg-stock' : 'mg-stock is-zero';
+        return '<span class="' + cls + '">' + n + ' na stanju</span>';
+    }
+    function showHint(text, isWarn) {
+        if (!qtyHint) return;
+        if (!text) {
+            qtyHint.hidden = true;
+            qtyHint.textContent = '';
+            qtyHint.classList.remove('is-warn');
+            return;
+        }
+        qtyHint.hidden = false;
+        qtyHint.textContent = text;
+        qtyHint.classList.toggle('is-warn', !!isWarn);
+    }
+    function resetPicker(keepHint) {
+        pick = null;
+        if (qtyInput) {
+            qtyInput.hidden = true;
+            qtyInput.value = '';
+        }
+        if (pickLabel) {
+            pickLabel.hidden = true;
+            pickLabel.textContent = '';
+        }
+        if (!keepHint) showHint('');
+        if (list) list.hidden = true;
+        if (search) {
+            search.value = '';
+            search.focus();
+        }
+    }
+    function addLine(item, variation, mpOk, qty) {
+        qty = parseInt(qty, 10) || 1;
+        if (qty < 1) qty = 1;
+        var pid = String(item.id);
+        var vid = variation ? String(variation.id) : '';
+        var existing = findRow(pid, vid);
+        if (existing) {
+            var existingQty = existing.querySelector('[name="kolicina"]');
+            existingQty.value = (parseInt(existingQty.value, 10) || 0) + qty;
+            if (mpOk) {
+                existing.querySelector('[name="mp_ok"]').value = '1';
+                if (!existing.querySelector('.mg-pill.is-manual')) {
+                    var existingName = existing.querySelector('td');
+                    var existingMark = document.createElement('span');
+                    existingMark.className = 'mg-pill is-manual';
+                    existingMark.textContent = 'Maloprodaja';
+                    if (existingName) existingName.appendChild(existingMark);
+                }
+            }
+            refreshTotal();
+            return;
+        }
+        var available = availableOf(item, variation);
+        var cijena = variation ? variation.cijena : item.cijena;
+        var naziv = item.naziv;
+        var varNaziv = variation ? variation.naziv : '';
+        var sifra = (variation && variation.sifra) ? variation.sifra : (item.sifra || '—');
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-line', '1');
+        tr.setAttribute('data-pid', pid);
+        tr.setAttribute('data-vid', vid);
+        tr.setAttribute('data-cijena', cijena);
+        tr.setAttribute('data-available', available);
+        if (available <= 0) tr.classList.add('is-out-row');
+        tr.innerHTML =
+            '<td><strong>' + escapeHtml(naziv) + '</strong>' +
+            (varNaziv ? '<span class="sub">' + escapeHtml(varNaziv) + '</span>' : '') +
+            (mpOk ? '<span class="mg-pill is-manual">Maloprodaja</span>' : '') +
+            '<input type="hidden" name="product_id" value="' + escapeHtml(pid) + '">' +
+            '<input type="hidden" name="variation_id" value="' + escapeHtml(vid) + '">' +
+            '<input type="hidden" name="mp_ok" value="' + (mpOk ? '1' : '0') + '">' +
+            '</td>' +
+            '<td>' + escapeHtml(sifra) + '</td>' +
+            '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" required></td>' +
+            '<td class="num">' + escapeHtml(cijena) + ' KM</td>' +
+            '<td class="num ' + (available <= 0 ? 'num-out' : 'num-ok') + '">' + available + '</td>' +
+            '<td class="num" data-line-total>' + money(cijena * qty) + ' KM</td>' +
+            '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
+        body.appendChild(tr);
+        refreshTotal();
+    }
+    function askQty(item, variation) {
+        pick = { item: item, variation: variation };
+        var available = availableOf(item, variation);
+        var label = pickName(item, variation);
+        if (search) search.value = label;
+        if (list) list.hidden = true;
+        if (pickLabel) {
+            pickLabel.hidden = false;
+            pickLabel.innerHTML = escapeHtml(label) + ' · ' + stockHtml(available);
+        }
+        if (qtyInput) {
+            qtyInput.hidden = false;
+            qtyInput.value = '1';
+            qtyInput.focus();
+            qtyInput.select();
+        }
+        showHint('');
+    }
+    function commitPick() {
+        if (!pick) return;
+        var qty = parseInt(qtyInput && qtyInput.value, 10) || 0;
+        if (qty < 1) {
+            showHint('Unesi količinu.');
+            if (qtyInput) qtyInput.focus();
+            return;
+        }
+        var available = availableOf(pick.item, pick.variation);
+        var existing = findRow(String(pick.item.id), pick.variation ? String(pick.variation.id) : '');
+        var already = existing ? (parseInt(existing.querySelector('[name="kolicina"]').value, 10) || 0) : 0;
+        var over = already + qty > available;
+        addLine(pick.item, pick.variation, over, qty);
+        resetPicker(over);
+        if (over) {
+            showHint(
+                'Na stanju je ' + available + '. Pogledaj u maloprodaji ima li artikal.',
+                true
+            );
+        }
+    }
+    function firstSelectable() {
+        if (!list || list.hidden) return null;
+        return list.querySelector('li[data-pick]:not([hidden])');
+    }
+    function highlightFirst() {
+        if (!list) return;
+        list.querySelectorAll('li').forEach(function (item) { item.classList.remove('is-active'); });
+        var first = firstSelectable();
+        if (first) first.classList.add('is-active');
+    }
+    function selectFirstSuggestion() {
+        var first = firstSelectable();
+        if (!first) return false;
+        var kind = first.getAttribute('data-pick');
+        var index = parseInt(first.getAttribute('data-index'), 10);
+        if (kind === 'product') {
+            var item = lastResults[index];
+            if (!item) return false;
+            if (item.varijacije && item.varijacije.length === 1) {
+                askQty(item, item.varijacije[0]);
+                return true;
+            }
+            if (item.varijacije && item.varijacije.length) {
+                renderVariations(item);
+                return true;
+            }
+            askQty(item, null);
+            return true;
+        }
+        if (kind === 'variation') {
+            var parent = lastResults._parent;
+            var variation = parent && parent.varijacije ? parent.varijacije[index] : null;
+            if (!parent || !variation) return false;
+            askQty(parent, variation);
+            return true;
+        }
+        return false;
+    }
+    function renderResults(results) {
+        lastResults = results || [];
+        if (!list) return;
+        list.innerHTML = '';
+        if (!lastResults.length) {
+            list.innerHTML = '<li class="is-empty">Nema sinhronizovanog artikla.</li>';
+            list.hidden = false;
+            return;
+        }
+        lastResults.forEach(function (item, index) {
+            var li = document.createElement('li');
+            li.setAttribute('data-pick', 'product');
+            li.setAttribute('data-index', String(index));
+            if ((item.dostupno || 0) <= 0) li.classList.add('is-out');
+            li.innerHTML =
+                '<strong>' + escapeHtml(item.naziv) + '</strong>' +
+                '<span>' + escapeHtml(item.sifra || 'bez šifre') +
+                ' · ' + stockHtml(item.dostupno || 0) +
+                ' · ' + escapeHtml(item.cijena) + ' KM</span>';
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                if (item.varijacije && item.varijacije.length) renderVariations(item);
+                else askQty(item, null);
+            });
+            list.appendChild(li);
+        });
+        list.hidden = false;
+        highlightFirst();
+    }
+    function renderVariations(item) {
+        lastResults._parent = item;
+        if (!list) return;
+        list.innerHTML = '';
+        var back = document.createElement('li');
+        back.className = 'mg-suggest-back';
+        back.textContent = '← ' + item.naziv;
+        back.addEventListener('mousedown', function (event) {
+            event.preventDefault();
+            searchProducts(search ? search.value : item.naziv);
+        });
+        list.appendChild(back);
+        (item.varijacije || []).forEach(function (variation, index) {
+            var li = document.createElement('li');
+            li.setAttribute('data-pick', 'variation');
+            li.setAttribute('data-index', String(index));
+            if ((variation.na_stanju || 0) <= 0) li.classList.add('is-out');
+            li.innerHTML =
+                '<strong>' + escapeHtml(variation.naziv) + '</strong>' +
+                '<span>' + escapeHtml(variation.sifra || item.sifra || '') +
+                ' · ' + stockHtml(variation.na_stanju || 0) +
+                ' · ' + escapeHtml(variation.cijena) + ' KM</span>';
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                askQty(item, variation);
+            });
+            list.appendChild(li);
+        });
+        list.hidden = false;
+        highlightFirst();
+    }
+    function searchProducts(query) {
+        var q = (query || '').trim();
+        if (q.length < 2) {
+            if (list) list.hidden = true;
+            lastResults = [];
+            return;
+        }
+        var includeZero = document.getElementById('mgOrderIncludeZero');
+        var zeroFlag = (includeZero && includeZero.checked) ? '1' : '0';
+        fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=' + zeroFlag, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) { renderResults(data.results || []); })
+            .catch(function () {
+                if (list) {
+                    list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
+                    list.hidden = false;
+                }
+            });
+    }
+
+    if (search) {
+        search.addEventListener('input', function () {
+            pick = null;
+            if (qtyInput) {
+                qtyInput.hidden = true;
+                qtyInput.value = '';
+            }
+            if (pickLabel) pickLabel.hidden = true;
+            showHint('');
+            window.clearTimeout(timer);
+            timer = window.setTimeout(function () { searchProducts(search.value); }, 180);
+        });
+        search.addEventListener('focus', function () {
+            if (!pick && (search.value || '').trim().length >= 2 && lastResults.length) {
+                renderResults(lastResults);
+            } else if (!pick && (search.value || '').trim().length >= 2) {
+                searchProducts(search.value);
+            }
+        });
+        search.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                if (list) list.hidden = true;
+                return;
+            }
+            if (event.key === 'Tab' || event.key === 'Enter') {
+                if (firstSelectable()) {
+                    event.preventDefault();
+                    selectFirstSuggestion();
+                }
+            }
+        });
+    }
+    var includeZeroBox = document.getElementById('mgOrderIncludeZero');
+    if (includeZeroBox) {
+        includeZeroBox.addEventListener('change', function () {
+            if (search && (search.value || '').trim().length >= 2) searchProducts(search.value);
+        });
+    }
+    if (qtyInput) {
+        qtyInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                resetPicker();
+                return;
+            }
+            if (event.key === 'Tab' || event.key === 'Enter') {
+                event.preventDefault();
+                commitPick();
+            }
+        });
+    }
+    document.addEventListener('click', function (event) {
+        if (!form.contains(event.target) && list) list.hidden = true;
+    });
+    if (body) {
+        body.addEventListener('click', function (event) {
+            var btn = event.target.closest('[data-remove-line]');
+            if (!btn) return;
+            var row = btn.closest('tr');
+            if (row) row.remove();
+            refreshTotal();
+        });
+        body.addEventListener('change', function (event) {
+            var input = event.target.closest('[name="kolicina"]');
+            if (!input) return;
+            var row = input.closest('tr');
+            var qty = parseInt(input.value, 10) || 0;
+            var available = parseInt(row.getAttribute('data-available'), 10) || 0;
+            var mp = row.querySelector('[name="mp_ok"]');
+            if (qty > available && mp) {
+                mp.value = '1';
+                showHint('Na stanju je ' + available + '. Pogledaj u maloprodaji ima li artikal.', true);
+                if (!row.querySelector('.mg-pill.is-manual')) {
+                    var nameCell = row.querySelector('td');
+                    var mark = document.createElement('span');
+                    mark.className = 'mg-pill is-manual';
+                    mark.textContent = 'Maloprodaja';
+                    if (nameCell) nameCell.appendChild(mark);
+                }
+            }
+            refreshTotal();
+        });
+    }
+    form.addEventListener('submit', function (event) {
+        if (pick) {
+            event.preventDefault();
+            commitPick();
+            return;
+        }
+        if (!lineCount()) {
+            event.preventDefault();
+            if (search) search.focus();
+        }
+    });
+    if (mpModal) {
+        document.getElementById('mgMpAdd').addEventListener('click', function () {
+            if (!pending) {
+                mpModal.hidden = true;
+                return;
+            }
+            if (pending.type === 'qty' && pending.row) {
+                pending.row.querySelector('[name="mp_ok"]').value = '1';
+                var badge = pending.row.querySelector('.mg-pill');
+                if (!badge) {
+                    var td = pending.row.querySelector('td');
+                    var mark = document.createElement('span');
+                    mark.className = 'mg-pill is-manual';
+                    mark.textContent = 'Maloprodaja';
+                    td.appendChild(mark);
+                }
+                refreshTotal();
+            }
+            pending = null;
+            mpModal.hidden = true;
+        });
+        function skipMp() {
+            if (pending && pending.type === 'qty' && pending.input) {
+                pending.input.value = pending.prev || 1;
+                refreshTotal();
+            }
+            pending = null;
+            mpModal.hidden = true;
+        }
+        document.getElementById('mgMpSkip').addEventListener('click', skipMp);
+        mpModal.querySelectorAll('[data-mp-skip]').forEach(function (el) {
+            el.addEventListener('click', skipMp);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && mpModal && !mpModal.hidden) skipMp();
+        });
+    }
+    refreshTotal();
+}
+
+function initOrderBulkPrint() {
+    var form = document.getElementById('mgPrintForm');
+    if (!form) return;
+    var selectAll = document.getElementById('mgSelectAll');
+    var printBtn = document.getElementById('mgPrintSelected');
+    var countEl = document.getElementById('mgSelectedCount');
+    var checks = function () {
+        return Array.prototype.slice.call(form.querySelectorAll('.mg-order-check'));
+    };
+
+    function sync() {
+        var selected = checks().filter(function (box) { return box.checked; });
+        if (printBtn) printBtn.disabled = selected.length === 0;
+        if (countEl) countEl.textContent = selected.length + ' odabrano';
+        if (selectAll) {
+            var all = checks();
+            selectAll.checked = all.length > 0 && selected.length === all.length;
+            selectAll.indeterminate = selected.length > 0 && selected.length < all.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            checks().forEach(function (box) { box.checked = selectAll.checked; });
+            sync();
+        });
+    }
+    form.addEventListener('change', function (event) {
+        if (event.target.classList.contains('mg-order-check')) sync();
+    });
+    form.addEventListener('submit', function (event) {
+        if (checks().filter(function (box) { return box.checked; }).length === 0) {
+            event.preventDefault();
+        }
+    });
+    form.querySelectorAll('[data-stop-row]').forEach(function (cell) {
+        cell.addEventListener('click', function (event) { event.stopPropagation(); });
+    });
+    form.querySelectorAll('tr[data-order-url]').forEach(function (row) {
+        row.addEventListener('click', function () {
+            window.location.href = row.getAttribute('data-order-url');
+        });
+    });
+    sync();
+}
+
+function initTransferPage() {
+    var insertPanel = document.getElementById('mgInsertPanel');
+    var movePanel = document.getElementById('mgMovePanel');
+    if (!insertPanel && !movePanel) return;
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function bindSuggest(input, list, fetchItems, onPick, minLen) {
+        minLen = minLen == null ? 1 : minLen;
+        var timer = null;
+        var last = [];
+
+        function firstItem() {
+            return list ? list.querySelector('li[data-pick]:not([hidden])') : null;
+        }
+
+        function render(items) {
+            last = items || [];
+            if (!list) return;
+            list.innerHTML = '';
+            if (!last.length) {
+                list.innerHTML = '<li class="is-empty">Nema rezultata.</li>';
+                list.hidden = false;
+                return;
+            }
+            last.forEach(function (item, index) {
+                var li = document.createElement('li');
+                li.setAttribute('data-pick', '1');
+                li.setAttribute('data-index', String(index));
+                li.innerHTML = item.html || ('<strong>' + escapeHtml(item.label) + '</strong>');
+                li.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    onPick(item);
+                    list.hidden = true;
+                });
+                list.appendChild(li);
+            });
+            list.hidden = false;
+            var first = firstItem();
+            if (first) first.classList.add('is-active');
+        }
+
+        function search() {
+            var q = (input.value || '').trim();
+            if (q.length < minLen) {
+                list.hidden = true;
+                return;
+            }
+            Promise.resolve(fetchItems(q)).then(render).catch(function () {
+                list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
+                list.hidden = false;
+            });
+        }
+
+        input.addEventListener('input', function () {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(search, 160);
+        });
+        input.addEventListener('focus', function () {
+            if ((input.value || '').trim().length >= minLen && last.length) render(last);
+            else if ((input.value || '').trim().length >= minLen) search();
+            else if (minLen === 0) search();
+        });
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                list.hidden = true;
+                return;
+            }
+            if (event.key === 'Tab' || event.key === 'Enter') {
+                var first = firstItem();
+                if (first) {
+                    event.preventDefault();
+                    var idx = parseInt(first.getAttribute('data-index'), 10) || 0;
+                    onPick(last[idx]);
+                    list.hidden = true;
+                }
+            }
+        });
+        document.addEventListener('click', function (event) {
+            if (!input.contains(event.target) && !list.contains(event.target)) list.hidden = true;
+        });
+        return { search: search };
+    }
+
+    function fetchJson(url) {
+        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (res) {
+            return res.json();
+        });
+    }
+
+    function locItem(row) {
+        var extra = row.kolicina ? (' · ' + row.kolicina + ' kom') : '';
+        return {
+            id: row.id,
+            label: row.label,
+            kolicina: row.kolicina || 0,
+            dostupno: row.dostupno || 0,
+            html: '<strong>' + escapeHtml(row.label) + '</strong><span>' + escapeHtml(row.sifra || '') + extra + '</span>',
+        };
+    }
+
+    function productItems(results) {
+        var items = [];
+        (results || []).forEach(function (item) {
+            var vars = item.varijacije || [];
+            if (vars.length) {
+                vars.forEach(function (variation) {
+                    items.push({
+                        id: item.id,
+                        vid: variation.id,
+                        naziv: item.naziv,
+                        varNaziv: variation.naziv,
+                        sifra: variation.sifra || item.sifra || '',
+                        label: item.naziv + ' — ' + variation.naziv,
+                        html:
+                            '<strong>' + escapeHtml(item.naziv) + ' — ' + escapeHtml(variation.naziv) + '</strong>' +
+                            '<span>' + escapeHtml(variation.sifra || item.sifra || '') + '</span>',
+                    });
+                });
+            } else {
+                items.push({
+                    id: item.id,
+                    vid: '',
+                    naziv: item.naziv,
+                    varNaziv: '',
+                    sifra: item.sifra || '',
+                    label: item.naziv,
+                    html:
+                        '<strong>' + escapeHtml(item.naziv) + '</strong>' +
+                        '<span>' + escapeHtml(item.sifra || '') + '</span>',
+                });
+            }
+        });
+        return items;
+    }
+
+    if (insertPanel) {
+        var locUrl = insertPanel.getAttribute('data-loc-lookup-url') || '';
+        var artUrl = insertPanel.getAttribute('data-lookup-url') || '';
+        var locId = document.getElementById('mgInsertLocId');
+        var locSearch = document.getElementById('mgInsertLocSearch');
+        var locSuggest = document.getElementById('mgInsertLocSuggest');
+        var locWrap = document.getElementById('mgInsertLocSearchWrap');
+        var locLocked = document.getElementById('mgInsertLocLocked');
+        var locLabel = document.getElementById('mgInsertLocLabel');
+        var locChange = document.getElementById('mgInsertLocChange');
+        var artWrap = document.getElementById('mgInsertArtWrap');
+        var artSearch = document.getElementById('mgInsertSearch');
+        var artSuggest = document.getElementById('mgInsertSuggest');
+        var artQty = document.getElementById('mgInsertQty');
+        var artPickLabel = document.getElementById('mgInsertPickLabel');
+        var lines = document.getElementById('mgInsertLines');
+        var table = document.getElementById('mgInsertTable');
+        var empty = document.getElementById('mgInsertEmpty');
+        var submit = document.getElementById('mgInsertSubmit');
+        var form = document.getElementById('mgInsertForm');
+        var pending = null;
+
+        function lockLocation(item) {
+            locId.value = item.id;
+            locLabel.textContent = item.label;
+            locWrap.hidden = true;
+            locLocked.hidden = false;
+            artWrap.hidden = false;
+            empty.hidden = false;
+            if (artSearch) artSearch.focus();
+        }
+
+        function unlockLocation() {
+            locId.value = '';
+            locSearch.value = '';
+            locWrap.hidden = false;
+            locLocked.hidden = true;
+            artWrap.hidden = true;
+            table.hidden = true;
+            empty.hidden = true;
+            if (lines) lines.innerHTML = '';
+            syncInsert();
+            locSearch.focus();
+        }
+
+        function syncInsert() {
+            var count = lines ? lines.querySelectorAll('tr[data-line]').length : 0;
+            if (table) table.hidden = count === 0;
+            if (empty) empty.hidden = !locId.value || count > 0;
+            if (submit) submit.disabled = !locId.value || count === 0;
+        }
+
+        function addInsertLine(item, qty) {
+            qty = parseInt(qty, 10) || 1;
+            if (qty < 1) qty = 1;
+            var existing = lines.querySelector('tr[data-pid="' + item.id + '"][data-vid="' + (item.vid || '') + '"]');
+            if (existing) {
+                var input = existing.querySelector('[name="kolicina"]');
+                input.value = (parseInt(input.value, 10) || 0) + qty;
+                return;
+            }
+            var tr = document.createElement('tr');
+            tr.setAttribute('data-line', '1');
+            tr.setAttribute('data-pid', item.id);
+            tr.setAttribute('data-vid', item.vid || '');
+            tr.innerHTML =
+                '<td><strong>' + escapeHtml(item.naziv) + '</strong>' +
+                (item.varNaziv ? '<span class="sub">' + escapeHtml(item.varNaziv) + '</span>' : '') +
+                '<input type="hidden" name="product_id" value="' + item.id + '">' +
+                '<input type="hidden" name="variation_id" value="' + escapeHtml(item.vid || '') + '"></td>' +
+                '<td>' + escapeHtml(item.sifra || '—') + '</td>' +
+                '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" required></td>' +
+                '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
+            lines.appendChild(tr);
+        }
+
+        bindSuggest(locSearch, locSuggest, function (q) {
+            return fetchJson(locUrl + '?q=' + encodeURIComponent(q)).then(function (data) {
+                return (data.results || []).map(locItem);
+            });
+        }, lockLocation, 1);
+
+        bindSuggest(artSearch, artSuggest, function (q) {
+            return fetchJson(artUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1').then(function (data) {
+                return productItems(data.results || []);
+            });
+        }, function (item) {
+            pending = item;
+            artSuggest.hidden = true;
+            artSearch.value = item.label;
+            if (artPickLabel) {
+                artPickLabel.hidden = false;
+                artPickLabel.textContent = item.label;
+            }
+            artQty.hidden = false;
+            artQty.value = '1';
+            artQty.focus();
+            artQty.select();
+        }, 2);
+
+        if (artQty) {
+            artQty.addEventListener('keydown', function (event) {
+                if (event.key === 'Tab' || event.key === 'Enter') {
+                    event.preventDefault();
+                    if (!pending) return;
+                    addInsertLine(pending, artQty.value);
+                    pending = null;
+                    artQty.hidden = true;
+                    artQty.value = '';
+                    artSearch.value = '';
+                    if (artPickLabel) artPickLabel.hidden = true;
+                    syncInsert();
+                    artSearch.focus();
+                }
+            });
+        }
+        if (lines) {
+            lines.addEventListener('click', function (event) {
+                var btn = event.target.closest('[data-remove-line]');
+                if (!btn) return;
+                var row = btn.closest('tr');
+                if (row) row.remove();
+                syncInsert();
+            });
+        }
+        if (locChange) locChange.addEventListener('click', unlockLocation);
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                if (pending) {
+                    event.preventDefault();
+                    addInsertLine(pending, artQty.value);
+                    pending = null;
+                    syncInsert();
+                    return;
+                }
+                if (!locId.value || !lines.querySelector('tr[data-line]')) {
+                    event.preventDefault();
+                }
+            });
+        }
+        syncInsert();
+    }
+
+    if (movePanel) {
+        var locUrl2 = movePanel.getAttribute('data-loc-lookup-url') || '';
+        var artUrl2 = movePanel.getAttribute('data-lookup-url') || '';
+        var pid = document.getElementById('mgMovePid');
+        var vid = document.getElementById('mgMoveVid');
+        var fromId = document.getElementById('mgMoveFromId');
+        var toId = document.getElementById('mgMoveToId');
+        var search = document.getElementById('mgMoveSearch');
+        var suggest = document.getElementById('mgMoveSuggest');
+        var pickLabel = document.getElementById('mgMovePickLabel');
+        var fromWrap = document.getElementById('mgMoveFromWrap');
+        var fromList = document.getElementById('mgMoveFromList');
+        var fromEmpty = document.getElementById('mgMoveFromEmpty');
+        var qtyWrap = document.getElementById('mgMoveQtyWrap');
+        var qty = document.getElementById('mgMoveQty');
+        var toWrap = document.getElementById('mgMoveToWrap');
+        var toSearch = document.getElementById('mgMoveToSearch');
+        var toSuggest = document.getElementById('mgMoveToSuggest');
+        var submit = document.getElementById('mgMoveSubmit');
+        var form = document.getElementById('mgMoveForm');
+        var fromQty = 0;
+
+        function syncMove() {
+            if (submit) submit.disabled = !(pid.value && fromId.value && toId.value && (parseInt(qty.value, 10) || 0) > 0);
+        }
+
+        function pickFrom(item) {
+            fromId.value = item.id;
+            fromQty = parseInt(item.kolicina, 10) || 0;
+            if (fromList) {
+                fromList.querySelectorAll('[data-from-loc]').forEach(function (btn) {
+                    btn.classList.toggle('is-active', btn.getAttribute('data-from-loc') === String(item.id));
+                });
+            }
+            if (qty) {
+                qty.max = fromQty || '';
+                if (!qty.value || parseInt(qty.value, 10) > fromQty) qty.value = fromQty > 0 ? '1' : '';
+            }
+            qtyWrap.hidden = fromQty <= 0;
+            toWrap.hidden = fromQty <= 0;
+            syncMove();
+            if (fromQty > 0 && qty) {
+                qty.focus();
+                qty.select();
+            }
+        }
+
+        function renderFromLocs(rows) {
+            if (!fromList) return;
+            fromList.innerHTML = '';
+            var items = (rows || []).filter(function (row) { return (row.kolicina || 0) > 0; });
+            if (fromEmpty) fromEmpty.hidden = items.length > 0;
+            items.forEach(function (row) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'mg-from-loc';
+                btn.setAttribute('data-from-loc', String(row.id));
+                btn.innerHTML =
+                    '<strong>' + escapeHtml(row.label) + '</strong>' +
+                    '<span>' + escapeHtml(String(row.kolicina)) + ' kom</span>';
+                btn.addEventListener('click', function () { pickFrom(row); });
+                fromList.appendChild(btn);
+            });
+        }
+
+        function loadFromLocs() {
+            var url = locUrl2 + '?sa_zalihom=1&product_id=' + encodeURIComponent(pid.value);
+            if (vid.value) url += '&variation_id=' + encodeURIComponent(vid.value);
+            return fetchJson(url).then(function (data) {
+                renderFromLocs(data.results || []);
+            }).catch(function () {
+                renderFromLocs([]);
+            });
+        }
+
+        function pickArticle(item) {
+            pid.value = item.id;
+            vid.value = item.vid || '';
+            search.value = item.label;
+            if (pickLabel) {
+                pickLabel.hidden = false;
+                pickLabel.textContent = item.label;
+            }
+            fromId.value = '';
+            toId.value = '';
+            toSearch.value = '';
+            if (qty) qty.value = '';
+            fromWrap.hidden = false;
+            qtyWrap.hidden = true;
+            toWrap.hidden = true;
+            if (fromList) fromList.innerHTML = '';
+            if (fromEmpty) fromEmpty.hidden = true;
+            syncMove();
+            loadFromLocs();
+        }
+
+        function pickTo(item) {
+            toId.value = item.id;
+            toSearch.value = item.label;
+            syncMove();
+        }
+
+        bindSuggest(search, suggest, function (q) {
+            return fetchJson(artUrl2 + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1').then(function (data) {
+                return productItems(data.results || []);
+            });
+        }, pickArticle, 2);
+
+        bindSuggest(toSearch, toSuggest, function (q) {
+            return fetchJson(locUrl2 + '?q=' + encodeURIComponent(q)).then(function (data) {
+                return (data.results || []).map(locItem);
+            });
+        }, pickTo, 1);
+
+        if (qty) qty.addEventListener('input', syncMove);
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                if (submit && submit.disabled) event.preventDefault();
+            });
+        }
+        syncMove();
+    }
+}
+
+function initArticleScanner() {
+    var openBtn = document.getElementById('mgArticleScanBtn');
+    var extraBtns = document.querySelectorAll('[data-mg-scan-target]');
+    var modal = document.getElementById('mgScanModal');
+    var statusEl = document.getElementById('mgScanStatus');
+    var fileInput = document.getElementById('mgBarcodeFile');
+    var searchInput = document.getElementById('mgArticleSearch');
+    var searchForm = document.getElementById('mgArticleSearchForm');
+    var video = document.getElementById('mgScanVideo');
+    if ((!openBtn && !extraBtns.length) || !modal || !video) return;
+    var targetInput = searchInput;
+    var submitAfterScan = true;
+
+    var stream = null;
+    var running = false;
+    var handled = false;
+    var loopTimer = 0;
+    var detector = null;
+    var zxing = null;
+    var zxingReader = null;
+    var zxingHints = null;
+    var fullCanvas = document.createElement('canvas');
+    var bandCanvas = document.createElement('canvas');
+    var ONED = ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf', 'codabar'];
+
+    function setStatus(msg) {
+        if (statusEl) statusEl.textContent = msg || '';
+    }
+
+    function applyCode(code) {
+        var value = String(code || '').replace(/[\r\n\t]+/g, '').trim();
+        if (!value || handled) return;
+        handled = true;
+        if (targetInput) {
+            targetInput.value = value;
+            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            targetInput.focus();
+        }
+        setStatus('Skenirano: ' + value);
+        stopScanner();
+        modal.hidden = true;
+        if (submitAfterScan && searchForm && targetInput === searchInput) searchForm.submit();
+    }
+
+    function stopScanner() {
+        running = false;
+        if (loopTimer) {
+            window.clearTimeout(loopTimer);
+            loopTimer = 0;
+        }
+        if (stream) {
+            stream.getTracks().forEach(function (track) { track.stop(); });
+            stream = null;
+        }
+        video.srcObject = null;
+    }
+
+    function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            s.onload = function () { resolve(); };
+            s.onerror = function () { reject(new Error('Učitavanje čitača nije uspjelo.')); };
+            document.head.appendChild(s);
+        });
+    }
+
+    function loadZXing() {
+        if (window.ZXing && window.ZXing.BrowserMultiFormatReader) {
+            return Promise.resolve(window.ZXing);
+        }
+        return loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js').catch(function () {
+            return loadScript('https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js');
+        }).then(function () {
+            if (!window.ZXing || !window.ZXing.BrowserMultiFormatReader) {
+                throw new Error('Čitač barkoda nije dostupan.');
+            }
+            return window.ZXing;
+        });
+    }
+
+    function setupZXing(ZXingLib) {
+        zxing = ZXingLib;
+        try {
+            zxingHints = new Map();
+            zxingHints.set(ZXingLib.DecodeHintType.TRY_HARDER, true);
+            if (ZXingLib.DecodeHintType.ALSO_INVERTED != null) {
+                zxingHints.set(ZXingLib.DecodeHintType.ALSO_INVERTED, true);
+            }
+            zxingHints.set(ZXingLib.DecodeHintType.POSSIBLE_FORMATS, [
+                ZXingLib.BarcodeFormat.EAN_13,
+                ZXingLib.BarcodeFormat.EAN_8,
+                ZXingLib.BarcodeFormat.CODE_128,
+                ZXingLib.BarcodeFormat.CODE_39,
+                ZXingLib.BarcodeFormat.UPC_A,
+                ZXingLib.BarcodeFormat.UPC_E,
+                ZXingLib.BarcodeFormat.ITF,
+                ZXingLib.BarcodeFormat.CODABAR,
+                ZXingLib.BarcodeFormat.QR_CODE,
+            ]);
+        } catch (e) {
+            zxingHints = undefined;
+        }
+        zxingReader = new ZXingLib.BrowserMultiFormatReader(zxingHints, 50);
+    }
+
+    function prepareDetector() {
+        if (!('BarcodeDetector' in window)) return Promise.resolve(null);
+        var supportedP = window.BarcodeDetector.getSupportedFormats
+            ? window.BarcodeDetector.getSupportedFormats()
+            : Promise.resolve(ONED);
+        return supportedP.then(function (supported) {
+            var has1d = ONED.some(function (fmt) { return supported.indexOf(fmt) !== -1; });
+            if (!has1d) return null;
+            var formats = ONED.filter(function (fmt) { return supported.indexOf(fmt) !== -1; });
+            formats.push('qr_code');
+            try { return new window.BarcodeDetector({ formats: formats }); }
+            catch (e) { return null; }
+        }).catch(function () { return null; });
+    }
+
+    function drawBand() {
+        var w = video.videoWidth;
+        var h = video.videoHeight;
+        if (!w || !h) return null;
+        var bandH = Math.max(80, Math.floor(h * 0.38));
+        var y = Math.floor((h - bandH) / 2);
+        bandCanvas.width = w;
+        bandCanvas.height = bandH;
+        bandCanvas.getContext('2d', { willReadFrequently: true }).drawImage(
+            video, 0, y, w, bandH, 0, 0, w, bandH
+        );
+        return bandCanvas;
+    }
+
+    function drawFull() {
+        var w = video.videoWidth;
+        var h = video.videoHeight;
+        if (!w || !h) return null;
+        var scale = w > 1280 ? 1280 / w : 1;
+        fullCanvas.width = Math.floor(w * scale);
+        fullCanvas.height = Math.floor(h * scale);
+        fullCanvas.getContext('2d', { willReadFrequently: true }).drawImage(
+            video, 0, 0, fullCanvas.width, fullCanvas.height
+        );
+        return fullCanvas;
+    }
+
+    function decodeZxingCanvas(canvas) {
+        if (!canvas || !zxingReader) return Promise.resolve(null);
+        if (zxingReader.decodeFromCanvas) {
+            return zxingReader.decodeFromCanvas(canvas).then(function (result) {
+                return result && result.getText ? result.getText() : null;
+            }).catch(function () { return null; });
+        }
+        try {
+            var source = new zxing.HTMLCanvasElementLuminanceSource(canvas);
+            var bitmap = new zxing.BinaryBitmap(new zxing.HybridBinarizer(source));
+            var reader = new zxing.MultiFormatReader();
+            if (zxingHints) reader.setHints(zxingHints);
+            var result = reader.decode(bitmap);
+            return Promise.resolve(result && result.getText ? result.getText() : null);
+        } catch (e) {
+            return Promise.resolve(null);
+        }
+    }
+
+    function decodeDetectorCanvas(canvas) {
+        if (!canvas || !detector) return Promise.resolve(null);
+        return detector.detect(canvas).then(function (codes) {
+            return codes && codes[0] && codes[0].rawValue ? codes[0].rawValue : null;
+        }).catch(function () { return null; });
+    }
+
+    function scanTick() {
+        if (!running) return;
+        if (video.readyState < 2) {
+            loopTimer = window.setTimeout(scanTick, 50);
+            return;
+        }
+        var band = drawBand();
+        var full = drawFull();
+        Promise.all([
+            decodeZxingCanvas(band),
+            decodeDetectorCanvas(band),
+            decodeZxingCanvas(full),
+            decodeDetectorCanvas(full),
+        ]).then(function (found) {
+            var code = found.filter(Boolean)[0];
+            if (code) {
+                applyCode(code);
+                return;
+            }
+            if (running) loopTimer = window.setTimeout(scanTick, 60);
+        }).catch(function () {
+            if (running) loopTimer = window.setTimeout(scanTick, 80);
+        });
+    }
+
+    function pickBackCamera() {
+        return navigator.mediaDevices.enumerateDevices().then(function (devices) {
+            var cams = devices.filter(function (d) { return d.kind === 'videoinput'; });
+            var back = cams.find(function (d) { return /back|rear|environment/i.test(d.label || ''); });
+            return back ? { deviceId: { exact: back.deviceId } } : { facingMode: { ideal: 'environment' } };
+        }).catch(function () {
+            return { facingMode: { ideal: 'environment' } };
+        });
+    }
+
+    function startCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setStatus('Preglednik ne podržava kameru. Koristi HTTPS ili učitaj sliku.');
+            return;
+        }
+        handled = false;
+        setStatus('Pokrećem kameru i čitač…');
+        Promise.all([
+            pickBackCamera(),
+            loadZXing(),
+            prepareDetector(),
+        ]).then(function (parts) {
+            detector = parts[2];
+            setupZXing(parts[1]);
+            var videoSource = parts[0];
+            return navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: Object.assign({
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    focusMode: 'continuous',
+                }, videoSource),
+            }).catch(function () {
+                return navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { facingMode: { ideal: 'environment' } },
+                });
+            });
+        }).then(function (media) {
+            stream = media;
+            video.srcObject = stream;
+            video.setAttribute('playsinline', 'true');
+            video.muted = true;
+            return video.play();
+        }).then(function () {
+            running = true;
+            setStatus('Drži barkod vodoravno u bijelom okviru, 10–20 cm od kamere.');
+            scanTick();
+        }).catch(function (err) {
+            setStatus((err && err.message) || 'Kamera nije dostupna. Dozvoli pristup ili učitaj sliku.');
+        });
+    }
+
+    function decodeFile(file) {
+        setStatus('Čitam sliku…');
+        Promise.all([loadZXing(), prepareDetector()]).then(function (parts) {
+            setupZXing(parts[0]);
+            detector = parts[1];
+            return createImageBitmap(file);
+        }).then(function (bitmap) {
+            fullCanvas.width = bitmap.width;
+            fullCanvas.height = bitmap.height;
+            fullCanvas.getContext('2d', { willReadFrequently: true }).drawImage(bitmap, 0, 0);
+            return Promise.all([
+                decodeZxingCanvas(fullCanvas),
+                decodeDetectorCanvas(fullCanvas),
+            ]);
+        }).then(function (found) {
+            var code = found.filter(Boolean)[0];
+            if (code) applyCode(code);
+            else setStatus('Barkod nije pročitan sa slike. Probaj bliže i ravnije, uz više svjetla.');
+        }).catch(function () {
+            setStatus('Barkod nije pročitan sa slike.');
+        });
+    }
+
+    function openScanner(input, shouldSubmit) {
+        targetInput = input || searchInput;
+        submitAfterScan = !!shouldSubmit;
+        handled = false;
+        modal.hidden = false;
+        window.setTimeout(startCamera, 80);
+    }
+
+    if (openBtn) {
+        openBtn.addEventListener('click', function () {
+            openScanner(searchInput, true);
+        });
+    }
+    extraBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = document.getElementById(btn.getAttribute('data-mg-scan-target') || '');
+            if (!input) return;
+            openScanner(input, false);
+        });
+    });
+    modal.querySelectorAll('[data-scan-close]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            stopScanner();
+            modal.hidden = true;
+            setStatus('');
+        });
+    });
+    if (fileInput) {
+        fileInput.addEventListener('change', function () {
+            var file = fileInput.files && fileInput.files[0];
+            fileInput.value = '';
+            if (file) decodeFile(file);
+        });
+    }
+}

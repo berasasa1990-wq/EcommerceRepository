@@ -4,6 +4,7 @@ from . import views
 from . import views_catalog_api
 from . import views_chat
 from . import views_feed
+from . import views_magacin
 from . import views_site_prep
 from . import views_sync
 
@@ -137,6 +138,31 @@ urlpatterns = [
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),
     path('nalog/aktiviraj-korisnika/', views.staff_activate_user, name='staff_activate_user'),
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
+    path('nalog/magacin/', views_magacin.magacin_home, name='staff_magacin'),
+    path('nalog/magacin/pregled/', views_magacin.magacin_pregled, name='staff_magacin_pregled'),
+    path('nalog/magacin/artikli/', views_magacin.magacin_artikli, name='staff_magacin_artikli'),
+    path('nalog/magacin/artikli/lookup/', views_magacin.magacin_artikli_lookup, name='staff_magacin_artikli_lookup'),
+    path('nalog/magacin/artikli/<int:pk>/', views_magacin.magacin_artikal, name='staff_magacin_artikal'),
+    path('nalog/magacin/artikli/<int:pk>/izmjena/', views_magacin.magacin_artikal_izmjena, name='staff_magacin_artikal_izmjena'),
+    path('nalog/magacin/artikli/<int:pk>/istorija/', views_magacin.magacin_istorija, name='staff_magacin_istorija'),
+    path('nalog/magacin/lokacije/lookup/', views_magacin.magacin_lokacije_lookup, name='staff_magacin_lokacije_lookup'),
+    path('nalog/magacin/lokacije/', views_magacin.magacin_lokacije, name='staff_magacin_lokacije'),
+    path('nalog/magacin/zalihe/', views_magacin.magacin_zalihe, name='staff_magacin_zalihe'),
+    path('nalog/magacin/transferi/', views_magacin.magacin_transferi, name='staff_magacin_transferi'),
+    path('nalog/magacin/narudzbe/', views_magacin.magacin_narudzbe, name='staff_magacin_narudzbe'),
+    path('nalog/magacin/narudzbe/nova/', views_magacin.magacin_narudzba_nova, name='staff_magacin_narudzba_nova'),
+    path('nalog/magacin/narudzbe/stampa/', views_magacin.magacin_narudzbe_stampa, name='staff_magacin_narudzbe_stampa'),
+    path(
+        'nalog/magacin/narudzbe/odstampano/',
+        views_magacin.magacin_narudzbe_mark_printed,
+        name='staff_magacin_narudzbe_mark_printed',
+    ),
+    path('nalog/magacin/pakovanje/', views_magacin.magacin_pakovanje, name='staff_magacin_pakovanje'),
+    path('nalog/magacin/dobavljaci/', views_magacin.magacin_dobavljaci, name='staff_magacin_dobavljaci'),
+    path('nalog/magacin/izvjestaji/', views_magacin.magacin_izvjestaji, name='staff_magacin_izvjestaji'),
+    path('nalog/magacin/podesavanja/', views_magacin.magacin_podesavanja, name='staff_magacin_podesavanja'),
+    path('nalog/magacin/sync/', views_magacin.magacin_sync, name='staff_magacin_sync'),
+    path('nalog/magacin/sync/istorija/', views_magacin.magacin_sync_istorija, name='staff_magacin_sync_istorija'),
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
     path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),

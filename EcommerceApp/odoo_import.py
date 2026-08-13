@@ -167,6 +167,8 @@ def _process_odoo_image(image_b64, filename):
 def _resolve_django_category(odoo_category_id, selected_category):
     if selected_category:
         return selected_category
+    if not odoo_category_id:
+        return None
     return Category.objects.filter(odoo_category_id=int(odoo_category_id)).first()
 
 

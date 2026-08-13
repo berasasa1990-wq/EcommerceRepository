@@ -1,0 +1,955 @@
+from decimal import Decimal
+
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from .magacin import (
+    MagacinError,
+    _apply_quant_batch,
+    _odoo_id_to_local,
+    apply_movement,
+    cancel_order_stock,
+    deduct_for_order,
+    location_rows,
+    reserve_for_order,
+    seed_default_locations,
+    stock_totals,
+    sync_catalog_chunk,
+    validate_order_stock,
+)
+from .models import (
+    Order,
+    OrderItem,
+    Product,
+    ProductVariation,
+    WarehouseLocation,
+    WarehouseMovement,
+    WarehouseStock,
+)
+
+
+class MagacinStockTests(TestCase):
+    def setUp(self):
+        self.product = Product.objects.create(
+            naziv='Fox Submerge Sinking Braid',
+            sifra='FOX12345',
+            cijena=Decimal('29.90'),
+            stanje=0,
+            na_stanju=False,
+        )
+        self.a10 = WarehouseLocation.objects.create(sifra='A-10', naziv='Glavni magacin', redoslijed=10)
+        self.b03 = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo', redoslijed=20)
+
+    def test_prijem_and_prodaja(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=50, napomena='Prijem robe')
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 50)
+        self.assertTrue(self.product.na_stanju)
+        apply_movement(product=self.product, location=self.a10, tip='prodaja', kolicina=3, napomena='Maloprodaja')
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 47)
+        totals = stock_totals(self.product)
+        self.assertEqual(totals['na_stanju'], 47)
+
+    def test_transfer_moves_stock(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=20)
+        apply_movement(
+            product=self.product,
+            location=self.a10,
+            to_location=self.b03,
+            tip='transfer',
+            kolicina=8,
+            napomena='Premještaj',
+        )
+        here = WarehouseStock.objects.get(product=self.product, location=self.a10, variation__isnull=True)
+        there = WarehouseStock.objects.get(product=self.product, location=self.b03, variation__isnull=True)
+        self.assertEqual(here.kolicina, 12)
+        self.assertEqual(there.kolicina, 8)
+        move = WarehouseMovement.objects.filter(tip='transfer').first()
+        self.assertEqual(move.to_location_id, self.b03.pk)
+
+    def test_prodaja_insufficient(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=2)
+        with self.assertRaises(MagacinError):
+            apply_movement(product=self.product, location=self.a10, tip='prodaja', kolicina=5)
+
+    def test_korekcija_sets_absolute(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
+        apply_movement(product=self.product, location=self.a10, tip='korekcija', kolicina=7)
+        stock = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        self.assertEqual(stock.kolicina, 7)
+
+    def test_variation_stock_updates_variation_qty(self):
+        var = ProductVariation.objects.create(
+            artikal=self.product, naziv='0.30mm 300m', sifra='FOX12345-030', cijena=Decimal('29.90'),
+        )
+        apply_movement(product=self.product, variation=var, location=self.a10, tip='prijem', kolicina=87)
+        var.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(var.stanje, 87)
+        self.assertEqual(self.product.stanje, 87)
+
+    def test_location_rows_only_where_article_has_stock(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
+        rows, totals = location_rows(self.product)
+        self.assertEqual(totals['na_stanju'], 10)
+        self.assertEqual([row['location'].sifra for row in rows], ['A-10'])
+        self.assertTrue(all(row['kolicina'] > 0 for row in rows))
+
+    def test_prenos_mp_is_not_counted_as_stock(self):
+        mp = WarehouseLocation.objects.create(
+            sifra='Prenos u MP', naziv='Prenos u MP', odoo_location_path='WH/Prenos u MP',
+        )
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=4)
+        WarehouseStock.objects.create(product=self.product, location=mp, kolicina=20)
+        rows, totals = location_rows(self.product)
+        self.assertEqual(totals['na_stanju'], 4)
+        self.assertEqual([row['location'].sifra for row in rows], ['A-10'])
+        self.assertFalse(any('prenos' in row['location'].sifra.casefold() for row in rows))
+
+    def test_maloprodaja_is_not_counted_as_stock(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=4)
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=20)
+        rows, totals = location_rows(self.product)
+        self.assertEqual(totals['na_stanju'], 4)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 4)
+        self.assertEqual([row['location'].sifra for row in rows], ['A-10'])
+        self.assertFalse(any('maloprodaja' in row['location'].naziv.casefold() for row in rows))
+
+    def test_seed_default_locations(self):
+        created = seed_default_locations()
+        self.assertGreaterEqual(created, 3)
+        self.assertTrue(WarehouseLocation.objects.filter(sifra='A-10').exists())
+
+    def test_deduct_for_order_takes_available_and_returns_leftover(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=4)
+        leftover = deduct_for_order(self.product, 10, napomena='Ručna narudžba')
+        self.assertEqual(leftover, 6)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 0)
+        self.assertEqual(
+            WarehouseMovement.objects.filter(tip=WarehouseMovement.Tip.PRODAJA).count(),
+            1,
+        )
+
+    def test_reserve_validate_and_cancel(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
+        order = Order.objects.create(
+            ime_prezime='Test', email='t@example.com', telefon='061',
+            adresa='A', grad='S', ukupno=Decimal('10.00'),
+            izvor=Order.Izvor.MAGACIN,
+        )
+        leftover = reserve_for_order(order, self.product, 4)
+        self.assertEqual(leftover, 0)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 10)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 6)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 4)
+
+        leftover2 = reserve_for_order(order, self.product, 8)
+        self.assertEqual(leftover2, 2)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 0)
+
+        validate_order_stock(order)
+        order.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(self.product.stanje, 0)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
+
+    def test_cancel_releases_reservation(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=5)
+        order = Order.objects.create(
+            ime_prezime='Test', email='t@example.com', telefon='061',
+            adresa='A', grad='S', ukupno=Decimal('10.00'),
+            izvor=Order.Izvor.MAGACIN, lager_status=Order.LagerStatus.REZERVISANO,
+        )
+        reserve_for_order(order, self.product, 3)
+        cancel_order_stock(order)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.OTKAZANA)
+        self.assertEqual(order.lager_status, Order.LagerStatus.OTKAZANO)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 5)
+
+
+class FakeOdooClient:
+    def __init__(self, templates):
+        self.templates = {int(row['id']): row for row in templates}
+        self.image_requests = []
+
+    def get_templates_by_ids(self, template_ids):
+        return [self.templates[int(tid)] for tid in template_ids if int(tid) in self.templates]
+
+    def get_template_images(self, template_ids, *, batch_size=5):
+        self.image_requests.extend(int(tid) for tid in template_ids)
+        return {}
+
+    def get_product_variants(self, variant_ids, *, with_images=False):
+        return []
+
+
+class MagacinCatalogSyncTests(TestCase):
+    def test_updates_existing_by_odoo_id_without_duplicate(self):
+        product = Product.objects.create(
+            naziv='Stari naziv',
+            sifra='FOX-OLD',
+            barkod='111',
+            cijena=Decimal('10.00'),
+            odoo_template_id=501,
+            stanje=4,
+        )
+        client = FakeOdooClient([{
+            'id': 501,
+            'name': 'Novi naziv',
+            'default_code': 'FOX-NEW',
+            'barcode': '999',
+            'list_price': '19.50',
+            'qty_available': 8,
+            'product_variant_ids': [501],
+        }])
+        stats = sync_catalog_chunk(client, [501], start=0, limit=10)
+        self.assertEqual(stats['azurirano'], 1)
+        self.assertEqual(stats['kreirano'], 0)
+        self.assertEqual(Product.objects.filter(odoo_template_id=501).count(), 1)
+        product.refresh_from_db()
+        self.assertEqual(product.naziv, 'Novi naziv')
+        self.assertEqual(product.sifra, 'FOX-NEW')
+        self.assertEqual(product.barkod, '999')
+        self.assertEqual(product.cijena, Decimal('19.50'))
+        self.assertEqual(Product.objects.count(), 1)
+
+    def test_skips_unchanged_existing_product(self):
+        product = Product.objects.create(
+            naziv='Isti naziv',
+            sifra='SAME-1',
+            barkod='B1',
+            cijena=Decimal('10.00'),
+            odoo_template_id=444,
+        )
+        product.slika = 'products/vec-tu.jpg'
+        product.save(update_fields=['slika'])
+        before = product.azuriran
+        client = FakeOdooClient([{
+            'id': 444,
+            'name': 'Isti naziv',
+            'default_code': 'SAME-1',
+            'barcode': 'B1',
+            'list_price': '10.00',
+            'qty_available': 3,
+            'product_variant_ids': [444],
+        }])
+        stats = sync_catalog_chunk(client, [444], start=0, limit=10)
+        self.assertEqual(stats['preskoceno'], 1)
+        self.assertEqual(stats['azurirano'], 0)
+        product.refresh_from_db()
+        self.assertEqual(product.azuriran, before)
+
+    def test_creates_zero_qty_new_product_for_later_stock(self):
+        client = FakeOdooClient([{
+            'id': 777,
+            'name': 'Nema na stanju',
+            'default_code': 'EMPTY-1',
+            'barcode': '',
+            'list_price': '5.00',
+            'qty_available': 0,
+            'product_variant_ids': [777],
+        }])
+        stats = sync_catalog_chunk(client, [777], start=0, limit=10)
+        self.assertEqual(stats['kreirano'], 1)
+        product = Product.objects.get(odoo_template_id=777)
+        self.assertEqual(product.stanje, 0)
+        self.assertFalse(product.na_stanju)
+        self.assertIsNotNone(product.magacin_sync_at)
+
+    def test_creates_variation_without_normalized_null(self):
+        product = Product.objects.create(
+            naziv='Parent',
+            sifra='PAR-1',
+            cijena=Decimal('1.00'),
+            odoo_template_id=900,
+        )
+        variation = ProductVariation.objects.create(
+            artikal=product,
+            naziv='0.30mm',
+            sifra='PAR-1-030',
+            odoo_variant_id=901,
+        )
+        self.assertEqual(variation.naziv_normalized, '0.30mm')
+        self.assertEqual(variation.sifra_normalized, 'par-1-030')
+
+    def test_odoo_variant_id_maps_to_template_product(self):
+        product = Product.objects.create(
+            naziv='Fox braid',
+            sifra='FOX-V',
+            cijena=Decimal('10.00'),
+            odoo_template_id=501,
+            magacin_sync_at=timezone.now(),
+        )
+        mapping = _odoo_id_to_local([9001], variant_to_template={9001: 501})
+        self.assertIn(9001, mapping)
+        self.assertEqual(mapping[9001][0].pk, product.pk)
+        self.assertIsNone(mapping[9001][1])
+
+    def test_odoo_template_id_is_not_treated_as_variant_id(self):
+        shorts = Product.objects.create(
+            naziv='CFX343 FOX LW Combat Short Khaki XXL',
+            sifra='ODOO-T5117',
+            cijena=Decimal('79.90'),
+            odoo_template_id=5117,
+            magacin_sync_at=timezone.now(),
+        )
+        feeder = Product.objects.create(
+            naziv='AS221 feeder 60gr',
+            sifra='4626',
+            cijena=Decimal('3.00'),
+            odoo_template_id=5080,
+            magacin_sync_at=timezone.now(),
+        )
+        mapping = _odoo_id_to_local(
+            [5117],
+            variant_to_template={5117: 5080},
+        )
+        self.assertEqual(mapping[5117][0].pk, feeder.pk)
+        self.assertNotEqual(mapping[5117][0].pk, shorts.pk)
+        unmapped = _odoo_id_to_local([5117])
+        self.assertNotIn(5117, unmapped)
+
+    def test_quant_sync_zeros_stale_odoo_stock(self):
+        product = Product.objects.create(
+            naziv='CFX343 FOX LW Combat Short Khaki XXL',
+            sifra='ODOO-T5117',
+            cijena=Decimal('79.90'),
+            odoo_template_id=5117,
+            stanje=150,
+            na_stanju=True,
+            magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.create(
+            sifra='Magacin',
+            naziv='Magacin',
+            odoo_location_id=327,
+            odoo_location_path='WH/VP/Magacin',
+        )
+        WarehouseStock.objects.create(product=product, location=loc, kolicina=150)
+        local = WarehouseLocation.objects.create(sifra='RUCNA', naziv='Ručna polica')
+        WarehouseStock.objects.create(product=product, location=local, kolicina=2)
+
+        class QuantClient:
+            def get_internal_stock_quants(self, product_ids, *, for_packing=False):
+                return {}
+
+            def get_template_ids_for_variants(self, variant_ids):
+                return {5154: 5117}
+
+        updated, touched = _apply_quant_batch(
+            QuantClient(), [5154], variant_to_template={5154: 5117},
+        )
+        self.assertIn(product.pk, touched)
+        self.assertGreaterEqual(updated, 1)
+        product.refresh_from_db()
+        self.assertEqual(
+            WarehouseStock.objects.get(product=product, location=loc).kolicina,
+            0,
+        )
+        self.assertEqual(
+            WarehouseStock.objects.get(product=product, location=local).kolicina,
+            2,
+        )
+        self.assertEqual(product.stanje, 2)
+        self.assertTrue(product.na_stanju)
+
+    def test_creates_only_in_stock_new_product(self):
+        client = FakeOdooClient([{
+            'id': 888,
+            'name': 'Novi na stanju',
+            'default_code': 'NEW-88',
+            'barcode': 'BAR-88',
+            'list_price': '12.00',
+            'qty_available': 6,
+            'product_variant_ids': [888],
+        }])
+        stats = sync_catalog_chunk(client, [888], start=0, limit=10)
+        self.assertEqual(stats['kreirano'], 1)
+        product = Product.objects.get(odoo_template_id=888)
+        self.assertEqual(product.sifra, 'NEW-88')
+        self.assertEqual(product.stanje, 6)
+        self.assertTrue(product.na_stanju)
+        self.assertIsNotNone(product.magacin_sync_at)
+
+    def test_skips_image_download_when_product_already_has_image(self):
+        product = Product.objects.create(
+            naziv='Ima sliku',
+            sifra='IMG-1',
+            cijena=Decimal('3.00'),
+            odoo_template_id=333,
+        )
+        product.slika = 'products/vec-tu.jpg'
+        product.save(update_fields=['slika'])
+        client = FakeOdooClient([{
+            'id': 333,
+            'name': 'Ima sliku',
+            'default_code': 'IMG-1',
+            'barcode': '',
+            'list_price': '3.00',
+            'qty_available': 2,
+            'product_variant_ids': [333],
+        }])
+        sync_catalog_chunk(client, [333], start=0, limit=10)
+        product.refresh_from_db()
+        self.assertEqual(product.slika.name, 'products/vec-tu.jpg')
+        self.assertEqual(client.image_requests, [])
+
+
+class MagacinViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+        self.product = Product.objects.create(
+            naziv='Test braid', sifra='TST-1', cijena=Decimal('10.00'),
+            stanje=8,
+            na_stanju=True,
+            magacin_sync_at=timezone.now(),
+        )
+        self.zero = Product.objects.create(
+            naziv='Prazan lager', sifra='ZERO-1', cijena=Decimal('2.00'),
+            stanje=0,
+            na_stanju=False,
+            magacin_sync_at=timezone.now(),
+        )
+        self.unsynced = Product.objects.create(
+            naziv='Samo web artikal', sifra='WEB-99', cijena=Decimal('5.00'),
+        )
+        loc = WarehouseLocation.objects.create(sifra='T-1', naziv='Test loc')
+        apply_movement(product=self.product, location=loc, tip='prijem', kolicina=8)
+
+    def test_admin_panel_has_magacin_not_carts(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('staff_admin_panel'))
+        self.assertContains(response, 'Magacin')
+        self.assertContains(response, reverse('staff_magacin'))
+        self.assertNotContains(response, 'Aktivne korpe')
+
+    def test_artikli_and_detail_ok(self):
+        self.client.force_login(self.user)
+        list_res = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertEqual(list_res.status_code, 200)
+        self.assertContains(list_res, 'mgArticleScanBtn')
+        self.assertContains(list_res, 'Zadnje izmjene količina')
+        self.assertNotContains(list_res, 'class="mg-product-row"')
+        self.assertContains(list_res, 'Test braid')
+        detail = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'Zalihe po lokacijama')
+        self.assertContains(detail, 'Istorija kretanja')
+        self.assertContains(detail, reverse('home'))
+        self.assertContains(detail, 'class="header"')
+        self.assertContains(detail, 'Pretraži artikle po nazivu, šifri ili barkodu')
+        self.assertContains(detail, f'action="{reverse("staff_magacin_artikli")}"')
+        self.assertNotContains(detail, 'class="mg-top"')
+        self.assertContains(detail, 'Izmijeni artikal')
+        self.assertContains(detail, reverse('staff_magacin_artikal_izmjena', args=[self.product.pk]))
+
+    def test_product_edit_updates_fields(self):
+        self.client.force_login(self.user)
+        page = self.client.get(reverse('staff_magacin_artikal_izmjena', args=[self.product.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Izmjena artikla')
+        self.assertContains(page, 'data-mg-scan-target="id_barkod"')
+        saved = self.client.post(reverse('staff_magacin_artikal_izmjena', args=[self.product.pk]), {
+            'naziv': 'Novi naziv braid',
+            'sifra': 'TST-1',
+            'barkod': '123456',
+            'opis': 'Novi opis',
+            'cijena': '19.50',
+            'aktivan': '1',
+            'prikazi_na_pocetnoj': '1',
+            'jedinica_mjere': 'kom',
+            'min_zaliha': '2',
+        })
+        self.assertEqual(saved.status_code, 302)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.naziv, 'Novi naziv braid')
+        self.assertEqual(self.product.barkod, '123456')
+        self.assertEqual(self.product.opis, 'Novi opis')
+        self.assertEqual(str(self.product.cijena), '19.50')
+        meta = self.product.magacin_meta
+        self.assertEqual(meta.min_zaliha, 2)
+
+    def test_default_list_hides_zero_stock(self):
+        self.client.force_login(self.user)
+        listed = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertNotContains(listed, 'class="mg-product-row"')
+        found = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'braid'})
+        self.assertContains(found, 'Test braid')
+        self.assertNotContains(found, 'Prazan lager')
+        with_zero = self.client.get(reverse('staff_magacin_artikli'), {
+            'pretraga': 'Prazan', 'bez_zalihe': '1',
+        })
+        self.assertContains(with_zero, 'Prazan lager')
+        self.assertContains(with_zero, 'Prikaži i bez zalihe')
+        self.assertContains(with_zero, 'is-out')
+        self.assertContains(with_zero, 'Nije na stanju')
+        shop_only_qty = Product.objects.create(
+            naziv='Samo shop kolicina',
+            sifra='SHOP-Q',
+            cijena=Decimal('3.00'),
+            stanje=20,
+            na_stanju=True,
+            magacin_sync_at=timezone.now(),
+        )
+        listed2 = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertNotContains(listed2, 'Samo shop kolicina')
+        shown = self.client.get(reverse('staff_magacin_artikli'), {
+            'pretraga': 'Samo shop', 'bez_zalihe': '1',
+        })
+        self.assertContains(shown, 'Samo shop kolicina')
+        miss = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'ZERO-1'})
+        self.assertEqual(miss.status_code, 302)
+        self.assertIn(f'/nalog/magacin/artikli/{self.zero.pk}/', miss['Location'])
+
+    def test_search_only_synced_magacin_articles(self):
+        self.client.force_login(self.user)
+        listed = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertNotContains(listed, 'class="mg-product-row"')
+        self.assertNotContains(listed, 'Samo web artikal')
+        missed = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'WEB-99'})
+        self.assertEqual(missed.status_code, 200)
+        self.assertNotContains(missed, 'Samo web artikal')
+        hidden = self.client.get(reverse('staff_magacin_artikal', args=[self.unsynced.pk]))
+        self.assertEqual(hidden.status_code, 404)
+
+    def test_search_exact_sifra_redirects(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'TST-1'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(f'/nalog/magacin/artikli/{self.product.pk}/', response['Location'])
+        self.assertIn('pretraga=TST-1', response['Location'])
+        self.assertNotIn('?q=', response['Location'])
+        self.assertNotIn('&q=', response['Location'])
+
+    def test_magacin_search_does_not_fill_site_search(self):
+        self.client.force_login(self.user)
+        page = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'braid'})
+        self.assertEqual(page.status_code, 200)
+        html = page.content.decode()
+        self.assertIn('id="mgArticleSearch"', html)
+        self.assertIn('name="pretraga"', html)
+        self.assertIn('value="braid"', html)
+        self.assertIn('id="searchInput" value=""', html)
+        self.assertNotIn('id="searchInput" value="braid"', html)
+        self.assertEqual(page.context['search_query'], '')
+        self.assertEqual(page.context['magacin_search'], 'braid')
+
+    def test_other_sections_ok(self):
+        self.client.force_login(self.user)
+        for name in (
+            'staff_magacin_pregled',
+            'staff_magacin_lokacije',
+            'staff_magacin_zalihe',
+            'staff_magacin_transferi',
+            'staff_magacin_dobavljaci',
+            'staff_magacin_izvjestaji',
+        ):
+            response = self.client.get(reverse(name))
+            self.assertEqual(response.status_code, 200, name)
+
+    def test_pregled_shows_order_stats_and_chart(self):
+        self.client.force_login(self.user)
+        order = Order.objects.create(
+            ime_prezime='Ana Ribić',
+            telefon='061111111',
+            email='ana@example.com',
+            adresa='Test 1',
+            grad='Sarajevo',
+            ukupno=Decimal('30.00'),
+            izvor=Order.Izvor.MAGACIN,
+        )
+        OrderItem.objects.create(
+            narudzba=order, naziv='Test braid', cijena=Decimal('10.00'), kolicina=3,
+            artikal=self.product,
+        )
+        page = self.client.get(reverse('staff_magacin_pregled'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Narudžbe — Danas')
+        self.assertContains(page, '30.00 KM')
+        self.assertContains(page, 'Prosječna cijena artikla')
+        self.assertContains(page, 'mgPregledChart')
+        self.assertContains(page, 'mg-chart-wrap')
+        self.assertContains(page, 'mg-table-stack')
+        self.assertContains(page, 'Zadnje izmjene artikala')
+        self.assertContains(page, order.broj)
+        month = self.client.get(reverse('staff_magacin_pregled'), {'period': 'month', 'graf': 'mjeseci'})
+        self.assertContains(month, 'Ovaj mjesec')
+        ranged = self.client.get(reverse('staff_magacin_pregled'), {
+            'period': 'range',
+            'from': timezone.localdate().isoformat(),
+            'to': timezone.localdate().isoformat(),
+            'graf': 'godine',
+        })
+        self.assertEqual(ranged.status_code, 200)
+        self.assertContains(ranged, '30.00 KM')
+        self.assertIn('godine', ranged.context['chart_json'])
+
+    def test_izvjestaji_finds_order_by_name_phone_or_number(self):
+        self.client.force_login(self.user)
+        order = Order.objects.create(
+            ime_prezime='Ana Ribić',
+            telefon='061111111',
+            email='ana@example.com',
+            adresa='Test 1',
+            grad='Sarajevo',
+            ukupno=Decimal('20.00'),
+            izvor=Order.Izvor.MAGACIN,
+        )
+        page = self.client.get(reverse('staff_magacin_izvjestaji'))
+        self.assertContains(page, 'Pronađi narudžbu')
+        self.assertNotContains(page, order.ime_prezime)
+        by_name = self.client.get(reverse('staff_magacin_izvjestaji'), {'narudzba': 'Ana'})
+        self.assertContains(by_name, order.broj)
+        self.assertContains(by_name, 'Ana Ribić')
+        by_phone = self.client.get(reverse('staff_magacin_izvjestaji'), {'narudzba': '061111111'})
+        self.assertContains(by_phone, order.broj)
+        by_broj = self.client.get(reverse('staff_magacin_izvjestaji'), {'narudzba': order.broj})
+        self.assertContains(by_broj, reverse('staff_order_detail', args=[order.broj]))
+
+    def test_transfer_insert_and_move(self):
+        self.client.force_login(self.user)
+        dest = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga loc')
+        src = WarehouseLocation.objects.get(sifra='T-1')
+        page = self.client.get(reverse('staff_magacin_transferi'))
+        self.assertContains(page, 'Ubaci u lokaciju')
+        self.assertContains(page, 'Prenos iz lokacije u lokaciju')
+        inserted = self.client.post(reverse('staff_magacin_transferi'), {
+            'action': 'ubaci',
+            'tab': 'ubaci',
+            'location_id': str(src.pk),
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['5'],
+        })
+        self.assertEqual(inserted.status_code, 302)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 13)
+        locs = self.client.get(reverse('staff_magacin_lokacije_lookup'), {
+            'sa_zalihom': '1',
+            'product_id': str(self.product.pk),
+        })
+        self.assertEqual(locs.status_code, 200)
+        ids = [row['id'] for row in locs.json()['results']]
+        self.assertIn(src.pk, ids)
+        self.assertNotIn(dest.pk, ids)
+        prenos = self.client.get(reverse('staff_magacin_transferi'), {'tab': 'prenos'})
+        self.assertContains(prenos, 'odaberi gdje ima količine')
+        self.assertContains(prenos, 'Kucaj šifru ili naziv lokacije')
+        moved = self.client.post(reverse('staff_magacin_transferi'), {
+            'action': 'transfer',
+            'tab': 'prenos',
+            'product_id': str(self.product.pk),
+            'variation_id': '',
+            'location_id': str(src.pk),
+            'to_location_id': str(dest.pk),
+            'kolicina': '4',
+        })
+        self.assertEqual(moved.status_code, 302)
+        here = WarehouseStock.objects.get(product=self.product, location=src, variation__isnull=True)
+        there = WarehouseStock.objects.get(product=self.product, location=dest, variation__isnull=True)
+        self.assertEqual(here.kolicina, 9)
+        self.assertEqual(there.kolicina, 4)
+
+    def test_staff_cannot_open_magacin(self):
+        staff = User.objects.create_user('staff', 'staff@example.com', 'pass', is_staff=True)
+        self.client.force_login(staff)
+        response = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertEqual(response.status_code, 302)
+
+    def test_post_prijem_updates_detail(self):
+        self.client.force_login(self.user)
+        loc = WarehouseLocation.objects.create(sifra='X-1', naziv='Test')
+        apply_movement(product=self.product, location=loc, tip='prijem', kolicina=1)
+        response = self.client.post(
+            reverse('staff_magacin_artikal', args=[self.product.pk]),
+            {
+                'action': 'kretanje',
+                'mode': 'update',
+                'location_id': loc.pk,
+                'kolicina': '12',
+                'napomena': 'Izmjena lokacije',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 20)
+        page = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
+        self.assertContains(page, 'Ažuriraj postojeću')
+        self.assertContains(page, 'Izmjena lokacije')
+
+    def test_narudzbe_has_manual_entry(self):
+        self.client.force_login(self.user)
+        listed = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertEqual(listed.status_code, 200)
+        self.assertContains(listed, 'Nova ručna narudžba')
+        self.assertContains(listed, 'Pokaži validirane')
+        self.assertContains(listed, reverse('staff_magacin_narudzba_nova'))
+        self.assertContains(listed, reverse('staff_magacin_narudzbe_stampa'))
+        self.assertNotContains(listed, 'mg-nav-count')
+        form = self.client.get(reverse('staff_magacin_narudzba_nova'))
+        self.assertEqual(form.status_code, 200)
+        self.assertContains(form, 'Nova ručna narudžba')
+        self.assertContains(form, 'Dodaj artikal')
+        self.assertContains(form, reverse('staff_magacin_artikli_lookup'))
+
+    def test_lookup_returns_synced_and_zero_stock(self):
+        self.client.force_login(self.user)
+        found = self.client.get(reverse('staff_magacin_artikli_lookup'), {'q': 'TST-1'})
+        self.assertEqual(found.status_code, 200)
+        payload = found.json()
+        ids = [row['id'] for row in payload['results']]
+        self.assertIn(self.product.pk, ids)
+        self.assertNotIn(self.unsynced.pk, ids)
+        hidden_zero = self.client.get(reverse('staff_magacin_artikli_lookup'), {'q': 'ZERO-1'})
+        self.assertNotIn(self.zero.pk, [row['id'] for row in hidden_zero.json()['results']])
+        empty = self.client.get(reverse('staff_magacin_artikli_lookup'), {'q': 'ZERO-1', 'bez_zalihe': '1'})
+        empty_ids = [row['id'] for row in empty.json()['results']]
+        self.assertIn(self.zero.pk, empty_ids)
+
+    def test_create_manual_order_deducts_stock(self):
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ana Ribić',
+            'telefon': '061111111',
+            'email': 'ana@example.com',
+            'adresa': 'Test 1',
+            'grad': 'Sarajevo',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['3'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(response.status_code, 302)
+        order = Order.objects.get(izvor=Order.Izvor.MAGACIN)
+        self.assertEqual(order.ime_prezime, 'Ana Ribić')
+        self.assertEqual(order.status, Order.Status.NOVA)
+        self.assertEqual(len(order.broj), 4)
+        self.assertTrue(order.broj.isdigit())
+        self.assertEqual(order.dostava, Decimal('11.00'))
+        self.assertEqual(order.ukupno, Decimal('41.00'))
+        self.assertEqual(order.lager_status, Order.LagerStatus.REZERVISANO)
+        self.assertEqual(order.stavke.count(), 1)
+        item = order.stavke.get()
+        self.assertEqual(item.artikal_id, self.product.pk)
+        self.assertEqual(item.kolicina, 3)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 8)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 3)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 5)
+        self.assertIn('/nalog/magacin/narudzbe/', response['Location'])
+        listed = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertContains(listed, 'mg-nav-count')
+        self.assertContains(listed, '1 novih narudžbi')
+
+    def test_manual_order_without_stock_requires_mp(self):
+        self.client.force_login(self.user)
+        blocked = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Marko',
+            'telefon': '062222222',
+            'product_id': [str(self.zero.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(blocked.status_code, 200)
+        self.assertContains(blocked, 'maloprodaju')
+        self.assertFalse(Order.objects.filter(izvor=Order.Izvor.MAGACIN).exists())
+
+        allowed = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Marko',
+            'telefon': '062222222',
+            'product_id': [str(self.zero.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['1'],
+        })
+        self.assertEqual(allowed.status_code, 302)
+        order = Order.objects.get(izvor=Order.Izvor.MAGACIN)
+        self.assertIn('Maloprodaja', order.napomena)
+        self.assertEqual(order.stavke.get().artikal_id, self.zero.pk)
+
+    def test_order_detail_uses_magacin_look_and_back_link(self):
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ana Ribić',
+            'telefon': '061111111',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(izvor=Order.Izvor.MAGACIN)
+        page = self.client.get(reverse('staff_order_detail', args=[order.broj]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Nazad na Magacin narudžbe')
+        self.assertContains(page, reverse('staff_magacin_narudzbe'))
+        self.assertContains(page, 'class="mg-sidebar"')
+        self.assertContains(page, 'class="mg-card mg-order-invoice-card"')
+        self.assertContains(page, 'staff-magacin')
+        self.assertNotContains(page, 'Nazad na Online narudžbe')
+        self.assertNotContains(page, 'preko 250 KM besplatna')
+        self.assertContains(page, '11.00 KM')
+
+    def test_validated_orders_hidden_until_validated_list(self):
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ana Ribić',
+            'telefon': '061111111',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(izvor=Order.Izvor.MAGACIN)
+        open_list = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertContains(open_list, order.broj)
+        self.assertEqual(order.lager_status, Order.LagerStatus.REZERVISANO)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 7)
+
+        print_page = self.client.get(reverse('staff_magacin_narudzbe_stampa'), {'b': [order.broj]})
+        self.assertEqual(print_page.status_code, 200)
+        html = print_page.content.decode()
+        self.assertContains(print_page, 'print-job')
+        self.assertContains(print_page, 'class="invoice-sheet"')
+        self.assertContains(print_page, 'class="print-page-break"')
+        self.assertContains(print_page, 'class="packing-section"')
+        self.assertContains(print_page, 'class="order-footer"')
+        self.assertContains(print_page, 'invoice-warranty-note')
+        self.assertContains(print_page, 'Ovaj papir je garantni list')
+        self.assertContains(print_page, 'class="pk-loc"')
+        self.assertContains(print_page, 'T-1')
+        self.assertIn('page-break-after: always', html)
+        self.assertLess(html.find('class="invoice-sheet"'), html.find('class="packing-section"'))
+        self.assertLess(html.find('invoice-warranty-note'), html.find('class="packing-section"'))
+        self.assertNotContains(print_page, 'Zapakovano')
+        self.assertNotContains(print_page, 'print-color-adjust')
+        packing_page = self.client.get(reverse('staff_order_packing', args=[order.broj]))
+        self.assertEqual(packing_page.status_code, 200)
+        self.assertContains(packing_page, 'class="pk-loc"')
+        self.assertContains(packing_page, 'T-1')
+        self.assertNotContains(packing_page, 'Zapakovano')
+        still_open = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertContains(still_open, order.broj)
+
+        validated = self.client.post(reverse('staff_order_detail', args=[order.broj]), {
+            'action': 'validiraj',
+        })
+        self.assertEqual(validated.status_code, 302)
+        self.assertIn('/nalog/magacin/narudzbe/', validated['Location'])
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.product.refresh_from_db()
+        self.assertEqual(stock_totals(self.product)['dostupno'], 7)
+        self.assertEqual(self.product.stanje, 7)
+        hidden = self.client.get(reverse('staff_magacin_narudzbe'))
+        listed = [row.broj for row in hidden.context['orders']]
+        self.assertNotIn(order.broj, listed)
+        shown = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'})
+        self.assertContains(shown, order.broj)
+        self.assertContains(shown, 'Validirane narudžbe')
+        self.assertTrue(order.zapakovana)
+        packing = self.client.get(reverse('staff_magacin_pakovanje'))
+        packing_ids = [row.broj for row in packing.context['orders']]
+        self.assertNotIn(order.broj, packing_ids)
+        packed = self.client.get(reverse('staff_magacin_pakovanje'), {'zapakovane': '1'})
+        self.assertContains(packed, order.broj)
+        self.assertContains(packed, 'Zapakovane narudžbe')
+
+    def test_new_order_cannot_take_reserved_qty_without_mp(self):
+        self.client.force_login(self.user)
+        first = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ana',
+            'telefon': '061111111',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['8'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(first.status_code, 302)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 0)
+        blocked = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Marko',
+            'telefon': '062222222',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(blocked.status_code, 200)
+        self.assertContains(blocked, 'maloprodaju')
+        self.assertEqual(Order.objects.filter(izvor=Order.Izvor.MAGACIN).count(), 1)
+
+
+class OdooCustomerAddressTests(TestCase):
+    def test_phone_goes_to_street2_on_create(self):
+        from .odoo_client import OdooClient
+
+        class DummyClient:
+            def __init__(self):
+                self.created = None
+
+            def execute(self, model, method, *args):
+                self.created = args[0] if args else None
+                return 42
+
+        dummy = DummyClient()
+        partner_id, created = OdooClient.find_or_create_customer(
+            dummy,
+            name='Ana Ribić',
+            street='Ulica 12',
+            city='Sarajevo',
+            phone='061111111',
+            email='ana@example.com',
+            zip_code='71000',
+        )
+        self.assertTrue(created)
+        self.assertEqual(partner_id, 42)
+        self.assertEqual(dummy.created['name'], 'Ana Ribić')
+        self.assertEqual(dummy.created['street'], 'Ulica 12')
+        self.assertEqual(dummy.created['street2'], '061111111')
+        self.assertEqual(dummy.created['phone'], '061111111')
+        self.assertEqual(dummy.created['mobile'], '061111111')
+
+    def test_repeated_phone_still_creates_new_partner_with_order_data(self):
+        from .odoo_client import OdooClient, OdooError
+
+        class DummyClient:
+            def __init__(self):
+                self.attempts = []
+
+            def execute(self, model, method, *args):
+                vals = args[0] if args else {}
+                self.attempts.append(vals)
+                if 'phone' in vals:
+                    raise OdooError('Telefon već postoji')
+                return 88
+
+        dummy = DummyClient()
+        partner_id, created = OdooClient.find_or_create_customer(
+            dummy,
+            name='Marko Novi',
+            street='Druga 5',
+            city='Mostar',
+            phone='061111111',
+            email='rucna@opremazaribolov.ba',
+        )
+        self.assertTrue(created)
+        self.assertEqual(partner_id, 88)
+        first, second = dummy.attempts
+        self.assertEqual(first['name'], 'Marko Novi')
+        self.assertEqual(first['street'], 'Druga 5')
+        self.assertEqual(first['street2'], '061111111')
+        self.assertNotIn('email', first)
+        self.assertEqual(second['street2'], '061111111')
+        self.assertNotIn('phone', second)
+        self.assertNotIn('mobile', second)

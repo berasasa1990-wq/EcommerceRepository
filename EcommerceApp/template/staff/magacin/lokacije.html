@@ -1,0 +1,119 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <h1>Lokacije</h1>
+</div>
+
+<div class="mg-grid-2">
+    <section class="mg-card">
+        <h2 class="mg-h">Sve lokacije</h2>
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>ŠIFRA</th>
+                    <th>NAZIV</th>
+                    <th class="num">ARTIKALA</th>
+                    <th class="num">NA STANJU</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in locations %}
+                <tr>
+                    <td>{{ row.location.sifra }}</td>
+                    <td>{{ row.location.naziv }}{% if not row.location.aktivan %} <span class="mg-pill is-off">Neaktivna</span>{% endif %}</td>
+                    <td class="num">{{ row.artikala }}</td>
+                    <td class="num">{{ row.na_stanju }}</td>
+                    <td class="num">
+                        <button type="button" class="mg-btn" data-edit-loc
+                            data-id="{{ row.location.pk }}"
+                            data-sifra="{{ row.location.sifra }}"
+                            data-naziv="{{ row.location.naziv }}"
+                            data-opis="{{ row.location.opis }}"
+                            data-redoslijed="{{ row.location.redoslijed }}"
+                            data-aktivan="{{ row.location.aktivan|yesno:'1,0' }}">Izmijeni</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="mg-muted">Nema lokacija.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="mg-card">
+        <h2 class="mg-h" id="locFormTitle">Nova lokacija</h2>
+        <form method="post" id="locForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="location_id" id="locId" value="">
+            <div class="mg-form-grid" style="grid-template-columns:1fr;">
+                <div class="mg-field">
+                    <label>Šifra</label>
+                    <input name="sifra" id="locSifra" required maxlength="20" placeholder="npr. A-10">
+                </div>
+                <div class="mg-field">
+                    <label>Naziv</label>
+                    <input name="naziv" id="locNaziv" required maxlength="120" placeholder="npr. Glavni magacin">
+                </div>
+                <div class="mg-field">
+                    <label>Opis</label>
+                    <input name="opis" id="locOpis" maxlength="300">
+                </div>
+                <div class="mg-field">
+                    <label>Redoslijed</label>
+                    <input name="redoslijed" id="locOrder" type="number" value="0">
+                </div>
+                <label style="display:flex;gap:8px;align-items:center;">
+                    <input type="checkbox" name="aktivan" id="locAktivan" value="1" checked>
+                    Aktivna
+                </label>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+                <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
+                <button type="button" class="mg-btn" id="locReset">Nova</button>
+            </div>
+        </form>
+        <form method="post" id="locDeleteForm" style="margin-top:12px;" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="location_id" id="locDeleteId">
+            <button type="submit" class="mg-btn mg-btn-danger" onclick="return confirm('Obrisati lokaciju?');">Obriši lokaciju</button>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var formTitle = document.getElementById('locFormTitle');
+    var locId = document.getElementById('locId');
+    var delForm = document.getElementById('locDeleteForm');
+    var delId = document.getElementById('locDeleteId');
+    function fill(btn) {
+        locId.value = btn.dataset.id || '';
+        document.getElementById('locSifra').value = btn.dataset.sifra || '';
+        document.getElementById('locNaziv').value = btn.dataset.naziv || '';
+        document.getElementById('locOpis').value = btn.dataset.opis || '';
+        document.getElementById('locOrder').value = btn.dataset.redoslijed || '0';
+        document.getElementById('locAktivan').checked = btn.dataset.aktivan === '1';
+        formTitle.textContent = 'Izmijeni lokaciju';
+        delForm.hidden = false;
+        delId.value = btn.dataset.id || '';
+    }
+    function reset() {
+        locId.value = '';
+        document.getElementById('locForm').reset();
+        document.getElementById('locAktivan').checked = true;
+        formTitle.textContent = 'Nova lokacija';
+        delForm.hidden = true;
+    }
+    document.querySelectorAll('[data-edit-loc]').forEach(function (btn) {
+        btn.addEventListener('click', function () { fill(btn); });
+    });
+    document.getElementById('locReset').addEventListener('click', reset);
+})();
+</script>
+{% endblock %}

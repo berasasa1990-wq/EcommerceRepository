@@ -310,7 +310,11 @@ def nav_categories(request):
         'live_visitor_offer': live_offer,
         'online_gift': online_gift,
         'online_gift_reward_label': gift_label,
-        'search_query': request.GET.get('q', '').strip(),
+        'search_query': (
+            ''
+            if (request.path or '').startswith('/nalog/magacin/')
+            else request.GET.get('q', '').strip()
+        ),
         'contact_phone': contact_phone,
         'contact_phone_digits': _phone_digits(contact_phone),
         'contact_whatsapp_url': contact_whatsapp_url,

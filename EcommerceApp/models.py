@@ -2914,6 +2914,11 @@ class Product(models.Model):
     odoo_template_id = models.PositiveIntegerField(
         blank=True, null=True, unique=True, verbose_name='Odoo template ID',
     )
+    magacin_sync_at = models.DateTimeField(
+        blank=True, null=True, db_index=True,
+        verbose_name='Magacin sync',
+        help_text='Kad je artikal zadnji put povučen iz Odoa u Magacin.',
+    )
     meta_title = models.CharField(
         max_length=70, blank=True,
         verbose_name='SEO title',
@@ -3372,6 +3377,12 @@ class ProductVariation(models.Model):
     odoo_variant_id = models.PositiveIntegerField(
         blank=True, null=True, unique=True, verbose_name='Odoo variant ID',
     )
+    naziv_normalized = models.CharField(
+        max_length=120, blank=True, default='', db_index=True, editable=False,
+    )
+    sifra_normalized = models.CharField(
+        max_length=80, blank=True, default='', db_index=True, editable=False,
+    )
 
     class Meta:
         verbose_name = 'Varijacija'
@@ -3457,6 +3468,11 @@ class ProductVariation(models.Model):
         return bool(self.slika)
 
     def save(self, *args, **kwargs):
+        self.naziv_normalized = (self.naziv or '').casefold()[:120]
+        self.sifra_normalized = (self.sifra or '').casefold()[:80]
+        update_fields = kwargs.get('update_fields')
+        if update_fields is not None:
+            kwargs['update_fields'] = list(set(update_fields) | {'naziv_normalized', 'sifra_normalized'})
         if self.akcija_postotak:
             self.akcijska_cijena = _izracunaj_akcijsku_od_postotka(
                 self.bazna_cijena, self.akcija_postotak,
@@ -3777,6 +3793,10 @@ class Order(models.Model):
         ZAVRSENA = 'zavrsena', 'Završena'
         OTKAZANA = 'otkazana', 'Otkazana'
 
+    class Izvor(models.TextChoices):
+        WEBSHOP = 'webshop', 'Webshop'
+        MAGACIN = 'magacin', 'Ručni unos (Magacin)'
+
     korisnik = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -3805,6 +3825,26 @@ class Order(models.Model):
     )
     ukupno = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NOVA)
+    class LagerStatus(models.TextChoices):
+        NIJE = 'nije', '—'
+        REZERVISANO = 'rezervisano', 'Rezervisano'
+        VALIDIRANO = 'validirano', 'Validirano'
+        OTKAZANO = 'otkazano', 'Otkazano'
+
+    izvor = models.CharField(
+        max_length=20,
+        choices=Izvor.choices,
+        default=Izvor.WEBSHOP,
+        db_index=True,
+        verbose_name='Izvor',
+    )
+    lager_status = models.CharField(
+        max_length=20,
+        choices=LagerStatus.choices,
+        default=LagerStatus.NIJE,
+        db_index=True,
+        verbose_name='Magacin lager',
+    )
     kreirana = models.DateTimeField(auto_now_add=True)
     odstampana = models.BooleanField(
         default=False,
@@ -3816,6 +3856,17 @@ class Order(models.Model):
         null=True,
         blank=True,
         verbose_name='Odštampana u',
+    )
+    zapakovana = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Zapakovana',
+        help_text='Validirana narudžba je automatski skinuta s pakovanja.',
+    )
+    zapakovana_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Zapakovana u',
     )
     stanje_skinuto = models.BooleanField(
         default=False,
@@ -3854,11 +3905,16 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.broj:
-            from django.utils import timezone
-            prefix = timezone.localtime().strftime('%Y%m%d')
-            last = Order.objects.filter(broj__startswith=prefix).order_by('-broj').first()
-            seq = int(last.broj[-4:]) + 1 if last else 1
-            self.broj = f'{prefix}{seq:04d}'
+            from django.db.models.functions import Length
+            last = (
+                Order.objects.annotate(_len=Length('broj'))
+                .filter(_len=4)
+                .order_by('-broj')
+                .values_list('broj', flat=True)
+                .first()
+            )
+            seq = int(last) + 1 if last and str(last).isdigit() else 1
+            self.broj = f'{seq:05d}' if seq > 9999 else f'{seq:04d}'
         super().save(*args, **kwargs)
 
     @property
@@ -5075,3 +5131,235 @@ class AdvisorBeginnerSetItem(models.Model):
         except Exception:
             price = Decimal('0')
         return (price * Decimal(self.kolicina or 1)).quantize(Decimal('0.01'))
+
+
+class WarehouseLocation(models.Model):
+    sifra = models.CharField(max_length=20, unique=True, verbose_name='Šifra')
+    naziv = models.CharField(max_length=120, verbose_name='Naziv')
+    opis = models.CharField(max_length=300, blank=True, verbose_name='Opis')
+    aktivan = models.BooleanField(default=True, db_index=True)
+    redoslijed = models.PositiveIntegerField(default=0)
+    odoo_location_id = models.PositiveIntegerField(
+        blank=True, null=True, unique=True, verbose_name='Odoo location ID',
+    )
+    odoo_location_path = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = 'Magacin lokacija'
+        verbose_name_plural = 'Magacin lokacije'
+        ordering = ['redoslijed', 'sifra', 'id']
+
+    def __str__(self):
+        return f'{self.sifra} ({self.naziv})' if self.naziv else self.sifra
+
+    @property
+    def label(self):
+        if self.naziv:
+            return f'{self.sifra} ({self.naziv})'
+        return self.sifra
+
+
+class WarehouseSupplier(models.Model):
+    naziv = models.CharField(max_length=160, unique=True)
+    aktivan = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Dobavljač'
+        verbose_name_plural = 'Dobavljači'
+        ordering = ['naziv']
+
+    def __str__(self):
+        return self.naziv
+
+
+class ProductWarehouseMeta(models.Model):
+    product = models.OneToOneField(
+        Product, on_delete=models.CASCADE, related_name='magacin_meta',
+    )
+    dobavljac = models.ForeignKey(
+        WarehouseSupplier,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='artikli',
+        verbose_name='Dobavljač',
+    )
+    tezina = models.CharField(max_length=40, blank=True, verbose_name='Težina')
+    jedinica_mjere = models.CharField(
+        max_length=20, default='kom', verbose_name='Jedinica mjere',
+    )
+    min_zaliha = models.PositiveIntegerField(default=0, verbose_name='Min. zaliha')
+    veleprodajna_cijena = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name='Veleprodajna cijena',
+    )
+
+    class Meta:
+        verbose_name = 'Magacin meta artikla'
+        verbose_name_plural = 'Magacin meta artikala'
+
+    def __str__(self):
+        return f'Magacin meta — {self.product}'
+
+
+class WarehouseStock(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='magacin_zalihe',
+    )
+    variation = models.ForeignKey(
+        ProductVariation,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='magacin_zalihe',
+    )
+    variation_key = models.PositiveIntegerField(default=0, editable=False)
+    location = models.ForeignKey(
+        WarehouseLocation, on_delete=models.CASCADE, related_name='zalihe',
+    )
+    kolicina = models.IntegerField(default=0, verbose_name='Na stanju')
+    rezervisano = models.IntegerField(default=0, verbose_name='Rezervisano')
+    azurirano = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Zaliha po lokaciji'
+        verbose_name_plural = 'Zalihe po lokacijama'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product', 'variation_key', 'location'],
+                name='uniq_wh_stock_product_varkey_loc',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['product', 'location']),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.variation_key = int(self.variation_id or 0)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        target = self.variation or self.product
+        return f'{target} @ {self.location.sifra}: {self.kolicina}'
+
+    @property
+    def dostupno(self):
+        return max(0, int(self.kolicina or 0) - max(0, int(self.rezervisano or 0)))
+
+
+class WarehouseMovement(models.Model):
+    class Tip(models.TextChoices):
+        PRIJEM = 'prijem', 'Prijem'
+        PRODAJA = 'prodaja', 'Prodaja'
+        TRANSFER = 'transfer', 'Transfer'
+        KOREKCIJA = 'korekcija', 'Korekcija'
+        REZERVACIJA = 'rezervacija', 'Rezervacija'
+        SYNC = 'sync', 'Sinhronizacija'
+
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='magacin_kretanja',
+    )
+    variation = models.ForeignKey(
+        ProductVariation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_kretanja',
+    )
+    location = models.ForeignKey(
+        WarehouseLocation,
+        on_delete=models.PROTECT,
+        related_name='kretanja',
+        verbose_name='Lokacija',
+    )
+    to_location = models.ForeignKey(
+        WarehouseLocation,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='kretanja_ulaz',
+        verbose_name='Odredište',
+    )
+    tip = models.CharField(max_length=20, choices=Tip.choices, db_index=True)
+    kolicina = models.IntegerField(verbose_name='Količina')
+    napomena = models.CharField(max_length=300, blank=True)
+    kreiran = models.DateTimeField(auto_now_add=True, db_index=True)
+    korisnik = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_kretanja',
+    )
+
+    class Meta:
+        verbose_name = 'Kretanje zalihe'
+        verbose_name_plural = 'Kretanja zalihe'
+        ordering = ['-kreiran', '-id']
+
+    def __str__(self):
+        return f'{self.get_tip_display()} {self.kolicina} — {self.product}'
+
+
+class OrderStockHold(models.Model):
+    class Status(models.TextChoices):
+        REZERVISANO = 'rezervisano', 'Rezervisano'
+        VALIDIRANO = 'validirano', 'Validirano'
+        OTKAZANO = 'otkazano', 'Otkazano'
+
+    narudzba = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='magacin_holds')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='magacin_holds')
+    variation = models.ForeignKey(
+        ProductVariation, on_delete=models.SET_NULL, null=True, blank=True, related_name='magacin_holds',
+    )
+    location = models.ForeignKey(WarehouseLocation, on_delete=models.PROTECT, related_name='magacin_holds')
+    kolicina = models.PositiveIntegerField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.REZERVISANO, db_index=True)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Rezervacija narudžbe'
+        verbose_name_plural = 'Rezervacije narudžbi'
+
+    def __str__(self):
+        return f'#{self.narudzba.broj} {self.kolicina} @ {self.location.sifra}'
+
+
+class WarehouseSyncLog(models.Model):
+    class Status(models.TextChoices):
+        USPJEH = 'uspjeh', 'Uspješna'
+        GRESKA = 'greska', 'Neuspješna'
+        U_TOKU = 'u_toku', 'U toku'
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.U_TOKU)
+    izvor = models.CharField(max_length=80, default='Lokalna baza (SQLite)')
+    poruka = models.CharField(max_length=400, blank=True)
+    artikala = models.PositiveIntegerField(default=0)
+    lokacija = models.PositiveIntegerField(default=0)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    trajanje_sekundi = models.PositiveIntegerField(default=0)
+    korisnik = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_syncovi',
+    )
+
+    class Meta:
+        verbose_name = 'Magacin sync'
+        verbose_name_plural = 'Magacin syncovi'
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f'{self.get_status_display()} {self.started_at}'
+
+    @property
+    def trajanje_label(self):
+        total = int(self.trajanje_sekundi or 0)
+        hours, rem = divmod(total, 3600)
+        minutes, seconds = divmod(rem, 60)
+        if hours:
+            return f'{hours:02d}:{minutes:02d}:{seconds:02d}'
+        return f'{minutes:02d}:{seconds:02d}'

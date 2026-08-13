@@ -123,45 +123,41 @@
         }
         .pack-table th,
         .pack-table td {
-            border: 1px solid #c4bc96;
-            padding: 10px 8px;
-            vertical-align: top;
+            border: 1px solid #999;
+            padding: 6px 7px;
+            vertical-align: middle;
             font-size: 13px;
+            font-weight: 400;
+            background: none;
         }
         .pack-table th {
-            background: #e8e8e8;
             text-align: left;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
+            font-weight: 400;
         }
         .pack-table .col-rb {
-            width: 36px;
+            width: 28px;
             text-align: center;
         }
         .pack-table .col-qty {
-            width: 70px;
+            width: 56px;
             text-align: center;
-            font-weight: 700;
+            font-weight: 400;
             white-space: nowrap;
         }
         .pack-table .item-name {
-            font-weight: 600;
+            font-weight: 400;
             color: #111;
         }
         .pack-table .item-sifra {
             display: block;
-            margin-top: 3px;
-            font-size: 12px;
-            color: #666;
+            margin-top: 2px;
+            font-size: 11px;
         }
-        .pack-table .pick-main {
+        .pack-table .pk-loc {
             font-weight: 700;
-            color: #111;
-            font-size: 14px;
-        }
-        .pack-table tr.has-shortfall .pick-main {
-            color: #b91c1c;
         }
         .packing-hint {
             margin: 16px 0 0;
@@ -191,9 +187,9 @@
                 border: none;
                 border-radius: 0;
             }
-            .pack-table th {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .pack-table th,
+            .pack-table td {
+                background: none;
             }
         }
     </style>
@@ -202,7 +198,7 @@
     <div class="print-toolbar">
         <p><strong>Pakovanje #{{ order.broj }}</strong> — artikli + Odoo lokacije (abecedno)</p>
         <div class="print-toolbar-actions">
-            <a class="btn-back" href="{% url 'staff_online_orders' %}">← Online narudžbe</a>
+            <a class="btn-back" href="{% url 'staff_magacin_narudzbe' %}">← Magacin narudžbe</a>
             <a class="btn-back" href="{% url 'staff_order_detail' broj=order.broj %}">Pregled računa</a>
             <button type="button" class="btn-print" id="printPackingBtn">Štampaj</button>
         </div>

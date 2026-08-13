@@ -1,0 +1,45 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<a class="mg-back" href="{% url 'staff_magacin_artikal' product.pk %}">← Nazad na artikal</a>
+<div class="mg-toolbar">
+    <h1>Istorija — {{ product.naziv }}</h1>
+</div>
+<section class="mg-card">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>DATUM</th>
+                <th>TIP</th>
+                <th>VARIJACIJA</th>
+                <th>LOKACIJA</th>
+                <th class="num">KOLIČINA</th>
+                <th>NAPOMENA</th>
+                <th>KORISNIK</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in page %}
+            <tr>
+                <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
+                <td>{{ m.get_tip_display }}</td>
+                <td>{{ m.variation.naziv|default:"—" }}</td>
+                <td>{{ m.location.sifra }}{% if m.to_location %} → {{ m.to_location.sifra }}{% endif %}</td>
+                <td class="num {% if m.kolicina > 0 %}num-plus{% elif m.kolicina < 0 %}num-minus{% endif %}">{{ m.kolicina }}</td>
+                <td>{{ m.napomena|default:"—" }}</td>
+                <td>{% if m.korisnik %}{{ m.korisnik.get_username }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="mg-muted">Nema kretanja.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% if page.has_other_pages %}
+<nav class="mg-pager">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">← Prethodna</a>{% endif %}
+    <span class="is-current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Sljedeća →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

@@ -63,6 +63,9 @@
                         {% elif order.status != 'nova' %}
                         <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
                         {% endif %}
+                        {% if order.izvor == 'magacin' %}
+                        <span class="staff-badge-nova" style="background:#e0e7ff;color:#3730a3;">RUČNI UNOS</span>
+                        {% endif %}
                     </div>
                     <div class="staff-online-order-meta">
                         <span class="staff-online-order-customer">{{ order.ime_prezime }}</span>

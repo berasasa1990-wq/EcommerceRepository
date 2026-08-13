@@ -1,21 +1,131 @@
+<style>
+    .packing-section { max-width: 860px; margin: 0 auto 24px; }
+    .packing-sheet {
+        padding: 16px 18px 20px;
+        background: #fff;
+        border: 1px solid #d7dbe0;
+        color: #111;
+        font-family: Inter, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+    .pk-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #111;
+    }
+    .pk-kicker {
+        margin: 0 0 2px;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #444;
+    }
+    .pk-number {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1;
+        letter-spacing: -.02em;
+        font-weight: 400;
+    }
+    .pk-date { margin: 4px 0 0; font-size: 12px; color: #444; }
+    .pk-buyer {
+        text-align: right;
+        font-size: 13px;
+        line-height: 1.4;
+        max-width: 52%;
+        font-weight: 400;
+    }
+    .pk-buyer .pk-buyer-name { display: block; font-size: 15px; margin-bottom: 2px; }
+    .pk-buyer span { display: block; }
+    .packing-alert {
+        margin: 0 0 10px;
+        padding: 0;
+        background: none;
+        border: 0;
+        font-size: 12px;
+    }
+    .pack-table { width: 100%; border-collapse: collapse; }
+    .pack-table th,
+    .pack-table td {
+        border: 1px solid #999;
+        padding: 6px 7px;
+        vertical-align: middle;
+        font-size: 13px;
+        font-weight: 400;
+        background: none;
+        color: #111;
+    }
+    .pack-table th {
+        text-align: left;
+        font-size: 11px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        font-weight: 400;
+    }
+    .pack-table .col-ok { width: 28px; text-align: center; }
+    .pack-table .col-rb { width: 28px; text-align: center; }
+    .pack-table .col-qty {
+        width: 56px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 400;
+    }
+    .pack-table .item-name { display: block; font-weight: 400; font-size: 13px; }
+    .pack-table .item-sifra { display: block; margin-top: 2px; font-size: 11px; }
+    .pk-box {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #111;
+        vertical-align: middle;
+    }
+    .pk-locs { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+    .pk-loc {
+        font-size: 13px;
+        font-weight: 700;
+        background: none;
+        border: 0;
+        padding: 0;
+    }
+    .pk-mp {
+        font-size: 12px;
+        font-weight: 400;
+        background: none;
+        color: #111;
+        padding: 0;
+    }
+    .pack-table tr.has-shortfall td { background: none; }
+    @media print {
+        .packing-section {
+            max-width: none;
+            margin: 0;
+            page-break-inside: auto;
+        }
+        .packing-sheet { padding: 0; border: 0; }
+        .pack-table th,
+        .pack-table td,
+        .pk-loc,
+        .pk-mp { background: none; }
+    }
+</style>
 <div class="packing-section">
     <div class="packing-sheet">
-        <div class="packing-head">
+        <div class="pk-head">
             <div>
-                <h2 class="packing-title">Pakovanje</h2>
-                <p class="packing-subtitle">{{ site_name }} · lista za skladište</p>
+                <p class="pk-kicker">Pakovanje</p>
+                <h1 class="pk-number">#{{ order.broj }}</h1>
+                <p class="pk-date">{% if datum %}{{ datum }}{% endif %}{% if vrijeme %} · {{ vrijeme }}{% endif %}</p>
             </div>
-            <div class="packing-meta">
-                <strong>Narudžba #{{ order.broj }}</strong>
-                <span>{% if datum %}{{ datum }}{% endif %}{% if vrijeme %} {{ vrijeme }}{% endif %}</span>
+            <div class="pk-buyer">
+                <span class="pk-buyer-name">{{ order.ime_prezime }}</span>
+                <span>{{ order.telefon }}</span>
+                <span>{{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}</span>
             </div>
         </div>
-
-        <p class="packing-customer">
-            <strong>Kupac:</strong> {{ order.ime_prezime }}
-            · {{ order.telefon }}
-            · {{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}
-        </p>
 
         {% if odoo_error %}
         <div class="packing-alert">Odoo: {{ odoo_error }}</div>
@@ -24,38 +134,39 @@
         <table class="pack-table" role="table">
             <thead>
                 <tr>
+                    <th class="col-ok"></th>
                     <th class="col-rb">#</th>
                     <th>Artikal</th>
-                    <th class="col-qty">Nar.</th>
-                    <th>Lokacija / količina</th>
+                    <th class="col-qty">Kol.</th>
+                    <th>Lokacija</th>
                 </tr>
             </thead>
             <tbody>
                 {% for line in packing_lines %}
-                <tr class="{% if line.check_mp %}has-shortfall{% endif %}">
+                <tr{% if line.check_mp %} class="has-shortfall"{% endif %}>
+                    <td class="col-ok"><span class="pk-box"></span></td>
                     <td class="col-rb">{{ line.rb }}</td>
                     <td>
                         <span class="item-name">{{ line.naziv }}</span>
-                        {% if line.sifra %}
-                        <span class="item-sifra">Šifra: {{ line.sifra }}</span>
-                        {% endif %}
+                        {% if line.sifra %}<span class="item-sifra">{{ line.sifra }}</span>{% endif %}
                     </td>
                     <td class="col-qty">{{ line.kolicina }}</td>
                     <td>
-                        <span class="pick-main">{{ line.pick_text }}</span>
+                        <div class="pk-locs">
+                            {% for pick in line.picks %}
+                            <span class="pk-loc">{{ pick.take }}× {{ pick.location_name }}</span>
+                            {% endfor %}
+                            {% if line.check_mp %}<span class="pk-mp">Provjeri MP</span>{% endif %}
+                            {% if not line.picks and not line.check_mp %}—{% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4">Nema stavki u narudžbi.</td>
+                    <td colspan="5">Nema stavki u narudžbi.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-
-        <p class="packing-hint">
-            Lokacije se uzimaju abecedno iz Odoa (npr. 2 kom, 1 na A2 i 1 na A3 → 1× A2 · 1× A3).
-            Ako artikal nema zalihe u Odoo skladištu → <strong>Provjeri u MP</strong>.
-        </p>
     </div>
 </div>

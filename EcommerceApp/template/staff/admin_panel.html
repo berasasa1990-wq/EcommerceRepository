@@ -62,17 +62,16 @@
             <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
 
-        <a href="{% url 'staff_active_carts' %}" class="admin-btn">
+        <a href="{% url 'staff_magacin' %}" class="admin-btn">
             <div class="admin-btn-icon admin-btn-icon--carts" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
-                    <circle cx="9" cy="20" r="1.5"/>
-                    <circle cx="17" cy="20" r="1.5"/>
+                    <path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <path d="M9 22V12h6v10"/>
                 </svg>
             </div>
             <div class="admin-btn-text">
-                <strong>Aktivne korpe</strong>
-                <span>Koji artikli su trenutno u korpama posjetilaca</span>
+                <strong>Magacin</strong>
+                <span>Lager artikala po lokacijama, transferi i kretanja</span>
             </div>
             <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
@@ -135,7 +134,7 @@
             </div>
             <div class="admin-btn-text">
                 <strong>Ostale sekcije</strong>
-                <span>Online narudžbe, korpe, analitika — samo superuser</span>
+                <span>Online narudžbe, magacin, analitika — samo superuser</span>
             </div>
         </div>
         {% endif %}

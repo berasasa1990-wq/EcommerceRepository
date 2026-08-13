@@ -1,0 +1,81 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar"><h1>Dobavljači</h1></div>
+<div class="mg-grid-2">
+    <section class="mg-card">
+        <table class="mg-table">
+            <thead>
+                <tr><th>NAZIV</th><th class="num">ARTIKALA</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for row in suppliers %}
+                <tr>
+                    <td>{{ row.supplier.naziv }}{% if not row.supplier.aktivan %} <span class="mg-pill is-off">Neaktivan</span>{% endif %}</td>
+                    <td class="num">{{ row.artikala }}</td>
+                    <td class="num">
+                        <button type="button" class="mg-btn" data-edit-sup
+                            data-id="{{ row.supplier.pk }}"
+                            data-naziv="{{ row.supplier.naziv }}"
+                            data-aktivan="{{ row.supplier.aktivan|yesno:'1,0' }}">Izmijeni</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="mg-muted">Nema dobavljača.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <section class="mg-card">
+        <h2 class="mg-h" id="supTitle">Novi dobavljač</h2>
+        <form method="post" id="supForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="supplier_id" id="supId">
+            <div class="mg-field">
+                <label>Naziv</label>
+                <input name="naziv" id="supNaziv" required maxlength="160">
+            </div>
+            <label style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+                <input type="checkbox" name="aktivan" id="supAktivan" value="1" checked>
+                Aktivan
+            </label>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+                <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
+                <button type="button" class="mg-btn" id="supReset">Novi</button>
+            </div>
+        </form>
+        <form method="post" id="supDelete" style="margin-top:12px;" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="supplier_id" id="supDeleteId">
+            <button class="mg-btn mg-btn-danger" onclick="return confirm('Obrisati dobavljača?');">Obriši</button>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var title = document.getElementById('supTitle');
+    document.querySelectorAll('[data-edit-sup]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('supId').value = btn.dataset.id;
+            document.getElementById('supNaziv').value = btn.dataset.naziv;
+            document.getElementById('supAktivan').checked = btn.dataset.aktivan === '1';
+            document.getElementById('supDelete').hidden = false;
+            document.getElementById('supDeleteId').value = btn.dataset.id;
+            title.textContent = 'Izmijeni dobavljača';
+        });
+    });
+    document.getElementById('supReset').addEventListener('click', function () {
+        document.getElementById('supForm').reset();
+        document.getElementById('supId').value = '';
+        document.getElementById('supAktivan').checked = true;
+        document.getElementById('supDelete').hidden = true;
+        title.textContent = 'Novi dobavljač';
+    });
+})();
+</script>
+{% endblock %}

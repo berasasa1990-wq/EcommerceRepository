@@ -1,0 +1,106 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>{% if show_validated %}Validirane narudžbe{% else %}Narudžbe{% endif %}</h1>
+        <p class="mg-count">
+            {% if show_validated %}
+            Validirane — zaliha je skinuta s lokacija.
+            {% else %}
+            Nove narudžbe ostaju ovdje na rezervaciji. Validacija skida zalihu i sklanja ih s liste.
+            {% endif %}
+        </p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_narudzba_nova' %}">+ Nova ručna narudžba</a>
+        {% if show_validated %}
+        <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+        {% else %}
+        <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?validirane=1">
+            Pokaži validirane{% if validated_count %} ({{ validated_count }}){% endif %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+<div class="mg-filter-tabs">
+    <a href="{% url 'staff_magacin_narudzbe' %}{% if show_validated %}?validirane=1{% endif %}" class="{% if izvor_filter == 'sve' %}is-active{% endif %}">Sve</a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?izvor=magacin{% if show_validated %}&validirane=1{% endif %}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">
+        Ručne{% if rucne_count and not show_validated %} <span>{{ rucne_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?izvor=webshop{% if show_validated %}&validirane=1{% endif %}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">Webshop</a>
+</div>
+
+<form id="mgPrintForm" method="get" action="{% url 'staff_magacin_narudzbe_stampa' %}" target="_blank">
+    <div class="mg-bulk-bar">
+        <label class="mg-check">
+            <input type="checkbox" id="mgSelectAll">
+            Odaberi sve
+        </label>
+        <button type="submit" class="mg-btn mg-btn-primary" id="mgPrintSelected" disabled>Štampaj odabrane</button>
+        <span class="mg-muted" id="mgSelectedCount">0 odabrano</span>
+    </div>
+    <section class="mg-card">
+        <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th class="mg-check-col"></th>
+                    <th>BROJ</th>
+                    <th>KUPAC</th>
+                    <th>IZVOR</th>
+                    <th>STATUS</th>
+                    <th>LAGER</th>
+                    <th>DATUM</th>
+                    <th class="num">UKUPNO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr class="is-clickable" data-order-url="{% url 'staff_order_detail' order.broj %}">
+                    <td class="mg-check-col" data-stop-row>
+                        <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check">
+                    </td>
+                    <td>#{{ order.broj }}</td>
+                    <td>{{ order.ime_prezime }}</td>
+                    <td>
+                        {% if order.izvor == 'magacin' %}
+                        <span class="mg-pill is-manual">Ručni unos</span>
+                        {% else %}
+                        <span class="mg-pill is-off">Webshop</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.get_status_label }}</td>
+                    <td>
+                        {% if order.lager_status == 'rezervisano' %}
+                        <span class="mg-pill is-manual">Rezervisano</span>
+                        {% elif order.lager_status == 'validirano' %}
+                        <span class="mg-pill">Validirano</span>
+                        {% elif order.lager_status == 'otkazano' %}
+                        <span class="mg-pill is-out">Otkazano</span>
+                        {% else %}
+                        <span class="mg-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.kreirana|date:"d.m.Y H:i" }}</td>
+                    <td class="num">{{ order.ukupno }} KM</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="mg-muted">
+                        {% if show_validated %}
+                        Nema validiranih narudžbi.
+                        {% elif izvor_filter == 'magacin' %}
+                        Nema novih narudžbi. Unesi prvu ručnu narudžbu.
+                        {% else %}
+                        Nema novih narudžbi.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+</form>
+{% endblock %}

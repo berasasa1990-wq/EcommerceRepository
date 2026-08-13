@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Štampa narudžbe #{{ order.broj }}</title>
+    <title>{% if print_jobs|length == 1 %}Štampa narudžbe #{{ print_jobs.0.order.broj }}{% else %}Štampa {{ print_jobs|length }} narudžbi{% endif %}</title>
     <style>
         body {
             margin: 0;
@@ -78,18 +78,31 @@
             background: #f9fafb;
         }
 
-        /* Invoice + warranty: force warranty onto its own sheet */
-        .invoice-section {
-            page-break-after: always;
-            break-after: page;
+        .invoice-sheet {
+            margin-bottom: 24px;
+        }
+        .print-page-break {
+            display: none;
+        }
+        .print-job + .print-job {
+            page-break-before: always;
+            break-before: page;
+            margin-top: 28px;
         }
         .doc {
+            display: flex;
+            flex-direction: column;
+            min-height: 265mm;
             max-width: 820px;
             margin: 0 auto;
             padding: 24px;
             background: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .invoice-totals-block {
+            margin-top: 18px;
         }
         .doc-header-table { width: 100%; }
         .doc-logo {
@@ -208,14 +221,21 @@
             letter-spacing: 0.03em;
         }
         .order-footer {
-            margin-top: 28px;
-            padding-top: 16px;
+            margin-top: auto;
+            padding-top: 12px;
             border-top: 1px solid #d9d9d9;
-            font-size: 12px;
+            font-size: 11px;
             color: #404040;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         .order-footer a { color: #28403d; }
+        .invoice-warranty-note {
+            display: block;
+            margin-top: 6px;
+            font-size: 11px;
+            color: #404040;
+            font-weight: 400;
+        }
 
         .page-separator {
             max-width: 820px;
@@ -250,12 +270,10 @@
             break-inside: avoid;
         }
 
-        /* Packing list (third section) */
+        /* Packing list — u pregledu ispod računa, pri štampi poseban list */
         .packing-section {
             max-width: 860px;
             margin: 0 auto 24px;
-            page-break-before: always;
-            break-before: page;
         }
         .packing-sheet {
             padding: 22px 24px 28px;
@@ -312,45 +330,44 @@
         }
         .pack-table th,
         .pack-table td {
-            border: 1px solid #c4bc96;
-            padding: 10px 8px;
-            vertical-align: top;
+            border: 1px solid #999;
+            padding: 6px 7px;
+            vertical-align: middle;
             font-size: 13px;
+            font-weight: 400;
+            background: none;
         }
         .pack-table th {
-            background: #e8e8e8;
             text-align: left;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
+            font-weight: 400;
         }
         .pack-table .col-rb {
-            width: 36px;
+            width: 28px;
             text-align: center;
         }
         .pack-table .col-qty {
-            width: 70px;
+            width: 56px;
             text-align: center;
-            font-weight: 700;
+            font-weight: 400;
             white-space: nowrap;
         }
         .pack-table .item-name {
-            font-weight: 600;
+            font-weight: 400;
             color: #111;
         }
         .pack-table .item-sifra {
             display: block;
-            margin-top: 3px;
-            font-size: 12px;
-            color: #666;
+            margin-top: 2px;
+            font-size: 11px;
         }
-        .pack-table .pick-main {
+        .pack-table .pk-loc {
             font-weight: 700;
-            color: #111;
-            font-size: 14px;
         }
-        .pack-table tr.has-shortfall .pick-main {
-            color: #b91c1c;
+        .pack-table tr.has-shortfall td {
+            background: none;
         }
         .packing-hint {
             margin: 16px 0 0;
@@ -490,16 +507,35 @@
             .mp-check-overlay {
                 display: none !important;
             }
-            .invoice-section {
-                page-break-after: always !important;
-                break-after: page !important;
+            .print-job {
+                display: block;
+            }
+            .invoice-sheet {
+                display: block;
+                margin: 0;
+            }
+            .print-page-break {
+                display: block;
+                height: 0;
+                overflow: hidden;
+                page-break-after: always;
+                break-after: page;
+            }
+            .print-job + .print-job {
+                page-break-before: always !important;
+                break-before: page !important;
+                margin-top: 0 !important;
             }
             .doc {
+                display: flex;
+                flex-direction: column;
+                min-height: 265mm;
                 max-width: none;
                 margin: 0;
                 padding: 0;
                 border: none;
                 border-radius: 0;
+                box-sizing: border-box;
             }
             /* Kompaktniji račun — više artikala, čitljivo */
             .doc-logo {
@@ -557,13 +593,14 @@
             .items-table td.col-price span {
                 font-size: 8.5px !important;
             }
-            /* Iznos sa PDV-om, dostava, ukupno — uvijek zajedno na istom listu */
-            .invoice-totals-block,
+            .invoice-totals-block {
+                margin-top: 8px !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
             .totals-wrap {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
-                page-break-before: avoid;
-                break-before: avoid;
                 margin-top: 8px !important;
             }
             .totals-table {
@@ -580,34 +617,24 @@
             .order-footer {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
-                margin-top: 10px !important;
-                padding-top: 6px !important;
+                margin-top: auto !important;
+                padding-top: 8px !important;
                 font-size: 8.5px !important;
                 line-height: 1.35 !important;
+                font-weight: 400 !important;
             }
-            .warranty-section {
-                page-break-before: always !important;
-                break-before: page !important;
-                page-break-after: always !important;
-                break-after: page !important;
-                width: auto;
-                max-width: none;
-                margin: 0;
-            }
-            .warranty-a4 {
-                border: 1px solid #28403d;
-                margin: 0;
-                width: auto;
-                max-width: none;
-                min-height: auto;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .invoice-warranty-note {
+                display: block;
+                margin-top: 4px !important;
+                padding-top: 0 !important;
+                border: 0 !important;
+                font-size: 8.5px !important;
+                line-height: 1.35 !important;
+                font-weight: 400 !important;
             }
             .packing-section {
-                page-break-before: always !important;
-                break-before: page !important;
+                page-break-before: auto;
+                break-before: auto;
                 max-width: none;
                 margin: 0;
             }
@@ -620,10 +647,11 @@
             .pack-table td {
                 padding: 5px 4px !important;
                 font-size: 11px !important;
+                background: none !important;
+                font-weight: 400 !important;
             }
-            .pack-table th {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .pack-table .pk-loc {
+                font-weight: 700 !important;
             }
         }
 
@@ -722,33 +750,35 @@
 </head>
 <body
     data-requires-mp-check="{% if requires_mp_check %}1{% else %}0{% endif %}"
-    data-already-printed="{% if order.odstampana %}1{% else %}0{% endif %}"
+    data-already-printed="{% if print_jobs|length == 1 and print_jobs.0.order.odstampana %}1{% else %}0{% endif %}"
 >
     {% if requires_mp_check %}
     <div class="mp-check-overlay no-print" id="mpCheckOverlay" role="dialog" aria-modal="true" aria-labelledby="mpCheckTitle">
         <div class="mp-check-dialog">
-            <h2 id="mpCheckTitle">Nema zalihe u Odoo skladištu</h2>
+            <h2 id="mpCheckTitle">Nema zalihe u magacinu</h2>
             <p class="mp-lead">
-                Prije nego pustiš narudžbu na štampu, provjeri u <strong>MP</strong> da li ima sljedećih artikala:
+                Artikal nije na stanju u magacinu. Pogledaj u <strong>maloprodaji</strong> ima li ga.
+                Ako ima — klikni <strong>Dodaj</strong>. Ako nema — klikni <strong>Nemoj</strong>.
             </p>
             <ul>
-                {% for line in packing_missing %}
-                <li>
-                    <strong>{% if line.sifra %}{{ line.sifra }} — {% endif %}{{ line.naziv }}</strong>
-                    <span class="mp-meta">
-                        Naručeno: {{ line.kolicina }}
-                        · {{ line.pick_text }}
-                    </span>
-                </li>
+                {% for job in print_jobs %}
+                    {% for line in job.packing_missing %}
+                    <li>
+                        <strong>#{{ job.order.broj }}{% if line.sifra %} — {{ line.sifra }}{% endif %} — {{ line.naziv }}</strong>
+                        <span class="mp-meta">
+                            Naručeno: {{ line.kolicina }}
+                        </span>
+                    </li>
+                    {% endfor %}
                 {% endfor %}
             </ul>
             <p class="mp-check-note">
-                Dugme <strong>Pusti narudžbu</strong> znači da si provjerio u MP i da artikal(i) ima(ju) —
-                tada se otvara štampa (račun + garancija + packing).
+                <strong>Dodaj</strong> = imaš ga u maloprodaji, nastavi narudžbu / štampu.
+                <strong>Nemoj</strong> = nema ga, vrati se na narudžbe.
             </p>
             <div class="mp-check-actions">
-                <a class="mp-btn-cancel" href="{% url 'staff_online_orders' %}">Otkaži</a>
-                <button type="button" class="mp-btn-release" id="releaseOrderBtn">Pusti narudžbu</button>
+                <a class="mp-btn-cancel" href="{% url 'staff_magacin_narudzbe' %}">Nemoj</a>
+                <button type="button" class="mp-btn-release" id="releaseOrderBtn">Dodaj</button>
             </div>
         </div>
     </div>
@@ -756,27 +786,26 @@
 
     <div class="print-toolbar no-print">
         <p>
-            <strong>Narudžba #{{ order.broj }}</strong>
-            — račun + garantni list + packing lista (svaki na posebnom A4 listu)
+            {% if print_jobs|length == 1 %}
+            <strong>Narudžba #{{ print_jobs.0.order.broj }}</strong>
+            — račun (garantni list na dnu) + packing lista
+            {% else %}
+            <strong>{{ print_jobs|length }} narudžbe</strong>
+            — račun + packing lista za svaku
+            {% endif %}
         </p>
         <div class="print-toolbar-actions">
-            <a class="btn-back" href="{% url 'staff_online_orders' %}">← Online narudžbe</a>
-            <a class="btn-back" href="{% url 'staff_order_detail' broj=order.broj %}">Pregled računa</a>
+            <a class="btn-back" href="{% url 'staff_magacin_narudzbe' %}">← Magacin narudžbe</a>
+            {% if print_jobs|length == 1 %}
+            <a class="btn-back" href="{% url 'staff_order_detail' broj=print_jobs.0.order.broj %}">Pregled računa</a>
+            {% endif %}
             <button type="button" class="btn-print" id="printOrderBtn">Štampaj</button>
         </div>
     </div>
 
-    <div class="invoice-section">
-        {% include 'partials/order_invoice_document.html' %}
-    </div>
-
-    <p class="page-separator">Garantni list — posebna A4 stranica za štampu</p>
-
-    {% include 'partials/order_warranty_document.html' %}
-
-    <p class="page-separator">Pakovanje — lista za skladište (posebna A4 stranica)</p>
-
-    {% include 'partials/order_packing_document.html' %}
+    {% for job in print_jobs %}
+    {% include 'staff/partials/order_print_job.html' %}
+    {% endfor %}
 
     <script>
     (function () {
@@ -788,6 +817,7 @@
         var releaseBtn = document.getElementById('releaseOrderBtn');
         var printBtn = document.getElementById('printOrderBtn');
         var markPrintedUrl = '{{ mark_printed_url|escapejs }}';
+        var printBrojevi = [{% for broj in print_brojevi %}'{{ broj|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
         var marked = false;
 
         function getCsrfToken() {
@@ -799,13 +829,22 @@
             if (marked || !markPrintedUrl) return;
             marked = true;
             try {
+                var body;
+                var headers = {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                };
+                if (printBrojevi.length > 1) {
+                    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                    body = printBrojevi.map(function (broj) {
+                        return 'b=' + encodeURIComponent(broj);
+                    }).join('&');
+                }
                 fetch(markPrintedUrl, {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
+                    headers: headers,
                     credentials: 'same-origin',
+                    body: body,
                 }).catch(function () { marked = false; });
             } catch (e) {
                 marked = false;

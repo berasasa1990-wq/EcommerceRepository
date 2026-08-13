@@ -74,6 +74,12 @@ from .models import (
     Tag,
     UpsellOffer,
     UserProfile,
+    ProductWarehouseMeta,
+    WarehouseLocation,
+    WarehouseMovement,
+    WarehouseStock,
+    WarehouseSupplier,
+    WarehouseSyncLog,
 )
 
 
@@ -95,9 +101,9 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'broj', 'korisnik', 'ime_prezime', 'email', 'telefon',
-        'ukupno', 'status', 'odstampana', 'kreirana',
+        'ukupno', 'status', 'izvor', 'lager_status', 'odstampana', 'zapakovana', 'kreirana',
     )
-    list_filter = ('status', 'odstampana', 'kreirana')
+    list_filter = ('status', 'izvor', 'lager_status', 'odstampana', 'zapakovana', 'kreirana')
     search_fields = ('broj', 'ime_prezime', 'email', 'telefon', 'korisnik__email')
     readonly_fields = (
         'broj', 'kreirana', 'medjuzbir', 'dostava', 'popust',
@@ -108,7 +114,7 @@ class OrderAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Narudžba', {
             'fields': (
-                'broj', 'status', 'medjuzbir', 'popust', 'kupon_kod',
+                'broj', 'status', 'izvor', 'lager_status', 'medjuzbir', 'popust', 'kupon_kod',
                 'popust_detalji', 'dostava', 'ukupno', 'kreirana',
                 'odstampana', 'odstampana_at',
             ),
@@ -3686,5 +3692,53 @@ class ActiveCartItemAdmin(admin.ModelAdmin):
     readonly_fields = ('dodano', 'azurirano')
     ordering = ('-azurirano',)
     autocomplete_fields = ('user', 'product')
+
+
+@admin.register(WarehouseLocation)
+class WarehouseLocationAdmin(admin.ModelAdmin):
+    list_display = ('sifra', 'naziv', 'aktivan', 'redoslijed', 'odoo_location_id')
+    list_filter = ('aktivan',)
+    search_fields = ('sifra', 'naziv')
+    ordering = ('redoslijed', 'sifra')
+
+
+@admin.register(WarehouseSupplier)
+class WarehouseSupplierAdmin(admin.ModelAdmin):
+    list_display = ('naziv', 'aktivan')
+    search_fields = ('naziv',)
+
+
+@admin.register(ProductWarehouseMeta)
+class ProductWarehouseMetaAdmin(admin.ModelAdmin):
+    list_display = ('product', 'dobavljac', 'min_zaliha', 'jedinica_mjere')
+    search_fields = ('product__naziv', 'product__sifra')
+    autocomplete_fields = ('product', 'dobavljac')
+
+
+@admin.register(WarehouseStock)
+class WarehouseStockAdmin(admin.ModelAdmin):
+    list_display = ('product', 'variation', 'location', 'kolicina', 'rezervisano')
+    list_filter = ('location',)
+    search_fields = ('product__naziv', 'product__sifra', 'variation__sifra')
+    autocomplete_fields = ('product', 'location')
+
+
+@admin.register(WarehouseMovement)
+class WarehouseMovementAdmin(admin.ModelAdmin):
+    list_display = ('kreiran', 'product', 'tip', 'location', 'to_location', 'kolicina')
+    list_filter = ('tip', 'kreiran')
+    search_fields = ('product__naziv', 'product__sifra', 'napomena')
+    autocomplete_fields = ('product', 'location', 'to_location', 'korisnik')
+    readonly_fields = ('kreiran',)
+
+
+@admin.register(WarehouseSyncLog)
+class WarehouseSyncLogAdmin(admin.ModelAdmin):
+    list_display = ('started_at', 'status', 'izvor', 'artikala', 'trajanje_sekundi')
+    list_filter = ('status',)
+    readonly_fields = (
+        'status', 'izvor', 'poruka', 'artikala', 'lokacija',
+        'started_at', 'finished_at', 'trajanje_sekundi', 'korisnik',
+    )
 
 

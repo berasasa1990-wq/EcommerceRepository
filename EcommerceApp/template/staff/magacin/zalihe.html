@@ -1,0 +1,70 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <h1>Zalihe</h1>
+    <form method="get" class="mg-page-search" style="margin:0;max-width:420px;flex:1;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Artikal, šifra, barkod..." autocomplete="off">
+        {% if selected_location %}<input type="hidden" name="lokacija" value="{{ selected_location }}">{% endif %}
+        {% if only_low %}<input type="hidden" name="nisko" value="1">{% endif %}
+        <button type="submit" class="mg-btn">Filtriraj</button>
+    </form>
+</div>
+
+<form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+    {% if magacin_search %}<input type="hidden" name="pretraga" value="{{ magacin_search }}">{% endif %}
+    <select name="lokacija" onchange="this.form.submit()" style="border:1px solid #eceeef;border-radius:8px;padding:8px 10px;font:inherit;">
+        <option value="">Sve lokacije</option>
+        {% for loc in locations %}
+        <option value="{{ loc.pk }}"{% if selected_location == loc.pk|stringformat:"s" %} selected{% endif %}>{{ loc.label }}</option>
+        {% endfor %}
+    </select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+        <input type="checkbox" name="nisko" value="1"{% if only_low %} checked{% endif %} onchange="this.form.submit()">
+        Samo niske (≤ 5)
+    </label>
+</form>
+
+<section class="mg-card">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>ARTIKAL</th>
+                <th>LOKACIJA</th>
+                <th class="num">NA STANJU</th>
+                <th class="num">REZ.</th>
+                <th class="num">DOSTUPNO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in page %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_artikal' row.product_id %}{% if row.variation_id %}?varijacija={{ row.variation_id }}{% endif %}'">
+                <td>
+                    <strong>{{ row.product.naziv }}</strong>
+                    {% if row.variation %}<div class="mg-muted">{{ row.variation.naziv }}</div>{% endif %}
+                </td>
+                <td>{{ row.location.label }}</td>
+                <td class="num">{{ row.kolicina }}</td>
+                <td class="num">{{ row.rezervisano }}</td>
+                <td class="num num-ok">{{ row.dostupno }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="mg-muted">Nema zaliha za ovaj filter.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% if page.has_other_pages %}
+<nav class="mg-pager">
+    {% if page.has_previous %}
+    <a href="?page={{ page.previous_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}{% if selected_location %}&lokacija={{ selected_location }}{% endif %}{% if only_low %}&nisko=1{% endif %}">← Prethodna</a>
+    {% endif %}
+    <span class="is-current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+    <a href="?page={{ page.next_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}{% if selected_location %}&lokacija={{ selected_location }}{% endif %}{% if only_low %}&nisko=1{% endif %}">Sljedeća →</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

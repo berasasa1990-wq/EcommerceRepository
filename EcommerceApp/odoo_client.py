@@ -154,6 +154,108 @@ class OdooClient:
             'virtual_available',
         ]
 
+    def get_all_sale_template_ids(self):
+        """Svi product.template koji se mogu prodavati (cijeli Odoo katalog)."""
+        return self.get_sale_template_ids()
+
+    def get_sale_template_ids(self, *, since=None):
+        domain = [('sale_ok', '=', True)]
+        if since is not None:
+            domain.append(('write_date', '>=', _odoo_datetime(since)))
+        records = self.search_read_batched(
+            'product.template',
+            domain,
+            ['id'],
+            batch_size=PRODUCT_BATCH_SIZE,
+            order='id asc',
+        )
+        return [int(record['id']) for record in records if record.get('id')]
+
+    def get_quant_product_ids_changed_since(self, since):
+        """product.product ID-jevi čije su interne zalihe mijenjane od `since`."""
+        if since is None:
+            return []
+        records = self.search_read_batched(
+            'stock.quant',
+            [
+                ('location_id.usage', '=', 'internal'),
+                ('write_date', '>=', _odoo_datetime(since)),
+            ],
+            ['product_id'],
+            batch_size=PRODUCT_BATCH_SIZE,
+            order='id asc',
+        )
+        ids = []
+        seen = set()
+        for record in records:
+            product = record.get('product_id')
+            pid = product[0] if isinstance(product, (list, tuple)) else product
+            if not pid:
+                continue
+            pid = int(pid)
+            if pid in seen:
+                continue
+            seen.add(pid)
+            ids.append(pid)
+        return ids
+
+    def get_internal_locations(self):
+        """Interna skladišta / police iz Odoa."""
+        return self.search_read(
+            'stock.location',
+            [('usage', '=', 'internal')],
+            ['id', 'name', 'complete_name'],
+            order='complete_name asc',
+        )
+
+    def get_variant_ids_for_templates(self, template_ids):
+        """product.product ID → product.template ID za zadate template ID-jeve."""
+        template_ids = sorted({int(tid) for tid in (template_ids or []) if tid})
+        if not template_ids:
+            return {}
+        mapping = {}
+        for offset in range(0, len(template_ids), PRODUCT_BATCH_SIZE):
+            chunk = template_ids[offset:offset + PRODUCT_BATCH_SIZE]
+            rows = self.search_read(
+                'product.product',
+                [('product_tmpl_id', 'in', chunk)],
+                ['id', 'product_tmpl_id'],
+            )
+            for row in rows or []:
+                vid = row.get('id')
+                tmpl = row.get('product_tmpl_id')
+                if not vid:
+                    continue
+                tid = tmpl[0] if isinstance(tmpl, (list, tuple)) else tmpl
+                if not tid:
+                    continue
+                mapping[int(vid)] = int(tid)
+        return mapping
+
+    def get_template_ids_for_variants(self, variant_ids):
+        """product.product ID → product.template ID."""
+        variant_ids = sorted({int(vid) for vid in (variant_ids or []) if vid})
+        if not variant_ids:
+            return {}
+        mapping = {}
+        for offset in range(0, len(variant_ids), VARIANT_BATCH_SIZE):
+            chunk = variant_ids[offset:offset + VARIANT_BATCH_SIZE]
+            rows = self.search_read(
+                'product.product',
+                [('id', 'in', chunk)],
+                ['id', 'product_tmpl_id'],
+            )
+            for row in rows or []:
+                vid = row.get('id')
+                tmpl = row.get('product_tmpl_id')
+                if not vid:
+                    continue
+                tid = tmpl[0] if isinstance(tmpl, (list, tuple)) else tmpl
+                if not tid:
+                    continue
+                mapping[int(vid)] = int(tid)
+        return mapping
+
     def get_products_in_category(self, category_id, *, include_children=True):
         category_id = int(category_id)
         if include_children:
@@ -419,10 +521,45 @@ class OdooClient:
         comment='',
     ):
         """
-        res.partner kupac:
-        name, street, city, phone (+ email/zip ako postoje).
-        Traži po emailu, pa telefonu, pa imenu+gradu; inače kreira.
+        Uvijek kreira novog kupca s tačnim podacima iz narudžbe.
+
+        Ne spaja po telefonu — isti broj smije postojati na više kupaca.
+        street = adresa za slanje, street2 = telefon (Odoo Adresa 2).
         """
+        vals = OdooClient._partner_vals_from_order(
+            name=name,
+            street=street,
+            city=city,
+            phone=phone,
+            email=email,
+            zip_code=zip_code,
+            comment=comment,
+        )
+        try:
+            partner_id = self.execute('res.partner', 'create', vals)
+        except OdooError:
+            # Ako Odoo odbije zbog ponovljenog telefona, ostavi telefon u Adresa 2.
+            retry = dict(vals)
+            retry.pop('phone', None)
+            retry.pop('mobile', None)
+            partner_id = self.execute('res.partner', 'create', retry)
+        if isinstance(partner_id, list):
+            partner_id = partner_id[0] if partner_id else None
+        if not partner_id:
+            raise OdooError('res.partner create nije vratio id.')
+        return int(partner_id), True
+
+    @staticmethod
+    def _partner_vals_from_order(
+        *,
+        name,
+        street='',
+        city='',
+        phone='',
+        email='',
+        zip_code='',
+        comment='',
+    ):
         name = (name or '').strip() or 'Kupac web'
         street = (street or '').strip()
         city = (city or '').strip()
@@ -430,105 +567,27 @@ class OdooClient:
         email = (email or '').strip().lower()
         zip_code = (zip_code or '').strip()
         comment = (comment or '').strip()
-
-        fields = [
-            'id', 'name', 'street', 'city', 'phone', 'mobile', 'email', 'zip',
-        ]
-        partner = None
-
-        if email:
-            rows = self.search_read(
-                'res.partner',
-                [('email', '=ilike', email), ('type', 'in', ['contact', 'invoice', 'delivery', 'other', False])],
-                fields,
-                limit=3,
-                order='id desc',
-            )
-            if not rows:
-                rows = self.search_read(
-                    'res.partner',
-                    [('email', '=ilike', email)],
-                    fields,
-                    limit=3,
-                    order='id desc',
-                )
-            if rows:
-                partner = rows[0]
-
-        if partner is None and phone:
-            # telefon može biti u phone ili mobile
-            phone_digits = ''.join(ch for ch in phone if ch.isdigit())
-            domain_phone = ['|', ('phone', 'ilike', phone), ('mobile', 'ilike', phone)]
-            if len(phone_digits) >= 8:
-                tail = phone_digits[-8:]
-                domain_phone = [
-                    '|', '|', '|',
-                    ('phone', 'ilike', phone),
-                    ('mobile', 'ilike', phone),
-                    ('phone', 'ilike', tail),
-                    ('mobile', 'ilike', tail),
-                ]
-            rows = self.search_read(
-                'res.partner',
-                domain_phone,
-                fields,
-                limit=5,
-                order='id desc',
-            )
-            if rows:
-                partner = rows[0]
-
-        if partner is None and name and city:
-            rows = self.search_read(
-                'res.partner',
-                [('name', '=ilike', name), ('city', '=ilike', city)],
-                fields,
-                limit=3,
-                order='id desc',
-            )
-            if rows:
-                partner = rows[0]
+        dummy_emails = {'rucna@opremazaribolov.ba'}
+        if email in dummy_emails:
+            email = ''
 
         vals = {
             'name': name[:200],
             'street': street[:250],
             'city': city[:100],
-            'phone': phone[:64],
             'customer_rank': 1,
         }
+        if phone:
+            vals['street2'] = phone[:250]
+            vals['phone'] = phone[:64]
+            vals['mobile'] = phone[:64]
         if email:
             vals['email'] = email[:120]
         if zip_code:
             vals['zip'] = zip_code[:24]
-        if phone and not partner:
-            vals['mobile'] = phone[:64]
         if comment:
             vals['comment'] = comment[:2000]
-
-        if partner:
-            partner_id = int(partner['id'])
-            # Dopuni prazna polja (ne pregazi postojeće ako su popunjena)
-            write_vals = {}
-            for key in ('street', 'city', 'phone', 'email', 'zip'):
-                new_val = vals.get(key)
-                if not new_val:
-                    continue
-                old = partner.get(key)
-                if not old or old is False:
-                    write_vals[key] = new_val
-            if write_vals:
-                try:
-                    self.execute('res.partner', 'write', [partner_id], write_vals)
-                except OdooError:
-                    pass
-            return partner_id, False
-
-        partner_id = self.execute('res.partner', 'create', vals)
-        if isinstance(partner_id, list):
-            partner_id = partner_id[0] if partner_id else None
-        if not partner_id:
-            raise OdooError('res.partner create nije vratio id.')
-        return int(partner_id), True
+        return vals
 
     def find_sale_order_by_web_ref(self, web_broj):
         """Već postoji SO sa origin/client_order_ref = WEB-{broj}."""
@@ -663,22 +722,29 @@ class OdooClient:
                 continue
             if for_packing and not _is_packing_pick_location(location_path):
                 continue
-            location_name = _short_location_name(location_path)
+            location_name = _short_location_name(location_path) or location_path
             if not location_name:
                 continue
 
             qty = _quant_on_hand(record)
-            if qty <= 0:
+            on_hand = _quant_raw_quantity(record)
+            reserved = _quant_reserved(record)
+            if qty <= 0 and on_hand <= 0:
                 continue
 
             buckets = by_product.setdefault(int(product_id), {})
             if location_id in buckets:
                 buckets[location_id]['quantity'] += qty
+                buckets[location_id]['on_hand'] += on_hand
+                buckets[location_id]['reserved_quantity'] += reserved
             else:
                 buckets[location_id] = {
                     'location_id': location_id,
                     'location_name': location_name,
+                    'location_path': location_path,
                     'quantity': qty,
+                    'on_hand': on_hand,
+                    'reserved_quantity': reserved,
                 }
 
         result = {}
@@ -943,6 +1009,20 @@ class OdooClient:
         return int(applied)
 
 
+def _odoo_datetime(value):
+    """Odoo XML-RPC write_date: 'YYYY-MM-DD HH:MM:SS' u UTC."""
+    from datetime import timezone as dt_tz
+
+    from django.utils import timezone as dj_tz
+
+    if value is None:
+        return None
+    dt = value
+    if dj_tz.is_aware(dt):
+        dt = dt.astimezone(dt_tz.utc).replace(tzinfo=None)
+    return dt.strftime('%Y-%m-%d %H:%M:%S')
+
+
 def _is_xmlrpc_none_marshal_error(exc):
     """
     Odoo XML-RPC ne može vratiti None (allow_none=False na serveru).
@@ -960,6 +1040,7 @@ def _is_xmlrpc_none_marshal_error(exc):
 # Lokacije koje nisu police za pakovanje online narudžbi (transfer, kupci, virtualno…)
 _PACKING_LOCATION_EXCLUDE_KEYWORDS = (
     'prenos',
+    'maloprodaja',
     'transfer',
     'transit',
     'output',
@@ -993,6 +1074,20 @@ def _short_location_name(name):
     if '/' in name:
         name = name.rsplit('/', 1)[-1].strip()
     return name
+
+
+def _quant_raw_quantity(record):
+    try:
+        return max(0, int(float(record.get('quantity') or 0)))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _quant_reserved(record):
+    try:
+        return max(0, int(float(record.get('reserved_quantity') or 0)))
+    except (TypeError, ValueError):
+        return 0
 
 
 def _quant_on_hand(record):

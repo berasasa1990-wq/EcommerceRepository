@@ -1,7 +1,9 @@
 """
 Kreiranje Odoo Sales narudžbe iz web narudžbe (staff dugme „Odoo narudžba”).
 
-Kupac (res.partner): name, street, city, phone (+ email/zip).
+Kupac (res.partner): uvijek novi zapis s tačnim podacima narudžbe
+(name, street, street2=telefon / Odoo Adresa 2, city, phone, email, zip).
+Ne spaja se po telefonu.
 Stavke: isti artikli i količine — match po Odoo ID, šifri, pa nazivu.
 """
 from __future__ import annotations

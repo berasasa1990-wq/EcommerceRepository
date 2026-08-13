@@ -1,0 +1,30 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar"><h1>Podešavanja</h1></div>
+<section class="mg-card">
+    <dl class="mg-kv">
+        <div class="mg-kv-row">
+            <dt>Izvor zaliha</dt>
+            <dd>Lokalna baza (SQLite). Sync sada povlači iz Odoa sve artikle, lokacije, cijene, šifre, barkodove, slike i zalihe u Magacin. Pretraga vidi samo te sinhronizovane artikle.</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Odoo veza</dt>
+            <dd>{% if odoo_configured %}Povezano{% else %}Nije konfigurisano (ODOO_URL / ODOO_DB / ODOO_USERNAME / ODOO_API_KEY){% endif %}</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Lokacija</dt>
+            <dd>{{ location_count }}</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Sync zapisa</dt>
+            <dd>{{ sync_count }}</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Katalog</dt>
+            <dd>Svako kretanje ažurira količinu artikla / varijacije na sajtu (stanje i „na stanju”).</dd>
+        </div>
+    </dl>
+    <a class="mg-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
+</section>
+{% endblock %}

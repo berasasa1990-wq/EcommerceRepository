@@ -4840,38 +4840,66 @@ def staff_order_detail(request, broj):
         action = (request.POST.get('action') or '').strip()
         if action == 'zavrsi':
             _mark_order_completed(request, broj)
-            return redirect('staff_online_orders')
+            return redirect('staff_magacin_narudzbe')
         if action == 'odoo_narudzba':
             _create_odoo_sale_order_from_web(request, broj)
             return redirect('staff_order_detail', broj=broj)
+        if action == 'validiraj':
+            from .magacin import MagacinError, validate_order_stock
+            try:
+                validate_order_stock(order, user=request.user)
+                messages.success(request, f'Narudžba #{order.broj} je validirana — zaliha je skinuta s lokacija.')
+            except MagacinError as exc:
+                messages.error(request, str(exc))
+                return redirect('staff_order_detail', broj=broj)
+            return redirect('staff_magacin_narudzbe')
+        if action == 'otkazi':
+            from .magacin import MagacinError, cancel_order_stock
+            try:
+                cancel_order_stock(order, user=request.user)
+                messages.success(request, f'Narudžba #{order.broj} je otkazana — rezervacija je vraćena.')
+            except MagacinError as exc:
+                messages.error(request, str(exc))
+            return redirect('staff_magacin_narudzbe')
 
+    from .views_magacin import _magacin_context
     context = {
-        **_base_context(),
+        **_magacin_context(request, section='narudzbe', page_title=f'Narudžba #{order.broj}'),
         **get_order_email_context(order),
     }
     return render(request, 'staff/order_detail.html', context)
 
 
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
-def staff_order_print(request, broj):
-    """Štampa: račun + garantni list (poseban list) + packing lista (poseban list)."""
-    order = get_object_or_404(
-        Order.objects.prefetch_related('stavke'),
-        broj=broj,
-    )
+def _order_print_job(order):
     packing_lines, odoo_error = _build_order_packing_lines(order)
-    # Artikli bez (pune) Odoo zalihe → mora se provjeriti u MP prije puštanja štampe
     packing_missing = [
         line for line in packing_lines
         if line.get('check_mp') or not line.get('picks')
     ]
-    context = {
-        **get_order_email_context(order),
+    job = get_order_email_context(order)
+    job.update({
         'packing_lines': packing_lines,
         'odoo_error': odoo_error,
         'packing_missing': packing_missing,
         'requires_mp_check': bool(packing_missing),
+    })
+    return job
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_order_print(request, broj):
+    """Štampa: račun s garantnim tekstom na dnu + packing lista (poseban list)."""
+    order = get_object_or_404(
+        Order.objects.prefetch_related('stavke'),
+        broj=broj,
+    )
+    job = _order_print_job(order)
+    context = {
+        **job,
+        'print_jobs': [job],
+        'print_brojevi': [order.broj],
+        'requires_mp_check': job['requires_mp_check'],
         'mark_printed_url': reverse('staff_order_mark_printed', kwargs={'broj': order.broj}),
     }
     return render(request, 'staff/order_print.html', context)
@@ -5119,9 +5147,49 @@ def _allocate_packing_locations(needed_qty, stock_locations):
     return picks, remaining
 
 
+def _magacin_hold_picks(order, items):
+    """Picks iz lokalnih Magacin rezervacija (rezervisano / validirano)."""
+    from .models import OrderStockHold
+
+    holds = list(
+        order.magacin_holds.exclude(status=OrderStockHold.Status.OTKAZANO)
+        .select_related('location', 'product', 'variation')
+    )
+    if not holds:
+        return {}
+
+    by_key = {}
+    for hold in holds:
+        key = (hold.product_id, hold.variation_id)
+        by_key.setdefault(key, []).append(hold)
+
+    picks_by_item = {}
+    for item in items:
+        item_holds = by_key.get((item.artikal_id, item.varijacija_id))
+        if not item_holds and item.varijacija_id:
+            item_holds = by_key.get((item.artikal_id, None))
+        if not item_holds:
+            continue
+        picks = []
+        taken = 0
+        for hold in item_holds:
+            loc = hold.location
+            name = loc.sifra or loc.naziv or '?'
+            picks.append({
+                'location_name': name,
+                'location_id': loc.pk,
+                'take': hold.kolicina,
+                'on_hand': hold.kolicina,
+            })
+            taken += hold.kolicina
+        picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
+        picks_by_item[item.pk] = (picks, max(0, item.kolicina - taken))
+    return picks_by_item
+
+
 def _build_order_packing_lines(order):
     """
-    Stavke pakovanja s Odoo lokacijama (quantity on hand).
+    Stavke pakovanja: prvo Magacin rezervacije, inače Odoo lokacije.
     Lokacije se čiste abecedno; količina se uzima redom s prvih lokacija.
     """
     from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
@@ -5133,8 +5201,9 @@ def _build_order_packing_lines(order):
     odoo_error = None
     stock_by_product = {}
     template_variants = {}
+    magacin_picks = _magacin_hold_picks(order, items)
 
-    if odoo_je_konfigurisan() and items:
+    if odoo_je_konfigurisan() and items and not magacin_picks:
         try:
             client = OdooClient.from_settings()
             template_ids = set()
@@ -5169,8 +5238,10 @@ def _build_order_packing_lines(order):
     for index, item in enumerate(items, start=1):
         odoo_product_id = _order_item_odoo_product_id(item, template_variants)
         stock_locations = stock_by_product.get(odoo_product_id, []) if odoo_product_id else []
-        # Lokacije već dolaze abecedno; pick redoslijed = abecedni
-        picks, shortfall = _allocate_packing_locations(item.kolicina, stock_locations)
+        if item.pk in magacin_picks:
+            picks, shortfall = magacin_picks[item.pk]
+        else:
+            picks, shortfall = _allocate_packing_locations(item.kolicina, stock_locations)
         if picks:
             picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
         # Ako ima Odoo zalihe: lokacija + koliko uzimaš; inače (ili ostatak) → Provjeri u MP
