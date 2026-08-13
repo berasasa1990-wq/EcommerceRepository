@@ -32,8 +32,8 @@
             Nove
             {% if nova_count %}<span class="staff-filter-count">{{ nova_count }}</span>{% endif %}
         </a>
-        <a href="{% url 'staff_online_orders' %}?filter=zavrsene" class="staff-filter-btn{% if filter_status == 'zavrsene' %} is-active{% endif %}">
-            Završene
+        <a href="{% url 'staff_online_orders' %}?filter=validirane" class="staff-filter-btn{% if filter_status == 'zavrsene' %} is-active{% endif %}">
+            Validirane
             {% if zavrsena_count %}<span class="staff-filter-count">{{ zavrsena_count }}</span>{% endif %}
         </a>
         <a href="{% url 'staff_online_orders' %}?filter=sve" class="staff-filter-btn{% if filter_status == 'sve' %} is-active{% endif %}">
@@ -97,7 +97,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="action" value="zavrsi">
                         <input type="hidden" name="broj" value="{{ order.broj }}">
-                        <button type="submit" class="btn btn-secondary btn-sm staff-complete-btn">Završi</button>
+                        <button type="submit" class="btn btn-secondary btn-sm staff-complete-btn">Validiraj</button>
                     </form>
                     {% endif %}
                 </div>
@@ -112,7 +112,7 @@
         {% elif filter_status == 'nove' %}
         Nema novih online narudžbi.
         {% elif filter_status == 'zavrsene' %}
-        Nema završenih online narudžbi.
+        Nema validiranih online narudžbi.
         {% else %}
         Nema online narudžbi.
         {% endif %}
@@ -125,7 +125,7 @@
 <script>
 document.querySelectorAll('.staff-complete-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
-        if (!window.confirm('Želite li završiti narudžbu?')) {
+        if (!window.confirm('Želite li validirati narudžbu?')) {
             event.preventDefault();
         }
     });

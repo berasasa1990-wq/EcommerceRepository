@@ -161,6 +161,8 @@ class MagacinStockTests(TestCase):
         order.refresh_from_db()
         self.product.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(order.status, Order.Status.ZAVRSENA)
+        self.assertEqual(order.get_status_label(), 'Validirana')
         self.assertEqual(self.product.stanje, 0)
         self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
 
@@ -940,6 +942,8 @@ class MagacinViewTests(TestCase):
         self.assertIn('/nalog/magacin/narudzbe/', validated['Location'])
         order.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(order.status, Order.Status.ZAVRSENA)
+        self.assertEqual(order.get_status_label(), 'Validirana')
         self.product.refresh_from_db()
         self.assertEqual(stock_totals(self.product)['dostupno'], 7)
         self.assertEqual(self.product.stanje, 7)

@@ -443,7 +443,9 @@ def search_products(query, *, limit=40, include_zero=False):
         qs = qs.annotate(_na_stanju=magacin_in_stock_q()).order_by('-_na_stanju', 'naziv')
     else:
         qs = qs.order_by('naziv')
-    return list(qs[:limit]), None
+    if limit is None:
+        return qs, None
+    return qs[: max(0, int(limit))], None
 
 
 def query_looks_like_name(query):
@@ -1253,8 +1255,8 @@ def validate_order_stock(order, *, user=None):
     order.zapakovana = True
     order.zapakovana_at = timezone.now()
     update_fields = ['lager_status', 'zapakovana', 'zapakovana_at']
-    if order.status == Order.Status.NOVA:
-        order.status = Order.Status.POTVRDJENA
+    if order.status != Order.Status.OTKAZANA:
+        order.status = Order.Status.ZAVRSENA
         update_fields.append('status')
     order.save(update_fields=update_fields)
 

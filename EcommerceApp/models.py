@@ -3790,7 +3790,7 @@ class Order(models.Model):
         NOVA = 'nova', 'Nova'
         POTVRDJENA = 'potvrdjena', 'Potvrđena'
         POSLANA = 'poslana', 'Poslana'
-        ZAVRSENA = 'zavrsena', 'Završena'
+        ZAVRSENA = 'zavrsena', 'Validirana'
         OTKAZANA = 'otkazana', 'Otkazana'
 
     class Izvor(models.TextChoices):

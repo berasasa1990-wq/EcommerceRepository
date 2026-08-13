@@ -4778,14 +4778,26 @@ def _search_staff_orders(query):
 
 
 def _mark_order_completed(request, broj):
+    from .magacin import MagacinError, validate_order_stock
+
     order = get_object_or_404(Order, broj=broj)
-    if order.status == Order.Status.NOVA:
+    if order.status == Order.Status.OTKAZANA:
+        messages.info(request, f'Narudžba #{broj} je otkazana.')
+        return False
+    if order.status != Order.Status.ZAVRSENA:
         order.status = Order.Status.ZAVRSENA
         order.save(update_fields=['status'])
-        messages.success(request, f'Narudžba #{broj} označena kao završena.')
-        return True
-    messages.info(request, f'Narudžba #{broj} više nije nova.')
-    return False
+    try:
+        if order.lager_status == Order.LagerStatus.REZERVISANO:
+            validate_order_stock(order, user=request.user)
+        elif order.lager_status != Order.LagerStatus.VALIDIRANO:
+            order.lager_status = Order.LagerStatus.VALIDIRANO
+            order.save(update_fields=['lager_status'])
+    except MagacinError as exc:
+        messages.error(request, str(exc))
+        return False
+    messages.success(request, f'Narudžba #{broj} je validirana.')
+    return True
 
 
 @login_required(login_url='login')
@@ -7002,7 +7014,7 @@ def staff_olx_messages(request):
 
 def _staff_online_orders_filter(request):
     raw = (request.GET.get('filter') or 'nove').strip().lower()
-    if raw in ('zavrsene', 'zavrsena'):
+    if raw in ('zavrsene', 'zavrsena', 'validirane', 'validirana'):
         return 'zavrsene'
     if raw == 'sve':
         return 'sve'

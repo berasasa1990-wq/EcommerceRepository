@@ -203,17 +203,14 @@ def magacin_artikli(request):
     if not searched:
         return render(request, 'staff/magacin/artikli.html', context)
 
-    qs = magacin_products_qs().select_related('kategorija', 'brend').order_by('naziv')
-    if not include_zero:
-        qs = qs.filter(magacin_in_stock_q()).distinct()
-    products, exact = search_products(query, limit=200, include_zero=include_zero)
+    products, exact = search_products(query, limit=None, include_zero=include_zero)
     if exact:
         url = reverse('staff_magacin_artikal', args=[exact.pk])
         params = {'pretraga': query}
         if include_zero:
             params['bez_zalihe'] = '1'
         return redirect(f'{url}?{urlencode(params)}')
-    qs = qs.filter(pk__in=[p.pk for p in products])
+    qs = products
 
     paginator = Paginator(qs, 40)
     page = paginator.get_page(request.GET.get('page') or 1)
@@ -992,10 +989,11 @@ def magacin_narudzbe(request):
         orders = orders.filter(izvor=Order.Izvor.MAGACIN)
     elif izvor == 'webshop':
         orders = orders.filter(izvor=Order.Izvor.WEBSHOP)
+    validated_q = Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
     if show_validated:
-        orders = orders.filter(lager_status=Order.LagerStatus.VALIDIRANO)
+        orders = orders.filter(validated_q)
     else:
-        orders = orders.exclude(lager_status=Order.LagerStatus.VALIDIRANO)
+        orders = orders.exclude(validated_q)
     base_qs = Order.objects.exclude(status=Order.Status.OTKAZANA)
     context = _magacin_context(request, section='narudzbe', page_title='Narudžbe — Magacin')
     context.update({
@@ -1004,8 +1002,8 @@ def magacin_narudzbe(request):
         'show_validated': show_validated,
         'rucne_count': base_qs.filter(
             izvor=Order.Izvor.MAGACIN,
-        ).exclude(lager_status=Order.LagerStatus.VALIDIRANO).count(),
-        'validated_count': base_qs.filter(lager_status=Order.LagerStatus.VALIDIRANO).count(),
+        ).exclude(validated_q).count(),
+        'validated_count': base_qs.filter(validated_q).count(),
     })
     return render(request, 'staff/magacin/narudzbe.html', context)
 
