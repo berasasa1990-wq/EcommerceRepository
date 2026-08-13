@@ -1,94 +1,139 @@
 <footer class="footer footer--mockup">
     <div class="footer-main">
+        <div class="footer-subscribe">
+            <div>
+                <h3 class="footer-subscribe-title">Pridruži se preko 20 000 sabskrajbera</h3>
+                <p class="footer-subscribe-sub">I budi informisan o svim novim dešavanjima</p>
+            </div>
+            <form class="footer-subscribe-form" id="footerNewsletterForm" action="{% url 'newsletter_subscribe' %}" method="post" novalidate>
+                {% csrf_token %}
+                <label class="visually-hidden" for="footerNewsletterEmail">E-mail</label>
+                <input type="email" id="footerNewsletterEmail" name="email" required autocomplete="email" placeholder="E-mail adresa">
+                <button type="submit" class="footer-subscribe-btn">Pretplati se</button>
+            </form>
+            <p class="footer-subscribe-msg" id="footerNewsletterMsg" hidden role="status"></p>
+        </div>
+
+        <div class="footer-features" aria-label="Prednosti kupovine">
+            <div class="footer-feature">
+                <strong>Dostava u roku 24h</strong>
+                <span>24/7 podrška</span>
+            </div>
+            <div class="footer-feature">
+                <strong>Zaštita kupca</strong>
+                <span>Bezbjedna pri kupovina</span>
+            </div>
+            <div class="footer-feature">
+                <strong>24/7 Podrška</strong>
+                <span>Podrška</span>
+            </div>
+            <div class="footer-feature">
+                <strong>Online Plaċanje</strong>
+                <span>Brzo i sigurno plaċanje</span>
+            </div>
+            <div class="footer-feature">
+                <strong>Dnevni dilovi</strong>
+                <span>Popusti i setovi</span>
+            </div>
+        </div>
+
         <div class="footer-grid footer-grid--mockup">
-            {# 1 — Brand / kontakt #}
             <div class="footer-column footer-column--brand">
-                <a href="{{ site_url }}/" class="footer-brand-title">Oprema za ribolov</a>
+                <a href="https://www.carpologijabh.ba/" class="footer-brand-title" target="_blank" rel="noopener noreferrer">Carpologija BH</a>
                 <p class="footer-brand-desc">
-                    Vodeća online trgovina ribolovne opreme u BiH.
-                    Nudimo vrhunske proizvode renomiranih brendova po najboljim cijenama.
+                    opremazaribolov.ba je sajt CarpologijaBH.
                 </p>
+                <h3 class="footer-section-title">Kontaktirajte nas:</h3>
                 <ul class="footer-contact-list">
                     <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span>Raje Banjičića 76, Bijeljina, BiH</span>
+                    </li>
+                    <li>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg>
-                        {% if contact_phone %}
-                        <a href="tel:{{ contact_phone_digits|default:contact_phone }}">{{ contact_phone }}</a>
-                        {% else %}
-                        <a href="tel:+38762195095">+387 62 195 095</a>
-                        {% endif %}
+                        <a href="tel:+38765838653">(387) 65 838-653</a>
                     </li>
                     <li>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                        <a href="mailto:info@opremazaribolov.ba">info@opremazaribolov.ba</a>
+                        <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a>
                     </li>
                     <li>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <span>Brčko distrikt, Bosna i Hercegovina</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+                        <a href="https://www.carpologijabh.ba/" target="_blank" rel="noopener noreferrer">www.carpologijabh.ba</a>
                     </li>
                 </ul>
                 <div class="footer-social">
-                    <a href="https://www.facebook.com/opremazaribolov.ba" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <a href="https://www.facebook.com/carpologijabh.ba/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.07C22 6.48 17.52 2 11.93 2S1.86 6.48 1.86 12.07c0 5.02 3.66 9.18 8.44 9.93v-7.02H7.9v-2.91h2.4V9.84c0-2.37 1.41-3.68 3.57-3.68 1.03 0 2.11.18 2.11.18v2.32h-1.19c-1.17 0-1.54.73-1.54 1.48v1.78h2.62l-.42 2.91h-2.2V22c4.78-.75 8.44-4.91 8.44-9.93z"/></svg>
                     </a>
-                    <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                    <a href="https://www.instagram.com/carpologijabh/?hl=en" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-                    </a>
-                    <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.5 31.5 0 0 0 0 12a31.5 31.5 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.5 31.5 0 0 0 24 12a31.5 31.5 0 0 0-.5-5.8zM9.75 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
-                    </a>
-                    <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.6 6.8A5.4 5.4 0 0 1 16 5.5V16a5 5 0 1 1-5-5c.3 0 .6 0 .9.1V14a2 2 0 1 0 1.4 1.9V2h3a5.4 5.4 0 0 0 3.3 4.8z"/></svg>
                     </a>
                 </div>
             </div>
 
-            {# Korisni linkovi #}
             <div class="footer-column">
-                <p class="footer-section-title">Korisni linkovi</p>
                 <ul class="footer-link-list">
                     <li><a href="{% url 'about_us' %}">O nama</a></li>
-                    <li><a href="{% url 'vlog_list' %}">Blog / Vlog</a></li>
-                    <li><a href="{% url 'payment_methods' %}">Dostava i plaćanje</a></li>
-                    <li><a href="{% url 'payment_methods' %}">Uslovi korištenja</a></li>
-                    <li><a href="{% url 'payment_methods' %}">Povrat i zamjena</a></li>
-                    <li><a href="{% url 'about_us' %}">Kontakt</a></li>
-                    <li><a href="{% url 'register' %}">Prijava / Registracija</a></li>
+                    <li><a href="{% url 'payment_methods' %}">Način plaćanja</a></li>
+                    <li><a href="https://carpologijabh.ba/sigurnost-placanja/" target="_blank" rel="noopener noreferrer">Sigurnost plaćanja</a></li>
+                    <li><a href="https://carpologijabh.ba/izjava-o-privatnosti/" target="_blank" rel="noopener noreferrer">Izjava o privatnosti</a></li>
+                    <li><a href="https://carpologijabh.ba/uslovi-kupovine" target="_blank" rel="noopener noreferrer">Uslovi kupovine</a></li>
+                    <li><a href="{% url 'vlog_list' %}">Blog</a></li>
                 </ul>
             </div>
 
-            {# 4 — Korisnički servis #}
-            <div class="footer-column">
-                <p class="footer-section-title">Korisnički servis</p>
-                <ul class="footer-link-list">
-                    <li><a href="{% url 'payment_methods' %}">Kako kupovati?</a></li>
-                    <li><a href="{% url 'payment_methods' %}">Često postavljana pitanja</a></li>
-                    <li><a href="{% url 'cart' %}">Praćenje narudžbe</a></li>
-                    <li><a href="{% url 'payment_methods' %}">Vodič za veličine</a></li>
-                    <li><a href="{% url 'home' %}">Poklon kartice</a></li>
-                    <li><a href="{% url 'account' %}">Bodovni sistem</a></li>
-                </ul>
-            </div>
-
-            {# 5 — Sigurna kupovina #}
             <div class="footer-column footer-column--secure">
-                <p class="footer-section-title">Sigurna kupovina</p>
+                <p class="footer-section-title">Radno vrijeme:</p>
+                <ul class="footer-hours">
+                    <li>Ponedjeljak – Petak : 9:00-17:00</li>
+                    <li>Subota: 9:00 – 13:00</li>
+                    <li>Nedelja: Ne radimo</li>
+                </ul>
+                <p class="footer-section-title" style="margin-top:22px;">Sigurno elektronski plaċanje</p>
                 <div class="footer-pay-logos" aria-label="Načini plaćanja">
                     <span class="footer-pay-badge">VISA</span>
                     <span class="footer-pay-badge">Mastercard</span>
                     <span class="footer-pay-badge">PayPal</span>
                 </div>
-                <p class="footer-secure-note">100% sigurna kupovina. Svi podaci su zaštićeni SSL enkripcijom.</p>
-                <div class="footer-ssl-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-                    <div>
-                        <strong>100% SECURE</strong>
-                        <span>SSL ENCRYPTION</span>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
     <div class="footer-bottom footer-bottom--mockup">
-        <p>&copy; {% now "Y" %} Oprema za ribolov. Sva prava zadržana.</p>
+        <p>© Copyright Carpologija BH 2015-{% now "Y" %}</p>
+        <p class="footer-affiliation">opremazaribolov.ba je sajt CarpologijaBH.</p>
+        <p class="footer-version">Verzija {{ site_version_label }}</p>
     </div>
 </footer>
+<script>
+(function () {
+    var form = document.getElementById('footerNewsletterForm');
+    if (!form) return;
+    var msg = document.getElementById('footerNewsletterMsg');
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var fd = new FormData(form);
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
+        fetch(form.action, {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        }).then(function (r) {
+            return r.json().then(function (d) { return { ok: r.ok, data: d }; });
+        }).then(function (res) {
+            if (msg) {
+                msg.hidden = false;
+                msg.textContent = (res.data && res.data.message) || (res.ok ? 'Hvala!' : 'Greška.');
+            }
+            if (res.ok && res.data && res.data.ok) form.reset();
+        }).catch(function () {
+            if (msg) {
+                msg.hidden = false;
+                msg.textContent = 'Greška mreže. Pokušajte ponovo.';
+            }
+        }).finally(function () { if (btn) btn.disabled = false; });
+    });
+})();
+</script>

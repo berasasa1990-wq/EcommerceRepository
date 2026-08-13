@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260813m">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260813v">
 {% endblock %}
 
 {% block body_class %}staff-shell-page magacin-page{% endblock %}
@@ -87,6 +87,7 @@
                 <button type="submit" class="mg-history-btn">Sync sada</button>
             </form>
             <a class="mg-history-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
+            <p class="mg-version">Verzija {{ site_version_label }}</p>
         </div>
     </aside>
 

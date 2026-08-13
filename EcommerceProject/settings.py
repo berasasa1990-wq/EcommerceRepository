@@ -244,6 +244,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'EcommerceApp.context_processors.nav_categories',
                 'EcommerceApp.context_processors.meta_pixel',
+                'EcommerceApp.site_version.site_version',
             ],
             **({} if DEBUG else {'loaders': _TEMPLATE_LOADERS}),
         },

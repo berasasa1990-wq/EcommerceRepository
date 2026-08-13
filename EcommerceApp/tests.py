@@ -328,3 +328,43 @@ class PonudaAkcijaTests(TestCase):
         self.assertEqual(payload['gratis_slug'], 'offer-ponuda')
         self.assertEqual(payload['label'], 'Dobra kupovina')
         self.assertIn('10', payload['headline'])
+
+
+class SiteVersionTests(TestCase):
+    def test_version_file_is_in_footer_label(self):
+        from .site_version import build_site_version
+
+        build_site_version.cache_clear()
+        info = build_site_version()
+        self.assertTrue(info['site_version'])
+        self.assertIn(info['site_version'], info['site_version_label'])
+        self.assertTrue(info['site_version_label'].startswith('v'))
+
+    def test_footer_shows_version(self):
+        from django.urls import reverse
+
+        from .site_version import build_site_version
+
+        page = self.client.get(reverse('home'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Verzija')
+        self.assertContains(page, build_site_version()['site_version_label'])
+
+    def test_footer_copies_carpologija_text(self):
+        from django.urls import reverse
+
+        page = self.client.get(reverse('home'))
+        self.assertContains(page, 'Kontaktirajte nas:')
+        self.assertContains(page, 'Raje Banjičića 76, Bijeljina, BiH')
+        self.assertContains(page, '(387) 65 838-653')
+        self.assertContains(page, 'carpologijabh@gmail.com')
+        self.assertContains(page, 'www.carpologijabh.ba')
+        self.assertContains(page, 'O nama')
+        self.assertContains(page, 'Način plaćanja')
+        self.assertContains(page, 'Sigurnost plaćanja')
+        self.assertContains(page, 'Izjava o privatnosti')
+        self.assertContains(page, 'Uslovi kupovine')
+        self.assertContains(page, 'Ponedjeljak – Petak : 9:00-17:00')
+        self.assertContains(page, '© Copyright Carpologija BH 2015-')
+        self.assertContains(page, 'opremazaribolov.ba je sajt CarpologijaBH.')
+        self.assertContains(page, 'Pridruži se preko 20 000 sabskrajbera')

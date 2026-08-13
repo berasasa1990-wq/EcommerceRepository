@@ -501,9 +501,11 @@ def _variation_has_image(variation):
     return bool(slika and getattr(slika, 'name', ''))
 
 
-def _find_product_by_odoo_id(template_id):
-    """Samo Odoo template ID — nikad po šifri, da se ne prave duplikati."""
-    return Product.objects.filter(odoo_template_id=int(template_id)).first()
+def _find_existing_sync_product(template):
+    """Nađi već uvezeni artikal. Sync nikad ne kreira novi."""
+    from .odoo_import import _find_product_for_template
+
+    return _find_product_for_template(template)
 
 
 def _apply_image_once(image_field, image_b64, filename):
@@ -521,9 +523,9 @@ def _apply_image_once(image_field, image_b64, filename):
 
 def sync_catalog_chunk(client, template_ids, *, start=0, limit=CATALOG_SYNC_BATCH):
     """
-    Ažuriraj postojeće artikle po odoo_template_id.
-    Nove ubaci sve (i sa zalihom i bez — kasnije mogu doći na stanje).
-    Sliku postavi samo kad artikal/varijacija još nema sliku.
+    Samo ažuriraj već uvezene artikle (Odoo ID, varijacija ili šifra).
+    Nikad ne kreira nove artikle — katalog je već uvezen Odoo importom.
+    Sliku postavi samo kad artikal još nema sliku.
     """
     from django.utils import timezone
 
@@ -551,8 +553,10 @@ def sync_catalog_chunk(client, template_ids, *, start=0, limit=CATALOG_SYNC_BATC
         template = by_id.get(int(tid))
         if not template:
             continue
-        product = _find_product_by_odoo_id(tid)
-        if product is None or not _product_has_image(product):
+        product = _find_existing_sync_product(template)
+        if product is None:
+            continue
+        if not _product_has_image(product):
             need_images.append(int(tid))
 
     images = {}
@@ -581,34 +585,15 @@ def _sync_one_template(client, template, *, image_b64=None, synced_at=None):
     from .odoo_import import _odoo_template_name
 
     odoo_id = int(template['id'])
-    product = _find_product_by_odoo_id(odoo_id)
-    qty = _template_qty(template)
+    product = _find_existing_sync_product(template)
+    if product is None:
+        return 'preskoceno'
     naziv = (_odoo_template_name(template) or f'Artikal {odoo_id}')[:200]
     barkod = ''
     if template.get('barcode') not in (False, None, ''):
         barkod = str(template.get('barcode'))[:BARKOD_MAX_LENGTH]
     cijena = _decimal_price(template.get('list_price'))
     now = synced_at or timezone.now()
-
-    if product is None:
-        sifra = _safe_sifra(template.get('default_code'), odoo_id=odoo_id)
-        product = Product(
-            naziv=naziv,
-            sifra=sifra or None,
-            barkod=barkod,
-            cijena=cijena,
-            odoo_template_id=odoo_id,
-            aktivan=True,
-            stanje=max(0, qty),
-            na_stanju=qty > 0,
-            magacin_sync_at=now,
-        )
-        product.save()
-        if image_b64 and not _product_has_image(product):
-            if _apply_image_once(product.slika, image_b64, f'odoo-template-{odoo_id}.jpg'):
-                product.save(update_fields=['slika'])
-        _sync_template_variations(client, product, template, create_images=True)
-        return 'kreirano'
 
     raw_code = template.get('default_code')
     new_sifra = _safe_sifra(raw_code, odoo_id=odoo_id, product_pk=product.pk)
@@ -620,6 +605,10 @@ def _sync_one_template(client, template, *, image_b64=None, synced_at=None):
     )
     need_image = bool(image_b64) and not _product_has_image(product)
     if not changed and not need_image:
+        if product.magacin_sync_at is None:
+            product.magacin_sync_at = now
+            product.save(update_fields=['magacin_sync_at'])
+            return 'azurirano'
         return 'preskoceno'
 
     update_fields = ['magacin_sync_at']
@@ -638,7 +627,7 @@ def _sync_one_template(client, template, *, image_b64=None, synced_at=None):
         if _apply_image_once(product.slika, image_b64, f'odoo-template-{odoo_id}.jpg'):
             update_fields.append('slika')
     product.save(update_fields=update_fields)
-    _sync_template_variations(client, product, template, create_images=False)
+    _sync_template_variations(client, product, template, create_images=need_image)
     return 'azurirano'
 
 
@@ -655,32 +644,19 @@ def _sync_template_variations(client, product, template, *, create_images):
         if not vid:
             continue
         vid = int(vid)
-        variation = ProductVariation.objects.filter(odoo_variant_id=vid).first()
-        if variation and variation.artikal_id != product.pk:
-            continue
-        v_qty = _template_qty(variant)
         raw_code = variant.get('default_code')
         v_sifra = '' if raw_code in (None, False) else str(raw_code).strip()
+        variation = ProductVariation.objects.filter(odoo_variant_id=vid).first()
+        if variation is None and v_sifra:
+            variation = ProductVariation.objects.filter(artikal=product, sifra=v_sifra).first()
+            if variation is not None and not variation.odoo_variant_id:
+                variation.odoo_variant_id = vid
+        if variation and variation.artikal_id != product.pk:
+            continue
         v_naziv = (variant.get('display_name') or variant.get('name') or product.naziv or '')[:100]
         v_cijena = _decimal_price(variant.get('lst_price'), default=str(product.cijena))
 
         if variation is None:
-            if v_sifra and ProductVariation.objects.filter(sifra=v_sifra).exists():
-                v_sifra = f'ODOO-V-{vid}'[:SIFRA_MAX_LENGTH]
-            variation = ProductVariation(
-                artikal=product,
-                naziv=v_naziv,
-                sifra=v_sifra or None,
-                cijena=v_cijena,
-                odoo_variant_id=vid,
-                stanje=v_qty,
-                na_stanju=v_qty > 0,
-            )
-            if create_images:
-                image_b64 = variant.get('image_variant_1920') or variant.get('image_1920')
-                if image_b64:
-                    _apply_image_once(variation.slika, image_b64, f'odoo-variant-{vid}.jpg')
-            variation.save()
             continue
 
         fields_changed = (

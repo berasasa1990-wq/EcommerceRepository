@@ -228,6 +228,7 @@ class MagacinCatalogSyncTests(TestCase):
             barkod='B1',
             cijena=Decimal('10.00'),
             odoo_template_id=444,
+            magacin_sync_at=timezone.now(),
         )
         product.slika = 'products/vec-tu.jpg'
         product.save(update_fields=['slika'])
@@ -247,7 +248,7 @@ class MagacinCatalogSyncTests(TestCase):
         product.refresh_from_db()
         self.assertEqual(product.azuriran, before)
 
-    def test_creates_zero_qty_new_product_for_later_stock(self):
+    def test_does_not_create_unknown_odoo_product(self):
         client = FakeOdooClient([{
             'id': 777,
             'name': 'Nema na stanju',
@@ -258,11 +259,10 @@ class MagacinCatalogSyncTests(TestCase):
             'product_variant_ids': [777],
         }])
         stats = sync_catalog_chunk(client, [777], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 1)
-        product = Product.objects.get(odoo_template_id=777)
-        self.assertEqual(product.stanje, 0)
-        self.assertFalse(product.na_stanju)
-        self.assertIsNotNone(product.magacin_sync_at)
+        self.assertEqual(stats['kreirano'], 0)
+        self.assertEqual(stats['preskoceno'], 1)
+        self.assertFalse(Product.objects.filter(odoo_template_id=777).exists())
+        self.assertEqual(Product.objects.count(), 0)
 
     def test_creates_variation_without_normalized_null(self):
         product = Product.objects.create(
@@ -361,7 +361,12 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertEqual(product.stanje, 2)
         self.assertTrue(product.na_stanju)
 
-    def test_creates_only_in_stock_new_product(self):
+    def test_updates_imported_product_by_sifra_without_duplicate(self):
+        product = Product.objects.create(
+            naziv='Stari import',
+            sifra='NEW-88',
+            cijena=Decimal('3.00'),
+        )
         client = FakeOdooClient([{
             'id': 888,
             'name': 'Novi na stanju',
@@ -372,12 +377,14 @@ class MagacinCatalogSyncTests(TestCase):
             'product_variant_ids': [888],
         }])
         stats = sync_catalog_chunk(client, [888], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 1)
-        product = Product.objects.get(odoo_template_id=888)
+        self.assertEqual(stats['kreirano'], 0)
+        self.assertEqual(stats['azurirano'], 1)
+        self.assertEqual(Product.objects.count(), 1)
+        product.refresh_from_db()
+        self.assertEqual(product.naziv, 'Novi na stanju')
         self.assertEqual(product.sifra, 'NEW-88')
-        self.assertEqual(product.stanje, 6)
-        self.assertTrue(product.na_stanju)
-        self.assertIsNotNone(product.magacin_sync_at)
+        self.assertEqual(product.barkod, 'BAR-88')
+        self.assertEqual(product.odoo_template_id, 888)
 
     def test_skips_image_download_when_product_already_has_image(self):
         product = Product.objects.create(
@@ -579,6 +586,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'mg-chart-wrap')
         self.assertContains(page, 'mg-table-stack')
         self.assertContains(page, 'Zadnje izmjene artikala')
+        self.assertContains(page, 'Verzija')
         self.assertContains(page, order.broj)
         month = self.client.get(reverse('staff_magacin_pregled'), {'period': 'month', 'graf': 'mjeseci'})
         self.assertContains(month, 'Ovaj mjesec')
