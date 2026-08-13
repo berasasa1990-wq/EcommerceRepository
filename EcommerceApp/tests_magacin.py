@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .magacin import (
+    MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
     _apply_quant_batch,
     _odoo_id_to_local,
@@ -27,6 +28,7 @@ from .models import (
     WarehouseLocation,
     WarehouseMovement,
     WarehouseStock,
+    WarehouseSyncLog,
 )
 
 
@@ -561,6 +563,43 @@ class MagacinViewTests(TestCase):
         ):
             response = self.client.get(reverse(name))
             self.assertEqual(response.status_code, 200, name)
+
+    def test_sync_can_be_cancelled(self):
+        self.client.force_login(self.user)
+        log = WarehouseSyncLog.objects.create(
+            status=WarehouseSyncLog.Status.U_TOKU,
+            izvor='Odoo',
+            poruka='Katalog: 20 / 400',
+            artikala=12,
+        )
+        session = self.client.session
+        session[MAGACIN_SYNC_SESSION_KEY] = {
+            'log_id': log.pk,
+            'started': timezone.now().timestamp(),
+            'phase': 'catalog',
+            'template_ids': [1, 2, 3],
+            'position': 20,
+            'artikala': 12,
+            'azurirano': 5,
+            'preskoceno': 15,
+            'done': False,
+        }
+        session.save()
+        listed = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertContains(listed, 'Prekini sync')
+        self.assertContains(listed, 'mgSyncCancel')
+        stopped = self.client.post(reverse('staff_magacin_sync'), {
+            'action': 'cancel',
+            'next': reverse('staff_magacin_artikli'),
+        })
+        self.assertEqual(stopped.status_code, 302)
+        log.refresh_from_db()
+        self.assertEqual(log.status, WarehouseSyncLog.Status.PREKINUT)
+        self.assertIn('prekinut', log.poruka.lower())
+        self.assertNotIn(MAGACIN_SYNC_SESSION_KEY, self.client.session)
+        after = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertNotContains(after, 'mgSyncCancel')
+        self.assertContains(after, 'Sinhronizacija je prekinuta')
 
     def test_pregled_shows_order_stats_and_chart(self):
         self.client.force_login(self.user)

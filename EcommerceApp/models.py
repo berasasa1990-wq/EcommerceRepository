@@ -5330,6 +5330,7 @@ class WarehouseSyncLog(models.Model):
         USPJEH = 'uspjeh', 'Uspješna'
         GRESKA = 'greska', 'Neuspješna'
         U_TOKU = 'u_toku', 'U toku'
+        PREKINUT = 'prekinut', 'Prekinuta'
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.U_TOKU)
     izvor = models.CharField(max_length=80, default='Lokalna baza (SQLite)')

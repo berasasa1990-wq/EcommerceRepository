@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260813v">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260813c">
 {% endblock %}
 
 {% block body_class %}staff-shell-page magacin-page{% endblock %}
@@ -84,7 +84,7 @@
             <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-                <button type="submit" class="mg-history-btn">Sync sada</button>
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>{% if sync_job %}Sync u toku…{% else %}Sync sada{% endif %}</button>
             </form>
             <a class="mg-history-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
             <p class="mg-version">Verzija {{ site_version_label }}</p>
@@ -97,11 +97,19 @@
             <strong>Sinhronizacija iz Odoo</strong>
             <span>{{ sync_job.label }}</span>
             <div class="mg-sync-bar"><i style="width: {{ sync_job.percent }}%"></i></div>
-            <form id="mgSyncContinue" method="post" action="{% url 'staff_magacin_sync' %}">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="continue">
-                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-            </form>
+            <div class="mg-sync-banner-actions">
+                <form id="mgSyncContinue" method="post" action="{% url 'staff_magacin_sync' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="continue">
+                    <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                </form>
+                <form id="mgSyncCancel" method="post" action="{% url 'staff_magacin_sync' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel">
+                    <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                    <button type="submit" class="mg-btn mg-btn-danger">Prekini sync</button>
+                </form>
+            </div>
         </div>
         {% endif %}
         <div class="mg-page-bar">
@@ -149,6 +157,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/staff-magacin.js' %}?v=20260813m"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260813c"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

@@ -681,6 +681,34 @@ def _sync_template_variations(client, product, template, *, create_images):
         variation.save()
 
 
+def cancel_sync(job, *, user=None):
+    """Zaustavi tekući sync nakon trenutnog chunka. Ne briše već ažurirane artikle."""
+    log = WarehouseSyncLog.objects.filter(pk=job.get('log_id')).first() if job else None
+    started = job.get('started') or time.time()
+    poruka = (
+        f'Sync prekinut: {job.get("artikala") or 0} artikala, '
+        f'{job.get("lokacija") or 0} lokacija, '
+        f'{job.get("zaliha") or 0} zaliha. '
+        f'Ažurirano {job.get("azurirano") or 0}, '
+        f'preskočeno {job.get("preskoceno") or 0}.'
+    )
+    if log and log.status == WarehouseSyncLog.Status.U_TOKU:
+        log.status = WarehouseSyncLog.Status.PREKINUT
+        log.poruka = poruka[:400]
+        log.finished_at = timezone.now()
+        log.artikala = int(job.get('artikala') or 0)
+        log.lokacija = int(job.get('lokacija') or 0)
+        log.trajanje_sekundi = max(0, int(time.time() - started))
+        log.save(update_fields=[
+            'status', 'poruka', 'finished_at', 'artikala', 'lokacija', 'trajanje_sekundi',
+        ])
+    job = dict(job or {})
+    job['done'] = True
+    job['cancelled'] = True
+    job['phase'] = 'done'
+    return job
+
+
 def _fail_log(log, started, message):
     log.status = WarehouseSyncLog.Status.GRESKA
     log.poruka = (message or '')[:400]

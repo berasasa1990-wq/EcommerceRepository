@@ -34,8 +34,15 @@
     }
 
     var syncForm = document.getElementById('mgSyncContinue');
+    var syncCancel = document.getElementById('mgSyncCancel');
+    var syncTimer = null;
     if (syncForm) {
-        window.setTimeout(function () { syncForm.submit(); }, 400);
+        syncTimer = window.setTimeout(function () { syncForm.submit(); }, 400);
+    }
+    if (syncCancel) {
+        syncCancel.addEventListener('submit', function () {
+            if (syncTimer) window.clearTimeout(syncTimer);
+        });
     }
 
     initManualOrderForm();

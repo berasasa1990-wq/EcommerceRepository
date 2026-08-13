@@ -29,6 +29,7 @@ from .magacin import (
     magacin_in_stock_q,
     magacin_products_qs,
     usable_locations,
+    cancel_sync,
     run_sync_chunk,
     search_products,
     seed_default_locations,
@@ -1400,10 +1401,23 @@ def magacin_sync(request):
     next_url = request.POST.get('next') or reverse('staff_magacin_artikli')
     action = (request.POST.get('action') or 'start').strip()
     try:
+        if action == 'cancel':
+            job = request.session.get(MAGACIN_SYNC_SESSION_KEY)
+            if job:
+                cancel_sync(job, user=request.user)
+            request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
+            request.session.modified = True
+            messages.info(request, 'Sinhronizacija je prekinuta.')
+            return HttpResponseRedirect(next_url.split('?')[0] if next_url else reverse('staff_magacin_artikli'))
         if action == 'continue':
             job = request.session.get(MAGACIN_SYNC_SESSION_KEY)
             if not job:
                 raise MagacinError('Sync sesija je istekla. Pokreni Sync ponovo.')
+            if job.get('cancelled'):
+                request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
+                request.session.modified = True
+                messages.info(request, 'Sinhronizacija je prekinuta.')
+                return HttpResponseRedirect(next_url.split('?')[0] if next_url else reverse('staff_magacin_artikli'))
             job = run_sync_chunk(job, user=request.user)
         else:
             product = None
