@@ -159,10 +159,10 @@ class OdooClient:
         return self.get_sale_template_ids()
 
     def get_sale_template_ids_page(self, *, offset=0, limit=250):
-        """Jedna stranica sale_ok template ID-jeva — da Render ne timeouta."""
+        """Jedna stranica artikala iz Odoo (prodaja ili lager) — da Render ne timeouta."""
         records = self.search_read(
             'product.template',
-            [('sale_ok', '=', True)],
+            ['|', ('sale_ok', '=', True), ('type', '=', 'product')],
             ['id'],
             limit=max(1, int(limit)),
             offset=max(0, int(offset)),

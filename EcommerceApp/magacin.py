@@ -909,6 +909,7 @@ def _create_sync_product(template, *, image_b64=None, synced_at=None):
     cijena = _decimal_price(template.get('list_price'))
     sifra = _safe_sifra(template.get('default_code'), odoo_id=odoo_id)
     now = synced_at or timezone.now()
+    qty = _template_qty(template)
     product = Product(
         naziv=naziv,
         sifra=sifra,
@@ -917,8 +918,8 @@ def _create_sync_product(template, *, image_b64=None, synced_at=None):
         odoo_template_id=odoo_id,
         magacin_sync_at=now,
         aktivan=True,
-        na_stanju=False,
-        stanje=0,
+        na_stanju=qty > 0,
+        stanje=qty,
     )
     if image_b64:
         _apply_image_once(product.slika, image_b64, f'odoo-template-{odoo_id}.jpg')

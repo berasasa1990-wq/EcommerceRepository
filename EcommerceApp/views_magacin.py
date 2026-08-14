@@ -595,6 +595,12 @@ def magacin_artikli(request):
         return render(request, 'staff/magacin/artikli.html', context)
 
     products, exact = search_products(query, limit=None, include_zero=include_zero)
+    if not exact and not include_zero:
+        zero_products, zero_exact = search_products(query, limit=None, include_zero=True)
+        if zero_exact or zero_products:
+            include_zero = True
+            products, exact = zero_products, zero_exact
+            context['include_zero'] = True
     if exact:
         url = reverse('staff_magacin_artikal', args=[exact.pk])
         params = {'pretraga': query}
