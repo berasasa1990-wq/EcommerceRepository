@@ -14,7 +14,7 @@
         <a class="pk-check-btn{% if mp_count %} is-blink{% endif %}" href="{% url 'staff_magacin_pakuj_provjera' %}">
             Provjera{% if mp_count %} <i>{{ mp_count }}</i>{% endif %}
         </a>
-        <form method="post" class="pk-bar-valid" id="mgPackValidateForm">
+        <form method="post" class="pk-bar-valid" id="mgPackValidateForm" hidden>
             {% csrf_token %}
             <input type="hidden" name="pick_json" id="pkPickJson" value="">
             <button type="submit" name="action" value="validiraj" class="pk-valid" id="pkValidBtn">Validatuj</button>
@@ -78,7 +78,9 @@
         </div>
         <div id="pkDoneAll" class="pk-done-all" hidden>
             <strong>Sve pokupljeno</strong>
-            <p>Nalog je spreman za validaciju.</p>
+            <p id="pkSlobaHint">Prvo klikni kod Slobe, pa Validatuj.</p>
+            <button type="button" class="pk-sloba" id="pkSlobaBtn">Klikni kod Slobe</button>
+            <button type="button" class="pk-valid" id="pkValidDoneBtn" hidden>Validatuj</button>
         </div>
         <p id="pkEmpty" class="pk-empty" hidden>Nema stavki za picking.</p>
     </section>

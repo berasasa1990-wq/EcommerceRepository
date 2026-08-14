@@ -1,15 +1,12 @@
 <div class="doc">
     <table class="doc-header-table" role="presentation" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="vertical-align: top; width: 55%;">
-                {% if logo_url %}
-                <img src="{{ logo_url }}" alt="{{ site_name }}" class="doc-logo" height="56">
-                {% else %}
-                <p class="doc-title">{{ site_name }}</p>
-                {% endif %}
+            <td class="doc-brand" style="vertical-align: top; width: 52%;">
+                <p class="doc-company">d.o.o. CarpologijaBH</p>
+                <p class="doc-contact">Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></p>
             </td>
             <td class="doc-meta">
-                <p class="doc-title">Narudžba br. {{ order.broj }}</p>
+                <p class="doc-title">Online Narudžbe br. {{ order.broj }}</p>
                 <p>Datum narudžbe: {{ datum_kratko }} {{ vrijeme }}</p>
                 <p>Datum isporuke: {{ datum_kratko }}</p>
                 <div class="doc-order-barcode">
@@ -23,7 +20,7 @@
     <table class="parties-table" role="presentation" cellpadding="0" cellspacing="0">
         <tr>
             <td>
-                <span class="party-label">KUPAC:</span>
+                <span class="party-label">KUPAC</span>
                 <span class="party-name">{{ order.ime_prezime }}</span>
                 {{ order.adresa }}<br>
                 {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}<br>
@@ -34,11 +31,10 @@
                 {% endif %}
             </td>
             <td>
-                <span class="party-label">PRODAVAC:</span>
-                <span class="party-name">{{ site_name }}</span>
-                {% if store_email %}Email: {{ store_email }}<br>{% endif %}
-                {% if store_phone %}Telefon: {{ store_phone }}<br>{% endif %}
-                Web: <a href="{{ site_url }}">{{ site_url }}</a>
+                <span class="party-label">PRODAVAC</span>
+                <span class="party-name">d.o.o. CarpologijaBH</span>
+                Email: carpologijabh@gmail.com<br>
+                Web: carpologijebh
             </td>
         </tr>
     </table>
@@ -117,7 +113,7 @@
         <div class="invoice-seal-block">
             <div class="invoice-warranty-box">
                 <strong>Garancija</strong>
-                <span class="invoice-warranty-note">Ovaj papir je garantni list za narudžbu #{{ order.broj }} koja je poručena {{ datum }}. Garancija se odnosi na sve artikle s ovog računa, u skladu sa zakonima BiH i uslovima proizvođača. Reklamacije se podnose uz ovaj račun{% if store_phone %} na {{ store_phone }}{% endif %}{% if store_email %} / {{ store_email }}{% endif %}.</span>
+                <span class="invoice-warranty-note">Ovaj papir je garantni list za narudžbu #{{ order.broj }} koja je poručena {{ datum }}. Garancija se odnosi na sve artikle s ovog računa, u skladu sa zakonima BiH i uslovima proizvođača. Reklamacije se podnose uz ovaj račun na carpologijabh@gmail.com.</span>
             </div>
             <div class="invoice-seal-row">
                 <div class="invoice-sign">
@@ -131,10 +127,8 @@
 
     <div class="order-footer">
         Način plaćanja: pouzećem pri preuzimanju pošiljke.
-        Hvala vam na kupovini na <a href="{{ site_url }}">{{ site_name }}</a>.
-        {% if store_phone or store_email %}
-        Kontakt:
-        {% if store_phone %}{{ store_phone }}{% endif %}{% if store_phone and store_email %}, {% endif %}{% if store_email %}<a href="mailto:{{ store_email }}">{{ store_email }}</a>{% endif %}.
-        {% endif %}
+        Hvala vam na kupovini.
+        Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a>.
+        <strong class="doc-site-note">Ovo je sajt carpologijebh.</strong>
     </div>
 </div>

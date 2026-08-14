@@ -1772,6 +1772,28 @@ tr.is-mp-lock {
     font-size: 20px;
     margin-bottom: 8px;
 }
+.pk-done-all p { margin: 0 0 16px; }
+.pk-sloba {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: min(280px, 86vw);
+    min-height: 52px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 12px;
+    background: #fff3c4;
+    color: #6b4e00;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.pk-sloba:active { transform: scale(.98); }
+.pk-done-all .pk-valid {
+    width: min(280px, 86vw);
+    margin: 0 auto;
+}
 .pk-alert {
     margin: 0;
     padding: 10px 14px;

@@ -1872,9 +1872,6 @@ function initArticleScanner() {
         });
         input.focus();
     }
-    if (scanBtn && scanBtn.getAttribute('data-mg-scan-auto') === '1') {
-        window.setTimeout(function () { scanBtn.click(); }, 180);
-    }
 })();
 
 (function initPickEngine() {
@@ -1949,10 +1946,33 @@ function initArticleScanner() {
         msg: document.getElementById('pkMsg'),
         valid: document.getElementById('pkValidBtn'),
         form: document.getElementById('mgPackValidateForm'),
+        sloba: document.getElementById('pkSlobaBtn'),
+        slobaHint: document.getElementById('pkSlobaHint'),
+        validDone: document.getElementById('pkValidDoneBtn'),
         takeLess: document.getElementById('pkTakeLess'),
         takeAll: document.getElementById('pkTakeAll'),
         pickJson: document.getElementById('pkPickJson'),
     };
+    var slobaKey = 'mg-sloba-' + broj;
+    var slobaOk = false;
+    try { slobaOk = window.sessionStorage.getItem(slobaKey) === '1'; } catch (err) { slobaOk = false; }
+
+    function setSlobaOk(on) {
+        slobaOk = !!on;
+        try {
+            if (slobaOk) window.sessionStorage.setItem(slobaKey, '1');
+            else window.sessionStorage.removeItem(slobaKey);
+        } catch (err) {}
+        syncValidateGate();
+    }
+    function syncValidateGate() {
+        var ready = queue.length > 0 && doneCount() === queue.length;
+        var showValid = ready && slobaOk;
+        if (els.form) els.form.hidden = !showValid;
+        if (els.sloba) els.sloba.hidden = !ready || slobaOk;
+        if (els.slobaHint) els.slobaHint.hidden = !ready || slobaOk;
+        if (els.validDone) els.validDone.hidden = !showValid;
+    }
 
     function persist() {
         try { window.localStorage.setItem(storageKey, JSON.stringify(state)); } catch (err) {}
@@ -2019,6 +2039,7 @@ function initArticleScanner() {
         if (els.todoN) els.todoN.textContent = String(queue.length - finished);
         if (els.doneN) els.doneN.textContent = String(finished);
         if (els.valid) els.valid.disabled = false;
+        syncValidateGate();
         renderLists();
 
         if (!queue.length) {
@@ -2227,6 +2248,16 @@ function initArticleScanner() {
         if (name === 'pick' && els.scan) els.scan.focus();
     }
 
+    if (els.sloba) {
+        els.sloba.addEventListener('click', function () {
+            setSlobaOk(true);
+        });
+    }
+    if (els.validDone) {
+        els.validDone.addEventListener('click', function () {
+            if (els.valid) els.valid.click();
+        });
+    }
     if (els.form) {
         els.form.addEventListener('submit', function (event) {
             var broj = root.getAttribute('data-broj') || '';
@@ -2234,9 +2265,14 @@ function initArticleScanner() {
             if (queue.length && doneCount() < queue.length) {
                 msg = 'Nisu sve stavke pokupljene. Želiš li validatovati narudžbu #' + broj + '?';
             }
+            if (!slobaOk) {
+                event.preventDefault();
+                return;
+            }
             if (!window.confirm(msg)) event.preventDefault();
             else {
                 try { window.localStorage.removeItem(storageKey); } catch (err) {}
+                try { window.sessionStorage.removeItem(slobaKey); } catch (err) {}
             }
         });
     }

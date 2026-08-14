@@ -2221,7 +2221,7 @@ def collect_mp_checks(orders=None):
                 continue
             pick_key = f'{item.pk}:Provjeri u MP'
             saved = state.get(pick_key) or {}
-            if saved.get('done'):
+            if saved.get('done') or saved.get('mp_checked'):
                 continue
             row = {
                 'naziv': item.product_naziv or item.naziv,
@@ -2297,11 +2297,16 @@ def apply_mp_check(group_lines, *, found):
         for line in lines:
             need = int(line.get('need') or 0)
             state[line['key']] = {
-                'got': need if found else 0,
-                'done': True,
+                'got': 0,
+                'done': not found,
+                'mp_checked': True,
                 'item_id': line.get('item_id'),
                 'need': need,
             }
+        if found:
+            order.pick_state = state
+            order.save(update_fields=['pick_state'])
+            continue
         payload = []
         for key, row in state.items():
             if not isinstance(row, dict):
@@ -2312,6 +2317,7 @@ def apply_mp_check(group_lines, *, found):
                 'got': row.get('got') or 0,
                 'need': row.get('need') or 0,
                 'done': bool(row.get('done')),
+                'mp_checked': bool(row.get('mp_checked')),
             })
         apply_order_pick(order, payload)
         if not payload:
@@ -2356,10 +2362,16 @@ def apply_order_pick(order, lines):
         key = str(raw.get('key') or '')
         if not key:
             continue
-        state[key] = {'got': got, 'done': done, 'item_id': item_id or None, 'need': need}
+        prev = state.get(key) if isinstance(state.get(key), dict) else {}
+        row = {'got': got, 'done': done, 'item_id': item_id or None, 'need': need}
+        if prev.get('mp_checked') or raw.get('mp_checked'):
+            row['mp_checked'] = True
+        state[key] = row
         if not item_id:
             continue
-        picked_by_item[item_id] = picked_by_item.get(item_id, 0) + (got if done else need)
+        if not done:
+            continue
+        picked_by_item[item_id] = picked_by_item.get(item_id, 0) + got
         need_by_item[item_id] = need_by_item.get(item_id, 0) + need
 
     items = {item.pk: item for item in order.stavke.all()}
