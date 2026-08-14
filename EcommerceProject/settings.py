@@ -181,7 +181,10 @@ if (not DEBUG) or RENDER_EXTERNAL_HOSTNAME or _env('RENDER', ''):
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
-SESSION_SAVE_EVERY_REQUEST = True
+# Login ostaje preko cookie domain + SECURE_PROXY_SSL_HEADER.
+# True ovdje piše django_session na SVAKI request (heartbeat/ponuda/chat)
+# i na 0.5 CPU + 1 worker pravi delay i CPU spike.
+SESSION_SAVE_EVERY_REQUEST = False
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
@@ -221,8 +224,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # HTML/JSON kompresija (manji payload, brži transfer) — bez promjene UI-a
-    'django.middleware.gzip.GZipMiddleware',
+    # Gzip samo HTML — JSON pollovi su sitni, gzip jede CPU
+    'EcommerceApp.middleware.gzip_html.HtmlGZipMiddleware',
     # WhiteNoise for static files (must be right after SecurityMiddleware)
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

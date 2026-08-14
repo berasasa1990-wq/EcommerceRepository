@@ -139,19 +139,33 @@ def _magacin_search_query(request):
     ).strip()
 
 
-def _magacin_nav_counts():
+_MAGACIN_NAV_CACHE_KEY = 'mg_nav_counts_v1'
+
+
+def invalidate_magacin_nav_counts():
     from django.core.cache import cache
 
-    data = cache.get('mg_nav_counts_v1')
-    if data is None:
-        data = {
-            'new_magacin_orders_count': Order.objects.filter(status=Order.Status.NOVA).count(),
-            'new_pack_orders_count': _unvalidated_orders_qs().count(),
-            'notify_count': StaffSiteEvent.objects.filter(
-                kreirano__gte=timezone.now() - timedelta(hours=24),
-            ).count(),
-        }
-        cache.set('mg_nav_counts_v1', data, 20)
+    cache.delete(_MAGACIN_NAV_CACHE_KEY)
+
+
+def _magacin_nav_counts():
+    import sys
+    from django.core.cache import cache
+
+    use_cache = 'test' not in sys.argv
+    if use_cache:
+        data = cache.get(_MAGACIN_NAV_CACHE_KEY)
+        if data is not None:
+            return data
+    data = {
+        'new_magacin_orders_count': Order.objects.filter(status=Order.Status.NOVA).count(),
+        'new_pack_orders_count': _unvalidated_orders_qs().count(),
+        'notify_count': StaffSiteEvent.objects.filter(
+            kreirano__gte=timezone.now() - timedelta(hours=24),
+        ).count(),
+    }
+    if use_cache:
+        cache.set(_MAGACIN_NAV_CACHE_KEY, data, 20)
     return data
 
 
@@ -1947,6 +1961,7 @@ def _save_manual_order(request, ime, telefon, email, adresa, grad, medjuzbir, do
             raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
     order.lager_status = Order.LagerStatus.REZERVISANO
     order.save(update_fields=['lager_status'])
+    invalidate_magacin_nav_counts()
     return order
 
 

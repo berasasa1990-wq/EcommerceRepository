@@ -4138,6 +4138,12 @@ def checkout(request):
                 popust_detalji=popust_detalji,
                 ukupno=summary['ukupno'],
             )
+            try:
+                from .views_magacin import invalidate_magacin_nav_counts
+
+                invalidate_magacin_nav_counts()
+            except Exception:
+                pass
             if request.user.is_authenticated:
                 _save_profile_from_checkout(request.user, form.cleaned_data)
             for item in cart:
@@ -6604,7 +6610,7 @@ def online_gift_poll(request):
         payload = {'active': False}
     else:
         payload = poll_online_gift(request)
-    payload['csrf_token'] = get_token(request)
+    payload['csrf_token'] = request.META.get('CSRF_COOKIE') or ''
     return JsonResponse(payload)
 
 
@@ -6707,7 +6713,7 @@ def live_visitor_offer_poll(request):
         else:
             payload = {'active': True, 'offer': offer}
 
-    payload['csrf_token'] = get_token(request)
+    payload['csrf_token'] = request.META.get('CSRF_COOKIE') or ''
     return JsonResponse(payload)
 
 

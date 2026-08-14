@@ -1,5 +1,6 @@
 import uuid
 
+from EcommerceApp.live_visitors import is_background_request_path
 from EcommerceApp.meta_conversions import track_page_view
 
 
@@ -11,6 +12,11 @@ class MetaPageViewMiddleware:
         '/api/',
         '/static/',
         '/media/',
+        '/nalog/',
+        '/sitemap',
+        '/robots.txt',
+        '/favicon',
+        '/healthz',
     )
 
     def __init__(self, get_response):
@@ -27,7 +33,11 @@ class MetaPageViewMiddleware:
     def _should_track(self, request):
         if request.method != 'GET':
             return False
-        path = request.path
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return False
+        path = request.path or ''
         if path == '/facebook-feed.xml':
+            return False
+        if is_background_request_path(path):
             return False
         return not any(path.startswith(prefix) for prefix in self.SKIP_PREFIXES)

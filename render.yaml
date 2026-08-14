@@ -14,8 +14,8 @@ services:
       python manage.py migrate --noinput
       # Superuser NE kreirati na svakom deployu (već postoji → CommandError).
       # Jednom ručno: python manage.py createsuperuser
-    # Free plan ~512 MB: 1 worker, kraći timeout, restart radi curenja memorije
-    startCommand: gunicorn EcommerceProject.wsgi:application --workers 1 --threads 2 --timeout 120 --graceful-timeout 30 --max-requests 80 --max-requests-jitter 20
+    # Starter 0.5 CPU / 512 MB: 1 worker. max-requests 80 + pollovi = restart svakih ~2 min (CPU spike).
+    startCommand: gunicorn EcommerceProject.wsgi:application --workers 1 --threads 4 --timeout 60 --graceful-timeout 20 --max-requests 400 --max-requests-jitter 50
     envVars:
       - key: PYTHON_VERSION
         value: 3.12  # ili 3.11, 3.13

@@ -520,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await apiFetch('/api/chat/badge/');
                 setBadge(customerBadge, data.customer_unread_count);
             } catch (e) { /* ignore */ }
-        }, config.isAuthenticated ? 3500 : 5000);
+        }, config.isAuthenticated ? 15000 : 20000);
     }
     function stopMinimizedCustomerPolling() {
         clearInterval(customerMinimizedPollTimer);
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function pollCustomerChat() {
-        if (!customerOpen) return;
+        if (document.hidden || !customerOpen) return;
         try {
             const data = await apiFetch(`/api/chat/poll/?after_id=${lastMessageId}&open=1`);
             if (data.closed) {
@@ -547,7 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function startCustomerPolling() {
         stopMinimizedCustomerPolling();
         clearInterval(customerPollTimer);
-        customerPollTimer = setInterval(pollCustomerChat, 6000);
+        customerPollTimer = setInterval(pollCustomerChat, 12000);
     }
 
     function stopCustomerPolling() {
@@ -832,6 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function pollStaffInbox() {
+        if (document.hidden) return;
         if (!config.isStaff) return;
         try {
             const inbox = await apiFetch('/api/chat/staff/inbox/');
@@ -887,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(staffPollTimer);
         clearInterval(staffPingTimer);
         // Brzi poll (1.5–2s) — chat iskače superuseru bez refresha
-        const interval = staffOpen ? 5000 : 10000;
+        const interval = staffOpen ? 8000 : 15000;
         staffPollTimer = setInterval(pollStaffInbox, interval);
     }
 
@@ -1054,6 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function pollCustomerUnread() {
+        if (document.hidden) return;
         if (!config.chatEnabled || customerOpen) return;
         // Badge i kad ikona još nije “reveal” (registrovan s istorijom)
         if (!customerChatRevealed && !config.isAuthenticated) return;
@@ -1299,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (config.chatEnabled) {
         scheduleProactiveChat();
         // Brži badge poll — nepročitano odmah (posebno registrovani)
-        setInterval(pollCustomerUnread, config.isAuthenticated ? 10000 : 20000);
+        setInterval(pollCustomerUnread, config.isAuthenticated ? 20000 : 30000);
     }
 
     document.addEventListener('visibilitychange', () => {

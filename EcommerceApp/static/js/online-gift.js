@@ -49,7 +49,7 @@
     var done = false;
     var isOpen = false;
     var pollTimer = null;
-    var POLL_MS = 8000;
+    var POLL_MS = 20000;
 
     // Nakon prijave (force_show) obriši sessionStorage da se popup opet otvori
     if (forceShow) {
@@ -379,6 +379,7 @@
     }
 
     function poll() {
+        if (document.hidden) return;
         if (done || isOpen) return;
         if (!forceShow && isClosed()) return;
         fetch(pollUrl, {
@@ -455,6 +456,9 @@
 
     // Poll za manuelni push (i ako auto još nije stigao)
     pollTimer = setInterval(poll, POLL_MS);
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) poll();
+    });
     // brzi prvi poll ako nije show_now
     if (!showNow) {
         setTimeout(poll, 400);

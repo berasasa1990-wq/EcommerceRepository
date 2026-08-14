@@ -56,8 +56,13 @@ class LiveVisitorMiddleware:
 
         response = self.get_response(request)
         try:
-            # POST / ostalo — ili ako early track nije uspio
-            if not tracked_early and should_track_visitor(request):
+            # Heartbeat / poll / AJAX već imaju svoj lagani update.
+            # Drugi track ovdje je dupli SQLite/Postgres write na svaki ping.
+            if (
+                not tracked_early
+                and should_track_visitor(request)
+                and not is_background_request_path(path)
+            ):
                 track_live_visitor(request)
         except Exception:
             logger.exception('Live visitor tracking failed')

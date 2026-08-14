@@ -4,7 +4,7 @@
     }
 
     const pollUrl = '/ponuda/status/';
-    const pollIntervalMs = 5000;
+    const pollIntervalMs = 20000;
     const LIVE_OFFER_ACTIVE_KEY = 'live_offer_active_session';
     const pageLoadedAt = Date.now();
     let lastOfferVersion = null;

@@ -491,6 +491,8 @@ BACKGROUND_PATH_PREFIXES = (
     '/korpa/kupon',
     '/korpa/ukloni',
     '/api/',
+    '/nalog/uzivo-obavijesti',
+    '/nalog/uzivo-analitika/podaci',
 )
 
 
@@ -819,6 +821,20 @@ def heartbeat_live_visitor(request, body_session_key=''):
 
     now = timezone.now()
     update_fields = {'last_seen': now}
+
+    # Path iz body-ja treba prije throttle-a da se „Sada:” ipak osvježi na navigaciji.
+    body_path_preview = ''
+    try:
+        body_path_preview = (request.POST.get('path') or request.GET.get('path') or '').strip()
+    except Exception:
+        body_path_preview = ''
+    from django.core.cache import cache as _hb_cache
+    hb_key = f'lv_hb:{session_key}'
+    last_hb_path = _hb_cache.get(hb_key)
+    if last_hb_path is not None and last_hb_path == (body_path_preview or last_hb_path):
+        touch_visitor_presence(session_key)
+        return True
+    _hb_cache.set(hb_key, body_path_preview or last_hb_path or '/', 20)
 
     # Live „Sada:” — klijent šalje path + q sa stvarne stranice (ne poll URL)
     body_path = ''

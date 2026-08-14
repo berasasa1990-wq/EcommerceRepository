@@ -1547,6 +1547,12 @@ def validate_order_stock(order, *, user=None):
         order.status = Order.Status.ZAVRSENA
         update_fields.append('status')
     order.save(update_fields=update_fields)
+    try:
+        from .views_magacin import invalidate_magacin_nav_counts
+
+        invalidate_magacin_nav_counts()
+    except Exception:
+        pass
 
 
 @transaction.atomic
@@ -1577,10 +1583,27 @@ def cancel_order_stock(order, *, user=None):
     order.lager_status = Order.LagerStatus.OTKAZANO
     order.status = Order.Status.OTKAZANA
     order.save(update_fields=['lager_status', 'status'])
+    try:
+        from .views_magacin import invalidate_magacin_nav_counts
+
+        invalidate_magacin_nav_counts()
+    except Exception:
+        pass
 
 
 def last_sync():
-    return WarehouseSyncLog.objects.order_by('-started_at').first()
+    import sys
+    from django.core.cache import cache
+
+    use_cache = 'test' not in sys.argv
+    if use_cache:
+        cached = cache.get('mg_last_sync_v1')
+        if cached is not None:
+            return cached or None
+    log = WarehouseSyncLog.objects.order_by('-started_at').first()
+    if use_cache:
+        cache.set('mg_last_sync_v1', log or False, 30)
+    return log
 
 
 def last_successful_sync():

@@ -134,7 +134,7 @@
     }
 
     async function poll() {
-        if (inFlight || !pollUrl) return;
+        if (document.hidden || inFlight || !pollUrl) return;
         inFlight = true;
         try {
             var res = await fetch(pollUrl, {
@@ -148,8 +148,11 @@
         finally { inFlight = false; }
     }
 
-    window.setInterval(poll, 5000);
+    window.setInterval(poll, 12000);
     window.setTimeout(poll, 1500);
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) poll();
+    });
 })();
 </script>
 {% endblock %}

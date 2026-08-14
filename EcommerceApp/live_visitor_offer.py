@@ -1281,25 +1281,42 @@ def build_live_visitor_offer_context(request):
 
 
 def poll_live_visitor_offer(request):
-    # Welcome: gostu automatski reg + popust (nakon delay-a)
+    # Kreiranje ponude je skupo — radi najviše jednom u 45 s po sesiji.
+    # Čitanje aktivne ponude ostaje na svakom pollu.
+    should_create = True
     try:
-        maybe_auto_welcome_registration(request)
-    except Exception:
-        pass
+        from django.core.cache import cache
 
-    # 1 min na stranici artikla → 10% na taj artikal (ako je uključeno)
-    try:
-        maybe_create_product_dwell_offer(request)
+        session_key = (getattr(request.session, 'session_key', None) or '').strip()
+        if session_key:
+            create_key = f'lv_offer_create:{session_key}'
+            if cache.get(create_key):
+                should_create = False
+            else:
+                cache.set(create_key, 1, 45)
     except Exception:
-        pass
+        should_create = True
 
-    # 2 min na sajtu → 10% na gledane artikle (kreiraj čak i ako ima reg invite)
-    try:
-        from .browse_interest_offer import maybe_create_browse_interest_offer
+    if should_create:
+        # Welcome: gostu automatski reg + popust (nakon delay-a)
+        try:
+            maybe_auto_welcome_registration(request)
+        except Exception:
+            pass
 
-        maybe_create_browse_interest_offer(request)
-    except Exception:
-        pass
+        # 1 min na stranici artikla → 10% na taj artikal (ako je uključeno)
+        try:
+            maybe_create_product_dwell_offer(request)
+        except Exception:
+            pass
+
+        # 2 min na sajtu → 10% na gledane artikle (kreiraj čak i ako ima reg invite)
+        try:
+            from .browse_interest_offer import maybe_create_browse_interest_offer
+
+            maybe_create_browse_interest_offer(request)
+        except Exception:
+            pass
 
     offer = get_active_live_visitor_offer(request)
     if offer:

@@ -10,8 +10,8 @@
     const heartbeatUrl = root.dataset.heartbeatUrl || '/uzivo/prisutan/';
     const leaveUrl = root.dataset.leaveUrl || '/uzivo/odlazak/';
     const sessionKey = (root.dataset.sessionKey || '').trim();
-    // Brži ping — staff live lista se osvježava skoro u real-time
-    const heartbeatMs = 10000;
+    // 25 s — staff live i dalje vidi kupca (online prozor je 60 s)
+    const heartbeatMs = 25000;
     let leftSent = false;
     let heartbeatTimer = null;
 

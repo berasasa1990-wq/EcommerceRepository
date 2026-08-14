@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import threading
 import time
 import uuid
 from decimal import Decimal
@@ -142,16 +143,28 @@ def send_event(
         'access_token': settings.META_ACCESS_TOKEN,
     }
 
+    # Ne blokiraj request (timeout 10s na 1 worker = cijeli sajt stoji).
     try:
-        response = requests.post(url, json=body, timeout=10)
+        threading.Thread(
+            target=_post_meta_event,
+            args=(url, body, event_name, event_id),
+            daemon=True,
+        ).start()
+    except Exception:
+        logger.exception('Meta CAPI %s thread start failed', event_name)
+    return event_id
+
+
+def _post_meta_event(url, body, event_name, event_id):
+    try:
+        response = requests.post(url, json=body, timeout=4)
         result = response.json()
         if response.ok and 'error' not in result:
             logger.info('Meta CAPI %s sent (event_id=%s)', event_name, event_id)
-            return event_id
+            return
         logger.warning('Meta CAPI %s failed: %s', event_name, result)
     except Exception:
         logger.exception('Meta CAPI %s request error', event_name)
-    return event_id
 
 
 def track_page_view(request, event_id=None):
