@@ -17,6 +17,17 @@
     </div>
     <div class="pk-ops">
         {% for order in orders %}
+        {% if order.needs_mp_check %}
+        <a class="pk-op is-locked" href="{% url 'staff_magacin_pakuj_provjera' %}" data-broj="{{ order.broj }}" data-name="{{ order.ime_prezime }}" data-locked="1">
+            <span class="pk-op-n">{{ forloop.counter }}</span>
+            <span class="pk-op-body">
+                <span class="pk-op-broj">#{{ order.broj }}</span>
+                <span class="pk-op-name">{{ order.ime_prezime }}</span>
+                <span class="pk-op-lock">Prvo Provjera MP — Ima / Nema</span>
+            </span>
+            <span class="pk-op-meta">MP</span>
+        </a>
+        {% else %}
         <a class="pk-op" href="{% url 'staff_magacin_pakuj_detail' order.broj %}" data-broj="{{ order.broj }}" data-name="{{ order.ime_prezime }}">
             <span class="pk-op-n">{{ forloop.counter }}</span>
             <span class="pk-op-body">
@@ -25,6 +36,7 @@
             </span>
             <span class="pk-op-meta">{{ order.stavki }}</span>
         </a>
+        {% endif %}
         {% empty %}
         <p class="pk-empty">Nema novih naloga za picking.</p>
         {% endfor %}

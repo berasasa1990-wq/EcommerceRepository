@@ -1644,6 +1644,23 @@ tr.has-short-pick {
     color: inherit;
 }
 .pk-op.is-hidden { display: none; }
+.pk-op.is-locked {
+    background: #fff8ea;
+    border-color: #f0d48a;
+    cursor: pointer;
+}
+.pk-op-lock {
+    display: block;
+    margin-top: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a6d3b;
+}
+.pk-op.is-locked .pk-op-meta {
+    color: #8a6d3b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
 .pk-op-n {
     width: 28px;
     color: var(--mg-muted);

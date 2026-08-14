@@ -2194,6 +2194,20 @@ def collect_mp_checks(orders=None):
     return list(grouped.values())
 
 
+def pending_mp_brojevi(mp_groups):
+    brojevi = set()
+    for group in mp_groups or []:
+        for line in group.get('lines') or []:
+            broj = (line.get('broj') or '').strip()
+            if broj:
+                brojevi.add(broj)
+    return brojevi
+
+
+def order_needs_mp_check(order):
+    return bool(collect_mp_checks([order]))
+
+
 def apply_mp_check(group_lines, *, found):
     by_broj = {}
     for line in group_lines:
@@ -2294,6 +2308,9 @@ def magacin_pakuj(request):
         .order_by('-kreirana')[:200]
     )
     mp_groups = collect_mp_checks(orders)
+    locked = pending_mp_brojevi(mp_groups)
+    for order in orders:
+        order.needs_mp_check = order.broj in locked
     context = _magacin_context(request, section='pakuj', page_title='Picking — Magacin')
     context.update({
         'orders': orders,
@@ -2334,9 +2351,21 @@ def magacin_pakuj_provjera(request):
 @user_passes_test(_superuser_required)
 def magacin_pakuj_detail(request, broj):
     order = get_object_or_404(
-        _unvalidated_orders_qs().prefetch_related('stavke'),
+        _unvalidated_orders_qs().prefetch_related('stavke', 'magacin_holds'),
         broj=broj,
     )
+    if order_needs_mp_check(order):
+        if request.method == 'POST' and (request.POST.get('action') or '') == 'pick_save':
+            return JsonResponse(
+                {'ok': False, 'error': 'Prvo uradi Provjeru MP (Ima u MP / Nema).'},
+                status=403,
+            )
+        messages.warning(
+            request,
+            f'Narudžba #{order.broj} ima artikal iz maloprodaje. '
+            'Prvo u Provjeri označi Ima u MP ili Nema.',
+        )
+        return redirect('staff_magacin_pakuj_provjera')
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
         if action in {'validiraj', 'pick_save'}:
