@@ -787,6 +787,7 @@ def _ensure_location_from_odoo(location_id, location_name, path=''):
 MAGACIN_SYNC_SESSION_KEY = 'magacin_sync_job'
 STOCK_SYNC_BATCH = 180
 CATALOG_SYNC_BATCH = 20
+DISCOVER_SYNC_BATCH = 300
 
 
 def _decimal_price(value, default='0'):
@@ -875,18 +876,9 @@ def sync_catalog_chunk(client, template_ids, *, start=0, limit=CATALOG_SYNC_BATC
     templates = client.get_templates_by_ids(chunk_ids)
     by_id = {int(row['id']): row for row in templates if row.get('id')}
 
-    need_images = []
-    for tid in chunk_ids:
-        template = by_id.get(int(tid))
-        if not template:
-            continue
-        product = _find_existing_sync_product(template)
-        if product is None or not _product_has_image(product):
-            need_images.append(int(tid))
-
+    # Slike se ne vuku ovdje — na Renderu XML-RPC slika timeouta cijeli chunk
+    # pa novi artikli nikad ne stignu. Količina/lokacija ide u stock fazi.
     images = {}
-    if need_images and hasattr(client, 'get_template_images'):
-        images = client.get_template_images(need_images) or {}
 
     now = timezone.now()
     for tid in chunk_ids:
@@ -1107,6 +1099,7 @@ def _fail_log(log, started, message):
     log.finished_at = timezone.now()
     log.trajanje_sekundi = max(0, int(time.time() - started))
     log.save(update_fields=['status', 'poruka', 'finished_at', 'trajanje_sekundi'])
+    _invalidate_last_sync_cache()
     return log
 
 
@@ -1120,6 +1113,7 @@ def _finish_log(log, started, *, poruka, artikala=0, lokacija=0):
     log.save(update_fields=[
         'status', 'poruka', 'artikala', 'lokacija', 'finished_at', 'trajanje_sekundi',
     ])
+    _invalidate_last_sync_cache()
     return log
 
 
@@ -1152,8 +1146,8 @@ def start_full_sync(*, user=None, product=None):
     client = OdooClient.from_settings()
     incremental = False
     stock_extra_ids = []
+    changed_ids = []
     attach_site_odoo_products_to_magacin()
-    local_ids = set(local_odoo_template_ids())
     try:
         if product is not None:
             template_id = getattr(product, 'odoo_template_id', None)
@@ -1161,60 +1155,26 @@ def start_full_sync(*, user=None, product=None):
                 _fail_log(log, started, 'Artikal nije povezan sa Odoo template ID-jem.')
                 raise MagacinError('Artikal nije povezan sa Odoo. Prvo uradi puni Sync.')
             template_ids = [int(template_id)]
+            phase = 'catalog'
+            progress = 'Katalog: 1 artikal…'
         else:
-            all_odoo_ids = set(client.get_all_sale_template_ids() or [])
+            # Cijeli popis ID-jeva ide u fazi discover (po stranici) — inače Render timeouta.
             previous = last_successful_sync()
             if previous and previous.started_at:
                 incremental = True
                 since = previous.started_at - timedelta(minutes=2)
                 try:
-                    changed = set(client.get_sale_template_ids(since=since))
+                    changed_ids = list(client.get_sale_template_ids(since=since) or [])
                     stock_extra_ids = client.get_quant_product_ids_changed_since(since)
                 except OdooError:
-                    changed = set()
-                missing = all_odoo_ids - local_ids
-                template_ids = sorted((changed & local_ids) | missing)
-            else:
-                template_ids = sorted(all_odoo_ids)
+                    changed_ids = []
+                    stock_extra_ids = []
+            template_ids = []
+            phase = 'discover'
+            progress = 'Čitam katalog iz Odoo…'
     except OdooError as exc:
         _fail_log(log, started, str(exc))
         raise MagacinError(str(exc)) from exc
-
-    if incremental and not template_ids and not stock_extra_ids:
-        _finish_log(
-            log, started,
-            poruka='Nema izmjena u Odoo od zadnjeg synca.',
-            artikala=magacin_products_qs().count(),
-            lokacija=WarehouseLocation.objects.count(),
-        )
-        return {
-            'log_id': log.pk,
-            'started': started,
-            'phase': 'done',
-            'template_ids': [],
-            'position': 0,
-            'stock_ids': [],
-            'stock_position': 0,
-            'artikala': magacin_products_qs().count(),
-            'lokacija': WarehouseLocation.objects.count(),
-            'zaliha': 0,
-            'kreirano': 0,
-            'azurirano': 0,
-            'preskoceno': 0,
-            'done': True,
-            'incremental': True,
-            'single_product_id': getattr(product, 'pk', None),
-        }
-
-    if incremental and not template_ids:
-        phase = 'locations'
-        progress = 'Samo zalihe (nema izmjena kataloga)…'
-    else:
-        phase = 'catalog'
-        progress = (
-            f'Katalog: 0 / {len(template_ids)} '
-            f'({"izmjene + novi iz Odoo" if incremental else "cijeli Odoo katalog"})…'
-        )
 
     _update_log_progress(log, started, progress)
     return {
@@ -1225,6 +1185,9 @@ def start_full_sync(*, user=None, product=None):
         'position': 0,
         'stock_ids': [],
         'stock_extra_ids': stock_extra_ids,
+        'changed_ids': changed_ids,
+        'discovered_ids': [],
+        'discover_offset': 0,
         'stock_position': 0,
         'artikala': 0,
         'lokacija': 0,
@@ -1251,6 +1214,43 @@ def run_sync_chunk(job, *, user=None):
     phase = job.get('phase') or 'catalog'
 
     try:
+        if phase == 'discover':
+            offset = int(job.get('discover_offset') or 0)
+            page = []
+            if hasattr(client, 'get_sale_template_ids_page'):
+                page = client.get_sale_template_ids_page(
+                    offset=offset, limit=DISCOVER_SYNC_BATCH,
+                ) or []
+            else:
+                page = client.get_all_sale_template_ids() or []
+            discovered = list(job.get('discovered_ids') or [])
+            discovered.extend(int(tid) for tid in page if tid)
+            job['discovered_ids'] = discovered
+            job['discover_offset'] = offset + len(page)
+            _update_log_progress(
+                log, started,
+                f'Čitam Odoo katalog: {len(discovered)} artikala…',
+            )
+            page_done = (
+                not hasattr(client, 'get_sale_template_ids_page')
+                or len(page) < DISCOVER_SYNC_BATCH
+            )
+            if page_done:
+                all_odoo = set(discovered)
+                local_ids = set(local_odoo_template_ids())
+                missing = all_odoo - local_ids
+                changed = {int(i) for i in (job.get('changed_ids') or []) if i}
+                if job.get('incremental'):
+                    job['template_ids'] = sorted((changed & local_ids) | missing)
+                else:
+                    job['template_ids'] = sorted(all_odoo)
+                if job['template_ids']:
+                    job['phase'] = 'catalog'
+                    job['position'] = 0
+                else:
+                    job['phase'] = 'locations'
+            return job
+
         if phase == 'catalog':
             template_ids = job.get('template_ids') or []
             position = int(job.get('position') or 0)
@@ -1656,6 +1656,12 @@ def cancel_order_stock(order, *, user=None):
         invalidate_magacin_nav_counts()
     except Exception:
         pass
+
+
+def _invalidate_last_sync_cache():
+    from django.core.cache import cache
+
+    cache.delete('mg_last_sync_v1')
 
 
 def last_sync():

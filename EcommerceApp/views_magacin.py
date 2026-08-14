@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from .magacin import (
+    DISCOVER_SYNC_BATCH,
     MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
     apply_movement,
@@ -98,10 +99,14 @@ def _sync_job_view(job):
     template_ids = job.get('template_ids') or []
     stock_ids = job.get('stock_ids') or []
     phase = job.get('phase') or 'catalog'
-    if phase == 'catalog':
+    if phase == 'discover':
+        total = max(1, int(job.get('discover_offset') or 0) + DISCOVER_SYNC_BATCH)
+        current = int(job.get('discover_offset') or 0)
+        label = f'Čitam Odoo katalog: {len(job.get("discovered_ids") or [])} artikala'
+    elif phase == 'catalog':
         total = max(1, len(template_ids))
         current = int(job.get('position') or 0)
-        label = f'Katalog {current} / {len(template_ids)} — cijene, šifre, barkodovi, slike'
+        label = f'Katalog {current} / {len(template_ids)} — novi se dodaju, postojeći se ne dupliraju'
     elif phase == 'locations':
         total = 1
         current = 1

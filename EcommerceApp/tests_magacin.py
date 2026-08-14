@@ -1,6 +1,8 @@
 import json
+import time
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -24,6 +26,7 @@ from .magacin import (
     reserve_for_order,
     seed_default_locations,
     stock_totals,
+    run_sync_chunk,
     sync_catalog_chunk,
     validate_order_stock,
 )
@@ -263,6 +266,38 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertEqual(stats['azurirano'], 0)
         product.refresh_from_db()
         self.assertEqual(product.azuriran, before)
+
+    def test_discover_phase_queues_missing_odoo_products(self):
+        Product.objects.create(
+            naziv='Već tu',
+            sifra='HAS-1',
+            cijena=Decimal('1.00'),
+            odoo_template_id=10,
+            magacin_sync_at=timezone.now(),
+        )
+        log = WarehouseSyncLog.objects.create(
+            status=WarehouseSyncLog.Status.U_TOKU,
+            izvor='Odoo',
+        )
+
+        class PageClient:
+            def get_sale_template_ids_page(self, *, offset=0, limit=250):
+                ids = [10, 88]
+                return ids[offset:offset + limit]
+
+        job = {
+            'log_id': log.pk,
+            'started': time.time(),
+            'phase': 'discover',
+            'discovered_ids': [],
+            'discover_offset': 0,
+            'changed_ids': [],
+            'incremental': True,
+        }
+        with patch('EcommerceApp.odoo_client.OdooClient.from_settings', return_value=PageClient()):
+            job = run_sync_chunk(job)
+        self.assertEqual(job['phase'], 'catalog')
+        self.assertEqual(job['template_ids'], [88])
 
     def test_creates_unknown_odoo_product(self):
         client = FakeOdooClient([{

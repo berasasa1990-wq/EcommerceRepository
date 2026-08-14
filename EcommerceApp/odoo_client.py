@@ -158,6 +158,18 @@ class OdooClient:
         """Svi product.template koji se mogu prodavati (cijeli Odoo katalog)."""
         return self.get_sale_template_ids()
 
+    def get_sale_template_ids_page(self, *, offset=0, limit=250):
+        """Jedna stranica sale_ok template ID-jeva — da Render ne timeouta."""
+        records = self.search_read(
+            'product.template',
+            [('sale_ok', '=', True)],
+            ['id'],
+            limit=max(1, int(limit)),
+            offset=max(0, int(offset)),
+            order='id asc',
+        )
+        return [int(record['id']) for record in (records or []) if record.get('id')]
+
     def get_sale_template_ids(self, *, since=None):
         domain = [('sale_ok', '=', True)]
         if since is not None:
