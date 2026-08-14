@@ -283,7 +283,7 @@ class MagacinCatalogSyncTests(TestCase):
         class PageClient:
             def get_sale_template_ids_page(self, *, offset=0, limit=250):
                 ids = [10, 88]
-                return ids[offset:offset + limit]
+                return ids[offset:offset + limit]  # 2 < 300 → discover gotov
 
         job = {
             'log_id': log.pk,

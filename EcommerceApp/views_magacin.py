@@ -106,7 +106,9 @@ def _sync_job_view(job):
     elif phase == 'catalog':
         total = max(1, len(template_ids))
         current = int(job.get('position') or 0)
-        label = f'Katalog {current} / {len(template_ids)} — novi se dodaju, postojeći se ne dupliraju'
+        label = (
+            f'Dodajem {current} / {len(template_ids)} artikala kojih nema na sajtu'
+        )
     elif phase == 'locations':
         total = 1
         current = 1

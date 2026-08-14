@@ -159,16 +159,28 @@ class OdooClient:
         return self.get_sale_template_ids()
 
     def get_sale_template_ids_page(self, *, offset=0, limit=250):
-        """Jedna stranica artikala iz Odoo (prodaja ili lager) — da Render ne timeouta."""
-        records = self.search_read(
-            'product.template',
-            ['|', ('sale_ok', '=', True), ('type', '=', 'product')],
-            ['id'],
-            limit=max(1, int(limit)),
-            offset=max(0, int(offset)),
-            order='id asc',
-        )
-        return [int(record['id']) for record in (records or []) if record.get('id')]
+        """Jedna stranica SVIH product.template ID-jeva (i arhivirani)."""
+        uid = self.authenticate()
+        try:
+            ids = self.models.execute_kw(
+                self.db,
+                uid,
+                self.api_key,
+                'product.template',
+                'search',
+                [[]],
+                {
+                    'offset': max(0, int(offset)),
+                    'limit': max(1, int(limit)),
+                    'order': 'id asc',
+                    'context': {'active_test': False},
+                },
+            )
+        except xmlrpc.client.Fault as exc:
+            raise OdooError(f'Odoo greška (product.template.search): {exc.faultString}') from exc
+        except Exception as exc:
+            raise OdooError(f'Odoo greška (product.template.search): {exc}') from exc
+        return [int(tid) for tid in (ids or []) if tid]
 
     def get_sale_template_ids(self, *, since=None):
         domain = [('sale_ok', '=', True)]
@@ -288,11 +300,27 @@ class OdooClient:
 
         records = []
         fields = self._product_template_fields()
+        uid = self.authenticate()
         for offset in range(0, len(template_ids), PRODUCT_BATCH_SIZE):
             chunk = template_ids[offset:offset + PRODUCT_BATCH_SIZE]
-            records.extend(
-                self.search_read('product.template', [('id', 'in', chunk)], fields)
-            )
+            try:
+                rows = self.models.execute_kw(
+                    self.db,
+                    uid,
+                    self.api_key,
+                    'product.template',
+                    'search_read',
+                    [[('id', 'in', chunk)]],
+                    {
+                        'fields': fields,
+                        'context': {'active_test': False},
+                    },
+                )
+            except xmlrpc.client.Fault as exc:
+                raise OdooError(f'Odoo greška (product.template.search_read): {exc.faultString}') from exc
+            except Exception as exc:
+                raise OdooError(f'Odoo greška (product.template.search_read): {exc}') from exc
+            records.extend(rows or [])
 
         by_id = {record['id']: record for record in records}
         return [by_id[template_id] for template_id in template_ids if template_id in by_id]

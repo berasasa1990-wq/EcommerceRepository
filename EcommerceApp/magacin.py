@@ -1144,7 +1144,6 @@ def start_full_sync(*, user=None, product=None):
         _fail_log(log, started, 'Odoo nije konfigurisan.')
         raise MagacinError('Odoo nije konfigurisan.')
 
-    client = OdooClient.from_settings()
     incremental = False
     stock_extra_ids = []
     changed_ids = []
@@ -1159,20 +1158,9 @@ def start_full_sync(*, user=None, product=None):
             phase = 'catalog'
             progress = 'Katalog: 1 artikal…'
         else:
-            # Cijeli popis ID-jeva ide u fazi discover (po stranici) — inače Render timeouta.
-            previous = last_successful_sync()
-            if previous and previous.started_at:
-                incremental = True
-                since = previous.started_at - timedelta(minutes=2)
-                try:
-                    changed_ids = list(client.get_sale_template_ids(since=since) or [])
-                    stock_extra_ids = client.get_quant_product_ids_changed_since(since)
-                except OdooError:
-                    changed_ids = []
-                    stock_extra_ids = []
             template_ids = []
             phase = 'discover'
-            progress = 'Čitam katalog iz Odoo…'
+            progress = 'Čitam cijeli Odoo katalog…'
     except OdooError as exc:
         _fail_log(log, started, str(exc))
         raise MagacinError(str(exc)) from exc
@@ -1239,17 +1227,24 @@ def run_sync_chunk(job, *, user=None):
             if page_done:
                 all_odoo = set(discovered)
                 local_ids = set(local_odoo_template_ids())
-                missing = all_odoo - local_ids
-                changed = {int(i) for i in (job.get('changed_ids') or []) if i}
-                if job.get('incremental'):
-                    job['template_ids'] = sorted((changed & local_ids) | missing)
-                else:
-                    job['template_ids'] = sorted(all_odoo)
+                missing = sorted(all_odoo - local_ids)
+                job['discovered_ids'] = []
+                job['odoo_ukupno'] = len(all_odoo)
+                job['nedostaje'] = len(missing)
+                # Uvijek uvezi SVE što fali. Zalihe idu za cijeli magacin.
+                job['template_ids'] = missing
+                job['incremental'] = False
                 if job['template_ids']:
                     job['phase'] = 'catalog'
                     job['position'] = 0
                 else:
                     job['phase'] = 'locations'
+                _update_log_progress(
+                    log, started,
+                    f'Odoo {len(all_odoo)} artikala, na sajtu {len(local_ids)}, '
+                    f'dodajem {len(missing)} novih…',
+                    artikala=len(local_ids),
+                )
             return job
 
         if phase == 'catalog':
@@ -1268,8 +1263,8 @@ def run_sync_chunk(job, *, user=None):
             job['artikala'] = magacin_products_qs().count()
             _update_log_progress(
                 log, started,
-                f'Katalog: {job["position"]} / {len(template_ids)} '
-                f'(postojeći ažurira, novi dodaje, bez duplikata)…',
+                f'Dodajem nove: {job["position"]} / {len(template_ids)} '
+                f'(novo {job.get("kreirano") or 0})…',
                 artikala=job['artikala'],
             )
             if stats.get('done'):
