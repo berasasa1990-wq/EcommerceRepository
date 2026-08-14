@@ -8,16 +8,19 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260814e">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260814u">
 {% endblock %}
 
-{% block body_class %}staff-shell-page magacin-page{% endblock %}
+{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% endblock %}
 
 {% block content %}
 <section class="mg-app" id="mgApp">
     <button type="button" class="mg-nav-backdrop" id="mgNavBackdrop" hidden aria-label="Zatvori meni magacina"></button>
     <aside class="mg-sidebar">
-        <div class="mg-side-label">MAGACIN</div>
+        <div class="mg-side-top">
+            <div class="mg-side-label">MAGACIN</div>
+            <button type="button" class="mg-btn mg-side-close" id="mgNavClose" hidden>Zatvori</button>
+        </div>
         <nav class="mg-nav">
             <a href="{% url 'staff_magacin_pregled' %}" class="{% if magacin_section == 'pregled' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -50,6 +53,13 @@
                 <span class="mg-nav-count" aria-label="{{ new_magacin_orders_count }} novih narudžbi">{{ new_magacin_orders_count }}</span>
                 {% endif %}
             </a>
+            <a href="{% url 'staff_magacin_pakuj' %}" class="{% if magacin_section == 'pakuj' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                Picking
+                {% if new_pack_orders_count %}
+                <span class="mg-nav-count" aria-label="{{ new_pack_orders_count }} za pakovanje">{{ new_pack_orders_count }}</span>
+                {% endif %}
+            </a>
             <a href="{% url 'staff_magacin_pakovanje' %}" class="{% if magacin_section == 'pakovanje' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                 Pretraga narudžbi
@@ -57,6 +67,10 @@
             <a href="{% url 'staff_magacin_uvoz' %}" class="{% if magacin_section == 'uvoz' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 18V11M9 14l3-3 3 3"/></svg>
                 Uvoz
+            </a>
+            <a href="{% url 'staff_magacin_nivelacije' %}" class="{% if magacin_section == 'nivelacije' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 16l5-5 4 4 7-8"/><path d="M15 7h5v5"/></svg>
+                Nivelacije
             </a>
             <a href="{% url 'staff_magacin_dobavljaci' %}" class="{% if magacin_section == 'dobavljaci' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.2-3.2 3.7-4.8 7-4.8S17.8 15.8 19 19"/></svg>
@@ -123,7 +137,7 @@
         <div class="mg-page-bar">
             <a href="{% url 'staff_admin_panel' %}" class="mg-back">← Nazad na Admin panel</a>
             <button type="button" class="mg-btn mg-nav-toggle" id="mgNavToggle">Meni magacina</button>
-            <form class="mg-page-search" method="get" action="{% url 'staff_magacin_artikli' %}" role="search" id="mgArticleSearchForm">
+            <form class="mg-page-search{% if magacin_section != 'artikli' %} is-artikli-only{% endif %}" method="get" action="{% url 'staff_magacin_artikli' %}" role="search" id="mgArticleSearchForm">
                 <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
                 <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Pretraži artikle po nazivu, šifri ili barkodu..." autocomplete="off" id="mgArticleSearch">
                 <button type="button" class="mg-btn mg-scan-btn" id="mgArticleScanBtn" title="Skeniraj barkod">
@@ -165,6 +179,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/staff-magacin.js' %}?v=20260814d"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260814t"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

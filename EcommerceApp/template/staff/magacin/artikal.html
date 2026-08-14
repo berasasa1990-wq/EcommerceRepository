@@ -64,6 +64,54 @@
 </section>
 
 <div class="mg-artikal-main">
+    <section class="mg-card mg-artikal-stock">
+        <div class="mg-card-head">
+            <h2 class="mg-h">Zalihe po lokacijama</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="mg-btn mg-btn-primary" data-mg-open-move data-mode="update"{% if not location_rows %} disabled{% endif %}>Ažuriraj postojeću</button>
+                <button type="button" class="mg-btn" data-mg-open-move data-mode="transfer"{% if not location_rows %} disabled{% endif %}>Transfer</button>
+                <button type="button" class="mg-btn" data-mg-open-move data-mode="add">Dodaj na novu</button>
+            </div>
+        </div>
+        {% if variations %}
+        <p class="mg-sync-meta" style="margin-top:-6px;margin-bottom:10px;">
+            {% if variation %}Prikaz za varijaciju <strong>{{ variation.naziv }}</strong>{% else %}Zbir svih varijacija{% endif %}
+        </p>
+        {% endif %}
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>LOKACIJA</th>
+                    <th class="num">NA STANJU</th>
+                    <th class="num">REZERVISANO</th>
+                    <th class="num">DOSTUPNO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in location_rows %}
+                <tr class="is-clickable" data-mg-open-move data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.label }}">
+                    <td>{{ row.location.label }}</td>
+                    <td class="num">{{ row.kolicina }}</td>
+                    <td class="num">{{ row.rezervisano }}</td>
+                    <td class="num num-ok">{{ row.dostupno }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
+                {% endfor %}
+            </tbody>
+            {% if location_rows %}
+            <tfoot>
+                <tr>
+                    <td>UKUPNO</td>
+                    <td class="num">{{ totals.na_stanju }}</td>
+                    <td class="num">{{ totals.rezervisano }}</td>
+                    <td class="num num-ok">{{ totals.dostupno }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </section>
+
     <section class="mg-card mg-artikal-price-history">
         <div class="mg-card-head">
             <h2 class="mg-h">Promjene cijena i marže (uvoz)</h2>
@@ -118,53 +166,6 @@
         {% else %}
         <p class="mg-muted">Još nema uvoza za ovaj artikal — cijene i marže će se pojaviti ovdje.</p>
         {% endif %}
-    </section>
-
-    <section class="mg-card mg-artikal-stock">
-        <div class="mg-card-head">
-            <h2 class="mg-h">Zalihe po lokacijama</h2>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button type="button" class="mg-btn mg-btn-primary" data-mg-open-move data-mode="update"{% if not location_rows %} disabled{% endif %}>Ažuriraj postojeću</button>
-                <button type="button" class="mg-btn" data-mg-open-move data-mode="add">Dodaj na novu</button>
-            </div>
-        </div>
-        {% if variations %}
-        <p class="mg-sync-meta" style="margin-top:-6px;margin-bottom:10px;">
-            {% if variation %}Prikaz za varijaciju <strong>{{ variation.naziv }}</strong>{% else %}Zbir svih varijacija{% endif %}
-        </p>
-        {% endif %}
-        <table class="mg-table">
-            <thead>
-                <tr>
-                    <th>LOKACIJA</th>
-                    <th class="num">NA STANJU</th>
-                    <th class="num">REZERVISANO</th>
-                    <th class="num">DOSTUPNO</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in location_rows %}
-                <tr class="is-clickable" data-mg-open-move data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.label }}">
-                    <td>{{ row.location.label }}</td>
-                    <td class="num">{{ row.kolicina }}</td>
-                    <td class="num">{{ row.rezervisano }}</td>
-                    <td class="num num-ok">{{ row.dostupno }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
-                {% endfor %}
-            </tbody>
-            {% if location_rows %}
-            <tfoot>
-                <tr>
-                    <td>UKUPNO</td>
-                    <td class="num">{{ totals.na_stanju }}</td>
-                    <td class="num">{{ totals.rezervisano }}</td>
-                    <td class="num num-ok">{{ totals.dostupno }}</td>
-                </tr>
-            </tfoot>
-            {% endif %}
-        </table>
     </section>
 
 <div class="mg-grid-3">
@@ -289,7 +290,7 @@
             {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
             <div class="mg-form-grid" style="grid-template-columns:1fr;">
                 <div class="mg-field" id="mgLocUpdateField">
-                    <label>Lokacija</label>
+                    <label id="mgLocUpdateLabel">Lokacija</label>
                     <select name="location_id" id="mgMoveLocation">
                         {% for row in location_rows %}
                         <option value="{{ row.location.pk }}" data-qty="{{ row.kolicina }}"{% if forloop.first %} selected{% endif %}>{{ row.location.label }}</option>
@@ -299,9 +300,10 @@
                     </select>
                 </div>
                 <div class="mg-field" id="mgLocAddField" hidden>
-                    <label>Lokacija</label>
+                    <label id="mgLocAddLabel">Lokacija</label>
                     <div class="mg-loc-search" id="mgLocSearch">
                         <input type="hidden" name="add_location_id" id="mgAddLocation">
+                        <input type="hidden" name="to_location_id" id="mgToLocation">
                         <input type="search" id="mgAddLocationQuery" placeholder="Kucaj šifru ili naziv lokacije..." autocomplete="off">
                         <ul class="mg-loc-suggest" id="mgAddLocationList" hidden>
                             {% for loc in locations %}

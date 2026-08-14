@@ -1,0 +1,93 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="pk-app" id="pkPickApp" data-broj="{{ order.broj }}">
+    <script type="application/json" id="pkQueue">{{ pick_queue_json|safe }}</script>
+    <script type="application/json" id="pkState">{{ pick_state_json|safe }}</script>
+
+    <header class="pk-bar">
+        <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
+        <div class="pk-bar-title">
+            <strong>#{{ order.broj }}</strong>
+            <span>{{ order.ime_prezime }}</span>
+        </div>
+        <a class="pk-check-btn{% if mp_count %} is-blink{% endif %}" href="{% url 'staff_magacin_pakuj_provjera' %}">
+            Provjera{% if mp_count %} <i>{{ mp_count }}</i>{% endif %}
+        </a>
+        <form method="post" class="pk-bar-valid" id="mgPackValidateForm">
+            {% csrf_token %}
+            <input type="hidden" name="pick_json" id="pkPickJson" value="">
+            <button type="submit" name="action" value="validiraj" class="pk-valid" id="pkValidBtn">Validatuj</button>
+        </form>
+        <div class="pk-bar-prog" id="pkProgress">0/{{ pick_total }}</div>
+    </header>
+
+    {% if odoo_error %}
+    <p class="pk-alert">{{ odoo_error }}</p>
+    {% endif %}
+
+    <nav class="pk-tabs">
+        <button type="button" class="is-on" data-pk-tab="pick">Pick</button>
+        <button type="button" data-pk-tab="todo">To do <i id="pkTodoN">0</i></button>
+        <button type="button" data-pk-tab="done">Done <i id="pkDoneN">0</i></button>
+    </nav>
+
+    <section class="pk-stage" data-pk-panel="pick">
+        <div id="pkCard" class="pk-card" hidden>
+            <div class="pk-loc">
+                <span>Idi na lokaciju</span>
+                <strong id="pkLoc">—</strong>
+                <em id="pkLocMeta"></em>
+            </div>
+            <div class="pk-prod">
+                <div class="pk-img" id="pkImg"></div>
+                <div class="pk-prod-txt">
+                    <h1 id="pkName">—</h1>
+                    <p id="pkSku"></p>
+                </div>
+            </div>
+            <div class="pk-need">
+                <span>Uzmi</span>
+                <div class="pk-qty">
+                    <button type="button" id="pkMinus" aria-label="Manje">−</button>
+                    <div class="pk-qty-val">
+                        <input type="number" id="pkGot" min="0" step="1" inputmode="numeric" aria-label="Pokupljena količina">
+                        <small>/ <i id="pkNeed">0</i></small>
+                    </div>
+                    <button type="button" id="pkPlus" aria-label="Više">+</button>
+                </div>
+            </div>
+            <div class="pk-scan-row">
+                <input type="text" id="pkScanInput" inputmode="none" autocomplete="off" placeholder="Barkod ili šifra">
+                <button type="button" class="pk-cam" id="pkScanCam" data-mg-scan-target="pkScanInput" title="Skener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                    Skener
+                </button>
+            </div>
+            <p class="pk-msg" id="pkMsg" hidden></p>
+            <div class="pk-qty-actions">
+                <button type="button" class="pk-all" id="pkTakeAll">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                    Pokupi sve
+                </button>
+                <button type="button" class="pk-less" id="pkTakeLess" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+                    Uzmi manje
+                </button>
+            </div>
+        </div>
+        <div id="pkDoneAll" class="pk-done-all" hidden>
+            <strong>Sve pokupljeno</strong>
+            <p>Nalog je spreman za validaciju.</p>
+        </div>
+        <p id="pkEmpty" class="pk-empty" hidden>Nema stavki za picking.</p>
+    </section>
+
+    <section class="pk-list-panel" data-pk-panel="todo" hidden>
+        <div id="pkTodoList" class="pk-lines"></div>
+    </section>
+    <section class="pk-list-panel" data-pk-panel="done" hidden>
+        <div id="pkDoneList" class="pk-lines"></div>
+    </section>
+</div>
+{% endblock %}

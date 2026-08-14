@@ -4,7 +4,7 @@
     }
 
     const pollUrl = '/ponuda/status/';
-    const pollIntervalMs = 1000;
+    const pollIntervalMs = 5000;
     const LIVE_OFFER_ACTIVE_KEY = 'live_offer_active_session';
     const pageLoadedAt = Date.now();
     let lastOfferVersion = null;
@@ -814,6 +814,21 @@
         }
     }
 
+    let pollTimer = null;
+    function schedulePoll() {
+        if (pollTimer) {
+            window.clearInterval(pollTimer);
+            pollTimer = null;
+        }
+        if (document.hidden) return;
+        pollTimer = window.setInterval(function () {
+            if (!document.hidden) pollOffer();
+        }, pollIntervalMs);
+    }
     pollOffer();
-    window.setInterval(pollOffer, pollIntervalMs);
+    schedulePoll();
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) pollOffer();
+        schedulePoll();
+    });
 })();

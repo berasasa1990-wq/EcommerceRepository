@@ -1,0 +1,114 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Nivelacije</h1>
+        <p class="mg-count">
+            {% if show_done %}
+            Artikli označeni kao izmjenjeni
+            {% else %}
+            Artikli kojima se Mpc ili Vpc promijenio pri uvozu
+            {% endif %}
+            {% if rows %}· {{ rows|length }}{% endif %}
+        </p>
+    </div>
+    <form method="get" class="mg-page-search" style="margin:0;max-width:420px;flex:1;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Artikal ili šifra..." autocomplete="off">
+        {% if show_done %}<input type="hidden" name="izmjenjene" value="1">{% endif %}
+        <button type="submit" class="mg-btn">Filtriraj</button>
+    </form>
+</div>
+
+<div class="mg-filter-tabs">
+    <a href="{% url 'staff_magacin_nivelacije' %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}" class="{% if not show_done %}is-active{% endif %}">Za izmjenu</a>
+    <a href="{% url 'staff_magacin_nivelacije' %}?izmjenjene=1{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}" class="{% if show_done %}is-active{% endif %}">Izmjenjene</a>
+</div>
+
+<section class="mg-card">
+    <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>ARTIKAL</th>
+                    <th>ŠIFRA</th>
+                    <th>DATUM</th>
+                    <th>UVOZ</th>
+                    <th class="num">VPC</th>
+                    <th class="num">MPC</th>
+                    <th>PROMJENA</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr class="is-clickable"{% if row.product %} onclick="location.href='{% url 'staff_magacin_artikal' row.product.pk %}'"{% endif %}>
+                    <td>
+                        {% if row.product %}
+                        <a href="{% url 'staff_magacin_artikal' row.product.pk %}"><strong>{{ row.naziv }}</strong></a>
+                        {% else %}
+                        <strong>{{ row.naziv }}</strong>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.sifra|default:"—" }}</td>
+                    <td>{{ row.uvoz.kreiran|date:"d.m.Y. H:i" }}</td>
+                    <td>
+                        {% if row.uvoz.izvor == 'magacin' %}
+                        <a href="{% url 'staff_magacin_uvoz_detail' row.uvoz.pk %}">{{ row.uvoz.naziv }}</a>
+                        {% else %}
+                        {{ row.uvoz.naziv }}
+                        {% endif %}
+                    </td>
+                    <td class="num">
+                        {{ row.prev_vpc|default:"—" }} →
+                        <span class="mg-delta{% if row.vpc_change %} is-{{ row.vpc_change.direction }}{% endif %}">{{ row.vpc|default:"—" }}</span>
+                    </td>
+                    <td class="num">
+                        {{ row.prev_mpc|default:"—" }} →
+                        <span class="mg-delta{% if row.mpc_change %} is-{{ row.mpc_change.direction }}{% endif %}">{{ row.mpc|default:"—" }}</span>
+                    </td>
+                    <td>
+                        <ul class="mg-price-changes">
+                            {% if row.mpc_change %}
+                            <li class="is-{{ row.mpc_change.direction }}"><strong>{{ row.mpc_change.label }}:</strong> {{ row.mpc_change.from }} → {{ row.mpc_change.to }}</li>
+                            {% endif %}
+                            {% if row.vpc_change %}
+                            <li class="is-{{ row.vpc_change.direction }}"><strong>{{ row.vpc_change.label }}:</strong> {{ row.vpc_change.from }} → {{ row.vpc_change.to }}</li>
+                            {% endif %}
+                        </ul>
+                    </td>
+                    <td onclick="event.stopPropagation();">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="kljuc" value="{{ row.kljuc }}">
+                            <input type="hidden" name="uvoz_id" value="{{ row.uvoz.pk }}">
+                            {% if row.product %}<input type="hidden" name="product_id" value="{{ row.product.pk }}">{% endif %}
+                            {% if magacin_search %}<input type="hidden" name="pretraga" value="{{ magacin_search }}">{% endif %}
+                            {% if show_done %}
+                            <input type="hidden" name="izmjenjene" value="1">
+                            <button type="submit" name="action" value="skini" class="mg-btn">Vrati</button>
+                            {% else %}
+                            <button type="submit" name="action" value="oznaci" class="mg-btn mg-btn-primary">Izmjenjen</button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="mg-muted">
+                        {% if magacin_search %}
+                        Nema nivelacija za „{{ magacin_search }}”.
+                        {% elif show_done %}
+                        Nema označenih izmjenjenih artikala.
+                        {% else %}
+                        Još nema artikala kojima se Mpc ili Vpc promijenio pri uvozu.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

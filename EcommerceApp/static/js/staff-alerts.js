@@ -21,7 +21,7 @@
         || root.dataset.disableToasts === '1'
     );
 
-    const pollMs = 2000;
+    const pollMs = 8000;
     const storageKey = 'staff_alerts_since_id';
     const dismissedOnlineKey = 'staff_alerts_online_summary_dismissed';
     let sinceId = 0;

@@ -1,0 +1,47 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="pk-app" id="pkCheckApp">
+    <header class="pk-bar">
+        <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
+        <div class="pk-bar-title">
+            <strong>Provjera MP</strong>
+            <span>{% if groups %}{{ groups|length }} artikl{{ groups|length|pluralize:"a,a" }} bez zalihe{% else %}Nema stavki za provjeru{% endif %}</span>
+        </div>
+    </header>
+
+    <div class="pk-ops">
+        {% for group in groups %}
+        <article class="pk-check-card">
+            <div class="pk-check-head">
+                {% if group.slika %}
+                <div class="pk-img" style="background-image:url('{{ group.slika }}')"></div>
+                {% else %}
+                <div class="pk-img"></div>
+                {% endif %}
+                <div class="pk-check-txt">
+                    <h2>{{ group.naziv }}</h2>
+                    <p>
+                        {% if group.sifra %}{{ group.sifra }} · {% endif %}
+                        {{ group.need }} kom · {{ group.lines|length }} nalog{{ group.lines|length|pluralize:"a,a" }}
+                    </p>
+                    <ul>
+                        {% for line in group.lines %}
+                        <li>#{{ line.broj }} — {{ line.ime }} ({{ line.need }})</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <form method="post" class="pk-check-actions">
+                {% csrf_token %}
+                <input type="hidden" name="group" value="{{ group.key }}">
+                <button type="submit" name="action" value="ima" class="pk-all">Ima u MP</button>
+                <button type="submit" name="action" value="nema" class="pk-less">Nema</button>
+            </form>
+        </article>
+        {% empty %}
+        <p class="pk-empty">Nema artikala za provjeru u MP.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

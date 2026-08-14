@@ -3879,6 +3879,11 @@ class Order(models.Model):
         blank=True,
         verbose_name='Stanje skinuto u',
     )
+    pick_state = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Picking stanje',
+    )
     odoo_sale_order_id = models.PositiveIntegerField(
         null=True,
         blank=True,
@@ -3929,6 +3934,20 @@ class Order(models.Model):
     def get_status_label(self):
         return self.Status(self.status).label
 
+    @property
+    def pick_shortages(self):
+        rows = []
+        for item in self.stavke.all():
+            got = item.kolicina_pokupljeno
+            if got is None or got >= item.kolicina:
+                continue
+            rows.append({
+                'naziv': item.product_naziv or item.naziv,
+                'got': got,
+                'need': item.kolicina,
+            })
+        return rows
+
     def __str__(self):
         return f'#{self.broj} — {self.ime_prezime}'
 
@@ -3972,14 +3991,26 @@ class OrderItem(models.Model):
         help_text='Ukupna ušteda na stavci (sve komade) u odnosu na regularnu cijenu.',
     )
     kolicina = models.PositiveIntegerField(default=1)
+    kolicina_pokupljeno = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Pokupljeno',
+        help_text='Količina potvrđena na pickingu. Ako je manja, faktura ide po ovoj količini.',
+    )
 
     class Meta:
         verbose_name = 'Stavka narudžbe'
         verbose_name_plural = 'Stavke narudžbe'
 
     @property
+    def kolicina_faktura(self):
+        if self.kolicina_pokupljeno is not None:
+            return self.kolicina_pokupljeno
+        return self.kolicina
+
+    @property
     def ukupno(self):
-        return self.cijena * self.kolicina
+        return self.cijena * self.kolicina_faktura
 
     @property
     def kolicina_range(self):
@@ -5357,6 +5388,42 @@ class WarehouseCustomer(models.Model):
 
     def __str__(self):
         return f'{self.ime_prezime} {self.telefon}'.strip()
+
+
+class NivelacijaOznaka(models.Model):
+    """Artikal označen kao izmjenjen za konkretan uvoz (zadnju promjenu cijene)."""
+
+    kljuc = models.CharField(max_length=220, db_index=True)
+    uvoz = models.ForeignKey(
+        Uvoz,
+        on_delete=models.CASCADE,
+        related_name='nivelacija_oznake',
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='nivelacija_oznake',
+    )
+    kreiran = models.DateTimeField(auto_now_add=True)
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='nivelacija_oznake',
+    )
+
+    class Meta:
+        verbose_name = 'Nivelacija oznaka'
+        verbose_name_plural = 'Nivelacija oznake'
+        constraints = [
+            models.UniqueConstraint(fields=['kljuc', 'uvoz'], name='uniq_nivelacija_kljuc_uvoz'),
+        ]
+
+    def __str__(self):
+        return f'{self.kljuc} @ {self.uvoz_id}'
 
 
 class WarehouseSyncLog(models.Model):

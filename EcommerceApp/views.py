@@ -4902,7 +4902,7 @@ def _order_print_job(order):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_order_print(request, broj):
-    """Štampa: račun s garantnim tekstom na dnu + packing lista (poseban list)."""
+    """Štampa: samo faktura (račun + garancija). Pakovanje je u Magacinu."""
     order = get_object_or_404(
         Order.objects.prefetch_related('stavke'),
         broj=broj,
@@ -5273,10 +5273,34 @@ def _build_order_packing_lines(order):
         if item.varijacija_naziv:
             display_name = f'{display_name} — {item.varijacija_naziv}'
 
+        product = item.artikal
+        variation = item.varijacija
+        barkod = ''
+        slika = ''
+        if variation:
+            barkod = (getattr(variation, 'barkod', None) or '').strip()
+            img = getattr(variation, 'prikazna_slika', None)
+            if img:
+                try:
+                    slika = img.url
+                except Exception:
+                    slika = ''
+        if product:
+            if not barkod:
+                barkod = (product.barkod or '').strip()
+            if not slika and product.prikazna_slika:
+                try:
+                    slika = product.prikazna_slika.url
+                except Exception:
+                    slika = ''
+
         lines.append({
             'rb': index,
+            'item_id': item.pk,
             'naziv': display_name,
             'sifra': item.sifra or '',
+            'barkod': barkod,
+            'slika': slika,
             'kolicina': item.kolicina,
             'odoo_product_id': odoo_product_id,
             'picks': picks,

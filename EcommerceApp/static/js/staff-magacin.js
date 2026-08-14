@@ -1,12 +1,14 @@
 (function () {
     var app = document.getElementById('mgApp');
     var navBtn = document.getElementById('mgNavToggle');
+    var navClose = document.getElementById('mgNavClose');
     var navBackdrop = document.getElementById('mgNavBackdrop');
     function setMagacinNav(open) {
         if (!app) return;
         app.classList.toggle('nav-open', !!open);
         if (navBackdrop) navBackdrop.hidden = !open;
         if (navBtn) navBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (navClose) navClose.hidden = !open;
         document.body.classList.toggle('mg-nav-lock', !!open);
     }
     if (navBtn && app) {
@@ -17,9 +19,17 @@
         app.querySelectorAll('.mg-nav a').forEach(function (link) {
             link.addEventListener('click', function () { setMagacinNav(false); });
         });
+        var isPhone = window.matchMedia('(max-width: 860px)').matches;
+        var fromMagacin = (document.referrer || '').indexOf('/nalog/magacin/') !== -1;
+        if (isPhone && !fromMagacin && !document.body.classList.contains('is-pick')) {
+            setMagacinNav(true);
+        }
     }
     if (navBackdrop) {
         navBackdrop.addEventListener('click', function () { setMagacinNav(false); });
+    }
+    if (navClose) {
+        navClose.addEventListener('click', function () { setMagacinNav(false); });
     }
 
     var user = document.getElementById('mgUser');
@@ -63,9 +73,13 @@
     var addQuery = document.getElementById('mgAddLocationQuery');
     var addList = document.getElementById('mgAddLocationList');
     var qtyInput = document.getElementById('mgQtyInput');
+    var updateLabel = document.getElementById('mgLocUpdateLabel');
+    var addLabel = document.getElementById('mgLocAddLabel');
+    var toLocation = document.getElementById('mgToLocation');
 
     function resetAddSearch() {
         if (addSelect) addSelect.value = '';
+        if (toLocation) toLocation.value = '';
         if (addQuery) addQuery.value = '';
         filterAddLocations('');
         if (addList) addList.hidden = true;
@@ -93,6 +107,7 @@
     function pickAddLocation(item) {
         if (!item || item.getAttribute('data-empty')) return;
         if (addSelect) addSelect.value = item.getAttribute('data-id') || '';
+        if (toLocation) toLocation.value = item.getAttribute('data-id') || '';
         if (addQuery) addQuery.value = item.getAttribute('data-label') || item.textContent || '';
         if (addList) addList.hidden = true;
     }
@@ -129,16 +144,31 @@
 
     function syncMode(mode) {
         var isAdd = mode === 'add';
-        if (modeInput) modeInput.value = isAdd ? 'add' : 'update';
-        if (title) title.textContent = isAdd ? 'Dodaj na novu lokaciju' : 'Ažuriraj postojeću lokaciju';
+        var isTransfer = mode === 'transfer';
+        if (modeInput) modeInput.value = isTransfer ? 'transfer' : (isAdd ? 'add' : 'update');
+        if (title) {
+            title.textContent = isTransfer
+                ? 'Transfer na drugu lokaciju'
+                : (isAdd ? 'Dodaj na novu lokaciju' : 'Ažuriraj postojeću lokaciju');
+        }
         if (updateField) updateField.hidden = isAdd;
-        if (addField) addField.hidden = !isAdd;
+        if (addField) addField.hidden = !(isAdd || isTransfer);
+        if (updateLabel) updateLabel.textContent = isTransfer ? 'Sa lokacije' : 'Lokacija';
+        if (addLabel) addLabel.textContent = isTransfer ? 'Na lokaciju' : 'Lokacija';
         if (locSelect) locSelect.required = !isAdd;
-        if (addSelect) addSelect.required = isAdd;
-        if (!isAdd) fillUpdateQty();
-        else {
+        if (addSelect) addSelect.required = isAdd || isTransfer;
+        if (qtyInput) {
+            qtyInput.min = isTransfer ? '1' : '0';
+        }
+        if (isAdd) {
             resetAddSearch();
             if (qtyInput) qtyInput.value = '';
+        } else if (isTransfer) {
+            resetAddSearch();
+            fillUpdateQty();
+            if (qtyInput) qtyInput.value = '';
+        } else {
+            fillUpdateQty();
         }
     }
 
@@ -171,7 +201,8 @@
     var form = modal.querySelector('form');
     if (form) {
         form.addEventListener('submit', function (event) {
-            if (modeInput && modeInput.value === 'add' && addSelect && !addSelect.value) {
+            var needsDest = modeInput && (modeInput.value === 'add' || modeInput.value === 'transfer');
+            if (needsDest && addSelect && !addSelect.value) {
                 event.preventDefault();
                 if (addQuery) addQuery.focus();
                 filterAddLocations(addQuery ? addQuery.value : '');
@@ -1769,3 +1800,402 @@ function initArticleScanner() {
         });
     }
 }
+
+(function initPickList() {
+    var root = document.getElementById('pkListApp');
+    if (!root) return;
+    var input = document.getElementById('pkListSearch');
+    var ops = root.querySelectorAll('.pk-op');
+    function filter() {
+        var q = (input && input.value || '').trim().toLowerCase().replace(/^#/, '');
+        ops.forEach(function (el) {
+            var hay = ((el.getAttribute('data-broj') || '') + ' ' + (el.getAttribute('data-name') || '')).toLowerCase();
+            el.classList.toggle('is-hidden', !!q && hay.indexOf(q) === -1);
+        });
+    }
+    if (input) {
+        input.addEventListener('input', filter);
+        input.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            var q = (input.value || '').trim().toLowerCase().replace(/^#/, '');
+            var match = null;
+            ops.forEach(function (el) {
+                if (match) return;
+                var broj = (el.getAttribute('data-broj') || '').toLowerCase();
+                if (q && broj === q) match = el;
+            });
+            if (match) window.location.href = match.getAttribute('href');
+        });
+    }
+})();
+
+(function initPickEngine() {
+    var root = document.getElementById('pkPickApp');
+    if (!root) return;
+    var raw = document.getElementById('pkQueue');
+    var queue = [];
+    try { queue = JSON.parse(raw ? raw.textContent : '[]') || []; } catch (err) { queue = []; }
+    var broj = root.getAttribute('data-broj') || '';
+    var storageKey = 'mg-pick-' + broj;
+    var localState = {};
+    var serverState = {};
+    try { localState = JSON.parse(window.localStorage.getItem(storageKey) || '{}') || {}; } catch (err) { localState = {}; }
+    try { serverState = JSON.parse((document.getElementById('pkState') || {}).textContent || '{}') || {}; } catch (err) { serverState = {}; }
+
+    function pickScore(row) {
+        if (!row || typeof row !== 'object') return 0;
+        return (row.done ? 100000 : 0) + (parseInt(row.got, 10) || 0);
+    }
+    function mergePickState(local, server) {
+        var out = {};
+        Object.keys(local || {}).forEach(function (key) { out[key] = local[key]; });
+        Object.keys(server || {}).forEach(function (key) {
+            if (pickScore(server[key]) >= pickScore(out[key])) out[key] = server[key];
+        });
+        return out;
+    }
+    function findSaved(item, bag) {
+        if (!item) return null;
+        if (bag[item.key]) return bag[item.key];
+        var found = null;
+        Object.keys(bag).forEach(function (key) {
+            var row = bag[key];
+            if (!row || typeof row !== 'object') return;
+            if (item.item_id && String(row.item_id) === String(item.item_id)) found = row;
+        });
+        return found;
+    }
+
+    var state = mergePickState(localState, serverState);
+    var current = 0;
+    var editingKey = '';
+    queue.forEach(function (item, idx) {
+        var prev = findSaved(item, state);
+        if (prev === true) prev = { got: item.need, done: true };
+        if (prev && prev !== state[item.key]) state[item.key] = prev;
+        if (!state[item.key]) state[item.key] = { got: 0, done: false, item_id: item.item_id };
+        if (state[item.key] === true) state[item.key] = { got: item.need, done: true, item_id: item.item_id };
+        if (!state[item.key].done && current === 0) current = idx;
+    });
+    if (queue.length && queue.every(function (item) { return state[item.key] && state[item.key].done; })) {
+        current = queue.length;
+    }
+
+    var els = {
+        card: document.getElementById('pkCard'),
+        doneAll: document.getElementById('pkDoneAll'),
+        empty: document.getElementById('pkEmpty'),
+        loc: document.getElementById('pkLoc'),
+        locMeta: document.getElementById('pkLocMeta'),
+        name: document.getElementById('pkName'),
+        sku: document.getElementById('pkSku'),
+        img: document.getElementById('pkImg'),
+        got: document.getElementById('pkGot'),
+        need: document.getElementById('pkNeed'),
+        progress: document.getElementById('pkProgress'),
+        todoN: document.getElementById('pkTodoN'),
+        doneN: document.getElementById('pkDoneN'),
+        todoList: document.getElementById('pkTodoList'),
+        doneList: document.getElementById('pkDoneList'),
+        scan: document.getElementById('pkScanInput'),
+        msg: document.getElementById('pkMsg'),
+        valid: document.getElementById('pkValidBtn'),
+        form: document.getElementById('mgPackValidateForm'),
+        takeLess: document.getElementById('pkTakeLess'),
+        takeAll: document.getElementById('pkTakeAll'),
+        pickJson: document.getElementById('pkPickJson'),
+    };
+
+    function persist() {
+        try { window.localStorage.setItem(storageKey, JSON.stringify(state)); } catch (err) {}
+    }
+    function itemState(item) {
+        return state[item.key] || { got: 0, done: false };
+    }
+    function doneCount() {
+        return queue.filter(function (item) { return itemState(item).done; }).length;
+    }
+    function showMsg(text, ok) {
+        if (!els.msg) return;
+        if (!text) { els.msg.hidden = true; return; }
+        els.msg.hidden = false;
+        els.msg.textContent = text;
+        els.msg.classList.toggle('is-ok', !!ok);
+    }
+    function norm(value) {
+        return String(value || '').replace(/\s+/g, '').toLowerCase();
+    }
+    function codesOf(item) {
+        return (item.codes || []).map(norm).filter(Boolean);
+    }
+    function firstOpenIndex() {
+        for (var i = 0; i < queue.length; i += 1) {
+            if (!itemState(queue[i]).done) return i;
+        }
+        return queue.length;
+    }
+
+    function renderLine(item, into, fromDone) {
+        var st = itemState(item);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pk-line';
+        btn.innerHTML = '<b>' + (item.loc || '') + '</b><span>' + (item.naziv || '') + '</span><em>' + st.got + '/' + item.need + '</em>';
+        btn.addEventListener('click', function () {
+            if (fromDone) {
+                if (!window.confirm('Želiš li promijeniti pokupljenu količinu?')) return;
+                editingKey = item.key;
+            }
+            current = queue.indexOf(item);
+            setTab('pick');
+            render();
+        });
+        into.appendChild(btn);
+    }
+
+    function renderLists() {
+        if (els.todoList) els.todoList.innerHTML = '';
+        if (els.doneList) els.doneList.innerHTML = '';
+        queue.forEach(function (item) {
+            if (itemState(item).done) {
+                if (els.doneList) renderLine(item, els.doneList, true);
+            } else if (els.todoList) {
+                renderLine(item, els.todoList, false);
+            }
+        });
+    }
+
+    function render() {
+        var finished = doneCount();
+        if (els.progress) els.progress.textContent = finished + '/' + queue.length;
+        if (els.todoN) els.todoN.textContent = String(queue.length - finished);
+        if (els.doneN) els.doneN.textContent = String(finished);
+        if (els.valid) els.valid.disabled = false;
+        renderLists();
+
+        if (!queue.length) {
+            if (els.card) els.card.hidden = true;
+            if (els.doneAll) els.doneAll.hidden = true;
+            if (els.empty) els.empty.hidden = false;
+            return;
+        }
+        if (els.empty) els.empty.hidden = true;
+        if (editingKey) {
+            var editIdx = -1;
+            queue.forEach(function (item, idx) {
+                if (item.key === editingKey) editIdx = idx;
+            });
+            if (editIdx >= 0) current = editIdx;
+            else editingKey = '';
+        }
+        if (!editingKey && finished === queue.length) {
+            if (els.card) els.card.hidden = true;
+            if (els.doneAll) els.doneAll.hidden = false;
+            return;
+        }
+        if (els.doneAll) els.doneAll.hidden = true;
+        if (!editingKey && (current >= queue.length || itemState(queue[current]).done)) {
+            current = firstOpenIndex();
+        }
+        var item = queue[current];
+        var st = itemState(item);
+        if (els.card) els.card.hidden = false;
+        if (els.loc) els.loc.textContent = item.loc || '—';
+        if (els.locMeta) els.locMeta.textContent = item.loc_rb + ' · stavka ' + item.rb;
+        if (els.name) els.name.textContent = item.naziv || '—';
+        if (els.sku) {
+            els.sku.textContent = [item.sifra, item.barkod].filter(Boolean).join('  ·  ');
+        }
+        if (els.img) {
+            els.img.style.backgroundImage = item.slika ? 'url("' + item.slika + '")' : '';
+        }
+        if (els.got && document.activeElement !== els.got) {
+            els.got.value = String(st.got);
+            els.got.max = String(item.need);
+        }
+        if (els.need) els.need.textContent = String(item.need);
+        if (els.takeLess) {
+            els.takeLess.hidden = !(st.got > 0 && st.got < item.need);
+        }
+        showMsg('');
+        if (els.scan) {
+            window.setTimeout(function () { els.scan.focus(); }, 40);
+        }
+        syncPickJson();
+    }
+
+    function pickPayload() {
+        return queue.map(function (item) {
+            var st = itemState(item);
+            return {
+                key: item.key,
+                item_id: item.item_id,
+                got: st.got,
+                need: item.need,
+                done: !!st.done,
+            };
+        });
+    }
+    function syncPickJson() {
+        if (els.pickJson) els.pickJson.value = JSON.stringify(pickPayload());
+    }
+    var saveTimer = 0;
+    function saveServer() {
+        syncPickJson();
+        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+        var body = new URLSearchParams();
+        body.set('action', 'pick_save');
+        body.set('pick_json', JSON.stringify(pickPayload()));
+        if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
+        fetch(window.location.pathname, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: body,
+            credentials: 'same-origin',
+        }).catch(function () {});
+    }
+    function saveSoon() {
+        persist();
+        window.clearTimeout(saveTimer);
+        saveTimer = window.setTimeout(saveServer, 250);
+    }
+
+    function setGot(item, got, forceDone) {
+        var next = Math.max(0, Math.min(item.need, got));
+        var exact = next >= item.need && item.need > 0;
+        var done = exact || !!(forceDone && next > 0);
+        state[item.key] = { got: next, done: done, item_id: item.item_id };
+        persist();
+        if (done && editingKey === item.key) editingKey = '';
+        if (done) current = firstOpenIndex();
+        render();
+        saveSoon();
+    }
+
+    function applyScan(code) {
+        var value = norm(code);
+        if (!value || !queue.length) return;
+        var item = queue[current];
+        if (!item || itemState(item).done) item = queue[firstOpenIndex()];
+        if (!item) return;
+        var match = codesOf(item).indexOf(value) !== -1;
+        if (!match) {
+            for (var i = 0; i < queue.length; i += 1) {
+                if (!itemState(queue[i]).done && codesOf(queue[i]).indexOf(value) !== -1) {
+                    current = i;
+                    item = queue[i];
+                    match = true;
+                    break;
+                }
+            }
+        }
+        if (!match) {
+            showMsg('Barkod se ne poklapa s ovom stavkom.');
+            return;
+        }
+        var st = itemState(item);
+        setGot(item, st.got + 1);
+        showMsg(itemState(item).done ? 'Pokupljeno. Sljedeća stavka.' : 'Sken OK', true);
+    }
+
+    function currentItem() {
+        return queue[current];
+    }
+
+    var minus = document.getElementById('pkMinus');
+    var plus = document.getElementById('pkPlus');
+    if (minus) minus.addEventListener('click', function () {
+        var item = currentItem();
+        if (item) setGot(item, itemState(item).got - 1);
+    });
+    if (plus) plus.addEventListener('click', function () {
+        var item = currentItem();
+        if (item) setGot(item, itemState(item).got + 1);
+    });
+    if (els.takeLess) els.takeLess.addEventListener('click', function () {
+        var item = currentItem();
+        if (!item) return;
+        var got = itemState(item).got;
+        if (got > 0 && got < item.need) setGot(item, got, true);
+    });
+    if (els.takeAll) els.takeAll.addEventListener('click', function () {
+        var item = currentItem();
+        if (item) setGot(item, item.need);
+    });
+    if (els.got) {
+        function applyTypedQty(asDone) {
+            var item = currentItem();
+            if (!item) return;
+            var raw = parseInt(els.got.value, 10);
+            if (isNaN(raw)) raw = 0;
+            if (asDone && raw > 0 && raw < item.need) setGot(item, raw, true);
+            else setGot(item, raw);
+        }
+        els.got.addEventListener('change', function () { applyTypedQty(false); });
+        els.got.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            applyTypedQty(true);
+            els.got.blur();
+        });
+    }
+    if (els.scan) {
+        els.scan.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            applyScan(els.scan.value);
+            els.scan.value = '';
+        });
+        els.scan.addEventListener('change', function () {
+            if (!els.scan.value) return;
+            applyScan(els.scan.value);
+            els.scan.value = '';
+        });
+        els.scan.addEventListener('input', function () {
+            var value = els.scan.value.trim();
+            if (value.length < 3) return;
+            window.clearTimeout(els.scan._pkTimer);
+            els.scan._pkTimer = window.setTimeout(function () {
+                if (els.scan.value.trim() !== value) return;
+                applyScan(value);
+                els.scan.value = '';
+            }, 60);
+        });
+    }
+
+    root.querySelectorAll('[data-pk-tab]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            setTab(btn.getAttribute('data-pk-tab'));
+        });
+    });
+    function setTab(name) {
+        if (name !== 'pick') editingKey = '';
+        root.querySelectorAll('[data-pk-tab]').forEach(function (btn) {
+            btn.classList.toggle('is-on', btn.getAttribute('data-pk-tab') === name);
+        });
+        root.querySelectorAll('[data-pk-panel]').forEach(function (panel) {
+            panel.hidden = panel.getAttribute('data-pk-panel') !== name;
+        });
+        if (name === 'pick' && els.scan) els.scan.focus();
+    }
+
+    if (els.form) {
+        els.form.addEventListener('submit', function (event) {
+            var broj = root.getAttribute('data-broj') || '';
+            var msg = 'Želiš li validatovati narudžbu #' + broj + '?';
+            if (queue.length && doneCount() < queue.length) {
+                msg = 'Nisu sve stavke pokupljene. Želiš li validatovati narudžbu #' + broj + '?';
+            }
+            if (!window.confirm(msg)) event.preventDefault();
+            else {
+                try { window.localStorage.removeItem(storageKey); } catch (err) {}
+            }
+        });
+    }
+
+    window.addEventListener('pagehide', function () { persist(); saveServer(); });
+    persist();
+    if (Object.keys(state).length) saveSoon();
+    render();
+})();

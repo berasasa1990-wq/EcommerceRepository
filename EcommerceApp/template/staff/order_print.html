@@ -890,10 +890,10 @@
         <p>
             {% if print_jobs|length == 1 %}
             <strong>Narudžba #{{ print_jobs.0.order.broj }}</strong>
-            — račun + packing lista. Štampaj <strong>A4 uspravno (Portrait)</strong>, bez smanjivanja stranice.
+            — samo faktura. Štampaj <strong>A4 uspravno (Portrait)</strong>, bez smanjivanja stranice.
             {% else %}
             <strong>{{ print_jobs|length }} narudžbe</strong>
-            — račun + packing lista za svaku
+            — samo faktura za svaku
             {% endif %}
         </p>
         <div class="print-toolbar-actions">

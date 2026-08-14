@@ -228,14 +228,26 @@ def _standardna_dostava(medjuzbir, postavke=None):
     return cijena, False, cijena, prag
 
 
+def _medjuzbir_za_racun(order):
+    """Međuzbir za fakturu: pokupljena količina ako je picking smanjio stavku."""
+    items = list(order.stavke.all())
+    if any(item.kolicina_pokupljeno is not None for item in items):
+        total = Decimal('0.00')
+        for item in items:
+            total += _kvantiziraj(item.cijena * item.kolicina_faktura)
+        return total
+    return _kvantiziraj(order.medjuzbir)
+
+
 def sazetak_iz_narudzbe(order):
     from .models import Order
 
     postavke = SiteSettings.load()
     dostava = _kvantiziraj(order.dostava)
-    ukupno = _kvantiziraj(order.ukupno)
     popust = _kvantiziraj(order.popust)
-    goods = _kvantiziraj(order.medjuzbir - popust)
+    medjuzbir = _medjuzbir_za_racun(order)
+    ukupno = _kvantiziraj(order.ukupno)
+    goods = _kvantiziraj(medjuzbir - popust)
     std_dostava, std_free, dostava_cijena, prag = _standardna_dostava(goods, postavke)
     # Ručne Magacin narudžbe: na računu uvijek 11 KM / besplatno preko 250 KM
     if getattr(order, 'izvor', '') == Order.Izvor.MAGACIN and dostava == Decimal('0.00') and not std_free:
@@ -245,10 +257,12 @@ def sazetak_iz_narudzbe(order):
         std_free = False
     else:
         std_free = dostava == Decimal('0.00')
-    ukupno_prije_popusta = _kvantiziraj(order.medjuzbir + dostava)
+    if any(item.kolicina_pokupljeno is not None for item in order.stavke.all()):
+        ukupno = _kvantiziraj(goods + dostava)
+    ukupno_prije_popusta = _kvantiziraj(medjuzbir + dostava)
     return {
-        'medjuzbir': order.medjuzbir,
-        'pdv_artikli': izracunaj_pdv(order.medjuzbir),
+        'medjuzbir': medjuzbir,
+        'pdv_artikli': izracunaj_pdv(medjuzbir),
         'popust': order.popust,
         'kupon_popust': Decimal('0.00'),
         'ostali_popust': order.popust,
@@ -287,6 +301,9 @@ def pripremi_stavke_za_racun(order):
 
     stavke = []
     for oi in order.stavke.all():
+        qty = oi.kolicina_faktura
+        if qty <= 0:
+            continue
         naziv = oi.naziv or ''
         is_akcija = 'popust iz akcije' in naziv.lower()
         is_deal = bool(deal_pattern.search(naziv))
@@ -295,7 +312,7 @@ def pripremi_stavke_za_racun(order):
         disc_qty = 0
         deal_pct = None
         deal_vrsta = None
-        charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
+        charged = (orig * qty).quantize(Decimal('0.01'))
 
         deal_match = deal_pattern.search(naziv)
         if deal_match:
@@ -304,22 +321,22 @@ def pripremi_stavke_za_racun(order):
                 disc_qty = int(deal_match.group(2))
                 deal_pct = deal_match.group(3)
                 disc = Decimal(deal_match.group(4).replace(',', '.')).quantize(Decimal('0.01'))
-                full_qty = max(0, oi.kolicina - disc_qty)
+                full_qty = max(0, qty - disc_qty)
                 charged = (orig * full_qty + disc * disc_qty).quantize(Decimal('0.01'))
             except (ValueError, ArithmeticError):
                 disc = None
                 disc_qty = 0
-                charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
+                charged = (orig * qty).quantize(Decimal('0.01'))
         elif is_akcija:
             m = akcija_pattern.search(naziv)
             if m:
                 try:
                     disc = Decimal(m.group(1).replace(',', '.')).quantize(Decimal('0.01'))
-                    charged = (orig * (oi.kolicina - 1) + disc).quantize(Decimal('0.01'))
+                    charged = (orig * max(0, qty - 1) + disc).quantize(Decimal('0.01'))
                     disc_qty = 1
                 except (ValueError, ArithmeticError):
                     disc = None
-                    charged = (orig * oi.kolicina).quantize(Decimal('0.01'))
+                    charged = (orig * qty).quantize(Decimal('0.01'))
 
         display_naziv = re.sub(
             r'\s*\([^)]*(?:\d+\+\d+|popust iz akcije)[^)]*\)\s*$',
@@ -334,7 +351,7 @@ def pripremi_stavke_za_racun(order):
         popust_postotak = getattr(oi, 'popust_postotak', None)
         popust_iznos = getattr(oi, 'popust_iznos', None)
         if popust_iznos is None and bazna is not None and bazna > orig:
-            popust_iznos = ((bazna - orig) * oi.kolicina).quantize(Decimal('0.01'))
+            popust_iznos = ((bazna - orig) * qty).quantize(Decimal('0.01'))
         # Legacy: izvuci izvor iz napomene u nazivu
         if not popust_opis:
             if is_deal and deal_vrsta:
@@ -357,7 +374,7 @@ def pripremi_stavke_za_racun(order):
             'product_naziv': display_naziv or oi.product_naziv or oi.naziv or '',
             'varijacija_naziv': oi.varijacija_naziv,
             'sifra': oi.sifra,
-            'kolicina': oi.kolicina,
+            'kolicina': qty,
             'cijena': orig,
             'bazna_cijena': bazna,
             'ukupno': charged,

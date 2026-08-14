@@ -1,0 +1,33 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="pk-app" id="pkListApp">
+    <header class="pk-bar">
+        <a class="pk-bar-back" href="{% url 'staff_magacin_narudzbe' %}">←</a>
+        <div class="pk-bar-title">
+            <strong>Picking</strong>
+            <span>{{ orders|length }} otvorenih</span>
+        </div>
+        <a class="pk-check-btn{% if mp_count %} is-blink{% endif %}" href="{% url 'staff_magacin_pakuj_provjera' %}">
+            Provjera{% if mp_count %} <i>{{ mp_count }}</i>{% endif %}
+        </a>
+    </header>
+    <div class="pk-search">
+        <input type="search" id="pkListSearch" placeholder="Skeniraj ili ukucaj broj / kupca" autocomplete="off" autofocus>
+    </div>
+    <div class="pk-ops">
+        {% for order in orders %}
+        <a class="pk-op" href="{% url 'staff_magacin_pakuj_detail' order.broj %}" data-broj="{{ order.broj }}" data-name="{{ order.ime_prezime }}">
+            <span class="pk-op-n">{{ forloop.counter }}</span>
+            <span class="pk-op-body">
+                <span class="pk-op-broj">#{{ order.broj }}</span>
+                <span class="pk-op-name">{{ order.ime_prezime }}</span>
+            </span>
+            <span class="pk-op-meta">{{ order.stavki }}</span>
+        </a>
+        {% empty %}
+        <p class="pk-empty">Nema novih naloga za picking.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

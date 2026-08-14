@@ -49,7 +49,7 @@
     var done = false;
     var isOpen = false;
     var pollTimer = null;
-    var POLL_MS = 2800;
+    var POLL_MS = 8000;
 
     // Nakon prijave (force_show) obriši sessionStorage da se popup opet otvori
     if (forceShow) {

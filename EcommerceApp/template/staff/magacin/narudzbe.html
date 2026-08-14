@@ -5,8 +5,10 @@
     <div>
         <h1>{% if show_validated %}Validatovane narudžbe{% else %}Narudžbe{% endif %}</h1>
         <p class="mg-count">
-            {% if show_validated %}
-            Validatovane — zaliha je skinuta s lokacija.
+            {% if show_validated and show_all_validated %}
+            Sve validatovane — zaliha je skinuta s lokacija.
+            {% elif show_validated %}
+            Validatovane danas — zaliha je skinuta s lokacija.
             {% else %}
             Nove narudžbe ostaju ovdje na rezervaciji. Validacija skida zalihu i sklanja ih s liste.
             {% endif %}
@@ -15,6 +17,11 @@
     <div class="mg-toolbar-actions">
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_narudzba_nova' %}">+ Nova ručna narudžba</a>
         {% if show_validated %}
+        {% if show_all_validated %}
+        <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?validirane=1{% if izvor_filter != 'sve' %}&izvor={{ izvor_filter }}{% endif %}">Samo danas</a>
+        {% else %}
+        <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?validirane=1&sve=1{% if izvor_filter != 'sve' %}&izvor={{ izvor_filter }}{% endif %}">Prikaži sve</a>
+        {% endif %}
         <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
         {% else %}
         <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?validirane=1">
@@ -24,14 +31,14 @@
     </div>
 </div>
 <div class="mg-filter-tabs">
-    <a href="{% url 'staff_magacin_narudzbe' %}{% if show_validated %}?validirane=1{% endif %}" class="{% if izvor_filter == 'sve' %}is-active{% endif %}">Sve</a>
-    <a href="{% url 'staff_magacin_narudzbe' %}?izvor=magacin{% if show_validated %}&validirane=1{% endif %}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">
+    <a href="{% url 'staff_magacin_narudzbe' %}{% if show_validated %}?validirane=1{% if show_all_validated %}&sve=1{% endif %}{% endif %}" class="{% if izvor_filter == 'sve' %}is-active{% endif %}">Sve</a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?izvor=magacin{% if show_validated %}&validirane=1{% if show_all_validated %}&sve=1{% endif %}{% endif %}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">
         Ručne{% if rucne_count and not show_validated %} <span>{{ rucne_count }}</span>{% endif %}
     </a>
-    <a href="{% url 'staff_magacin_narudzbe' %}?izvor=webshop{% if show_validated %}&validirane=1{% endif %}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">Webshop</a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?izvor=webshop{% if show_validated %}&validirane=1{% if show_all_validated %}&sve=1{% endif %}{% endif %}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">Webshop</a>
 </div>
 
-<form id="mgPrintForm" method="get" action="{% url 'staff_magacin_narudzbe_stampa' %}" target="_blank">
+<form id="mgPrintForm" method="get" action="{% url 'staff_magacin_narudzbe_stampa' %}" target="_blank" class="mg-orders-form">
     <div class="mg-bulk-bar">
         <label class="mg-check">
             <input type="checkbox" id="mgSelectAll">
@@ -43,9 +50,9 @@
         {% endif %}
         <span class="mg-muted" id="mgSelectedCount">0 odabrano</span>
     </div>
-    <section class="mg-card">
+    <section class="mg-card mg-orders-card">
         <div class="mg-table-wrap">
-        <table class="mg-table">
+        <table class="mg-table mg-table-stack mg-table-stack-narudzbe">
             <thead>
                 <tr>
                     <th class="mg-check-col"></th>
@@ -60,12 +67,22 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr class="is-clickable" data-order-url="{% url 'staff_order_detail' order.broj %}">
+                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}" data-order-url="{% url 'staff_order_detail' order.broj %}">
                     <td class="mg-check-col" data-stop-row>
                         <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check">
                     </td>
                     <td>#{{ order.broj }}</td>
-                    <td>{{ order.ime_prezime }}</td>
+                    <td>
+                        {{ order.ime_prezime }}
+                        {% if order.pick_shortages %}
+                        <span class="mg-pick-short">
+                            Manje pokupljeno:
+                            {% for short in order.pick_shortages %}
+                            {{ short.naziv }} {{ short.got }}/{{ short.need }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if order.izvor == 'magacin' %}
                         <span class="mg-pill is-manual">Ručni unos</span>
@@ -91,7 +108,9 @@
                 {% empty %}
                 <tr>
                     <td colspan="8" class="mg-muted">
-                        {% if show_validated %}
+                        {% if show_validated and not show_all_validated %}
+                        Nema validatovanih narudžbi za danas.
+                        {% elif show_validated %}
                         Nema validatovanih narudžbi.
                         {% elif izvor_filter == 'magacin' %}
                         Nema novih narudžbi. Unesi prvu ručnu narudžbu.

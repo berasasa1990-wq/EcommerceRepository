@@ -547,7 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function startCustomerPolling() {
         stopMinimizedCustomerPolling();
         clearInterval(customerPollTimer);
-        customerPollTimer = setInterval(pollCustomerChat, 3000);
+        customerPollTimer = setInterval(pollCustomerChat, 6000);
     }
 
     function stopCustomerPolling() {
@@ -887,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(staffPollTimer);
         clearInterval(staffPingTimer);
         // Brzi poll (1.5–2s) — chat iskače superuseru bez refresha
-        const interval = staffOpen ? 2000 : 1500;
+        const interval = staffOpen ? 5000 : 10000;
         staffPollTimer = setInterval(pollStaffInbox, interval);
     }
 
@@ -1299,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (config.chatEnabled) {
         scheduleProactiveChat();
         // Brži badge poll — nepročitano odmah (posebno registrovani)
-        setInterval(pollCustomerUnread, config.isAuthenticated ? 4000 : 12000);
+        setInterval(pollCustomerUnread, config.isAuthenticated ? 10000 : 20000);
     }
 
     document.addEventListener('visibilitychange', () => {

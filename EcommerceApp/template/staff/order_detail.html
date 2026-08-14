@@ -38,6 +38,14 @@
     </div>
 </div>
 
+{% if order.pick_shortages %}
+<p class="mg-pick-short mg-pick-short-detail">
+    Manje pokupljeno:
+    {% for short in order.pick_shortages %}
+    {{ short.naziv }} {{ short.got }}/{{ short.need }}{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</p>
+{% endif %}
 <div class="mg-order-meta">
     {% if order.status == 'nova' %}
     <span class="mg-pill">Nova</span>

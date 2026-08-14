@@ -11,7 +11,7 @@
     const leaveUrl = root.dataset.leaveUrl || '/uzivo/odlazak/';
     const sessionKey = (root.dataset.sessionKey || '').trim();
     // Brži ping — staff live lista se osvježava skoro u real-time
-    const heartbeatMs = 3000;
+    const heartbeatMs = 10000;
     let leftSent = false;
     let heartbeatTimer = null;
 
@@ -127,10 +127,15 @@
     });
 
     document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) {
-            leftSent = false;
-            sendHeartbeat();
+        if (document.hidden) {
+            if (heartbeatTimer) {
+                window.clearInterval(heartbeatTimer);
+                heartbeatTimer = null;
+            }
+            return;
         }
+        leftSent = false;
+        startHeartbeat();
     });
 
     // Prvi ping odmah (staff vidi „Sada:” bez čekanja)
