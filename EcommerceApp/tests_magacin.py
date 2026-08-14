@@ -264,21 +264,45 @@ class MagacinCatalogSyncTests(TestCase):
         product.refresh_from_db()
         self.assertEqual(product.azuriran, before)
 
-    def test_does_not_create_unknown_odoo_product(self):
+    def test_creates_unknown_odoo_product(self):
         client = FakeOdooClient([{
             'id': 777,
-            'name': 'Nema na stanju',
+            'name': 'Novi iz Odoo',
             'default_code': 'EMPTY-1',
-            'barcode': '',
+            'barcode': 'B777',
             'list_price': '5.00',
             'qty_available': 0,
             'product_variant_ids': [777],
         }])
         stats = sync_catalog_chunk(client, [777], start=0, limit=10)
+        self.assertEqual(stats['kreirano'], 1)
+        self.assertEqual(stats['preskoceno'], 0)
+        product = Product.objects.get(odoo_template_id=777)
+        self.assertEqual(product.naziv, 'Novi iz Odoo')
+        self.assertEqual(product.sifra, 'EMPTY-1')
+        self.assertEqual(product.barkod, 'B777')
+        self.assertIsNotNone(product.magacin_sync_at)
+        self.assertEqual(Product.objects.count(), 1)
+
+    def test_does_not_duplicate_when_creating_existing_odoo_id(self):
+        Product.objects.create(
+            naziv='Već tu',
+            sifra='EMPTY-1',
+            cijena=Decimal('5.00'),
+            odoo_template_id=777,
+        )
+        client = FakeOdooClient([{
+            'id': 777,
+            'name': 'Već tu',
+            'default_code': 'EMPTY-1',
+            'barcode': '',
+            'list_price': '5.00',
+            'qty_available': 2,
+            'product_variant_ids': [777],
+        }])
+        stats = sync_catalog_chunk(client, [777], start=0, limit=10)
         self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(stats['preskoceno'], 1)
-        self.assertFalse(Product.objects.filter(odoo_template_id=777).exists())
-        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(Product.objects.filter(odoo_template_id=777).count(), 1)
 
     def test_creates_variation_without_normalized_null(self):
         product = Product.objects.create(
@@ -439,10 +463,12 @@ class MagacinCatalogSyncTests(TestCase):
             'product_variant_ids': [9999],
         }])
         stats = sync_catalog_chunk(client, [1201, 9999], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(Product.objects.filter(sifra='GHOST-9').count(), 0)
+        self.assertEqual(stats['kreirano'], 1)
+        self.assertEqual(Product.objects.filter(sifra='GHOST-9').count(), 1)
+        ghost = Product.objects.get(odoo_template_id=9999)
+        self.assertEqual(ghost.naziv, 'Nepoznat u shopu')
         self.assertEqual(Product.objects.filter(odoo_template_id=1201).count(), 1)
-        self.assertEqual(Product.objects.count(), 2)
+        self.assertEqual(Product.objects.count(), 3)
 
     def test_skips_image_download_when_product_already_has_image(self):
         product = Product.objects.create(

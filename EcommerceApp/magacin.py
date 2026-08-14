@@ -7,7 +7,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 
@@ -829,7 +829,7 @@ def _variation_has_image(variation):
 
 
 def _find_existing_sync_product(template):
-    """Nađi već uvezeni artikal. Sync nikad ne kreira novi."""
+    """Nađi već uvezeni artikal (Odoo ID, varijacija ili šifra) — bez duplikata."""
     from .odoo_import import _find_product_for_template
 
     return _find_product_for_template(template)
@@ -850,8 +850,8 @@ def _apply_image_once(image_field, image_b64, filename):
 
 def sync_catalog_chunk(client, template_ids, *, start=0, limit=CATALOG_SYNC_BATCH):
     """
-    Samo ažuriraj već uvezene artikle (Odoo ID, varijacija ili šifra).
-    Nikad ne kreira nove artikle — katalog je već uvezen Odoo importom.
+    Postojeći artikal (Odoo ID / šifra) — ažuriraj, ne dupliraj.
+    Artikal koj nema na sajtu — kreiraj.
     Sliku postavi samo kad artikal još nema sliku.
     """
     from django.utils import timezone
@@ -881,9 +881,7 @@ def sync_catalog_chunk(client, template_ids, *, start=0, limit=CATALOG_SYNC_BATC
         if not template:
             continue
         product = _find_existing_sync_product(template)
-        if product is None:
-            continue
-        if not _product_has_image(product):
+        if product is None or not _product_has_image(product):
             need_images.append(int(tid))
 
     images = {}
@@ -906,6 +904,50 @@ def sync_catalog_chunk(client, template_ids, *, start=0, limit=CATALOG_SYNC_BATC
     return stats
 
 
+def _create_sync_product(template, *, image_b64=None, synced_at=None):
+    from django.utils import timezone
+
+    from .odoo_import import _odoo_template_name
+
+    odoo_id = int(template['id'])
+    naziv = (_odoo_template_name(template) or f'Artikal {odoo_id}')[:200]
+    barkod = ''
+    if template.get('barcode') not in (False, None, ''):
+        barkod = str(template.get('barcode'))[:BARKOD_MAX_LENGTH]
+    cijena = _decimal_price(template.get('list_price'))
+    sifra = _safe_sifra(template.get('default_code'), odoo_id=odoo_id)
+    now = synced_at or timezone.now()
+    product = Product(
+        naziv=naziv,
+        sifra=sifra,
+        barkod=barkod,
+        cijena=cijena,
+        odoo_template_id=odoo_id,
+        magacin_sync_at=now,
+        aktivan=True,
+        na_stanju=False,
+        stanje=0,
+    )
+    if image_b64:
+        _apply_image_once(product.slika, image_b64, f'odoo-template-{odoo_id}.jpg')
+    try:
+        with transaction.atomic():
+            product.save()
+    except IntegrityError:
+        existing = (
+            Product.objects.filter(odoo_template_id=odoo_id).first()
+            or Product.objects.filter(sifra=sifra).first()
+        )
+        if existing is None:
+            raise
+        if not existing.odoo_template_id:
+            existing.odoo_template_id = odoo_id
+            existing.magacin_sync_at = now
+            existing.save(update_fields=['odoo_template_id', 'magacin_sync_at'])
+        return existing, False
+    return product, True
+
+
 def _sync_one_template(client, template, *, image_b64=None, synced_at=None):
     from django.utils import timezone
 
@@ -914,7 +956,11 @@ def _sync_one_template(client, template, *, image_b64=None, synced_at=None):
     odoo_id = int(template['id'])
     product = _find_existing_sync_product(template)
     if product is None:
-        return 'preskoceno'
+        product, created = _create_sync_product(
+            template, image_b64=image_b64, synced_at=synced_at,
+        )
+        _sync_template_variations(client, product, template, create_images=bool(image_b64))
+        return 'kreirano' if created else 'azurirano'
     naziv = (_odoo_template_name(template) or f'Artikal {odoo_id}')[:200]
     barkod = ''
     if template.get('barcode') not in (False, None, ''):
@@ -984,6 +1030,25 @@ def _sync_template_variations(client, product, template, *, create_images):
         v_cijena = _decimal_price(variant.get('lst_price'), default=str(product.cijena))
 
         if variation is None:
+            from .odoo_import import _unique_sifra
+
+            if not v_sifra:
+                v_sifra = _unique_sifra('ODOO-V', vid)
+            elif ProductVariation.objects.filter(sifra=v_sifra).exists():
+                v_sifra = _unique_sifra('ODOO-V', vid)
+            variation = ProductVariation(
+                artikal=product,
+                naziv=v_naziv[:100],
+                sifra=v_sifra[:SIFRA_MAX_LENGTH],
+                cijena=v_cijena,
+                odoo_variant_id=vid,
+            )
+            variation.save()
+            if create_images:
+                image_b64 = variant.get('image_variant_1920') or variant.get('image_1920')
+                if image_b64:
+                    _apply_image_once(variation.slika, image_b64, f'odoo-variant-{vid}.jpg')
+                    variation.save(update_fields=['slika'])
             continue
 
         fields_changed = (
@@ -1068,8 +1133,9 @@ def _update_log_progress(log, started, poruka, *, artikala=0, lokacija=0):
 
 def start_full_sync(*, user=None, product=None):
     """
-    Pokreni Odoo → Magacin sync za artikle koji već postoje na sajtu.
-    Nikad ne kreira nove artikle. Vraća session job dict (chunkovi).
+    Odoo → Magacin: cijeli katalog.
+    Postojeći artikal se ne duplira (samo količina/lokacija + već vezani podaci).
+    Artikal koj nema na sajtu se kreira.
     """
     from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
 
@@ -1096,19 +1162,20 @@ def start_full_sync(*, user=None, product=None):
                 raise MagacinError('Artikal nije povezan sa Odoo. Prvo uradi puni Sync.')
             template_ids = [int(template_id)]
         else:
+            all_odoo_ids = set(client.get_all_sale_template_ids() or [])
             previous = last_successful_sync()
             if previous and previous.started_at:
                 incremental = True
                 since = previous.started_at - timedelta(minutes=2)
                 try:
                     changed = set(client.get_sale_template_ids(since=since))
-                    template_ids = sorted(changed & local_ids)
                     stock_extra_ids = client.get_quant_product_ids_changed_since(since)
                 except OdooError:
-                    incremental = False
-                    template_ids = sorted(local_ids)
+                    changed = set()
+                missing = all_odoo_ids - local_ids
+                template_ids = sorted((changed & local_ids) | missing)
             else:
-                template_ids = sorted(local_ids)
+                template_ids = sorted(all_odoo_ids)
     except OdooError as exc:
         _fail_log(log, started, str(exc))
         raise MagacinError(str(exc)) from exc
@@ -1146,7 +1213,7 @@ def start_full_sync(*, user=None, product=None):
         phase = 'catalog'
         progress = (
             f'Katalog: 0 / {len(template_ids)} '
-            f'({"samo izmjene" if incremental else "postojeći artikli sa sajta"})…'
+            f'({"izmjene + novi iz Odoo" if incremental else "cijeli Odoo katalog"})…'
         )
 
     _update_log_progress(log, started, progress)
@@ -1201,7 +1268,7 @@ def run_sync_chunk(job, *, user=None):
             _update_log_progress(
                 log, started,
                 f'Katalog: {job["position"]} / {len(template_ids)} '
-                f'(update po Odoo ID, slike se ne dupliraju)…',
+                f'(postojeći ažurira, novi dodaje, bez duplikata)…',
                 artikala=job['artikala'],
             )
             if stats.get('done'):
