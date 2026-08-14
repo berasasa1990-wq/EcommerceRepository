@@ -67,13 +67,16 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}" data-order-url="{% url 'staff_order_detail' order.broj %}">
+                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=stampa{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}">
                     <td class="mg-check-col" data-stop-row>
-                        <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check">
+                        <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.needs_mp_check %} data-mp="1"{% endif %}>
                     </td>
                     <td>#{{ order.broj }}</td>
                     <td>
                         {{ order.ime_prezime }}
+                        {% if order.needs_mp_check %}
+                        <span class="mg-pick-short">Prvo Provjera MP — Ima / Nema</span>
+                        {% endif %}
                         {% if order.pick_shortages %}
                         <span class="mg-pick-short">
                             Manje pokupljeno:

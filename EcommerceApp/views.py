@@ -4910,9 +4910,18 @@ def _order_print_job(order):
 def staff_order_print(request, broj):
     """Štampa: samo faktura (račun + garancija). Pakovanje je u Magacinu."""
     order = get_object_or_404(
-        Order.objects.prefetch_related('stavke'),
+        Order.objects.prefetch_related('stavke', 'magacin_holds'),
         broj=broj,
     )
+    from .views_magacin import _provjera_url, order_needs_mp_check
+
+    if order_needs_mp_check(order):
+        messages.warning(
+            request,
+            f'Narudžba #{order.broj} ima artikal iz maloprodaje. '
+            'Prvo označi Ima u MP ili Nema, pa štampaj.',
+        )
+        return redirect(_provjera_url(order.broj, next_print=True))
     job = _order_print_job(order)
     context = {
         **job,

@@ -242,8 +242,10 @@ function initCustomerPicker() {
     var intro = document.getElementById('mgOrderIntro');
     if (!search || !form) return;
     var lookupUrl = form.getAttribute('data-customer-lookup') || '';
+    var saveUrl = form.getAttribute('data-customer-save') || '';
     var timer = null;
     var lastResults = [];
+    var saving = false;
 
     function escapeHtml(value) {
         return String(value == null ? '' : value)
@@ -390,12 +392,41 @@ function initCustomerPicker() {
                 if (newTel) newTel.focus();
                 return;
             }
-            lockCustomer({
-                ime_prezime: ime,
-                telefon: tel,
-                adresa: newAdresa ? newAdresa.value.trim() : '',
-                grad: newGrad ? newGrad.value.trim() : '',
-            });
+            if (saving) return;
+            var csrf = form.querySelector('[name=csrfmiddlewaretoken]');
+            var body = new URLSearchParams();
+            body.set('ime_prezime', ime);
+            body.set('telefon', tel);
+            body.set('adresa', newAdresa ? newAdresa.value.trim() : '');
+            body.set('grad', newGrad ? newGrad.value.trim() : '');
+            saving = true;
+            saveBtn.disabled = true;
+            showHint('');
+            fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrf ? csrf.value : '',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (result) {
+                    saving = false;
+                    saveBtn.disabled = false;
+                    if (!result.data || !result.data.ok || !result.data.customer) {
+                        showHint((result.data && result.data.error) || 'Kupac nije sačuvan.');
+                        return;
+                    }
+                    lockCustomer(result.data.customer);
+                })
+                .catch(function () {
+                    saving = false;
+                    saveBtn.disabled = false;
+                    showHint('Kupac nije sačuvan. Pokušaj ponovo.');
+                });
         });
     }
     if (modal) {
@@ -1047,8 +1078,20 @@ function initOrderBulkPrint() {
         if (event.target.classList.contains('mg-order-check')) sync();
     });
     form.addEventListener('submit', function (event) {
-        if (checks().filter(function (box) { return box.checked; }).length === 0) {
+        var selected = checks().filter(function (box) { return box.checked; });
+        if (!selected.length) {
             event.preventDefault();
+            return;
+        }
+        var locked = selected.find(function (box) {
+            return box.getAttribute('data-mp') === '1' ||
+                (box.closest('tr') && box.closest('tr').getAttribute('data-mp') === '1');
+        });
+        if (locked) {
+            event.preventDefault();
+            var row = locked.closest('tr');
+            var url = row && row.getAttribute('data-order-url');
+            if (url) window.location.href = url;
         }
     });
     if (validateBtn && validateForm) {
@@ -1525,6 +1568,7 @@ function initArticleScanner() {
         if (targetInput) {
             targetInput.value = value;
             targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            targetInput.dispatchEvent(new CustomEvent('mg-scanned', { bubbles: true, detail: { code: value } }));
             targetInput.focus();
         }
         setStatus('Skenirano: ' + value);
@@ -1782,6 +1826,9 @@ function initArticleScanner() {
         btn.addEventListener('click', function () {
             var input = document.getElementById(btn.getAttribute('data-mg-scan-target') || '');
             if (!input) return;
+            var title = btn.getAttribute('data-mg-scan-title') || '';
+            var titleEl = document.getElementById('mgScanTitle');
+            if (title && titleEl) titleEl.textContent = title;
             openScanner(input, false);
         });
     });
@@ -1805,28 +1852,28 @@ function initArticleScanner() {
     var root = document.getElementById('pkListApp');
     if (!root) return;
     var input = document.getElementById('pkListSearch');
-    var ops = root.querySelectorAll('.pk-op');
-    function filter() {
-        var q = (input && input.value || '').trim().toLowerCase().replace(/^#/, '');
-        ops.forEach(function (el) {
-            var hay = ((el.getAttribute('data-broj') || '') + ' ' + (el.getAttribute('data-name') || '')).toLowerCase();
-            el.classList.toggle('is-hidden', !!q && hay.indexOf(q) === -1);
-        });
+    var scanBtn = document.getElementById('pkOrderScan');
+    var scanUrl = (input && input.getAttribute('data-scan-url')) || '';
+
+    function openFromScan(raw) {
+        var q = (raw || '').trim();
+        if (!q || !scanUrl) return false;
+        window.location.href = scanUrl + '?q=' + encodeURIComponent(q);
+        return true;
     }
     if (input) {
-        input.addEventListener('input', filter);
+        input.addEventListener('mg-scanned', function (event) {
+            openFromScan((event.detail && event.detail.code) || input.value);
+        });
         input.addEventListener('keydown', function (event) {
             if (event.key !== 'Enter') return;
             event.preventDefault();
-            var q = (input.value || '').trim().toLowerCase().replace(/^#/, '');
-            var match = null;
-            ops.forEach(function (el) {
-                if (match) return;
-                var broj = (el.getAttribute('data-broj') || '').toLowerCase();
-                if (q && broj === q) match = el;
-            });
-            if (match) window.location.href = match.getAttribute('href');
+            openFromScan(input.value);
         });
+        input.focus();
+    }
+    if (scanBtn && scanBtn.getAttribute('data-mg-scan-auto') === '1') {
+        window.setTimeout(function () { scanBtn.click(); }, 180);
     }
 })();
 

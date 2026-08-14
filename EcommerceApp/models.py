@@ -3935,6 +3935,11 @@ class Order(models.Model):
         return self.Status(self.status).label
 
     @property
+    def barkod(self):
+        """Code128 vrijednost za picking skener — jedinstvena po broju naloga."""
+        return f'OZB{self.broj}'
+
+    @property
     def pick_shortages(self):
         rows = []
         for item in self.stavke.all():

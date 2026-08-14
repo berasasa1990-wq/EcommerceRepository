@@ -1,18 +1,28 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pk-app" id="pkCheckApp">
+<div class="pk-app{% if next_pick %} pk-check-popup{% endif %}" id="pkCheckApp">
     <header class="pk-bar">
-        <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
+        <a class="pk-bar-back" href="{% if next_print %}{% url 'staff_magacin_narudzbe' %}{% else %}{% url 'staff_magacin_pakuj' %}{% endif %}">←</a>
         <div class="pk-bar-title">
-            <strong>Provjera MP</strong>
-            <span>{% if groups %}{{ groups|length }} artikl{{ groups|length|pluralize:"a,a" }} bez zalihe{% else %}Nema stavki za provjeru{% endif %}</span>
+            <strong>{% if focus_broj %}Provjera #{{ focus_broj }}{% else %}Provjera MP{% endif %}</strong>
+            <span>
+                {% if focus_order %}{{ focus_order.ime_prezime }} · {% endif %}
+                {% if groups %}{{ groups|length }} artikl{{ groups|length|pluralize:"a,a" }} bez zalihe{% else %}Nema stavki za provjeru{% endif %}
+            </span>
         </div>
     </header>
 
+    {% if next_pick %}
+    <div class="pk-popup-scrim" aria-hidden="true"></div>
+    <div class="pk-popup" role="dialog" aria-modal="true" aria-labelledby="pkPopupTitle">
+        <h2 id="pkPopupTitle">Prvo Provjera MP</h2>
+        <p class="pk-popup-lead">Artikal nije na stanju u magacinu. Provjeri u maloprodaji prije pakovanja.</p>
+    {% endif %}
+
     <div class="pk-ops">
         {% for group in groups %}
-        <article class="pk-check-card">
+        <article class="pk-check-card{% if forloop.first %} is-focus{% endif %}">
             <div class="pk-check-head">
                 {% if group.slika %}
                 <div class="pk-img" style="background-image:url('{{ group.slika }}')"></div>
@@ -35,6 +45,9 @@
             <form method="post" class="pk-check-actions">
                 {% csrf_token %}
                 <input type="hidden" name="group" value="{{ group.key }}">
+                {% if focus_broj %}<input type="hidden" name="narudzba" value="{{ focus_broj }}">{% endif %}
+                {% if next_print %}<input type="hidden" name="next" value="stampa">{% endif %}
+                {% if next_pick %}<input type="hidden" name="next" value="pick">{% endif %}
                 <button type="submit" name="action" value="ima" class="pk-all">Ima u MP</button>
                 <button type="submit" name="action" value="nema" class="pk-less">Nema</button>
             </form>
@@ -43,5 +56,8 @@
         <p class="pk-empty">Nema artikala za provjeru u MP.</p>
         {% endfor %}
     </div>
+    {% if next_pick %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

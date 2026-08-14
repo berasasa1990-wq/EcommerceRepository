@@ -1,45 +1,20 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pk-app" id="pkListApp">
+<div class="pk-app pk-scan-only" id="pkListApp">
     <header class="pk-bar">
         <a class="pk-bar-back" href="{% url 'staff_magacin_narudzbe' %}">←</a>
         <div class="pk-bar-title">
             <strong>Picking</strong>
-            <span>{{ orders|length }} otvorenih</span>
+            <span>Skeniraj narudžbu</span>
         </div>
-        <a class="pk-check-btn{% if mp_count %} is-blink{% endif %}" href="{% url 'staff_magacin_pakuj_provjera' %}">
-            Provjera{% if mp_count %} <i>{{ mp_count }}</i>{% endif %}
-        </a>
     </header>
-    <div class="pk-search">
-        <input type="search" id="pkListSearch" placeholder="Skeniraj ili ukucaj broj / kupca" autocomplete="off" autofocus>
-    </div>
-    <div class="pk-ops">
-        {% for order in orders %}
-        {% if order.needs_mp_check %}
-        <a class="pk-op is-locked" href="{% url 'staff_magacin_pakuj_provjera' %}" data-broj="{{ order.broj }}" data-name="{{ order.ime_prezime }}" data-locked="1">
-            <span class="pk-op-n">{{ forloop.counter }}</span>
-            <span class="pk-op-body">
-                <span class="pk-op-broj">#{{ order.broj }}</span>
-                <span class="pk-op-name">{{ order.ime_prezime }}</span>
-                <span class="pk-op-lock">Prvo Provjera MP — Ima / Nema</span>
-            </span>
-            <span class="pk-op-meta">MP</span>
-        </a>
-        {% else %}
-        <a class="pk-op" href="{% url 'staff_magacin_pakuj_detail' order.broj %}" data-broj="{{ order.broj }}" data-name="{{ order.ime_prezime }}">
-            <span class="pk-op-n">{{ forloop.counter }}</span>
-            <span class="pk-op-body">
-                <span class="pk-op-broj">#{{ order.broj }}</span>
-                <span class="pk-op-name">{{ order.ime_prezime }}</span>
-            </span>
-            <span class="pk-op-meta">{{ order.stavki }}</span>
-        </a>
-        {% endif %}
-        {% empty %}
-        <p class="pk-empty">Nema novih naloga za picking.</p>
-        {% endfor %}
+    <div class="pk-scan-home">
+        <input type="text" id="pkListSearch" class="pk-scan-hidden" inputmode="none" autocomplete="off" autofocus data-scan-url="{% url 'staff_magacin_pakuj_sken' %}" aria-label="Barkod narudžbe">
+        <button type="button" class="pk-cam pk-cam-xl" id="pkOrderScan" data-mg-scan-target="pkListSearch" data-mg-scan-title="Skeniraj narudžbu" data-mg-scan-auto="1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+            Skeniraj narudžbu
+        </button>
     </div>
 </div>
 {% endblock %}

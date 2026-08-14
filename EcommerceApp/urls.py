@@ -158,6 +158,7 @@ urlpatterns = [
     path('nalog/magacin/narudzbe/', views_magacin.magacin_narudzbe, name='staff_magacin_narudzbe'),
     path('nalog/magacin/narudzbe/nova/', views_magacin.magacin_narudzba_nova, name='staff_magacin_narudzba_nova'),
     path('nalog/magacin/kupci/lookup/', views_magacin.magacin_kupci_lookup, name='staff_magacin_kupci_lookup'),
+    path('nalog/magacin/kupci/sacuvaj/', views_magacin.magacin_kupci_save, name='staff_magacin_kupci_save'),
     path('nalog/magacin/narudzbe/stampa/', views_magacin.magacin_narudzbe_stampa, name='staff_magacin_narudzbe_stampa'),
     path('nalog/magacin/narudzbe/validiraj/', views_magacin.magacin_narudzbe_validiraj, name='staff_magacin_narudzbe_validiraj'),
     path(
@@ -168,6 +169,12 @@ urlpatterns = [
     path('nalog/magacin/pakovanje/', views_magacin.magacin_pakovanje, name='staff_magacin_pakovanje'),
     path('nalog/magacin/pakuj/', views_magacin.magacin_pakuj, name='staff_magacin_pakuj'),
     path('nalog/magacin/pakuj/provjera/', views_magacin.magacin_pakuj_provjera, name='staff_magacin_pakuj_provjera'),
+    path('nalog/magacin/pakuj/sken/', views_magacin.magacin_pakuj_sken, name='staff_magacin_pakuj_sken'),
+    path(
+        'nalog/magacin/narudzbe/<str:broj>/barkod.png',
+        views_magacin.magacin_narudzba_barkod,
+        name='staff_magacin_narudzba_barkod',
+    ),
     path('nalog/magacin/pakuj/<str:broj>/', views_magacin.magacin_pakuj_detail, name='staff_magacin_pakuj_detail'),
     path('nalog/magacin/uvoz/', views_magacin.magacin_uvoz, name='staff_magacin_uvoz'),
     path('nalog/magacin/uvoz/novi/', views_magacin.magacin_uvoz_novi, name='staff_magacin_uvoz_novi'),

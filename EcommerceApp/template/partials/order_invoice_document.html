@@ -12,6 +12,10 @@
                 <p class="doc-title">Narudžba br. {{ order.broj }}</p>
                 <p>Datum narudžbe: {{ datum_kratko }} {{ vrijeme }}</p>
                 <p>Datum isporuke: {{ datum_kratko }}</p>
+                <div class="doc-order-barcode">
+                    <img src="{% url 'staff_magacin_narudzba_barkod' order.broj %}" alt="{{ order.barkod }}" width="180" height="48">
+                    <span>{{ order.barkod }}</span>
+                </div>
             </td>
         </tr>
     </table>

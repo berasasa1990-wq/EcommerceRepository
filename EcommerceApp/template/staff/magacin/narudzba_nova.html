@@ -20,7 +20,7 @@
     </div>
 </div>
 
-<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
+<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
         <h2 class="mg-h">Kupac</h2>
