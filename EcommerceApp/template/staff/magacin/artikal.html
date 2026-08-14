@@ -64,21 +64,11 @@
 </section>
 
 <div class="mg-artikal-main">
-<div class="mg-grid-2">
     <section class="mg-card mg-artikal-price-history">
         <div class="mg-card-head">
             <h2 class="mg-h">Promjene cijena i marže (uvoz)</h2>
         </div>
         {% if price_history %}
-        {% if price_chart.has_compare %}
-        <p class="mg-muted mg-price-chart-hint">Iznad nule rast, ispod nule pad — u odnosu na prethodni uvoz.</p>
-        <div class="mg-chart-wrap mg-price-chart-wrap">
-            <canvas id="mgPriceChart"></canvas>
-        </div>
-        {{ price_chart|json_script:"mgPriceChartData" }}
-        {% else %}
-        <p class="mg-muted">Treba još jedan uvoz da se vidi rast ili pad cijene i marže.</p>
-        {% endif %}
         <div class="mg-table-wrap">
             <table class="mg-table">
                 <thead>
@@ -176,7 +166,6 @@
             {% endif %}
         </table>
     </section>
-</div>
 
 <div class="mg-grid-3">
     <section class="mg-card mg-artikal-prices">
@@ -335,93 +324,4 @@
         </form>
     </div>
 </div>
-{% endblock %}
-
-{% block magacin_js %}
-{% if price_chart.has_compare %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script>
-(function () {
-    var node = document.getElementById('mgPriceChartData');
-    var canvas = document.getElementById('mgPriceChart');
-    if (!node || !canvas || !window.Chart) return;
-    var data;
-    try { data = JSON.parse(node.textContent || '{}'); } catch (e) { return; }
-    var narrow = window.matchMedia('(max-width: 640px)').matches;
-    function signedColor(up, down) {
-        return function (ctx) {
-            var v = ctx.parsed && ctx.parsed.y;
-            if (v == null) return '#d1d5db';
-            if (v > 0) return up;
-            if (v < 0) return down;
-            return '#d1d5db';
-        };
-    }
-    new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: data.labels || [],
-            datasets: [
-                {
-                    label: 'Mpc rast/pad (KM)',
-                    data: data.mpc || [],
-                    backgroundColor: signedColor('rgba(61, 143, 4, 0.85)', 'rgba(185, 28, 28, 0.8)'),
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Vpc rast/pad (KM)',
-                    data: data.vpc || [],
-                    backgroundColor: signedColor('rgba(17, 17, 17, 0.8)', 'rgba(75, 85, 99, 0.75)'),
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Nabavna rast/pad (KM)',
-                    data: data.nabavna || [],
-                    backgroundColor: signedColor('rgba(217, 119, 6, 0.85)', 'rgba(180, 83, 9, 0.75)'),
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Marža rast/pad (bod)',
-                    data: data.marza || [],
-                    backgroundColor: signedColor('rgba(124, 58, 237, 0.85)', 'rgba(91, 33, 182, 0.75)'),
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-                tooltip: {
-                    callbacks: {
-                        label: function (ctx) {
-                            var v = ctx.parsed.y;
-                            if (v == null) return ctx.dataset.label + ': —';
-                            var sign = v > 0 ? '+' : '';
-                            var unit = ctx.dataset.yAxisID === 'y1' ? ' bod' : ' KM';
-                            return ctx.dataset.label + ': ' + sign + v + unit;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    position: 'left',
-                    title: { display: !narrow, text: 'Razlika KM' },
-                    grace: '8%'
-                },
-                y1: {
-                    position: 'right',
-                    title: { display: !narrow, text: 'Razlika marže' },
-                    grace: '8%',
-                    grid: { drawOnChartArea: false }
-                }
-            }
-        }
-    });
-})();
-</script>
-{% endif %}
 {% endblock %}

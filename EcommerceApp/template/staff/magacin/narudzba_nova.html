@@ -67,6 +67,7 @@
             <h2 class="mg-h">Dodato na narudžbu</h2>
             <span class="mg-muted" id="mgOrderAddedCount">0 stavki</span>
         </div>
+        <div class="mg-table-wrap">
         <table class="mg-table mg-order-lines">
             <thead>
                 <tr>
@@ -100,6 +101,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         <p id="mgOrderEmpty" class="mg-empty"{% if form_lines %} hidden{% endif %}>Još nema stavki. Pretraži artikal iznad.</p>
         <div class="mg-order-total">
             <span class="mg-order-ship" id="mgOrderShip">Dostava 11 KM</span>

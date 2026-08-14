@@ -1243,41 +1243,50 @@ table.mg-table {
     max-width: 220px;
 }
 .mg-order-page.is-ready .mg-order-build {
-    display: grid;
+    display: flex;
+}
+.mg-order-page.is-ready {
+    max-width: none;
+    width: 100%;
 }
 .mg-order-build {
-    display: grid;
-    grid-template-columns: minmax(0, 1.75fr) minmax(300px, .85fr);
-    gap: 18px;
-    margin-top: 8px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 4px;
+    width: 100%;
+    min-width: 0;
 }
 #mgOrderCatalogCard {
     min-width: 0;
+    width: 100%;
     overflow: hidden;
 }
 #mgOrderCatalogCard #mgOrderSearch {
     width: 100%;
-    min-height: 40px;
+    min-height: 44px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 10px 12px;
     font: inherit;
     box-sizing: border-box;
 }
 .mg-order-added {
-    position: sticky;
-    top: 12px;
+    position: static;
     min-width: 0;
+    width: 100%;
+}
+.mg-order-added .mg-table-wrap,
+.mg-order-added .mg-table {
+    width: 100%;
 }
 .mg-catalog {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
-    max-height: min(68vh, 760px);
-    overflow: auto;
+    max-height: none;
+    overflow: visible;
     min-width: 0;
-    padding-right: 2px;
 }
 .mg-catalog-item {
     border: 1px solid var(--mg-line);
@@ -1417,6 +1426,7 @@ table.mg-table {
     .mg-hero-aside { grid-column: 1 / -1; min-width: 0; }
     .mg-grid-3 { grid-template-columns: 1fr; }
     .mg-stats-row { grid-template-columns: 1fr 1fr; }
+    .mg-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 860px) {
@@ -1712,7 +1722,7 @@ table.mg-table {
     .mg-artikal-history { order: 4; }
     .mg-artikal-variants { order: 5; }
     .mg-order-build {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
     .mg-order-customer {
         max-width: none;
