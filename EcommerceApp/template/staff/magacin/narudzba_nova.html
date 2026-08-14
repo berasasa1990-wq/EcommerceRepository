@@ -1,72 +1,72 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
+<div class="mg-order-page is-pick-customer" id="mgOrderPage">
 <div class="mg-toolbar">
     <div>
         <h1>Nova ručna narudžba</h1>
-        <p class="mg-count">Narudžba koja nije kreirana preko webshopa. Zaliha se skida s magacinskih lokacija.</p>
+        <p class="mg-count" id="mgOrderIntro">Prvo odaberi ili dodaj kupca. Poslije ide unos artikala.</p>
     </div>
-    <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}">← Nazad na narudžbe</a>
+    <div class="mg-toolbar-actions">
+        <div id="mgCustomerLocked" class="mg-customer-chip" hidden>
+            <div>
+                <span class="mg-locked-kicker">Kupac</span>
+                <strong id="mgCustomerLockedName"></strong>
+                <p class="mg-muted" id="mgCustomerLockedMeta"></p>
+            </div>
+            <button type="button" class="mg-btn" id="mgCustomerChange">Promijeni</button>
+        </div>
+        <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}">← Nazad na narudžbe</a>
+    </div>
 </div>
 
-<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
+<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
-    <div class="mg-grid-2">
-        <section class="mg-card">
-            <h2 class="mg-h">Kupac</h2>
-            <div class="mg-form-grid">
-                <div class="mg-field">
-                    <label for="id_ime_prezime">Ime i prezime *</label>
-                    <input id="id_ime_prezime" name="ime_prezime" required maxlength="200" value="{{ form.ime_prezime|default:'' }}">
-                </div>
-                <div class="mg-field">
-                    <label for="id_telefon">Telefon *</label>
-                    <input id="id_telefon" name="telefon" required maxlength="30" value="{{ form.telefon|default:'' }}">
-                </div>
-                <div class="mg-field">
-                    <label for="id_email">Email</label>
-                    <input id="id_email" name="email" type="email" maxlength="254" value="{{ form.email|default:'' }}" placeholder="nije obavezno">
-                </div>
-                <div class="mg-field">
-                    <label for="id_grad">Grad</label>
-                    <input id="id_grad" name="grad" maxlength="100" value="{{ form.grad|default:'' }}">
-                </div>
-                <div class="mg-field" style="grid-column:1 / -1;">
-                    <label for="id_adresa">Adresa</label>
-                    <input id="id_adresa" name="adresa" maxlength="300" value="{{ form.adresa|default:'' }}">
-                </div>
-                <div class="mg-field">
-                    <label for="id_postanski_broj">Poštanski broj</label>
-                    <input id="id_postanski_broj" name="postanski_broj" maxlength="20" value="{{ form.postanski_broj|default:'' }}">
-                </div>
-                <div class="mg-field" style="grid-column:1 / -1;">
-                    <label for="id_napomena">Napomena</label>
-                    <textarea id="id_napomena" name="napomena" maxlength="2000">{{ form.napomena|default:'' }}</textarea>
-                </div>
-            </div>
-        </section>
+    <section class="mg-card mg-order-customer" id="mgCustomerCard">
+        <h2 class="mg-h">Kupac</h2>
+        <p class="mg-muted">Pretraži postojećeg ili dodaj novog. Kad ga sačuvaš, otvara se katalog.</p>
+        <div class="mg-field mg-loc-search" id="mgCustomerSearchWrap">
+            <label for="mgCustomerSearch">Ime ili telefon</label>
+            <input id="mgCustomerSearch" type="search" placeholder="Ukucaj ime ili telefon…" autocomplete="off" value="{{ form.ime_prezime|default:'' }}">
+            <ul id="mgCustomerSuggest" class="mg-loc-suggest" hidden></ul>
+            <button type="button" class="mg-btn mg-btn-primary" id="mgCustomerAdd" style="margin-top:10px;">Dodaj kupca</button>
+        </div>
+        <input type="hidden" name="customer_id" id="id_customer_id" value="{{ form.customer_id|default:'' }}">
+        <input type="hidden" name="ime_prezime" id="id_ime_prezime" value="{{ form.ime_prezime|default:'' }}">
+        <input type="hidden" name="telefon" id="id_telefon" value="{{ form.telefon|default:'' }}">
+        <input type="hidden" name="grad" id="id_grad" value="{{ form.grad|default:'' }}">
+        <input type="hidden" name="adresa" id="id_adresa" value="{{ form.adresa|default:'' }}">
+        <input type="hidden" name="postanski_broj" id="id_postanski_broj" value="{{ form.postanski_broj|default:'' }}">
+        <input type="hidden" name="email" id="id_email" value="{{ form.email|default:'' }}">
+        <div class="mg-field" id="mgOrderNoteWrap" hidden style="margin-top:12px;">
+            <label for="id_napomena">Napomena</label>
+            <textarea id="id_napomena" name="napomena" maxlength="2000">{{ form.napomena|default:'' }}</textarea>
+        </div>
+    </section>
 
-        <section class="mg-card">
-            <h2 class="mg-h">Artikli</h2>
-            <div class="mg-field mg-loc-search">
-                <label for="mgOrderSearch">Dodaj artikal</label>
-                <div class="mg-add-row">
-                    <input id="mgOrderSearch" type="search" placeholder="Naziv, šifra ili barkod… Tab = prvi iz liste" autocomplete="off">
-                    <input id="mgOrderQty" class="mg-qty-input" type="number" min="1" step="1" inputmode="numeric" placeholder="Kol." hidden aria-label="Količina">
-                </div>
-                <label class="mg-zero-check" style="margin-top:8px;">
-                    <input type="checkbox" id="mgOrderIncludeZero" value="1">
-                    Prikaži i bez zalihe
-                </label>
-                <p id="mgOrderPickLabel" class="mg-pick-label" hidden></p>
-                <p id="mgOrderQtyHint" class="mg-qty-hint" hidden></p>
-                <ul id="mgOrderSuggest" class="mg-loc-suggest" hidden></ul>
-            </div>
-            <p class="mg-muted" style="margin:8px 0 0;">Tab odabere prvi prijedlog, unesi količinu, pa Tab ubaci artikal i krene novi unos.</p>
-        </section>
-    </div>
+    <div class="mg-order-build" id="mgOrderBuild" hidden>
+    <section class="mg-card" id="mgOrderCatalogCard">
+        <h2 class="mg-h">Katalog</h2>
+        <div class="mg-field">
+            <label for="mgOrderSearch">Pretraga</label>
+            <input id="mgOrderSearch" type="search" placeholder="Riječ, naziv, šifra ili barkod…" autocomplete="off">
+            <input id="mgOrderQty" class="mg-qty-input" type="number" min="1" step="1" inputmode="numeric" placeholder="Kol." hidden aria-label="Količina">
+            <label class="mg-zero-check" style="margin-top:8px;">
+                <input type="checkbox" id="mgOrderOnlyInStock" value="1">
+                Samo na stanju
+            </label>
+            <p id="mgOrderPickLabel" class="mg-pick-label" hidden></p>
+            <p id="mgOrderQtyHint" class="mg-qty-hint" hidden></p>
+        </div>
+        <p class="mg-muted" id="mgOrderCatalogMeta" style="margin:10px 0 8px;">Ukucaj riječ da izlista katalog.</p>
+        <div class="mg-catalog" id="mgOrderCatalog"></div>
+    </section>
 
-    <section class="mg-card" style="margin-top:14px;">
+    <section class="mg-card mg-order-added">
+        <div class="mg-card-head">
+            <h2 class="mg-h">Dodato na narudžbu</h2>
+            <span class="mg-muted" id="mgOrderAddedCount">0 stavki</span>
+        </div>
         <table class="mg-table mg-order-lines">
             <thead>
                 <tr>
@@ -91,7 +91,7 @@
                         <input type="hidden" name="mp_ok" value="{% if line.mp_ok %}1{% else %}0{% endif %}">
                     </td>
                     <td>{{ line.variation.sifra|default:line.product.sifra|default:"—" }}</td>
-                    <td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="{{ line.qty }}" required></td>
+                    <td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="{{ line.qty }}" data-prev="{{ line.qty }}" required></td>
                     <td class="num">{{ line.cijena }} KM</td>
                     <td class="num {% if line.dostupno <= 0 %}num-out{% else %}num-ok{% endif %}">{{ line.dostupno }}</td>
                     <td class="num" data-line-total>{{ line.cijena }} KM</td>
@@ -107,22 +107,53 @@
         </div>
         <button type="submit" class="mg-btn mg-btn-primary">Kreiraj narudžbu</button>
     </section>
+    </div>
 </form>
+</div>
+
+<div class="mg-modal" id="mgCustomerModal" hidden>
+    <div class="mg-modal-bg" data-customer-close></div>
+    <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mgCustomerModalTitle">
+        <h2 id="mgCustomerModalTitle">Dodaj kupca</h2>
+        <div class="mg-form-grid" style="grid-template-columns:1fr;">
+            <div class="mg-field">
+                <label for="mgNewIme">Ime i prezime *</label>
+                <input id="mgNewIme" maxlength="200">
+            </div>
+            <div class="mg-field">
+                <label for="mgNewTelefon">Telefon *</label>
+                <input id="mgNewTelefon" maxlength="30">
+            </div>
+            <div class="mg-field">
+                <label for="mgNewAdresa">Adresa</label>
+                <input id="mgNewAdresa" maxlength="300">
+            </div>
+            <div class="mg-field">
+                <label for="mgNewGrad">Grad</label>
+                <input id="mgNewGrad" maxlength="100">
+            </div>
+        </div>
+        <p class="mg-qty-hint is-warn" id="mgCustomerModalHint" hidden></p>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-customer-close>Odustani</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="mgCustomerSave">Sačuvaj kupca</button>
+        </div>
+    </div>
+</div>
 
 <div class="mg-modal" id="mgMpModal" hidden>
     <div class="mg-modal-bg" data-mp-skip></div>
     <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mgMpTitle">
-        <h2 id="mgMpTitle">Nema zalihe u magacinu</h2>
+        <h2 id="mgMpTitle">Provjeri u maloprodaji</h2>
         <p id="mgMpText" class="mg-mp-lead">
-            Artikal nije na stanju u magacinu. Pogledaj u <strong>maloprodaji</strong> ima li ga.
-            Ako ima — klikni <strong>Dodaj</strong>. Ako nema — klikni <strong>Nemoj</strong>.
+            Artikal nije na stanju u magacinu. Provjeri u <strong>maloprodaji</strong> ima li ga.
         </p>
         <p class="mg-muted">
             <strong>Dodaj</strong> = imaš ga u maloprodaji, stavi na narudžbu.
-            <strong>Nemoj</strong> = nema ga, ne dodaji stavku.
+            <strong>Izbaci</strong> = nema ga, ne dodaji / skini sa narudžbe.
         </p>
         <div class="mg-modal-actions">
-            <button type="button" class="mg-btn" id="mgMpSkip">Nemoj</button>
+            <button type="button" class="mg-btn mg-btn-danger" id="mgMpSkip">Izbaci</button>
             <button type="button" class="mg-btn mg-btn-primary" id="mgMpAdd">Dodaj</button>
         </div>
     </div>

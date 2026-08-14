@@ -63,60 +63,74 @@
     </div>
 </section>
 
+<div class="mg-artikal-main">
 <div class="mg-grid-2">
-    <section class="mg-card">
+    <section class="mg-card mg-artikal-price-history">
         <div class="mg-card-head">
-            <h2 class="mg-h">Osnovne informacije</h2>
+            <h2 class="mg-h">Promjene cijena i marže (uvoz)</h2>
         </div>
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="meta">
-            {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
-            <dl class="mg-kv">
-                <div class="mg-kv-row">
-                    <dt>Težina</dt>
-                    <dd>
-                        <input name="tezina" value="{{ meta.tezina|default:'' }}" placeholder="—" style="width:100%;border:0;padding:0;font:inherit;background:transparent;">
-                    </dd>
-                </div>
-                <div class="mg-kv-row">
-                    <dt>Opis</dt>
-                    <dd>{% if product.opis %}{{ product.opis|truncatechars:220 }}{% else %}<span class="mg-muted">—</span>{% endif %}</dd>
-                </div>
-                <div class="mg-kv-row">
-                    <dt>Tags</dt>
-                    <dd>
-                        {% if tags %}
-                            {% for tag in tags %}{{ tag.naziv }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                        {% else %}
-                            <span class="mg-muted">—</span>
-                        {% endif %}
-                    </dd>
-                </div>
-                <div class="mg-kv-row">
-                    <dt>Dobavljač</dt>
-                    <dd>
-                        <select name="dobavljac_id" style="width:100%;border:0;padding:0;font:inherit;background:transparent;">
-                            <option value="">—</option>
-                            {% for d in dobavljaci %}
-                            <option value="{{ d.pk }}"{% if meta.dobavljac_id == d.pk %} selected{% endif %}>{{ d.naziv }}</option>
-                            {% endfor %}
-                        </select>
-                    </dd>
-                </div>
-                <div class="mg-kv-row">
-                    <dt>Min. zaliha</dt>
-                    <dd>
-                        <input name="min_zaliha" value="{{ meta.min_zaliha|default:0 }}" inputmode="numeric" style="width:80px;border:0;padding:0;font:inherit;background:transparent;">
-                        <input type="hidden" name="jedinica_mjere" value="{{ meta.jedinica_mjere|default:'kom' }}">
-                    </dd>
-                </div>
-            </dl>
-            <button type="submit" class="mg-btn" style="margin-top:8px;">Sačuvaj info</button>
-        </form>
+        {% if price_history %}
+        {% if price_chart.has_compare %}
+        <p class="mg-muted mg-price-chart-hint">Iznad nule rast, ispod nule pad — u odnosu na prethodni uvoz.</p>
+        <div class="mg-chart-wrap mg-price-chart-wrap">
+            <canvas id="mgPriceChart"></canvas>
+        </div>
+        {{ price_chart|json_script:"mgPriceChartData" }}
+        {% else %}
+        <p class="mg-muted">Treba još jedan uvoz da se vidi rast ili pad cijene i marže.</p>
+        {% endif %}
+        <div class="mg-table-wrap">
+            <table class="mg-table">
+                <thead>
+                    <tr>
+                        <th>DATUM</th>
+                        <th>UVOZ</th>
+                        <th class="num">NABAVNA</th>
+                        <th class="num">VPC</th>
+                        <th class="num">MPC</th>
+                        <th class="num">MARŽA</th>
+                        <th>PROMJENA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in price_history %}
+                    <tr>
+                        <td>{{ row.uvoz.kreiran|date:"d.m.Y" }}</td>
+                        <td>
+                            {% if row.uvoz.izvor == 'magacin' %}
+                            <a href="{% url 'staff_magacin_uvoz_detail' row.uvoz.pk %}">{{ row.uvoz.naziv }}</a>
+                            {% else %}
+                            {{ row.uvoz.naziv }}
+                            {% endif %}
+                        </td>
+                        <td class="num">{% if row.nabavna %}{{ row.nabavna }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{% if row.vpc %}{{ row.vpc }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{% if row.mpc %}{{ row.mpc }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{% if row.marza is not None %}{{ row.marza }}%{% else %}—{% endif %}</td>
+                        <td>
+                            {% if row.is_first %}
+                            <span class="mg-muted">Prvi uvoz</span>
+                            {% elif row.changes %}
+                            <ul class="mg-price-changes">
+                                {% for ch in row.changes %}
+                                <li class="is-{{ ch.direction }}"><strong>{{ ch.label }}:</strong> {{ ch.from }} → {{ ch.to }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span class="mg-muted">Bez izmjene</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="mg-muted">Još nema uvoza za ovaj artikal — cijene i marže će se pojaviti ovdje.</p>
+        {% endif %}
     </section>
 
-    <section class="mg-card">
+    <section class="mg-card mg-artikal-stock">
         <div class="mg-card-head">
             <h2 class="mg-h">Zalihe po lokacijama</h2>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -165,7 +179,7 @@
 </div>
 
 <div class="mg-grid-3">
-    <section class="mg-card">
+    <section class="mg-card mg-artikal-prices">
         <h2 class="mg-h">Cijene</h2>
         <table class="mg-table">
             <thead>
@@ -205,7 +219,7 @@
         </form>
     </section>
 
-    <section class="mg-card">
+    <section class="mg-card mg-artikal-history">
         <h2 class="mg-h">Istorija kretanja (zadnjih 10)</h2>
         <table class="mg-table">
             <thead>
@@ -239,7 +253,7 @@
         <a class="mg-link" href="{% url 'staff_magacin_istorija' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}">Pogledaj kompletnu istoriju →</a>
     </section>
 
-    <section class="mg-card">
+    <section class="mg-card mg-artikal-variants">
         <h2 class="mg-h">Varijacije</h2>
         <table class="mg-table">
             <thead>
@@ -272,6 +286,7 @@
         <a class="mg-link" href="{% url 'staff_magacin_artikal' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Prikaži zbir svih varijacija</a>
         {% endif %}
     </section>
+</div>
 </div>
 
 <div class="mg-modal" id="mgMoveModal" hidden>
@@ -320,4 +335,93 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block magacin_js %}
+{% if price_chart.has_compare %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    var node = document.getElementById('mgPriceChartData');
+    var canvas = document.getElementById('mgPriceChart');
+    if (!node || !canvas || !window.Chart) return;
+    var data;
+    try { data = JSON.parse(node.textContent || '{}'); } catch (e) { return; }
+    var narrow = window.matchMedia('(max-width: 640px)').matches;
+    function signedColor(up, down) {
+        return function (ctx) {
+            var v = ctx.parsed && ctx.parsed.y;
+            if (v == null) return '#d1d5db';
+            if (v > 0) return up;
+            if (v < 0) return down;
+            return '#d1d5db';
+        };
+    }
+    new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: data.labels || [],
+            datasets: [
+                {
+                    label: 'Mpc rast/pad (KM)',
+                    data: data.mpc || [],
+                    backgroundColor: signedColor('rgba(61, 143, 4, 0.85)', 'rgba(185, 28, 28, 0.8)'),
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Vpc rast/pad (KM)',
+                    data: data.vpc || [],
+                    backgroundColor: signedColor('rgba(17, 17, 17, 0.8)', 'rgba(75, 85, 99, 0.75)'),
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Nabavna rast/pad (KM)',
+                    data: data.nabavna || [],
+                    backgroundColor: signedColor('rgba(217, 119, 6, 0.85)', 'rgba(180, 83, 9, 0.75)'),
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Marža rast/pad (bod)',
+                    data: data.marza || [],
+                    backgroundColor: signedColor('rgba(124, 58, 237, 0.85)', 'rgba(91, 33, 182, 0.75)'),
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            var v = ctx.parsed.y;
+                            if (v == null) return ctx.dataset.label + ': —';
+                            var sign = v > 0 ? '+' : '';
+                            var unit = ctx.dataset.yAxisID === 'y1' ? ' bod' : ' KM';
+                            return ctx.dataset.label + ': ' + sign + v + unit;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    position: 'left',
+                    title: { display: !narrow, text: 'Razlika KM' },
+                    grace: '8%'
+                },
+                y1: {
+                    position: 'right',
+                    title: { display: !narrow, text: 'Razlika marže' },
+                    grace: '8%',
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

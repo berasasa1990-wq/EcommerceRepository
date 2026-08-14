@@ -45,6 +45,7 @@
         });
     }
 
+    initCustomerPicker();
     initManualOrderForm();
     initOrderBulkPrint();
     initTransferPage();
@@ -179,6 +180,229 @@
     }
 })();
 
+function initCustomerPicker() {
+    var search = document.getElementById('mgCustomerSearch');
+    var list = document.getElementById('mgCustomerSuggest');
+    var addBtn = document.getElementById('mgCustomerAdd');
+    var locked = document.getElementById('mgCustomerLocked');
+    var wrap = document.getElementById('mgCustomerSearchWrap');
+    var nameEl = document.getElementById('mgCustomerLockedName');
+    var metaEl = document.getElementById('mgCustomerLockedMeta');
+    var changeBtn = document.getElementById('mgCustomerChange');
+    var noteWrap = document.getElementById('mgOrderNoteWrap');
+    var idInput = document.getElementById('id_customer_id');
+    var imeInput = document.getElementById('id_ime_prezime');
+    var telInput = document.getElementById('id_telefon');
+    var gradInput = document.getElementById('id_grad');
+    var adresaInput = document.getElementById('id_adresa');
+    var emailInput = document.getElementById('id_email');
+    var postInput = document.getElementById('id_postanski_broj');
+    var modal = document.getElementById('mgCustomerModal');
+    var newIme = document.getElementById('mgNewIme');
+    var newTel = document.getElementById('mgNewTelefon');
+    var newAdresa = document.getElementById('mgNewAdresa');
+    var newGrad = document.getElementById('mgNewGrad');
+    var modalHint = document.getElementById('mgCustomerModalHint');
+    var saveBtn = document.getElementById('mgCustomerSave');
+    var form = document.getElementById('mgOrderForm');
+    var page = document.getElementById('mgOrderPage');
+    var customerCard = document.getElementById('mgCustomerCard');
+    var orderBuild = document.getElementById('mgOrderBuild');
+    var intro = document.getElementById('mgOrderIntro');
+    if (!search || !form) return;
+    var lookupUrl = form.getAttribute('data-customer-lookup') || '';
+    var timer = null;
+    var lastResults = [];
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+    function showHint(text) {
+        if (!modalHint) return;
+        modalHint.hidden = !text;
+        modalHint.textContent = text || '';
+    }
+    function openAddModal() {
+        var ime = (search.value || '').trim();
+        if (!ime) {
+            search.focus();
+            return;
+        }
+        if (newIme) newIme.value = ime;
+        if (newTel) newTel.value = '';
+        if (newAdresa) newAdresa.value = '';
+        if (newGrad) newGrad.value = '';
+        showHint('');
+        if (list) list.hidden = true;
+        if (modal) modal.hidden = false;
+        if (newTel) newTel.focus();
+    }
+    function closeAddModal() {
+        if (modal) modal.hidden = true;
+        showHint('');
+    }
+    function lockCustomer(data) {
+        var ime = (data.ime_prezime || '').trim();
+        if (!ime) {
+            search.focus();
+            return;
+        }
+        if (imeInput) imeInput.value = ime;
+        if (idInput) idInput.value = data.id || '';
+        if (telInput) telInput.value = data.telefon || '';
+        if (gradInput) gradInput.value = data.grad || '';
+        if (adresaInput) adresaInput.value = data.adresa || '';
+        if (emailInput) emailInput.value = data.email || '';
+        if (postInput) postInput.value = data.postanski_broj || '';
+        if (nameEl) nameEl.textContent = ime;
+        if (metaEl) {
+            var bits = [data.telefon, data.grad, data.adresa].filter(Boolean);
+            metaEl.textContent = bits.join(' · ');
+        }
+        if (wrap) wrap.hidden = true;
+        if (locked) locked.hidden = false;
+        if (noteWrap) noteWrap.hidden = true;
+        if (list) list.hidden = true;
+        if (customerCard) customerCard.hidden = true;
+        if (orderBuild) orderBuild.hidden = false;
+        if (page) {
+            page.classList.remove('is-pick-customer');
+            page.classList.add('is-ready');
+        }
+        if (intro) intro.textContent = 'Dodaj artikle iz kataloga. Kupca mijenjaš gore desno.';
+        closeAddModal();
+        var articleSearch = document.getElementById('mgOrderSearch');
+        if (articleSearch) window.setTimeout(function () { articleSearch.focus(); }, 40);
+    }
+    function unlockCustomer() {
+        if (wrap) wrap.hidden = false;
+        if (locked) locked.hidden = true;
+        if (noteWrap) noteWrap.hidden = true;
+        if (customerCard) customerCard.hidden = false;
+        if (orderBuild) orderBuild.hidden = true;
+        if (page) {
+            page.classList.add('is-pick-customer');
+            page.classList.remove('is-ready');
+        }
+        if (intro) intro.textContent = 'Prvo odaberi ili dodaj kupca. Poslije ide unos artikala.';
+        if (idInput) idInput.value = '';
+        if (search) {
+            search.value = (imeInput && imeInput.value) || search.value || '';
+            search.focus();
+        }
+    }
+    function renderList(rows) {
+        lastResults = rows || [];
+        if (!list) return;
+        list.innerHTML = '';
+        if (!lastResults.length) {
+            list.innerHTML = '<li class="is-empty">Nema sačuvanog kupca. Klikni Dodaj kupca.</li>';
+            list.hidden = false;
+            return;
+        }
+        lastResults.forEach(function (row) {
+            var li = document.createElement('li');
+            li.innerHTML = '<strong>' + escapeHtml(row.ime_prezime) + '</strong><span>' +
+                escapeHtml([row.telefon, row.grad].filter(Boolean).join(' · ')) + '</span>';
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                lockCustomer(row);
+            });
+            list.appendChild(li);
+        });
+        list.hidden = false;
+    }
+    function searchCustomers(query) {
+        var q = (query || '').trim();
+        if (!q) {
+            if (list) list.hidden = true;
+            lastResults = [];
+            return;
+        }
+        fetch(lookupUrl + '?q=' + encodeURIComponent(q), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) { renderList(data.results || []); })
+            .catch(function () {
+                if (list) {
+                    list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
+                    list.hidden = false;
+                }
+            });
+    }
+
+    search.addEventListener('input', function () {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(function () { searchCustomers(search.value); }, 160);
+    });
+    search.addEventListener('focus', function () {
+        if ((search.value || '').trim() && lastResults.length) renderList(lastResults);
+        else if ((search.value || '').trim()) searchCustomers(search.value);
+    });
+    if (addBtn) addBtn.addEventListener('click', openAddModal);
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function () {
+            var ime = (newIme && newIme.value || '').trim();
+            var tel = (newTel && newTel.value || '').trim();
+            if (!ime) {
+                showHint('Unesi ime i prezime.');
+                if (newIme) newIme.focus();
+                return;
+            }
+            if (!tel) {
+                showHint('Unesi telefon.');
+                if (newTel) newTel.focus();
+                return;
+            }
+            lockCustomer({
+                ime_prezime: ime,
+                telefon: tel,
+                adresa: newAdresa ? newAdresa.value.trim() : '',
+                grad: newGrad ? newGrad.value.trim() : '',
+            });
+        });
+    }
+    if (modal) {
+        modal.querySelectorAll('[data-customer-close]').forEach(function (el) {
+            el.addEventListener('click', closeAddModal);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal && !modal.hidden) closeAddModal();
+        });
+    }
+    if (changeBtn) changeBtn.addEventListener('click', unlockCustomer);
+    document.addEventListener('click', function (event) {
+        if (wrap && !wrap.contains(event.target) && list) list.hidden = true;
+    });
+    form.addEventListener('submit', function (event) {
+        if (locked && locked.hidden) {
+            event.preventDefault();
+            if (search) search.focus();
+            return;
+        }
+        if (imeInput && !imeInput.value.trim()) {
+            event.preventDefault();
+            if (search) search.focus();
+        }
+    });
+    if ((imeInput && imeInput.value) && (telInput && telInput.value)) {
+        lockCustomer({
+            id: idInput ? idInput.value : '',
+            ime_prezime: imeInput.value,
+            telefon: telInput.value,
+            grad: gradInput ? gradInput.value : '',
+            adresa: adresaInput ? adresaInput.value : '',
+            email: emailInput ? emailInput.value : '',
+            postanski_broj: postInput ? postInput.value : '',
+        });
+    }
+}
+
 function initManualOrderForm() {
     var form = document.getElementById('mgOrderForm');
     if (!form) return;
@@ -187,7 +411,10 @@ function initManualOrderForm() {
     var qtyInput = document.getElementById('mgOrderQty');
     var pickLabel = document.getElementById('mgOrderPickLabel');
     var qtyHint = document.getElementById('mgOrderQtyHint');
-    var list = document.getElementById('mgOrderSuggest');
+    var list = null;
+    var catalog = document.getElementById('mgOrderCatalog');
+    var catalogMeta = document.getElementById('mgOrderCatalogMeta');
+    var addedCount = document.getElementById('mgOrderAddedCount');
     var body = document.getElementById('mgOrderLines');
     var empty = document.getElementById('mgOrderEmpty');
     var totalEl = document.getElementById('mgOrderTotal');
@@ -234,6 +461,11 @@ function initManualOrderForm() {
         }
         if (totalEl) totalEl.textContent = money(sum + ship) + ' KM';
         if (empty) empty.hidden = lineCount() > 0;
+        if (addedCount) {
+            var n = lineCount();
+            addedCount.textContent = n === 1 ? '1 stavka' : (n + ' stavki');
+        }
+        refreshCatalogBadges();
     }
     function availableOf(item, variation) {
         if (variation) return Number(variation.na_stanju) || 0;
@@ -279,6 +511,27 @@ function initManualOrderForm() {
             search.focus();
         }
     }
+    function askMp(opts) {
+        pending = opts || null;
+        if (!pending) return;
+        var name = pending.name || pickName(pending.item, pending.variation);
+        var available = pending.available;
+        if (mpText) {
+            mpText.innerHTML =
+                '„' + escapeHtml(name) + '” nije na stanju u magacinu' +
+                (available != null ? ' (' + available + ' kom).' : '.') +
+                ' Provjeri u <strong>maloprodaji</strong> ima li ga.';
+        }
+        if (mpModal) mpModal.hidden = false;
+    }
+    function hideMp() {
+        pending = null;
+        if (mpModal) mpModal.hidden = true;
+    }
+    function rowIsMp(row) {
+        var mp = row && row.querySelector('[name="mp_ok"]');
+        return !!(mp && mp.value === '1');
+    }
     function addLine(item, variation, mpOk, qty) {
         qty = parseInt(qty, 10) || 1;
         if (qty < 1) qty = 1;
@@ -288,6 +541,7 @@ function initManualOrderForm() {
         if (existing) {
             var existingQty = existing.querySelector('[name="kolicina"]');
             existingQty.value = (parseInt(existingQty.value, 10) || 0) + qty;
+            existingQty.setAttribute('data-prev', existingQty.value);
             if (mpOk) {
                 existing.querySelector('[name="mp_ok"]').value = '1';
                 if (!existing.querySelector('.mg-pill.is-manual')) {
@@ -322,13 +576,114 @@ function initManualOrderForm() {
             '<input type="hidden" name="mp_ok" value="' + (mpOk ? '1' : '0') + '">' +
             '</td>' +
             '<td>' + escapeHtml(sifra) + '</td>' +
-            '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" required></td>' +
+            '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" data-prev="' + qty + '" required></td>' +
             '<td class="num">' + escapeHtml(cijena) + ' KM</td>' +
             '<td class="num ' + (available <= 0 ? 'num-out' : 'num-ok') + '">' + available + '</td>' +
             '<td class="num" data-line-total>' + money(cijena * qty) + ' KM</td>' +
             '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
         body.appendChild(tr);
         refreshTotal();
+    }
+    function addedQty(pid, vid) {
+        var row = findRow(String(pid), vid ? String(vid) : '');
+        if (!row) return 0;
+        return parseInt(row.querySelector('[name="kolicina"]').value, 10) || 0;
+    }
+    function bumpLine(item, variation, delta) {
+        var existing = findRow(String(item.id), variation ? String(variation.id) : '');
+        var available = existing
+            ? (parseInt(existing.getAttribute('data-available'), 10) || 0)
+            : availableOf(item, variation);
+        var current = existing
+            ? (parseInt(existing.querySelector('[name="kolicina"]').value, 10) || 0)
+            : 0;
+        var next = current + delta;
+        if (delta > 0 && next > available && !(existing && rowIsMp(existing))) {
+            askMp({
+                type: 'add',
+                item: item,
+                variation: variation,
+                qty: delta,
+                available: available,
+                name: pickName(item, variation),
+            });
+            return;
+        }
+        if (!existing) {
+            if (delta > 0) addLine(item, variation, false, delta);
+            return;
+        }
+        var input = existing.querySelector('[name="kolicina"]');
+        if (next <= 0) {
+            existing.remove();
+            refreshTotal();
+            return;
+        }
+        input.value = next;
+        input.setAttribute('data-prev', String(next));
+        refreshTotal();
+    }
+    function refreshCatalogBadges() {
+        if (!catalog) return;
+        catalog.querySelectorAll('[data-cat-pid]').forEach(function (card) {
+            var qty = addedQty(card.getAttribute('data-cat-pid'), card.getAttribute('data-cat-vid'));
+            var qtyEl = card.querySelector('[data-cat-qty]');
+            if (qtyEl) qtyEl.textContent = String(qty);
+            card.classList.toggle('is-added', qty > 0);
+        });
+    }
+    function catalogCard(item, variation) {
+        var available = availableOf(item, variation);
+        var qty = addedQty(item.id, variation && variation.id);
+        var card = document.createElement('div');
+        card.className = 'mg-catalog-item' + (available <= 0 ? ' is-out' : '') + (qty > 0 ? ' is-added' : '');
+        card.setAttribute('data-cat-pid', String(item.id));
+        card.setAttribute('data-cat-vid', variation ? String(variation.id) : '');
+        card.innerHTML =
+            '<strong>' + escapeHtml(item.naziv) + '</strong>' +
+            (variation ? '<span class="sub">' + escapeHtml(variation.naziv) + '</span>' : '') +
+            '<div class="mg-catalog-meta">' +
+            escapeHtml((variation && variation.sifra) || item.sifra || 'bez šifre') +
+            ' · ' + stockHtml(available) +
+            ' · ' + escapeHtml(variation ? variation.cijena : item.cijena) + ' KM</div>' +
+            '<div class="mg-catalog-qty">' +
+            '<button type="button" class="mg-btn" data-cat-minus aria-label="Smanji">−</button>' +
+            '<em data-cat-qty>' + qty + '</em>' +
+            '<button type="button" class="mg-btn mg-btn-primary" data-cat-plus aria-label="Dodaj">+</button>' +
+            '</div>';
+        card.querySelector('[data-cat-plus]').addEventListener('click', function () {
+            bumpLine(item, variation, 1);
+        });
+        card.querySelector('[data-cat-minus]').addEventListener('click', function () {
+            bumpLine(item, variation, -1);
+        });
+        return card;
+    }
+    function renderCatalog(results) {
+        if (!catalog) return;
+        catalog.innerHTML = '';
+        var rows = results || [];
+        var shown = 0;
+        rows.forEach(function (item) {
+            var vars = item.varijacije || [];
+            if (vars.length) {
+                vars.forEach(function (variation) {
+                    catalog.appendChild(catalogCard(item, variation));
+                    shown += 1;
+                });
+            } else {
+                catalog.appendChild(catalogCard(item, null));
+                shown += 1;
+            }
+        });
+        if (catalogMeta) {
+            catalogMeta.textContent = shown
+                ? ('Prikazano ' + shown + ' artikl' + (shown === 1 ? '' : 'a') + '. Klikni +/− za količinu.')
+                : 'Nema artikala za tu riječ.';
+        }
+        if (!shown) {
+            catalog.innerHTML = '<p class="mg-muted">Nema artikala za tu riječ.</p>';
+        }
     }
     function askQty(item, variation) {
         pick = { item: item, variation: variation };
@@ -360,14 +715,21 @@ function initManualOrderForm() {
         var existing = findRow(String(pick.item.id), pick.variation ? String(pick.variation.id) : '');
         var already = existing ? (parseInt(existing.querySelector('[name="kolicina"]').value, 10) || 0) : 0;
         var over = already + qty > available;
-        addLine(pick.item, pick.variation, over, qty);
-        resetPicker(over);
-        if (over) {
-            showHint(
-                'Na stanju je ' + available + '. Pogledaj u maloprodaji ima li artikal.',
-                true
-            );
+        var existingMp = existing && rowIsMp(existing);
+        if (over && !existingMp) {
+            askMp({
+                type: 'add',
+                item: pick.item,
+                variation: pick.variation,
+                qty: qty,
+                available: available,
+                name: pickName(pick.item, pick.variation),
+            });
+            resetPicker(true);
+            return;
         }
+        addLine(pick.item, pick.variation, existingMp, qty);
+        resetPicker();
     }
     function firstSelectable() {
         if (!list || list.hidden) return null;
@@ -472,20 +834,24 @@ function initManualOrderForm() {
         if (q.length < 2) {
             if (list) list.hidden = true;
             lastResults = [];
+            if (catalog) catalog.innerHTML = '';
+            if (catalogMeta) catalogMeta.textContent = 'Ukucaj riječ da izlista artikle.';
             return;
         }
-        var includeZero = document.getElementById('mgOrderIncludeZero');
-        var zeroFlag = (includeZero && includeZero.checked) ? '1' : '0';
-        fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=' + zeroFlag, {
+        var onlyInStock = document.getElementById('mgOrderOnlyInStock');
+        var zeroFlag = (onlyInStock && onlyInStock.checked) ? '0' : '1';
+        fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=' + zeroFlag + '&limit=100', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
             .then(function (res) { return res.json(); })
-            .then(function (data) { renderResults(data.results || []); })
+            .then(function (data) {
+                var rows = data.results || [];
+                lastResults = rows;
+                renderCatalog(rows);
+            })
             .catch(function () {
-                if (list) {
-                    list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
-                    list.hidden = false;
-                }
+                if (catalog) catalog.innerHTML = '';
+                if (catalogMeta) catalogMeta.textContent = 'Pretraga nije uspjela.';
             });
     }
 
@@ -501,29 +867,13 @@ function initManualOrderForm() {
             window.clearTimeout(timer);
             timer = window.setTimeout(function () { searchProducts(search.value); }, 180);
         });
-        search.addEventListener('focus', function () {
-            if (!pick && (search.value || '').trim().length >= 2 && lastResults.length) {
-                renderResults(lastResults);
-            } else if (!pick && (search.value || '').trim().length >= 2) {
-                searchProducts(search.value);
-            }
-        });
         search.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape') {
-                if (list) list.hidden = true;
-                return;
-            }
-            if (event.key === 'Tab' || event.key === 'Enter') {
-                if (firstSelectable()) {
-                    event.preventDefault();
-                    selectFirstSuggestion();
-                }
-            }
+            if (event.key === 'Enter') event.preventDefault();
         });
     }
-    var includeZeroBox = document.getElementById('mgOrderIncludeZero');
-    if (includeZeroBox) {
-        includeZeroBox.addEventListener('change', function () {
+    var onlyInStockBox = document.getElementById('mgOrderOnlyInStock');
+    if (onlyInStockBox) {
+        onlyInStockBox.addEventListener('change', function () {
             if (search && (search.value || '').trim().length >= 2) searchProducts(search.value);
         });
     }
@@ -557,18 +907,26 @@ function initManualOrderForm() {
             var row = input.closest('tr');
             var qty = parseInt(input.value, 10) || 0;
             var available = parseInt(row.getAttribute('data-available'), 10) || 0;
-            var mp = row.querySelector('[name="mp_ok"]');
-            if (qty > available && mp) {
-                mp.value = '1';
-                showHint('Na stanju je ' + available + '. Pogledaj u maloprodaji ima li artikal.', true);
-                if (!row.querySelector('.mg-pill.is-manual')) {
-                    var nameCell = row.querySelector('td');
-                    var mark = document.createElement('span');
-                    mark.className = 'mg-pill is-manual';
-                    mark.textContent = 'Maloprodaja';
-                    if (nameCell) nameCell.appendChild(mark);
-                }
+            var prev = parseInt(input.getAttribute('data-prev') || '1', 10) || 1;
+            if (qty > available && !rowIsMp(row)) {
+                input.value = prev;
+                var nameEl = row.querySelector('strong');
+                askMp({
+                    type: 'qty',
+                    row: row,
+                    input: input,
+                    next: qty,
+                    prev: prev,
+                    available: available,
+                    name: nameEl ? nameEl.textContent : 'Artikal',
+                });
+                return;
             }
+            if (qty < 1) {
+                input.value = prev;
+                return;
+            }
+            input.setAttribute('data-prev', String(qty));
             refreshTotal();
         });
     }
@@ -586,31 +944,32 @@ function initManualOrderForm() {
     if (mpModal) {
         document.getElementById('mgMpAdd').addEventListener('click', function () {
             if (!pending) {
-                mpModal.hidden = true;
+                hideMp();
                 return;
             }
-            if (pending.type === 'qty' && pending.row) {
+            if (pending.type === 'add') {
+                addLine(pending.item, pending.variation, true, pending.qty || 1);
+            } else if (pending.type === 'qty' && pending.row && pending.input) {
+                pending.input.value = pending.next;
+                pending.input.setAttribute('data-prev', String(pending.next));
                 pending.row.querySelector('[name="mp_ok"]').value = '1';
-                var badge = pending.row.querySelector('.mg-pill');
-                if (!badge) {
+                if (!pending.row.querySelector('.mg-pill.is-manual')) {
                     var td = pending.row.querySelector('td');
                     var mark = document.createElement('span');
                     mark.className = 'mg-pill is-manual';
                     mark.textContent = 'Maloprodaja';
-                    td.appendChild(mark);
+                    if (td) td.appendChild(mark);
                 }
                 refreshTotal();
             }
-            pending = null;
-            mpModal.hidden = true;
+            hideMp();
         });
         function skipMp() {
             if (pending && pending.type === 'qty' && pending.input) {
                 pending.input.value = pending.prev || 1;
                 refreshTotal();
             }
-            pending = null;
-            mpModal.hidden = true;
+            hideMp();
         }
         document.getElementById('mgMpSkip').addEventListener('click', skipMp);
         mpModal.querySelectorAll('[data-mp-skip]').forEach(function (el) {
@@ -628,6 +987,8 @@ function initOrderBulkPrint() {
     if (!form) return;
     var selectAll = document.getElementById('mgSelectAll');
     var printBtn = document.getElementById('mgPrintSelected');
+    var validateBtn = document.getElementById('mgValidateSelected');
+    var validateForm = document.getElementById('mgValidateForm');
     var countEl = document.getElementById('mgSelectedCount');
     var checks = function () {
         return Array.prototype.slice.call(form.querySelectorAll('.mg-order-check'));
@@ -636,6 +997,7 @@ function initOrderBulkPrint() {
     function sync() {
         var selected = checks().filter(function (box) { return box.checked; });
         if (printBtn) printBtn.disabled = selected.length === 0;
+        if (validateBtn) validateBtn.disabled = selected.length === 0;
         if (countEl) countEl.textContent = selected.length + ' odabrano';
         if (selectAll) {
             var all = checks();
@@ -658,6 +1020,24 @@ function initOrderBulkPrint() {
             event.preventDefault();
         }
     });
+    if (validateBtn && validateForm) {
+        validateBtn.addEventListener('click', function () {
+            var selected = checks().filter(function (box) { return box.checked; });
+            if (!selected.length) return;
+            if (!window.confirm('Validirati ' + selected.length + ' označen' + (selected.length === 1 ? 'u narudžbu' : 'e narudžbe') + '?')) {
+                return;
+            }
+            validateForm.querySelectorAll('input[name="b"]').forEach(function (el) { el.remove(); });
+            selected.forEach(function (box) {
+                var hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'b';
+                hidden.value = box.value;
+                validateForm.appendChild(hidden);
+            });
+            validateForm.submit();
+        });
+    }
     form.querySelectorAll('[data-stop-row]').forEach(function (cell) {
         cell.addEventListener('click', function (event) { event.stopPropagation(); });
     });

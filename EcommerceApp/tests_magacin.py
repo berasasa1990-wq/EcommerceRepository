@@ -8,8 +8,10 @@ from django.utils import timezone
 from .magacin import (
     MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
+    NOVI_UVOZ_NAZIV,
     _apply_quant_batch,
     _odoo_id_to_local,
+    apply_magacin_uvoz,
     apply_movement,
     attach_site_odoo_products_to_magacin,
     cancel_order_stock,
@@ -28,6 +30,10 @@ from .models import (
     OrderItem,
     Product,
     ProductVariation,
+    ProductWarehouseMeta,
+    Uvoz,
+    UvozStavka,
+    WarehouseCustomer,
     WarehouseLocation,
     WarehouseMovement,
     WarehouseStock,
@@ -162,7 +168,7 @@ class MagacinStockTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
         self.assertEqual(order.status, Order.Status.ZAVRSENA)
-        self.assertEqual(order.get_status_label(), 'Validirana')
+        self.assertEqual(order.get_status_label(), 'Validatovana')
         self.assertEqual(self.product.stanje, 0)
         self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
 
@@ -506,6 +512,33 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(detail, 'class="mg-top"')
         self.assertContains(detail, 'Izmijeni artikal')
         self.assertContains(detail, reverse('staff_magacin_artikal_izmjena', args=[self.product.pk]))
+        self.assertContains(detail, 'Promjene cijena i marže')
+        self.assertNotContains(detail, 'Osnovne informacije')
+        self.assertNotContains(detail, 'Sačuvaj info')
+
+    def test_brzi_unos_same_as_admin_flow(self):
+        self.client.force_login(self.user)
+        nav = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertContains(nav, 'Brzi unos / Aktivacija')
+        self.assertContains(nav, reverse('staff_magacin_brzi_unos'))
+
+        page = self.client.get(reverse('staff_magacin_brzi_unos'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Skeniraj barkod kamerom')
+        self.assertContains(page, 'Šifra, barkod ili naziv')
+
+        found = self.client.get(reverse('staff_magacin_brzi_unos'), {'q': 'TST-1'})
+        self.assertRedirects(
+            found,
+            reverse('staff_magacin_brzi_unos_aktivacija', args=[self.product.pk]),
+        )
+        act = self.client.get(reverse('staff_magacin_brzi_unos_aktivacija', args=[self.product.pk]))
+        self.assertEqual(act.status_code, 200)
+        self.assertContains(act, 'Aktiviraj artikal')
+        self.assertContains(act, 'Skini sa stanja')
+        self.assertContains(act, 'Test braid')
+        self.assertContains(act, 'Google slike')
+        self.assertContains(act, 'Otvori u ChatGPT-u')
 
     def test_product_edit_updates_fields(self):
         self.client.force_login(self.user)
@@ -602,10 +635,12 @@ class MagacinViewTests(TestCase):
         self.client.force_login(self.user)
         for name in (
             'staff_magacin_pregled',
+            'staff_magacin_brzi_unos',
             'staff_magacin_lokacije',
             'staff_magacin_zalihe',
             'staff_magacin_transferi',
             'staff_magacin_dobavljaci',
+            'staff_magacin_uvoz',
             'staff_magacin_izvjestaji',
         ):
             response = self.client.get(reverse(name))
@@ -779,20 +814,52 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'Ažuriraj postojeću')
         self.assertContains(page, 'Izmjena lokacije')
 
+    def test_location_click_lists_articles(self):
+        self.client.force_login(self.user)
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        other = WarehouseLocation.objects.create(sifra='Z-9', naziv='Zadnja polica')
+        empty = self.client.get(reverse('staff_magacin_lokacije'))
+        self.assertContains(empty, 'Ukucaj šifru ili naziv')
+        self.assertNotContains(empty, 'Zadnja polica')
+        found = self.client.get(reverse('staff_magacin_lokacije'), {'pretraga': 'T-1'})
+        self.assertContains(found, 'T-1')
+        self.assertNotContains(found, 'Zadnja polica')
+        page = self.client.get(reverse('staff_magacin_lokacije'), {'lokacija': loc.pk})
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Artikli u')
+        self.assertContains(page, 'Test braid')
+        self.assertContains(page, '8')
+        self.assertEqual(other.sifra, 'Z-9')
+
     def test_narudzbe_has_manual_entry(self):
         self.client.force_login(self.user)
         listed = self.client.get(reverse('staff_magacin_narudzbe'))
         self.assertEqual(listed.status_code, 200)
         self.assertContains(listed, 'Nova ručna narudžba')
-        self.assertContains(listed, 'Pokaži validirane')
+        self.assertContains(listed, 'Pokaži validatovane')
         self.assertContains(listed, reverse('staff_magacin_narudzba_nova'))
         self.assertContains(listed, reverse('staff_magacin_narudzbe_stampa'))
+        self.assertContains(listed, 'Validiraj odabrane')
+        self.assertContains(listed, reverse('staff_magacin_narudzbe_validiraj'))
         self.assertNotContains(listed, 'mg-nav-count')
         form = self.client.get(reverse('staff_magacin_narudzba_nova'))
         self.assertEqual(form.status_code, 200)
         self.assertContains(form, 'Nova ručna narudžba')
-        self.assertContains(form, 'Dodaj artikal')
+        self.assertContains(form, 'id="mgOrderSearch"')
+        self.assertContains(form, 'id="mgOrderCatalog"')
+        self.assertContains(form, 'Dodato na narudžbu')
+        self.assertContains(form, 'id="mgCustomerSearch"')
+        self.assertContains(form, 'Dodaj kupca')
+        self.assertContains(form, 'id="mgCustomerModal"')
+        self.assertContains(form, reverse('staff_magacin_kupci_lookup'))
+        self.assertNotContains(form, 'id="mgOrderSuggest"')
         self.assertContains(form, reverse('staff_magacin_artikli_lookup'))
+        self.assertContains(form, 'id="mgOrderOnlyInStock"')
+        self.assertContains(form, 'Samo na stanju')
+        self.assertContains(form, 'id="mgMpModal"')
+        self.assertContains(form, 'id="mgMpAdd"')
+        self.assertContains(form, 'Izbaci')
+        self.assertContains(form, 'Provjeri u maloprodaji')
 
     def test_lookup_returns_synced_and_zero_stock(self):
         self.client.force_login(self.user)
@@ -838,6 +905,12 @@ class MagacinViewTests(TestCase):
         self.assertEqual(self.product.stanje, 8)
         self.assertEqual(stock_totals(self.product)['rezervisano'], 3)
         self.assertEqual(stock_totals(self.product)['dostupno'], 5)
+        customer = WarehouseCustomer.objects.get(telefon='061111111')
+        self.assertEqual(customer.ime_prezime, 'Ana Ribić')
+        self.assertEqual(customer.grad, 'Sarajevo')
+        found = self.client.get(reverse('staff_magacin_kupci_lookup'), {'q': 'Ana'})
+        self.assertEqual(found.status_code, 200)
+        self.assertEqual(found.json()['results'][0]['ime_prezime'], 'Ana Ribić')
         self.assertIn('/nalog/magacin/narudzbe/', response['Location'])
         listed = self.client.get(reverse('staff_magacin_artikli'))
         self.assertContains(listed, 'mg-nav-count')
@@ -869,6 +942,10 @@ class MagacinViewTests(TestCase):
         order = Order.objects.get(izvor=Order.Izvor.MAGACIN)
         self.assertIn('Maloprodaja', order.napomena)
         self.assertEqual(order.stavke.get().artikal_id, self.zero.pk)
+        print_page = self.client.get(reverse('staff_magacin_narudzbe_stampa'), {'b': [order.broj]})
+        self.assertEqual(print_page.status_code, 200)
+        self.assertNotContains(print_page, 'id="mpCheckOverlay"')
+        self.assertContains(print_page, 'print-job')
 
     def test_order_detail_uses_magacin_look_and_back_link(self):
         self.client.force_login(self.user)
@@ -920,6 +997,9 @@ class MagacinViewTests(TestCase):
         self.assertContains(print_page, 'class="order-footer"')
         self.assertContains(print_page, 'invoice-warranty-note')
         self.assertContains(print_page, 'Ovaj papir je garantni list')
+        self.assertNotContains(print_page, 'invoice-stamp')
+        self.assertContains(print_page, 'Potpis prodavca')
+        self.assertContains(print_page, 'Saša B.')
         self.assertContains(print_page, 'class="pk-loc"')
         self.assertContains(print_page, 'T-1')
         self.assertIn('page-break-after: always', html)
@@ -943,7 +1023,7 @@ class MagacinViewTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
         self.assertEqual(order.status, Order.Status.ZAVRSENA)
-        self.assertEqual(order.get_status_label(), 'Validirana')
+        self.assertEqual(order.get_status_label(), 'Validatovana')
         self.product.refresh_from_db()
         self.assertEqual(stock_totals(self.product)['dostupno'], 7)
         self.assertEqual(self.product.stanje, 7)
@@ -952,14 +1032,46 @@ class MagacinViewTests(TestCase):
         self.assertNotIn(order.broj, listed)
         shown = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'})
         self.assertContains(shown, order.broj)
-        self.assertContains(shown, 'Validirane narudžbe')
+        self.assertContains(shown, 'Validatovane narudžbe')
         self.assertTrue(order.zapakovana)
         packing = self.client.get(reverse('staff_magacin_pakovanje'))
-        packing_ids = [row.broj for row in packing.context['orders']]
-        self.assertNotIn(order.broj, packing_ids)
-        packed = self.client.get(reverse('staff_magacin_pakovanje'), {'zapakovane': '1'})
-        self.assertContains(packed, order.broj)
-        self.assertContains(packed, 'Zapakovane narudžbe')
+        self.assertContains(packing, 'Pretraga narudžbi')
+        self.assertEqual(list(packing.context['orders']), [])
+        by_name = self.client.get(reverse('staff_magacin_pakovanje'), {'pretraga': order.ime_prezime})
+        self.assertContains(by_name, order.broj)
+        self.assertContains(by_name, 'Naručeno')
+        self.assertContains(by_name, 'class="packing-section"')
+        self.assertContains(by_name, 'class="pk-loc"')
+        self.assertContains(by_name, 'T-1')
+        by_phone = self.client.get(reverse('staff_magacin_pakovanje'), {'pretraga': order.telefon})
+        self.assertContains(by_phone, order.broj)
+
+    def test_bulk_validate_selected_orders(self):
+        self.client.force_login(self.user)
+        first = Order.objects.create(
+            ime_prezime='Ana Ribić', telefon='061111111', email='a@example.com',
+            adresa='A 1', grad='Sarajevo', ukupno=Decimal('10.00'),
+            izvor=Order.Izvor.MAGACIN,
+        )
+        reserve_for_order(first, self.product, 2)
+        second = Order.objects.create(
+            ime_prezime='Marko', telefon='062222222', email='m@example.com',
+            adresa='B 2', grad='Tuzla', ukupno=Decimal('8.00'),
+            izvor=Order.Izvor.WEBSHOP,
+        )
+        posted = self.client.post(reverse('staff_magacin_narudzbe_validiraj'), {
+            'b': [first.broj, second.broj],
+            'next': reverse('staff_magacin_narudzbe'),
+        })
+        self.assertEqual(posted.status_code, 302)
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(first.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(second.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(first.status, Order.Status.ZAVRSENA)
+        listed = [row.broj for row in self.client.get(reverse('staff_magacin_narudzbe')).context['orders']]
+        self.assertNotIn(first.broj, listed)
+        self.assertNotIn(second.broj, listed)
 
     def test_new_order_cannot_take_reserved_qty_without_mp(self):
         self.client.force_login(self.user)
@@ -1049,3 +1161,171 @@ class OdooCustomerAddressTests(TestCase):
         self.assertEqual(second['street2'], '061111111')
         self.assertNotIn('phone', second)
         self.assertNotIn('mobile', second)
+
+
+class MagacinUvozTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+        self.existing = Product.objects.create(
+            naziv='Fox Edges Lead Clip',
+            sifra='FOX-UVOZ-1',
+            cijena=Decimal('4.50'),
+            stanje=3,
+            na_stanju=True,
+            magacin_sync_at=timezone.now(),
+        )
+        self.site_only = Product.objects.create(
+            naziv='Shimano Aero Reel',
+            sifra='WEB-UVOZ-1',
+            cijena=Decimal('80.00'),
+            stanje=0,
+            na_stanju=False,
+        )
+        self.a10 = WarehouseLocation.objects.create(
+            sifra='A-10', naziv='Glavni magacin', redoslijed=10,
+        )
+        apply_movement(product=self.existing, location=self.a10, tip='prijem', kolicina=3)
+
+    def test_updates_existing_price_and_adds_qty_to_novi_uvoz(self):
+        stats = apply_magacin_uvoz([{
+            'artikal': 'Fox Edges Lead Clip',
+            'kolicina': Decimal('10'),
+            'mpc_brutto': Decimal('6.90'),
+            'vpc_netto': Decimal('5.50'),
+        }])
+        self.existing.refresh_from_db()
+        self.assertEqual(stats['updated'], 1)
+        self.assertEqual(stats['created'], 0)
+        self.assertEqual(self.existing.cijena, Decimal('6.90'))
+        self.assertEqual(
+            ProductWarehouseMeta.objects.get(product=self.existing).veleprodajna_cijena,
+            Decimal('5.50'),
+        )
+        novi = WarehouseLocation.objects.get(naziv=NOVI_UVOZ_NAZIV)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.existing, location=novi).kolicina,
+            10,
+        )
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.existing, location=self.a10).kolicina,
+            3,
+        )
+        self.assertEqual(self.existing.stanje, 13)
+
+    def test_creates_missing_product_on_novi_uvoz(self):
+        stats = apply_magacin_uvoz([{
+            'artikal': 'Novi Pellet 4mm',
+            'kolicina': 8,
+            'mpc_brutto': Decimal('12.00'),
+            'vpc_netto': Decimal('9.00'),
+        }])
+        self.assertEqual(stats['created'], 1)
+        product = Product.objects.get(naziv='Novi Pellet 4mm')
+        self.assertIsNotNone(product.magacin_sync_at)
+        self.assertEqual(product.cijena, Decimal('12.00'))
+        novi = WarehouseLocation.objects.get(naziv=NOVI_UVOZ_NAZIV)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=product, location=novi).kolicina,
+            8,
+        )
+        self.assertEqual(product.stanje, 8)
+
+    def test_does_not_duplicate_site_product_by_name(self):
+        stats = apply_magacin_uvoz([{
+            'artikal': 'Shimano Aero Reel',
+            'kolicina': 2,
+            'mpc_brutto': Decimal('99.00'),
+        }])
+        self.assertEqual(stats['updated'], 1)
+        self.assertEqual(stats['created'], 0)
+        self.assertEqual(Product.objects.filter(naziv='Shimano Aero Reel').count(), 1)
+        self.site_only.refresh_from_db()
+        self.assertIsNotNone(self.site_only.magacin_sync_at)
+        self.assertEqual(self.site_only.cijena, Decimal('99.00'))
+        self.assertEqual(self.site_only.stanje, 2)
+
+    def test_page_and_excel_post(self):
+        from .uvoz_import import parse_uvoz_paste
+
+        rows = parse_uvoz_paste(
+            'Artikal\tKolicina\tFakturna\tNabavna\tVpc netto\tMpc brutto\tVpc marza\tUkupno Fakturna\n'
+            'Fox Edges Lead Clip\t4\t3\t3.2\t4.1\t7.5\t0.2\t12\n'
+            'Excel Novi Artikal\t5\t2\t2.5\t3\t8\t0.3\t10\n'
+        )
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]['artikal'], 'Fox Edges Lead Clip')
+        self.assertEqual(rows[0]['mpc_brutto'], Decimal('7.50'))
+
+        self.client.force_login(self.user)
+        page = self.client.get(reverse('staff_magacin_uvoz'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Novi uvoz')
+        self.assertContains(page, reverse('staff_magacin_uvoz_novi'))
+
+        form = self.client.get(reverse('staff_magacin_uvoz_novi'))
+        self.assertEqual(form.status_code, 200)
+        self.assertContains(form, 'Artikal')
+        self.assertContains(form, 'Kolicina')
+        self.assertContains(form, 'Fakturna')
+        self.assertContains(form, 'Nabavna')
+        self.assertContains(form, 'Vpc netto')
+        self.assertContains(form, 'Mpc brutto')
+        self.assertContains(form, 'Vpc marza')
+        self.assertContains(form, 'Ukupno Fakturna')
+
+        paste = (
+            'Artikal\tKolicina\tFakturna\tNabavna\tVpc netto\tMpc brutto\tVpc marza\tUkupno Fakturna\n'
+            'Fox Edges Lead Clip\t4\t3\t3.2\t4.1\t7.5\t0.2\t12\n'
+            'Excel Novi Artikal\t5\t2\t2.5\t3\t8\t0.3\t10\n'
+        )
+        response = self.client.post(
+            reverse('staff_magacin_uvoz_novi'),
+            {'naziv': 'Uvoz test 13.08', 'paste_text': paste},
+        )
+        self.assertEqual(response.status_code, 302)
+        uvoz = Uvoz.objects.get(izvor=Uvoz.Izvor.MAGACIN, naziv='Uvoz test 13.08')
+        self.assertRedirects(response, reverse('staff_magacin_uvoz_detail', args=[uvoz.pk]))
+        self.existing.refresh_from_db()
+        self.assertEqual(self.existing.cijena, Decimal('7.50'))
+        created = Product.objects.get(naziv='Excel Novi Artikal')
+        self.assertEqual(created.cijena, Decimal('8.00'))
+        novi = WarehouseLocation.objects.get(naziv=NOVI_UVOZ_NAZIV)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.existing, location=novi).kolicina,
+            4,
+        )
+        self.assertEqual(
+            WarehouseStock.objects.get(product=created, location=novi).kolicina,
+            5,
+        )
+        detail = self.client.get(reverse('staff_magacin_uvoz_detail', args=[uvoz.pk]))
+        self.assertContains(detail, 'Excel Novi Artikal')
+        self.assertContains(detail, 'Fox Edges Lead Clip')
+        self.assertContains(detail, '7.50')
+        self.assertEqual(uvoz.stavke.count(), 2)
+        clip = uvoz.stavke.get(artikal_naziv='Fox Edges Lead Clip')
+        self.assertEqual(clip.status, UvozStavka.Status.UPDATED)
+        self.assertEqual(clip.fakturna, Decimal('3.0000'))
+        self.assertEqual(clip.vpc_netto, Decimal('4.10'))
+
+        listing = self.client.get(reverse('staff_magacin_uvoz'))
+        self.assertContains(listing, 'Uvoz test 13.08')
+
+        later = (
+            'Artikal\tKolicina\tFakturna\tNabavna\tVpc netto\tMpc brutto\tVpc marza\tUkupno Fakturna\n'
+            'Fox Edges Lead Clip\t2\t3\t2.8\t3.9\t6.5\t0.15\t6\n'
+        )
+        self.client.post(
+            reverse('staff_magacin_uvoz_novi'),
+            {'naziv': 'Uvoz test 14.08', 'paste_text': later},
+        )
+
+        article = self.client.get(reverse('staff_magacin_artikal', args=[self.existing.pk]))
+        self.assertContains(article, 'Promjene cijena i marže')
+        self.assertContains(article, 'Uvoz test 13.08')
+        self.assertContains(article, 'id="mgPriceChart"')
+        self.assertContains(article, 'Iznad nule rast, ispod nule pad')
+        self.assertContains(article, 'Mpc pad')
+        self.assertContains(article, 'Nabavna')
+        self.assertNotContains(article, 'Osnovne informacije')
+        self.assertNotContains(article, 'Sačuvaj info')

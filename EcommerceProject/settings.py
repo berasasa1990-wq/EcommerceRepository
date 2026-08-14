@@ -172,9 +172,19 @@ CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
 if 'https://*.onrender.com' not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
 
-# Behind Render/Cloudflare HTTPS proxy Django must trust X-Forwarded-Proto (also with DEBUG=True).
-if RENDER_EXTERNAL_HOSTNAME or _env('RENDER', ''):
+# Behind Render/Cloudflare HTTPS proxy Django must trust X-Forwarded-Proto.
+# Without this, request.is_secure() is False, Secure cookies se ne šalju nazad
+# i korisnik se na sljedećem kliku opet vidi kao odjavljen.
+if (not DEBUG) or RENDER_EXTERNAL_HOSTNAME or _env('RENDER', ''):
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Production security settings
 if not DEBUG:
@@ -187,6 +197,13 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
+    # Isti login na opremazaribolov.ba i www.opremazaribolov.ba
+    _cookie_domain = _env('SESSION_COOKIE_DOMAIN', '')
+    if not _cookie_domain and _site_host and _site_host.endswith('opremazaribolov.ba'):
+        _cookie_domain = '.opremazaribolov.ba'
+    if _cookie_domain:
+        SESSION_COOKIE_DOMAIN = _cookie_domain
+        CSRF_COOKIE_DOMAIN = _cookie_domain
 
 
 # Application definition

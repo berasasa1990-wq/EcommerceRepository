@@ -4540,6 +4540,7 @@ def login_view(request):
                 form.add_error(None, 'Turnstile provjera nije uspjela. Molimo pokušajte ponovo.')
             else:
                 login(request, form.user)
+                request.session.modified = True
                 Order.objects.filter(
                     email__iexact=form.user.email,
                     korisnik__isnull=True,
@@ -5484,7 +5485,7 @@ def _uvoz_search_articles(query: str) -> list[dict]:
         return []
 
     stavke = list(
-        UvozStavka.objects.filter(artikal_naziv__icontains=q)
+        UvozStavka.objects.filter(artikal_naziv__icontains=q, uvoz__izvor='sajt')
         .select_related('uvoz', 'product')
         .order_by('artikal_naziv', 'uvoz__kreiran', 'id')
     )
@@ -5643,7 +5644,8 @@ def staff_uvoz(request):
                 messages.error(request, f'Uvoz nije uspio: {exc}')
 
     uvozi = (
-        Uvoz.objects.select_related('kreirao')
+        Uvoz.objects.filter(izvor=Uvoz.Izvor.SAJT)
+        .select_related('kreirao')
         .annotate(stavke_n=Count('stavke'))
         .order_by('-kreiran')[:100]
     )
@@ -5665,7 +5667,11 @@ def staff_uvoz_detail(request, pk):
     from .models import Uvoz, UvozStavka
     from .uvoz_import import parse_money, parse_qty, reapply_stavka
 
-    uvoz = get_object_or_404(Uvoz.objects.select_related('kreirao'), pk=pk)
+    uvoz = get_object_or_404(
+        Uvoz.objects.select_related('kreirao'),
+        pk=pk,
+        izvor=Uvoz.Izvor.SAJT,
+    )
     stavke = list(uvoz.stavke.select_related('product').all())
 
     if request.method == 'POST':

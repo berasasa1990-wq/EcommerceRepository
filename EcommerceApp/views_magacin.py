@@ -1,6 +1,7 @@
 """Staff Magacin — lager artikala po lokacijama."""
 
 import json
+import logging
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
@@ -21,6 +22,7 @@ from .magacin import (
     MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
     apply_movement,
+    create_magacin_uvoz_from_rows,
     reserve_for_order,
     is_ignored_stock_location,
     last_sync,
@@ -31,6 +33,7 @@ from .magacin import (
     usable_locations,
     cancel_sync,
     run_sync_chunk,
+    validate_order_stock,
     search_products,
     seed_default_locations,
     start_full_sync,
@@ -50,14 +53,19 @@ from .models import (
     SiteSettings,
     StaffSiteEvent,
     Tag,
+    Uvoz,
+    UvozStavka,
     WarehouseLocation,
     WarehouseMovement,
+    WarehouseCustomer,
     WarehouseStock,
     WarehouseSupplier,
     WarehouseSyncLog,
 )
 from .odoo_client import odoo_je_konfigurisan
 from .views import _base_context, _superuser_required
+
+logger = logging.getLogger(__name__)
 
 
 def _user_display(user):
@@ -172,6 +180,327 @@ def _parse_money(raw):
 @user_passes_test(_superuser_required)
 def magacin_home(request):
     return redirect('staff_magacin_artikli')
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_brzi_unos(request):
+    """Korak 1: sken / šifra / barkod / naziv → pronađi postojeći artikal."""
+    from .quick_activation import find_products, find_single_product, normalize_scan_code
+
+    query = normalize_scan_code(request.GET.get('q') or request.POST.get('q') or '')
+    matches = []
+    not_found = False
+
+    if request.method == 'POST' or query:
+        if not query:
+            messages.warning(request, 'Unesi šifru, barkod ili naziv — ili skeniraj barkod.')
+        else:
+            product, multi = find_single_product(query)
+            if product is not None:
+                return redirect('staff_magacin_brzi_unos_aktivacija', product_id=product.pk)
+            matches = multi if multi is not None else find_products(query)
+            if not matches:
+                not_found = True
+                messages.error(
+                    request,
+                    f'Nijedan artikal nije pronađen za „{query}”. '
+                    'Traži po šifri, barkodu ili nazivu (artikal mora već postojati).',
+                )
+            elif len(matches) == 1:
+                return redirect('staff_magacin_brzi_unos_aktivacija', product_id=matches[0].pk)
+
+    context = _magacin_context(request, section='brzi_unos', page_title='Brzi unos / Aktivacija — Magacin')
+    context.update({
+        'query': query,
+        'matches': matches,
+        'not_found': not_found,
+    })
+    return render(request, 'staff/magacin/brzi_unos.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_brzi_unos_aktivacija(request, product_id):
+    """Korak 2: cijena, brend, slika, AI opis → Aktiviraj artikal."""
+    from urllib.parse import quote_plus
+
+    from .quick_activation import (
+        activate_product,
+        category_choices,
+        parse_price,
+        resolve_tags,
+        take_off_stock,
+    )
+
+    product = (
+        Product.objects.select_related('brend', 'kategorija')
+        .prefetch_related('tagovi')
+        .filter(pk=product_id)
+        .first()
+    )
+    if product is None:
+        messages.error(request, 'Artikal nije pronađen.')
+        return redirect('staff_magacin_brzi_unos')
+
+    post_action = (request.POST.get('action') or '').strip() if request.method == 'POST' else ''
+    if request.method == 'POST' and post_action == 'off_stock':
+        try:
+            take_off_stock(product)
+            messages.success(
+                request,
+                f'✓ „{product.naziv}” — nije na stanju (sakriven od kupaca).',
+            )
+        except Exception as exc:
+            logger.exception(
+                'Magacin brzi unos: skidanje sa stanja nije uspjelo product_id=%s',
+                product_id,
+            )
+            messages.error(request, f'Skidanje sa stanja nije uspjelo: {exc}')
+        return redirect('staff_magacin_brzi_unos')
+
+    brands = Brand.objects.order_by('naziv')
+    categories = category_choices()
+    from django.conf import settings as django_settings
+
+    olx_configured = bool(getattr(django_settings, 'OLX_API_TOKEN', None))
+    form_errors = []
+    pack_n = product.pakovanje_komada or 0
+    form_data = {
+        'cijena': str(product.cijena) if product.cijena is not None else '',
+        'brend_id': str(product.brend_id or ''),
+        'kategorija_id': str(product.kategorija_id or ''),
+        'opis': (product.opis or '').strip(),
+        'tagovi': '',
+        'barkod': (product.barkod or '').strip(),
+        'je_pakovanje': '1' if pack_n and pack_n > 1 else '',
+        'pakovanje_komada': str(pack_n) if pack_n and pack_n > 1 else '',
+        'proizvedeno_u_japanu': '1' if product.proizvedeno_u_japanu else '',
+        'objavi_olx': '',
+    }
+
+    if request.method == 'POST' and post_action == 'activate':
+        form_data['cijena'] = (request.POST.get('cijena') or '').strip()
+        form_data['brend_id'] = (request.POST.get('brend_id') or '').strip()
+        form_data['kategorija_id'] = (request.POST.get('kategorija_id') or '').strip()
+        form_data['opis'] = (request.POST.get('opis') or '').strip()
+        form_data['tagovi'] = (request.POST.get('tagovi') or '').strip()
+        form_data['barkod'] = (request.POST.get('barkod') or '').strip()
+        form_data['je_pakovanje'] = (
+            '1'
+            if (request.POST.get('je_pakovanje') or '').strip()
+            in ('1', 'true', 'on', 'yes')
+            else ''
+        )
+        form_data['pakovanje_komada'] = (request.POST.get('pakovanje_komada') or '').strip()
+        form_data['proizvedeno_u_japanu'] = (
+            '1'
+            if (request.POST.get('proizvedeno_u_japanu') or '').strip()
+            in ('1', 'true', 'on', 'yes')
+            else ''
+        )
+        form_data['objavi_olx'] = (
+            '1'
+            if (request.POST.get('objavi_olx') or '').strip()
+            in ('1', 'true', 'on', 'yes')
+            else ''
+        )
+        image_upload = request.FILES.get('slika') or request.FILES.get('slika_kamera')
+        keep_image = request.POST.get('keep_existing_image') == '1'
+        extra_images = request.FILES.getlist('dodatne_slike')
+
+        brend = None
+        if form_data['brend_id']:
+            brend = brands.filter(pk=form_data['brend_id']).first()
+
+        kategorija = None
+        if form_data['kategorija_id']:
+            try:
+                kategorija = Category.objects.filter(
+                    pk=int(form_data['kategorija_id']),
+                    aktivan=True,
+                ).first()
+            except (TypeError, ValueError):
+                kategorija = None
+
+        try:
+            cijena = parse_price(form_data['cijena'])
+        except (InvalidOperation, ValueError):
+            form_errors.append('Unesi ispravnu cijenu (npr. 12.90).')
+            cijena = None
+
+        if form_data['brend_id']:
+            if brend is None:
+                form_errors.append('Odabrani brend ne postoji.')
+        else:
+            form_errors.append('Izaberi brend.')
+
+        if form_data['kategorija_id']:
+            if kategorija is None:
+                form_errors.append('Odabrana kategorija ne postoji.')
+        else:
+            form_errors.append('Izaberi kategoriju.')
+
+        if not image_upload and not (product.slika and product.slika.name):
+            form_errors.append('Dodaj sliku artikla (galerija ili kamera).')
+        elif not image_upload and product.slika and product.slika.name:
+            keep_image = True
+
+        pack_value = None
+        if form_data['je_pakovanje']:
+            raw_pack = form_data['pakovanje_komada']
+            try:
+                pack_value = int(raw_pack) if raw_pack else 0
+            except (TypeError, ValueError):
+                pack_value = 0
+                form_errors.append('Pakovanje: unesi cijeli broj komada (npr. 9).')
+            if pack_value and pack_value <= 1:
+                form_errors.append('Pakovanje: količina mora biti najmanje 2 komada.')
+                pack_value = None
+
+        if not form_errors and cijena is not None:
+            try:
+                tagovi = resolve_tags(form_data['tagovi'])
+                activate_product(
+                    product,
+                    cijena=cijena,
+                    brend=brend,
+                    kategorija=kategorija,
+                    image_upload=image_upload,
+                    keep_existing_image=keep_image and not image_upload,
+                    opis=form_data['opis'],
+                    tagovi=tagovi,
+                    barkod=form_data['barkod'],
+                    extra_images=extra_images,
+                    set_pakovanje=True,
+                    pakovanje_komada=pack_value if form_data['je_pakovanje'] else None,
+                    proizvedeno_u_japanu=bool(form_data['proizvedeno_u_japanu']),
+                )
+                tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
+                cat_note = f', {kategorija.naziv}' if kategorija else ''
+                extra_note = f', +{len(extra_images)} slika' if extra_images else ''
+                pack_note = ''
+                if form_data['je_pakovanje'] and pack_value and pack_value > 1:
+                    pack_note = f', pakovanje {pack_value} kom.'
+                japan_note = ', Made in Japan' if form_data['proizvedeno_u_japanu'] else ''
+                messages.success(
+                    request,
+                    f'✓ „{product.naziv}” je aktivan na webshopu '
+                    f'({cijena} KM'
+                    f'{f", {brend.naziv}" if brend else ""}'
+                    f'{cat_note}'
+                    f'{tag_note}'
+                    f'{extra_note}'
+                    f'{pack_note}'
+                    f'{japan_note}'
+                    f', na stanju).',
+                )
+
+                if form_data['objavi_olx']:
+                    if not olx_configured:
+                        messages.warning(
+                            request,
+                            'OLX nije konfigurisan (OLX_API_TOKEN) — artikal je aktivan, ali nije objavljen.',
+                        )
+                    else:
+                        try:
+                            from django.utils import timezone as dj_tz
+
+                            from .olx_api import OlxApiError, publish_product_to_olx
+
+                            olx_result = publish_product_to_olx(product)
+                            product.olx_listing_id = olx_result['id']
+                            product.olx_listing_slug = olx_result.get('slug', '') or ''
+                            product.olx_listing_url = olx_result.get('url', '') or ''
+                            product.olx_objavljen = dj_tz.now()
+                            product.save(
+                                update_fields=[
+                                    'olx_listing_id',
+                                    'olx_listing_slug',
+                                    'olx_listing_url',
+                                    'olx_objavljen',
+                                ]
+                            )
+                            olx_url = olx_result.get('url') or ''
+                            if olx_result.get('status') == 'active':
+                                messages.success(
+                                    request,
+                                    f'Objavljeno na OLX/Pik. {olx_url}'.strip(),
+                                )
+                            else:
+                                messages.warning(
+                                    request,
+                                    'OLX oglas poslan, ali nije aktivan — provjeri Neaktivne u Pik/OLX. '
+                                    f'{olx_url}'.strip(),
+                                )
+                        except OlxApiError as olx_exc:
+                            messages.error(
+                                request,
+                                f'Artikal je aktivan, ali OLX objava nije uspjela: {olx_exc}',
+                            )
+                            logger.warning('Magacin brzi unos OLX %s: %s', product.slug, olx_exc)
+                        except Exception as olx_exc:
+                            logger.exception(
+                                'Magacin brzi unos OLX neočekivano product_id=%s',
+                                product_id,
+                            )
+                            messages.error(
+                                request,
+                                f'Artikal je aktivan, ali OLX objava nije uspjela: {olx_exc}',
+                            )
+
+                return redirect('staff_magacin_brzi_unos')
+            except Exception as exc:
+                logger.exception(
+                    'Magacin brzi unos: aktivacija nije uspjela za product_id=%s',
+                    product_id,
+                )
+                form_errors.append(f'Aktivacija nije uspjela: {exc}')
+
+    product.refresh_from_db()
+    current_image_url = ''
+    if product.slika and product.slika.name:
+        try:
+            current_image_url = product.slika.url
+        except Exception:
+            current_image_url = ''
+
+    existing_extra = []
+    for img in product.dodatne_slike.all().order_by('redoslijed', 'id')[:12]:
+        try:
+            url = img.slika.url if img.slika else ''
+        except Exception:
+            url = ''
+        if url:
+            existing_extra.append({'id': img.pk, 'url': url})
+
+    google_query = (product.naziv or '').strip()
+    google_images_url = (
+        'https://www.google.com/search?tbm=isch&q=' + quote_plus(google_query)
+        if google_query else ''
+    )
+    chatgpt_url = ''
+    if google_query:
+        chatgpt_prompt = f'{google_query} veci opis za ovaj artikal i tagove'
+        chatgpt_url = 'https://chatgpt.com/?q=' + quote_plus(chatgpt_prompt)
+
+    context = _magacin_context(request, section='brzi_unos', page_title=f'Aktivacija: {product.naziv} — Magacin')
+    context.update({
+        'product': product,
+        'brands': brands,
+        'categories': categories,
+        'categories_json': categories,
+        'form_data': form_data,
+        'form_errors': form_errors,
+        'current_image_url': current_image_url,
+        'existing_extra_images': existing_extra,
+        'google_images_url': google_images_url,
+        'google_query': google_query,
+        'chatgpt_url': chatgpt_url,
+        'olx_configured': olx_configured,
+        'scan_url': reverse('staff_magacin_brzi_unos'),
+    })
+    return render(request, 'staff/magacin/brzi_unos_aktivacija.html', context)
 
 
 @login_required(login_url='login')
@@ -340,6 +669,8 @@ def magacin_artikal(request, pk):
             'cijena': var.prikazna_cijena,
         })
 
+    price_history, price_chart = _product_uvoz_price_history(product)
+
     context = _magacin_context(request, section='artikli', page_title=f'{product.naziv} — Magacin')
     context.update({
         'product': product,
@@ -356,8 +687,119 @@ def magacin_artikal(request, pk):
         'dobavljaci': WarehouseSupplier.objects.filter(aktivan=True),
         'from_search': bool(_magacin_search_query(request)),
         'edit_url': reverse('staff_magacin_artikal_izmjena', args=[product.pk]),
+        'price_history': price_history,
+        'price_chart': price_chart,
     })
     return render(request, 'staff/magacin/artikal.html', context)
+
+
+def _uvoz_marza_pct(stavka):
+    pct = stavka.vpc_marza_pct
+    if pct is not None:
+        return pct
+    vpc = stavka.vpc_netto
+    mpc = stavka.mpc_brutto
+    if vpc and mpc and vpc > 0:
+        return ((mpc - vpc) / vpc * Decimal('100')).quantize(Decimal('0.01'))
+    return None
+
+
+def _fmt_km(value):
+    if value is None:
+        return '—'
+    return f'{value} KM'
+
+
+def _delta_float(new, old):
+    if new is None or old is None:
+        return None
+    return float(new - old)
+
+
+def _change_row(field, old_label, new_label, new, old):
+    if new == old:
+        return None
+    if new is None or old is None:
+        direction = 'down' if new is None else 'up'
+    else:
+        direction = 'up' if new > old else 'down'
+    word = 'rast' if direction == 'up' else 'pad'
+    return {
+        'field': field,
+        'from': old_label,
+        'to': new_label,
+        'direction': direction,
+        'label': f'{field} {word}',
+    }
+
+
+def _product_uvoz_price_history(product):
+    stavke = list(
+        UvozStavka.objects.filter(
+            Q(product=product) | Q(artikal_naziv=product.naziv)
+        )
+        .select_related('uvoz')
+        .order_by('-uvoz__kreiran', '-id')[:50]
+    )
+    stavke.reverse()
+
+    history = []
+    prev = None
+    for stavka in stavke:
+        mpc = stavka.mpc_brutto
+        vpc = stavka.vpc_netto
+        nabavna = stavka.nabavna
+        marza = _uvoz_marza_pct(stavka)
+        changes = []
+        delta_mpc = delta_vpc = delta_nabavna = delta_marza = None
+        if prev is not None:
+            delta_mpc = _delta_float(mpc, prev['mpc'])
+            delta_vpc = _delta_float(vpc, prev['vpc'])
+            delta_nabavna = _delta_float(nabavna, prev['nabavna'])
+            delta_marza = _delta_float(marza, prev['marza'])
+            for item in (
+                _change_row('Mpc', _fmt_km(prev['mpc']), _fmt_km(mpc), mpc, prev['mpc']),
+                _change_row('Vpc', _fmt_km(prev['vpc']), _fmt_km(vpc), vpc, prev['vpc']),
+                _change_row('Nabavna', _fmt_km(prev['nabavna']), _fmt_km(nabavna), nabavna, prev['nabavna']),
+                _change_row(
+                    'Marža',
+                    f'{prev["marza"]}%' if prev['marza'] is not None else '—',
+                    f'{marza}%' if marza is not None else '—',
+                    marza,
+                    prev['marza'],
+                ),
+            ):
+                if item:
+                    changes.append(item)
+        history.append({
+            'stavka': stavka,
+            'uvoz': stavka.uvoz,
+            'mpc': mpc,
+            'vpc': vpc,
+            'nabavna': nabavna,
+            'marza': marza,
+            'delta_mpc': delta_mpc,
+            'delta_vpc': delta_vpc,
+            'delta_nabavna': delta_nabavna,
+            'delta_marza': delta_marza,
+            'changes': changes,
+            'is_first': prev is None,
+        })
+        prev = {'mpc': mpc, 'vpc': vpc, 'nabavna': nabavna, 'marza': marza}
+
+    compare = [row for row in history if not row['is_first']]
+    chart = {
+        'labels': [
+            timezone.localtime(row['uvoz'].kreiran).strftime('%d.%m.%Y')
+            for row in compare
+        ],
+        'mpc': [row['delta_mpc'] for row in compare],
+        'vpc': [row['delta_vpc'] for row in compare],
+        'nabavna': [row['delta_nabavna'] for row in compare],
+        'marza': [row['delta_marza'] for row in compare],
+        'has_compare': bool(compare),
+    }
+    return list(reversed(history)), chart
 
 
 def _save_product_meta(request, product):
@@ -782,22 +1224,50 @@ def magacin_lokacije(request):
             messages.error(request, str(exc))
         return redirect('staff_magacin_lokacije')
 
-    locations = []
-    for loc in WarehouseLocation.objects.exclude(
+    query = (request.GET.get('pretraga') or '').strip()
+    selected_id = (request.GET.get('lokacija') or '').strip()
+    loc_qs = WarehouseLocation.objects.exclude(
         sifra__icontains='prenos',
     ).exclude(
         naziv__icontains='prenos',
     ).exclude(
         odoo_location_path__icontains='prenos',
-    ):
+    )
+    if query:
+        loc_qs = loc_qs.filter(
+            Q(sifra__icontains=query)
+            | Q(naziv__icontains=query)
+            | Q(opis__icontains=query)
+        )
+    elif selected_id.isdigit():
+        loc_qs = loc_qs.filter(pk=int(selected_id))
+    else:
+        loc_qs = loc_qs.none()
+    locations = []
+    for loc in loc_qs:
         agg = loc.zalihe.aggregate(na_stanju=Sum('kolicina'), artikala=Count('product', distinct=True))
         locations.append({
             'location': loc,
             'na_stanju': int(agg['na_stanju'] or 0),
             'artikala': int(agg['artikala'] or 0),
         })
+    selected_location = None
+    location_stock = []
+    if selected_id.isdigit():
+        selected_location = WarehouseLocation.objects.filter(pk=int(selected_id)).first()
+        if selected_location:
+            location_stock = list(
+                WarehouseStock.objects.filter(location=selected_location, kolicina__gt=0)
+                .select_related('product', 'variation')
+                .order_by('product__naziv', 'variation__naziv')
+            )
     context = _magacin_context(request, section='lokacije', page_title='Lokacije — Magacin')
-    context.update({'locations': locations})
+    context.update({
+        'locations': locations,
+        'location_query': query,
+        'selected_location': selected_location,
+        'location_stock': location_stock,
+    })
     return render(request, 'staff/magacin/lokacije.html', context)
 
 
@@ -1033,10 +1503,43 @@ def magacin_narudzbe_stampa(request):
         **print_jobs[0],
         'print_jobs': print_jobs,
         'print_brojevi': [order.broj for order in ordered],
-        'requires_mp_check': any(job['requires_mp_check'] for job in print_jobs),
+        # MP se već potvrđuje pri unosu ručne narudžbe — ne pitaj ponovo na štampi.
+        'requires_mp_check': False,
         'mark_printed_url': reverse('staff_magacin_narudzbe_mark_printed'),
     }
     return render(request, 'staff/order_print.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def magacin_narudzbe_validiraj(request):
+    brojevi = [b.strip() for b in request.POST.getlist('b') if (b or '').strip()]
+    brojevi = list(dict.fromkeys(brojevi))[:80]
+    next_url = request.POST.get('next') or reverse('staff_magacin_narudzbe')
+    if not brojevi:
+        messages.error(request, 'Označi barem jednu narudžbu za validaciju.')
+        return HttpResponseRedirect(next_url)
+    orders = list(
+        Order.objects.filter(broj__in=brojevi)
+        .exclude(status=Order.Status.OTKAZANA)
+    )
+    if not orders:
+        messages.error(request, 'Označene narudžbe nisu pronađene.')
+        return HttpResponseRedirect(next_url)
+    ok = 0
+    errors = []
+    for order in orders:
+        try:
+            validate_order_stock(order, user=request.user)
+            ok += 1
+        except MagacinError as exc:
+            errors.append(f'#{order.broj}: {exc}')
+    if ok:
+        messages.success(request, f'Validirano {ok} narudžb{"a" if ok == 1 else "i"}.')
+    for err in errors:
+        messages.error(request, err)
+    return HttpResponseRedirect(next_url)
 
 
 @login_required(login_url='login')
@@ -1060,7 +1563,12 @@ def magacin_narudzbe_mark_printed(request):
 def magacin_artikli_lookup(request):
     query = (request.GET.get('q') or '').strip()
     include_zero = (request.GET.get('bez_zalihe') or '') == '1'
-    products, exact = search_products(query, limit=30, include_zero=include_zero)
+    try:
+        limit = int(request.GET.get('limit') or 30)
+    except (TypeError, ValueError):
+        limit = 30
+    limit = max(1, min(limit, 200))
+    products, exact = search_products(query, limit=limit, include_zero=include_zero)
     if exact:
         products = [exact]
     results = []
@@ -1089,6 +1597,59 @@ def magacin_artikli_lookup(request):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+def magacin_kupci_lookup(request):
+    query = (request.GET.get('q') or '').strip()
+    results = []
+    if len(query) >= 1:
+        qs = WarehouseCustomer.objects.filter(
+            Q(ime_prezime__icontains=query)
+            | Q(telefon__icontains=query)
+            | Q(grad__icontains=query)
+        ).order_by('ime_prezime')[:40]
+        for row in qs:
+            results.append({
+                'id': row.pk,
+                'ime_prezime': row.ime_prezime,
+                'telefon': row.telefon,
+                'adresa': row.adresa,
+                'grad': row.grad,
+                'email': row.email,
+                'postanski_broj': row.postanski_broj,
+            })
+    return JsonResponse({'results': results, 'query': query})
+
+
+def _save_warehouse_customer(*, ime, telefon, adresa='', grad='', email='', postanski_broj=''):
+    ime = (ime or '').strip()
+    telefon = (telefon or '').strip()
+    if not ime or not telefon:
+        return None
+    customer = (
+        WarehouseCustomer.objects.filter(ime_prezime__iexact=ime, telefon=telefon).first()
+        or WarehouseCustomer.objects.filter(telefon=telefon).first()
+    )
+    fields = {
+        'ime_prezime': ime[:200],
+        'telefon': telefon[:30],
+        'adresa': (adresa or '').strip()[:300],
+        'grad': (grad or '').strip()[:100],
+        'email': (email or '').strip()[:254],
+        'postanski_broj': (postanski_broj or '').strip()[:20],
+    }
+    if customer:
+        changed = []
+        for key, value in fields.items():
+            if value and getattr(customer, key) != value:
+                setattr(customer, key, value)
+                changed.append(key)
+        if changed:
+            customer.save(update_fields=changed)
+        return customer
+    return WarehouseCustomer.objects.create(**fields)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 def magacin_narudzba_nova(request):
     context = _magacin_context(request, section='narudzbe', page_title='Nova ručna narudžba')
     if request.method == 'POST':
@@ -1098,12 +1659,14 @@ def magacin_narudzba_nova(request):
             messages.error(request, str(exc))
             context['form'] = request.POST
             context['form_lines'] = _posted_display_lines(request)
+            context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
             return render(request, 'staff/magacin/narudzba_nova.html', context)
         messages.success(request, f'Narudžba #{order.broj} je kreirana.')
         return redirect('staff_magacin_narudzbe')
 
     context['form'] = {}
     context['form_lines'] = []
+    context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
     return render(request, 'staff/magacin/narudzba_nova.html', context)
 
 
@@ -1149,6 +1712,14 @@ def _create_manual_order(request):
     email = (request.POST.get('email') or '').strip() or 'rucna@opremazaribolov.ba'
     adresa = (request.POST.get('adresa') or '').strip() or 'Ručni unos'
     grad = (request.POST.get('grad') or '').strip() or '—'
+    _save_warehouse_customer(
+        ime=ime,
+        telefon=telefon,
+        adresa=adresa,
+        grad=grad,
+        email='' if email == 'rucna@opremazaribolov.ba' else email,
+        postanski_broj=(request.POST.get('postanski_broj') or '').strip(),
+    )
     product_ids = request.POST.getlist('product_id')
     variation_ids = request.POST.getlist('variation_id')
     kolicine = request.POST.getlist('kolicina')
@@ -1260,26 +1831,138 @@ def _save_manual_order(request, ime, telefon, email, adresa, grad, medjuzbir, do
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_pakovanje(request):
-    show_packed = (request.GET.get('zapakovane') or '') == '1'
-    orders = (
-        Order.objects.exclude(status=Order.Status.OTKAZANA)
-        .order_by('-kreirana')
-    )
-    if show_packed:
-        orders = orders.filter(zapakovana=True)
-    else:
-        orders = orders.filter(zapakovana=False).filter(
-            status__in=[Order.Status.NOVA, Order.Status.POTVRDJENA],
+    from .views import _build_order_packing_lines
+
+    query = (request.GET.get('pretraga') or request.GET.get('q') or '').strip()
+    selected_broj = (request.GET.get('broj') or '').strip().lstrip('#')
+    orders = []
+    if query:
+        digits = ''.join(ch for ch in query if ch.isdigit())
+        filt = (
+            Q(broj__icontains=query.lstrip('#'))
+            | Q(ime_prezime__icontains=query)
+            | Q(telefon__icontains=query)
         )
-    context = _magacin_context(request, section='pakovanje', page_title='Pakovanje — Magacin')
+        if digits and digits != query:
+            filt |= Q(broj__icontains=digits) | Q(telefon__icontains=digits)
+        orders = list(
+            Order.objects.exclude(status=Order.Status.OTKAZANA)
+            .filter(filt)
+            .prefetch_related('stavke')
+            .order_by('-kreirana')[:80]
+        )
+        if len(orders) == 1 and not selected_broj:
+            selected_broj = orders[0].broj
+
+    packing_order = None
+    packing_lines = []
+    odoo_error = ''
+    datum = ''
+    vrijeme = ''
+    if selected_broj:
+        packing_order = get_object_or_404(
+            Order.objects.exclude(status=Order.Status.OTKAZANA).prefetch_related('stavke'),
+            broj=selected_broj,
+        )
+        packing_lines, odoo_error = _build_order_packing_lines(packing_order)
+        created = timezone.localtime(packing_order.kreirana)
+        datum = created.strftime('%d.%m.%Y.')
+        vrijeme = created.strftime('%H:%M')
+
+    context = _magacin_context(request, section='pakovanje', page_title='Pretraga narudžbi — Magacin')
     context.update({
-        'orders': orders[:80],
-        'show_packed': show_packed,
-        'packed_count': Order.objects.filter(zapakovana=True)
-        .exclude(status=Order.Status.OTKAZANA)
-        .count(),
+        'orders': orders,
+        'order_query': query,
+        'selected_broj': selected_broj,
+        'order': packing_order,
+        'packing_lines': packing_lines,
+        'odoo_error': odoo_error,
+        'datum': datum,
+        'vrijeme': vrijeme,
     })
     return render(request, 'staff/magacin/pakovanje.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_uvoz(request):
+    uvozi = (
+        Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN)
+        .select_related('kreirao')
+        .annotate(stavke_n=Count('stavke'))
+        .order_by('-kreiran')[:200]
+    )
+    context = _magacin_context(request, section='uvoz', page_title='Uvoz — Magacin')
+    context.update({'uvozi': uvozi})
+    return render(request, 'staff/magacin/uvoz.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_uvoz_novi(request):
+    from .uvoz_import import parse_uvoz_json_rows, parse_uvoz_paste
+
+    draft_naziv = (request.POST.get('naziv') or '').strip()
+    paste_text = request.POST.get('paste_text') or ''
+    if request.method == 'POST':
+        try:
+            rows = parse_uvoz_json_rows(request.POST.get('rows_json') or '')
+            if not rows:
+                rows = parse_uvoz_paste(paste_text)
+            if not rows:
+                raise MagacinError('Zalijepi redove iz Excela u tabelu ili u polje za lijepljenje.')
+            uvoz, result = create_magacin_uvoz_from_rows(
+                rows,
+                naziv=draft_naziv,
+                user=request.user,
+            )
+            messages.success(
+                request,
+                f'Uvoz „{uvoz.naziv}” sačuvan: {result["updated"]} ažurirano, '
+                f'{result["created"]} kreirano, {result["qty_total"]} kom na Novi uvoz.',
+            )
+            if result.get('errors'):
+                messages.warning(
+                    request,
+                    f'{len(result["errors"])} greška(ka) — vidi detalje uvoza.',
+                )
+            return redirect('staff_magacin_uvoz_detail', pk=uvoz.pk)
+        except MagacinError as exc:
+            messages.error(request, str(exc))
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        except Exception as exc:
+            messages.error(request, f'Uvoz nije uspio: {exc}')
+
+    context = _magacin_context(request, section='uvoz', page_title='Novi uvoz — Magacin')
+    context.update({
+        'draft_naziv': draft_naziv,
+        'paste_text': paste_text,
+    })
+    return render(request, 'staff/magacin/uvoz_novi.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_uvoz_detail(request, pk):
+    uvoz = get_object_or_404(
+        Uvoz.objects.select_related('kreirao'),
+        pk=pk,
+        izvor=Uvoz.Izvor.MAGACIN,
+    )
+    if request.method == 'POST' and request.POST.get('action') == 'delete':
+        naziv = uvoz.naziv
+        uvoz.delete()
+        messages.success(request, f'Uvoz „{naziv}” je obrisan.')
+        return redirect('staff_magacin_uvoz')
+
+    stavke = list(uvoz.stavke.select_related('product').all())
+    context = _magacin_context(request, section='uvoz', page_title=f'{uvoz.naziv} — Magacin')
+    context.update({
+        'uvoz': uvoz,
+        'stavke': stavke,
+    })
+    return render(request, 'staff/magacin/uvoz_detail.html', context)
 
 
 @login_required(login_url='login')

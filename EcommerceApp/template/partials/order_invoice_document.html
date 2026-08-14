@@ -109,6 +109,20 @@
                 </tr>
             </table>
         </div>
+
+        <div class="invoice-seal-block">
+            <div class="invoice-warranty-box">
+                <strong>Garancija</strong>
+                <span class="invoice-warranty-note">Ovaj papir je garantni list za narudžbu #{{ order.broj }} koja je poručena {{ datum }}. Garancija se odnosi na sve artikle s ovog računa, u skladu sa zakonima BiH i uslovima proizvođača. Reklamacije se podnose uz ovaj račun{% if store_phone %} na {{ store_phone }}{% endif %}{% if store_email %} / {{ store_email }}{% endif %}.</span>
+            </div>
+            <div class="invoice-seal-row">
+                <div class="invoice-sign">
+                    <span class="invoice-sign-script">Saša B.</span>
+                    <span class="invoice-sign-line"></span>
+                    <span class="invoice-sign-label">Potpis prodavca</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="order-footer">
@@ -118,6 +132,5 @@
         Kontakt:
         {% if store_phone %}{{ store_phone }}{% endif %}{% if store_phone and store_email %}, {% endif %}{% if store_email %}<a href="mailto:{{ store_email }}">{{ store_email }}</a>{% endif %}.
         {% endif %}
-        <span class="invoice-warranty-note">Ovaj papir je garantni list za narudžbu #{{ order.broj }} koja je poručena {{ datum }}. Garancija se odnosi na sve artikle s ovog računa.</span>
     </div>
 </div>

@@ -48,6 +48,14 @@ class SitePrepLockMiddleware:
             return True
         if path.startswith('/admin/'):
             return True
+        # Prijava/odjava moraju raditi i dok je sajt u pripremi — inače loop na login.
+        if path.startswith((
+            '/prijava/',
+            '/registracija/',
+            '/odjava/',
+            '/activate/',
+        )):
+            return True
         if path in ('/facebook-feed.xml', '/healthz', '/healthz/'):
             return True
         if path.startswith('/healthz'):

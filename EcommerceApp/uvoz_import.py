@@ -10,6 +10,7 @@ Pravila:
 """
 from __future__ import annotations
 
+import json
 import re
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
@@ -21,6 +22,17 @@ from django.utils.text import slugify
 from .models import Product, Uvoz, UvozStavka
 
 # Kolone u Excelu (header red) — mapiranje po nazivu
+UVOZ_COLUMN_ORDER = (
+    'artikal',
+    'kolicina',
+    'fakturna',
+    'nabavna',
+    'vpc_netto',
+    'mpc_brutto',
+    'vpc_marza',
+    'ukupno_fakturna',
+)
+
 HEADER_ALIASES = {
     'artikal': 'artikal',
     'kolicina': 'kolicina',
@@ -134,26 +146,144 @@ def read_uvoz_rows_from_workbook(wb) -> list[dict]:
                 return None
             return row[i]
 
-        qty = parse_qty(_col('kolicina'))
-        price = parse_money(_col('mpc_brutto'))
-        marza_raw = _col('vpc_marza')
-        marza = None
-        if marza_raw is not None and marza_raw != '':
-            try:
-                marza = Decimal(str(marza_raw))
-            except (InvalidOperation, ValueError):
-                marza = parse_money(marza_raw)
+        items.append(_build_uvoz_row(
+            artikal=name,
+            kolicina=_col('kolicina'),
+            mpc_brutto=_col('mpc_brutto'),
+            fakturna=_col('fakturna'),
+            nabavna=_col('nabavna'),
+            vpc_netto=_col('vpc_netto'),
+            vpc_marza=_col('vpc_marza'),
+            ukupno_fakturna=_col('ukupno_fakturna'),
+        ))
+    return items
 
-        items.append({
-            'artikal': name[:200],
-            'kolicina': qty,
-            'mpc_brutto': price,
-            'fakturna': parse_money(_col('fakturna')),
-            'nabavna': parse_money(_col('nabavna')),
-            'vpc_netto': parse_money(_col('vpc_netto')),
-            'vpc_marza': marza,
-            'ukupno_fakturna': parse_money(_col('ukupno_fakturna')),
-        })
+
+def _parse_marza(value):
+    if value is None or value == '':
+        return None
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return parse_money(value)
+
+
+def _build_uvoz_row(
+    *,
+    artikal,
+    kolicina=None,
+    fakturna=None,
+    nabavna=None,
+    vpc_netto=None,
+    mpc_brutto=None,
+    vpc_marza=None,
+    ukupno_fakturna=None,
+) -> dict:
+    name = _cell_str(artikal)
+    return {
+        'artikal': name[:200],
+        'kolicina': parse_qty(kolicina) if not isinstance(kolicina, Decimal) else kolicina,
+        'mpc_brutto': mpc_brutto if isinstance(mpc_brutto, Decimal) else parse_money(mpc_brutto),
+        'fakturna': fakturna if isinstance(fakturna, Decimal) else parse_money(fakturna),
+        'nabavna': nabavna if isinstance(nabavna, Decimal) else parse_money(nabavna),
+        'vpc_netto': vpc_netto if isinstance(vpc_netto, Decimal) else parse_money(vpc_netto),
+        'vpc_marza': vpc_marza if isinstance(vpc_marza, Decimal) else _parse_marza(vpc_marza),
+        'ukupno_fakturna': (
+            ukupno_fakturna if isinstance(ukupno_fakturna, Decimal) else parse_money(ukupno_fakturna)
+        ),
+    }
+
+
+def _detect_paste_delim(sample: str) -> str:
+    if '\t' in sample:
+        return '\t'
+    if sample.count(';') >= 2:
+        return ';'
+    return '\t'
+
+
+def parse_uvoz_grid(rows_cells: list[list]) -> list[dict]:
+    """Pretvori mrežu ćelija (Excel copy) u redove uvoza."""
+    if not rows_cells:
+        return []
+    mapping = {}
+    for col_i, cell in enumerate(rows_cells[0]):
+        key = HEADER_ALIASES.get(_normalize_header(cell))
+        if key and key not in mapping:
+            mapping[key] = col_i
+    start = 0
+    if 'artikal' in mapping:
+        start = 1
+    else:
+        mapping = {key: idx for idx, key in enumerate(UVOZ_COLUMN_ORDER)}
+
+    items = []
+    for row in rows_cells[start:]:
+        if not row:
+            continue
+
+        def _col(key, current=row):
+            i = mapping.get(key)
+            if i is None or i >= len(current):
+                return None
+            return current[i]
+
+        name = _cell_str(_col('artikal'))
+        if not name or _normalize_header(name) == 'artikal':
+            continue
+        items.append(_build_uvoz_row(
+            artikal=name,
+            kolicina=_col('kolicina'),
+            fakturna=_col('fakturna'),
+            nabavna=_col('nabavna'),
+            vpc_netto=_col('vpc_netto'),
+            mpc_brutto=_col('mpc_brutto'),
+            vpc_marza=_col('vpc_marza'),
+            ukupno_fakturna=_col('ukupno_fakturna'),
+        ))
+    return items
+
+
+def parse_uvoz_paste(text: str) -> list[dict]:
+    """Parsira tekst zalijepljen iz Excela (tab / ; razdvojeno)."""
+    raw = (text or '').replace('\r\n', '\n').replace('\r', '\n')
+    lines = [ln for ln in raw.split('\n') if ln.strip()]
+    if not lines:
+        return []
+    delim = _detect_paste_delim(lines[0])
+    return parse_uvoz_grid([ln.split(delim) for ln in lines])
+
+
+def parse_uvoz_json_rows(raw) -> list[dict]:
+    """Parsira redove iz JSON tabele (Novi uvoz forma)."""
+    if raw is None or raw == '':
+        return []
+    if isinstance(raw, str):
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError('Tabela uvoza nije ispravna.') from exc
+    else:
+        data = raw
+    if not isinstance(data, list):
+        raise ValueError('Očekivan je spisak redova.')
+    items = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        name = _cell_str(item.get('artikal'))
+        if not name:
+            continue
+        items.append(_build_uvoz_row(
+            artikal=name,
+            kolicina=item.get('kolicina'),
+            fakturna=item.get('fakturna'),
+            nabavna=item.get('nabavna'),
+            vpc_netto=item.get('vpc_netto'),
+            mpc_brutto=item.get('mpc_brutto'),
+            vpc_marza=item.get('vpc_marza'),
+            ukupno_fakturna=item.get('ukupno_fakturna'),
+        ))
     return items
 
 

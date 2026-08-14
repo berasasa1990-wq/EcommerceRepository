@@ -104,6 +104,55 @@
         .invoice-totals-block {
             margin-top: 18px;
         }
+        .invoice-seal-block {
+            margin-top: 18px;
+            clear: both;
+        }
+        .invoice-warranty-box {
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            padding: 10px 12px;
+            background: #fafafa;
+        }
+        .invoice-warranty-box strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: #28403d;
+        }
+        .invoice-seal-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+        .invoice-sign {
+            min-width: 180px;
+            text-align: center;
+        }
+        .invoice-sign-script {
+            display: block;
+            font-family: "Palatino Linotype", Palatino, "Times New Roman", serif;
+            font-size: 22px;
+            font-style: italic;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+            color: #1a1a1a;
+            margin-bottom: 2px;
+        }
+        .invoice-sign-line {
+            display: block;
+            border-bottom: 1px solid #111;
+            margin: 0 8px 6px;
+        }
+        .invoice-sign-label {
+            display: block;
+            font-size: 11px;
+            color: #595959;
+        }
         .doc-header-table { width: 100%; }
         .doc-logo {
             max-height: 56px;
@@ -631,6 +680,27 @@
                 font-size: 8.5px !important;
                 line-height: 1.35 !important;
                 font-weight: 400 !important;
+            }
+            .invoice-seal-block {
+                margin-top: 10px !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .invoice-warranty-box {
+                padding: 6px 8px !important;
+            }
+            .invoice-warranty-box strong {
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
+            }
+            .invoice-seal-row {
+                margin-top: 8px !important;
+            }
+            .invoice-sign-script {
+                font-size: 16px !important;
+            }
+            .invoice-sign-label {
+                font-size: 8px !important;
             }
             .packing-section {
                 page-break-before: auto;

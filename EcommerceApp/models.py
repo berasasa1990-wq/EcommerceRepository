@@ -3790,7 +3790,7 @@ class Order(models.Model):
         NOVA = 'nova', 'Nova'
         POTVRDJENA = 'potvrdjena', 'Potvrđena'
         POSLANA = 'poslana', 'Poslana'
-        ZAVRSENA = 'zavrsena', 'Validirana'
+        ZAVRSENA = 'zavrsena', 'Validatovana'
         OTKAZANA = 'otkazana', 'Otkazana'
 
     class Izvor(models.TextChoices):
@@ -3828,7 +3828,7 @@ class Order(models.Model):
     class LagerStatus(models.TextChoices):
         NIJE = 'nije', '—'
         REZERVISANO = 'rezervisano', 'Rezervisano'
-        VALIDIRANO = 'validirano', 'Validirano'
+        VALIDIRANO = 'validirano', 'Validatovano'
         OTKAZANO = 'otkazano', 'Otkazano'
 
     izvor = models.CharField(
@@ -4867,7 +4867,18 @@ class OnlineGiftPush(models.Model):
 class Uvoz(models.Model):
     """Spremljeni uvoz iz Excel uvoznice (pregled / izmjena / brisanje)."""
 
+    class Izvor(models.TextChoices):
+        SAJT = 'sajt', 'Sajt'
+        MAGACIN = 'magacin', 'Magacin'
+
     naziv = models.CharField(max_length=200, verbose_name='Naziv uvoza')
+    izvor = models.CharField(
+        max_length=20,
+        choices=Izvor.choices,
+        default=Izvor.SAJT,
+        db_index=True,
+        verbose_name='Izvor',
+    )
     fajl_naziv = models.CharField(max_length=255, blank=True, verbose_name='Ime fajla')
     napomena = models.TextField(blank=True, verbose_name='Napomena')
     kreirao = models.ForeignKey(
@@ -5304,7 +5315,7 @@ class WarehouseMovement(models.Model):
 class OrderStockHold(models.Model):
     class Status(models.TextChoices):
         REZERVISANO = 'rezervisano', 'Rezervisano'
-        VALIDIRANO = 'validirano', 'Validirano'
+        VALIDIRANO = 'validirano', 'Validatovano'
         OTKAZANO = 'otkazano', 'Otkazano'
 
     narudzba = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='magacin_holds')
@@ -5323,6 +5334,29 @@ class OrderStockHold(models.Model):
 
     def __str__(self):
         return f'#{self.narudzba.broj} {self.kolicina} @ {self.location.sifra}'
+
+
+class WarehouseCustomer(models.Model):
+    ime_prezime = models.CharField(max_length=200)
+    telefon = models.CharField(max_length=30)
+    adresa = models.CharField(max_length=300, blank=True)
+    grad = models.CharField(max_length=100, blank=True)
+    email = models.EmailField(blank=True)
+    postanski_broj = models.CharField(max_length=20, blank=True)
+    kreiran = models.DateTimeField(auto_now_add=True)
+    azuriran = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Magacin kupac'
+        verbose_name_plural = 'Magacin kupci'
+        ordering = ['ime_prezime', 'id']
+        indexes = [
+            models.Index(fields=['ime_prezime']),
+            models.Index(fields=['telefon']),
+        ]
+
+    def __str__(self):
+        return f'{self.ime_prezime} {self.telefon}'.strip()
 
 
 class WarehouseSyncLog(models.Model):

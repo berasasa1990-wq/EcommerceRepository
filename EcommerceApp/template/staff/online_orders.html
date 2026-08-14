@@ -33,7 +33,7 @@
             {% if nova_count %}<span class="staff-filter-count">{{ nova_count }}</span>{% endif %}
         </a>
         <a href="{% url 'staff_online_orders' %}?filter=validirane" class="staff-filter-btn{% if filter_status == 'zavrsene' %} is-active{% endif %}">
-            Validirane
+            Validatovane
             {% if zavrsena_count %}<span class="staff-filter-count">{{ zavrsena_count }}</span>{% endif %}
         </a>
         <a href="{% url 'staff_online_orders' %}?filter=sve" class="staff-filter-btn{% if filter_status == 'sve' %} is-active{% endif %}">

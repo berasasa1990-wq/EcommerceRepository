@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from collections import defaultdict
 from datetime import timedelta
@@ -19,6 +20,9 @@ from .models import (
     OrderStockHold,
     Product,
     ProductVariation,
+    ProductWarehouseMeta,
+    Uvoz,
+    UvozStavka,
     WarehouseLocation,
     WarehouseMovement,
     WarehouseStock,
@@ -339,6 +343,290 @@ def apply_movement(
     )
     refresh_catalog_qty(product)
     return movement
+
+
+NOVI_UVOZ_SIFRA = 'UVOZ'
+NOVI_UVOZ_NAZIV = 'Novi uvoz'
+
+
+def ensure_novi_uvoz_location():
+    """Lokacija na koju ide sva količina iz Excel uvoza, dok je korisnik ne rasporedi."""
+    existing = (
+        WarehouseLocation.objects.filter(
+            Q(naziv__iexact=NOVI_UVOZ_NAZIV) | Q(sifra__iexact=NOVI_UVOZ_SIFRA)
+        )
+        .order_by('redoslijed', 'id')
+        .first()
+    )
+    if existing:
+        fields = []
+        if existing.naziv != NOVI_UVOZ_NAZIV:
+            existing.naziv = NOVI_UVOZ_NAZIV
+            fields.append('naziv')
+        if not existing.aktivan:
+            existing.aktivan = True
+            fields.append('aktivan')
+        if fields:
+            existing.save(update_fields=fields)
+        return existing
+    return WarehouseLocation.objects.create(
+        sifra=NOVI_UVOZ_SIFRA,
+        naziv=NOVI_UVOZ_NAZIV,
+        opis='Količine iz Excel uvoza, za raspodjelu',
+        aktivan=True,
+        redoslijed=1,
+    )
+
+
+def _find_product_exact_name(name):
+    """Pronađi artikal po 100% istom nazivu; prednost ima već u Magacinu."""
+    name = (name or '').strip()
+    if not name:
+        return None
+    qs = Product.objects.filter(naziv=name)
+    magacin = qs.filter(
+        Q(magacin_sync_at__isnull=False) | Q(odoo_template_id__isnull=False)
+    ).first()
+    if magacin:
+        return magacin
+    product = qs.first()
+    if product:
+        return product
+    collapsed = re.sub(r'\s+', ' ', name)
+    if collapsed != name:
+        return _find_product_exact_name(collapsed)
+    for candidate in Product.objects.filter(naziv__iexact=name).only('id', 'naziv')[:5]:
+        if (candidate.naziv or '').strip() == name:
+            return candidate
+    return None
+
+
+def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
+    """
+    Primijeni jedan red uvoza na Magacin.
+    Vraća dict: status, product, poruka, qty
+    """
+    name = (row.get('artikal') or '').strip()
+    qty = _int(row.get('kolicina'))
+    price = row.get('mpc_brutto')
+    vpc = row.get('vpc_netto')
+    if not name:
+        return {
+            'status': UvozStavka.Status.SKIPPED,
+            'product': None,
+            'poruka': 'Prazan naziv',
+            'qty': 0,
+        }
+    product_guess = _find_product_exact_name(name)
+    if qty <= 0:
+        return {
+            'status': UvozStavka.Status.SKIPPED,
+            'product': product_guess,
+            'poruka': 'Količina ≤ 0',
+            'qty': 0,
+        }
+    location = location or ensure_novi_uvoz_location()
+    try:
+        with transaction.atomic():
+            product = product_guess
+            created = False
+            now = timezone.now()
+            if product is None:
+                if price is None or price <= 0:
+                    return {
+                        'status': UvozStavka.Status.SKIPPED,
+                        'product': None,
+                        'poruka': 'Nema Mpc brutto — novi artikal nije kreiran',
+                        'qty': 0,
+                    }
+                product = Product(
+                    naziv=name[:200],
+                    cijena=price,
+                    na_stanju=True,
+                    stanje=0,
+                    aktivan=True,
+                    prikazi_na_pocetnoj=False,
+                    magacin_sync_at=now,
+                )
+                product.save()
+                created = True
+            else:
+                fields = []
+                if product.magacin_sync_at is None:
+                    product.magacin_sync_at = now
+                    fields.append('magacin_sync_at')
+                if price is not None and price > 0 and product.cijena != price:
+                    product.cijena = price
+                    if product.akcija_postotak:
+                        product.akcijska_cijena = None
+                        fields.append('akcijska_cijena')
+                    fields.append('cijena')
+                if not product.aktivan:
+                    product.aktivan = True
+                    fields.append('aktivan')
+                if fields:
+                    product.save(update_fields=fields)
+
+            if vpc is not None and vpc > 0:
+                meta, _ = ProductWarehouseMeta.objects.get_or_create(product=product)
+                if meta.veleprodajna_cijena != vpc:
+                    meta.veleprodajna_cijena = vpc
+                    meta.save(update_fields=['veleprodajna_cijena'])
+
+            apply_movement(
+                product=product,
+                location=location,
+                tip=WarehouseMovement.Tip.PRIJEM,
+                kolicina=qty,
+                napomena=(napomena or 'Uvoz Excel')[:300],
+                user=user,
+            )
+            status = UvozStavka.Status.CREATED if created else UvozStavka.Status.UPDATED
+            price_label = f'{price} KM' if price is not None and price > 0 else 'cijena ista'
+            return {
+                'status': status,
+                'product': product,
+                'poruka': f'+{qty} kom na Novi uvoz, {price_label}',
+                'qty': qty,
+            }
+    except Exception as exc:
+        return {
+            'status': UvozStavka.Status.ERROR,
+            'product': product_guess,
+            'poruka': str(exc),
+            'qty': 0,
+        }
+
+
+def apply_magacin_uvoz(rows, *, user=None, filename=''):
+    """
+    Uvoz iz Excel redova u Magacin.
+    Postojeći artikli: ažuriraj MPC / VPC i dodaj količinu na lokaciju Novi uvoz.
+    Nepostojeći: kreiraj pa primi istu količinu na Novi uvoz.
+    """
+    location = ensure_novi_uvoz_location()
+    stats = {
+        'updated': 0,
+        'created': 0,
+        'skipped': 0,
+        'errors': [],
+        'details': [],
+        'location': location,
+        'rows_total': len(rows),
+        'qty_total': 0,
+    }
+    note = 'Uvoz Excel'
+    if filename:
+        note = f'Uvoz Excel: {filename}'[:300]
+
+    for row in rows:
+        name = (row.get('artikal') or '').strip()
+        if not name:
+            continue
+        result = apply_magacin_uvoz_row(row, location=location, user=user, napomena=note)
+        status = result['status']
+        product = result['product']
+        if status == UvozStavka.Status.CREATED:
+            stats['created'] += 1
+            stats['qty_total'] += result['qty']
+        elif status == UvozStavka.Status.UPDATED:
+            stats['updated'] += 1
+            stats['qty_total'] += result['qty']
+        elif status == UvozStavka.Status.ERROR:
+            stats['errors'].append(f'{name}: {result["poruka"]}')
+        else:
+            stats['skipped'] += 1
+        if len(stats['details']) < 200:
+            stats['details'].append({
+                'status': status,
+                'naziv': name,
+                'product_id': product.pk if product else None,
+                'poruka': result['poruka'],
+            })
+    return stats
+
+
+def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
+    """Snimi Magacin uvoz + stavke i primijeni količine na lokaciju Novi uvoz."""
+    named = [(row.get('artikal') or '').strip() for row in rows]
+    if not any(named):
+        raise MagacinError('Nema redova za uvoz. Zalijepi podatke iz Excela.')
+
+    if not naziv:
+        naziv = f'Uvoz {timezone.localtime().strftime("%d.%m.%Y. %H:%M")}'
+
+    location = ensure_novi_uvoz_location()
+    note = f'Uvoz: {naziv}'[:300]
+    stats = {
+        'updated': 0,
+        'created': 0,
+        'skipped': 0,
+        'errors': [],
+        'details': [],
+        'location': location,
+        'rows_total': 0,
+        'qty_total': 0,
+    }
+
+    with transaction.atomic():
+        uvoz = Uvoz.objects.create(
+            naziv=naziv[:200],
+            izvor=Uvoz.Izvor.MAGACIN,
+            kreirao=user if getattr(user, 'is_authenticated', False) else None,
+        )
+        stavke = []
+        for i, row in enumerate(rows):
+            name = (row.get('artikal') or '').strip()
+            if not name:
+                continue
+            stats['rows_total'] += 1
+            result = apply_magacin_uvoz_row(
+                row, location=location, user=user, napomena=note,
+            )
+            status = result['status']
+            product = result['product']
+            if status == UvozStavka.Status.CREATED:
+                stats['created'] += 1
+                stats['qty_total'] += result['qty']
+            elif status == UvozStavka.Status.UPDATED:
+                stats['updated'] += 1
+                stats['qty_total'] += result['qty']
+            elif status == UvozStavka.Status.ERROR:
+                stats['errors'].append(f'{name}: {result["poruka"]}')
+            else:
+                stats['skipped'] += 1
+            if len(stats['details']) < 200:
+                stats['details'].append({
+                    'status': status,
+                    'naziv': name,
+                    'product_id': product.pk if product else None,
+                    'poruka': result['poruka'],
+                })
+            stavke.append(UvozStavka(
+                uvoz=uvoz,
+                artikal_naziv=name[:200],
+                kolicina=row.get('kolicina'),
+                fakturna=row.get('fakturna'),
+                nabavna=row.get('nabavna'),
+                vpc_netto=row.get('vpc_netto'),
+                mpc_brutto=row.get('mpc_brutto'),
+                vpc_marza=row.get('vpc_marza'),
+                ukupno_fakturna=row.get('ukupno_fakturna'),
+                product=product,
+                status=status,
+                poruka=(result['poruka'] or '')[:300],
+                redoslijed=i,
+            ))
+        UvozStavka.objects.bulk_create(stavke)
+        uvoz.broj_redova = len(stavke)
+        uvoz.broj_azurirano = stats['updated']
+        uvoz.broj_kreirano = stats['created']
+        uvoz.broj_preskoceno = stats['skipped']
+        uvoz.log_detalji = stats['details']
+        uvoz.save()
+
+    stats['uvoz'] = uvoz
+    return uvoz, stats
 
 
 def magacin_products_qs():

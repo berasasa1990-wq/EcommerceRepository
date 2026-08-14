@@ -1,0 +1,188 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Novi uvoz</h1>
+        <p class="mg-count">Kopiraj iz Excela kolone Artikal, Kolicina, Fakturna, Nabavna, Vpc netto, Mpc brutto, Vpc marza, Ukupno Fakturna — zalijepi ovdje i sačuvaj.</p>
+    </div>
+    <a href="{% url 'staff_magacin_uvoz' %}" class="mg-btn">← Svi uvozi</a>
+</div>
+
+<form method="post" id="mgUvozForm" class="mg-uvoz-new">
+    {% csrf_token %}
+    <section class="mg-card">
+        <div class="mg-form-grid">
+            <div class="mg-field">
+                <label for="uvozNaziv">Naziv uvoza</label>
+                <input type="text" name="naziv" id="uvozNaziv" value="{{ draft_naziv }}" maxlength="200" placeholder="npr. Uvoz 13.08.2026" autocomplete="off">
+            </div>
+        </div>
+        <div class="mg-field" style="margin-top:12px;">
+            <label for="uvozPaste">Zalijepi iz Excela</label>
+            <textarea name="paste_text" id="uvozPaste" class="mg-uvoz-paste" placeholder="Označi sve u Excelu, kopiraj, pa zalijepi ovdje (Ctrl+V / Cmd+V). Zaglavlje može ostati.">{{ paste_text }}</textarea>
+        </div>
+        <p class="mg-muted" id="uvozPasteHint">Tabela ispod se popuni iz zalijepljenog. Možeš i ručno kucati u polja.</p>
+    </section>
+
+    <section class="mg-card">
+        <div class="mg-card-head">
+            <h2 class="mg-h">Stavke</h2>
+            <button type="button" class="mg-btn" id="uvozAddRow">+ Red</button>
+        </div>
+        <div class="mg-table-wrap">
+            <table class="mg-uvoz-sheet" id="uvozSheet">
+                <thead>
+                    <tr>
+                        <th class="col-artikal">Artikal</th>
+                        <th class="col-num">Kolicina</th>
+                        <th class="col-num">Fakturna</th>
+                        <th class="col-num">Nabavna</th>
+                        <th class="col-num">Vpc netto</th>
+                        <th class="col-num">Mpc brutto</th>
+                        <th class="col-num">Vpc marza</th>
+                        <th class="col-num">Ukupno Fakturna</th>
+                    </tr>
+                </thead>
+                <tbody id="uvozSheetBody"></tbody>
+            </table>
+        </div>
+        <input type="hidden" name="rows_json" id="uvozRowsJson">
+        <div class="mg-uvoz-actions">
+            <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj uvoz</button>
+            <a href="{% url 'staff_magacin_uvoz' %}" class="mg-btn">Odustani</a>
+        </div>
+    </section>
+</form>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var COLS = ['artikal', 'kolicina', 'fakturna', 'nabavna', 'vpc_netto', 'mpc_brutto', 'vpc_marza', 'ukupno_fakturna'];
+    var HEADERS = {
+        artikal: 'artikal',
+        kolicina: 'kolicina',
+        'količina': 'kolicina',
+        fakturna: 'fakturna',
+        nabavna: 'nabavna',
+        'vpc netto': 'vpc_netto',
+        'mpc brutto': 'mpc_brutto',
+        'vpc marza': 'vpc_marza',
+        'vpc marža': 'vpc_marza',
+        'ukupno fakturna': 'ukupno_fakturna'
+    };
+    var body = document.getElementById('uvozSheetBody');
+    var paste = document.getElementById('uvozPaste');
+    var form = document.getElementById('mgUvozForm');
+    var hint = document.getElementById('uvozPasteHint');
+
+    function norm(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+    function addRow(values) {
+        var tr = document.createElement('tr');
+        COLS.forEach(function (key, idx) {
+            var td = document.createElement('td');
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.setAttribute('data-col', key);
+            input.autocomplete = 'off';
+            input.value = values && values[key] != null ? values[key] : '';
+            if (idx === 0) input.className = 'col-artikal-input';
+            td.appendChild(input);
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+        return tr;
+    }
+    function ensureRows(n) {
+        while (body.rows.length < n) addRow();
+    }
+    function parsePaste(text) {
+        var lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(function (line) {
+            return line.trim();
+        });
+        if (!lines.length) return [];
+        var delim = lines[0].indexOf('\t') >= 0 ? '\t' : (lines[0].split(';').length >= 3 ? ';' : '\t');
+        var grid = lines.map(function (line) { return line.split(delim); });
+        var map = {};
+        grid[0].forEach(function (cell, i) {
+            var key = HEADERS[norm(cell)];
+            if (key && map[key] == null) map[key] = i;
+        });
+        var start = 0;
+        if (map.artikal != null) start = 1;
+        else {
+            COLS.forEach(function (key, i) { map[key] = i; });
+        }
+        var rows = [];
+        for (var r = start; r < grid.length; r++) {
+            var cells = grid[r];
+            var name = cells[map.artikal] != null ? String(cells[map.artikal]).trim() : '';
+            if (!name || norm(name) === 'artikal') continue;
+            var row = {};
+            COLS.forEach(function (key) {
+                var i = map[key];
+                row[key] = i == null || cells[i] == null ? '' : String(cells[i]).trim();
+            });
+            rows.push(row);
+        }
+        return rows;
+    }
+    function fillTable(rows) {
+        body.innerHTML = '';
+        rows.forEach(function (row) { addRow(row); });
+        ensureRows(Math.max(rows.length + 3, 8));
+        if (hint) {
+            hint.textContent = rows.length
+                ? ('Popunjeno ' + rows.length + ' redova. Provjeri i sačuvaj.')
+                : 'Tabela ispod se popuni iz zalijepljenog. Možeš i ručno kucati u polja.';
+        }
+    }
+    function collectRows() {
+        var rows = [];
+        Array.prototype.forEach.call(body.rows, function (tr) {
+            var row = {};
+            var empty = true;
+            COLS.forEach(function (key) {
+                var input = tr.querySelector('[data-col="' + key + '"]');
+                var val = input ? input.value.trim() : '';
+                row[key] = val;
+                if (val) empty = false;
+            });
+            if (!empty && row.artikal) rows.push(row);
+        });
+        return rows;
+    }
+
+    ensureRows(8);
+    document.getElementById('uvozAddRow').addEventListener('click', function () {
+        addRow();
+        var last = body.querySelector('tr:last-child input');
+        if (last) last.focus();
+    });
+    paste.addEventListener('paste', function (event) {
+        var text = event.clipboardData && event.clipboardData.getData('text/plain');
+        if (!text) return;
+        var rows = parsePaste(text);
+        if (!rows.length) return;
+        event.preventDefault();
+        paste.value = text;
+        fillTable(rows);
+    });
+    document.getElementById('uvozSheet').addEventListener('paste', function (event) {
+        var text = event.clipboardData && event.clipboardData.getData('text/plain');
+        if (!text || (text.indexOf('\t') < 0 && text.indexOf('\n') < 0)) return;
+        var rows = parsePaste(text);
+        if (!rows.length) return;
+        event.preventDefault();
+        paste.value = text;
+        fillTable(rows);
+    });
+    form.addEventListener('submit', function () {
+        document.getElementById('uvozRowsJson').value = JSON.stringify(collectRows());
+    });
+})();
+</script>
+{% endblock %}

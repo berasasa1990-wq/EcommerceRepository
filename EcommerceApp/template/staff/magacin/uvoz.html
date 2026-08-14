@@ -1,0 +1,44 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Uvozi</h1>
+        <p class="mg-count">Otvori sačuvani uvoz ili napravi novi i zalijepi Excel.</p>
+    </div>
+    <a href="{% url 'staff_magacin_uvoz_novi' %}" class="mg-btn mg-btn-primary">+ Novi uvoz</a>
+</div>
+
+<section class="mg-card">
+    <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>NAZIV</th>
+                    <th>DATUM</th>
+                    <th class="num">STAVKI</th>
+                    <th class="num">AŽURIRANO</th>
+                    <th class="num">KREIRANO</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in uvozi %}
+                <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_uvoz_detail' u.pk %}'">
+                    <td><strong>{{ u.naziv }}</strong></td>
+                    <td>{{ u.kreiran|date:"d.m.Y. H:i" }}</td>
+                    <td class="num">{{ u.stavke_n|default:u.broj_redova }}</td>
+                    <td class="num">{{ u.broj_azurirano }}</td>
+                    <td class="num">{{ u.broj_kreirano }}</td>
+                    <td class="num"><a class="mg-btn" href="{% url 'staff_magacin_uvoz_detail' u.pk %}">Otvori</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="mg-muted">Još nema uvoza. Klikni Novi uvoz i zalijepi kolone iz Excela.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
