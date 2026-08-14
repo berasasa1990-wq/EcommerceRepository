@@ -3884,6 +3884,24 @@ class Order(models.Model):
         blank=True,
         verbose_name='Picking stanje',
     )
+    pick_claimed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='preuzete_narudzbe',
+        verbose_name='Picking preuzeo',
+    )
+    pick_claimed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Picking preuzeto',
+    )
+    pick_claimed_name = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Picking preuzeo (ime)',
+    )
     odoo_sale_order_id = models.PositiveIntegerField(
         null=True,
         blank=True,

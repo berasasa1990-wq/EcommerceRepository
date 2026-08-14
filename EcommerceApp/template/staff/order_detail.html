@@ -14,6 +14,9 @@
         <p class="mg-count">
             {% if order.izvor == 'magacin' %}Ručni unos (Magacin){% else %}Webshop{% endif %}
             · {{ order.kreirana|date:"d.m.Y. H:i" }}
+            {% if order.pick_claimed_name %}
+            · Preuzeo {{ order.pick_claimed_name }}
+            {% endif %}
         </p>
     </div>
     <div class="mg-toolbar-actions">

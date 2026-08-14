@@ -934,6 +934,13 @@ table.mg-table {
     color: #8a6d3b;
     line-height: 1.35;
 }
+.mg-pick-claim {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #28403d;
+}
 .mg-pick-short-detail {
     margin: 0 0 12px;
     padding: 8px 12px;

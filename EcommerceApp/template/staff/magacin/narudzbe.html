@@ -74,6 +74,9 @@
                     <td>#{{ order.broj }}</td>
                     <td>
                         {{ order.ime_prezime }}
+                        {% if order.pick_claimed_name %}
+                        <span class="mg-pick-claim">Preuzeo {{ order.pick_claimed_name }}</span>
+                        {% endif %}
                         {% if order.needs_mp_check %}
                         <span class="mg-pick-short">Prvo Provjera MP — Ima / Nema</span>
                         {% endif %}

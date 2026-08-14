@@ -2285,6 +2285,27 @@ def _stampa_url(broj):
     return f"{reverse('staff_magacin_narudzbe_stampa')}?{urlencode({'b': broj})}"
 
 
+def _pick_claim_name(order):
+    return (order.pick_claimed_name or '').strip() or (
+        _user_display(order.pick_claimed_by) if order.pick_claimed_by_id else ''
+    )
+
+
+def claim_order_pick(order, user):
+    """Prvi sken/otvaranje preuzima nalog. Drugi korisnik ne može ući."""
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, ''
+    if order.pick_claimed_by_id and order.pick_claimed_by_id != user.pk:
+        return False, _pick_claim_name(order)
+    if order.pick_claimed_by_id == user.pk:
+        return True, _pick_claim_name(order)
+    order.pick_claimed_by = user
+    order.pick_claimed_at = timezone.now()
+    order.pick_claimed_name = _user_display(user)[:120]
+    order.save(update_fields=['pick_claimed_by', 'pick_claimed_at', 'pick_claimed_name'])
+    return True, order.pick_claimed_name
+
+
 def apply_mp_check(group_lines, *, found):
     by_broj = {}
     for line in group_lines:
@@ -2411,6 +2432,13 @@ def magacin_pakuj_sken(request):
     if not order:
         messages.warning(request, f'Narudžba za barkod „{raw or "—"}” nije na pickingu.')
         return redirect('staff_magacin_pakuj')
+    ok, holder = claim_order_pick(order, request.user)
+    if not ok:
+        messages.error(
+            request,
+            f'Narudžbu #{order.broj} je već preuzeo {holder or "drugi radnik"}.',
+        )
+        return redirect('staff_magacin_pakuj')
     if order_needs_mp_check(order):
         messages.warning(
             request,
@@ -2446,6 +2474,14 @@ def magacin_pakuj_provjera(request):
             .filter(broj=focus_broj)
             .first()
         )
+    if focus_order and next_pick:
+        ok, holder = claim_order_pick(focus_order, request.user)
+        if not ok:
+            messages.error(
+                request,
+                f'Narudžbu #{focus_order.broj} je već preuzeo {holder or "drugi radnik"}.',
+            )
+            return redirect('staff_magacin_pakuj')
     if focus_order:
         groups = collect_mp_checks([focus_order])
     else:
@@ -2504,6 +2540,18 @@ def magacin_pakuj_detail(request, broj):
         _unvalidated_orders_qs().prefetch_related('stavke', 'magacin_holds'),
         broj=broj,
     )
+    ok, holder = claim_order_pick(order, request.user)
+    if not ok:
+        if request.method == 'POST':
+            return JsonResponse(
+                {'ok': False, 'error': f'Narudžbu je već preuzeo {holder or "drugi radnik"}.'},
+                status=403,
+            )
+        messages.error(
+            request,
+            f'Narudžbu #{order.broj} je već preuzeo {holder or "drugi radnik"}.',
+        )
+        return redirect('staff_magacin_pakuj')
     if order_needs_mp_check(order):
         if request.method == 'POST' and (request.POST.get('action') or '') == 'pick_save':
             return JsonResponse(

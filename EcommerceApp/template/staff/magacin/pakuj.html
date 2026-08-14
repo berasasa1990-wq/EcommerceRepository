@@ -9,6 +9,11 @@
             <span>Skeniraj narudžbu</span>
         </div>
     </header>
+    {% if messages %}
+    <div class="pk-alert">
+        {% for message in messages %}{{ message }}{% endfor %}
+    </div>
+    {% endif %}
     <div class="pk-scan-home">
         <input type="text" id="pkListSearch" class="pk-scan-hidden" inputmode="none" autocomplete="off" autofocus data-scan-url="{% url 'staff_magacin_pakuj_sken' %}" aria-label="Barkod narudžbe">
         <button type="button" class="pk-cam pk-cam-xl" id="pkOrderScan" data-mg-scan-target="pkListSearch" data-mg-scan-title="Skeniraj narudžbu">

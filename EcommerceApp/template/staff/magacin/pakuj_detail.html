@@ -9,7 +9,7 @@
         <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
         <div class="pk-bar-title">
             <strong>#{{ order.broj }}</strong>
-            <span>{{ order.ime_prezime }}</span>
+            <span>{{ order.ime_prezime }}{% if order.pick_claimed_name %} · Preuzeo {{ order.pick_claimed_name }}{% endif %}</span>
         </div>
         <a class="pk-check-btn{% if mp_count %} is-blink{% endif %}" href="{% url 'staff_magacin_pakuj_provjera' %}">
             Provjera{% if mp_count %} <i>{{ mp_count }}</i>{% endif %}
@@ -78,8 +78,8 @@
         </div>
         <div id="pkDoneAll" class="pk-done-all" hidden>
             <strong>Sve pokupljeno</strong>
-            <p id="pkSlobaHint">Prvo klikni kod Slobe, pa Validatuj.</p>
-            <button type="button" class="pk-sloba" id="pkSlobaBtn">Klikni kod Slobe</button>
+            <p id="pkSlobaHint">Prvo označi Odnio kod Slobe, pa Validatuj.</p>
+            <button type="button" class="pk-sloba" id="pkSlobaBtn">Odnio kod Slobe</button>
             <button type="button" class="pk-valid" id="pkValidDoneBtn" hidden>Validatuj</button>
         </div>
         <p id="pkEmpty" class="pk-empty" hidden>Nema stavki za picking.</p>
