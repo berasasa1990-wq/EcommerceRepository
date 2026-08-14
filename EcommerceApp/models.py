@@ -5464,6 +5464,12 @@ class WarehouseSyncLog(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     trajanje_sekundi = models.PositiveIntegerField(default=0)
+    job_data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Sync job',
+        help_text='Stanje chunkova da sync preživi reload i Render timeout.',
+    )
     korisnik = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

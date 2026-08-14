@@ -6,7 +6,7 @@
     <dl class="mg-kv">
         <div class="mg-kv-row">
             <dt>Izvor zaliha</dt>
-            <dd>Lokalna baza (SQLite). Sync sada povlači iz Odoa sve artikle, lokacije, cijene, šifre, barkodove, slike i zalihe u Magacin. Pretraga vidi samo te sinhronizovane artikle.</dd>
+            <dd>Svaki server ima svoju bazu. Git push šalje samo kod, ne artikle. Na sajtu klikni Sync sada (ili u Render Shell: python manage.py sync_odoo_magacin) da se iz Odoo uvezu artikli kojih ovdje nema. Postojeći se ne dupliraju — samo količina i lokacija.</dd>
         </div>
         <div class="mg-kv-row">
             <dt>Odoo veza</dt>

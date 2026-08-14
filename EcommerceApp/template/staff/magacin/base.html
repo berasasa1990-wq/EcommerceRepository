@@ -101,8 +101,9 @@
                 <span class="dot"></span>
                 Nije rađena
             </div>
-            <p class="mg-sync-meta">Izvor: <strong>Lokalna baza (SQLite)</strong></p>
+            <p class="mg-sync-meta">Izvor: <strong>Odoo (ovaj server)</strong></p>
             {% endif %}
+            <p class="mg-sync-meta">Push ne šalje artikle. Sync vuče iz Odoo na ovaj server.</p>
             <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">

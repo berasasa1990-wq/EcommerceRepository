@@ -1511,11 +1511,50 @@ def _odoo_id_to_local(odoo_product_ids, *, variant_to_template=None, client=None
     return mapping
 
 
+def persist_sync_job(job):
+    if not job or not job.get('log_id'):
+        return
+    WarehouseSyncLog.objects.filter(pk=job['log_id']).update(job_data=job)
+
+
+def load_running_sync_job():
+    log = (
+        WarehouseSyncLog.objects.filter(status=WarehouseSyncLog.Status.U_TOKU)
+        .exclude(job_data={})
+        .order_by('-started_at')
+        .first()
+    )
+    if not log:
+        return None
+    job = log.job_data if isinstance(log.job_data, dict) else None
+    if not job or job.get('done') or job.get('cancelled'):
+        return None
+    job['log_id'] = log.pk
+    return job
+
+
+def run_sync_until(job, *, user=None, max_chunks=10, max_seconds=22):
+    """Odradi više chunkova u jednom HTTP requestu, bez Render timeouta."""
+    started = time.time()
+    chunks = 0
+    while not job.get('done') and chunks < max_chunks:
+        if time.time() - started >= max_seconds:
+            break
+        job = run_sync_chunk(job, user=user)
+        persist_sync_job(job)
+        chunks += 1
+        if job.get('error') or job.get('cancelled'):
+            break
+    return job
+
+
 def sync_from_odoo(*, user=None, product=None):
-    """Kompatibilnost: odradi cijeli sync u petlji (testovi / mali skup)."""
+    """Kompatibilnost: odradi cijeli sync u petlji (testovi / mali skup / Render shell)."""
     job = start_full_sync(user=user, product=product)
+    persist_sync_job(job)
     while not job.get('done'):
         job = run_sync_chunk(job, user=user)
+        persist_sync_job(job)
     if job.get('error'):
         raise MagacinError(job['error'])
     return WarehouseSyncLog.objects.filter(pk=job.get('log_id')).first()

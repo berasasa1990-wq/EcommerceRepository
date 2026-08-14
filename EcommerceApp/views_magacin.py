@@ -28,6 +28,9 @@ from .magacin import (
     reserve_for_order,
     is_ignored_stock_location,
     last_sync,
+    load_running_sync_job,
+    persist_sync_job,
+    run_sync_until,
     location_rows,
     countable_stock_qs,
     magacin_in_stock_q,
@@ -214,7 +217,9 @@ def _magacin_context(request, *, section='artikli', page_title='Magacin'):
         'search_query': '',
         'magacin_search': _magacin_search_query(request),
         'include_zero': (request.GET.get('bez_zalihe') or '') == '1',
-        'sync_job': _sync_job_view(request.session.get(MAGACIN_SYNC_SESSION_KEY)),
+        'sync_job': _sync_job_view(
+            request.session.get(MAGACIN_SYNC_SESSION_KEY) or load_running_sync_job()
+        ),
         'new_magacin_orders_count': counts['new_magacin_orders_count'],
         'new_pack_orders_count': counts['new_pack_orders_count'],
     }
@@ -2872,15 +2877,16 @@ def magacin_sync(request):
     action = (request.POST.get('action') or 'start').strip()
     try:
         if action == 'cancel':
-            job = request.session.get(MAGACIN_SYNC_SESSION_KEY)
+            job = request.session.get(MAGACIN_SYNC_SESSION_KEY) or load_running_sync_job()
             if job:
                 cancel_sync(job, user=request.user)
+                persist_sync_job(job)
             request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
             request.session.modified = True
             messages.info(request, 'Sinhronizacija je prekinuta.')
             return HttpResponseRedirect(next_url.split('?')[0] if next_url else reverse('staff_magacin_artikli'))
         if action == 'continue':
-            job = request.session.get(MAGACIN_SYNC_SESSION_KEY)
+            job = request.session.get(MAGACIN_SYNC_SESSION_KEY) or load_running_sync_job()
             if not job:
                 raise MagacinError('Sync sesija je istekla. Pokreni Sync ponovo.')
             if job.get('cancelled'):
@@ -2888,15 +2894,17 @@ def magacin_sync(request):
                 request.session.modified = True
                 messages.info(request, 'Sinhronizacija je prekinuta.')
                 return HttpResponseRedirect(next_url.split('?')[0] if next_url else reverse('staff_magacin_artikli'))
-            job = run_sync_chunk(job, user=request.user)
+            job = run_sync_until(job, user=request.user)
         else:
             product = None
             product_id = request.POST.get('product_id')
             if product_id:
                 product = get_object_or_404(Product, pk=product_id)
             job = start_full_sync(user=request.user, product=product)
-            job = run_sync_chunk(job, user=request.user)
+            persist_sync_job(job)
+            job = run_sync_until(job, user=request.user)
 
+        persist_sync_job(job)
         if job.get('done'):
             request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
             request.session.modified = True

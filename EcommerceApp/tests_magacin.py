@@ -299,6 +299,29 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertEqual(job['phase'], 'catalog')
         self.assertEqual(job['template_ids'], [88])
 
+    def test_persist_and_load_running_sync_job(self):
+        from EcommerceApp.magacin import load_running_sync_job, persist_sync_job
+
+        log = WarehouseSyncLog.objects.create(
+            status=WarehouseSyncLog.Status.U_TOKU,
+            izvor='Odoo',
+        )
+        job = {
+            'log_id': log.pk,
+            'phase': 'catalog',
+            'template_ids': [88, 99],
+            'position': 1,
+            'done': False,
+        }
+        persist_sync_job(job)
+        loaded = load_running_sync_job()
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded['template_ids'], [88, 99])
+        self.assertEqual(loaded['position'], 1)
+        job['done'] = True
+        persist_sync_job(job)
+        self.assertIsNone(load_running_sync_job())
+
     def test_creates_unknown_odoo_product(self):
         client = FakeOdooClient([{
             'id': 777,
