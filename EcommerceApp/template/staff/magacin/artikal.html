@@ -6,25 +6,62 @@
         ← Nazad na rezultate
     </a>
     <div class="mg-toolbar-actions">
-        <button type="button" class="mg-btn" id="mgZaliheBtn">Zalihe</button>
-        <form method="post" id="mgSkiniForm" class="mg-inline-form">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="skini">
-            {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
-            <button type="submit" class="mg-btn" id="mgSkiniBtn">Skini sa stanja</button>
-        </form>
+        <button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
     </div>
 </div>
 
-<section class="mg-card">
-    <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
-        <div class="mg-hero-img">
-            {% if product.prikazna_slika %}
-            <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}">
+<section class="mg-card mg-artikal-top">
+    <div class="mg-phone-artikal{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
+        <div class="mg-phone-visual">
+            <div class="mg-phone-shot">
+                {% if product.prikazna_slika %}
+                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}">
+                {% else %}
+                <div class="ph">Nema slike</div>
+                {% endif %}
+            </div>
+            <form method="post" class="mg-skini-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="skini">
+                {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                <button type="submit" class="mg-btn">Skini sa stanja</button>
+            </form>
+        </div>
+        <h1>{{ product.naziv }}</h1>
+        <p class="mg-phone-price">
+            {% if variation %}
+            {{ variation.prikazna_cijena }} KM{% if variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% endif %}
             {% else %}
-            <div class="ph">Nema slike</div>
+            {{ product.prikazna_cijena }} KM{% if product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
             {% endif %}
+        </p>
+        <ul class="mg-phone-locs">
+            {% for row in location_rows %}
+            <li>
+                <span>{{ row.location.sifra }}</span>
+                <b>{{ row.dostupno }}</b>
+            </li>
+            {% empty %}
+            <li class="is-empty">Nema zalihe</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
+        <div class="mg-hero-visual">
+            <div class="mg-hero-img">
+                {% if product.prikazna_slika %}
+                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}">
+                {% else %}
+                <div class="ph">Nema slike</div>
+                {% endif %}
+            </div>
+            <form method="post" class="mg-skini-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="skini">
+                {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                <button type="submit" class="mg-btn">Skini sa stanja</button>
+            </form>
         </div>
         <div>
             <h1 class="mg-hero-title">{{ product.naziv }}</h1>
@@ -291,31 +328,27 @@
 <div class="mg-modal" id="mgZaliheModal" hidden>
     <div class="mg-modal-bg" data-mg-zalihe-close></div>
     <div class="mg-modal-panel mg-zalihe-panel" role="dialog" aria-labelledby="mgZaliheTitle">
-        <h2 id="mgZaliheTitle">Zalihe</h2>
-        <div class="mg-price-hero mg-zalihe-price">
-            {% if variation %}
-            <strong>{{ variation.prikazna_cijena }} KM</strong>
-            {% if variation.na_akciji %}<s>{{ variation.cijena }} KM</s>{% endif %}
-            {% else %}
-            <strong>{{ product.prikazna_cijena }} KM</strong>
-            {% if product.na_akciji %}<s>{{ product.cijena }} KM</s>{% endif %}
-            {% endif %}
-            {% if meta.veleprodajna_cijena %}
-            <span>VPC {{ meta.veleprodajna_cijena }} KM</span>
-            {% endif %}
-        </div>
+        <p class="mg-zalihe-kicker">Zalihe</p>
+        <h2 id="mgZaliheTitle">
+            {% if variation %}{{ variation.prikazna_cijena }} KM{% else %}{{ product.prikazna_cijena }} KM{% endif %}
+        </h2>
+        {% if variation and variation.na_akciji %}
+        <p class="mg-zalihe-old"><s>{{ variation.cijena }} KM</s></p>
+        {% elif product.na_akciji %}
+        <p class="mg-zalihe-old"><s>{{ product.cijena }} KM</s></p>
+        {% endif %}
         <div class="mg-zalihe-actions">
-            <button type="button" class="mg-btn mg-btn-primary" data-mg-open-move data-mode="mp"{% if not location_rows %} disabled{% endif %}>Prenos u MP</button>
+            <button type="button" class="mg-btn" data-mg-open-move data-mode="mp"{% if not location_rows %} disabled{% endif %}>Prenos u MP</button>
             <button type="button" class="mg-btn" data-mg-open-move data-mode="transfer"{% if not location_rows %} disabled{% endif %}>Transfer</button>
             <button type="button" class="mg-btn" data-mg-open-move data-mode="add">Dodaj u novu lokaciju</button>
         </div>
-        <button type="button" class="mg-btn" data-mg-zalihe-close>Zatvori</button>
+        <button type="button" class="mg-zalihe-close" data-mg-zalihe-close>Zatvori</button>
     </div>
 </div>
 
 <div class="mg-modal" id="mgMoveModal" hidden>
     <div class="mg-modal-bg" data-mg-close></div>
-    <div class="mg-modal-panel" role="dialog" aria-labelledby="mgMoveTitle">
+    <div class="mg-modal-panel mg-zalihe-move" role="dialog" aria-labelledby="mgMoveTitle">
         <h2 id="mgMoveTitle">Zalihe</h2>
         <form method="post">
             {% csrf_token %}
@@ -353,7 +386,7 @@
                     <input name="kolicina" id="mgQtyInput" type="number" min="0" step="1" required>
                 </div>
             </div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+            <div class="mg-zalihe-move-btns">
                 <button type="button" class="mg-btn" data-mg-close>Otkaži</button>
                 <button type="submit" class="mg-btn mg-btn-primary">Potvrdi</button>
             </div>
@@ -385,14 +418,13 @@
         if (event.key === 'Escape' && !modal.hidden) closeChooser();
     });
 
-    var skiniForm = document.getElementById('mgSkiniForm');
-    if (skiniForm) {
+    document.querySelectorAll('.mg-skini-form').forEach(function (skiniForm) {
         skiniForm.addEventListener('submit', function (event) {
             if (!window.confirm('Skinuti artikal sa sajta i staviti sve količine na 0?')) {
                 event.preventDefault();
             }
         });
-    }
+    });
 })();
 </script>
 {% endblock %}

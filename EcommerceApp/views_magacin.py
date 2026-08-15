@@ -221,7 +221,7 @@ def _magacin_nav_counts():
     return data
 
 
-def _magacin_context(request, *, section='artikli', page_title='Magacin'):
+def _magacin_context(request, *, section='artikli', page_title='Magacin', hide_top_search=False):
     sync = last_sync()
     site_settings = SiteSettings.load()
     counts = _magacin_nav_counts()
@@ -230,6 +230,7 @@ def _magacin_context(request, *, section='artikli', page_title='Magacin'):
         'site_settings': site_settings,
         'magacin_section': section,
         'page_title': page_title,
+        'hide_top_search': hide_top_search,
         'last_sync': sync,
         'odoo_configured': odoo_je_konfigurisan(),
         'notify_count': counts['notify_count'],
@@ -831,7 +832,7 @@ def magacin_artikal(request, pk):
 
     price_history, price_chart = _product_uvoz_price_history(product)
 
-    context = _magacin_context(request, section='artikli', page_title=f'{product.naziv} — Magacin')
+    context = _magacin_context(request, section='artikli', page_title=f'{product.naziv} — Magacin', hide_top_search=True)
     context.update({
         'product': product,
         'meta': meta,
@@ -1179,7 +1180,7 @@ def magacin_artikal_izmjena(request, pk):
         except MagacinError as exc:
             messages.error(request, str(exc))
     meta = getattr(product, 'magacin_meta', None)
-    context = _magacin_context(request, section='artikli', page_title=f'Izmjena — {product.naziv}')
+    context = _magacin_context(request, section='artikli', page_title=f'Izmjena — {product.naziv}', hide_top_search=True)
     context.update({
         'product': product,
         'meta': meta,
@@ -1209,7 +1210,7 @@ def magacin_istorija(request, pk):
         qs = qs.filter(variation_id=variation_id)
     paginator = Paginator(qs, 50)
     page = paginator.get_page(request.GET.get('page') or 1)
-    context = _magacin_context(request, section='artikli', page_title=f'Istorija — {product.naziv}')
+    context = _magacin_context(request, section='artikli', page_title=f'Istorija — {product.naziv}', hide_top_search=True)
     context.update({'product': product, 'page': page})
     return render(request, 'staff/magacin/istorija.html', context)
 

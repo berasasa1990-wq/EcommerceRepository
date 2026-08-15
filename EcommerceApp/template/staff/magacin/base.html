@@ -8,10 +8,10 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260815scan">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260815zalcss">
 {% endblock %}
 
-{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% endblock %}
+{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% endblock %}
 
 {% block content %}
 <section class="mg-app" id="mgApp">
@@ -142,6 +142,7 @@
         <div class="mg-page-bar">
             <a href="{% url 'staff_admin_panel' %}" class="mg-back">← Nazad na Admin panel</a>
             <button type="button" class="mg-btn mg-nav-toggle" id="mgNavToggle">Meni magacina</button>
+            {% if not hide_top_search %}
             <form class="mg-page-search{% if magacin_section != 'artikli' %} is-artikli-only{% endif %}" method="get" action="{% url 'staff_magacin_artikli' %}" role="search" id="mgArticleSearchForm">
                 <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
                 <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Pretraži artikle po nazivu, šifri ili barkodu..." autocomplete="off" id="mgArticleSearch">
@@ -158,6 +159,7 @@
                 </label>
                 <button type="submit" class="mg-btn mg-btn-primary">Pretraži</button>
             </form>
+            {% endif %}
         </div>
         {% block magacin_content %}{% endblock %}
     </div>
@@ -184,6 +186,15 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+    if (!document.body.classList.contains('is-artikli') && !document.body.classList.contains('is-vp')) return;
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+        meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    }
+})();
+</script>
 <script src="{% static 'js/staff-magacin.js' %}?v=20260815zal3"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}
