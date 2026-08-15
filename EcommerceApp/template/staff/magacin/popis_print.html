@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="utf-8">
+    <title>Popis</title>
+    <style>
+        @page { size: A4 portrait; margin: 14mm; }
+        body { font: 13px/1.35 Arial, Helvetica, sans-serif; color: #111; margin: 0; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        .meta { color: #555; margin: 0 0 14px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #ddd; padding: 7px 6px; text-align: left; vertical-align: top; }
+        th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #555; }
+        td.n { width: 36px; }
+        td.q { width: 70px; text-align: right; font-weight: 700; }
+        .sifra { color: #444; font-size: 12px; }
+        @media screen {
+            body { padding: 20px; }
+            .bar { margin-bottom: 16px; }
+            button { min-height: 40px; padding: 0 14px; }
+        }
+        @media print { .bar { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="bar"><button type="button" onclick="window.print()">Štampaj</button></div>
+    <h1>Popis</h1>
+    <p class="meta">{{ popis.kreiran|date:"d.m.Y H:i" }} · {{ stavke|length }} stavki</p>
+    <table>
+        <thead>
+            <tr>
+                <th class="n">#</th>
+                <th>Naziv</th>
+                <th>Šifra</th>
+                <th class="q">Količina</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in stavke %}
+            <tr>
+                <td class="n">{{ forloop.counter }}</td>
+                <td>{{ row.naziv }}</td>
+                <td class="sifra">{{ row.sifra|default:"—" }}</td>
+                <td class="q">{{ row.kolicina }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Nema stavki.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>window.addEventListener('load', function () { window.print(); });</script>
+</body>
+</html>

@@ -61,10 +61,7 @@
         <span></span>
         <span>ARTIKAL</span>
         <span>ŠIFRA</span>
-        <span>KATEGORIJA</span>
-        <span>NA STANJU</span>
-        <span>REZ.</span>
-        <span>DOSTUPNO</span>
+        <span>LOKACIJE I DOSTUPNO</span>
         <span>STATUS</span>
     </div>
     {% for row in page %}
@@ -79,10 +76,13 @@
             <span class="sub">{{ row.product.brend.naziv|default:"" }}</span>
         </span>
         <span>{{ row.product.sifra|default:"—" }}</span>
-        <span>{{ row.product.kategorija.naziv|default:"—" }}</span>
-        <span class="{% if row.na_stanju <= 0 %}num-out{% endif %}">{{ row.na_stanju }}</span>
-        <span>{{ row.rezervisano }}</span>
-        <span class="{% if row.dostupno > 0 %}num-ok{% else %}num-out{% endif %}">{{ row.dostupno }}</span>
+        <span class="mg-loc-inline">
+            {% for loc in row.locations %}
+            <i><b>{{ loc.sifra }}</b> {{ loc.dostupno }}</i>
+            {% empty %}
+            <i class="is-empty">Nema zalihe</i>
+            {% endfor %}
+        </span>
         <span>
             {% if row.na_stanju <= 0 %}
             <span class="mg-pill is-out">Nije na stanju</span>

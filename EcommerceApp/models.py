@@ -5224,6 +5224,148 @@ class WarehouseLocation(models.Model):
         return self.sifra
 
 
+class MagacinPopis(models.Model):
+    class Status(models.TextChoices):
+        U_TOKU = 'u_toku', 'U toku'
+        ZAVRSEN = 'zavrsen', 'Završen'
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.U_TOKU, db_index=True)
+    kreiran = models.DateTimeField(auto_now_add=True)
+    azuriran = models.DateTimeField(auto_now=True)
+    zavrsen_at = models.DateTimeField(null=True, blank=True)
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_popisi',
+    )
+
+    class Meta:
+        verbose_name = 'Magacin popis'
+        verbose_name_plural = 'Magacin popisi'
+        ordering = ['-kreiran']
+
+    def __str__(self):
+        return f'Popis #{self.pk} ({self.get_status_display()})'
+
+
+class MagacinPopisStavka(models.Model):
+    popis = models.ForeignKey(MagacinPopis, on_delete=models.CASCADE, related_name='stavke')
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='popis_stavke',
+    )
+    variation = models.ForeignKey(
+        'ProductVariation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='popis_stavke',
+    )
+    naziv = models.CharField(max_length=200)
+    sifra = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
+    kolicina = models.PositiveIntegerField(default=1)
+    redoslijed = models.PositiveIntegerField(default=0)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Popis stavka'
+        verbose_name_plural = 'Popis stavke'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return f'{self.naziv} × {self.kolicina}'
+
+
+class MagacinVpNarudzba(models.Model):
+    class Status(models.TextChoices):
+        U_TOKU = 'u_toku', 'U toku'
+        ZAVRSENA = 'zavrsena', 'Završena'
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.U_TOKU, db_index=True)
+    customer = models.ForeignKey(
+        'WarehouseCustomer',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vp_narudzbe',
+    )
+    ime_prezime = models.CharField(max_length=200, blank=True)
+    telefon = models.CharField(max_length=30, blank=True)
+    adresa = models.CharField(max_length=300, blank=True)
+    grad = models.CharField(max_length=100, blank=True)
+    email = models.EmailField(blank=True)
+    postanski_broj = models.CharField(max_length=20, blank=True)
+    order = models.ForeignKey(
+        'Order',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vp_nacrti',
+    )
+    kreiran = models.DateTimeField(auto_now_add=True)
+    azuriran = models.DateTimeField(auto_now=True)
+    zavrsen_at = models.DateTimeField(null=True, blank=True)
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_vp_narudzbe',
+    )
+
+    class Meta:
+        verbose_name = 'Magacin VP narudžba'
+        verbose_name_plural = 'Magacin VP narudžbe'
+        ordering = ['-kreiran']
+
+    def __str__(self):
+        who = self.ime_prezime or 'bez kupca'
+        return f'VP #{self.pk} ({who})'
+
+
+class MagacinVpStavka(models.Model):
+    narudzba = models.ForeignKey(MagacinVpNarudzba, on_delete=models.CASCADE, related_name='stavke')
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vp_stavke',
+    )
+    variation = models.ForeignKey(
+        'ProductVariation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vp_stavke',
+    )
+    naziv = models.CharField(max_length=200)
+    sifra = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
+    kolicina = models.PositiveIntegerField(default=1)
+    cijena = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    mpc = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    mp_ok = models.BooleanField(default=False)
+    redoslijed = models.PositiveIntegerField(default=0)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'VP stavka'
+        verbose_name_plural = 'VP stavke'
+        ordering = ['redoslijed', 'id']
+
+    @property
+    def ukupno(self):
+        return (self.cijena or Decimal('0.00')) * self.kolicina
+
+    def __str__(self):
+        return f'{self.naziv} × {self.kolicina}'
+
+
 class WarehouseSupplier(models.Model):
     naziv = models.CharField(max_length=160, unique=True)
     aktivan = models.BooleanField(default=True)

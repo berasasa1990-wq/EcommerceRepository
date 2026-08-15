@@ -11,12 +11,13 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from .models import (
     BARKOD_MAX_LENGTH,
     SIFRA_MAX_LENGTH,
     Order,
+    OrderItem,
     OrderStockHold,
     Product,
     ProductVariation,
@@ -28,7 +29,13 @@ from .models import (
     WarehouseStock,
     WarehouseSupplier,
     WarehouseSyncLog,
+    MagacinPopis,
+    MagacinPopisStavka,
+    MagacinVpNarudzba,
+    MagacinVpStavka,
 )
+
+VP_MPC_DIVISOR = Decimal('1.38')
 
 
 class MagacinError(Exception):
@@ -840,11 +847,17 @@ def search_products(query, *, limit=40, include_zero=False):
     q = (query or '').strip()
     if q:
         qs = qs.filter(_product_search_q(q)).distinct()
+        folded = q.casefold()
         exact_qs = magacin_products_qs().filter(
-            Q(sifra__iexact=q) | Q(barkod__iexact=q) | Q(varijacije__sifra__iexact=q)
+            Q(sifra__iexact=q)
+            | Q(barkod__iexact=q)
+            | Q(naziv__iexact=q)
+            | Q(naziv_normalized__iexact=folded)
+            | Q(varijacije__sifra__iexact=q)
+            | Q(varijacije__naziv__iexact=q)
         ).distinct()
         exact = list(exact_qs[:2])
-        if len(exact) == 1 and not query_looks_like_name(q):
+        if len(exact) == 1:
             return exact, exact[0]
     qs = qs.distinct()
     if include_zero:
@@ -1673,7 +1686,6 @@ def persist_sync_job(job):
 def load_running_sync_job():
     log = (
         WarehouseSyncLog.objects.filter(status=WarehouseSyncLog.Status.U_TOKU)
-        .exclude(job_data={})
         .order_by('-started_at')
         .first()
     )
@@ -1713,6 +1725,293 @@ def sync_from_odoo(*, user=None, product=None):
     return WarehouseSyncLog.objects.filter(pk=job.get('log_id')).first()
 
 
+@transaction.atomic
+def skini_sa_sajta(product, *, user=None):
+    """Rasprodato: sve magacinske količine na 0, artikal nestaje sa sajta."""
+    stocks = list(
+        countable_stock_qs(WarehouseStock.objects.filter(product=product))
+        .filter(Q(kolicina__gt=0) | Q(rezervisano__gt=0))
+        .select_related('location', 'variation')
+    )
+    for stock in stocks:
+        apply_movement(
+            product=product,
+            variation=stock.variation,
+            location=stock.location,
+            tip=WarehouseMovement.Tip.KOREKCIJA,
+            kolicina=0,
+            napomena='Skini sa stanja (rasprodato)',
+            user=user,
+        )
+    ProductVariation.objects.filter(artikal=product).update(stanje=0, na_stanju=False)
+    product.stanje = 0
+    product.na_stanju = False
+    product.save(update_fields=['stanje', 'na_stanju'])
+    return product
+
+
+def active_popis():
+    from django.db import OperationalError, ProgrammingError
+
+    try:
+        return (
+            MagacinPopis.objects.filter(status=MagacinPopis.Status.U_TOKU)
+            .order_by('-kreiran')
+            .first()
+        )
+    except (ProgrammingError, OperationalError):
+        return None
+
+
+def start_popis(*, user=None):
+    existing = active_popis()
+    if existing:
+        return existing
+    return MagacinPopis.objects.create(
+        kreirao=user if getattr(user, 'is_authenticated', False) else None,
+    )
+
+
+def add_popis_stavka(popis, *, product, qty, variation=None):
+    qty = max(1, _int(qty))
+    if popis.status != MagacinPopis.Status.U_TOKU:
+        raise MagacinError('Ovaj popis je završen.')
+    if variation and variation.artikal_id != product.pk:
+        raise MagacinError('Varijacija ne pripada artiklu.')
+    naziv = product.naziv
+    sifra = product.sifra or ''
+    if variation:
+        naziv = f'{product.naziv} {variation.naziv}'.strip()
+        sifra = variation.sifra or product.sifra or ''
+    existing = popis.stavke.filter(product=product, variation=variation).first()
+    if existing:
+        existing.kolicina += qty
+        existing.save(update_fields=['kolicina'])
+        return existing
+    next_rb = (popis.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
+    return MagacinPopisStavka.objects.create(
+        popis=popis,
+        product=product,
+        variation=variation,
+        naziv=naziv[:200],
+        sifra=(sifra or '')[:SIFRA_MAX_LENGTH],
+        kolicina=qty,
+        redoslijed=next_rb,
+    )
+
+
+def finish_popis(popis):
+    if popis.status == MagacinPopis.Status.ZAVRSEN:
+        return popis
+    popis.status = MagacinPopis.Status.ZAVRSEN
+    popis.zavrsen_at = timezone.now()
+    popis.save(update_fields=['status', 'zavrsen_at'])
+    return popis
+
+
+def vp_cijena_from_mpc(mpc):
+    amount = Decimal(str(mpc or 0))
+    if amount <= 0:
+        return Decimal('0.00')
+    return (amount / VP_MPC_DIVISOR).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+def vp_cijena(product, variation=None):
+    mpc = variation.prikazna_cijena if variation else product.prikazna_cijena
+    return vp_cijena_from_mpc(mpc), Decimal(str(mpc or 0)).quantize(Decimal('0.01'))
+
+
+def active_vp_narudzba():
+    from django.db import OperationalError, ProgrammingError
+
+    try:
+        return (
+            MagacinVpNarudzba.objects.filter(status=MagacinVpNarudzba.Status.U_TOKU)
+            .order_by('-kreiran')
+            .first()
+        )
+    except (ProgrammingError, OperationalError):
+        return None
+
+
+def start_vp_narudzba(*, user=None):
+    existing = active_vp_narudzba()
+    if existing:
+        return existing
+    return MagacinVpNarudzba.objects.create(
+        kreirao=user if getattr(user, 'is_authenticated', False) else None,
+    )
+
+
+def set_vp_customer(draft, customer):
+    if draft.status != MagacinVpNarudzba.Status.U_TOKU:
+        raise MagacinError('Ova VP narudžba je završena.')
+    if not customer:
+        raise MagacinError('Izaberi kupca.')
+    draft.customer = customer
+    draft.ime_prezime = (customer.ime_prezime or '')[:200]
+    draft.telefon = (customer.telefon or '')[:30]
+    draft.adresa = (customer.adresa or '')[:300]
+    draft.grad = (customer.grad or '')[:100]
+    draft.email = customer.email or ''
+    draft.postanski_broj = (customer.postanski_broj or '')[:20]
+    draft.save(update_fields=[
+        'customer', 'ime_prezime', 'telefon', 'adresa', 'grad', 'email', 'postanski_broj', 'azuriran',
+    ])
+    return draft
+
+
+def add_vp_stavka(draft, *, product, qty, variation=None, mp_ok=False):
+    qty = max(1, _int(qty))
+    if draft.status != MagacinVpNarudzba.Status.U_TOKU:
+        raise MagacinError('Ova VP narudžba je završena.')
+    if variation and variation.artikal_id != product.pk:
+        raise MagacinError('Varijacija ne pripada artiklu.')
+    naziv = product.naziv
+    sifra = product.sifra or ''
+    if variation:
+        naziv = f'{product.naziv} {variation.naziv}'.strip()
+        sifra = variation.sifra or product.sifra or ''
+    cijena, mpc = vp_cijena(product, variation)
+    existing = draft.stavke.filter(product=product, variation=variation).first()
+    if existing:
+        existing.kolicina += qty
+        existing.cijena = cijena
+        existing.mpc = mpc
+        fields = ['kolicina', 'cijena', 'mpc']
+        if mp_ok and not existing.mp_ok:
+            existing.mp_ok = True
+            fields.append('mp_ok')
+        existing.save(update_fields=fields)
+        return existing
+    next_rb = (draft.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
+    return MagacinVpStavka.objects.create(
+        narudzba=draft,
+        product=product,
+        variation=variation,
+        naziv=naziv[:200],
+        sifra=(sifra or '')[:SIFRA_MAX_LENGTH],
+        kolicina=qty,
+        cijena=cijena,
+        mpc=mpc,
+        mp_ok=bool(mp_ok),
+        redoslijed=next_rb,
+    )
+
+
+def set_vp_stavka_qty(draft, stavka_id, qty, *, mp_ok=False):
+    if draft.status != MagacinVpNarudzba.Status.U_TOKU:
+        raise MagacinError('Ova VP narudžba je završena.')
+    qty = max(1, _int(qty))
+    stavka = draft.stavke.filter(pk=stavka_id).first()
+    if not stavka:
+        raise MagacinError('Stavka nije pronađena.')
+    fields = []
+    if stavka.kolicina != qty:
+        stavka.kolicina = qty
+        fields.append('kolicina')
+    if mp_ok and not stavka.mp_ok:
+        stavka.mp_ok = True
+        fields.append('mp_ok')
+    if fields:
+        stavka.save(update_fields=fields)
+    return stavka
+
+
+def remove_vp_stavka(draft, stavka_id):
+    if draft.status != MagacinVpNarudzba.Status.U_TOKU:
+        raise MagacinError('Ova VP narudžba je završena.')
+    deleted, _ = draft.stavke.filter(pk=stavka_id).delete()
+    if not deleted:
+        raise MagacinError('Stavka nije pronađena.')
+
+
+def finish_vp_narudzba(draft, *, user=None):
+    if draft.status == MagacinVpNarudzba.Status.ZAVRSENA:
+        return draft.order
+    if not (draft.ime_prezime or '').strip() or not (draft.telefon or '').strip():
+        raise MagacinError('Izaberi ili dodaj kupca.')
+    stavke = list(draft.stavke.select_related('product', 'variation'))
+    if not stavke:
+        raise MagacinError('Dodaj barem jedan artikal.')
+    lines = []
+    mp_names = []
+    for row in stavke:
+        if not row.product_id:
+            raise MagacinError(f'Artikal „{row.naziv}” više ne postoji.')
+        available = stock_totals(row.product, row.variation)['dostupno']
+        shortfall = max(0, row.kolicina - available)
+        if shortfall > 0 and not row.mp_ok:
+            raise MagacinError(
+                f'„{row.naziv}” nema dovoljno zalihe u magacinu ({available}). '
+                'Provjeri maloprodaju pa dodaj, ili makni stavku.'
+            )
+        if shortfall > 0 and row.mp_ok:
+            mp_names.append(row.naziv)
+        bazna = row.variation.bazna_cijena if row.variation else row.product.bazna_cijena
+        lines.append({
+            'product': row.product,
+            'variation': row.variation,
+            'qty': row.kolicina,
+            'cijena': row.cijena,
+            'bazna': bazna,
+            'shortfall': shortfall,
+        })
+    medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
+    email = (draft.email or '').strip() or 'vp@opremazaribolov.ba'
+    adresa = (draft.adresa or '').strip() or 'VP narudžba'
+    grad = (draft.grad or '').strip() or '—'
+    napomena = 'VP narudžba'
+    if mp_names:
+        napomena = f'{napomena}\nMaloprodaja: {", ".join(mp_names)}'
+    with transaction.atomic():
+        order = Order.objects.create(
+            ime_prezime=draft.ime_prezime[:200],
+            email=email[:254],
+            telefon=draft.telefon[:30],
+            adresa=adresa[:300],
+            grad=grad[:100],
+            postanski_broj=(draft.postanski_broj or '')[:20],
+            napomena=napomena,
+            medjuzbir=medjuzbir,
+            dostava=Decimal('0.00'),
+            popust=Decimal('0.00'),
+            ukupno=medjuzbir,
+            status=Order.Status.NOVA,
+            izvor=Order.Izvor.MAGACIN,
+        )
+        for line in lines:
+            product = line['product']
+            variation = line['variation']
+            OrderItem.objects.create(
+                narudzba=order,
+                artikal=product,
+                varijacija=variation,
+                naziv=product.naziv[:200],
+                product_naziv=product.naziv[:200],
+                varijacija_naziv=(variation.naziv[:100] if variation else ''),
+                sifra=((variation.sifra if variation and variation.sifra else product.sifra) or '')[:200],
+                cijena=line['cijena'],
+                bazna_cijena=line['bazna'],
+                kolicina=line['qty'],
+            )
+            reserve_for_order(
+                order,
+                product,
+                line['qty'] - line['shortfall'],
+                variation=variation,
+                user=user,
+                napomena=f'VP rezervacija #{order.broj}',
+            )
+        order.lager_status = Order.LagerStatus.REZERVISANO
+        order.save(update_fields=['lager_status'])
+        draft.status = MagacinVpNarudzba.Status.ZAVRSENA
+        draft.order = order
+        draft.zavrsen_at = timezone.now()
+        draft.save(update_fields=['status', 'order', 'zavrsen_at'])
+    return order
+
+
 def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
     """Skini slobodnu količinu (bez rezervisanog). Vraća koliko nije skinuto."""
     remaining = max(0, _int(qty))
@@ -1738,12 +2037,15 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
     return remaining
 
 
-def reserve_for_order(order, product, qty, *, variation=None, user=None, napomena=''):
+def reserve_for_order(order, product, qty, *, variation=None, user=None, napomena='', location=None):
     """Rezerviši slobodnu zalihu za narudžbu. Vraća koliko nije rezervisano."""
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
     rows, _ = location_rows(product, variation)
+    if location is not None:
+        loc_pk = getattr(location, 'pk', location)
+        rows = [row for row in rows if row['location'].pk == loc_pk]
     for row in rows:
         if remaining <= 0:
             break
@@ -1771,6 +2073,86 @@ def reserve_for_order(order, product, qty, *, variation=None, user=None, napomen
         )
         remaining -= take
     return remaining
+
+
+def is_prenos_mp_order(order):
+    state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
+    if state.get('kind') == 'prenos_mp':
+        return True
+    return (getattr(order, 'ime_prezime', '') or '').strip().casefold() == 'prenos u mp'
+
+
+@transaction.atomic
+def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
+    """Napravi picking za prenos u MP — Validate skida zalihu s odabrane lokacije."""
+    from .models import Order, OrderItem
+
+    qty = _parse_move_qty(qty)
+    if qty <= 0:
+        raise MagacinError('Unesi količinu za prenos u MP.')
+    rows, _ = location_rows(product, variation)
+    row = next((item for item in rows if item['location'].pk == location.pk), None)
+    if row is None or row['dostupno'] < qty:
+        raise MagacinError('Nema dovoljno dostupne količine na toj lokaciji.')
+    cijena = product.cijena or Decimal('0.00')
+    order = Order.objects.create(
+        ime_prezime='Prenos u MP',
+        email='prenos@carpologijabh.local',
+        telefon='-',
+        adresa=(location.label or location.sifra or '')[:300],
+        grad='Magacin',
+        napomena=f'Prenos u MP sa {location.label}',
+        medjuzbir=cijena * qty,
+        dostava=Decimal('0.00'),
+        ukupno=cijena * qty,
+        status=Order.Status.NOVA,
+        izvor=Order.Izvor.MAGACIN,
+        pick_state={'kind': 'prenos_mp', 'from_location_id': location.pk},
+    )
+    OrderItem.objects.create(
+        narudzba=order,
+        artikal=product,
+        varijacija=variation,
+        naziv=product.naziv[:200],
+        product_naziv=product.naziv[:200],
+        varijacija_naziv=(variation.naziv[:100] if variation else ''),
+        sifra=((variation.sifra if variation and variation.sifra else product.sifra) or '')[:200],
+        cijena=cijena,
+        bazna_cijena=cijena,
+        kolicina=qty,
+    )
+    leftover = reserve_for_order(
+        order,
+        product,
+        qty,
+        variation=variation,
+        user=user,
+        napomena=f'Prenos u MP #{order.broj}',
+        location=location,
+    )
+    if leftover:
+        raise MagacinError('Nije rezervisana puna količina za prenos u MP.')
+    order.lager_status = Order.LagerStatus.REZERVISANO
+    order.save(update_fields=['lager_status'])
+    try:
+        from .views_magacin import invalidate_magacin_nav_counts
+
+        invalidate_magacin_nav_counts()
+    except Exception:
+        pass
+    return order
+
+
+def _parse_move_qty(raw):
+    if isinstance(raw, int):
+        return max(0, raw)
+    text = str(raw or '').strip().replace(',', '.')
+    if not text:
+        return 0
+    try:
+        return max(0, int(Decimal(text)))
+    except (ArithmeticError, ValueError, TypeError):
+        raise MagacinError('Količina nije validan broj.')
 
 
 @transaction.atomic
@@ -1861,7 +2243,7 @@ def last_sync():
         cached = cache.get('mg_last_sync_v1')
         if cached is not None:
             return cached or None
-    log = WarehouseSyncLog.objects.order_by('-started_at').first()
+    log = WarehouseSyncLog.objects.defer('job_data').order_by('-started_at').first()
     if use_cache:
         cache.set('mg_last_sync_v1', log or False, 30)
     return log

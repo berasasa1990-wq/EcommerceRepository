@@ -5,11 +5,20 @@
     <a class="mg-back" href="{% url 'staff_magacin_artikli' %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
         ← Nazad na rezultate
     </a>
-    <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
+    <div class="mg-toolbar-actions">
+        <button type="button" class="mg-btn" id="mgZaliheBtn">Zalihe</button>
+        <form method="post" id="mgSkiniForm" class="mg-inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="skini">
+            {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+            <button type="submit" class="mg-btn" id="mgSkiniBtn">Skini sa stanja</button>
+        </form>
+        <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
+    </div>
 </div>
 
 <section class="mg-card">
-    <div class="mg-hero">
+    <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% endif %}">
         <div class="mg-hero-img">
             {% if product.prikazna_slika %}
             <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}">
@@ -20,18 +29,23 @@
         <div>
             <h1 class="mg-hero-title">{{ product.naziv }}</h1>
             <dl class="mg-meta-grid">
-                <dt>Šifra / Barcode</dt>
-                <dd>{{ product.sifra|default:"—" }}{% if product.barkod %} / {{ product.barkod }}{% endif %}</dd>
+                <dt>Šifra</dt>
+                <dd>{{ product.sifra|default:"—" }}</dd>
+                <dt>Barkod</dt>
+                <dd>{{ product.barkod|default:"—" }}</dd>
                 <dt>Kategorija</dt>
                 <dd>{{ product.kategorija.naziv|default:"—" }}</dd>
                 <dt>Brend</dt>
                 <dd>{{ product.brend.naziv|default:"—" }}</dd>
-                <dt>Dobavljač</dt>
-                <dd>{{ meta.dobavljac.naziv|default:"—" }}</dd>
-                <dt>Jedinica mjere</dt>
-                <dd>{{ meta.jedinica_mjere|default:"kom" }}</dd>
-                <dt>Min. zaliha</dt>
-                <dd>{% if meta %}{{ meta.min_zaliha }} {{ meta.jedinica_mjere|default:"kom" }}{% else %}0 kom{% endif %}</dd>
+                <dt>Cijena</dt>
+                <dd class="mg-meta-price">
+                    {% if variation %}
+                    {{ variation.prikazna_cijena }} KM{% if variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% endif %}
+                    {% else %}
+                    {{ product.prikazna_cijena }} KM{% if product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
+                    {% endif %}
+                    {% if meta.veleprodajna_cijena %} · VPC {{ meta.veleprodajna_cijena }} KM{% endif %}
+                </dd>
             </dl>
         </div>
         <div class="mg-hero-aside">
@@ -67,11 +81,6 @@
     <section class="mg-card mg-artikal-stock">
         <div class="mg-card-head">
             <h2 class="mg-h">Zalihe po lokacijama</h2>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button type="button" class="mg-btn mg-btn-primary" data-mg-open-move data-mode="update"{% if not location_rows %} disabled{% endif %}>Ažuriraj postojeću</button>
-                <button type="button" class="mg-btn" data-mg-open-move data-mode="transfer"{% if not location_rows %} disabled{% endif %}>Transfer</button>
-                <button type="button" class="mg-btn" data-mg-open-move data-mode="add">Dodaj na novu</button>
-            </div>
         </div>
         {% if variations %}
         <p class="mg-sync-meta" style="margin-top:-6px;margin-bottom:10px;">
@@ -89,11 +98,11 @@
             </thead>
             <tbody>
                 {% for row in location_rows %}
-                <tr class="is-clickable" data-mg-open-move data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.label }}">
-                    <td>{{ row.location.label }}</td>
+                <tr class="is-clickable mg-stock-row" data-mg-open-move data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}">
+                    <td><strong class="mg-loc-name">{{ row.location.sifra }}</strong></td>
                     <td class="num">{{ row.kolicina }}</td>
                     <td class="num">{{ row.rezervisano }}</td>
-                    <td class="num num-ok">{{ row.dostupno }}</td>
+                    <td class="num num-ok mg-loc-qty">{{ row.dostupno }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
@@ -279,10 +288,35 @@
 </div>
 </div>
 
+<div class="mg-modal" id="mgZaliheModal" hidden>
+    <div class="mg-modal-bg" data-mg-zalihe-close></div>
+    <div class="mg-modal-panel mg-zalihe-panel" role="dialog" aria-labelledby="mgZaliheTitle">
+        <h2 id="mgZaliheTitle">Zalihe</h2>
+        <div class="mg-price-hero mg-zalihe-price">
+            {% if variation %}
+            <strong>{{ variation.prikazna_cijena }} KM</strong>
+            {% if variation.na_akciji %}<s>{{ variation.cijena }} KM</s>{% endif %}
+            {% else %}
+            <strong>{{ product.prikazna_cijena }} KM</strong>
+            {% if product.na_akciji %}<s>{{ product.cijena }} KM</s>{% endif %}
+            {% endif %}
+            {% if meta.veleprodajna_cijena %}
+            <span>VPC {{ meta.veleprodajna_cijena }} KM</span>
+            {% endif %}
+        </div>
+        <div class="mg-zalihe-actions">
+            <button type="button" class="mg-btn mg-btn-primary" data-mg-open-move data-mode="mp"{% if not location_rows %} disabled{% endif %}>Prenos u MP</button>
+            <button type="button" class="mg-btn" data-mg-open-move data-mode="transfer"{% if not location_rows %} disabled{% endif %}>Transfer</button>
+            <button type="button" class="mg-btn" data-mg-open-move data-mode="add">Dodaj u novu lokaciju</button>
+        </div>
+        <button type="button" class="mg-btn" data-mg-zalihe-close>Zatvori</button>
+    </div>
+</div>
+
 <div class="mg-modal" id="mgMoveModal" hidden>
     <div class="mg-modal-bg" data-mg-close></div>
     <div class="mg-modal-panel" role="dialog" aria-labelledby="mgMoveTitle">
-        <h2 id="mgMoveTitle">Ažuriraj postojeću lokaciju</h2>
+        <h2 id="mgMoveTitle">Zalihe</h2>
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="action" value="kretanje">
@@ -293,7 +327,7 @@
                     <label id="mgLocUpdateLabel">Lokacija</label>
                     <select name="location_id" id="mgMoveLocation">
                         {% for row in location_rows %}
-                        <option value="{{ row.location.pk }}" data-qty="{{ row.kolicina }}"{% if forloop.first %} selected{% endif %}>{{ row.location.label }}</option>
+                        <option value="{{ row.location.pk }}" data-qty="{{ row.kolicina }}"{% if forloop.first %} selected{% endif %}>{{ row.location.sifra }}</option>
                         {% empty %}
                         <option value="" disabled>Nema lokacije sa zalihom</option>
                         {% endfor %}
@@ -307,7 +341,7 @@
                         <input type="search" id="mgAddLocationQuery" placeholder="Kucaj šifru ili naziv lokacije..." autocomplete="off">
                         <ul class="mg-loc-suggest" id="mgAddLocationList" hidden>
                             {% for loc in locations %}
-                            <li data-id="{{ loc.pk }}" data-label="{{ loc.label }}">{{ loc.label }}</li>
+                            <li data-id="{{ loc.pk }}" data-label="{{ loc.sifra }}">{{ loc.sifra }}</li>
                             {% empty %}
                             <li class="is-empty" data-empty="1">Nema lokacija</li>
                             {% endfor %}
@@ -326,4 +360,39 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var btn = document.getElementById('mgZaliheBtn');
+    var modal = document.getElementById('mgZaliheModal');
+    if (!btn || !modal) return;
+    function openChooser() { modal.hidden = false; }
+    function closeChooser() { modal.hidden = true; }
+    btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openChooser();
+    });
+    modal.querySelectorAll('[data-mg-zalihe-close]').forEach(function (el) {
+        el.addEventListener('click', closeChooser);
+    });
+    modal.querySelectorAll('[data-mg-open-move]').forEach(function (el) {
+        el.addEventListener('click', closeChooser);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.hidden) closeChooser();
+    });
+
+    var skiniForm = document.getElementById('mgSkiniForm');
+    if (skiniForm) {
+        skiniForm.addEventListener('submit', function (event) {
+            if (!window.confirm('Skinuti artikal sa sajta i staviti sve količine na 0?')) {
+                event.preventDefault();
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}

@@ -55,6 +55,7 @@
         });
     }
 
+    try { initZaliheMenu(); } catch (err) {}
     initCustomerPicker();
     initManualOrderForm();
     initOrderBulkPrint();
@@ -145,22 +146,30 @@
     function syncMode(mode) {
         var isAdd = mode === 'add';
         var isTransfer = mode === 'transfer';
-        if (modeInput) modeInput.value = isTransfer ? 'transfer' : (isAdd ? 'add' : 'update');
-        if (title) {
-            title.textContent = isTransfer
-                ? 'Transfer na drugu lokaciju'
-                : (isAdd ? 'Dodaj na novu lokaciju' : 'Ažuriraj postojeću lokaciju');
+        var isMp = mode === 'mp';
+        if (modeInput) {
+            modeInput.value = isMp ? 'mp' : (isTransfer ? 'transfer' : (isAdd ? 'add' : 'update'));
         }
-        if (updateField) updateField.hidden = isAdd;
+        if (title) {
+            title.textContent = isMp
+                ? 'Prenos u MP'
+                : (isTransfer
+                    ? 'Transfer'
+                    : (isAdd ? 'Dodaj u novu lokaciju' : 'Zalihe'));
+        }
+        if (updateField) updateField.hidden = isAdd || isMp;
         if (addField) addField.hidden = !(isAdd || isTransfer);
         if (updateLabel) updateLabel.textContent = isTransfer ? 'Sa lokacije' : 'Lokacija';
         if (addLabel) addLabel.textContent = isTransfer ? 'Na lokaciju' : 'Lokacija';
-        if (locSelect) locSelect.required = !isAdd;
+        if (locSelect) locSelect.required = !(isAdd || isMp);
         if (addSelect) addSelect.required = isAdd || isTransfer;
         if (qtyInput) {
-            qtyInput.min = isTransfer ? '1' : '0';
+            qtyInput.min = (isTransfer || isMp) ? '1' : '0';
         }
-        if (isAdd) {
+        if (isMp) {
+            resetAddSearch();
+            if (qtyInput) qtyInput.value = '1';
+        } else if (isAdd) {
             resetAddSearch();
             if (qtyInput) qtyInput.value = '';
         } else if (isTransfer) {
@@ -180,6 +189,7 @@
             locSelect.value = String(locationId);
             fillUpdateQty();
         }
+        modal.classList.toggle('is-qty-only', mode === 'mp');
         modal.hidden = false;
     }
     function closeModal() {
@@ -210,6 +220,27 @@
         });
     }
 })();
+
+function initZaliheMenu() {
+    var btn = document.getElementById('mgZaliheBtn');
+    var modal = document.getElementById('mgZaliheModal');
+    if (!btn || !modal) return;
+    function openChooser() { modal.hidden = false; }
+    function closeChooser() { modal.hidden = true; }
+    btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        openChooser();
+    });
+    modal.querySelectorAll('[data-mg-zalihe-close]').forEach(function (el) {
+        el.addEventListener('click', closeChooser);
+    });
+    modal.querySelectorAll('[data-mg-open-move]').forEach(function (el) {
+        el.addEventListener('click', closeChooser);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.hidden) closeChooser();
+    });
+}
 
 function initCustomerPicker() {
     var search = document.getElementById('mgCustomerSearch');
@@ -1946,32 +1977,17 @@ function initArticleScanner() {
         msg: document.getElementById('pkMsg'),
         valid: document.getElementById('pkValidBtn'),
         form: document.getElementById('mgPackValidateForm'),
-        sloba: document.getElementById('pkSlobaBtn'),
-        slobaHint: document.getElementById('pkSlobaHint'),
         validDone: document.getElementById('pkValidDoneBtn'),
         takeLess: document.getElementById('pkTakeLess'),
         takeAll: document.getElementById('pkTakeAll'),
         pickJson: document.getElementById('pkPickJson'),
     };
-    var slobaKey = 'mg-sloba-' + broj;
-    var slobaOk = false;
-    try { slobaOk = window.sessionStorage.getItem(slobaKey) === '1'; } catch (err) { slobaOk = false; }
+    var isPrenosMp = root.getAttribute('data-prenos-mp') === '1';
 
-    function setSlobaOk(on) {
-        slobaOk = !!on;
-        try {
-            if (slobaOk) window.sessionStorage.setItem(slobaKey, '1');
-            else window.sessionStorage.removeItem(slobaKey);
-        } catch (err) {}
-        syncValidateGate();
-    }
     function syncValidateGate() {
         var ready = queue.length > 0 && doneCount() === queue.length;
-        var showValid = ready && slobaOk;
-        if (els.form) els.form.hidden = !showValid;
-        if (els.sloba) els.sloba.hidden = !ready || slobaOk;
-        if (els.slobaHint) els.slobaHint.hidden = !ready || slobaOk;
-        if (els.validDone) els.validDone.hidden = !showValid;
+        if (els.form) els.form.hidden = !ready;
+        if (els.validDone) els.validDone.hidden = !ready;
     }
 
     function persist() {
@@ -2248,11 +2264,6 @@ function initArticleScanner() {
         if (name === 'pick' && els.scan) els.scan.focus();
     }
 
-    if (els.sloba) {
-        els.sloba.addEventListener('click', function () {
-            setSlobaOk(true);
-        });
-    }
     if (els.validDone) {
         els.validDone.addEventListener('click', function () {
             if (els.valid) els.valid.click();
@@ -2261,18 +2272,17 @@ function initArticleScanner() {
     if (els.form) {
         els.form.addEventListener('submit', function (event) {
             var broj = root.getAttribute('data-broj') || '';
-            var msg = 'Želiš li validatovati narudžbu #' + broj + '?';
+            var msg = isPrenosMp
+                ? 'Želiš li validatovati prenos u MP #' + broj + '? Skida se sa stanja.'
+                : 'Želiš li validatovati narudžbu #' + broj + '?';
             if (queue.length && doneCount() < queue.length) {
-                msg = 'Nisu sve stavke pokupljene. Želiš li validatovati narudžbu #' + broj + '?';
-            }
-            if (!slobaOk) {
-                event.preventDefault();
-                return;
+                msg = isPrenosMp
+                    ? 'Nije sve pokupljeno. Validatovati prenos u MP #' + broj + '?'
+                    : 'Nisu sve stavke pokupljene. Želiš li validatovati narudžbu #' + broj + '?';
             }
             if (!window.confirm(msg)) event.preventDefault();
             else {
                 try { window.localStorage.removeItem(storageKey); } catch (err) {}
-                try { window.sessionStorage.removeItem(slobaKey); } catch (err) {}
             }
         });
     }

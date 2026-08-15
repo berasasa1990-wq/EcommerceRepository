@@ -1,7 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pk-app" id="pkPickApp" data-broj="{{ order.broj }}">
+<div class="pk-app" id="pkPickApp" data-broj="{{ order.broj }}"{% if is_prenos_mp %} data-prenos-mp="1"{% endif %}>
     <script type="application/json" id="pkQueue">{{ pick_queue_json|safe }}</script>
     <script type="application/json" id="pkState">{{ pick_state_json|safe }}</script>
 
@@ -78,9 +78,7 @@
         </div>
         <div id="pkDoneAll" class="pk-done-all" hidden>
             <strong>Sve pokupljeno</strong>
-            <p id="pkSlobaHint">Prvo označi Odnio kod Slobe, pa Validatuj.</p>
-            <button type="button" class="pk-sloba" id="pkSlobaBtn">Odnio kod Slobe</button>
-            <button type="button" class="pk-valid" id="pkValidDoneBtn" hidden>Validatuj</button>
+            <button type="button" class="pk-valid" id="pkValidDoneBtn">Validatuj</button>
         </div>
         <p id="pkEmpty" class="pk-empty" hidden>Nema stavki za picking.</p>
     </section>

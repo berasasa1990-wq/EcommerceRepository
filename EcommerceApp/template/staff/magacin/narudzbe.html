@@ -16,6 +16,7 @@
     </div>
     <div class="mg-toolbar-actions">
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_narudzba_nova' %}">+ Nova ručna narudžba</a>
+        <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_vp_narudzba' %}">VP narudžbe</a>
         {% if show_validated %}
         {% if show_all_validated %}
         <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?validirane=1{% if izvor_filter != 'sve' %}&izvor={{ izvor_filter }}{% endif %}">Samo danas</a>

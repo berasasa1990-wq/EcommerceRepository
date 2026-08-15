@@ -1,0 +1,30 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="pk-app pk-prenos" id="pkPrenosApp">
+    <header class="pk-bar">
+        <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
+        <div class="pk-bar-title">
+            <strong>Prenos u MP</strong>
+        </div>
+    </header>
+
+    {% if odoo_error %}
+    <p class="pk-alert">{{ odoo_error }}</p>
+    {% endif %}
+
+    {% with item=order.stavke.first hold=order.magacin_holds.first %}
+    <section class="pk-prenos-screen">
+        <p class="pk-prenos-kicker">Lokacija</p>
+        <p class="pk-prenos-loc">{{ hold.location.sifra|default:order.adresa }}</p>
+        <p class="pk-prenos-name">{{ item.naziv }}</p>
+        <p class="pk-prenos-kicker">Količina</p>
+        <p class="pk-prenos-qty">{{ item.kolicina }}</p>
+        <form method="post" class="pk-prenos-form">
+            {% csrf_token %}
+            <button type="submit" name="action" value="validiraj" class="pk-prenos-valid">Validatuj</button>
+        </form>
+    </section>
+    {% endwith %}
+</div>
+{% endblock %}
