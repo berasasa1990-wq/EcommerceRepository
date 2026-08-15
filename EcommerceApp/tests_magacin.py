@@ -933,7 +933,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(draft.ime_prezime, 'Drugi Kupac')
         self.assertContains(page, 'name="kolicina"')
         self.assertContains(page, 'value="ukloni"')
-        self.assertContains(page, 'id="vpAddQty"')
+        self.assertContains(page, 'id="vpQtyModal"')
+        self.assertContains(page, 'id="vpScanBtn"')
         ajax = self.client.post(
             reverse('staff_magacin_vp_narudzba'),
             {'action': 'kolicina', 'stavka_id': line.pk, 'kolicina': '4'},

@@ -56,11 +56,12 @@
 
     <section class="vp-box vp-search" data-lookup="{{ lookup_url }}">
         <div class="vp-row vp-entry">
-            <input type="search" id="vpQuery" placeholder="Naziv, šifra ili skener" autocomplete="off" autofocus>
-            <input type="number" id="vpAddQty" class="vp-qty" min="1" step="1" value="1" inputmode="numeric" aria-label="Količina" tabindex="0">
-            <button type="button" class="mg-btn" id="vpScanBtn" tabindex="-1" data-mg-scan-target="vpQuery" data-mg-scan-title="Skeniraj artikal">Skener</button>
+            <input type="search" id="vpQuery" placeholder="Naziv, šifra ili barkod" autocomplete="off" autofocus>
+            <button type="button" class="vp-scan-btn" id="vpScanBtn" data-mg-scan-target="vpQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skener
+            </button>
         </div>
-        <p class="vp-pick" id="vpPickMeta" hidden></p>
         <ul class="vp-suggest" id="vpSuggest" hidden></ul>
     </section>
     <form method="post" id="vpAddForm" hidden>
@@ -137,6 +138,20 @@
     </div>
 </div>
 
+<div class="mg-modal" id="vpQtyModal" hidden>
+    <div class="mg-modal-bg" data-vp-qty-close></div>
+    <div class="mg-modal-panel vp-qty-panel" role="dialog">
+        <p class="vp-qty-kicker">Količina</p>
+        <h2 id="vpQtyName">Artikal</h2>
+        <p id="vpQtyMeta" class="vp-qty-meta"></p>
+        <input id="vpQtyModalInput" class="vp-qty-big" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Količina">
+        <div class="vp-qty-actions">
+            <button type="button" class="mg-btn" data-vp-qty-close>Otkaži</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="vpQtyAdd">Dodaj</button>
+        </div>
+    </div>
+</div>
+
 <div class="mg-modal" id="vpMpModal" hidden>
     <div class="mg-modal-bg" data-vp-mp-skip></div>
     <div class="mg-modal-panel" role="dialog">
@@ -159,6 +174,12 @@
 {% block magacin_js %}
 <script>
 (function () {
+    var vpMeta = document.querySelector('meta[name="viewport"]');
+    if (vpMeta) {
+        vpMeta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    }
+    document.body.classList.add('is-vp');
+
     var finish = document.getElementById('vpFinishForm');
     if (finish) {
         finish.addEventListener('submit', function (event) {
@@ -323,13 +344,13 @@
 
     var wrap = document.querySelector('.vp-search');
     var input = document.getElementById('vpQuery');
-    var qtyInput = document.getElementById('vpAddQty');
     var qtyHidden = document.getElementById('vpAddQtyHidden');
     var list = document.getElementById('vpSuggest');
-    var pickMeta = document.getElementById('vpPickMeta');
-    var addForm = document.getElementById('vpAddForm');
-    var pidEl = document.getElementById('vpProductId');
-    var vidEl = document.getElementById('vpVariationId');
+    var qtyModal = document.getElementById('vpQtyModal');
+    var qtyName = document.getElementById('vpQtyName');
+    var qtyMeta = document.getElementById('vpQtyMeta');
+    var qtyField = document.getElementById('vpQtyModalInput');
+    var qtyAddBtn = document.getElementById('vpQtyAdd');
     var linesEl = document.getElementById('vpLines');
     var totalEl = document.getElementById('vpTotal');
     if (!wrap || !input || !list) return;
@@ -338,6 +359,7 @@
     var adding = false;
     var seq = 0;
     var picked = null;
+    var lastSuggest = [];
 
     function vpFromMpc(raw) {
         var n = parseFloat(String(raw || '').replace(',', '.'));
@@ -347,47 +369,51 @@
     function norm(value) {
         return String(value || '').replace(/\s+/g, '').toLowerCase();
     }
-    function isExact(item, query) {
-        var q = norm(query);
-        if (!q) return false;
-        return norm(item.sifra) === q || norm(item.barkod) === q || norm(item.naziv) === q;
+    function looksLikeBarcode(query) {
+        return /^\d{8,14}$/.test(String(query || '').replace(/\s+/g, ''));
     }
-    function isPrefixOfLonger(query, rows) {
+    function isBarcodeHit(item, query) {
+        var q = norm(query);
+        return !!q && norm(item.barkod) === q;
+    }
+    function isPrefixOfLongerBarcode(query, rows, hit) {
         var q = norm(query);
         if (!q) return false;
         return rows.some(function (row) {
-            var sifra = norm(row.sifra);
+            if (row === hit) return false;
             var barkod = norm(row.barkod);
-            return (sifra.length > q.length && sifra.indexOf(q) === 0) ||
-                   (barkod.length > q.length && barkod.indexOf(q) === 0);
+            return barkod.length > q.length && barkod.indexOf(q) === 0;
         });
     }
     function qtyValue() {
-        var n = parseInt(qtyInput && qtyInput.value, 10);
+        var n = parseInt(qtyField && qtyField.value, 10);
         return n > 0 ? n : 1;
     }
-    function focusQty() {
-        if (!qtyInput) return;
-        qtyInput.focus();
-        qtyInput.select();
+    function closeQty() {
+        if (qtyModal) qtyModal.hidden = true;
+    }
+    function openQty(item) {
+        if (!item || !qtyModal) return;
+        picked = item;
+        list.hidden = true;
+        if (qtyName) qtyName.textContent = item.naziv || 'Artikal';
+        if (qtyMeta) qtyMeta.textContent = [item.sifra, item.vp ? item.vp + ' KM' : ''].filter(Boolean).join(' · ');
+        if (qtyField) qtyField.value = '1';
+        qtyModal.hidden = false;
+        window.setTimeout(function () {
+            if (!qtyField) return;
+            qtyField.focus();
+            qtyField.select();
+        }, 40);
     }
     function focusQuery() {
         input.value = '';
-        if (qtyInput) qtyInput.value = '1';
+        if (qtyField) qtyField.value = '1';
         if (qtyHidden) qtyHidden.value = '1';
         picked = null;
-        if (pickMeta) { pickMeta.hidden = true; pickMeta.textContent = ''; }
         list.hidden = true;
+        closeQty();
         input.focus();
-    }
-    function showPick(item) {
-        picked = item;
-        input.value = item.naziv || '';
-        if (pickMeta) {
-            pickMeta.hidden = false;
-            pickMeta.textContent = [item.sifra, item.vp ? item.vp + ' KM' : ''].filter(Boolean).join(' · ');
-        }
-        list.hidden = true;
     }
     function flatten(data) {
         var rows = [];
@@ -420,6 +446,7 @@
         return rows;
     }
     function renderSuggest(items) {
+        lastSuggest = items || [];
         list.innerHTML = '';
         if (!items.length) {
             var empty = document.createElement('li');
@@ -436,19 +463,16 @@
             li.querySelector('span:last-child').textContent = (item.sifra || '') + (item.vp ? ' · ' + item.vp + ' KM' : '');
             li.addEventListener('mousedown', function (event) {
                 event.preventDefault();
-                showPick(item);
-                focusQty();
+                openQty(item);
             });
             list.appendChild(li);
         });
         list.hidden = false;
     }
-    function pickExact(rows, query, force) {
-        var hit = rows.filter(function (row) { return isExact(row, query); })[0];
-        if (hit && !isPrefixOfLonger(query, rows.filter(function (row) { return row !== hit; }))) {
-            return hit;
-        }
-        if (force && rows.length === 1) return rows[0];
+    function pickBarcode(rows, query) {
+        var hit = rows.filter(function (row) { return isBarcodeHit(row, query); })[0];
+        if (hit && !isPrefixOfLongerBarcode(query, rows, hit)) return hit;
+        if (looksLikeBarcode(query) && rows.length === 1) return rows[0];
         return null;
     }
     var mpModal = document.getElementById('vpMpModal');
@@ -483,6 +507,7 @@
           .then(function (result) {
               adding = false;
               if (result.data && result.data.need_mp) {
+                  closeQty();
                   showMp(result.data);
                   return;
               }
@@ -592,61 +617,61 @@
         }).then(function (res) { return res.json(); }).then(function (data) {
             if (ticket !== seq) return null;
             var rows = flatten(data);
-            var hit = pickExact(rows, q, !!opts.force);
-            if (hit) {
-                showPick(hit);
-                if (opts.toQty) focusQty();
+            lastSuggest = rows;
+            var hit = pickBarcode(rows, q);
+            if (hit && (opts.fromScan || looksLikeBarcode(q) || isBarcodeHit(hit, q))) {
+                openQty(hit);
                 return hit;
+            }
+            if (opts.takeFirst && rows.length) {
+                openQty(rows[0]);
+                return rows[0];
             }
             renderSuggest(rows);
             return null;
         }).catch(function () { return null; });
     }
-    function goToQty(event) {
-        if (event) event.preventDefault();
-        window.clearTimeout(timer);
-        if (picked) {
-            focusQty();
-            return;
-        }
-        search({ force: true, toQty: true }).then(function (hit) {
-            if (!hit) focusQty();
-        });
-    }
-    function goAdd(event) {
-        if (event) event.preventDefault();
-        if (picked) {
-            addPicked();
-            return;
-        }
-        search({ force: true }).then(function (hit) {
-            if (hit) addPicked();
-        });
-    }
     input.addEventListener('input', function () {
         picked = null;
-        if (pickMeta) { pickMeta.hidden = true; pickMeta.textContent = ''; }
+        lastSuggest = [];
         window.clearTimeout(timer);
-        timer = window.setTimeout(function () { search({ toQty: true }); }, 160);
+        timer = window.setTimeout(function () { search({}); }, 160);
     });
     input.addEventListener('keydown', function (event) {
         if (event.key === 'Tab' && !event.shiftKey) {
-            goToQty(event);
+            event.preventDefault();
+            window.clearTimeout(timer);
+            if (lastSuggest.length) {
+                openQty(lastSuggest[0]);
+                return;
+            }
+            search({ takeFirst: true });
             return;
         }
-        if (event.key === 'Enter') goToQty(event);
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        window.clearTimeout(timer);
+        search({ fromScan: looksLikeBarcode(input.value) });
     });
     input.addEventListener('mg-scanned', function () {
         window.clearTimeout(timer);
-        search({ force: true, toQty: true });
+        search({ fromScan: true });
     });
-    if (qtyInput) {
-        qtyInput.addEventListener('keydown', function (event) {
-            if (event.key === 'Tab' && !event.shiftKey) {
-                goAdd(event);
-                return;
-            }
-            if (event.key === 'Enter') goAdd(event);
+    if (qtyField) {
+        qtyField.addEventListener('keydown', function (event) {
+            if (event.key === 'Tab' && event.shiftKey) return;
+            if (event.key !== 'Enter' && event.key !== 'Tab') return;
+            event.preventDefault();
+            addPicked();
+        });
+    }
+    if (qtyAddBtn) qtyAddBtn.addEventListener('click', function () { addPicked(); });
+    if (qtyModal) {
+        qtyModal.querySelectorAll('[data-vp-qty-close]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                closeQty();
+                input.focus();
+            });
         });
     }
     document.addEventListener('click', function (event) {
