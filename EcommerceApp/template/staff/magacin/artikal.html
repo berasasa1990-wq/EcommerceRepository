@@ -18,7 +18,7 @@
 </div>
 
 <section class="mg-card">
-    <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% endif %}">
+    <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
         <div class="mg-hero-img">
             {% if product.prikazna_slika %}
             <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}">

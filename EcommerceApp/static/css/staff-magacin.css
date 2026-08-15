@@ -624,9 +624,15 @@
     background: #111;
     flex-shrink: 0;
 }
-.mg-hero.is-stock {
+.mg-hero.is-stock,
+.mg-hero.is-out {
     border-radius: 14px;
+}
+.mg-hero.is-stock {
     animation: mg-stock-pulse 1.6s ease-in-out infinite;
+}
+.mg-hero.is-out {
+    animation: mg-out-pulse 1.6s ease-in-out infinite;
 }
 .mg-hero-img img { width: 100%; height: 100%; object-fit: cover; }
 .mg-hero-img .ph {
@@ -1492,6 +1498,10 @@ tr.is-mp-lock {
 @keyframes mg-stock-pulse {
     0%, 100% { box-shadow: 0 0 0 2px #3d8f04, 0 0 0 6px rgba(61, 143, 4, .16); }
     50% { box-shadow: 0 0 0 3px #3d8f04, 0 0 0 10px rgba(61, 143, 4, .36); }
+}
+@keyframes mg-out-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px #dc2626, 0 0 0 6px rgba(220, 38, 38, .16); }
+    50% { box-shadow: 0 0 0 3px #dc2626, 0 0 0 10px rgba(220, 38, 38, .36); }
 }
 .mg-product-row.is-stock {
     border-radius: 12px;

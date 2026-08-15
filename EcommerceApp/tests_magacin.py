@@ -712,6 +712,10 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(detail, 'Sačuvaj info')
         self.assertContains(detail, 'T-1')
         self.assertNotContains(detail, 'T-1 (Test loc)')
+        self.assertContains(detail, 'mg-hero is-stock')
+        out_page = self.client.get(reverse('staff_magacin_artikal', args=[self.zero.pk]))
+        self.assertContains(out_page, 'mg-hero is-out')
+        self.assertNotContains(out_page, 'mg-hero is-stock')
 
     def test_brzi_unos_same_as_admin_flow(self):
         self.client.force_login(self.user)
