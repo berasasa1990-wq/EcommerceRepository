@@ -687,6 +687,119 @@ def _missing_odoo_template_ids(template_ids):
     return sorted(wanted - {int(i) for i in have if i})
 
 
+def _norm_ident(value):
+    return (value or '').strip()
+
+
+def _template_identity(template):
+    from .odoo_import import _odoo_template_name
+
+    naziv = _norm_ident(_odoo_template_name(template))
+    raw_code = template.get('default_code')
+    sifra = '' if raw_code in (None, False) else _norm_ident(str(raw_code))
+    raw_bar = template.get('barcode')
+    barkod = '' if raw_bar in (None, False) else _norm_ident(str(raw_bar))
+    return naziv, sifra, barkod
+
+
+def _identity_blockers(template, *, exclude_pk=None):
+    """Artikli sa istim nazivom, šifrom ili barkodom."""
+    naziv, sifra, barkod = _template_identity(template)
+    q = Q()
+    if sifra:
+        q |= Q(sifra__iexact=sifra)
+    if barkod:
+        q |= Q(barkod__iexact=barkod)
+    if naziv:
+        q |= Q(naziv__iexact=naziv)
+    if not q:
+        return Product.objects.none()
+    qs = Product.objects.filter(q)
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+    return qs
+
+
+def _keeper_rank(product):
+    orders = product.orderitem_set.count()
+    stock = int(product.stanje or 0)
+    real_sifra = 0 if (product.sifra or '').upper().startswith('ODOO-T') else 1
+    has_barcode = 1 if _norm_ident(product.barkod) else 0
+    return (orders, stock, real_sifra, has_barcode, -int(product.pk))
+
+
+def _duplicate_identity_groups():
+    """Grupe artikala sa istim nazivom / šifrom / barkodom."""
+    groups = []
+    seen = set()
+
+    def add_group(items):
+        pks = tuple(sorted(p.pk for p in items if p))
+        if len(pks) < 2 or pks in seen:
+            return
+        seen.add(pks)
+        groups.append(list(items))
+
+    by_name = {}
+    by_sifra = {}
+    by_barkod = {}
+    for product in Product.objects.all().only(
+        'id', 'naziv', 'sifra', 'barkod', 'stanje', 'odoo_template_id',
+    ):
+        name = _norm_ident(product.naziv).casefold()
+        if name:
+            by_name.setdefault(name, []).append(product)
+        sifra = _norm_ident(product.sifra)
+        if sifra:
+            by_sifra.setdefault(sifra.casefold(), []).append(product)
+        barkod = _norm_ident(product.barkod)
+        if barkod:
+            by_barkod.setdefault(barkod, []).append(product)
+    for bucket in (by_name, by_sifra, by_barkod):
+        for items in bucket.values():
+            if len(items) > 1:
+                add_group(items)
+    return groups
+
+
+def cleanup_duplicate_identities(*, dry_run=False):
+    """
+    Obriši duple artikle po nazivu, šifri ili barkodu.
+    Zadrži jedan (narudžbe > zaliha > prava šifra > barkod > stariji).
+    """
+    deleted = []
+    skipped = []
+    gone = set()
+    for items in _duplicate_identity_groups():
+        alive = [p for p in items if p.pk not in gone]
+        if len(alive) < 2:
+            continue
+        keeper = max(alive, key=_keeper_rank)
+        for product in alive:
+            if product.pk == keeper.pk:
+                continue
+            if product.orderitem_set.exists():
+                skipped.append({
+                    'pk': product.pk,
+                    'naziv': product.naziv,
+                    'sifra': product.sifra,
+                    'razlog': f'ima narudžbe, ostavljen uz #{keeper.pk}',
+                })
+                continue
+            info = {
+                'pk': product.pk,
+                'naziv': product.naziv,
+                'sifra': product.sifra,
+                'odoo_template_id': product.odoo_template_id,
+                'zadrzan': keeper.pk,
+            }
+            if not dry_run:
+                product.delete()
+            gone.add(product.pk)
+            deleted.append(info)
+    return {'obrisano': deleted, 'preskoceno': skipped}
+
+
 def attach_site_odoo_products_to_magacin(*, when=None):
     """Označi postojeće Odoo artikle sa sajta kao Magacin — ne kreira nove."""
     when = when or timezone.now()
@@ -837,8 +950,8 @@ def _variation_has_image(variation):
 
 
 def _find_existing_sync_product(template):
-    """Nađi artikal isključivo po Odoo ID. Šifra samo ako artikal još nema Odoo ID."""
-    from .odoo_import import _find_product_for_template, _link_product_odoo_template, _odoo_id
+    """Nađi artikal po Odoo ID, ili po šifri/barkodu/nazivu ako još nema Odoo ID."""
+    from .odoo_import import _link_product_odoo_template, _odoo_id
 
     odoo_id = _odoo_id(template.get('id'))
     if odoo_id is None:
@@ -846,14 +959,10 @@ def _find_existing_sync_product(template):
     product = Product.objects.filter(odoo_template_id=odoo_id).first()
     if product is not None:
         return product
-
-    found = _find_product_for_template(template)
-    if found is None:
-        return None
-    # Parent već vezan na DRUGI Odoo ID — to nije ovaj artikal, kreiraj novi.
-    if found.odoo_template_id and int(found.odoo_template_id) != int(odoo_id):
-        return None
-    return _link_product_odoo_template(found, odoo_id)
+    for candidate in _identity_blockers(template):
+        if not candidate.odoo_template_id:
+            return _link_product_odoo_template(candidate, odoo_id)
+    return None
 
 
 def _apply_image_once(image_field, image_b64, filename):
@@ -971,6 +1080,8 @@ def _sync_one_template(client, template, *, image_b64=None, synced_at=None):
     odoo_id = int(template['id'])
     product = _find_existing_sync_product(template)
     if product is None:
+        if _identity_blockers(template).exists():
+            return 'preskoceno'
         product, created = _create_sync_product(
             template, image_b64=image_b64, synced_at=synced_at,
         )

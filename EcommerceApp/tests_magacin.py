@@ -316,10 +316,56 @@ class MagacinCatalogSyncTests(TestCase):
             'product_variant_ids': [88],
         }])
         stats = sync_catalog_chunk(client, [88], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 1)
+        self.assertEqual(stats['kreirano'], 0)
+        self.assertEqual(stats['preskoceno'], 1)
         self.assertEqual(Product.objects.filter(odoo_template_id=10).count(), 1)
-        self.assertEqual(Product.objects.filter(odoo_template_id=88).count(), 1)
-        self.assertEqual(Product.objects.count(), 2)
+        self.assertEqual(Product.objects.filter(odoo_template_id=88).count(), 0)
+        self.assertEqual(Product.objects.count(), 1)
+
+    def test_skips_create_when_name_already_exists(self):
+        Product.objects.create(
+            naziv='Gift Card',
+            sifra='GC-1',
+            cijena=Decimal('1.00'),
+            odoo_template_id=10,
+        )
+        client = FakeOdooClient([{
+            'id': 88,
+            'name': 'gift card',
+            'default_code': 'GC-NEW',
+            'barcode': '',
+            'list_price': '2.00',
+            'qty_available': 0,
+            'product_variant_ids': [88],
+        }])
+        stats = sync_catalog_chunk(client, [88], start=0, limit=10)
+        self.assertEqual(stats['kreirano'], 0)
+        self.assertEqual(stats['preskoceno'], 1)
+        self.assertEqual(Product.objects.filter(naziv__iexact='gift card').count(), 1)
+
+    def test_cleanup_deletes_duplicate_names(self):
+        from EcommerceApp.magacin import cleanup_duplicate_identities
+
+        keep = Product.objects.create(
+            naziv='Gift Card',
+            sifra='GC-KEEP',
+            barkod='111',
+            cijena=Decimal('1.00'),
+            odoo_template_id=10,
+            stanje=2,
+        )
+        extra = Product.objects.create(
+            naziv='gift card',
+            sifra='ODOO-T88',
+            cijena=Decimal('1.00'),
+            odoo_template_id=88,
+            stanje=0,
+        )
+        result = cleanup_duplicate_identities()
+        self.assertEqual(len(result['obrisano']), 1)
+        self.assertEqual(result['obrisano'][0]['pk'], extra.pk)
+        self.assertTrue(Product.objects.filter(pk=keep.pk).exists())
+        self.assertFalse(Product.objects.filter(pk=extra.pk).exists())
 
     def test_variation_other_odoo_id_does_not_block_new_product(self):
         parent = Product.objects.create(
