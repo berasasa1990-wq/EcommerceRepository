@@ -36,9 +36,15 @@ class Command(BaseCommand):
 
         if job.get('error'):
             raise CommandError(job['error'])
+        odoo_n = job.get('odoo_ukupno') or 0
+        mag_n = job.get('artikala') or 0
         self.stdout.write(self.style.SUCCESS(
-            f'Gotovo. Novo {job.get("kreirano") or 0}, '
+            f'Gotovo. Odoo {odoo_n}, Magacin {mag_n}. '
+            f'Novo {job.get("kreirano") or 0}, '
             f'ažurirano {job.get("azurirano") or 0}, '
-            f'zaliha {job.get("zaliha") or 0}, '
-            f'artikala {job.get("artikala") or 0}.'
+            f'zaliha {job.get("zaliha") or 0}.'
         ))
+        if int(job.get('nedostaje') or 0) > 0:
+            self.stdout.write(self.style.WARNING(
+                f'Još fali {job["nedostaje"]} po Odoo ID. Pokreni komandu ponovo.'
+            ))

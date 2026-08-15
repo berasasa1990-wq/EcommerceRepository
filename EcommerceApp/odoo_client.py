@@ -159,7 +159,7 @@ class OdooClient:
         return self.get_sale_template_ids()
 
     def get_sale_template_ids_page(self, *, offset=0, limit=250):
-        """Jedna stranica SVIH product.template ID-jeva (i arhivirani)."""
+        """Jedna stranica aktivnih product.template ID-jeva (isti skup kao Odoo API)."""
         uid = self.authenticate()
         try:
             ids = self.models.execute_kw(
@@ -173,7 +173,6 @@ class OdooClient:
                     'offset': max(0, int(offset)),
                     'limit': max(1, int(limit)),
                     'order': 'id asc',
-                    'context': {'active_test': False},
                 },
             )
         except xmlrpc.client.Fault as exc:

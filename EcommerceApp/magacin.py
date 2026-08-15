@@ -668,16 +668,23 @@ def _product_search_q(query):
 
 
 def local_odoo_template_ids():
-    """Odoo template ID-jevi artikala koji već postoje na sajtu."""
-    ids = set(
-        Product.objects.exclude(odoo_template_id=None)
-        .values_list('odoo_template_id', flat=True)
-    )
-    ids.update(
-        ProductVariation.objects.exclude(odoo_template_id=None)
-        .values_list('odoo_template_id', flat=True)
+    """Odoo template ID-jevi artikala (Product) koji već postoje — bez varijacija."""
+    ids = Product.objects.exclude(odoo_template_id=None).values_list(
+        'odoo_template_id', flat=True,
     )
     return sorted(int(item) for item in ids if item)
+
+
+def _missing_odoo_template_ids(template_ids):
+    """Odoo template ID-jevi iz liste koji još nemaju Product na sajtu."""
+    wanted = {int(tid) for tid in (template_ids or []) if tid}
+    if not wanted:
+        return []
+    have = set(
+        Product.objects.filter(odoo_template_id__in=wanted)
+        .values_list('odoo_template_id', flat=True)
+    )
+    return sorted(wanted - {int(i) for i in have if i})
 
 
 def attach_site_odoo_products_to_magacin(*, when=None):
@@ -830,10 +837,23 @@ def _variation_has_image(variation):
 
 
 def _find_existing_sync_product(template):
-    """Nađi već uvezeni artikal (Odoo ID, varijacija ili šifra) — bez duplikata."""
-    from .odoo_import import _find_product_for_template
+    """Nađi artikal isključivo po Odoo ID. Šifra samo ako artikal još nema Odoo ID."""
+    from .odoo_import import _find_product_for_template, _link_product_odoo_template, _odoo_id
 
-    return _find_product_for_template(template)
+    odoo_id = _odoo_id(template.get('id'))
+    if odoo_id is None:
+        return None
+    product = Product.objects.filter(odoo_template_id=odoo_id).first()
+    if product is not None:
+        return product
+
+    found = _find_product_for_template(template)
+    if found is None:
+        return None
+    # Parent već vezan na DRUGI Odoo ID — to nije ovaj artikal, kreiraj novi.
+    if found.odoo_template_id and int(found.odoo_template_id) != int(odoo_id):
+        return None
+    return _link_product_odoo_template(found, odoo_id)
 
 
 def _apply_image_once(image_field, image_b64, filename):
@@ -927,17 +947,19 @@ def _create_sync_product(template, *, image_b64=None, synced_at=None):
         with transaction.atomic():
             product.save()
     except IntegrityError:
-        existing = (
-            Product.objects.filter(odoo_template_id=odoo_id).first()
-            or Product.objects.filter(sifra=sifra).first()
-        )
-        if existing is None:
-            raise
-        if not existing.odoo_template_id:
+        existing = Product.objects.filter(odoo_template_id=odoo_id).first()
+        if existing is not None:
+            return existing, False
+        existing = Product.objects.filter(sifra=sifra).first()
+        if existing is not None and not existing.odoo_template_id:
             existing.odoo_template_id = odoo_id
             existing.magacin_sync_at = now
             existing.save(update_fields=['odoo_template_id', 'magacin_sync_at'])
-        return existing, False
+            return existing, False
+        from .odoo_import import _unique_sifra
+
+        product.sifra = _unique_sifra('ODOO-T', odoo_id)[:SIFRA_MAX_LENGTH]
+        product.save()
     return product, True
 
 
@@ -1268,7 +1290,20 @@ def run_sync_chunk(job, *, user=None):
                 artikala=job['artikala'],
             )
             if stats.get('done'):
-                job['phase'] = 'locations'
+                still_missing = _missing_odoo_template_ids(template_ids)
+                if still_missing and int(job.get('catalog_pass') or 0) < 1:
+                    job['catalog_pass'] = 1
+                    job['template_ids'] = still_missing
+                    job['position'] = 0
+                    job['nedostaje'] = len(still_missing)
+                    _update_log_progress(
+                        log, started,
+                        f'Ponavljam {len(still_missing)} artikala koji nisu upisani…',
+                        artikala=job['artikala'],
+                    )
+                else:
+                    job['nedostaje'] = len(still_missing)
+                    job['phase'] = 'locations'
             return job
 
         if phase == 'locations':
@@ -1318,16 +1353,23 @@ def run_sync_chunk(job, *, user=None):
             if job['stock_position'] >= len(stock_ids):
                 job['done'] = True
                 job['phase'] = 'done'
+                magacin_odoo = Product.objects.exclude(odoo_template_id=None).count()
+                odoo_n = int(job.get('odoo_ukupno') or magacin_odoo)
+                job['artikala'] = magacin_odoo
                 _finish_log(
                     log, started,
                     poruka=(
-                        f'Sync završen: {job.get("artikala") or 0} artikala, '
-                        f'{job.get("lokacija") or 0} lokacija, '
-                        f'{job.get("zaliha") or 0} zaliha. '
-                        f'Novo {job.get("kreirano") or 0}, ažurirano {job.get("azurirano") or 0}, '
-                        f'preskočeno {job.get("preskoceno") or 0}.'
+                        f'Sync završen: Odoo {odoo_n} artikala, Magacin {magacin_odoo}. '
+                        f'Novo {job.get("kreirano") or 0}, '
+                        f'zaliha {job.get("zaliha") or 0}, '
+                        f'lokacija {job.get("lokacija") or 0}.'
+                        + (
+                            f' Još fali {job.get("nedostaje")} po Odoo ID.'
+                            if int(job.get('nedostaje') or 0) > 0
+                            else ' Broj je usklađen.'
+                        )
                     ),
-                    artikala=job.get('artikala') or 0,
+                    artikala=magacin_odoo,
                     lokacija=job.get('lokacija') or 0,
                 )
             return job

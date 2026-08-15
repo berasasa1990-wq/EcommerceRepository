@@ -299,6 +299,55 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertEqual(job['phase'], 'catalog')
         self.assertEqual(job['template_ids'], [88])
 
+    def test_does_not_reuse_product_with_other_odoo_id(self):
+        Product.objects.create(
+            naziv='Drugi artikal',
+            sifra='SAME-CODE',
+            cijena=Decimal('1.00'),
+            odoo_template_id=10,
+        )
+        client = FakeOdooClient([{
+            'id': 88,
+            'name': 'Novi iz Odoo',
+            'default_code': 'SAME-CODE',
+            'barcode': '',
+            'list_price': '2.00',
+            'qty_available': 1,
+            'product_variant_ids': [88],
+        }])
+        stats = sync_catalog_chunk(client, [88], start=0, limit=10)
+        self.assertEqual(stats['kreirano'], 1)
+        self.assertEqual(Product.objects.filter(odoo_template_id=10).count(), 1)
+        self.assertEqual(Product.objects.filter(odoo_template_id=88).count(), 1)
+        self.assertEqual(Product.objects.count(), 2)
+
+    def test_variation_other_odoo_id_does_not_block_new_product(self):
+        parent = Product.objects.create(
+            naziv='Parent',
+            sifra='PAR-88',
+            cijena=Decimal('1.00'),
+            odoo_template_id=10,
+        )
+        ProductVariation.objects.create(
+            artikal=parent,
+            naziv='var',
+            sifra='PAR-88-V',
+            odoo_template_id=88,
+        )
+        client = FakeOdooClient([{
+            'id': 88,
+            'name': 'Treba novi artikal',
+            'default_code': 'NEW-88-T',
+            'barcode': '',
+            'list_price': '3.00',
+            'qty_available': 0,
+            'product_variant_ids': [88],
+        }])
+        stats = sync_catalog_chunk(client, [88], start=0, limit=10)
+        self.assertEqual(stats['kreirano'], 1)
+        self.assertEqual(Product.objects.filter(odoo_template_id=88).count(), 1)
+        self.assertEqual(Product.objects.filter(odoo_template_id=10).count(), 1)
+
     def test_persist_and_load_running_sync_job(self):
         from EcommerceApp.magacin import load_running_sync_job, persist_sync_job
 
