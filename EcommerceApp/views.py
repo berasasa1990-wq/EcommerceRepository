@@ -4069,11 +4069,12 @@ def cart_abandon_exit_dismiss(request):
 def _checkout_initial(request):
     if not request.user.is_authenticated:
         return {}
+    from .loyalty import ba_mobile_local
     profil = getattr(request.user, 'profil', None)
     return {
         'ime_prezime': request.user.get_full_name() or request.user.email,
         'email': request.user.email,
-        'telefon': profil.telefon if profil else '',
+        'telefon': ba_mobile_local(profil.telefon) if profil else '',
         'adresa': profil.adresa if profil else '',
         'grad': profil.grad if profil else '',
         'postanski_broj': profil.postanski_broj if profil else '',
@@ -4605,18 +4606,20 @@ def logout_view(request):
 
 @login_required(login_url='login')
 def account(request):
+    from .loyalty import ba_mobile_local
+
     profil, _ = UserProfile.objects.get_or_create(user=request.user)
     profile_form = ProfileForm(initial={
         'ime_prezime': request.user.get_full_name() or request.user.first_name,
         'email': request.user.email,
-        'telefon': profil.telefon,
+        'telefon': ba_mobile_local(profil.telefon) if profil.telefon else '',
         'adresa': profil.adresa,
         'grad': profil.grad,
         'postanski_broj': profil.postanski_broj,
-    })
+    }, exclude_user_id=request.user.pk)
 
     if request.method == 'POST':
-        profile_form = ProfileForm(request.POST)
+        profile_form = ProfileForm(request.POST, exclude_user_id=request.user.pk)
         if profile_form.is_valid():
             email = profile_form.cleaned_data['email'].strip().lower()
             if User.objects.filter(email__iexact=email).exclude(pk=request.user.pk).exists():
@@ -7684,6 +7687,7 @@ def staff_loyalty_system(request):
         get_pending_open_card_otp,
         izdaj_loyalty_karticu,
         loyalty_card_share_token,
+        loyalty_desk_purchase_ledger,
         loyalty_desk_stats,
         loyalty_desk_url,
         loyalty_from_phone_display,
@@ -7777,20 +7781,27 @@ def staff_loyalty_system(request):
             request.headers.get('X-Requested-With') == 'XMLHttpRequest'
             or request.POST.get('ajax') == '1'
         )
+        creating = bool(ime and prezime)
 
         def _open_json(payload, status=200):
             return JsonResponse(payload, status=status)
 
-        found = search_loyalty_cards(phone, limit=5, mode='code') if phone else []
-        card = found[0] if found else None
-        if card is None:
-            if not ime or not prezime:
-                messages.info(request, 'Novi član — unesi ime i prezime pa ponovo pošalji kod ili Admin otvori.')
-                request.session['loyalty_new_phone'] = phone
-                request.session.modified = True
+        if creating:
+            from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
+            try:
+                phone, _e164 = validiraj_ba_mobilni(phone)
+            except ValueError as exc:
+                messages.error(request, str(exc))
                 dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
                 if wants_json:
-                    return _open_json({'ok': False, 'need_name': True, 'redirect': dest})
+                    return _open_json({'ok': False, 'error': str(exc), 'redirect': dest}, 400)
+                return redirect(dest)
+            if telefon_vec_registrovan(phone):
+                err = 'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.'
+                messages.error(request, err)
+                dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
+                if wants_json:
+                    return _open_json({'ok': False, 'error': err}, 400)
                 return redirect(dest)
             try:
                 card, user = izdaj_loyalty_karticu(ime, prezime, phone)
@@ -7800,6 +7811,25 @@ def staff_loyalty_system(request):
                 dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
                 if wants_json:
                     return _open_json({'ok': False, 'error': str(exc), 'redirect': dest}, 400)
+                return redirect(dest)
+        else:
+            found = search_loyalty_cards(phone, limit=5, mode='code') if phone else []
+            card = found[0] if found else None
+            if card is None:
+                from .loyalty import validiraj_ba_mobilni
+                try:
+                    phone, _e164 = validiraj_ba_mobilni(phone)
+                except ValueError as exc:
+                    messages.error(request, str(exc))
+                    if wants_json:
+                        return _open_json({'ok': False, 'error': str(exc)}, 400)
+                    return redirect(request.path)
+                messages.info(request, 'Novi član — unesi ime i prezime pa ponovo pošalji kod ili Admin otvori.')
+                request.session['loyalty_new_phone'] = phone
+                request.session.modified = True
+                dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
+                if wants_json:
+                    return _open_json({'ok': False, 'need_name': True, 'redirect': dest})
                 return redirect(dest)
         if channel == 'admin':
             clear_pending_open_card_otp(request)
@@ -8150,8 +8180,9 @@ def staff_loyalty_system(request):
                     'email': selected_card.user.email or '',
                 }
                 if profil:
+                    from .loyalty import ba_mobile_local
                     initial.update({
-                        'telefon': profil.telefon or '',
+                        'telefon': ba_mobile_local(profil.telefon) or '',
                         'adresa': profil.adresa or '',
                         'grad': profil.grad or '',
                         'postanski_broj': profil.postanski_broj or '',
@@ -8252,8 +8283,16 @@ def staff_loyalty_system(request):
         }
     page_items = loyalty_page_items(table_page) if table_page else []
     desk_tab = (request.GET.get('tab') or 'pretraga').strip().lower()
+    if request.GET.get('novi') == '1':
+        desk_tab = 'novi'
+    if desk_tab not in {'pretraga', 'novi'}:
+        desk_tab = 'pretraga'
+    desk_ledger = loyalty_desk_purchase_ledger(
+        year=request.GET.get('godina'),
+        page=request.GET.get('ep') or 1,
+    )
     raw_phone = ''
-    if desk_tab == 'novi' or request.GET.get('novi') == '1':
+    if desk_tab == 'novi':
         raw_phone = request.GET.get('tel') or request.session.get('loyalty_new_phone') or ''
     phone_local = loyalty_phone_local_display(raw_phone)
     open_step = 3 if (request.GET.get('opened') == '1' and selected_card) else (
@@ -8282,6 +8321,7 @@ def staff_loyalty_system(request):
         'page_items': page_items,
         'desk_tab': desk_tab,
         'desk_stats': desk_stats,
+        'desk_ledger': desk_ledger,
         'open_step': open_step,
         'pending_open': pending_open,
         'selected_card': selected_card,
@@ -8396,6 +8436,27 @@ def staff_loyalty_member(request, kod):
         })
     from django.utils import timezone as dj_tz
     purchase_timeline.sort(key=lambda row: row['date'] or dj_tz.now(), reverse=True)
+
+    def _purchase_year(row):
+        dt = row.get('date')
+        if not dt:
+            return dj_tz.localdate().year
+        if dj_tz.is_aware(dt):
+            dt = dj_tz.localtime(dt)
+        return dt.year
+
+    purchases_by_year = {}
+    for row in purchase_timeline:
+        purchases_by_year.setdefault(_purchase_year(row), []).append(row)
+    purchase_years = sorted(purchases_by_year.keys(), reverse=True)
+    try:
+        purchase_year = int(request.GET.get('godina') or 0)
+    except (TypeError, ValueError):
+        purchase_year = 0
+    if purchase_year not in purchases_by_year:
+        purchase_year = purchase_years[0] if purchase_years else dj_tz.localdate().year
+    year_purchases = purchases_by_year.get(purchase_year, [])
+    year_total = sum((row.get('amount') or Decimal('0')) for row in year_purchases)
     profil = getattr(selected_card.user, 'profil', None)
 
     if request.method == 'POST' and request.POST.get('action') == 'aktiviraj_nalog':
@@ -8548,8 +8609,9 @@ def staff_loyalty_member(request, kod):
             'email': selected_card.user.email or '',
         }
         if profil:
+            from .loyalty import ba_mobile_local
             initial.update({
-                'telefon': profil.telefon or '',
+                'telefon': ba_mobile_local(profil.telefon) or '',
                 'adresa': profil.adresa or '',
                 'grad': profil.grad or '',
                 'postanski_broj': profil.postanski_broj or '',
@@ -8608,7 +8670,7 @@ def staff_loyalty_member(request, kod):
         row['amount_fmt'] = format_ba_money(row.get('amount'))
         row['points'] = int(row.get('amount') or 0)
         row['points_fmt'] = format_ba_int(row['points'])
-    paginator = Paginator(purchase_timeline, 5)
+    paginator = Paginator(year_purchases, 10)
     try:
         purchase_page = paginator.get_page(request.GET.get('page') or 1)
     except (EmptyPage, PageNotAnInteger):
@@ -8632,6 +8694,10 @@ def staff_loyalty_member(request, kod):
         'user_orders': user_orders,
         'purchase_timeline': purchase_timeline,
         'purchase_page': purchase_page,
+        'purchase_years': purchase_years,
+        'purchase_year': purchase_year,
+        'purchase_year_count': len(year_purchases),
+        'purchase_year_total_fmt': format_ba_money(year_total),
         'edit_form': edit_form,
         'pending_otp': pending_otp,
         'cardholder_name': name,

@@ -304,22 +304,29 @@ def ba_mobile_local(telefon):
     return '0' + e164[3:]
 
 
-def validiraj_ba_mobilni(telefon):
+def validiraj_ba_mobilni(telefon, *, required=True):
     """
-    Validacija za izdavanje kartice.
-    Vraća (local_06, e164) ili diže ValueError s porukom.
+    Unos telefona: samo 06 + cifre, bez razmaka.
+    Vraća (local_06, e164) ili diže ValueError.
     """
-    raw = (telefon or '').strip()
+    raw = '' if telefon is None else str(telefon)
+    if re.search(r'\s', raw):
+        raise ValueError('Telefon ne smije imati razmake. Unesite 06 i broj, npr. 061234567.')
+    raw = raw.strip()
     if not raw:
-        raise ValueError('Telefon je obavezan.')
+        if required:
+            raise ValueError('Telefon je obavezan.')
+        return '', ''
+    if re.search(r'[^0-9]', raw):
+        raise ValueError('Telefon smije sadržavati samo cifre, bez razmaka i znakova. Unesite 06 i broj.')
+    if not raw.startswith('06'):
+        raise ValueError('Telefon mora počinjati sa 06, npr. 061234567.')
+    if not re.fullmatch(r'06\d{7,8}', raw):
+        raise ValueError('Unesite 06 i zatim 7 ili 8 cifara, bez razmaka (npr. 061234567).')
     local = ba_mobile_local(raw)
     e164 = ba_mobile_e164(raw)
     if not local or not e164 or not local.startswith('06'):
-        raise ValueError(
-            'Unesite ispravan mobilni broj koji počinje sa 06 '
-            '(npr. 061 123 456). Isti broj u formatu +387… ili 00387… '
-            'također se prihvata i tretira kao isti.'
-        )
+        raise ValueError('Unesite ispravan mobilni broj koji počinje sa 06, npr. 061234567.')
     return local, e164
 
 
@@ -594,6 +601,21 @@ def loyalty_desk_stats():
             }.get(tier['nivo'], (tier['nivo'] or '').upper()),
             'count': qs.filter(nivo=tier['nivo']).count(),
         })
+    top_card = (
+        qs.exclude(ukupna_potrosnja__lte=0)
+        .order_by('-ukupna_potrosnja', '-azurirana')
+        .first()
+    )
+    top_spender = None
+    if top_card:
+        top_name = (top_card.user.get_full_name() or '').strip() or top_card.kod
+        top_spender = {
+            'name': top_name,
+            'kod': top_card.kod,
+            'url': loyalty_member_url(top_card.kod),
+            'spend': top_card.ukupna_potrosnja,
+            'spend_fmt': format_ba_money(top_card.ukupna_potrosnja),
+        }
     return {
         'active': active,
         'total': total,
@@ -605,6 +627,128 @@ def loyalty_desk_stats():
         'potrosnja_fmt': format_ba_money(potrosnja),
         'avg_discount_fmt': format_ba_pct(avg),
         'tiers': tiers,
+        'top_spender': top_spender,
+    }
+
+
+def _loyalty_year_bounds(year):
+    from datetime import datetime
+
+    from django.utils import timezone as dj_tz
+
+    tz = dj_tz.get_current_timezone()
+    start = dj_tz.make_aware(datetime(int(year), 1, 1), tz)
+    end = dj_tz.make_aware(datetime(int(year) + 1, 1, 1), tz)
+    return start, end
+
+
+def loyalty_desk_purchase_years():
+    from django.db.models.functions import ExtractYear
+
+    years = set(
+        LoyaltyPurchase.objects.annotate(y=ExtractYear('kreirano'))
+        .values_list('y', flat=True)
+        .distinct()
+    )
+    user_ids = LoyaltyCard.objects.values_list('user_id', flat=True)
+    years.update(
+        Order.objects.exclude(status=Order.Status.OTKAZANA)
+        .filter(korisnik_id__in=user_ids)
+        .annotate(y=ExtractYear('kreirana'))
+        .values_list('y', flat=True)
+        .distinct()
+    )
+    years.discard(None)
+    return sorted((int(y) for y in years), reverse=True)
+
+
+def loyalty_desk_purchase_ledger(year=None, page=1, per_page=15):
+    """Sve loyalty kupovine (prodavnica + online) za desk, po godini."""
+    from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+    from django.utils import timezone as dj_tz
+
+    years = loyalty_desk_purchase_years()
+    try:
+        year = int(year or 0)
+    except (TypeError, ValueError):
+        year = 0
+    if year not in years:
+        year = years[0] if years else dj_tz.localdate().year
+
+    start, end = _loyalty_year_bounds(year)
+    rows = []
+    for pur in (
+        LoyaltyPurchase.objects.filter(kreirano__gte=start, kreirano__lt=end)
+        .select_related('kartica', 'kartica__user')
+        .order_by('-kreirano')
+    ):
+        card = pur.kartica
+        user = getattr(card, 'user', None)
+        name = ((user.get_full_name() if user else '') or '').strip() or (
+            card.kod if card else '—'
+        )
+        rows.append({
+            'date': pur.kreirano,
+            'name': name,
+            'kod': card.kod if card else '',
+            'url': loyalty_member_url(card.kod) if card else '',
+            'label': 'Evidentirano',
+            'amount': pur.iznos,
+            'amount_fmt': format_ba_money(pur.iznos),
+            'points_fmt': format_ba_int(int(pur.iznos or 0)),
+            'payment': (
+                'Kartica' if pur.placanje == LoyaltyPurchase.Placanje.KARTICA
+                else 'Gotovina'
+            ),
+            'channel': 'Prodavnica',
+            'status': 'Završena',
+        })
+
+    kod_by_user = dict(LoyaltyCard.objects.values_list('user_id', 'kod'))
+    for order in (
+        Order.objects.exclude(status=Order.Status.OTKAZANA)
+        .filter(korisnik_id__in=kod_by_user.keys(), kreirana__gte=start, kreirana__lt=end)
+        .select_related('korisnik')
+        .order_by('-kreirana')
+    ):
+        kod = kod_by_user.get(order.korisnik_id) or ''
+        name = ''
+        if order.korisnik:
+            name = (order.korisnik.get_full_name() or '').strip()
+        name = name or kod or '—'
+        if order.status in ('zavrsena', 'poslana', 'potvrdjena'):
+            status = 'Završena'
+        elif hasattr(order, 'get_status_label'):
+            status = order.get_status_label()
+        else:
+            status = order.status
+        rows.append({
+            'date': order.kreirana,
+            'name': name,
+            'kod': kod,
+            'url': loyalty_member_url(kod) if kod else '',
+            'label': f'#{order.broj}',
+            'amount': order.ukupno,
+            'amount_fmt': format_ba_money(order.ukupno),
+            'points_fmt': format_ba_int(int(order.ukupno or 0)),
+            'payment': 'Kartica',
+            'channel': 'Web',
+            'status': status,
+        })
+
+    rows.sort(key=lambda row: row.get('date') or start, reverse=True)
+    total = sum((row.get('amount') or Decimal('0')) for row in rows)
+    paginator = Paginator(rows, per_page)
+    try:
+        page_obj = paginator.get_page(page)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.get_page(1)
+    return {
+        'years': years,
+        'year': year,
+        'page': page_obj,
+        'count': len(rows),
+        'total_fmt': format_ba_money(total),
     }
 
 
@@ -665,23 +809,8 @@ def format_loyalty_phone(raw):
 
 
 def loyalty_phone_local_display(raw):
-    """Lokalni dio za desk polje: 65 123 456."""
-    digits = _to_e164_digits(raw) or _normalizuj_telefon(raw)
-    if digits.startswith('387'):
-        rest = digits[3:]
-    elif digits.startswith('0'):
-        rest = digits[1:]
-    else:
-        rest = digits
-    if not rest:
-        return ''
-    if len(rest) > 8:
-        rest = rest[:8]
-    if len(rest) > 5:
-        return f'{rest[:2]} {rest[2:5]} {rest[5:]}'
-    if len(rest) > 2:
-        return f'{rest[:2]} {rest[2:]}'
-    return rest
+    """Unos na desku: 06XXXXXXXX, bez razmaka."""
+    return ba_mobile_local(raw) or ''
 
 
 def purchase_otp_message(code, *, iznos=None):
@@ -857,10 +986,7 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
 
     # Duplikati: 065… == +38765… == 0038765…
     if telefon_vec_registrovan(telefon_local) or telefon_vec_registrovan(e164):
-        raise ValueError(
-            'Ovaj broj telefona je već registrovan na loyalty karticu — '
-            'dupli telefon nije dozvoljen (uključujući +387 / 00387 format).'
-        )
+        raise ValueError('Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.')
     if email:
         if email_vec_registrovan(email):
             raise ValueError(

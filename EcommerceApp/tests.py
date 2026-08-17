@@ -76,8 +76,11 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertContains(page, 'WhatsApp')
         self.assertContains(page, '65 152 072')
         self.assertContains(page, 'Ukupno članova')
+        self.assertContains(page, 'Najveći potrošač')
+        self.assertNotContains(page, 'Ukupno bodova')
         self.assertContains(page, 'Rang nivoa')
         self.assertContains(page, 'Zakontaktiraj člana')
+        self.assertContains(page, 'Kupovine po godinama')
         self.assertContains(page, 'Brza pomoć')
         named = self.client.get('/nalog/loyalty/', {'q': 'Kovacevic', 'mode': 'name'})
         self.assertContains(named, 'Ana')
@@ -88,6 +91,8 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertContains(page, 'Nema internet')
         self.assertContains(page, 'Ime, telefon ili broj kartice')
         self.assertContains(page, 'id="loyOpenPhone"')
+        self.assertContains(page, '061234567')
+        self.assertNotContains(page, 'placeholder="65 123 456"')
         self.assertNotContains(page, 'value="65')
         desk = self.client.get('/nalog/loyalty/')
         self.assertContains(desk, '/nalog/loyalty/clan/482731/')
@@ -122,6 +127,31 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertTrue(LoyaltyPurchase.objects.filter(kartica=self.card, iznos='25.50').exists())
         again = self.client.get('/nalog/loyalty/clan/482731/')
         self.assertContains(again, 'Gotovina')
+        self.assertContains(again, 'godina=2026')
+        self.assertContains(again, '1 kupovina')
+        desk_top = self.client.get('/nalog/loyalty/')
+        self.assertContains(desk_top, 'Ana Kovačević')
+        self.assertContains(desk_top, '25,50 KM')
+        self.assertContains(desk_top, 'Nema internet')
+        self.assertContains(desk_top, 'Kupovine po godinama')
+        self.assertContains(desk_top, 'godina=2026')
+        self.assertContains(desk_top, 'Gotovina')
+        from datetime import datetime
+
+        from django.utils import timezone
+
+        from .models import LoyaltyPurchase
+        old = LoyaltyPurchase.objects.create(
+            kartica=self.card, iznos='10.00', placanje='gotovina',
+        )
+        LoyaltyPurchase.objects.filter(pk=old.pk).update(
+            kreirano=timezone.make_aware(datetime(2025, 3, 1, 12, 0)),
+        )
+        years = self.client.get('/nalog/loyalty/clan/482731/')
+        self.assertContains(years, 'godina=2025')
+        y2025 = self.client.get('/nalog/loyalty/clan/482731/', {'godina': '2025'})
+        self.assertContains(y2025, '10,00 KM')
+        self.assertContains(y2025, '1 kupovina · 10,00 KM u 2025')
         exact = self.client.get('/nalog/loyalty/', {'q': '482731'})
         self.assertEqual(exact.status_code, 302)
         self.assertIn('/nalog/loyalty/clan/482731/', exact['Location'])
@@ -133,6 +163,26 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertIn('/nalog/loyalty/clan/', created['Location'])
         new_kod = created['Location'].rstrip('/').split('/')[-1]
         self.assertRegex(new_kod, r'^\d{6}$')
+        from .loyalty import izdaj_loyalty_karticu, validiraj_ba_mobilni
+        with self.assertRaises(ValueError):
+            validiraj_ba_mobilni('061 123 456')
+        with self.assertRaises(ValueError):
+            validiraj_ba_mobilni('+38765123456')
+        with self.assertRaises(ValueError):
+            validiraj_ba_mobilni('65123456')
+        local, e164 = validiraj_ba_mobilni('065123456')
+        self.assertEqual(local, '065123456')
+        self.assertEqual(e164, '38765123456')
+        with self.assertRaises(ValueError):
+            izdaj_loyalty_karticu('Drugi', 'Kupac', '065123456')
+        dup = self.client.post('/nalog/loyalty/', {
+            'action': 'open_card', 'channel': 'admin',
+            'telefon': '065123456', 'ime': 'Drugi', 'prezime': 'Kupac',
+        })
+        self.assertEqual(dup.status_code, 302)
+        self.assertNotIn('/nalog/loyalty/clan/482731/', dup['Location'])
+        follow = self.client.get(dup['Location'])
+        self.assertContains(follow, 'već registrovan')
 
     def test_viber_chat_url_prefills_draft(self):
         from urllib.parse import parse_qs, unquote, urlparse

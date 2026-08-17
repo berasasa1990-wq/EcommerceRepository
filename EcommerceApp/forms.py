@@ -650,9 +650,16 @@ class RegisterForm(forms.Form):
     )
     telefon = forms.CharField(
         label='Telefon',
-        max_length=30,
+        max_length=10,
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+387 6x xxx xxx'}),
+        strip=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '061234567',
+            'inputmode': 'numeric',
+            'pattern': r'06[0-9]{7,8}',
+            'maxlength': '10',
+        }),
     )
     lozinka = forms.CharField(
         label='Lozinka',
@@ -680,6 +687,18 @@ class RegisterForm(forms.Form):
         if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
             raise forms.ValidationError('Korisnik s ovim emailom već postoji.')
         return email
+
+    def clean_telefon(self):
+        from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
+
+        raw = self.cleaned_data.get('telefon', '')
+        try:
+            local, _e164 = validiraj_ba_mobilni(raw, required=False)
+        except ValueError as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        if local and telefon_vec_registrovan(local):
+            raise forms.ValidationError('Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.')
+        return local
 
     def clean(self):
         cleaned = super().clean()
@@ -758,16 +777,16 @@ class LoyaltyIssueForm(forms.Form):
     )
     telefon = forms.CharField(
         label='Mobilni telefon',
-        max_length=30,
-        help_text=(
-            'Obavezno mobilni broj (06…). '
-            'Isti broj: 065666666 = +38765666666 = 0038765666666.'
-        ),
+        max_length=10,
+        strip=False,
+        help_text='Obavezno 06 i broj, bez razmaka (npr. 061234567). Isti telefon nije dozvoljen.',
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'npr. 061 123 456',
+            'placeholder': '061234567',
             'autocomplete': 'tel',
-            'inputmode': 'tel',
+            'inputmode': 'numeric',
+            'pattern': r'06[0-9]{7,8}',
+            'maxlength': '10',
         }),
     )
     email = forms.EmailField(
@@ -784,15 +803,14 @@ class LoyaltyIssueForm(forms.Form):
     def clean_telefon(self):
         from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
 
-        telefon = self.cleaned_data.get('telefon', '').strip()
+        telefon = self.cleaned_data.get('telefon', '')
         try:
             local, _e164 = validiraj_ba_mobilni(telefon)
         except ValueError as exc:
             raise forms.ValidationError(str(exc)) from exc
         if telefon_vec_registrovan(local):
             raise forms.ValidationError(
-                'Ovaj broj je već na loyalty kartici '
-                '(uključujući format +387 / 00387).'
+                'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.'
             )
         # Vrati normalizirani 06… za spremanje
         return local
@@ -819,7 +837,7 @@ class LoyaltyIssueForm(forms.Form):
         if telefon and telefon_vec_registrovan(telefon):
             self.add_error(
                 'telefon',
-                'Ovaj broj je već registrovan (+387 / 00387 / 06… = isti).',
+                'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.',
             )
         if email and email_vec_registrovan(email):
             self.add_error(
@@ -842,9 +860,16 @@ class ProfileForm(forms.Form):
     )
     telefon = forms.CharField(
         label='Telefon',
-        max_length=30,
+        max_length=10,
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-input'}),
+        strip=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '061234567',
+            'inputmode': 'numeric',
+            'pattern': r'06[0-9]{7,8}',
+            'maxlength': '10',
+        }),
     )
     adresa = forms.CharField(
         label='Adresa',
@@ -863,6 +888,24 @@ class ProfileForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-input'}),
     )
+
+    def __init__(self, *args, exclude_user_id=None, **kwargs):
+        self.exclude_user_id = exclude_user_id
+        super().__init__(*args, **kwargs)
+
+    def clean_telefon(self):
+        from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
+
+        raw = self.cleaned_data.get('telefon', '')
+        try:
+            local, _e164 = validiraj_ba_mobilni(raw, required=False)
+        except ValueError as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        if local and telefon_vec_registrovan(local, exclude_user_id=self.exclude_user_id):
+            raise forms.ValidationError(
+                'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.'
+            )
+        return local
 
 
 class StaffLoyaltyProfileForm(forms.Form):
@@ -889,11 +932,15 @@ class StaffLoyaltyProfileForm(forms.Form):
     )
     telefon = forms.CharField(
         label='Telefon',
-        max_length=30,
+        max_length=10,
         required=False,
+        strip=False,
         widget=forms.TextInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Opcionalno',
+            'placeholder': '061234567',
+            'inputmode': 'numeric',
+            'pattern': r'06[0-9]{7,8}',
+            'maxlength': '10',
         }),
     )
     adresa = forms.CharField(
@@ -942,7 +989,7 @@ class StaffLoyaltyProfileForm(forms.Form):
     def clean_telefon(self):
         from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
 
-        telefon = (self.cleaned_data.get('telefon') or '').strip()
+        telefon = self.cleaned_data.get('telefon') or ''
         if not telefon:
             return ''
         try:
@@ -951,8 +998,7 @@ class StaffLoyaltyProfileForm(forms.Form):
             raise forms.ValidationError(str(exc)) from exc
         if telefon_vec_registrovan(local, exclude_user_id=self.exclude_user_id):
             raise forms.ValidationError(
-                'Ovaj telefon je već na drugoj loyalty kartici '
-                '(06… / +387… / 00387… = isti broj).'
+                'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.'
             )
         return local
 
@@ -988,8 +1034,14 @@ class CheckoutForm(forms.Form):
         widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'email@primjer.ba'}),
     )
     telefon = forms.CharField(
-        label='Telefon', max_length=30,
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+387 6x xxx xxx'}),
+        label='Telefon', max_length=10, strip=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '061234567',
+            'inputmode': 'numeric',
+            'pattern': r'06[0-9]{7,8}',
+            'maxlength': '10',
+        }),
     )
     adresa = forms.CharField(
         label='Adresa',
@@ -1007,6 +1059,15 @@ class CheckoutForm(forms.Form):
         label='Napomena', required=False,
         widget=forms.Textarea(attrs={'class': 'form-input form-textarea', 'rows': 3, 'placeholder': 'Opcionalno'}),
     )
+
+    def clean_telefon(self):
+        from .loyalty import validiraj_ba_mobilni
+
+        try:
+            local, _e164 = validiraj_ba_mobilni(self.cleaned_data.get('telefon', ''))
+        except ValueError as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        return local
 
 
 class OdooImportForm(forms.Form):

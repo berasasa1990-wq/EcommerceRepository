@@ -75,6 +75,11 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 .lm-tabs{display:flex;gap:22px;border-bottom:1px solid #eceef1;margin:0 0 14px}
 .lm-tabs a{padding:8px 0 10px;color:#9aa3ad;text-decoration:none;font-size:14px;font-weight:600}
 .lm-tabs a.is-on{color:#16a34a;border-bottom:2px solid #16a34a;margin-bottom:-1px}
+.lm-years{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.lm-years a,.lm-years span{min-height:30px;padding:0 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;text-decoration:none;font-size:13px;font-weight:700;display:inline-flex;align-items:center}
+.lm-years a:hover{border-color:#86efac;color:#15803d}
+.lm-years .is-on{background:#16a34a;border-color:#16a34a;color:#fff}
+.lm-year-sum{margin:0 0 10px;color:#6b7280;font-size:12.5px}
 .lm-split{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px}
 .lm-table-wrap{overflow-x:auto}
 .lm-card{background:#fff;border:1px solid #eceef1;border-radius:16px;padding:16px 16px 12px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
@@ -227,6 +232,16 @@ body.loy-full main{padding-top:28px!important;max-width:none}
             <div class="lm-split">
                 <div class="lm-card">
                     <h2 class="plain">Evidencija kupovina</h2>
+                    {% if purchase_years %}
+                    <nav class="lm-years" aria-label="Godina kupovina">
+                        {% for year in purchase_years %}
+                        <a href="?godina={{ year }}" class="{% if year == purchase_year %}is-on{% endif %}">{{ year }}</a>
+                        {% endfor %}
+                    </nav>
+                    {% if purchase_year %}
+                    <p class="lm-year-sum">{{ purchase_year_count }} kupovina · {{ purchase_year_total_fmt }} KM u {{ purchase_year }}.</p>
+                    {% endif %}
+                    {% endif %}
                     <div class="lm-table-wrap">
                     <table class="lm-table">
                         <thead>
@@ -252,23 +267,23 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                                 <td><span class="lm-ok">{{ row.status }} ›</span></td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="7" class="lm-empty">Nema kupovina.</td></tr>
+                            <tr><td colspan="7" class="lm-empty">{% if purchase_year %}Nema kupovina u {{ purchase_year }}.{% else %}Nema kupovina.{% endif %}</td></tr>
                         {% endfor %}
                         </tbody>
                     </table>
                     </div>
                     <div class="lm-foot">
-                        <span>Prikazano {{ purchase_page.start_index|default:0 }} do {{ purchase_page.end_index|default:0 }} od {{ purchase_page.paginator.count|default:0 }} kupovina</span>
+                        <span>Prikazano {{ purchase_page.start_index|default:0 }} do {{ purchase_page.end_index|default:0 }} od {{ purchase_page.paginator.count|default:0 }} kupovina{% if purchase_year %} ({{ purchase_year }}){% endif %}</span>
                         {% if purchase_page.paginator.num_pages > 1 %}
                         <div class="lm-pages">
-                            {% if purchase_page.has_previous %}<a href="?tab=kupovine&amp;page={{ purchase_page.previous_page_number }}">‹</a>{% endif %}
+                            {% if purchase_page.has_previous %}<a href="?godina={{ purchase_year }}&amp;page={{ purchase_page.previous_page_number }}">‹</a>{% endif %}
                             {% for n in purchase_page.paginator.page_range %}
                                 {% if n == purchase_page.number %}<span class="is-on">{{ n }}</span>
                                 {% elif n <= 3 or n > purchase_page.paginator.num_pages|add:'-1' %}
-                                <a href="?tab=kupovine&amp;page={{ n }}">{{ n }}</a>
+                                <a href="?godina={{ purchase_year }}&amp;page={{ n }}">{{ n }}</a>
                                 {% endif %}
                             {% endfor %}
-                            {% if purchase_page.has_next %}<a href="?tab=kupovine&amp;page={{ purchase_page.next_page_number }}">›</a>{% endif %}
+                            {% if purchase_page.has_next %}<a href="?godina={{ purchase_year }}&amp;page={{ purchase_page.next_page_number }}">›</a>{% endif %}
                         </div>
                         {% endif %}
                     </div>

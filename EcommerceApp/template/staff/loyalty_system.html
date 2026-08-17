@@ -87,6 +87,9 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 .loy-stat article{background:#fff;border:1px solid #eceef1;border-radius:14px;padding:14px 12px 12px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
 .loy-stat .lab{display:block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#9aa3ad;margin-bottom:6px}
 .loy-stat b{display:block;font-size:22px;letter-spacing:-.03em;line-height:1.15;color:#111827}
+.loy-stat b a{color:inherit;text-decoration:none}
+.loy-stat b a:hover{color:#16a34a}
+.loy-stat .top-name{font-size:15px;line-height:1.25;word-break:break-word}
 .loy-stat span.sub{color:#9aa3ad;font-size:12px}
 .loy-stat .ic{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;margin-bottom:8px}
 .loy-stat .g{background:#dcfce7;color:#16a34a}
@@ -106,6 +109,15 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 .loy-ch-wide.wa{background:#16a34a}
 .loy-help{margin:0;padding-left:18px;color:#6b7280;font-size:13px;line-height:1.55;list-style:disc!important}
 .loy-help li{margin:0 0 6px;list-style:disc!important}
+.loy-years{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.loy-years a{min-height:30px;padding:0 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;text-decoration:none;font-size:13px;font-weight:700;display:inline-flex;align-items:center}
+.loy-years a:hover{border-color:#86efac;color:#15803d}
+.loy-years .is-on{background:#16a34a;border-color:#16a34a;color:#fff}
+.loy-year-sum{margin:0 0 10px;color:#6b7280;font-size:12.5px}
+.loy-ledger{margin-top:16px}
+.loy-ledger h2{margin:0 0 12px;font-size:16px;font-weight:800;letter-spacing:0;color:#111}
+.loy-table td a.mem{color:#111;font-weight:700;text-decoration:none}
+.loy-table td a.mem:hover{color:#16a34a}
 .loy-fab{position:fixed;right:24px;bottom:24px;width:58px;height:58px;border-radius:999px;border:0;background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.16);color:#111;cursor:pointer;display:grid;place-items:center;z-index:30}
 .loy-fab:hover{box-shadow:0 12px 32px rgba(15,23,42,.2)}
 .loy-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -180,7 +192,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
             {% if desk_tab == 'novi' %}
             <div class="loy-search-card">
                 <p class="loy-kicker">Novi član</p>
-                <p class="loy-sub">Unesite ime, prezime i broj telefona. Kartica se otvara na novom URL-u.</p>
+                <p class="loy-sub">Unesite ime, prezime i telefon (06 i broj, bez razmaka). Isti telefon nije dozvoljen.</p>
                 <form method="post" class="loy-new" id="loyNewForm">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="open_card">
@@ -191,8 +203,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                         <span class="ico" aria-hidden="true">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.35 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
                         </span>
-                        <span class="loy-cc">+387 <svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 4.5 6 8l3-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
-                        <input type="tel" name="telefon" class="loy-local-phone" placeholder="65 123 456" value="{{ phone_local }}" autocomplete="tel" required>
+                        <input type="tel" name="telefon" class="loy-local-phone" placeholder="061234567" value="{{ phone_local }}" autocomplete="tel" inputmode="numeric" maxlength="10" pattern="06[0-9]{7,8}" required>
                     </div>
                     <button type="submit" class="loy-btn-new" style="border:0;justify-content:center">Kreiraj i otvori karticu</button>
                 </form>
@@ -241,7 +252,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                 </form>
                 {% else %}
                 <p class="loy-kicker">Pretraga člana</p>
-                <p class="loy-sub">Unesite broj telefona i pošaljite kod na Viber ili WhatsApp. Kod ide sa {{ loyalty_from_phone_fmt }}.</p>
+                <p class="loy-sub">Unesite telefon (06 i broj, bez razmaka) i pošaljite kod na Viber ili WhatsApp. Kod ide sa {{ loyalty_from_phone_fmt }}.</p>
                 <form method="post" id="loyOpenForm">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="open_card">
@@ -250,8 +261,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                         <span class="ico" aria-hidden="true">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.35 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
                         </span>
-                        <span class="loy-cc">+387 <svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 4.5 6 8l3-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
-                        <input type="tel" id="loyOpenPhone" name="telefon" class="loy-local-phone" placeholder="65 123 456" value="" autocomplete="off">
+                        <input type="tel" id="loyOpenPhone" name="telefon" class="loy-local-phone" placeholder="061234567" value="" autocomplete="off" inputmode="numeric" maxlength="10" pattern="06[0-9]{7,8}">
                         <button type="button" class="clr" id="loyPhoneClear" aria-label="Obriši">×</button>
                     </div>
                     {% if new_member %}
@@ -287,6 +297,65 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                     <input type="search" name="q" value="{% if loyalty_search_mode == 'any' %}{{ loyalty_search_query }}{% endif %}" placeholder="Ime, telefon ili broj kartice" autocomplete="off" id="loyOfflineQ">
                     <button type="submit">Pretraži</button>
                 </form>
+            </div>
+            <div class="loy-search-card loy-ledger" id="loyLedger">
+                <p class="loy-kicker">Kupovine po godinama</p>
+                <p class="loy-sub">Izlistaj kupovine svih kupaca za odabranu godinu.</p>
+                {% if desk_ledger.years %}
+                <nav class="loy-years" aria-label="Godina kupovina">
+                    {% for year in desk_ledger.years %}
+                    <a href="?godina={{ year }}#loyLedger" class="{% if year == desk_ledger.year %}is-on{% endif %}">{{ year }}</a>
+                    {% endfor %}
+                </nav>
+                <p class="loy-year-sum">{{ desk_ledger.count }} kupovina · {{ desk_ledger.total_fmt }} KM u {{ desk_ledger.year }}.</p>
+                {% endif %}
+                <div class="loy-table" style="box-shadow:none;border:1px solid #eceef1;margin:0">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Član</th>
+                                <th>Kartica</th>
+                                <th>Iznos</th>
+                                <th>Plaćanje</th>
+                                <th>Kanal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in desk_ledger.page %}
+                            <tr {% if row.url %}onclick="window.location='{{ row.url }}'"{% endif %}>
+                                <td class="muted">{{ row.date|date:"d.m.Y. H:i" }}</td>
+                                <td>{% if row.url %}<a class="mem" href="{{ row.url }}">{{ row.name }}</a>{% else %}{{ row.name }}{% endif %}</td>
+                                <td class="num">{% if row.url %}<a class="row" href="{{ row.url }}">{{ row.kod }}</a>{% else %}{{ row.kod|default:"—" }}{% endif %}</td>
+                                <td>{{ row.amount_fmt }} KM</td>
+                                <td>{{ row.payment }}</td>
+                                <td>{{ row.channel }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6">{% if desk_ledger.year %}Nema kupovina u {{ desk_ledger.year }}.{% else %}Još nema kupovina.{% endif %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="loy-foot">
+                        <span>Prikazano {{ desk_ledger.page.start_index|default:0 }} do {{ desk_ledger.page.end_index|default:0 }} od {{ desk_ledger.page.paginator.count|default:0 }} kupovina{% if desk_ledger.year %} ({{ desk_ledger.year }}){% endif %}</span>
+                        {% if desk_ledger.page.paginator.num_pages > 1 %}
+                        <div class="loy-pages">
+                            {% if desk_ledger.page.has_previous %}
+                            <a href="?godina={{ desk_ledger.year }}&amp;ep={{ desk_ledger.page.previous_page_number }}#loyLedger">‹</a>
+                            {% endif %}
+                            {% for n in desk_ledger.page.paginator.page_range %}
+                                {% if n == desk_ledger.page.number %}<span class="is-on">{{ n }}</span>
+                                {% elif n <= 3 or n > desk_ledger.page.paginator.num_pages|add:'-1' %}
+                                <a href="?godina={{ desk_ledger.year }}&amp;ep={{ n }}#loyLedger">{{ n }}</a>
+                                {% endif %}
+                            {% endfor %}
+                            {% if desk_ledger.page.has_next %}
+                            <a href="?godina={{ desk_ledger.year }}&amp;ep={{ desk_ledger.page.next_page_number }}#loyLedger">›</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             {% endif %}
 
@@ -354,11 +423,16 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                 </article>
                 <article>
                     <div class="ic p" aria-hidden="true">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4 14.7 8l6.1.9-4.4 4.3 1 6.1L12 16.4 6.6 19.3l1-6.1L3.2 8.9 9.3 8 12 2.4z"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.1 4.3 4.7.7-3.4 3.3.8 4.7L12 13.8 7.8 16l.8-4.7L5.2 8l4.7-.7L12 3z"/><path d="M8 18h8M9.5 21h5"/></svg>
                     </div>
-                    <span class="lab">Ukupno bodova</span>
-                    <b>{{ desk_stats.bodovi_fmt|default:desk_stats.bodovi }}</b>
-                    <span class="sub">Svi članovi</span>
+                    <span class="lab">Najveći potrošač</span>
+                    {% if desk_stats.top_spender %}
+                    <b class="top-name"><a href="{{ desk_stats.top_spender.url }}">{{ desk_stats.top_spender.name }}</a></b>
+                    <span class="sub">{{ desk_stats.top_spender.spend_fmt }} KM</span>
+                    {% else %}
+                    <b class="top-name">—</b>
+                    <span class="sub">Nema potrošnje</span>
+                    {% endif %}
                 </article>
                 <article>
                     <div class="ic g" aria-hidden="true">
@@ -456,19 +530,12 @@ body.loy-full main{padding-top:28px!important;max-width:none}
     }
     function formatLocal(value) {
         var d = digitsOnly(value);
-        if (d.indexOf('387') === 0) d = d.slice(3);
-        if (d.charAt(0) === '0') d = d.slice(1);
-        if (d.length > 8) d = d.slice(0, 8);
-        if (d.length > 5) return d.slice(0, 2) + ' ' + d.slice(2, 5) + ' ' + d.slice(5);
-        if (d.length > 2) return d.slice(0, 2) + ' ' + d.slice(2);
+        if (d.indexOf('387') === 0) d = '0' + d.slice(3);
+        if (d.length > 10) d = d.slice(0, 10);
         return d;
     }
     function toFullPhone(value) {
-        var d = digitsOnly(value);
-        if (!d) return '';
-        if (d.indexOf('387') === 0) return '+' + d;
-        if (d.charAt(0) === '0') return '+387' + d.slice(1);
-        return '+387' + d;
+        return formatLocal(value);
     }
     function openChatApp(url, popup) {
         if (!url) return false;
