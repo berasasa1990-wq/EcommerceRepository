@@ -1,7 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pk-app" id="pkPickApp" data-broj="{{ order.broj }}"{% if is_prenos_mp %} data-prenos-mp="1"{% endif %}>
+<div class="pk-app" id="pkPickApp" data-broj="{{ order.broj }}"{% if is_prenos_mp %} data-prenos-mp="1"{% endif %}{% if can_edit_order %} data-edit="1" data-lookup="{{ lookup_url }}"{% endif %}{% if is_vp_order %} data-vp="1"{% endif %}>
     <script type="application/json" id="pkQueue">{{ pick_queue_json|safe }}</script>
     <script type="application/json" id="pkState">{{ pick_state_json|safe }}</script>
 
@@ -30,12 +30,15 @@
         <button type="button" class="is-on" data-pk-tab="pick">Pick</button>
         <button type="button" data-pk-tab="todo">To do <i id="pkTodoN">0</i></button>
         <button type="button" data-pk-tab="done">Done <i id="pkDoneN">0</i></button>
+        {% if can_edit_order %}
+        <button type="button" data-pk-tab="edit">Izmijeni</button>
+        {% endif %}
     </nav>
 
     <section class="pk-stage" data-pk-panel="pick">
         <div id="pkCard" class="pk-card" hidden>
             <div class="pk-loc">
-                <span>Idi na lokaciju</span>
+                <span id="pkLocKicker">Idi na lokaciju</span>
                 <strong id="pkLoc">—</strong>
                 <em id="pkLocMeta"></em>
             </div>
@@ -89,5 +92,74 @@
     <section class="pk-list-panel" data-pk-panel="done" hidden>
         <div id="pkDoneList" class="pk-lines"></div>
     </section>
+    {% if can_edit_order %}
+    <section class="pk-list-panel pk-edit-panel" data-pk-panel="edit" hidden>
+        <div class="pk-edit-search" data-lookup="{{ lookup_url }}">
+            <input type="search" id="pkEditQuery" placeholder="Naziv, šifra ili barkod" autocomplete="off">
+            <button type="button" class="pk-cam" id="pkEditScan" data-mg-scan-target="pkEditQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skener
+            </button>
+        </div>
+        <ul class="pk-edit-suggest" id="pkEditSuggest" hidden></ul>
+        <ul class="pk-edit-lines" id="pkEditLines">
+            {% for row in order_items %}
+            <li data-id="{{ row.pk }}">
+                <div class="pk-edit-info">
+                    <strong>{{ row.puni_naziv }}</strong>
+                    <span>{{ row.sifra|default:"—" }} · {{ row.cijena }} KM</span>
+                </div>
+                <form method="post" class="pk-edit-qty-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="kolicina">
+                    <input type="hidden" name="stavka_id" value="{{ row.pk }}">
+                    <input class="pk-edit-qty" name="kolicina" type="number" min="1" step="1" value="{{ row.kolicina }}" inputmode="numeric" aria-label="Količina">
+                </form>
+                <form method="post" class="pk-edit-remove-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="ukloni">
+                    <input type="hidden" name="stavka_id" value="{{ row.pk }}">
+                    <button type="submit" class="pk-edit-remove">Ukloni</button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="is-empty">Nema stavki.</li>
+            {% endfor %}
+        </ul>
+        <p class="pk-edit-total">Račun <span id="pkEditTotal">{{ order.ukupno }} KM</span></p>
+    </section>
+    <form method="post" id="pkEditAddForm" hidden>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="dodaj">
+        <input type="hidden" name="product_id" id="pkEditProductId">
+        <input type="hidden" name="variation_id" id="pkEditVariationId">
+        <input type="hidden" name="kolicina" id="pkEditAddQty" value="1">
+        <input type="hidden" name="mp_ok" id="pkEditMpOk" value="0">
+    </form>
+    <div class="pk-popup" id="pkEditQtyModal" hidden>
+        <div class="pk-popup-scrim" data-pk-edit-qty-close></div>
+        <div class="pk-edit-qty-box" role="dialog">
+            <p class="pk-prenos-kicker">Količina</p>
+            <h2 id="pkEditQtyName">Artikal</h2>
+            <p id="pkEditQtyMeta" class="pk-edit-meta"></p>
+            <input id="pkEditQtyInput" class="pk-edit-qty-big" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Količina">
+            <div class="pk-edit-qty-actions">
+                <button type="button" class="pk-edit-cancel" data-pk-edit-qty-close>Otkaži</button>
+                <button type="button" class="pk-prenos-valid" id="pkEditQtyAdd">Dodaj</button>
+            </div>
+        </div>
+    </div>
+    <div class="pk-popup" id="pkEditMpModal" hidden>
+        <div class="pk-popup-scrim" data-pk-edit-mp-skip></div>
+        <div class="pk-edit-qty-box" role="dialog">
+            <h2>Provjeri u maloprodaji</h2>
+            <p id="pkEditMpText">Artikal nije na stanju u magacinu.</p>
+            <div class="pk-edit-qty-actions">
+                <button type="button" class="pk-edit-cancel" id="pkEditMpSkip">Izbaci</button>
+                <button type="button" class="pk-prenos-valid" id="pkEditMpAdd">Dodaj</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

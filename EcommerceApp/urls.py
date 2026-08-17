@@ -174,6 +174,11 @@ urlpatterns = [
     path('nalog/magacin/pakuj/provjera/', views_magacin.magacin_pakuj_provjera, name='staff_magacin_pakuj_provjera'),
     path('nalog/magacin/pakuj/sken/', views_magacin.magacin_pakuj_sken, name='staff_magacin_pakuj_sken'),
     path(
+        'nalog/magacin/pakuj/<str:broj>/stampaj-zapakovano/',
+        views_magacin.magacin_pakuj_stampaj_zapakovano,
+        name='staff_magacin_pakuj_stampaj_zapakovano',
+    ),
+    path(
         'nalog/magacin/narudzbe/<str:broj>/barkod.png',
         views_magacin.magacin_narudzba_barkod,
         name='staff_magacin_narudzba_barkod',
@@ -210,6 +215,7 @@ urlpatterns = [
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
+    path('nalog/loyalty/clan/<str:kod>/', views.staff_loyalty_member, name='staff_loyalty_member'),
     path(
         'nalog/loyalty/kartica/<int:card_id>/slika.png',
         views.staff_loyalty_card_image,

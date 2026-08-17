@@ -3675,6 +3675,10 @@ class LoyaltyPurchase(models.Model):
         OTP = 'otp', 'Kod (Viber/WhatsApp)'
         ADMIN = 'admin', 'Admin override (bez koda)'
 
+    class Placanje(models.TextChoices):
+        GOTOVINA = 'gotovina', 'Gotovina'
+        KARTICA = 'kartica', 'Kartica'
+
     kartica = models.ForeignKey(
         LoyaltyCard,
         on_delete=models.CASCADE,
@@ -3707,6 +3711,12 @@ class LoyaltyPurchase(models.Model):
         verbose_name='Evidentirao',
     )
     kreirano = models.DateTimeField(auto_now_add=True, verbose_name='Datum')
+    placanje = models.CharField(
+        max_length=12,
+        choices=Placanje.choices,
+        default=Placanje.GOTOVINA,
+        verbose_name='Način plaćanja',
+    )
 
     class Meta:
         verbose_name = 'Evidentirana loyalty kupovina'
@@ -3772,6 +3782,7 @@ class UserProfile(models.Model):
     adresa = models.CharField(max_length=300, blank=True)
     grad = models.CharField(max_length=100, blank=True)
     postanski_broj = models.CharField(max_length=20, blank=True)
+    loyalty_napomena = models.TextField(blank=True, verbose_name='Loyalty napomena')
 
     class Meta:
         verbose_name = 'Korisnički profil'

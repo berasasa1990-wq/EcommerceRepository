@@ -38,6 +38,12 @@ from .magacin import (
     start_vp_narudzba,
     create_prenos_mp_pick,
     is_prenos_mp_order,
+    is_vp_order,
+    add_item_to_order,
+    set_order_item_qty,
+    remove_item_from_order,
+    mark_order_packed,
+    vp_waiting_print_ids,
     skini_sa_sajta,
     reserve_for_order,
     is_ignored_stock_location,
@@ -211,7 +217,10 @@ def _magacin_nav_counts():
             return data
     data = {
         'new_magacin_orders_count': Order.objects.filter(status=Order.Status.NOVA).exclude(_prenos_mp_q()).count(),
-        'new_pack_orders_count': _unvalidated_orders_qs().count(),
+        'new_pack_orders_count': (
+            _unvalidated_orders_qs().count()
+            + Order.objects.filter(pk__in=list(vp_waiting_print_ids())).count()
+        ),
         'notify_count': StaffSiteEvent.objects.filter(
             kreirano__gte=timezone.now() - timedelta(hours=24),
         ).count(),
@@ -1695,7 +1704,7 @@ def magacin_narudzbe(request):
         orders = orders.filter(izvor=Order.Izvor.WEBSHOP)
     validated_q = Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
     if show_validated:
-        orders = orders.filter(validated_q)
+        orders = orders.filter(validated_q).exclude(pk__in=list(vp_waiting_print_ids()))
         if not show_all_validated:
             today = timezone.localdate()
             orders = orders.filter(
@@ -1719,7 +1728,7 @@ def magacin_narudzbe(request):
         'rucne_count': base_qs.filter(
             izvor=Order.Izvor.MAGACIN,
         ).exclude(validated_q).count(),
-        'validated_count': base_qs.filter(validated_q).count(),
+        'validated_count': base_qs.filter(validated_q).exclude(pk__in=list(vp_waiting_print_ids())).count(),
     })
     return render(request, 'staff/magacin/narudzbe.html', context)
 
@@ -2183,11 +2192,12 @@ def _location_sort_key(name):
 def _packing_location_groups(lines):
     groups = {}
     mp_items = []
+    mp_confirmed_items = []
     for line in lines:
         picks = line.get('picks') or []
         for pick in picks:
             name = pick.get('location_name') or '?'
-            groups.setdefault(name, []).append({
+            row = {
                 'line_id': line.get('rb'),
                 'item_id': line.get('item_id'),
                 'naziv': line['naziv'],
@@ -2196,7 +2206,11 @@ def _packing_location_groups(lines):
                 'slika': line.get('slika') or '',
                 'take': pick.get('take') or line.get('kolicina'),
                 'kolicina': line.get('kolicina'),
-            })
+            }
+            if name == 'MP':
+                mp_confirmed_items.append(row)
+            else:
+                groups.setdefault(name, []).append(row)
         if line.get('check_mp'):
             take = line.get('shortfall') or (0 if picks else line.get('kolicina') or 0)
             if take:
@@ -2237,6 +2251,14 @@ def _packing_location_groups(lines):
             'rb_label': f'{index:02d}',
             'items': _number_items(mp_items),
         })
+    if mp_confirmed_items:
+        index = len(ordered) + 1
+        ordered.append({
+            'label': 'MP',
+            'rb': index,
+            'rb_label': f'{index:02d}',
+            'items': _number_items(mp_confirmed_items),
+        })
     return ordered
 
 
@@ -2265,7 +2287,7 @@ def _pick_queue(location_groups):
                 'slika': item.get('slika') or '',
                 'need': int(item.get('take') or 0),
                 'codes': codes,
-                'is_mp': loc['label'] == 'Provjeri u MP',
+                'is_mp': loc['label'] in {'MP', 'Provjeri u MP'},
             })
     return queue
 
@@ -2580,14 +2602,19 @@ def pending_vp_orders():
     if not order_ids:
         return []
     orders = list(
-        _unvalidated_orders_qs()
-        .filter(pk__in=order_ids)
+        Order.objects.filter(pk__in=order_ids)
+        .exclude(status=Order.Status.OTKAZANA)
+        .exclude(zapakovana=True)
         .prefetch_related('stavke')
         .order_by('kreirana')
     )
     for order in orders:
-        order.needs_mp_check = order_needs_mp_check(order)
+        order.needs_mp_check = (
+            order.lager_status != Order.LagerStatus.VALIDIRANO
+            and order_needs_mp_check(order)
+        )
         order.vp_stavki = order.stavke.count()
+        order.needs_print_packed = order.lager_status == Order.LagerStatus.VALIDIRANO
     return orders
 
 
@@ -2711,6 +2738,8 @@ def magacin_pakuj_detail(request, broj):
         return redirect(_provjera_url(order.broj, next_pick=True))
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
+        if action in {'dodaj', 'ukloni', 'kolicina'}:
+            return _pakuj_edit_order(request, order)
         if action in {'validiraj', 'pick_save'}:
             try:
                 apply_order_pick(order, _parse_pick_lines(request.POST.get('pick_json')))
@@ -2723,7 +2752,12 @@ def magacin_pakuj_detail(request, broj):
                 return JsonResponse({'ok': True})
             try:
                 validate_order_stock(order, user=request.user)
-                if not is_prenos_mp_order(order):
+                if is_vp_order(order):
+                    messages.success(
+                        request,
+                        f'VP narudžba #{order.broj} je validatovana. Štampaj zapakovano da je skloniš.',
+                    )
+                elif not is_prenos_mp_order(order):
                     messages.success(request, f'Narudžba #{order.broj} je validatovana.')
                 return redirect('staff_magacin_pakuj')
             except MagacinError as exc:
@@ -2743,9 +2777,139 @@ def magacin_pakuj_detail(request, broj):
         'pick_fullscreen': True,
         'mp_count': mp_count,
         'is_prenos_mp': prenos_mp,
+        'can_edit_order': not prenos_mp,
+        'is_vp_order': is_vp_order(order),
+        'order_items': list(order.stavke.all()),
+        'lookup_url': reverse('staff_magacin_artikli_lookup'),
     })
     template = 'staff/magacin/pakuj_prenos.html' if prenos_mp else 'staff/magacin/pakuj_detail.html'
     return render(request, template, context)
+
+
+def _pakuj_is_ajax(request):
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def _pakuj_order_payload(order):
+    items = list(order.stavke.all())
+    return {
+        'ok': True,
+        'ukupno': str(order.ukupno),
+        'medjuzbir': str(order.medjuzbir),
+        'reload': True,
+        'stavke': [
+            {
+                'id': row.pk,
+                'naziv': row.puni_naziv,
+                'sifra': row.sifra or '',
+                'kolicina': row.kolicina,
+                'cijena': str(row.cijena),
+            }
+            for row in items
+        ],
+    }
+
+
+def _pakuj_need_mp(request, order, product, variation, qty, *, available, naziv):
+    message = (
+        f'„{naziv}” nema dovoljno zalihe u magacinu ({available}). '
+        'Provjeri maloprodaju pa klikni Dodaj, ili makni stavku.'
+    )
+    if _pakuj_is_ajax(request):
+        return JsonResponse({
+            'ok': False,
+            'need_mp': True,
+            'error': message,
+            'available': available,
+            'naziv': naziv,
+            'product_id': product.pk,
+            'variation_id': variation.pk if variation else '',
+            'kolicina': qty,
+        }, status=409)
+    messages.error(request, message)
+    return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+
+
+def _pakuj_edit_order(request, order):
+    action = (request.POST.get('action') or '').strip()
+    ajax = _pakuj_is_ajax(request)
+    try:
+        if action == 'dodaj':
+            product = get_object_or_404(magacin_products_qs(), pk=int(request.POST.get('product_id') or 0))
+            variation = None
+            var_id = request.POST.get('variation_id')
+            if var_id:
+                variation = get_object_or_404(ProductVariation, pk=int(var_id), artikal=product)
+            qty = _parse_qty(request.POST.get('kolicina') or '1')
+            mp_ok = request.POST.get('mp_ok') == '1'
+            available = stock_totals(product, variation)['dostupno']
+            if qty > available and not mp_ok:
+                naziv = f'{product.naziv} {variation.naziv}'.strip() if variation else product.naziv
+                return _pakuj_need_mp(
+                    request, order, product, variation, qty,
+                    available=available, naziv=naziv,
+                )
+            add_item_to_order(
+                order,
+                product=product,
+                variation=variation,
+                qty=qty,
+                mp_ok=mp_ok,
+                user=request.user,
+            )
+        elif action == 'kolicina':
+            item = get_object_or_404(order.stavke, pk=int(request.POST.get('stavka_id') or 0))
+            qty = _parse_qty(request.POST.get('kolicina') or '1')
+            mp_ok = request.POST.get('mp_ok') == '1'
+            product = item.artikal
+            if product is None:
+                raise MagacinError('Artikal više ne postoji.')
+            delta = qty - int(item.kolicina or 0)
+            if delta > 0 and not mp_ok:
+                available = stock_totals(product, item.varijacija)['dostupno']
+                if delta > available:
+                    return _pakuj_need_mp(
+                        request, order, product, item.varijacija, qty,
+                        available=available, naziv=item.puni_naziv,
+                    )
+            set_order_item_qty(order, item, qty, mp_ok=mp_ok, user=request.user)
+        elif action == 'ukloni':
+            item = get_object_or_404(order.stavke, pk=int(request.POST.get('stavka_id') or 0))
+            remove_item_from_order(order, item, user=request.user)
+        else:
+            raise MagacinError('Nepoznata akcija.')
+        invalidate_magacin_nav_counts()
+        order.refresh_from_db()
+        if ajax:
+            return JsonResponse(_pakuj_order_payload(order))
+        messages.success(request, 'Narudžba i račun su ažurirani.')
+        return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+    except (MagacinError, Product.DoesNotExist, ValueError) as exc:
+        if ajax:
+            return JsonResponse(
+                {'ok': False, 'error': str(exc) if str(exc) else 'Narudžba nije izmijenjena.'},
+                status=400,
+            )
+        messages.error(request, str(exc) if str(exc) else 'Narudžba nije izmijenjena.')
+        return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_pakuj_stampaj_zapakovano(request, broj):
+    order = get_object_or_404(Order, broj=broj)
+    if not is_vp_order(order):
+        messages.error(request, 'Štampa zapakovanog je samo za VP narudžbe.')
+        return redirect('staff_magacin_pakuj')
+    try:
+        if order.lager_status != Order.LagerStatus.VALIDIRANO:
+            raise MagacinError('Prvo validatuj VP narudžbu.')
+        mark_order_packed(order)
+    except MagacinError as exc:
+        messages.error(request, str(exc))
+        return redirect('staff_magacin_pakuj')
+    stampa = reverse('staff_magacin_narudzbe_stampa')
+    return redirect(f'{stampa}?{urlencode({"b": order.broj})}')
 
 
 @login_required(login_url='login')

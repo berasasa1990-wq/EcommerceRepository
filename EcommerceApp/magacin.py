@@ -2082,6 +2082,298 @@ def is_prenos_mp_order(order):
     return (getattr(order, 'ime_prezime', '') or '').strip().casefold() == 'prenos u mp'
 
 
+def is_vp_order(order):
+    cached = getattr(order, '_is_vp_order', None)
+    if cached is not None:
+        return cached
+    if (getattr(order, 'napomena', '') or '').startswith('VP narudžba'):
+        order._is_vp_order = True
+        return True
+    found = MagacinVpNarudzba.objects.filter(order_id=order.pk).exists()
+    order._is_vp_order = found
+    return found
+
+
+def vp_waiting_print_ids():
+    """Samo validatovane VP koje još čekaju „Štampaj zapakovano” — nisu u _unvalidated_orders_qs."""
+    return MagacinVpNarudzba.objects.filter(
+        status=MagacinVpNarudzba.Status.ZAVRSENA,
+        order_id__isnull=False,
+        order__zapakovana=False,
+        order__lager_status=Order.LagerStatus.VALIDIRANO,
+    ).exclude(
+        order__status=Order.Status.OTKAZANA,
+    ).values_list('order_id', flat=True)
+
+
+def _item_variation_filter(variation):
+    if variation is None:
+        return {'varijacija__isnull': True}
+    return {'varijacija': variation}
+
+
+def _hold_variation_filter(variation):
+    if variation is None:
+        return {'variation__isnull': True}
+    return {'variation': variation}
+
+
+def _clear_pick_state_for_item(order, item_id):
+    state = dict(order.pick_state or {}) if isinstance(getattr(order, 'pick_state', None), dict) else {}
+    if not state or not item_id:
+        return
+    prefix = f'{item_id}:'
+    changed = False
+    for key in list(state.keys()):
+        row = state.get(key)
+        if isinstance(row, dict) and (
+            row.get('item_id') == item_id or str(key).startswith(prefix)
+        ):
+            del state[key]
+            changed = True
+    if changed:
+        order.pick_state = state
+        order.save(update_fields=['pick_state'])
+
+
+def _fresh_order_items(order):
+    if hasattr(order, '_prefetched_objects_cache'):
+        order._prefetched_objects_cache.pop('stavke', None)
+        order._prefetched_objects_cache.pop('magacin_holds', None)
+    return list(OrderItem.objects.filter(narudzba_id=order.pk))
+
+
+def recalculate_order_totals(order):
+    items = _fresh_order_items(order)
+    medjuzbir = sum(
+        (Decimal(str(item.cijena or 0)) * int(item.kolicina or 0) for item in items),
+        Decimal('0.00'),
+    ).quantize(Decimal('0.01'))
+    popust = Decimal(str(order.popust or 0)).quantize(Decimal('0.01'))
+    if is_vp_order(order):
+        dostava = Decimal('0.00')
+    elif getattr(order, 'izvor', '') == Order.Izvor.MAGACIN:
+        from .pricing import _standardna_dostava
+
+        dostava, _, _, _ = _standardna_dostava(medjuzbir)
+    else:
+        dostava = Decimal(str(order.dostava or 0)).quantize(Decimal('0.01'))
+    ukupno = (medjuzbir - popust + dostava).quantize(Decimal('0.01'))
+    if ukupno < 0:
+        ukupno = Decimal('0.00')
+    order.medjuzbir = medjuzbir
+    order.dostava = dostava
+    order.ukupno = ukupno
+    order.save(update_fields=['medjuzbir', 'dostava', 'ukupno'])
+    return order
+
+
+def release_holds_for_product(order, product, variation=None, qty=None, *, user=None):
+    holds = list(
+        order.magacin_holds.filter(
+            product=product,
+            status=OrderStockHold.Status.REZERVISANO,
+            **_hold_variation_filter(variation),
+        ).order_by('-kolicina', '-pk')
+    )
+    remaining = qty if qty is not None else sum(hold.kolicina for hold in holds)
+    remaining = max(0, _int(remaining))
+    for hold in holds:
+        if remaining <= 0:
+            break
+        take = min(hold.kolicina, remaining)
+        if take <= 0:
+            continue
+        stock = get_or_create_stock(
+            product=hold.product, variation=hold.variation, location=hold.location,
+        )
+        new_reserved = max(0, stock.rezervisano - take)
+        apply_movement(
+            product=hold.product,
+            variation=hold.variation,
+            location=hold.location,
+            tip=WarehouseMovement.Tip.REZERVACIJA,
+            kolicina=1,
+            rezervisano=new_reserved,
+            napomena=f'Izmjena #{order.broj}',
+            user=user,
+        )
+        if take >= hold.kolicina:
+            hold.status = OrderStockHold.Status.OTKAZANO
+            hold.save(update_fields=['status'])
+        else:
+            hold.kolicina -= take
+            hold.save(update_fields=['kolicina'])
+        remaining -= take
+    return remaining
+
+
+def _order_item_unit_price(order, product, variation=None):
+    if is_vp_order(order):
+        cijena, _mpc = vp_cijena(product, variation)
+        bazna = variation.bazna_cijena if variation else product.bazna_cijena
+        return cijena, bazna
+    cijena = variation.prikazna_cijena if variation else product.prikazna_cijena
+    bazna = variation.bazna_cijena if variation else product.bazna_cijena
+    return cijena, bazna
+
+
+def _assert_order_editable(order):
+    if is_prenos_mp_order(order):
+        raise MagacinError('Prenos u MP se ne može mijenjati.')
+    if order.lager_status == Order.LagerStatus.VALIDIRANO:
+        raise MagacinError('Validirana narudžba se ne može mijenjati.')
+    if order.lager_status == Order.LagerStatus.OTKAZANO or order.status == Order.Status.OTKAZANA:
+        raise MagacinError('Otkazana narudžba se ne može mijenjati.')
+
+
+def _note_maloprodaja(order, product, variation=None):
+    naziv = f'{product.naziv} {variation.naziv}'.strip() if variation else product.naziv
+    note = (order.napomena or '').strip()
+    marker = f'Maloprodaja: {naziv}'
+    if marker in note:
+        return
+    extra = marker if 'Maloprodaja:' in note else f'Maloprodaja: {naziv}'
+    order.napomena = f'{note}\n{extra}'.strip() if note else extra
+    order.save(update_fields=['napomena'])
+
+
+@transaction.atomic
+def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=None):
+    _assert_order_editable(order)
+    qty = max(1, _int(qty))
+    if variation and variation.artikal_id != product.pk:
+        raise MagacinError('Varijacija ne pripada artiklu.')
+    available = stock_totals(product, variation)['dostupno']
+    shortfall = max(0, qty - available)
+    if shortfall > 0 and not mp_ok:
+        raise MagacinError(
+            f'„{product.naziv}” nema dovoljno zalihe u magacinu ({available}). '
+            'Provjeri maloprodaju pa dodaj, ili makni stavku.'
+        )
+    cijena, bazna = _order_item_unit_price(order, product, variation)
+    existing = OrderItem.objects.filter(
+        narudzba_id=order.pk, artikal=product, **_item_variation_filter(variation),
+    ).first()
+    if existing:
+        existing.kolicina += qty
+        existing.kolicina_pokupljeno = None
+        existing.cijena = cijena
+        existing.save(update_fields=['kolicina', 'kolicina_pokupljeno', 'cijena'])
+        item = existing
+    else:
+        item = OrderItem.objects.create(
+            narudzba=order,
+            artikal=product,
+            varijacija=variation,
+            naziv=product.naziv[:200],
+            product_naziv=product.naziv[:200],
+            varijacija_naziv=(variation.naziv[:100] if variation else ''),
+            sifra=((variation.sifra if variation and variation.sifra else product.sifra) or '')[:200],
+            cijena=cijena,
+            bazna_cijena=bazna,
+            kolicina=qty,
+        )
+    leftover = reserve_for_order(
+        order,
+        product,
+        qty - shortfall,
+        variation=variation,
+        user=user,
+        napomena=f'Izmjena #{order.broj}',
+    )
+    if leftover and not mp_ok:
+        raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
+    if shortfall > 0:
+        _note_maloprodaja(order, product, variation)
+    _clear_pick_state_for_item(order, item.pk)
+    recalculate_order_totals(order)
+    return item
+
+
+@transaction.atomic
+def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
+    _assert_order_editable(order)
+    qty = max(1, _int(qty))
+    if item.narudzba_id != order.pk:
+        raise MagacinError('Stavka nije na ovoj narudžbi.')
+    product = item.artikal
+    if product is None:
+        raise MagacinError('Artikal više ne postoji.')
+    variation = item.varijacija
+    current = int(item.kolicina or 0)
+    if qty == current and not mp_ok:
+        return item
+    delta = qty - current
+    available = stock_totals(product, variation)['dostupno']
+    if delta > 0:
+        shortfall = max(0, delta - available)
+        if shortfall > 0 and not mp_ok:
+            raise MagacinError(
+                f'„{product.naziv}” nema dovoljno zalihe u magacinu ({available}). '
+                'Provjeri maloprodaju pa dodaj, ili makni stavku.'
+            )
+        leftover = reserve_for_order(
+            order,
+            product,
+            delta - shortfall,
+            variation=variation,
+            user=user,
+            napomena=f'Izmjena #{order.broj}',
+        )
+        if leftover and not mp_ok:
+            raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
+        if shortfall > 0:
+            _note_maloprodaja(order, product, variation)
+    elif delta < 0:
+        release_holds_for_product(order, product, variation, -delta, user=user)
+    item.kolicina = qty
+    item.kolicina_pokupljeno = None
+    item.save(update_fields=['kolicina', 'kolicina_pokupljeno'])
+    _clear_pick_state_for_item(order, item.pk)
+    recalculate_order_totals(order)
+    return item
+
+
+@transaction.atomic
+def remove_item_from_order(order, item, *, user=None):
+    _assert_order_editable(order)
+    if item.narudzba_id != order.pk:
+        raise MagacinError('Stavka nije na ovoj narudžbi.')
+    if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
+        raise MagacinError('Narudžba mora imati barem jedan artikal.')
+    product = item.artikal
+    variation = item.varijacija
+    if product is not None:
+        release_holds_for_product(order, product, variation, user=user)
+    item_id = item.pk
+    item.delete()
+    _clear_pick_state_for_item(order, item_id)
+    recalculate_order_totals(order)
+
+
+@transaction.atomic
+def mark_order_packed(order):
+    if order.lager_status != Order.LagerStatus.VALIDIRANO:
+        raise MagacinError('Prvo validatuj narudžbu.')
+    if order.zapakovana and order.status == Order.Status.ZAVRSENA:
+        return order
+    order.zapakovana = True
+    order.zapakovana_at = timezone.now()
+    update_fields = ['zapakovana', 'zapakovana_at']
+    if order.status != Order.Status.OTKAZANA:
+        order.status = Order.Status.ZAVRSENA
+        update_fields.append('status')
+    order.save(update_fields=update_fields)
+    try:
+        from .views_magacin import invalidate_magacin_nav_counts
+
+        invalidate_magacin_nav_counts()
+    except Exception:
+        pass
+    return order
+
+
 @transaction.atomic
 def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
     """Napravi picking za prenos u MP — Validate skida zalihu s odabrane lokacije."""
@@ -2177,12 +2469,14 @@ def validate_order_stock(order, *, user=None):
         hold.status = OrderStockHold.Status.VALIDIRANO
         hold.save(update_fields=['status'])
     order.lager_status = Order.LagerStatus.VALIDIRANO
-    order.zapakovana = True
-    order.zapakovana_at = timezone.now()
-    update_fields = ['lager_status', 'zapakovana', 'zapakovana_at']
-    if order.status != Order.Status.OTKAZANA:
-        order.status = Order.Status.ZAVRSENA
-        update_fields.append('status')
+    update_fields = ['lager_status']
+    if not is_vp_order(order):
+        order.zapakovana = True
+        order.zapakovana_at = timezone.now()
+        update_fields.extend(['zapakovana', 'zapakovana_at'])
+        if order.status != Order.Status.OTKAZANA:
+            order.status = Order.Status.ZAVRSENA
+            update_fields.append('status')
     order.save(update_fields=update_fields)
     try:
         from .views_magacin import invalidate_magacin_nav_counts

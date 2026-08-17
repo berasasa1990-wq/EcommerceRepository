@@ -4,811 +4,676 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Loyalty System — Admin — opremazaribolov.ba</title>
+<title>Članovi / Kartice — Admin — opremazaribolov.ba</title>
 {% endblock %}
 
-{% block body_class %}staff-shell-page{% endblock %}
+{% block extra_css %}
+<style>
+.staff-shell-page,.staff-shell-page .site-main{background:#f5f6f8!important}
+.staff-shell-page .contact-float-group,
+.staff-shell-page .site-chat,
+.staff-shell-page .site-chat-launchers,
+.staff-shell-page .site-chat-launcher{display:none!important}
+body.loy-full #header,
+body.loy-full .header,
+body.loy-full .promo-bar,
+body.loy-full .site-chrome-backdrop,
+body.loy-full .header-row--categories,
+body.loy-full footer.site-footer,
+body.loy-full .site-footer,
+body.loy-full .footer{display:none!important}
+body.loy-full main{padding-top:28px!important;max-width:none}
+.loy-desk{width:100%;max-width:none;margin:0;padding:12px 28px 48px;color:#111827;font-family:Inter,"Segoe UI",sans-serif;box-sizing:border-box}
+.loy-grid{display:grid;grid-template-columns:minmax(640px,1fr) 360px;gap:24px;align-items:start}
+.loy-back{display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;color:#6b7280;text-decoration:none;font-size:13px;font-weight:600}
+.loy-back:hover{color:#111}
+.loy-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px}
+.loy-top h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.035em;color:#111827;line-height:1.1}
+.loy-btn-new{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 14px;border:0;border-radius:10px;background:#22c55e;color:#fff;font:inherit;font-size:13.5px;font-weight:700;text-decoration:none;box-shadow:0 1px 0 rgba(22,163,74,.15)}
+.loy-btn-new:hover{background:#16a34a;color:#fff}
+.loy-tabs{display:flex;gap:26px;border-bottom:1px solid #e8eaed;margin:0 0 16px}
+.loy-tabs a{padding:8px 0 11px;color:#9aa1a9;text-decoration:none;font-size:14px;font-weight:600}
+.loy-tabs a.is-on{color:#16a34a;border-bottom:2px solid #16a34a;margin-bottom:-1px}
+.loy-search-card{background:#fff;border:1px solid #eceef1;border-radius:16px;padding:18px 18px 16px;margin-bottom:14px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.loy-kicker{margin:0 0 5px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#16a34a}
+.loy-sub{margin:0 0 14px;color:#4f8a57;font-size:13px;line-height:1.45}
+.loy-phone{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 12px 0 14px;border:1px solid #e4e6ea;border-radius:12px;background:#fff}
+.loy-phone:focus-within{border-color:#86efac;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+.loy-phone .ico{color:#9aa3ad;display:grid;place-items:center;flex:0 0 auto}
+.loy-cc{display:inline-flex;align-items:center;gap:4px;min-height:30px;padding:0 8px;border:1px solid #e5e7eb;border-radius:8px;background:#f8faf9;font:inherit;font-size:13.5px;font-weight:700;color:#111827;cursor:default;flex:0 0 auto}
+.loy-cc svg{color:#9aa3ad}
+.loy-phone input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:15px;background:transparent;color:#111827}
+.loy-phone input::placeholder{color:#c0c5cb}
+.loy-phone .clr{border:0;background:transparent;color:#c0c5cb;cursor:pointer;font-size:20px;line-height:1;padding:4px}
+.loy-phone .clr:hover{color:#6b7280}
+.loy-send-lab{margin:14px 0 8px;font-size:13px;color:#6b7280}
+.loy-ch-row{display:flex;gap:8px;flex-wrap:wrap}
+.loy-ch{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 14px;border-radius:10px;background:#fff;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none}
+.loy-ch.is-viber{color:#7c3aed;border:1.5px solid #c4b5fd}
+.loy-ch.is-viber:hover{background:#f5f3ff}
+.loy-ch.is-wa{color:#16a34a;border:1.5px solid #86efac}
+.loy-ch.is-wa:hover{background:#f0fdf4}
+.loy-hint{display:flex;align-items:flex-start;gap:8px;margin:14px 0 0;padding:10px 12px;border-radius:10px;background:#eef6ff;color:#3b7ab8;font-size:12.5px;line-height:1.45}
+.loy-hint svg{flex:0 0 auto;margin-top:1px}
+.loy-offline{margin-top:0}
+.loy-find{display:flex;gap:8px;align-items:stretch}
+.loy-find input{flex:1;min-width:0;min-height:46px;padding:0 14px;border:1px solid #e4e6ea;border-radius:12px;font:inherit;font-size:15px}
+.loy-find input:focus{outline:none;border-color:#86efac;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+.loy-find button{flex:0 0 auto;min-height:46px;padding:0 16px;border:0;border-radius:12px;background:#111827;color:#fff;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+.loy-find button:hover{background:#000}
+.loy-new{display:grid;gap:10px}
+.loy-new input[type=text],.loy-new input[type=tel]{min-height:44px;padding:0 12px;border:1px solid #e5e7eb;border-radius:10px;font:inherit;width:100%;box-sizing:border-box}
+.loy-table{background:#fff;border:1px solid #eceef1;border-radius:16px;overflow:auto;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.loy-table table{width:100%;min-width:720px;border-collapse:collapse;table-layout:auto}
+.loy-table th{padding:12px 16px;text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#b0b6bd;font-weight:700;white-space:nowrap}
+.loy-table td{padding:13px 16px;font-size:14px;border-top:1px solid #f3f4f6;color:#1f2937;vertical-align:middle;white-space:nowrap}
+.loy-table td.num{color:#6b7280;font-variant-numeric:tabular-nums}
+.loy-table td.muted{color:#9aa3ad;font-variant-numeric:tabular-nums}
+.loy-table a.row{color:#9aa3ad;text-decoration:none;font-weight:600;font-variant-numeric:tabular-nums}
+.loy-table tbody tr{cursor:pointer}
+.loy-table tbody tr:hover{background:#fafafa}
+.loy-badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.04em}
+.loy-badge.bronza,.loy-badge.bronze{color:#b45309;background:#fff7ed}
+.loy-badge.srebrna,.loy-badge.silver{color:#64748b;background:#f1f5f9}
+.loy-badge.zlatna,.loy-badge.gold{color:#ca8a04;background:#fefce8}
+.loy-badge.platinum{color:#4f46e5;background:#eef2ff}
+.loy-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;color:#9aa3ad;font-size:12.5px}
+.loy-pages{display:flex;gap:4px;align-items:center}
+.loy-pages a,.loy-pages span{min-width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;color:#6b7280;font-size:13px}
+.loy-pages .is-on{background:#16a34a;color:#fff;font-weight:700}
+.loy-pages .dots{min-width:18px}
+.loy-side{display:flex;flex-direction:column;gap:12px}
+.loy-stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.loy-stat article{background:#fff;border:1px solid #eceef1;border-radius:14px;padding:14px 12px 12px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.loy-stat .lab{display:block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#9aa3ad;margin-bottom:6px}
+.loy-stat b{display:block;font-size:22px;letter-spacing:-.03em;line-height:1.15;color:#111827}
+.loy-stat span.sub{color:#9aa3ad;font-size:12px}
+.loy-stat .ic{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;margin-bottom:8px}
+.loy-stat .g{background:#dcfce7;color:#16a34a}
+.loy-stat .p{background:#ede9fe;color:#7c3aed}
+.loy-stat .o{background:#ffedd5;color:#ea580c}
+.loy-card{background:#fff;border:1px solid #eceef1;border-radius:14px;padding:16px 16px 14px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.loy-card h3{margin:0 0 12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;font-weight:800}
+.loy-tier{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0}
+.loy-tier + .loy-tier{border-top:1px solid #f3f4f6}
+.loy-tier .left{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:800;letter-spacing:.02em}
+.loy-tier em{font-style:normal;color:#9aa3ad;font-size:12px;text-align:right;line-height:1.35;font-weight:500}
+.loy-medal{width:26px;height:26px;flex:0 0 auto}
+.loy-contact-p{margin:0 0 12px;color:#6b7280;font-size:13px;line-height:1.45}
+.loy-contact-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.loy-ch-wide{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:10px;color:#fff;font-weight:700;font-size:12px;text-decoration:none;border:0;width:100%;cursor:pointer;padding:0 6px;white-space:nowrap}
+.loy-ch-wide.viber{background:#7c3aed}
+.loy-ch-wide.wa{background:#16a34a}
+.loy-help{margin:0;padding-left:18px;color:#6b7280;font-size:13px;line-height:1.55;list-style:disc!important}
+.loy-help li{margin:0 0 6px;list-style:disc!important}
+.loy-fab{position:fixed;right:24px;bottom:24px;width:58px;height:58px;border-radius:999px;border:0;background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.16);color:#111;cursor:pointer;display:grid;place-items:center;z-index:30}
+.loy-fab:hover{box-shadow:0 12px 32px rgba(15,23,42,.2)}
+.loy-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+.loy-modal[hidden]{display:none}
+.loy-scrim{position:absolute;inset:0;background:rgba(15,23,42,.22)}
+.loy-panel{position:relative;width:min(460px,100%);background:#fff;border-radius:18px;padding:22px 24px 20px;box-shadow:0 24px 60px rgba(15,23,42,.18)}
+.loy-panel h2{margin:0 28px 18px 0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:#111827}
+.loy-x{position:absolute;top:14px;right:14px;border:0;background:transparent;font-size:22px;color:#9aa3ad;cursor:pointer;line-height:1;padding:4px}
+.loy-prog{display:flex;align-items:flex-start;justify-content:center;gap:0;margin:0 0 22px;font-size:11px;color:#9aa3ad}
+.loy-prog .s{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:86px;text-align:center;font-style:normal}
+.loy-prog .n{width:24px;height:24px;border-radius:999px;background:#e5e7eb;color:#6b7280;display:grid;place-items:center;font-weight:700;font-size:11px;font-style:normal;font-family:inherit}
+.loy-prog .on .n,.loy-prog .done .n{background:#16a34a;color:#fff}
+.loy-prog .on{color:#16a34a;font-weight:700}
+.loy-prog .ln{width:42px;height:2px;background:#e5e7eb;margin-top:11px;position:relative}
+.loy-prog .ln:after{content:"";position:absolute;right:-1px;top:-3px;border:4px solid transparent;border-left-color:#e5e7eb}
+.loy-prog .done + .ln{background:#86efac}
+.loy-prog .done + .ln:after{border-left-color:#86efac}
+.loy-sent{text-align:center}
+.loy-sent .ok{color:#16a34a;font-weight:700;margin:0 0 8px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px}
+.loy-sent p{margin:0 0 6px;color:#6b7280;font-size:13.5px}
+.loy-sent strong{display:block;margin:8px 0 0;font-size:16px;color:#111827}
+.loy-otp{display:flex;gap:8px;justify-content:center;margin:18px 0 12px}
+.loy-otp-d{width:46px;height:52px;text-align:center;font-size:22px;font-weight:700;border:1px solid #e5e7eb;border-radius:10px;color:#111827;background:#fff}
+.loy-otp-d:focus{outline:none;border-color:#86efac;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+.loy-resend{text-align:center;font-size:13px;color:#6b7280;margin:0}
+.loy-resend button{border:0;background:none;color:#16a34a;font:inherit;font-weight:700;cursor:pointer;padding:0}
+.loy-resend button[disabled]{color:#86efac;cursor:default}
+.loy-modal-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:18px}
+.loy-modal-actions a.loy-btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.loy-btn{min-height:40px;padding:0 18px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+.loy-btn-ghost{border:1px solid #e5e7eb;background:#fff;color:#111827}
+.loy-btn-go{border:0;background:#16a34a;color:#fff}
+.loy-btn-go:hover{background:#15803d}
+.loyalty-scan-modal{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:16px}
+.loyalty-scan-modal[hidden]{display:none}
+.loyalty-scan-modal__backdrop{position:absolute;inset:0;background:rgba(15,23,42,.28)}
+.loyalty-scan-modal__panel{position:relative;width:min(440px,100%);background:#fff;border-radius:16px;padding:20px;box-shadow:0 20px 50px rgba(15,23,42,.18)}
+.loyalty-scan-modal__reader{min-height:180px;margin:12px 0;border-radius:10px;overflow:hidden;background:#111}
+.loyalty-scan-modal__hint,.loyalty-scan-modal__status{color:#6b7280;font-size:13px}
+.loyalty-scan-modal__actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+@media (max-width:1100px){
+  .loy-desk{padding:16px 14px 88px}
+  .loy-grid{grid-template-columns:1fr}
+  .loy-top h1{font-size:24px}
+  .loy-contact-row{grid-template-columns:1fr}
+  .loy-otp-d{width:40px;height:48px}
+  .loy-table table{min-width:0}
+  .loy-table td{white-space:normal}
+}
+</style>
+{% endblock %}
+
+{% block body_class %}staff-shell-page loy-full{% endblock %}
 
 {% block content %}
-<section class="staff-loyalty-page">
-    <header class="staff-page-hero">
-        <div class="staff-page-hero__inner">
-            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
-            <p class="staff-page-kicker">Admin</p>
-            <h1 class="staff-page-title">Loyalty System</h1>
-            <p class="staff-page-subtitle">Pretraga kupaca, izdavanje kartica i praćenje potrošnje.</p>
-
-            <form method="get"
-                  id="loyaltyCustomerSearchForm"
-                  class="staff-loyalty-search staff-loyalty-search--header staff-loyalty-search--hero"
-                  role="search"
-                  action="{% url 'staff_loyalty_system' %}">
-                <label class="staff-loyalty-search-label" for="loyaltySearchInput">Pretraga kupaca</label>
-                <div class="search-input-group">
-                    <input type="search" id="loyaltySearchInput" name="q" value="{{ loyalty_search_query }}"
-                           placeholder="Broj kartice, barkod, telefon, email ili ime…"
-                           autocomplete="off"
-                           autofocus>
-                    <button type="button" class="loyalty-scan-btn" id="loyaltyBarcodeScanBtn" title="Skeniraj barkod kamerom / sa telefona">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                            <path d="M7 8v8M10 8v8M13 8v5M16 8v8M19 8v6"/>
-                        </svg>
-                        Skeniraj barkod
-                    </button>
-                    <button type="submit" class="btn btn-primary">Pretraži</button>
-                </div>
-            </form>
-        </div>
-    </header>
-
-    {# Modal: čitač barkoda (kamera telefona / web) #}
-    <div class="loyalty-scan-modal" id="loyaltyScanModal" hidden>
-        <div class="loyalty-scan-modal__backdrop" data-scan-close></div>
-        <div class="loyalty-scan-modal__panel" role="dialog" aria-modal="true" aria-labelledby="loyaltyScanTitle">
-            <h2 id="loyaltyScanTitle">Skeniraj barkod kartice</h2>
-            <p class="loyalty-scan-modal__hint">
-                Usmjeri kameru na barkod na kartici (ili na sliku barkoda na telefonu).
-                Kod se automatski unosi u pretragu.
-            </p>
-            <div id="loyaltyBarcodeReader" class="loyalty-scan-modal__reader"></div>
-            <p class="loyalty-scan-modal__status" id="loyaltyScanStatus" aria-live="polite"></p>
-            <div class="loyalty-scan-modal__actions">
-                <label class="btn btn-outline" style="cursor:pointer;">
-                    Učitaj sliku barkoda
-                    <input type="file" id="loyaltyBarcodeFile" accept="image/*" capture="environment" hidden>
-                </label>
-                <button type="button" class="btn btn-outline" data-scan-close>Zatvori</button>
+<section class="loy-desk">
+    <a class="loy-back" href="{% url 'staff_admin_panel' %}">← Admin panel</a>
+    <div class="loy-grid">
+        <div>
+            <div class="loy-top">
+                <h1>Članovi / Kartice</h1>
+                <a class="loy-btn-new" href="?tab=novi">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    Novi član
+                </a>
             </div>
-        </div>
-    </div>
+            <nav class="loy-tabs">
+                <a href="{% url 'staff_loyalty_system' %}" class="{% if desk_tab != 'novi' %}is-on{% endif %}">Pretraga članova</a>
+                <a href="?tab=novi" class="{% if desk_tab == 'novi' %}is-on{% endif %}">Novi član</a>
+            </nav>
 
-    <div class="staff-loyalty-layout">
-        <aside class="staff-loyalty-issue-panel">
-            <div class="staff-loyalty-issue-card">
-                <div class="staff-loyalty-issue-header">
-                    <span class="staff-loyalty-issue-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <h2>Izdaj karticu</h2>
-                        <p>Unesite podatke kupca — kartica se generiše automatski.</p>
-                    </div>
-                </div>
-
-                <form method="post" class="staff-loyalty-issue-form" novalidate>
+            {% if desk_tab == 'novi' %}
+            <div class="loy-search-card">
+                <p class="loy-kicker">Novi član</p>
+                <p class="loy-sub">Unesite ime, prezime i broj telefona. Kartica se otvara na novom URL-u.</p>
+                <form method="post" class="loy-new" id="loyNewForm">
                     {% csrf_token %}
-                    <input type="hidden" name="action" value="izdaj_karticu">
-
-                    <div class="staff-loyalty-issue-grid">
-                        <div class="form-field">
-                            <label for="{{ issue_form.ime.id_for_label }}">{{ issue_form.ime.label }}</label>
-                            {{ issue_form.ime }}
-                            {% if issue_form.ime.errors %}
-                            <div class="field-error">{{ issue_form.ime.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="form-field">
-                            <label for="{{ issue_form.prezime.id_for_label }}">{{ issue_form.prezime.label }}</label>
-                            {{ issue_form.prezime }}
-                            {% if issue_form.prezime.errors %}
-                            <div class="field-error">{{ issue_form.prezime.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                    <input type="hidden" name="action" value="open_card">
+                    <input type="hidden" name="channel" value="admin">
+                    <input type="text" name="ime" placeholder="Ime" required>
+                    <input type="text" name="prezime" placeholder="Prezime" required>
+                    <div class="loy-phone">
+                        <span class="ico" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.35 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+                        </span>
+                        <span class="loy-cc">+387 <svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 4.5 6 8l3-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                        <input type="tel" name="telefon" class="loy-local-phone" placeholder="65 123 456" value="{{ phone_local }}" autocomplete="tel" required>
                     </div>
-
-                    <div class="form-field">
-                        <label for="{{ issue_form.telefon.id_for_label }}">{{ issue_form.telefon.label }}</label>
-                        {{ issue_form.telefon }}
-                        {% if issue_form.telefon.errors %}
-                        <div class="field-error">{{ issue_form.telefon.errors.0 }}</div>
-                        {% endif %}
-                        <small class="staff-loyalty-field-hint">
-                            Mobilni mora počinjati sa <strong>06</strong>.
-                            Isti broj: 065666666 = +38765666666 = 0038765666666.
-                        </small>
-                    </div>
-
-                    <div class="form-field">
-                        <label for="{{ issue_form.email.id_for_label }}">{{ issue_form.email.label }} <span class="staff-loyalty-optional">(opcionalno)</span></label>
-                        {{ issue_form.email }}
-                        {% if issue_form.email.errors %}
-                        <div class="field-error">{{ issue_form.email.errors.0 }}</div>
-                        {% endif %}
-                        <small class="staff-loyalty-field-hint">Nije obavezno. Ako unesete — mora biti jedinstven.</small>
-                    </div>
-
-                    {% if issue_form.non_field_errors %}
-                    <div class="field-error">{{ issue_form.non_field_errors.0 }}</div>
-                    {% endif %}
-
-                    <button type="submit" class="btn btn-primary btn-issue-card">
-                        Registruj i izdaj karticu
-                    </button>
+                    <button type="submit" class="loy-btn-new" style="border:0;justify-content:center">Kreiraj i otvori karticu</button>
                 </form>
             </div>
-        </aside>
-
-        <div class="staff-loyalty-main">
-            {% if searched %}
-                {% if cards %}
-                    {% if cards|length > 1 %}
-                    <div class="staff-results">
-                        <h3>Više rezultata ({{ cards|length }})</h3>
-                        <div class="results-grid">
-                            {% for c in cards %}
-                            <a href="?q={{ c.kod|urlencode }}" class="result-card {% if selected_card and selected_card.id == c.id %}active{% endif %}">
-                                <div class="result-name">{{ c.user.get_full_name|default:c.user.email }}</div>
-                                <div class="result-meta">
-                                    <span class="tier-badge tier-{{ c.nivo }}">{{ c.nivo|title }}</span>
-                                    <span class="card-code">{{ c.kod }}</span>
-                                </div>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if selected_card and loyalty %}
-                    <div class="loyalty-customer" id="loyaltyCustomerPanel">
-                        {% if newly_issued %}
-                        <div class="loyalty-success-banner" role="status">
-                            Kartica uspješno registrovana. Možete je odštampati ili poslati kupcu na Viber.
-                        </div>
-                        {% endif %}
-
-                        <div class="loyalty-account-status">
-                            {% if selected_card.user.is_active %}
-                            <span class="loyalty-account-badge loyalty-account-badge--active" title="Email nalog je aktiviran">✓ Nalog aktivan</span>
-                            {% else %}
-                            <span class="loyalty-account-badge loyalty-account-badge--inactive" title="Kupac nije potvrdio email">Nalog nije aktiviran</span>
-                            <form method="post" class="loyalty-activate-form" onsubmit="return confirm('Aktivirati nalog za {{ selected_card.user.email|default:selected_card.user.get_full_name|escapejs }}?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="aktiviraj_nalog">
-                                <input type="hidden" name="user_id" value="{{ selected_card.user_id }}">
-                                <input type="hidden" name="q" value="{{ loyalty_search_query }}">
-                                <button type="submit" class="btn btn-primary btn-sm">Aktiviraj nalog</button>
-                            </form>
-                            {% endif %}
-                            <span class="loyalty-account-badge loyalty-account-badge--tier">
-                                {{ loyalty.tier.label }} · {{ loyalty.tier.postotak }}%
-                            </span>
-                            {% if loyalty.next_tier and loyalty.preostalo_do_sljedeceg is not None %}
-                            <span class="loyalty-account-badge loyalty-account-badge--next">
-                                Još {{ loyalty.preostalo_do_sljedeceg|floatformat:0 }} KM do {{ loyalty.next_tier.label }}
-                            </span>
-                            {% else %}
-                            <span class="loyalty-account-badge loyalty-account-badge--next">Najviši nivo</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="loyalty-preview-section">
-                            <div class="loyalty-preview-header">
-                                <h3>Loyalty kartica</h3>
-                                <div class="loyalty-preview-actions">
-                                    <button type="button" class="btn btn-print-card" onclick="window.print()">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                                            <rect x="6" y="14" width="12" height="8"/>
-                                        </svg>
-                                        Štampaj
-                                    </button>
-                                    {% if loyalty.telefon %}
-                                    <button type="button"
-                                            class="btn btn-viber-card loyalty-card-send-btn"
-                                            data-channel="viber"
-                                            data-image-url="{% url 'staff_loyalty_card_image' selected_card.pk %}"
-                                            data-share-image-url="{{ loyalty.share_image_url }}"
-                                            data-chat-url="{{ loyalty.viber_url }}"
-                                            data-card-code="{{ selected_card.kod }}"
-                                            data-phone="{{ loyalty.telefon }}">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                            <path d="M12 2C6.5 2 2 5.9 2 10.7c0 2.8 1.5 5.3 3.9 6.9L5 22l4.7-1.5c.8.2 1.5.3 2.3.3 5.5 0 10-3.9 10-8.7S17.5 2 12 2zm5.1 11.3c-.2.5-1.1.9-1.5 1-.4 0-.7.2-2.3-.5-1.9-.9-3.1-2.9-3.2-3.1-.1-.1-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4.2.4.7 1.6.7 1.7.1.1.1.3 0 .5-.1.2-.2.3-.3.4-.1.1-.3.3-.1.6.1.3.6 1 1.3 1.6.9.8 1.6 1 1.8 1.1.2.1.4.1.5-.1.1-.1.6-.7.8-.9.2-.2.3-.2.5-.1.2.1 1.3.6 1.5.7.2.1.4.2.4.3.1.2 0 .7-.2 1.2z"/>
-                                        </svg>
-                                        Pošalji Viber
-                                    </button>
-                                    <button type="button"
-                                            class="btn btn-whatsapp-card loyalty-card-send-btn"
-                                            data-channel="whatsapp"
-                                            data-image-url="{% url 'staff_loyalty_card_image' selected_card.pk %}"
-                                            data-share-image-url="{{ loyalty.share_image_url }}"
-                                            data-chat-url="{{ loyalty.whatsapp_url }}"
-                                            data-card-code="{{ selected_card.kod }}"
-                                            data-phone="{{ loyalty.telefon }}">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                            <path d="M17.5 14.4c-.3-.1-1.6-.8-1.8-.9-.2-.1-.4-.1-.6.1-.2.2-.7.9-.8 1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.7.5-.1 1.6-.6 1.8-1.3.2-.6.2-1.2.1-1.3-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.1.8.8-3-.2-.3C4.1 15 3.7 13.5 3.7 12 3.7 7.4 7.4 3.7 12 3.7S20.3 7.4 20.3 12 16.6 20.2 12 20.2z"/>
-                                        </svg>
-                                        Pošalji WhatsApp
-                                    </button>
-                                    {% else %}
-                                    <span class="staff-loyalty-muted-hint" title="Dodajte telefon u ličnim podacima">Viber / WhatsApp nedostupni (nema telefona)</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <p class="loyalty-preview-hint">
-                                Prednja = logo · Zadnja (tanka, bez QR) = popust, broj, barkod.
-                                {% if loyalty.telefon %}
-                                <strong>Pošalji</strong>: tekst u Viber/WA + skida <strong>JPG zadnje strane</strong> — priloži ručno (📎).
-                                {% endif %}
-                            </p>
-                            {% if loyalty.card_caption or loyalty.viber_caption %}
-                            {{ loyalty.card_caption|default:loyalty.viber_caption|json_script:"loyaltyCardCaption" }}
-                            {% endif %}
-                            <div class="loyalty-print-preview">
-                                {% include 'partials/loyalty_card_print.html' %}
-                            </div>
-                        </div>
-
-                        <div class="section-card purchase-section" id="evidentiraj-kupovinu">
-                            <div class="section-header">
-                                <h3>Evidentiraj kupovinu</h3>
-                            </div>
-                            {% if pending_otp %}
-                            <div class="loyalty-otp-panel" id="loyaltyOtpPanel"
-                                 data-whatsapp-url="{{ pending_otp.whatsapp_url }}"
-                                 data-viber-url="{{ pending_otp.viber_url }}"
-                                 data-channel="{{ pending_otp.channel|default:'' }}">
-                                <p class="loyalty-otp-lead">
-                                    Iznos <strong>{{ pending_otp.iznos }} KM</strong>
-                                    · telefon <strong>{{ pending_otp.telefon|default:"—" }}</strong>
-                                </p>
-                                <p class="hint">
-                                    Klik otvara Viber/WhatsApp na broj kupca s kodom — samo <strong>Pošalji</strong>.
-                                    Kupac ti izdiktira kod — unesi ga ispod.
-                                </p>
-                                <div class="loyalty-otp-send-row">
-                                    {% if pending_otp.viber_url %}
-                                    <a href="{{ pending_otp.viber_url }}"
-                                       class="btn btn-viber-card"
-                                       id="loyaltyOtpViberBtn"
-                                       data-viber-url="{{ pending_otp.viber_url }}">
-                                        Pošalji Viber
-                                    </a>
-                                    {% endif %}
-                                    {% if pending_otp.whatsapp_url %}
-                                    <a href="{{ pending_otp.whatsapp_url }}"
-                                       class="btn btn-primary"
-                                       id="loyaltyOtpWhatsappBtn"
-                                       data-whatsapp-url="{{ pending_otp.whatsapp_url }}">
-                                        Pošalji WhatsApp
-                                    </a>
-                                    {% endif %}
-                                </div>
-                                {{ pending_otp.message|json_script:"loyaltyOtpMessage" }}
-
-                                <form method="post" class="purchase-form loyalty-otp-confirm-form" action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="evidentiraj_kupovinu_potvrdi">
-                                    <div class="form-inline">
-                                        <input type="text"
-                                               name="otp_code"
-                                               inputmode="numeric"
-                                               pattern="[0-9]{4}"
-                                               maxlength="4"
-                                               placeholder="4-cifreni kod"
-                                               autocomplete="one-time-code"
-                                               required
-                                               class="form-input loyalty-otp-input">
-                                        <button type="submit" class="btn btn-primary">Potvrdi i evidentiraj</button>
-                                    </div>
-                                </form>
-
-                                <div class="loyalty-otp-admin-row">
-                                    <form method="post" class="purchase-form" action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="evidentiraj_kupovinu_admin">
-                                        <button type="submit" class="btn btn-outline loyalty-otp-admin-btn">
-                                            Admin — nema internet (evidentiraj odmah)
-                                        </button>
-                                    </form>
-                                    <form method="post" class="purchase-form" action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="evidentiraj_kupovinu_cancel">
-                                        <button type="submit" class="btn btn-outline">Otkaži</button>
-                                    </form>
-                                </div>
-                            </div>
-                            {% else %}
-                            {# Korak 1: iznos + izbor kanala #}
-                            <form method="post"
-                                  class="purchase-form"
-                                  id="loyaltyOtpStartForm"
-                                  action="{{ request.path }}?q={{ loyalty_search_query|urlencode }}">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="evidentiraj_kupovinu_start">
-                                <input type="hidden" name="ajax" value="1">
-                                <input type="hidden" name="channel" id="loyaltyOtpChannel" value="whatsapp">
-                                <div class="form-inline">
-                                    <input type="number" name="iznos" step="0.01" min="0.01"
-                                           placeholder="Iznos u KM (npr. 125.50)" required class="form-input"
-                                           id="loyaltyOtpIznos">
-                                    <input type="text" name="napomena" maxlength="200"
-                                           placeholder="Napomena (opcionalno)" class="form-input">
-                                </div>
-                                <div class="loyalty-otp-send-row" style="margin-top:12px;">
-                                    <button type="submit" class="btn btn-viber-card" data-channel="viber" id="loyaltyOtpStartViber">
-                                        Pošalji kod — Viber
-                                    </button>
-                                    <button type="submit" class="btn btn-primary" data-channel="whatsapp" id="loyaltyOtpStartWa">
-                                        Pošalji kod — WhatsApp
-                                    </button>
-                                    <button type="submit" class="btn btn-outline loyalty-otp-admin-btn" data-channel="admin" id="loyaltyOtpStartAdmin">
-                                        Admin — nema internet
-                                    </button>
-                                </div>
-                                <small class="hint">
-                                    <strong>Viber / WhatsApp:</strong> otvara app na broj kupca s kodom — samo Pošalji; kupac izdiktira kod, uneseš ga i evidentira se.<br>
-                                    <strong>Admin:</strong> odmah evidentira bez koda (nema internet).
-                                </small>
-                            </form>
-                            {% endif %}
-                        </div>
-
-                        <div class="customer-details">
-                            <div class="section-card">
-                                <div class="section-header">
-                                    <h3>Kupovine ({{ purchase_timeline|length }})</h3>
-                                </div>
-                                <p class="hint" style="margin:0 0 12px;">
-                                    Online narudžbe + ručno evidentirane kupovine (prodavnica).
-                                </p>
-                                {% if purchase_timeline %}
-                                <div class="orders-list">
-                                    {% for row in purchase_timeline %}
-                                    <div class="order-item order-item--{{ row.kind }}">
-                                        <div class="order-info">
-                                            <div>
-                                                <strong>
-                                                    {% if row.kind == 'online' %}
-                                                    Online {{ row.label }}
-                                                    {% else %}
-                                                    {{ row.label }}
-                                                    {% endif %}
-                                                </strong>
-                                                <span class="order-date">{{ row.date|date:"d.m.Y. H:i" }}</span>
-                                            </div>
-                                            <div class="order-meta">
-                                                {% if row.kind == 'online' %}
-                                                <span class="order-status order-status--{{ row.status_code }}">{{ row.status }}</span>
-                                                {% else %}
-                                                <span class="order-status order-status--manual">{{ row.status }}</span>
-                                                {% endif %}
-                                                <span class="order-amount">{{ row.amount }} KM</span>
-                                            </div>
-                                            {% if row.note %}
-                                            <div class="order-note" style="font-size:0.85rem;color:#64748b;margin-top:4px;">{{ row.note }}</div>
-                                            {% endif %}
-                                        </div>
-                                        {% if row.kind == 'online' and row.order and user.is_superuser %}
-                                        <div class="order-actions">
-                                            <a href="{% url 'staff_order_detail' broj=row.order.broj %}"
-                                               class="btn btn-sm btn-outline" target="_blank">
-                                                Pregled računa
-                                            </a>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% else %}
-                                <p class="empty-text">Nema online narudžbi ni evidentiranih kupovina.</p>
-                                {% endif %}
-                            </div>
-
-                            <div class="section-card">
-                                <div class="section-header">
-                                    <h3>Lični podaci</h3>
-                                </div>
-                                <p class="hint" style="margin:0 0 12px;">
-                                    Nijedno polje nije obavezno. Email i telefon moraju biti jedinstveni ako se unesu.
-                                </p>
-                                {% if edit_form %}
-                                <form method="post" class="profile-edit-form" novalidate>
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="update_profile">
-
-                                    {% for field in edit_form %}
-                                    <div class="form-field">
-                                        <label>{{ field.label }} <span class="staff-loyalty-optional">(opcionalno)</span></label>
-                                        {{ field }}
-                                        {% if field.errors %}
-                                        <div class="field-error">{{ field.errors.0 }}</div>
-                                        {% endif %}
-                                    </div>
-                                    {% endfor %}
-
-                                    <button type="submit" class="btn btn-primary btn-full">
-                                        Sačuvaj promjene
-                                    </button>
-                                </form>
-                                {% else %}
-                                <p class="empty-text">Podaci nisu dostupni za uređivanje.</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                {% else %}
-                    <div class="empty-state">
-                        <p>Nema rezultata za pretragu „{{ loyalty_search_query }}“.</p>
-                    </div>
-                {% endif %}
             {% else %}
-                <div class="empty-state empty-state--hint">
-                    <p>Pretražite postojećeg kupca ili izdajte novu karticu pomoću forme lijevo.</p>
+            <div class="loy-search-card">
+                {% if pending_open %}
+                <p class="loy-kicker">Verifikacija koda</p>
+                <p class="loy-sub" id="loyOtpPanel" data-resend="{{ pending_open.resend_wait|default:0 }}">Kod je poslan na {{ pending_open.channel_label|default:"Viber" }}. Vrati se ovdje, unesi kod i potvrdi.</p>
+                <div class="loy-sent">
+                    <p class="ok">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                        Kod je poslan na {{ pending_open.channel_label|default:"Viber" }}
+                    </p>
+                    <strong>{{ pending_open.telefon_fmt }}</strong>
                 </div>
+                <form method="post" id="loyVerifyForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="open_card_verify">
+                    <div class="loy-otp" id="loyOtpBoxes">
+                        <input class="loy-otp-d" maxlength="1" inputmode="numeric" aria-label="1">
+                        <input class="loy-otp-d" maxlength="1" inputmode="numeric" aria-label="2">
+                        <input class="loy-otp-d" maxlength="1" inputmode="numeric" aria-label="3">
+                        <input class="loy-otp-d" maxlength="1" inputmode="numeric" aria-label="4">
+                        <input class="loy-otp-d" maxlength="1" inputmode="numeric" aria-label="5">
+                        <input class="loy-otp-d" maxlength="1" inputmode="numeric" aria-label="6">
+                        <input type="hidden" name="otp_code" id="loyOtpCode">
+                    </div>
+                    <p class="loy-resend">Niste primili kod? <button type="submit" form="loyResend" id="loyResendBtn">Ponovo pošalji kod</button><span id="loyResendClock"></span></p>
+                    <div class="loy-modal-actions">
+                        <button form="loyBack" class="loy-btn loy-btn-ghost">Nazad</button>
+                        <a class="loy-btn loy-btn-ghost"
+                           {% if pending_open.channel == 'whatsapp' %}target="_blank" rel="noopener noreferrer"{% endif %}
+                           href="{% if pending_open.channel == 'whatsapp' %}{{ pending_open.whatsapp_url }}{% else %}{{ pending_open.viber_url }}{% endif %}">
+                            Otvori {{ pending_open.channel_label|default:"Viber" }}
+                        </a>
+                        <button type="submit" class="loy-btn loy-btn-go">Potvrdi i otvori karticu</button>
+                    </div>
+                </form>
+                <form id="loyBack" method="post">{% csrf_token %}<input type="hidden" name="action" value="open_card_cancel"></form>
+                <form id="loyResend" method="post" class="loy-chat-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="open_card">
+                    <input type="hidden" name="channel" value="{{ pending_open.channel|default:'viber' }}">
+                    <input type="hidden" name="telefon" value="{{ pending_open.telefon }}">
+                </form>
+                {% else %}
+                <p class="loy-kicker">Pretraga člana</p>
+                <p class="loy-sub">Unesite broj telefona i pošaljite kod na Viber ili WhatsApp. Kod ide sa {{ loyalty_from_phone_fmt }}.</p>
+                <form method="post" id="loyOpenForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="open_card">
+                    <input type="hidden" name="channel" id="loyOpenChannel" value="viber">
+                    <div class="loy-phone">
+                        <span class="ico" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.35 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+                        </span>
+                        <span class="loy-cc">+387 <svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 4.5 6 8l3-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                        <input type="tel" id="loyOpenPhone" name="telefon" class="loy-local-phone" placeholder="65 123 456" value="" autocomplete="off">
+                        <button type="button" class="clr" id="loyPhoneClear" aria-label="Obriši">×</button>
+                    </div>
+                    {% if new_member %}
+                    <p class="loy-sub" style="margin-top:14px;margin-bottom:8px">Novi član — unesi ime i prezime</p>
+                    <div class="loy-new">
+                        <input type="text" name="ime" placeholder="Ime" required>
+                        <input type="text" name="prezime" placeholder="Prezime" required>
+                    </div>
+                    {% endif %}
+                    <p class="loy-send-lab">Pošalji kod putem:</p>
+                    <div class="loy-ch-row">
+                        <button type="submit" class="loy-ch is-viber" data-channel="viber">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.3 2 1.7 6.1 1.7 11.2c0 2.7 1.2 5.1 3.2 6.8V22l3.3-1.8c1.2.3 2.5.5 3.8.5 5.7 0 10.3-4.1 10.3-9.2S17.7 2 12 2zm5.2 13.1c-.2.6-1.2 1.1-1.6 1.1-.4.1-1 .3-3.4-.7-2.8-1.2-4.6-4.1-4.7-4.3-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.5.8 1.9.8 2 .1.2.1.4 0 .6l-.4.5c-.1.2-.3.3-.1.6.1.3.6 1 1.4 1.6.9.8 1.7 1 1.9 1.1.2.1.4.1.5-.1l.6-.8c.2-.2.3-.2.6-.1.2.1 1.6.8 1.8.9.3.1.4.2.5.3.1.2 0 .8-.3 1.4z"/></svg>
+                            Viber
+                        </button>
+                        <button type="submit" class="loy-ch is-wa" data-channel="whatsapp">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm5.5 12.4c-.3-.1-1.6-.8-1.8-.9-.2-.1-.4-.1-.6.1-.2.2-.7.9-.8 1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.7.5-.1 1.6-.6 1.8-1.3.2-.6.2-1.2.1-1.3-.1-.1-.3-.2-.6-.3z"/></svg>
+                            WhatsApp
+                        </button>
+                    </div>
+                    <p class="loy-hint">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+                        Šalje se sa {{ loyalty_from_phone_fmt }}. Otvori aplikaciju na tom broju, pošalji, pa se vrati ovdje.
+                    </p>
+                </form>
+                {% endif %}
+            </div>
+            <div class="loy-search-card loy-offline">
+                <p class="loy-kicker">Nema internet</p>
+                <p class="loy-sub">Pretraga po imenu, telefonu ili broju kartice — otvara karticu bez koda.</p>
+                <form method="get" class="loy-find" action="{% url 'staff_loyalty_system' %}">
+                    <input type="hidden" name="mode" value="any">
+                    <input type="search" name="q" value="{% if loyalty_search_mode == 'any' %}{{ loyalty_search_query }}{% endif %}" placeholder="Ime, telefon ili broj kartice" autocomplete="off" id="loyOfflineQ">
+                    <button type="submit">Pretraži</button>
+                </form>
+            </div>
             {% endif %}
+
+            <div class="loy-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Broj kartice</th>
+                            <th>Član</th>
+                            <th>Nivo</th>
+                            <th>Bodovi</th>
+                            <th>Potrošnja</th>
+                            <th>Datum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for card in table_cards %}
+                        <tr onclick="window.location='{{ card.desk_url }}'">
+                            <td class="num"><a class="row" href="{{ card.desk_url }}">{{ card.kod }}</a></td>
+                            <td>{{ card.user.get_full_name|default:"—" }}</td>
+                            <td><span class="loy-badge {{ card.nivo }} {{ card.desk_tier|lower }}">{{ card.desk_tier }}</span></td>
+                            <td>{{ card.desk_points_fmt }}</td>
+                            <td>{{ card.desk_spend_fmt }} KM</td>
+                            <td class="muted">{{ card.azurirana|date:"d.m.Y. H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">{% if searched %}Nema rezultata.{% else %}Još nema članova.{% endif %}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <div class="loy-foot">
+                    <span>Prikazano {{ table_page.start_index|default:0 }} do {{ table_page.end_index|default:0 }} od {{ table_page.paginator.count|default:0 }} članova</span>
+                    {% if table_page.paginator.num_pages > 1 %}
+                    <div class="loy-pages">
+                        {% if table_page.has_previous %}
+                        <a href="?page={{ table_page.previous_page_number }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">‹</a>
+                        {% endif %}
+                        {% for item in page_items %}
+                            {% if item == '...' %}
+                            <span class="dots">…</span>
+                            {% elif item == table_page.number %}
+                            <span class="is-on">{{ item }}</span>
+                            {% else %}
+                            <a href="?page={{ item }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">{{ item }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if table_page.has_next %}
+                        <a href="?page={{ table_page.next_page_number }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">›</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
+
+        <aside class="loy-side">
+            <div class="loy-stat">
+                <article>
+                    <div class="ic g" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="3.2"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <span class="lab">Ukupno članova</span>
+                    <b>{{ desk_stats.active_fmt|default:desk_stats.active }}</b>
+                    <span class="sub">Aktivnih članova</span>
+                </article>
+                <article>
+                    <div class="ic p" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4 14.7 8l6.1.9-4.4 4.3 1 6.1L12 16.4 6.6 19.3l1-6.1L3.2 8.9 9.3 8 12 2.4z"/></svg>
+                    </div>
+                    <span class="lab">Ukupno bodova</span>
+                    <b>{{ desk_stats.bodovi_fmt|default:desk_stats.bodovi }}</b>
+                    <span class="sub">Svi članovi</span>
+                </article>
+                <article>
+                    <div class="ic g" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 11.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.5L22 7H6"/></svg>
+                    </div>
+                    <span class="lab">Ukupna potrošnja</span>
+                    <b>{{ desk_stats.potrosnja_fmt|default:desk_stats.potrosnja }} KM</b>
+                    <span class="sub">Svi članovi</span>
+                </article>
+                <article>
+                    <div class="ic o" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M19 5 5 19"/><circle cx="7.2" cy="7.2" r="2.2"/><circle cx="16.8" cy="16.8" r="2.2"/></svg>
+                    </div>
+                    <span class="lab">Prosječan popust</span>
+                    <b>{{ desk_stats.avg_discount_fmt|default:desk_stats.avg_discount }}%</b>
+                    <span class="sub">Prosječan popust</span>
+                </article>
+            </div>
+
+            <div class="loy-card">
+                <h3>Rang nivoa</h3>
+                {% for tier in desk_stats.tiers %}
+                <div class="loy-tier">
+                    <span class="left">
+                        {% if tier.nivo == 'bronza' %}
+                        <svg class="loy-medal" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="18" r="9" fill="#c9843a"/><circle cx="16" cy="18" r="6" fill="#e8b15a"/><path d="M11 4h4l1 8h-2z" fill="#b45309"/><path d="M17 4h4l-3 8h-2z" fill="#92400e"/></svg>
+                        {% elif tier.nivo == 'srebrna' %}
+                        <svg class="loy-medal" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="18" r="9" fill="#94a3b8"/><circle cx="16" cy="18" r="6" fill="#cbd5e1"/><path d="M11 4h4l1 8h-2z" fill="#64748b"/><path d="M17 4h4l-3 8h-2z" fill="#475569"/></svg>
+                        {% elif tier.nivo == 'zlatna' %}
+                        <svg class="loy-medal" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="18" r="9" fill="#eab308"/><circle cx="16" cy="18" r="6" fill="#fde047"/><path d="M11 4h4l1 8h-2z" fill="#ca8a04"/><path d="M17 4h4l-3 8h-2z" fill="#a16207"/></svg>
+                        {% else %}
+                        <svg class="loy-medal" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="18" r="9" fill="#3b82f6"/><circle cx="16" cy="18" r="6" fill="#93c5fd"/><path d="M11 4h4l1 8h-2z" fill="#2563eb"/><path d="M17 4h4l-3 8h-2z" fill="#1d4ed8"/></svg>
+                        {% endif %}
+                        {{ tier.en_label|default:tier.label|upper }}
+                    </span>
+                    <em>{{ tier.raspon }}<br>{{ tier.popust_label|default:tier.postotak }}{% if not tier.popust_label %}% popusta{% endif %}</em>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="loy-card">
+                <h3>Zakontaktiraj člana</h3>
+                <p class="loy-contact-p">Pošaljite aktivacioni kod kartice putem Viber ili WhatsApp.</p>
+                <div class="loy-contact-row">
+                    <button type="submit" form="loyOpenForm" class="loy-ch-wide viber" data-channel="viber">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.3 2 1.7 6.1 1.7 11.2c0 2.7 1.2 5.1 3.2 6.8V22l3.3-1.8c1.2.3 2.5.5 3.8.5 5.7 0 10.3-4.1 10.3-9.2S17.7 2 12 2z"/></svg>
+                        Pošalji na Viber
+                    </button>
+                    <button type="submit" form="loyOpenForm" class="loy-ch-wide wa" data-channel="whatsapp">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+                        Pošalji na WhatsApp
+                    </button>
+                </div>
+            </div>
+
+            <div class="loy-card">
+                <h3>Brza pomoć</h3>
+                <ul class="loy-help">
+                    <li>Unesite telefon i pošaljite kod na Viber ili WhatsApp.</li>
+                    <li>Aplikacija se otvara u novom prozoru — vrati se i unesi kod.</li>
+                    <li>Ako kupac nema internet, pretraži po imenu, telefonu ili kartici.</li>
+                </ul>
+            </div>
+        </aside>
     </div>
 </section>
+
+<button type="button" class="loy-fab" id="loyaltyBarcodeScanBtn" title="Skeniraj barkod" aria-label="Skeniraj">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+</button>
+
+<div class="loyalty-scan-modal" id="loyaltyScanModal" hidden>
+    <div class="loyalty-scan-modal__backdrop" data-scan-close></div>
+    <div class="loyalty-scan-modal__panel" role="dialog" aria-modal="true" aria-labelledby="loyaltyScanTitle">
+        <h2 id="loyaltyScanTitle">Skeniraj barkod kartice</h2>
+        <p class="loyalty-scan-modal__hint">Usmjeri kameru na barkod na kartici. Kod se automatski unosi u pretragu.</p>
+        <div id="loyaltyBarcodeReader" class="loyalty-scan-modal__reader"></div>
+        <p class="loyalty-scan-modal__status" id="loyaltyScanStatus" aria-live="polite"></p>
+        <div class="loyalty-scan-modal__actions">
+            <label class="loy-btn loy-btn-ghost" style="cursor:pointer;">
+                Učitaj sliku barkoda
+                <input type="file" id="loyaltyBarcodeFile" accept="image/*" capture="environment" hidden>
+            </label>
+            <button type="button" class="loy-btn loy-btn-ghost" data-scan-close>Zatvori</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function () {
-    function showToast(message) {
-        let toast = document.querySelector('.cart-toast');
-        if (!toast) {
-            toast = document.createElement('p');
-            toast.className = 'cart-toast';
-            document.body.appendChild(toast);
-        }
-        toast.textContent = message;
-        toast.classList.add('cart-toast--visible');
-        window.setTimeout(function () {
-            toast.classList.remove('cart-toast--visible');
-        }, 4500);
+    function digitsOnly(value) {
+        return String(value || '').replace(/\D/g, '');
     }
-
-    function getCardCaption() {
-        const el = document.getElementById('loyaltyCardCaption')
-            || document.getElementById('loyaltyViberCaption');
-        if (!el) return '';
-        try {
-            return JSON.parse(el.textContent);
-        } catch (e) {
-            return el.textContent || '';
-        }
+    function formatLocal(value) {
+        var d = digitsOnly(value);
+        if (d.indexOf('387') === 0) d = d.slice(3);
+        if (d.charAt(0) === '0') d = d.slice(1);
+        if (d.length > 8) d = d.slice(0, 8);
+        if (d.length > 5) return d.slice(0, 2) + ' ' + d.slice(2, 5) + ' ' + d.slice(5);
+        if (d.length > 2) return d.slice(0, 2) + ' ' + d.slice(2);
+        return d;
     }
-
-    function getOtpMessage() {
-        const el = document.getElementById('loyaltyOtpMessage');
-        if (!el) return '';
-        try {
-            return JSON.parse(el.textContent);
-        } catch (e) {
-            return el.textContent || '';
-        }
+    function toFullPhone(value) {
+        var d = digitsOnly(value);
+        if (!d) return '';
+        if (d.indexOf('387') === 0) return '+' + d;
+        if (d.charAt(0) === '0') return '+387' + d.slice(1);
+        return '+387' + d;
     }
-
-    function pinEvidentirajKupovinu(opts) {
-        const options = opts || {};
-        const focusInput = options.focusInput !== false;
-        const anchor = document.getElementById('evidentiraj-kupovinu');
-        if (!anchor) return;
-
-        const root = document.documentElement;
-        let chrome = parseFloat(
-            getComputedStyle(root).getPropertyValue('--site-chrome-top'),
-        );
-        if (!Number.isFinite(chrome) || chrome < 40) {
-            const promo = document.querySelector('.promo-bar');
-            const header = document.querySelector('header.site-header, .site-header, header');
-            chrome = (promo ? promo.offsetHeight : 0) + (header ? header.offsetHeight : 120);
-        }
-        const gap = 12;
-        const y = Math.max(
-            0,
-            Math.round(anchor.getBoundingClientRect().top + window.pageYOffset - chrome - gap),
-        );
-        window.scrollTo(0, y);
-        if (focusInput) {
-            const otpInput = document.querySelector('.loyalty-otp-input');
-            if (otpInput && typeof otpInput.focus === 'function') {
-                try {
-                    otpInput.focus({ preventScroll: true });
-                } catch (e) {
-                    otpInput.focus();
-                }
-            }
-        }
-    }
-
-    function getCsrfToken() {
-        const inp = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (inp && inp.value) return inp.value;
-        const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
-        return m ? decodeURIComponent(m[1]) : '';
-    }
-
-    function postUrl() {
-        return window.location.pathname + (window.location.search || '');
-    }
-
-    /**
-     * Otvori Viber/WhatsApp na tačan broj s porukom (staff samo Pošalji).
-     * - viber://  → ista kartica / app (location ili <a>)
-     * - https wa.me → novi tab / app
-     */
-    function openChatApp(url) {
+    function openChatApp(url, popup) {
         if (!url) return false;
-        const isDeep = /^viber:\/\//i.test(url) || /^whatsapp:\/\//i.test(url);
-
-        // 1) Direktno window.open u user-gesture (najpouzdanije za WA)
+        if (popup && !popup.closed) {
+            try { popup.location = url; return true; } catch (e) { /* fall through */ }
+        }
+        var isDeep = /^(viber|whatsapp):\/\//i.test(url);
         if (!isDeep) {
-            const w = window.open(url, '_blank', 'noopener,noreferrer');
+            var w = window.open(url, '_blank');
             if (w) return true;
         }
-
-        // 2) <a> klik (dobro za viber:// i fallback)
         try {
-            const a = document.createElement('a');
+            var a = document.createElement('a');
             a.href = url;
             a.rel = 'noopener noreferrer';
             if (!isDeep) a.target = '_blank';
             document.body.appendChild(a);
             a.click();
             a.remove();
-            return true;
-        } catch (e) { /* fall through */ }
-
-        // 3) Posljednji pokušaj
-        try {
-            window.location.href = url;
-            return true;
-        } catch (e2) {
-            return false;
+            return isDeep;
+        } catch (e) {
+            try { window.location.href = url; return true; } catch (e2) { return false; }
         }
     }
 
-    async function copyText(text) {
-        if (!text) return false;
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(text);
-                return true;
-            }
-        } catch (e) { /* ignore */ }
-        try {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.setAttribute('readonly', '');
-            ta.style.position = 'fixed';
-            ta.style.left = '-9999px';
-            document.body.appendChild(ta);
-            ta.select();
-            const ok = document.execCommand('copy');
-            ta.remove();
-            return ok;
-        } catch (e2) {
-            return false;
-        }
-    }
-
-    // ── Korak 1: Viber / WhatsApp / Admin (evidentiraj kupovinu) ──
-    const startForm = document.getElementById('loyaltyOtpStartForm');
-    if (startForm) {
-        const channelInput = document.getElementById('loyaltyOtpChannel');
-        startForm.querySelectorAll('[data-channel]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                if (channelInput) channelInput.value = btn.getAttribute('data-channel') || 'whatsapp';
-            });
+    document.querySelectorAll('.loy-local-phone').forEach(function (input) {
+        input.addEventListener('input', function () {
+            var start = input.selectionStart;
+            var next = formatLocal(input.value);
+            input.value = next;
+            try { input.setSelectionRange(next.length, next.length); } catch (e) { /* ignore */ }
+            void start;
         });
-
-        startForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const channel = (channelInput && channelInput.value) || 'whatsapp';
-            const buttons = startForm.querySelectorAll('button[type="submit"]');
-            buttons.forEach(function (b) { b.disabled = true; });
-
-            try {
-                const body = new URLSearchParams(new FormData(startForm));
-                body.set('ajax', '1');
-                body.set('channel', channel);
-                const response = await fetch(postUrl(), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': getCsrfToken(),
-                    },
-                    body: body.toString(),
-                    credentials: 'same-origin',
-                });
-                const rawText = await response.text();
-                let data = {};
-                try {
-                    data = JSON.parse(rawText);
-                } catch (parseErr) {
-                    showToast('Greška servera. Provjeri da si prijavljen i da je kartica odabrana.');
-                    buttons.forEach(function (b) { b.disabled = false; });
-                    return;
-                }
-                if (!response.ok || !data.ok) {
-                    showToast(data.message || 'Akcija nije uspjela.');
-                    buttons.forEach(function (b) { b.disabled = false; });
-                    return;
-                }
-
-                if (data.admin) {
-                    showToast(data.message || 'Evidentirano (admin).');
-                    window.location.assign(data.redirect || postUrl() + '#evidentiraj-kupovinu');
-                    return;
-                }
-
-                // Otvori app na taj broj s porukom — samo klikni Pošalji
-                const openUrl = channel === 'viber'
-                    ? (data.viber_url || '')
-                    : (data.whatsapp_url || '');
-                const msg = data.message || '';
-
-                // Prvo otvori app (ne čekaj clipboard)
-                if (openUrl) {
-                    openChatApp(openUrl);
-                    showToast(
-                        channel === 'whatsapp'
-                            ? 'WhatsApp otvoren — poruka upisana, samo Pošalji.'
-                            : 'Viber otvoren — ako poruka nije upisana, zalijepi (clipboard) i Pošalji.',
-                    );
-                } else {
-                    showToast('Nedostaje telefon kupca ili link za chat.');
-                }
-                if (msg) {
-                    copyText(msg);
-                }
-
-                // OTP panel učitaj kasnije (ne prekidaj odmah chat)
-                const redirect = data.redirect || (postUrl() + (postUrl().indexOf('?') >= 0 ? '&' : '?') + 'otp=1#evidentiraj-kupovinu');
-                window.setTimeout(function () {
-                    window.location.assign(redirect);
-                }, 900);
-            } catch (err) {
-                showToast(err.message || 'Greška mreže.');
-                buttons.forEach(function (b) { b.disabled = false; });
-            }
-        });
-    }
-
-    // ── OTP panel: ponovo pošalji ──
-    const otpWaBtn = document.getElementById('loyaltyOtpWhatsappBtn');
-    if (otpWaBtn) {
-        otpWaBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const url = otpWaBtn.getAttribute('href')
-                || otpWaBtn.dataset.whatsappUrl
-                || '';
-            const msg = getOtpMessage();
-            if (msg) copyText(msg);
-            if (url) openChatApp(url);
-            showToast('WhatsApp otvoren — poruka upisana, samo Pošalji.');
-            pinEvidentirajKupovinu({ focusInput: true });
-        });
-    }
-    const otpViberBtn = document.getElementById('loyaltyOtpViberBtn');
-    if (otpViberBtn) {
-        otpViberBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const url = otpViberBtn.getAttribute('href')
-                || otpViberBtn.dataset.viberUrl
-                || '';
-            const msg = getOtpMessage();
-            if (msg) copyText(msg);
-            if (url) openChatApp(url);
-            showToast('Viber otvoren na broj — ako treba zalijepi kod (clipboard) i Pošalji.');
-            pinEvidentirajKupovinu({ focusInput: true });
-        });
-    }
-
-    // Pin skrola na OTP panel (bez auto-open — app se već otvorio na klik)
-    (function scrollToPurchaseSection() {
-        const params = new URLSearchParams(window.location.search || '');
-        const wantOtp = params.get('otp') === '1' || window.location.hash === '#evidentiraj-kupovinu';
-        const panel = document.getElementById('loyaltyOtpPanel');
-        if (!wantOtp && !panel) return;
-
-        if ('scrollRestoration' in history) {
-            try { history.scrollRestoration = 'manual'; } catch (e) { /* ignore */ }
-        }
-
-        function go() {
-            pinEvidentirajKupovinu({ focusInput: true });
-        }
-        go();
-        requestAnimationFrame(function () { requestAnimationFrame(go); });
-        window.setTimeout(go, 50);
-        window.setTimeout(go, 200);
-        window.addEventListener('load', go, { once: true });
-    })();
-
-    // ── Pošalji karticu: tekst u WA/Viber + skini sliku na računar (ručni prilog) ──
-    function sendLoyaltyCard(btn) {
-        const chatUrl = btn.dataset.chatUrl;
-        const channel = (btn.dataset.channel || 'whatsapp').toLowerCase();
-        const phone = (btn.dataset.phone || '').trim();
-        const imageUrl = btn.dataset.imageUrl || '';
-        const code = btn.dataset.cardCode || '';
-        if (!chatUrl) {
-            alert('Nedostaje telefon kupca. Unesite telefon u ličnim podacima.');
-            return;
-        }
-
-        // 1) ODMAH otvori chat s tekstom (bez linka slike)
-        openChatApp(chatUrl);
-        const caption = getCardCaption();
-        if (caption) copyText(caption);
-
-        // 2) Skini PNG (prednja+zadnja) na računar — staff priloži ručno
-        if (imageUrl) {
-            fetch(imageUrl, {
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            }).then(function (response) {
-                if (!response.ok) throw new Error('Slika nije dostupna.');
-                return response.blob();
-            }).then(function (blob) {
-                const objectUrl = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = objectUrl;
-                link.download = 'kartica-' + (code || 'loyalty') + '.jpg';
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                window.setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 4000);
-            }).catch(function () {
-                /* chat je već otvoren — slika je bonus */
-            });
-        }
-
-        const label = channel === 'whatsapp' ? 'WhatsApp' : 'Viber';
-        showToast(
-            label + ' otvoren' + (phone ? (' za ' + phone) : '') +
-            ' — tekst spreman (Pošalji). JPG zadnje strane se skida — priloži ručno (📎).',
-        );
-    }
-
-    document.querySelectorAll('.loyalty-card-send-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            sendLoyaltyCard(btn);
-        });
+        if (input.value) input.value = formatLocal(input.value);
     });
 
-    // ── Barkod skener (kamera / slika sa telefona) ──
-    (function initLoyaltyBarcodeScanner() {
-        const openBtn = document.getElementById('loyaltyBarcodeScanBtn');
-        const modal = document.getElementById('loyaltyScanModal');
-        const statusEl = document.getElementById('loyaltyScanStatus');
-        const fileInput = document.getElementById('loyaltyBarcodeFile');
-        const searchInput = document.getElementById('loyaltySearchInput');
-        const searchForm = document.getElementById('loyaltyCustomerSearchForm');
-        if (!openBtn || !modal) return;
+    function bindPhoneForm(form) {
+        if (!form) return;
+        form.addEventListener('submit', function () {
+            var phone = form.querySelector('.loy-local-phone');
+            if (phone) phone.value = toFullPhone(phone.value);
+        });
+    }
+    bindPhoneForm(document.getElementById('loyOpenForm'));
+    bindPhoneForm(document.getElementById('loyNewForm'));
 
-        let html5Qr = null;
-        let scanning = false;
-        const readerId = 'loyaltyBarcodeReader';
+    var channelInput = document.getElementById('loyOpenChannel');
+    var openForm = document.getElementById('loyOpenForm');
+    if (openForm && channelInput) {
+        document.querySelectorAll('[data-channel]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                channelInput.value = btn.getAttribute('data-channel') || 'viber';
+            });
+        });
+        openForm.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            var phone = document.getElementById('loyOpenPhone');
+            var raw = digitsOnly(phone && phone.value);
+            if (raw.length === 6) {
+                event.preventDefault();
+                window.location = '{% url "staff_loyalty_system" %}?q=' + encodeURIComponent(raw);
+            } else {
+                event.preventDefault();
+            }
+        });
+        bindChatSubmit(openForm, function () { return channelInput.value; });
+    }
 
-        function setStatus(msg) {
-            if (statusEl) statusEl.textContent = msg || '';
-        }
+    function bindChatSubmit(form, channelFn) {
+        if (!form) return;
+        form.addEventListener('submit', function (event) {
+            var channel = String(channelFn() || '').toLowerCase();
+            if (channel !== 'viber' && channel !== 'whatsapp') return;
+            event.preventDefault();
+            var phone = form.querySelector('.loy-local-phone');
+            if (phone) phone.value = toFullPhone(phone.value);
+            var popup = null;
+            try { popup = window.open('about:blank', 'loyChat'); } catch (e) { popup = null; }
+            var body = new FormData(form);
+            body.set('ajax', '1');
+            body.set('channel', channel);
+            fetch(form.getAttribute('action') || window.location.pathname, {
+                method: 'POST',
+                body: body,
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (resp) { return resp.json(); }).then(function (data) {
+                var chat = (data && (data.chat_url || data.app_url)) || '';
+                if (chat) {
+                    if (!openChatApp(chat, popup) && data.app_url && data.app_url !== chat) {
+                        openChatApp(data.app_url, popup);
+                    }
+                } else if (popup) {
+                    try { popup.close(); } catch (e2) { /* ignore */ }
+                }
+                if (data && data.redirect) window.location = data.redirect;
+            }).catch(function () {
+                if (popup) try { popup.close(); } catch (e3) { /* ignore */ }
+                form.submit();
+            });
+        });
+    }
+    var resendForm = document.getElementById('loyResend');
+    if (resendForm) {
+        bindChatSubmit(resendForm, function () {
+            var ch = resendForm.querySelector('input[name="channel"]');
+            return ch ? ch.value : 'viber';
+        });
+    }
+    var clr = document.getElementById('loyPhoneClear');
+    if (clr) clr.addEventListener('click', function () {
+        var phone = document.getElementById('loyOpenPhone');
+        if (phone) { phone.value = ''; phone.focus(); }
+    });
 
-        function applyCode(code) {
-            const value = String(code || '').trim();
-            if (!value) return;
-            if (searchInput) searchInput.value = value;
-            setStatus('Pronađeno: ' + value);
-            stopScanner();
-            modal.hidden = true;
-            if (searchForm) {
-                searchForm.submit();
+    var digits = document.querySelectorAll('#loyOtpBoxes .loy-otp-d');
+    var hidden = document.getElementById('loyOtpCode');
+    function syncOtp() {
+        if (!hidden) return;
+        hidden.value = Array.prototype.map.call(digits, function (el) { return el.value || ''; }).join('');
+    }
+    if (digits.length && hidden) {
+        digits.forEach(function (box, i) {
+            box.addEventListener('input', function () {
+                var pasted = digitsOnly(box.value);
+                if (pasted.length > 1) {
+                    for (var n = 0; n < digits.length; n += 1) {
+                        digits[n].value = pasted.charAt(n) || '';
+                    }
+                    syncOtp();
+                    if (pasted.length >= 6) digits[5].focus();
+                    return;
+                }
+                box.value = pasted.slice(0, 1);
+                syncOtp();
+                if (box.value && digits[i + 1]) digits[i + 1].focus();
+            });
+            box.addEventListener('keydown', function (event) {
+                if (event.key === 'Backspace' && !box.value && digits[i - 1]) digits[i - 1].focus();
+            });
+            box.addEventListener('paste', function (event) {
+                var text = (event.clipboardData || window.clipboardData).getData('text') || '';
+                var pasted = digitsOnly(text);
+                if (!pasted) return;
+                event.preventDefault();
+                for (var n = 0; n < digits.length; n += 1) {
+                    digits[n].value = pasted.charAt(n) || '';
+                }
+                syncOtp();
+            });
+        });
+        if (digits[0]) digits[0].focus();
+    }
+
+    var otpPanel = document.getElementById('loyOtpPanel');
+    if (otpPanel) {
+        var left = parseInt(otpPanel.getAttribute('data-resend') || '0', 10) || 0;
+        var btn = document.getElementById('loyResendBtn');
+        var clock = document.getElementById('loyResendClock');
+        function paintClock() {
+            if (!btn || !clock) return;
+            if (left > 0) {
+                btn.disabled = true;
+                var mm = String(Math.floor(left / 60)).padStart(2, '0');
+                var ss = String(left % 60).padStart(2, '0');
+                clock.textContent = ' (' + mm + ':' + ss + ')';
+            } else {
+                btn.disabled = false;
+                clock.textContent = '';
             }
         }
+        paintClock();
+        if (left > 0) {
+            var timer = window.setInterval(function () {
+                left -= 1;
+                if (left <= 0) {
+                    window.clearInterval(timer);
+                    left = 0;
+                }
+                paintClock();
+            }, 1000);
+        }
+    }
 
+    (function initLoyaltyBarcodeScanner() {
+        var openBtn = document.getElementById('loyaltyBarcodeScanBtn');
+        var scanModal = document.getElementById('loyaltyScanModal');
+        var statusEl = document.getElementById('loyaltyScanStatus');
+        var fileInput = document.getElementById('loyaltyBarcodeFile');
+        if (!openBtn || !scanModal) return;
+        var html5Qr = null;
+        var scanning = false;
+        var readerId = 'loyaltyBarcodeReader';
+        function setStatus(msg) { if (statusEl) statusEl.textContent = msg || ''; }
+        function applyCode(code) {
+            var value = String(code || '').trim();
+            if (!value) return;
+            stopScanner();
+            scanModal.hidden = true;
+            window.location = '{% url "staff_loyalty_system" %}?q=' + encodeURIComponent(value);
+        }
         async function ensureLib() {
             if (window.Html5Qrcode) return window.Html5Qrcode;
             await new Promise(function (resolve, reject) {
-                const s = document.createElement('script');
+                var s = document.createElement('script');
                 s.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
                 s.async = true;
                 s.onload = resolve;
@@ -817,107 +682,79 @@
             });
             return window.Html5Qrcode;
         }
-
         async function startScanner() {
             setStatus('Pokrećem kameru…');
             try {
-                const Html5Qrcode = await ensureLib();
+                var Html5Qrcode = await ensureLib();
                 if (html5Qr) {
                     try { await html5Qr.stop(); } catch (e) { /* ignore */ }
                     try { html5Qr.clear(); } catch (e2) { /* ignore */ }
                 }
                 html5Qr = new Html5Qrcode(readerId);
-                const cameras = await Html5Qrcode.getCameras();
-                let cameraId = null;
+                var cameras = await Html5Qrcode.getCameras();
+                var cameraId = null;
                 if (cameras && cameras.length) {
-                    // prefer back camera
-                    const back = cameras.find(function (c) {
-                        return /back|rear|environment/i.test(c.label || '');
-                    });
+                    var back = cameras.find(function (c) { return /back|rear|environment/i.test(c.label || ''); });
                     cameraId = (back || cameras[cameras.length - 1]).id;
                 }
-                const config = {
-                    fps: 10,
-                    qrbox: function (viewW, viewH) {
-                        const w = Math.min(viewW, 320);
-                        return { width: w, height: Math.min(120, Math.floor(viewH * 0.35)) };
-                    },
-                    aspectRatio: 1.333,
-                    formatsToSupport: (window.Html5QrcodeSupportedFormats)
-                        ? [
-                            window.Html5QrcodeSupportedFormats.CODE_128,
-                            window.Html5QrcodeSupportedFormats.CODE_39,
-                            window.Html5QrcodeSupportedFormats.EAN_13,
-                            window.Html5QrcodeSupportedFormats.EAN_8,
-                            window.Html5QrcodeSupportedFormats.UPC_A,
-                            window.Html5QrcodeSupportedFormats.UPC_E,
-                          ]
-                        : undefined,
-                };
-                const onSuccess = function (decoded) {
+                var config = { fps: 10, aspectRatio: 1.333 };
+                var onSuccess = function (decoded) {
                     if (!scanning) return;
                     scanning = false;
                     applyCode(decoded);
                 };
-                if (cameraId) {
-                    await html5Qr.start(cameraId, config, onSuccess, function () {});
-                } else {
-                    await html5Qr.start({ facingMode: 'environment' }, config, onSuccess, function () {});
-                }
+                if (cameraId) await html5Qr.start(cameraId, config, onSuccess, function () {});
+                else await html5Qr.start({ facingMode: 'environment' }, config, onSuccess, function () {});
                 scanning = true;
                 setStatus('Usmjeri kameru na barkod…');
             } catch (err) {
                 setStatus(err.message || 'Kamera nije dostupna. Učitaj sliku barkoda.');
             }
         }
-
         async function stopScanner() {
             scanning = false;
             if (!html5Qr) return;
-            try {
-                const st = html5Qr.getState && html5Qr.getState();
-                // 2 = SCANNING in html5-qrcode
-                if (st === 2 || st === undefined) {
-                    await html5Qr.stop();
-                }
-            } catch (e) { /* ignore */ }
+            try { await html5Qr.stop(); } catch (e) { /* ignore */ }
             try { html5Qr.clear(); } catch (e2) { /* ignore */ }
         }
-
         openBtn.addEventListener('click', function () {
-            modal.hidden = false;
+            scanModal.hidden = false;
             startScanner();
         });
-
-        modal.querySelectorAll('[data-scan-close]').forEach(function (el) {
+        scanModal.querySelectorAll('[data-scan-close]').forEach(function (el) {
             el.addEventListener('click', function () {
                 stopScanner();
-                modal.hidden = true;
+                scanModal.hidden = true;
                 setStatus('');
             });
         });
-
         if (fileInput) {
             fileInput.addEventListener('change', async function () {
-                const file = fileInput.files && fileInput.files[0];
+                var file = fileInput.files && fileInput.files[0];
                 if (!file) return;
                 setStatus('Čitam sliku…');
                 try {
-                    const Html5Qrcode = await ensureLib();
-                    if (!html5Qr) html5Qr = new Html5Qrcode(readerId);
-                    // stop camera first if running
+                    var Html5Qrcode = await ensureLib();
                     try { await stopScanner(); } catch (e) { /* ignore */ }
                     html5Qr = new Html5Qrcode(readerId);
-                    const result = await html5Qr.scanFile(file, true);
+                    var result = await html5Qr.scanFile(file, true);
                     applyCode(result);
                 } catch (err) {
-                    setStatus(err.message || 'Barkod nije pročitan sa slike. Pokušaj ponovo.');
+                    setStatus(err.message || 'Barkod nije pročitan sa slike.');
                 }
                 fileInput.value = '';
             });
         }
     })();
-
+    document.querySelectorAll('.site-chat-launchers, .contact-float-group').forEach(function (el) {
+        el.remove();
+    });
 })();
 </script>
+<style>
+/* site-chat.css se učitava u footeru i prepisuje extra_css */
+body.staff-shell-page .site-chat-launchers,
+body.staff-shell-page .site-chat-launcher,
+body.staff-shell-page .contact-float-group{display:none!important}
+</style>
 {% endblock %}

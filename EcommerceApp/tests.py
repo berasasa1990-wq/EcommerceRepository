@@ -28,6 +28,182 @@ class LoyaltyCouponPricingTests(SimpleTestCase):
         ]
         self.assertEqual(_loyalty_osnovica_iz_korpe(cart_items), Decimal('30.00'))
 
+
+class LoyaltyAdminSearchTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        from .loyalty import search_loyalty_cards
+        from .models import LoyaltyCard, UserProfile
+
+        self.search_loyalty_cards = search_loyalty_cards
+        self.user = User.objects.create_user(
+            'ana', 'ana@example.com', 'pass', first_name='Ana', last_name='Kovačević',
+        )
+        UserProfile.objects.create(user=self.user, telefon='065123456')
+        self.card = LoyaltyCard.objects.create(
+            user=self.user, kod='482731', barkod='L482731',
+        )
+        self.admin = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+
+    def test_new_card_code_is_six_digits(self):
+        from .loyalty import _generisi_kod
+
+        kod = _generisi_kod()
+        self.assertRegex(kod, r'^\d{6}$')
+
+    def test_code_mode_finds_card_and_phone_not_name(self):
+        self.assertEqual(self.search_loyalty_cards('482731', mode='code')[0].pk, self.card.pk)
+        self.assertEqual(self.search_loyalty_cards('065123456', mode='code')[0].pk, self.card.pk)
+        self.assertEqual(self.search_loyalty_cards('Kovačević', mode='code'), [])
+
+    def test_name_mode_finds_name_not_card(self):
+        found = self.search_loyalty_cards('Kovacevic', mode='name')
+        self.assertEqual(found[0].pk, self.card.pk)
+        self.assertEqual(self.search_loyalty_cards('482731', mode='name'), [])
+
+    def test_admin_page_has_name_and_filter_controls(self):
+        self.client.force_login(self.admin)
+        page = self.client.get('/nalog/loyalty/')
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Članovi / Kartice')
+        self.assertContains(page, 'Admin panel')
+        self.assertContains(page, 'Pretraga članova')
+        self.assertContains(page, 'Novi član')
+        self.assertContains(page, 'Pretraga člana')
+        self.assertContains(page, '+387')
+        self.assertContains(page, 'Viber')
+        self.assertContains(page, 'WhatsApp')
+        self.assertContains(page, '65 152 072')
+        self.assertContains(page, 'Ukupno članova')
+        self.assertContains(page, 'Rang nivoa')
+        self.assertContains(page, 'Zakontaktiraj člana')
+        self.assertContains(page, 'Brza pomoć')
+        named = self.client.get('/nalog/loyalty/', {'q': 'Kovacevic', 'mode': 'name'})
+        self.assertContains(named, 'Ana')
+        coded = self.client.get('/nalog/loyalty/', {'q': 'Kovacevic', 'mode': 'code'})
+        self.assertContains(coded, 'Nema rezultata')
+        any_name = self.client.get('/nalog/loyalty/', {'q': 'Kovacevic', 'mode': 'any'})
+        self.assertContains(any_name, 'Ana')
+        self.assertContains(page, 'Nema internet')
+        self.assertContains(page, 'Ime, telefon ili broj kartice')
+        self.assertContains(page, 'id="loyOpenPhone"')
+        self.assertNotContains(page, 'value="65')
+        desk = self.client.get('/nalog/loyalty/')
+        self.assertContains(desk, '/nalog/loyalty/clan/482731/')
+        self.assertContains(desk, 'Broj kartice')
+        opened = self.client.post('/nalog/loyalty/', {
+            'action': 'open_card', 'channel': 'admin', 'telefon': '065123456',
+        })
+        self.assertEqual(opened.status_code, 302)
+        self.assertIn('/nalog/loyalty/clan/482731/', opened['Location'])
+        member = self.client.get('/nalog/loyalty/clan/482731/')
+        self.assertEqual(member.status_code, 200)
+        self.assertContains(member, 'Ana')
+        self.assertContains(member, 'Detalji člana')
+        self.assertContains(member, 'Loyalty program')
+        self.assertContains(member, 'Brzi pregled')
+        self.assertContains(member, 'Evidencija kupovina')
+        self.assertContains(member, 'Evidentiraj kupovinu')
+        self.assertContains(member, 'Dodaj napomenu')
+        self.assertContains(member, 'viber://chat?number=%2B38765123456')
+        self.assertContains(member, 'draft=')
+        self.assertContains(member, 'data-channel="viber"')
+        self.assertNotContains(member, 'Bodovne transakcije')
+        self.assertNotContains(member, 'Kod — Viber')
+        self.assertNotContains(member, 'Admin — bez koda')
+        bought = self.client.post('/nalog/loyalty/clan/482731/', {
+            'action': 'evidentiraj_kupovinu',
+            'iznos': '25.50',
+            'placanje': 'gotovina',
+        })
+        self.assertEqual(bought.status_code, 302)
+        from .models import LoyaltyPurchase
+        self.assertTrue(LoyaltyPurchase.objects.filter(kartica=self.card, iznos='25.50').exists())
+        again = self.client.get('/nalog/loyalty/clan/482731/')
+        self.assertContains(again, 'Gotovina')
+        exact = self.client.get('/nalog/loyalty/', {'q': '482731'})
+        self.assertEqual(exact.status_code, 302)
+        self.assertIn('/nalog/loyalty/clan/482731/', exact['Location'])
+        created = self.client.post('/nalog/loyalty/', {
+            'action': 'open_card', 'channel': 'admin',
+            'telefon': '065999888', 'ime': 'Marko', 'prezime': 'Petrovic',
+        })
+        self.assertEqual(created.status_code, 302)
+        self.assertIn('/nalog/loyalty/clan/', created['Location'])
+        new_kod = created['Location'].rstrip('/').split('/')[-1]
+        self.assertRegex(new_kod, r'^\d{6}$')
+
+    def test_viber_chat_url_prefills_draft(self):
+        from urllib.parse import parse_qs, unquote, urlparse
+
+        from .loyalty import loyalty_card_caption, viber_chat_url
+
+        caption = loyalty_card_caption(self.card)
+        self.assertIn('https://g.page/r/CXurB2BnmyVdEBM/review', caption)
+        url = viber_chat_url('065123456', caption)
+        self.assertTrue(url.startswith('viber://chat?number=%2B38765123456'))
+        self.assertIn('draft=', url)
+        self.assertNotIn('&text=', url)
+        parsed = urlparse(url)
+        draft = unquote(parse_qs(parsed.query).get('draft', [''])[0])
+        self.assertIn('Vasa loyalty kartica', draft)
+        self.assertIn('Broj kartice: 482731', draft)
+        self.assertIn('g.page/r/CXurB2BnmyVdEBM/review', draft)
+        self.assertIn(' posto', draft)
+        self.assertNotIn('%', draft)
+        otp = viber_chat_url('065123456', 'Vaš kod: 123456')
+        self.assertIn('draft=', otp)
+        self.assertIn('123456', unquote(otp.split('draft=', 1)[1]))
+        self.client.force_login(self.admin)
+        resp = self.client.post(
+            '/nalog/loyalty/',
+            {'action': 'open_card', 'channel': 'viber', 'telefon': '065123456', 'ajax': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['ok'])
+        self.assertIn('viber://chat?number=%2B38765123456', data['chat_url'])
+        self.assertIn('draft=', data['chat_url'])
+
+    def test_whatsapp_open_returns_chat_url(self):
+        from .loyalty import whatsapp_app_url, whatsapp_chat_url
+
+        from .loyalty import open_card_otp_message
+        self.assertIn('65 152 072', open_card_otp_message('123456'))
+        web = whatsapp_chat_url('065123456', 'kod 123456')
+        app = whatsapp_app_url('065123456', 'kod 123456')
+        self.assertTrue(web.startswith('https://wa.me/38765123456'))
+        self.assertIn('text=', web)
+        self.assertTrue(app.startswith('whatsapp://send?phone=38765123456'))
+        self.client.force_login(self.admin)
+        resp = self.client.post(
+            '/nalog/loyalty/',
+            {'action': 'open_card', 'channel': 'whatsapp', 'telefon': '065123456', 'ajax': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['ok'])
+        self.assertIn('wa.me/38765123456', data['chat_url'])
+        self.assertIn('whatsapp://send?phone=38765123456', data['app_url'])
+        self.assertIn('step=2', data['redirect'])
+        self.assertNotIn('open=whatsapp', data['redirect'])
+        panel = self.client.get(data['redirect'])
+        self.assertContains(panel, 'Verifikacija koda')
+        self.assertContains(panel, 'Potvrdi i otvori karticu')
+        self.assertContains(panel, 'https://wa.me/38765123456')
+        self.assertContains(panel, 'Nema internet')
+        from .loyalty import LOYALTY_OPEN_OTP_SESSION_KEY
+        code = self.client.session.get(LOYALTY_OPEN_OTP_SESSION_KEY, {}).get('code')
+        self.assertTrue(code)
+        verify = self.client.post('/nalog/loyalty/', {
+            'action': 'open_card_verify', 'otp_code': code,
+        })
+        self.assertEqual(verify.status_code, 302)
+        self.assertIn('/nalog/loyalty/clan/482731/', verify['Location'])
+
     def test_loyalty_counts_only_full_price_units_in_deal(self):
         cart_items = [
             {

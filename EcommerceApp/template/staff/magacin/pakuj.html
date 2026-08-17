@@ -15,35 +15,46 @@
     </div>
     {% endif %}
     {% if prenos_mp_jobs %}
-    <section class="pk-mp-list">
+    <section class="pk-mp-list pk-jobs is-prenos">
         <h2>Prenos u MP</h2>
         {% for job in prenos_mp_jobs %}
-        <a class="pk-mp-card" href="{% url 'staff_magacin_pakuj_detail' job.order.broj %}">
+        <a class="pk-mp-card pk-job is-prenos" href="{% url 'staff_magacin_pakuj_detail' job.order.broj %}">
             {% if job.slika %}
             <img src="{{ job.slika }}" alt="">
             {% else %}
             <span class="ph">—</span>
             {% endif %}
-            <div>
+            <div class="pk-job-body">
                 <strong>{{ job.naziv }}</strong>
-                <span>{{ job.sifra }}{% if job.lokacija %} · {{ job.lokacija }}{% endif %}</span>
+                <span>{% if job.sifra %}{{ job.sifra }}{% endif %}{% if job.lokacija %} · {{ job.lokacija }}{% endif %}</span>
             </div>
-            <em>{{ job.qty }}</em>
+            <em class="pk-job-qty">{{ job.qty }}</em>
         </a>
         {% endfor %}
     </section>
     {% endif %}
     {% if vp_orders %}
-    <section class="pk-mp-list">
+    <section class="pk-mp-list pk-jobs is-vp">
         <h2>VP narudžbe</h2>
         {% for order in vp_orders %}
-        <a class="pk-mp-card" href="{% if order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=pick{% else %}{% url 'staff_magacin_pakuj_detail' order.broj %}{% endif %}">
-            <div>
+        {% if order.needs_print_packed %}
+        <div class="pk-mp-card pk-job is-vp is-ready">
+            <div class="pk-job-body">
+                <strong>{{ order.ime_prezime }}</strong>
+                <span>#{{ order.broj }} · {{ order.vp_stavki }} stavki · Validatovano</span>
+            </div>
+            <em class="pk-job-sum">{{ order.ukupno }}</em>
+            <a class="pk-print-packed" href="{% url 'staff_magacin_pakuj_stampaj_zapakovano' order.broj %}">Štampaj zapakovano</a>
+        </div>
+        {% else %}
+        <a class="pk-mp-card pk-job is-vp" href="{% if order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=pick{% else %}{% url 'staff_magacin_pakuj_detail' order.broj %}{% endif %}">
+            <div class="pk-job-body">
                 <strong>{{ order.ime_prezime }}</strong>
                 <span>#{{ order.broj }} · {{ order.vp_stavki }} stavki{% if order.needs_mp_check %} · Provjera MP{% endif %}</span>
             </div>
-            <em>{{ order.ukupno }}</em>
+            <em class="pk-job-sum">{{ order.ukupno }}</em>
         </a>
+        {% endif %}
         {% endfor %}
     </section>
     {% endif %}

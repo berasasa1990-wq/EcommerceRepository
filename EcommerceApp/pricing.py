@@ -249,8 +249,16 @@ def sazetak_iz_narudzbe(order):
     ukupno = _kvantiziraj(order.ukupno)
     goods = _kvantiziraj(medjuzbir - popust)
     std_dostava, std_free, dostava_cijena, prag = _standardna_dostava(goods, postavke)
+    from .magacin import is_vp_order
+
     # Ručne Magacin narudžbe: na računu uvijek 11 KM / besplatno preko 250 KM
-    if getattr(order, 'izvor', '') == Order.Izvor.MAGACIN and dostava == Decimal('0.00') and not std_free:
+    # VP narudžbe nemaju dostavu.
+    if (
+        getattr(order, 'izvor', '') == Order.Izvor.MAGACIN
+        and dostava == Decimal('0.00')
+        and not std_free
+        and not is_vp_order(order)
+    ):
         dostava = std_dostava
         ukupno = _kvantiziraj(goods + dostava)
     elif dostava > 0:

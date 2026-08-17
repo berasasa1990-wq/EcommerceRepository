@@ -543,7 +543,7 @@ EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
 SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
 STORE_PHONE = _env('STORE_PHONE', '')
 # Viber broj s kojeg se šalju loyalty kodovi za provjeru kupca (BA format 00… ili +…)
-LOYALTY_VIBER_FROM_PHONE = _env('LOYALTY_VIBER_FROM_PHONE', '0038765838653')
+LOYALTY_VIBER_FROM_PHONE = _env('LOYALTY_VIBER_FROM_PHONE', '0038765152072')
 MESSENGER_PAGE = _env('MESSENGER_PAGE', 'opremazaribolov.ba')
 STORE_EMAIL = _env('STORE_EMAIL', 'narudzbe@opremazaribolov.ba')
 

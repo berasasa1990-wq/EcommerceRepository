@@ -5215,6 +5215,27 @@ def _magacin_hold_picks(order, items):
     return picks_by_item
 
 
+def _mp_confirmed_item_ids(order):
+    """Stavke potvrđene sa „Ima u MP” — ne idu na police magacina."""
+    confirmed = set()
+    state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
+    for key, row in state.items():
+        if not isinstance(row, dict) or not row.get('mp_checked'):
+            continue
+        if row.get('done') and not row.get('got'):
+            continue
+        item_id = row.get('item_id')
+        if not item_id and isinstance(key, str) and key.endswith(':Provjeri u MP'):
+            raw = key.split(':', 1)[0]
+            try:
+                item_id = int(raw)
+            except (TypeError, ValueError):
+                item_id = None
+        if item_id:
+            confirmed.add(int(item_id))
+    return confirmed
+
+
 def _build_order_packing_lines(order):
     """
     Stavke pakovanja: prvo Magacin rezervacije, inače Odoo lokacije.
@@ -5230,6 +5251,7 @@ def _build_order_packing_lines(order):
     stock_by_product = {}
     template_variants = {}
     magacin_picks = _magacin_hold_picks(order, items)
+    mp_confirmed = _mp_confirmed_item_ids(order)
 
     if odoo_je_konfigurisan() and items and not magacin_picks:
         try:
@@ -5268,10 +5290,24 @@ def _build_order_packing_lines(order):
         stock_locations = stock_by_product.get(odoo_product_id, []) if odoo_product_id else []
         if item.pk in magacin_picks:
             picks, shortfall = magacin_picks[item.pk]
+        elif item.pk in mp_confirmed:
+            picks, shortfall = [], int(item.kolicina or 0)
         else:
             picks, shortfall = _allocate_packing_locations(item.kolicina, stock_locations)
+        if item.pk in mp_confirmed and shortfall > 0:
+            picks = list(picks or [])
+            picks.append({
+                'location_name': 'MP',
+                'location_id': None,
+                'take': shortfall,
+                'on_hand': shortfall,
+            })
+            shortfall = 0
         if picks:
-            picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
+            picks = sorted(
+                picks,
+                key=lambda p: (1 if (p.get('location_name') or '') == 'MP' else 0, (p.get('location_name') or '').casefold()),
+            )
         # Ako ima Odoo zalihe: lokacija + koliko uzimaš; inače (ili ostatak) → Provjeri u MP
         if picks:
             pick_parts = [
@@ -5321,7 +5357,7 @@ def _build_order_packing_lines(order):
             'picks': picks,
             'pick_text': pick_text,
             'shortfall': shortfall,
-            'check_mp': not picks or shortfall > 0,
+            'check_mp': item.pk not in mp_confirmed and (not picks or shortfall > 0),
             'stock_locations': stock_locations,
         })
 
@@ -7641,9 +7677,26 @@ def staff_loyalty_system(request):
     from django.urls import reverse
     from .loyalty import (
         azuriraj_loyalty_karticu,
+        clear_pending_open_card_otp,
+        format_ba_int,
+        format_ba_money,
+        format_loyalty_phone,
+        get_pending_open_card_otp,
+        izdaj_loyalty_karticu,
         loyalty_card_share_token,
+        loyalty_desk_stats,
+        loyalty_desk_url,
+        loyalty_from_phone_display,
         loyalty_kontekst,
+        loyalty_member_url,
+        loyalty_page_items,
+        loyalty_phone_local_display,
         osiguraj_loyalty_karticu,
+        osiguraj_sestocifreni_kod,
+        recent_loyalty_cards,
+        search_loyalty_cards,
+        start_open_card_otp,
+        verify_open_card_otp,
     )
 
     from .models import LoyaltyPurchase
@@ -7686,7 +7739,11 @@ def staff_loyalty_system(request):
             )
         q = (request.POST.get('q') or request.GET.get('q') or '').strip()
         if q:
-            return redirect(f'{request.path}?q={q}')
+            return redirect(loyalty_desk_url(
+                request.path, q=q,
+                mode=request.POST.get('mode') or request.GET.get('mode') or 'code',
+                nivo=request.POST.get('nivo') or request.GET.get('nivo') or '',
+            ))
         return redirect(request.path)
 
     if request.method == 'POST' and request.POST.get('action') == 'izdaj_karticu':
@@ -7707,11 +7764,107 @@ def staff_loyalty_system(request):
                     request,
                     f'Kartica izdata za {user.get_full_name()}. Broj: {card.kod}',
                 )
-                return redirect(f"{request.path}?q={card.kod}&issued=1")
+                return redirect(loyalty_member_url(card.kod))
         else:
             messages.error(request, 'Provjerite unesene podatke (dupli email/telefon nisu dozvoljeni).')
 
+    if request.method == 'POST' and request.POST.get('action') == 'open_card':
+        phone = (request.POST.get('telefon') or '').strip()
+        channel = (request.POST.get('channel') or 'admin').strip().lower()
+        ime = (request.POST.get('ime') or '').strip()
+        prezime = (request.POST.get('prezime') or '').strip()
+        wants_json = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or request.POST.get('ajax') == '1'
+        )
+
+        def _open_json(payload, status=200):
+            return JsonResponse(payload, status=status)
+
+        found = search_loyalty_cards(phone, limit=5, mode='code') if phone else []
+        card = found[0] if found else None
+        if card is None:
+            if not ime or not prezime:
+                messages.info(request, 'Novi član — unesi ime i prezime pa ponovo pošalji kod ili Admin otvori.')
+                request.session['loyalty_new_phone'] = phone
+                request.session.modified = True
+                dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
+                if wants_json:
+                    return _open_json({'ok': False, 'need_name': True, 'redirect': dest})
+                return redirect(dest)
+            try:
+                card, user = izdaj_loyalty_karticu(ime, prezime, phone)
+                sync_korisnik(user)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+                dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
+                if wants_json:
+                    return _open_json({'ok': False, 'error': str(exc), 'redirect': dest}, 400)
+                return redirect(dest)
+        if channel == 'admin':
+            clear_pending_open_card_otp(request)
+            request.session.pop('loyalty_new_phone', None)
+            dest = loyalty_member_url(card.kod)
+            if wants_json:
+                return _open_json({'ok': True, 'redirect': dest})
+            return redirect(dest)
+        try:
+            otp_info = start_open_card_otp(request, card, channel=channel)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            if wants_json:
+                return _open_json({'ok': False, 'error': str(exc)}, 400)
+            return redirect(request.path)
+        dest = loyalty_desk_url(request.path, extra={'step': '2'})
+        if wants_json:
+            chat_url = (
+                otp_info.get('whatsapp_url')
+                if channel == 'whatsapp'
+                else otp_info.get('viber_url')
+            )
+            return _open_json({
+                'ok': True,
+                'chat_url': chat_url or '',
+                'app_url': (
+                    otp_info.get('whatsapp_app_url')
+                    if channel == 'whatsapp'
+                    else otp_info.get('viber_url')
+                ) or '',
+                'redirect': dest,
+            })
+        return redirect(dest)
+
+    if request.method == 'POST' and request.POST.get('action') == 'open_card_verify':
+        ok, result = verify_open_card_otp(request, request.POST.get('otp_code'))
+        if not ok:
+            messages.error(request, result)
+            return redirect(loyalty_desk_url(request.path, extra={'step': '2'}))
+        kod = result.get('kod') or ''
+        clear_pending_open_card_otp(request)
+        if kod:
+            return redirect(loyalty_member_url(kod))
+        return redirect(request.path)
+
+    if request.method == 'POST' and request.POST.get('action') == 'open_card_admin':
+        pending_open = get_pending_open_card_otp(request) or {}
+        kod = pending_open.get('kod') or ''
+        clear_pending_open_card_otp(request)
+        if kod:
+            return redirect(loyalty_member_url(kod))
+        return redirect(request.path)
+
+    if request.method == 'POST' and request.POST.get('action') == 'open_card_cancel':
+        clear_pending_open_card_otp(request)
+        return redirect(request.path)
+
     q = (request.GET.get('q') or '').strip()
+    search_mode = (request.GET.get('mode') or 'code').strip().lower()
+    if search_mode not in {'code', 'name', 'any'}:
+        search_mode = 'code'
+    search_nivo = (request.GET.get('nivo') or '').strip().lower()
+    valid_nivoi = {choice.value for choice in LoyaltyCard.Nivo}
+    if search_nivo not in valid_nivoi:
+        search_nivo = ''
     cards = []
     selected_card = None
     user_orders = []
@@ -7723,12 +7876,20 @@ def staff_loyalty_system(request):
     searched = bool(q)
 
     if q:
-        from .loyalty import search_loyalty_cards
-
-        # Pretraga kupaca (kod / email / telefon / ime) — dijakritici ž≈z, š≈s, č/ć≈c
-        cards = search_loyalty_cards(q, limit=30)
+        cards = search_loyalty_cards(q, limit=30, mode=search_mode)
+        if search_nivo:
+            cards = [card for card in cards if card.nivo == search_nivo]
 
         if cards:
+            only = cards[0]
+            qn = q.replace(' ', '').casefold()
+            if len(cards) == 1 and qn in {
+                (only.kod or '').casefold(),
+                (only.barkod or '').casefold(),
+            }:
+                return redirect(loyalty_member_url(only.kod))
+            selected_card = None
+        if False:
             selected_card = cards[0]
             selected_card = osiguraj_loyalty_karticu(selected_card.user)
             loyalty_ctx = _loyalty_ctx(selected_card)
@@ -8034,13 +8195,95 @@ def staff_loyalty_system(request):
             except Exception:
                 pending_otp = None
 
+    desk_stats = loyalty_desk_stats()
+    if searched:
+        table_source = cards
+    else:
+        table_source = list(
+            LoyaltyCard.objects.select_related('user', 'user__profil').order_by('-azurirana')
+        )
+    paginator = Paginator(table_source, 10)
+    try:
+        table_page = paginator.get_page(request.GET.get('page') or 1)
+    except (EmptyPage, PageNotAnInteger):
+        table_page = paginator.get_page(1)
+    table_cards = list(table_page)
+    _tier_en = {
+        'bronza': 'BRONZE', 'srebrna': 'SILVER',
+        'zlatna': 'GOLD', 'platinum': 'PLATINUM',
+    }
+    for card in table_cards:
+        osiguraj_sestocifreni_kod(card)
+        profil = getattr(card.user, 'profil', None)
+        card.desk_phone = format_loyalty_phone(profil.telefon if profil else '')
+        card.desk_url = loyalty_member_url(card.kod)
+        card.desk_tier = _tier_en.get(card.nivo, (card.nivo or '').upper())
+        card.desk_points = int(card.ukupna_potrosnja or 0)
+        card.desk_points_fmt = format_ba_int(card.desk_points)
+        card.desk_spend_fmt = format_ba_money(card.ukupna_potrosnja)
+    pending_open = get_pending_open_card_otp(request)
+    if pending_open:
+        import time as _time
+        from .loyalty import (
+            LOYALTY_OPEN_OTP_TTL_SEC,
+            loyalty_from_phone_display,
+            open_card_otp_message,
+            viber_chat_url,
+            whatsapp_app_url,
+            whatsapp_chat_url,
+        )
+        msg = open_card_otp_message(pending_open.get('code') or '')
+        now = _time.time()
+        sent_ts = float(pending_open.get('sent_ts') or (
+            float(pending_open.get('exp') or now) - LOYALTY_OPEN_OTP_TTL_SEC
+        ))
+        resend_wait = max(0, int(60 - (now - sent_ts)))
+        channel = (pending_open.get('channel') or request.GET.get('open') or 'viber').strip().lower()
+        pending_open = {
+            **pending_open,
+            'message': msg,
+            'viber_url': viber_chat_url(pending_open.get('telefon') or '', msg),
+            'whatsapp_url': whatsapp_chat_url(pending_open.get('telefon') or '', msg),
+            'whatsapp_app_url': whatsapp_app_url(pending_open.get('telefon') or '', msg),
+            'telefon_fmt': format_loyalty_phone(pending_open.get('telefon') or ''),
+            'from_phone_fmt': loyalty_from_phone_display(),
+            'resend_wait': resend_wait,
+            'channel_label': 'WhatsApp' if channel == 'whatsapp' else 'Viber',
+        }
+    page_items = loyalty_page_items(table_page) if table_page else []
+    desk_tab = (request.GET.get('tab') or 'pretraga').strip().lower()
+    raw_phone = ''
+    if desk_tab == 'novi' or request.GET.get('novi') == '1':
+        raw_phone = request.GET.get('tel') or request.session.get('loyalty_new_phone') or ''
+    phone_local = loyalty_phone_local_display(raw_phone)
+    open_step = 3 if (request.GET.get('opened') == '1' and selected_card) else (
+        2 if pending_open else 1
+    )
+    name_search_url = loyalty_desk_url(
+        request.path, q=q if search_mode == 'name' else '', mode='name', nivo=search_nivo,
+    )
+    code_search_url = loyalty_desk_url(
+        request.path, q=q if search_mode == 'code' else '', mode='code', nivo=search_nivo,
+    )
+
     context = {
         **_base_context(),
         # Prazno: ne puni header polje za pretragu ARTIKALA (context_processor koristi ?q=)
         'search_query': '',
         'loyalty_search_query': q,
+        'loyalty_search_mode': search_mode,
+        'loyalty_search_nivo': search_nivo,
+        'loyalty_name_url': name_search_url,
+        'loyalty_code_url': code_search_url,
         'searched': searched,
         'cards': cards,
+        'table_cards': table_cards,
+        'table_page': table_page,
+        'page_items': page_items,
+        'desk_tab': desk_tab,
+        'desk_stats': desk_stats,
+        'open_step': open_step,
+        'pending_open': pending_open,
         'selected_card': selected_card,
         'user_orders': user_orders,
         'purchase_timeline': purchase_timeline,
@@ -8050,8 +8293,372 @@ def staff_loyalty_system(request):
         'newly_issued': newly_issued,
         'cardholder_name': cardholder_name,
         'pending_otp': pending_otp if selected_card else None,
+        'new_member': request.GET.get('novi') == '1',
+        'new_member_phone': phone_local,
+        'phone_local': phone_local,
+        'loyalty_from_phone_fmt': loyalty_from_phone_display(),
     }
     return render(request, 'staff/loyalty_system.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_staff_required)
+def staff_loyalty_member(request, kod):
+    """Poseban URL za otvorenu loyalty karticu / kupca."""
+    from decimal import InvalidOperation
+
+    from .models import LoyaltyPurchase
+    from .loyalty import (
+        azuriraj_loyalty_karticu,
+        clear_pending_purchase_otp,
+        commit_loyalty_purchase,
+        get_pending_purchase_otp,
+        loyalty_card_share_token,
+        loyalty_kontekst,
+        online_orders_for_loyalty_card,
+        osiguraj_loyalty_karticu,
+        osiguraj_sestocifreni_kod,
+        start_purchase_otp,
+        verify_purchase_otp,
+        LOYALTY_PURCHASE_OTP_SESSION_KEY,
+    )
+
+    selected_card = get_object_or_404(
+        LoyaltyCard.objects.select_related('user', 'user__profil'),
+        kod__iexact=kod,
+    )
+    selected_card = osiguraj_loyalty_karticu(selected_card.user)
+    old_kod = selected_card.kod
+    osiguraj_sestocifreni_kod(selected_card)
+    if selected_card.kod != old_kod:
+        return redirect('staff_loyalty_member', kod=selected_card.kod)
+    azuriraj_loyalty_karticu(selected_card)
+
+    def _ctx(card):
+        token = loyalty_card_share_token(card)
+        share_url = ''
+        if token:
+            path = reverse(
+                'public_loyalty_card_image',
+                kwargs={'card_id': card.pk, 'token': token},
+            )
+            share_url = request.build_absolute_uri(path)
+        return loyalty_kontekst(card, share_image_url=share_url)
+
+    member_url = request.path
+    purchase_anchor = '#evidentiraj-kupovinu'
+    user_orders = online_orders_for_loyalty_card(selected_card, limit=50)
+    manual_purchases = list(
+        LoyaltyPurchase.objects.filter(kartica=selected_card)
+        .select_related('kreirao')
+        .order_by('-kreirano')[:50]
+    )
+    purchase_timeline = []
+    for order in user_orders:
+        purchase_timeline.append({
+            'kind': 'online',
+            'date': order.kreirana,
+            'amount': order.ukupno,
+            'label': f'#{order.broj}',
+            'status': (
+                'Završena'
+                if order.status in ('zavrsena', 'poslana', 'potvrdjena')
+                else (order.get_status_label() if hasattr(order, 'get_status_label') else order.status)
+            ),
+            'status_code': order.status,
+            'order': order,
+            'note': '',
+            'payment': 'Kartica',
+            'channel': 'Web',
+        })
+    for pur in manual_purchases:
+        status_label = (
+            'Prodavnica · admin (bez koda)'
+            if getattr(pur, 'verifikacija', '') == LoyaltyPurchase.Verifikacija.ADMIN
+            else 'Prodavnica · kod'
+        )
+        purchase_timeline.append({
+            'kind': 'manual',
+            'date': pur.kreirano,
+            'amount': pur.iznos,
+            'label': 'Evidentirano',
+            'status': 'Završena',
+            'status_code': 'manual',
+            'order': None,
+            'note': pur.napomena or '',
+            'purchase': pur,
+            'payment': (
+                'Kartica' if getattr(pur, 'placanje', '') == LoyaltyPurchase.Placanje.KARTICA
+                else 'Gotovina'
+            ),
+            'channel': 'Prodavnica',
+            'status_detail': status_label,
+        })
+    from django.utils import timezone as dj_tz
+    purchase_timeline.sort(key=lambda row: row['date'] or dj_tz.now(), reverse=True)
+    profil = getattr(selected_card.user, 'profil', None)
+
+    if request.method == 'POST' and request.POST.get('action') == 'aktiviraj_nalog':
+        target = selected_card.user
+        if not target.is_active:
+            target.is_active = True
+            target.save(update_fields=['is_active'])
+            messages.success(request, f'Nalog {target.email or target.get_full_name()} je aktiviran.')
+        return redirect(member_url)
+
+    if request.method == 'POST' and request.POST.get('action') == 'deaktiviraj_karticu':
+        target = selected_card.user
+        if target.is_active:
+            target.is_active = False
+            target.save(update_fields=['is_active'])
+            messages.warning(request, 'Kartica / nalog je deaktiviran.')
+        return redirect(member_url)
+
+    if request.method == 'POST' and request.POST.get('action') == 'save_note':
+        note = (request.POST.get('napomena') or '').strip()[:2000]
+        profil_obj, _ = UserProfile.objects.get_or_create(user=selected_card.user)
+        profil_obj.loyalty_napomena = note
+        profil_obj.save(update_fields=['loyalty_napomena'])
+        messages.success(request, 'Napomena je sačuvana.')
+        return redirect(member_url)
+
+    if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu':
+        try:
+            iznos = Decimal(request.POST.get('iznos', '0'))
+        except (InvalidOperation, TypeError, ValueError):
+            messages.error(request, 'Neispravan iznos.')
+            return redirect(member_url)
+        placanje = (request.POST.get('placanje') or 'gotovina').strip().lower()
+        if placanje not in {'gotovina', 'kartica'}:
+            placanje = 'gotovina'
+        try:
+            purchase = commit_loyalty_purchase(
+                selected_card, iznos,
+                napomena='',
+                verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
+                staff_user=request.user,
+                placanje=placanje,
+            )
+            clear_pending_purchase_otp(request)
+            nacin = 'kartično' if placanje == 'kartica' else 'gotovinski'
+            messages.success(request, f'Kupovina od {purchase.iznos} KM evidentirana ({nacin}).')
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        return redirect(member_url)
+
+    if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_start':
+        channel = (request.POST.get('channel') or 'whatsapp').strip().lower()
+        try:
+            iznos = Decimal(request.POST.get('iznos', '0'))
+            napomena = (request.POST.get('napomena') or '').strip()[:200]
+        except (InvalidOperation, TypeError, ValueError):
+            messages.error(request, 'Neispravan iznos.')
+            return redirect(member_url + purchase_anchor)
+        if channel == 'admin':
+            try:
+                purchase = commit_loyalty_purchase(
+                    selected_card, iznos,
+                    napomena=napomena or 'Admin — nema internet (bez koda)',
+                    verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
+                    staff_user=request.user,
+                )
+                clear_pending_purchase_otp(request)
+                messages.warning(request, f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).')
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            return redirect(member_url + purchase_anchor)
+        try:
+            start_purchase_otp(request, selected_card, iznos, napomena)
+            pending = get_pending_purchase_otp(request, card=selected_card) or {}
+            pending['channel'] = channel
+            request.session[LOYALTY_PURCHASE_OTP_SESSION_KEY] = pending
+            request.session.modified = True
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        return redirect(member_url + purchase_anchor)
+
+    if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_potvrdi':
+        ok, result = verify_purchase_otp(request, request.POST.get('otp_code'), selected_card)
+        if not ok:
+            messages.error(request, result)
+            return redirect(member_url + purchase_anchor)
+        try:
+            purchase = commit_loyalty_purchase(
+                selected_card, result.get('iznos'),
+                napomena=result.get('napomena') or '',
+                verifikacija=LoyaltyPurchase.Verifikacija.OTP,
+                staff_user=request.user,
+            )
+            clear_pending_purchase_otp(request)
+            messages.success(request, f'Kupovina od {purchase.iznos} KM evidentirana (potvrđeno kodom).')
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        return redirect(member_url + purchase_anchor)
+
+    if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_admin':
+        try:
+            pending = get_pending_purchase_otp(request, card=selected_card)
+            if pending:
+                iznos = Decimal(str(pending.get('iznos') or '0'))
+                napomena = (pending.get('napomena') or '').strip()[:200]
+            else:
+                iznos = Decimal(request.POST.get('iznos', '0'))
+                napomena = (request.POST.get('napomena') or '').strip()[:200]
+            purchase = commit_loyalty_purchase(
+                selected_card, iznos,
+                napomena=napomena or 'Admin — nema internet (bez koda)',
+                verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
+                staff_user=request.user,
+            )
+            clear_pending_purchase_otp(request)
+            messages.warning(request, f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).')
+        except (ValueError, InvalidOperation, TypeError) as exc:
+            messages.error(request, str(exc) if str(exc) else 'Neispravan iznos.')
+        return redirect(member_url + purchase_anchor)
+
+    if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu_cancel':
+        clear_pending_purchase_otp(request)
+        return redirect(member_url + purchase_anchor)
+
+    edit_form = None
+    if request.method == 'POST' and request.POST.get('action') == 'update_profile':
+        edit_form = StaffLoyaltyProfileForm(request.POST, exclude_user_id=selected_card.user_id)
+        if edit_form.is_valid():
+            u = selected_card.user
+            ime_prezime = (edit_form.cleaned_data.get('ime_prezime') or '').strip()
+            if ime_prezime:
+                parts = ime_prezime.split(maxsplit=1)
+                u.first_name = parts[0]
+                u.last_name = parts[1] if len(parts) > 1 else ''
+            new_email = (edit_form.cleaned_data.get('email') or '').strip().lower()
+            u.email = new_email
+            u.save(update_fields=['first_name', 'last_name', 'email'])
+            profil, _ = UserProfile.objects.get_or_create(user=u)
+            profil.telefon = (edit_form.cleaned_data.get('telefon') or '').strip()
+            profil.adresa = (edit_form.cleaned_data.get('adresa') or '').strip()
+            profil.grad = (edit_form.cleaned_data.get('grad') or '').strip()
+            profil.postanski_broj = (edit_form.cleaned_data.get('postanski_broj') or '').strip()
+            profil.save()
+            messages.success(request, 'Podaci su ažurirani.')
+            return redirect(member_url)
+        messages.error(request, 'Greška pri ažuriranju (provjeri dupli email/telefon).')
+    else:
+        initial = {
+            'ime_prezime': selected_card.user.get_full_name() or selected_card.user.first_name,
+            'email': selected_card.user.email or '',
+        }
+        if profil:
+            initial.update({
+                'telefon': profil.telefon or '',
+                'adresa': profil.adresa or '',
+                'grad': profil.grad or '',
+                'postanski_broj': profil.postanski_broj or '',
+            })
+        edit_form = StaffLoyaltyProfileForm(initial=initial, exclude_user_id=selected_card.user_id)
+
+    pending_otp = None
+    raw_pending = get_pending_purchase_otp(request, card=selected_card)
+    if raw_pending:
+        from .loyalty import purchase_otp_message, sms_chat_url, viber_chat_url, whatsapp_chat_url
+        tel = raw_pending.get('telefon') or ((profil.telefon if profil else '') or '')
+        msg = purchase_otp_message(raw_pending.get('code') or '', iznos=raw_pending.get('iznos'))
+        pending_otp = {
+            'iznos': raw_pending.get('iznos'),
+            'napomena': raw_pending.get('napomena') or '',
+            'telefon': tel,
+            'message': msg,
+            'channel': raw_pending.get('channel') or '',
+            'viber_url': viber_chat_url(tel, msg),
+            'whatsapp_url': whatsapp_chat_url(tel, msg),
+            'sms_url': sms_chat_url(tel, msg),
+            'auto_open': '',
+        }
+
+    from .loyalty import (
+        LOYALTY_TIERS,
+        format_ba_int,
+        format_ba_money,
+        format_loyalty_phone,
+    )
+
+    loyalty_ctx = _ctx(selected_card)
+    name = selected_card.user.get_full_name().strip() or selected_card.kod
+    parts = [p for p in (selected_card.user.first_name, selected_card.user.last_name) if p]
+    initials = ''.join(p[0] for p in parts)[:2].upper() or (name[:2].upper() if name else '—')
+    spend = selected_card.ukupna_potrosnja or Decimal('0')
+    points = int(spend)
+    buy_count = len(purchase_timeline)
+    avg = (spend / Decimal(buy_count)).quantize(Decimal('0.01')) if buy_count else Decimal('0')
+    tier = loyalty_ctx['tier']
+    next_tier = loyalty_ctx['next_tier']
+    tier_en = {
+        'bronza': 'BRONZE', 'srebrna': 'SILVER',
+        'zlatna': 'GOLD', 'platinum': 'PLATINUM',
+    }
+    remain = loyalty_ctx.get('preostalo_do_sljedeceg')
+    if next_tier and next_tier.get('od') is not None:
+        span = Decimal(str(next_tier['od'])) - Decimal(str(tier.get('od') or 0))
+        done = spend - Decimal(str(tier.get('od') or 0))
+        progress_pct = 0
+        if span > 0:
+            progress_pct = int(max(0, min(100, (done / span) * 100)))
+    else:
+        progress_pct = 100
+    for row in purchase_timeline:
+        row['amount_fmt'] = format_ba_money(row.get('amount'))
+        row['points'] = int(row.get('amount') or 0)
+        row['points_fmt'] = format_ba_int(row['points'])
+    paginator = Paginator(purchase_timeline, 5)
+    try:
+        purchase_page = paginator.get_page(request.GET.get('page') or 1)
+    except (EmptyPage, PageNotAnInteger):
+        purchase_page = paginator.get_page(1)
+    member_tab = (request.GET.get('tab') or 'kupovine').strip().lower()
+    if member_tab not in {'kupovine', 'bodovi', 'napomene'}:
+        member_tab = 'kupovine'
+    addr_bits = []
+    if profil:
+        if profil.adresa:
+            addr_bits.append(profil.adresa)
+        city = ' '.join(x for x in (profil.postanski_broj, profil.grad) if x)
+        if city:
+            addr_bits.append(city)
+    context = {
+        **_base_context(),
+        'search_query': '',
+        'loyalty_search_query': selected_card.kod,
+        'selected_card': selected_card,
+        'loyalty': loyalty_ctx,
+        'user_orders': user_orders,
+        'purchase_timeline': purchase_timeline,
+        'purchase_page': purchase_page,
+        'edit_form': edit_form,
+        'pending_otp': pending_otp,
+        'cardholder_name': name,
+        'newly_issued': request.GET.get('issued') == '1',
+        'member_tab': member_tab,
+        'member_initials': initials,
+        'member_phone_fmt': format_loyalty_phone(loyalty_ctx.get('telefon') or ''),
+        'member_since': selected_card.kreirana,
+        'member_address': ', '.join(addr_bits),
+        'member_note': (profil.loyalty_napomena if profil else '') or '',
+        'member_tier_en': tier_en.get(selected_card.nivo, (selected_card.nivo or '').upper()),
+        'member_next_en': tier_en.get((next_tier or {}).get('nivo'), '') if next_tier else '',
+        'member_spend_fmt': format_ba_money(spend),
+        'member_points': points,
+        'member_points_fmt': format_ba_int(points),
+        'member_orders_count': buy_count,
+        'member_avg_fmt': format_ba_money(avg),
+        'member_progress_pct': progress_pct,
+        'member_remain_fmt': format_ba_int(int(remain)) if remain is not None else '',
+        'member_tier_range': (
+            f'{int(tier["od"])} – {int(tier["do"])} bodova'
+            if tier.get('do') is not None
+            else f'{int(tier["od"])}+ bodova'
+        ),
+        'loyalty_tiers': LOYALTY_TIERS,
+    }
+    return render(request, 'staff/loyalty_member.html', context)
 
 
 @login_required(login_url='login')

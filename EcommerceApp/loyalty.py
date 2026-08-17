@@ -17,6 +17,8 @@ from .models import Coupon, LoyaltyCard, LoyaltyPurchase, Order, UserProfile
 LOYALTY_PURCHASE_OTP_SESSION_KEY = 'loyalty_purchase_otp'
 LOYALTY_PURCHASE_OTP_TTL_SEC = 10 * 60  # 10 min
 LOYALTY_PURCHASE_OTP_MAX_ATTEMPTS = 5
+LOYALTY_OPEN_OTP_SESSION_KEY = 'loyalty_open_otp'
+LOYALTY_OPEN_OTP_TTL_SEC = 5 * 60
 
 
 LOYALTY_TIERS = (
@@ -62,6 +64,7 @@ TIER_COLORS = {
 LOYALTY_CARD_BG = '#0A0A0A'
 LOYALTY_CARD_BG_MID = '#111111'
 LOYALTY_CARD_GREEN = '#5BB805'
+LOYALTY_REVIEW_URL = 'https://g.page/r/CXurB2BnmyVdEBM/review'
 
 
 def _normalizuj_telefon(telefon):
@@ -142,14 +145,18 @@ def _loyalty_name_query_variants(term, *, max_variants=48):
     return out
 
 
-def search_loyalty_cards(query, *, limit=30):
+def search_loyalty_cards(query, *, limit=30, mode='code'):
     """
-    Pretraga loyalty kupaca: kod, barkod, email, telefon, ime.
-    Dijakritici: ž≈z, š≈s, č/ć≈c (u oba smjera).
+    Pretraga loyalty kupaca.
+    mode=code: broj kartice, barkod, telefon.
+    mode=name: ime i prezime (dijakritici ž≈z, š≈s, č/ć≈c).
     """
     q = (query or '').strip()
     if not q:
         return []
+    mode = (mode or 'code').strip().lower()
+    if mode not in {'code', 'name', 'any'}:
+        mode = 'code'
 
     name_q = Q()
     for v in _loyalty_name_query_variants(q):
@@ -168,15 +175,18 @@ def search_loyalty_cards(query, *, limit=30):
             phone_q |= Q(user__profil__telefon__icontains=local)
             phone_q |= Q(user__profil__telefon__icontains=local[1:])  # bez 0
 
-    filter_q = (
-        Q(kod__icontains=q)
-        | Q(barkod__icontains=q)
-        | Q(user__email__icontains=q)
-    )
-    if name_q:
-        filter_q |= name_q
-    if phone_q:
-        filter_q |= phone_q
+    if mode == 'name':
+        filter_q = name_q if name_q else Q(pk__in=[])
+    elif mode == 'any':
+        filter_q = Q(kod__icontains=q) | Q(barkod__icontains=q)
+        if name_q:
+            filter_q |= name_q
+        if phone_q:
+            filter_q |= phone_q
+    else:
+        filter_q = Q(kod__icontains=q) | Q(barkod__icontains=q)
+        if phone_q:
+            filter_q |= phone_q
 
     cards_qs = list(
         LoyaltyCard.objects.select_related('user', 'user__profil')
@@ -219,7 +229,7 @@ def search_loyalty_cards(query, *, limit=30):
         seen_ids.add(card.pk)
 
     # Dopuna: sken imena s dijakriticima (upit bez ž, ime s ž — i obrnuto)
-    if len(results) < limit and fold_q and len(fold_q) >= 2:
+    if mode in {'name', 'any'} and len(results) < limit and fold_q and len(fold_q) >= 2:
         for card in (
             LoyaltyCard.objects.select_related('user', 'user__profil')
             .order_by('-azurirana')[:500]
@@ -368,35 +378,59 @@ def _to_e164_digits(telefon):
     return digits
 
 
+def _viber_draft_text(text):
+    """
+    Viber u composeru prekine draft na znaku %.
+    Isti sadržaj kao WhatsApp, samo % → ' posto'.
+    """
+    return (text or '').replace('%', ' posto')
+
+
 def viber_chat_url(telefon, text=''):
     """
     Deep link Viber chata na tačan broj (BA).
-    Otvara chat s kontaktom — staff samo pošalje.
-    Napomena: Viber 1:1 često ne prefill-uje tekst; draft= je best-effort.
+    draft= puni polje za poruku — staff samo klikne Pošalji.
+    Broj ide kao %2B387… (plus mora biti enkodiran, inače Viber ga pročita kao razmak).
+    Otvarati preko <a href> bez target=_blank — window.open / novi tab gubi draft.
     """
     digits = _to_e164_digits(telefon)
     if not digits:
         return ''
-    # %2B + broj pouzdanije otvara tačan chat na desktop/mobilnom
     url = f'viber://chat?number=%2B{digits}'
     if text:
-        # draft / text — ovisi o klijentu; ako ne radi, poruka je u clipboardu (JS)
-        url = f'{url}&draft={quote(text)}'
+        url = f'{url}&draft={quote(_viber_draft_text(text), safe="")}'
     return url
 
 
 def whatsapp_chat_url(telefon, text=''):
     """
-    Deep link WhatsApp — otvara chat s brojem i unaprijed ispunjenom porukom.
-    Staff samo klikne Pošalji. wa.me pouzdano otvara app / web.
+    WhatsApp web/app link — wa.me otvara instaliranu app ili WhatsApp Web.
     """
     digits = _to_e164_digits(telefon)
     if not digits:
         return ''
-    # wa.me najbolje otvara instaliranu app; text= je unaprijed upisan
     if text:
         return f'https://wa.me/{digits}?text={quote(text)}'
     return f'https://wa.me/{digits}'
+
+
+def whatsapp_app_url(telefon, text=''):
+    """Native WhatsApp shema (kao viber://) — ne treba popup."""
+    digits = _to_e164_digits(telefon)
+    if not digits:
+        return ''
+    if text:
+        return f'whatsapp://send?phone={digits}&text={quote(text)}'
+    return f'whatsapp://send?phone={digits}'
+
+
+def loyalty_from_phone():
+    """Službeni broj s kojeg se šalju loyalty verifikacijski kodovi."""
+    return (getattr(settings, 'LOYALTY_VIBER_FROM_PHONE', '') or '').strip()
+
+
+def loyalty_from_phone_display():
+    return format_loyalty_phone(loyalty_from_phone()) or loyalty_from_phone() or '—'
 
 
 def sms_chat_url(telefon, text=''):
@@ -416,13 +450,250 @@ def _generate_otp_code():
     return f'{secrets.randbelow(9000) + 1000}'
 
 
+def loyalty_desk_params(*, q='', mode='code', nivo='', extra=None):
+    """GET parametri za loyalty desk — uvijek isti, dijeljiv URL."""
+    params = {}
+    q = (q or '').strip()
+    mode = (mode or 'code').strip().lower()
+    nivo = (nivo or '').strip().lower()
+    if q:
+        params['q'] = q
+    if mode and mode not in {'code', ''}:
+        params['mode'] = mode
+    if nivo:
+        params['nivo'] = nivo
+    if extra:
+        for key, value in extra.items():
+            if value in (None, '', False):
+                continue
+            params[key] = '1' if value is True else str(value)
+    return params
+
+
+def loyalty_desk_url(path='/nalog/loyalty/', *, q='', mode='code', nivo='', extra=None):
+    from urllib.parse import urlencode
+
+    params = loyalty_desk_params(q=q, mode=mode, nivo=nivo, extra=extra)
+    if not params:
+        return path
+    return f'{path}?{urlencode(params)}'
+
+
+def loyalty_member_url(kod):
+    from django.urls import reverse
+
+    return reverse('staff_loyalty_member', kwargs={'kod': kod})
+
+
+def open_card_otp_message(code):
+    from_label = loyalty_from_phone_display()
+    lines = [
+        'opremazaribolov.ba — otvaranje kartice',
+        f'Vaš 6-cifreni kod: {code}',
+    ]
+    if from_label and from_label != '—':
+        lines.append(f'Poruka sa broja: {from_label}')
+    return '\n'.join(lines)
+
+
+def _generate_open_otp_code():
+    return f'{secrets.randbelow(900000) + 100000}'
+
+
+def start_open_card_otp(request, card, *, channel=''):
+    if not request or not card:
+        raise ValueError('Kartica nije dostupna.')
+    profil = getattr(card.user, 'profil', None)
+    telefon = (profil.telefon if profil else '') or ''
+    if not _to_e164_digits(telefon):
+        raise ValueError('Kartica nema ispravan telefon.')
+    now = time.time()
+    code = _generate_open_otp_code()
+    payload = {
+        'card_id': card.pk,
+        'kod': card.kod,
+        'code': code,
+        'telefon': telefon,
+        'channel': channel or '',
+        'sent_ts': now,
+        'exp': now + LOYALTY_OPEN_OTP_TTL_SEC,
+        'attempts': 0,
+    }
+    request.session[LOYALTY_OPEN_OTP_SESSION_KEY] = payload
+    request.session.modified = True
+    msg = open_card_otp_message(code)
+    return {
+        **payload,
+        'message': msg,
+        'from_phone': loyalty_from_phone(),
+        'from_phone_fmt': loyalty_from_phone_display(),
+        'viber_url': viber_chat_url(telefon, msg),
+        'whatsapp_url': whatsapp_chat_url(telefon, msg),
+        'whatsapp_app_url': whatsapp_app_url(telefon, msg),
+    }
+
+
+def get_pending_open_card_otp(request):
+    data = (request.session.get(LOYALTY_OPEN_OTP_SESSION_KEY) or {}) if request else {}
+    if not data:
+        return None
+    if time.time() > float(data.get('exp') or 0):
+        clear_pending_open_card_otp(request)
+        return None
+    return data
+
+
+def clear_pending_open_card_otp(request):
+    if request and LOYALTY_OPEN_OTP_SESSION_KEY in request.session:
+        del request.session[LOYALTY_OPEN_OTP_SESSION_KEY]
+        request.session.modified = True
+
+
+def verify_open_card_otp(request, entered_code):
+    data = get_pending_open_card_otp(request)
+    if not data:
+        return False, 'Kod je istekao. Pošaljite novi.'
+    attempts = int(data.get('attempts') or 0) + 1
+    data['attempts'] = attempts
+    request.session[LOYALTY_OPEN_OTP_SESSION_KEY] = data
+    request.session.modified = True
+    if attempts > 5:
+        clear_pending_open_card_otp(request)
+        return False, 'Previše pokušaja. Pošaljite novi kod.'
+    if str(entered_code or '').strip() != str(data.get('code') or ''):
+        return False, 'Kod nije tačan.'
+    return True, data
+
+
+def loyalty_desk_stats():
+    qs = LoyaltyCard.objects.select_related('user')
+    total = qs.count()
+    active = qs.filter(user__is_active=True).count()
+    potrosnja = qs.aggregate(s=Sum('ukupna_potrosnja'))['s'] or Decimal('0.00')
+    avg = Decimal('0')
+    if total:
+        weighted = Decimal('0')
+        for tier in LOYALTY_TIERS:
+            n = qs.filter(nivo=tier['nivo']).count()
+            weighted += Decimal(n) * Decimal(str(tier['postotak']))
+        avg = (weighted / Decimal(total)).quantize(Decimal('0.1'))
+    tiers = []
+    for tier in LOYALTY_TIERS:
+        od = tier['od']
+        do = tier['do']
+        raspon = f'{int(od)} – {int(do)} bodova' if do else f'{int(od)}+ bodova'
+        tiers.append({
+            **tier,
+            'raspon': raspon,
+            'popust_label': f'{int(tier["postotak"])}% popusta',
+            'en_label': {
+                'bronza': 'BRONZE',
+                'srebrna': 'SILVER',
+                'zlatna': 'GOLD',
+                'platinum': 'PLATINUM',
+            }.get(tier['nivo'], (tier['nivo'] or '').upper()),
+            'count': qs.filter(nivo=tier['nivo']).count(),
+        })
+    return {
+        'active': active,
+        'total': total,
+        'potrosnja': potrosnja,
+        'bodovi': int(potrosnja),
+        'avg_discount': avg,
+        'active_fmt': format_ba_int(active),
+        'bodovi_fmt': format_ba_int(int(potrosnja)),
+        'potrosnja_fmt': format_ba_money(potrosnja),
+        'avg_discount_fmt': format_ba_pct(avg),
+        'tiers': tiers,
+    }
+
+
+def recent_loyalty_cards(limit=8):
+    return list(
+        LoyaltyCard.objects.select_related('user', 'user__profil')
+        .order_by('-azurirana')[:limit]
+    )
+
+
+def format_ba_int(value):
+    try:
+        n = int(Decimal(str(value or 0)))
+    except Exception:
+        n = 0
+    return f'{n:,}'.replace(',', '.')
+
+
+def format_ba_money(value):
+    try:
+        d = Decimal(str(value or 0)).quantize(Decimal('0.01'))
+    except Exception:
+        d = Decimal('0.00')
+    sign = '-' if d < 0 else ''
+    d = abs(d)
+    whole = int(d)
+    frac = int((d - Decimal(whole)) * 100)
+    return f"{sign}{whole:,}".replace(',', '.') + f',{frac:02d}'
+
+
+def format_ba_pct(value):
+    try:
+        d = Decimal(str(value or 0)).quantize(Decimal('0.1'))
+    except Exception:
+        d = Decimal('0.0')
+    return f'{d:.1f}'.replace('.', ',')
+
+
+def loyalty_page_items(page):
+    n = page.paginator.num_pages
+    cur = page.number
+    if n <= 7:
+        return list(range(1, n + 1))
+    if cur <= 4:
+        return [1, 2, 3, 4, 5, '...', n]
+    if cur >= n - 3:
+        return [1, '...', n - 4, n - 3, n - 2, n - 1, n]
+    return [1, '...', cur - 1, cur, cur + 1, '...', n]
+
+
+def format_loyalty_phone(raw):
+    local = ba_mobile_local(raw) or (raw or '').strip()
+    digits = _to_e164_digits(local) or _normalizuj_telefon(local)
+    if digits.startswith('387') and len(digits) >= 11:
+        rest = digits[3:]
+        return f'+387 {rest[:2]} {rest[2:5]} {rest[5:]}'.strip()
+    return local or '—'
+
+
+def loyalty_phone_local_display(raw):
+    """Lokalni dio za desk polje: 65 123 456."""
+    digits = _to_e164_digits(raw) or _normalizuj_telefon(raw)
+    if digits.startswith('387'):
+        rest = digits[3:]
+    elif digits.startswith('0'):
+        rest = digits[1:]
+    else:
+        rest = digits
+    if not rest:
+        return ''
+    if len(rest) > 8:
+        rest = rest[:8]
+    if len(rest) > 5:
+        return f'{rest[:2]} {rest[2:5]} {rest[5:]}'
+    if len(rest) > 2:
+        return f'{rest[:2]} {rest[2:]}'
+    return rest
+
+
 def purchase_otp_message(code, *, iznos=None):
     """Tekst poruke za Viber/WhatsApp — kupac izdiktira kod prodavcu."""
+    from_label = loyalty_from_phone_display()
     lines = [
         'opremazaribolov.ba — potvrda kupovine',
         f'Vaš kod: {code}',
         'Recite ovaj kod prodavcu da se kupovina evidentira.',
     ]
+    if from_label and from_label != '—':
+        lines.append(f'Poruka sa broja: {from_label}')
     if iznos is not None:
         try:
             lines.append(f'Iznos: {Decimal(str(iznos)).quantize(Decimal("0.01"))} KM')
@@ -543,6 +814,7 @@ def commit_loyalty_purchase(
     napomena='',
     verifikacija=LoyaltyPurchase.Verifikacija.OTP,
     staff_user=None,
+    placanje=LoyaltyPurchase.Placanje.GOTOVINA,
 ):
     """Upiši kupovinu + ažuriraj potrošnju/nivo kartice."""
     try:
@@ -551,12 +823,15 @@ def commit_loyalty_purchase(
         raise ValueError('Neispravan iznos.') from exc
     if iznos_d <= 0:
         raise ValueError('Iznos mora biti veći od 0.')
+    if placanje not in {LoyaltyPurchase.Placanje.GOTOVINA, LoyaltyPurchase.Placanje.KARTICA}:
+        placanje = LoyaltyPurchase.Placanje.GOTOVINA
 
     purchase = LoyaltyPurchase.objects.create(
         kartica=card,
         iznos=iznos_d,
         napomena=(napomena or '')[:200],
         verifikacija=verifikacija,
+        placanje=placanje,
         kreirao=staff_user if getattr(staff_user, 'is_authenticated', False) else None,
     )
     # Preračunaj iz online + svih evidentiranih (uključujući ovu) — bez dvostrukog zbrajanja
@@ -617,9 +892,32 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
     return card, user
 
 
-def _generisi_kod(user):
-    suffix = secrets.token_hex(3).upper()
-    return f'OZ{user.pk:05d}{suffix}'
+def _generisi_kod(user=None):
+    """Jedinstveni 6-cifreni broj kartice (100000–999999)."""
+    for _ in range(60):
+        kod = f'{secrets.randbelow(900000) + 100000}'
+        taken = LoyaltyCard.objects.filter(Q(kod=kod) | Q(barkod=kod)).exists()
+        if not taken and not Coupon.objects.filter(kod=kod).exists():
+            return kod
+    raise RuntimeError('Nije moguće generisati jedinstveni 6-cifreni broj kartice.')
+
+
+def osiguraj_sestocifreni_kod(card):
+    """Stare OZ… šifre pretvori u 6 cifara. Već 6-cifrene ostaju."""
+    if not card:
+        return card
+    if re.fullmatch(r'\d{6}', (card.kod or '').strip()):
+        return card
+    old = card.kod
+    new_kod = _generisi_kod(getattr(card, 'user', None))
+    card.kod = new_kod
+    fields = ['kod', 'azurirana']
+    if not card.barkod or card.barkod == old:
+        card.barkod = new_kod
+        fields.append('barkod')
+    card.save(update_fields=fields)
+    sync_loyalty_coupon(card)
+    return card
 
 
 def _barkod_iz_koda(kod):
@@ -896,6 +1194,7 @@ def kreiraj_loyalty_karticu(user):
 def osiguraj_loyalty_karticu(user):
     card = getattr(user, 'loyalty_kartica', None)
     if card:
+        osiguraj_sestocifreni_kod(card)
         return preracunaj_potrosnju_kartice(card)
     return kreiraj_loyalty_karticu(user)
 
@@ -1018,7 +1317,7 @@ def verify_loyalty_card_share_token(card, token):
 def loyalty_card_caption(card, *, share_image_url=''):
     """
     Tekst poruke za WhatsApp / Viber.
-    Samo tekst (nivo, %, broj) — bez linka slike i bez naziva fajla.
+    Podaci o kartici + link za Google recenziju.
     Slika se skida na računar, staff je priloži ručno.
     """
     del share_image_url  # namjerno se ne šalje u poruci
@@ -1032,18 +1331,18 @@ def loyalty_card_caption(card, *, share_image_url=''):
     if next_tier:
         preostalo = max(Decimal('0'), next_tier['od'] - card.ukupna_potrosnja)
     if next_tier and preostalo is not None:
-        next_line = (
-            f'Još {preostalo.quantize(Decimal("0.01"))} KM do nivoa '
-            f'{next_tier["label"]} ({next_tier["postotak"]}%)'
-        )
+        km = preostalo.quantize(Decimal('1') if preostalo == preostalo.to_integral() else Decimal('0.01'))
+        next_line = f'Jos {km} KM do nivoa {next_tier["label"]} ({int(next_tier["postotak"])}%)'
     else:
-        next_line = 'Najviši nivo — maksimalni popust'
-
+        next_line = 'Najvisi nivo, maksimalni popust'
     return '\n'.join([
-        'Vaša loyalty kartica — opremazaribolov.ba',
-        f'Nivo: {tier["label"]} · Popust: {tier["postotak"]}%',
+        'Vasa loyalty kartica - opremazaribolov.ba',
+        f'Nivo: {tier["label"]} - Popust: {int(tier["postotak"])}%',
         next_line,
         f'Broj kartice: {card.kod}',
+        '',
+        'Ostavi recenziju:',
+        LOYALTY_REVIEW_URL,
     ])
 
 

@@ -17950,6 +17950,131 @@ button.nav-action-link {
     transform: translateY(-1px);
 }
 
+.loyalty-find {
+    margin-top: 22px;
+}
+.loyalty-find-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.loyalty-find-field {
+    position: relative;
+    flex: 1 1 280px;
+    min-width: 0;
+}
+.loyalty-find-field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 88px 0 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    color: #111827;
+    font: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+.loyalty-find-field input::placeholder {
+    color: #9ca3af;
+}
+.loyalty-find-field input:focus {
+    outline: none;
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.loyalty-find-scan,
+.loyalty-find-go {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 8px;
+}
+.loyalty-find-scan { right: 42px; }
+.loyalty-find-go { right: 6px; }
+.loyalty-find-scan:hover,
+.loyalty-find-go:hover { color: #111827; background: #f3f4f6; }
+.loyalty-find-name,
+.loyalty-find-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    background: #fff;
+    color: #111827;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.loyalty-find-name:hover,
+.loyalty-find-filter:hover {
+    background: #f9fafb;
+}
+.loyalty-find-name.is-on,
+.loyalty-find-filter.is-on {
+    border-color: #2563eb;
+    color: #1d4ed8;
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.loyalty-find-caret { margin-left: 2px; }
+.loyalty-find-filters { position: relative; }
+.loyalty-find-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
+    min-width: 200px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+.loyalty-find-menu p {
+    margin: 0 8px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #9ca3af;
+}
+.loyalty-find-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #111827;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+.loyalty-find-menu button:hover { background: #f3f4f6; }
+.loyalty-find-menu button.is-on {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
 .staff-loyalty-search-label {
     display: block;
     margin-bottom: 8px;
@@ -19584,6 +19709,11 @@ button.nav-action-link {
         width: 100%;
         min-height: 46px;
     }
+
+    .loyalty-find-row { flex-direction: column; align-items: stretch; }
+    .loyalty-find-name,
+    .loyalty-find-filter { width: 100%; }
+    .loyalty-find-menu { left: 0; right: 0; }
 
     .staff-loyalty-issue-grid {
         grid-template-columns: 1fr;

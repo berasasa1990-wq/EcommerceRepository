@@ -24,7 +24,7 @@
     {% csrf_token %}
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
         <h2 class="mg-h">Kupac</h2>
-        <p class="mg-muted">Pretraži postojećeg ili dodaj novog. Kad ga sačuvaš, otvara se katalog.</p>
+        <p class="mg-muted">Pretraži postojećeg ili dodaj novog. Kad ga sačuvaš, ide unos artikala.</p>
         <div class="mg-field mg-loc-search" id="mgCustomerSearchWrap">
             <label for="mgCustomerSearch">Ime ili telefon</label>
             <input id="mgCustomerSearch" type="search" placeholder="Ukucaj ime ili telefon…" autocomplete="off" value="{{ form.ime_prezime|default:'' }}">
@@ -45,21 +45,16 @@
     </section>
 
     <div class="mg-order-build" id="mgOrderBuild" hidden>
-    <section class="mg-card" id="mgOrderCatalogCard">
-        <h2 class="mg-h">Katalog</h2>
-        <div class="mg-field">
-            <label for="mgOrderSearch">Pretraga</label>
-            <input id="mgOrderSearch" type="search" placeholder="Riječ, naziv, šifra ili barkod…" autocomplete="off">
-            <input id="mgOrderQty" class="mg-qty-input" type="number" min="1" step="1" inputmode="numeric" placeholder="Kol." hidden aria-label="Količina">
-            <label class="mg-zero-check" style="margin-top:8px;">
-                <input type="checkbox" id="mgOrderOnlyInStock" value="1">
-                Samo na stanju
-            </label>
-            <p id="mgOrderPickLabel" class="mg-pick-label" hidden></p>
-            <p id="mgOrderQtyHint" class="mg-qty-hint" hidden></p>
+    <section class="mg-card vp-box vp-search" id="mgOrderSearchBox">
+        <div class="vp-row vp-entry">
+            <input type="search" id="mgOrderSearch" placeholder="Naziv, šifra ili barkod" autocomplete="off">
+            <button type="button" class="vp-scan-btn" id="mgOrderScan" data-mg-scan-target="mgOrderSearch" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skener
+            </button>
         </div>
-        <p class="mg-muted" id="mgOrderCatalogMeta" style="margin:10px 0 8px;">Ukucaj riječ da izlista katalog.</p>
-        <div class="mg-catalog" id="mgOrderCatalog"></div>
+        <ul class="vp-suggest" id="mgOrderSuggest" hidden></ul>
+        <p id="mgOrderQtyHint" class="mg-qty-hint" hidden></p>
     </section>
 
     <section class="mg-card mg-order-added">
@@ -102,7 +97,7 @@
             </tbody>
         </table>
         </div>
-        <p id="mgOrderEmpty" class="mg-empty"{% if form_lines %} hidden{% endif %}>Još nema stavki. Pretraži artikal iznad.</p>
+        <p id="mgOrderEmpty" class="mg-empty"{% if form_lines %} hidden{% endif %}>Još nema stavki. Unesi artikal — Tab na količinu, Tab doda i spremi novi.</p>
         <div class="mg-order-total">
             <span class="mg-order-ship" id="mgOrderShip">Dostava 11 KM</span>
             Ukupno: <strong id="mgOrderTotal">0.00 KM</strong>
@@ -139,6 +134,20 @@
         <div class="mg-modal-actions">
             <button type="button" class="mg-btn" data-customer-close>Odustani</button>
             <button type="button" class="mg-btn mg-btn-primary" id="mgCustomerSave">Sačuvaj kupca</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="mgOrderQtyModal" hidden>
+    <div class="mg-modal-bg" data-order-qty-close></div>
+    <div class="mg-modal-panel vp-qty-panel" role="dialog">
+        <p class="vp-qty-kicker">Količina</p>
+        <h2 id="mgOrderQtyName">Artikal</h2>
+        <p id="mgOrderQtyMeta" class="vp-qty-meta"></p>
+        <input id="mgOrderQty" class="vp-qty-big" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Količina">
+        <div class="vp-qty-actions">
+            <button type="button" class="mg-btn" data-order-qty-close>Otkaži</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="mgOrderQtyAdd">Dodaj</button>
         </div>
     </div>
 </div>
