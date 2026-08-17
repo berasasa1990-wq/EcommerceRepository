@@ -11,6 +11,13 @@
             <strong>#{{ order.broj }}</strong>
             <span>{{ order.ime_prezime }}{% if order.pick_claimed_name %} · Preuzeo {{ order.pick_claimed_name }}{% endif %}</span>
         </div>
+        {% if order.pick_claimed_name or order.pick_claimed_by_id %}
+        <form method="post" action="{% url 'staff_magacin_pakuj_oslobodi' order.broj %}" class="pk-release pk-release-bar">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'staff_magacin_pakuj' %}">
+            <button type="submit">Skini</button>
+        </form>
+        {% endif %}
         <a class="pk-check-btn{% if mp_count %} is-blink{% endif %}" href="{% url 'staff_magacin_pakuj_provjera' %}">
             Provjera{% if mp_count %} <i>{{ mp_count }}</i>{% endif %}
         </a>

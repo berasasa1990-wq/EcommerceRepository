@@ -672,24 +672,7 @@ def magacin_artikli(request):
             'rezervisano': 0,
             'dostupno': 0,
         }
-        rows.append({'product': product, **totals, 'locations': []})
-    locs_by_product = {}
-    if product_ids:
-        for stock in (
-            countable_stock_qs(WarehouseStock.objects.filter(product_id__in=product_ids, kolicina__gt=0))
-            .select_related('location')
-            .order_by('location__sifra')
-        ):
-            dostupno = max(0, int(stock.kolicina or 0) - max(0, int(stock.rezervisano or 0)))
-            if dostupno <= 0:
-                continue
-            locs_by_product.setdefault(stock.product_id, []).append({
-                'sifra': stock.location.sifra,
-                'naziv': stock.location.naziv,
-                'dostupno': dostupno,
-            })
-    for row in rows:
-        row['locations'] = locs_by_product.get(row['product'].pk) or []
+        rows.append({'product': product, **totals})
     page.object_list = rows
     context.update({
         'page': page,
@@ -2418,6 +2401,22 @@ def claim_order_pick(order, user):
     return True, order.pick_claimed_name
 
 
+def release_order_pick(order):
+    """Skini preuzimanje da nalog može uzeti neko drugi."""
+    if not order.pick_claimed_by_id and not (order.pick_claimed_name or '').strip():
+        return False, ''
+    name = _pick_claim_name(order)
+    order.pick_claimed_by = None
+    order.pick_claimed_at = None
+    order.pick_claimed_name = ''
+    order.save(update_fields=['pick_claimed_by', 'pick_claimed_at', 'pick_claimed_name'])
+    return True, name
+
+
+def _pakuj_zauzeto_url(broj):
+    return f"{reverse('staff_magacin_pakuj')}?{urlencode({'zauzeto': broj})}"
+
+
 def apply_mp_check(group_lines, *, found):
     by_broj = {}
     for line in group_lines:
@@ -2550,7 +2549,7 @@ def magacin_pakuj_sken(request):
             request,
             f'Narudžbu #{order.broj} je već preuzeo {holder or "drugi radnik"}.',
         )
-        return redirect('staff_magacin_pakuj')
+        return redirect(_pakuj_zauzeto_url(order.broj))
     if order_needs_mp_check(order):
         messages.warning(
             request,
@@ -2621,13 +2620,50 @@ def pending_vp_orders():
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_pakuj(request):
+    claimed_order = None
+    zauzeto = (request.GET.get('zauzeto') or '').strip()
+    if zauzeto:
+        claimed_order = (
+            _unvalidated_orders_qs()
+            .filter(broj=zauzeto)
+            .exclude(pick_claimed_name='')
+            .first()
+        )
+        if claimed_order is None:
+            claimed_order = (
+                _unvalidated_orders_qs()
+                .filter(broj=zauzeto, pick_claimed_by__isnull=False)
+                .first()
+            )
     context = _magacin_context(request, section='pakuj', page_title='Picking — Magacin')
     context.update({
         'pick_fullscreen': True,
         'prenos_mp_jobs': pending_prenos_mp_jobs(),
         'vp_orders': pending_vp_orders(),
+        'claimed_order': claimed_order,
     })
     return render(request, 'staff/magacin/pakuj.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def magacin_pakuj_oslobodi(request, broj):
+    order = get_object_or_404(_unvalidated_orders_qs(), broj=broj)
+    released, holder = release_order_pick(order)
+    if released:
+        messages.success(
+            request,
+            f'Skinuto preuzimanje #{order.broj}'
+            + (f' ({holder})' if holder else '')
+            + '. Sada je može preuzeti neko drugi.',
+        )
+    else:
+        messages.info(request, f'Narudžba #{order.broj} nije preuzeta.')
+    next_url = (request.POST.get('next') or '').strip()
+    if not next_url:
+        next_url = reverse('staff_magacin_pakuj')
+    return redirect(next_url)
 
 
 @login_required(login_url='login')
@@ -2652,7 +2688,7 @@ def magacin_pakuj_provjera(request):
                 request,
                 f'Narudžbu #{focus_order.broj} je već preuzeo {holder or "drugi radnik"}.',
             )
-            return redirect('staff_magacin_pakuj')
+            return redirect(_pakuj_zauzeto_url(focus_order.broj))
     if focus_order:
         groups = collect_mp_checks([focus_order])
     else:
@@ -2722,7 +2758,7 @@ def magacin_pakuj_detail(request, broj):
             request,
             f'Narudžbu #{order.broj} je već preuzeo {holder or "drugi radnik"}.',
         )
-        return redirect('staff_magacin_pakuj')
+        return redirect(_pakuj_zauzeto_url(order.broj))
     prenos_mp = is_prenos_mp_order(order)
     if not prenos_mp and order_needs_mp_check(order):
         if request.method == 'POST' and (request.POST.get('action') or '') == 'pick_save':

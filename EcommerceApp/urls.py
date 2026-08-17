@@ -174,6 +174,11 @@ urlpatterns = [
     path('nalog/magacin/pakuj/provjera/', views_magacin.magacin_pakuj_provjera, name='staff_magacin_pakuj_provjera'),
     path('nalog/magacin/pakuj/sken/', views_magacin.magacin_pakuj_sken, name='staff_magacin_pakuj_sken'),
     path(
+        'nalog/magacin/pakuj/<str:broj>/oslobodi/',
+        views_magacin.magacin_pakuj_oslobodi,
+        name='staff_magacin_pakuj_oslobodi',
+    ),
+    path(
         'nalog/magacin/pakuj/<str:broj>/stampaj-zapakovano/',
         views_magacin.magacin_pakuj_stampaj_zapakovano,
         name='staff_magacin_pakuj_stampaj_zapakovano',

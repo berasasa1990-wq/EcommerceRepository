@@ -1614,11 +1614,63 @@ body.is-vp #mgScanModal .mg-btn {
     line-height: 1.35;
 }
 .mg-pick-claim {
-    display: block;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-top: 4px;
     font-size: 12px;
     font-weight: 700;
     color: #28403d;
+}
+.mg-pick-claim form { display: inline; }
+.mg-pick-release {
+    border: 1px solid #d7dcde;
+    background: #fff;
+    color: #28403d;
+    border-radius: 6px;
+    min-height: 24px;
+    padding: 0 8px;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.mg-pick-release:hover { background: #f3f5f4; }
+.pk-release {
+    margin: 10px 16px 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff7ed;
+    color: #9a3412;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.pk-release p { margin: 0; font-weight: 700; font-size: 14px; }
+.pk-release button,
+.pk-release-bar button {
+    border: 0;
+    border-radius: 8px;
+    background: #111;
+    color: #fff;
+    min-height: 36px;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.pk-release-bar {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+.pk-release-bar button {
+    min-height: 32px;
+    background: #fff7ed;
+    color: #9a3412;
 }
 .mg-pick-short-detail {
     margin: 0 0 12px;

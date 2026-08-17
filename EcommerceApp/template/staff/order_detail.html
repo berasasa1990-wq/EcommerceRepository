@@ -18,6 +18,13 @@
             · Preuzeo {{ order.pick_claimed_name }}
             {% endif %}
         </p>
+        {% if order.pick_claimed_name and order.lager_status == 'rezervisano' %}
+        <form method="post" action="{% url 'staff_magacin_pakuj_oslobodi' order.broj %}" style="margin:8px 0 0">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="mg-btn">Skini preuzimanje</button>
+        </form>
+        {% endif %}
     </div>
     <div class="mg-toolbar-actions">
         {% if order.lager_status == 'rezervisano' %}

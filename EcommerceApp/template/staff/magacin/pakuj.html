@@ -14,6 +14,14 @@
         {% for message in messages %}{{ message }}{% endfor %}
     </div>
     {% endif %}
+    {% if claimed_order %}
+    <form method="post" action="{% url 'staff_magacin_pakuj_oslobodi' claimed_order.broj %}" class="pk-release">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'staff_magacin_pakuj' %}">
+        <p>Preuzeo {{ claimed_order.pick_claimed_name|default:"drugi radnik" }} — #{{ claimed_order.broj }}</p>
+        <button type="submit">Skini preuzimanje</button>
+    </form>
+    {% endif %}
     {% if prenos_mp_jobs %}
     <section class="pk-mp-list pk-jobs is-prenos">
         <h2>Prenos u MP</h2>

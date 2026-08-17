@@ -61,7 +61,7 @@
         <span></span>
         <span>ARTIKAL</span>
         <span>ŠIFRA</span>
-        <span>LOKACIJE I DOSTUPNO</span>
+        <span>STANJE</span>
         <span>STATUS</span>
     </div>
     {% for row in page %}
@@ -77,11 +77,11 @@
         </span>
         <span>{{ row.product.sifra|default:"—" }}</span>
         <span class="mg-loc-inline">
-            {% for loc in row.locations %}
-            <i><b>{{ loc.sifra }}</b> {{ loc.dostupno }}</i>
-            {% empty %}
+            {% if row.na_stanju > 0 %}
+            <i>Na stanju</i>
+            {% else %}
             <i class="is-empty">Nema zalihe</i>
-            {% endfor %}
+            {% endif %}
         </span>
         <span>
             {% if row.na_stanju <= 0 %}
