@@ -606,7 +606,7 @@ class OdooClient:
         email = (email or '').strip().lower()
         zip_code = (zip_code or '').strip()
         comment = (comment or '').strip()
-        dummy_emails = {'rucna@opremazaribolov.ba'}
+        dummy_emails = {'carpologijabh@gmail.com'}
         if email in dummy_emails:
             email = ''
 

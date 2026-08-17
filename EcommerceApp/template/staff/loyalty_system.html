@@ -298,6 +298,60 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                     <button type="submit">Pretraži</button>
                 </form>
             </div>
+            {% endif %}
+
+            <div class="loy-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Broj kartice</th>
+                            <th>Član</th>
+                            <th>Nivo</th>
+                            <th>Bodovi</th>
+                            <th>Potrošnja</th>
+                            <th>Datum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for card in table_cards %}
+                        <tr onclick="window.location='{{ card.desk_url }}'">
+                            <td class="num"><a class="row" href="{{ card.desk_url }}">{{ card.kod }}</a></td>
+                            <td>{{ card.user.get_full_name|default:"—" }}</td>
+                            <td><span class="loy-badge {{ card.nivo }} {{ card.desk_tier|lower }}">{{ card.desk_tier }}</span></td>
+                            <td>{{ card.desk_points_fmt }}</td>
+                            <td>{{ card.desk_spend_fmt }} KM</td>
+                            <td class="muted">{{ card.azurirana|date:"d.m.Y. H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">{% if searched %}Nema rezultata.{% else %}Još nema članova.{% endif %}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <div class="loy-foot">
+                    <span>Prikazano {{ table_page.start_index|default:0 }} do {{ table_page.end_index|default:0 }} od {{ table_page.paginator.count|default:0 }} članova</span>
+                    {% if table_page.paginator.num_pages > 1 %}
+                    <div class="loy-pages">
+                        {% if table_page.has_previous %}
+                        <a href="?page={{ table_page.previous_page_number }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">‹</a>
+                        {% endif %}
+                        {% for item in page_items %}
+                            {% if item == '...' %}
+                            <span class="dots">…</span>
+                            {% elif item == table_page.number %}
+                            <span class="is-on">{{ item }}</span>
+                            {% else %}
+                            <a href="?page={{ item }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">{{ item }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if table_page.has_next %}
+                        <a href="?page={{ table_page.next_page_number }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">›</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if desk_tab != 'novi' %}
             <div class="loy-search-card loy-ledger" id="loyLedger">
                 <p class="loy-kicker">Kupovine po godinama</p>
                 <p class="loy-sub">Izlistaj kupovine svih kupaca za odabranu godinu.</p>
@@ -358,57 +412,6 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                 </div>
             </div>
             {% endif %}
-
-            <div class="loy-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Broj kartice</th>
-                            <th>Član</th>
-                            <th>Nivo</th>
-                            <th>Bodovi</th>
-                            <th>Potrošnja</th>
-                            <th>Datum</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for card in table_cards %}
-                        <tr onclick="window.location='{{ card.desk_url }}'">
-                            <td class="num"><a class="row" href="{{ card.desk_url }}">{{ card.kod }}</a></td>
-                            <td>{{ card.user.get_full_name|default:"—" }}</td>
-                            <td><span class="loy-badge {{ card.nivo }} {{ card.desk_tier|lower }}">{{ card.desk_tier }}</span></td>
-                            <td>{{ card.desk_points_fmt }}</td>
-                            <td>{{ card.desk_spend_fmt }} KM</td>
-                            <td class="muted">{{ card.azurirana|date:"d.m.Y. H:i" }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="6">{% if searched %}Nema rezultata.{% else %}Još nema članova.{% endif %}</td></tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                <div class="loy-foot">
-                    <span>Prikazano {{ table_page.start_index|default:0 }} do {{ table_page.end_index|default:0 }} od {{ table_page.paginator.count|default:0 }} članova</span>
-                    {% if table_page.paginator.num_pages > 1 %}
-                    <div class="loy-pages">
-                        {% if table_page.has_previous %}
-                        <a href="?page={{ table_page.previous_page_number }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">‹</a>
-                        {% endif %}
-                        {% for item in page_items %}
-                            {% if item == '...' %}
-                            <span class="dots">…</span>
-                            {% elif item == table_page.number %}
-                            <span class="is-on">{{ item }}</span>
-                            {% else %}
-                            <a href="?page={{ item }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">{{ item }}</a>
-                            {% endif %}
-                        {% endfor %}
-                        {% if table_page.has_next %}
-                        <a href="?page={{ table_page.next_page_number }}{% if loyalty_search_query %}&amp;q={{ loyalty_search_query|urlencode }}{% endif %}{% if loyalty_search_mode and loyalty_search_mode != 'code' %}&amp;mode={{ loyalty_search_mode }}{% endif %}{% if desk_tab == 'novi' %}&amp;tab=novi{% endif %}">›</a>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
         </div>
 
         <aside class="loy-side">
