@@ -1723,7 +1723,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(print_ok, 'Online Narudžbe br.')
         self.assertContains(print_ok, 'd.o.o. CarpologijaBH')
         self.assertContains(print_ok, 'carpologijabh@gmail.com')
-        self.assertContains(print_ok, 'sajt carpologijebh')
+        self.assertContains(print_ok, 'sajt www.opremazaribolov.ba')
         self.assertNotContains(print_ok, 'class="doc-logo"')
         gone = self.client.get(reverse('staff_magacin_pakuj_provjera'))
         self.assertEqual(gone.context['groups'], [])
@@ -2094,7 +2094,7 @@ class OdooCustomerAddressTests(TestCase):
             street='Druga 5',
             city='Mostar',
             phone='061111111',
-            email='rucna@opremazaribolov.ba',
+            email='carpologijabh@gmail.com',
         )
         self.assertTrue(created)
         self.assertEqual(partner_id, 88)
