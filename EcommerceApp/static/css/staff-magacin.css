@@ -423,6 +423,16 @@
     font-weight: 600;
 }
 .mg-nav a.is-active svg { color: var(--mg-green-text); }
+.mg-nav a.is-blink-pack {
+    animation: mg-pack-blink 1.2s ease-in-out infinite;
+}
+.mg-nav a.is-blink-pack .mg-nav-count {
+    background: #16a34a;
+}
+@keyframes mg-pack-blink {
+    0%, 100% { background: #ecfdf3; box-shadow: inset 0 0 0 1px rgba(22, 163, 74, .18); }
+    50% { background: #86efac; box-shadow: inset 0 0 0 1px rgba(22, 163, 74, .45); }
+}
 .mg-mode-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -2607,6 +2617,54 @@ tr.is-mp-lock {
 .pk-cam-xl svg {
     width: 28px;
     height: 28px;
+}
+.pk-open-num {
+    width: min(320px, 86vw);
+    margin-top: 22px;
+}
+.pk-open-num label {
+    display: block;
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--mg-muted);
+}
+.pk-open-row {
+    display: flex;
+    gap: 8px;
+}
+.pk-open-row input {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--mg-line);
+    border-radius: 12px;
+    background: #fff;
+    font: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+.pk-open-row input:focus {
+    outline: none;
+    border-color: #86efac;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, .15);
+}
+.pk-open-row button {
+    flex: 0 0 auto;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 12px;
+    background: #111;
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
 }
 .pk-search {
     display: flex;

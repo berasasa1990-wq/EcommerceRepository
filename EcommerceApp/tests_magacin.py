@@ -1516,6 +1516,8 @@ class MagacinViewTests(TestCase):
         self.assertContains(listing, 'data-mg-scan-target="pkListSearch"')
         self.assertContains(listing, reverse('staff_magacin_pakuj_sken'))
         self.assertContains(listing, 'Skeniraj narudžbu')
+        self.assertContains(listing, 'id="pkOrderNo"')
+        self.assertContains(listing, 'value="#"')
         self.assertNotContains(listing, order.ime_prezime)
         png = self.client.get(reverse('staff_magacin_narudzba_barkod', args=[order.broj]))
         self.assertEqual(png.status_code, 200)
@@ -1566,6 +1568,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(pick_after['Location'], reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         opened_num = self.client.get(reverse('staff_magacin_pakuj_sken'), {'q': order.broj})
         self.assertEqual(opened_num['Location'], reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        opened_hash = self.client.get(reverse('staff_magacin_pakuj_sken'), {'q': f'#{order.broj}'})
+        self.assertEqual(opened_hash['Location'], reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         missing = self.client.get(reverse('staff_magacin_pakuj_sken'), {'q': 'OZB9999'})
         self.assertEqual(missing.status_code, 302)
         self.assertEqual(missing['Location'], reverse('staff_magacin_pakuj'))
@@ -1654,7 +1658,9 @@ class MagacinViewTests(TestCase):
         self.assertIn('/nalog/magacin/narudzbe/', response['Location'])
         listed = self.client.get(reverse('staff_magacin_artikli'))
         self.assertContains(listed, 'mg-nav-count')
-        self.assertContains(listed, '1 novih narudžbi')
+        self.assertContains(listed, '1 za pakovanje')
+        self.assertContains(listed, 'is-blink-pack')
+        self.assertNotContains(listed, 'novih narudžbi')
 
     def test_manual_order_without_stock_requires_mp(self):
         self.client.force_login(self.user)

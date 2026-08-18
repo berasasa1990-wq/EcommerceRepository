@@ -1321,7 +1321,7 @@ def osiguraj_loyalty_karticu(user):
     card = getattr(user, 'loyalty_kartica', None)
     if card:
         osiguraj_sestocifreni_kod(card)
-        return preracunaj_potrosnju_kartice(card)
+        return card
     return kreiraj_loyalty_karticu(user)
 
 

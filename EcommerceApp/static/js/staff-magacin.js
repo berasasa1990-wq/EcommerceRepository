@@ -1807,6 +1807,33 @@ function initArticleScanner() {
         });
         input.focus();
     }
+    var numForm = document.getElementById('pkOpenNum');
+    var numInput = document.getElementById('pkOrderNo');
+    function keepHashPrefix() {
+        if (!numInput) return;
+        var digits = String(numInput.value || '').replace(/\D/g, '');
+        numInput.value = '#' + digits;
+    }
+    if (numInput) {
+        keepHashPrefix();
+        numInput.addEventListener('input', keepHashPrefix);
+        numInput.addEventListener('focus', function () {
+            keepHashPrefix();
+            try { numInput.setSelectionRange(numInput.value.length, numInput.value.length); } catch (e) {}
+        });
+    }
+    if (numForm) {
+        numForm.addEventListener('submit', function (event) {
+            keepHashPrefix();
+            var digits = String(numInput && numInput.value || '').replace(/\D/g, '');
+            if (!digits) {
+                event.preventDefault();
+                if (numInput) numInput.focus();
+                return;
+            }
+            if (numInput) numInput.value = '#' + digits;
+        });
+    }
 })();
 
 (function initPickEngine() {
