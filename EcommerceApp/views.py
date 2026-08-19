@@ -5211,6 +5211,7 @@ def _magacin_hold_picks(order, items):
                 'location_id': loc.pk,
                 'take': hold.kolicina,
                 'on_hand': hold.kolicina,
+                'location_path': loc.odoo_location_path or loc.naziv or '',
             })
             taken += hold.kolicina
         picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
@@ -5247,7 +5248,7 @@ def _build_order_packing_lines(order):
     from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
 
     items = list(
-        order.stavke.select_related('artikal', 'varijacija').all()
+        order.stavke.select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija').all()
     )
     lines = []
     odoo_error = None
@@ -5328,6 +5329,13 @@ def _build_order_packing_lines(order):
             display_name = f'{display_name} — {item.varijacija_naziv}'
 
         product = item.artikal
+        brend = ''
+        kategorija = ''
+        if product is not None:
+            if getattr(product, 'brend', None):
+                brend = product.brend.naziv or ''
+            if getattr(product, 'kategorija', None):
+                kategorija = product.kategorija.naziv or ''
         variation = item.varijacija
         barkod = ''
         slika = ''
@@ -5355,6 +5363,8 @@ def _build_order_packing_lines(order):
             'sifra': item.sifra or '',
             'barkod': barkod,
             'slika': slika,
+            'brend': brend,
+            'kategorija': kategorija,
             'kolicina': item.kolicina,
             'odoo_product_id': odoo_product_id,
             'picks': picks,

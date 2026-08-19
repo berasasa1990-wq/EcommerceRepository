@@ -2,12 +2,15 @@
 
 {% block magacin_content %}
 <div class="pk-app pk-scan-only" id="pkListApp">
-    <header class="pk-bar">
+    <header class="pk-bar pk-bar-dark">
         <a class="pk-bar-back" href="{% url 'staff_magacin_narudzbe' %}">←</a>
         <div class="pk-bar-title">
             <strong>Picking</strong>
             <span>Skeniraj narudžbu</span>
         </div>
+        <button type="button" class="pk-bar-scan" id="pkOrderScanTop" data-mg-scan-target="pkListSearch" data-mg-scan-title="Skeniraj narudžbu" aria-label="Skener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+        </button>
     </header>
     {% if messages %}
     <div class="pk-alert">
@@ -21,6 +24,18 @@
         <p>Preuzeo {{ claimed_order.pick_claimed_name|default:"drugi radnik" }} — #{{ claimed_order.broj }}</p>
         <button type="submit">Skini preuzimanje</button>
     </form>
+    {% endif %}
+    {% if mp_pending_count %}
+    <section class="pk-mp-list pk-jobs is-check">
+        <h2>Provjera MP</h2>
+        <a class="pk-mp-card pk-job is-check" href="{% url 'staff_magacin_pakuj_provjera' %}?next=pick">
+            <div class="pk-job-body">
+                <strong>Ima u MP / Nema</strong>
+                <span>{{ mp_pending_count }} artikl{{ mp_pending_count|pluralize:"a,a" }} bez zalihe. Picking kreće poslije provjere.</span>
+            </div>
+            <em class="pk-job-qty">{{ mp_pending_count }}</em>
+        </a>
+    </section>
     {% endif %}
     {% if prenos_mp_jobs %}
     <section class="pk-mp-list pk-jobs is-prenos">
@@ -55,10 +70,10 @@
             <a class="pk-print-packed" href="{% url 'staff_magacin_pakuj_stampaj_zapakovano' order.broj %}">Štampaj zapakovano</a>
         </div>
         {% else %}
-        <a class="pk-mp-card pk-job is-vp" href="{% if order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=pick{% else %}{% url 'staff_magacin_pakuj_detail' order.broj %}{% endif %}">
+        <a class="pk-mp-card pk-job is-vp" href="{% url 'staff_magacin_pakuj_detail' order.broj %}">
             <div class="pk-job-body">
                 <strong>{{ order.ime_prezime }}</strong>
-                <span>#{{ order.broj }} · {{ order.vp_stavki }} stavki{% if order.needs_mp_check %} · Provjera MP{% endif %}</span>
+                <span>#{{ order.broj }} · {{ order.vp_stavki }} stavki</span>
             </div>
             <em class="pk-job-sum">{{ order.ukupno }}</em>
         </a>

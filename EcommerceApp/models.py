@@ -3879,6 +3879,17 @@ class Order(models.Model):
         blank=True,
         verbose_name='Zapakovana u',
     )
+    packing_odstampana = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Packing odštampan',
+        help_text='Odštampan packing list (lokacije po kupcu). Skida se s liste narudžbi.',
+    )
+    packing_odstampana_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Packing odštampan u',
+    )
     stanje_skinuto = models.BooleanField(
         default=False,
         db_index=True,

@@ -43,7 +43,7 @@
         </div>
         {% endif %}
         <div class="vp-row">
-            <input type="search" id="vpCustomerSearch" placeholder="Kupac — ime ili telefon" autocomplete="off">
+            <input type="search" id="vpCustomerSearch" placeholder="Klikni da vidiš kupce, ili ukucaj ime / telefon" autocomplete="off">
             <button type="button" class="mg-btn" id="vpCustomerAdd">+ Kupac</button>
         </div>
         <ul class="vp-suggest" id="vpCustomerSuggest" hidden></ul>
@@ -55,14 +55,16 @@
     </section>
 
     <section class="vp-box vp-search" data-lookup="{{ lookup_url }}">
-        <div class="vp-row vp-entry">
+        <div class="vp-row vp-entry has-catalog">
             <input type="search" id="vpQuery" placeholder="Naziv, šifra ili barkod" autocomplete="off" autofocus>
+            <button type="button" class="mg-btn" id="vpCatalogBtn" aria-pressed="false">Katalog</button>
             <button type="button" class="vp-scan-btn" id="vpScanBtn" data-mg-scan-target="vpQuery" data-mg-scan-title="Skeniraj artikal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
                 Skener
             </button>
         </div>
         <ul class="vp-suggest" id="vpSuggest" hidden></ul>
+        <div id="vpCatalog" class="mg-catalog" hidden></div>
     </section>
     <form method="post" id="vpAddForm" hidden>
         {% csrf_token %}
@@ -82,7 +84,7 @@
         </div>
         <ul class="vp-lines" id="vpLines">
             {% for row in stavke %}
-            <li data-id="{{ row.pk }}">
+            <li data-id="{{ row.pk }}" data-pid="{{ row.product_id|default:'' }}" data-vid="{{ row.variation_id|default:'' }}">
                 <span class="vp-name">{{ row.naziv }}{% if row.mp_ok %} <i class="vp-mp">Maloprodaja</i>{% endif %}</span>
                 <span class="vp-code">{{ row.sifra|default:"—" }}</span>
                 <form method="post" class="vp-qty-form">
@@ -240,13 +242,13 @@
         custList.hidden = false;
     }
     function searchCustomers(query) {
-        var q = (query || '').trim();
         var url = custBox ? custBox.getAttribute('data-lookup') : '';
-        if (!q || !url) {
+        if (!url) {
             if (custList) custList.hidden = true;
             return;
         }
-        fetch(url + '?q=' + encodeURIComponent(q), {
+        var q = (query || '').trim();
+        fetch(url + (q ? '?q=' + encodeURIComponent(q) : ''), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
         }).then(function (res) { return res.json(); }).then(function (data) {
@@ -275,7 +277,7 @@
             custTimer = window.setTimeout(function () { searchCustomers(custSearch.value); }, 160);
         });
         custSearch.addEventListener('focus', function () {
-            if ((custSearch.value || '').trim()) searchCustomers(custSearch.value);
+            searchCustomers(custSearch.value);
         });
     }
     if (addBtn) addBtn.addEventListener('click', openAdd);
@@ -346,6 +348,8 @@
     var input = document.getElementById('vpQuery');
     var qtyHidden = document.getElementById('vpAddQtyHidden');
     var list = document.getElementById('vpSuggest');
+    var catalog = document.getElementById('vpCatalog');
+    var catalogBtn = document.getElementById('vpCatalogBtn');
     var qtyModal = document.getElementById('vpQtyModal');
     var qtyName = document.getElementById('vpQtyName');
     var qtyMeta = document.getElementById('vpQtyMeta');
@@ -445,6 +449,98 @@
         });
         return rows;
     }
+    function catalogOpen() {
+        return !!(catalog && !catalog.hidden);
+    }
+    function vpLineQty(pid, vid) {
+        if (!linesEl) return 0;
+        var li = linesEl.querySelector('li[data-pid="' + pid + '"][data-vid="' + (vid || '') + '"]');
+        if (!li) return 0;
+        var field = li.querySelector('.vp-qty');
+        return field ? (parseInt(field.value, 10) || 0) : 0;
+    }
+    function vpLineId(pid, vid) {
+        if (!linesEl) return '';
+        var li = linesEl.querySelector('li[data-pid="' + pid + '"][data-vid="' + (vid || '') + '"]');
+        return li ? (li.getAttribute('data-id') || '') : '';
+    }
+    function setCatalog(on) {
+        if (!catalog || !catalogBtn) return;
+        catalog.hidden = !on;
+        catalogBtn.classList.toggle('is-on', on);
+        catalogBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (list) list.hidden = true;
+        if (on) {
+            if ((input.value || '').trim()) search({});
+            else renderCatalog([]);
+        }
+    }
+    function renderCatalog(rows) {
+        if (!catalog) return;
+        catalog.innerHTML = '';
+        if (!rows || !rows.length) {
+            catalog.innerHTML = '<p class="mg-empty">Ukucaj naziv, šifru ili barkod — izlistaće se artikli.</p>';
+            return;
+        }
+        rows.forEach(function (row) {
+            var pid = String(row.id);
+            var vid = String(row.variation_id || '');
+            var qty = vpLineQty(pid, vid);
+            var card = document.createElement('article');
+            card.className = 'mg-catalog-item' + (qty ? ' is-added' : '') + ((row.dostupno || 0) <= 0 ? ' is-out' : '');
+            card.innerHTML =
+                '<strong></strong>' +
+                '<p class="mg-catalog-meta"></p>' +
+                '<div class="mg-catalog-qty">' +
+                '<button type="button" class="mg-btn" data-cat-minus aria-label="Manje">−</button>' +
+                '<em data-cat-qty></em>' +
+                '<button type="button" class="mg-btn" data-cat-plus aria-label="Više">+</button>' +
+                '</div>';
+            card.querySelector('strong').textContent = row.naziv || '';
+            card.querySelector('.mg-catalog-meta').textContent = [
+                row.sifra,
+                row.vp ? row.vp + ' KM' : '',
+                (row.dostupno || 0) + ' na stanju',
+            ].filter(Boolean).join(' · ');
+            card.querySelector('[data-cat-qty]').textContent = String(qty);
+            card.querySelector('[data-cat-minus]').disabled = qty <= 0;
+            card.querySelector('[data-cat-minus]').addEventListener('click', function (event) {
+                event.preventDefault();
+                shiftCatalogQty(row, -1);
+            });
+            card.querySelector('[data-cat-plus]').addEventListener('click', function (event) {
+                event.preventDefault();
+                shiftCatalogQty(row, 1);
+            });
+            catalog.appendChild(card);
+        });
+    }
+    function shiftCatalogQty(row, delta) {
+        var pid = String(row.id);
+        var vid = String(row.variation_id || '');
+        var current = vpLineQty(pid, vid);
+        var stavkaId = vpLineId(pid, vid);
+        if (delta > 0) {
+            picked = row;
+            if (qtyField) qtyField.value = '1';
+            addPicked();
+            return;
+        }
+        if (!stavkaId || current <= 0) {
+            renderCatalog(lastSuggest);
+            return;
+        }
+        var body = new URLSearchParams();
+        if (current <= 1) {
+            body.set('action', 'ukloni');
+            body.set('stavka_id', stavkaId);
+        } else {
+            body.set('action', 'kolicina');
+            body.set('stavka_id', stavkaId);
+            body.set('kolicina', String(current - 1));
+        }
+        postAction(body, function () { renderCatalog(lastSuggest); });
+    }
     function renderSuggest(items) {
         lastSuggest = items || [];
         list.innerHTML = '';
@@ -513,6 +609,7 @@
               }
               if (!result.data || !result.data.ok) return;
               renderLines(result.data.stavke || [], result.data.ukupno);
+              if (catalogOpen()) renderCatalog(lastSuggest);
               if (done) done();
           }).catch(function () { adding = false; });
     }
@@ -553,6 +650,8 @@
             rows.forEach(function (row) {
                 var li = document.createElement('li');
                 li.setAttribute('data-id', row.id);
+                li.setAttribute('data-pid', row.product_id || '');
+                li.setAttribute('data-vid', row.variation_id || '');
                 li.innerHTML =
                     '<span class="vp-name"></span>' +
                     '<span class="vp-code"></span>' +
@@ -600,6 +699,12 @@
         if (mpOk) body.set('mp_ok', '1');
         postAction(body, function () {
             hideMp();
+            if (catalogOpen()) {
+                picked = null;
+                if (qtyField) qtyField.value = '1';
+                closeQty();
+                return;
+            }
             focusQuery();
         });
     }
@@ -609,9 +714,12 @@
         var ticket = ++seq;
         if (q.length < 1) {
             list.hidden = true;
+            lastSuggest = [];
+            if (catalogOpen()) renderCatalog([]);
             return Promise.resolve(null);
         }
-        return fetch(lookup + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=20', {
+        var limit = catalogOpen() ? 80 : 20;
+        return fetch(lookup + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=' + limit, {
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         }).then(function (res) { return res.json(); }).then(function (data) {
@@ -623,9 +731,14 @@
                 openQty(hit);
                 return hit;
             }
-            if (opts.takeFirst && rows.length) {
+            if (opts.takeFirst && rows.length && !catalogOpen()) {
                 openQty(rows[0]);
                 return rows[0];
+            }
+            if (catalogOpen()) {
+                list.hidden = true;
+                renderCatalog(rows);
+                return null;
             }
             renderSuggest(rows);
             return null;
@@ -657,6 +770,12 @@
         window.clearTimeout(timer);
         search({ fromScan: true });
     });
+    if (catalogBtn) {
+        catalogBtn.addEventListener('click', function () {
+            setCatalog(!catalogOpen());
+            input.focus();
+        });
+    }
     if (qtyField) {
         qtyField.addEventListener('keydown', function (event) {
             if (event.key === 'Tab' && event.shiftKey) return;

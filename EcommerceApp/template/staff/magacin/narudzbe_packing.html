@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if print_jobs|length == 1 %}Packing #{{ print_jobs.0.order.broj }}{% else %}Packing {{ print_jobs|length }} narudžbi{% endif %}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 16px;
+            background: #f3f4f6;
+            font-family: Inter, "Segoe UI", Helvetica, Arial, sans-serif;
+            color: #111;
+            line-height: 1.25;
+        }
+        .print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            max-width: 860px;
+            margin: 0 auto 14px;
+            padding: 10px 14px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+        }
+        .print-toolbar p { margin: 0; font-size: 14px; color: #374151; }
+        .print-toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .print-toolbar a,
+        .print-toolbar button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            padding: 6px 12px;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-print { border: none; background: #111; color: #fff; }
+        .btn-back { border: 1px solid #d1d5db; background: #fff; color: #111; }
+        .pack-run {
+            max-width: 860px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 10px 14px 14px;
+            border: 1px solid #d1d5db;
+        }
+        .pack-block {
+            margin: 0;
+            padding: 7px 0 6px;
+            border-bottom: 1px solid #ccc;
+        }
+        .pack-block:last-child { border-bottom: 0; }
+        .pack-who {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 8px 14px;
+            margin: 0 0 4px;
+            font-size: 13px;
+        }
+        .pack-who strong { font-size: 14px; }
+        .pack-who span { color: #444; }
+        .pack-lines {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .pack-lines td {
+            padding: 1px 6px 1px 0;
+            vertical-align: top;
+            font-size: 12px;
+        }
+        .pack-lines .col-qty {
+            width: 2.4em;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            padding-right: 8px;
+        }
+        .pack-lines .col-loc {
+            width: 38%;
+            white-space: nowrap;
+        }
+        .pk-loc { font-weight: 700; }
+        .pack-empty { color: #666; font-size: 12px; }
+        @page { size: A4 portrait; margin: 8mm; }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .print-toolbar { display: none !important; }
+            .pack-run { max-width: none; margin: 0; padding: 0; border: 0; }
+            .pack-block {
+                page-break-before: auto;
+                page-break-after: auto;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-toolbar">
+        <p>
+            {% if print_jobs|length == 1 %}
+            <strong>Packing #{{ print_jobs.0.order.broj }}</strong> — {{ print_jobs.0.order.ime_prezime }}
+            {% else %}
+            <strong>{{ print_jobs|length }} narudžbi</strong> na listu — kupac, šta je uzeo, odakle
+            {% endif %}
+        </p>
+        <div class="print-toolbar-actions">
+            <a class="btn-back" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+            <button type="button" class="btn-print" id="printPackingBtn">Štampaj</button>
+        </div>
+    </div>
+
+    <div class="pack-run">
+        {% for job in print_jobs %}
+        <section class="pack-block">
+            <div class="pack-who">
+                <strong>{{ job.order.ime_prezime }}</strong>
+                <span>#{{ job.order.broj }}</span>
+                {% if job.order.telefon %}<span>{{ job.order.telefon }}</span>{% endif %}
+            </div>
+            {% if job.packing_lines %}
+            <table class="pack-lines">
+                {% for line in job.packing_lines %}
+                <tr>
+                    <td class="col-qty">{{ line.kolicina }}</td>
+                    <td>{{ line.naziv }}{% if line.sifra %} <span>({{ line.sifra }})</span>{% endif %}</td>
+                    <td class="col-loc">
+                        {% for pick in line.picks %}
+                        <span class="pk-loc">{{ pick.take }}× {{ pick.location_name }}</span>{% if not forloop.last %} · {% endif %}
+                        {% empty %}—{% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p class="pack-empty">Nema pokupljenih stavki.</p>
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+
+    <script>
+    (function () {
+        var btn = document.getElementById('printPackingBtn');
+        if (btn) btn.addEventListener('click', function () { window.print(); });
+        window.addEventListener('load', function () {
+            window.setTimeout(function () { window.print(); }, 250);
+        });
+    })();
+    </script>
+</body>
+</html>

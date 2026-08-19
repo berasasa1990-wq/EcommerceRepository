@@ -381,14 +381,11 @@ function initCustomerPicker() {
         list.hidden = false;
     }
     function searchCustomers(query) {
+        if (!lookupUrl) return;
         var q = (query || '').trim();
-        if (!q) {
-            if (list) list.hidden = true;
-            lastResults = [];
-            return;
-        }
-        fetch(lookupUrl + '?q=' + encodeURIComponent(q), {
+        fetch(lookupUrl + (q ? '?q=' + encodeURIComponent(q) : ''), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
         })
             .then(function (res) { return res.json(); })
             .then(function (data) { renderList(data.results || []); })
@@ -405,8 +402,8 @@ function initCustomerPicker() {
         timer = window.setTimeout(function () { searchCustomers(search.value); }, 160);
     });
     search.addEventListener('focus', function () {
-        if ((search.value || '').trim() && lastResults.length) renderList(lastResults);
-        else if ((search.value || '').trim()) searchCustomers(search.value);
+        if (lastResults.length && !(search.value || '').trim()) renderList(lastResults);
+        else searchCustomers(search.value);
     });
     if (addBtn) addBtn.addEventListener('click', openAddModal);
     if (saveBtn) {
@@ -514,6 +511,8 @@ function initManualOrderForm() {
     var totalEl = document.getElementById('mgOrderTotal');
     var mpModal = document.getElementById('mgMpModal');
     var mpText = document.getElementById('mgMpText');
+    var catalog = document.getElementById('mgOrderCatalog');
+    var catalogBtn = document.getElementById('mgOrderCatalogBtn');
     var lookupUrl = form.getAttribute('data-lookup-url') || '';
     var shipFee = parseFloat(form.getAttribute('data-dostava-cijena')) || 11;
     var shipFreeFrom = parseFloat(form.getAttribute('data-besplatna-od')) || 250;
@@ -566,6 +565,14 @@ function initManualOrderForm() {
     }
     function findRow(pid, vid) {
         return body.querySelector('tr[data-pid="' + pid + '"][data-vid="' + (vid || '') + '"]');
+    }
+    function catalogOpen() {
+        return !!(catalog && !catalog.hidden);
+    }
+    function lineQty(pid, vid) {
+        var row = findRow(pid, vid);
+        if (!row) return 0;
+        return parseInt(row.querySelector('[name="kolicina"]').value, 10) || 0;
     }
     function pickName(item, variation) {
         return item.naziv + (variation ? ' — ' + variation.naziv : '');
@@ -772,11 +779,104 @@ function initManualOrderForm() {
                 available: available,
                 name: pickName(pick.item, pick.variation),
             });
-            resetPicker(true);
+            if (catalogOpen()) {
+                pick = null;
+                closeQty();
+            } else {
+                resetPicker(true);
+            }
             return;
         }
         addLine(pick.item, pick.variation, existingMp, qty);
+        if (catalogOpen()) {
+            renderCatalog(lastResults);
+            pick = null;
+            if (qtyInput) qtyInput.value = '1';
+            closeQty();
+            return;
+        }
         resetPicker();
+    }
+    function setCatalog(on) {
+        if (!catalog || !catalogBtn) return;
+        catalog.hidden = !on;
+        catalogBtn.classList.toggle('is-on', on);
+        catalogBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (list) list.hidden = true;
+        if (on) {
+            if ((search && search.value || '').trim()) searchProducts({});
+            else renderCatalog([]);
+        }
+    }
+    function renderCatalog(rows) {
+        if (!catalog) return;
+        catalog.innerHTML = '';
+        if (!rows || !rows.length) {
+            catalog.innerHTML = '<p class="mg-empty">Ukucaj naziv, šifru ili barkod — izlistaće se artikli.</p>';
+            return;
+        }
+        rows.forEach(function (row) {
+            var pid = String(row.item.id);
+            var vid = row.variation ? String(row.variation.id) : '';
+            var qty = lineQty(pid, vid);
+            var card = document.createElement('article');
+            card.className = 'mg-catalog-item' + (qty ? ' is-added' : '') + ((row.dostupno || 0) <= 0 ? ' is-out' : '');
+            card.innerHTML =
+                '<strong></strong>' +
+                (row.variation && row.variation.naziv ? '<span class="sub"></span>' : '') +
+                '<p class="mg-catalog-meta"></p>' +
+                '<div class="mg-catalog-qty">' +
+                '<button type="button" class="mg-btn" data-cat-minus aria-label="Manje">−</button>' +
+                '<em data-cat-qty></em>' +
+                '<button type="button" class="mg-btn" data-cat-plus aria-label="Više">+</button>' +
+                '</div>';
+            card.querySelector('strong').textContent = row.item.naziv || row.naziv || '';
+            var sub = card.querySelector('.sub');
+            if (sub) sub.textContent = row.variation.naziv;
+            card.querySelector('.mg-catalog-meta').textContent = [
+                row.sifra,
+                row.cijena ? row.cijena + ' KM' : '',
+                (row.dostupno || 0) + ' na stanju',
+            ].filter(Boolean).join(' · ');
+            card.querySelector('[data-cat-qty]').textContent = String(qty);
+            var minus = card.querySelector('[data-cat-minus]');
+            minus.disabled = qty <= 0;
+            minus.addEventListener('click', function (event) {
+                event.preventDefault();
+                shiftCatalogQty(row, -1);
+            });
+            card.querySelector('[data-cat-plus]').addEventListener('click', function (event) {
+                event.preventDefault();
+                shiftCatalogQty(row, 1);
+            });
+            catalog.appendChild(card);
+        });
+    }
+    function shiftCatalogQty(row, delta) {
+        var pid = String(row.item.id);
+        var vid = row.variation ? String(row.variation.id) : '';
+        var current = lineQty(pid, vid);
+        var next = current + delta;
+        if (next < 0) next = 0;
+        if (delta > 0) {
+            pick = { item: row.item, variation: row.variation };
+            if (qtyInput) qtyInput.value = '1';
+            commitPick();
+            return;
+        }
+        var existing = findRow(pid, vid);
+        if (!existing) {
+            renderCatalog(lastResults);
+            return;
+        }
+        if (next <= 0) existing.remove();
+        else {
+            var field = existing.querySelector('[name="kolicina"]');
+            field.value = String(next);
+            field.setAttribute('data-prev', String(next));
+        }
+        refreshTotal();
+        renderCatalog(lastResults);
     }
     function renderSuggest(items) {
         lastResults = items || [];
@@ -807,9 +907,11 @@ function initManualOrderForm() {
         if (q.length < 1) {
             if (list) list.hidden = true;
             lastResults = [];
+            if (catalogOpen()) renderCatalog([]);
             return Promise.resolve(null);
         }
-        return fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=20', {
+        var limit = catalogOpen() ? 80 : 20;
+        return fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=' + limit, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
         }).then(function (res) { return res.json(); }).then(function (data) {
@@ -820,9 +922,14 @@ function initManualOrderForm() {
                 openQty(hit);
                 return hit;
             }
-            if (opts.takeFirst && rows.length) {
+            if (opts.takeFirst && rows.length && !catalogOpen()) {
                 openQty(rows[0]);
                 return rows[0];
+            }
+            if (catalogOpen()) {
+                if (list) list.hidden = true;
+                renderCatalog(rows);
+                return null;
             }
             renderSuggest(rows);
             return null;
@@ -863,6 +970,12 @@ function initManualOrderForm() {
             searchProducts({ fromScan: true });
         });
     }
+    if (catalogBtn) {
+        catalogBtn.addEventListener('click', function () {
+            setCatalog(!catalogOpen());
+            if (search) search.focus();
+        });
+    }
     if (qtyInput) {
         qtyInput.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
@@ -896,6 +1009,7 @@ function initManualOrderForm() {
             var row = btn.closest('tr');
             if (row) row.remove();
             refreshTotal();
+            if (catalogOpen()) renderCatalog(lastResults);
         });
         body.addEventListener('change', function (event) {
             var input = event.target.closest('[name="kolicina"]');
@@ -945,6 +1059,7 @@ function initManualOrderForm() {
             }
             if (pending.type === 'add') {
                 addLine(pending.item, pending.variation, true, pending.qty || 1);
+                if (catalogOpen()) renderCatalog(lastResults);
                 if (search) search.focus();
             } else if (pending.type === 'qty' && pending.row && pending.input) {
                 pending.input.value = pending.next;
@@ -1895,11 +2010,17 @@ function initArticleScanner() {
         loc: document.getElementById('pkLoc'),
         locKicker: document.getElementById('pkLocKicker'),
         locMeta: document.getElementById('pkLocMeta'),
+        locPath: document.getElementById('pkLocPath'),
         name: document.getElementById('pkName'),
         sku: document.getElementById('pkSku'),
+        brand: document.getElementById('pkBrand'),
         img: document.getElementById('pkImg'),
         got: document.getElementById('pkGot'),
+        gotView: document.getElementById('pkGotView'),
         need: document.getElementById('pkNeed'),
+        barFill: document.getElementById('pkBarFill'),
+        barPct: document.getElementById('pkBarPct'),
+        addQty: document.getElementById('pkAddQty'),
         progress: document.getElementById('pkProgress'),
         todoN: document.getElementById('pkTodoN'),
         doneN: document.getElementById('pkDoneN'),
@@ -1917,9 +2038,8 @@ function initArticleScanner() {
     var isPrenosMp = root.getAttribute('data-prenos-mp') === '1';
 
     function syncValidateGate() {
-        var ready = queue.length > 0 && doneCount() === queue.length;
-        if (els.form) els.form.hidden = !ready;
-        if (els.validDone) els.validDone.hidden = !ready;
+        if (els.validDone) els.validDone.hidden = false;
+        if (els.form) els.form.hidden = true;
     }
 
     function persist() {
@@ -2005,33 +2125,51 @@ function initArticleScanner() {
             if (editIdx >= 0) current = editIdx;
             else editingKey = '';
         }
-        if (!editingKey && finished === queue.length) {
-            if (els.card) els.card.hidden = true;
-            if (els.doneAll) els.doneAll.hidden = false;
+        if (els.doneAll) els.doneAll.hidden = true;
+        var work = document.getElementById('pkPickWork');
+        var customer = document.getElementById('pkCustomer');
+        var allDone = queue.length > 0 && finished === queue.length && !editingKey;
+        if (work) work.hidden = allDone;
+        if (customer) customer.hidden = !allDone;
+        if (allDone) {
+            if (els.card) els.card.hidden = false;
+            syncPickJson();
             return;
         }
-        if (els.doneAll) els.doneAll.hidden = true;
         if (!editingKey && (current >= queue.length || itemState(queue[current]).done)) {
             current = firstOpenIndex();
         }
         var item = queue[current];
+        if (!item) {
+            if (els.card) els.card.hidden = true;
+            return;
+        }
         var st = itemState(item);
+        var pct = item.need > 0 ? Math.round((st.got / item.need) * 100) : 0;
         if (els.card) els.card.hidden = false;
         if (els.loc) els.loc.textContent = item.is_mp ? 'MP' : (item.loc || '—');
-        if (els.locKicker) els.locKicker.textContent = item.is_mp ? 'Uzmi iz maloprodaje' : 'Idi na lokaciju';
+        if (els.locKicker) els.locKicker.textContent = item.is_mp ? 'Uzmi iz maloprodaje' : 'Lokacija (odakle se uzima)';
+        if (els.locPath) els.locPath.textContent = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
         if (els.locMeta) els.locMeta.textContent = item.loc_rb + ' · stavka ' + item.rb;
         if (els.name) els.name.textContent = item.naziv || '—';
-        if (els.sku) {
-            els.sku.textContent = [item.sifra, item.barkod].filter(Boolean).join('  ·  ');
+        if (els.sku) els.sku.textContent = item.sifra || item.barkod || '—';
+        if (els.brand) {
+            var bits = [];
+            if (item.brend) bits.push('Brend: ' + item.brend);
+            if (item.kategorija) bits.push('Kategorija: ' + item.kategorija);
+            els.brand.textContent = bits.join('  ·  ');
         }
         if (els.img) {
             els.img.style.backgroundImage = item.slika ? 'url("' + item.slika + '")' : '';
         }
+        if (els.gotView) els.gotView.textContent = String(st.got);
         if (els.got && document.activeElement !== els.got) {
             els.got.value = String(st.got);
             els.got.max = String(item.need);
         }
         if (els.need) els.need.textContent = String(item.need);
+        if (els.barFill) els.barFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+        if (els.barPct) els.barPct.textContent = pct + '%';
         if (els.takeLess) {
             els.takeLess.hidden = !(st.got > 0 && st.got < item.need);
         }
@@ -2140,6 +2278,36 @@ function initArticleScanner() {
         var item = currentItem();
         if (item) setGot(item, item.need);
     });
+    var addBtn = document.getElementById('pkAddQtyBtn');
+    if (addBtn) addBtn.addEventListener('click', function () {
+        var item = currentItem();
+        if (!item || !els.addQty) return;
+        var raw = parseInt(els.addQty.value, 10);
+        if (isNaN(raw) || raw <= 0) return;
+        setGot(item, itemState(item).got + raw);
+        els.addQty.value = '0';
+    });
+    var resetBtn = document.getElementById('pkReset');
+    if (resetBtn) resetBtn.addEventListener('click', function () {
+        var allDone = queue.length > 0 && doneCount() === queue.length && !editingKey;
+        if (allDone) {
+            if (!window.confirm('Poništiti cijeli picking?')) return;
+            queue.forEach(function (item) {
+                state[item.key] = { got: 0, done: false, item_id: item.item_id };
+            });
+            editingKey = '';
+            current = 0;
+            persist();
+            render();
+            saveSoon();
+            return;
+        }
+        var item = currentItem();
+        if (!item) return;
+        if (!window.confirm('Poništiti pokupljenu količinu za ovu stavku?')) return;
+        editingKey = item.key;
+        setGot(item, 0);
+    });
     if (els.got) {
         function applyTypedQty(asDone) {
             var item = currentItem();
@@ -2197,21 +2365,20 @@ function initArticleScanner() {
         if (name === 'pick' && els.scan) els.scan.focus();
     }
 
-    if (els.validDone) {
-        els.validDone.addEventListener('click', function () {
-            if (els.valid) els.valid.click();
-        });
+    function clickValidate() {
+        if (els.valid) els.valid.click();
     }
+    if (els.validDone) els.validDone.addEventListener('click', clickValidate);
+    var validDone2 = document.getElementById('pkValidDoneBtn2');
+    if (validDone2) validDone2.addEventListener('click', clickValidate);
     if (els.form) {
         els.form.addEventListener('submit', function (event) {
             var broj = root.getAttribute('data-broj') || '';
             var msg = isPrenosMp
                 ? 'Želiš li validatovati prenos u MP #' + broj + '? Skida se sa stanja.'
-                : 'Želiš li validatovati narudžbu #' + broj + '?';
-            if (queue.length && doneCount() < queue.length) {
-                msg = isPrenosMp
-                    ? 'Nije sve pokupljeno. Validatovati prenos u MP #' + broj + '?'
-                    : 'Nisu sve stavke pokupljene. Želiš li validatovati narudžbu #' + broj + '?';
+                : 'Želiš li završiti picking #' + broj + '?';
+            if (!isPrenosMp && queue.length && doneCount() < queue.length) {
+                msg = 'Nepokupljeni artikli neće ići na račun. Završiti picking #' + broj + '?';
             }
             if (!window.confirm(msg)) event.preventDefault();
             else {

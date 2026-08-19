@@ -27,7 +27,7 @@
         <p class="mg-muted">Pretraži postojećeg ili dodaj novog. Kad ga sačuvaš, ide unos artikala.</p>
         <div class="mg-field mg-loc-search" id="mgCustomerSearchWrap">
             <label for="mgCustomerSearch">Ime ili telefon</label>
-            <input id="mgCustomerSearch" type="search" placeholder="Ukucaj ime ili telefon…" autocomplete="off" value="{{ form.ime_prezime|default:'' }}">
+            <input id="mgCustomerSearch" type="search" placeholder="Klikni da vidiš kupce, ili ukucaj ime / telefon" autocomplete="off" value="{{ form.ime_prezime|default:'' }}">
             <ul id="mgCustomerSuggest" class="mg-loc-suggest" hidden></ul>
             <button type="button" class="mg-btn mg-btn-primary" id="mgCustomerAdd" style="margin-top:10px;">Dodaj kupca</button>
         </div>
@@ -46,14 +46,16 @@
 
     <div class="mg-order-build" id="mgOrderBuild" hidden>
     <section class="mg-card vp-box vp-search" id="mgOrderSearchBox">
-        <div class="vp-row vp-entry">
+        <div class="vp-row vp-entry has-catalog">
             <input type="search" id="mgOrderSearch" placeholder="Naziv, šifra ili barkod" autocomplete="off">
+            <button type="button" class="mg-btn" id="mgOrderCatalogBtn" aria-pressed="false">Katalog</button>
             <button type="button" class="vp-scan-btn" id="mgOrderScan" data-mg-scan-target="mgOrderSearch" data-mg-scan-title="Skeniraj artikal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
                 Skener
             </button>
         </div>
         <ul class="vp-suggest" id="mgOrderSuggest" hidden></ul>
+        <div id="mgOrderCatalog" class="mg-catalog" hidden></div>
         <p id="mgOrderQtyHint" class="mg-qty-hint" hidden></p>
     </section>
 

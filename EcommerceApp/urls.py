@@ -163,6 +163,7 @@ urlpatterns = [
     path('nalog/magacin/kupci/lookup/', views_magacin.magacin_kupci_lookup, name='staff_magacin_kupci_lookup'),
     path('nalog/magacin/kupci/sacuvaj/', views_magacin.magacin_kupci_save, name='staff_magacin_kupci_save'),
     path('nalog/magacin/narudzbe/stampa/', views_magacin.magacin_narudzbe_stampa, name='staff_magacin_narudzbe_stampa'),
+    path('nalog/magacin/narudzbe/packing/', views_magacin.magacin_narudzbe_packing, name='staff_magacin_narudzbe_packing'),
     path('nalog/magacin/narudzbe/validiraj/', views_magacin.magacin_narudzbe_validiraj, name='staff_magacin_narudzbe_validiraj'),
     path(
         'nalog/magacin/narudzbe/odstampano/',

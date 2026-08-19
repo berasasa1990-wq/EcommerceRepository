@@ -49,6 +49,7 @@
         {% if not show_validated %}
         <button type="button" class="mg-btn" id="mgValidateSelected" disabled>Validiraj odabrane</button>
         {% endif %}
+        <a class="mg-btn" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener"{% if not packing_ready_count %} aria-disabled="true"{% endif %}>Štampaj packing{% if packing_ready_count %} ({{ packing_ready_count }}){% endif %}</a>
         <span class="mg-muted" id="mgSelectedCount">0 odabrano</span>
     </div>
     <section class="mg-card mg-orders-card">
@@ -68,7 +69,7 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=stampa{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}">
+                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}">
                     <td class="mg-check-col" data-stop-row>
                         <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.needs_mp_check %} data-mp="1"{% endif %}>
                     </td>

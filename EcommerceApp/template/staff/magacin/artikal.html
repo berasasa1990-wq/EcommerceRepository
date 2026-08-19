@@ -21,12 +21,20 @@
                 <div class="ph">Nema slike</div>
                 {% endif %}
             </div>
-            <form method="post" class="mg-skini-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="skini">
-                {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
-                <button type="submit" class="mg-btn">Skini sa stanja</button>
-            </form>
+            <div class="mg-stock-actions">
+                <form method="post" class="mg-skini-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="skini">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn">Skini sa stanja</button>
+                </form>
+                <form method="post" class="mg-ubaci-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="ubaci">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn{% if not product.na_stanju %} mg-btn-primary{% endif %}">Dodaj na stanje</button>
+                </form>
+            </div>
         </div>
         <h1>{{ product.naziv }}</h1>
         <p class="mg-phone-price">
@@ -56,12 +64,20 @@
                 <div class="ph">Nema slike</div>
                 {% endif %}
             </div>
-            <form method="post" class="mg-skini-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="skini">
-                {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
-                <button type="submit" class="mg-btn">Skini sa stanja</button>
-            </form>
+            <div class="mg-stock-actions">
+                <form method="post" class="mg-skini-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="skini">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn">Skini sa stanja</button>
+                </form>
+                <form method="post" class="mg-ubaci-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="ubaci">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn{% if not product.na_stanju %} mg-btn-primary{% endif %}">Dodaj na stanje</button>
+                </form>
+            </div>
         </div>
         <div>
             <h1 class="mg-hero-title">{{ product.naziv }}</h1>
@@ -421,6 +437,13 @@
     document.querySelectorAll('.mg-skini-form').forEach(function (skiniForm) {
         skiniForm.addEventListener('submit', function (event) {
             if (!window.confirm('Skinuti artikal sa sajta i staviti sve količine na 0?')) {
+                event.preventDefault();
+            }
+        });
+    });
+    document.querySelectorAll('.mg-ubaci-form').forEach(function (ubaciForm) {
+        ubaciForm.addEventListener('submit', function (event) {
+            if (!window.confirm('Staviti artikal na sajt? Magacinska zaliha se ne mijenja — za artikle koji su na stanju u radnji.')) {
                 event.preventDefault();
             }
         });

@@ -3,7 +3,7 @@
 {% block magacin_content %}
 <div class="pk-app{% if next_pick %} pk-check-popup{% endif %}" id="pkCheckApp">
     <header class="pk-bar">
-        <a class="pk-bar-back" href="{% if next_print %}{% url 'staff_magacin_narudzbe' %}{% else %}{% url 'staff_magacin_pakuj' %}{% endif %}">←</a>
+        <a class="pk-bar-back" href="{% if next_pick %}{% url 'staff_magacin_pakuj' %}{% else %}{% url 'staff_magacin_narudzbe' %}{% endif %}">←</a>
         <div class="pk-bar-title">
             <strong>{% if focus_broj %}Provjera #{{ focus_broj }}{% else %}Provjera MP{% endif %}</strong>
             <span>

@@ -1750,6 +1750,35 @@ def skini_sa_sajta(product, *, user=None):
     return product
 
 
+@transaction.atomic
+def ubaci_na_sajt(product):
+    """Stavi artikal na sajt bez magacinske zalihe (ima ga u radnji)."""
+    update_fields = []
+    if not product.aktivan:
+        product.aktivan = True
+        update_fields.append('aktivan')
+    if not product.na_stanju:
+        product.na_stanju = True
+        update_fields.append('na_stanju')
+    if not product.stanje or product.stanje < 1:
+        product.stanje = 1
+        update_fields.append('stanje')
+    if update_fields:
+        product.save(update_fields=update_fields)
+
+    for var in product.varijacije.all():
+        var_fields = []
+        if not var.na_stanju:
+            var.na_stanju = True
+            var_fields.append('na_stanju')
+        if not var.stanje or var.stanje < 1:
+            var.stanje = 1
+            var_fields.append('stanje')
+        if var_fields:
+            var.save(update_fields=var_fields)
+    return product
+
+
 def active_popis():
     from django.db import OperationalError, ProgrammingError
 
@@ -2450,10 +2479,32 @@ def _parse_move_qty(raw):
 @transaction.atomic
 def validate_order_stock(order, *, user=None):
     """Skini rezervisane količine s lokacija te narudžbe."""
+    from collections import defaultdict
+
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
         return
     if order.lager_status == Order.LagerStatus.OTKAZANO:
         raise MagacinError('Otkazana narudžba se ne može validirati.')
+    reserved = defaultdict(int)
+    holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
+    for hold in holds:
+        reserved[(hold.product_id, hold.variation_id)] += int(hold.kolicina or 0)
+    picked = defaultdict(int)
+    for item in order.stavke.all():
+        if item.kolicina_pokupljeno is None:
+            qty = int(item.kolicina or 0)
+        else:
+            qty = int(item.kolicina_pokupljeno or 0)
+        picked[(item.artikal_id, item.varijacija_id)] += qty
+    for key, res in reserved.items():
+        extra = res - picked.get(key, 0)
+        if extra <= 0 or not key[0]:
+            continue
+        product = Product.objects.filter(pk=key[0]).first()
+        if product is None:
+            continue
+        variation = ProductVariation.objects.filter(pk=key[1]).first() if key[1] else None
+        release_holds_for_product(order, product, variation, qty=extra, user=user)
     holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
     for hold in holds:
         apply_movement(
