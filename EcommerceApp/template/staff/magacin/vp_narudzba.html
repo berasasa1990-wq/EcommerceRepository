@@ -3,48 +3,49 @@
 {% block magacin_content %}
 <div class="vp-page">
     {% if not draft %}
-    <div class="vp-start">
-        <h1>VP narudžbe</h1>
-        <p>Otvori VP narudžbu. Kupac i artikli ostaju dok ne obrišeš ili završiš.</p>
+    <div class="mg-page-head">
+        <div>
+            <h1>VP narudžbe</h1>
+            <p>Otvori VP narudžbu. Kupac i artikli ostaju dok ne obrišeš ili završiš.</p>
+        </div>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+    </div>
+    <section class="mg-card vp-start">
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="action" value="novi">
             <button type="submit" class="mg-btn mg-btn-primary">Nova VP narudžba</button>
         </form>
-    </div>
+    </section>
     {% else %}
-    <header class="vp-head">
+    <header class="vp-head mg-page-head">
         <div>
             <h1>VP narudžbe</h1>
             <p>{{ stavke|length }} stavki{% if ukupno %} · {{ ukupno }} KM{% endif %}</p>
         </div>
-        <div class="vp-head-actions">
-            <form method="post" id="vpFinishForm">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="zavrsi">
-                <button type="submit" class="mg-btn mg-btn-primary">Završi</button>
-            </form>
-            <form method="post" id="vpDeleteForm">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="obrisi">
-                <button type="submit" class="mg-btn mg-btn-danger">Obriši</button>
-            </form>
-            <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
-        </div>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
     </header>
 
-    <section class="vp-box" id="vpCustomerBox"
+    <section class="vp-box mg-card" id="vpCustomerBox"
              data-lookup="{{ customer_lookup_url }}"
              data-save="{{ customer_save_url }}">
+        <h2 class="mg-h">Kupac</h2>
         {% if draft.ime_prezime %}
-        <div class="vp-chip">
-            <span class="vp-name">{{ draft.ime_prezime }}</span>
-            <span>{{ draft.telefon }}{% if draft.grad %} · {{ draft.grad }}{% endif %}</span>
+        <div class="vp-chip mg-customer-chip">
+            <div>
+                <span class="mg-locked-kicker">Kupac</span>
+                <strong class="vp-name">{{ draft.ime_prezime }}</strong>
+                <span>{{ draft.telefon }}{% if draft.grad %} · {{ draft.grad }}{% endif %}</span>
+            </div>
         </div>
         {% endif %}
-        <div class="vp-row">
-            <input type="search" id="vpCustomerSearch" placeholder="Klikni da vidiš kupce, ili ukucaj ime / telefon" autocomplete="off">
-            <button type="button" class="mg-btn" id="vpCustomerAdd">+ Kupac</button>
+        <p class="mg-field-label">Pretraga kupca</p>
+        <div class="vp-row mg-input-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <input type="search" id="vpCustomerSearch" placeholder="Unesi ime, telefon ili odaberi postojećeg kupca..." autocomplete="off">
+            </div>
+            <button type="button" class="mg-btn mg-btn-pill" id="vpCustomerAdd">+ Novi kupac</button>
         </div>
         <ul class="vp-suggest" id="vpCustomerSuggest" hidden></ul>
         <form method="post" id="vpCustomerForm">
@@ -54,13 +55,17 @@
         </form>
     </section>
 
-    <section class="vp-box vp-search" data-lookup="{{ lookup_url }}">
-        <div class="vp-row vp-entry has-catalog">
-            <input type="search" id="vpQuery" placeholder="Naziv, šifra ili barkod" autocomplete="off" autofocus>
-            <button type="button" class="mg-btn" id="vpCatalogBtn" aria-pressed="false">Katalog</button>
-            <button type="button" class="vp-scan-btn" id="vpScanBtn" data-mg-scan-target="vpQuery" data-mg-scan-title="Skeniraj artikal">
+    <section class="vp-box vp-search mg-card" data-lookup="{{ lookup_url }}">
+        <h2 class="mg-h">Dodaj artikle</h2>
+        <div class="vp-row vp-entry has-catalog mg-input-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg>
+                <input type="search" id="vpQuery" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off" autofocus>
+            </div>
+            <button type="button" class="mg-btn mg-btn-pill" id="vpCatalogBtn" aria-pressed="false">Katalog</button>
+            <button type="button" class="mg-btn mg-btn-pill vp-scan-btn" id="vpScanBtn" data-mg-scan-target="vpQuery" data-mg-scan-title="Skeniraj artikal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
-                Skener
+                Skeniraj
             </button>
         </div>
         <ul class="vp-suggest" id="vpSuggest" hidden></ul>
@@ -74,7 +79,8 @@
         <input type="hidden" name="kolicina" id="vpAddQtyHidden" value="1">
     </form>
 
-    <div class="vp-table">
+    <section class="vp-table mg-card">
+        <h2 class="mg-h">Stavke narudžbe</h2>
         <div class="vp-cols" aria-hidden="true">
             <span>Artikal</span>
             <span>Šifra</span>
@@ -102,10 +108,36 @@
                 </form>
             </li>
             {% empty %}
-            <li class="is-empty">Unesi artikal — predložiće se dok kucaš.</li>
+            <li class="is-empty">
+                <span class="mg-empty-state">
+                    <span class="mg-empty-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>
+                    </span>
+                    <strong>Nema stavki</strong>
+                    <p>Unesi artikal — predložiće se dok kucaš.</p>
+                </span>
+            </li>
             {% endfor %}
         </ul>
-        <p class="vp-total" id="vpTotal"{% if not stavke %} hidden{% endif %}>Ukupno <span>{{ ukupno }} KM</span></p>
+    </section>
+
+    <div class="mg-order-foot">
+        <form method="post" id="vpDeleteForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="obrisi">
+            <button type="submit" class="mg-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                Obriši narudžbu
+            </button>
+        </form>
+        <div class="mg-order-foot-sum">
+            <span class="vp-total" id="vpTotal"{% if not stavke %} hidden{% endif %}>Ukupno: <strong><span>{{ ukupno }} KM</span></strong></span>
+            <form method="post" id="vpFinishForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="zavrsi">
+                <button type="submit" class="mg-btn mg-btn-primary">Završi</button>
+            </form>
+        </div>
     </div>
     {% endif %}
 </div>

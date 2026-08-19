@@ -692,7 +692,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(detail, reverse('home'))
         self.assertContains(detail, 'class="header"')
         self.assertContains(detail, 'Nazad na rezultate')
-        self.assertNotContains(detail, 'id="mgArticleSearch"')
+        self.assertContains(detail, 'id="mgArticleSearch"')
         self.assertNotContains(detail, 'class="mg-top"')
         self.assertContains(detail, 'Izmijeni artikal')
         self.assertContains(detail, 'Zalihe')
@@ -707,6 +707,8 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(detail, 'Ažuriraj postojeću')
         self.assertNotContains(detail, 'Ažuriraj lokacije')
         self.assertNotContains(detail, 'Dodaj na novu')
+        self.assertContains(detail, reverse('staff_magacin_artikal_stampa', args=[self.product.pk]))
+        self.assertContains(detail, 'Štampaj')
         self.assertContains(detail, reverse('staff_magacin_artikal_izmjena', args=[self.product.pk]))
         self.assertContains(detail, 'Promjene cijena i marže')
         self.assertNotContains(detail, 'Osnovne informacije')
@@ -719,6 +721,67 @@ class MagacinViewTests(TestCase):
         out_page = self.client.get(reverse('staff_magacin_artikal', args=[self.zero.pk]))
         self.assertContains(out_page, 'mg-hero is-out')
         self.assertNotContains(out_page, 'mg-hero is-stock')
+
+    def test_artikal_etiketa_print(self):
+        import base64
+        import io
+
+        from PIL import Image
+
+        self.client.force_login(self.user)
+        self.product.barkod = '3870123456789'
+        self.product.save(update_fields=['barkod'])
+        page = self.client.get(reverse('staff_magacin_artikal_stampa', args=[self.product.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'size: 6cm 4cm')
+        self.assertContains(page, 'width: 6cm')
+        self.assertContains(page, 'height: 4cm')
+        self.assertContains(page, 'Test braid')
+        self.assertContains(page, 'TST-1')
+        self.assertContains(page, '3870123456789')
+        self.assertContains(page, '10.00 KM')
+        self.assertContains(page, 'data:image/png;base64,')
+        self.assertContains(page, 'window.print()')
+        html = page.content.decode()
+        marker = 'data:image/png;base64,'
+        start = html.index(marker) + len(marker)
+        end = html.index('"', start)
+        png = base64.b64decode(html[start:end])
+        self.assertGreater(len(png), 40)
+        self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
+        img = Image.open(io.BytesIO(png))
+        self.assertEqual(img.mode, 'RGB')
+        self.assertGreater(img.width, 40)
+        self.assertGreater(img.height, 10)
+
+        variation = ProductVariation.objects.create(
+            artikal=self.product,
+            naziv='Crvena',
+            sifra='TST-1-R',
+            cijena=Decimal('12.50'),
+        )
+        var_page = self.client.get(
+            reverse('staff_magacin_artikal_stampa', args=[self.product.pk]),
+            {'varijacija': variation.pk},
+        )
+        self.assertEqual(var_page.status_code, 200)
+        self.assertContains(var_page, 'Test braid — Crvena')
+        self.assertContains(var_page, 'TST-1-R')
+        self.assertContains(var_page, '12.50 KM')
+        self.assertContains(var_page, '3870123456789')
+
+        no_bar = self.client.get(reverse('staff_magacin_artikal_stampa', args=[self.zero.pk]))
+        self.assertContains(no_bar, 'Prazan lager')
+        self.assertContains(no_bar, 'ZERO-1')
+        self.assertContains(no_bar, '2.00 KM')
+        self.assertContains(no_bar, 'data:image/png;base64,')
+
+        missing = self.client.get(
+            reverse('staff_magacin_artikal_stampa', args=[self.product.pk]),
+            {'varijacija': '999999'},
+        )
+        self.assertEqual(missing.status_code, 302)
+        self.assertEqual(missing['Location'], reverse('staff_magacin_artikal', args=[self.product.pk]))
 
     def test_brzi_unos_same_as_admin_flow(self):
         self.client.force_login(self.user)
@@ -1521,6 +1584,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(listed.status_code, 200)
         self.assertContains(listed, 'Nova ručna narudžba')
         self.assertContains(listed, 'Pokaži validatovane')
+        self.assertContains(listed, 'Pretraži narudžbe po broju, kupcu, izvoru')
+        self.assertNotContains(listed, 'Broj narudžbe, ime ili telefon')
         self.assertContains(listed, reverse('staff_magacin_narudzba_nova'))
         self.assertContains(listed, reverse('staff_magacin_narudzbe_stampa'))
         self.assertContains(listed, 'Validiraj odabrane')
@@ -1534,7 +1599,9 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'id="mgOrderSearch"')
         self.assertContains(form, 'id="mgOrderSuggest"')
         self.assertContains(form, 'id="mgOrderQtyModal"')
-        self.assertContains(form, 'Dodato na narudžbu')
+        self.assertContains(form, 'Stavke narudžbe')
+        self.assertContains(form, 'Sačuvaj narudžbu')
+        self.assertContains(form, 'Očisti narudžbu')
         self.assertContains(form, 'id="mgCustomerSearch"')
         self.assertContains(form, 'Dodaj kupca')
         self.assertContains(form, 'id="mgCustomerModal"')
@@ -2232,6 +2299,30 @@ class MagacinViewTests(TestCase):
         all_listed = [row.broj for row in all_page.context['orders']]
         self.assertIn(today.broj, all_listed)
         self.assertIn(old.broj, all_listed)
+        self.assertContains(page, 'Pretraži narudžbe po broju, kupcu, izvoru')
+        self.assertContains(page, 'name="pretraga"')
+        by_name = self.client.get(reverse('staff_magacin_narudzbe'), {
+            'validirane': '1', 'pretraga': 'Stara',
+        })
+        named = [row.broj for row in by_name.context['orders']]
+        self.assertIn(old.broj, named)
+        self.assertNotIn(today.broj, named)
+        by_phone = self.client.get(reverse('staff_magacin_narudzbe'), {
+            'validirane': '1', 'pretraga': '061 000 000',
+        })
+        phoned = [row.broj for row in by_phone.context['orders']]
+        self.assertIn(old.broj, phoned)
+        self.assertNotIn(today.broj, phoned)
+        by_num = self.client.get(reverse('staff_magacin_narudzbe'), {
+            'validirane': '1', 'pretraga': f'#{old.broj}',
+        })
+        numbered = [row.broj for row in by_num.context['orders']]
+        self.assertEqual(numbered, [old.broj])
+        missing = self.client.get(reverse('staff_magacin_narudzbe'), {
+            'validirane': '1', 'pretraga': 'NemaOvogKupca',
+        })
+        self.assertEqual(list(missing.context['orders']), [])
+        self.assertContains(missing, 'Nema narudžbi za')
 
     def test_pack_validate_from_detail(self):
         self.client.force_login(self.user)

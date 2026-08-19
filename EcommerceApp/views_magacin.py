@@ -1,17 +1,18 @@
 """Staff Magacin — lager artikala po lokacijama."""
 
+import base64
 import json
 import logging
 import re
 from datetime import date, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -90,6 +91,7 @@ from .models import (
     WarehouseStock,
     WarehouseSupplier,
     WarehouseSyncLog,
+    OrderStockHold,
 )
 from .odoo_client import odoo_je_konfigurisan
 from .views import _base_context, _superuser_required
@@ -872,6 +874,66 @@ def magacin_artikal(request, pk):
         'price_chart': price_chart,
     })
     return render(request, 'staff/magacin/artikal.html', context)
+
+
+def _etiketa_barcode_data_uri(code):
+    raw = (code or '').strip()
+    if not raw:
+        return ''
+    from .loyalty import generisi_loyalty_barcode_png
+
+    try:
+        png = generisi_loyalty_barcode_png(raw)
+    except Exception:
+        logger.exception('Barkod etikete nije generisan: %s', raw)
+        return ''
+    return 'data:image/png;base64,' + base64.b64encode(png).decode('ascii')
+
+
+def _artikal_etiketa_payload(product, variation=None):
+    naziv = (product.naziv or '').strip()
+    if variation:
+        var_name = (variation.naziv or '').strip()
+        if var_name:
+            naziv = f'{naziv} — {var_name}' if naziv else var_name
+    sifra = ''
+    if variation:
+        sifra = (variation.sifra or '').strip()
+    if not sifra:
+        sifra = (product.sifra or '').strip()
+    cijena = variation.prikazna_cijena if variation else product.prikazna_cijena
+    if cijena is not None:
+        cijena = Decimal(cijena).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    barkod = (product.barkod or '').strip() or sifra
+    return {
+        'naziv': naziv,
+        'sifra': sifra,
+        'cijena': cijena,
+        'barkod': barkod,
+        'barcode_src': _etiketa_barcode_data_uri(barkod),
+    }
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_artikal_stampa(request, pk):
+    product = get_object_or_404(magacin_products_qs(), pk=pk)
+    variations = list(product.varijacije.all())
+    variation = None
+    variation_id = (request.GET.get('varijacija') or '').strip()
+    if variation_id:
+        variation = next((row for row in variations if str(row.pk) == variation_id), None)
+        if variation is None:
+            messages.error(request, 'Varijacija nije pronađena.')
+            return redirect('staff_magacin_artikal', pk=product.pk)
+    payload = _artikal_etiketa_payload(product, variation)
+    context = {
+        'product': product,
+        'variation': variation,
+        **payload,
+    }
+    return render(request, 'staff/magacin/artikal_etiketa.html', context)
 
 
 def _uvoz_marza_pct(stavka):
@@ -1697,16 +1759,39 @@ def magacin_transferi(request):
     return render(request, 'staff/magacin/transferi.html', context)
 
 
+def _order_text_search_q(query):
+    raw = (query or '').strip()
+    if not raw:
+        return Q()
+    stripped = raw.lstrip('#')
+    digits = ''.join(ch for ch in raw if ch.isdigit())
+    filt = (
+        Q(broj__icontains=stripped)
+        | Q(ime_prezime__icontains=raw)
+        | Q(telefon__icontains=raw)
+    )
+    if digits and digits not in {raw, stripped}:
+        filt |= Q(broj__icontains=digits) | Q(telefon__icontains=digits)
+    return filt
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_narudzbe(request):
     izvor = (request.GET.get('izvor') or 'sve').strip()
     show_validated = (request.GET.get('validirane') or '') == '1'
     show_all_validated = (request.GET.get('sve') or '') == '1'
+    order_query = (request.GET.get('pretraga') or request.GET.get('q') or '').strip()
     orders = (
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
-        .prefetch_related('stavke', 'magacin_holds')
+        .prefetch_related(
+            'stavke',
+            Prefetch(
+                'magacin_holds',
+                queryset=OrderStockHold.objects.select_related('location'),
+            ),
+        )
         .order_by('-kreirana')
     )
     if izvor == 'magacin':
@@ -1715,28 +1800,58 @@ def magacin_narudzbe(request):
         orders = orders.filter(izvor=Order.Izvor.WEBSHOP)
     validated_q = Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
     if show_validated:
-        orders = orders.filter(validated_q).exclude(pk__in=list(vp_waiting_print_ids()))
-        orders = orders.exclude(packing_odstampana=True)
-        if not show_all_validated:
-            today = timezone.localdate()
-            orders = orders.filter(
-                Q(zapakovana_at__date=today)
-                | Q(zapakovana_at__isnull=True, kreirana__date=today)
-            )
+        orders = orders.filter(validated_q)
+        if not order_query:
+            orders = orders.exclude(pk__in=list(vp_waiting_print_ids()))
+            orders = orders.exclude(packing_odstampana=True)
+            if not show_all_validated:
+                today = timezone.localdate()
+                orders = orders.filter(
+                    Q(zapakovana_at__date=today)
+                    | Q(zapakovana_at__isnull=True, kreirana__date=today)
+                )
     else:
         orders = orders.exclude(validated_q)
+    if order_query:
+        orders = orders.filter(_order_text_search_q(order_query))
     order_list = list(orders[:80])
     if not show_validated:
         locked = pending_mp_brojevi(collect_mp_checks(order_list))
         for order in order_list:
             order.needs_mp_check = order.broj in locked
+    for order in order_list:
+        seen = []
+        for hold in order.magacin_holds.all():
+            sifra = (hold.location.sifra if hold.location_id else '') or ''
+            if sifra and sifra not in seen:
+                seen.append(sifra)
+        order.lager_lokacije = seen
     base_qs = Order.objects.exclude(status=Order.Status.OTKAZANA).exclude(_prenos_mp_q())
+
+    def _list_qs(*, izvor_value=izvor, all_validated=show_all_validated, query=order_query):
+        params = {}
+        if show_validated:
+            params['validirane'] = '1'
+            if all_validated:
+                params['sve'] = '1'
+        if query:
+            params['pretraga'] = query
+        if izvor_value and izvor_value != 'sve':
+            params['izvor'] = izvor_value
+        return urlencode(params)
+
     context = _magacin_context(request, section='narudzbe', page_title='Narudžbe — Magacin')
     context.update({
         'orders': order_list,
         'izvor_filter': izvor,
         'show_validated': show_validated,
         'show_all_validated': show_all_validated,
+        'order_query': order_query,
+        'qs_sve': _list_qs(izvor_value='sve'),
+        'qs_magacin': _list_qs(izvor_value='magacin'),
+        'qs_webshop': _list_qs(izvor_value='webshop'),
+        'qs_today': _list_qs(all_validated=False),
+        'qs_all': _list_qs(all_validated=True),
         'rucne_count': base_qs.filter(
             izvor=Order.Izvor.MAGACIN,
         ).exclude(validated_q).count(),

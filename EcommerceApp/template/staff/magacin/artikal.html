@@ -7,6 +7,7 @@
     </a>
     <div class="mg-toolbar-actions">
         <button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>
+        <a class="mg-btn" href="{% url 'staff_magacin_artikal_stampa' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}" target="_blank" rel="noopener">Štampaj Cijenu</a>
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
     </div>
 </div>

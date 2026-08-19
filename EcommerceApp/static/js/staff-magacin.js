@@ -292,10 +292,6 @@ function initCustomerPicker() {
     }
     function openAddModal() {
         var ime = (search.value || '').trim();
-        if (!ime) {
-            search.focus();
-            return;
-        }
         if (newIme) newIme.value = ime;
         if (newTel) newTel.value = '';
         if (newAdresa) newAdresa.value = '';
@@ -303,7 +299,8 @@ function initCustomerPicker() {
         showHint('');
         if (list) list.hidden = true;
         if (modal) modal.hidden = false;
-        if (newTel) newTel.focus();
+        if (ime && newTel) newTel.focus();
+        else if (newIme) newIme.focus();
     }
     function closeAddModal() {
         if (modal) modal.hidden = true;
@@ -331,13 +328,13 @@ function initCustomerPicker() {
         if (locked) locked.hidden = false;
         if (noteWrap) noteWrap.hidden = true;
         if (list) list.hidden = true;
-        if (customerCard) customerCard.hidden = true;
+        if (customerCard) customerCard.hidden = false;
         if (orderBuild) orderBuild.hidden = false;
         if (page) {
             page.classList.remove('is-pick-customer');
             page.classList.add('is-ready');
         }
-        if (intro) intro.textContent = 'Unesi artikal. Tab ide na količinu, Tab doda i spremi novi.';
+        if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         closeAddModal();
         var articleSearch = document.getElementById('mgOrderSearch');
         if (articleSearch) window.setTimeout(function () { articleSearch.focus(); }, 40);
@@ -347,12 +344,12 @@ function initCustomerPicker() {
         if (locked) locked.hidden = true;
         if (noteWrap) noteWrap.hidden = true;
         if (customerCard) customerCard.hidden = false;
-        if (orderBuild) orderBuild.hidden = true;
+        if (orderBuild) orderBuild.hidden = false;
         if (page) {
-            page.classList.add('is-pick-customer');
+            page.classList.remove('is-pick-customer');
             page.classList.remove('is-ready');
         }
-        if (intro) intro.textContent = 'Prvo odaberi ili dodaj kupca. Poslije ide unos artikala.';
+        if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         if (idInput) idInput.value = '';
         if (search) {
             search.value = (imeInput && imeInput.value) || search.value || '';
@@ -549,8 +546,8 @@ function initManualOrderForm() {
         var ship = (sum > 0 && sum < shipFreeFrom) ? shipFee : 0;
         if (shipEl) {
             shipEl.textContent = ship > 0
-                ? ('Dostava ' + money(ship) + ' KM')
-                : (sum > 0 ? 'Dostava besplatna' : ('Dostava ' + money(shipFee) + ' KM'));
+                ? ('Dostava: ' + money(ship) + ' KM')
+                : (sum > 0 ? 'Dostava: besplatna' : ('Dostava: ' + money(shipFee) + ' KM'));
         }
         if (totalEl) totalEl.textContent = money(sum + ship) + ' KM';
         if (empty) empty.hidden = lineCount() > 0;
@@ -673,9 +670,9 @@ function initManualOrderForm() {
             '<input type="hidden" name="mp_ok" value="' + (mpOk ? '1' : '0') + '">' +
             '</td>' +
             '<td>' + escapeHtml(sifra) + '</td>' +
+            '<td class="num ' + (available <= 0 ? 'num-out' : 'num-ok') + '">' + available + '</td>' +
             '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" data-prev="' + qty + '" required></td>' +
             '<td class="num">' + escapeHtml(cijena) + ' KM</td>' +
-            '<td class="num ' + (available <= 0 ? 'num-out' : 'num-ok') + '">' + available + '</td>' +
             '<td class="num" data-line-total>' + money(cijena * qty) + ' KM</td>' +
             '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
         body.appendChild(tr);
@@ -1089,6 +1086,15 @@ function initManualOrderForm() {
         });
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && mpModal && !mpModal.hidden) skipMp();
+        });
+    }
+    var clearBtn = document.getElementById('mgOrderClear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            if (body) body.innerHTML = '';
+            refreshTotal();
+            var change = document.getElementById('mgCustomerChange');
+            if (change) change.click();
         });
     }
     refreshTotal();
@@ -2034,6 +2040,14 @@ function initArticleScanner() {
         takeLess: document.getElementById('pkTakeLess'),
         takeAll: document.getElementById('pkTakeAll'),
         pickJson: document.getElementById('pkPickJson'),
+        itemList: document.getElementById('pkItemList'),
+        statItems: document.getElementById('pkStatItems'),
+        statNeed: document.getElementById('pkStatNeed'),
+        statGot: document.getElementById('pkStatGot'),
+        statPct: document.getElementById('pkStatPct'),
+        dockGot: document.getElementById('pkDockGot'),
+        dockNeed: document.getElementById('pkDockNeed'),
+        statusPill: document.getElementById('pkStatusPill'),
     };
     var isPrenosMp = root.getAttribute('data-prenos-mp') === '1';
 
@@ -2101,14 +2115,97 @@ function initArticleScanner() {
         });
     }
 
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function totals() {
+        var need = 0;
+        var got = 0;
+        queue.forEach(function (item) {
+            need += item.need || 0;
+            got += itemState(item).got || 0;
+        });
+        return { need: need, got: got, items: queue.length, done: doneCount() };
+    }
+
+    function renderItems() {
+        if (!els.itemList) return;
+        els.itemList.innerHTML = '';
+        queue.forEach(function (item, idx) {
+            var st = itemState(item);
+            var pct = item.need > 0 ? Math.round((st.got / item.need) * 100) : 0;
+            var loc = item.is_mp ? 'MP' : (item.loc || '—');
+            var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
+            var sku = item.sifra || item.barkod || '—';
+            var art = document.createElement('article');
+            art.className = 'pk-item' + (st.done ? ' is-done' : '');
+            art.innerHTML =
+                '<div class="pk-item-top">' +
+                    '<em class="pk-item-n">' + (idx + 1) + '</em>' +
+                    '<div class="pk-item-img"' + (item.slika ? ' style="background-image:url(\'' + escapeHtml(item.slika) + '\')"' : '') + '></div>' +
+                    '<div class="pk-item-info">' +
+                        '<strong>' + escapeHtml(sku) + '</strong>' +
+                        '<p>' + escapeHtml(item.naziv || '—') + '</p>' +
+                        '<span>Šifra: ' + escapeHtml(sku) + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="pk-item-grid">' +
+                    '<div><span>Lokacija</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || 'Magacin') + '</small></div>' +
+                    '<div><span>Za pokupiti</span><b>' + item.need + ' kom</b></div>' +
+                    '<div><span>Pokupljeno</span><b>' + st.got + ' / ' + item.need + ' kom</b>' +
+                        '<div class="pk-track" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>' +
+                        '<em>' + pct + '%</em>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="pk-item-step">' +
+                    '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
+                    '<div class="pk-step-val"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small></div>' +
+                    '<button type="button" data-pk-plus aria-label="Više">+</button>' +
+                    '<button type="button" class="pk-all" data-pk-all>Pokupi sve</button>' +
+                '</div>';
+            art.querySelector('[data-pk-minus]').addEventListener('click', function () {
+                current = idx;
+                setGot(item, itemState(item).got - 1);
+            });
+            art.querySelector('[data-pk-plus]').addEventListener('click', function () {
+                current = idx;
+                setGot(item, itemState(item).got + 1);
+            });
+            art.querySelector('[data-pk-all]').addEventListener('click', function () {
+                current = idx;
+                setGot(item, item.need);
+            });
+            els.itemList.appendChild(art);
+        });
+    }
+
     function render() {
         var finished = doneCount();
+        var tot = totals();
+        var pct = tot.need > 0 ? Math.round((tot.got / tot.need) * 100) : 0;
         if (els.progress) els.progress.textContent = finished + '/' + queue.length;
         if (els.todoN) els.todoN.textContent = String(queue.length - finished);
         if (els.doneN) els.doneN.textContent = String(finished);
         if (els.valid) els.valid.disabled = false;
+        if (els.statItems) els.statItems.textContent = String(tot.items);
+        if (els.statNeed) els.statNeed.textContent = String(tot.need);
+        if (els.statGot) els.statGot.textContent = String(tot.got);
+        if (els.statPct) els.statPct.textContent = pct + '%';
+        if (els.barFill) els.barFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+        if (els.barPct) els.barPct.textContent = pct + '%';
+        if (els.dockGot) els.dockGot.textContent = String(tot.got);
+        if (els.dockNeed) els.dockNeed.textContent = String(tot.need);
+        if (els.statusPill) {
+            els.statusPill.textContent = tot.got <= 0 ? 'Čeka picking' : (finished === queue.length && queue.length ? 'Gotovo' : 'U toku');
+        }
         syncValidateGate();
         renderLists();
+        renderItems();
 
         if (!queue.length) {
             if (els.card) els.card.hidden = true;
@@ -2117,61 +2214,16 @@ function initArticleScanner() {
             return;
         }
         if (els.empty) els.empty.hidden = true;
-        if (editingKey) {
-            var editIdx = -1;
-            queue.forEach(function (item, idx) {
-                if (item.key === editingKey) editIdx = idx;
-            });
-            if (editIdx >= 0) current = editIdx;
-            else editingKey = '';
-        }
         if (els.doneAll) els.doneAll.hidden = true;
-        var work = document.getElementById('pkPickWork');
+        if (els.card) els.card.hidden = false;
         var customer = document.getElementById('pkCustomer');
-        var allDone = queue.length > 0 && finished === queue.length && !editingKey;
-        if (work) work.hidden = allDone;
-        if (customer) customer.hidden = !allDone;
-        if (allDone) {
-            if (els.card) els.card.hidden = false;
-            syncPickJson();
-            return;
-        }
-        if (!editingKey && (current >= queue.length || itemState(queue[current]).done)) {
+        if (customer) customer.hidden = false;
+        if (!editingKey && (current >= queue.length || (queue[current] && itemState(queue[current]).done))) {
             current = firstOpenIndex();
         }
-        var item = queue[current];
-        if (!item) {
-            if (els.card) els.card.hidden = true;
-            return;
-        }
-        var st = itemState(item);
-        var pct = item.need > 0 ? Math.round((st.got / item.need) * 100) : 0;
-        if (els.card) els.card.hidden = false;
-        if (els.loc) els.loc.textContent = item.is_mp ? 'MP' : (item.loc || '—');
-        if (els.locKicker) els.locKicker.textContent = item.is_mp ? 'Uzmi iz maloprodaje' : 'Lokacija (odakle se uzima)';
-        if (els.locPath) els.locPath.textContent = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
-        if (els.locMeta) els.locMeta.textContent = item.loc_rb + ' · stavka ' + item.rb;
-        if (els.name) els.name.textContent = item.naziv || '—';
-        if (els.sku) els.sku.textContent = item.sifra || item.barkod || '—';
-        if (els.brand) {
-            var bits = [];
-            if (item.brend) bits.push('Brend: ' + item.brend);
-            if (item.kategorija) bits.push('Kategorija: ' + item.kategorija);
-            els.brand.textContent = bits.join('  ·  ');
-        }
-        if (els.img) {
-            els.img.style.backgroundImage = item.slika ? 'url("' + item.slika + '")' : '';
-        }
-        if (els.gotView) els.gotView.textContent = String(st.got);
-        if (els.got && document.activeElement !== els.got) {
-            els.got.value = String(st.got);
-            els.got.max = String(item.need);
-        }
-        if (els.need) els.need.textContent = String(item.need);
-        if (els.barFill) els.barFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-        if (els.barPct) els.barPct.textContent = pct + '%';
-        if (els.takeLess) {
-            els.takeLess.hidden = !(st.got > 0 && st.got < item.need);
+        if (els.locKicker) {
+            var cur = queue[current];
+            els.locKicker.textContent = cur && cur.is_mp ? 'Uzmi iz maloprodaje' : 'Lokacija (odakle se uzima)';
         }
         showMsg('');
         if (els.scan) {
