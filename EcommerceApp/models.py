@@ -3799,6 +3799,7 @@ class UserProfile(models.Model):
 class Order(models.Model):
     class Status(models.TextChoices):
         NOVA = 'nova', 'Nova'
+        REZERVACIJA = 'rezervacija', 'Rezervacija'
         POTVRDJENA = 'potvrdjena', 'Potvrđena'
         POSLANA = 'poslana', 'Poslana'
         ZAVRSENA = 'zavrsena', 'Validatovana'

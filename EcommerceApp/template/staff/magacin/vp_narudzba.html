@@ -1,7 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="vp-page">
+<div class="vp-page{% if draft.ime_prezime %} is-customer-set{% endif %}">
     {% if not draft %}
     <div class="mg-page-head">
         <div>
@@ -26,10 +26,9 @@
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
     </header>
 
-    <section class="vp-box mg-card" id="vpCustomerBox"
+    <section class="vp-box mg-card{% if draft.ime_prezime %} is-set{% endif %}" id="vpCustomerBox"
              data-lookup="{{ customer_lookup_url }}"
              data-save="{{ customer_save_url }}">
-        <h2 class="mg-h">Kupac</h2>
         {% if draft.ime_prezime %}
         <div class="vp-chip mg-customer-chip">
             <div>
@@ -37,17 +36,21 @@
                 <strong class="vp-name">{{ draft.ime_prezime }}</strong>
                 <span>{{ draft.telefon }}{% if draft.grad %} · {{ draft.grad }}{% endif %}</span>
             </div>
+            <button type="button" class="mg-btn" id="vpCustomerChange">Promijeni</button>
         </div>
         {% endif %}
-        <p class="mg-field-label">Pretraga kupca</p>
-        <div class="vp-row mg-input-row">
-            <div class="mg-icon-field">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <input type="search" id="vpCustomerSearch" placeholder="Unesi ime, telefon ili odaberi postojećeg kupca..." autocomplete="off">
+        <div class="vp-customer-edit">
+            <h2 class="mg-h">Kupac</h2>
+            <p class="mg-field-label">Pretraga kupca</p>
+            <div class="vp-row mg-input-row">
+                <div class="mg-icon-field">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input type="search" id="vpCustomerSearch" placeholder="Unesi ime, telefon ili odaberi postojećeg kupca..." autocomplete="off">
+                </div>
+                <button type="button" class="mg-btn mg-btn-pill" id="vpCustomerAdd">+ Novi kupac</button>
             </div>
-            <button type="button" class="mg-btn mg-btn-pill" id="vpCustomerAdd">+ Novi kupac</button>
+            <ul class="vp-suggest" id="vpCustomerSuggest" hidden></ul>
         </div>
-        <ul class="vp-suggest" id="vpCustomerSuggest" hidden></ul>
         <form method="post" id="vpCustomerForm">
             {% csrf_token %}
             <input type="hidden" name="action" value="kupac">
@@ -132,6 +135,11 @@
         </form>
         <div class="mg-order-foot-sum">
             <span class="vp-total" id="vpTotal"{% if not stavke %} hidden{% endif %}>Ukupno: <strong><span>{{ ukupno }} KM</span></strong></span>
+            <form method="post" id="vpReserveForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="rezervacija">
+                <button type="submit" class="mg-btn">Rezervacija</button>
+            </form>
             <form method="post" id="vpFinishForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="zavrsi">
@@ -218,6 +226,12 @@
     if (finish) {
         finish.addEventListener('submit', function (event) {
             if (!window.confirm('Završiti VP narudžbu?')) event.preventDefault();
+        });
+    }
+    var reserve = document.getElementById('vpReserveForm');
+    if (reserve) {
+        reserve.addEventListener('submit', function (event) {
+            if (!window.confirm('Sačuvati kao rezervaciju? Zaliha se drži, narudžba ostaje otvorena.')) event.preventDefault();
         });
     }
     var del = document.getElementById('vpDeleteForm');
@@ -313,6 +327,18 @@
         });
     }
     if (addBtn) addBtn.addEventListener('click', openAdd);
+    var changeBtn = document.getElementById('vpCustomerChange');
+    var vpPage = document.querySelector('.vp-page');
+    if (changeBtn && custBox) {
+        changeBtn.addEventListener('click', function () {
+            custBox.classList.remove('is-set');
+            if (vpPage) vpPage.classList.remove('is-customer-set');
+            if (custSearch) {
+                custSearch.focus();
+                searchCustomers(custSearch.value);
+            }
+        });
+    }
     if (modal) {
         modal.querySelectorAll('[data-vp-cust-close]').forEach(function (el) {
             el.addEventListener('click', closeAdd);

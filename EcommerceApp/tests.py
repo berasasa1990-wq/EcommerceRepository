@@ -328,6 +328,61 @@ class ProductPakovanjeKatalogHintTests(TestCase):
         self.assertEqual(product.pakovanje_komada_prikaz, 9)
 
 
+class ProductVariationSplitTests(TestCase):
+    def test_split_variations_into_standalone_products(self):
+        from .product_merge import split_product_variations
+
+        parent = Product.objects.create(
+            naziv='Fox masinica',
+            slug='fox-masinica-split',
+            sifra='FOX-BASE',
+            cijena=Decimal('100.00'),
+            aktivan=True,
+            na_stanju=True,
+            stanje=0,
+        )
+        red = ProductVariation.objects.create(
+            artikal=parent, naziv='Crvena', sifra='FOX-R',
+            cijena=Decimal('110.00'), stanje=3, na_stanju=True, redoslijed=1,
+        )
+        blue = ProductVariation.objects.create(
+            artikal=parent, naziv='Plava', sifra='FOX-B',
+            cijena=Decimal('120.00'), stanje=5, na_stanju=True, redoslijed=2,
+        )
+        result = split_product_variations(parent)
+        parent.refresh_from_db()
+        self.assertEqual(parent.varijacije.count(), 0)
+        self.assertEqual(result['split_count'], 2)
+        self.assertEqual(len(result['created_products']), 1)
+        self.assertEqual(parent.naziv, 'Fox masinica — Crvena')
+        self.assertEqual(parent.sifra, 'FOX-R')
+        self.assertEqual(parent.cijena, Decimal('110.00'))
+        self.assertEqual(parent.stanje, 3)
+        created = result['created_products'][0]
+        created.refresh_from_db()
+        self.assertEqual(created.naziv, 'Fox masinica — Plava')
+        self.assertEqual(created.sifra, 'FOX-B')
+        self.assertEqual(created.cijena, Decimal('120.00'))
+        self.assertEqual(created.stanje, 5)
+        self.assertFalse(ProductVariation.objects.filter(pk__in=[red.pk, blue.pk]).exists())
+
+    def test_admin_split_action_requires_variations(self):
+        from django.contrib.auth.models import User
+        from django.urls import reverse
+
+        user = User.objects.create_superuser('admin', 'a@example.com', 'pass')
+        product = Product.objects.create(
+            naziv='Bez varijacija', slug='bez-var-split', cijena=Decimal('10.00'),
+        )
+        self.client.force_login(user)
+        changelist = reverse('admin:EcommerceApp_product_changelist')
+        response = self.client.post(changelist, {
+            'action': 'bulk_split_variations',
+            '_selected_action': [str(product.pk)],
+        })
+        self.assertEqual(response.status_code, 302)
+
+
 class PonudaAkcijaTests(TestCase):
     """+ Ponuda: popup after add-to-cart, optional % discount."""
 

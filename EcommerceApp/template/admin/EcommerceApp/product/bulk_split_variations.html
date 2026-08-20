@@ -1,0 +1,62 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .bulk-merge-note {
+        max-width: 760px; background: #f8f8f8; border: 1px solid #e5e5e5;
+        border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; line-height: 1.5;
+    }
+    .bulk-merge-list {
+        margin: 20px 0; padding: 14px 16px; background: #fff;
+        border: 1px solid #e5e5e5; border-radius: 6px; max-width: 760px;
+    }
+    .bulk-merge-list ul { margin: 8px 0 0; padding-left: 18px; max-height: 280px; overflow-y: auto; }
+    .bulk-merge-actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Rastavi varijacije
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Vrati varijacije u zasebne artikle</h1>
+
+    <div class="bulk-merge-note">
+        Svaka <strong>varijacija</strong> postaje svoj artikal (svoja šifra, cijena, zaliha, Odoo ID).
+        Glavni artikal ostaje jedan od njih. Ovo je suprotno od spajanja u varijante.
+    </div>
+
+    <div class="bulk-merge-list">
+        <strong>Artikli za rastavljanje: {{ queryset|length }}</strong>
+        <ul>
+            {% for product in queryset %}
+            <li>
+                {{ product.naziv }}
+                {% if product.sifra %}<span style="color:#666;">({{ product.sifra }})</span>{% endif %}
+                — {{ product.varijacije.count }} varijacij{{ product.varijacije.count|pluralize:"a,e,a" }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for product in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
+        {% endfor %}
+        <div class="bulk-merge-actions">
+            <input type="submit" name="apply" value="Rastavi u zasebne artikle" class="default">
+            <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

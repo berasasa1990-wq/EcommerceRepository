@@ -26,78 +26,83 @@
         .label {
             width: 3.559in;
             height: 1.224in;
-            padding: 1.5mm 2.2mm 1.4mm;
+            padding: 0.07in 0.1in 0.05in;
             border: 1px solid #ccc;
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            grid-template-rows: auto auto minmax(0, 1fr);
-            column-gap: 2.4mm;
-            row-gap: 0.4mm;
+            display: flex;
+            flex-direction: column;
             font-family: Arial, Helvetica, sans-serif;
             color: #000;
             overflow: hidden;
             background: #fff;
         }
+        .top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.08in;
+            flex-shrink: 0;
+        }
+        .info {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
         .naziv {
-            grid-column: 1 / -1;
             margin: 0;
-            font-size: 9px;
+            font-size: 11px;
             font-weight: 700;
-            line-height: 1.15;
+            line-height: 1.12;
+            text-transform: uppercase;
             max-height: 2.3em;
             overflow: hidden;
         }
         .sifra {
-            grid-column: 1 / -1;
+            margin: 0.02in 0 0;
+            font-size: 8px;
+            letter-spacing: .03em;
+        }
+        .cijena {
             margin: 0;
-            font-size: 7.5px;
-            letter-spacing: .02em;
+            flex-shrink: 0;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            line-height: 1;
+            white-space: nowrap;
+            text-align: right;
         }
         .barcode {
-            grid-column: 1;
-            grid-row: 3;
+            flex: 1 1 auto;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-width: 0;
             min-height: 0;
+            padding-top: 0.04in;
         }
         .barcode img {
             display: block;
             width: 100%;
-            height: 8.5mm;
+            height: 0.58in;
             object-fit: contain;
             object-position: center;
         }
         .barcode span {
             display: block;
-            margin-top: 0.4mm;
-            font-size: 7.5px;
+            margin-top: 0.03in;
+            font-size: 9px;
             font-family: ui-monospace, Consolas, "Courier New", monospace;
-            letter-spacing: .08em;
+            letter-spacing: .12em;
             font-weight: 700;
-        }
-        .cijena {
-            grid-column: 2;
-            grid-row: 3;
-            margin: 0;
-            align-self: center;
-            font-size: 18px;
-            font-weight: 800;
-            text-align: right;
-            line-height: 1;
-            white-space: nowrap;
         }
         @media print {
             .bar { display: none !important; }
             .sheet { padding: 0; }
-            html, body {
+            html, body, .label {
                 width: 3.559in;
                 height: 1.224in;
                 background: #fff;
             }
-            .label { border: 0; }
+            .label { border: 0; padding: 0.06in 0.08in 0.04in; }
         }
     </style>
 </head>
@@ -108,15 +113,19 @@
     </div>
     <div class="sheet">
         <article class="label">
-            <h1 class="naziv">{{ naziv }}</h1>
-            <p class="sifra">{% if sifra %}{{ sifra }}{% else %}—{% endif %}</p>
+            <header class="top">
+                <div class="info">
+                    <h1 class="naziv">{{ naziv }}</h1>
+                    <p class="sifra">{% if sifra %}{{ sifra }}{% else %}—{% endif %}</p>
+                </div>
+                <p class="cijena">{% if cijena is not None %}{{ cijena }} KM{% else %}—{% endif %}</p>
+            </header>
             <div class="barcode">
                 {% if barcode_src %}
                 <img src="{{ barcode_src }}" alt="{{ barkod }}">
                 {% endif %}
                 {% if barkod %}<span>{{ barkod }}</span>{% endif %}
             </div>
-            <p class="cijena">{% if cijena is not None %}{{ cijena }} KM{% else %}—{% endif %}</p>
         </article>
     </div>
     <script>window.addEventListener('load', function () { window.print(); });</script>

@@ -36,6 +36,13 @@
             Pauziraj
         </a>
         <button type="button" class="pk-reset" id="pkReset">Poništi</button>
+        {% if not is_prenos_mp %}
+        <form method="post" class="pk-cancel-form" id="pkCancelForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="otkazi">
+            <button type="submit" class="mg-btn mg-btn-danger">Otkaži</button>
+        </form>
+        {% endif %}
         <button type="button" class="pk-finish" id="pkValidDoneBtn2">Završi</button>
     </footer>
 
@@ -93,7 +100,7 @@
             <input type="text" id="pkScanInput" class="pk-scan-hidden" inputmode="none" autocomplete="off" aria-label="Barkod ili šifra">
             <p class="pk-msg" id="pkMsg" hidden></p>
             <p class="pk-bar-prog" id="pkProgress" hidden>0/{{ pick_total }}</p>
-            <button type="button" id="pkTakeLess" hidden>Uzmi manje</button>
+            <button type="button" id="pkTakeLess" hidden>Pokupi manje</button>
             <button type="button" id="pkTakeAll" hidden>Pokupi sve</button>
             <button type="button" id="pkMinus" hidden>−</button>
             <button type="button" id="pkPlus" hidden>+</button>

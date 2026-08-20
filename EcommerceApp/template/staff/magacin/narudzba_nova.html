@@ -2,11 +2,11 @@
 
 {% block magacin_content %}
 <div class="mg-order-page" id="mgOrderPage">
-    <nav class="mg-crumb">Narudžbe / Nova ručna narudžba</nav>
+    <nav class="mg-crumb">Narudžbe / {% if existing_order %}Rezervacija #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</nav>
     <div class="mg-page-head">
         <div>
-            <h1>Nova ručna narudžba</h1>
-            <p class="mg-count" id="mgOrderIntro">Kreiraj narudžbu dodavanjem kupca i artikla.</p>
+            <h1>{% if existing_order %}Rezervacija #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</h1>
+            <p class="mg-count" id="mgOrderIntro">{% if existing_order %}Zaliha je rezervisana. Dodaj ili izbaci artikle, pa Sačuvaj kad je narudžba gotova.{% else %}Kreiraj narudžbu dodavanjem kupca i artikla.{% endif %}</p>
         </div>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
@@ -16,6 +16,7 @@
 
 <form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
+    {% if existing_order %}<input type="hidden" name="order_broj" value="{{ existing_order.broj }}">{% endif %}
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
         <h2 class="mg-h">Kupac</h2>
         <p class="mg-field-label">Pretraga kupca</p>
@@ -126,10 +127,18 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
             Očisti narudžbu
         </button>
+        {% if existing_order %}
+        <button type="submit" name="action" value="otkazi" class="mg-btn mg-btn-danger" id="mgOrderCancel" formnovalidate>
+            Otkaži narudžbu
+        </button>
+        {% endif %}
         <div class="mg-order-foot-sum">
             <span class="mg-order-ship" id="mgOrderShip">Dostava: 11.00 KM</span>
             <span>Ukupno: <strong id="mgOrderTotal">0.00 KM</strong></span>
-            <button type="submit" class="mg-btn mg-btn-primary">
+            <button type="submit" name="action" value="rezervacija" class="mg-btn">
+                Rezervacija
+            </button>
+            <button type="submit" name="action" value="sacuvaj" class="mg-btn mg-btn-primary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
                 Sačuvaj narudžbu
             </button>

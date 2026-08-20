@@ -31,7 +31,7 @@ from .odoo_import import (
 
 logger = logging.getLogger(__name__)
 ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
-from .product_merge import ProductMergeError, merge_products
+from .product_merge import ProductMergeError, merge_products, split_product_variations
 from .models import (
     ActiveCartItem,
     AdvisorBeginnerFishType,
@@ -2114,6 +2114,7 @@ class ProductAdmin(admin.ModelAdmin):
         'bulk_assign_pakovanje',
         'bulk_rename_product_images',
         'bulk_proizvedeno_u_japanu', 'bulk_ukloni_japan', 'bulk_merge_products',
+        'bulk_split_variations',
         'bulk_objavi_na_olx_pik',
     ]
     filter_horizontal = ('tagovi',)
@@ -3449,6 +3450,59 @@ class ProductAdmin(admin.ModelAdmin):
         return render(request, 'admin/EcommerceApp/product/bulk_merge_products.html', context)
 
     bulk_merge_products.short_description = 'Spoji u jedan artikal (varijante)'
+
+    def bulk_split_variations(self, request, queryset):
+        selected = queryset.distinct().prefetch_related('varijacije')
+        with_vars = [product for product in selected if product.varijacije.exists()]
+        if not with_vars:
+            self.message_user(
+                request,
+                'Odaberite artikal koji ima varijacije da ga rastavite na zasebne artikle.',
+                messages.ERROR,
+            )
+            return
+
+        if 'apply' in request.POST:
+            created_total = 0
+            split_total = 0
+            errors = 0
+            last_primary = None
+            for product in with_vars:
+                try:
+                    result = split_product_variations(product)
+                except ProductMergeError as exc:
+                    errors += 1
+                    self.message_user(request, str(exc), messages.ERROR)
+                    continue
+                created_total += len(result['created_products'])
+                split_total += result['split_count']
+                last_primary = result['primary']
+            if split_total:
+                self.message_user(
+                    request,
+                    (
+                        f'Rastavljeno {len(with_vars) - errors} artikl(a) u {split_total} zasebnih. '
+                        f'Novo kreirano: {created_total}.'
+                    ),
+                    messages.SUCCESS,
+                )
+            if last_primary and len(with_vars) == 1 and not errors:
+                return HttpResponseRedirect(
+                    reverse('admin:EcommerceApp_product_change', args=[last_primary.pk]),
+                )
+            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Rastavi varijacije u zasebne artikle',
+            'queryset': with_vars,
+            'opts': self.model._meta,
+            'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            'action_name': 'bulk_split_variations',
+        }
+        return render(request, 'admin/EcommerceApp/product/bulk_split_variations.html', context)
+
+    bulk_split_variations.short_description = 'Vrati varijacije u zasebne artikle'
 
     @admin.display(description='Upute')
     def olx_objavi_info(self, obj):

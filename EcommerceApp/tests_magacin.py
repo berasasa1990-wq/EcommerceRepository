@@ -969,6 +969,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(start.status_code, 302)
         draft = MagacinVpNarudzba.objects.get()
         vp_form = self.client.get(reverse('staff_magacin_vp_narudzba'))
+        self.assertContains(vp_form, 'Rezervacija')
         self.assertContains(vp_form, 'id="vpCatalog"')
         self.assertContains(vp_form, 'id="vpCatalogBtn"')
         self.assertContains(vp_form, 'Katalog')
@@ -985,6 +986,10 @@ class MagacinViewTests(TestCase):
             'customer_id': customer.pk,
         })
         self.assertEqual(set_cust.status_code, 302)
+        with_cust = self.client.get(reverse('staff_magacin_vp_narudzba'))
+        self.assertContains(with_cust, 'is-customer-set')
+        self.assertContains(with_cust, 'vpCustomerChange')
+        self.assertContains(with_cust, 'Promijeni')
         added = self.client.post(reverse('staff_magacin_vp_narudzba'), {
             'action': 'dodaj',
             'product_id': self.product.pk,
@@ -1606,6 +1611,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'id="mgOrderQtyModal"')
         self.assertContains(form, 'Stavke narudžbe')
         self.assertContains(form, 'Sačuvaj narudžbu')
+        self.assertContains(form, 'Rezervacija')
         self.assertContains(form, 'Očisti narudžbu')
         self.assertContains(form, 'id="mgCustomerSearch"')
         self.assertContains(form, 'Dodaj kupca')
@@ -1862,6 +1868,81 @@ class MagacinViewTests(TestCase):
         self.assertContains(listed, 'is-blink-pack')
         self.assertNotContains(listed, 'novih narudžbi')
 
+    def test_manual_reservation_holds_stock_and_stays_editable(self):
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Reza Kupac',
+            'telefon': '061999888',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'action': 'rezervacija',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Reza Kupac')
+        self.assertEqual(order.status, Order.Status.REZERVACIJA)
+        self.assertEqual(order.lager_status, Order.LagerStatus.REZERVISANO)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 2)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 6)
+        self.assertIn('broj=' + order.broj, created['Location'])
+        picking = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertNotContains(picking, 'Reza Kupac')
+        listed = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertContains(listed, 'Reza Kupac')
+        self.assertContains(listed, 'Rezervacija')
+        edit = self.client.get(reverse('staff_magacin_narudzba_nova'), {'broj': order.broj})
+        self.assertContains(edit, 'Rezervacija #')
+        self.assertContains(edit, 'Test braid')
+        saved = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'order_broj': order.broj,
+            'ime_prezime': 'Reza Kupac',
+            'telefon': '061999888',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['3'],
+            'mp_ok': ['0'],
+            'action': 'sacuvaj',
+        })
+        self.assertEqual(saved.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.NOVA)
+        self.assertEqual(order.stavke.get().kolicina, 3)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 3)
+        picking_ready = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertContains(picking_ready, 'Reza Kupac')
+
+    def test_reservation_can_be_cancelled(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Predomislio',
+            'telefon': '061777666',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'action': 'rezervacija',
+        })
+        order = Order.objects.get(ime_prezime='Predomislio')
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 2)
+        edit = self.client.get(reverse('staff_magacin_narudzba_nova'), {'broj': order.broj})
+        self.assertContains(edit, 'Otkaži narudžbu')
+        cancelled = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'order_broj': order.broj,
+            'action': 'otkazi',
+        })
+        self.assertEqual(cancelled.status_code, 302)
+        self.assertEqual(cancelled['Location'], reverse('staff_magacin_narudzbe'))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.OTKAZANA)
+        self.assertEqual(order.lager_status, Order.LagerStatus.OTKAZANO)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 8)
+        listed = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertNotContains(listed, 'Predomislio')
+        picking = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertNotContains(picking, 'Predomislio')
+
     def test_packing_print_shows_picked_validated_qty_and_locations(self):
         from .magacin import validate_order_stock
         from .views_magacin import apply_order_pick
@@ -2100,8 +2181,10 @@ class MagacinViewTests(TestCase):
         self.assertContains(pack_detail, 'T-1')
         self.assertContains(pack_detail, '01')
         self.assertContains(pack_detail, 'Lokacija (odakle se uzima)')
-        self.assertContains(pack_detail, 'Uzmi manje')
+        self.assertContains(pack_detail, 'Pokupi manje')
         self.assertContains(pack_detail, 'Pokupi sve')
+        self.assertContains(pack_detail, 'Otkaži')
+        self.assertContains(pack_detail, 'name="action" value="otkazi"')
         self.assertContains(pack_detail, 'Validatuj')
         self.assertContains(pack_detail, 'Završi picking')
         self.assertContains(pack_detail, 'Stavke za pakovanje')

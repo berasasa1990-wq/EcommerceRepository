@@ -48,6 +48,8 @@ from .magacin import (
     skini_sa_sajta,
     ubaci_na_sajt,
     reserve_for_order,
+    release_holds_for_product,
+    cancel_order_stock,
     is_ignored_stock_location,
     last_sync,
     load_running_sync_job,
@@ -169,7 +171,11 @@ def _validated_orders_q():
 
 
 def _unvalidated_orders_qs():
-    return Order.objects.exclude(status=Order.Status.OTKAZANA).exclude(_validated_orders_q())
+    return (
+        Order.objects.exclude(status=Order.Status.OTKAZANA)
+        .exclude(status=Order.Status.REZERVACIJA)
+        .exclude(_validated_orders_q())
+    )
 
 
 def _completed_pick_qs():
@@ -895,10 +901,31 @@ def _etiketa_barcode_data_uri(code):
     raw = (code or '').strip()
     if not raw:
         return ''
-    from .loyalty import generisi_loyalty_barcode_png
+    import io as _io
+    from barcode import Code128
+    from barcode.writer import ImageWriter
+    from PIL import Image
 
     try:
-        png = generisi_loyalty_barcode_png(raw)
+        buffer = _io.BytesIO()
+        Code128(str(raw), writer=ImageWriter()).write(
+            buffer,
+            options={
+                'module_width': 0.32,
+                'module_height': 18.0,
+                'quiet_zone': 1.2,
+                'font_size': 0,
+                'text_distance': 1,
+                'write_text': False,
+                'background': 'white',
+                'foreground': 'black',
+            },
+        )
+        buffer.seek(0)
+        img = Image.open(buffer).convert('RGB')
+        out = _io.BytesIO()
+        img.save(out, format='PNG', optimize=True)
+        png = out.getvalue()
     except Exception:
         logger.exception('Barkod etikete nije generisan: %s', raw)
         return ''
@@ -2268,23 +2295,72 @@ def _save_warehouse_customer(*, ime, telefon, adresa='', grad='', email='', post
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_narudzba_nova(request):
-    context = _magacin_context(request, section='narudzbe', page_title='Nova ručna narudžba')
+    existing = _reservation_order_from_request(request)
+    page_title = (
+        f'Rezervacija #{existing.broj}' if existing else 'Nova ručna narudžba'
+    )
+    context = _magacin_context(request, section='narudzbe', page_title=page_title)
+    context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
+    context['existing_order'] = existing
     if request.method == 'POST':
+        if (request.POST.get('action') or '').strip() == 'otkazi':
+            if existing is None:
+                messages.error(request, 'Narudžba za otkazivanje nije pronađena.')
+                return redirect('staff_magacin_narudzbe')
+            try:
+                cancel_order_stock(existing, user=request.user)
+            except MagacinError as exc:
+                messages.error(request, str(exc))
+                return redirect(f"{reverse('staff_magacin_narudzba_nova')}?broj={existing.broj}")
+            messages.success(
+                request,
+                f'Narudžba #{existing.broj} je otkazana — rezervacija je vraćena na lokacije.',
+            )
+            return redirect('staff_magacin_narudzbe')
         try:
-            order = _create_manual_order(request)
+            order = _create_manual_order(request, existing=existing)
         except MagacinError as exc:
             messages.error(request, str(exc))
             context['form'] = request.POST
             context['form_lines'] = _posted_display_lines(request)
-            context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
             return render(request, 'staff/magacin/narudzba_nova.html', context)
+        if order.status == Order.Status.REZERVACIJA:
+            messages.success(
+                request,
+                f'Rezervacija #{order.broj} je sačuvana. '
+                'Možeš dodati ili izbaciti artikle, pa Sačuvaj kad je gotova.',
+            )
+            return redirect(f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}")
         messages.success(request, f'Narudžba #{order.broj} je kreirana.')
         return redirect('staff_magacin_narudzbe')
 
-    context['form'] = {}
-    context['form_lines'] = []
-    context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
+    if existing:
+        context['form'] = {
+            'ime_prezime': existing.ime_prezime,
+            'telefon': existing.telefon,
+            'email': existing.email,
+            'adresa': existing.adresa,
+            'grad': existing.grad,
+            'postanski_broj': existing.postanski_broj,
+            'napomena': existing.napomena,
+        }
+        context['form_lines'] = _order_display_lines(existing)
+    else:
+        context['form'] = {}
+        context['form_lines'] = []
     return render(request, 'staff/magacin/narudzba_nova.html', context)
+
+
+def _reservation_order_from_request(request):
+    broj = (request.POST.get('order_broj') or request.GET.get('broj') or '').strip().lstrip('#')
+    if not broj:
+        return None
+    order = (
+        Order.objects.filter(broj=broj, status=Order.Status.REZERVACIJA)
+        .exclude(status=Order.Status.OTKAZANA)
+        .first()
+    )
+    return order
 
 
 def _posted_display_lines(request):
@@ -2319,7 +2395,39 @@ def _posted_display_lines(request):
     return lines
 
 
-def _create_manual_order(request):
+def _held_qty_on_order(order, product, variation):
+    if order is None or product is None:
+        return 0
+    filt = {'product': product, 'status': OrderStockHold.Status.REZERVISANO}
+    if variation is None:
+        filt['variation__isnull'] = True
+    else:
+        filt['variation'] = variation
+    return sum(int(h.kolicina or 0) for h in order.magacin_holds.filter(**filt))
+
+
+def _order_display_lines(order):
+    lines = []
+    for item in order.stavke.select_related('artikal', 'varijacija'):
+        product = item.artikal
+        variation = item.varijacija
+        available = 0
+        if product is not None:
+            available = stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
+                order, product, variation,
+            )
+        lines.append({
+            'product': product,
+            'variation': variation,
+            'qty': item.kolicina,
+            'mp_ok': 'Maloprodaja' in (order.napomena or ''),
+            'cijena': item.cijena,
+            'dostupno': available,
+        })
+    return lines
+
+
+def _create_manual_order(request, *, existing=None):
     ime = (request.POST.get('ime_prezime') or '').strip()
     telefon = (request.POST.get('telefon') or '').strip()
     if not ime:
@@ -2362,7 +2470,9 @@ def _create_manual_order(request):
         if qty <= 0:
             raise MagacinError('Količina mora biti veća od nule.')
         mp_ok = (mp_flags[index] if index < len(mp_flags) else '') == '1'
-        available = stock_totals(product, variation)['dostupno']
+        available = stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
+            existing, product, variation,
+        )
         if available < qty and not mp_ok:
             raise MagacinError(
                 f'„{product.naziv}” nema dovoljno zalihe u magacinu ({available}). '
@@ -2383,14 +2493,34 @@ def _create_manual_order(request):
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
     from .pricing import _standardna_dostava
     dostava, _, _, _ = _standardna_dostava(medjuzbir)
+    action = (request.POST.get('action') or '').strip()
+    keep_reservation = action == 'rezervacija' or (
+        existing is not None and action != 'sacuvaj'
+    )
     with transaction.atomic():
         order = _save_manual_order(
             request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
+            existing=existing,
+            rezervacija=keep_reservation,
         )
     return order
 
 
-def _save_manual_order(request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines):
+def _clear_order_items_and_holds(order, user=None):
+    for item in list(order.stavke.all()):
+        product = item.artikal
+        variation = item.varijacija
+        if product is not None:
+            release_holds_for_product(order, product, variation, user=user)
+        item.delete()
+    order.pick_state = {}
+    order.save(update_fields=['pick_state'])
+
+
+def _save_manual_order(
+    request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
+    *, existing=None, rezervacija=False,
+):
     napomena = (request.POST.get('napomena') or '').strip()
     mp_names = [
         (line['variation'].naziv if line['variation'] else line['product'].naziv)
@@ -2400,21 +2530,39 @@ def _save_manual_order(request, ime, telefon, email, adresa, grad, medjuzbir, do
     if mp_names:
         extra = 'Maloprodaja: ' + ', '.join(mp_names)
         napomena = f'{napomena}\n{extra}'.strip() if napomena else extra
-    order = Order.objects.create(
-        ime_prezime=ime[:200],
-        email=email[:254],
-        telefon=telefon[:30],
-        adresa=adresa[:300],
-        grad=grad[:100],
-        postanski_broj=(request.POST.get('postanski_broj') or '').strip()[:20],
-        napomena=napomena,
-        medjuzbir=medjuzbir,
-        dostava=dostava,
-        popust=Decimal('0.00'),
-        ukupno=medjuzbir + dostava,
-        status=Order.Status.NOVA,
-        izvor=Order.Izvor.MAGACIN,
-    )
+    status = Order.Status.REZERVACIJA if rezervacija else Order.Status.NOVA
+    if existing is not None:
+        _clear_order_items_and_holds(existing, user=request.user)
+        existing.ime_prezime = ime[:200]
+        existing.email = email[:254]
+        existing.telefon = telefon[:30]
+        existing.adresa = adresa[:300]
+        existing.grad = grad[:100]
+        existing.postanski_broj = (request.POST.get('postanski_broj') or '').strip()[:20]
+        existing.napomena = napomena
+        existing.medjuzbir = medjuzbir
+        existing.dostava = dostava
+        existing.popust = Decimal('0.00')
+        existing.ukupno = medjuzbir + dostava
+        existing.status = status
+        existing.save()
+        order = existing
+    else:
+        order = Order.objects.create(
+            ime_prezime=ime[:200],
+            email=email[:254],
+            telefon=telefon[:30],
+            adresa=adresa[:300],
+            grad=grad[:100],
+            postanski_broj=(request.POST.get('postanski_broj') or '').strip()[:20],
+            napomena=napomena,
+            medjuzbir=medjuzbir,
+            dostava=dostava,
+            popust=Decimal('0.00'),
+            ukupno=medjuzbir + dostava,
+            status=status,
+            izvor=Order.Izvor.MAGACIN,
+        )
     for line in lines:
         product = line['product']
         variation = line['variation']
@@ -3283,6 +3431,20 @@ def magacin_pakuj_detail(request, broj):
         return redirect(_pakuj_zauzeto_url(order.broj))
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
+        if action == 'otkazi':
+            if prenos_mp:
+                messages.error(request, 'Prenos u MP se ne otkazuje ovdje.')
+                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+            try:
+                cancel_order_stock(order, user=request.user)
+            except MagacinError as exc:
+                messages.error(request, str(exc))
+                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+            messages.success(
+                request,
+                f'Narudžba #{order.broj} je otkazana — rezervacija je vraćena na lokacije.',
+            )
+            return redirect('staff_magacin_pakuj')
         if action in {'dodaj', 'ukloni', 'kolicina'}:
             return _pakuj_edit_order(request, order)
         if action in {'validiraj', 'pick_save'}:
@@ -3876,9 +4038,20 @@ def magacin_vp_narudzba(request):
             if action == 'obrisi':
                 draft.delete()
                 return redirect('staff_magacin_vp_narudzba')
-            if action == 'zavrsi':
-                order = finish_vp_narudzba(draft, user=request.user)
+            if action in {'zavrsi', 'rezervacija'}:
+                order = finish_vp_narudzba(
+                    draft, user=request.user, rezervacija=(action == 'rezervacija'),
+                )
                 invalidate_magacin_nav_counts()
+                if action == 'rezervacija':
+                    messages.success(
+                        request,
+                        f'Rezervacija #{order.broj} je sačuvana. '
+                        'Možeš dodati ili izbaciti artikle, pa Sačuvaj kad je gotova.',
+                    )
+                    return redirect(
+                        f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}"
+                    )
                 messages.success(request, f'VP narudžba #{order.broj} je kreirana.')
                 return redirect('staff_magacin_narudzbe')
             raise MagacinError('Nepoznata akcija.')

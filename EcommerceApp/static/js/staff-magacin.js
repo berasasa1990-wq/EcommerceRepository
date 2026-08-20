@@ -467,6 +467,13 @@ function initCustomerPicker() {
         if (wrap && !wrap.contains(event.target) && list) list.hidden = true;
     });
     form.addEventListener('submit', function (event) {
+        var submitter = event.submitter;
+        if (submitter && submitter.getAttribute('name') === 'action' && submitter.value === 'otkazi') {
+            if (!window.confirm('Otkazati narudžbu i vratiti rezervaciju na lokacije?')) {
+                event.preventDefault();
+            }
+            return;
+        }
         if (locked && locked.hidden) {
             event.preventDefault();
             if (search) search.focus();
@@ -1038,6 +1045,10 @@ function initManualOrderForm() {
         });
     }
     form.addEventListener('submit', function (event) {
+        var submitter = event.submitter;
+        if (submitter && submitter.getAttribute('name') === 'action' && submitter.value === 'otkazi') {
+            return;
+        }
         if (pick) {
             event.preventDefault();
             commitPick();
@@ -2147,7 +2158,6 @@ function initArticleScanner() {
 
     function appendItemCard(into, item, idx, number, isNow) {
         var st = itemState(item);
-        var pct = item.need > 0 ? Math.round((st.got / item.need) * 100) : 0;
         var loc = item.is_mp ? 'MP' : (item.loc || '—');
         var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
         var sku = item.sifra || item.barkod || '—';
@@ -2174,14 +2184,12 @@ function initArticleScanner() {
                     '<span>Šifra: ' + escapeHtml(sku) + '</span>' +
                 '</div>' +
             '</div>' +
-            '<div class="pk-item-grid">' +
-                '<div><span>Lokacija</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || 'Magacin') + '</small></div>' +
-                '<div><span>Za pokupiti</span><b>' + item.need + ' kom</b></div>' +
-                '<div><span>Pokupljeno</span><b>' + st.got + ' / ' + item.need + ' kom</b>' +
-                    '<div class="pk-track" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>' +
-                    '<em>' + pct + '%</em>' +
-                '</div>' +
-            '</div>';
+            (st.done
+                ? ''
+                : '<div class="pk-less-row">' +
+                    '<input type="number" inputmode="numeric" min="1" max="' + item.need + '" step="1" placeholder="Unesi količinu" data-pk-less-qty aria-label="Količina">' +
+                    '<button type="button" data-pk-less>Pokupi manje</button>' +
+                  '</div>');
         art.querySelector('[data-pk-minus]').addEventListener('click', function () {
             current = idx;
             setGot(item, itemState(item).got - 1);
@@ -2195,6 +2203,30 @@ function initArticleScanner() {
             allBtn.addEventListener('click', function () {
                 current = idx;
                 setGot(item, item.need);
+            });
+        }
+        var lessBtn = art.querySelector('[data-pk-less]');
+        var lessQty = art.querySelector('[data-pk-less-qty]');
+        if (lessBtn && lessQty) {
+            function pickLess() {
+                current = idx;
+                var raw = parseInt(lessQty.value, 10);
+                if (isNaN(raw) || raw <= 0) {
+                    showMsg('Unesi količinu koju imaš (manje od ' + item.need + ').');
+                    lessQty.focus();
+                    return;
+                }
+                if (raw >= item.need) {
+                    setGot(item, item.need);
+                    return;
+                }
+                setGot(item, raw, true);
+            }
+            lessBtn.addEventListener('click', pickLess);
+            lessQty.addEventListener('keydown', function (event) {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                pickLess();
             });
         }
         into.appendChild(art);
@@ -2490,6 +2522,14 @@ function initArticleScanner() {
     if (els.validDone) els.validDone.addEventListener('click', clickValidate);
     var validDone2 = document.getElementById('pkValidDoneBtn2');
     if (validDone2) validDone2.addEventListener('click', clickValidate);
+    var cancelForm = document.getElementById('pkCancelForm');
+    if (cancelForm) {
+        cancelForm.addEventListener('submit', function (event) {
+            if (!window.confirm('Otkazati narudžbu i vratiti rezervaciju na lokacije?')) {
+                event.preventDefault();
+            }
+        });
+    }
     if (els.form) {
         els.form.addEventListener('submit', function (event) {
             var broj = root.getAttribute('data-broj') || '';

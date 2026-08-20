@@ -1955,7 +1955,7 @@ def remove_vp_stavka(draft, stavka_id):
         raise MagacinError('Stavka nije pronađena.')
 
 
-def finish_vp_narudzba(draft, *, user=None):
+def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
     if draft.status == MagacinVpNarudzba.Status.ZAVRSENA:
         return draft.order
     if not (draft.ime_prezime or '').strip() or not (draft.telefon or '').strip():
@@ -2006,7 +2006,7 @@ def finish_vp_narudzba(draft, *, user=None):
             dostava=Decimal('0.00'),
             popust=Decimal('0.00'),
             ukupno=medjuzbir,
-            status=Order.Status.NOVA,
+            status=Order.Status.REZERVACIJA if rezervacija else Order.Status.NOVA,
             izvor=Order.Izvor.MAGACIN,
         )
         for line in lines:
