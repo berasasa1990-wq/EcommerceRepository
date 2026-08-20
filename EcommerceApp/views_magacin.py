@@ -65,6 +65,7 @@ from .magacin import (
     seed_default_locations,
     start_full_sync,
     stock_totals,
+    vp_cijena,
 )
 from .models import (
     BARKOD_MAX_LENGTH,
@@ -853,11 +854,14 @@ def magacin_artikal(request, pk):
         })
 
     price_history, price_chart = _product_uvoz_price_history(product)
+    vpc, mpc = vp_cijena(product, variation)
 
     context = _magacin_context(request, section='artikli', page_title=f'{product.naziv} — Magacin', hide_top_search=True)
     context.update({
         'product': product,
         'meta': meta,
+        'mpc': mpc,
+        'vpc': vpc,
         'tags': tags,
         'location_rows': rows,
         'totals': totals,
@@ -3003,6 +3007,79 @@ def pending_vp_orders():
     return ready
 
 
+def _order_pick_status(order):
+    if (
+        order.lager_status == Order.LagerStatus.VALIDIRANO
+        or order.status == Order.Status.ZAVRSENA
+        or getattr(order, 'needs_print_packed', False)
+    ):
+        return 'zavrseno'
+    claimed = bool(order.pick_claimed_by_id or (order.pick_claimed_name or '').strip())
+    state = order.pick_state if isinstance(order.pick_state, dict) else {}
+    progressed = False
+    for row in state.values():
+        if isinstance(row, dict) and (row.get('done') or int(row.get('got') or 0) > 0):
+            progressed = True
+            break
+    if claimed or progressed:
+        return 'u_toku'
+    return 'ceka'
+
+
+def collect_pick_jobs():
+    jobs = []
+    seen = set()
+    qs = list(
+        _unvalidated_orders_qs()
+        .prefetch_related('stavke', 'magacin_holds')
+        .order_by('-kreirana')
+    )
+    locked = pending_mp_brojevi(collect_mp_checks(qs))
+    vp_map = {order.pk: order for order in pending_vp_orders()}
+    for order in qs:
+        if not is_prenos_mp_order(order) and (
+            order.broj in locked or order_needs_mp_check(order)
+        ):
+            continue
+        order.pick_status = _order_pick_status(order)
+        order.stavki = order.stavke.count()
+        order.pick_open_url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
+        vp = vp_map.get(order.pk)
+        if vp and vp.needs_print_packed:
+            order.needs_print_packed = True
+            order.pick_status = 'zavrseno'
+            order.pick_open_url = reverse('staff_order_detail', args=[order.broj])
+        jobs.append(order)
+        seen.add(order.pk)
+    for order in vp_map.values():
+        if order.pk in seen or not order.needs_print_packed:
+            continue
+        order.pick_status = 'zavrseno'
+        order.stavki = getattr(order, 'vp_stavki', order.stavke.count())
+        order.pick_open_url = reverse('staff_order_detail', args=[order.broj])
+        jobs.append(order)
+        seen.add(order.pk)
+    today = timezone.localdate()
+    done_qs = (
+        Order.objects.filter(
+            Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
+        )
+        .exclude(status=Order.Status.OTKAZANA)
+        .exclude(_prenos_mp_q())
+        .filter(Q(zapakovana_at__date=today) | Q(kreirana__date=today))
+        .prefetch_related('stavke')
+        .order_by('-kreirana')[:40]
+    )
+    for order in done_qs:
+        if order.pk in seen:
+            continue
+        order.pick_status = 'zavrseno'
+        order.stavki = order.stavke.count()
+        order.pick_open_url = reverse('staff_order_detail', args=[order.broj])
+        jobs.append(order)
+    return jobs
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_pakuj(request):
@@ -3021,13 +3098,43 @@ def magacin_pakuj(request):
                 .filter(broj=zauzeto, pick_claimed_by__isnull=False)
                 .first()
             )
+    explicit_status = (request.GET.get('status') or '').strip()
+    status_filter = explicit_status or 'ceka'
+    query = (request.GET.get('pretraga') or request.GET.get('q') or '').strip()
+    jobs = collect_pick_jobs()
+    counts = {
+        'sve': len(jobs),
+        'ceka': 0,
+        'u_toku': 0,
+        'zavrseno': 0,
+    }
+    for job in jobs:
+        counts[job.pick_status] = counts.get(job.pick_status, 0) + 1
+    if query:
+        q = query.casefold()
+        q_digits = ''.join(ch for ch in query if ch.isdigit())
+        jobs = [
+            job for job in jobs
+            if q in (job.broj or '').casefold()
+            or q.lstrip('#') in (job.broj or '').casefold()
+            or q in (job.ime_prezime or '').casefold()
+            or q in (job.telefon or '').casefold()
+            or (q_digits and q_digits in ''.join(ch for ch in (job.telefon or '') if ch.isdigit()))
+            or (q_digits and q_digits in (job.broj or ''))
+        ]
+    if status_filter in {'ceka', 'u_toku', 'zavrseno'}:
+        jobs = [job for job in jobs if job.pick_status == status_filter]
     context = _magacin_context(request, section='pakuj', page_title='Picking — Magacin')
     context.update({
-        'pick_fullscreen': True,
+        'pick_fullscreen': False,
         'prenos_mp_jobs': pending_prenos_mp_jobs(),
         'vp_orders': pending_vp_orders(),
         'mp_pending_count': len(collect_mp_checks()),
         'claimed_order': claimed_order,
+        'pick_jobs': jobs,
+        'pick_status_filter': status_filter,
+        'pick_query': query,
+        'pick_counts': counts,
     })
     return render(request, 'staff/magacin/pakuj.html', context)
 

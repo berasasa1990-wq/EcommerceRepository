@@ -39,11 +39,8 @@
         </div>
         <h1>{{ product.naziv }}</h1>
         <p class="mg-phone-price">
-            {% if variation %}
-            {{ variation.prikazna_cijena }} KM{% if variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% endif %}
-            {% else %}
-            {{ product.prikazna_cijena }} KM{% if product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
-            {% endif %}
+            {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
+            <span class="mg-phone-vpc">Vpc {{ vpc }} KM</span>
         </p>
         <ul class="mg-phone-locs">
             {% for row in location_rows %}
@@ -93,13 +90,10 @@
                 <dd>{{ product.brend.naziv|default:"—" }}</dd>
                 <dt>Cijena</dt>
                 <dd class="mg-meta-price">
-                    {% if variation %}
-                    {{ variation.prikazna_cijena }} KM{% if variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% endif %}
-                    {% else %}
-                    {{ product.prikazna_cijena }} KM{% if product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
-                    {% endif %}
-                    {% if meta.veleprodajna_cijena %} · VPC {{ meta.veleprodajna_cijena }} KM{% endif %}
+                    {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
                 </dd>
+                <dt>Vpc</dt>
+                <dd>{{ vpc }} KM</dd>
             </dl>
         </div>
         <div class="mg-hero-aside">
@@ -244,8 +238,8 @@
                     <td class="num">{{ product.cijena }} KM</td>
                 </tr>
                 <tr>
-                    <td>Veleprodajna cijena</td>
-                    <td class="num">{% if meta.veleprodajna_cijena %}{{ meta.veleprodajna_cijena }} KM{% else %}—{% endif %}</td>
+                    <td>Vpc</td>
+                    <td class="num">{{ vpc }} KM</td>
                 </tr>
                 <tr>
                     <td>Akcijska cijena</td>

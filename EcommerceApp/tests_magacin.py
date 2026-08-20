@@ -699,8 +699,12 @@ class MagacinViewTests(TestCase):
         self.assertContains(detail, 'Skini sa stanja')
         self.assertContains(detail, 'Dodaj na stanje')
         self.assertContains(detail, '>Cijena<')
+        self.assertContains(detail, '>Vpc<')
         self.assertContains(detail, 'mg-zalihe-panel')
         self.assertContains(detail, '10.00 KM')
+        self.assertContains(detail, '7.25 KM')
+        self.assertContains(detail, 'Vpc 7.25 KM')
+        self.assertNotContains(detail, '· VPC')
         self.assertContains(detail, 'Prenos u MP')
         self.assertContains(detail, 'Transfer')
         self.assertContains(detail, 'Dodaj u novu lokaciju')
@@ -1096,7 +1100,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
         self.assertFalse(order.zapakovana)
         self.assertNotEqual(order.status, Order.Status.ZAVRSENA)
-        still = self.client.get(reverse('staff_magacin_pakuj'))
+        still = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'sve'})
         self.assertContains(still, 'Print Kupac')
         self.assertContains(still, 'Štampaj zapakovano')
         self.assertEqual(len(still.context['vp_orders']), 1)
@@ -1115,8 +1119,9 @@ class MagacinViewTests(TestCase):
         order.refresh_from_db()
         self.assertTrue(order.zapakovana)
         self.assertEqual(order.status, Order.Status.ZAVRSENA)
-        gone = self.client.get(reverse('staff_magacin_pakuj'))
-        self.assertNotContains(gone, 'Print Kupac')
+        gone = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'sve'})
+        self.assertContains(gone, 'Print Kupac')
+        self.assertContains(gone, 'Završeno')
         self.assertNotContains(gone, 'Štampaj zapakovano')
         self.assertEqual(gone.context['new_pack_orders_count'], 0)
         shown = [
@@ -1536,7 +1541,6 @@ class MagacinViewTests(TestCase):
         self.assertEqual(stock_totals(self.product)['rezervisano'], 3)
         listing = self.client.get(reverse('staff_magacin_pakuj'))
         self.assertContains(listing, 'Prenos u MP')
-        self.assertContains(listing, self.product.naziv)
         self.assertContains(listing, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         narudzbe = self.client.get(reverse('staff_magacin_narudzbe'))
         self.assertNotContains(narudzbe, order.broj)
@@ -1637,7 +1641,8 @@ class MagacinViewTests(TestCase):
         self.assertContains(listing, 'Skeniraj narudžbu')
         self.assertContains(listing, 'id="pkOrderNo"')
         self.assertContains(listing, 'value="#"')
-        self.assertNotContains(listing, order.ime_prezime)
+        self.assertContains(listing, order.ime_prezime)
+        self.assertContains(listing, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         png = self.client.get(reverse('staff_magacin_narudzba_barkod', args=[order.broj]))
         self.assertEqual(png.status_code, 200)
         self.assertEqual(png['Content-Type'], 'image/png')
@@ -1692,6 +1697,51 @@ class MagacinViewTests(TestCase):
         missing = self.client.get(reverse('staff_magacin_pakuj_sken'), {'q': 'OZB9999'})
         self.assertEqual(missing.status_code, 302)
         self.assertEqual(missing['Location'], reverse('staff_magacin_pakuj'))
+
+    def test_picking_home_defaults_to_waiting(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ceka Kupac',
+            'telefon': '061111111',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Toku Kupac',
+            'telefon': '061222222',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        waiting = Order.objects.get(ime_prezime='Ceka Kupac')
+        active = Order.objects.get(ime_prezime='Toku Kupac')
+        home = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertEqual(home.context['pick_status_filter'], 'ceka')
+        self.assertContains(home, 'pk-refresh')
+        self.assertContains(home, 'Ceka Kupac')
+        self.assertContains(home, 'Toku Kupac')
+        self.assertContains(home, 'status=u_toku')
+        self.assertContains(home, 'status=zavrseno')
+        self.assertNotContains(home, 'pk-tab-n')
+        empty_toku = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'u_toku'})
+        self.assertContains(empty_toku, 'Nema pickinga u toku')
+        self.assertNotContains(empty_toku, 'Ceka Kupac')
+        self.client.get(reverse('staff_magacin_pakuj_sken'), {'q': active.broj})
+        waiting_only = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertEqual(waiting_only.context['pick_status_filter'], 'ceka')
+        self.assertContains(waiting_only, 'Ceka Kupac')
+        self.assertNotContains(waiting_only, 'Toku Kupac')
+        self.assertContains(waiting_only, 'class="pk-tab-n">1</i>')
+        in_progress = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'u_toku'})
+        self.assertContains(in_progress, 'Toku Kupac')
+        self.assertNotContains(in_progress, 'Ceka Kupac')
+        all_jobs = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'sve'})
+        self.assertContains(all_jobs, 'Ceka Kupac')
+        self.assertContains(all_jobs, 'Toku Kupac')
+        self.assertContains(all_jobs, reverse('staff_magacin_pakuj_detail', args=[waiting.broj]))
 
     def test_save_customer_persists_without_order(self):
         self.client.force_login(self.user)
@@ -1946,7 +1996,7 @@ class MagacinViewTests(TestCase):
         unlocked = self.client.get(reverse('staff_magacin_pakuj'))
         self.assertContains(unlocked, 'Skeniraj narudžbu')
         self.assertNotContains(unlocked, 'Picking kreće poslije provjere')
-        self.assertNotContains(unlocked, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertContains(unlocked, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(unlocked.context['new_pack_orders_count'], 1)
 
     def test_order_detail_uses_magacin_look_and_back_link(self):
@@ -2016,7 +2066,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(pack_list.status_code, 200)
         self.assertContains(pack_list, 'Picking')
         self.assertContains(pack_list, 'Skeniraj narudžbu')
-        self.assertNotContains(pack_list, order.ime_prezime)
+        self.assertContains(pack_list, order.ime_prezime)
         pack_detail = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(pack_detail.status_code, 200)
         self.assertContains(pack_detail, order.ime_prezime)
@@ -2028,7 +2078,10 @@ class MagacinViewTests(TestCase):
         self.assertContains(pack_detail, 'Pokupi sve')
         self.assertContains(pack_detail, 'Validatuj')
         self.assertContains(pack_detail, 'Završi picking')
-        self.assertContains(pack_detail, 'Unos količine')
+        self.assertContains(pack_detail, 'Stavke za pakovanje')
+        self.assertContains(pack_detail, 'id="pkSeparatedWrap"')
+        self.assertContains(pack_detail, 'id="pkSeparatedToggle"')
+        self.assertContains(pack_detail, 'Odvojeno')
         self.assertNotContains(pack_detail, 'Odnio kod Slobe')
         self.assertNotContains(pack_detail, 'ostavi kod slobe')
         self.assertContains(pack_detail, 'Test braid')

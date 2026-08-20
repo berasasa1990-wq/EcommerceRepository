@@ -3840,6 +3840,14 @@ tr.is-mp-lock {
         font-size: 16px;
         color: var(--mg-muted);
     }
+    .mg-phone-vpc {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--mg-muted);
+        letter-spacing: 0;
+    }
     .mg-phone-locs {
         margin: 0;
         padding: 0;
@@ -4742,6 +4750,23 @@ tr.is-mp-lock {
     color: #111;
     box-shadow: inset 0 -2px 0 #111;
 }
+.mg-orders-page .mg-filter-tabs .pk-tab-n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1;
+    vertical-align: 1px;
+}
 .mg-orders-page .mg-bulk-bar {
     gap: 8px;
     margin: 0 0 14px;
@@ -4914,6 +4939,48 @@ tr.is-mp-lock {
     font-size: 16px;
     font-weight: 700;
 }
+.pk-open-empty {
+    margin: 0 0 16px;
+    color: #9aa0a6;
+    font-size: 13px;
+}
+.pk-separated {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #eceef1;
+}
+.pk-separated-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #eceef1;
+    border-radius: 12px;
+    background: #fff;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: #6b7280;
+    cursor: pointer;
+}
+.pk-separated.is-open .pk-separated-toggle { margin-bottom: 10px; }
+.pk-separated-toggle i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 700;
+}
 .pk-item {
     background: #fff;
     border: 1px solid #eceef1;
@@ -4921,7 +4988,20 @@ tr.is-mp-lock {
     padding: 14px;
     margin-bottom: 12px;
 }
-.pk-item.is-done { opacity: .92; }
+.pk-item.is-done { background: #fafafa; }
+.pk-odvojeno-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 110px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 12px;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 600;
+}
 .pk-item-top {
     display: grid;
     grid-template-columns: 22px 72px 1fr;
@@ -5076,4 +5156,90 @@ tr.is-mp-lock {
     .pk-bottom a.is-on { color: #111; }
     .pk-bottom svg { width: 22px; height: 22px; }
     .pk-list .pk-stage { padding-bottom: 180px; }
+}
+
+.pk-home .pk-refresh {
+    position: relative;
+    flex: 0 0 auto;
+    align-self: flex-start;
+    width: auto;
+    min-width: 0;
+    min-height: 36px;
+    padding: 6px 12px;
+    gap: 6px;
+    overflow: hidden;
+}
+.pk-home .pk-refresh svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    display: block;
+}
+.pk-home-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    gap: 18px 24px;
+    align-items: start;
+    margin-bottom: 16px;
+}
+.pk-home-search { max-width: none; margin: 8px 0 0; }
+.pk-home-stats { margin: 0; }
+.pk-mp-banner {
+    display: block;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff7ed;
+    color: #9a3412;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+}
+.pk-home-foot {
+    margin: 10px 12px 6px;
+    font-size: 13px;
+    color: #9aa0a6;
+}
+.pk-scan-hidden-block {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+.pk-print-row td { padding-top: 0; border-top: 0; }
+.pk-print-packed {
+    display: inline-flex;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--mg-line);
+    color: #111;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+}
+@media (max-width: 860px) {
+    .pk-home .mg-page-head {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .pk-home .pk-refresh {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+        padding: 0;
+        justify-content: center;
+        margin-top: 2px;
+    }
+    .pk-home .pk-refresh .pk-refresh-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+    .pk-home-top { grid-template-columns: 1fr; }
 }

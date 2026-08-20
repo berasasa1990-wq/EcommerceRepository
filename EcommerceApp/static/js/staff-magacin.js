@@ -1926,7 +1926,7 @@ function initArticleScanner() {
             event.preventDefault();
             openFromScan(input.value);
         });
-        input.focus();
+        if (root.classList.contains('pk-scan-only')) input.focus();
     }
     var numForm = document.getElementById('pkOpenNum');
     var numInput = document.getElementById('pkOrderNo');
@@ -2041,6 +2041,12 @@ function initArticleScanner() {
         takeAll: document.getElementById('pkTakeAll'),
         pickJson: document.getElementById('pkPickJson'),
         itemList: document.getElementById('pkItemList'),
+        openHead: document.getElementById('pkOpenHead'),
+        openEmpty: document.getElementById('pkOpenEmpty'),
+        separatedWrap: document.getElementById('pkSeparatedWrap'),
+        separatedToggle: document.getElementById('pkSeparatedToggle'),
+        separatedN: document.getElementById('pkSeparatedN'),
+        separatedList: document.getElementById('pkSeparatedList'),
         statItems: document.getElementById('pkStatItems'),
         statNeed: document.getElementById('pkStatNeed'),
         statGot: document.getElementById('pkStatGot'),
@@ -2050,6 +2056,7 @@ function initArticleScanner() {
         statusPill: document.getElementById('pkStatusPill'),
     };
     var isPrenosMp = root.getAttribute('data-prenos-mp') === '1';
+    var separatedOpen = false;
 
     function syncValidateGate() {
         if (els.validDone) els.validDone.hidden = false;
@@ -2133,54 +2140,88 @@ function initArticleScanner() {
         return { need: need, got: got, items: queue.length, done: doneCount() };
     }
 
-    function renderItems() {
-        if (!els.itemList) return;
-        els.itemList.innerHTML = '';
-        queue.forEach(function (item, idx) {
-            var st = itemState(item);
-            var pct = item.need > 0 ? Math.round((st.got / item.need) * 100) : 0;
-            var loc = item.is_mp ? 'MP' : (item.loc || '—');
-            var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
-            var sku = item.sifra || item.barkod || '—';
-            var art = document.createElement('article');
-            art.className = 'pk-item' + (st.done ? ' is-done' : '');
-            art.innerHTML =
-                '<div class="pk-item-top">' +
-                    '<em class="pk-item-n">' + (idx + 1) + '</em>' +
-                    '<div class="pk-item-img"' + (item.slika ? ' style="background-image:url(\'' + escapeHtml(item.slika) + '\')"' : '') + '></div>' +
-                    '<div class="pk-item-info">' +
-                        '<strong>' + escapeHtml(sku) + '</strong>' +
-                        '<p>' + escapeHtml(item.naziv || '—') + '</p>' +
-                        '<span>Šifra: ' + escapeHtml(sku) + '</span>' +
-                    '</div>' +
+    function appendItemCard(into, item, idx, number) {
+        var st = itemState(item);
+        var pct = item.need > 0 ? Math.round((st.got / item.need) * 100) : 0;
+        var loc = item.is_mp ? 'MP' : (item.loc || '—');
+        var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
+        var sku = item.sifra || item.barkod || '—';
+        var art = document.createElement('article');
+        art.className = 'pk-item' + (st.done ? ' is-done' : '');
+        art.innerHTML =
+            '<div class="pk-item-top">' +
+                '<em class="pk-item-n">' + number + '</em>' +
+                '<div class="pk-item-img"' + (item.slika ? ' style="background-image:url(\'' + escapeHtml(item.slika) + '\')"' : '') + '></div>' +
+                '<div class="pk-item-info">' +
+                    '<strong>' + escapeHtml(sku) + '</strong>' +
+                    '<p>' + escapeHtml(item.naziv || '—') + '</p>' +
+                    '<span>Šifra: ' + escapeHtml(sku) + '</span>' +
                 '</div>' +
-                '<div class="pk-item-grid">' +
-                    '<div><span>Lokacija</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || 'Magacin') + '</small></div>' +
-                    '<div><span>Za pokupiti</span><b>' + item.need + ' kom</b></div>' +
-                    '<div><span>Pokupljeno</span><b>' + st.got + ' / ' + item.need + ' kom</b>' +
-                        '<div class="pk-track" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>' +
-                        '<em>' + pct + '%</em>' +
-                    '</div>' +
+            '</div>' +
+            '<div class="pk-item-grid">' +
+                '<div><span>Lokacija</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || 'Magacin') + '</small></div>' +
+                '<div><span>Za pokupiti</span><b>' + item.need + ' kom</b></div>' +
+                '<div><span>Pokupljeno</span><b>' + st.got + ' / ' + item.need + ' kom</b>' +
+                    '<div class="pk-track" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>' +
+                    '<em>' + pct + '%</em>' +
                 '</div>' +
-                '<div class="pk-item-step">' +
-                    '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
-                    '<div class="pk-step-val"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small></div>' +
-                    '<button type="button" data-pk-plus aria-label="Više">+</button>' +
-                    '<button type="button" class="pk-all" data-pk-all>Pokupi sve</button>' +
-                '</div>';
-            art.querySelector('[data-pk-minus]').addEventListener('click', function () {
-                current = idx;
-                setGot(item, itemState(item).got - 1);
-            });
-            art.querySelector('[data-pk-plus]').addEventListener('click', function () {
-                current = idx;
-                setGot(item, itemState(item).got + 1);
-            });
-            art.querySelector('[data-pk-all]').addEventListener('click', function () {
+            '</div>' +
+            '<div class="pk-item-step">' +
+                '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
+                '<div class="pk-step-val"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small></div>' +
+                '<button type="button" data-pk-plus aria-label="Više">+</button>' +
+                (st.done
+                    ? '<span class="pk-odvojeno-tag">Odvojeno</span>'
+                    : '<button type="button" class="pk-all" data-pk-all>Pokupi sve</button>') +
+            '</div>';
+        art.querySelector('[data-pk-minus]').addEventListener('click', function () {
+            current = idx;
+            setGot(item, itemState(item).got - 1);
+        });
+        art.querySelector('[data-pk-plus]').addEventListener('click', function () {
+            current = idx;
+            setGot(item, itemState(item).got + 1);
+        });
+        var allBtn = art.querySelector('[data-pk-all]');
+        if (allBtn) {
+            allBtn.addEventListener('click', function () {
                 current = idx;
                 setGot(item, item.need);
             });
-            els.itemList.appendChild(art);
+        }
+        into.appendChild(art);
+    }
+
+    function renderItems() {
+        if (!els.itemList) return;
+        els.itemList.innerHTML = '';
+        if (els.separatedList) els.separatedList.innerHTML = '';
+        var openN = 0;
+        var doneN = 0;
+        queue.forEach(function (item, idx) {
+            if (itemState(item).done) {
+                doneN += 1;
+                if (els.separatedList) appendItemCard(els.separatedList, item, idx, doneN);
+            } else {
+                openN += 1;
+                appendItemCard(els.itemList, item, idx, openN);
+            }
+        });
+        if (els.openHead) els.openHead.hidden = openN === 0;
+        if (els.openEmpty) els.openEmpty.hidden = !(openN === 0 && doneN > 0);
+        if (doneN === 0) separatedOpen = false;
+        if (els.separatedWrap) {
+            els.separatedWrap.hidden = doneN === 0;
+            els.separatedWrap.classList.toggle('is-open', separatedOpen && doneN > 0);
+        }
+        if (els.separatedN) els.separatedN.textContent = String(doneN);
+        if (els.separatedList) els.separatedList.hidden = !separatedOpen;
+        if (els.separatedToggle) els.separatedToggle.setAttribute('aria-expanded', separatedOpen ? 'true' : 'false');
+    }
+    if (els.separatedToggle) {
+        els.separatedToggle.addEventListener('click', function () {
+            separatedOpen = !separatedOpen;
+            renderItems();
         });
     }
 

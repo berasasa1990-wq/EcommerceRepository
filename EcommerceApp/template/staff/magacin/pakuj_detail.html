@@ -68,8 +68,16 @@
                 </div>
             </div>
 
-            <h2 class="pk-list-h">Stavke za pakovanje</h2>
+            <h2 class="pk-list-h" id="pkOpenHead">Stavke za pakovanje</h2>
             <div id="pkItemList" class="pk-items"></div>
+            <p class="pk-open-empty" id="pkOpenEmpty" hidden>Sve stavke su odvojene.</p>
+            <div id="pkSeparatedWrap" class="pk-separated" hidden>
+                <button type="button" class="pk-separated-toggle" id="pkSeparatedToggle" aria-expanded="false">
+                    <span>Odvojeno</span>
+                    <i id="pkSeparatedN">0</i>
+                </button>
+                <div id="pkSeparatedList" class="pk-items" hidden></div>
+            </div>
             <span id="pkLocKicker" hidden>Lokacija (odakle se uzima)</span>
             <span hidden>Količina</span>
             <div id="pkPickWork" hidden></div>
@@ -111,7 +119,7 @@
             <span>Ukupno za pokupiti: <b id="pkDockNeed">0</b> kom</span>
         </p>
         <button type="button" class="pk-reset" id="pkReset">Poništi</button>
-        <button type="button" class="pk-finish" id="pkValidDoneBtn2">Završi picking</button>
+        <button type="button" class="pk-finish" id="pkValidDoneBtn2">Završi</button>
     </footer>
 
     <nav class="pk-bottom" aria-label="Magacin">

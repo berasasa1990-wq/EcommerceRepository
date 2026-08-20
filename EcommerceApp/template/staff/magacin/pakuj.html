@@ -1,17 +1,18 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pk-app pk-scan-only" id="pkListApp">
-    <header class="pk-bar pk-bar-dark">
-        <a class="pk-bar-back" href="{% url 'staff_magacin_narudzbe' %}">←</a>
-        <div class="pk-bar-title">
-            <strong>Picking</strong>
-            <span>Skeniraj narudžbu</span>
+<div class="mg-orders-page pk-home" id="pkListApp">
+    <div class="mg-page-head">
+        <div>
+            <h1>Picking</h1>
+            <p class="mg-count">Lista svih pick lista. Odaberite listu za prikaz detalja i početak operacije.</p>
         </div>
-        <button type="button" class="pk-bar-scan" id="pkOrderScanTop" data-mg-scan-target="pkListSearch" data-mg-scan-title="Skeniraj narudžbu" aria-label="Skener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
-        </button>
-    </header>
+        <a class="mg-btn mg-btn-pill pk-refresh" href="{{ request.get_full_path }}" aria-label="Osveži">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+            <span class="pk-refresh-label">Osveži</span>
+        </a>
+    </div>
+
     {% if messages %}
     <div class="pk-alert">
         {% for message in messages %}{{ message }}{% endfor %}
@@ -26,65 +27,113 @@
     </form>
     {% endif %}
     {% if mp_pending_count %}
-    <section class="pk-mp-list pk-jobs is-check">
-        <h2>Provjera MP</h2>
-        <a class="pk-mp-card pk-job is-check" href="{% url 'staff_magacin_pakuj_provjera' %}?next=pick">
-            <div class="pk-job-body">
-                <strong>Ima u MP / Nema</strong>
-                <span>{{ mp_pending_count }} artikl{{ mp_pending_count|pluralize:"a,a" }} bez zalihe. Picking kreće poslije provjere.</span>
-            </div>
-            <em class="pk-job-qty">{{ mp_pending_count }}</em>
-        </a>
-    </section>
+    <a class="pk-mp-banner" href="{% url 'staff_magacin_pakuj_provjera' %}?next=pick">
+        Provjera MP — {{ mp_pending_count }} artikl{{ mp_pending_count|pluralize:"a,a" }} bez zalihe. Picking kreće poslije provjere.
+    </a>
     {% endif %}
-    {% if prenos_mp_jobs %}
-    <section class="pk-mp-list pk-jobs is-prenos">
-        <h2>Prenos u MP</h2>
-        {% for job in prenos_mp_jobs %}
-        <a class="pk-mp-card pk-job is-prenos" href="{% url 'staff_magacin_pakuj_detail' job.order.broj %}">
-            {% if job.slika %}
-            <img src="{{ job.slika }}" alt="">
-            {% else %}
-            <span class="ph">—</span>
-            {% endif %}
-            <div class="pk-job-body">
-                <strong>{{ job.naziv }}</strong>
-                <span>{% if job.sifra %}{{ job.sifra }}{% endif %}{% if job.lokacija %} · {{ job.lokacija }}{% endif %}</span>
+
+    <div class="pk-home-top">
+        <div>
+            <div class="mg-filter-tabs">
+                <a href="?status=sve{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'sve' %}is-active{% endif %}">Sve</a>
+                <a href="?status=ceka{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'ceka' %}is-active{% endif %}">Čeka picking</a>
+                <a href="?status=u_toku{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'u_toku' %}is-active{% endif %}">U toku{% if pick_counts.u_toku %}<i class="pk-tab-n">{{ pick_counts.u_toku }}</i>{% endif %}</a>
+                <a href="?status=zavrseno{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'zavrseno' %}is-active{% endif %}">Završeno</a>
             </div>
-            <em class="pk-job-qty">{{ job.qty }}</em>
-        </a>
-        {% endfor %}
-    </section>
-    {% endif %}
-    {% if vp_orders %}
-    <section class="pk-mp-list pk-jobs is-vp">
-        <h2>VP narudžbe</h2>
-        {% for order in vp_orders %}
-        {% if order.needs_print_packed %}
-        <div class="pk-mp-card pk-job is-vp is-ready">
-            <div class="pk-job-body">
-                <strong>{{ order.ime_prezime }}</strong>
-                <span>#{{ order.broj }} · {{ order.vp_stavki }} stavki · Validatovano</span>
-            </div>
-            <em class="pk-job-sum">{{ order.ukupno }}</em>
-            <a class="pk-print-packed" href="{% url 'staff_magacin_pakuj_stampaj_zapakovano' order.broj %}">Štampaj zapakovano</a>
+            <form method="get" class="mg-page-search pk-home-search" role="search">
+                <input type="hidden" name="status" value="{{ pick_status_filter }}">
+                <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input type="search" name="pretraga" value="{{ pick_query }}" placeholder="Pretraži pick listu po broju narudžbe, kupcu..." autocomplete="off">
+                <button type="submit" class="mg-btn mg-btn-pill">Filtriraj</button>
+            </form>
         </div>
-        {% else %}
-        <a class="pk-mp-card pk-job is-vp" href="{% url 'staff_magacin_pakuj_detail' order.broj %}">
-            <div class="pk-job-body">
-                <strong>{{ order.ime_prezime }}</strong>
-                <span>#{{ order.broj }} · {{ order.vp_stavki }} stavki</span>
-            </div>
-            <em class="pk-job-sum">{{ order.ukupno }}</em>
-        </a>
-        {% endif %}
-        {% endfor %}
+        <div class="pk-stats pk-home-stats">
+            <div><span>Ukupno pick lista</span><b>{{ pick_counts.sve }}</b></div>
+            <div><span>Čeka picking</span><b>{{ pick_counts.ceka }}</b></div>
+            <div><span>U toku</span><b>{{ pick_counts.u_toku }}</b></div>
+            <div><span>Završeno</span><b>{{ pick_counts.zavrseno }}</b></div>
+        </div>
+    </div>
+
+    <section class="mg-card mg-orders-card">
+        <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>PICK LISTA</th>
+                    <th>NARUDŽBA</th>
+                    <th>KUPAC</th>
+                    <th>STAVKI</th>
+                    <th>STATUS</th>
+                    <th>KREIRANO</th>
+                    <th class="mg-more-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in pick_jobs %}
+                <tr class="is-clickable" onclick="location.href='{{ order.pick_open_url }}'">
+                    <td>
+                        <strong class="mg-order-rn">PL-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
+                        <span class="sub">#{{ order.pk }}</span>
+                    </td>
+                    <td>RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</td>
+                    <td>
+                        <strong class="mg-order-name">{{ order.ime_prezime }}</strong>
+                        {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
+                    </td>
+                    <td>{{ order.stavki }} stavki</td>
+                    <td>
+                        {% if order.pick_status == 'zavrseno' %}
+                        <span class="mg-pill mg-st-zavrsena">Završeno</span>
+                        {% elif order.pick_status == 'u_toku' %}
+                        <span class="mg-pill mg-st-nova">U toku</span>
+                        {% else %}
+                        <span class="mg-pill mg-src-rucna">Čeka picking</span>
+                        {% endif %}
+                    </td>
+                    <td class="mg-order-date">
+                        <span>{{ order.kreirana|date:"d.m.Y" }}</span>
+                        <span class="sub">{{ order.kreirana|date:"H:i" }}</span>
+                    </td>
+                    <td class="mg-more-col">
+                        <a class="mg-row-more" href="{{ order.pick_open_url }}" aria-label="Otvori">›</a>
+                    </td>
+                </tr>
+                {% if order.needs_print_packed %}
+                <tr class="pk-print-row">
+                    <td colspan="7">
+                        <a class="pk-print-packed" href="{% url 'staff_magacin_pakuj_stampaj_zapakovano' order.broj %}">Štampaj zapakovano</a>
+                    </td>
+                </tr>
+                {% endif %}
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="mg-muted">
+                        {% if pick_status_filter == 'ceka' %}
+                        Nema narudžbi koje čekaju picking.
+                        {% elif pick_status_filter == 'u_toku' %}
+                        Nema pickinga u toku.
+                        {% elif pick_status_filter == 'zavrseno' %}
+                        Nema završenih pick lista.
+                        {% else %}
+                        Nema pick lista.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <p class="pk-home-foot">Prikazano {{ pick_jobs|length }} rezultata</p>
     </section>
+
+    {% if vp_orders %}
+    <p class="mg-sr-only">VP narudžbe</p>
     {% endif %}
-    <div class="pk-scan-home">
-        <input type="text" id="pkListSearch" class="pk-scan-hidden" inputmode="none" autocomplete="off" autofocus data-scan-url="{% url 'staff_magacin_pakuj_sken' %}" aria-label="Barkod narudžbe">
+
+    <div class="pk-scan-home pk-scan-hidden-block">
+        <input type="text" id="pkListSearch" class="pk-scan-hidden" inputmode="none" autocomplete="off" data-scan-url="{% url 'staff_magacin_pakuj_sken' %}" aria-label="Barkod narudžbe">
         <button type="button" class="pk-cam pk-cam-xl" id="pkOrderScan" data-mg-scan-target="pkListSearch" data-mg-scan-title="Skeniraj narudžbu">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
             Skeniraj narudžbu
         </button>
         <form class="pk-open-num" id="pkOpenNum" action="{% url 'staff_magacin_pakuj_sken' %}" method="get">
