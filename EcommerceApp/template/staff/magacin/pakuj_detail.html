@@ -30,6 +30,15 @@
     <p class="pk-alert">{{ odoo_error }}</p>
     {% endif %}
 
+    <footer class="pk-dock">
+        <a class="mg-btn" href="{% url 'staff_magacin_pakuj' %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12h4"/><path d="M10 4v16h8a2 2 0 0 0 2-2V8z"/><path d="M10 9h4"/></svg>
+            Pauziraj
+        </a>
+        <button type="button" class="pk-reset" id="pkReset">Poništi</button>
+        <button type="button" class="pk-finish" id="pkValidDoneBtn2">Završi</button>
+    </footer>
+
     <section class="pk-stage" data-pk-panel="pick">
         <div id="pkCard" class="pk-sheet">
             <article class="pk-meta" id="pkCustomer">
@@ -56,27 +65,26 @@
                 </div>
             </article>
 
-            <div class="pk-stats" id="pkStats">
-                <div><span>Ukupno stavki</span><b id="pkStatItems">0</b></div>
-                <div><span>Ukupno za pokupiti</span><b id="pkStatNeed">0</b></div>
-                <div><span>Pokupljeno</span><b id="pkStatGot">0</b></div>
-                <div>
-                    <span>Progres</span>
-                    <b id="pkStatPct">0%</b>
-                    <div class="pk-track" aria-hidden="true"><i id="pkBarFill"></i></div>
-                    <em id="pkBarPct">0%</em>
-                </div>
-            </div>
+            <nav class="pk-switch" id="pkSwitch">
+                <button type="button" class="is-on" data-pk-view="now">Trenutno <i id="pkNowN">0</i></button>
+                <button type="button" data-pk-view="done">Pokupljeno <i id="pkDoneN">0</i></button>
+                <button type="button" data-pk-view="todo">Za pokupiti <i id="pkTodoN">0</i></button>
+            </nav>
 
-            <h2 class="pk-list-h" id="pkOpenHead">Stavke za pakovanje</h2>
-            <div id="pkItemList" class="pk-items"></div>
-            <p class="pk-open-empty" id="pkOpenEmpty" hidden>Sve stavke su odvojene.</p>
-            <div id="pkSeparatedWrap" class="pk-separated" hidden>
-                <button type="button" class="pk-separated-toggle" id="pkSeparatedToggle" aria-expanded="false">
-                    <span>Odvojeno</span>
-                    <i id="pkSeparatedN">0</i>
-                </button>
-                <div id="pkSeparatedList" class="pk-items" hidden></div>
+            <div id="pkViewNow">
+                <h2 class="pk-list-h" id="pkOpenHead">Stavke za pakovanje</h2>
+                <div id="pkItemList" class="pk-items"></div>
+                <p class="pk-open-empty" id="pkOpenEmpty" hidden>Sve stavke su odvojene.</p>
+            </div>
+            <div id="pkViewTodo" hidden>
+                <p class="pk-choose-h">Odaberi koju da pokupiš</p>
+                <div id="pkTodoList" class="pk-lines"></div>
+                <p class="pk-open-empty" id="pkTodoEmpty" hidden>Nema stavki za pokupiti.</p>
+            </div>
+            <div id="pkViewDone" hidden>
+                <p class="pk-choose-h">Pokupljene stavke</p>
+                <div id="pkDoneList" class="pk-lines"></div>
+                <p class="pk-open-empty" id="pkDoneEmpty" hidden>Još ništa nije pokupljeno.</p>
             </div>
             <span id="pkLocKicker" hidden>Lokacija (odakle se uzima)</span>
             <span hidden>Količina</span>
@@ -99,28 +107,9 @@
 
     <nav class="pk-tabs" hidden>
         <button type="button" class="is-on" data-pk-tab="pick">Pick</button>
-        <button type="button" data-pk-tab="todo">To do <i id="pkTodoN">0</i></button>
-        <button type="button" data-pk-tab="done">Done <i id="pkDoneN">0</i></button>
+        <button type="button" data-pk-tab="todo">To do</button>
+        <button type="button" data-pk-tab="done">Done</button>
     </nav>
-    <section class="pk-list-panel" data-pk-panel="todo" hidden>
-        <div id="pkTodoList" class="pk-lines"></div>
-    </section>
-    <section class="pk-list-panel" data-pk-panel="done" hidden>
-        <div id="pkDoneList" class="pk-lines"></div>
-    </section>
-
-    <footer class="pk-dock">
-        <a class="mg-btn" href="{% url 'staff_magacin_pakuj' %}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12h4"/><path d="M10 4v16h8a2 2 0 0 0 2-2V8z"/><path d="M10 9h4"/></svg>
-            Pauziraj
-        </a>
-        <p class="pk-dock-sum">
-            Pokupljeno: <b id="pkDockGot">0</b> kom
-            <span>Ukupno za pokupiti: <b id="pkDockNeed">0</b> kom</span>
-        </p>
-        <button type="button" class="pk-reset" id="pkReset">Poništi</button>
-        <button type="button" class="pk-finish" id="pkValidDoneBtn2">Završi</button>
-    </footer>
 
     <nav class="pk-bottom" aria-label="Magacin">
         <a href="{% url 'staff_magacin_pregled' %}">

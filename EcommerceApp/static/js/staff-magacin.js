@@ -2030,8 +2030,14 @@ function initArticleScanner() {
         progress: document.getElementById('pkProgress'),
         todoN: document.getElementById('pkTodoN'),
         doneN: document.getElementById('pkDoneN'),
+        nowN: document.getElementById('pkNowN'),
         todoList: document.getElementById('pkTodoList'),
         doneList: document.getElementById('pkDoneList'),
+        viewNow: document.getElementById('pkViewNow'),
+        viewTodo: document.getElementById('pkViewTodo'),
+        viewDone: document.getElementById('pkViewDone'),
+        todoEmpty: document.getElementById('pkTodoEmpty'),
+        doneEmpty: document.getElementById('pkDoneEmpty'),
         scan: document.getElementById('pkScanInput'),
         msg: document.getElementById('pkMsg'),
         valid: document.getElementById('pkValidBtn'),
@@ -2043,20 +2049,12 @@ function initArticleScanner() {
         itemList: document.getElementById('pkItemList'),
         openHead: document.getElementById('pkOpenHead'),
         openEmpty: document.getElementById('pkOpenEmpty'),
-        separatedWrap: document.getElementById('pkSeparatedWrap'),
-        separatedToggle: document.getElementById('pkSeparatedToggle'),
-        separatedN: document.getElementById('pkSeparatedN'),
-        separatedList: document.getElementById('pkSeparatedList'),
-        statItems: document.getElementById('pkStatItems'),
-        statNeed: document.getElementById('pkStatNeed'),
-        statGot: document.getElementById('pkStatGot'),
-        statPct: document.getElementById('pkStatPct'),
         dockGot: document.getElementById('pkDockGot'),
         dockNeed: document.getElementById('pkDockNeed'),
         statusPill: document.getElementById('pkStatusPill'),
     };
     var isPrenosMp = root.getAttribute('data-prenos-mp') === '1';
-    var separatedOpen = false;
+    var pickView = 'now';
 
     function syncValidateGate() {
         if (els.validDone) els.validDone.hidden = false;
@@ -2102,10 +2100,11 @@ function initArticleScanner() {
             if (fromDone) {
                 if (!window.confirm('Želiš li promijeniti pokupljenu količinu?')) return;
                 editingKey = item.key;
+            } else {
+                editingKey = '';
             }
             current = queue.indexOf(item);
-            setTab('pick');
-            render();
+            setPickView('now', true);
         });
         into.appendChild(btn);
     }
@@ -2113,13 +2112,19 @@ function initArticleScanner() {
     function renderLists() {
         if (els.todoList) els.todoList.innerHTML = '';
         if (els.doneList) els.doneList.innerHTML = '';
+        var todoN = 0;
+        var doneN = 0;
         queue.forEach(function (item) {
             if (itemState(item).done) {
+                doneN += 1;
                 if (els.doneList) renderLine(item, els.doneList, true);
-            } else if (els.todoList) {
-                renderLine(item, els.todoList, false);
+            } else {
+                todoN += 1;
+                if (els.todoList) renderLine(item, els.todoList, false);
             }
         });
+        if (els.todoEmpty) els.todoEmpty.hidden = todoN > 0;
+        if (els.doneEmpty) els.doneEmpty.hidden = doneN > 0;
     }
 
     function escapeHtml(value) {
@@ -2140,15 +2145,26 @@ function initArticleScanner() {
         return { need: need, got: got, items: queue.length, done: doneCount() };
     }
 
-    function appendItemCard(into, item, idx, number) {
+    function appendItemCard(into, item, idx, number, isNow) {
         var st = itemState(item);
         var pct = item.need > 0 ? Math.round((st.got / item.need) * 100) : 0;
         var loc = item.is_mp ? 'MP' : (item.loc || '—');
         var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
         var sku = item.sifra || item.barkod || '—';
         var art = document.createElement('article');
-        art.className = 'pk-item' + (st.done ? ' is-done' : '');
+        art.className = 'pk-item' + (st.done ? ' is-done' : '') + (isNow ? ' is-now' : '');
         art.innerHTML =
+            (isNow
+                ? '<div class="pk-now-go"><span>Uzmi sa lokacije</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || 'Magacin') + '</small></div>'
+                : '') +
+            '<div class="pk-item-step">' +
+                '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
+                '<div class="pk-step-val"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small></div>' +
+                '<button type="button" data-pk-plus aria-label="Više">+</button>' +
+                (st.done
+                    ? '<span class="pk-odvojeno-tag">Odvojeno</span>'
+                    : '<button type="button" class="pk-all" data-pk-all>Pokupi sve</button>') +
+            '</div>' +
             '<div class="pk-item-top">' +
                 '<em class="pk-item-n">' + number + '</em>' +
                 '<div class="pk-item-img"' + (item.slika ? ' style="background-image:url(\'' + escapeHtml(item.slika) + '\')"' : '') + '></div>' +
@@ -2165,14 +2181,6 @@ function initArticleScanner() {
                     '<div class="pk-track" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>' +
                     '<em>' + pct + '%</em>' +
                 '</div>' +
-            '</div>' +
-            '<div class="pk-item-step">' +
-                '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
-                '<div class="pk-step-val"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small></div>' +
-                '<button type="button" data-pk-plus aria-label="Više">+</button>' +
-                (st.done
-                    ? '<span class="pk-odvojeno-tag">Odvojeno</span>'
-                    : '<button type="button" class="pk-all" data-pk-all>Pokupi sve</button>') +
             '</div>';
         art.querySelector('[data-pk-minus]').addEventListener('click', function () {
             current = idx;
@@ -2195,34 +2203,55 @@ function initArticleScanner() {
     function renderItems() {
         if (!els.itemList) return;
         els.itemList.innerHTML = '';
-        if (els.separatedList) els.separatedList.innerHTML = '';
-        var openN = 0;
-        var doneN = 0;
-        queue.forEach(function (item, idx) {
-            if (itemState(item).done) {
-                doneN += 1;
-                if (els.separatedList) appendItemCard(els.separatedList, item, idx, doneN);
-            } else {
-                openN += 1;
-                appendItemCard(els.itemList, item, idx, openN);
+        var doneN = doneCount();
+        var remaining = queue.length - doneN;
+        var focusIdx = -1;
+        if (editingKey) {
+            for (var i = 0; i < queue.length; i += 1) {
+                if (queue[i].key === editingKey) {
+                    focusIdx = i;
+                    break;
+                }
             }
-        });
-        if (els.openHead) els.openHead.hidden = openN === 0;
-        if (els.openEmpty) els.openEmpty.hidden = !(openN === 0 && doneN > 0);
-        if (doneN === 0) separatedOpen = false;
-        if (els.separatedWrap) {
-            els.separatedWrap.hidden = doneN === 0;
-            els.separatedWrap.classList.toggle('is-open', separatedOpen && doneN > 0);
         }
-        if (els.separatedN) els.separatedN.textContent = String(doneN);
-        if (els.separatedList) els.separatedList.hidden = !separatedOpen;
-        if (els.separatedToggle) els.separatedToggle.setAttribute('aria-expanded', separatedOpen ? 'true' : 'false');
+        if (focusIdx < 0 && queue[current] && !itemState(queue[current]).done) {
+            focusIdx = current;
+        }
+        if (focusIdx < 0) {
+            focusIdx = firstOpenIndex();
+            current = focusIdx;
+        }
+        if (focusIdx < queue.length && queue[focusIdx]) {
+            appendItemCard(els.itemList, queue[focusIdx], focusIdx, focusIdx + 1, true);
+        }
+        if (els.openHead) {
+            els.openHead.hidden = remaining === 0 && !editingKey;
+            if (!els.openHead.hidden) {
+                els.openHead.textContent = editingKey
+                    ? 'Izmjena stavke'
+                    : ('Stavka ' + (focusIdx + 1) + ' / ' + queue.length);
+            }
+        }
+        if (els.openEmpty) els.openEmpty.hidden = !(remaining === 0 && doneN > 0 && !editingKey);
     }
-    if (els.separatedToggle) {
-        els.separatedToggle.addEventListener('click', function () {
-            separatedOpen = !separatedOpen;
-            renderItems();
+
+    function syncPickView() {
+        root.querySelectorAll('[data-pk-view]').forEach(function (btn) {
+            btn.classList.toggle('is-on', btn.getAttribute('data-pk-view') === pickView);
         });
+        if (els.viewNow) els.viewNow.hidden = pickView !== 'now';
+        if (els.viewTodo) els.viewTodo.hidden = pickView !== 'todo';
+        if (els.viewDone) els.viewDone.hidden = pickView !== 'done';
+    }
+
+    function setPickView(name, keepCurrent) {
+        pickView = name === 'todo' || name === 'done' ? name : 'now';
+        if (pickView === 'now' && !keepCurrent) {
+            editingKey = '';
+            current = firstOpenIndex();
+        }
+        syncPickView();
+        render();
     }
 
     function render() {
@@ -2233,18 +2262,21 @@ function initArticleScanner() {
         if (els.todoN) els.todoN.textContent = String(queue.length - finished);
         if (els.doneN) els.doneN.textContent = String(finished);
         if (els.valid) els.valid.disabled = false;
-        if (els.statItems) els.statItems.textContent = String(tot.items);
-        if (els.statNeed) els.statNeed.textContent = String(tot.need);
-        if (els.statGot) els.statGot.textContent = String(tot.got);
-        if (els.statPct) els.statPct.textContent = pct + '%';
-        if (els.barFill) els.barFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-        if (els.barPct) els.barPct.textContent = pct + '%';
+        if (els.nowN) {
+            els.nowN.textContent = queue.length
+                ? (Math.min(finished + (finished === queue.length ? 0 : 1), queue.length) + '/' + queue.length)
+                : '0';
+        }
         if (els.dockGot) els.dockGot.textContent = String(tot.got);
         if (els.dockNeed) els.dockNeed.textContent = String(tot.need);
         if (els.statusPill) {
             els.statusPill.textContent = tot.got <= 0 ? 'Čeka picking' : (finished === queue.length && queue.length ? 'Gotovo' : 'U toku');
         }
+        if (!editingKey && (current >= queue.length || (queue[current] && itemState(queue[current]).done))) {
+            current = firstOpenIndex();
+        }
         syncValidateGate();
+        syncPickView();
         renderLists();
         renderItems();
 
@@ -2259,15 +2291,12 @@ function initArticleScanner() {
         if (els.card) els.card.hidden = false;
         var customer = document.getElementById('pkCustomer');
         if (customer) customer.hidden = false;
-        if (!editingKey && (current >= queue.length || (queue[current] && itemState(queue[current]).done))) {
-            current = firstOpenIndex();
-        }
         if (els.locKicker) {
             var cur = queue[current];
             els.locKicker.textContent = cur && cur.is_mp ? 'Uzmi iz maloprodaje' : 'Lokacija (odakle se uzima)';
         }
-        showMsg('');
-        if (els.scan) {
+        if (pickView === 'now') showMsg('');
+        if (els.scan && pickView === 'now') {
             window.setTimeout(function () { els.scan.focus(); }, 40);
         }
         syncPickJson();
@@ -2325,21 +2354,13 @@ function initArticleScanner() {
         var value = norm(code);
         if (!value || !queue.length) return;
         var item = queue[current];
-        if (!item || itemState(item).done) item = queue[firstOpenIndex()];
-        if (!item) return;
-        var match = codesOf(item).indexOf(value) !== -1;
-        if (!match) {
-            for (var i = 0; i < queue.length; i += 1) {
-                if (!itemState(queue[i]).done && codesOf(queue[i]).indexOf(value) !== -1) {
-                    current = i;
-                    item = queue[i];
-                    match = true;
-                    break;
-                }
-            }
+        if (!item || itemState(item).done) {
+            current = firstOpenIndex();
+            item = queue[current];
         }
-        if (!match) {
-            showMsg('Barkod se ne poklapa s ovom stavkom.');
+        if (!item) return;
+        if (codesOf(item).indexOf(value) === -1) {
+            showMsg('Pogrešan artikal. Sada pickuj: ' + (item.naziv || 'ovu stavku') + ' @ ' + (item.loc || '—'));
             return;
         }
         var st = itemState(item);
@@ -2442,6 +2463,11 @@ function initArticleScanner() {
         });
     }
 
+    root.querySelectorAll('[data-pk-view]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            setPickView(btn.getAttribute('data-pk-view'));
+        });
+    });
     root.querySelectorAll('[data-pk-tab]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             setTab(btn.getAttribute('data-pk-tab'));

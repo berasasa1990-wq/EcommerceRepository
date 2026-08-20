@@ -33,31 +33,23 @@
     {% endif %}
 
     <div class="pk-home-top">
-        <div>
-            <div class="mg-filter-tabs">
-                <a href="?status=sve{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'sve' %}is-active{% endif %}">Sve</a>
-                <a href="?status=ceka{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'ceka' %}is-active{% endif %}">Čeka picking</a>
-                <a href="?status=u_toku{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'u_toku' %}is-active{% endif %}">U toku{% if pick_counts.u_toku %}<i class="pk-tab-n">{{ pick_counts.u_toku }}</i>{% endif %}</a>
-                <a href="?status=zavrseno{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'zavrseno' %}is-active{% endif %}">Završeno{% if pick_counts.zavrseno %}<i class="pk-tab-n">{{ pick_counts.zavrseno }}</i>{% endif %}</a>
-            </div>
-            <form method="get" class="mg-page-search pk-home-search" role="search">
-                <input type="hidden" name="status" value="{{ pick_status_filter }}">
-                <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
-                <input type="search" name="pretraga" value="{{ pick_query }}" placeholder="Pretraži pick listu po broju narudžbe, kupcu..." autocomplete="off">
-                <button type="submit" class="mg-btn mg-btn-pill">Filtriraj</button>
-            </form>
+        <div class="mg-filter-tabs">
+            <a href="?status=sve{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'sve' %}is-active{% endif %}">Sve</a>
+            <a href="?status=ceka{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'ceka' %}is-active{% endif %}">Čeka picking</a>
+            <a href="?status=u_toku{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'u_toku' %}is-active{% endif %}">U toku{% if pick_counts.u_toku %}<i class="pk-tab-n">{{ pick_counts.u_toku }}</i>{% endif %}</a>
+            <a href="?status=zavrseno{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'zavrseno' %}is-active{% endif %}">Završeno{% if pick_counts.zavrseno %}<i class="pk-tab-n">{{ pick_counts.zavrseno }}</i>{% endif %}</a>
         </div>
-        <div class="pk-stats pk-home-stats">
-            <div><span>Ukupno pick lista</span><b>{{ pick_counts.sve }}</b></div>
-            <div><span>Čeka picking</span><b>{{ pick_counts.ceka }}</b></div>
-            <div><span>U toku</span><b>{{ pick_counts.u_toku }}</b></div>
-            <div><span>Završeno</span><b>{{ pick_counts.zavrseno }}</b></div>
-        </div>
+        <form method="get" class="mg-page-search pk-home-search" role="search">
+            <input type="hidden" name="status" value="{{ pick_status_filter }}">
+            <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <input type="search" name="pretraga" value="{{ pick_query }}" placeholder="Pretraži pick listu po broju narudžbe, kupcu..." autocomplete="off">
+            <button type="submit" class="mg-btn mg-btn-pill">Filtriraj</button>
+        </form>
     </div>
 
     <section class="mg-card mg-orders-card">
         <div class="mg-table-wrap">
-        <table class="mg-table">
+        <table class="mg-table mg-table-stack mg-table-stack-pick">
             <thead>
                 <tr>
                     <th>PICK LISTA</th>
@@ -71,7 +63,7 @@
             </thead>
             <tbody>
                 {% for order in pick_jobs %}
-                <tr class="is-clickable" onclick="location.href='{{ order.pick_open_url }}'">
+                <tr class="is-clickable{% if order.pick_status == 'ceka' %} is-wait-pick{% endif %}" onclick="location.href='{{ order.pick_open_url }}'">
                     <td>
                         <strong class="mg-order-rn">PL-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
                         <span class="sub">#{{ order.pk }}</span>
@@ -88,7 +80,7 @@
                         {% elif order.pick_status == 'u_toku' %}
                         <span class="mg-pill mg-st-nova">U toku</span>
                         {% else %}
-                        <span class="mg-pill mg-src-rucna">Čeka picking</span>
+                        <span class="mg-pill mg-st-ceka">Čeka picking</span>
                         {% endif %}
                     </td>
                     <td class="mg-order-date">
