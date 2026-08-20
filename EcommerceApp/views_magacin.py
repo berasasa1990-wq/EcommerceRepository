@@ -164,9 +164,20 @@ def _prenos_mp_q():
     return Q(ime_prezime='Prenos u MP')
 
 
+def _validated_orders_q():
+    return Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
+
+
 def _unvalidated_orders_qs():
-    validated_q = Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
-    return Order.objects.exclude(status=Order.Status.OTKAZANA).exclude(validated_q)
+    return Order.objects.exclude(status=Order.Status.OTKAZANA).exclude(_validated_orders_q())
+
+
+def _completed_pick_qs():
+    return (
+        Order.objects.filter(_validated_orders_q())
+        .exclude(status=Order.Status.OTKAZANA)
+        .exclude(_prenos_mp_q())
+    )
 
 
 def _normalize_order_scan(raw):
@@ -1802,7 +1813,7 @@ def magacin_narudzbe(request):
         orders = orders.filter(izvor=Order.Izvor.MAGACIN)
     elif izvor == 'webshop':
         orders = orders.filter(izvor=Order.Izvor.WEBSHOP)
-    validated_q = Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
+    validated_q = _validated_orders_q()
     if show_validated:
         orders = orders.filter(validated_q)
         if not order_query:
@@ -3059,16 +3070,10 @@ def collect_pick_jobs():
         order.pick_open_url = reverse('staff_order_detail', args=[order.broj])
         jobs.append(order)
         seen.add(order.pk)
-    today = timezone.localdate()
     done_qs = (
-        Order.objects.filter(
-            Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
-        )
-        .exclude(status=Order.Status.OTKAZANA)
-        .exclude(_prenos_mp_q())
-        .filter(Q(zapakovana_at__date=today) | Q(kreirana__date=today))
+        _completed_pick_qs()
         .prefetch_related('stavke')
-        .order_by('-kreirana')[:40]
+        .order_by(F('zapakovana_at').desc(nulls_last=True), '-kreirana')[:80]
     )
     for order in done_qs:
         if order.pk in seen:
@@ -3103,13 +3108,16 @@ def magacin_pakuj(request):
     query = (request.GET.get('pretraga') or request.GET.get('q') or '').strip()
     jobs = collect_pick_jobs()
     counts = {
-        'sve': len(jobs),
+        'sve': 0,
         'ceka': 0,
         'u_toku': 0,
         'zavrseno': 0,
     }
     for job in jobs:
-        counts[job.pick_status] = counts.get(job.pick_status, 0) + 1
+        if job.pick_status in counts:
+            counts[job.pick_status] += 1
+    counts['zavrseno'] = _completed_pick_qs().count()
+    counts['sve'] = counts['ceka'] + counts['u_toku'] + counts['zavrseno']
     if query:
         q = query.casefold()
         q_digits = ''.join(ch for ch in query if ch.isdigit())

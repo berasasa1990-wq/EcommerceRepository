@@ -846,6 +846,11 @@ table.mg-table {
     align-items: center;
     gap: 6px;
 }
+.mg-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
 .mg-btn:hover { background: #f8f9fa; }
 .mg-btn[aria-disabled="true"] {
     opacity: .45;
@@ -1639,6 +1644,13 @@ body.is-vp #mgScanModal .mg-btn {
     font-size: 13px;
     font-weight: 600;
     color: #374151;
+}
+.mg-check input,
+.mg-order-check {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: #111;
 }
 .mg-check-col {
     width: 36px;
@@ -4835,10 +4847,29 @@ tr.is-mp-lock {
         flex-wrap: nowrap;
         overflow-x: auto;
     }
+    .mg-orders-page .mg-bulk-bar .mg-btn {
+        padding: 7px 10px;
+        font-size: 12px;
+        gap: 5px;
+    }
+    .mg-orders-page .mg-bulk-bar .mg-btn svg {
+        width: 14px;
+        height: 14px;
+    }
     .mg-table-stack-narudzbe td:nth-child(9) {
         grid-column: 3;
         grid-row: 2;
         justify-self: end;
+        align-self: start;
+        width: auto;
+    }
+    .mg-table-stack-narudzbe .mg-row-more {
+        width: 28px;
+        height: 28px;
+    }
+    .mg-table-stack-narudzbe .mg-row-more svg {
+        width: 14px;
+        height: 14px;
     }
 }
 

@@ -28,7 +28,7 @@
         {% endif %}
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
         {% else %}
-        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}?validirane=1">
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}?validirane=1&sve=1">
             Pokaži validatovane{% if validated_count %} ({{ validated_count }}){% endif %}
         </a>
         {% endif %}
@@ -47,17 +47,17 @@
             Odaberi sve
         </label>
         <button type="submit" class="mg-btn mg-btn-pill" id="mgPrintSelected" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
             Štampaj odabrane
         </button>
         {% if not show_validated %}
         <button type="button" class="mg-btn mg-btn-pill" id="mgValidateSelected" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
             Validiraj odabrane
         </button>
         {% endif %}
         <a class="mg-btn mg-btn-pill" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener"{% if not packing_ready_count %} aria-disabled="true"{% endif %}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             Štampaj packing{% if packing_ready_count %} ({{ packing_ready_count }}){% endif %}
         </a>
         <span class="mg-muted" id="mgSelectedCount">0 odabrano</span>
@@ -141,7 +141,7 @@
                     <td class="num mg-order-sum">{{ order.ukupno }} KM</td>
                     <td class="mg-more-col" data-stop-row>
                         <a class="mg-row-more" href="{% if order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" aria-label="Otvori narudžbu">
-                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
                         </a>
                     </td>
                 </tr>

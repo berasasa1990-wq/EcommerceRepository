@@ -38,7 +38,7 @@
                 <a href="?status=sve{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'sve' %}is-active{% endif %}">Sve</a>
                 <a href="?status=ceka{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'ceka' %}is-active{% endif %}">Čeka picking</a>
                 <a href="?status=u_toku{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'u_toku' %}is-active{% endif %}">U toku{% if pick_counts.u_toku %}<i class="pk-tab-n">{{ pick_counts.u_toku }}</i>{% endif %}</a>
-                <a href="?status=zavrseno{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'zavrseno' %}is-active{% endif %}">Završeno</a>
+                <a href="?status=zavrseno{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'zavrseno' %}is-active{% endif %}">Završeno{% if pick_counts.zavrseno %}<i class="pk-tab-n">{{ pick_counts.zavrseno }}</i>{% endif %}</a>
             </div>
             <form method="get" class="mg-page-search pk-home-search" role="search">
                 <input type="hidden" name="status" value="{{ pick_status_filter }}">

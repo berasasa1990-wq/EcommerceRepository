@@ -1588,6 +1588,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(listed.status_code, 200)
         self.assertContains(listed, 'Nova ručna narudžba')
         self.assertContains(listed, 'Pokaži validatovane')
+        self.assertContains(listed, 'validirane=1&sve=1')
         self.assertContains(listed, 'Pretraži narudžbe po broju, kupcu, izvoru')
         self.assertNotContains(listed, 'Broj narudžbe, ime ili telefon')
         self.assertContains(listed, reverse('staff_magacin_narudzba_nova'))
@@ -1742,6 +1743,27 @@ class MagacinViewTests(TestCase):
         self.assertContains(all_jobs, 'Ceka Kupac')
         self.assertContains(all_jobs, 'Toku Kupac')
         self.assertContains(all_jobs, reverse('staff_magacin_pakuj_detail', args=[waiting.broj]))
+
+    def test_picking_completed_shows_older_jobs(self):
+        self.client.force_login(self.user)
+        old = Order.objects.create(
+            ime_prezime='Stari Picking', telefon='061000000', email='s@example.com',
+            adresa='A 1', grad='Sarajevo', ukupno=Decimal('10.00'),
+            izvor=Order.Izvor.MAGACIN,
+            status=Order.Status.ZAVRSENA,
+            lager_status=Order.LagerStatus.VALIDIRANO,
+            zapakovana=True,
+            zapakovana_at=timezone.now() - timedelta(days=2),
+        )
+        Order.objects.filter(pk=old.pk).update(kreirana=timezone.now() - timedelta(days=2))
+        home = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertEqual(home.context['pick_counts']['zavrseno'], 1)
+        self.assertNotContains(home, 'Stari Picking')
+        done = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'zavrseno'})
+        listed = [row.broj for row in done.context['pick_jobs']]
+        self.assertIn(old.broj, listed)
+        self.assertContains(done, 'Stari Picking')
+        self.assertContains(done, 'class="pk-tab-n">1</i>')
 
     def test_save_customer_persists_without_order(self):
         self.client.force_login(self.user)
@@ -2343,6 +2365,9 @@ class MagacinViewTests(TestCase):
             zapakovana=True,
             zapakovana_at=timezone.now(),
         )
+        home = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertEqual(home.context['validated_count'], 2)
+        self.assertContains(home, 'validirane=1&sve=1')
         page = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'})
         listed = [row.broj for row in page.context['orders']]
         self.assertIn(today.broj, listed)
