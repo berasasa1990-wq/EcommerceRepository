@@ -1936,6 +1936,7 @@ def magacin_narudzbe_stampa(request):
         'print_jobs': print_jobs,
         'print_brojevi': [order.broj for order in ordered],
         'requires_mp_check': False,
+        'allow_reprint': True,
         'mark_printed_url': reverse('staff_magacin_narudzbe_mark_printed'),
     }
     return render(request, 'staff/order_print.html', context)

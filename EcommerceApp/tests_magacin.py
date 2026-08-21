@@ -2660,6 +2660,12 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'Pretraži po imenu ili broju narudžbe')
         self.assertContains(page, 'Ime ili broj narudžbe')
         self.assertContains(page, 'name="pretraga"')
+        self.assertContains(page, 'Štampaj račune')
+        self.assertContains(page, reverse('staff_magacin_narudzbe_stampa') + '?b=' + today.broj)
+        reprint = self.client.get(reverse('staff_magacin_narudzbe_stampa'), {'b': [today.broj]})
+        self.assertEqual(reprint.status_code, 200)
+        self.assertContains(reprint, today.ime_prezime)
+        self.assertContains(reprint, 'data-already-printed="0"')
         by_name = self.client.get(reverse('staff_magacin_narudzbe'), {
             'validirane': '1', 'pretraga': 'Stara',
         })

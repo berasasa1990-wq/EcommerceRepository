@@ -912,7 +912,7 @@
 </head>
 <body
     data-requires-mp-check="{% if requires_mp_check %}1{% else %}0{% endif %}"
-    data-already-printed="{% if print_jobs|length == 1 and print_jobs.0.order.odstampana %}1{% else %}0{% endif %}"
+    data-already-printed="{% if allow_reprint %}0{% elif print_jobs|length == 1 and print_jobs.0.order.odstampana %}1{% else %}0{% endif %}"
 >
     {% if requires_mp_check %}
     <div class="mp-check-overlay no-print" id="mpCheckOverlay" role="dialog" aria-modal="true" aria-labelledby="mpCheckTitle">

@@ -61,7 +61,7 @@
         </label>
         <button type="submit" class="mg-btn mg-btn-pill" id="mgPrintSelected" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
-            Štampaj odabrane
+            {% if show_validated %}Štampaj račune{% else %}Štampaj odabrane{% endif %}
         </button>
         {% if not show_validated %}
         <button type="button" class="mg-btn mg-btn-pill" id="mgValidateSelected" disabled>
@@ -153,6 +153,11 @@
                     </td>
                     <td class="num mg-order-sum">{{ order.ukupno }} KM</td>
                     <td class="mg-more-col" data-stop-row>
+                        {% if show_validated %}
+                        <a class="mg-order-print" href="{% url 'staff_magacin_narudzbe_stampa' %}?b={{ order.broj }}" target="_blank" rel="noopener" title="Štampaj račun" aria-label="Štampaj račun">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
+                        </a>
+                        {% endif %}
                         <a class="mg-row-more" href="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% elif order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" aria-label="Otvori narudžbu">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
                         </a>

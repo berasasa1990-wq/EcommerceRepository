@@ -665,10 +665,6 @@ function initManualOrderForm() {
                 ' Provjeri u <strong>maloprodaji</strong> ima li ga.';
         }
         if (mpModal) mpModal.hidden = false;
-        var addBtn = document.getElementById('mgMpAdd');
-        window.setTimeout(function () {
-            if (addBtn) addBtn.focus();
-        }, 40);
     }
     function hideMp() {
         pending = null;
@@ -1141,15 +1137,13 @@ function initManualOrderForm() {
         });
         document.addEventListener('keydown', function (event) {
             if (!mpModal || mpModal.hidden) return;
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                return;
+            }
             if (event.key === 'Escape') {
                 event.preventDefault();
                 skipMp();
-                return;
-            }
-            if (event.key === 'Tab' || event.key === 'Enter') {
-                event.preventDefault();
-                var addBtn = document.getElementById('mgMpAdd');
-                if (addBtn) addBtn.click();
             }
         }, true);
     }

@@ -4924,8 +4924,9 @@ tr.is-mp-lock {
 }
 .mg-order-loc { color: #4b5563; }
 .mg-order-sum { font-weight: 700; white-space: nowrap; }
-.mg-more-col { width: 44px; text-align: right; }
-.mg-row-more {
+.mg-more-col { width: 76px; text-align: right; white-space: nowrap; }
+.mg-row-more,
+.mg-order-print {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -4935,6 +4936,8 @@ tr.is-mp-lock {
     color: #9aa0a6;
     text-decoration: none;
 }
+.mg-order-print { color: #374151; }
+.mg-order-print:hover,
 .mg-row-more:hover { background: #f3f4f6; color: #111; }
 .mg-row-more svg { width: 16px; height: 16px; }
 .mg-pill.mg-src-rucna { background: #f3f4f6; color: #6b7280; }
