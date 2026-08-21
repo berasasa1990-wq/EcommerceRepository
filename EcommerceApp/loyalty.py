@@ -4,8 +4,9 @@ import io
 import re
 import secrets
 import time
+import unicodedata
 from decimal import Decimal
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -387,10 +388,16 @@ def _to_e164_digits(telefon):
 
 def _viber_draft_text(text):
     """
-    Viber u composeru prekine draft na znaku %.
-    Isti sadržaj kao WhatsApp, samo % → ' posto'.
+    Isti sadržaj kao WhatsApp. Viber prekine draft na znaku %, pa:
+    % → ' posto', razmaci kao +, novi red kao ' | ', bez non-ASCII.
+    Tako draft u URL-u nema % i ostaje u polju za slanje.
     """
-    return (text or '').replace('%', ' posto')
+    raw = (text or '').replace('%', ' posto')
+    raw = raw.replace('\r\n', '\n').replace('\r', '\n')
+    raw = raw.replace('—', '-').replace('–', '-').replace('−', '-')
+    raw = unicodedata.normalize('NFKD', raw).encode('ascii', 'ignore').decode('ascii')
+    lines = [line.strip() for line in raw.split('\n') if line.strip()]
+    return ' | '.join(lines)
 
 
 def viber_chat_url(telefon, text=''):
@@ -405,7 +412,8 @@ def viber_chat_url(telefon, text=''):
         return ''
     url = f'viber://chat?number=%2B{digits}'
     if text:
-        url = f'{url}&draft={quote(_viber_draft_text(text), safe="")}'
+        draft = quote_plus(_viber_draft_text(text), safe='|:().,_/-')
+        url = f'{url}&draft={draft}'
     return url
 
 

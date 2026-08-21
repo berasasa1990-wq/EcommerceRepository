@@ -797,6 +797,11 @@ class MagacinViewTests(TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'Skeniraj barkod kamerom')
         self.assertContains(page, 'Šifra, barkod ili naziv')
+        self.assertContains(page, 'Pokreni kameru')
+        self.assertContains(page, 'Savjeti')
+        self.assertContains(page, 'Nazad na Artikle')
+        self.assertContains(page, 'bu-tips')
+        self.assertContains(page, 'bu-sheet')
 
         found = self.client.get(reverse('staff_magacin_brzi_unos'), {'q': 'TST-1'})
         self.assertRedirects(
@@ -1113,11 +1118,10 @@ class MagacinViewTests(TestCase):
         self.assertContains(still, reverse('staff_magacin_pakuj_stampaj_zapakovano', args=[order.broj]))
         open_list = [row.broj for row in self.client.get(reverse('staff_magacin_narudzbe')).context['orders']]
         self.assertNotIn(order.broj, open_list)
-        validated_list = [
-            row.broj
-            for row in self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'}).context['orders']
-        ]
-        self.assertNotIn(order.broj, validated_list)
+        validated_page = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'})
+        validated_list = [row.broj for row in validated_page.context['orders']]
+        self.assertIn(order.broj, validated_list)
+        self.assertGreaterEqual(validated_page.context['validated_count'], 1)
         printed = self.client.get(reverse('staff_magacin_pakuj_stampaj_zapakovano', args=[order.broj]))
         self.assertEqual(printed.status_code, 302)
         self.assertIn(reverse('staff_magacin_narudzbe_stampa'), printed['Location'])
@@ -1627,6 +1631,11 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'id="mgMpAdd"')
         self.assertContains(form, 'Izbaci')
         self.assertContains(form, 'Provjeri u maloprodaji')
+        self.assertContains(form, 'name="popust_pct"')
+        self.assertContains(form, 'Popust %')
+        self.assertContains(form, 'id="mgOrderDisc"')
+        self.assertContains(form, 'Skini dostavu')
+        self.assertContains(form, 'name="bez_dostave"')
 
     def test_order_barcode_opens_picking(self):
         self.client.force_login(self.user)
@@ -1867,6 +1876,89 @@ class MagacinViewTests(TestCase):
         self.assertContains(listed, '1 za pakovanje')
         self.assertContains(listed, 'is-blink-pack')
         self.assertNotContains(listed, 'novih narudžbi')
+
+    def test_manual_order_percent_discount_reduces_total(self):
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Popust Kupac',
+            'telefon': '061222333',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'popust_pct': '10',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Popust Kupac')
+        self.assertEqual(order.medjuzbir, Decimal('20.00'))
+        self.assertEqual(order.popust, Decimal('2.00'))
+        self.assertEqual(order.dostava, Decimal('11.00'))
+        self.assertEqual(order.ukupno, Decimal('29.00'))
+        self.assertEqual(order.popust_detalji[0]['postotak'], '10')
+        self.assertIn('Ručni popust 10%', order.popust_detalji[0]['opis'])
+        reserved = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Popust Rez',
+            'telefon': '061222334',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'popust_pct': '20',
+            'action': 'rezervacija',
+        })
+        self.assertEqual(reserved.status_code, 302)
+        rez = Order.objects.get(ime_prezime='Popust Rez')
+        edit = self.client.get(reverse('staff_magacin_narudzba_nova'), {'broj': rez.broj})
+        self.assertContains(edit, 'value="20"')
+        blocked = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Popust Los',
+            'telefon': '061222335',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'popust_pct': '150',
+        })
+        self.assertEqual(blocked.status_code, 200)
+        self.assertContains(blocked, 'Popust mora biti od 0 do 100')
+
+    def test_manual_order_can_waive_shipping(self):
+        from .pricing import sazetak_iz_narudzbe
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Bez Dostave',
+            'telefon': '061444555',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'bez_dostave': '1',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Bez Dostave')
+        self.assertEqual(order.medjuzbir, Decimal('20.00'))
+        self.assertEqual(order.dostava, Decimal('0.00'))
+        self.assertEqual(order.ukupno, Decimal('20.00'))
+        self.assertTrue(any(row.get('bez_dostave') for row in order.popust_detalji))
+        summary = sazetak_iz_narudzbe(order)
+        self.assertEqual(summary['dostava'], Decimal('0.00'))
+        self.assertEqual(summary['ukupno'], Decimal('20.00'))
+        reserved = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Bez Dostave Rez',
+            'telefon': '061444556',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'bez_dostave': '1',
+            'action': 'rezervacija',
+        })
+        self.assertEqual(reserved.status_code, 302)
+        rez = Order.objects.get(ime_prezime='Bez Dostave Rez')
+        edit = self.client.get(reverse('staff_magacin_narudzba_nova'), {'broj': rez.broj})
+        self.assertContains(edit, 'id="mgOrderNoShip"')
+        self.assertRegex(edit.content.decode(), r'id="mgOrderNoShip"[^>]*value="1"')
 
     def test_manual_reservation_holds_stock_and_stays_editable(self):
         self.client.force_login(self.user)

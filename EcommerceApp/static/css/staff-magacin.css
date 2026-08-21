@@ -4567,6 +4567,37 @@ tr.is-mp-lock {
     color: #6b7280;
     font-size: 14px;
 }
+.mg-order-disc {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+    font-weight: 650;
+    white-space: nowrap;
+}
+.mg-order-disc input {
+    width: 64px;
+    height: 36px;
+    padding: 0 8px;
+    border: 1px solid var(--mg-line);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+}
+.mg-order-disc-amt { color: #b45309; font-weight: 650; }
+.mg-order-noship {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+.mg-order-noship.is-on {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #9a3412;
+}
 .mg-order-foot-sum strong {
     color: #111;
     font-size: 16px;

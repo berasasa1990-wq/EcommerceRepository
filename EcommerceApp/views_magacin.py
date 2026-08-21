@@ -1844,7 +1844,6 @@ def magacin_narudzbe(request):
     if show_validated:
         orders = orders.filter(validated_q)
         if not order_query:
-            orders = orders.exclude(pk__in=list(vp_waiting_print_ids()))
             orders = orders.exclude(packing_odstampana=True)
             if not show_all_validated:
                 today = timezone.localdate()
@@ -1898,8 +1897,8 @@ def magacin_narudzbe(request):
             izvor=Order.Izvor.MAGACIN,
         ).exclude(validated_q).count(),
         'validated_count': base_qs.filter(validated_q).exclude(
-            pk__in=list(vp_waiting_print_ids()),
-        ).exclude(packing_odstampana=True).count(),
+            packing_odstampana=True,
+        ).count(),
         'packing_ready_count': len(packing_ready_orders()),
     })
     return render(request, 'staff/magacin/narudzbe.html', context)
@@ -2335,6 +2334,8 @@ def magacin_narudzba_nova(request):
         return redirect('staff_magacin_narudzbe')
 
     if existing:
+        from .pricing import order_waived_shipping
+
         context['form'] = {
             'ime_prezime': existing.ime_prezime,
             'telefon': existing.telefon,
@@ -2343,6 +2344,8 @@ def magacin_narudzba_nova(request):
             'grad': existing.grad,
             'postanski_broj': existing.postanski_broj,
             'napomena': existing.napomena,
+            'popust_pct': _manual_popust_pct_display(existing),
+            'bez_dostave': '1' if order_waived_shipping(existing) else '',
         }
         context['form_lines'] = _order_display_lines(existing)
     else:
@@ -2491,8 +2494,17 @@ def _create_manual_order(request, *, existing=None):
         })
 
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
-    from .pricing import _standardna_dostava
+    from .pricing import _postotni_popust, _standardna_dostava
+    popust_pct = _parse_manual_popust_pct(request.POST.get('popust_pct'))
+    popust = _postotni_popust(medjuzbir, popust_pct) if popust_pct else Decimal('0.00')
+    if popust > medjuzbir:
+        popust = medjuzbir
     dostava, _, _, _ = _standardna_dostava(medjuzbir)
+    bez_dostave = (request.POST.get('bez_dostave') or '').strip().lower() in (
+        '1', 'on', 'true', 'da',
+    )
+    if bez_dostave:
+        dostava = Decimal('0.00')
     action = (request.POST.get('action') or '').strip()
     keep_reservation = action == 'rezervacija' or (
         existing is not None and action != 'sacuvaj'
@@ -2502,8 +2514,34 @@ def _create_manual_order(request, *, existing=None):
             request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
             existing=existing,
             rezervacija=keep_reservation,
+            popust=popust,
+            popust_pct=popust_pct,
+            bez_dostave=bez_dostave,
         )
     return order
+
+
+def _parse_manual_popust_pct(raw):
+    text = (raw or '').strip().replace('%', '').replace(',', '.').replace(' ', '')
+    if not text:
+        return Decimal('0')
+    try:
+        pct = Decimal(text)
+    except InvalidOperation:
+        raise MagacinError('Popust mora biti broj (npr. 10).')
+    if pct < 0 or pct > 100:
+        raise MagacinError('Popust mora biti od 0 do 100.')
+    return pct
+
+
+def _manual_popust_pct_display(order):
+    for row in (getattr(order, 'popust_detalji', None) or []):
+        if not isinstance(row, dict):
+            continue
+        raw = row.get('postotak')
+        if raw not in (None, ''):
+            return str(raw)
+    return ''
 
 
 def _clear_order_items_and_holds(order, user=None):
@@ -2519,7 +2557,8 @@ def _clear_order_items_and_holds(order, user=None):
 
 def _save_manual_order(
     request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
-    *, existing=None, rezervacija=False,
+    *, existing=None, rezervacija=False, popust=None, popust_pct=None,
+    bez_dostave=False,
 ):
     napomena = (request.POST.get('napomena') or '').strip()
     mp_names = [
@@ -2530,6 +2569,29 @@ def _save_manual_order(
     if mp_names:
         extra = 'Maloprodaja: ' + ', '.join(mp_names)
         napomena = f'{napomena}\n{extra}'.strip() if napomena else extra
+    popust = popust if popust is not None else Decimal('0.00')
+    popust_pct = popust_pct if popust_pct is not None else Decimal('0')
+    popust_detalji = []
+    if popust > 0 and popust_pct > 0:
+        pct_label = (
+            str(int(popust_pct))
+            if popust_pct == popust_pct.to_integral()
+            else str(popust_pct)
+        )
+        popust_detalji.append({
+            'opis': f'Ručni popust {pct_label}%',
+            'iznos': str(popust),
+            'postotak': pct_label,
+        })
+    if bez_dostave:
+        popust_detalji.append({
+            'opis': 'Bez dostave',
+            'iznos': '0.00',
+            'bez_dostave': True,
+        })
+    ukupno = medjuzbir - popust + dostava
+    if ukupno < 0:
+        ukupno = Decimal('0.00')
     status = Order.Status.REZERVACIJA if rezervacija else Order.Status.NOVA
     if existing is not None:
         _clear_order_items_and_holds(existing, user=request.user)
@@ -2542,8 +2604,9 @@ def _save_manual_order(
         existing.napomena = napomena
         existing.medjuzbir = medjuzbir
         existing.dostava = dostava
-        existing.popust = Decimal('0.00')
-        existing.ukupno = medjuzbir + dostava
+        existing.popust = popust
+        existing.popust_detalji = popust_detalji
+        existing.ukupno = ukupno
         existing.status = status
         existing.save()
         order = existing
@@ -2558,8 +2621,9 @@ def _save_manual_order(
             napomena=napomena,
             medjuzbir=medjuzbir,
             dostava=dostava,
-            popust=Decimal('0.00'),
-            ukupno=medjuzbir + dostava,
+            popust=popust,
+            popust_detalji=popust_detalji,
+            ukupno=ukupno,
             status=status,
             izvor=Order.Izvor.MAGACIN,
         )

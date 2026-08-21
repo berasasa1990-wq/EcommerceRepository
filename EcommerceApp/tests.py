@@ -114,6 +114,9 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertContains(member, 'viber://chat?number=%2B38765123456')
         self.assertContains(member, 'draft=')
         self.assertContains(member, 'data-channel="viber"')
+        self.assertContains(member, 'Pošalji na Viber')
+        self.assertContains(member, 'href="viber://chat?number=%2B38765123456')
+        self.assertNotContains(member, 'data-chat-url=')
         self.assertNotContains(member, 'Bodovne transakcije')
         self.assertNotContains(member, 'Kod — Viber')
         self.assertNotContains(member, 'Admin — bez koda')
@@ -185,7 +188,7 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertContains(follow, 'već registrovan')
 
     def test_viber_chat_url_prefills_draft(self):
-        from urllib.parse import parse_qs, unquote, urlparse
+        from urllib.parse import parse_qs, unquote_plus, urlparse
 
         from .loyalty import loyalty_card_caption, viber_chat_url
 
@@ -195,8 +198,12 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertTrue(url.startswith('viber://chat?number=%2B38765123456'))
         self.assertIn('draft=', url)
         self.assertNotIn('&text=', url)
+        draft_enc = url.split('draft=', 1)[1]
+        self.assertNotIn('%', draft_enc)
         parsed = urlparse(url)
-        draft = unquote(parse_qs(parsed.query).get('draft', [''])[0])
+        draft_raw = parse_qs(parsed.query).get('draft', [''])[0]
+        self.assertNotIn('%', draft_raw)
+        draft = unquote_plus(draft_raw)
         self.assertIn('Vasa loyalty kartica', draft)
         self.assertIn('Broj kartice: 482731', draft)
         self.assertIn('g.page/r/CXurB2BnmyVdEBM/review', draft)
@@ -204,7 +211,7 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertNotIn('%', draft)
         otp = viber_chat_url('065123456', 'Vaš kod: 123456')
         self.assertIn('draft=', otp)
-        self.assertIn('123456', unquote(otp.split('draft=', 1)[1]))
+        self.assertIn('123456', unquote_plus(otp.split('draft=', 1)[1]))
         self.client.force_login(self.admin)
         resp = self.client.post(
             '/nalog/loyalty/',

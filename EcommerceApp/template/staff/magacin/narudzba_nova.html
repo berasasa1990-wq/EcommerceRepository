@@ -133,6 +133,13 @@
         </button>
         {% endif %}
         <div class="mg-order-foot-sum">
+            <label class="mg-order-disc" for="mgOrderDisc">
+                Popust %
+                <input type="number" name="popust_pct" id="mgOrderDisc" min="0" max="100" step="1" inputmode="numeric" placeholder="0" value="{{ form.popust_pct|default:'' }}">
+            </label>
+            <span class="mg-order-disc-amt" id="mgOrderDiscAmt" hidden></span>
+            <input type="hidden" name="bez_dostave" id="mgOrderNoShip" value="{% if form.bez_dostave == '1' %}1{% endif %}">
+            <button type="button" class="mg-btn mg-order-noship" id="mgOrderNoShipBtn">Skini dostavu</button>
             <span class="mg-order-ship" id="mgOrderShip">Dostava: 11.00 KM</span>
             <span>Ukupno: <strong id="mgOrderTotal">0.00 KM</strong></span>
             <button type="submit" name="action" value="rezervacija" class="mg-btn">

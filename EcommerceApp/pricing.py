@@ -239,6 +239,17 @@ def _medjuzbir_za_racun(order):
     return _kvantiziraj(order.medjuzbir)
 
 
+def order_waived_shipping(order):
+    for row in (getattr(order, 'popust_detalji', None) or []):
+        if not isinstance(row, dict):
+            continue
+        if row.get('bez_dostave'):
+            return True
+        if str(row.get('opis') or '').casefold().startswith('bez dostave'):
+            return True
+    return False
+
+
 def sazetak_iz_narudzbe(order):
     from .models import Order
 
@@ -252,12 +263,13 @@ def sazetak_iz_narudzbe(order):
     from .magacin import is_vp_order
 
     # Ručne Magacin narudžbe: na računu uvijek 11 KM / besplatno preko 250 KM
-    # VP narudžbe nemaju dostavu.
+    # osim ako je dostava ručno skinuta. VP narudžbe nemaju dostavu.
     if (
         getattr(order, 'izvor', '') == Order.Izvor.MAGACIN
         and dostava == Decimal('0.00')
         and not std_free
         and not is_vp_order(order)
+        and not order_waived_shipping(order)
     ):
         dostava = std_dostava
         ukupno = _kvantiziraj(goods + dostava)

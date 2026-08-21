@@ -521,6 +521,10 @@ function initManualOrderForm() {
     var shipFee = parseFloat(form.getAttribute('data-dostava-cijena')) || 11;
     var shipFreeFrom = parseFloat(form.getAttribute('data-besplatna-od')) || 250;
     var shipEl = document.getElementById('mgOrderShip');
+    var discInput = document.getElementById('mgOrderDisc');
+    var discAmt = document.getElementById('mgOrderDiscAmt');
+    var noShipInput = document.getElementById('mgOrderNoShip');
+    var noShipBtn = document.getElementById('mgOrderNoShipBtn');
     var timer = null;
     var pending = null;
     var pick = null;
@@ -528,6 +532,17 @@ function initManualOrderForm() {
 
     function money(n) {
         return (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
+    }
+    function discountPct() {
+        if (!discInput) return 0;
+        var raw = String(discInput.value || '').replace(',', '.').replace(/[^\d.]/g, '');
+        var pct = parseFloat(raw);
+        if (!isFinite(pct) || pct < 0) return 0;
+        if (pct > 100) return 100;
+        return pct;
+    }
+    function shipWaived() {
+        return !!(noShipInput && noShipInput.value === '1');
     }
     function escapeHtml(value) {
         return String(value == null ? '' : value)
@@ -551,12 +566,27 @@ function initManualOrderForm() {
             sum += lineTotal;
         });
         var ship = (sum > 0 && sum < shipFreeFrom) ? shipFee : 0;
+        if (shipWaived()) ship = 0;
+        var pct = discountPct();
+        var discount = sum * pct / 100;
         if (shipEl) {
-            shipEl.textContent = ship > 0
-                ? ('Dostava: ' + money(ship) + ' KM')
-                : (sum > 0 ? 'Dostava: besplatna' : ('Dostava: ' + money(shipFee) + ' KM'));
+            if (shipWaived() && sum > 0) {
+                shipEl.textContent = 'Dostava: skinuta';
+            } else {
+                shipEl.textContent = ship > 0
+                    ? ('Dostava: ' + money(ship) + ' KM')
+                    : (sum > 0 ? 'Dostava: besplatna' : ('Dostava: ' + money(shipFee) + ' KM'));
+            }
         }
-        if (totalEl) totalEl.textContent = money(sum + ship) + ' KM';
+        if (noShipBtn) {
+            noShipBtn.classList.toggle('is-on', shipWaived());
+            noShipBtn.textContent = shipWaived() ? 'Vrati dostavu' : 'Skini dostavu';
+        }
+        if (discAmt) {
+            discAmt.hidden = !(pct > 0 && sum > 0);
+            discAmt.textContent = 'Popust: −' + money(discount) + ' KM';
+        }
+        if (totalEl) totalEl.textContent = money(sum - discount + ship) + ' KM';
         if (empty) empty.hidden = lineCount() > 0;
         if (addedCount) {
             var n = lineCount();
@@ -1097,6 +1127,20 @@ function initManualOrderForm() {
         });
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && mpModal && !mpModal.hidden) skipMp();
+        });
+    }
+    if (discInput) {
+        discInput.addEventListener('input', function () {
+            var cleaned = String(discInput.value || '').replace(/[^\d]/g, '');
+            if (cleaned !== discInput.value) discInput.value = cleaned;
+            if (parseInt(cleaned, 10) > 100) discInput.value = '100';
+            refreshTotal();
+        });
+    }
+    if (noShipBtn && noShipInput) {
+        noShipBtn.addEventListener('click', function () {
+            noShipInput.value = shipWaived() ? '' : '1';
+            refreshTotal();
         });
     }
     var clearBtn = document.getElementById('mgOrderClear');

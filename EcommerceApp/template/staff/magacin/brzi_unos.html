@@ -4,123 +4,286 @@
 {% block magacin_content %}
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
-  .bu-wrap {
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 8px 4px 40px;
+  .bu-page { max-width: 1120px; margin: 0 auto; }
+  .bu-sheet {
+    background: #fff;
+    border: 1px solid #eceeef;
+    border-radius: 20px;
+    padding: 32px 36px 28px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04);
   }
-  .bu-card {
-    background: var(--body-bg, #fff);
-    border: 1px solid var(--hairline-color, #e5e7eb);
-    border-radius: 14px;
-    padding: 18px 16px 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
-  }
-  .bu-card h1 {
-    font-size: 1.25rem;
-    margin: 0 0 6px;
+  .bu-head { margin: 0 0 28px; }
+  .bu-head h1 {
+    margin: 0;
+    font-size: 30px;
     font-weight: 800;
-    color: #166534;
+    letter-spacing: -.035em;
+    color: #111;
+    line-height: 1.15;
   }
-  .bu-lead {
-    color: #64748b;
-    font-size: .92rem;
-    line-height: 1.45;
-    margin: 0 0 18px;
+  .bu-head p {
+    margin: 10px 0 0;
+    color: #6b7280;
+    font-size: 14.5px;
+    line-height: 1.5;
+    max-width: 56ch;
+  }
+  .bu-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 28px 32px;
+    align-items: start;
   }
   .bu-label {
     display: block;
     font-weight: 700;
-    margin-bottom: 8px;
-    font-size: .95rem;
+    font-size: 14px;
+    color: #111;
+    margin: 0 0 10px;
   }
-  .bu-scan-row {
+  .bu-search {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: stretch;
   }
-  .bu-scan-row input[type="text"] {
+  .bu-input-wrap {
     flex: 1;
     min-width: 0;
-    font-size: 1.15rem !important;
-    padding: 14px 12px !important;
-    border-radius: 10px !important;
-    border: 2px solid #5BB805 !important;
-    letter-spacing: .02em;
+    position: relative;
   }
-  .bu-scan-row button[type="submit"],
-  .bu-btn {
+  .bu-input-wrap input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 48px;
+    padding: 0 44px 0 16px !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    font-size: 14.5px !important;
+    color: #111;
+    outline: none;
+  }
+  .bu-input-wrap input:focus {
+    border-color: #cfd3d8 !important;
+    box-shadow: 0 0 0 3px rgba(17,24,39,.04);
+  }
+  .bu-input-wrap input::placeholder { color: #9ca3af; }
+  .bu-input-ico {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+  }
+  .bu-input-ico svg { width: 20px; height: 20px; }
+  .bu-find {
     appearance: none;
-    border: none;
-    border-radius: 10px;
-    background: #5BB805;
-    color: #fff;
-    font-weight: 800;
-    font-size: 1rem;
-    padding: 12px 16px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .bu-scan-row button[type="submit"]:active,
-  .bu-btn:active { background: #4a9a04; }
-  .bu-btn-scan {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    width: 100%;
-    box-sizing: border-box;
-    margin-top: 10px;
-    appearance: none;
-    border: 2px solid #0f172a;
+    height: 48px;
+    padding: 0 18px;
+    border: 0;
     border-radius: 12px;
-    background: #0f172a;
+    background: #4b5563;
     color: #fff;
-    font-weight: 800;
-    font-size: 1rem;
-    padding: 13px 14px;
+    font-weight: 700;
+    font-size: 14px;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
-  .bu-btn-scan:active { background: #1e293b; }
-  .bu-btn-scan.is-on {
+  .bu-find:hover { background: #374151; }
+  .bu-find svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .bu-or {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 22px 0;
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+  }
+  .bu-or::before,
+  .bu-or::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #eceeef;
+  }
+  .bu-cam {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    border: 1px solid #eef0f2;
+    border-radius: 14px;
+    background: #f7f8fa;
+  }
+  .bu-cam-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .bu-cam-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #eceeef;
+    color: #111;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .bu-cam-mark svg { width: 26px; height: 26px; }
+  .bu-cam-copy strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 750;
+    color: #111;
+    letter-spacing: -.02em;
+  }
+  .bu-cam-copy p {
+    margin: 3px 0 0;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  .bu-cam-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #111;
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .bu-cam-btn:hover { background: #f9fafb; }
+  .bu-cam-btn svg { width: 16px; height: 16px; }
+  .bu-cam-btn.is-on {
     background: #b91c1c;
     border-color: #b91c1c;
+    color: #fff;
   }
   .bu-scanner {
     display: none;
     margin-top: 12px;
     border-radius: 12px;
     overflow: hidden;
-    border: 2px solid #0f172a;
+    border: 1px solid #e5e7eb;
     background: #000;
   }
   .bu-scanner.is-on { display: block; }
-  #bu-qr-reader {
-    width: 100%;
-    min-height: 240px;
-  }
-  #bu-qr-reader video {
-    width: 100% !important;
-    border-radius: 0 !important;
-  }
+  #bu-qr-reader { width: 100%; min-height: 240px; }
+  #bu-qr-reader video { width: 100% !important; border-radius: 0 !important; }
   .bu-scanner-status {
     display: none;
-    margin-top: 8px;
-    font-size: .82rem;
-    color: #64748b;
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #6b7280;
     text-align: center;
     line-height: 1.35;
   }
   .bu-scanner-status.is-on { display: block; }
   .bu-scanner-status.is-err { color: #b91c1c; }
   .bu-hint {
-    margin-top: 10px;
-    font-size: .82rem;
-    color: #94a3b8;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 18px 0 0;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .bu-hint-ico {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #9ca3af;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .bu-hint-ico svg { width: 16px; height: 16px; }
+  .bu-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 28px;
+    height: 42px;
+    padding: 0 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    color: #111 !important;
+    text-decoration: none !important;
+    font-size: 14px;
+    font-weight: 650;
+  }
+  .bu-back:hover { background: #f9fafb; }
+  .bu-back svg { width: 16px; height: 16px; }
+  .bu-tips {
+    border: 1px solid #eceeef;
+    border-radius: 16px;
+    padding: 18px 18px 14px;
+    background: #fff;
+  }
+  .bu-tips h2 {
+    margin: 0 0 14px;
+    font-size: 15px;
+    font-weight: 750;
+    color: #111;
+  }
+  .bu-tips ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .bu-tips li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: #6b7280;
     line-height: 1.4;
   }
+  .bu-tip-ico {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #6b7280;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .bu-tip-ico svg { width: 14px; height: 14px; }
   .bu-matches {
-    margin-top: 20px;
+    margin-top: 24px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -130,32 +293,32 @@
     gap: 12px;
     align-items: center;
     padding: 12px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
     text-decoration: none !important;
     color: inherit !important;
-    background: #f8fafc;
+    background: #fff;
   }
-  .bu-match:hover { border-color: #5BB805; background: #f0fdf4; }
+  .bu-match:hover { border-color: #d1d5db; background: #f9fafb; }
   .bu-match img {
     width: 56px;
     height: 56px;
     object-fit: contain;
     background: #fff;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e5e7eb;
     flex-shrink: 0;
   }
   .bu-match-ph {
     width: 56px;
     height: 56px;
     border-radius: 8px;
-    background: #e2e8f0;
+    background: #f3f4f6;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #94a3b8;
+    color: #9ca3af;
     font-size: .7rem;
   }
   .bu-match-body { min-width: 0; flex: 1; }
@@ -165,10 +328,7 @@
     line-height: 1.3;
     margin-bottom: 4px;
   }
-  .bu-match-meta {
-    font-size: .8rem;
-    color: #64748b;
-  }
+  .bu-match-meta { font-size: .8rem; color: #6b7280; }
   .bu-badge {
     display: inline-block;
     font-size: .7rem;
@@ -183,7 +343,7 @@
     display: inline-block;
     margin-top: 6px;
     font-size: .72rem;
-    font-weight: 900;
+    font-weight: 800;
     letter-spacing: .04em;
     text-transform: uppercase;
     padding: 4px 10px;
@@ -193,267 +353,190 @@
   .bu-stock-status.is-in {
     color: #14532d;
     background: #bbf7d0;
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, .55);
     animation: bu-pulse-green 1.4s ease-in-out infinite;
   }
   .bu-stock-status.is-out {
     color: #7f1d1d;
     background: #fecaca;
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, .55);
     animation: bu-pulse-red 1.4s ease-in-out infinite;
   }
   @keyframes bu-pulse-green {
-    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, .55); transform: scale(1); }
-    50%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); transform: scale(1.04); }
-    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
+    50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); transform: scale(1.04); }
   }
   @keyframes bu-pulse-red {
-    0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, .55); transform: scale(1); }
-    50%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); transform: scale(1.04); }
-    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); transform: scale(1.04); }
   }
   .bu-match.is-in-stock { border-color: #86efac; }
   .bu-match.is-out-stock { border-color: #fca5a5; }
   .bu-empty {
-    margin-top: 16px;
-    padding: 14px;
-    border-radius: 10px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 12px;
     background: #fff7ed;
     border: 1px solid #fed7aa;
     color: #9a3412;
-    font-size: .9rem;
+    font-size: 14px;
     line-height: 1.4;
   }
-  .bu-back {
-    display: inline-block;
-    margin-top: 16px;
-    color: #64748b;
-    font-size: .9rem;
-  }
-  @media (max-width: 600px) {
-    #header, .breadcrumbs { font-size: 14px; }
-    .bu-wrap { padding: 4px 2px 32px; }
-  }
-
-  /* Desktop: puni ekran, što preglednije */
-  @media (min-width: 900px) {
-    #content {
-      max-width: none !important;
-    }
-    .bu-wrap {
-      max-width: min(1400px, calc(100vw - 48px));
-      width: 100%;
-      margin: 0 auto;
-      padding: 16px 24px 56px;
-      box-sizing: border-box;
-    }
-    .bu-card {
-      padding: 28px 32px 32px;
-      border-radius: 16px;
-    }
-    .bu-card h1 {
-      font-size: 1.75rem;
-      margin-bottom: 8px;
-    }
-    .bu-lead {
-      font-size: 1.05rem;
-      max-width: 64ch;
-      margin-bottom: 24px;
-    }
-    .bu-label {
-      font-size: 1.05rem;
-      margin-bottom: 10px;
-    }
-    .bu-scan-row {
-      gap: 12px;
-      max-width: 720px;
-    }
-    .bu-scan-row input[type="text"] {
-      font-size: 1.25rem !important;
-      padding: 16px 16px !important;
-    }
-    .bu-scan-row button[type="submit"] {
-      font-size: 1.1rem;
-      padding: 14px 28px;
-      min-width: 140px;
-    }
-    .bu-btn-scan {
-      max-width: 720px;
-      font-size: 1.05rem;
-      padding: 14px 18px;
-      margin-top: 14px;
-    }
-    .bu-scanner {
-      max-width: 720px;
-    }
-    #bu-qr-reader {
-      min-height: 320px;
-    }
-    .bu-hint {
-      font-size: .92rem;
-      max-width: 720px;
-      margin-top: 12px;
-    }
-    .bu-matches {
-      margin-top: 28px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-    .bu-matches > .bu-label {
-      grid-column: 1 / -1;
-      margin-bottom: 0;
-      font-size: 1.1rem;
-    }
-    .bu-match {
-      gap: 16px;
-      padding: 16px 18px;
-      border-radius: 14px;
-      border-width: 1.5px;
-      transition: border-color .15s, background .15s, box-shadow .15s;
-    }
-    .bu-match:hover {
-      box-shadow: 0 4px 14px rgba(91, 184, 5, .12);
-    }
-    .bu-match img,
-    .bu-match-ph {
-      width: 88px;
-      height: 88px;
-      border-radius: 10px;
-    }
-    .bu-match-body strong {
-      font-size: 1.1rem;
-      margin-bottom: 6px;
-      line-height: 1.35;
-    }
-    .bu-match-meta {
-      font-size: .92rem;
-      line-height: 1.45;
-    }
-    .bu-stock-status {
-      font-size: .78rem;
-      padding: 5px 12px;
-      margin-top: 8px;
-    }
-    .bu-badge {
-      font-size: .75rem;
-      padding: 3px 9px;
-    }
-    .bu-empty {
-      max-width: 720px;
-      font-size: 1rem;
-      padding: 18px 20px;
-    }
-    .bu-back {
-      font-size: 1rem;
-      margin-top: 20px;
-    }
-  }
-  @media (min-width: 1200px) {
-    .bu-wrap {
-      max-width: min(1600px, calc(100vw - 64px));
-      padding: 20px 32px 64px;
-    }
-    .bu-card {
-      padding: 32px 40px 36px;
-    }
-    .bu-matches {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-    .bu-match img,
-    .bu-match-ph {
-      width: 96px;
-      height: 96px;
-    }
+  @media (max-width: 900px) {
+    .bu-sheet { padding: 22px 16px 20px; border-radius: 16px; }
+    .bu-head h1 { font-size: 24px; }
+    .bu-layout { grid-template-columns: 1fr; gap: 20px; }
+    .bu-tips { order: 2; }
+    .bu-search { flex-wrap: wrap; }
+    .bu-find { width: 100%; }
+    .bu-cam { flex-direction: column; align-items: stretch; }
+    .bu-cam-btn { width: 100%; }
   }
 </style>
-<div class="bu-wrap">
-  <div class="bu-card">
-    <h1>Brzi unos / Aktivacija</h1>
-    <p class="bu-lead">
-      Skeniraj barkod, upiši šifru ili <strong>naziv</strong>.
-      Sistem pronađe postojeći artikal — ne kreira novi.
-    </p>
+<div class="bu-page">
+  <section class="bu-sheet">
+    <header class="bu-head">
+      <h1>Brzi unos / Aktivacija</h1>
+      <p>Skeniraj barkod, upiši šifru ili <strong>naziv</strong>. Sistem pronalazi postojeći artikal — ne kreira novi.</p>
+    </header>
 
-    <form method="get" action="" id="bu-scan-form" autocomplete="off">
-      <label class="bu-label" for="id_q">Šifra, barkod ili naziv</label>
-      <div class="bu-scan-row">
-        <input
-          type="text"
-          name="q"
-          id="id_q"
-          value="{{ query }}"
-          inputmode="search"
-          enterkeyhint="search"
-          autocapitalize="off"
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-          placeholder="Skeniraj, šifra ili naziv…"
-          autofocus
-        >
-        <button type="submit">Pronađi</button>
-      </div>
-
-      <button type="button" class="bu-btn-scan" id="bu-scan-toggle" aria-expanded="false">
-        Skeniraj barkod kamerom
-      </button>
-      <div class="bu-scanner" id="bu-scanner" aria-hidden="true">
-        <div id="bu-qr-reader"></div>
-      </div>
-      <p class="bu-scanner-status" id="bu-scanner-status"></p>
-
-      <p class="bu-hint">
-        Kamerom skeniraj barkod na ambalaži, ili upiši dio naziva (npr. „fox rage”).
-        USB/Bluetooth skener i dalje radi u polju iznad (Enter = traži).
-      </p>
-    </form>
-
-    {% if not_found %}
-    <div class="bu-empty">
-      Nema artikla za „{{ query }}”. Traži po šifri, barkodu ili nazivu.
-      Artikli se ne kreiraju ovdje — moraju već postojati u bazi.
-    </div>
-    {% endif %}
-
-    {% if matches %}
-    <div class="bu-matches">
-      <p class="bu-label" style="margin-bottom:4px;">
-        {% if matches|length == 1 %}Pronađen artikal{% else %}{{ matches|length }} rezultata — odaberi artikal{% endif %}
-      </p>
-      {% for p in matches %}
-      <a class="bu-match {% if p.na_stanju %}is-in-stock{% else %}is-out-stock{% endif %}" href="{% url 'staff_magacin_brzi_unos_aktivacija' p.pk %}">
-        {% if p.slika %}
-          <img src="{{ p.slika.url }}" alt="" loading="lazy">
-        {% else %}
-          <div class="bu-match-ph">nema</div>
-        {% endif %}
-        <div class="bu-match-body">
-          <strong>{{ p.naziv }}</strong>
-          {% if p.na_stanju %}
-          <span class="bu-stock-status is-in">NA STANJU</span>
-          {% else %}
-          <span class="bu-stock-status is-out">NIJE NA STANJU</span>
-          {% endif %}
-          <div class="bu-match-meta">
-            {% if p.sifra %}Šifra: {{ p.sifra }}{% endif %}
-            {% if p.barkod %} · Barkod: {{ p.barkod }}{% endif %}
-            · {{ p.cijena }} KM
-            {% if p.aktivan %}
-              <span class="bu-badge bu-badge-ok">aktivan</span>
-            {% else %}
-              <span class="bu-badge bu-badge-off">neaktivan</span>
-            {% endif %}
+    <div class="bu-layout">
+      <div class="bu-main">
+        <form method="get" action="" id="bu-scan-form" autocomplete="off">
+          <label class="bu-label" for="id_q">Šifra, barkod ili naziv</label>
+          <div class="bu-search">
+            <div class="bu-input-wrap">
+              <input
+                type="text"
+                name="q"
+                id="id_q"
+                value="{{ query }}"
+                inputmode="search"
+                enterkeyhint="search"
+                autocapitalize="off"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+                placeholder="Skeniraj, šifra ili naziv…"
+                autofocus
+              >
+              <span class="bu-input-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v16M8 7v10M11 4v16M14 8v8M17 5v14M20 8v8"/></svg>
+              </span>
+            </div>
+            <button type="submit" class="bu-find">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+              Pronađi
+            </button>
           </div>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
 
-  <a class="bu-back" href="{% url 'staff_magacin_artikli' %}">← Nazad na Artikle</a>
+          <div class="bu-or">ILI</div>
+
+          <div class="bu-cam">
+            <div class="bu-cam-left">
+              <div class="bu-cam-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+              </div>
+              <div class="bu-cam-copy">
+                <strong>Skeniraj barkod kamerom</strong>
+                <p>Usmjeri kameru na barkod ambalaže ili proizvoda.</p>
+              </div>
+            </div>
+            <button type="button" class="bu-cam-btn" id="bu-scan-toggle" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V7a2 2 0 0 1 2-2h2l1.2-2h5.6L16 5h2a2 2 0 0 1 2 2v1"/><rect x="4" y="8" width="16" height="12" rx="2"/><circle cx="12" cy="14" r="3.2"/></svg>
+              <span id="bu-scan-toggle-label">Pokreni kameru</span>
+            </button>
+          </div>
+          <div class="bu-scanner" id="bu-scanner" aria-hidden="true">
+            <div id="bu-qr-reader"></div>
+          </div>
+          <p class="bu-scanner-status" id="bu-scanner-status"></p>
+
+          <p class="bu-hint">
+            <span class="bu-hint-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.4-3 5.6V16a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-1.4A7 7 0 0 1 12 2z"/></svg>
+            </span>
+            <span>Kamerom skeniraj barkod na ambalaži, ili upiši dio naziva (npr. „fox rage”). USB/Bluetooth skener i dalje radi u polju iznad (Enter = traži).</span>
+          </p>
+        </form>
+
+        {% if not_found %}
+        <div class="bu-empty">
+          Nema artikla za „{{ query }}”. Traži po šifri, barkodu ili nazivu.
+          Artikli se ne kreiraju ovdje — moraju već postojati u bazi.
+        </div>
+        {% endif %}
+
+        {% if matches %}
+        <div class="bu-matches">
+          <p class="bu-label" style="margin-bottom:4px;">
+            {% if matches|length == 1 %}Pronađen artikal{% else %}{{ matches|length }} rezultata — odaberi artikal{% endif %}
+          </p>
+          {% for p in matches %}
+          <a class="bu-match {% if p.na_stanju %}is-in-stock{% else %}is-out-stock{% endif %}" href="{% url 'staff_magacin_brzi_unos_aktivacija' p.pk %}">
+            {% if p.slika %}
+              <img src="{{ p.slika.url }}" alt="" loading="lazy">
+            {% else %}
+              <div class="bu-match-ph">nema</div>
+            {% endif %}
+            <div class="bu-match-body">
+              <strong>{{ p.naziv }}</strong>
+              {% if p.na_stanju %}
+              <span class="bu-stock-status is-in">NA STANJU</span>
+              {% else %}
+              <span class="bu-stock-status is-out">NIJE NA STANJU</span>
+              {% endif %}
+              <div class="bu-match-meta">
+                {% if p.sifra %}Šifra: {{ p.sifra }}{% endif %}
+                {% if p.barkod %} · Barkod: {{ p.barkod }}{% endif %}
+                · {{ p.cijena }} KM
+                {% if p.aktivan %}
+                  <span class="bu-badge bu-badge-ok">aktivan</span>
+                {% else %}
+                  <span class="bu-badge bu-badge-off">neaktivan</span>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <a class="bu-back" href="{% url 'staff_magacin_artikli' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+          Nazad na Artikle
+        </a>
+      </div>
+
+      <aside class="bu-tips">
+        <h2>Savjeti</h2>
+        <ul>
+          <li>
+            <span class="bu-tip-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v16M8 7v10M11 4v16M14 8v8M17 5v14M20 8v8"/></svg>
+            </span>
+            Koristi skener ili kameru za brzi unos.
+          </li>
+          <li>
+            <span class="bu-tip-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.2 2.2 4.8-5.2"/></svg>
+            </span>
+            Sistem prikazuje samo postojeće artikle.
+          </li>
+          <li>
+            <span class="bu-tip-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 10-14h-7l0-6z"/></svg>
+            </span>
+            Aktiviraj artikal nakon provjere podataka.
+          </li>
+          <li>
+            <span class="bu-tip-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+            </span>
+            Sve promjene se odmah bilježe.
+          </li>
+        </ul>
+      </aside>
+    </div>
+  </section>
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -462,6 +545,7 @@
   var input = document.getElementById('id_q');
   var form = document.getElementById('bu-scan-form');
   var toggle = document.getElementById('bu-scan-toggle');
+  var toggleLabel = document.getElementById('bu-scan-toggle-label');
   var scannerBox = document.getElementById('bu-scanner');
   var statusEl = document.getElementById('bu-scanner-status');
   var html5Qr = null;
@@ -470,6 +554,14 @@
 
   if (input) {
     setTimeout(function () { input.focus(); input.select(); }, 50);
+  }
+
+  function setToggle(on) {
+    if (toggle) {
+      toggle.classList.toggle('is-on', !!on);
+      toggle.setAttribute('aria-expanded', on ? 'true' : 'false');
+    }
+    if (toggleLabel) toggleLabel.textContent = on ? 'Zaustavi skener' : 'Pokreni kameru';
   }
 
   function setStatus(msg, isErr) {
@@ -482,11 +574,7 @@
   function stopScanner() {
     scanning = false;
     handled = false;
-    if (toggle) {
-      toggle.classList.remove('is-on');
-      toggle.setAttribute('aria-expanded', 'false');
-      toggle.textContent = 'Skeniraj barkod kamerom';
-    }
+    setToggle(false);
     if (scannerBox) {
       scannerBox.classList.remove('is-on');
       scannerBox.setAttribute('aria-hidden', 'true');
@@ -525,11 +613,7 @@
 
     scanning = true;
     handled = false;
-    if (toggle) {
-      toggle.classList.add('is-on');
-      toggle.setAttribute('aria-expanded', 'true');
-      toggle.textContent = 'Zaustavi skener';
-    }
+    setToggle(true);
     if (scannerBox) {
       scannerBox.classList.add('is-on');
       scannerBox.setAttribute('aria-hidden', 'false');
@@ -555,11 +639,7 @@
       function () { /* ignore frame misses */ }
     ).catch(function (err) {
       scanning = false;
-      if (toggle) {
-        toggle.classList.remove('is-on');
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.textContent = 'Skeniraj barkod kamerom';
-      }
+      setToggle(false);
       if (scannerBox) {
         scannerBox.classList.remove('is-on');
         scannerBox.setAttribute('aria-hidden', 'true');

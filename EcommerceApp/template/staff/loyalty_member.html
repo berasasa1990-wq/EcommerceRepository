@@ -381,12 +381,12 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                 {% endif %}
                 <div class="lm-send">
                     {% if loyalty.viber_url %}
-                    <button type="button" class="viber loyalty-card-send-btn" data-channel="viber"
-                            data-chat-url="{{ loyalty.viber_url }}">Pošalji na Viber</button>
+                    <a class="viber loyalty-card-send-btn" data-channel="viber"
+                       href="{{ loyalty.viber_url }}">Pošalji na Viber</a>
                     {% endif %}
                     {% if loyalty.whatsapp_url %}
-                    <button type="button" class="wa loyalty-card-send-btn" data-channel="whatsapp"
-                            data-chat-url="{{ loyalty.whatsapp_url }}">Pošalji na WhatsApp</button>
+                    <a class="wa loyalty-card-send-btn" data-channel="whatsapp"
+                       href="{{ loyalty.whatsapp_url }}" target="_blank" rel="noopener">Pošalji na WhatsApp</a>
                     {% endif %}
                 </div>
             </div>
@@ -493,30 +493,12 @@ body.loy-full main{padding-top:28px!important;max-width:none}
         var el = document.getElementById('loyaltyCardCaption');
         try { return el ? JSON.parse(el.textContent) : ''; } catch (e) { return ''; }
     }
-    function openChatUrl(url, channel) {
-        if (!url) return;
-        var isViber = channel === 'viber' || /^viber:/i.test(url);
-        if (!isViber) {
-            var w = window.open(url, '_blank');
-            if (w) return;
-        }
-        var a = document.createElement('a');
-        a.href = url;
-        a.rel = 'noopener noreferrer';
-        if (!isViber) a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-    }
     document.querySelectorAll('.loyalty-card-send-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            const url = btn.getAttribute('data-chat-url');
-            var channel = (btn.getAttribute('data-channel') || '').toLowerCase();
             var text = cardCaption();
             if (text && navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).catch(function () {});
             }
-            openChatUrl(url, channel);
         });
     });
     document.querySelectorAll('.site-chat-launchers, .contact-float-group').forEach(function (el) { el.remove(); });
