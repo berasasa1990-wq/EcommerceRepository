@@ -69,7 +69,7 @@
             Validiraj odabrane
         </button>
         {% endif %}
-        <a class="mg-btn mg-btn-pill" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener"{% if not packing_ready_count %} aria-disabled="true"{% endif %}>
+        <a class="mg-btn mg-btn-pill" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener" data-packing-count="{{ packing_ready_count|default:0 }}"{% if not packing_ready_count %} aria-disabled="true"{% endif %}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             Štampaj packing{% if packing_ready_count %} ({{ packing_ready_count }}){% endif %}
         </a>

@@ -331,6 +331,34 @@ def validiraj_ba_mobilni(telefon, *, required=True):
     return local, e164
 
 
+def validiraj_strani_mobilni(telefon):
+    """
+    Strani broj: 00 + pozivni + broj, bez razmaka (npr. 0038161234567 za Srbiju).
+    Vraća (spremljeni 00…, e164 bez 00).
+    """
+    raw = '' if telefon is None else str(telefon)
+    if re.search(r'\s', raw):
+        raise ValueError('Telefon ne smije imati razmake. Unesite 00 i pozivni, npr. 0038161234567.')
+    raw = raw.strip()
+    if not raw:
+        raise ValueError('Telefon je obavezan.')
+    if re.search(r'[^0-9]', raw):
+        raise ValueError('Telefon smije sadržavati samo cifre. Unesite 00 i pozivni, npr. 00381…')
+    if not raw.startswith('00'):
+        raise ValueError('Strani broj mora počinjati sa 00 i pozivnim, npr. 00381 za Srbiju.')
+    if raw.startswith('00387'):
+        raise ValueError('Bosanski broj unesite bez „Strani državljanin” (06…).')
+    if not re.fullmatch(r'00\d{10,14}', raw):
+        raise ValueError('Unesite 00, pozivni i broj (npr. 0038161234567).')
+    return raw, raw[2:]
+
+
+def validiraj_loyalty_telefon(telefon, *, strani=False):
+    if strani:
+        return validiraj_strani_mobilni(telefon)
+    return validiraj_ba_mobilni(telefon)
+
+
 def _pronadji_korisnika_po_telefonu(telefon):
     """Pronađi user-a po telefonu — svi formati istog broja se tretiraju kao isti."""
     key = ba_mobile_e164(telefon) or _to_e164_digits(telefon)
@@ -810,9 +838,13 @@ def loyalty_page_items(page):
 def format_loyalty_phone(raw):
     local = ba_mobile_local(raw) or (raw or '').strip()
     digits = _to_e164_digits(local) or _normalizuj_telefon(local)
+    if digits.startswith('00'):
+        digits = digits[2:]
     if digits.startswith('387') and len(digits) >= 11:
         rest = digits[3:]
         return f'+387 {rest[:2]} {rest[2:5]} {rest[5:]}'.strip()
+    if digits and not digits.startswith('387') and len(digits) >= 10:
+        return f'+{digits}'
     return local or '—'
 
 
@@ -976,10 +1008,10 @@ def commit_loyalty_purchase(
     return purchase
 
 
-def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
+def izdaj_loyalty_karticu(ime, prezime, telefon, email='', *, strani=False):
     """
     Registruje kupca i izdaje loyalty karticu.
-    Telefon: obavezan BA mobilni (06…); +387 / 00387 se tretiraju kao isti broj.
+    Telefon: BA mobilni (06…) ili strani 00+pozivni (npr. 00381…).
     Email: opcionalan, bez duplikata.
     """
     ime = (ime or '').strip()
@@ -989,8 +1021,7 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
     if not ime or not prezime:
         raise ValueError('Ime i prezime su obavezni.')
 
-    # Normalizuj na 06… i provjeri da je mobilni
-    telefon_local, e164 = validiraj_ba_mobilni(telefon)
+    telefon_local, e164 = validiraj_loyalty_telefon(telefon, strani=strani)
 
     # Duplikati: 065… == +38765… == 0038765…
     if telefon_vec_registrovan(telefon_local) or telefon_vec_registrovan(e164):
@@ -1019,7 +1050,6 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email=''):
         last_name=prezime,
         is_active=True,
     )
-    # Uvijek spremi lokalni oblik 06…
     UserProfile.objects.create(user=user, telefon=telefon_local)
 
     card = osiguraj_loyalty_karticu(user)

@@ -46,6 +46,8 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 .loy-phone input::placeholder{color:#c0c5cb}
 .loy-phone .clr{border:0;background:transparent;color:#c0c5cb;cursor:pointer;font-size:20px;line-height:1;padding:4px}
 .loy-phone .clr:hover{color:#6b7280}
+.loy-foreign{display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:13.5px;font-weight:650;color:#374151;cursor:pointer;user-select:none}
+.loy-foreign input{width:16px;height:16px;accent-color:#16a34a;flex:0 0 auto}
 .loy-send-lab{margin:14px 0 8px;font-size:13px;color:#6b7280}
 .loy-ch-row{display:flex;gap:8px;flex-wrap:wrap}
 .loy-ch{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 14px;border-radius:10px;background:#fff;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none}
@@ -192,7 +194,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
             {% if desk_tab == 'novi' %}
             <div class="loy-search-card">
                 <p class="loy-kicker">Novi član</p>
-                <p class="loy-sub">Unesite ime, prezime i telefon (06 i broj, bez razmaka). Isti telefon nije dozvoljen.</p>
+                <p class="loy-sub">Unesite ime, prezime i telefon (06 i broj, bez razmaka). Za Srbiju i ostale: Strani državljanin, npr. 00381… Isti telefon nije dozvoljen.</p>
                 <form method="post" class="loy-new" id="loyNewForm">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="open_card">
@@ -205,6 +207,10 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                         </span>
                         <input type="tel" name="telefon" class="loy-local-phone" placeholder="061234567" value="{{ phone_local }}" autocomplete="tel" inputmode="numeric" maxlength="10" pattern="06[0-9]{7,8}" required>
                     </div>
+                    <label class="loy-foreign">
+                        <input type="checkbox" name="strani" value="1">
+                        Strani državljanin (npr. 00381 Srbija)
+                    </label>
                     <button type="submit" class="loy-btn-new" style="border:0;justify-content:center">Kreiraj i otvori karticu</button>
                 </form>
             </div>
@@ -264,6 +270,10 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                         <input type="tel" id="loyOpenPhone" name="telefon" class="loy-local-phone" placeholder="061234567" value="" autocomplete="off" inputmode="numeric" maxlength="10" pattern="06[0-9]{7,8}">
                         <button type="button" class="clr" id="loyPhoneClear" aria-label="Obriši">×</button>
                     </div>
+                    <label class="loy-foreign">
+                        <input type="checkbox" name="strani" value="1">
+                        Strani državljanin (npr. 00381 Srbija)
+                    </label>
                     {% if new_member %}
                     <p class="loy-sub" style="margin-top:14px;margin-bottom:8px">Novi član — unesi ime i prezime</p>
                     <div class="loy-new">
@@ -537,8 +547,35 @@ body.loy-full main{padding-top:28px!important;max-width:none}
         if (d.length > 10) d = d.slice(0, 10);
         return d;
     }
-    function toFullPhone(value) {
+    function formatForeign(value) {
+        return digitsOnly(value).slice(0, 16);
+    }
+    function isForeignForm(form) {
+        var box = form && form.querySelector('input[name="strani"]');
+        return !!(box && box.checked);
+    }
+    function toFullPhone(value, form) {
+        if (isForeignForm(form)) return formatForeign(value);
         return formatLocal(value);
+    }
+    function applyForeignMode(form) {
+        if (!form) return;
+        var box = form.querySelector('input[name="strani"]');
+        var phone = form.querySelector('.loy-local-phone');
+        if (!box || !phone) return;
+        var on = box.checked;
+        form.classList.toggle('is-foreign', on);
+        if (on) {
+            phone.removeAttribute('pattern');
+            phone.setAttribute('maxlength', '16');
+            phone.placeholder = '0038161234567';
+            if (!phone.value) phone.value = '00381';
+        } else {
+            phone.setAttribute('pattern', '06[0-9]{7,8}');
+            phone.setAttribute('maxlength', '10');
+            phone.placeholder = '061234567';
+            if (digitsOnly(phone.value).indexOf('00') === 0) phone.value = '';
+        }
     }
     function openChatApp(url, popup) {
         if (!url) return false;
@@ -566,20 +603,25 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 
     document.querySelectorAll('.loy-local-phone').forEach(function (input) {
         input.addEventListener('input', function () {
-            var start = input.selectionStart;
-            var next = formatLocal(input.value);
+            var form = input.closest('form');
+            var next = isForeignForm(form) ? formatForeign(input.value) : formatLocal(input.value);
             input.value = next;
             try { input.setSelectionRange(next.length, next.length); } catch (e) { /* ignore */ }
-            void start;
         });
-        if (input.value) input.value = formatLocal(input.value);
+        var form = input.closest('form');
+        if (input.value && !isForeignForm(form)) input.value = formatLocal(input.value);
     });
 
     function bindPhoneForm(form) {
         if (!form) return;
+        var box = form.querySelector('input[name="strani"]');
+        if (box) {
+            box.addEventListener('change', function () { applyForeignMode(form); });
+            applyForeignMode(form);
+        }
         form.addEventListener('submit', function () {
             var phone = form.querySelector('.loy-local-phone');
-            if (phone) phone.value = toFullPhone(phone.value);
+            if (phone) phone.value = toFullPhone(phone.value, form);
         });
     }
     bindPhoneForm(document.getElementById('loyOpenForm'));
@@ -614,7 +656,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
             if (channel !== 'viber' && channel !== 'whatsapp') return;
             event.preventDefault();
             var phone = form.querySelector('.loy-local-phone');
-            if (phone) phone.value = toFullPhone(phone.value);
+            if (phone) phone.value = toFullPhone(phone.value, form);
             var popup = null;
             try { popup = window.open('about:blank', 'loyChat'); } catch (e) { popup = null; }
             var body = new FormData(form);

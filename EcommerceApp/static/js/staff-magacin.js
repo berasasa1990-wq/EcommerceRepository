@@ -1245,6 +1245,20 @@ function initOrderBulkPrint() {
             validateForm.submit();
         });
     }
+    var packingBtn = document.getElementById('mgPackingSelected');
+    if (packingBtn) {
+        packingBtn.addEventListener('click', function (event) {
+            var count = parseInt(packingBtn.getAttribute('data-packing-count') || '0', 10) || 0;
+            if (!count || packingBtn.getAttribute('aria-disabled') === 'true') {
+                event.preventDefault();
+                return;
+            }
+            var msg = count === 1
+                ? 'Štampati packing za 1 narudžbu?'
+                : ('Štampati packing za ' + count + ' narudžbe?');
+            if (!window.confirm(msg)) event.preventDefault();
+        });
+    }
     form.querySelectorAll('[data-stop-row]').forEach(function (cell) {
         cell.addEventListener('click', function (event) { event.stopPropagation(); });
     });

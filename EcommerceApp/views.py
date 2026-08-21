@@ -7792,14 +7792,15 @@ def staff_loyalty_system(request):
             or request.POST.get('ajax') == '1'
         )
         creating = bool(ime and prezime)
+        strani = (request.POST.get('strani') or '').strip().lower() in ('1', 'on', 'true', 'da')
 
         def _open_json(payload, status=200):
             return JsonResponse(payload, status=status)
 
         if creating:
-            from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
+            from .loyalty import telefon_vec_registrovan, validiraj_loyalty_telefon
             try:
-                phone, _e164 = validiraj_ba_mobilni(phone)
+                phone, _e164 = validiraj_loyalty_telefon(phone, strani=strani)
             except ValueError as exc:
                 messages.error(request, str(exc))
                 dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
@@ -7814,7 +7815,7 @@ def staff_loyalty_system(request):
                     return _open_json({'ok': False, 'error': err}, 400)
                 return redirect(dest)
             try:
-                card, user = izdaj_loyalty_karticu(ime, prezime, phone)
+                card, user = izdaj_loyalty_karticu(ime, prezime, phone, strani=strani)
                 sync_korisnik(user)
             except ValueError as exc:
                 messages.error(request, str(exc))
@@ -7826,9 +7827,9 @@ def staff_loyalty_system(request):
             found = search_loyalty_cards(phone, limit=5, mode='code') if phone else []
             card = found[0] if found else None
             if card is None:
-                from .loyalty import validiraj_ba_mobilni
+                from .loyalty import validiraj_loyalty_telefon
                 try:
-                    phone, _e164 = validiraj_ba_mobilni(phone)
+                    phone, _e164 = validiraj_loyalty_telefon(phone, strani=strani)
                 except ValueError as exc:
                     messages.error(request, str(exc))
                     if wants_json:

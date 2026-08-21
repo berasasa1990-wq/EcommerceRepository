@@ -91,6 +91,8 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertContains(page, 'Nema internet')
         self.assertContains(page, 'Ime, telefon ili broj kartice')
         self.assertContains(page, 'id="loyOpenPhone"')
+        self.assertContains(page, 'Strani državljanin')
+        self.assertContains(page, 'name="strani"')
         self.assertContains(page, '061234567')
         self.assertNotContains(page, 'placeholder="65 123 456"')
         self.assertNotContains(page, 'value="65')
@@ -176,6 +178,19 @@ class LoyaltyAdminSearchTests(TestCase):
         local, e164 = validiraj_ba_mobilni('065123456')
         self.assertEqual(local, '065123456')
         self.assertEqual(e164, '38765123456')
+        from .loyalty import validiraj_strani_mobilni, viber_chat_url
+        stored, intl = validiraj_strani_mobilni('00381641234567')
+        self.assertEqual(stored, '00381641234567')
+        self.assertEqual(intl, '381641234567')
+        with self.assertRaises(ValueError):
+            validiraj_strani_mobilni('061234567')
+        with self.assertRaises(ValueError):
+            validiraj_strani_mobilni('0038765123456')
+        card, user = izdaj_loyalty_karticu(
+            'Srdjan', 'Ilic', '00381641234567', strani=True,
+        )
+        self.assertEqual(user.profil.telefon, '00381641234567')
+        self.assertIn('381641234567', viber_chat_url(user.profil.telefon, 'test'))
         with self.assertRaises(ValueError):
             izdaj_loyalty_karticu('Drugi', 'Kupac', '065123456')
         dup = self.client.post('/nalog/loyalty/', {

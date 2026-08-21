@@ -1605,6 +1605,8 @@ class MagacinViewTests(TestCase):
         self.assertContains(listed, reverse('staff_magacin_narudzbe_stampa'))
         self.assertContains(listed, 'Validiraj odabrane')
         self.assertContains(listed, 'Štampaj packing')
+        self.assertContains(listed, 'id="mgPackingSelected"')
+        self.assertContains(listed, 'data-packing-count=')
         self.assertContains(listed, reverse('staff_magacin_narudzbe_validiraj'))
         self.assertContains(listed, reverse('staff_magacin_narudzbe_packing'))
         self.assertNotContains(listed, 'mg-nav-count')
