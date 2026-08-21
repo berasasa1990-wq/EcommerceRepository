@@ -133,6 +133,17 @@
         </button>
         {% endif %}
         <div class="mg-order-foot-sum">
+            <div class="mg-order-pay" role="group" aria-label="Način plaćanja">
+                <span>Plaćanje</span>
+                <label>
+                    <input type="radio" name="placanje" value="gotovina"{% if form.placanje != 'kartica' %} checked{% endif %}>
+                    Gotovina
+                </label>
+                <label>
+                    <input type="radio" name="placanje" value="kartica"{% if form.placanje == 'kartica' %} checked{% endif %}>
+                    Kartica
+                </label>
+            </div>
             <label class="mg-order-disc" for="mgOrderDisc">
                 Popust %
                 <input type="number" name="popust_pct" id="mgOrderDisc" min="0" max="100" step="1" inputmode="numeric" placeholder="0" value="{{ form.popust_pct|default:'' }}">

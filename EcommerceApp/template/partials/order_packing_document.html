@@ -41,6 +41,17 @@
     }
     .pk-buyer .pk-buyer-name { display: block; font-size: 15px; margin-bottom: 2px; }
     .pk-buyer span { display: block; }
+    .pk-pay {
+        display: inline-block;
+        margin-top: 6px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        padding: 2px 8px;
+        border: 1px solid #111;
+    }
+    .pk-pay.is-card { color: #1d4ed8; border-color: #1d4ed8; }
+    .pk-pay.is-cash { color: #166534; border-color: #166534; }
     .packing-alert {
         margin: 0 0 10px;
         padding: 0;
@@ -124,6 +135,7 @@
                 <span class="pk-buyer-name">{{ order.ime_prezime }}</span>
                 <span>{{ order.telefon }}</span>
                 <span>{{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}</span>
+                <span class="pk-pay {% if order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ order.packing_placanje_label }}</span>
             </div>
         </div>
 

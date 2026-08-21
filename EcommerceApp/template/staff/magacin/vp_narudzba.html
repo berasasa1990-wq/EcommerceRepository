@@ -646,6 +646,10 @@
                 ' Provjeri u <strong>maloprodaji</strong> ima li ga.';
         }
         if (mpModal) mpModal.hidden = false;
+        var addBtn = document.getElementById('vpMpAdd');
+        window.setTimeout(function () {
+            if (addBtn) addBtn.focus();
+        }, 40);
     }
     function postAction(body, done) {
         fetch(window.location.pathname, {
@@ -878,6 +882,19 @@
         mpModal.querySelectorAll('[data-vp-mp-skip]').forEach(function (el) {
             el.addEventListener('click', function () { hideMp(); focusQuery(); });
         });
+        document.addEventListener('keydown', function (event) {
+            if (!mpModal || mpModal.hidden) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                hideMp();
+                focusQuery();
+                return;
+            }
+            if (event.key === 'Tab' || event.key === 'Enter') {
+                event.preventDefault();
+                if (mpAdd) mpAdd.click();
+            }
+        }, true);
     }
     bindLineForms(document);
 })();

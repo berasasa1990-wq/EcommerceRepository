@@ -239,7 +239,16 @@ def _medjuzbir_za_racun(order):
     return _kvantiziraj(order.medjuzbir)
 
 
+def order_paid_by_card(order):
+    method = getattr(order, 'placeno_karticom', None)
+    if callable(method):
+        return method()
+    return False
+
+
 def order_waived_shipping(order):
+    if order_paid_by_card(order):
+        return True
     for row in (getattr(order, 'popust_detalji', None) or []):
         if not isinstance(row, dict):
             continue
@@ -280,6 +289,9 @@ def sazetak_iz_narudzbe(order):
     if any(item.kolicina_pokupljeno is not None for item in order.stavke.all()):
         ukupno = _kvantiziraj(goods + dostava)
     ukupno_prije_popusta = _kvantiziraj(medjuzbir + dostava)
+    pogodnosti = []
+    if order_paid_by_card(order):
+        pogodnosti.append('Plaćeno karticom')
     return {
         'medjuzbir': medjuzbir,
         'pdv_artikli': izracunaj_pdv(medjuzbir),
@@ -288,7 +300,7 @@ def sazetak_iz_narudzbe(order):
         'ostali_popust': order.popust,
         'kupon_primijenjen': bool(order.kupon_kod),
         'kupon_postotak': None,
-        'pogodnosti': [],
+        'pogodnosti': pogodnosti,
         'ima_novu_pogodnost': False,
         'pogodnosti_dostupne_gostu': False,
         'dostava': dostava,

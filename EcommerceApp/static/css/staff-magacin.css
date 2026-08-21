@@ -4567,6 +4567,26 @@ tr.is-mp-lock {
     color: #6b7280;
     font-size: 14px;
 }
+.mg-order-pay {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #374151;
+    font-weight: 650;
+    white-space: nowrap;
+}
+.mg-order-pay label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-weight: 650;
+}
+.mg-order-page.is-card-pay .mg-order-disc,
+.mg-order-page.is-card-pay .mg-order-noship {
+    opacity: .45;
+    pointer-events: none;
+}
 .mg-order-disc {
     display: inline-flex;
     align-items: center;
@@ -4810,6 +4830,19 @@ tr.is-mp-lock {
     .mg-icon-field { flex: 1 1 100%; }
 }
 
+.mg-orders-find {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+.mg-orders-find .mg-icon-field {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.mg-orders-find input[type="search"] {
+    width: 100%;
+}
 .mg-orders-page .mg-page-head { margin-bottom: 10px; }
 .mg-orders-page .mg-filter-tabs {
     gap: 8px 22px;

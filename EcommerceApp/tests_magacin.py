@@ -1598,7 +1598,8 @@ class MagacinViewTests(TestCase):
         self.assertContains(listed, 'Nova ručna narudžba')
         self.assertContains(listed, 'Pokaži validatovane')
         self.assertContains(listed, 'validirane=1&sve=1')
-        self.assertContains(listed, 'Pretraži narudžbe po broju, kupcu, izvoru')
+        self.assertContains(listed, 'Pretraži po imenu ili broju narudžbe')
+        self.assertContains(listed, 'Ime ili broj narudžbe')
         self.assertNotContains(listed, 'Broj narudžbe, ime ili telefon')
         self.assertContains(listed, reverse('staff_magacin_narudzba_nova'))
         self.assertContains(listed, reverse('staff_magacin_narudzbe_stampa'))
@@ -1631,11 +1632,17 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'id="mgMpAdd"')
         self.assertContains(form, 'Izbaci')
         self.assertContains(form, 'Provjeri u maloprodaji')
+        self.assertContains(form, 'stavi na narudžbu')
         self.assertContains(form, 'name="popust_pct"')
         self.assertContains(form, 'Popust %')
         self.assertContains(form, 'id="mgOrderDisc"')
         self.assertContains(form, 'Skini dostavu')
         self.assertContains(form, 'name="bez_dostave"')
+        self.assertContains(form, 'name="placanje"')
+        self.assertContains(form, 'Gotovina')
+        self.assertContains(form, 'Kartica')
+        self.assertContains(form, 'value="gotovina"')
+        self.assertContains(form, 'checked')
 
     def test_order_barcode_opens_picking(self):
         self.client.force_login(self.user)
@@ -1960,6 +1967,63 @@ class MagacinViewTests(TestCase):
         self.assertContains(edit, 'id="mgOrderNoShip"')
         self.assertRegex(edit.content.decode(), r'id="mgOrderNoShip"[^>]*value="1"')
 
+    def test_manual_order_card_payment_zeros_invoice(self):
+        from .pricing import sazetak_iz_narudzbe
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Kartica Kupac',
+            'telefon': '061555666',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'placanje': 'kartica',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Kartica Kupac')
+        self.assertEqual(order.medjuzbir, Decimal('20.00'))
+        self.assertEqual(order.popust, Decimal('20.00'))
+        self.assertEqual(order.dostava, Decimal('0.00'))
+        self.assertEqual(order.ukupno, Decimal('0.00'))
+        self.assertIn('Plaćeno karticom', order.napomena)
+        self.assertTrue(any(row.get('placanje') == 'kartica' for row in order.popust_detalji))
+        summary = sazetak_iz_narudzbe(order)
+        self.assertEqual(summary['dostava'], Decimal('0.00'))
+        self.assertEqual(summary['ukupno'], Decimal('0.00'))
+        self.assertEqual(summary['popust'], Decimal('20.00'))
+        self.assertIn('Plaćeno karticom', summary['pogodnosti'])
+        reserved = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Kartica Rez',
+            'telefon': '061555667',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'placanje': 'kartica',
+            'action': 'rezervacija',
+        })
+        self.assertEqual(reserved.status_code, 302)
+        rez = Order.objects.get(ime_prezime='Kartica Rez')
+        edit = self.client.get(reverse('staff_magacin_narudzba_nova'), {'broj': rez.broj})
+        self.assertRegex(
+            edit.content.decode(),
+            r'name="placanje" value="kartica"[^>]*checked|value="kartica"[^>]*checked',
+        )
+        cash = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Gotovina Kupac',
+            'telefon': '061555668',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(cash.status_code, 302)
+        cash_order = Order.objects.get(ime_prezime='Gotovina Kupac')
+        self.assertEqual(cash_order.dostava, Decimal('11.00'))
+        self.assertEqual(cash_order.ukupno, Decimal('21.00'))
+        self.assertNotIn('Plaćeno karticom', cash_order.napomena)
+
     def test_manual_reservation_holds_stock_and_stays_editable(self):
         self.client.force_login(self.user)
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
@@ -2077,6 +2141,8 @@ class MagacinViewTests(TestCase):
         empty = self.client.get(reverse('staff_magacin_narudzbe_packing'))
         self.assertEqual(empty.status_code, 200)
         self.assertContains(empty, 'Ana Ribić')
+        self.assertContains(empty, 'GOTOVINSKI')
+        self.assertNotContains(empty, 'KARTICA')
         self.assertContains(empty, 'class="pk-loc"')
         self.assertContains(empty, '2× T-1')
         self.assertContains(empty, 'class="col-qty">2<')
@@ -2090,11 +2156,42 @@ class MagacinViewTests(TestCase):
         self.assertFalse(marko.packing_odstampana)
         validated = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'})
         listed = [row.broj for row in validated.context['orders']]
-        self.assertNotIn(ana.broj, listed)
+        self.assertIn(ana.broj, listed)
         self.assertIn(marko.broj, listed)
         again = self.client.get(reverse('staff_magacin_narudzbe_packing'))
         self.assertEqual(again.status_code, 302)
         self.assertEqual(again['Location'], reverse('staff_magacin_narudzbe'))
+
+    def test_packing_print_marks_card_vs_cash(self):
+        from .magacin import validate_order_stock
+        from .views_magacin import apply_order_pick
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Kartica Pack',
+            'telefon': '061888777',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'placanje': 'kartica',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Kartica Pack')
+        item = order.stavke.get()
+        apply_order_pick(order, [{
+            'key': f'{item.pk}:T-1',
+            'item_id': item.pk,
+            'got': 1,
+            'need': 1,
+            'done': True,
+        }])
+        validate_order_stock(order, user=self.user)
+        page = self.client.get(reverse('staff_magacin_narudzbe_packing'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Kartica Pack')
+        self.assertContains(page, 'KARTICA')
+        self.assertNotContains(page, 'GOTOVINSKI')
 
     def test_manual_order_without_stock_requires_mp(self):
         self.client.force_login(self.user)
@@ -2560,7 +2657,8 @@ class MagacinViewTests(TestCase):
         all_listed = [row.broj for row in all_page.context['orders']]
         self.assertIn(today.broj, all_listed)
         self.assertIn(old.broj, all_listed)
-        self.assertContains(page, 'Pretraži narudžbe po broju, kupcu, izvoru')
+        self.assertContains(page, 'Pretraži po imenu ili broju narudžbe')
+        self.assertContains(page, 'Ime ili broj narudžbe')
         self.assertContains(page, 'name="pretraga"')
         by_name = self.client.get(reverse('staff_magacin_narudzbe'), {
             'validirane': '1', 'pretraga': 'Stara',

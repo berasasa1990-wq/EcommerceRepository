@@ -3975,6 +3975,21 @@ class Order(models.Model):
     def get_status_label(self):
         return self.Status(self.status).label
 
+    def placeno_karticom(self):
+        for row in (self.popust_detalji or []):
+            if not isinstance(row, dict):
+                continue
+            if row.get('placanje') == 'kartica':
+                return True
+            opis = str(row.get('opis') or '').casefold()
+            if 'plaćeno karticom' in opis or 'placeno karticom' in opis:
+                return True
+        note = (self.napomena or '').casefold()
+        return 'plaćeno karticom' in note or 'placeno karticom' in note
+
+    def packing_placanje_label(self):
+        return 'KARTICA' if self.placeno_karticom() else 'GOTOVINSKI'
+
     @property
     def barkod(self):
         """Code128 vrijednost za picking skener — jedinstvena po broju naloga."""

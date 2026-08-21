@@ -1843,19 +1843,17 @@ def magacin_narudzbe(request):
     validated_q = _validated_orders_q()
     if show_validated:
         orders = orders.filter(validated_q)
-        if not order_query:
-            orders = orders.exclude(packing_odstampana=True)
-            if not show_all_validated:
-                today = timezone.localdate()
-                orders = orders.filter(
-                    Q(zapakovana_at__date=today)
-                    | Q(zapakovana_at__isnull=True, kreirana__date=today)
-                )
+        if not order_query and not show_all_validated:
+            today = timezone.localdate()
+            orders = orders.filter(
+                Q(zapakovana_at__date=today)
+                | Q(zapakovana_at__isnull=True, kreirana__date=today)
+            )
     else:
         orders = orders.exclude(validated_q)
     if order_query:
         orders = orders.filter(_order_text_search_q(order_query))
-    order_list = list(orders[:80])
+    order_list = list(orders[:200] if show_validated else orders[:80])
     if not show_validated:
         locked = pending_mp_brojevi(collect_mp_checks(order_list))
         for order in order_list:
@@ -1893,12 +1891,11 @@ def magacin_narudzbe(request):
         'qs_webshop': _list_qs(izvor_value='webshop'),
         'qs_today': _list_qs(all_validated=False),
         'qs_all': _list_qs(all_validated=True),
+        'qs_clear': _list_qs(query=''),
         'rucne_count': base_qs.filter(
             izvor=Order.Izvor.MAGACIN,
         ).exclude(validated_q).count(),
-        'validated_count': base_qs.filter(validated_q).exclude(
-            packing_odstampana=True,
-        ).count(),
+        'validated_count': base_qs.filter(validated_q).count(),
         'packing_ready_count': len(packing_ready_orders()),
     })
     return render(request, 'staff/magacin/narudzbe.html', context)
@@ -2346,6 +2343,7 @@ def magacin_narudzba_nova(request):
             'napomena': existing.napomena,
             'popust_pct': _manual_popust_pct_display(existing),
             'bez_dostave': '1' if order_waived_shipping(existing) else '',
+            'placanje': _manual_placanje(existing),
         }
         context['form_lines'] = _order_display_lines(existing)
     else:
@@ -2495,6 +2493,9 @@ def _create_manual_order(request, *, existing=None):
 
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
     from .pricing import _postotni_popust, _standardna_dostava
+    placanje = (request.POST.get('placanje') or 'gotovina').strip().lower()
+    if placanje not in ('gotovina', 'kartica'):
+        placanje = 'gotovina'
     popust_pct = _parse_manual_popust_pct(request.POST.get('popust_pct'))
     popust = _postotni_popust(medjuzbir, popust_pct) if popust_pct else Decimal('0.00')
     if popust > medjuzbir:
@@ -2503,6 +2504,10 @@ def _create_manual_order(request, *, existing=None):
     bez_dostave = (request.POST.get('bez_dostave') or '').strip().lower() in (
         '1', 'on', 'true', 'da',
     )
+    if placanje == 'kartica':
+        popust_pct = Decimal('100')
+        popust = medjuzbir
+        bez_dostave = True
     if bez_dostave:
         dostava = Decimal('0.00')
     action = (request.POST.get('action') or '').strip()
@@ -2517,6 +2522,7 @@ def _create_manual_order(request, *, existing=None):
             popust=popust,
             popust_pct=popust_pct,
             bez_dostave=bez_dostave,
+            placanje=placanje,
         )
     return order
 
@@ -2538,10 +2544,27 @@ def _manual_popust_pct_display(order):
     for row in (getattr(order, 'popust_detalji', None) or []):
         if not isinstance(row, dict):
             continue
+        if row.get('placanje') == 'kartica':
+            continue
         raw = row.get('postotak')
         if raw not in (None, ''):
             return str(raw)
     return ''
+
+
+def _manual_placanje(order):
+    from .pricing import order_paid_by_card
+
+    return 'kartica' if order_paid_by_card(order) else 'gotovina'
+
+
+def _strip_card_pay_note(napomena):
+    skip = {'plaćeno karticom', 'placeno karticom'}
+    lines = [
+        line for line in (napomena or '').splitlines()
+        if line.strip().casefold() not in skip
+    ]
+    return '\n'.join(lines).strip()
 
 
 def _clear_order_items_and_holds(order, user=None):
@@ -2558,9 +2581,9 @@ def _clear_order_items_and_holds(order, user=None):
 def _save_manual_order(
     request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
     *, existing=None, rezervacija=False, popust=None, popust_pct=None,
-    bez_dostave=False,
+    bez_dostave=False, placanje='gotovina',
 ):
-    napomena = (request.POST.get('napomena') or '').strip()
+    napomena = _strip_card_pay_note((request.POST.get('napomena') or '').strip())
     mp_names = [
         (line['variation'].naziv if line['variation'] else line['product'].naziv)
         for line in lines
@@ -2569,10 +2592,19 @@ def _save_manual_order(
     if mp_names:
         extra = 'Maloprodaja: ' + ', '.join(mp_names)
         napomena = f'{napomena}\n{extra}'.strip() if napomena else extra
+    if placanje == 'kartica':
+        napomena = f'{napomena}\nPlaćeno karticom'.strip() if napomena else 'Plaćeno karticom'
     popust = popust if popust is not None else Decimal('0.00')
     popust_pct = popust_pct if popust_pct is not None else Decimal('0')
     popust_detalji = []
-    if popust > 0 and popust_pct > 0:
+    if placanje == 'kartica':
+        popust_detalji.append({
+            'opis': 'Plaćeno karticom',
+            'iznos': str(popust),
+            'postotak': '100',
+            'placanje': 'kartica',
+        })
+    elif popust > 0 and popust_pct > 0:
         pct_label = (
             str(int(popust_pct))
             if popust_pct == popust_pct.to_integral()

@@ -500,6 +500,7 @@ function initCustomerPicker() {
 function initManualOrderForm() {
     var form = document.getElementById('mgOrderForm');
     if (!form) return;
+    var page = document.getElementById('mgOrderPage');
 
     var search = document.getElementById('mgOrderSearch');
     var qtyInput = document.getElementById('mgOrderQty');
@@ -544,6 +545,10 @@ function initManualOrderForm() {
     function shipWaived() {
         return !!(noShipInput && noShipInput.value === '1');
     }
+    function payByCard() {
+        var el = form.querySelector('input[name="placanje"]:checked');
+        return !!(el && el.value === 'kartica');
+    }
     function escapeHtml(value) {
         return String(value == null ? '' : value)
             .replace(/&/g, '&amp;')
@@ -565,12 +570,14 @@ function initManualOrderForm() {
             if (cell) cell.textContent = money(lineTotal) + ' KM';
             sum += lineTotal;
         });
+        var card = payByCard();
         var ship = (sum > 0 && sum < shipFreeFrom) ? shipFee : 0;
-        if (shipWaived()) ship = 0;
-        var pct = discountPct();
-        var discount = sum * pct / 100;
+        if (shipWaived() || card) ship = 0;
+        var pct = card ? 100 : discountPct();
+        var discount = card ? sum : (sum * pct / 100);
+        if (page) page.classList.toggle('is-card-pay', card);
         if (shipEl) {
-            if (shipWaived() && sum > 0) {
+            if ((shipWaived() || card) && sum > 0) {
                 shipEl.textContent = 'Dostava: skinuta';
             } else {
                 shipEl.textContent = ship > 0
@@ -579,12 +586,16 @@ function initManualOrderForm() {
             }
         }
         if (noShipBtn) {
-            noShipBtn.classList.toggle('is-on', shipWaived());
-            noShipBtn.textContent = shipWaived() ? 'Vrati dostavu' : 'Skini dostavu';
+            noShipBtn.disabled = card;
+            noShipBtn.classList.toggle('is-on', shipWaived() || card);
+            noShipBtn.textContent = (shipWaived() || card) ? 'Vrati dostavu' : 'Skini dostavu';
         }
+        if (discInput) discInput.disabled = card;
         if (discAmt) {
             discAmt.hidden = !(pct > 0 && sum > 0);
-            discAmt.textContent = 'Popust: −' + money(discount) + ' KM';
+            discAmt.textContent = card
+                ? ('Kartica: −' + money(discount) + ' KM')
+                : ('Popust: −' + money(discount) + ' KM');
         }
         if (totalEl) totalEl.textContent = money(sum - discount + ship) + ' KM';
         if (empty) empty.hidden = lineCount() > 0;
@@ -654,6 +665,10 @@ function initManualOrderForm() {
                 ' Provjeri u <strong>maloprodaji</strong> ima li ga.';
         }
         if (mpModal) mpModal.hidden = false;
+        var addBtn = document.getElementById('mgMpAdd');
+        window.setTimeout(function () {
+            if (addBtn) addBtn.focus();
+        }, 40);
     }
     function hideMp() {
         pending = null;
@@ -813,12 +828,10 @@ function initManualOrderForm() {
                 available: available,
                 name: pickName(pick.item, pick.variation),
             });
-            if (catalogOpen()) {
-                pick = null;
-                closeQty();
-            } else {
-                resetPicker(true);
-            }
+            pick = null;
+            closeQty();
+            if (search) search.value = '';
+            if (list) list.hidden = true;
             return;
         }
         addLine(pick.item, pick.variation, existingMp, qty);
@@ -1098,7 +1111,6 @@ function initManualOrderForm() {
             if (pending.type === 'add') {
                 addLine(pending.item, pending.variation, true, pending.qty || 1);
                 if (catalogOpen()) renderCatalog(lastResults);
-                if (search) search.focus();
             } else if (pending.type === 'qty' && pending.row && pending.input) {
                 pending.input.value = pending.next;
                 pending.input.setAttribute('data-prev', String(pending.next));
@@ -1113,6 +1125,7 @@ function initManualOrderForm() {
                 refreshTotal();
             }
             hideMp();
+            if (search) search.focus();
         });
         function skipMp() {
             if (pending && pending.type === 'qty' && pending.input) {
@@ -1120,14 +1133,25 @@ function initManualOrderForm() {
                 refreshTotal();
             }
             hideMp();
+            if (search) search.focus();
         }
         document.getElementById('mgMpSkip').addEventListener('click', skipMp);
         mpModal.querySelectorAll('[data-mp-skip]').forEach(function (el) {
             el.addEventListener('click', skipMp);
         });
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && mpModal && !mpModal.hidden) skipMp();
-        });
+            if (!mpModal || mpModal.hidden) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                skipMp();
+                return;
+            }
+            if (event.key === 'Tab' || event.key === 'Enter') {
+                event.preventDefault();
+                var addBtn = document.getElementById('mgMpAdd');
+                if (addBtn) addBtn.click();
+            }
+        }, true);
     }
     if (discInput) {
         discInput.addEventListener('input', function () {
@@ -1139,10 +1163,14 @@ function initManualOrderForm() {
     }
     if (noShipBtn && noShipInput) {
         noShipBtn.addEventListener('click', function () {
+            if (payByCard()) return;
             noShipInput.value = shipWaived() ? '' : '1';
             refreshTotal();
         });
     }
+    form.querySelectorAll('input[name="placanje"]').forEach(function (el) {
+        el.addEventListener('change', refreshTotal);
+    });
     var clearBtn = document.getElementById('mgOrderClear');
     if (clearBtn) {
         clearBtn.addEventListener('click', function () {

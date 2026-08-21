@@ -9,7 +9,7 @@
             {% if show_validated and order_query %}
             Pretraga validatovanih — broj, ime ili telefon.
             {% elif show_validated and show_all_validated %}
-            Sve validatovane — zaliha je skinuta s lokacija.
+            Sve validatovane iz pickinga — pretraži po imenu ili broju.
             {% elif show_validated %}
             Validatovane danas — zaliha je skinuta s lokacija.
             {% else %}
@@ -39,6 +39,19 @@
     <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_magacin }}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">Ručne</a>
     <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_webshop }}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">Webshop</a>
 </div>
+<form method="get" action="{% url 'staff_magacin_narudzbe' %}" class="mg-orders-find" role="search">
+    {% if show_validated %}<input type="hidden" name="validirane" value="1">{% endif %}
+    {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% endif %}
+    {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
+    <div class="mg-icon-field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Ime ili broj narudžbe..." autocomplete="off">
+    </div>
+    <button type="submit" class="mg-btn">Traži</button>
+    {% if order_query %}
+    <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}{% if qs_clear %}?{{ qs_clear }}{% endif %}">Poništi</a>
+    {% endif %}
+</form>
 
 <form id="mgPrintForm" method="get" action="{% url 'staff_magacin_narudzbe_stampa' %}" target="_blank" class="mg-orders-form">
     <div class="mg-bulk-bar">

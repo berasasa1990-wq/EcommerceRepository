@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260821noship">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260821valsearch">
 {% endblock %}
 
 {% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% endblock %}
@@ -151,7 +151,7 @@
                 {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% endif %}
                 {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
                 <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
-                <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Pretraži narudžbe po broju, kupcu, izvoru..." autocomplete="off">
+                <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Pretraži po imenu ili broju narudžbe..." autocomplete="off">
             </form>
             {% else %}
             <form class="mg-page-search mg-chrome-search" method="get" action="{% url 'staff_magacin_artikli' %}" role="search" id="mgArticleSearchForm">
@@ -219,6 +219,6 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260821noship"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260821mptab"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

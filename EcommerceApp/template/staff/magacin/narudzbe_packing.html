@@ -68,6 +68,16 @@
         }
         .pack-who strong { font-size: 14px; }
         .pack-who span { color: #444; }
+        .pack-pay {
+            margin-left: auto;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            padding: 1px 8px;
+            border: 1px solid #111;
+        }
+        .pack-pay.is-card { color: #1d4ed8; border-color: #1d4ed8; }
+        .pack-pay.is-cash { color: #166534; border-color: #166534; }
         .pack-lines {
             width: 100%;
             border-collapse: collapse;
@@ -125,6 +135,7 @@
                 <strong>{{ job.order.ime_prezime }}</strong>
                 <span>#{{ job.order.broj }}</span>
                 {% if job.order.telefon %}<span>{{ job.order.telefon }}</span>{% endif %}
+                <span class="pack-pay {% if job.order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ job.order.packing_placanje_label }}</span>
             </div>
             {% if job.packing_lines %}
             <table class="pack-lines">
