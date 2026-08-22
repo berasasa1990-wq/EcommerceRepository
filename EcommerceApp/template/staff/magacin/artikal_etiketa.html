@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title> </title>
     <style>
-        @page { size: 60mm 40mm; margin: 0; }
+        @page { size: 32mm 57mm landscape; margin: 0; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             margin: 0;
@@ -22,13 +22,13 @@
         }
         .sheet { padding: 16px; }
         .label {
-            width: 60mm;
-            height: 40mm;
-            max-width: 60mm;
-            max-height: 40mm;
-            padding: 1.5mm 2.1mm 1.2mm;
-            border: 0.35mm solid #111;
-            border-radius: 2mm;
+            width: 57mm;
+            height: 32mm;
+            max-width: 57mm;
+            max-height: 32mm;
+            padding: 1.2mm 1.8mm 1mm;
+            border: 0.3mm solid #111;
+            border-radius: 1.6mm;
             display: flex;
             flex-direction: column;
             font-family: Arial, Helvetica, sans-serif;
@@ -38,9 +38,9 @@
         }
         .naziv {
             flex: 0 0 auto;
-            font-size: 2.95mm;
+            font-size: 2.55mm;
             font-weight: 800;
-            line-height: 1.12;
+            line-height: 1.1;
             letter-spacing: -0.02em;
             text-transform: uppercase;
             display: -webkit-box;
@@ -50,19 +50,19 @@
             overflow: hidden;
             overflow-wrap: anywhere;
             word-break: break-word;
-            max-height: 6.6mm;
+            max-height: 5.6mm;
         }
         .rule {
             flex-shrink: 0;
-            height: 0.3mm;
-            margin: 0.7mm 0 0.55mm;
+            height: 0.25mm;
+            margin: 0.5mm 0 0.4mm;
             background: #111;
             border: 0;
         }
         .sifra {
             flex-shrink: 0;
-            margin: 0 0 0.4mm;
-            font-size: 2mm;
+            margin: 0 0 0.3mm;
+            font-size: 1.7mm;
             font-weight: 700;
             letter-spacing: .04em;
             white-space: nowrap;
@@ -81,45 +81,45 @@
         .barcode img {
             display: block;
             width: 100%;
-            height: 7.6mm;
-            max-height: 8mm;
+            height: 6.4mm;
+            max-height: 6.8mm;
             object-fit: fill;
             object-position: center;
         }
         .barcode span {
             display: block;
-            margin-top: 0.2mm;
-            font-size: 2.1mm;
-            letter-spacing: .07em;
+            margin-top: 0.15mm;
+            font-size: 1.8mm;
+            letter-spacing: .06em;
             font-weight: 700;
         }
         .cijena-row {
             display: flex;
             align-items: baseline;
             justify-content: space-between;
-            gap: 1.5mm;
+            gap: 1.2mm;
             flex-shrink: 0;
-            margin-top: 0.35mm;
-            padding-top: 0.45mm;
-            border-top: 0.3mm solid #111;
+            margin-top: 0.25mm;
+            padding-top: 0.35mm;
+            border-top: 0.25mm solid #111;
         }
         .cijena-iznos {
-            font-size: 7.2mm;
+            font-size: 6.2mm;
             font-weight: 800;
             letter-spacing: -0.06em;
-            line-height: 0.9;
+            line-height: 0.88;
             white-space: nowrap;
         }
         .cijena-km {
-            font-size: 4.2mm;
+            font-size: 3.5mm;
             font-weight: 800;
             letter-spacing: .02em;
             line-height: 1;
         }
         @media print {
             html, body {
-                width: 60mm !important;
-                height: 40mm !important;
+                width: 57mm !important;
+                height: 32mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 overflow: hidden !important;
@@ -128,18 +128,18 @@
             .sheet {
                 padding: 0 !important;
                 margin: 0 !important;
-                width: 60mm !important;
-                height: 40mm !important;
+                width: 57mm !important;
+                height: 32mm !important;
                 overflow: hidden !important;
             }
             .label {
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 60mm !important;
-                height: 40mm !important;
-                max-width: 60mm !important;
-                max-height: 40mm !important;
+                width: 57mm !important;
+                height: 32mm !important;
+                max-width: 57mm !important;
+                max-height: 32mm !important;
                 overflow: hidden !important;
                 page-break-after: avoid !important;
                 page-break-inside: avoid !important;
@@ -152,7 +152,7 @@
 <body>
     <div class="bar">
         <button type="button" onclick="window.print()">Štampaj</button>
-        <span>Etiketa 60 × 40 mm — u printeru: papir 60×40 mm, bez zaglavlja, skala 100%</span>
+        <span>Etiketa 32 × 57 mm landscape — u printeru: 32×57 mm, landscape, skala 100%, bez zaglavlja</span>
     </div>
     <div class="sheet">
         <article class="label">
