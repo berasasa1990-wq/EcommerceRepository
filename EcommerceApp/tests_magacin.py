@@ -872,12 +872,12 @@ class MagacinViewTests(TestCase):
         self.product.save(update_fields=['barkod'])
         page = self.client.get(reverse('staff_magacin_artikal_stampa', args=[self.product.pk]))
         self.assertEqual(page.status_code, 200)
-        self.assertContains(page, 'size: 57mm 32mm')
-        self.assertContains(page, 'width: 57mm')
-        self.assertContains(page, 'height: 32mm')
-        self.assertContains(page, 'padding: 2.2mm 2.4mm 2.4mm 2.6mm')
-        self.assertNotContains(page, 'rotate(')
-        self.assertNotContains(page, 'landscape')
+        self.assertContains(page, 'size: 32mm 57mm')
+        self.assertContains(page, 'width: 32mm')
+        self.assertContains(page, 'height: 57mm')
+        self.assertContains(page, '^PW256')
+        self.assertContains(page, '^LL456')
+        self.assertContains(page, 'ZD421')
         self.assertContains(page, 'Test braid')
         self.assertContains(page, 'ŠIFRA: TST-1')
         self.assertContains(page, '3870123456789')
@@ -894,8 +894,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
         img = Image.open(io.BytesIO(png))
         self.assertEqual(img.mode, 'RGB')
-        self.assertGreater(img.width, 40)
-        self.assertGreater(img.height, 10)
+        self.assertEqual(img.size, (256, 456))
 
         variation = ProductVariation.objects.create(
             artikal=self.product,

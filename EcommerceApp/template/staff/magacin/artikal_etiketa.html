@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title> </title>
     <style>
-        @page { size: 57mm 32mm; margin: 0; }
+        @page { size: 32mm 57mm; margin: 0; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             margin: 0;
@@ -19,168 +19,88 @@
         .bar button {
             min-height: 40px;
             padding: 0 16px;
+            margin-right: 8px;
         }
         .sheet { padding: 16px; }
         .label {
-            width: 57mm;
-            height: 32mm;
-            max-width: 57mm;
-            max-height: 32mm;
-            padding: 2.2mm 2.4mm 2.4mm 2.6mm;
-            border: 0.3mm solid #111;
-            border-radius: 1.6mm;
-            display: flex;
-            flex-direction: column;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #111;
-            overflow: hidden;
-            background: #fff;
-        }
-        .naziv {
-            flex: 0 0 auto;
-            font-size: 2.35mm;
-            font-weight: 800;
-            line-height: 1.08;
-            letter-spacing: -0.02em;
-            text-transform: uppercase;
-            display: -webkit-box;
-            -webkit-box-orient: vertical;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            overflow: hidden;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            max-height: 5.1mm;
-        }
-        .rule {
-            flex-shrink: 0;
-            height: 0.25mm;
-            margin: 0.35mm 0 0.3mm;
-            background: #111;
-            border: 0;
-        }
-        .sifra {
-            flex-shrink: 0;
-            margin: 0 0 0.2mm;
-            font-size: 1.55mm;
-            font-weight: 700;
-            letter-spacing: .04em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .barcode {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 0;
-            overflow: hidden;
-        }
-        .barcode img {
             display: block;
-            width: 100%;
-            height: 5.4mm;
-            max-height: 5.8mm;
-            object-fit: fill;
-            object-position: center;
+            width: 32mm;
+            height: 57mm;
+            image-rendering: pixelated;
         }
-        .barcode span {
-            display: block;
-            margin-top: 0.1mm;
-            font-size: 1.55mm;
-            letter-spacing: .06em;
-            font-weight: 700;
-        }
-        .cijena-row {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 1.2mm;
-            flex-shrink: 0;
-            margin-top: 0.15mm;
-            padding-top: 0.25mm;
-            border-top: 0.25mm solid #111;
-        }
-        .cijena-iznos {
-            font-size: 5.2mm;
-            font-weight: 800;
-            letter-spacing: -0.06em;
-            line-height: 0.88;
-            white-space: nowrap;
-        }
-        .cijena-km {
-            font-size: 3.1mm;
-            font-weight: 800;
-            letter-spacing: .02em;
-            line-height: 1;
-        }
+        .meta { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
         @media print {
             html, body {
-                width: 57mm !important;
-                height: 32mm !important;
-                max-width: 57mm !important;
-                max-height: 32mm !important;
+                width: 32mm !important;
+                height: 57mm !important;
+                max-width: 32mm !important;
+                max-height: 57mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 overflow: hidden !important;
+                background: #fff !important;
             }
-            .bar { display: none !important; }
+            .bar, .meta { display: none !important; }
             .sheet {
                 padding: 0 !important;
                 margin: 0 !important;
-                width: 57mm !important;
-                height: 32mm !important;
-                max-width: 57mm !important;
-                max-height: 32mm !important;
+                width: 32mm !important;
+                height: 57mm !important;
                 overflow: hidden !important;
             }
             .label {
-                width: 57mm !important;
-                height: 32mm !important;
-                max-width: 57mm !important;
-                max-height: 32mm !important;
-                overflow: hidden !important;
+                width: 32mm !important;
+                height: 57mm !important;
+                max-width: 32mm !important;
+                max-height: 57mm !important;
                 page-break-after: avoid !important;
                 page-break-inside: avoid !important;
-                break-after: avoid !important;
-                break-inside: avoid !important;
             }
         }
     </style>
 </head>
 <body>
     <div class="bar">
-        <button type="button" onclick="window.print()">Štampaj</button>
-        <span>Etiketa 57 × 32 mm — u printeru: 57×32 mm, 1 kopija, skala 100%, margine nema, bez zaglavlja</span>
+        <button type="button" onclick="printEtiketa()">Štampaj</button>
+        <span>Zebra ZD421 — papir 32 × 57 mm, Portrait, 203 dpi, 1 kopija, 100%, margine 0</span>
     </div>
     <div class="sheet">
-        <article class="label">
-            <h1 class="naziv">{{ naziv }}</h1>
-            <div class="rule"></div>
-            <p class="sifra">ŠIFRA: {% if sifra %}{{ sifra }}{% else %}—{% endif %}</p>
-            <div class="barcode">
-                {% if barcode_src %}
-                <img src="{{ barcode_src }}" alt="{{ barkod }}">
-                {% endif %}
-                {% if barkod %}<span>{{ barkod }}</span>{% endif %}
-            </div>
-            <div class="cijena-row">
-                {% if cijena_label %}
-                <span class="cijena-iznos">{{ cijena_label }}</span>
-                <span class="cijena-km">KM</span>
-                {% else %}
-                <span class="cijena-iznos">—</span>
-                {% endif %}
-            </div>
-        </article>
+        {% if label_src %}
+        <img class="label" src="{{ label_src }}" alt="{{ naziv }} {{ cijena_label }} KM">
+        {% endif %}
     </div>
+    <div class="meta">
+        {{ naziv }}
+        ŠIFRA: {% if sifra %}{{ sifra }}{% else %}—{% endif %}
+        {% if barkod %}{{ barkod }}{% endif %}
+        {% if cijena_label %}{{ cijena_label }}{% endif %}
+        <span class="cijena-km">KM</span>
+        {% if barcode_src %}<img src="{{ barcode_src }}" alt="">{% endif %}
+    </div>
+    <script type="application/zpl" id="etiketa-zpl">{{ zpl|safe }}</script>
     <script>
-    window.addEventListener('load', function () {
+    function fallbackPrint() {
         document.title = ' ';
         window.print();
+    }
+    function printEtiketa() {
+        var zplEl = document.getElementById('etiketa-zpl');
+        var zpl = zplEl ? zplEl.textContent : '';
+        if (zpl && window.BrowserPrint) {
+            try {
+                window.BrowserPrint.getDefaultDevice('printer', function (device) {
+                    if (!device) { fallbackPrint(); return; }
+                    device.send(zpl, function () {}, function () { fallbackPrint(); });
+                }, function () { fallbackPrint(); });
+                return;
+            } catch (err) {}
+        }
+        fallbackPrint();
+    }
+    window.addEventListener('load', function () {
+        setTimeout(printEtiketa, 400);
     });
     </script>
+    <script src="http://127.0.0.1:9100/default" async></script>
 </body>
 </html>
