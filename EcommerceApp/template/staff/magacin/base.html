@@ -8,10 +8,10 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260821reprint">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260822artmpc">
 {% endblock %}
 
-{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% endblock %}
+{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% endblock %}
 
 {% block content %}
 <section class="mg-app" id="mgApp">
@@ -115,6 +115,18 @@
                 <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
                 <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>{% if sync_job %}Sync u toku…{% else %}Sync sada{% endif %}</button>
             </form>
+            <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="stock">
+                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync zaliha</button>
+            </form>
+            <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="prices">
+                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync cijena</button>
+            </form>
             <a class="mg-history-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
             <p class="mg-version">Verzija {{ site_version_label }}</p>
         </div>
@@ -212,13 +224,13 @@
 {% block extra_js %}
 <script>
 (function () {
-    if (!document.body.classList.contains('is-artikli') && !document.body.classList.contains('is-vp')) return;
+    if (!document.body.classList.contains('is-artikli') && !document.body.classList.contains('is-vp') && !document.body.classList.contains('is-popis')) return;
     var meta = document.querySelector('meta[name="viewport"]');
     if (meta) {
         meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260821packok"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260822popis4"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

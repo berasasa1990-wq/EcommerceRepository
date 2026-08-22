@@ -62,6 +62,7 @@
         <span>ARTIKAL</span>
         <span>ŠIFRA</span>
         <span>STANJE</span>
+        <span>MPC</span>
         <span>STATUS</span>
     </div>
     {% for row in page %}
@@ -83,6 +84,7 @@
             <i class="is-empty">Nema zalihe</i>
             {% endif %}
         </span>
+        <span class="mg-mpc">{{ row.product.prikazna_cijena }} KM</span>
         <span>
             {% if row.na_stanju <= 0 %}
             <span class="mg-pill is-out">Nije na stanju</span>

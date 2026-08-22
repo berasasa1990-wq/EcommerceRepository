@@ -188,9 +188,36 @@ def location_rows(product, variation=None, *, locations=None):
     }
 
 
+def _keeps_site_without_locations(product):
+    try:
+        return bool(product.magacin_meta.mp_bez_lokacije)
+    except ProductWarehouseMeta.DoesNotExist:
+        return False
+
+
+def mark_mp_without_location(product):
+    meta, created = ProductWarehouseMeta.objects.get_or_create(product=product)
+    if created or not meta.mp_bez_lokacije:
+        meta.mp_bez_lokacije = True
+        meta.save(update_fields=['mp_bez_lokacije'])
+    return meta
+
+
+def clear_mp_without_location(product):
+    try:
+        meta = product.magacin_meta
+    except ProductWarehouseMeta.DoesNotExist:
+        return
+    if not meta.mp_bez_lokacije:
+        return
+    meta.mp_bez_lokacije = False
+    meta.save(update_fields=['mp_bez_lokacije'])
+
+
 def refresh_catalog_qty(product):
     """Usaglasi Product/Variation.stanje sa zbirom magacinskih lokacija."""
     variations = list(product.varijacije.all())
+    var_totals = []
     if variations:
         product_total = 0
         for variation in variations:
@@ -198,16 +225,24 @@ def refresh_catalog_qty(product):
                 product=product, variation=variation,
             )).aggregate(s=Sum('kolicina'))['s'] or 0
             total = max(0, _int(total))
-            if variation.stanje != total or variation.na_stanju != (total > 0):
-                variation.stanje = total
-                variation.na_stanju = total > 0
-                variation.save(update_fields=['stanje', 'na_stanju'])
+            var_totals.append((variation, total))
             product_total += total
     else:
         product_total = countable_stock_qs(WarehouseStock.objects.filter(
             product=product, variation__isnull=True,
         )).aggregate(s=Sum('kolicina'))['s'] or 0
         product_total = max(0, _int(product_total))
+
+    if product_total <= 0 and _keeps_site_without_locations(product):
+        return product_total
+    if product_total > 0:
+        clear_mp_without_location(product)
+
+    for variation, total in var_totals:
+        if variation.stanje != total or variation.na_stanju != (total > 0):
+            variation.stanje = total
+            variation.na_stanju = total > 0
+            variation.save(update_fields=['stanje', 'na_stanju'])
 
     na_stanju = product_total > 0
     update_fields = []
@@ -385,6 +420,106 @@ def ensure_novi_uvoz_location():
     )
 
 
+def _row_ukupna_fakturna(row):
+    total = row.get('ukupno_fakturna')
+    if total is not None and total != '':
+        try:
+            return Decimal(str(total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        except Exception:
+            pass
+    qty = row.get('kolicina')
+    fak = row.get('fakturna')
+    if qty is None or fak is None or qty == '' or fak == '':
+        return Decimal('0.00')
+    try:
+        return (Decimal(str(qty)) * Decimal(str(fak))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    except Exception:
+        return Decimal('0.00')
+
+
+def _stavka_ukupna_fakturna(stavka):
+    if stavka.ukupno_fakturna is not None:
+        return stavka.ukupno_fakturna
+    if stavka.kolicina is not None and stavka.fakturna is not None:
+        return (stavka.kolicina * stavka.fakturna).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    return Decimal('0.00')
+
+
+def attach_uvoz_list_metrics(uvozi):
+    """Dodaj na listing: stavki, ažurirano, kreirano, promjena MPC, ukupna fakturna."""
+    uvozi = list(uvozi)
+    if not uvozi:
+        return uvozi
+    ids = [u.pk for u in uvozi]
+    stavke = list(
+        UvozStavka.objects.filter(uvoz_id__in=ids).only(
+            'uvoz_id', 'status', 'product_id', 'artikal_naziv',
+            'mpc_brutto', 'kolicina', 'fakturna', 'ukupno_fakturna',
+        )
+    )
+    by_uvoz = defaultdict(list)
+    for row in stavke:
+        by_uvoz[row.uvoz_id].append(row)
+    hist_counts = {}
+    if any(u.broj_mpc_promjena is None for u in uvozi):
+        hist_counts = _mpc_change_counts_for_uvozi(ids, stavke)
+    for uvoz in uvozi:
+        rows = by_uvoz.get(uvoz.pk, [])
+        uvoz.list_stavki = len(rows)
+        uvoz.list_azurirano = sum(1 for row in rows if row.status == UvozStavka.Status.UPDATED)
+        uvoz.list_kreirano = sum(1 for row in rows if row.status == UvozStavka.Status.CREATED)
+        if uvoz.ukupna_fakturna is not None:
+            uvoz.list_fakturna = uvoz.ukupna_fakturna
+        else:
+            total = Decimal('0.00')
+            for row in rows:
+                total += _stavka_ukupna_fakturna(row)
+            uvoz.list_fakturna = total
+        if uvoz.broj_mpc_promjena is not None:
+            uvoz.list_mpc = uvoz.broj_mpc_promjena
+        else:
+            uvoz.list_mpc = hist_counts.get(uvoz.pk, 0)
+    return uvozi
+
+
+def _mpc_change_counts_for_uvozi(uvoz_ids, listed_stavke):
+    pids = {row.product_id for row in listed_stavke if row.product_id}
+    names = {
+        (row.artikal_naziv or '').strip()
+        for row in listed_stavke
+        if not row.product_id and (row.artikal_naziv or '').strip()
+    }
+    filt = Q()
+    if pids:
+        filt |= Q(product_id__in=pids)
+    if names:
+        filt |= Q(artikal_naziv__in=names)
+    if not pids and not names:
+        return {}
+    hist = (
+        UvozStavka.objects.filter(uvoz__izvor=Uvoz.Izvor.MAGACIN)
+        .filter(filt)
+        .select_related('uvoz')
+        .order_by('uvoz__kreiran', 'id')
+    )
+    last = {}
+    counts = defaultdict(int)
+    idset = set(uvoz_ids)
+    for row in hist:
+        key = ('p', row.product_id) if row.product_id else ('n', (row.artikal_naziv or '').strip().casefold())
+        prev = last.get(key)
+        if (
+            row.uvoz_id in idset
+            and prev is not None
+            and row.mpc_brutto is not None
+            and prev != row.mpc_brutto
+        ):
+            counts[row.uvoz_id] += 1
+        if row.mpc_brutto is not None:
+            last[key] = row.mpc_brutto
+    return counts
+
+
 def _find_product_exact_name(name):
     """Pronađi artikal po 100% istom nazivu; prednost ima već u Magacinu."""
     name = (name or '').strip()
@@ -437,6 +572,7 @@ def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
         with transaction.atomic():
             product = product_guess
             created = False
+            mpc_changed = False
             now = timezone.now()
             if product is None:
                 if price is None or price <= 0:
@@ -463,6 +599,7 @@ def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
                     product.magacin_sync_at = now
                     fields.append('magacin_sync_at')
                 if price is not None and price > 0 and product.cijena != price:
+                    mpc_changed = True
                     product.cijena = price
                     if product.akcija_postotak:
                         product.akcijska_cijena = None
@@ -495,6 +632,7 @@ def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
                 'product': product,
                 'poruka': f'+{qty} kom na Novi uvoz, {price_label}',
                 'qty': qty,
+                'mpc_changed': mpc_changed,
             }
     except Exception as exc:
         return {
@@ -568,6 +706,8 @@ def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
         'updated': 0,
         'created': 0,
         'skipped': 0,
+        'mpc_changed': 0,
+        'ukupna_fakturna': Decimal('0.00'),
         'errors': [],
         'details': [],
         'location': location,
@@ -602,6 +742,9 @@ def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
                 stats['errors'].append(f'{name}: {result["poruka"]}')
             else:
                 stats['skipped'] += 1
+            if result.get('mpc_changed'):
+                stats['mpc_changed'] += 1
+            stats['ukupna_fakturna'] += _row_ukupna_fakturna(row)
             if len(stats['details']) < 200:
                 stats['details'].append({
                     'status': status,
@@ -629,11 +772,122 @@ def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
         uvoz.broj_azurirano = stats['updated']
         uvoz.broj_kreirano = stats['created']
         uvoz.broj_preskoceno = stats['skipped']
+        uvoz.broj_mpc_promjena = stats['mpc_changed']
+        uvoz.ukupna_fakturna = stats['ukupna_fakturna']
         uvoz.log_detalji = stats['details']
         uvoz.save()
 
     stats['uvoz'] = uvoz
     return uvoz, stats
+
+
+def uvoz_location():
+    return (
+        WarehouseLocation.objects.filter(
+            Q(naziv__iexact=NOVI_UVOZ_NAZIV) | Q(sifra__iexact=NOVI_UVOZ_SIFRA)
+        )
+        .order_by('redoslijed', 'id')
+        .first()
+    )
+
+
+def leftover_uvoz_stocks():
+    """Količine na Uvoz lokaciji koje nisu otišle ni na jednu drugu lokaciju."""
+    location = uvoz_location()
+    if location is None:
+        return [], None
+    stocks = list(
+        countable_stock_qs(
+            WarehouseStock.objects.filter(location=location, kolicina__gt=0)
+        ).select_related('product', 'variation')
+    )
+    if not stocks:
+        return [], location
+    product_ids = {row.product_id for row in stocks if row.product_id}
+    imported_ids = set(
+        UvozStavka.objects.filter(
+            uvoz__izvor=Uvoz.Izvor.MAGACIN,
+            product_id__in=product_ids,
+        ).values_list('product_id', flat=True)
+    )
+    other_ids = set(
+        countable_stock_qs(
+            WarehouseStock.objects.filter(product_id__in=product_ids, kolicina__gt=0)
+        )
+        .exclude(location=location)
+        .values_list('product_id', flat=True)
+    )
+    leftover = [
+        row
+        for row in stocks
+        if row.product_id in imported_ids
+        and row.product_id not in other_ids
+        and _int(row.rezervisano) <= 0
+    ]
+    return leftover, location
+
+
+@transaction.atomic
+def move_uvoz_leftovers_to_mp(*, user=None):
+    """
+    Skini s magacinskih lokacija uvozne artikle koji su ostali samo na Uvoz.
+    Na sajtu ostaju na stanju (fizički su u MP). Zapise uvoza ne dira.
+    """
+    leftover, location = leftover_uvoz_stocks()
+    if not leftover:
+        return {'count': 0, 'qty': 0, 'product_ids': []}
+    moved_ids = []
+    qty_total = 0
+    seen = set()
+    user_obj = user if getattr(user, 'is_authenticated', False) else None
+    for stock in leftover:
+        qty = _int(stock.kolicina)
+        qty_total += qty
+        stock.kolicina = 0
+        stock.rezervisano = 0
+        stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
+        WarehouseMovement.objects.create(
+            product=stock.product,
+            variation=stock.variation,
+            location=location,
+            tip=WarehouseMovement.Tip.KOREKCIJA,
+            kolicina=-qty,
+            napomena='Uvoz lokacija u MP',
+            korisnik=user_obj,
+        )
+        if stock.product_id in seen:
+            continue
+        product = Product.objects.get(pk=stock.product_id)
+        fields = []
+        if not product.aktivan:
+            product.aktivan = True
+            fields.append('aktivan')
+        if not product.na_stanju:
+            product.na_stanju = True
+            fields.append('na_stanju')
+        if not product.stanje or product.stanje < 1:
+            product.stanje = max(qty, 1)
+            fields.append('stanje')
+        if fields:
+            product.save(update_fields=fields)
+        for var in product.varijacije.all():
+            var_fields = []
+            if not var.na_stanju:
+                var.na_stanju = True
+                var_fields.append('na_stanju')
+            if not var.stanje or var.stanje < 1:
+                var.stanje = 1
+                var_fields.append('stanje')
+            if var_fields:
+                var.save(update_fields=var_fields)
+        mark_mp_without_location(product)
+        seen.add(stock.product_id)
+        moved_ids.append(stock.product_id)
+    return {
+        'count': len(moved_ids),
+        'qty': qty_total,
+        'product_ids': moved_ids,
+    }
 
 
 def magacin_products_qs():
@@ -920,6 +1174,7 @@ def _ensure_location_from_odoo(location_id, location_name, path=''):
 MAGACIN_SYNC_SESSION_KEY = 'magacin_sync_job'
 STOCK_SYNC_BATCH = 180
 CATALOG_SYNC_BATCH = 20
+PRICE_SYNC_BATCH = 80
 DISCOVER_SYNC_BATCH = 300
 
 
@@ -1212,6 +1467,62 @@ def _sync_template_variations(client, product, template, *, create_images):
         variation.save()
 
 
+def _sync_variation_prices(client, product, template):
+    variant_ids = [int(v) for v in (template.get('product_variant_ids') or []) if v]
+    if len(variant_ids) <= 1 or not hasattr(client, 'get_product_variants'):
+        return 0
+    variants = client.get_product_variants(variant_ids, with_images=False) or []
+    updated = 0
+    for variant in variants:
+        vid = variant.get('id')
+        if not vid:
+            continue
+        variation = ProductVariation.objects.filter(
+            odoo_variant_id=int(vid), artikal=product,
+        ).first()
+        if variation is None:
+            continue
+        v_cijena = _decimal_price(variant.get('lst_price'), default=str(product.cijena))
+        if variation.cijena != v_cijena:
+            variation.cijena = v_cijena
+            variation.save(update_fields=['cijena'])
+            updated += 1
+    return updated
+
+
+def sync_price_chunk(client, template_ids):
+    """Po Odoo ID postavi MPC kao list_price u Odoo. Ne kreira artikle."""
+    stats = {'azurirano': 0, 'preskoceno': 0}
+    ids = [int(tid) for tid in (template_ids or []) if tid]
+    if not ids:
+        return stats
+    templates = client.get_templates_by_ids(ids) or []
+    by_id = {int(row['id']): row for row in templates if row.get('id')}
+    products = {
+        int(prod.odoo_template_id): prod
+        for prod in Product.objects.filter(odoo_template_id__in=ids)
+        if prod.odoo_template_id
+    }
+    for tid in ids:
+        template = by_id.get(tid)
+        product = products.get(tid)
+        if not template or not product:
+            stats['preskoceno'] += 1
+            continue
+        cijena = _decimal_price(template.get('list_price'))
+        changed = False
+        if product.cijena != cijena:
+            product.cijena = cijena
+            product.save(update_fields=['cijena'])
+            changed = True
+        var_updated = _sync_variation_prices(client, product, template)
+        if changed or var_updated:
+            stats['azurirano'] += 1
+        else:
+            stats['preskoceno'] += 1
+    return stats
+
+
 def cancel_sync(job, *, user=None):
     """Zaustavi tekući sync nakon trenutnog chunka. Ne briše već ažurirane artikle."""
     log = WarehouseSyncLog.objects.filter(pk=job.get('log_id')).first() if job else None
@@ -1349,6 +1660,33 @@ def run_sync_chunk(job, *, user=None):
     phase = job.get('phase') or 'catalog'
 
     try:
+        if phase == 'prices':
+            template_ids = job.get('template_ids') or []
+            position = int(job.get('position') or 0)
+            batch = template_ids[position:position + PRICE_SYNC_BATCH]
+            stats = sync_price_chunk(client, batch)
+            job['position'] = position + len(batch)
+            job['azurirano'] = int(job.get('azurirano') or 0) + int(stats.get('azurirano') or 0)
+            job['preskoceno'] = int(job.get('preskoceno') or 0) + int(stats.get('preskoceno') or 0)
+            _update_log_progress(
+                log, started,
+                f'Cijene: {job["position"]} / {len(template_ids)} '
+                f'(ažurirano {job.get("azurirano") or 0})…',
+                artikala=job.get('artikala') or 0,
+            )
+            if job['position'] >= len(template_ids):
+                job['done'] = True
+                job['phase'] = 'done'
+                _finish_log(
+                    log, started,
+                    poruka=(
+                        f'Cijene usklađene s Odoo: ažurirano {job.get("azurirano") or 0}, '
+                        f'preskočeno {job.get("preskoceno") or 0}.'
+                    ),
+                    artikala=job.get('artikala') or 0,
+                )
+            return job
+
         if phase == 'discover':
             offset = int(job.get('discover_offset') or 0)
             page = []
@@ -1480,9 +1818,13 @@ def run_sync_chunk(job, *, user=None):
                 magacin_odoo = Product.objects.exclude(odoo_template_id=None).count()
                 odoo_n = int(job.get('odoo_ukupno') or magacin_odoo)
                 job['artikala'] = magacin_odoo
-                _finish_log(
-                    log, started,
-                    poruka=(
+                if job.get('stock_only'):
+                    poruka = (
+                        f'Zalihe usklađene s Odoo: ažurirano {job.get("zaliha") or 0} količina, '
+                        f'lokacija {job.get("lokacija") or 0}.'
+                    )
+                else:
+                    poruka = (
                         f'Sync završen: Odoo {odoo_n} artikala, Magacin {magacin_odoo}. '
                         f'Novo {job.get("kreirano") or 0}, '
                         f'zaliha {job.get("zaliha") or 0}, '
@@ -1492,7 +1834,10 @@ def run_sync_chunk(job, *, user=None):
                             if int(job.get('nedostaje') or 0) > 0
                             else ' Broj je usklađen.'
                         )
-                    ),
+                    )
+                _finish_log(
+                    log, started,
+                    poruka=poruka,
                     artikala=magacin_odoo,
                     lokacija=job.get('lokacija') or 0,
                 )
@@ -1677,6 +2022,111 @@ def _odoo_id_to_local(odoo_product_ids, *, variant_to_template=None, client=None
     return mapping
 
 
+def _price_template_ids(*, product=None):
+    qs = magacin_products_qs().exclude(odoo_template_id=None).order_by('id')
+    if product is not None:
+        qs = qs.filter(pk=product.pk)
+    seen = []
+    used = set()
+    for tid in qs.values_list('odoo_template_id', flat=True):
+        tid = int(tid)
+        if tid in used:
+            continue
+        used.add(tid)
+        seen.append(tid)
+    return seen
+
+
+def start_price_sync(*, user=None, product=None):
+    """Samo MPC: nađi isti artikal po Odoo ID i postavi cijenu kao list_price u Odoo."""
+    from .odoo_client import odoo_je_konfigurisan
+
+    started = time.time()
+    log = WarehouseSyncLog.objects.create(
+        status=WarehouseSyncLog.Status.U_TOKU,
+        izvor='Odoo cijene',
+        korisnik=user if getattr(user, 'is_authenticated', False) else None,
+    )
+    if not odoo_je_konfigurisan():
+        _fail_log(log, started, 'Odoo nije konfigurisan.')
+        raise MagacinError('Odoo nije konfigurisan.')
+    attach_site_odoo_products_to_magacin()
+    if product is not None and not getattr(product, 'odoo_template_id', None):
+        _fail_log(log, started, 'Artikal nije povezan sa Odoo template ID-jem.')
+        raise MagacinError('Artikal nije povezan sa Odoo. Prvo uradi puni Sync.')
+    template_ids = _price_template_ids(product=product)
+    _update_log_progress(log, started, 'Cijene iz Odoo…', artikala=len(template_ids))
+    return {
+        'log_id': log.pk,
+        'started': started,
+        'phase': 'prices',
+        'template_ids': template_ids,
+        'position': 0,
+        'stock_ids': [],
+        'stock_extra_ids': [],
+        'changed_ids': [],
+        'discovered_ids': [],
+        'discover_offset': 0,
+        'stock_position': 0,
+        'artikala': len(template_ids),
+        'lokacija': 0,
+        'zaliha': 0,
+        'kreirano': 0,
+        'azurirano': 0,
+        'preskoceno': 0,
+        'done': False,
+        'incremental': False,
+        'price_only': True,
+        'single_product_id': getattr(product, 'pk', None) if product is not None else None,
+    }
+
+
+def start_stock_sync(*, user=None, product=None):
+    """Samo zalihe: nađi isti artikal po Odoo ID i postavi količinu kao u Odoo."""
+    from .odoo_client import odoo_je_konfigurisan
+
+    started = time.time()
+    log = WarehouseSyncLog.objects.create(
+        status=WarehouseSyncLog.Status.U_TOKU,
+        izvor='Odoo zalihe',
+        korisnik=user if getattr(user, 'is_authenticated', False) else None,
+    )
+    if not odoo_je_konfigurisan():
+        _fail_log(log, started, 'Odoo nije konfigurisan.')
+        raise MagacinError('Odoo nije konfigurisan.')
+    attach_site_odoo_products_to_magacin()
+    single_id = None
+    if product is not None:
+        if not getattr(product, 'odoo_template_id', None):
+            _fail_log(log, started, 'Artikal nije povezan sa Odoo template ID-jem.')
+            raise MagacinError('Artikal nije povezan sa Odoo. Prvo uradi puni Sync.')
+        single_id = product.pk
+    _update_log_progress(log, started, 'Zalihe iz Odoo…')
+    return {
+        'log_id': log.pk,
+        'started': started,
+        'phase': 'locations',
+        'template_ids': [],
+        'position': 0,
+        'stock_ids': [],
+        'stock_extra_ids': [],
+        'changed_ids': [],
+        'discovered_ids': [],
+        'discover_offset': 0,
+        'stock_position': 0,
+        'artikala': magacin_products_qs().count(),
+        'lokacija': 0,
+        'zaliha': 0,
+        'kreirano': 0,
+        'azurirano': 0,
+        'preskoceno': 0,
+        'done': False,
+        'incremental': False,
+        'stock_only': True,
+        'single_product_id': single_id,
+    }
+
+
 def persist_sync_job(job):
     if not job or not job.get('log_id'):
         return
@@ -1744,6 +2194,7 @@ def skini_sa_sajta(product, *, user=None):
             user=user,
         )
     ProductVariation.objects.filter(artikal=product).update(stanje=0, na_stanju=False)
+    clear_mp_without_location(product)
     product.stanje = 0
     product.na_stanju = False
     product.save(update_fields=['stanje', 'na_stanju'])
@@ -1801,10 +2252,49 @@ def start_popis(*, user=None):
     )
 
 
+def paused_popisi():
+    from django.db import OperationalError, ProgrammingError
+    from django.db.models import Count, Sum
+
+    try:
+        return (
+            MagacinPopis.objects.filter(status=MagacinPopis.Status.PAUZIRAN)
+            .annotate(
+                n_stavke=Count('stavke'),
+                n_kom=Sum('stavke__kolicina'),
+            )
+            .order_by('-azuriran', '-kreiran')
+        )
+    except (ProgrammingError, OperationalError):
+        return MagacinPopis.objects.none()
+
+
+def pause_popis(popis):
+    if popis.status == MagacinPopis.Status.ZAVRSEN:
+        raise MagacinError('Završen popis se ne može pauzirati.')
+    if popis.status == MagacinPopis.Status.PAUZIRAN:
+        return popis
+    popis.status = MagacinPopis.Status.PAUZIRAN
+    popis.save(update_fields=['status'])
+    return popis
+
+
+def resume_popis(popis):
+    if popis.status == MagacinPopis.Status.ZAVRSEN:
+        raise MagacinError('Završen popis se ne može nastaviti.')
+    current = active_popis()
+    if current and current.pk != popis.pk:
+        pause_popis(current)
+    if popis.status != MagacinPopis.Status.U_TOKU:
+        popis.status = MagacinPopis.Status.U_TOKU
+        popis.save(update_fields=['status'])
+    return popis
+
+
 def add_popis_stavka(popis, *, product, qty, variation=None):
     qty = max(1, _int(qty))
     if popis.status != MagacinPopis.Status.U_TOKU:
-        raise MagacinError('Ovaj popis je završen.')
+        raise MagacinError('Ovaj popis nije u toku. Nastavi ga pa dodaj artikle.')
     if variation and variation.artikal_id != product.pk:
         raise MagacinError('Varijacija ne pripada artiklu.')
     naziv = product.naziv
@@ -1815,7 +2305,9 @@ def add_popis_stavka(popis, *, product, qty, variation=None):
     existing = popis.stavke.filter(product=product, variation=variation).first()
     if existing:
         existing.kolicina += qty
-        existing.save(update_fields=['kolicina'])
+        next_rb = (popis.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
+        existing.redoslijed = next_rb
+        existing.save(update_fields=['kolicina', 'redoslijed'])
         return existing
     next_rb = (popis.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
     return MagacinPopisStavka.objects.create(
@@ -1836,6 +2328,32 @@ def finish_popis(popis):
     popis.zavrsen_at = timezone.now()
     popis.save(update_fields=['status', 'zavrsen_at'])
     return popis
+
+
+def set_popis_stavka_qty(popis, stavka_id, qty):
+    if popis.status != MagacinPopis.Status.U_TOKU:
+        raise MagacinError('Ovaj popis nije u toku.')
+    stavka = popis.stavke.filter(pk=stavka_id).first()
+    if not stavka:
+        raise MagacinError('Stavka nije pronađena.')
+    qty = _int(qty)
+    if qty <= 0:
+        stavka.delete()
+        return None
+    if stavka.kolicina != qty:
+        stavka.kolicina = qty
+        stavka.save(update_fields=['kolicina'])
+    return stavka
+
+
+def remove_popis_stavka(popis, stavka_id):
+    if popis.status != MagacinPopis.Status.U_TOKU:
+        raise MagacinError('Ovaj popis nije u toku.')
+    stavka = popis.stavke.filter(pk=stavka_id).first()
+    if not stavka:
+        raise MagacinError('Stavka nije pronađena.')
+    stavka.delete()
+    return None
 
 
 def vp_cijena_from_mpc(mpc):

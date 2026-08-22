@@ -61,6 +61,7 @@
     initOrderBulkPrint();
     initTransferPage();
     initArticleScanner();
+    initPopisPage();
 
     var modal = document.getElementById('mgMoveModal');
     if (!modal) return;
@@ -1249,14 +1250,28 @@ function initOrderBulkPrint() {
     if (packingBtn) {
         packingBtn.addEventListener('click', function (event) {
             var count = parseInt(packingBtn.getAttribute('data-packing-count') || '0', 10) || 0;
-            if (!count || packingBtn.getAttribute('aria-disabled') === 'true') {
-                event.preventDefault();
+            if (count > 0) {
+                var msg = count === 1
+                    ? 'Štampati packing za 1 narudžbu?'
+                    : ('Štampati packing za ' + count + ' narudžbe?');
+                if (!window.confirm(msg)) event.preventDefault();
                 return;
             }
-            var msg = count === 1
-                ? 'Štampati packing za 1 narudžbu?'
-                : ('Štampati packing za ' + count + ' narudžbe?');
-            if (!window.confirm(msg)) event.preventDefault();
+            event.preventDefault();
+            var password = window.prompt(
+                'Packing je već odštampan. Lozinka za reprint svih picking pošiljki od danas:'
+            );
+            if (password === null) return;
+            if (String(password).trim() !== 'admin') {
+                window.alert('Pogrešna lozinka.');
+                return;
+            }
+            var reprintForm = document.getElementById('mgPackingReprintForm');
+            if (!reprintForm) return;
+            var field = reprintForm.querySelector('input[name="lozinka"]');
+            if (field) field.value = String(password).trim();
+            reprintForm.submit();
+            if (field) field.value = '';
         });
     }
     form.querySelectorAll('[data-stop-row]').forEach(function (cell) {
@@ -1357,7 +1372,18 @@ function initTransferPage() {
         document.addEventListener('click', function (event) {
             if (!input.contains(event.target) && !list.contains(event.target)) list.hidden = true;
         });
-        return { search: search };
+        return { search: search, fetchItems: fetchItems, onPick: onPick };
+    }
+
+    function bindBarcodePick(input, fetchItems, onPick) {
+        if (!input) return;
+        input.addEventListener('mg-scanned', function (event) {
+            var q = String((event.detail && event.detail.code) || input.value || '').trim();
+            if (!q) return;
+            Promise.resolve(fetchItems(q)).then(function (items) {
+                if (items && items.length) onPick(items[0]);
+            });
+        });
     }
 
     function fetchJson(url) {
@@ -1488,17 +1514,17 @@ function initTransferPage() {
             lines.appendChild(tr);
         }
 
-        bindSuggest(locSearch, locSuggest, function (q) {
+        function fetchLocs(q) {
             return fetchJson(locUrl + '?q=' + encodeURIComponent(q)).then(function (data) {
                 return (data.results || []).map(locItem);
             });
-        }, lockLocation, 1);
-
-        bindSuggest(artSearch, artSuggest, function (q) {
+        }
+        function fetchArts(q) {
             return fetchJson(artUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1').then(function (data) {
                 return productItems(data.results || []);
             });
-        }, function (item) {
+        }
+        function pickInsertArticle(item) {
             pending = item;
             artSuggest.hidden = true;
             artSearch.value = item.label;
@@ -1510,7 +1536,11 @@ function initTransferPage() {
             artQty.value = '1';
             artQty.focus();
             artQty.select();
-        }, 2);
+        }
+        bindSuggest(locSearch, locSuggest, fetchLocs, lockLocation, 1);
+        bindBarcodePick(locSearch, fetchLocs, lockLocation);
+        bindSuggest(artSearch, artSuggest, fetchArts, pickInsertArticle, 2);
+        bindBarcodePick(artSearch, fetchArts, pickInsertArticle);
 
         if (artQty) {
             artQty.addEventListener('keydown', function (event) {
@@ -1657,17 +1687,20 @@ function initTransferPage() {
             syncMove();
         }
 
-        bindSuggest(search, suggest, function (q) {
+        function fetchMoveArts(q) {
             return fetchJson(artUrl2 + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1').then(function (data) {
                 return productItems(data.results || []);
             });
-        }, pickArticle, 2);
-
-        bindSuggest(toSearch, toSuggest, function (q) {
+        }
+        function fetchMoveLocs(q) {
             return fetchJson(locUrl2 + '?q=' + encodeURIComponent(q)).then(function (data) {
                 return (data.results || []).map(locItem);
             });
-        }, pickTo, 1);
+        }
+        bindSuggest(search, suggest, fetchMoveArts, pickArticle, 2);
+        bindBarcodePick(search, fetchMoveArts, pickArticle);
+        bindSuggest(toSearch, toSuggest, fetchMoveLocs, pickTo, 1);
+        bindBarcodePick(toSearch, fetchMoveLocs, pickTo);
 
         if (qty) qty.addEventListener('input', syncMove);
         if (form) {
@@ -2877,3 +2910,435 @@ function initArticleScanner() {
     if (addForm) addForm.addEventListener('submit', function (event) { event.preventDefault(); });
     if (isVp && totalEl) totalEl.setAttribute('data-vp', '1');
 })();
+
+function initPopisPage() {
+    var root = document.getElementById('ppApp');
+    if (!root) return;
+    var live = root.getAttribute('data-live') === '1';
+    var lookupUrl = root.getAttribute('data-lookup') || '';
+    var input = document.getElementById('ppQuery');
+    var list = document.getElementById('ppList');
+    var suggest = document.getElementById('ppSuggest');
+    var toast = document.getElementById('ppToast');
+    var countEl = document.getElementById('ppCount');
+    var totalEl = document.getElementById('ppTotal');
+    var addForm = document.getElementById('ppAddForm');
+    var modal = document.getElementById('ppQtyModal');
+    var qtyInput = document.getElementById('ppQty');
+    var qtyName = document.getElementById('ppQtyName');
+    var qtySifra = document.getElementById('ppQtySifra');
+    var qtySave = document.getElementById('ppQtySave');
+    var csrfEl = addForm && addForm.querySelector('[name=csrfmiddlewaretoken]');
+    var csrf = csrfEl ? csrfEl.value : '';
+    var popisIdEl = addForm && addForm.querySelector('[name=popis_id]');
+    var bootEl = document.getElementById('ppBoot');
+    var boot = { stavke: [], count: 0, total_qty: 0 };
+    try {
+        if (bootEl) boot = JSON.parse(bootEl.textContent || '{}') || boot;
+    } catch (err) {}
+    var stavke = boot.stavke || [];
+    var timer = 0;
+    var pending = Promise.resolve();
+    var toastTimer = 0;
+    var editId = 0;
+    var pendingItem = null;
+
+    var pause = document.getElementById('ppPauseForm');
+    if (pause) {
+        pause.addEventListener('submit', function (event) {
+            if (!window.confirm('Pauzirati popis? Možeš ga kasnije nastaviti.')) event.preventDefault();
+        });
+    }
+    var finish = document.getElementById('ppFinishForm');
+    if (finish) {
+        finish.addEventListener('submit', function (event) {
+            if (!window.confirm('Završiti popis?')) event.preventDefault();
+        });
+    }
+    var del = document.getElementById('ppDeleteForm');
+    if (del) {
+        del.addEventListener('submit', function (event) {
+            if (!window.confirm('Obrisati cijeli popis?')) event.preventDefault();
+        });
+    }
+    if (!live || !input || !list) return;
+
+    function beep(ok) {
+        try {
+            var Ctx = window.AudioContext || window.webkitAudioContext;
+            if (Ctx) {
+                var ctx = new Ctx();
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = ok ? 880 : 240;
+                gain.gain.value = 0.06;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.09);
+                window.setTimeout(function () {
+                    try { ctx.close(); } catch (e) {}
+                }, 200);
+            }
+        } catch (e) {}
+        if (ok && navigator.vibrate) {
+            try { navigator.vibrate(30); } catch (e2) {}
+        }
+    }
+
+    function showToast(msg, isError) {
+        if (!toast) return;
+        toast.textContent = msg || '';
+        toast.hidden = !msg;
+        toast.classList.toggle('is-error', !!isError);
+        window.clearTimeout(toastTimer);
+        if (msg) {
+            toastTimer = window.setTimeout(function () {
+                toast.hidden = true;
+            }, 1800);
+        }
+    }
+
+    function focusQuery() {
+        window.setTimeout(function () {
+            try { input.focus(); input.select(); } catch (e) {}
+        }, 30);
+    }
+
+    function esc(text) {
+        return String(text || '').replace(/[&<>"']/g, function (ch) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+        });
+    }
+
+    function render(highlightId) {
+        if (!stavke.length) {
+            list.innerHTML = '<li class="is-empty">Još nema stavki. Skeniraj barkod ili unesi artikal.</li>';
+        } else {
+            list.innerHTML = stavke.map(function (row) {
+                var flash = highlightId && Number(row.id) === Number(highlightId) ? ' is-flash' : '';
+                return '<li class="' + flash + '" data-id="' + row.id + '" data-qty="' + row.kolicina + '">' +
+                    '<div class="pp-line-info"><strong>' + esc(row.naziv) + '</strong><span>' + esc(row.sifra || '—') + '</span></div>' +
+                    '<div class="pp-step">' +
+                    '<button type="button" class="pp-step-btn" data-pp-delta="-1" aria-label="Smanji">−</button>' +
+                    '<button type="button" class="pp-step-qty" data-pp-edit>' + esc(row.kolicina) + '</button>' +
+                    '<button type="button" class="pp-step-btn" data-pp-delta="1" aria-label="Povećaj">+</button>' +
+                    '</div></li>';
+            }).join('');
+        }
+        if (countEl) countEl.textContent = String(stavke.length);
+        if (totalEl) {
+            var sum = 0;
+            stavke.forEach(function (row) { sum += Number(row.kolicina) || 0; });
+            totalEl.textContent = String(sum);
+        }
+    }
+
+    function applyPayload(data, addedLabel) {
+        stavke = data.stavke || [];
+        render(data.added_id);
+        if (addedLabel) {
+            showToast(addedLabel, false);
+            beep(true);
+            input.value = '';
+            if (suggest) suggest.hidden = true;
+        }
+        focusQuery();
+    }
+
+    function post(action, extra) {
+        pending = pending.then(function () {
+            var body = new URLSearchParams();
+            body.set('action', action);
+            if (csrf) body.set('csrfmiddlewaretoken', csrf);
+            if (popisIdEl && popisIdEl.value) body.set('popis_id', popisIdEl.value);
+            Object.keys(extra || {}).forEach(function (key) {
+                if (extra[key] != null) body.set(key, extra[key]);
+            });
+            return fetch(window.location.pathname, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: body,
+                credentials: 'same-origin',
+            }).then(function (res) {
+                return res.json().then(function (data) {
+                    return { ok: res.ok && data && data.ok !== false, data: data || {} };
+                });
+            }).then(function (result) {
+                if (!result.ok) {
+                    beep(false);
+                    showToast((result.data && result.data.error) || 'Greška na popisu.', true);
+                    return null;
+                }
+                return result.data;
+            }).catch(function () {
+                beep(false);
+                showToast('Nema veze. Pokušaj ponovo.', true);
+                return null;
+            });
+        });
+        return pending;
+    }
+
+    function addItem(item, qty) {
+        if (!item || !item.id) return;
+        var amount = Math.max(1, parseInt(qty, 10) || 1);
+        post('dodaj', {
+            product_id: item.id,
+            variation_id: item.variation_id || '',
+            kolicina: String(amount),
+        }).then(function (data) {
+            if (!data) return;
+            applyPayload(data, 'Dodano: ' + (item.naziv || '') + ' × ' + amount);
+        });
+    }
+
+    function setQty(id, qty) {
+        post('set_qty', { stavka_id: String(id), kolicina: String(qty) }).then(function (data) {
+            if (!data) return;
+            applyPayload(data);
+        });
+    }
+
+    function hideSuggest() {
+        if (suggest) suggest.hidden = true;
+    }
+
+    function norm(value) {
+        return String(value || '').replace(/\s+/g, '').toLowerCase();
+    }
+
+    function flatten(results) {
+        var rows = [];
+        (results || []).forEach(function (prod) {
+            var vars = prod.varijacije || [];
+            if (vars.length > 1) {
+                vars.forEach(function (v) {
+                    rows.push({
+                        id: prod.id,
+                        variation_id: v.id,
+                        naziv: (prod.naziv || '') + ' ' + (v.naziv || ''),
+                        sifra: v.sifra || prod.sifra || '',
+                        barkod: prod.barkod || '',
+                    });
+                });
+            } else {
+                rows.push({
+                    id: prod.id,
+                    variation_id: '',
+                    naziv: prod.naziv,
+                    sifra: prod.sifra,
+                    barkod: prod.barkod || '',
+                });
+            }
+        });
+        return rows;
+    }
+
+    function isExact(item, query) {
+        var q = norm(query);
+        if (!q) return false;
+        return norm(item.sifra) === q || norm(item.barkod) === q;
+    }
+
+    function showSuggest(items) {
+        if (!suggest) return;
+        suggest.innerHTML = '';
+        if (!items.length) {
+            var empty = document.createElement('li');
+            empty.className = 'is-empty';
+            empty.textContent = 'Nema rezultata.';
+            suggest.appendChild(empty);
+            suggest.hidden = false;
+            return;
+        }
+        items.forEach(function (item) {
+            var li = document.createElement('li');
+            li.innerHTML = '<strong></strong><span></span>';
+            li.querySelector('strong').textContent = item.naziv || '';
+            li.querySelector('span').textContent = item.sifra || '';
+            li.addEventListener('click', function () {
+                hideSuggest();
+                askQty(item);
+            });
+            suggest.appendChild(li);
+        });
+        suggest.hidden = false;
+    }
+
+    function searchArticles(query, commit) {
+        var q = String(query || '').trim();
+        if (!q) {
+            hideSuggest();
+            return;
+        }
+        if (!lookupUrl) {
+            showToast('Pretraga nije spremna. Osvježi stranicu.', true);
+            return;
+        }
+        fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=20', {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            var rows = flatten(data.results || []);
+            var hit = rows.filter(function (row) { return isExact(row, q); })[0];
+            if (commit) {
+                if (hit || (data.exact && rows.length === 1)) {
+                    hideSuggest();
+                    askQty(hit || rows[0]);
+                    return;
+                }
+                if (rows.length === 1) {
+                    hideSuggest();
+                    askQty(rows[0]);
+                    return;
+                }
+                if (!rows.length) {
+                    showSuggest([]);
+                    beep(false);
+                    showToast('Artikal nije pronađen.', true);
+                    return;
+                }
+                showSuggest(rows);
+                return;
+            }
+            showSuggest(rows);
+        }).catch(function () {
+            showToast('Pretraga nije uspjela.', true);
+        });
+    }
+
+    function closeQty() {
+        if (modal) modal.hidden = true;
+        editId = 0;
+        pendingItem = null;
+        focusQuery();
+    }
+
+    function showQtyModal(name, sifra, qty, saveLabel) {
+        if (!modal) return;
+        if (qtyName) qtyName.textContent = name || 'Količina';
+        if (qtySifra) qtySifra.textContent = sifra || '';
+        if (qtyInput) {
+            qtyInput.min = pendingItem ? '1' : '0';
+            qtyInput.value = String(qty == null ? 1 : qty);
+        }
+        if (qtySave) qtySave.textContent = saveLabel || 'Ubaci';
+        modal.hidden = false;
+        window.setTimeout(function () {
+            if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
+        }, 40);
+    }
+
+    function askQty(item) {
+        if (!item) return;
+        pendingItem = item;
+        editId = 0;
+        showQtyModal(item.naziv, item.sifra, 1, 'Ubaci');
+    }
+
+    function openQty(row) {
+        if (!row) return;
+        pendingItem = null;
+        editId = row.id;
+        showQtyModal(row.naziv, row.sifra, row.kolicina || 1, 'Sačuvaj');
+    }
+
+    function readModalQty() {
+        var raw = qtyInput ? qtyInput.value : '1';
+        var n = parseInt(raw, 10);
+        if (isNaN(n)) n = 1;
+        return n;
+    }
+
+    function bumpModalQty(delta) {
+        if (!qtyInput) return;
+        var min = pendingItem ? 1 : 0;
+        qtyInput.value = String(Math.max(min, readModalQty() + delta));
+        qtyInput.focus();
+        qtyInput.select();
+    }
+
+    function saveQty() {
+        var qty = readModalQty();
+        if (pendingItem) {
+            var item = pendingItem;
+            closeQty();
+            addItem(item, qty);
+            return;
+        }
+        if (editId) {
+            var id = editId;
+            closeQty();
+            setQty(id, qty);
+        }
+    }
+
+    input.addEventListener('input', function () {
+        window.clearTimeout(timer);
+        var q = (input.value || '').trim();
+        if (q.length < 2) {
+            hideSuggest();
+            return;
+        }
+        timer = window.setTimeout(function () { searchArticles(q, false); }, 220);
+    });
+    input.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        window.clearTimeout(timer);
+        searchArticles(input.value, true);
+    });
+    input.addEventListener('mg-scanned', function (event) {
+        window.clearTimeout(timer);
+        var code = (event.detail && event.detail.code) || input.value;
+        searchArticles(code, true);
+    });
+
+    list.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-pp-delta], [data-pp-edit]');
+        if (!btn) return;
+        var rowEl = btn.closest('li[data-id]');
+        if (!rowEl) return;
+        var id = Number(rowEl.getAttribute('data-id'));
+        var row = stavke.filter(function (item) { return Number(item.id) === id; })[0];
+        if (!row) return;
+        if (btn.hasAttribute('data-pp-edit')) {
+            openQty(row);
+            return;
+        }
+        var next = (Number(row.kolicina) || 0) + Number(btn.getAttribute('data-pp-delta') || 0);
+        setQty(id, next);
+    });
+
+    if (modal) {
+        modal.querySelectorAll('[data-pp-close]').forEach(function (el) {
+            el.addEventListener('click', closeQty);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal && !modal.hidden) closeQty();
+        });
+    }
+    if (qtySave) {
+        qtySave.addEventListener('click', function () {
+            saveQty();
+        });
+    }
+    if (qtyInput) {
+        qtyInput.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            saveQty();
+        });
+    }
+    if (modal) {
+        modal.querySelectorAll('[data-pp-modal-delta]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                bumpModalQty(Number(btn.getAttribute('data-pp-modal-delta') || 0));
+            });
+        });
+    }
+
+    focusQuery();
+}

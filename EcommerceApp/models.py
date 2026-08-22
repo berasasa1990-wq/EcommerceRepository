@@ -4987,6 +4987,12 @@ class Uvoz(models.Model):
     broj_azurirano = models.PositiveIntegerField(default=0, verbose_name='Ažurirano artikala')
     broj_kreirano = models.PositiveIntegerField(default=0, verbose_name='Kreirano artikala')
     broj_preskoceno = models.PositiveIntegerField(default=0, verbose_name='Preskočeno')
+    broj_mpc_promjena = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name='Promjena MPC',
+    )
+    ukupna_fakturna = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True, verbose_name='Ukupna fakturna',
+    )
     log_detalji = models.JSONField(default=list, blank=True, verbose_name='Log')
 
     class Meta:
@@ -5265,6 +5271,7 @@ class WarehouseLocation(models.Model):
 class MagacinPopis(models.Model):
     class Status(models.TextChoices):
         U_TOKU = 'u_toku', 'U toku'
+        PAUZIRAN = 'pauziran', 'Pauziran'
         ZAVRSEN = 'zavrsen', 'Završen'
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.U_TOKU, db_index=True)
@@ -5437,6 +5444,11 @@ class ProductWarehouseMeta(models.Model):
     veleprodajna_cijena = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
         verbose_name='Veleprodajna cijena',
+    )
+    mp_bez_lokacije = models.BooleanField(
+        default=False,
+        verbose_name='MP bez lokacije',
+        help_text='Artikal je fizički u maloprodaji i ostaje na sajtu i kad nema magacinske lokacije.',
     )
 
     class Meta:

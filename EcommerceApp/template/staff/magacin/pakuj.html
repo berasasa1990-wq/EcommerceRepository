@@ -27,11 +27,14 @@
     </form>
     {% endif %}
     {% if mp_pending_count %}
-    <a class="pk-mp-banner" href="{% url 'staff_magacin_pakuj_provjera' %}?next=pick">
-        Provjera MP — {{ mp_pending_count }} artikl{{ mp_pending_count|pluralize:"a,a" }} bez zalihe. Picking kreće poslije provjere.
-    </a>
-    {% endif %}
-
+    <div class="pk-mp-gate">
+        <a class="pk-mp-cta" href="{% url 'staff_magacin_pakuj_provjera' %}?next=pick">
+            Artikli u MP
+            <i>{{ mp_pending_count }}</i>
+        </a>
+        <p>Artikli iz aktivnih narudžbi kojih nema na stanju. Provjeri u maloprodaji: Ima — ostaje na nalogu, Nema — izbacuje se. Picking narudžbi kreće poslije.</p>
+    </div>
+    {% else %}
     <div class="pk-home-top">
         <div class="mg-filter-tabs">
             <a href="?status=sve{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'sve' %}is-active{% endif %}">Sve</a>
@@ -136,5 +139,6 @@
             </div>
         </form>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

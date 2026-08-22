@@ -69,7 +69,7 @@
             Validiraj odabrane
         </button>
         {% endif %}
-        <a class="mg-btn mg-btn-pill" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener" data-packing-count="{{ packing_ready_count|default:0 }}"{% if not packing_ready_count %} aria-disabled="true"{% endif %}>
+        <a class="mg-btn mg-btn-pill{% if not packing_ready_count %} is-packing-idle{% endif %}" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener" data-packing-count="{{ packing_ready_count|default:0 }}"{% if not packing_ready_count %} data-packing-reprint="1"{% endif %}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             Štampaj packing{% if packing_ready_count %} ({{ packing_ready_count }}){% endif %}
         </a>
@@ -93,7 +93,7 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% elif order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}">
+                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% elif order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=pick{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}">
                     <td class="mg-check-col" data-stop-row>
                         <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.needs_mp_check %} data-mp="1"{% endif %}>
                     </td>
@@ -158,7 +158,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
                         </a>
                         {% endif %}
-                        <a class="mg-row-more" href="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% elif order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" aria-label="Otvori narudžbu">
+                        <a class="mg-row-more" href="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% elif order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=pick{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" aria-label="Otvori narudžbu">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
                         </a>
                     </td>
@@ -192,4 +192,8 @@
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
 </form>
 {% endif %}
+<form id="mgPackingReprintForm" method="post" action="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="lozinka" value="">
+</form>
 {% endblock %}

@@ -1,33 +1,57 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pp-page">
-    {% if not popis %}
-    <div class="pp-start">
-        <h1>Popis</h1>
-        <p>Otvori novi popis. Ostaje sačuvan dok ga ne obrišeš ili završiš.</p>
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="novi">
-            <button type="submit" class="mg-btn mg-btn-primary">Novi popis</button>
-        </form>
-    </div>
-    {% else %}
-    <div class="pp-head">
+<div class="pp-page mg-orders-page" id="ppApp" data-lookup="{{ lookup_url }}" data-live="{% if popis and popis.status == 'u_toku' %}1{% else %}0{% endif %}">
+    <div class="mg-page-head">
         <div>
-            <h1>Popis</h1>
-            <p>{% if popis.status == 'u_toku' %}U toku{% else %}Završen{% endif %} · {{ stavke|length }} stavki</p>
+            <h1>{% if popis %}Popis #{{ popis.pk }}{% else %}Popis{% endif %}</h1>
+            {% if not popis %}
+            <p class="mg-count">Broji robu skeniranjem barkoda ili unosom šifre / naziva.</p>
+            {% elif popis.status == 'u_toku' %}
+            <p class="mg-count" id="ppMeta">U toku · <span id="ppCount">{{ stavke|length }}</span> stavki · <span id="ppTotal">{{ total_qty }}</span> kom</p>
+            {% elif popis.status == 'pauziran' %}
+            <p class="mg-count" id="ppMeta">Pauziran · {{ stavke|length }} stavki · {{ total_qty }} kom · {{ popis.azuriran|date:"d.m.Y H:i" }}</p>
+            {% else %}
+            <p class="mg-count" id="ppMeta">Završen {{ popis.zavrsen_at|date:"d.m.Y H:i" }} · {{ stavke|length }} stavki · {{ total_qty }} kom</p>
+            {% endif %}
         </div>
+        {% if popis %}
         <div class="pp-actions">
             {% if popis.status == 'u_toku' %}
+            <form method="post" id="ppPauseForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="pauziraj">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn mg-btn-primary">Pauziraj</button>
+            </form>
             <form method="post" id="ppFinishForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="zavrsi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
                 <button type="submit" class="mg-btn">Završi</button>
             </form>
             <form method="post" id="ppDeleteForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="obrisi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn mg-btn-danger">Obriši</button>
+            </form>
+            {% elif popis.status == 'pauziran' %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="nastavi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn mg-btn-primary">Nastavi</button>
+            </form>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="novi">
+                <button type="submit" class="mg-btn">Novi popis</button>
+            </form>
+            <form method="post" id="ppDeleteForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="obrisi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
                 <button type="submit" class="mg-btn mg-btn-danger">Obriši</button>
             </form>
             {% else %}
@@ -39,31 +63,92 @@
             {% endif %}
             <a class="mg-btn" href="{% url 'staff_magacin_popis_stampa' %}?id={{ popis.pk }}" target="_blank">Štampaj</a>
         </div>
+        {% endif %}
     </div>
+
+    {% if not popis %}
+    <section class="mg-card mg-orders-card pp-start-card">
+        <p>Otvori popis pa skeniraj ili ukucaj artikal. Pauziraj kad trebaš drugi popis — ovaj ostaje i uvijek ga možeš nastaviti.</p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="novi">
+            <button type="submit" class="mg-btn mg-btn-primary pp-start-btn">Započni popis</button>
+        </form>
+    </section>
+    {% else %}
 
     {% if popis.status == 'u_toku' %}
-    <div class="pp-scan" data-lookup="{{ lookup_url }}">
-        <input type="search" id="ppQuery" placeholder="Šifra, barkod ili naziv…" autocomplete="off" autofocus>
-        <button type="button" class="mg-btn mg-btn-primary" id="ppFindBtn">Pronađi</button>
-        <button type="button" class="mg-btn" id="ppScanBtn" data-mg-scan-target="ppQuery" data-mg-scan-title="Skeniraj artikal">Skener</button>
-        <ul class="pp-suggest" id="ppSuggest" hidden></ul>
+    <div class="pp-dock">
+        <form method="post" id="ppAddForm" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="dodaj">
+            <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+            <input type="hidden" name="product_id" id="ppProductId">
+            <input type="hidden" name="variation_id" id="ppVariationId">
+            <input type="hidden" name="kolicina" id="ppHiddenQty" value="1">
+        </form>
+        <label class="pp-scan-label" for="ppQuery">Artikal</label>
+        <div class="mg-input-row pp-scan-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input id="ppQuery" type="search" placeholder="Šifra, barkod ili naziv…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="go" autofocus>
+            </div>
+            <button type="button" class="vp-scan-btn" id="ppScanBtn" data-mg-scan-target="ppQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
+            <ul class="pp-suggest" id="ppSuggest" hidden></ul>
+        </div>
+        <p class="mg-muted pp-hint">Skeniraj ili ukucaj artikal, pa unesi koliko komada.</p>
+        <p class="pp-toast" id="ppToast" hidden></p>
     </div>
+    {% elif popis.status == 'pauziran' %}
+    <p class="pp-paused-banner">Popis je pauziran. Otvori ga s <b>Nastavi</b> da dodaješ artikle.</p>
     {% endif %}
 
-    <ol class="pp-list">
+    <ol class="pp-list" id="ppList">
         {% for row in stavke %}
-        <li>
-            <em>{{ forloop.counter }}</em>
-            <div>
+        <li data-id="{{ row.pk }}" data-qty="{{ row.kolicina }}">
+            <div class="pp-line-info">
                 <strong>{{ row.naziv }}</strong>
                 <span>{{ row.sifra|default:"—" }}</span>
             </div>
-            <b>{{ row.kolicina }}</b>
+            {% if popis.status == 'u_toku' %}
+            <div class="pp-step">
+                <button type="button" class="pp-step-btn" data-pp-delta="-1" aria-label="Smanji">−</button>
+                <button type="button" class="pp-step-qty" data-pp-edit>{{ row.kolicina }}</button>
+                <button type="button" class="pp-step-btn" data-pp-delta="1" aria-label="Povećaj">+</button>
+            </div>
+            {% else %}
+            <b class="pp-qty-ro">{{ row.kolicina }}</b>
+            {% endif %}
         </li>
         {% empty %}
-        <li class="is-empty">Još nema stavki. Unesi ili skeniraj artikal.</li>
+        <li class="is-empty">{% if popis.status == 'u_toku' %}Još nema stavki. Skeniraj barkod ili unesi artikal.{% else %}Nema stavki.{% endif %}</li>
         {% endfor %}
     </ol>
+    {% endif %}
+
+    {% if paused_popisi %}
+    <section class="pp-paused">
+        <h2>Pauzirani popisi</h2>
+        <ul>
+            {% for row in paused_popisi %}
+            <li>
+                <a class="pp-paused-main" href="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    <strong>Popis #{{ row.pk }}</strong>
+                    <span>{{ row.azuriran|date:"d.m.Y H:i" }} · {{ row.n_stavke|default:0 }} stavki · {{ row.n_kom|default:0 }} kom</span>
+                </a>
+                <form method="post" action="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="nastavi">
+                    <input type="hidden" name="popis_id" value="{{ row.pk }}">
+                    <button type="submit" class="mg-btn mg-btn-primary">Nastavi</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
     {% endif %}
 </div>
 
@@ -72,154 +157,19 @@
     <div class="mg-modal-panel pp-qty-panel" role="dialog">
         <h2 id="ppQtyName">Količina</h2>
         <p id="ppQtySifra" class="mg-muted"></p>
-        <form method="post" id="ppQtyForm">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="dodaj">
-            <input type="hidden" name="product_id" id="ppProductId">
-            <input type="hidden" name="variation_id" id="ppVariationId">
-            <div class="mg-field">
-                <label for="ppQty">Količina</label>
-                <input id="ppQty" name="kolicina" type="number" min="1" step="1" value="1" required>
+        <div class="mg-field">
+            <label for="ppQty">Koliko komada?</label>
+            <div class="pp-qty-entry">
+                <button type="button" class="pp-step-btn" data-pp-modal-delta="-1" aria-label="Smanji">−</button>
+                <input id="ppQty" type="number" min="1" step="1" inputmode="numeric" value="1">
+                <button type="button" class="pp-step-btn" data-pp-modal-delta="1" aria-label="Povećaj">+</button>
             </div>
-            <div class="pp-qty-btns">
-                <button type="button" class="mg-btn" data-pp-close>Otkaži</button>
-                <button type="submit" class="mg-btn mg-btn-primary">Dalje</button>
-            </div>
-        </form>
+        </div>
+        <div class="pp-qty-btns">
+            <button type="button" class="mg-btn" data-pp-close>Otkaži</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="ppQtySave">Ubaci</button>
+        </div>
     </div>
 </div>
-{% endblock %}
-
-{% block magacin_js %}
-<script>
-(function () {
-    var finish = document.getElementById('ppFinishForm');
-    if (finish) {
-        finish.addEventListener('submit', function (event) {
-            if (!window.confirm('Završiti popis?')) event.preventDefault();
-        });
-    }
-    var del = document.getElementById('ppDeleteForm');
-    if (del) {
-        del.addEventListener('submit', function (event) {
-            if (!window.confirm('Obrisati cijeli popis?')) event.preventDefault();
-        });
-    }
-
-    var wrap = document.querySelector('.pp-scan');
-    var input = document.getElementById('ppQuery');
-    var findBtn = document.getElementById('ppFindBtn');
-    var list = document.getElementById('ppSuggest');
-    var modal = document.getElementById('ppQtyModal');
-    var qtyInput = document.getElementById('ppQty');
-    var nameEl = document.getElementById('ppQtyName');
-    var sifraEl = document.getElementById('ppQtySifra');
-    var pidEl = document.getElementById('ppProductId');
-    var vidEl = document.getElementById('ppVariationId');
-    if (!wrap || !input || !list || !findBtn) return;
-    var lookup = wrap.getAttribute('data-lookup') || '';
-
-    function closeQty() { if (modal) modal.hidden = true; }
-    function openQty(item) {
-        if (!modal || !item) return;
-        pidEl.value = item.id || '';
-        vidEl.value = item.variation_id || '';
-        nameEl.textContent = item.naziv || 'Količina';
-        sifraEl.textContent = item.sifra || '';
-        qtyInput.value = '1';
-        modal.hidden = false;
-        window.setTimeout(function () { qtyInput.focus(); qtyInput.select(); }, 40);
-    }
-    function render(items) {
-        list.innerHTML = '';
-        if (!items.length) {
-            var empty = document.createElement('li');
-            empty.className = 'is-empty';
-            empty.textContent = 'Nema rezultata.';
-            list.appendChild(empty);
-            list.hidden = false;
-            return;
-        }
-        items.forEach(function (item) {
-            var li = document.createElement('li');
-            li.innerHTML = '<strong></strong><span></span>';
-            li.querySelector('strong').textContent = item.naziv || '';
-            li.querySelector('span').textContent = item.sifra || '';
-            li.addEventListener('click', function () {
-                list.hidden = true;
-                openQty(item);
-            });
-            list.appendChild(li);
-        });
-        list.hidden = false;
-    }
-    function norm(value) {
-        return String(value || '').replace(/\s+/g, '').toLowerCase();
-    }
-    function isExact(item, query) {
-        var q = norm(query);
-        if (!q) return false;
-        return norm(item.sifra) === q || norm(item.barkod) === q;
-    }
-    function search() {
-        var q = (input.value || '').trim();
-        if (q.length < 1) {
-            list.hidden = true;
-            return;
-        }
-        fetch(lookup + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=20', {
-            credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        }).then(function (res) { return res.json(); }).then(function (data) {
-            var rows = [];
-            (data.results || []).forEach(function (prod) {
-                var vars = prod.varijacije || [];
-                if (vars.length > 1) {
-                    vars.forEach(function (v) {
-                        rows.push({
-                            id: prod.id,
-                            variation_id: v.id,
-                            naziv: (prod.naziv || '') + ' ' + (v.naziv || ''),
-                            sifra: v.sifra || prod.sifra || '',
-                            barkod: prod.barkod || '',
-                        });
-                    });
-                } else {
-                    rows.push({
-                        id: prod.id,
-                        variation_id: '',
-                        naziv: prod.naziv,
-                        sifra: prod.sifra,
-                        barkod: prod.barkod || '',
-                    });
-                }
-            });
-            var hit = rows.filter(function (row) { return isExact(row, q); })[0];
-            if (hit || (data.exact && rows.length === 1)) {
-                list.hidden = true;
-                openQty(hit || rows[0]);
-                return;
-            }
-            render(rows);
-        }).catch(function () {});
-    }
-    findBtn.addEventListener('click', function (event) {
-        event.preventDefault();
-        search();
-    });
-    input.addEventListener('keydown', function (event) {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        search();
-    });
-    if (modal) {
-        modal.querySelectorAll('[data-pp-close]').forEach(function (el) {
-            el.addEventListener('click', closeQty);
-        });
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && !modal.hidden) closeQty();
-        });
-    }
-})();
-</script>
+{{ pp_boot|json_script:"ppBoot" }}
 {% endblock %}

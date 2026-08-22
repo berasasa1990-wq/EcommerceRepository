@@ -5559,6 +5559,48 @@ def staff_admin_panel(request):
     return render(request, 'staff/admin_panel.html', context)
 
 
+GIFT_VOUCHER_AMOUNTS = (50, 100, 200, 300, 500)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_gift_voucher(request):
+    context = {
+        **_base_context(),
+        'amounts': GIFT_VOUCHER_AMOUNTS,
+        'ime': (request.GET.get('ime') or '').strip(),
+        'prezime': (request.GET.get('prezime') or '').strip(),
+        'iznos': (request.GET.get('iznos') or '').strip(),
+    }
+    return render(request, 'staff/gift_voucher.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_gift_voucher_print(request):
+    from django.utils import timezone
+
+    ime = (request.GET.get('ime') or '').strip()
+    prezime = (request.GET.get('prezime') or '').strip()
+    try:
+        iznos = int(request.GET.get('iznos') or 0)
+    except (TypeError, ValueError):
+        iznos = 0
+    if not ime or not prezime or iznos not in GIFT_VOUCHER_AMOUNTS:
+        messages.error(request, 'Unesi ime, prezime i iznos poklona (50, 100, 200, 300 ili 500 KM).')
+        return redirect('staff_gift_voucher')
+    created = timezone.localtime(timezone.now())
+    context = {
+        'ime': ime,
+        'prezime': prezime,
+        'punio_ime': f'{ime} {prezime}'.strip(),
+        'iznos': iznos,
+        'datum': created.strftime('%d.%m.%Y.'),
+        'site_name': 'opremazaribolov.ba',
+    }
+    return render(request, 'staff/gift_voucher_print.html', context)
+
+
 def _uvoz_search_articles(query: str) -> list[dict]:
     """
     Pretraga artikala kroz SVE uvoze po nazivu.

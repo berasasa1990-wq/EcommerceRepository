@@ -6,7 +6,7 @@
     <dl class="mg-kv">
         <div class="mg-kv-row">
             <dt>Izvor zaliha</dt>
-            <dd>Svaki server ima svoju bazu. Git push šalje samo kod, ne artikle. Na sajtu klikni Sync sada (ili u Render Shell: python manage.py sync_odoo_magacin) da se iz Odoo uvezu artikli kojih ovdje nema. Postojeći se ne dupliraju — samo količina i lokacija.</dd>
+            <dd>Svaki server ima svoju bazu. Git push šalje samo kod, ne artikle. „Sync sada” uvodi nove artikle iz Odoo. „Sync zaliha” postavi količinu po Odoo ID. „Sync cijena” postavi MPC (list_price) po Odoo ID.</dd>
         </div>
         <div class="mg-kv-row">
             <dt>Odoo veza</dt>
@@ -25,6 +25,20 @@
             <dd>Svako kretanje ažurira količinu artikla / varijacije na sajtu (stanje i „na stanju”).</dd>
         </div>
     </dl>
-    <a class="mg-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
+    <div class="mg-toolbar-actions" style="margin-top:16px;">
+        <form method="post" action="{% url 'staff_magacin_sync' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="stock">
+            <input type="hidden" name="next" value="{% url 'staff_magacin_podesavanja' %}">
+            <button type="submit" class="mg-btn mg-btn-primary"{% if sync_job %} disabled{% endif %}>Sync zaliha iz Odoo</button>
+        </form>
+        <form method="post" action="{% url 'staff_magacin_sync' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="prices">
+            <input type="hidden" name="next" value="{% url 'staff_magacin_podesavanja' %}">
+            <button type="submit" class="mg-btn"{% if sync_job %} disabled{% endif %}>Sync cijena iz Odoo</button>
+        </form>
+        <a class="mg-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
+    </div>
 </section>
 {% endblock %}

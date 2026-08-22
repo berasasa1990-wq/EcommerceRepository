@@ -1,6 +1,7 @@
 """Staff Magacin — lager artikala po lokacijama."""
 
 import base64
+import hmac
 import json
 import logging
 import re
@@ -12,7 +13,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, F, Prefetch, Q, Sum
+from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -26,13 +27,21 @@ from .magacin import (
     MagacinError,
     active_popis,
     add_popis_stavka,
+    pause_popis,
+    paused_popisi,
+    resume_popis,
     active_vp_narudzba,
     add_vp_stavka,
     apply_movement,
+    attach_uvoz_list_metrics,
     create_magacin_uvoz_from_rows,
+    leftover_uvoz_stocks,
+    move_uvoz_leftovers_to_mp,
     finish_popis,
     finish_vp_narudzba,
+    remove_popis_stavka,
     remove_vp_stavka,
+    set_popis_stavka_qty,
     set_vp_customer,
     set_vp_stavka_qty,
     start_popis,
@@ -66,6 +75,8 @@ from .magacin import (
     search_products,
     seed_default_locations,
     start_full_sync,
+    start_price_sync,
+    start_stock_sync,
     stock_totals,
     vp_cijena,
 )
@@ -134,6 +145,10 @@ def _sync_job_view(job):
         total = max(1, int(job.get('discover_offset') or 0) + DISCOVER_SYNC_BATCH)
         current = int(job.get('discover_offset') or 0)
         label = f'Čitam Odoo katalog: {len(job.get("discovered_ids") or [])} artikala'
+    elif phase == 'prices':
+        total = max(1, len(template_ids))
+        current = int(job.get('position') or 0)
+        label = f'Usklađujem cijene s Odoo: {current} / {len(template_ids)}'
     elif phase == 'catalog':
         total = max(1, len(template_ids))
         current = int(job.get('position') or 0)
@@ -147,7 +162,11 @@ def _sync_job_view(job):
     elif phase == 'stock':
         total = max(1, len(stock_ids))
         current = int(job.get('stock_position') or 0)
-        label = f'Zalihe {current} / {len(stock_ids)}'
+        label = (
+            f'Usklađujem količine s Odoo: {current} / {len(stock_ids)}'
+            if job.get('stock_only')
+            else f'Zalihe {current} / {len(stock_ids)}'
+        )
     else:
         total = 1
         current = 1
@@ -911,9 +930,9 @@ def _etiketa_barcode_data_uri(code):
         Code128(str(raw), writer=ImageWriter()).write(
             buffer,
             options={
-                'module_width': 0.32,
-                'module_height': 18.0,
-                'quiet_zone': 1.2,
+                'module_width': 0.38,
+                'module_height': 22.0,
+                'quiet_zone': 1.0,
                 'font_size': 0,
                 'text_distance': 1,
                 'write_text': False,
@@ -944,13 +963,16 @@ def _artikal_etiketa_payload(product, variation=None):
     if not sifra:
         sifra = (product.sifra or '').strip()
     cijena = variation.prikazna_cijena if variation else product.prikazna_cijena
+    cijena_label = ''
     if cijena is not None:
         cijena = Decimal(cijena).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        cijena_label = format(cijena, '.2f').replace('.', ',')
     barkod = (product.barkod or '').strip() or sifra
     return {
         'naziv': naziv,
         'sifra': sifra,
         'cijena': cijena,
+        'cijena_label': cijena_label,
         'barkod': barkod,
         'barcode_src': _etiketa_barcode_data_uri(barkod),
     }
@@ -2001,14 +2023,60 @@ def _order_was_picked(order):
     )
 
 
+PACKING_READY_LIMIT = 80
+PACKING_TODAY_LIMIT = 200
+PACKING_REPRINT_PASSWORD = 'admin'
+
+
+def _packing_reprint_password_ok(raw):
+    password = (raw or '').strip()
+    expected = PACKING_REPRINT_PASSWORD
+    if len(password) != len(expected):
+        return False
+    return hmac.compare_digest(password, expected)
+
+
+def _picked_item_exists():
+    return Exists(
+        OrderItem.objects.filter(
+            narudzba_id=OuterRef('pk'),
+            kolicina_pokupljeno__isnull=False,
+        )
+    )
+
+
 def packing_ready_orders():
-    validated_q = Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(status=Order.Status.ZAVRSENA)
+    """Narudžbe spremne za packing: validatovane, pickovane, još neodštampane.
+
+    Filter po pokupljenoj količini ide u bazu — inače starije validirane
+    (nikad pickovane) popune LIMIT i nova pickovana ostane skrivena.
+    """
     orders = list(
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
-        .filter(validated_q, packing_odstampana=False)
+        .filter(_validated_orders_q(), packing_odstampana=False)
+        .filter(_picked_item_exists())
         .prefetch_related('stavke', 'magacin_holds')
-        .order_by('kreirana')[:80]
+        .order_by('kreirana')[:PACKING_READY_LIMIT]
+    )
+    return [order for order in orders if _order_was_picked(order)]
+
+
+def packing_today_orders():
+    """Sve pickovane pošiljke od danas, uključujući već odštampane packinge."""
+    today = timezone.localdate()
+    orders = list(
+        Order.objects.exclude(status=Order.Status.OTKAZANA)
+        .exclude(_prenos_mp_q())
+        .filter(_validated_orders_q())
+        .filter(_picked_item_exists())
+        .filter(
+            Q(zapakovana_at__date=today)
+            | Q(packing_odstampana_at__date=today)
+            | Q(kreirana__date=today)
+        )
+        .prefetch_related('stavke', 'magacin_holds')
+        .order_by('kreirana')[:PACKING_TODAY_LIMIT]
     )
     return [order for order in orders if _order_was_picked(order)]
 
@@ -2127,13 +2195,7 @@ def _order_packing_job(order):
     }
 
 
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
-def magacin_narudzbe_packing(request):
-    ordered = packing_ready_orders()
-    if not ordered:
-        messages.info(request, 'Nema pickovanih i validatovanih narudžbi za packing.')
-        return redirect('staff_magacin_narudzbe')
+def _render_packing_jobs(ordered):
     now = timezone.now()
     Order.objects.filter(
         pk__in=[order.pk for order in ordered],
@@ -2141,12 +2203,37 @@ def magacin_narudzbe_packing(request):
     ).update(packing_odstampana=True, packing_odstampana_at=now)
     invalidate_magacin_nav_counts()
     print_jobs = [_order_packing_job(order) for order in ordered]
-    context = {
+    return {
         **print_jobs[0],
         'print_jobs': print_jobs,
         'print_brojevi': [order.broj for order in ordered],
     }
-    return render(request, 'staff/magacin/narudzbe_packing.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_narudzbe_packing(request):
+    reprint_today = False
+    if request.method == 'POST':
+        if not _packing_reprint_password_ok(request.POST.get('lozinka')):
+            messages.error(request, 'Pogrešna lozinka za reprint packinga.')
+            return redirect('staff_magacin_narudzbe')
+        reprint_today = True
+    if reprint_today:
+        ordered = packing_today_orders()
+        if not ordered:
+            messages.info(request, 'Nema picking pošiljki od danas za packing.')
+            return redirect('staff_magacin_narudzbe')
+    else:
+        ordered = packing_ready_orders()
+        if not ordered:
+            messages.info(request, 'Nema pickovanih i validatovanih narudžbi za packing.')
+            return redirect('staff_magacin_narudzbe')
+    return render(
+        request,
+        'staff/magacin/narudzbe_packing.html',
+        _render_packing_jobs(ordered),
+    )
 
 
 @login_required(login_url='login')
@@ -2328,8 +2415,7 @@ def magacin_narudzba_nova(request):
                 'Možeš dodati ili izbaciti artikle, pa Sačuvaj kad je gotova.',
             )
             return redirect(f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}")
-        messages.success(request, f'Narudžba #{order.broj} je kreirana.')
-        return redirect('staff_magacin_narudzbe')
+        return _after_order_created_redirect(request, order)
 
     if existing:
         from .pricing import order_waived_shipping
@@ -3016,6 +3102,24 @@ def _provjera_url(broj=None, *, next_print=False, next_pick=False):
     return url
 
 
+def _after_order_created_redirect(request, order):
+    messages.success(request, f'Narudžba #{order.broj} je kreirana.')
+    return redirect('staff_magacin_narudzbe')
+
+
+def _after_mp_check_done_redirect(request, *, focus_order, focus_broj, next_print):
+    if next_print:
+        if focus_broj:
+            messages.success(
+                request,
+                f'Narudžba #{focus_broj} je provjerena. Sada možeš štampati.',
+            )
+            return redirect('staff_magacin_narudzbe')
+        return redirect('staff_magacin_pakuj_provjera')
+    messages.success(request, 'Artikli u MP su provjereni. Sada možeš picking narudžbi.')
+    return redirect('staff_magacin_pakuj')
+
+
 def _pick_claim_name(order):
     return (order.pick_claimed_name or '').strip() or (
         _user_display(order.pick_claimed_by) if order.pick_claimed_by_id else ''
@@ -3053,7 +3157,7 @@ def _pakuj_zauzeto_url(broj):
     return f"{reverse('staff_magacin_pakuj')}?{urlencode({'zauzeto': broj})}"
 
 
-def apply_mp_check(group_lines, *, found):
+def apply_mp_check(group_lines, *, found, user=None):
     by_broj = {}
     for line in group_lines:
         by_broj.setdefault(line['broj'], []).append(line)
@@ -3075,22 +3179,30 @@ def apply_mp_check(group_lines, *, found):
             order.pick_state = state
             order.save(update_fields=['pick_state'])
             continue
-        payload = []
-        for key, row in state.items():
-            if not isinstance(row, dict):
+        cancelled = False
+        for line in lines:
+            item = order.stavke.filter(pk=line.get('item_id')).first()
+            if not item:
                 continue
-            payload.append({
-                'key': key,
-                'item_id': row.get('item_id'),
-                'got': row.get('got') or 0,
-                'need': row.get('need') or 0,
-                'done': bool(row.get('done')),
-                'mp_checked': bool(row.get('mp_checked')),
-            })
-        apply_order_pick(order, payload)
-        if not payload:
-            order.pick_state = state
-            order.save(update_fields=['pick_state'])
+            if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
+                try:
+                    cancel_order_stock(order, user=user)
+                except MagacinError:
+                    pass
+                cancelled = True
+                break
+            try:
+                remove_item_from_order(order, item, user=user)
+            except MagacinError:
+                continue
+        if cancelled:
+            continue
+        order.refresh_from_db()
+        state = dict(order.pick_state or {})
+        for line in lines:
+            state.pop(line.get('key'), None)
+        order.pick_state = state
+        order.save(update_fields=['pick_state'])
     invalidate_magacin_nav_counts()
 
 
@@ -3182,6 +3294,9 @@ def magacin_narudzba_barkod(request, broj):
 @require_GET
 def magacin_pakuj_sken(request):
     raw = (request.GET.get('q') or '').strip()
+    if collect_mp_checks():
+        messages.warning(request, 'Prvo Artikli u MP, pa picking narudžbi.')
+        return redirect('staff_magacin_pakuj')
     order = find_order_by_scan(raw, qs=_unvalidated_orders_qs())
     if not order:
         messages.warning(request, f'Narudžba za barkod „{raw or "—"}” nije na pickingu.')
@@ -3190,9 +3305,9 @@ def magacin_pakuj_sken(request):
         messages.warning(
             request,
             f'Narudžba #{order.broj} ima artikal iz maloprodaje. '
-            'Prvo u Provjeri označi Ima u MP ili Nema.',
+            'Prvo Artikli u MP.',
         )
-        return redirect(_provjera_url(order.broj, next_pick=True))
+        return redirect('staff_magacin_pakuj')
     ok, holder = claim_order_pick(order, request.user)
     if not ok:
         messages.error(
@@ -3428,10 +3543,14 @@ def magacin_pakuj_provjera(request):
             .filter(broj=focus_broj)
             .first()
         )
-    if focus_order:
+    if next_print and focus_order:
         groups = collect_mp_checks([focus_order])
     else:
         groups = collect_mp_checks()
+        if not next_print:
+            focus_broj = ''
+            focus_order = None
+            next_pick = True
 
     if request.method == 'POST':
         key = (request.POST.get('group') or '').strip()
@@ -3440,52 +3559,61 @@ def magacin_pakuj_provjera(request):
         if not group:
             messages.error(request, 'Stavka za provjeru nije pronađena.')
         else:
-            apply_mp_check(group['lines'], found=found)
+            apply_mp_check(group['lines'], found=found, user=request.user)
             if found:
-                messages.success(request, f'{group["naziv"]} — ima u MP, dodato na nalog.')
+                messages.success(request, f'{group["naziv"]} — ima u MP, ubačeno na narudžbu.')
             else:
-                messages.success(request, f'{group["naziv"]} — nema u MP, količina smanjena.')
-        leftover = []
+                messages.success(request, f'{group["naziv"]} — nema u MP, izbačeno s narudžbe.')
         if focus_order:
-            focus_order.refresh_from_db()
-            leftover = collect_mp_checks([focus_order])
-        elif not focus_broj:
-            leftover = collect_mp_checks()
+            focus_order = (
+                _unvalidated_orders_qs()
+                .prefetch_related('stavke', 'magacin_holds')
+                .filter(pk=focus_order.pk)
+                .first()
+            )
+        leftover_all = collect_mp_checks()
+        leftover_focus = (
+            collect_mp_checks([focus_order]) if focus_order else leftover_all
+        )
+        leftover = leftover_focus if next_print else leftover_all
         if not leftover:
-            if next_pick:
-                if focus_broj:
-                    messages.success(
-                        request,
-                        f'Narudžba #{focus_broj} je provjerena. Unesi ili skeniraj da otvoriš picking.',
-                    )
-                else:
-                    messages.success(
-                        request,
-                        'Provjera MP je završena. Unesi ili skeniraj narudžbu.',
-                    )
-                return redirect('staff_magacin_pakuj')
-            if focus_broj:
-                messages.success(request, f'Narudžba #{focus_broj} je provjerena. Sada možeš štampati.')
-                return redirect('staff_magacin_narudzbe')
-            return redirect('staff_magacin_pakuj_provjera')
-        return redirect(_provjera_url(
-            focus_broj or None,
-            next_print=next_print,
-            next_pick=next_pick,
-        ))
+            return _after_mp_check_done_redirect(
+                request,
+                focus_order=focus_order,
+                focus_broj=focus_broj,
+                next_print=next_print,
+            )
+        if next_print:
+            return redirect(_provjera_url(focus_broj or None, next_print=True))
+        return redirect(_provjera_url(next_pick=True))
 
     if not groups:
-        if next_pick:
+        leftover_all = collect_mp_checks()
+        if leftover_all and not next_print:
+            groups = leftover_all
+            focus_broj = ''
+            focus_order = None
+            next_pick = True
+        elif next_print:
+            if focus_broj:
+                messages.success(request, f'Narudžba #{focus_broj} nema više stavki za Provjeru MP.')
+                return redirect('staff_magacin_narudzbe')
             return redirect('staff_magacin_pakuj')
-        if focus_broj:
+        elif next_pick:
+            return redirect('staff_magacin_pakuj')
+        elif focus_broj:
             messages.success(request, f'Narudžba #{focus_broj} nema više stavki za Provjeru MP.')
             return redirect('staff_magacin_narudzbe')
 
-    context = _magacin_context(request, section='pakuj', page_title='Provjera MP — Magacin')
+    context = _magacin_context(
+        request,
+        section='pakuj',
+        page_title='Artikli u MP — Magacin' if not next_print else 'Provjera MP — Magacin',
+    )
     context.update({
         'groups': groups,
         'mp_count': len(groups),
-        'pick_fullscreen': True,
+        'pick_fullscreen': False,
         'focus_broj': focus_broj,
         'next_print': next_print,
         'next_pick': next_pick,
@@ -3502,18 +3630,14 @@ def magacin_pakuj_detail(request, broj):
         broj=broj,
     )
     prenos_mp = is_prenos_mp_order(order)
-    if not prenos_mp and order_needs_mp_check(order):
+    if not prenos_mp and collect_mp_checks():
         if request.method == 'POST' and (request.POST.get('action') or '') == 'pick_save':
             return JsonResponse(
-                {'ok': False, 'error': 'Prvo uradi Provjeru MP (Ima u MP / Nema).'},
+                {'ok': False, 'error': 'Prvo Artikli u MP (Ima / Nema).'},
                 status=403,
             )
-        messages.warning(
-            request,
-            f'Narudžba #{order.broj} ima artikal iz maloprodaje. '
-            'Prvo u Provjeri označi Ima u MP ili Nema.',
-        )
-        return redirect(_provjera_url(order.broj, next_pick=True))
+        messages.warning(request, 'Prvo Artikli u MP, pa picking narudžbi.')
+        return redirect('staff_magacin_pakuj')
     ok, holder = claim_order_pick(order, request.user)
     if not ok:
         if request.method == 'POST':
@@ -3723,14 +3847,38 @@ def magacin_pakuj_stampaj_zapakovano(request, broj):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_uvoz(request):
-    uvozi = (
+    if request.method == 'POST' and request.POST.get('action') == 'uvoz_u_mp':
+        try:
+            result = move_uvoz_leftovers_to_mp(user=request.user)
+        except MagacinError as exc:
+            messages.error(request, str(exc) if str(exc) else 'Prebacivanje u MP nije uspjelo.')
+            return redirect('staff_magacin_uvoz')
+        if result['count']:
+            messages.success(
+                request,
+                f'Uvoz lokacija u MP: {result["count"]} artikala ({result["qty"]} kom) '
+                f'skinuto s lokacije Uvoz. Na sajtu ostaju na stanju. Uvozi nisu dirani.',
+            )
+        else:
+            messages.info(
+                request,
+                'Nema artikala koji su ostali samo na lokaciji Uvoz.',
+            )
+        return redirect('staff_magacin_uvoz')
+
+    uvozi = attach_uvoz_list_metrics(
         Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN)
         .select_related('kreirao')
-        .annotate(stavke_n=Count('stavke'))
         .order_by('-kreiran')[:200]
     )
+    leftover, _loc = leftover_uvoz_stocks()
+    leftover_qty = sum(int(row.kolicina or 0) for row in leftover)
     context = _magacin_context(request, section='uvoz', page_title='Uvoz — Magacin')
-    context.update({'uvozi': uvozi})
+    context.update({
+        'uvozi': uvozi,
+        'uvoz_mp_count': len({row.product_id for row in leftover}),
+        'uvoz_mp_qty': leftover_qty,
+    })
     return render(request, 'staff/magacin/uvoz.html', context)
 
 
@@ -3949,30 +4097,109 @@ def magacin_izvjestaji(request):
     return render(request, 'staff/magacin/izvjestaji.html', context)
 
 
+def _popis_is_ajax(request):
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def _popis_stavka_rows(popis):
+    if not popis:
+        return []
+    return list(popis.stavke.select_related('product', 'variation').order_by('-redoslijed', '-id'))
+
+
+def _popis_payload(popis, *, added_id=None):
+    stavke = _popis_stavka_rows(popis)
+    return {
+        'ok': True,
+        'status': popis.status if popis else '',
+        'popis_id': popis.pk if popis else None,
+        'count': len(stavke),
+        'total_qty': sum(int(row.kolicina or 0) for row in stavke),
+        'added_id': added_id,
+        'stavke': [
+            {
+                'id': row.pk,
+                'naziv': row.naziv,
+                'sifra': row.sifra or '',
+                'kolicina': int(row.kolicina or 0),
+            }
+            for row in stavke
+        ],
+    }
+
+
+def _popis_redirect(popis=None):
+    if popis and popis.pk:
+        return redirect('staff_magacin_popis_detail', pk=popis.pk)
+    return redirect('staff_magacin_popis')
+
+
+def _popis_from_request(request, pk=None):
+    raw = pk if pk is not None else (request.POST.get('popis_id') or request.GET.get('id'))
+    if raw not in (None, ''):
+        try:
+            return MagacinPopis.objects.filter(pk=int(raw)).first()
+        except (TypeError, ValueError):
+            return None
+    return active_popis()
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
-def magacin_popis(request):
-    popis = active_popis()
+def magacin_popis(request, pk=None):
+    popis = _popis_from_request(request, pk)
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
+        ajax = _popis_is_ajax(request)
         try:
             if action == 'novi':
                 popis = start_popis(user=request.user)
-                return redirect('staff_magacin_popis')
+                return _popis_redirect(popis)
+            if action == 'nastavi':
+                target = _popis_from_request(request, pk)
+                if target is None:
+                    raise MagacinError('Popis nije pronađen.')
+                popis = resume_popis(target)
+                return _popis_redirect(popis)
             if popis is None:
                 raise MagacinError('Nema otvorenog popisa.')
             if action == 'dodaj':
-                product = get_object_or_404(Product, pk=int(request.POST.get('product_id') or 0))
+                try:
+                    product = Product.objects.get(pk=int(request.POST.get('product_id') or 0))
+                except (Product.DoesNotExist, TypeError, ValueError):
+                    raise MagacinError('Artikal nije pronađen.')
                 variation = None
-                var_id = request.POST.get('variation_id')
+                var_id = (request.POST.get('variation_id') or '').strip()
                 if var_id:
-                    variation = get_object_or_404(ProductVariation, pk=int(var_id), artikal=product)
-                add_popis_stavka(
+                    try:
+                        variation = ProductVariation.objects.get(pk=int(var_id), artikal=product)
+                    except (ProductVariation.DoesNotExist, TypeError, ValueError):
+                        raise MagacinError('Varijacija nije pronađena.')
+                stavka = add_popis_stavka(
                     popis,
                     product=product,
                     variation=variation,
                     qty=_parse_qty(request.POST.get('kolicina') or '1'),
                 )
+                if ajax:
+                    return JsonResponse(_popis_payload(popis, added_id=stavka.pk if stavka else None))
+                return _popis_redirect(popis)
+            if action == 'set_qty':
+                stavka = set_popis_stavka_qty(
+                    popis,
+                    request.POST.get('stavka_id'),
+                    _parse_qty(request.POST.get('kolicina') if request.POST.get('kolicina') not in (None, '') else '0'),
+                )
+                if ajax:
+                    return JsonResponse(_popis_payload(popis, added_id=stavka.pk if stavka else None))
+                return _popis_redirect(popis)
+            if action == 'ukloni':
+                remove_popis_stavka(popis, request.POST.get('stavka_id'))
+                if ajax:
+                    return JsonResponse(_popis_payload(popis))
+                return _popis_redirect(popis)
+            if action == 'pauziraj':
+                pause_popis(popis)
                 return redirect('staff_magacin_popis')
             if action == 'obrisi':
                 popis.delete()
@@ -3982,16 +4209,33 @@ def magacin_popis(request):
                 return redirect('staff_magacin_popis')
             raise MagacinError('Nepoznata akcija.')
         except (MagacinError, Product.DoesNotExist, ValueError) as exc:
+            if ajax:
+                return JsonResponse(
+                    {'ok': False, 'error': str(exc) if str(exc) else 'Greška na popisu.'},
+                    status=400,
+                )
             messages.error(request, str(exc) if str(exc) else 'Greška na popisu.')
-            return redirect('staff_magacin_popis')
+            return _popis_redirect(popis)
 
-    if popis is None:
-        popis = MagacinPopis.objects.order_by('-kreiran').first()
-    context = _magacin_context(request, section='popis', page_title='Popis — Magacin')
+    if pk and popis is None:
+        messages.error(request, 'Popis nije pronađen.')
+        return redirect('staff_magacin_popis')
+    if not pk:
+        popis = active_popis()
+    paused = list(paused_popisi())
+    if popis and popis.status == MagacinPopis.Status.PAUZIRAN:
+        paused = [row for row in paused if row.pk != popis.pk]
+    stavke = _popis_stavka_rows(popis)
+    context = _magacin_context(
+        request, section='popis', page_title='Popis — Magacin', hide_top_search=True,
+    )
     context.update({
         'popis': popis,
-        'stavke': list(popis.stavke.select_related('product', 'variation')) if popis else [],
+        'stavke': stavke,
+        'total_qty': sum(int(row.kolicina or 0) for row in stavke),
+        'paused_popisi': paused,
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
+        'pp_boot': _popis_payload(popis) if popis else {'ok': True, 'stavke': [], 'count': 0, 'total_qty': 0},
     })
     return render(request, 'staff/magacin/popis.html', context)
 
@@ -4149,8 +4393,7 @@ def magacin_vp_narudzba(request):
                     return redirect(
                         f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}"
                     )
-                messages.success(request, f'VP narudžba #{order.broj} je kreirana.')
-                return redirect('staff_magacin_narudzbe')
+                return _after_order_created_redirect(request, order)
             raise MagacinError('Nepoznata akcija.')
         except (MagacinError, Product.DoesNotExist, WarehouseCustomer.DoesNotExist, ValueError) as exc:
             if _vp_is_ajax(request):
@@ -4225,7 +4468,12 @@ def magacin_sync(request):
             product_id = request.POST.get('product_id')
             if product_id:
                 product = get_object_or_404(Product, pk=product_id)
-            job = start_full_sync(user=request.user, product=product)
+            if action == 'stock':
+                job = start_stock_sync(user=request.user, product=product)
+            elif action == 'prices':
+                job = start_price_sync(user=request.user, product=product)
+            else:
+                job = start_full_sync(user=request.user, product=product)
             persist_sync_job(job)
             job = run_sync_until(job, user=request.user)
 

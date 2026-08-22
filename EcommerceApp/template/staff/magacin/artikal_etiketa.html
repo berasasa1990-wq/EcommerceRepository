@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Etiketa {{ sifra|default:naziv }}</title>
     <style>
-        @page { size: 3.559in 1.224in; margin: 0; }
+        @page { size: 60mm 40mm; margin: 0; }
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
@@ -20,55 +20,53 @@
             min-height: 40px;
             padding: 0 16px;
         }
-        .sheet {
-            padding: 16px;
-        }
+        .sheet { padding: 16px; }
         .label {
-            width: 3.559in;
-            height: 1.224in;
-            padding: 0.07in 0.1in 0.05in;
-            border: 1px solid #ccc;
+            width: 60mm;
+            height: 40mm;
+            padding: 1.8mm 2.4mm 1.4mm;
+            border: 0.45mm solid #111;
+            border-radius: 2.4mm;
             display: flex;
             flex-direction: column;
             font-family: Arial, Helvetica, sans-serif;
-            color: #000;
+            color: #111;
             overflow: hidden;
             background: #fff;
         }
-        .top {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 0.08in;
-            flex-shrink: 0;
-        }
-        .info {
-            min-width: 0;
-            flex: 1 1 auto;
-        }
         .naziv {
             margin: 0;
-            font-size: 11px;
-            font-weight: 700;
+            flex: 0 0 auto;
+            font-size: 3.35mm;
+            font-weight: 800;
             line-height: 1.12;
+            letter-spacing: -0.02em;
             text-transform: uppercase;
-            max-height: 2.3em;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
             overflow: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            max-height: 7.5mm;
+        }
+        .rule {
+            height: 0;
+            margin: 0.85mm 0 0.7mm;
+            border: 0;
+            border-top: 0.32mm solid #111;
+            flex-shrink: 0;
         }
         .sifra {
-            margin: 0.02in 0 0;
-            font-size: 8px;
-            letter-spacing: .03em;
-        }
-        .cijena {
-            margin: 0;
+            margin: 0 0 0.45mm;
+            font-size: 2.15mm;
+            font-weight: 700;
+            letter-spacing: .04em;
             flex-shrink: 0;
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -.02em;
-            line-height: 1;
             white-space: nowrap;
-            text-align: right;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .barcode {
             flex: 1 1 auto;
@@ -76,55 +74,83 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 0;
-            padding-top: 0.04in;
+            min-height: 7.5mm;
         }
         .barcode img {
             display: block;
             width: 100%;
-            height: 0.58in;
-            object-fit: contain;
+            height: 8.8mm;
+            max-height: 9.2mm;
+            object-fit: fill;
             object-position: center;
         }
         .barcode span {
             display: block;
-            margin-top: 0.03in;
-            font-size: 9px;
-            font-family: ui-monospace, Consolas, "Courier New", monospace;
-            letter-spacing: .12em;
+            margin-top: 0.25mm;
+            font-size: 2.35mm;
+            font-family: Arial, Helvetica, sans-serif;
+            letter-spacing: .08em;
             font-weight: 700;
+            flex-shrink: 0;
+        }
+        .cijena-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 2mm;
+            flex-shrink: 0;
+            margin-top: 0.4mm;
+            padding-top: 0.55mm;
+            border-top: 0.32mm solid #111;
+        }
+        .cijena-iznos {
+            font-size: 8.4mm;
+            font-weight: 800;
+            letter-spacing: -0.06em;
+            line-height: 0.88;
+            white-space: nowrap;
+        }
+        .cijena-km {
+            font-size: 4.9mm;
+            font-weight: 800;
+            letter-spacing: .02em;
+            line-height: 1;
         }
         @media print {
             .bar { display: none !important; }
             .sheet { padding: 0; }
             html, body, .label {
-                width: 3.559in;
-                height: 1.224in;
+                width: 60mm;
+                height: 40mm;
                 background: #fff;
             }
-            .label { border: 0; padding: 0.06in 0.08in 0.04in; }
+            .label { border-radius: 2.2mm; }
         }
     </style>
 </head>
 <body>
     <div class="bar">
         <button type="button" onclick="window.print()">Štampaj</button>
-        <span>Etiketa 3.559 × 1.224 in</span>
+        <span>Etiketa 60 × 40 mm</span>
     </div>
     <div class="sheet">
         <article class="label">
-            <header class="top">
-                <div class="info">
-                    <h1 class="naziv">{{ naziv }}</h1>
-                    <p class="sifra">{% if sifra %}{{ sifra }}{% else %}—{% endif %}</p>
-                </div>
-                <p class="cijena">{% if cijena is not None %}{{ cijena }} KM{% else %}—{% endif %}</p>
-            </header>
+            <h1 class="naziv">{{ naziv }}</h1>
+            <hr class="rule">
+            <p class="sifra">ŠIFRA: {% if sifra %}{{ sifra }}{% else %}—{% endif %}</p>
             <div class="barcode">
                 {% if barcode_src %}
                 <img src="{{ barcode_src }}" alt="{{ barkod }}">
                 {% endif %}
                 {% if barkod %}<span>{{ barkod }}</span>{% endif %}
+            </div>
+            <div class="cijena-row">
+                {% if cijena_label %}
+                <span class="cijena-iznos">{{ cijena_label }}</span>
+                <span class="cijena-km">KM</span>
+                {% else %}
+                <span class="cijena-iznos">—</span>
+                {% endif %}
             </div>
         </article>
     </div>

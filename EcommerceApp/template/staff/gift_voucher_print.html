@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poklon vaučer — {{ punio_ime }} — {{ iznos }} KM</title>
+    <style>
+        :root {
+            --ink: #14331a;
+            --gold: #b45309;
+            --leaf: #2f7a03;
+            --paper: #fbf8f1;
+            --line: #c9b48a;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 16px;
+            background: #e8ece6;
+            color: var(--ink);
+            font-family: Georgia, "Times New Roman", serif;
+        }
+        .bar {
+            max-width: 210mm;
+            margin: 0 auto 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            font-family: Inter, "Segoe UI", sans-serif;
+        }
+        .bar p { margin: 0; font-size: 14px; color: #374151; }
+        .bar a, .bar button {
+            min-height: 36px;
+            padding: 6px 12px;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .bar a { border: 1px solid #d1d5db; background: #fff; color: #111; display: inline-flex; align-items: center; }
+        .bar button { border: 0; background: #111; color: #fff; }
+        .sheet-wrap {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: var(--paper);
+            padding: 12mm;
+        }
+        .sheet {
+            min-height: calc(297mm - 24mm);
+            border: 3px solid var(--ink);
+            padding: 8mm;
+            position: relative;
+            background:
+                radial-gradient(circle at 12% 18%, rgba(47,122,3,.07), transparent 28%),
+                radial-gradient(circle at 88% 82%, rgba(180,83,9,.08), transparent 30%),
+                var(--paper);
+        }
+        .sheet:before {
+            content: "";
+            position: absolute;
+            inset: 4mm;
+            border: 1px solid var(--line);
+            pointer-events: none;
+        }
+        .inner {
+            position: relative;
+            z-index: 1;
+            min-height: calc(297mm - 40mm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10mm 8mm;
+        }
+        .kicker {
+            margin: 0;
+            letter-spacing: .28em;
+            text-transform: uppercase;
+            font-size: 12px;
+            font-family: Inter, "Segoe UI", sans-serif;
+            font-weight: 700;
+            color: var(--leaf);
+        }
+        h1 {
+            margin: 10px 0 0;
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        .ornament {
+            width: 120px;
+            height: 18px;
+            margin: 16px 0 22px;
+            background:
+                linear-gradient(90deg, transparent, var(--gold), transparent);
+            height: 1px;
+            position: relative;
+        }
+        .gift-to {
+            margin: 0;
+            font-size: 16px;
+            font-style: italic;
+            color: #4b5563;
+        }
+        .who {
+            margin: 10px 0 0;
+            font-size: 40px;
+            line-height: 1.15;
+            color: var(--ink);
+        }
+        .value-lab {
+            margin: 28px 0 8px;
+            font-size: 14px;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            font-family: Inter, "Segoe UI", sans-serif;
+            color: #6b7280;
+        }
+        .value {
+            margin: 0;
+            font-size: 72px;
+            line-height: 1;
+            font-weight: 700;
+            color: var(--leaf);
+            letter-spacing: -.03em;
+        }
+        .note {
+            margin: 22px 0 0;
+            max-width: 420px;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #374151;
+        }
+        .foot {
+            margin-top: 36px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 460px;
+            font-family: Inter, "Segoe UI", sans-serif;
+            font-size: 12px;
+            color: #6b7280;
+            letter-spacing: .04em;
+        }
+        .hook {
+            width: 42px;
+            height: 42px;
+            margin-bottom: 10px;
+            color: var(--gold);
+        }
+        @page { size: A4 portrait; margin: 0; }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .bar { display: none !important; }
+            .sheet-wrap { width: auto; min-height: 100vh; margin: 0; padding: 12mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bar">
+        <p><strong>Poklon vaučer</strong> — A4 uspravno, bez smanjivanja stranice</p>
+        <div>
+            <a href="{% url 'staff_gift_voucher' %}?ime={{ ime|urlencode }}&prezime={{ prezime|urlencode }}&iznos={{ iznos }}">← Nazad</a>
+            <button type="button" id="gvPrintBtn">Štampaj</button>
+        </div>
+    </div>
+    <div class="sheet-wrap">
+        <div class="sheet">
+            <div class="inner">
+                <svg class="hook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <path d="M12 3v7"/>
+                    <circle cx="12" cy="3.6" r="1.4"/>
+                    <path d="M12 10c4 0 6 2.4 6 5.2S16.2 21 12 21 6 18 6 15.2"/>
+                </svg>
+                <p class="kicker">{{ site_name }}</p>
+                <h1>Poklon vaučer</h1>
+                <div class="ornament"></div>
+                <p class="gift-to">S radošću se poklanja</p>
+                <p class="who">{{ punio_ime }}</p>
+                <p class="value-lab">u vrijednosti</p>
+                <p class="value">{{ iznos }} KM</p>
+                <p class="note">za opremu za ribolov u radnji opremazaribolov.ba — da netko koga volite uhvati novi ulov.</p>
+                <div class="foot">
+                    <span>{{ datum }}</span>
+                    <span>{{ site_name }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function () {
+        var btn = document.getElementById('gvPrintBtn');
+        if (btn) btn.addEventListener('click', function () { window.print(); });
+        window.addEventListener('load', function () {
+            window.setTimeout(function () { window.print(); }, 280);
+        });
+    })();
+    </script>
+</body>
+</html>

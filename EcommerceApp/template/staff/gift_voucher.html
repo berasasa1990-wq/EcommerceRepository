@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Poklon vaučer — Admin</title>
+{% endblock %}
+
+{% block body_class %}staff-shell-page{% endblock %}
+
+{% block extra_css %}
+<style>
+.gv-page{max-width:640px;margin:0 auto;padding:0 20px 48px}
+.gv-card{background:#fff;border:1px solid #eceef1;border-radius:16px;padding:24px 22px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.gv-card h2{margin:0 0 6px;font-size:22px;letter-spacing:-.03em}
+.gv-card p{margin:0 0 18px;color:#6b7280;font-size:14px;line-height:1.45}
+.gv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gv-field{display:flex;flex-direction:column;gap:6px}
+.gv-field span{font-size:13px;font-weight:700;color:#374151}
+.gv-field input{min-height:46px;padding:0 12px;border:1px solid #e5e7eb;border-radius:12px;font:inherit;font-size:15px}
+.gv-field input:focus{outline:none;border-color:#86efac;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+.gv-amounts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:4px 0 18px}
+.gv-amt{position:relative}
+.gv-amt input{position:absolute;opacity:0;pointer-events:none}
+.gv-amt span{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;font-weight:800;font-size:15px;cursor:pointer}
+.gv-amt input:checked+span{border-color:#16a34a;background:#f0fdf4;color:#15803d;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+.gv-amt span:hover{border-color:#86efac}
+.gv-go{width:100%;min-height:48px;border:0;border-radius:12px;background:#111827;color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.gv-go:hover{background:#000}
+@media (max-width:640px){
+  .gv-grid,.gv-amounts{grid-template-columns:1fr 1fr}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="staff-admin-page">
+    <header class="staff-page-hero">
+        <div class="staff-page-hero__inner">
+            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Admin panel</a>
+            <p class="staff-page-kicker">Staff</p>
+            <h1 class="staff-page-title">Poklon vaučer</h1>
+            <p class="staff-page-subtitle">Unesi kome se poklanja i iznos — odmah se otvara A4 za štampu.</p>
+        </div>
+    </header>
+    <div class="gv-page">
+        <form class="gv-card" method="get" action="{% url 'staff_gift_voucher_print' %}" target="_blank" rel="noopener">
+            <h2>Novi vaučer</h2>
+            <p>Ime i prezime osobe kojoj se poklanja, zatim iznos. Štampa se na A4, uspravno.</p>
+            <div class="gv-grid">
+                <label class="gv-field">
+                    <span>Ime</span>
+                    <input type="text" name="ime" value="{{ ime }}" required maxlength="80" autocomplete="given-name">
+                </label>
+                <label class="gv-field">
+                    <span>Prezime</span>
+                    <input type="text" name="prezime" value="{{ prezime }}" required maxlength="80" autocomplete="family-name">
+                </label>
+            </div>
+            <p style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#374151">Iznos poklona</p>
+            <div class="gv-amounts">
+                {% for amt in amounts %}
+                <label class="gv-amt">
+                    <input type="radio" name="iznos" value="{{ amt }}"{% if iznos == amt|stringformat:"s" or not iznos and amt == 100 %} checked{% endif %} required>
+                    <span>{{ amt }} KM</span>
+                </label>
+                {% endfor %}
+            </div>
+            <button type="submit" class="gv-go">Štampaj vaučer</button>
+        </form>
+    </div>
+</section>
+{% endblock %}
