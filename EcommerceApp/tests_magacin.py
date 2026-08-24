@@ -2070,6 +2070,9 @@ class MagacinViewTests(TestCase):
         self.assertEqual(form.status_code, 200)
         self.assertContains(form, 'Nova ručna narudžba')
         self.assertContains(form, 'id="mgOrderSearch"')
+        self.assertContains(form, 'id="mgSpareBtn"')
+        self.assertContains(form, 'Slanje rezervnog dijela')
+        self.assertContains(form, 'id="mgSpareModal"')
         self.assertContains(form, 'id="mgOrderSuggest"')
         self.assertContains(form, 'id="mgOrderQtyModal"')
         self.assertContains(form, 'Stavke narudžbe')
@@ -2376,6 +2379,57 @@ class MagacinViewTests(TestCase):
         self.assertContains(listed, '1 za pakovanje')
         self.assertContains(listed, 'is-blink-pack')
         self.assertNotContains(listed, 'novih narudžbi')
+
+    def test_spare_part_line_on_order_and_picking(self):
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Spare Kupac',
+            'telefon': '061777888',
+            'product_id': [''],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'rezervni': ['1'],
+            'spare_naziv': ['MATE Rage Feeder GORNJA SEKCIJA'],
+            'spare_cijena': ['25.00'],
+            'bez_dostave': '1',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Spare Kupac')
+        item = order.stavke.get()
+        self.assertTrue(item.rezervni_dio)
+        self.assertIsNone(item.artikal_id)
+        self.assertEqual(item.naziv, 'MATE Rage Feeder GORNJA SEKCIJA')
+        self.assertEqual(item.kolicina, 2)
+        self.assertEqual(item.cijena, Decimal('25.00'))
+        self.assertEqual(order.dostava, Decimal('0.00'))
+        self.assertEqual(order.ukupno, Decimal('50.00'))
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
+        listed = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertContains(listed, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(pick.status_code, 200)
+        queue = json.loads(pick.context['pick_queue_json'])
+        self.assertTrue(queue)
+        self.assertTrue(queue[0]['rezervni'])
+        self.assertEqual(queue[0]['need'], 2)
+        self.assertIn('MATE Rage Feeder GORNJA SEKCIJA', queue[0]['naziv'])
+        mixed = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Spare Mix',
+            'telefon': '061777889',
+            'product_id': [str(self.product.pk), ''],
+            'variation_id': ['', ''],
+            'kolicina': ['1', '1'],
+            'mp_ok': ['0', '0'],
+            'rezervni': ['0', '1'],
+            'spare_naziv': ['', 'Donja sekcija'],
+            'spare_cijena': ['', '10'],
+        })
+        self.assertEqual(mixed.status_code, 302)
+        mix_order = Order.objects.get(ime_prezime='Spare Mix')
+        self.assertEqual(mix_order.stavke.count(), 2)
+        self.assertTrue(mix_order.stavke.filter(rezervni_dio=True, naziv='Donja sekcija').exists())
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 1)
 
     def test_manual_order_percent_discount_reduces_total(self):
         self.client.force_login(self.user)
@@ -3496,6 +3550,106 @@ class MagacinViewTests(TestCase):
         self.assertEqual(len(names), 1)
         self.assertIn('Test braid', names)
         self.assertNotIn('Prazan lager', names)
+
+    def test_mp_partial_found_goes_on_invoice(self):
+        from .views import _order_print_job
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Nasao Manje',
+            'telefon': '061121314',
+            'product_id': [str(self.zero.pk)],
+            'variation_id': [''],
+            'kolicina': ['5'],
+            'mp_ok': ['1'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Nasao Manje')
+        item = order.stavke.get()
+        self.assertEqual(item.kolicina, 5)
+        check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
+            'narudzba': order.broj, 'next': 'pick',
+        })
+        self.assertContains(check, 'name="kolicina"')
+        self.assertContains(check, 'Našao')
+        groups = check.context['groups']
+        self.assertEqual(groups[0]['need'], 5)
+        partial = self.client.post(reverse('staff_magacin_pakuj_provjera'), {
+            'group': groups[0]['key'],
+            'action': 'ima',
+            'kolicina': '2',
+            'narudzba': order.broj,
+            'next': 'pick',
+        })
+        self.assertEqual(partial.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina, 5)
+        self.assertEqual(item.kolicina_pokupljeno, 2)
+        self.assertEqual(item.kolicina_faktura, 2)
+        job = _order_print_job(order)
+        self.assertEqual(job['stavke'][0]['kolicina'], 2)
+        self.assertEqual(job['stavke'][0]['ukupno'], Decimal('4.00'))
+        pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(pick.status_code, 200)
+        queue = json.loads(pick.context['pick_queue_json'])
+        self.assertEqual(sum(row['need'] for row in queue if row.get('is_mp')), 2)
+
+        zeroed = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Nasao Nula',
+            'telefon': '061121316',
+            'product_id': [str(self.product.pk), str(self.zero.pk)],
+            'variation_id': ['', ''],
+            'kolicina': ['1', '3'],
+            'mp_ok': ['0', '1'],
+        })
+        self.assertEqual(zeroed.status_code, 302)
+        zero_order = Order.objects.get(ime_prezime='Nasao Nula')
+        zero_check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
+            'narudzba': zero_order.broj, 'next': 'pick',
+        })
+        zero_groups = zero_check.context['groups']
+        self.client.post(reverse('staff_magacin_pakuj_provjera'), {
+            'group': zero_groups[0]['key'],
+            'action': 'ima',
+            'kolicina': '0',
+            'narudzba': zero_order.broj,
+            'next': 'pick',
+        })
+        zero_order.refresh_from_db()
+        names = list(zero_order.stavke.values_list('naziv', flat=True))
+        self.assertEqual(names, ['Test braid'])
+
+        mixed = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Nasao Mix',
+            'telefon': '061121315',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['10'],
+            'mp_ok': ['1'],
+        })
+        self.assertEqual(mixed.status_code, 302)
+        mix_order = Order.objects.get(ime_prezime='Nasao Mix')
+        mix_item = mix_order.stavke.get()
+        self.assertEqual(mix_item.kolicina, 10)
+        mix_check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
+            'narudzba': mix_order.broj, 'next': 'pick',
+        })
+        mix_groups = mix_check.context['groups']
+        mix_need = mix_groups[0]['need']
+        self.assertGreaterEqual(mix_need, 1)
+        reserved = mix_item.kolicina - mix_need
+        self.client.post(reverse('staff_magacin_pakuj_provjera'), {
+            'group': mix_groups[0]['key'],
+            'action': 'ima',
+            'kolicina': '1',
+            'narudzba': mix_order.broj,
+            'next': 'pick',
+        })
+        mix_item.refresh_from_db()
+        self.assertEqual(mix_item.kolicina_pokupljeno, reserved + 1)
+        mix_pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[mix_order.broj]))
+        mix_queue = json.loads(mix_pick.context['pick_queue_json'])
+        self.assertEqual(sum(row['need'] for row in mix_queue if row.get('is_mp')), 1)
 
     def test_pick_less_qty_prints_on_invoice(self):
         from .views import _order_print_job

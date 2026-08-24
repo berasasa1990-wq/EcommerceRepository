@@ -44,7 +44,7 @@
         {% endfor %}
     </div>
     {% else %}
-    <p class="pk-mp-lead">Šta treba {{ focus_order.ime_prezime }}. Ima u MP ostaje na narudžbi. Nema se skida.</p>
+    <p class="pk-mp-lead">Šta treba {{ focus_order.ime_prezime }}. Ako ima manje, unesi koliko si našao — to ide na račun. Nema se skida.</p>
     <div class="pk-ops">
         {% for group in groups %}
         <article class="pk-check-card{% if forloop.first %} is-focus{% endif %}">
@@ -65,6 +65,11 @@
                 <input type="hidden" name="group" value="{{ group.key }}">
                 {% if focus_broj %}<input type="hidden" name="narudzba" value="{{ focus_broj }}">{% endif %}
                 {% if next_print %}<input type="hidden" name="next" value="stampa">{% else %}<input type="hidden" name="next" value="pick">{% endif %}
+                <label class="pk-mp-found">
+                    Našao
+                    <input class="pk-mp-qty" type="number" name="kolicina" min="0" max="{{ group.need }}" step="1" value="{{ group.need }}" inputmode="numeric" aria-label="Količina u MP">
+                    <small>/ {{ group.need }}</small>
+                </label>
                 <button type="submit" name="action" value="ima" class="pk-all">Ima u MP</button>
                 <button type="submit" name="action" value="nema" class="pk-less">Nema — izbaci</button>
             </form>

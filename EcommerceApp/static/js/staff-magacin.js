@@ -743,12 +743,61 @@ function initManualOrderForm() {
             '<input type="hidden" name="product_id" value="' + escapeHtml(pid) + '">' +
             '<input type="hidden" name="variation_id" value="' + escapeHtml(vid) + '">' +
             '<input type="hidden" name="mp_ok" value="' + (mpOk ? '1' : '0') + '">' +
+            '<input type="hidden" name="rezervni" value="0">' +
+            '<input type="hidden" name="spare_naziv" value="">' +
+            '<input type="hidden" name="spare_cijena" value="">' +
             '</td>' +
             '<td>' + escapeHtml(sifra) + '</td>' +
             '<td class="num ' + (available <= 0 ? 'num-out' : 'num-ok') + '">' + available + '</td>' +
             '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" data-prev="' + qty + '" required></td>' +
             '<td class="num">' + escapeHtml(cijena) + ' KM</td>' +
             '<td class="num" data-line-total>' + money(cijena * qty) + ' KM</td>' +
+            '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
+        body.appendChild(tr);
+        refreshTotal();
+    }
+    function addSpareLine(naziv, qty, cijena) {
+        naziv = String(naziv || '').trim();
+        qty = parseInt(qty, 10) || 1;
+        if (qty < 1) qty = 1;
+        cijena = money(cijena);
+        var existing = null;
+        if (body) {
+            body.querySelectorAll('tr[data-rezervni="1"]').forEach(function (row) {
+                var n = (row.querySelector('[name="spare_naziv"]') || {}).value || '';
+                if (n.trim().toLowerCase() === naziv.toLowerCase()) existing = row;
+            });
+        }
+        if (existing) {
+            var existingQty = existing.querySelector('[name="kolicina"]');
+            existingQty.value = (parseInt(existingQty.value, 10) || 0) + qty;
+            existingQty.setAttribute('data-prev', existingQty.value);
+            refreshTotal();
+            return;
+        }
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-line', '1');
+        tr.setAttribute('data-pid', '');
+        tr.setAttribute('data-vid', '');
+        tr.setAttribute('data-cijena', cijena);
+        tr.setAttribute('data-available', '0');
+        tr.setAttribute('data-rezervni', '1');
+        tr.className = 'is-spare-row';
+        tr.innerHTML =
+            '<td><strong>' + escapeHtml(naziv) + '</strong>' +
+            '<span class="mg-pill is-spare">Rezervni dio</span>' +
+            '<input type="hidden" name="product_id" value="">' +
+            '<input type="hidden" name="variation_id" value="">' +
+            '<input type="hidden" name="mp_ok" value="0">' +
+            '<input type="hidden" name="rezervni" value="1">' +
+            '<input type="hidden" name="spare_naziv" value="' + escapeHtml(naziv) + '">' +
+            '<input type="hidden" name="spare_cijena" value="' + escapeHtml(cijena) + '">' +
+            '</td>' +
+            '<td>REZERVNI</td>' +
+            '<td class="num">—</td>' +
+            '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" data-prev="' + qty + '" required></td>' +
+            '<td class="num">' + escapeHtml(cijena) + ' KM</td>' +
+            '<td class="num" data-line-total>' + money(Number(cijena) * qty) + ' KM</td>' +
             '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
         body.appendChild(tr);
         refreshTotal();
@@ -1201,6 +1250,61 @@ function initManualOrderForm() {
             if (change) change.click();
         });
     }
+    var spareBtn = document.getElementById('mgSpareBtn');
+    var spareModal = document.getElementById('mgSpareModal');
+    var spareNaziv = document.getElementById('mgSpareNaziv');
+    var spareQty = document.getElementById('mgSpareQty');
+    var spareCijena = document.getElementById('mgSpareCijena');
+    var spareHint = document.getElementById('mgSpareHint');
+    var spareAdd = document.getElementById('mgSpareAdd');
+    function closeSpare() {
+        if (spareModal) spareModal.hidden = true;
+        if (spareHint) { spareHint.hidden = true; spareHint.textContent = ''; }
+    }
+    function openSpare() {
+        if (!spareModal) return;
+        if (spareNaziv) spareNaziv.value = '';
+        if (spareQty) spareQty.value = '1';
+        if (spareCijena) spareCijena.value = '';
+        if (spareHint) { spareHint.hidden = true; spareHint.textContent = ''; }
+        spareModal.hidden = false;
+        window.setTimeout(function () { if (spareNaziv) spareNaziv.focus(); }, 40);
+    }
+    function submitSpare() {
+        var naziv = spareNaziv ? spareNaziv.value.trim() : '';
+        var qty = spareQty ? spareQty.value : '1';
+        var cijena = spareCijena ? spareCijena.value : '';
+        if (!naziv) {
+            if (spareHint) { spareHint.hidden = false; spareHint.textContent = 'Unesi naziv rezervnog dijela.'; }
+            if (spareNaziv) spareNaziv.focus();
+            return;
+        }
+        if (!cijena || parseFloat(String(cijena).replace(',', '.')) < 0 || isNaN(parseFloat(String(cijena).replace(',', '.')))) {
+            if (spareHint) { spareHint.hidden = false; spareHint.textContent = 'Unesi naplatu.'; }
+            if (spareCijena) spareCijena.focus();
+            return;
+        }
+        addSpareLine(naziv, qty, cijena);
+        closeSpare();
+    }
+    if (spareBtn) spareBtn.addEventListener('click', openSpare);
+    if (spareAdd) spareAdd.addEventListener('click', submitSpare);
+    if (spareModal) {
+        spareModal.querySelectorAll('[data-spare-close]').forEach(function (el) {
+            el.addEventListener('click', closeSpare);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && spareModal && !spareModal.hidden) closeSpare();
+        });
+    }
+    [spareNaziv, spareQty, spareCijena].forEach(function (el) {
+        if (!el) return;
+        el.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            submitSpare();
+        });
+    });
     refreshTotal();
 }
 
@@ -2244,7 +2348,7 @@ function initArticleScanner() {
         var st = itemState(item);
         var btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'pk-line';
+        btn.className = 'pk-line' + (item.rezervni ? ' is-spare' : '');
         btn.innerHTML = '<b>' + (item.loc || '') + '</b><span>' + (item.naziv || '') + '</span><em>' + st.got + '/' + item.need + '</em>';
         btn.addEventListener('click', function () {
             if (fromDone) {
@@ -2301,10 +2405,11 @@ function initArticleScanner() {
         var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
         var sku = item.sifra || item.barkod || '—';
         var art = document.createElement('article');
-        art.className = 'pk-item' + (st.done ? ' is-done' : '') + (isNow ? ' is-now' : '');
+        art.className = 'pk-item' + (st.done ? ' is-done' : '') + (isNow ? ' is-now' : '') + (item.rezervni ? ' is-spare' : '');
         art.innerHTML =
+            (item.rezervni ? '<div class="pk-spare-tag">REZERVNI DIO</div>' : '') +
             (isNow
-                ? '<div class="pk-now-go"><span>Uzmi sa lokacije</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || 'Magacin') + '</small></div>'
+                ? '<div class="pk-now-go"><span>' + (item.rezervni ? 'Rezervni dio' : 'Uzmi sa lokacije') + '</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || (item.rezervni ? 'Slanje rezervnog dijela' : 'Magacin')) + '</small></div>'
                 : '') +
             '<div class="pk-item-step">' +
                 '<button type="button" data-pk-minus aria-label="Manje">−</button>' +

@@ -4718,6 +4718,7 @@ tr.is-mp-lock {
 .mg-order-page .vp-entry.has-catalog .mg-icon-field { flex: 1; }
 .mg-order-page .vp-scan-btn,
 .mg-order-page #mgOrderCatalogBtn,
+.mg-order-page #mgSpareBtn,
 .mg-order-page #mgCustomerAdd {
     min-height: 44px;
     border-radius: 12px;
@@ -5430,6 +5431,60 @@ tr.is-mp-lock {
     border-color: #86efac;
     box-shadow: 0 0 0 2px rgba(22, 163, 74, .18);
 }
+@keyframes pk-spare-pulse {
+    0%, 100% { background-color: #7f1d1d; box-shadow: 0 0 0 0 rgba(220, 38, 38, .55); }
+    50% { background-color: #dc2626; box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+}
+.pk-item.is-spare,
+.pk-item.is-spare.is-now,
+.pk-item.is-spare.is-done {
+    animation: pk-spare-pulse 1.35s ease-in-out infinite;
+    border-color: #991b1b;
+    color: #fff;
+}
+.pk-item.is-spare .pk-item-info p,
+.pk-item.is-spare .pk-item-info strong,
+.pk-item.is-spare .pk-item-info span,
+.pk-item.is-spare .pk-now-go span,
+.pk-item.is-spare .pk-now-go b,
+.pk-item.is-spare .pk-now-go small,
+.pk-item.is-spare .pk-step-val b,
+.pk-item.is-spare .pk-step-val small {
+    color: #fff;
+}
+.pk-item.is-spare .pk-now-go { background: rgba(0, 0, 0, .22); }
+.pk-spare-tag {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .28);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-align: center;
+}
+.pk-line.is-spare {
+    animation: pk-spare-pulse 1.35s ease-in-out infinite;
+    border-color: #991b1b;
+    color: #fff;
+}
+.pk-line.is-spare span,
+.pk-line.is-spare b,
+.pk-line.is-spare em { color: #fff; }
+.mg-pill.is-spare {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.mg-order-lines tr.is-spare-row td:first-child { background: #fef2f2; }
 .pk-now-go {
     margin: 0 0 12px;
     padding: 10px 12px;
@@ -5865,6 +5920,31 @@ tr.is-mp-lock {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     margin-top: 14px;
+}
+.pk-mp-found {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 700;
+}
+.pk-mp-qty {
+    width: 88px;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 20px;
+    font-weight: 800;
+    text-align: center;
+}
+.pk-mp-found small {
+    color: #9aa3ad;
+    font-size: 13px;
+    font-weight: 700;
 }
 .pk-mp-page .pk-all,
 .pk-mp-page .pk-less {

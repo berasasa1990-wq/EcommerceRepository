@@ -65,6 +65,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg>
                 Katalog
             </button>
+            <button type="button" class="mg-btn" id="mgSpareBtn">Slanje rezervnog dijela</button>
             <button type="button" class="vp-scan-btn" id="mgOrderScan" data-mg-scan-target="mgOrderSearch" data-mg-scan-title="Skeniraj artikal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
                 Skeniraj
@@ -95,6 +96,26 @@
             </thead>
             <tbody id="mgOrderLines">
                 {% for line in form_lines %}
+                {% if line.rezervni %}
+                <tr data-line="1" data-pid="" data-vid="" data-cijena="{{ line.cijena }}" data-available="0" data-rezervni="1" class="is-spare-row">
+                    <td>
+                        <strong>{{ line.naziv }}</strong>
+                        <span class="mg-pill is-spare">Rezervni dio</span>
+                        <input type="hidden" name="product_id" value="">
+                        <input type="hidden" name="variation_id" value="">
+                        <input type="hidden" name="mp_ok" value="0">
+                        <input type="hidden" name="rezervni" value="1">
+                        <input type="hidden" name="spare_naziv" value="{{ line.naziv }}">
+                        <input type="hidden" name="spare_cijena" value="{{ line.cijena }}">
+                    </td>
+                    <td>REZERVNI</td>
+                    <td class="num">—</td>
+                    <td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="{{ line.qty }}" data-prev="{{ line.qty }}" required></td>
+                    <td class="num">{{ line.cijena }} KM</td>
+                    <td class="num" data-line-total>{{ line.cijena }} KM</td>
+                    <td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>
+                </tr>
+                {% else %}
                 <tr data-line="1" data-pid="{{ line.product.pk }}" data-vid="{{ line.variation.pk|default:'' }}" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}"{% if line.dostupno <= 0 %} class="is-out-row"{% endif %}>
                     <td>
                         <strong>{{ line.product.naziv }}</strong>
@@ -103,6 +124,9 @@
                         <input type="hidden" name="product_id" value="{{ line.product.pk }}">
                         <input type="hidden" name="variation_id" value="{{ line.variation.pk|default:'' }}">
                         <input type="hidden" name="mp_ok" value="{% if line.mp_ok %}1{% else %}0{% endif %}">
+                        <input type="hidden" name="rezervni" value="0">
+                        <input type="hidden" name="spare_naziv" value="">
+                        <input type="hidden" name="spare_cijena" value="">
                     </td>
                     <td>{{ line.variation.sifra|default:line.product.sifra|default:"—" }}</td>
                     <td class="num {% if line.dostupno <= 0 %}num-out{% else %}num-ok{% endif %}">{{ line.dostupno }}</td>
@@ -111,6 +135,7 @@
                     <td class="num" data-line-total>{{ line.cijena }} KM</td>
                     <td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>
                 </tr>
+                {% endif %}
                 {% endfor %}
             </tbody>
         </table>
@@ -203,6 +228,33 @@
         <div class="mg-modal-actions">
             <button type="button" class="mg-btn" data-customer-close>Odustani</button>
             <button type="button" class="mg-btn mg-btn-primary" id="mgCustomerSave">Sačuvaj kupca</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="mgSpareModal" hidden>
+    <div class="mg-modal-bg" data-spare-close></div>
+    <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mgSpareTitle">
+        <h2 id="mgSpareTitle">Slanje rezervnog dijela</h2>
+        <p class="mg-muted">Unesi naziv dijela, količinu i naplatu. Artikal ne ide s lagera.</p>
+        <div class="mg-form-grid" style="grid-template-columns:1fr;">
+            <div class="mg-field">
+                <label for="mgSpareNaziv">Naziv *</label>
+                <input id="mgSpareNaziv" maxlength="200" placeholder="npr. MATE Rage Feeder GORNJA SEKCIJA">
+            </div>
+            <div class="mg-field">
+                <label for="mgSpareQty">Količina *</label>
+                <input id="mgSpareQty" type="number" min="1" step="1" value="1" inputmode="numeric">
+            </div>
+            <div class="mg-field">
+                <label for="mgSpareCijena">Naplata (KM) *</label>
+                <input id="mgSpareCijena" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+            </div>
+        </div>
+        <p class="mg-qty-hint is-warn" id="mgSpareHint" hidden></p>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-spare-close>Otkaži</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="mgSpareAdd">Dodaj</button>
         </div>
     </div>
 </div>

@@ -4058,6 +4058,11 @@ class OrderItem(models.Model):
         verbose_name='Pokupljeno',
         help_text='Količina potvrđena na pickingu. Ako je manja, faktura ide po ovoj količini.',
     )
+    rezervni_dio = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Rezervni dio',
+    )
 
     class Meta:
         verbose_name = 'Stavka narudžbe'

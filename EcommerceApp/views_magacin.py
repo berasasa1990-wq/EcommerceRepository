@@ -332,7 +332,7 @@ def _parse_qty(raw):
 
 
 def _parse_money(raw):
-    text = str(raw or '').strip().replace(',', '.')
+    text = str(raw or '').strip().replace('KM', '').replace('km', '').replace(' ', '').replace(',', '.')
     if not text:
         return None
     try:
@@ -2731,7 +2731,31 @@ def _posted_display_lines(request):
     variation_ids = request.POST.getlist('variation_id')
     kolicine = request.POST.getlist('kolicina')
     mp_flags = request.POST.getlist('mp_ok')
+    rezervni_flags = request.POST.getlist('rezervni')
+    spare_names = request.POST.getlist('spare_naziv')
+    spare_prices = request.POST.getlist('spare_cijena')
     for index, raw_pid in enumerate(product_ids):
+        try:
+            qty = _parse_qty(kolicine[index] if index < len(kolicine) else 1)
+        except MagacinError:
+            qty = 1
+        if (rezervni_flags[index] if index < len(rezervni_flags) else '') == '1':
+            naziv = (spare_names[index] if index < len(spare_names) else '').strip()
+            try:
+                cijena = _parse_money(spare_prices[index] if index < len(spare_prices) else '') or Decimal('0.00')
+            except MagacinError:
+                cijena = Decimal('0.00')
+            lines.append({
+                'product': None,
+                'variation': None,
+                'qty': qty,
+                'mp_ok': False,
+                'cijena': cijena,
+                'dostupno': 0,
+                'rezervni': True,
+                'naziv': naziv or 'Rezervni dio',
+            })
+            continue
         try:
             product = Product.objects.get(pk=int(raw_pid))
         except (TypeError, ValueError, Product.DoesNotExist):
@@ -2740,10 +2764,6 @@ def _posted_display_lines(request):
         raw_vid = variation_ids[index] if index < len(variation_ids) else ''
         if raw_vid:
             variation = ProductVariation.objects.filter(pk=int(raw_vid), artikal=product).first()
-        try:
-            qty = _parse_qty(kolicine[index] if index < len(kolicine) else 1)
-        except MagacinError:
-            qty = 1
         cijena = variation.prikazna_cijena if variation else product.prikazna_cijena
         available = stock_totals(product, variation)['dostupno']
         lines.append({
@@ -2753,6 +2773,8 @@ def _posted_display_lines(request):
             'mp_ok': (mp_flags[index] if index < len(mp_flags) else '') == '1',
             'cijena': cijena,
             'dostupno': available,
+            'rezervni': False,
+            'naziv': product.naziv,
         })
     return lines
 
@@ -2785,6 +2807,8 @@ def _order_display_lines(order):
             'mp_ok': 'Maloprodaja' in (order.napomena or ''),
             'cijena': item.cijena,
             'dostupno': available,
+            'rezervni': bool(getattr(item, 'rezervni_dio', False)),
+            'naziv': item.naziv or (product.naziv if product else 'Rezervni dio'),
         })
     return lines
 
@@ -2811,11 +2835,37 @@ def _create_manual_order(request, *, existing=None):
     variation_ids = request.POST.getlist('variation_id')
     kolicine = request.POST.getlist('kolicina')
     mp_flags = request.POST.getlist('mp_ok')
+    rezervni_flags = request.POST.getlist('rezervni')
+    spare_names = request.POST.getlist('spare_naziv')
+    spare_prices = request.POST.getlist('spare_cijena')
     if not product_ids:
         raise MagacinError('Dodaj barem jedan artikal.')
 
     lines = []
     for index, raw_pid in enumerate(product_ids):
+        qty = _parse_qty(kolicine[index] if index < len(kolicine) else 1)
+        if qty <= 0:
+            raise MagacinError('Količina mora biti veća od nule.')
+        if (rezervni_flags[index] if index < len(rezervni_flags) else '') == '1':
+            naziv = (spare_names[index] if index < len(spare_names) else '').strip()
+            if not naziv:
+                raise MagacinError('Unesi naziv rezervnog dijela.')
+            cijena = _parse_money(spare_prices[index] if index < len(spare_prices) else '')
+            if cijena is None or cijena < 0:
+                raise MagacinError('Unesi naplatu za rezervni dio.')
+            cijena = cijena.quantize(Decimal('0.01'))
+            lines.append({
+                'product': None,
+                'variation': None,
+                'qty': qty,
+                'mp_ok': False,
+                'cijena': cijena,
+                'bazna': cijena,
+                'shortfall': 0,
+                'rezervni': True,
+                'naziv': naziv,
+            })
+            continue
         try:
             product = magacin_products_qs().get(pk=int(raw_pid))
         except (TypeError, ValueError, Product.DoesNotExist):
@@ -2828,9 +2878,6 @@ def _create_manual_order(request, *, existing=None):
                 raise MagacinError(f'Varijacija nije pronađena za „{product.naziv}”.')
         elif product.varijacije.exists():
             raise MagacinError(f'Odaberi varijaciju za „{product.naziv}”.')
-        qty = _parse_qty(kolicine[index] if index < len(kolicine) else 1)
-        if qty <= 0:
-            raise MagacinError('Količina mora biti veća od nule.')
         mp_ok = (mp_flags[index] if index < len(mp_flags) else '') == '1'
         available = stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
             existing, product, variation,
@@ -2850,6 +2897,8 @@ def _create_manual_order(request, *, existing=None):
             'cijena': cijena,
             'bazna': bazna,
             'shortfall': max(0, qty - available),
+            'rezervni': False,
+            'naziv': product.naziv,
         })
 
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
@@ -2953,7 +3002,7 @@ def _save_manual_order(
     mp_names = [
         (line['variation'].naziv if line['variation'] else line['product'].naziv)
         for line in lines
-        if line['mp_ok'] and line['shortfall'] > 0
+        if line.get('product') and line['mp_ok'] and line['shortfall'] > 0
     ]
     if mp_names:
         extra = 'Maloprodaja: ' + ', '.join(mp_names)
@@ -3026,6 +3075,22 @@ def _save_manual_order(
             izvor=Order.Izvor.MAGACIN,
         )
     for line in lines:
+        if line.get('rezervni'):
+            naziv = (line.get('naziv') or 'Rezervni dio')[:200]
+            OrderItem.objects.create(
+                narudzba=order,
+                artikal=None,
+                varijacija=None,
+                naziv=naziv,
+                product_naziv=naziv,
+                varijacija_naziv='',
+                sifra='REZERVNI',
+                cijena=line['cijena'],
+                bazna_cijena=line['bazna'],
+                kolicina=line['qty'],
+                rezervni_dio=True,
+            )
+            continue
         product = line['product']
         variation = line['variation']
         OrderItem.objects.create(
@@ -3143,6 +3208,7 @@ def _packing_location_groups(lines):
                 'on_hand': pick.get('on_hand') or 0,
                 'loc_path': pick.get('location_path') or '',
                 'kolicina': line.get('kolicina'),
+                'rezervni': bool(line.get('rezervni') or name == 'Rezervni dio'),
             }
             if name == 'MP':
                 mp_confirmed_items.append(row)
@@ -3231,6 +3297,8 @@ def _pick_queue(location_groups):
         loc_path = ''
         if loc['label'] in {'MP', 'Provjeri u MP'}:
             loc_path = 'Maloprodaja'
+        elif loc['label'] == 'Rezervni dio':
+            loc_path = 'Slanje rezervnog dijela'
         elif loc_obj:
             loc_path = loc_obj.odoo_location_path or loc_obj.naziv or ''
         for item in loc['items']:
@@ -3276,6 +3344,7 @@ def _pick_queue(location_groups):
                 'on_hand': on_hand,
                 'codes': codes,
                 'is_mp': loc['label'] in {'MP', 'Provjeri u MP'},
+                'rezervni': bool(item.get('rezervni') or loc['label'] == 'Rezervni dio'),
             })
     return queue
 
@@ -3313,6 +3382,8 @@ def collect_mp_checks(orders=None):
             hkey = (hold.product_id, hold.variation_id)
             hold_qty[hkey] = hold_qty.get(hkey, 0) + int(hold.kolicina or 0)
         for item in order.stavke.all():
+            if getattr(item, 'rezervni_dio', False):
+                continue
             reserved = hold_qty.get((item.artikal_id, item.varijacija_id), 0)
             if reserved <= 0 and item.varijacija_id:
                 reserved = hold_qty.get((item.artikal_id, None), 0)
@@ -3482,25 +3553,40 @@ def _pakuj_zauzeto_url(broj):
     return f"{reverse('staff_magacin_pakuj')}?{urlencode({'zauzeto': broj})}"
 
 
-def apply_mp_check(group_lines, *, found, user=None):
+def apply_mp_check(group_lines, *, found, user=None, found_qty=None):
     by_broj = {}
     for line in group_lines:
         by_broj.setdefault(line['broj'], []).append(line)
+    remaining = None if found_qty is None else max(0, int(found_qty))
+    if found and remaining == 0:
+        found = False
     for broj, lines in by_broj.items():
         order = Order.objects.filter(broj=broj).first()
         if not order:
             continue
         state = dict(order.pick_state or {})
-        for line in lines:
-            need = int(line.get('need') or 0)
-            state[line['key']] = {
-                'got': 0,
-                'done': not found,
-                'mp_checked': True,
-                'item_id': line.get('item_id'),
-                'need': need,
-            }
         if found:
+            for line in lines:
+                need = int(line.get('need') or 0)
+                take = need if remaining is None else min(need, remaining)
+                if remaining is not None:
+                    remaining -= take
+                state[line['key']] = {
+                    'got': 0,
+                    'done': False,
+                    'mp_checked': True,
+                    'mp_found': take,
+                    'item_id': line.get('item_id'),
+                    'need': need,
+                }
+                item = order.stavke.filter(pk=line.get('item_id')).first()
+                if not item:
+                    continue
+                reserved = max(0, int(item.kolicina or 0) - need)
+                invoice_qty = reserved + take
+                if invoice_qty < int(item.kolicina or 0):
+                    item.kolicina_pokupljeno = invoice_qty
+                    item.save(update_fields=['kolicina_pokupljeno'])
             order.pick_state = state
             order.save(update_fields=['pick_state'])
             continue
@@ -3879,9 +3965,30 @@ def magacin_pakuj_provjera(request):
             lines = group['lines']
             if focus_order:
                 lines = [line for line in lines if line.get('broj') == focus_order.broj]
-            apply_mp_check(lines, found=found, user=request.user)
+            found_qty = None
             if found:
-                messages.success(request, f'{group["naziv"]} — ima u MP, ubačeno na narudžbu.')
+                raw_qty = (request.POST.get('kolicina') or '').strip()
+                if raw_qty != '':
+                    try:
+                        found_qty = _parse_qty(raw_qty)
+                    except MagacinError as exc:
+                        messages.error(request, str(exc))
+                        return redirect(_provjera_url(focus_broj, next_print=next_print, next_pick=next_pick))
+                    need = int(group.get('need') or 0)
+                    if need:
+                        found_qty = min(found_qty, need)
+            apply_mp_check(lines, found=found, user=request.user, found_qty=found_qty)
+            if found and found_qty == 0:
+                found = False
+            if found:
+                extra = ''
+                need = int(group.get('need') or 0)
+                if found_qty is not None and need and found_qty < need:
+                    extra = f' ({found_qty}/{need})'
+                messages.success(
+                    request,
+                    f'{group["naziv"]} — ima u MP{extra}, ubačeno na narudžbu.',
+                )
             else:
                 messages.success(request, f'{group["naziv"]} — nema u MP, izbačeno s narudžbe.')
         if focus_order:

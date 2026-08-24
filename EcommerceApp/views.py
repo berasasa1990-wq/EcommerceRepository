@@ -5249,6 +5249,16 @@ def _mp_confirmed_item_ids(order):
     return confirmed
 
 
+def _mp_found_qty(pick_state, item_id, default):
+    saved = (pick_state or {}).get(f'{item_id}:Provjeri u MP') or {}
+    if not isinstance(saved, dict) or not saved.get('mp_checked') or 'mp_found' not in saved:
+        return default
+    try:
+        return max(0, int(saved.get('mp_found') or 0))
+    except (TypeError, ValueError):
+        return default
+
+
 def _build_order_packing_lines(order):
     """
     Stavke pakovanja: prvo Magacin rezervacije, inače Odoo lokacije.
@@ -5265,6 +5275,7 @@ def _build_order_packing_lines(order):
     template_variants = {}
     magacin_picks = _magacin_hold_picks(order, items)
     mp_confirmed = _mp_confirmed_item_ids(order)
+    pick_state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
 
     if odoo_je_konfigurisan() and items and not magacin_picks:
         try:
@@ -5299,6 +5310,34 @@ def _build_order_packing_lines(order):
             odoo_error = f'Odoo greška: {exc}'
 
     for index, item in enumerate(items, start=1):
+        if getattr(item, 'rezervni_dio', False):
+            qty = int(item.kolicina or 0)
+            display_name = item.product_naziv or item.naziv or 'Rezervni dio'
+            lines.append({
+                'rb': index,
+                'item_id': item.pk,
+                'naziv': display_name,
+                'sifra': item.sifra or 'REZERVNI',
+                'barkod': '',
+                'slika': '',
+                'brend': '',
+                'kategorija': '',
+                'kolicina': qty,
+                'odoo_product_id': None,
+                'picks': [{
+                    'location_name': 'Rezervni dio',
+                    'location_id': None,
+                    'location_path': 'Slanje rezervnog dijela',
+                    'take': qty,
+                    'on_hand': qty,
+                }],
+                'pick_text': f'{qty}× Rezervni dio',
+                'shortfall': 0,
+                'check_mp': False,
+                'stock_locations': [],
+                'rezervni': True,
+            })
+            continue
         odoo_product_id = _order_item_odoo_product_id(item, template_variants)
         stock_locations = stock_by_product.get(odoo_product_id, []) if odoo_product_id else []
         if item.pk in magacin_picks:
@@ -5309,12 +5348,14 @@ def _build_order_packing_lines(order):
             picks, shortfall = _allocate_packing_locations(item.kolicina, stock_locations)
         if item.pk in mp_confirmed and shortfall > 0:
             picks = list(picks or [])
-            picks.append({
-                'location_name': 'MP',
-                'location_id': None,
-                'take': shortfall,
-                'on_hand': shortfall,
-            })
+            mp_take = _mp_found_qty(pick_state, item.pk, shortfall)
+            if mp_take > 0:
+                picks.append({
+                    'location_name': 'MP',
+                    'location_id': None,
+                    'take': mp_take,
+                    'on_hand': mp_take,
+                })
             shortfall = 0
         if picks:
             picks = sorted(
