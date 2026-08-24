@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title> </title>
     <style>
-        @page { size: A4 portrait; margin: 16mm; }
+        @page { size: A4 portrait; margin: 5px; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             margin: 0;
@@ -33,10 +33,10 @@
             cursor: pointer;
         }
         .sheet {
-            width: 178mm;
-            min-height: 265mm;
+            width: 210mm;
+            min-height: 297mm;
             margin: 0 auto 16px;
-            padding: 0;
+            padding: 5px;
             background: #fff;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -46,7 +46,7 @@
         .label {
             min-width: 0;
             min-height: 0;
-            height: calc((265mm - 12mm) / 7);
+            height: auto;
             padding: 1.4mm 1.8mm 1.2mm;
             border: 0.3mm solid #111;
             border-radius: 1.4mm;
@@ -146,10 +146,11 @@
             }
             .bar { display: none !important; }
             .sheet {
-                width: 178mm !important;
-                min-height: 265mm !important;
-                height: 265mm !important;
-                margin: 3mm 0 0 3mm !important;
+                width: auto !important;
+                min-height: 0 !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 page-break-after: always;
                 break-after: page;
             }
@@ -163,7 +164,7 @@
 <body>
     <div class="bar">
         <button type="button" onclick="window.print()">Štampaj</button>
-        <span>A4 — 3 × 7 po listu · {{ etiketa_count }} etiketa. Papir A4, skala 100%, margine 16 mm sa svih strana.</span>
+        <span>A4 — 3 u redu, 7 naniže · {{ etiketa_count }} etiketa. Papir A4, skala 100%, margine 5 px sa svih strana.</span>
     </div>
     {% for sheet in sheets %}
     <div class="sheet">
