@@ -3180,7 +3180,7 @@ def collect_mp_checks(orders=None):
     if orders is None:
         orders = list(
             _unvalidated_orders_qs()
-            .prefetch_related('stavke', 'magacin_holds')
+            .prefetch_related('stavke__artikal', 'magacin_holds')
             .order_by('-kreirana')[:200]
         )
     grouped = {}
@@ -3203,11 +3203,20 @@ def collect_mp_checks(orders=None):
             saved = state.get(pick_key) or {}
             if saved.get('done') or saved.get('mp_checked'):
                 continue
+            slika = ''
+            product = getattr(item, 'artikal', None)
+            if product is not None:
+                img = product.prikazna_slika
+                if img:
+                    try:
+                        slika = img.url
+                    except ValueError:
+                        slika = ''
             row = {
                 'naziv': item.product_naziv or item.naziv,
                 'sifra': item.sifra or '',
                 'barkod': '',
-                'slika': '',
+                'slika': slika,
                 'need': short,
                 'item_id': item.pk,
                 'key': pick_key,
@@ -3218,14 +3227,17 @@ def collect_mp_checks(orders=None):
                 'naziv': row['naziv'],
                 'sifra': row['sifra'],
                 'barkod': '',
-                'slika': '',
+                'slika': slika,
                 'need': 0,
                 'lines': [],
             })
+            if slika and not group.get('slika'):
+                group['slika'] = slika
             group['need'] += short
             group['lines'].append({
                 'broj': order.broj,
                 'ime': order.ime_prezime,
+                'telefon': order.telefon or '',
                 'item_id': item.pk,
                 'key': pick_key,
                 'need': short,
@@ -3259,6 +3271,40 @@ def _provjera_url(broj=None, *, next_print=False, next_pick=False):
     if params:
         url = f'{url}?{urlencode(params)}'
     return url
+
+
+def collect_mp_customers(groups=None, *, next_print=False, next_pick=True):
+    if groups is None:
+        groups = collect_mp_checks()
+    by_broj = {}
+    for group in groups or []:
+        for line in group.get('lines') or []:
+            broj = (line.get('broj') or '').strip()
+            if not broj:
+                continue
+            row = by_broj.setdefault(broj, {
+                'broj': broj,
+                'ime': line.get('ime') or '',
+                'telefon': line.get('telefon') or '',
+                'need': 0,
+                'artikala': 0,
+                'open_url': '',
+            })
+            if not row['ime']:
+                row['ime'] = line.get('ime') or ''
+            if not row['telefon']:
+                row['telefon'] = line.get('telefon') or ''
+            row['need'] += int(line.get('need') or 0)
+            row['artikala'] += 1
+    customers = list(by_broj.values())
+    for row in customers:
+        row['open_url'] = _provjera_url(
+            row['broj'],
+            next_print=next_print,
+            next_pick=next_pick and not next_print,
+        )
+    customers.sort(key=lambda item: ((item.get('ime') or '').casefold(), item.get('broj') or ''))
+    return customers
 
 
 def _after_order_created_redirect(request, order):
@@ -3453,9 +3499,6 @@ def magacin_narudzba_barkod(request, broj):
 @require_GET
 def magacin_pakuj_sken(request):
     raw = (request.GET.get('q') or '').strip()
-    if collect_mp_checks():
-        messages.warning(request, 'Prvo Artikli u MP, pa picking narudžbi.')
-        return redirect('staff_magacin_pakuj')
     order = find_order_by_scan(raw, qs=_unvalidated_orders_qs())
     if not order:
         messages.warning(request, f'Narudžba za barkod „{raw or "—"}” nije na pickingu.')
@@ -3466,7 +3509,7 @@ def magacin_pakuj_sken(request):
             f'Narudžba #{order.broj} ima artikal iz maloprodaje. '
             'Prvo Artikli u MP.',
         )
-        return redirect('staff_magacin_pakuj')
+        return redirect(_provjera_url(order.broj, next_pick=True))
     ok, holder = claim_order_pick(order, request.user)
     if not ok:
         messages.error(
@@ -3656,7 +3699,7 @@ def magacin_pakuj(request):
         'pick_fullscreen': False,
         'prenos_mp_jobs': pending_prenos_mp_jobs(),
         'vp_orders': pending_vp_orders(),
-        'mp_pending_count': len(collect_mp_checks()),
+        'mp_pending_count': len(collect_mp_customers()),
         'claimed_order': claimed_order,
         'pick_jobs': jobs,
         'pick_status_filter': status_filter,
@@ -3693,32 +3736,30 @@ def magacin_pakuj_provjera(request):
     focus_broj = (request.POST.get('narudzba') or request.GET.get('narudzba') or '').strip()
     next_dest = (request.POST.get('next') or request.GET.get('next') or '').strip()
     next_print = next_dest == 'stampa'
-    next_pick = next_dest == 'pick'
+    next_pick = not next_print
     focus_order = None
     if focus_broj:
         focus_order = (
             _unvalidated_orders_qs()
-            .prefetch_related('stavke', 'magacin_holds')
+            .prefetch_related('stavke__artikal', 'magacin_holds')
             .filter(broj=focus_broj)
             .first()
         )
-    if next_print and focus_order:
-        groups = collect_mp_checks([focus_order])
-    else:
-        groups = collect_mp_checks()
-        if not next_print:
+        if focus_order is None:
             focus_broj = ''
-            focus_order = None
-            next_pick = True
 
     if request.method == 'POST':
         key = (request.POST.get('group') or '').strip()
         found = (request.POST.get('action') or '') == 'ima'
-        group = next((row for row in groups if row['key'] == key), None)
+        source = collect_mp_checks([focus_order] if focus_order else None)
+        group = next((row for row in source if row['key'] == key), None)
         if not group:
             messages.error(request, 'Stavka za provjeru nije pronađena.')
         else:
-            apply_mp_check(group['lines'], found=found, user=request.user)
+            lines = group['lines']
+            if focus_order:
+                lines = [line for line in lines if line.get('broj') == focus_order.broj]
+            apply_mp_check(lines, found=found, user=request.user)
             if found:
                 messages.success(request, f'{group["naziv"]} — ima u MP, ubačeno na narudžbu.')
             else:
@@ -3726,43 +3767,60 @@ def magacin_pakuj_provjera(request):
         if focus_order:
             focus_order = (
                 _unvalidated_orders_qs()
-                .prefetch_related('stavke', 'magacin_holds')
+                .prefetch_related('stavke__artikal', 'magacin_holds')
                 .filter(pk=focus_order.pk)
                 .first()
             )
-        leftover_all = collect_mp_checks()
-        leftover_focus = (
-            collect_mp_checks([focus_order]) if focus_order else leftover_all
-        )
-        leftover = leftover_focus if next_print else leftover_all
-        if not leftover:
+            leftover_focus = collect_mp_checks([focus_order]) if focus_order else []
+            if leftover_focus:
+                return redirect(_provjera_url(focus_broj, next_print=next_print, next_pick=next_pick))
+            if next_print:
+                return _after_mp_check_done_redirect(
+                    request,
+                    focus_order=focus_order,
+                    focus_broj=focus_broj,
+                    next_print=True,
+                )
+            leftover_all = collect_mp_checks()
+            if leftover_all and focus_order:
+                messages.success(
+                    request,
+                    f'{focus_order.ime_prezime} #{focus_broj} je spreman za picking. '
+                    'Ostali kupci ostaju na provjeri MP.',
+                )
+                return redirect('staff_magacin_pakuj')
             return _after_mp_check_done_redirect(
                 request,
                 focus_order=focus_order,
                 focus_broj=focus_broj,
-                next_print=next_print,
+                next_print=False,
             )
-        if next_print:
-            return redirect(_provjera_url(focus_broj or None, next_print=True))
-        return redirect(_provjera_url(next_pick=True))
-
-    if not groups:
         leftover_all = collect_mp_checks()
-        if leftover_all and not next_print:
-            groups = leftover_all
-            focus_broj = ''
-            focus_order = None
-            next_pick = True
-        elif next_print:
-            if focus_broj:
+        if leftover_all:
+            return redirect(_provjera_url(next_pick=True))
+        return _after_mp_check_done_redirect(
+            request,
+            focus_order=None,
+            focus_broj='',
+            next_print=False,
+        )
+
+    customers = []
+    groups = []
+    if focus_order:
+        groups = collect_mp_checks([focus_order])
+        if not groups:
+            if next_print:
                 messages.success(request, f'Narudžba #{focus_broj} nema više stavki za Provjeru MP.')
                 return redirect('staff_magacin_narudzbe')
             return redirect('staff_magacin_pakuj')
-        elif next_pick:
+    else:
+        customers = collect_mp_customers(next_print=next_print, next_pick=next_pick)
+        if not customers:
+            if next_print and focus_broj:
+                messages.success(request, f'Narudžba #{focus_broj} nema više stavki za Provjeru MP.')
+                return redirect('staff_magacin_narudzbe')
             return redirect('staff_magacin_pakuj')
-        elif focus_broj:
-            messages.success(request, f'Narudžba #{focus_broj} nema više stavki za Provjeru MP.')
-            return redirect('staff_magacin_narudzbe')
 
     context = _magacin_context(
         request,
@@ -3771,7 +3829,8 @@ def magacin_pakuj_provjera(request):
     )
     context.update({
         'groups': groups,
-        'mp_count': len(groups),
+        'customers': customers,
+        'mp_count': len(customers) if customers else len(groups),
         'pick_fullscreen': False,
         'focus_broj': focus_broj,
         'next_print': next_print,
@@ -3789,14 +3848,14 @@ def magacin_pakuj_detail(request, broj):
         broj=broj,
     )
     prenos_mp = is_prenos_mp_order(order)
-    if not prenos_mp and collect_mp_checks():
+    if not prenos_mp and order_needs_mp_check(order):
         if request.method == 'POST' and (request.POST.get('action') or '') == 'pick_save':
             return JsonResponse(
                 {'ok': False, 'error': 'Prvo Artikli u MP (Ima / Nema).'},
                 status=403,
             )
-        messages.warning(request, 'Prvo Artikli u MP, pa picking narudžbi.')
-        return redirect('staff_magacin_pakuj')
+        messages.warning(request, 'Prvo Artikli u MP, pa picking te narudžbe.')
+        return redirect(_provjera_url(order.broj, next_pick=True))
     ok, holder = claim_order_pick(order, request.user)
     if not ok:
         if request.method == 'POST':

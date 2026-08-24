@@ -32,9 +32,9 @@
             Artikli u MP
             <i>{{ mp_pending_count }}</i>
         </a>
-        <p>Artikli iz aktivnih narudžbi kojih nema na stanju. Provjeri u maloprodaji: Ima — ostaje na nalogu, Nema — izbacuje se. Picking narudžbi kreće poslije.</p>
+        <p>Izaberi kupca, vidi šta mu treba u maloprodaji, pa pokupi.</p>
     </div>
-    {% else %}
+    {% endif %}
     <div class="pk-home-top">
         <div class="mg-filter-tabs">
             <a href="?status=sve{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'sve' %}is-active{% endif %}">Sve</a>
@@ -139,6 +139,5 @@
             </div>
         </form>
     </div>
-    {% endif %}
 </div>
 {% endblock %}
