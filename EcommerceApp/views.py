@@ -8408,6 +8408,7 @@ def staff_loyalty_member(request, kod):
         get_pending_purchase_otp,
         loyalty_card_share_token,
         loyalty_kontekst,
+        obrisi_loyalty_kupovinu,
         online_orders_for_loyalty_card,
         osiguraj_loyalty_karticu,
         osiguraj_sestocifreni_kod,
@@ -8534,6 +8535,14 @@ def staff_loyalty_member(request, kod):
         profil_obj.loyalty_napomena = note
         profil_obj.save(update_fields=['loyalty_napomena'])
         messages.success(request, 'Napomena je sačuvana.')
+        return redirect(member_url)
+
+    if request.method == 'POST' and request.POST.get('action') == 'obrisi_kupovinu':
+        try:
+            iznos = obrisi_loyalty_kupovinu(selected_card, request.POST.get('purchase_id'))
+            messages.success(request, f'Evidentiranje kupovine od {iznos} KM je obrisano.')
+        except ValueError as exc:
+            messages.error(request, str(exc))
         return redirect(member_url)
 
     if request.method == 'POST' and request.POST.get('action') == 'evidentiraj_kupovinu':

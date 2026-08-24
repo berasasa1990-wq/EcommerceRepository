@@ -4350,7 +4350,7 @@ tr.is-mp-lock {
         text-align: right;
     }
     .mg-table-stack-moves td:nth-child(2) {
-        grid-column: 1 / -1;
+        grid-column: 1;
         grid-row: 2;
     }
     .mg-table-stack-moves td:nth-child(3) {
@@ -4367,6 +4367,13 @@ tr.is-mp-lock {
         font-size: 12px;
     }
     .mg-table-stack-moves td:nth-child(5) {
+        grid-column: 2;
+        grid-row: 2;
+        color: var(--mg-label);
+        font-size: 12px;
+        text-align: right;
+    }
+    .mg-table-stack-moves td:nth-child(6) {
         grid-column: 1;
         grid-row: 1;
         font-weight: 700;

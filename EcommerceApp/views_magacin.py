@@ -128,6 +128,22 @@ def _user_display(user):
     return user.get_username()
 
 
+_ORDER_STOCK_NOTE_RE = re.compile(
+    r'(?i)(?:validacija|rezervacija|otkazivanje|izmjena|prenos u mp)\s*#|#\d+|ru[cč]na narud[zž]ba',
+)
+
+
+def _movement_from_order(movement):
+    note = (getattr(movement, 'napomena', None) or '').strip()
+    return bool(note and _ORDER_STOCK_NOTE_RE.search(note))
+
+
+def _movement_korisnik_label(movement):
+    if not getattr(movement, 'korisnik_id', None) or _movement_from_order(movement):
+        return ''
+    return _user_display(movement.korisnik)
+
+
 def _ensure_magacin_locations():
     if WarehouseLocation.objects.exists():
         return
@@ -656,7 +672,7 @@ def magacin_artikli(request):
     query = _magacin_search_query(request)
     include_zero = (request.GET.get('bez_zalihe') or '') == '1'
     searched = bool(query)
-    recent_movements = (
+    recent_movements = list(
         WarehouseMovement.objects.filter(
             tip__in=[
                 WarehouseMovement.Tip.PRIJEM,
@@ -668,6 +684,8 @@ def magacin_artikli(request):
         .select_related('product', 'variation', 'location', 'to_location', 'korisnik')
         .order_by('-kreiran', '-id')[:10]
     )
+    for movement in recent_movements:
+        movement.korisnik_label = _movement_korisnik_label(movement)
     context = _magacin_context(request, section='artikli', page_title='Artikli — Magacin')
     context.update({
         'searched': searched,

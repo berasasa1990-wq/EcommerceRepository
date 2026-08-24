@@ -134,6 +134,29 @@ class LoyaltyAdminSearchTests(TestCase):
         self.assertContains(again, 'Gotovina')
         self.assertContains(again, 'godina=2026')
         self.assertContains(again, '1 kupovina')
+        self.assertContains(again, 'Obriši')
+        self.assertContains(again, 'obrisi_kupovinu')
+        pur = LoyaltyPurchase.objects.get(kartica=self.card, iznos='25.50')
+        deleted = self.client.post('/nalog/loyalty/clan/482731/', {
+            'action': 'obrisi_kupovinu',
+            'purchase_id': pur.pk,
+        })
+        self.assertEqual(deleted.status_code, 302)
+        self.assertFalse(LoyaltyPurchase.objects.filter(pk=pur.pk).exists())
+        self.card.refresh_from_db()
+        self.assertEqual(self.card.ukupna_potrosnja, Decimal('0'))
+        after_del = self.client.get('/nalog/loyalty/clan/482731/')
+        self.assertContains(after_del, 'Nema kupovina')
+        bought = self.client.post('/nalog/loyalty/clan/482731/', {
+            'action': 'evidentiraj_kupovinu',
+            'iznos': '25.50',
+            'placanje': 'gotovina',
+        })
+        self.assertEqual(bought.status_code, 302)
+        again = self.client.get('/nalog/loyalty/clan/482731/')
+        self.assertContains(again, 'Gotovina')
+        self.assertContains(again, 'godina=2026')
+        self.assertContains(again, '1 kupovina')
         desk_top = self.client.get('/nalog/loyalty/')
         self.assertContains(desk_top, 'Ana Kovačević')
         self.assertContains(desk_top, '25,50 KM')

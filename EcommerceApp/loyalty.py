@@ -1008,6 +1008,21 @@ def commit_loyalty_purchase(
     return purchase
 
 
+def obrisi_loyalty_kupovinu(card, purchase_id):
+    """Obriši ručno evidentiranu kupovinu (greška na kasi) i preračunaj potrošnju."""
+    try:
+        pk = int(purchase_id)
+    except (TypeError, ValueError) as exc:
+        raise ValueError('Kupovina nije pronađena.') from exc
+    purchase = LoyaltyPurchase.objects.filter(kartica=card, pk=pk).first()
+    if purchase is None:
+        raise ValueError('Kupovina nije pronađena.')
+    iznos = purchase.iznos
+    purchase.delete()
+    preracunaj_potrosnju_kartice(card)
+    return iznos
+
+
 def izdaj_loyalty_karticu(ime, prezime, telefon, email='', *, strani=False):
     """
     Registruje kupca i izdaje loyalty karticu.

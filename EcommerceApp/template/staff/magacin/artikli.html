@@ -25,6 +25,7 @@
                 <th>ARTIKAL</th>
                 <th>TIP</th>
                 <th>LOKACIJA</th>
+                <th>KORISNIK</th>
                 <th class="num">KOL.</th>
             </tr>
         </thead>
@@ -44,12 +45,13 @@
                     {{ m.location.sifra }}
                     {% endif %}
                 </td>
+                <td class="mg-move-user">{% if m.korisnik_label %}{{ m.korisnik_label }}{% else %}—{% endif %}</td>
                 <td class="num {% if m.tip == 'prijem' %}num-plus{% elif m.tip == 'prodaja' %}num-out{% endif %}">
                     {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' %}−{% endif %}{{ m.kolicina }}
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="mg-muted">Još nema izmjena količina.</td></tr>
+            <tr><td colspan="6" class="mg-muted">Još nema izmjena količina.</td></tr>
             {% endfor %}
         </tbody>
     </table>

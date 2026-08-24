@@ -818,6 +818,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(list_res.status_code, 200)
         self.assertContains(list_res, 'mgArticleScanBtn')
         self.assertContains(list_res, 'Zadnje izmjene količina')
+        self.assertContains(list_res, 'KORISNIK')
         self.assertNotContains(list_res, 'class="mg-product-row"')
         self.assertContains(list_res, 'Test braid')
         detail = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
@@ -861,6 +862,55 @@ class MagacinViewTests(TestCase):
         out_page = self.client.get(reverse('staff_magacin_artikal', args=[self.zero.pk]))
         self.assertContains(out_page, 'mg-hero is-out')
         self.assertNotContains(out_page, 'mg-hero is-stock')
+
+    def test_artikli_recent_moves_show_staff_not_order_user(self):
+        import re as _re
+
+        self.client.force_login(self.user)
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        staff = User.objects.create_superuser(
+            'lagerist', 'lager@example.com', 'pass',
+            first_name='Marko', last_name='Ivic',
+        )
+        WarehouseMovement.objects.all().delete()
+        apply_movement(
+            product=self.product,
+            location=loc,
+            tip='prijem',
+            kolicina=2,
+            napomena='Dodano na lokaciju',
+            user=staff,
+        )
+        move = WarehouseMovement.objects.order_by('-id').first()
+        self.assertEqual(move.korisnik_id, staff.pk)
+        page = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertRegex(page.content.decode(), _re.compile(r'mg-move-user[^>]*>\s*Marko I\.'))
+
+        WarehouseMovement.objects.all().delete()
+        apply_movement(
+            product=self.product,
+            location=loc,
+            tip='prodaja',
+            kolicina=1,
+            napomena='Validacija #88',
+            user=staff,
+        )
+        order_page = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertNotRegex(order_page.content.decode(), _re.compile(r'mg-move-user[^>]*>\s*Marko I\.'))
+        self.assertRegex(order_page.content.decode(), _re.compile(r'mg-move-user[^>]*>\s*—'))
+        self.assertContains(order_page, 'Prodaja')
+
+        WarehouseMovement.objects.all().delete()
+        apply_movement(
+            product=self.product,
+            location=loc,
+            tip='prodaja',
+            kolicina=1,
+            napomena='Ručna narudžba',
+            user=staff,
+        )
+        manual_order = self.client.get(reverse('staff_magacin_artikli'))
+        self.assertNotRegex(manual_order.content.decode(), _re.compile(r'mg-move-user[^>]*>\s*Marko I\.'))
 
     def test_artikal_etiketa_print(self):
         import base64
