@@ -741,6 +741,22 @@ class ProductNameOptionsTests(TestCase):
             'Shimano Catana 2500',
             'Shimano Nasci 2500',
         ))
+        # Šifra MT+broj se zanemaruje — ostatak naziva se podudara
+        self.assertTrue(names_are_similar(
+            'Fox Edges Armapoint MT12345 Curve',
+            'Fox Edges Armapoint MT998877 Curve',
+        ))
+        self.assertGreaterEqual(
+            name_similarity(
+                'Fox Edges Armapoint MT12345 Curve',
+                'Fox Edges Armapoint MT998877 Curve',
+            ),
+            0.90,
+        )
+        self.assertFalse(names_are_similar(
+            'Fox Edges Armapoint MT111 Hook',
+            'Korda Krank MT222 Hook',
+        ))
 
     def test_finds_similar_sku_in_same_category(self):
         from .product_options import find_similar_name_products

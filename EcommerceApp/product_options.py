@@ -35,12 +35,17 @@ _VARIANT_TOKENS = frozenset({
 _NON_ALNUM = re.compile(r'[^a-z0-9]+')
 _MULTI_SPACE = re.compile(r'\s+')
 _CLOTHING_SIZE = re.compile(r'^\d{1,3}$')
+# Interna šifra u nazivu (npr. MT12345 / MT-12345) — ne ulazi u podudaranje.
+_MT_CODE = re.compile(r'\bmt[\s\-]*\d+\b')
+_MT_TOKEN = re.compile(r'^mt\d+$')
 
 
 def fold_product_name(value):
     text = unicodedata.normalize('NFKD', value or '')
     text = ''.join(ch for ch in text if not unicodedata.combining(ch))
-    text = _NON_ALNUM.sub(' ', text.casefold())
+    text = text.casefold()
+    text = _MT_CODE.sub(' ', text)
+    text = _NON_ALNUM.sub(' ', text)
     return _MULTI_SPACE.sub(' ', text).strip()
 
 
@@ -55,7 +60,12 @@ def name_similarity(left, right):
 
 
 def _is_variant_token(token):
-    return token in _VARIANT_TOKENS or bool(_CLOTHING_SIZE.fullmatch(token))
+    return (
+        token in _VARIANT_TOKENS
+        or bool(_CLOTHING_SIZE.fullmatch(token))
+        or bool(_MT_TOKEN.fullmatch(token))
+        or token == 'mt'
+    )
 
 
 def _core_tokens(name):
@@ -67,7 +77,7 @@ def _core_tokens(name):
 
 
 def names_are_similar(left, right, threshold=SIMILAR_NAME_THRESHOLD):
-    """True ako je ≥90% istog teksta, ili ista jezgra uz razliku boje/veličine."""
+    """True ako je ≥90% istog teksta (bez MT+broj šifre), ili ista jezgra boja/veličina."""
     folded_left = fold_product_name(left)
     folded_right = fold_product_name(right)
     if not folded_left or not folded_right:
