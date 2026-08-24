@@ -1752,6 +1752,60 @@ class MagacinViewTests(TestCase):
         self.assertEqual(extra_stock.kolicina, 3)
         self.assertEqual(extra_stock.rezervisano, 0)
 
+    def test_finish_pick_zero_when_shelf_already_empty(self):
+        extra = Product.objects.create(
+            naziv='Nema na polici', sifra='ADD-EMPTY', cijena=Decimal('4.00'),
+            stanje=1, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=extra, location=loc, tip='prijem', kolicina=1)
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Prazna Polica',
+            'telefon': '061404044',
+            'product_id': [str(self.product.pk), str(extra.pk)],
+            'variation_id': ['', ''],
+            'kolicina': ['1', '1'],
+            'mp_ok': ['0', '0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Prazna Polica')
+        braid = order.stavke.get(artikal=self.product)
+        extra_item = order.stavke.get(artikal=extra)
+        stock = WarehouseStock.objects.get(product=extra, location=loc)
+        stock.kolicina = 0
+        stock.rezervisano = 2
+        stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
+        finished = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'validiraj',
+                'pick_json': json.dumps([
+                    {
+                        'key': f'{braid.pk}:T-1',
+                        'item_id': braid.pk,
+                        'loc': 'T-1',
+                        'got': 1,
+                        'need': 1,
+                        'done': True,
+                    },
+                    {
+                        'key': f'{extra_item.pk}:T-1',
+                        'item_id': extra_item.pk,
+                        'loc': 'T-1',
+                        'got': 0,
+                        'need': 1,
+                        'done': True,
+                    },
+                ]),
+            },
+        )
+        self.assertRedirects(finished, reverse('staff_magacin_pakuj'))
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertFalse(order.stavke.filter(artikal=extra).exists())
+        self.assertEqual(order.stavke.get().artikal_id, self.product.pk)
+
     def test_finish_pick_only_zero_cancels_order(self):
         self.client.force_login(self.user)
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
@@ -1787,6 +1841,68 @@ class MagacinViewTests(TestCase):
         stock = WarehouseStock.objects.get(product=self.product, location=loc)
         self.assertEqual(stock.kolicina, before - 1)
         self.assertEqual(stock.rezervisano, 0)
+
+    def test_brza_posta_list_copy_fields_and_mark_entered(self):
+        self.client.force_login(self.user)
+        listed = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertContains(listed, 'Unesi Brzu poštu')
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Brza Kupac',
+            'telefon': '065111222',
+            'email': 'brza@example.com',
+            'adresa': 'Ulica 12',
+            'grad': 'Bijeljina',
+            'postanski_broj': '76300',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Brza Kupac')
+        validate_order_stock(order, user=self.user)
+        page = self.client.get(reverse('staff_magacin_brza_posta'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Brza Kupac')
+        self.assertContains(page, 'Čeka')
+        yesterday = timezone.localdate() - timedelta(days=1)
+        older = self.client.get(
+            reverse('staff_magacin_brza_posta'),
+            {'datum': yesterday.isoformat()},
+        )
+        self.assertNotContains(older, 'Brza Kupac')
+        detail = self.client.get(
+            reverse('staff_magacin_brza_posta_detail', args=[order.broj]),
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'Ime')
+        self.assertContains(detail, 'Adresa')
+        self.assertContains(detail, 'Grad')
+        self.assertContains(detail, 'Kontakt')
+        self.assertContains(detail, 'Telefon')
+        self.assertContains(detail, 'Broj narudžbe')
+        self.assertContains(detail, 'Iznos')
+        self.assertContains(detail, 'Brza Kupac')
+        self.assertContains(detail, 'Ulica 12')
+        self.assertContains(detail, '76300 Bijeljina')
+        self.assertContains(detail, 'brza@example.com')
+        self.assertContains(detail, '065111222')
+        self.assertContains(detail, order.broj)
+        self.assertContains(detail, 'Copy')
+        self.assertContains(detail, 'Unijeto')
+        marked = self.client.post(
+            reverse('staff_magacin_brza_posta_detail', args=[order.broj]),
+            {'action': 'unesi', 'datum': timezone.localdate().isoformat()},
+        )
+        self.assertRedirects(
+            marked,
+            f"{reverse('staff_magacin_brza_posta')}?datum={timezone.localdate().isoformat()}",
+        )
+        order.refresh_from_db()
+        self.assertTrue(order.brza_posta_unijeta)
+        self.assertIsNotNone(order.brza_posta_unijeta_at)
+        again = self.client.get(reverse('staff_magacin_brza_posta'))
+        self.assertContains(again, 'Unijeto')
 
     def test_pick_zero_removes_item_and_location_qty(self):
         extra = Product.objects.create(

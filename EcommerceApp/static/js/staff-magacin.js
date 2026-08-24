@@ -2461,6 +2461,7 @@ function initArticleScanner() {
                     return;
                 }
                 if (raw === 0) {
+                    setGot(item, 0, true);
                     dropMissing(item);
                     return;
                 }
@@ -2656,7 +2657,8 @@ function initArticleScanner() {
     function setGot(item, got, forceDone) {
         var next = Math.max(0, Math.min(item.need, got));
         var exact = next >= item.need && item.need > 0;
-        var done = exact || !!(forceDone && next > 0);
+        var missing = forceDone && next === 0 && item.need > 0;
+        var done = exact || !!(forceDone && next > 0) || missing;
         state[item.key] = { got: next, done: done, item_id: item.item_id };
         persist();
         if (done && editingKey === item.key) editingKey = '';
@@ -2815,6 +2817,7 @@ function initArticleScanner() {
     }
     if (els.form) {
         els.form.addEventListener('submit', function (event) {
+            syncPickJson();
             var broj = root.getAttribute('data-broj') || '';
             var msg = isPrenosMp
                 ? 'Želiš li validatovati prenos u MP #' + broj + '? Skida se sa stanja.'

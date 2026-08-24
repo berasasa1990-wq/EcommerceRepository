@@ -3229,9 +3229,45 @@ def remove_item_from_order(order, item, *, user=None):
     recalculate_order_totals(order)
 
 
+def _safe_release_pick_hold(hold, take, *, user=None, napomena=''):
+    """Skini rezervaciju; ne ruši picking ako je zaliha već 0."""
+    take = max(0, _int(take))
+    if take <= 0:
+        return
+    stock = get_or_create_stock(
+        product=hold.product, variation=hold.variation, location=hold.location,
+    )
+    on_hand = max(0, int(stock.kolicina or 0))
+    reserved = max(0, int(stock.rezervisano or 0))
+    new_reserved = min(on_hand, max(0, reserved - take))
+    if new_reserved == reserved:
+        return
+    try:
+        apply_movement(
+            product=hold.product,
+            variation=hold.variation,
+            location=hold.location,
+            tip=WarehouseMovement.Tip.REZERVACIJA,
+            kolicina=1,
+            rezervisano=new_reserved,
+            napomena=napomena,
+            user=user,
+        )
+    except MagacinError:
+        stock = get_or_create_stock(
+            product=hold.product, variation=hold.variation, location=hold.location,
+        )
+        stock.rezervisano = min(max(0, int(stock.kolicina or 0)), new_reserved)
+        stock.save(update_fields=['rezervisano', 'azurirano'])
+
+
 @transaction.atomic
 def drop_missing_pick_line(order, item, *, loc, qty, user=None):
-    """Picking 0 / nema: skini količinu s narudžbe i s te lokacije."""
+    """Picking 0 / nema: skini količinu s narudžbe i s te lokacije.
+
+    Zaliha/rezervacija se koriguje best-effort — stavka se uvijek skida
+    da se picking može završiti i kad artikla fizički nema.
+    """
     _assert_order_editable(order)
     if item.narudzba_id != order.pk:
         raise MagacinError('Stavka nije na ovoj narudžbi.')
@@ -3258,25 +3294,14 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
                     **_hold_variation_filter(variation),
                 ).order_by('-kolicina', '-pk')
             )
+            note = f'Nema na pickingu #{order.broj}'
             for hold in holds:
                 if remaining <= 0:
                     break
                 take = min(int(hold.kolicina or 0), remaining)
                 if take <= 0:
                     continue
-                stock = get_or_create_stock(
-                    product=product, variation=variation, location=location,
-                )
-                apply_movement(
-                    product=product,
-                    variation=variation,
-                    location=location,
-                    tip=WarehouseMovement.Tip.REZERVACIJA,
-                    kolicina=1,
-                    rezervisano=max(0, int(stock.rezervisano or 0) - take),
-                    napomena=f'Nema na pickingu #{order.broj}',
-                    user=user,
-                )
+                _safe_release_pick_hold(hold, take, user=user, napomena=note)
                 if take >= int(hold.kolicina or 0):
                     hold.status = OrderStockHold.Status.OTKAZANO
                     hold.save(update_fields=['status'])
@@ -3289,21 +3314,38 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
             )
             new_on_hand = max(0, int(stock.kolicina or 0) - qty)
             if new_on_hand != int(stock.kolicina or 0):
-                apply_movement(
-                    product=product,
-                    variation=variation,
-                    location=location,
-                    tip=WarehouseMovement.Tip.KOREKCIJA,
-                    kolicina=new_on_hand,
-                    napomena=f'Nema na pickingu #{order.broj}',
-                    user=user,
-                )
+                try:
+                    apply_movement(
+                        product=product,
+                        variation=variation,
+                        location=location,
+                        tip=WarehouseMovement.Tip.KOREKCIJA,
+                        kolicina=new_on_hand,
+                        napomena=note,
+                        user=user,
+                    )
+                except MagacinError:
+                    stock.kolicina = new_on_hand
+                    if int(stock.rezervisano or 0) > new_on_hand:
+                        stock.rezervisano = new_on_hand
+                    stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
     new_qty = int(item.kolicina or 0) - qty
     if new_qty <= 0:
         if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
-            cancel_order_stock(order, user=user)
+            try:
+                cancel_order_stock(order, user=user)
+            except MagacinError:
+                order.lager_status = Order.LagerStatus.OTKAZANO
+                order.status = Order.Status.OTKAZANA
+                order.save(update_fields=['lager_status', 'status'])
             return {'cancelled': True, 'removed': True}
-        remove_item_from_order(order, item, user=user)
+        try:
+            remove_item_from_order(order, item, user=user)
+        except MagacinError:
+            item_id = item.pk
+            item.delete()
+            _clear_pick_state_for_item(order, item_id)
+            recalculate_order_totals(order)
         return {'cancelled': False, 'removed': True}
     item.kolicina = new_qty
     item.kolicina_pokupljeno = None
@@ -3439,18 +3481,27 @@ def validate_order_stock(order, *, user=None):
         release_holds_for_product(order, product, variation, qty=extra, user=user)
     holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
     for hold in holds:
-        apply_movement(
-            product=hold.product,
-            variation=hold.variation,
-            location=hold.location,
-            tip=WarehouseMovement.Tip.PRODAJA,
-            kolicina=hold.kolicina,
-            napomena=f'Validacija #{order.broj}',
-            user=user,
-            from_reservation=True,
-        )
-        hold.status = OrderStockHold.Status.VALIDIRANO
-        hold.save(update_fields=['status'])
+        try:
+            apply_movement(
+                product=hold.product,
+                variation=hold.variation,
+                location=hold.location,
+                tip=WarehouseMovement.Tip.PRODAJA,
+                kolicina=hold.kolicina,
+                napomena=f'Validacija #{order.broj}',
+                user=user,
+                from_reservation=True,
+            )
+            hold.status = OrderStockHold.Status.VALIDIRANO
+            hold.save(update_fields=['status'])
+        except MagacinError:
+            try:
+                release_holds_for_product(
+                    order, hold.product, hold.variation, qty=hold.kolicina, user=user,
+                )
+            except MagacinError:
+                hold.status = OrderStockHold.Status.OTKAZANO
+                hold.save(update_fields=['status'])
     order.lager_status = Order.LagerStatus.VALIDIRANO
     update_fields = ['lager_status']
     if not is_vp_order(order):

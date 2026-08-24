@@ -1,0 +1,56 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-orders-page bp-page">
+<div class="mg-page-head">
+    <div>
+        <h1>Unesi Brzu poštu</h1>
+        <p class="mg-count">
+            Validatovane narudžbe za {{ day|date:"d.m.Y." }}
+            {% if pending_count %} — čeka unos: {{ pending_count }}{% endif %}
+        </p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+    </div>
+</div>
+
+<nav class="bp-days" aria-label="Datum">
+    <a class="mg-btn" href="{% url 'staff_magacin_brza_posta' %}?datum={{ prev_day|date:'Y-m-d' }}">← {{ prev_day|date:"d.m." }}</a>
+    <form method="get" action="{% url 'staff_magacin_brza_posta' %}" class="bp-days-form">
+        <label class="bp-days-label">
+            Datum
+            <input type="date" name="datum" value="{{ day|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}" onchange="this.form.submit()">
+        </label>
+    </form>
+    {% if can_go_next %}
+    <a class="mg-btn" href="{% url 'staff_magacin_brza_posta' %}?datum={{ next_day|date:'Y-m-d' }}">{{ next_day|date:"d.m." }} →</a>
+    {% else %}
+    <span class="mg-btn is-disabled" aria-disabled="true">Danas</span>
+    {% endif %}
+</nav>
+
+<section class="mg-card mg-orders-card">
+    {% if orders %}
+    <div class="bp-list">
+        {% for order in orders %}
+        <a class="bp-row{% if order.brza_posta_unijeta %} is-done{% endif %}" href="{% url 'staff_magacin_brza_posta_detail' order.broj %}?datum={{ day|date:'Y-m-d' }}">
+            <span class="bp-row-main">
+                <strong>{{ order.ime_prezime }}</strong>
+                <span>#{{ order.broj }} · {{ order.grad }}</span>
+            </span>
+            <span class="bp-row-sum">{{ order.ukupno }} KM</span>
+            {% if order.brza_posta_unijeta %}
+            <span class="bp-badge">Unijeto</span>
+            {% else %}
+            <span class="bp-badge bp-badge--wait">Čeka</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="mg-empty">Nema validatovanih narudžbi za ovaj dan.</p>
+    {% endif %}
+</section>
+</div>
+{% endblock %}

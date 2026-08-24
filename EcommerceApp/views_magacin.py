@@ -2086,6 +2086,97 @@ def magacin_narudzbe(request):
     return render(request, 'staff/magacin/narudzbe.html', context)
 
 
+def _parse_brza_posta_day(raw):
+    today = timezone.localdate()
+    text = (raw or '').strip()
+    if text:
+        try:
+            day = date.fromisoformat(text)
+        except ValueError:
+            day = today
+    else:
+        day = today
+    if day > today:
+        return today
+    return day
+
+
+def _brza_posta_day_q(day):
+    return Q(zapakovana_at__date=day) | Q(zapakovana_at__isnull=True, kreirana__date=day)
+
+
+def _brza_posta_orders_qs(day):
+    return (
+        Order.objects.filter(_validated_orders_q())
+        .exclude(status=Order.Status.OTKAZANA)
+        .exclude(_prenos_mp_q())
+        .filter(_brza_posta_day_q(day))
+        .order_by('brza_posta_unijeta', 'broj')
+    )
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_brza_posta(request):
+    day = _parse_brza_posta_day(request.GET.get('datum'))
+    today = timezone.localdate()
+    prev_day = day - timedelta(days=1)
+    next_day = day + timedelta(days=1)
+    orders = list(_brza_posta_orders_qs(day))
+    pending = sum(1 for row in orders if not row.brza_posta_unijeta)
+    context = _magacin_context(
+        request, section='narudzbe', page_title='Unesi Brzu poštu — Magacin',
+    )
+    context.update({
+        'day': day,
+        'today': today,
+        'prev_day': prev_day,
+        'next_day': next_day,
+        'can_go_next': next_day <= today,
+        'is_today': day == today,
+        'orders': orders,
+        'pending_count': pending,
+    })
+    return render(request, 'staff/magacin/brza_posta.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_brza_posta_detail(request, broj):
+    order = get_object_or_404(
+        Order.objects.exclude(status=Order.Status.OTKAZANA).exclude(_prenos_mp_q()),
+        broj=broj,
+    )
+    if not (
+        order.lager_status == Order.LagerStatus.VALIDIRANO
+        or order.status == Order.Status.ZAVRSENA
+    ):
+        messages.warning(request, 'Samo validatovane narudžbe idu u Brzu poštu.')
+        return redirect('staff_magacin_brza_posta')
+    day = _parse_brza_posta_day(request.GET.get('datum') or request.POST.get('datum'))
+    if request.method == 'POST' and (request.POST.get('action') or '') == 'unesi':
+        if not order.brza_posta_unijeta:
+            order.brza_posta_unijeta = True
+            order.brza_posta_unijeta_at = timezone.now()
+            order.save(update_fields=['brza_posta_unijeta', 'brza_posta_unijeta_at'])
+            messages.success(request, f'Narudžba #{order.broj} je unijeta u Brzu poštu.')
+        else:
+            messages.info(request, f'Narudžba #{order.broj} je već unijeta.')
+        return redirect(f"{reverse('staff_magacin_brza_posta')}?datum={day.isoformat()}")
+    context = _magacin_context(
+        request, section='narudzbe', page_title=f'Brza pošta #{order.broj} — Magacin',
+    )
+    context.update({
+        'order': order,
+        'day': day,
+        'grad_value': ' '.join(
+            part for part in ((order.postanski_broj or '').strip(), (order.grad or '').strip()) if part
+        ),
+        'iznos_copy': f'{order.ukupno:.2f}',
+    })
+    return render(request, 'staff/magacin/brza_posta_detail.html', context)
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_narudzbe_stampa(request):
@@ -3683,14 +3774,34 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     order.pick_state = state
     order.save(update_fields=['pick_state'])
 
+    def _drop_zero(item, loc, qty):
+        try:
+            return drop_missing_pick_line(
+                order, item, loc=loc, qty=qty, user=user,
+            )
+        except MagacinError:
+            if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
+                try:
+                    cancel_order_stock(order, user=user)
+                except MagacinError:
+                    order.lager_status = Order.LagerStatus.OTKAZANO
+                    order.status = Order.Status.OTKAZANA
+                    order.save(update_fields=['lager_status', 'status'])
+                return {'cancelled': True, 'removed': True}
+            try:
+                remove_item_from_order(order, item, user=user)
+            except MagacinError:
+                item_id = item.pk
+                item.delete()
+                order.refresh_from_db()
+            return {'cancelled': False, 'removed': True}
+
     if finalize:
         for item_id, loc, qty in missing_lines:
             item = OrderItem.objects.filter(pk=item_id, narudzba=order).first()
             if item is None:
                 continue
-            result = drop_missing_pick_line(
-                order, item, loc=loc, qty=qty, user=user,
-            )
+            result = _drop_zero(item, loc, qty)
             if result.get('cancelled'):
                 return state
 
@@ -3699,9 +3810,7 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
         for item in items.values():
             qty = max(0, min(int(item.kolicina), int(picked_by_item.get(item.pk, 0))))
             if qty <= 0:
-                result = drop_missing_pick_line(
-                    order, item, loc='', qty=int(item.kolicina or 0), user=user,
-                )
+                result = _drop_zero(item, '', int(item.kolicina or 0))
                 if result.get('cancelled'):
                     return state
                 continue

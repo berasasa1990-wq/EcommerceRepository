@@ -3902,6 +3902,16 @@ class Order(models.Model):
         blank=True,
         verbose_name='Stanje skinuto u',
     )
+    brza_posta_unijeta = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Unijeto u Brzu poštu',
+    )
+    brza_posta_unijeta_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Unijeto u Brzu poštu u',
+    )
     pick_state = models.JSONField(
         default=dict,
         blank=True,

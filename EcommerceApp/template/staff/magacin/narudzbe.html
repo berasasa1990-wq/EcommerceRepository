@@ -20,6 +20,7 @@
     <div class="mg-toolbar-actions">
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzba_nova' %}">+ Nova ručna narudžba</a>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_vp_narudzba' %}">VP narudžbe</a>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}">Unesi Brzu poštu</a>
         {% if show_validated %}
         {% if show_all_validated %}
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}{% if qs_today %}?{{ qs_today }}{% endif %}">Samo danas</a>
