@@ -2588,6 +2588,7 @@ function initArticleScanner() {
             return {
                 key: item.key,
                 item_id: item.item_id,
+                loc: item.loc || '',
                 got: st.got,
                 need: item.need,
                 done: !!st.done,
@@ -2818,8 +2819,11 @@ function initArticleScanner() {
             var msg = isPrenosMp
                 ? 'Želiš li validatovati prenos u MP #' + broj + '? Skida se sa stanja.'
                 : 'Želiš li završiti picking #' + broj + '?';
-            if (!isPrenosMp && queue.length && doneCount() < queue.length) {
-                msg = 'Nepokupljeni artikli neće ići na račun. Završiti picking #' + broj + '?';
+            var hasZero = queue.some(function (item) {
+                return (itemState(item).got || 0) === 0 && (item.need || 0) > 0;
+            });
+            if (!isPrenosMp && (hasZero || (queue.length && doneCount() < queue.length))) {
+                msg = 'Artikli s 0 kom se skidaju s narudžbe. Završiti picking #' + broj + '?';
             }
             if (!window.confirm(msg)) event.preventDefault();
             else {

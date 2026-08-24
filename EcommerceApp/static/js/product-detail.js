@@ -444,11 +444,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (data.requires_qty_deal_choice && data.qty_deal_offer) {
                 // Još NIJE u korpi — izaberi količinski tier ili odbij (onda se doda originalna količina)
+                if (typeof window.closeProductOtherOptionsModal === 'function') {
+                    window.closeProductOtherOptionsModal();
+                }
                 openQtyDealOfferModal(data.qty_deal_offer, form);
                 return;
             }
             if (data.requires_gratis_choice && data.gratis_offer) {
                 // Još NIJE u korpi — čekaj DA/NE (svaki put dok je ponuda aktivna)
+                if (typeof window.closeProductOtherOptionsModal === 'function') {
+                    window.closeProductOtherOptionsModal();
+                }
                 openGratisOfferModal(data.gratis_offer, form);
                 return;
             }
@@ -467,12 +473,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.querySelectorAll('form.add-to-cart-form, form.product-detail-variation-form').forEach((form) => {
+    document.querySelectorAll('form.add-to-cart-form, form.product-detail-variation-form, form.product-other-options-form').forEach((form) => {
         form.addEventListener('submit', (event) => {
             event.preventDefault();
             submitAddToCartForm(form);
         });
     });
+
+    (function initOtherOptionsModal() {
+        const modal = document.getElementById('productOtherOptionsModal');
+        const openBtn = document.getElementById('productOtherOptionsBtn');
+        if (!modal || !openBtn) return;
+
+        const close = () => {
+            modal.hidden = true;
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('product-other-options-open');
+        };
+        const open = () => {
+            modal.hidden = false;
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('product-other-options-open');
+        };
+
+        openBtn.addEventListener('click', open);
+        modal.querySelectorAll('[data-other-options-close]').forEach((el) => {
+            el.addEventListener('click', close);
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !modal.hidden) {
+                close();
+            }
+        });
+        window.closeProductOtherOptionsModal = close;
+    })();
 
     document.querySelectorAll('.product-qty-selector').forEach((selector) => {
         // + Ponuda modal ima vlastiti +1 handler — ne dodavaj drugi

@@ -694,3 +694,90 @@ class SiteVersionTests(TestCase):
         self.assertContains(page, '© Copyright Carpologija BH 2015-')
         self.assertContains(page, 'opremazaribolov.ba je sajt CarpologijaBH.')
         self.assertContains(page, 'Pridruži se preko 20 000 sabskrajbera')
+
+
+class ProductNameOptionsTests(TestCase):
+    def setUp(self):
+        from .models import Category
+
+        self.category = Category.objects.create(naziv='Majice')
+        self.red = Product.objects.create(
+            naziv='Majica crvena XL',
+            cijena=Decimal('19.90'),
+            na_stanju=True,
+            stanje=5,
+            kategorija=self.category,
+        )
+        self.blue = Product.objects.create(
+            naziv='Majica plava S',
+            cijena=Decimal('19.90'),
+            na_stanju=True,
+            stanje=3,
+            kategorija=self.category,
+        )
+        self.unrelated = Product.objects.create(
+            naziv='Shimano Stella 2500',
+            cijena=Decimal('99.00'),
+            na_stanju=True,
+            stanje=2,
+            kategorija=self.category,
+        )
+
+    def test_color_size_names_count_as_similar(self):
+        from .product_options import names_are_similar, name_similarity
+
+        self.assertTrue(names_are_similar('Majica crvena XL', 'Majica plava S'))
+        self.assertTrue(names_are_similar(
+            'Shimano Stella 2500 crvena',
+            'Shimano Stella 2500 plava',
+        ))
+        self.assertFalse(names_are_similar('Majica crvena XL', 'Shimano Stella 2500'))
+        # Ispod 90% istog teksta (i bez iste jezgre boja/veličina) se ne prikazuje
+        self.assertLess(
+            name_similarity('Shimano Catana 2500', 'Shimano Nasci 2500'),
+            0.90,
+        )
+        self.assertFalse(names_are_similar(
+            'Shimano Catana 2500',
+            'Shimano Nasci 2500',
+        ))
+
+    def test_finds_similar_sku_in_same_category(self):
+        from .product_options import find_similar_name_products
+
+        found = find_similar_name_products(self.red, Product.objects.filter(aktivan=True))
+        self.assertEqual([item.pk for item in found], [self.blue.pk])
+
+    def test_product_page_shows_button_and_popup(self):
+        page = self.client.get(self.red.get_absolute_url())
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Druge opcije artikla')
+        self.assertContains(page, 'productOtherOptionsModal')
+        self.assertContains(page, self.blue.naziv)
+        self.assertContains(page, f'/artikal/{self.blue.slug}/dodaj/')
+        similar = list(page.context['similar_name_products'])
+        self.assertEqual([item.pk for item in similar], [self.blue.pk])
+
+    def test_product_page_hides_button_without_similar(self):
+        lonely = Product.objects.create(
+            naziv='Unikatni feeder štap 3.6m',
+            cijena=Decimal('45.00'),
+            na_stanju=True,
+            stanje=1,
+            kategorija=self.category,
+        )
+        page = self.client.get(lonely.get_absolute_url())
+        self.assertEqual(page.status_code, 200)
+        self.assertNotContains(page, 'productOtherOptionsModal')
+        self.assertNotContains(page, 'id="productOtherOptionsBtn"')
+
+    def test_popup_option_can_be_added_to_cart(self):
+        added = self.client.post(
+            f'/artikal/{self.blue.slug}/dodaj/',
+            {'quantity': '1', 'stay': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(added.status_code, 200)
+        payload = added.json()
+        self.assertTrue(payload.get('ok'))
+        self.assertGreaterEqual(payload.get('cart_count') or 0, 1)

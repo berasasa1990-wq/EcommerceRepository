@@ -61,6 +61,7 @@ from .meta_conversions import (
     track_purchase,
     track_view_content,
 )
+from .product_options import find_similar_name_products
 from .utils.images import image_field_dimensions
 from .utils.seo import (
     auto_category_seo_description,
@@ -2932,6 +2933,7 @@ def product_detail(request, slug):
         lcp_image_url = request.build_absolute_uri(product.prikazna_slika.url)
 
     related_products = _related_category_products(product, request=request)
+    similar_name_products = find_similar_name_products(product, _product_queryset(request))
     site_settings = SiteSettings.load()
     kategorija_naziv = product.kategorija.naziv if product.kategorija else ''
 
@@ -2942,6 +2944,7 @@ def product_detail(request, slug):
         'ima_varijacije': bool(in_stock_variations),
         'product_available': product_available,
         'related_products': related_products,
+        'similar_name_products': similar_name_products,
         'povezani_podnaslov': site_settings.format_povezani_podnaslov(kategorija_naziv),
         'lcp_image_url': lcp_image_url,
         'product_image_width': product_image_width,

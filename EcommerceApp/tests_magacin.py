@@ -986,8 +986,8 @@ class MagacinViewTests(TestCase):
         page = self.client.get(reverse('staff_magacin_artikal_stampa', args=[self.product.pk]))
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'size: A4 portrait')
-        self.assertContains(page, 'margin: 10mm')
-        self.assertContains(page, 'width: 190mm')
+        self.assertContains(page, 'margin: 16mm')
+        self.assertContains(page, 'width: 178mm')
         self.assertContains(page, 'grid-template-columns: repeat(3')
         self.assertContains(page, 'grid-template-rows: repeat(7')
         self.assertContains(page, 'class="label"', count=21)
@@ -1671,6 +1671,7 @@ class MagacinViewTests(TestCase):
             {
                 'key': f'{braid.pk}:T-1',
                 'item_id': braid.pk,
+                'loc': 'T-1',
                 'got': 1,
                 'need': 1,
                 'done': True,
@@ -1678,21 +1679,114 @@ class MagacinViewTests(TestCase):
             {
                 'key': f'{extra_item.pk}:T-1',
                 'item_id': extra_item.pk,
+                'loc': 'T-1',
                 'got': 0,
                 'need': 2,
                 'done': False,
             },
-        ], finalize=True)
-        extra_item.refresh_from_db()
-        self.assertEqual(extra_item.kolicina_pokupljeno, 0)
+        ], finalize=True, user=self.user)
+        order.refresh_from_db()
+        self.assertFalse(order.stavke.filter(pk=extra_item.pk).exists())
+        self.assertEqual(order.stavke.get().artikal_id, self.product.pk)
         job = _order_print_job(order)
         names = [row['naziv'] for row in job['stavke']]
         self.assertTrue(any('Test braid' in name for name in names))
         self.assertFalse(any('Drugi artikal' in name for name in names))
-        self.assertEqual(stock_totals(extra)['dostupno'], 2)
+        extra_stock = WarehouseStock.objects.get(product=extra, location=loc)
+        self.assertEqual(extra_stock.kolicina, 2)
+        self.assertEqual(extra_stock.rezervisano, 0)
         validate_order_stock(order, user=self.user)
-        self.assertEqual(stock_totals(extra)['dostupno'], 4)
+        self.assertEqual(stock_totals(extra)['dostupno'], 2)
         self.assertEqual(stock_totals(self.product)['dostupno'], 7)
+
+    def test_finish_pick_with_zero_qty_removes_item(self):
+        extra = Product.objects.create(
+            naziv='Drugi artikal', sifra='ADD-FIN0', cijena=Decimal('4.00'),
+            stanje=4, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=extra, location=loc, tip='prijem', kolicina=4)
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Zavrsi Nula',
+            'telefon': '061404042',
+            'product_id': [str(self.product.pk), str(extra.pk)],
+            'variation_id': ['', ''],
+            'kolicina': ['1', '1'],
+            'mp_ok': ['0', '0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Zavrsi Nula')
+        braid = order.stavke.get(artikal=self.product)
+        extra_item = order.stavke.get(artikal=extra)
+        finished = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'validiraj',
+                'pick_json': json.dumps([
+                    {
+                        'key': f'{braid.pk}:T-1',
+                        'item_id': braid.pk,
+                        'loc': 'T-1',
+                        'got': 1,
+                        'need': 1,
+                        'done': True,
+                    },
+                    {
+                        'key': f'{extra_item.pk}:T-1',
+                        'item_id': extra_item.pk,
+                        'loc': 'T-1',
+                        'got': 0,
+                        'need': 1,
+                        'done': False,
+                    },
+                ]),
+            },
+        )
+        self.assertRedirects(finished, reverse('staff_magacin_pakuj'))
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertFalse(order.stavke.filter(artikal=extra).exists())
+        self.assertEqual(order.stavke.get().artikal_id, self.product.pk)
+        extra_stock = WarehouseStock.objects.get(product=extra, location=loc)
+        self.assertEqual(extra_stock.kolicina, 3)
+        self.assertEqual(extra_stock.rezervisano, 0)
+
+    def test_finish_pick_only_zero_cancels_order(self):
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Samo Nula',
+            'telefon': '061404043',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Samo Nula')
+        item = order.stavke.get()
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        before = WarehouseStock.objects.get(product=self.product, location=loc).kolicina
+        finished = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'validiraj',
+                'pick_json': json.dumps([{
+                    'key': f'{item.pk}:T-1',
+                    'item_id': item.pk,
+                    'loc': 'T-1',
+                    'got': 0,
+                    'need': 1,
+                    'done': False,
+                }]),
+            },
+        )
+        self.assertRedirects(finished, reverse('staff_magacin_pakuj'))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.OTKAZANA)
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.kolicina, before - 1)
+        self.assertEqual(stock.rezervisano, 0)
 
     def test_pick_zero_removes_item_and_location_qty(self):
         extra = Product.objects.create(

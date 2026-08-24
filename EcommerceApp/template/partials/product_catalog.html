@@ -38,7 +38,7 @@
             {% if products %}
             <div class="product-grid product-grid--catalog">
                 {% for product in products %}
-                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations show_akcija_expiry=show_akcija_expiry %}
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 25vw' %}
                 {% endfor %}
             </div>
             {% else %}

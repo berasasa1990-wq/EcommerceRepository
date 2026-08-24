@@ -88,6 +88,12 @@
                 {% include 'partials/brand_display.html' with brand=product.brend %}
             </div>
             <h1>{{ seo_h1|default:product.naziv }}</h1>
+            {% if similar_name_products %}
+            <button type="button" class="product-other-options-btn" id="productOtherOptionsBtn" data-other-options-open>
+                Druge opcije artikla
+                <span class="product-other-options-btn__count">{{ similar_name_products|length }}</span>
+            </button>
+            {% endif %}
             {% if not product_available %}
             <div class="product-unavailable-banner" role="status">
                 <strong>Artikal više nije dostupan</strong>
@@ -600,10 +606,70 @@
 </section>
 {% endif %}
 {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
+
+{% if similar_name_products %}
+<div class="product-other-options-modal" id="productOtherOptionsModal" hidden aria-hidden="true">
+    <div class="product-other-options-modal__backdrop" data-other-options-close></div>
+    <div class="product-other-options-modal__panel" role="dialog" aria-modal="true" aria-labelledby="productOtherOptionsTitle">
+        <button type="button" class="product-other-options-modal__close" data-other-options-close aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <h2 class="product-other-options-modal__title" id="productOtherOptionsTitle">Druge opcije artikla</h2>
+        <p class="product-other-options-modal__lead">Slične boje, veličine i modeli — dodaj u korpu bez izlaska sa stranice.</p>
+        <div class="product-other-options-list">
+            {% for opt in similar_name_products %}
+            {% with opt_vars=opt.varijacije.all %}
+            <article class="product-other-options-row">
+                <a href="{{ opt.get_absolute_url }}" class="product-other-options-row__media" aria-label="{{ opt.naziv }}">
+                    {% include 'partials/product_image.html' with product=opt image_loading='lazy' image_sizes='64px' %}
+                </a>
+                <div class="product-other-options-row__info">
+                    <a href="{{ opt.get_absolute_url }}" class="product-other-options-row__name">{{ opt.naziv }}</a>
+                    <div class="product-other-options-row__price">
+                        {% if opt.katalog_na_akciji %}
+                        <span class="price-original">{{ opt.katalog_bazna_cijena }} KM</span>
+                        <span class="price-sale">{{ opt.katalog_prikazna_cijena }} KM</span>
+                        {% else %}
+                        <span class="price-current">{{ opt.katalog_prikazna_cijena }} KM</span>
+                        {% endif %}
+                    </div>
+                    {% if opt_vars and opt_vars|length == 1 %}
+                    <p class="product-other-options-row__variant">{{ opt_vars.0.naziv }}</p>
+                    {% endif %}
+                </div>
+                {% if opt_vars %}
+                <form method="post" action="{% url 'add_to_cart' opt.slug %}" class="product-other-options-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="variation_id" value="{{ opt_vars.0.pk }}">
+                    {% include 'partials/product_qty_selector.html' %}
+                    <button type="submit" class="btn btn-primary product-other-options-add"
+                            data-product-id="{{ opt.pk }}"
+                            data-product-name="{{ opt.naziv }}"
+                            data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                </form>
+                {% elif opt.na_stanju %}
+                <form method="post" action="{% url 'add_to_cart' opt.slug %}" class="product-other-options-form">
+                    {% csrf_token %}
+                    {% include 'partials/product_qty_selector.html' %}
+                    <button type="submit" class="btn btn-primary product-other-options-add"
+                            data-product-id="{{ opt.pk }}"
+                            data-product-name="{{ opt.naziv }}"
+                            data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                </form>
+                {% else %}
+                <span class="product-other-options-row__sold">Nije na stanju</span>
+                {% endif %}
+            </article>
+            {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260731qtyDeal" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260824otherOpts" defer></script>
 {% if staff_product_tools %}
 <script src="{% static 'js/staff-product-objava.js' %}?v=20260725v7" defer></script>
 {% endif %}

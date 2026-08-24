@@ -3632,14 +3632,25 @@ def _parse_pick_lines(raw):
     return data
 
 
-def apply_order_pick(order, lines, *, finalize=False):
+def _pick_line_loc(raw):
+    loc = str((raw or {}).get('loc') or '').strip()
+    if loc:
+        return loc
+    key = str((raw or {}).get('key') or '')
+    if ':' in key:
+        return key.split(':', 1)[1].strip()
+    return ''
+
+
+def apply_order_pick(order, lines, *, finalize=False, user=None):
     """Sačuvaj picking i postavi količinu za fakturu.
 
-    finalize=True (završi picking): svaka stavka dobije pokupljenu količinu,
-    pa i 0 ako nije pokupljena — te stavke ne idu na račun.
+    finalize=True (završi picking): stavke s 0 pokupljenih se skidaju s narudžbe
+    (nema artikla). Ostale dobiju pokupljenu količinu za račun.
     """
     state = dict(order.pick_state or {})
     picked_by_item = {}
+    missing_lines = []
     for raw in lines or []:
         try:
             item_id = int(raw.get('item_id') or 0)
@@ -3663,14 +3674,37 @@ def apply_order_pick(order, lines, *, finalize=False):
         state[key] = row
         if not item_id:
             continue
+        if finalize and got == 0 and need > 0:
+            missing_lines.append((item_id, _pick_line_loc(raw), need))
         if not finalize and not done:
             continue
         picked_by_item[item_id] = picked_by_item.get(item_id, 0) + got
+
+    order.pick_state = state
+    order.save(update_fields=['pick_state'])
+
+    if finalize:
+        for item_id, loc, qty in missing_lines:
+            item = OrderItem.objects.filter(pk=item_id, narudzba=order).first()
+            if item is None:
+                continue
+            result = drop_missing_pick_line(
+                order, item, loc=loc, qty=qty, user=user,
+            )
+            if result.get('cancelled'):
+                return state
 
     items = {item.pk: item for item in order.stavke.all()}
     if finalize:
         for item in items.values():
             qty = max(0, min(int(item.kolicina), int(picked_by_item.get(item.pk, 0))))
+            if qty <= 0:
+                result = drop_missing_pick_line(
+                    order, item, loc='', qty=int(item.kolicina or 0), user=user,
+                )
+                if result.get('cancelled'):
+                    return state
+                continue
             item.kolicina_pokupljeno = qty
             item.save(update_fields=['kolicina_pokupljeno'])
     else:
@@ -3681,8 +3715,6 @@ def apply_order_pick(order, lines, *, finalize=False):
             qty = max(0, min(int(item.kolicina), int(qty)))
             item.kolicina_pokupljeno = qty
             item.save(update_fields=['kolicina_pokupljeno'])
-    order.pick_state = state
-    order.save(update_fields=['pick_state'])
     return state
 
 
@@ -4167,6 +4199,7 @@ def magacin_pakuj_detail(request, broj):
                     order,
                     _parse_pick_lines(request.POST.get('pick_json')),
                     finalize=(action == 'validiraj'),
+                    user=request.user,
                 )
             except (MagacinError, json.JSONDecodeError, TypeError, ValueError) as exc:
                 if action == 'pick_save':
@@ -4175,6 +4208,13 @@ def magacin_pakuj_detail(request, broj):
                 return redirect('staff_magacin_pakuj_detail', broj=order.broj)
             if action == 'pick_save':
                 return JsonResponse({'ok': True})
+            order.refresh_from_db()
+            if order.status == Order.Status.OTKAZANA:
+                messages.success(
+                    request,
+                    f'Narudžba #{order.broj} je otkazana — nijedan artikal nije pokupljen.',
+                )
+                return redirect('staff_magacin_pakuj')
             try:
                 validate_order_stock(order, user=request.user)
                 if is_vp_order(order):
