@@ -916,94 +916,15 @@ def magacin_artikal(request, pk):
     return render(request, 'staff/magacin/artikal.html', context)
 
 
-# Zebra ZD421 native 203 dpi = 8 dots/mm. Media: 32 mm across the roll, 57 mm along the feed.
-ETIKETA_DPMM = 8
-ETIKETA_MEDIA_W_MM = 32
-ETIKETA_MEDIA_L_MM = 57
+ETIKETA_A4_COLS = 3
+ETIKETA_A4_ROWS = 7
+ETIKETA_A4_COUNT = ETIKETA_A4_COLS * ETIKETA_A4_ROWS
 
 
-def _etiketa_font(size, bold=True):
-    from PIL import ImageFont
-
-    names = (
-        ('Arial Bold.ttf', 'Arial.ttf') if bold else ('Arial.ttf', 'Arial.ttf')
-    )
-    candidates = [
-        f'/System/Library/Fonts/Supplemental/{names[0]}',
-        f'/System/Library/Fonts/Supplemental/{names[1]}',
-        '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
-        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-        '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
-        '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf' if bold else '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
-    ]
-    for path in candidates:
-        try:
-            return ImageFont.truetype(path, size)
-        except OSError:
-            continue
-    return ImageFont.load_default()
-
-
-def _etiketa_text_width(draw, text, font):
-    box = draw.textbbox((0, 0), text, font=font)
-    return box[2] - box[0]
-
-
-def _etiketa_text_height(draw, text, font):
-    box = draw.textbbox((0, 0), text, font=font)
-    return box[3] - box[1]
-
-
-def _etiketa_wrap(draw, text, font, max_width, max_lines=2):
-    text = ' '.join((text or '').split()).upper()
-    if not text:
-        return []
-
-    def fits(value):
-        return _etiketa_text_width(draw, value, font) <= max_width
-
-    lines = []
-    current = ''
-    for word in text.split(' '):
-        piece = word
-        while piece and not fits(piece) and len(piece) > 1:
-            cut = len(piece)
-            while cut > 1 and not fits(piece[:cut]):
-                cut -= 1
-            chunk = piece[:cut]
-            piece = piece[cut:]
-            trial = f'{current} {chunk}'.strip() if current else chunk
-            if current and not fits(trial):
-                lines.append(current)
-                current = chunk
-            else:
-                current = trial
-        if not piece:
-            continue
-        trial = f'{current} {piece}'.strip() if current else piece
-        if current and not fits(trial):
-            lines.append(current)
-            current = piece
-        else:
-            current = trial
-    if current:
-        lines.append(current)
-    if len(lines) > max_lines:
-        head = lines[: max_lines - 1]
-        rest = ' '.join(lines[max_lines - 1 :])
-        while rest and not fits(rest.rstrip('…')):
-            rest = rest[:-1]
-        rest = (rest.rstrip() + '…') if rest else '…'
-        while rest != '…' and not fits(rest):
-            rest = rest[:-2] + '…'
-        return head + [rest]
-    return lines
-
-
-def _etiketa_barcode_image(code):
+def _etiketa_barcode_data_uri(code):
     raw = (code or '').strip()
     if not raw:
-        return None
+        return ''
     import io as _io
     from barcode import Code128
     from barcode.writer import ImageWriter
@@ -1016,7 +937,7 @@ def _etiketa_barcode_image(code):
             options={
                 'module_width': 0.38,
                 'module_height': 22.0,
-                'quiet_zone': 1.5,
+                'quiet_zone': 1.2,
                 'font_size': 0,
                 'text_distance': 1,
                 'write_text': False,
@@ -1025,141 +946,14 @@ def _etiketa_barcode_image(code):
             },
         )
         buffer.seek(0)
-        return Image.open(buffer).convert('RGB')
+        img = Image.open(buffer).convert('RGB')
+        out = _io.BytesIO()
+        img.save(out, format='PNG', optimize=True)
+        png = out.getvalue()
     except Exception:
         logger.exception('Barkod etikete nije generisan: %s', raw)
-        return None
-
-
-def _etiketa_barcode_data_uri(code):
-    img = _etiketa_barcode_image(code)
-    if img is None:
         return ''
-    import io as _io
-
-    out = _io.BytesIO()
-    img.save(out, format='PNG', optimize=True)
-    return 'data:image/png;base64,' + base64.b64encode(out.getvalue()).decode('ascii')
-
-
-def _render_zd421_etiketa(naziv, sifra, barkod, cijena_label):
-    """Landscape mockup rotated onto ZD421 32×57 mm media (203 dpi)."""
-    from PIL import Image, ImageDraw, ImageOps
-
-    dpmm = ETIKETA_DPMM
-    land = Image.new('RGB', (ETIKETA_MEDIA_L_MM * dpmm, ETIKETA_MEDIA_W_MM * dpmm), 'white')
-    draw = ImageDraw.Draw(land)
-    w, h = land.size
-    pad = int(2.0 * dpmm)
-    border = max(2, int(0.35 * dpmm))
-    radius = int(1.4 * dpmm)
-    draw.rounded_rectangle((1, 1, w - 2, h - 2), radius=radius, outline='black', width=border)
-
-    inner_l, inner_t = pad, pad
-    inner_r, inner_b = w - pad, h - pad
-    inner_w = inner_r - inner_l
-    y = inner_t
-
-    title_font = _etiketa_font(max(14, int(2.4 * dpmm)), bold=True)
-    line_gap = max(1, int(0.22 * dpmm))
-    title_lines = _etiketa_wrap(draw, naziv, title_font, inner_w, 2)
-    if not title_lines:
-        title_lines = ['']
-    for line in title_lines[:2]:
-        draw.text((inner_l, y), line, font=title_font, fill='black')
-        y += _etiketa_text_height(draw, line or 'A', title_font) + line_gap
-    y += int(0.2 * dpmm)
-    draw.rectangle((inner_l, y, inner_r, y + border), fill='black')
-    y += border + int(0.35 * dpmm)
-
-    sifra_font = _etiketa_font(max(11, int(1.55 * dpmm)), bold=True)
-    sifra_text = f'ŠIFRA: {sifra}' if sifra else 'ŠIFRA: —'
-    if _etiketa_text_width(draw, sifra_text, sifra_font) > inner_w:
-        while sifra_text and _etiketa_text_width(draw, sifra_text + '…', sifra_font) > inner_w:
-            sifra_text = sifra_text[:-1]
-        sifra_text = sifra_text.rstrip() + '…'
-    draw.text((inner_l, y), sifra_text, font=sifra_font, fill='black')
-    y += _etiketa_text_height(draw, sifra_text, sifra_font) + int(0.35 * dpmm)
-
-    price_font = _etiketa_font(max(28, int(5.0 * dpmm)), bold=True)
-    km_font = _etiketa_font(max(16, int(2.8 * dpmm)), bold=True)
-    price_text = cijena_label or '—'
-    price_h = _etiketa_text_height(draw, price_text, price_font)
-    km_h = _etiketa_text_height(draw, 'KM', km_font)
-    price_block = max(price_h, km_h) + int(0.5 * dpmm)
-    price_top = inner_b - price_block
-    barcode_bottom = price_top - int(0.7 * dpmm)
-    draw.rectangle((inner_l, price_top - int(0.35 * dpmm) - border, inner_r, price_top - int(0.35 * dpmm)), fill='black')
-
-    code_font = _etiketa_font(max(11, int(1.5 * dpmm)), bold=True)
-    code_text = (barkod or '').strip()
-    code_h = _etiketa_text_height(draw, code_text or '0', code_font) if code_text else 0
-    bar_bottom = barcode_bottom - (code_h + int(0.2 * dpmm) if code_text else 0)
-    bar_top = y
-    bar_h = max(int(5.2 * dpmm), bar_bottom - bar_top)
-    if bar_top + bar_h > bar_bottom:
-        bar_h = max(int(4.2 * dpmm), bar_bottom - bar_top)
-
-    barcode_img = _etiketa_barcode_image(barkod)
-    if barcode_img is not None and bar_h > 4:
-        barcode_img = ImageOps.fit(barcode_img, (inner_w, bar_h), method=Image.Resampling.NEAREST)
-        land.paste(barcode_img, (inner_l, bar_top))
-    if code_text:
-        cw = _etiketa_text_width(draw, code_text, code_font)
-        draw.text((inner_l + max(0, (inner_w - cw) // 2), bar_top + bar_h + int(0.12 * dpmm)), code_text, font=code_font, fill='black')
-
-    draw.text((inner_l, price_top), price_text, font=price_font, fill='black')
-    km_w = _etiketa_text_width(draw, 'KM', km_font)
-    km_y = price_top + max(0, price_h - km_h)
-    draw.text((inner_r - km_w, km_y), 'KM', font=km_font, fill='black')
-
-    # ZD421 feeds 32 mm wide × 57 mm long. Rotate landscape art 90° CCW so title sits on the left.
-    return land.rotate(90, expand=True, fillcolor='white')
-
-
-def _etiketa_png_data_uri(img):
-    import io as _io
-
-    out = _io.BytesIO()
-    img.save(out, format='PNG', optimize=True)
-    return 'data:image/png;base64,' + base64.b64encode(out.getvalue()).decode('ascii')
-
-
-def _etiketa_zpl(img):
-    """Raw ZPL for ZD421: lock print width to 32 mm so Chrome/driver cannot scale onto 104 mm."""
-    bw = img.convert('L').point(lambda px: 0 if px < 160 else 255, mode='1')
-    width, height = bw.size
-    row_bytes = (width + 7) // 8
-    pixels = bw.load()
-    payload = bytearray()
-    for y in range(height):
-        for byte_i in range(row_bytes):
-            byte = 0
-            for bit in range(8):
-                x = byte_i * 8 + bit
-                if x < width and pixels[x, y] == 0:
-                    byte |= 1 << (7 - bit)
-            payload.append(byte)
-    hexdata = payload.hex().upper()
-    total = len(payload)
-    pw = ETIKETA_MEDIA_W_MM * ETIKETA_DPMM
-    ll = ETIKETA_MEDIA_L_MM * ETIKETA_DPMM
-    return (
-        '^XA\n'
-        '^CI28\n'
-        f'^PW{pw}\n'
-        f'^LL{ll}\n'
-        '^LH0,0\n'
-        '^LS0\n'
-        '^LT0\n'
-        '^PR4\n'
-        '^MD15\n'
-        '^MNY\n'
-        '^PON\n'
-        '^PQ1,0,1,Y\n'
-        f'^FO0,0^GFA,{total},{total},{row_bytes},{hexdata}^FS\n'
-        '^XZ\n'
-    )
+    return 'data:image/png;base64,' + base64.b64encode(png).decode('ascii')
 
 
 def _artikal_etiketa_payload(product, variation=None):
@@ -1179,7 +973,6 @@ def _artikal_etiketa_payload(product, variation=None):
         cijena = Decimal(cijena).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         cijena_label = format(cijena, '.2f').replace('.', ',')
     barkod = (product.barkod or '').strip() or sifra
-    label_img = _render_zd421_etiketa(naziv, sifra, barkod, cijena_label)
     return {
         'naziv': naziv,
         'sifra': sifra,
@@ -1187,9 +980,74 @@ def _artikal_etiketa_payload(product, variation=None):
         'cijena_label': cijena_label,
         'barkod': barkod,
         'barcode_src': _etiketa_barcode_data_uri(barkod),
-        'label_src': _etiketa_png_data_uri(label_img),
-        'zpl': _etiketa_zpl(label_img),
     }
+
+
+def _etiketa_sheets(items):
+    pages = []
+    for i in range(0, len(items), ETIKETA_A4_COUNT):
+        pages.append(items[i:i + ETIKETA_A4_COUNT])
+    return pages
+
+
+def _etiketa_copy_count(raw, default=1):
+    try:
+        n = int(str(raw or '').strip() or default)
+    except (TypeError, ValueError):
+        n = default
+    return max(1, min(n, ETIKETA_A4_COUNT * 10))
+
+
+def _etiketa_resolve(product_id, variation_id=None):
+    try:
+        pk = int(str(product_id or '').strip())
+    except (TypeError, ValueError):
+        return None, None
+    product = magacin_products_qs().filter(pk=pk).prefetch_related('varijacije').first()
+    if product is None:
+        return None, None
+    vid = str(variation_id or '').strip()
+    if not vid:
+        return product, None
+    variation = next((row for row in product.varijacije.all() if str(row.pk) == vid), None)
+    if variation is None:
+        return None, None
+    return product, variation
+
+
+def _etiketa_resolve_token(raw):
+    text = str(raw or '').strip()
+    if not text:
+        return None, None
+    if ':' in text:
+        pid, vid = text.split(':', 1)
+        return _etiketa_resolve(pid, vid)
+    return _etiketa_resolve(text, None)
+
+
+def _stampa_cijena_context(request, *, mode='izbor'):
+    context = _magacin_context(
+        request,
+        section='stampa_cijena',
+        page_title='Štampaj cijenu — Magacin',
+        hide_top_search=True,
+    )
+    context.update({
+        'mode': mode,
+        'lookup_url': reverse('staff_magacin_artikli_lookup'),
+        'print_url': reverse('staff_magacin_stampa_cijena_print'),
+    })
+    return context
+
+
+def _render_etiketa_print(request, items):
+    if not items:
+        messages.error(request, 'Nema artikala za štampu.')
+        return redirect('staff_magacin_stampa_cijena')
+    return render(request, 'staff/magacin/artikal_etiketa.html', {
+        'sheets': _etiketa_sheets(items),
+        'etiketa_count': len(items),
+    })
 
 
 @login_required(login_url='login')
@@ -1206,12 +1064,81 @@ def magacin_artikal_stampa(request, pk):
             messages.error(request, 'Varijacija nije pronađena.')
             return redirect('staff_magacin_artikal', pk=product.pk)
     payload = _artikal_etiketa_payload(product, variation)
-    context = {
-        'product': product,
-        'variation': variation,
-        **payload,
-    }
-    return render(request, 'staff/magacin/artikal_etiketa.html', context)
+    n = _etiketa_copy_count(request.GET.get('n'), default=ETIKETA_A4_COUNT)
+    return _render_etiketa_print(request, [payload] * n)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_stampa_cijena(request):
+    return render(request, 'staff/magacin/stampa_cijena.html', _stampa_cijena_context(request, mode='izbor'))
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_stampa_cijena_ista(request):
+    context = _stampa_cijena_context(request, mode='ista')
+    product, variation = _etiketa_resolve(request.GET.get('artikal'), request.GET.get('varijacija'))
+    picked = None
+    if product:
+        payload = _artikal_etiketa_payload(product, variation)
+        picked = {
+            'product_id': product.pk,
+            'variation_id': variation.pk if variation else '',
+            'naziv': payload['naziv'],
+            'sifra': payload['sifra'],
+            'cijena_label': payload['cijena_label'],
+        }
+    context['picked'] = picked
+    return render(request, 'staff/magacin/stampa_cijena.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_stampa_cijena_razlicite(request):
+    return render(request, 'staff/magacin/stampa_cijena.html', _stampa_cijena_context(request, mode='razlicite'))
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_stampa_cijena_print(request):
+    data = request.POST if request.method == 'POST' else request.GET
+    mod = (data.get('mod') or 'ista').strip()
+    if mod == 'razlicite':
+        items = []
+        seen = set()
+        for raw in data.getlist('stavka'):
+            product, variation = _etiketa_resolve_token(raw)
+            if product is None:
+                continue
+            key = (product.pk, variation.pk if variation else 0)
+            if key in seen:
+                continue
+            seen.add(key)
+            items.append(_artikal_etiketa_payload(product, variation))
+        if not items:
+            messages.error(request, 'Unesi barem jedan artikal.')
+            return redirect('staff_magacin_stampa_cijena_razlicite')
+        return _render_etiketa_print(request, items)
+
+    product, variation = _etiketa_resolve(data.get('artikal'), data.get('varijacija'))
+    if product is None:
+        messages.error(request, 'Izaberi artikal.')
+        return redirect('staff_magacin_stampa_cijena_ista')
+    raw_n = data.get('n')
+    if raw_n is None or str(raw_n).strip() == '':
+        messages.error(request, 'Unesi koliko cijena da odstampa.')
+        url = reverse('staff_magacin_stampa_cijena_ista')
+        params = {'artikal': product.pk}
+        if variation:
+            params['varijacija'] = variation.pk
+        return redirect(f'{url}?{urlencode(params)}')
+    n = _etiketa_copy_count(raw_n)
+    payload = _artikal_etiketa_payload(product, variation)
+    return _render_etiketa_print(request, [payload] * n)
 
 
 def _uvoz_marza_pct(stavka):

@@ -4,103 +4,197 @@
     <meta charset="utf-8">
     <title> </title>
     <style>
-        @page { size: 32mm 57mm; margin: 0; }
+        @page { size: A4 portrait; margin: 10mm; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             margin: 0;
             padding: 0;
-            background: #fff;
+            background: #e8ece6;
             color: #111;
         }
         .bar {
+            max-width: 210mm;
+            margin: 12px auto;
             padding: 12px 16px;
+            background: #fff;
+            border: 1px solid #d1d5db;
             font: 14px/1.3 Arial, Helvetica, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .bar button {
             min-height: 40px;
             padding: 0 16px;
-            margin-right: 8px;
+            border: 0;
+            background: #111;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
         }
-        .sheet { padding: 16px; }
+        .sheet {
+            width: 190mm;
+            min-height: 277mm;
+            margin: 0 auto 16px;
+            padding: 0;
+            background: #fff;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            gap: 2mm;
+        }
         .label {
-            display: block;
-            width: 32mm;
-            height: 57mm;
-            image-rendering: pixelated;
+            min-width: 0;
+            min-height: 0;
+            height: calc((277mm - 12mm) / 7);
+            padding: 1.4mm 1.8mm 1.2mm;
+            border: 0.3mm solid #111;
+            border-radius: 1.4mm;
+            display: flex;
+            flex-direction: column;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111;
+            overflow: hidden;
+            background: #fff;
+            page-break-inside: avoid;
         }
-        .meta { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+        .naziv {
+            flex: 0 0 auto;
+            font-size: 2.6mm;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            max-height: 5.8mm;
+        }
+        .rule {
+            flex-shrink: 0;
+            height: 0.25mm;
+            margin: 0.45mm 0 0.35mm;
+            background: #111;
+            border: 0;
+        }
+        .sifra {
+            flex-shrink: 0;
+            margin: 0 0 0.25mm;
+            font-size: 1.7mm;
+            font-weight: 700;
+            letter-spacing: .04em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .barcode {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .barcode img {
+            display: block;
+            width: 100%;
+            height: 7.2mm;
+            max-height: 8mm;
+            object-fit: fill;
+            object-position: center;
+        }
+        .barcode span {
+            display: block;
+            margin-top: 0.15mm;
+            font-size: 1.7mm;
+            letter-spacing: .06em;
+            font-weight: 700;
+        }
+        .cijena-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1.2mm;
+            flex-shrink: 0;
+            margin-top: 0.2mm;
+            padding-top: 0.35mm;
+            border-top: 0.25mm solid #111;
+        }
+        .cijena-iznos {
+            font-size: 6.4mm;
+            font-weight: 800;
+            letter-spacing: -0.06em;
+            line-height: 0.88;
+            white-space: nowrap;
+        }
+        .cijena-km {
+            font-size: 3.4mm;
+            font-weight: 800;
+            letter-spacing: .02em;
+            line-height: 1;
+        }
         @media print {
             html, body {
-                width: 32mm !important;
-                height: 57mm !important;
-                max-width: 32mm !important;
-                max-height: 57mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                overflow: hidden !important;
                 background: #fff !important;
             }
-            .bar, .meta { display: none !important; }
+            .bar { display: none !important; }
             .sheet {
-                padding: 0 !important;
+                width: 190mm !important;
+                min-height: 277mm !important;
+                height: 277mm !important;
                 margin: 0 !important;
-                width: 32mm !important;
-                height: 57mm !important;
-                overflow: hidden !important;
+                page-break-after: always;
+                break-after: page;
             }
-            .label {
-                width: 32mm !important;
-                height: 57mm !important;
-                max-width: 32mm !important;
-                max-height: 57mm !important;
-                page-break-after: avoid !important;
-                page-break-inside: avoid !important;
+            .sheet:last-child {
+                page-break-after: auto;
+                break-after: auto;
             }
         }
     </style>
 </head>
 <body>
     <div class="bar">
-        <button type="button" onclick="printEtiketa()">Štampaj</button>
-        <span>Zebra ZD421 — papir 32 × 57 mm, Portrait, 203 dpi, 1 kopija, 100%, margine 0</span>
+        <button type="button" onclick="window.print()">Štampaj</button>
+        <span>A4 — 3 × 7 po listu · {{ etiketa_count }} etiketa. Papir A4, skala 100%, margine 10 mm.</span>
     </div>
+    {% for sheet in sheets %}
     <div class="sheet">
-        {% if label_src %}
-        <img class="label" src="{{ label_src }}" alt="{{ naziv }} {{ cijena_label }} KM">
-        {% endif %}
+        {% for e in sheet %}
+        <article class="label">
+            <h1 class="naziv">{{ e.naziv }}</h1>
+            <div class="rule"></div>
+            <p class="sifra">ŠIFRA: {% if e.sifra %}{{ e.sifra }}{% else %}—{% endif %}</p>
+            <div class="barcode">
+                {% if e.barcode_src %}
+                <img src="{{ e.barcode_src }}" alt="{{ e.barkod }}">
+                {% endif %}
+                {% if e.barkod %}<span>{{ e.barkod }}</span>{% endif %}
+            </div>
+            <div class="cijena-row">
+                {% if e.cijena_label %}
+                <span class="cijena-iznos">{{ e.cijena_label }}</span>
+                <span class="cijena-km">KM</span>
+                {% else %}
+                <span class="cijena-iznos">—</span>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
     </div>
-    <div class="meta">
-        {{ naziv }}
-        ŠIFRA: {% if sifra %}{{ sifra }}{% else %}—{% endif %}
-        {% if barkod %}{{ barkod }}{% endif %}
-        {% if cijena_label %}{{ cijena_label }}{% endif %}
-        <span class="cijena-km">KM</span>
-        {% if barcode_src %}<img src="{{ barcode_src }}" alt="">{% endif %}
-    </div>
-    <script type="application/zpl" id="etiketa-zpl">{{ zpl|safe }}</script>
+    {% endfor %}
     <script>
-    function fallbackPrint() {
+    window.addEventListener('load', function () {
         document.title = ' ';
         window.print();
-    }
-    function printEtiketa() {
-        var zplEl = document.getElementById('etiketa-zpl');
-        var zpl = zplEl ? zplEl.textContent : '';
-        if (zpl && window.BrowserPrint) {
-            try {
-                window.BrowserPrint.getDefaultDevice('printer', function (device) {
-                    if (!device) { fallbackPrint(); return; }
-                    device.send(zpl, function () {}, function () { fallbackPrint(); });
-                }, function () { fallbackPrint(); });
-                return;
-            } catch (err) {}
-        }
-        fallbackPrint();
-    }
-    window.addEventListener('load', function () {
-        setTimeout(printEtiketa, 400);
     });
     </script>
-    <script src="http://127.0.0.1:9100/default" async></script>
 </body>
 </html>

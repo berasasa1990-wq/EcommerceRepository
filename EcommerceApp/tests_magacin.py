@@ -846,7 +846,8 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(detail, 'Ažuriraj postojeću')
         self.assertNotContains(detail, 'Ažuriraj lokacije')
         self.assertNotContains(detail, 'Dodaj na novu')
-        self.assertContains(detail, reverse('staff_magacin_artikal_stampa', args=[self.product.pk]))
+        self.assertContains(detail, reverse('staff_magacin_stampa_cijena_ista'))
+        self.assertContains(detail, f'artikal={self.product.pk}')
         self.assertContains(detail, 'Štampaj')
         self.assertContains(detail, reverse('staff_magacin_artikal_izmjena', args=[self.product.pk]))
         self.assertContains(detail, 'Promjene cijena i marže')
@@ -872,19 +873,20 @@ class MagacinViewTests(TestCase):
         self.product.save(update_fields=['barkod'])
         page = self.client.get(reverse('staff_magacin_artikal_stampa', args=[self.product.pk]))
         self.assertEqual(page.status_code, 200)
-        self.assertContains(page, 'size: 32mm 57mm')
-        self.assertContains(page, 'width: 32mm')
-        self.assertContains(page, 'height: 57mm')
-        self.assertContains(page, '^PW256')
-        self.assertContains(page, '^LL456')
-        self.assertContains(page, 'ZD421')
-        self.assertContains(page, 'Test braid')
+        self.assertContains(page, 'size: A4 portrait')
+        self.assertContains(page, 'margin: 10mm')
+        self.assertContains(page, 'width: 190mm')
+        self.assertContains(page, 'grid-template-columns: repeat(3')
+        self.assertContains(page, 'grid-template-rows: repeat(7')
+        self.assertContains(page, 'class="label"', count=21)
+        self.assertContains(page, 'Test braid', count=21)
         self.assertContains(page, 'ŠIFRA: TST-1')
         self.assertContains(page, '3870123456789')
         self.assertContains(page, '10,00')
         self.assertContains(page, 'cijena-km')
         self.assertContains(page, 'data:image/png;base64,')
         self.assertContains(page, 'window.print()')
+        self.assertNotContains(page, 'ZD421')
         html = page.content.decode()
         marker = 'data:image/png;base64,'
         start = html.index(marker) + len(marker)
@@ -894,7 +896,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
         img = Image.open(io.BytesIO(png))
         self.assertEqual(img.mode, 'RGB')
-        self.assertEqual(img.size, (256, 456))
+        self.assertGreater(img.width, 40)
+        self.assertGreater(img.height, 10)
 
         variation = ProductVariation.objects.create(
             artikal=self.product,
@@ -925,11 +928,70 @@ class MagacinViewTests(TestCase):
         self.assertEqual(missing.status_code, 302)
         self.assertEqual(missing['Location'], reverse('staff_magacin_artikal', args=[self.product.pk]))
 
+    def test_stampa_cijena_menu_same_and_mixed(self):
+        self.client.force_login(self.user)
+        nav = self.client.get(reverse('staff_magacin_artikli'))
+        html = nav.content.decode()
+        brzi = html.find(reverse('staff_magacin_brzi_unos'))
+        stampa = html.find(reverse('staff_magacin_stampa_cijena'))
+        self.assertNotEqual(brzi, -1)
+        self.assertNotEqual(stampa, -1)
+        self.assertLess(brzi, stampa)
+        self.assertContains(nav, 'Štampaj cijenu')
+
+        home = self.client.get(reverse('staff_magacin_stampa_cijena'))
+        self.assertEqual(home.status_code, 200)
+        self.assertContains(home, 'Ista cijena')
+        self.assertContains(home, 'Različite cijene')
+        self.assertContains(home, reverse('staff_magacin_stampa_cijena_ista'))
+        self.assertContains(home, reverse('staff_magacin_stampa_cijena_razlicite'))
+
+        ista = self.client.get(reverse('staff_magacin_stampa_cijena_ista'), {'artikal': self.product.pk})
+        self.assertEqual(ista.status_code, 200)
+        self.assertContains(ista, 'Test braid')
+        self.assertContains(ista, 'Koliko cijena da odstampa')
+
+        missing_n = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+            'mod': 'ista',
+            'artikal': self.product.pk,
+        })
+        self.assertEqual(missing_n.status_code, 302)
+
+        same = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+            'mod': 'ista',
+            'artikal': self.product.pk,
+            'n': '4',
+        })
+        self.assertEqual(same.status_code, 200)
+        self.assertContains(same, 'size: A4 portrait')
+        self.assertContains(same, 'class="label"', count=4)
+        self.assertContains(same, 'Test braid', count=4)
+        self.assertContains(same, '10,00')
+
+        mixed_page = self.client.get(reverse('staff_magacin_stampa_cijena_razlicite'))
+        self.assertEqual(mixed_page.status_code, 200)
+        self.assertContains(mixed_page, 'Dodaj artikal')
+        self.assertContains(mixed_page, 'Katalog')
+        self.assertContains(mixed_page, 'scCatalog')
+
+        mixed = self.client.post(reverse('staff_magacin_stampa_cijena_print'), {
+            'mod': 'razlicite',
+            'stavka': [str(self.product.pk), str(self.zero.pk)],
+        })
+        self.assertEqual(mixed.status_code, 200)
+        self.assertContains(mixed, 'class="label"', count=2)
+        self.assertContains(mixed, 'Test braid', count=1)
+        self.assertContains(mixed, 'Prazan lager', count=1)
+        self.assertContains(mixed, '10,00')
+        self.assertContains(mixed, '2,00')
+
     def test_brzi_unos_same_as_admin_flow(self):
         self.client.force_login(self.user)
         nav = self.client.get(reverse('staff_magacin_artikli'))
         self.assertContains(nav, 'Brzi unos / Aktivacija')
         self.assertContains(nav, reverse('staff_magacin_brzi_unos'))
+        self.assertContains(nav, 'Štampaj cijenu')
+        self.assertContains(nav, reverse('staff_magacin_stampa_cijena'))
 
         page = self.client.get(reverse('staff_magacin_brzi_unos'))
         self.assertEqual(page.status_code, 200)

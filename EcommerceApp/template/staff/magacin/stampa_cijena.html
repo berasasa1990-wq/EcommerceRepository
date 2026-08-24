@@ -1,0 +1,360 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="sc-page" data-lookup="{{ lookup_url }}" data-mode="{{ mode }}">
+    <div class="mg-page-head">
+        <div>
+            {% if mode == 'izbor' %}
+            <h1>Štampaj cijenu</h1>
+            <p class="mg-count">A4 list, 3 × 7 = 21 etiketa. Izaberi način.</p>
+            {% elif mode == 'ista' %}
+            <h1>Ista cijena</h1>
+            <p class="mg-count">Nađi artikal, pa reci koliko cijena da odstampa.</p>
+            {% else %}
+            <h1>Različite cijene</h1>
+            <p class="mg-count">Dodaj artikle. Štampa ide po jedna od svakog.</p>
+            {% endif %}
+        </div>
+        {% if mode != 'izbor' %}
+        <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena' %}">Nazad</a>
+        {% endif %}
+    </div>
+
+    {% if messages %}
+    <ul class="mg-flash">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if mode == 'izbor' %}
+    <div class="sc-modes">
+        <a class="sc-mode" href="{% url 'staff_magacin_stampa_cijena_ista' %}">
+            <strong>Ista cijena</strong>
+            <span>Jedan artikal. Uneseš koliko kopija da ide na papir.</span>
+        </a>
+        <a class="sc-mode" href="{% url 'staff_magacin_stampa_cijena_razlicite' %}">
+            <strong>Različite cijene</strong>
+            <span>Unosiš artikle redom. Na štampi je po jedna od svakog.</span>
+        </a>
+    </div>
+    {% elif mode == 'ista' %}
+    <section class="mg-card sc-card">
+        <label class="sc-label" for="scQuery">Artikal</label>
+        <div class="sc-search" id="scSearch">
+            <input type="search" id="scQuery" placeholder="Kucaj naziv, šifru ili barkod…" autocomplete="off" {% if not picked %}autofocus{% endif %} {% if picked %}hidden{% endif %}>
+            <ul class="sc-suggest" id="scSuggest" hidden></ul>
+        </div>
+        <div class="sc-picked" id="scPicked"{% if not picked %} hidden{% endif %}>
+            <div>
+                <strong id="scPickedName">{% if picked %}{{ picked.naziv }}{% endif %}</strong>
+                <span id="scPickedMeta">{% if picked %}{% if picked.sifra %}ŠIFRA: {{ picked.sifra }} · {% endif %}{% if picked.cijena_label %}{{ picked.cijena_label }} KM{% endif %}{% endif %}</span>
+            </div>
+            <button type="button" class="mg-btn" id="scPickedClear">Promijeni</button>
+        </div>
+        <form method="get" action="{{ print_url }}" target="_blank" rel="noopener" id="scIstaForm">
+            <input type="hidden" name="mod" value="ista">
+            <input type="hidden" name="artikal" id="scProductId" value="{% if picked %}{{ picked.product_id }}{% endif %}">
+            <input type="hidden" name="varijacija" id="scVariationId" value="{% if picked %}{{ picked.variation_id }}{% endif %}">
+            <label class="sc-label" for="scQty">Koliko cijena da odstampa?</label>
+            <input type="number" name="n" id="scQty" min="1" max="210" step="1" required inputmode="numeric" placeholder="npr. 21">
+            <button type="submit" class="mg-btn mg-btn-primary" id="scIstaPrint">Štampaj</button>
+        </form>
+    </section>
+    {% else %}
+    <section class="mg-card sc-card sc-card-wide">
+        <label class="sc-label" for="scQuery">Dodaj artikal</label>
+        <div class="sc-entry">
+            <div class="sc-search" id="scSearch">
+                <input type="search" id="scQuery" placeholder="Kucaj naziv, šifru ili barkod…" autocomplete="off" autofocus>
+                <ul class="sc-suggest" id="scSuggest" hidden></ul>
+            </div>
+            <button type="button" class="mg-btn mg-btn-pill" id="scCatalogBtn" aria-pressed="false">Katalog</button>
+        </div>
+        <div id="scCatalog" class="mg-catalog" hidden></div>
+        <form method="post" action="{{ print_url }}" target="_blank" rel="noopener" id="scDiffForm">
+            {% csrf_token %}
+            <input type="hidden" name="mod" value="razlicite">
+            <div id="scStavke"></div>
+            <ul class="sc-list" id="scList"></ul>
+            <p class="sc-empty" id="scEmpty">Još nema artikala.</p>
+            <button type="submit" class="mg-btn mg-btn-primary" id="scDiffPrint" disabled>Štampaj</button>
+        </form>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+{% if mode != 'izbor' %}
+<script>
+(function () {
+    var root = document.querySelector('.sc-page');
+    if (!root) return;
+    var lookup = root.getAttribute('data-lookup') || '';
+    var mode = root.getAttribute('data-mode');
+    var query = document.getElementById('scQuery');
+    var suggest = document.getElementById('scSuggest');
+    var catalog = document.getElementById('scCatalog');
+    var catalogBtn = document.getElementById('scCatalogBtn');
+    var listEl = document.getElementById('scList');
+    var emptyEl = document.getElementById('scEmpty');
+    var stavkeEl = document.getElementById('scStavke');
+    var printBtn = document.getElementById('scDiffPrint');
+    var timer = null;
+    var lastRows = [];
+    var seen = {};
+
+    function formatCijena(value) {
+        if (value == null || value === '') return '';
+        var n = Number(value);
+        if (isNaN(n)) return String(value).replace('.', ',');
+        return n.toFixed(2).replace('.', ',') + ' KM';
+    }
+
+    function flatten(results) {
+        var rows = [];
+        (results || []).forEach(function (p) {
+            var vars = p.varijacije || [];
+            if (vars.length) {
+                vars.forEach(function (v) {
+                    rows.push({
+                        product_id: p.id,
+                        variation_id: v.id,
+                        naziv: p.naziv + (v.naziv ? ' — ' + v.naziv : ''),
+                        sifra: v.sifra || p.sifra || '',
+                        cijena: v.cijena
+                    });
+                });
+            } else {
+                rows.push({
+                    product_id: p.id,
+                    variation_id: '',
+                    naziv: p.naziv,
+                    sifra: p.sifra || '',
+                    cijena: p.cijena
+                });
+            }
+        });
+        return rows;
+    }
+
+    function hideSuggest() {
+        if (!suggest) return;
+        suggest.hidden = true;
+        suggest.innerHTML = '';
+    }
+
+    function catalogOpen() {
+        return !!(catalog && !catalog.hidden);
+    }
+
+    function token(row) {
+        return row.variation_id ? (row.product_id + ':' + row.variation_id) : String(row.product_id);
+    }
+
+    function refreshDiff() {
+        if (!printBtn || !emptyEl || !stavkeEl) return;
+        var keys = Object.keys(seen);
+        emptyEl.hidden = keys.length > 0;
+        printBtn.disabled = keys.length === 0;
+        stavkeEl.innerHTML = '';
+        keys.forEach(function (key) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'stavka';
+            input.value = key;
+            stavkeEl.appendChild(input);
+        });
+        if (catalogOpen()) renderCatalog(lastRows);
+    }
+
+    function showRows(rows) {
+        suggest.innerHTML = '';
+        if (!rows.length) {
+            var empty = document.createElement('li');
+            empty.className = 'is-empty';
+            empty.textContent = 'Nema rezultata.';
+            suggest.appendChild(empty);
+            suggest.hidden = false;
+            return;
+        }
+        rows.forEach(function (row) {
+            var li = document.createElement('li');
+            li.innerHTML = '<span class="sc-name"></span><span class="sc-meta"></span>';
+            li.querySelector('.sc-name').textContent = row.naziv;
+            var meta = (row.sifra ? row.sifra + ' · ' : '') + formatCijena(row.cijena);
+            li.querySelector('.sc-meta').textContent = meta;
+            li.addEventListener('mousedown', function (ev) {
+                ev.preventDefault();
+                pick(row);
+            });
+            suggest.appendChild(li);
+        });
+        suggest.hidden = false;
+    }
+
+    function search(q) {
+        var useCatalog = catalogOpen();
+        if (!useCatalog && (!q || q.length < 1)) { hideSuggest(); return; }
+        var url = lookup + (lookup.indexOf('?') >= 0 ? '&' : '?') + 'q=' + encodeURIComponent(q || '') + '&bez_zalihe=1&limit=' + (useCatalog ? '80' : '20');
+        fetch(url, { credentials: 'same-origin' }).then(function (res) { return res.json(); }).then(function (data) {
+            if (query.value.trim() !== (q || '')) return;
+            var rows = flatten(data.results || []);
+            if (useCatalog) renderCatalog(rows);
+            else showRows(rows);
+        }).catch(function () {
+            if (useCatalog) renderCatalog([]);
+            else hideSuggest();
+        });
+    }
+
+    function renderCatalog(rows) {
+        if (!catalog) return;
+        lastRows = rows || [];
+        catalog.innerHTML = '';
+        if (!lastRows.length) {
+            catalog.innerHTML = '<p class="mg-empty">Ukucaj naziv, šifru ili barkod — izlistaće se artikli.</p>';
+            return;
+        }
+        lastRows.forEach(function (row) {
+            var key = token(row);
+            var added = !!seen[key];
+            var card = document.createElement('article');
+            card.className = 'mg-catalog-item' + (added ? ' is-added' : '');
+            card.innerHTML =
+                '<strong></strong>' +
+                '<p class="mg-catalog-meta"></p>' +
+                '<div class="mg-catalog-qty">' +
+                '<button type="button" class="mg-btn" data-cat-minus aria-label="Ukloni">−</button>' +
+                '<em data-cat-qty></em>' +
+                '<button type="button" class="mg-btn" data-cat-plus aria-label="Dodaj">+</button>' +
+                '</div>';
+            card.querySelector('strong').textContent = row.naziv || '';
+            card.querySelector('.mg-catalog-meta').textContent = [
+                row.sifra,
+                formatCijena(row.cijena)
+            ].filter(Boolean).join(' · ');
+            card.querySelector('[data-cat-qty]').textContent = added ? '1' : '0';
+            card.querySelector('[data-cat-minus]').disabled = !added;
+            card.querySelector('[data-cat-plus]').disabled = added;
+            card.querySelector('[data-cat-minus]').addEventListener('click', function (ev) {
+                ev.preventDefault();
+                removeDiff(key);
+            });
+            card.querySelector('[data-cat-plus]').addEventListener('click', function (ev) {
+                ev.preventDefault();
+                addDiff(row);
+            });
+            catalog.appendChild(card);
+        });
+    }
+
+    function setCatalog(on) {
+        if (!catalog || !catalogBtn) return;
+        catalog.hidden = !on;
+        catalogBtn.classList.toggle('is-on', on);
+        catalogBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        hideSuggest();
+        if (on) search(query.value.trim());
+    }
+
+    if (catalogBtn) {
+        catalogBtn.addEventListener('click', function () {
+            setCatalog(catalog.hidden);
+        });
+    }
+
+    query.addEventListener('input', function () {
+        var q = query.value.trim();
+        clearTimeout(timer);
+        timer = setTimeout(function () { search(q); }, 180);
+    });
+    query.addEventListener('blur', function () {
+        setTimeout(hideSuggest, 180);
+    });
+
+    function pick(row) {
+        hideSuggest();
+        if (mode === 'ista') pickIsta(row);
+        else addDiff(row);
+    }
+
+    function pickIsta(row) {
+        document.getElementById('scProductId').value = row.product_id;
+        document.getElementById('scVariationId').value = row.variation_id || '';
+        document.getElementById('scPickedName').textContent = row.naziv;
+        document.getElementById('scPickedMeta').textContent = (row.sifra ? 'ŠIFRA: ' + row.sifra + ' · ' : '') + formatCijena(row.cijena);
+        document.getElementById('scPicked').hidden = false;
+        query.hidden = true;
+        query.value = '';
+        document.getElementById('scQty').focus();
+    }
+
+    var clearBtn = document.getElementById('scPickedClear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            document.getElementById('scProductId').value = '';
+            document.getElementById('scVariationId').value = '';
+            document.getElementById('scPicked').hidden = true;
+            query.hidden = false;
+            query.focus();
+        });
+    }
+
+    var istaForm = document.getElementById('scIstaForm');
+    if (istaForm) {
+        istaForm.addEventListener('submit', function (ev) {
+            if (!document.getElementById('scProductId').value) {
+                ev.preventDefault();
+                query.focus();
+            }
+        });
+    }
+
+    function removeDiff(key) {
+        if (!seen[key]) return;
+        delete seen[key];
+        if (listEl) {
+            var li = listEl.querySelector('li[data-key="' + key.replace(/"/g, '') + '"]');
+            if (li) li.remove();
+        }
+        refreshDiff();
+    }
+
+    function addDiff(row) {
+        var key = token(row);
+        if (seen[key]) {
+            query.value = '';
+            hideSuggest();
+            return;
+        }
+        seen[key] = row;
+        if (listEl) {
+            var li = document.createElement('li');
+            li.dataset.key = key;
+            li.innerHTML = '<div><strong></strong><span></span></div><button type="button" class="mg-btn">Ukloni</button>';
+            li.querySelector('strong').textContent = row.naziv;
+            li.querySelector('span').textContent = (row.sifra ? row.sifra + ' · ' : '') + formatCijena(row.cijena);
+            li.querySelector('button').addEventListener('click', function () {
+                removeDiff(key);
+            });
+            listEl.appendChild(li);
+        }
+        query.value = '';
+        hideSuggest();
+        if (!catalogOpen()) query.focus();
+        refreshDiff();
+    }
+
+    var diffForm = document.getElementById('scDiffForm');
+    if (diffForm) {
+        diffForm.addEventListener('submit', function (ev) {
+            if (!Object.keys(seen).length) ev.preventDefault();
+        });
+    }
+})();
+</script>
+{% endif %}
+{% endblock %}

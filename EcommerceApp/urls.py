@@ -148,6 +148,18 @@ urlpatterns = [
         name='staff_magacin_brzi_unos_aktivacija',
     ),
     path('nalog/magacin/artikli/lookup/', views_magacin.magacin_artikli_lookup, name='staff_magacin_artikli_lookup'),
+    path('nalog/magacin/stampa-cijena/', views_magacin.magacin_stampa_cijena, name='staff_magacin_stampa_cijena'),
+    path('nalog/magacin/stampa-cijena/ista/', views_magacin.magacin_stampa_cijena_ista, name='staff_magacin_stampa_cijena_ista'),
+    path(
+        'nalog/magacin/stampa-cijena/razlicite/',
+        views_magacin.magacin_stampa_cijena_razlicite,
+        name='staff_magacin_stampa_cijena_razlicite',
+    ),
+    path(
+        'nalog/magacin/stampa-cijena/print/',
+        views_magacin.magacin_stampa_cijena_print,
+        name='staff_magacin_stampa_cijena_print',
+    ),
     path('nalog/magacin/artikli/<int:pk>/', views_magacin.magacin_artikal, name='staff_magacin_artikal'),
     path(
         'nalog/magacin/artikli/<int:pk>/stampa/',
