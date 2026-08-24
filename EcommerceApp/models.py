@@ -3983,6 +3983,8 @@ class Order(models.Model):
         return SiteSettings.load().dostava_naziv
 
     def get_status_label(self):
+        if self.lager_status == self.LagerStatus.VALIDIRANO:
+            return 'Validatovana'
         return self.Status(self.status).label
 
     def placeno_karticom(self):

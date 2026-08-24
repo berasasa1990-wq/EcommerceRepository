@@ -1313,6 +1313,7 @@ function initOrderBulkPrint() {
     if (!form) return;
     var selectAll = document.getElementById('mgSelectAll');
     var printBtn = document.getElementById('mgPrintSelected');
+    var qtyPrintBtn = document.getElementById('mgPrintQtySelected');
     var validateBtn = document.getElementById('mgValidateSelected');
     var validateForm = document.getElementById('mgValidateForm');
     var countEl = document.getElementById('mgSelectedCount');
@@ -1323,6 +1324,7 @@ function initOrderBulkPrint() {
     function sync() {
         var selected = checks().filter(function (box) { return box.checked; });
         if (printBtn) printBtn.disabled = selected.length === 0;
+        if (qtyPrintBtn) qtyPrintBtn.disabled = selected.length === 0;
         if (validateBtn) validateBtn.disabled = selected.length === 0;
         if (countEl) countEl.textContent = selected.length + ' odabrano';
         if (selectAll) {

@@ -5194,6 +5194,7 @@ tr.is-mp-lock {
 .mg-row-more:hover { background: #f3f4f6; color: #111; }
 .mg-row-more svg { width: 16px; height: 16px; }
 .mg-pill.mg-src-rucna { background: #f3f4f6; color: #6b7280; }
+.mg-pill.mg-src-vp { background: #e0f2fe; color: #075985; }
 .mg-pill.mg-src-web { background: #ecfdf3; color: #16a34a; }
 .mg-pill.mg-st-nova,
 .mg-pill.mg-st-potvrdjena { background: #e8f1ff; color: #2563eb; }

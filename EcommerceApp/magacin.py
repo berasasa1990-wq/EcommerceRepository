@@ -3504,13 +3504,13 @@ def validate_order_stock(order, *, user=None):
                 hold.save(update_fields=['status'])
     order.lager_status = Order.LagerStatus.VALIDIRANO
     update_fields = ['lager_status']
+    if order.status != Order.Status.OTKAZANA:
+        order.status = Order.Status.ZAVRSENA
+        update_fields.append('status')
     if not is_vp_order(order):
         order.zapakovana = True
         order.zapakovana_at = timezone.now()
         update_fields.extend(['zapakovana', 'zapakovana_at'])
-        if order.status != Order.Status.OTKAZANA:
-            order.status = Order.Status.ZAVRSENA
-            update_fields.append('status')
     order.save(update_fields=update_fields)
     try:
         from .views_magacin import invalidate_magacin_nav_counts

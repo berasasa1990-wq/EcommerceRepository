@@ -1610,7 +1610,8 @@ class MagacinViewTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
         self.assertFalse(order.zapakovana)
-        self.assertNotEqual(order.status, Order.Status.ZAVRSENA)
+        self.assertEqual(order.status, Order.Status.ZAVRSENA)
+        self.assertEqual(order.get_status_label(), 'Validatovana')
         still = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'sve'})
         self.assertContains(still, 'Print Kupac')
         self.assertContains(still, 'Štampaj zapakovano')
@@ -1623,6 +1624,18 @@ class MagacinViewTests(TestCase):
         validated_list = [row.broj for row in validated_page.context['orders']]
         self.assertIn(order.broj, validated_list)
         self.assertGreaterEqual(validated_page.context['validated_count'], 1)
+        self.assertContains(validated_page, 'Validatovana')
+        self.assertContains(validated_page, 'Štampaj količine za fakturu')
+        self.assertContains(validated_page, reverse('staff_magacin_narudzbe_stampa_kolicine'))
+        qty_page = self.client.get(
+            reverse('staff_magacin_narudzbe_stampa_kolicine'),
+            {'b': order.broj},
+        )
+        self.assertEqual(qty_page.status_code, 200)
+        self.assertContains(qty_page, 'Količine za fakturu')
+        self.assertContains(qty_page, self.product.naziv)
+        self.assertContains(qty_page, '>1<')
+        self.assertNotContains(qty_page, 'KM')
         printed = self.client.get(reverse('staff_magacin_pakuj_stampaj_zapakovano', args=[order.broj]))
         self.assertEqual(printed.status_code, 302)
         self.assertIn(reverse('staff_magacin_narudzbe_stampa'), printed['Location'])

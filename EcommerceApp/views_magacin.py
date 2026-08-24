@@ -2043,7 +2043,13 @@ def magacin_narudzbe(request):
         locked = pending_mp_brojevi(collect_mp_checks(order_list))
         for order in order_list:
             order.needs_mp_check = order.broj in locked
+    vp_ids = set(
+        MagacinVpNarudzba.objects.filter(
+            order_id__in=[order.pk for order in order_list],
+        ).values_list('order_id', flat=True)
+    ) if order_list else set()
     for order in order_list:
+        order.is_vp = order.pk in vp_ids
         seen = []
         for hold in order.magacin_holds.all():
             sifra = (hold.location.sifra if hold.location_id else '') or ''
@@ -2216,6 +2222,44 @@ def magacin_narudzbe_stampa(request):
         'mark_printed_url': reverse('staff_magacin_narudzbe_mark_printed'),
     }
     return render(request, 'staff/order_print.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_narudzbe_stampa_kolicine(request):
+    brojevi = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
+    brojevi = list(dict.fromkeys(brojevi))[:30]
+    if not brojevi:
+        messages.error(request, 'Odaberi barem jednu VP narudžbu za štampu količina.')
+        return redirect('staff_magacin_narudzbe')
+    orders = list(
+        Order.objects.filter(broj__in=brojevi)
+        .exclude(status=Order.Status.OTKAZANA)
+        .prefetch_related('stavke')
+    )
+    by_broj = {order.broj: order for order in orders}
+    ordered = [by_broj[broj] for broj in brojevi if broj in by_broj]
+    if not ordered:
+        messages.error(request, 'Odabrane narudžbe nisu pronađene.')
+        return redirect('staff_magacin_narudzbe')
+    print_jobs = []
+    for order in ordered:
+        stavke = []
+        for item in order.stavke.all():
+            qty = int(item.kolicina_faktura or 0)
+            if qty <= 0:
+                continue
+            stavke.append({
+                'naziv': item.puni_naziv,
+                'kolicina': qty,
+            })
+        print_jobs.append({
+            'order': order,
+            'stavke': stavke,
+        })
+    return render(request, 'staff/magacin/stampa_kolicine.html', {
+        'print_jobs': print_jobs,
+    })
 
 
 @login_required(login_url='login')
@@ -3808,6 +3852,8 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     items = {item.pk: item for item in order.stavke.all()}
     if finalize:
         for item in items.values():
+            if item.pk not in picked_by_item:
+                continue
             qty = max(0, min(int(item.kolicina), int(picked_by_item.get(item.pk, 0))))
             if qty <= 0:
                 result = _drop_zero(item, '', int(item.kolicina or 0))
