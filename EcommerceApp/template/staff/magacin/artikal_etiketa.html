@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title> </title>
     <style>
-        @page { size: A4 portrait; margin: 5px; }
+        @page { size: A4 portrait; margin: 10mm; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             margin: 0;
@@ -33,21 +33,25 @@
             cursor: pointer;
         }
         .sheet {
-            width: 210mm;
-            min-height: 297mm;
+            width: 190mm;
+            height: 277mm;
             margin: 0 auto 16px;
-            padding: 5px;
+            padding: 0;
             background: #fff;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(7, 1fr);
-            gap: 2mm;
+            grid-template-columns: repeat(3, 50mm);
+            grid-template-rows: repeat(7, 36mm);
+            justify-content: center;
+            align-content: start;
+            column-gap: 8mm;
+            row-gap: 3mm;
         }
         .label {
+            width: 50mm;
+            height: 36mm;
             min-width: 0;
             min-height: 0;
-            height: auto;
-            padding: 1.4mm 1.8mm 1.2mm;
+            padding: 1.2mm 1.4mm 1mm;
             border: 0.3mm solid #111;
             border-radius: 1.4mm;
             display: flex;
@@ -126,14 +130,14 @@
             border-top: 0.25mm solid #111;
         }
         .cijena-iznos {
-            font-size: 6.4mm;
+            font-size: 5.4mm;
             font-weight: 800;
             letter-spacing: -0.06em;
             line-height: 0.88;
             white-space: nowrap;
         }
         .cijena-km {
-            font-size: 3.4mm;
+            font-size: 2.8mm;
             font-weight: 800;
             letter-spacing: .02em;
             line-height: 1;
@@ -146,11 +150,12 @@
             }
             .bar { display: none !important; }
             .sheet {
-                width: auto !important;
+                width: 190mm !important;
+                height: 277mm !important;
                 min-height: 0 !important;
-                height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                overflow: hidden;
                 page-break-after: always;
                 break-after: page;
             }
@@ -164,7 +169,7 @@
 <body>
     <div class="bar">
         <button type="button" onclick="window.print()">Štampaj</button>
-        <span>A4 — 3 u redu, 7 naniže · {{ etiketa_count }} etiketa. Papir A4, skala 100%, margine 5 px sa svih strana.</span>
+        <span>A4 — 3 uže cijene u redu, 7 naniže. Papir A4, skala 100%, margine najmanje 10 mm, bez sječenja.</span>
     </div>
     {% for sheet in sheets %}
     <div class="sheet">
