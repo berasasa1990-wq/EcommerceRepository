@@ -2431,7 +2431,7 @@ function initArticleScanner() {
             (st.done
                 ? ''
                 : '<div class="pk-less-row">' +
-                    '<input type="number" inputmode="numeric" min="1" max="' + item.need + '" step="1" placeholder="Unesi količinu" data-pk-less-qty aria-label="Količina">' +
+                    '<input type="number" inputmode="numeric" min="0" max="' + item.need + '" step="1" placeholder="0 = nema" data-pk-less-qty aria-label="Količina">' +
                     '<button type="button" data-pk-less>Pokupi manje</button>' +
                   '</div>');
         art.querySelector('[data-pk-minus]').addEventListener('click', function () {
@@ -2455,9 +2455,13 @@ function initArticleScanner() {
             function pickLess() {
                 current = idx;
                 var raw = parseInt(lessQty.value, 10);
-                if (isNaN(raw) || raw <= 0) {
-                    showMsg('Unesi količinu koju imaš (manje od ' + item.need + ').');
+                if (isNaN(raw) || raw < 0) {
+                    showMsg('Unesi količinu koju imaš (0 = nema).');
                     lessQty.focus();
+                    return;
+                }
+                if (raw === 0) {
+                    dropMissing(item);
                     return;
                 }
                 if (raw >= item.need) {
@@ -2612,6 +2616,40 @@ function initArticleScanner() {
         persist();
         window.clearTimeout(saveTimer);
         saveTimer = window.setTimeout(saveServer, 250);
+    }
+    function dropMissing(item) {
+        if (!item) return;
+        if (!window.confirm('Artikal nema na ovoj lokaciji. Skinuti s narudžbe i s lokacije?')) return;
+        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+        var body = new URLSearchParams();
+        body.set('action', 'pick_nema');
+        body.set('item_id', String(item.item_id || ''));
+        body.set('loc', item.loc || '');
+        body.set('need', String(item.need || 0));
+        body.set('key', item.key || '');
+        if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
+        fetch(window.location.pathname, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrf ? csrf.value : '',
+            },
+            body: body,
+            credentials: 'same-origin',
+        }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+              if (!result.data || !result.data.ok) {
+                  window.alert((result.data && result.data.error) || 'Stavka nije skinuta.');
+                  return;
+              }
+              if (result.data.redirect) {
+                  window.location.href = result.data.redirect;
+                  return;
+              }
+              window.location.reload();
+          }).catch(function () {
+              window.alert('Stavka nije skinuta.');
+          });
     }
 
     function setGot(item, got, forceDone) {

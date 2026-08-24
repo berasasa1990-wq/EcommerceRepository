@@ -54,6 +54,7 @@ from .magacin import (
     add_item_to_order,
     set_order_item_qty,
     remove_item_from_order,
+    drop_missing_pick_line,
     order_is_editable,
     mark_order_packed,
     vp_waiting_print_ids,
@@ -4121,6 +4122,45 @@ def magacin_pakuj_detail(request, broj):
                 messages.error(request, 'Narudžba se ne može mijenjati.')
                 return redirect('staff_magacin_pakuj_detail', broj=order.broj)
             return _pakuj_edit_order(request, order)
+        if action == 'pick_nema':
+            try:
+                item = get_object_or_404(order.stavke, pk=int(request.POST.get('item_id') or 0))
+                loc = (request.POST.get('loc') or '').strip()
+                raw_need = request.POST.get('need') or request.POST.get('kolicina') or '0'
+                qty = _parse_qty(raw_need)
+                result = drop_missing_pick_line(
+                    order, item, loc=loc, qty=qty, user=request.user,
+                )
+            except (MagacinError, ValueError, TypeError) as exc:
+                if _pakuj_is_ajax(request):
+                    return JsonResponse(
+                        {'ok': False, 'error': str(exc) if str(exc) else 'Stavka nije skinuta.'},
+                        status=400,
+                    )
+                messages.error(request, str(exc) if str(exc) else 'Stavka nije skinuta.')
+                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+            invalidate_magacin_nav_counts()
+            if result.get('cancelled'):
+                message = 'Artikal nema — narudžba je otkazana, zaliha je skinuta s lokacije.'
+            elif result.get('removed'):
+                message = 'Artikal nema — skinut s narudžbe i s lokacije.'
+            else:
+                message = 'Artikal nema na toj lokaciji — količina je smanjena, zaliha je skinuta.'
+            if _pakuj_is_ajax(request):
+                payload = {
+                    'ok': True,
+                    'reload': True,
+                    'cancelled': bool(result.get('cancelled')),
+                    'removed': bool(result.get('removed')),
+                    'message': message,
+                }
+                if result.get('cancelled'):
+                    payload['redirect'] = reverse('staff_magacin_pakuj')
+                return JsonResponse(payload)
+            messages.success(request, message)
+            if result.get('cancelled'):
+                return redirect('staff_magacin_pakuj')
+            return redirect('staff_magacin_pakuj_detail', broj=order.broj)
         if action in {'validiraj', 'pick_save'}:
             try:
                 apply_order_pick(

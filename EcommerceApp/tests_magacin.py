@@ -305,8 +305,8 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertEqual(job['phase'], 'catalog')
         self.assertEqual(job['template_ids'], [88])
 
-    def test_does_not_reuse_product_with_other_odoo_id(self):
-        Product.objects.create(
+    def test_updates_product_matched_by_sifra_even_with_other_odoo_id(self):
+        product = Product.objects.create(
             naziv='Drugi artikal',
             sifra='SAME-CODE',
             cijena=Decimal('1.00'),
@@ -323,31 +323,38 @@ class MagacinCatalogSyncTests(TestCase):
         }])
         stats = sync_catalog_chunk(client, [88], start=0, limit=10)
         self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(stats['preskoceno'], 1)
-        self.assertEqual(Product.objects.filter(odoo_template_id=10).count(), 1)
-        self.assertEqual(Product.objects.filter(odoo_template_id=88).count(), 0)
+        self.assertEqual(stats['azurirano'], 1)
         self.assertEqual(Product.objects.count(), 1)
+        product.refresh_from_db()
+        self.assertEqual(product.odoo_template_id, 88)
+        self.assertEqual(product.naziv, 'Novi iz Odoo')
+        self.assertEqual(product.sifra, 'SAME-CODE')
+        self.assertEqual(product.cijena, Decimal('2.00'))
 
-    def test_skips_create_when_name_already_exists(self):
-        Product.objects.create(
+    def test_updates_existing_by_name_from_odoo(self):
+        product = Product.objects.create(
             naziv='Gift Card',
             sifra='GC-1',
             cijena=Decimal('1.00'),
-            odoo_template_id=10,
         )
         client = FakeOdooClient([{
             'id': 88,
             'name': 'gift card',
             'default_code': 'GC-NEW',
-            'barcode': '',
+            'barcode': 'B-88',
             'list_price': '2.00',
             'qty_available': 0,
             'product_variant_ids': [88],
         }])
         stats = sync_catalog_chunk(client, [88], start=0, limit=10)
         self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(stats['preskoceno'], 1)
+        self.assertEqual(stats['azurirano'], 1)
         self.assertEqual(Product.objects.filter(naziv__iexact='gift card').count(), 1)
+        product.refresh_from_db()
+        self.assertEqual(product.odoo_template_id, 88)
+        self.assertEqual(product.sifra, 'GC-NEW')
+        self.assertEqual(product.barkod, 'B-88')
+        self.assertEqual(product.cijena, Decimal('2.00'))
 
     def test_cleanup_deletes_duplicate_names(self):
         from EcommerceApp.magacin import cleanup_duplicate_identities
@@ -605,6 +612,59 @@ class MagacinCatalogSyncTests(TestCase):
         product.refresh_from_db()
         self.assertEqual(product.stanje, 25)
 
+    def test_quant_sync_maps_by_name_when_odoo_id_missing(self):
+        product = Product.objects.create(
+            naziv='Fox braid Odoo',
+            sifra='STARA-SIFRA',
+            cijena=Decimal('12.00'),
+            stanje=3,
+            na_stanju=True,
+            magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.create(
+            sifra='A-10',
+            naziv='Glavni magacin',
+            odoo_location_id=10,
+            odoo_location_path='WH/Stock/A-10',
+        )
+        WarehouseStock.objects.create(product=product, location=loc, kolicina=3)
+
+        class QuantClient:
+            def get_internal_stock_quants(self, product_ids, *, for_packing=False):
+                return {
+                    88: [{
+                        'location_id': 10,
+                        'location_name': 'A-10',
+                        'location_path': 'WH/Stock/A-10',
+                        'quantity': 25,
+                        'on_hand': 25,
+                        'reserved_quantity': 0,
+                    }],
+                }
+
+            def get_template_ids_for_variants(self, variant_ids):
+                return {88: 88}
+
+            def get_templates_by_ids(self, template_ids):
+                return [{
+                    'id': 88,
+                    'name': 'Fox braid Odoo',
+                    'default_code': 'FOX-OD-1',
+                    'barcode': '',
+                    'list_price': '12.00',
+                    'product_variant_ids': [88],
+                }]
+
+        updated, touched = _apply_quant_batch(
+            QuantClient(), [88], variant_to_template={88: 88},
+        )
+        self.assertIn(product.pk, touched)
+        self.assertGreaterEqual(updated, 1)
+        product.refresh_from_db()
+        self.assertEqual(product.odoo_template_id, 88)
+        stock = WarehouseStock.objects.get(product=product, location=loc)
+        self.assertEqual(stock.kolicina, 25)
+
     def test_start_stock_sync_skips_catalog(self):
         with patch('EcommerceApp.odoo_client.odoo_je_konfigurisan', return_value=True), patch(
             'EcommerceApp.magacin.attach_site_odoo_products_to_magacin',
@@ -648,7 +708,8 @@ class MagacinCatalogSyncTests(TestCase):
         var.refresh_from_db()
         self.assertEqual(product.cijena, Decimal('19.90'))
         self.assertEqual(product.naziv, 'Fox braid Odoo')
-        self.assertEqual(product.sifra, 'FOX-OD-P')
+        self.assertEqual(product.sifra, 'DRUGA-SIFRA')
+        self.assertEqual(product.barkod, 'XXX')
         self.assertEqual(var.cijena, Decimal('21.50'))
 
     def test_start_price_sync_skips_catalog(self):
@@ -1632,6 +1693,80 @@ class MagacinViewTests(TestCase):
         validate_order_stock(order, user=self.user)
         self.assertEqual(stock_totals(extra)['dostupno'], 4)
         self.assertEqual(stock_totals(self.product)['dostupno'], 7)
+
+    def test_pick_zero_removes_item_and_location_qty(self):
+        extra = Product.objects.create(
+            naziv='Drugi artikal', sifra='ADD-0', cijena=Decimal('4.00'),
+            stanje=4, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=extra, location=loc, tip='prijem', kolicina=4)
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Nema Na Polici',
+            'telefon': '061404040',
+            'product_id': [str(self.product.pk), str(extra.pk)],
+            'variation_id': ['', ''],
+            'kolicina': ['3', '1'],
+            'mp_ok': ['0', '0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Nema Na Polici')
+        item = order.stavke.get(artikal=self.product)
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.kolicina, 8)
+        self.assertEqual(stock.rezervisano, 3)
+        dropped = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'pick_nema',
+                'item_id': str(item.pk),
+                'loc': 'T-1',
+                'need': '3',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(dropped.status_code, 200)
+        self.assertTrue(dropped.json().get('ok'))
+        self.assertTrue(dropped.json().get('removed'))
+        self.assertFalse(dropped.json().get('cancelled'))
+        order.refresh_from_db()
+        self.assertFalse(order.stavke.filter(artikal=self.product).exists())
+        self.assertEqual(order.stavke.get().artikal_id, extra.pk)
+        stock.refresh_from_db()
+        self.assertEqual(stock.rezervisano, 0)
+        self.assertEqual(stock.kolicina, 5)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 5)
+
+        only = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Samo Jedan',
+            'telefon': '061404041',
+            'product_id': [str(extra.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(only.status_code, 302)
+        last_order = Order.objects.get(ime_prezime='Samo Jedan')
+        last_item = last_order.stavke.get()
+        extra_stock = WarehouseStock.objects.get(product=extra, location=loc)
+        before = extra_stock.kolicina
+        gone = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[last_order.broj]),
+            {
+                'action': 'pick_nema',
+                'item_id': str(last_item.pk),
+                'loc': 'T-1',
+                'need': '1',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(gone.status_code, 200)
+        self.assertTrue(gone.json().get('cancelled'))
+        last_order.refresh_from_db()
+        self.assertEqual(last_order.status, Order.Status.OTKAZANA)
+        extra_stock.refresh_from_db()
+        self.assertEqual(extra_stock.kolicina, before - 1)
 
     def test_vp_picking_add_uses_vp_price_on_invoice(self):
         self.client.force_login(self.user)

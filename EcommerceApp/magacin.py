@@ -1219,20 +1219,79 @@ def _variation_has_image(variation):
     return bool(slika and getattr(slika, 'name', ''))
 
 
+def _norm_name_key(value):
+    return ' '.join((value or '').split()).casefold()
+
+
+def _bind_sync_product(product, odoo_id):
+    """Poveži Magacin artikal na Odoo template ID (Odoo je izvor istine)."""
+    if product is None or odoo_id is None:
+        return product
+    odoo_id = int(odoo_id)
+    if product.odoo_template_id == odoo_id:
+        return product
+    clash = Product.objects.filter(odoo_template_id=odoo_id).exclude(pk=product.pk).first()
+    if clash is not None:
+        return clash
+    product.odoo_template_id = odoo_id
+    try:
+        product.save(update_fields=['odoo_template_id'])
+    except IntegrityError:
+        return product
+    return product
+
+
 def _find_existing_sync_product(template):
-    """Nađi artikal po Odoo ID, ili po šifri/barkodu/nazivu ako još nema Odoo ID."""
-    from .odoo_import import _link_product_odoo_template, _odoo_id
+    """Nađi isti artikal: Odoo ID, pa naziv, pa šifra / barkod."""
+    from .odoo_import import _odoo_id
 
     odoo_id = _odoo_id(template.get('id'))
-    if odoo_id is None:
+    if odoo_id is not None:
+        product = Product.objects.filter(odoo_template_id=odoo_id).first()
+        if product is not None:
+            return product
+        variation = (
+            ProductVariation.objects.filter(odoo_template_id=odoo_id)
+            .select_related('artikal')
+            .first()
+        )
+        if variation is not None and variation.artikal_id:
+            parent = variation.artikal
+            if not parent.odoo_template_id or parent.odoo_template_id == odoo_id:
+                return _bind_sync_product(parent, odoo_id)
+        variant_ids = [
+            vid for vid in (_odoo_id(v) for v in (template.get('product_variant_ids') or []))
+            if vid
+        ]
+        if variant_ids:
+            variation = (
+                ProductVariation.objects.filter(odoo_variant_id__in=variant_ids)
+                .select_related('artikal')
+                .first()
+            )
+            if variation is not None and variation.artikal_id:
+                parent = variation.artikal
+                if not parent.odoo_template_id or parent.odoo_template_id == odoo_id:
+                    return _bind_sync_product(parent, odoo_id)
+
+    naziv, sifra, barkod = _template_identity(template)
+    candidates = []
+    if naziv:
+        name_key = _norm_name_key(naziv)
+        for row in Product.objects.filter(naziv__iexact=naziv):
+            if _norm_name_key(row.naziv) == name_key:
+                candidates.append(row)
+    if not candidates and sifra:
+        candidates.extend(list(Product.objects.filter(sifra__iexact=sifra)))
+    if not candidates and barkod:
+        candidates.extend(list(Product.objects.filter(barkod__iexact=barkod)))
+    if not candidates:
         return None
-    product = Product.objects.filter(odoo_template_id=odoo_id).first()
-    if product is not None:
-        return product
-    for candidate in _identity_blockers(template):
-        if not candidate.odoo_template_id:
-            return _link_product_odoo_template(candidate, odoo_id)
-    return None
+    unique = {row.pk: row for row in candidates}
+    product = max(unique.values(), key=_keeper_rank)
+    if odoo_id is not None:
+        product = _bind_sync_product(product, odoo_id)
+    return product
 
 
 def _apply_image_once(image_field, image_b64, filename):
@@ -1350,8 +1409,6 @@ def _sync_one_template(client, template, *, image_b64=None, synced_at=None):
     odoo_id = int(template['id'])
     product = _find_existing_sync_product(template)
     if product is None:
-        if _identity_blockers(template).exists():
-            return 'preskoceno'
         product, created = _create_sync_product(
             template, image_b64=image_b64, synced_at=synced_at,
         )
@@ -1507,16 +1564,31 @@ def sync_price_chunk(client, template_ids):
     }
     for tid in ids:
         template = by_id.get(tid)
-        product = products.get(tid)
-        if not template or not product:
+        if not template:
+            stats['preskoceno'] += 1
+            continue
+        product = products.get(tid) or _find_existing_sync_product(template)
+        if not product:
             stats['preskoceno'] += 1
             continue
         cijena = _decimal_price(template.get('list_price'))
-        changed = False
+        barkod = ''
+        if template.get('barcode') not in (False, None, ''):
+            barkod = str(template.get('barcode'))[:BARKOD_MAX_LENGTH]
+        new_sifra = _safe_sifra(template.get('default_code'), odoo_id=tid, product_pk=product.pk)
+        fields = []
         if product.cijena != cijena:
             product.cijena = cijena
-            product.save(update_fields=['cijena'])
-            changed = True
+            fields.append('cijena')
+        if new_sifra and new_sifra != product.sifra:
+            product.sifra = new_sifra
+            fields.append('sifra')
+        if (product.barkod or '') != barkod:
+            product.barkod = barkod
+            fields.append('barkod')
+        changed = bool(fields)
+        if fields:
+            product.save(update_fields=fields)
         var_updated = _sync_variation_prices(client, product, template)
         if changed or var_updated:
             stats['azurirano'] += 1
@@ -2017,6 +2089,14 @@ def _odoo_id_to_local(odoo_product_ids, *, variant_to_template=None, client=None
             for prod in Product.objects.filter(odoo_template_id__in=template_ids)
             if prod.odoo_template_id
         }
+        missing_tids = [tid for tid in template_ids if tid not in by_template]
+        if missing_tids and client is not None and hasattr(client, 'get_templates_by_ids'):
+            templates = client.get_templates_by_ids(missing_tids) or []
+            for tmpl in templates:
+                found = _find_existing_sync_product(tmpl)
+                if found is None or not found.odoo_template_id:
+                    continue
+                by_template[int(found.odoo_template_id)] = found
         for vid in leftover:
             tid = v2t.get(vid)
             if tid and tid in by_template:
@@ -3147,6 +3227,90 @@ def remove_item_from_order(order, item, *, user=None):
     item.delete()
     _clear_pick_state_for_item(order, item_id)
     recalculate_order_totals(order)
+
+
+@transaction.atomic
+def drop_missing_pick_line(order, item, *, loc, qty, user=None):
+    """Picking 0 / nema: skini količinu s narudžbe i s te lokacije."""
+    _assert_order_editable(order)
+    if item.narudzba_id != order.pk:
+        raise MagacinError('Stavka nije na ovoj narudžbi.')
+    qty = max(0, _int(qty))
+    if qty <= 0:
+        qty = int(item.kolicina or 0)
+    loc = (loc or '').strip()
+    product = item.artikal
+    variation = item.varijacija
+    skip_stock = (
+        loc in {'MP', 'Provjeri u MP', 'Rezervni dio'}
+        or getattr(item, 'rezervni_dio', False)
+        or product is None
+    )
+    if not skip_stock:
+        location = WarehouseLocation.objects.filter(sifra=loc).first()
+        if location is not None and not is_ignored_stock_location(location):
+            remaining = qty
+            holds = list(
+                order.magacin_holds.filter(
+                    product=product,
+                    location=location,
+                    status=OrderStockHold.Status.REZERVISANO,
+                    **_hold_variation_filter(variation),
+                ).order_by('-kolicina', '-pk')
+            )
+            for hold in holds:
+                if remaining <= 0:
+                    break
+                take = min(int(hold.kolicina or 0), remaining)
+                if take <= 0:
+                    continue
+                stock = get_or_create_stock(
+                    product=product, variation=variation, location=location,
+                )
+                apply_movement(
+                    product=product,
+                    variation=variation,
+                    location=location,
+                    tip=WarehouseMovement.Tip.REZERVACIJA,
+                    kolicina=1,
+                    rezervisano=max(0, int(stock.rezervisano or 0) - take),
+                    napomena=f'Nema na pickingu #{order.broj}',
+                    user=user,
+                )
+                if take >= int(hold.kolicina or 0):
+                    hold.status = OrderStockHold.Status.OTKAZANO
+                    hold.save(update_fields=['status'])
+                else:
+                    hold.kolicina -= take
+                    hold.save(update_fields=['kolicina'])
+                remaining -= take
+            stock = get_or_create_stock(
+                product=product, variation=variation, location=location,
+            )
+            new_on_hand = max(0, int(stock.kolicina or 0) - qty)
+            if new_on_hand != int(stock.kolicina or 0):
+                apply_movement(
+                    product=product,
+                    variation=variation,
+                    location=location,
+                    tip=WarehouseMovement.Tip.KOREKCIJA,
+                    kolicina=new_on_hand,
+                    napomena=f'Nema na pickingu #{order.broj}',
+                    user=user,
+                )
+    new_qty = int(item.kolicina or 0) - qty
+    if new_qty <= 0:
+        if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
+            cancel_order_stock(order, user=user)
+            return {'cancelled': True, 'removed': True}
+        remove_item_from_order(order, item, user=user)
+        return {'cancelled': False, 'removed': True}
+    item.kolicina = new_qty
+    item.kolicina_pokupljeno = None
+    item.save(update_fields=['kolicina', 'kolicina_pokupljeno'])
+    _clear_pick_state_for_item(order, item.pk)
+    recalculate_order_totals(order)
+    return {'cancelled': False, 'removed': False}
 
 
 @transaction.atomic
