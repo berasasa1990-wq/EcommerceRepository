@@ -781,3 +781,52 @@ class ProductNameOptionsTests(TestCase):
         payload = added.json()
         self.assertTrue(payload.get('ok'))
         self.assertGreaterEqual(payload.get('cart_count') or 0, 1)
+
+
+class ProductAdminVariationSortTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        self.admin = User.objects.create_superuser('prodadmin', 'prod@example.com', 'pass')
+        self.plain = Product.objects.create(
+            naziv='Majica bez varijacije',
+            cijena=Decimal('10.00'),
+            na_stanju=True,
+            stanje=2,
+        )
+        self.with_vars = Product.objects.create(
+            naziv='Majica sa varijacijama',
+            cijena=Decimal('12.00'),
+            na_stanju=True,
+            stanje=3,
+        )
+        ProductVariation.objects.create(
+            artikal=self.with_vars, naziv='XL', na_stanju=True, stanje=2,
+        )
+        ProductVariation.objects.create(
+            artikal=self.with_vars, naziv='S', na_stanju=True, stanje=1,
+        )
+
+    def test_filter_and_sort_by_variations(self):
+        from django.contrib.admin.sites import site
+        from django.test import RequestFactory
+
+        from .admin import ImaVarijacijeFilter, ProductAdmin
+
+        self.assertIn('varijacije_broj', ProductAdmin.list_display)
+        self.assertIn(ImaVarijacijeFilter, ProductAdmin.list_filter)
+        request = RequestFactory().get('/admin/EcommerceApp/product/')
+        request.user = self.admin
+        model_admin = ProductAdmin(Product, site)
+        qs = model_admin.get_queryset(request)
+        self.assertIn('varijacije_broj', qs.query.annotations)
+        with_vars = ImaVarijacijeFilter(
+            request, {'ima_varijacije': ['da']}, Product, model_admin,
+        ).queryset(request, qs)
+        self.assertEqual(list(with_vars.values_list('pk', flat=True)), [self.with_vars.pk])
+        without = ImaVarijacijeFilter(
+            request, {'ima_varijacije': ['ne']}, Product, model_admin,
+        ).queryset(request, qs)
+        self.assertEqual(list(without.values_list('pk', flat=True)), [self.plain.pk])
+        ordered = list(qs.order_by('-varijacije_broj', 'pk').values_list('pk', flat=True))
+        self.assertEqual(ordered[0], self.with_vars.pk)

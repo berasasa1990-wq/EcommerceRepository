@@ -3,7 +3,7 @@ import logging
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
@@ -2065,6 +2065,26 @@ class BannerAdmin(admin.ModelAdmin):
         return 'Nema videa'
 
 
+class ImaVarijacijeFilter(admin.SimpleListFilter):
+    title = 'Varijacije'
+    parameter_name = 'ima_varijacije'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('da', 'Ima varijacije'),
+            ('ne', 'Bez varijacija'),
+        )
+
+    def queryset(self, request, queryset):
+        if 'varijacije_broj' not in queryset.query.annotations:
+            queryset = queryset.annotate(varijacije_broj=Count('varijacije', distinct=True))
+        if self.value() == 'da':
+            return queryset.filter(varijacije_broj__gt=0)
+        if self.value() == 'ne':
+            return queryset.filter(varijacije_broj=0)
+        return queryset
+
+
 class NaStanjuFilter(admin.SimpleListFilter):
     """Custom filter for 'na_stanju' that defaults to 'Yes' (in stock) selected."""
     title = 'Na stanju'
@@ -2120,13 +2140,13 @@ class ProductAdmin(admin.ModelAdmin):
     ]
     filter_horizontal = ('tagovi',)
     list_display = (
-        'naziv', 'sifra', 'brend', 'kategorija', 'cijena', 'pakovanje_komada',
+        'naziv', 'varijacije_broj', 'sifra', 'brend', 'kategorija', 'cijena', 'pakovanje_komada',
         'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
         'prioritet_lagera', 'proizvedeno_u_japanu',
         'aktivan', 'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
     list_filter = (
-        'aktivan', NaStanjuFilter, 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
+        'aktivan', NaStanjuFilter, ImaVarijacijeFilter, 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
         'prioritet_lagera', 'proizvedeno_u_japanu',
         'kategorija', 'brend', 'tagovi',
         ('kreiran', admin.DateFieldListFilter),
@@ -2142,6 +2162,10 @@ class ProductAdmin(admin.ModelAdmin):
         'kategorija__naziv', 'kategorija__roditelj__naziv',
         'odoo_template_id', 'meta_title', 'meta_description',
     )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(varijacije_broj=Count('varijacije', distinct=True))
 
     def get_search_results(self, request, queryset, search_term):
         """
@@ -3524,6 +3548,13 @@ class ProductAdmin(admin.ModelAdmin):
         return mark_safe(
             'Nije objavljen. Klikni <strong>Objavi na OLX / Pik</strong> pored Save (dolje na stranici).',
         )
+
+    @admin.display(description='Varijacije', ordering='varijacije_broj')
+    def varijacije_broj(self, obj):
+        n = getattr(obj, 'varijacije_broj', None)
+        if n is None:
+            n = obj.varijacije.count()
+        return n or '—'
 
     @admin.display(description='Dodano', ordering='kreiran')
     def datum_dodavanja(self, obj):
