@@ -72,6 +72,77 @@
                 </div>
             </article>
 
+            {% if can_edit_order %}
+            <section class="pk-edit-panel" id="pkEditPanel">
+                <details class="pk-edit-box">
+                    <summary>Izmijeni narudžbu</summary>
+                    <p class="pk-edit-lead">Ako si greškom ubacio artikal, ukloni ga ili dodaj ispravan. Picking se usklađuje odmah.</p>
+                    {% if edit_form_url %}
+                    <p class="pk-edit-form-link"><a href="{{ edit_form_url }}">Otvori cijelu formu</a></p>
+                    {% endif %}
+                    <form id="pkEditAddForm" class="pk-edit-search" method="post" action="">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="dodaj">
+                        <input type="hidden" name="product_id" id="pkEditProductId" value="">
+                        <input type="hidden" name="variation_id" id="pkEditVariationId" value="">
+                        <input type="hidden" name="kolicina" id="pkEditAddQty" value="1">
+                        <input type="hidden" name="mp_ok" id="pkEditMpOk" value="0">
+                        <input type="search" id="pkEditQuery" placeholder="Pretraži ili skeniraj artikal..." autocomplete="off">
+                    </form>
+                    <ul class="pk-edit-suggest" id="pkEditSuggest" hidden></ul>
+                    <ul class="pk-edit-lines" id="pkEditLines">
+                        {% for item in order_items %}
+                        <li>
+                            <div class="pk-edit-info">
+                                <strong>{{ item.puni_naziv }}</strong>
+                                <span>{{ item.sifra }} · {{ item.cijena }} KM</span>
+                            </div>
+                            <form class="pk-edit-qty-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="kolicina">
+                                <input type="hidden" name="stavka_id" value="{{ item.pk }}">
+                                <input class="pk-edit-qty" type="number" name="kolicina" min="1" step="1" value="{{ item.kolicina }}" aria-label="Količina">
+                            </form>
+                            <form class="pk-edit-remove-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="ukloni">
+                                <input type="hidden" name="stavka_id" value="{{ item.pk }}">
+                                <button type="submit" class="pk-edit-remove">Ukloni</button>
+                            </form>
+                        </li>
+                        {% empty %}
+                        <li class="is-empty">Nema stavki.</li>
+                        {% endfor %}
+                    </ul>
+                    <p class="pk-edit-total">Ukupno <span id="pkEditTotal">{{ order.ukupno }} KM</span></p>
+                </details>
+            </section>
+            <div class="mg-modal" id="pkEditQtyModal" hidden>
+                <div class="mg-modal-bg" data-pk-edit-qty-close></div>
+                <div class="pk-edit-qty-box" role="dialog" aria-modal="true">
+                    <p class="vp-qty-kicker">Količina</p>
+                    <h2 id="pkEditQtyName">Artikal</h2>
+                    <p class="pk-edit-meta" id="pkEditQtyMeta"></p>
+                    <input id="pkEditQtyInput" class="pk-edit-qty-big" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Količina">
+                    <div class="pk-edit-qty-actions">
+                        <button type="button" class="mg-btn" data-pk-edit-qty-close>Otkaži</button>
+                        <button type="button" class="mg-btn mg-btn-primary" id="pkEditQtyAdd">Dodaj</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mg-modal" id="pkEditMpModal" hidden>
+                <div class="mg-modal-bg" data-pk-edit-mp-skip></div>
+                <div class="pk-edit-qty-box" role="dialog" aria-modal="true">
+                    <h2>Provjeri u maloprodaji</h2>
+                    <p class="pk-edit-meta" id="pkEditMpText">Artikal nije na stanju u magacinu.</p>
+                    <div class="pk-edit-qty-actions">
+                        <button type="button" class="mg-btn" id="pkEditMpSkip">Izbaci</button>
+                        <button type="button" class="mg-btn mg-btn-primary" id="pkEditMpAdd">Dodaj</button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <nav class="pk-switch" id="pkSwitch">
                 <button type="button" class="is-on" data-pk-view="now">Trenutno <i id="pkNowN">0</i></button>
                 <button type="button" data-pk-view="done">Pokupljeno <i id="pkDoneN">0</i></button>

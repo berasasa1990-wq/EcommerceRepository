@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import csv
 import re
 import time
 from collections import defaultdict
 from datetime import timedelta
+from io import StringIO
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from .models import (
     BARKOD_MAX_LENGTH,
@@ -2408,7 +2410,7 @@ def set_vp_customer(draft, customer):
     return draft
 
 
-def add_vp_stavka(draft, *, product, qty, variation=None, mp_ok=False):
+def add_vp_stavka(draft, *, product, qty, variation=None, mp_ok=False, cijena=None):
     qty = max(1, _int(qty))
     if draft.status != MagacinVpNarudzba.Status.U_TOKU:
         raise MagacinError('Ova VP narudžba je završena.')
@@ -2419,7 +2421,16 @@ def add_vp_stavka(draft, *, product, qty, variation=None, mp_ok=False):
     if variation:
         naziv = f'{product.naziv} {variation.naziv}'.strip()
         sifra = variation.sifra or product.sifra or ''
-    cijena, mpc = vp_cijena(product, variation)
+    catalog_cijena, mpc = vp_cijena(product, variation)
+    if cijena is None or cijena == '':
+        cijena = catalog_cijena
+    else:
+        try:
+            cijena = Decimal(str(cijena)).quantize(Decimal('0.01'))
+        except (InvalidOperation, TypeError, ValueError):
+            cijena = catalog_cijena
+        if cijena < 0:
+            cijena = catalog_cijena
     existing = draft.stavke.filter(product=product, variation=variation).first()
     if existing:
         existing.kolicina += qty
@@ -2473,6 +2484,230 @@ def remove_vp_stavka(draft, stavka_id):
         raise MagacinError('Stavka nije pronađena.')
 
 
+_BULK_SIFRA_RE = re.compile(r'šifra\s*:\s*([A-Za-z0-9._/-]+)', re.IGNORECASE)
+_BULK_MONEY_RE = re.compile(
+    r'^\s*\d+(?:[.,]\d{1,2})?\s*(?:KM)?\s*$',
+    re.IGNORECASE,
+)
+_BULK_QTY_RE = re.compile(r'^\s*\d+\s*$')
+_BULK_ROW_START_RE = re.compile(r'^\s*(\d+)\s*[.,;\t]+\s*(.*)$')
+
+
+def _bulk_norm_name(value):
+    text = _BULK_SIFRA_RE.sub('', value or '')
+    return ' '.join(text.split()).casefold()
+
+
+def _bulk_is_header(line):
+    n = (line or '').casefold()
+    if 'artikal' in n and any(token in n for token in ('kol', 'cijena', 'ukupno')):
+        return True
+    stripped = n.strip().strip(',')
+    return stripped in {'#', 'rb', 'r.b.', 'r.b'}
+
+
+def _bulk_is_money(value):
+    return bool(_BULK_MONEY_RE.match(value or ''))
+
+
+def _bulk_parse_money(value):
+    text = (value or '').replace('KM', '').replace(' ', '').replace(',', '.')
+    try:
+        amount = Decimal(text)
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    if amount < 0:
+        return None
+    return amount.quantize(Decimal('0.01'))
+
+
+def _bulk_is_row_start(line):
+    match = _BULK_ROW_START_RE.match(line or '')
+    if not match:
+        return False
+    rest = (match.group(2) or '').strip()
+    if not rest:
+        return True
+    first = rest.split('\t', 1)[0].split(',', 1)[0].strip()
+    if _bulk_is_money(first) or _BULK_QTY_RE.match(first):
+        return False
+    n = rest.casefold()
+    if 'artikal' in n and any(token in n for token in ('kol', 'cijena', 'ukupno')):
+        return False
+    return True
+
+
+def _bulk_clean_field(value):
+    return (value or '').replace('\n', ' ').strip().strip(',').strip()
+
+
+def _bulk_split_fields(chunk):
+    text = (chunk or '').strip()
+    if not text:
+        return []
+    if text.count('\t') >= 2:
+        return [_bulk_clean_field(part) for part in text.split('\t')]
+    reader = csv.reader(StringIO(re.sub(r'\s*\n\s*', ' ', text)))
+    try:
+        return [_bulk_clean_field(part) for part in next(reader)]
+    except StopIteration:
+        return [_bulk_clean_field(text)]
+
+
+def _bulk_parse_chunk(chunk):
+    fields = [part for part in _bulk_split_fields(chunk) if part]
+    if not fields:
+        return None
+    joined = ' '.join(fields)
+    if _bulk_is_header(joined):
+        return None
+    if fields and _BULK_QTY_RE.match(fields[0]) and len(fields) > 1:
+        fields = fields[1:]
+    ukupno = None
+    if fields and _bulk_is_money(fields[-1]):
+        ukupno = _bulk_parse_money(fields[-1])
+        fields = fields[:-1]
+    cijena = None
+    if fields and _bulk_is_money(fields[-1]):
+        cijena = _bulk_parse_money(fields[-1])
+        fields = fields[:-1]
+    elif ukupno is not None:
+        cijena = ukupno
+        ukupno = None
+    qty = 1
+    if fields and _BULK_QTY_RE.match(fields[-1]):
+        qty = max(1, int(fields[-1]))
+        fields = fields[:-1]
+    artikal = ' '.join(fields).strip()
+    sifra_match = _BULK_SIFRA_RE.search(artikal)
+    sifra = sifra_match.group(1) if sifra_match else ''
+    naziv = _BULK_SIFRA_RE.sub('', artikal)
+    naziv = ' '.join(naziv.split()).strip()
+    if not naziv:
+        return None
+    return {
+        'naziv': naziv,
+        'sifra': sifra,
+        'qty': qty,
+        'cijena': cijena,
+        'ukupno': ukupno,
+    }
+
+
+def parse_vp_bulk_text(text):
+    """Parsiraj zalijepljenu VP tabelu (#, Artikal, Kol., Cijena, Ukupno)."""
+    raw = (text or '').replace('\r\n', '\n').replace('\r', '\n')
+    lines = [line.strip() for line in raw.split('\n')]
+    chunks = []
+    current = []
+    for line in lines:
+        if not line or _bulk_is_header(line):
+            continue
+        if _bulk_is_row_start(line) and current:
+            chunks.append('\n'.join(current))
+            current = [line]
+        else:
+            current.append(line)
+    if current:
+        chunks.append('\n'.join(current))
+    rows = []
+    for chunk in chunks:
+        parsed = _bulk_parse_chunk(chunk)
+        if parsed:
+            rows.append(parsed)
+    return rows
+
+
+def _vp_bulk_name_index():
+    index = {}
+    products = magacin_products_qs().prefetch_related('varijacije')
+    for product in products:
+        variations = list(product.varijacije.all())
+        key = _bulk_norm_name(product.naziv)
+        if key and len(variations) <= 1:
+            variation = variations[0] if variations else None
+            index.setdefault(key, []).append((product, variation))
+        for variation in variations:
+            combined = _bulk_norm_name(f'{product.naziv} {variation.naziv}')
+            if combined:
+                index.setdefault(combined, []).append((product, variation))
+            var_key = _bulk_norm_name(variation.naziv)
+            if var_key and len(var_key) >= 12:
+                index.setdefault(var_key, []).append((product, variation))
+    return index
+
+
+def _vp_bulk_match(naziv, index):
+    hits = index.get(_bulk_norm_name(naziv)) or []
+    if not hits:
+        return None
+    for product, variation in hits:
+        if variation is None:
+            return product, None
+    return hits[0]
+
+
+def add_vp_bulk_stavke(draft, text):
+    if draft is None or draft.status != MagacinVpNarudzba.Status.U_TOKU:
+        raise MagacinError('Nema otvorene VP narudžbe.')
+    rows = parse_vp_bulk_text(text)
+    if not rows:
+        raise MagacinError(
+            'Nema stavki za unos. Zalijepi tabelu s kolonama Artikal, Kol., Cijena.'
+        )
+    index = _vp_bulk_name_index()
+    added = []
+    skipped = []
+    for row in rows:
+        hit = _vp_bulk_match(row['naziv'], index)
+        if hit is None:
+            skipped.append({'naziv': row['naziv'], 'razlog': 'nema u bazi'})
+            continue
+        product, variation = hit
+        available = stock_totals(product, variation)['dostupno']
+        existing = draft.stavke.filter(product=product, variation=variation).first()
+        needed = row['qty'] + (existing.kolicina if existing else 0)
+        mp_ok = needed > available
+        stavka = add_vp_stavka(
+            draft,
+            product=product,
+            variation=variation,
+            qty=row['qty'],
+            mp_ok=mp_ok,
+            cijena=row['cijena'],
+        )
+        added.append({
+            'naziv': stavka.naziv,
+            'kolicina': row['qty'],
+            'cijena': str(stavka.cijena),
+            'mp_ok': bool(stavka.mp_ok),
+        })
+    if added and not draft.bulk:
+        draft.bulk = True
+        draft.save(update_fields=['bulk', 'azuriran'])
+    return {'added': added, 'skipped': skipped}
+
+
+def vp_draft_totals(osnova, *, bulk=False):
+    from .cart import PDV_STOPA
+
+    osnova = Decimal(str(osnova or 0)).quantize(Decimal('0.01'))
+    if not bulk:
+        return {
+            'osnova': osnova,
+            'pdv': Decimal('0.00'),
+            'ukupno_sa_pdv': osnova,
+            'bulk': False,
+        }
+    pdv = (osnova * PDV_STOPA).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    return {
+        'osnova': osnova,
+        'pdv': pdv,
+        'ukupno_sa_pdv': (osnova + pdv).quantize(Decimal('0.01')),
+        'bulk': True,
+    }
+
+
 def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
     if draft.status == MagacinVpNarudzba.Status.ZAVRSENA:
         return draft.order
@@ -2505,10 +2740,17 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
             'shortfall': shortfall,
         })
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
+    totals = vp_draft_totals(medjuzbir, bulk=bool(getattr(draft, 'bulk', False)))
     email = (draft.email or '').strip() or 'vp@opremazaribolov.ba'
     adresa = (draft.adresa or '').strip() or 'VP narudžba'
     grad = (draft.grad or '').strip() or '—'
     napomena = 'VP narudžba'
+    if totals['bulk']:
+        napomena = (
+            f'{napomena}\nBulk: PDV 17% = {totals["pdv"]} KM, '
+            f'ukupno sa PDV {totals["ukupno_sa_pdv"]} KM'
+        )
+        medjuzbir = totals['ukupno_sa_pdv']
     if mp_names:
         napomena = f'{napomena}\nMaloprodaja: {", ".join(mp_names)}'
     with transaction.atomic():
@@ -2772,6 +3014,14 @@ def _assert_order_editable(order):
         raise MagacinError('Validirana narudžba se ne može mijenjati.')
     if order.lager_status == Order.LagerStatus.OTKAZANO or order.status == Order.Status.OTKAZANA:
         raise MagacinError('Otkazana narudžba se ne može mijenjati.')
+
+
+def order_is_editable(order):
+    try:
+        _assert_order_editable(order)
+        return True
+    except MagacinError:
+        return False
 
 
 def _note_maloprodaja(order, product, variation=None):

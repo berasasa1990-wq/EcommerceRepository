@@ -2,11 +2,11 @@
 
 {% block magacin_content %}
 <div class="mg-order-page" id="mgOrderPage">
-    <nav class="mg-crumb">Narudžbe / {% if existing_order %}Rezervacija #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</nav>
+    <nav class="mg-crumb">Narudžbe / {% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</nav>
     <div class="mg-page-head">
         <div>
-            <h1>{% if existing_order %}Rezervacija #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</h1>
-            <p class="mg-count" id="mgOrderIntro">{% if existing_order %}Zaliha je rezervisana. Dodaj ili izbaci artikle, pa Sačuvaj kad je narudžba gotova.{% else %}Kreiraj narudžbu dodavanjem kupca i artikla.{% endif %}</p>
+            <h1>{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</h1>
+            <p class="mg-count" id="mgOrderIntro">{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Zaliha je rezervisana. Dodaj ili izbaci artikle, pa Sačuvaj kad je narudžba gotova.{% else %}Ako si greškom ubacio artikal, izbaci ga ili dodaj ispravan. Sačuvaj — picking se usklađuje.{% endif %}{% else %}Kreiraj narudžbu dodavanjem kupca i artikla.{% endif %}</p>
         </div>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>

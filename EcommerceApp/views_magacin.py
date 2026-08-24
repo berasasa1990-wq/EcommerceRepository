@@ -32,6 +32,8 @@ from .magacin import (
     resume_popis,
     active_vp_narudzba,
     add_vp_stavka,
+    add_vp_bulk_stavke,
+    vp_draft_totals,
     apply_movement,
     attach_uvoz_list_metrics,
     create_magacin_uvoz_from_rows,
@@ -52,6 +54,7 @@ from .magacin import (
     add_item_to_order,
     set_order_item_qty,
     remove_item_from_order,
+    order_is_editable,
     mark_order_packed,
     vp_waiting_print_ids,
     skini_sa_sajta,
@@ -2538,10 +2541,23 @@ def _save_warehouse_customer(*, ime, telefon, adresa='', grad='', email='', post
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_narudzba_nova(request):
-    existing = _reservation_order_from_request(request)
-    page_title = (
-        f'Rezervacija #{existing.broj}' if existing else 'Nova ručna narudžba'
-    )
+    requested_broj = (
+        request.POST.get('order_broj') or request.GET.get('broj') or ''
+    ).strip().lstrip('#')
+    existing = _editable_order_from_request(request)
+    if requested_broj and existing is None:
+        found = Order.objects.filter(broj=requested_broj).first()
+        if found is not None:
+            messages.error(request, 'Ova narudžba se ne može mijenjati.')
+            return redirect('staff_order_detail', broj=found.broj)
+        messages.error(request, 'Narudžba nije pronađena.')
+        return redirect('staff_magacin_narudzbe')
+    if existing is not None and existing.status == Order.Status.REZERVACIJA:
+        page_title = f'Rezervacija #{existing.broj}'
+    elif existing is not None:
+        page_title = f'Narudžba #{existing.broj}'
+    else:
+        page_title = 'Nova ručna narudžba'
     context = _magacin_context(request, section='narudzbe', page_title=page_title)
     context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
     context['existing_order'] = existing
@@ -2574,6 +2590,15 @@ def magacin_narudzba_nova(request):
                 'Možeš dodati ili izbaciti artikle, pa Sačuvaj kad je gotova.',
             )
             return redirect(f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}")
+        if existing is not None:
+            messages.success(
+                request,
+                f'Narudžba #{order.broj} je ažurirana. '
+                'Picking je usklađen — uklonjeni artikli su izbačeni, dodani su na listu.',
+            )
+            if order.pick_claimed_by_id:
+                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+            return redirect('staff_magacin_pakuj')
         return _after_order_created_redirect(request, order)
 
     if existing:
@@ -2598,15 +2623,23 @@ def magacin_narudzba_nova(request):
     return render(request, 'staff/magacin/narudzba_nova.html', context)
 
 
-def _reservation_order_from_request(request):
+def _editable_order_from_request(request):
     broj = (request.POST.get('order_broj') or request.GET.get('broj') or '').strip().lstrip('#')
     if not broj:
         return None
     order = (
-        Order.objects.filter(broj=broj, status=Order.Status.REZERVACIJA)
+        Order.objects.filter(broj=broj)
         .exclude(status=Order.Status.OTKAZANA)
         .first()
     )
+    if order is None:
+        return None
+    if order.status == Order.Status.REZERVACIJA:
+        return order
+    if getattr(order, 'izvor', '') != Order.Izvor.MAGACIN:
+        return None
+    if not order_is_editable(order):
+        return None
     return order
 
 
@@ -2757,9 +2790,14 @@ def _create_manual_order(request, *, existing=None):
     if bez_dostave:
         dostava = Decimal('0.00')
     action = (request.POST.get('action') or '').strip()
-    keep_reservation = action == 'rezervacija' or (
-        existing is not None and action != 'sacuvaj'
-    )
+    if action == 'rezervacija':
+        keep_reservation = True
+    elif action == 'sacuvaj':
+        keep_reservation = False
+    elif existing is not None:
+        keep_reservation = existing.status == Order.Status.REZERVACIJA
+    else:
+        keep_reservation = False
     with transaction.atomic():
         order = _save_manual_order(
             request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
@@ -3885,6 +3923,14 @@ def magacin_pakuj_detail(request, broj):
             )
             return redirect('staff_magacin_pakuj')
         if action in {'dodaj', 'ukloni', 'kolicina'}:
+            if not order_is_editable(order):
+                if _pakuj_is_ajax(request):
+                    return JsonResponse(
+                        {'ok': False, 'error': 'Narudžba se ne može mijenjati.'},
+                        status=400,
+                    )
+                messages.error(request, 'Narudžba se ne može mijenjati.')
+                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
             return _pakuj_edit_order(request, order)
         if action in {'validiraj', 'pick_save'}:
             try:
@@ -3927,9 +3973,14 @@ def magacin_pakuj_detail(request, broj):
         'pick_fullscreen': True,
         'mp_count': mp_count,
         'is_prenos_mp': prenos_mp,
-        'can_edit_order': False,
+        'can_edit_order': order_is_editable(order),
+        'edit_form_url': (
+            f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}"
+            if getattr(order, 'izvor', '') == Order.Izvor.MAGACIN and order_is_editable(order)
+            else ''
+        ),
         'is_vp_order': is_vp_order(order),
-        'order_items': list(order.stavke.all()),
+        'order_items': list(order.stavke.select_related('artikal', 'varijacija')),
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
     })
     template = 'staff/magacin/pakuj_prenos.html' if prenos_mp else 'staff/magacin/pakuj_detail.html'
@@ -4515,10 +4566,14 @@ def _vp_stock_block(request, draft, product, variation, qty, *, mp_ok=False, rep
 
 def _vp_draft_payload(draft):
     stavke = list(draft.stavke.select_related('product', 'variation')) if draft else []
-    ukupno = sum((row.ukupno for row in stavke), Decimal('0.00'))
+    osnova = sum((row.ukupno for row in stavke), Decimal('0.00'))
+    totals = vp_draft_totals(osnova, bulk=bool(getattr(draft, 'bulk', False)))
     return {
         'ok': True,
-        'ukupno': str(ukupno),
+        'ukupno': str(totals['osnova']),
+        'pdv': str(totals['pdv']),
+        'ukupno_sa_pdv': str(totals['ukupno_sa_pdv']),
+        'bulk': totals['bulk'],
         'stavke': [
             {
                 'id': row.pk,
@@ -4573,6 +4628,34 @@ def magacin_vp_narudzba(request):
                 if _vp_is_ajax(request):
                     return JsonResponse(_vp_draft_payload(draft))
                 return redirect('staff_magacin_vp_narudzba')
+            if action == 'bulk':
+                result = add_vp_bulk_stavke(draft, request.POST.get('tekst') or '')
+                added_n = len(result['added'])
+                skipped_n = len(result['skipped'])
+                if _vp_is_ajax(request):
+                    payload = _vp_draft_payload(draft)
+                    payload.update({
+                        'added': added_n,
+                        'skipped': result['skipped'],
+                        'mp': [row['naziv'] for row in result['added'] if row.get('mp_ok')],
+                    })
+                    return JsonResponse(payload)
+                if added_n:
+                    messages.success(
+                        request,
+                        f'Bulk: uneseno {added_n} artikala'
+                        + (f', preskočeno {skipped_n} (nema u bazi).' if skipped_n else '.'),
+                    )
+                elif skipped_n:
+                    messages.error(
+                        request,
+                        'Nijedan artikal nije unesen — nazivi iz liste nisu u bazi.',
+                    )
+                if skipped_n:
+                    names = ', '.join(row['naziv'] for row in result['skipped'][:8])
+                    extra = '…' if skipped_n > 8 else ''
+                    messages.warning(request, f'Preskočeno: {names}{extra}')
+                return redirect('staff_magacin_vp_narudzba')
             if action == 'kolicina':
                 stavka_id = int(request.POST.get('stavka_id') or 0)
                 qty = _parse_qty(request.POST.get('kolicina') or '1')
@@ -4620,12 +4703,16 @@ def magacin_vp_narudzba(request):
             return redirect('staff_magacin_vp_narudzba')
 
     stavke = list(draft.stavke.select_related('product', 'variation')) if draft else []
-    ukupno = sum((row.ukupno for row in stavke), Decimal('0.00'))
+    osnova = sum((row.ukupno for row in stavke), Decimal('0.00'))
+    totals = vp_draft_totals(osnova, bulk=bool(getattr(draft, 'bulk', False))) if draft else vp_draft_totals(0)
     context = _magacin_context(request, section='narudzbe', page_title='VP narudžbe — Magacin')
     context.update({
         'draft': draft,
         'stavke': stavke,
-        'ukupno': ukupno,
+        'ukupno': totals['osnova'],
+        'pdv': totals['pdv'],
+        'ukupno_sa_pdv': totals['ukupno_sa_pdv'],
+        'vp_bulk': totals['bulk'],
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
         'customer_lookup_url': reverse('staff_magacin_kupci_lookup'),
         'customer_save_url': reverse('staff_magacin_kupci_save'),

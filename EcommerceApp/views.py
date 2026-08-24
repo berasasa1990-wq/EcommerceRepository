@@ -4884,10 +4884,19 @@ def staff_order_detail(request, broj):
                 messages.error(request, str(exc))
             return redirect('staff_magacin_narudzbe')
 
+    from .magacin import order_is_editable
     from .views_magacin import _magacin_context
+    can_edit = (
+        getattr(order, 'izvor', '') == Order.Izvor.MAGACIN
+        and order_is_editable(order)
+    )
     context = {
         **_magacin_context(request, section='narudzbe', page_title=f'Narudžba #{order.broj}'),
         **get_order_email_context(order),
+        'can_edit_order': can_edit,
+        'edit_order_url': (
+            f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}" if can_edit else ''
+        ),
     }
     return render(request, 'staff/order_detail.html', context)
 

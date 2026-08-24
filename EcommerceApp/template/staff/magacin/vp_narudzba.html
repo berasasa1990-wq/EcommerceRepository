@@ -21,7 +21,7 @@
     <header class="vp-head mg-page-head">
         <div>
             <h1>VP narudžbe</h1>
-            <p>{{ stavke|length }} stavki{% if ukupno %} · {{ ukupno }} KM{% endif %}</p>
+            <p id="vpHeadSum">{{ stavke|length }} stavki{% if ukupno %} · {{ ukupno }} KM{% if vp_bulk %} · sa PDV {{ ukupno_sa_pdv }} KM{% endif %}{% endif %}</p>
         </div>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
     </header>
@@ -66,6 +66,7 @@
                 <input type="search" id="vpQuery" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off" autofocus>
             </div>
             <button type="button" class="mg-btn mg-btn-pill" id="vpCatalogBtn" aria-pressed="false">Katalog</button>
+            <button type="button" class="mg-btn mg-btn-pill" id="vpBulkBtn">Bulk</button>
             <button type="button" class="mg-btn mg-btn-pill vp-scan-btn" id="vpScanBtn" data-mg-scan-target="vpQuery" data-mg-scan-title="Skeniraj artikal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
                 Skeniraj
@@ -73,6 +74,7 @@
         </div>
         <ul class="vp-suggest" id="vpSuggest" hidden></ul>
         <div id="vpCatalog" class="mg-catalog" hidden></div>
+        <p class="vp-bulk-result" id="vpBulkResult" hidden></p>
     </section>
     <form method="post" id="vpAddForm" hidden>
         {% csrf_token %}
@@ -134,7 +136,11 @@
             </button>
         </form>
         <div class="mg-order-foot-sum">
-            <span class="vp-total" id="vpTotal"{% if not stavke %} hidden{% endif %}>Ukupno: <strong><span>{{ ukupno }} KM</span></strong></span>
+            <div class="vp-total" id="vpTotal"{% if not stavke %} hidden{% endif %}>
+                <span>Ukupno: <strong><span id="vpSumNet">{{ ukupno }} KM</span></strong></span>
+                <span class="vp-pdv-line" id="vpPdvRow"{% if not vp_bulk %} hidden{% endif %}>PDV 17%: <strong><span id="vpSumPdv">{{ pdv }} KM</span></strong></span>
+                <span class="vp-pdv-line is-gross" id="vpGrossRow"{% if not vp_bulk %} hidden{% endif %}>Ukupno sa PDV: <strong><span id="vpSumGross">{{ ukupno_sa_pdv }} KM</span></strong></span>
+            </div>
             <form method="post" id="vpReserveForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="rezervacija">
@@ -176,6 +182,20 @@
         <div class="mg-modal-actions">
             <button type="button" class="mg-btn" data-vp-cust-close>Odustani</button>
             <button type="button" class="mg-btn mg-btn-primary" id="vpCustomerSave">Sačuvaj kupca</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="vpBulkModal" hidden>
+    <div class="mg-modal-bg" data-vp-bulk-close></div>
+    <div class="mg-modal-panel vp-bulk-panel" role="dialog" aria-modal="true" aria-labelledby="vpBulkTitle">
+        <h2 id="vpBulkTitle">Bulk unos</h2>
+        <p class="mg-muted">Zalijepi tabelu narudžbe (#, Artikal, Kol., Cijena, Ukupno). Unose se samo artikli čiji je naziv isti u bazi.</p>
+        <textarea id="vpBulkText" rows="10" placeholder="#, Artikal, Kol., Cijena, Ukupno&#10;1, MT13982 MATE Goliath Camo Carp Line 1000m 0.31mm&#10;Šifra: 7943, 3, 19.20 KM, 57.60 KM"></textarea>
+        <p class="mg-qty-hint is-warn" id="vpBulkHint" hidden></p>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-vp-bulk-close>Odustani</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="vpBulkImport">Unesi</button>
         </div>
     </div>
 </div>
@@ -666,7 +686,7 @@
                   return;
               }
               if (!result.data || !result.data.ok) return;
-              renderLines(result.data.stavke || [], result.data.ukupno);
+              renderLines(result.data.stavke || [], result.data.ukupno, result.data);
               if (catalogOpen()) renderCatalog(lastSuggest);
               if (done) done();
           }).catch(function () { adding = false; });
@@ -696,7 +716,7 @@
             });
         });
     }
-    function renderLines(rows, ukupno) {
+    function renderLines(rows, ukupno, totals) {
         if (!linesEl) return;
         linesEl.innerHTML = '';
         if (!rows.length) {
@@ -740,10 +760,35 @@
             });
             bindLineForms(linesEl);
         }
-        if (totalEl) {
-            totalEl.hidden = !rows.length;
-            var label = totalEl.querySelector('span');
-            if (label) label.textContent = (ukupno || '0.00') + ' KM';
+        var payload = totals || {};
+        payload.stavke = rows;
+        payload.ukupno = ukupno;
+        updateVpTotals(payload);
+    }
+    function km(value) {
+        var text = String(value == null || value === '' ? '0.00' : value);
+        if (text.indexOf(' KM') >= 0) return text;
+        return text + ' KM';
+    }
+    function updateVpTotals(data) {
+        data = data || {};
+        var rows = data.stavke || [];
+        var net = data.ukupno || '0.00';
+        var bulk = !!data.bulk;
+        if (totalEl) totalEl.hidden = !rows.length;
+        var netEl = document.getElementById('vpSumNet');
+        if (netEl) netEl.textContent = km(net);
+        var pdvRow = document.getElementById('vpPdvRow');
+        var grossRow = document.getElementById('vpGrossRow');
+        if (pdvRow) pdvRow.hidden = !bulk;
+        if (grossRow) grossRow.hidden = !bulk;
+        var pdvEl = document.getElementById('vpSumPdv');
+        var grossEl = document.getElementById('vpSumGross');
+        if (pdvEl) pdvEl.textContent = km(data.pdv || '0.00');
+        if (grossEl) grossEl.textContent = km(data.ukupno_sa_pdv || net);
+        var head = document.getElementById('vpHeadSum');
+        if (head) {
+            head.textContent = rows.length + ' stavki' + (rows.length ? ' · ' + km(net) : '') + (bulk && rows.length ? ' · sa PDV ' + km(data.ukupno_sa_pdv || net) : '');
         }
     }
     function addPicked(mpOk) {
@@ -892,6 +937,105 @@
         }, true);
     }
     bindLineForms(document);
+
+    var bulkBtn = document.getElementById('vpBulkBtn');
+    var bulkModal = document.getElementById('vpBulkModal');
+    var bulkText = document.getElementById('vpBulkText');
+    var bulkImport = document.getElementById('vpBulkImport');
+    var bulkHint = document.getElementById('vpBulkHint');
+    var bulkResult = document.getElementById('vpBulkResult');
+    var bulkBusy = false;
+    function closeBulk() {
+        if (bulkModal) bulkModal.hidden = true;
+        if (bulkHint) { bulkHint.hidden = true; bulkHint.textContent = ''; }
+    }
+    function openBulk() {
+        if (!bulkModal) return;
+        if (bulkText) bulkText.value = '';
+        if (bulkHint) { bulkHint.hidden = true; bulkHint.textContent = ''; }
+        bulkModal.hidden = false;
+        window.setTimeout(function () { if (bulkText) bulkText.focus(); }, 40);
+    }
+    function showBulkResult(data) {
+        if (!bulkResult) return;
+        var added = Number(data && data.added) || 0;
+        var skipped = (data && data.skipped) || [];
+        var mp = (data && data.mp) || [];
+        var parts = [];
+        if (added) parts.push('Uneseno ' + added + '.');
+        if (skipped.length) {
+            parts.push('Preskočeno ' + skipped.length + ' (nema u bazi): ' + skipped.map(function (row) {
+                return row.naziv || '';
+            }).filter(Boolean).slice(0, 8).join('; ') + (skipped.length > 8 ? '…' : ''));
+        }
+        if (mp.length) parts.push('Bez zalihe u magacinu (MP): ' + mp.join('; ') + '.');
+        if (!parts.length) {
+            bulkResult.hidden = true;
+            bulkResult.textContent = '';
+            return;
+        }
+        bulkResult.hidden = false;
+        bulkResult.textContent = parts.join(' ');
+    }
+    if (bulkBtn) bulkBtn.addEventListener('click', openBulk);
+    if (bulkModal) {
+        bulkModal.querySelectorAll('[data-vp-bulk-close]').forEach(function (el) {
+            el.addEventListener('click', closeBulk);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && bulkModal && !bulkModal.hidden) closeBulk();
+        });
+    }
+    if (bulkImport) {
+        bulkImport.addEventListener('click', function () {
+            var tekst = bulkText ? bulkText.value : '';
+            if (!(tekst || '').trim()) {
+                if (bulkHint) {
+                    bulkHint.hidden = false;
+                    bulkHint.textContent = 'Zalijepi tabelu narudžbe.';
+                }
+                if (bulkText) bulkText.focus();
+                return;
+            }
+            if (bulkBusy) return;
+            bulkBusy = true;
+            bulkImport.disabled = true;
+            var body = new URLSearchParams();
+            body.set('action', 'bulk');
+            body.set('tekst', tekst);
+            fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken(),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+              .then(function (result) {
+                  bulkBusy = false;
+                  bulkImport.disabled = false;
+                  if (!result.data || !result.data.ok) {
+                      if (bulkHint) {
+                          bulkHint.hidden = false;
+                          bulkHint.textContent = (result.data && result.data.error) || 'Bulk unos nije uspio.';
+                      }
+                      return;
+                  }
+                  renderLines(result.data.stavke || [], result.data.ukupno, result.data);
+                  showBulkResult(result.data);
+                  closeBulk();
+              }).catch(function () {
+                  bulkBusy = false;
+                  bulkImport.disabled = false;
+                  if (bulkHint) {
+                      bulkHint.hidden = false;
+                      bulkHint.textContent = 'Bulk unos nije uspio.';
+                  }
+              });
+        });
+    }
 })();
 </script>
 {% endblock %}

@@ -5362,6 +5362,7 @@ class MagacinVpNarudzba(models.Model):
         blank=True,
         related_name='magacin_vp_narudzbe',
     )
+    bulk = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = 'Magacin VP narudžba'

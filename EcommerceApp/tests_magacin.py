@@ -13,6 +13,7 @@ from .magacin import (
     MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
     NOVI_UVOZ_NAZIV,
+    parse_vp_bulk_text,
     _apply_quant_batch,
     _odoo_id_to_local,
     apply_magacin_uvoz,
@@ -1422,6 +1423,99 @@ class MagacinViewTests(TestCase):
         self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'obrisi'})
         self.assertFalse(MagacinVpNarudzba.objects.filter(pk=live.pk).exists())
 
+    def test_vp_bulk_imports_matching_names_and_skips_unknown(self):
+        paste = (
+            '#,\tArtikal,\tKol.,\tCijena\t,Ukupno\n'
+            '1,\tMT13982 MATE Goliath Camo Carp Line 1000m 0.31mm\n'
+            'Šifra: 7943\t,3\t,19.20 KM\t,57.60 KM\n'
+            '2,\tNepostojeci Artikal XYZ\n'
+            'Šifra: 9999\t,1\t,10.00 KM\t,10.00 KM\n'
+            '3,\tTest braid\t,2\t,8.50 KM\t,17.00 KM\n'
+        )
+        rows = parse_vp_bulk_text(paste)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0]['naziv'], 'MT13982 MATE Goliath Camo Carp Line 1000m 0.31mm')
+        self.assertEqual(rows[0]['sifra'], '7943')
+        self.assertEqual(rows[0]['qty'], 3)
+        self.assertEqual(rows[0]['cijena'], Decimal('19.20'))
+        self.assertEqual(rows[2]['naziv'], 'Test braid')
+        self.assertEqual(rows[2]['qty'], 2)
+        self.assertEqual(rows[2]['cijena'], Decimal('8.50'))
+
+        mate = Product.objects.create(
+            naziv='MT13982 MATE Goliath Camo Carp Line 1000m 0.31mm',
+            sifra='7943', cijena=Decimal('26.50'),
+            stanje=10, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=mate, location=loc, tip='prijem', kolicina=10)
+
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'novi'})
+        form = self.client.get(reverse('staff_magacin_vp_narudzba'))
+        self.assertContains(form, 'id="vpBulkBtn"')
+        self.assertContains(form, 'id="vpBulkModal"')
+        self.assertContains(form, 'Bulk unos')
+
+        imported = self.client.post(
+            reverse('staff_magacin_vp_narudzba'),
+            {'action': 'bulk', 'tekst': paste},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(imported.status_code, 200)
+        data = imported.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['added'], 2)
+        self.assertEqual(len(data['skipped']), 1)
+        self.assertIn('Nepostojeci Artikal XYZ', data['skipped'][0]['naziv'])
+        draft = MagacinVpNarudzba.objects.get(status=MagacinVpNarudzba.Status.U_TOKU)
+        names = list(draft.stavke.values_list('naziv', flat=True))
+        self.assertIn(mate.naziv, names)
+        self.assertIn('Test braid', names)
+        self.assertNotIn('Nepostojeci Artikal XYZ', names)
+        mate_line = draft.stavke.get(product=mate)
+        self.assertEqual(mate_line.kolicina, 3)
+        self.assertEqual(mate_line.cijena, Decimal('19.20'))
+        braid_line = draft.stavke.get(product=self.product)
+        self.assertEqual(braid_line.kolicina, 2)
+        self.assertEqual(braid_line.cijena, Decimal('8.50'))
+
+        tsv = '1\tTest braid\t1\t6.00 KM\t6.00 KM'
+        again = self.client.post(
+            reverse('staff_magacin_vp_narudzba'),
+            {'action': 'bulk', 'tekst': tsv},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(again.status_code, 200)
+        braid_line.refresh_from_db()
+        self.assertEqual(braid_line.kolicina, 3)
+        self.assertEqual(braid_line.cijena, Decimal('6.00'))
+        again_data = again.json()
+        self.assertTrue(again_data['bulk'])
+        osnova = Decimal('19.20') * 3 + Decimal('6.00') * 3
+        pdv = (osnova * Decimal('0.17')).quantize(Decimal('0.01'))
+        self.assertEqual(Decimal(again_data['ukupno']), osnova)
+        self.assertEqual(Decimal(again_data['pdv']), pdv)
+        self.assertEqual(Decimal(again_data['ukupno_sa_pdv']), osnova + pdv)
+
+        page = self.client.get(reverse('staff_magacin_vp_narudzba'))
+        self.assertContains(page, 'PDV 17%')
+        self.assertContains(page, 'Ukupno sa PDV')
+        self.assertContains(page, f'{osnova + pdv} KM')
+
+        customer = WarehouseCustomer.objects.create(
+            ime_prezime='Bulk Pdv', telefon='061121314',
+        )
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {
+            'action': 'kupac', 'customer_id': customer.pk,
+        })
+        finished = self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'zavrsi'})
+        self.assertEqual(finished.status_code, 302)
+        order = Order.objects.get(ime_prezime='Bulk Pdv')
+        self.assertEqual(order.ukupno, osnova + pdv)
+        self.assertEqual(order.medjuzbir, osnova + pdv)
+        self.assertIn('PDV 17%', order.napomena)
+
     def test_vp_validate_stays_until_print_packed(self):
         self.client.force_login(self.user)
         self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'novi'})
@@ -1504,8 +1598,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(created.status_code, 302)
         order = Order.objects.get(ime_prezime='Skip Kupac')
         page = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
-        self.assertNotContains(page, 'Izmijeni')
-        self.assertNotContains(page, 'pk-edit-remove')
+        self.assertContains(page, 'Izmijeni narudžbu')
+        self.assertContains(page, 'pk-edit-remove')
         self.assertContains(page, 'Završi picking')
         braid = order.stavke.get(artikal=self.product)
         extra_item = order.stavke.get(artikal=extra)
@@ -1912,6 +2006,8 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(narudzbe, order.broj)
         self.assertNotContains(narudzbe, self.product.naziv)
         pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertFalse(pick.context['can_edit_order'])
+        self.assertNotContains(pick, 'Izmijeni narudžbu')
         self.assertContains(pick, 'Validatuj')
         self.assertContains(pick, 'Prenos u MP')
         self.assertContains(pick, 'T-1')
@@ -2426,6 +2522,157 @@ class MagacinViewTests(TestCase):
         self.assertEqual(stock_totals(self.product)['rezervisano'], 3)
         picking_ready = self.client.get(reverse('staff_magacin_pakuj'))
         self.assertContains(picking_ready, 'Reza Kupac')
+
+    def test_created_order_stays_editable_and_updates_picking(self):
+        from .views_magacin import apply_order_pick
+
+        extra = Product.objects.create(
+            naziv='Drugi artikal', sifra='TST-2', cijena=Decimal('5.00'),
+            stanje=4, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=extra, location=loc, tip='prijem', kolicina=4)
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Greska Unos',
+            'telefon': '061121212',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Greska Unos')
+        old_item = order.stavke.get()
+        apply_order_pick(order, [{
+            'key': f'{old_item.pk}:T-1',
+            'item_id': old_item.pk,
+            'got': 1,
+            'need': 1,
+            'done': True,
+        }])
+        order.refresh_from_db()
+        self.assertTrue(order.pick_state)
+
+        detail = self.client.get(reverse('staff_order_detail', args=[order.broj]))
+        self.assertContains(detail, 'Izmijeni narudžbu')
+        self.assertContains(detail, reverse('staff_magacin_narudzba_nova'))
+
+        form = self.client.get(reverse('staff_magacin_narudzba_nova'), {'broj': order.broj})
+        self.assertEqual(form.status_code, 200)
+        self.assertContains(form, 'Narudžba #')
+        self.assertContains(form, 'Test braid')
+        self.assertContains(form, 'picking se usklađuje')
+
+        saved = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'order_broj': order.broj,
+            'ime_prezime': 'Greska Unos',
+            'telefon': '061121212',
+            'product_id': [str(extra.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'action': 'sacuvaj',
+        })
+        self.assertEqual(saved.status_code, 302)
+        self.assertEqual(saved['Location'], reverse('staff_magacin_pakuj'))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.NOVA)
+        self.assertEqual(order.lager_status, Order.LagerStatus.REZERVISANO)
+        names = list(order.stavke.values_list('naziv', flat=True))
+        self.assertEqual(names, ['Drugi artikal'])
+        self.assertEqual(order.stavke.get().kolicina, 2)
+        self.assertFalse(order.pick_state)
+        self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
+        self.assertEqual(stock_totals(extra)['rezervisano'], 2)
+
+        pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(pick.status_code, 200)
+        self.assertTrue(pick.context['can_edit_order'])
+        self.assertContains(pick, 'Izmijeni narudžbu')
+        self.assertContains(pick, 'id="pkEditQuery"')
+        queue = json.loads(pick.context['pick_queue_json'])
+        nazivi = [row['naziv'] for row in queue]
+        self.assertIn('Drugi artikal', nazivi)
+        self.assertNotIn('Test braid', nazivi)
+        self.assertEqual(sum(row['need'] for row in queue), 2)
+
+    def test_pick_page_add_and_remove_syncs_queue(self):
+        extra = Product.objects.create(
+            naziv='Zamjena', sifra='TST-3', cijena=Decimal('7.00'),
+            stanje=5, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=extra, location=loc, tip='prijem', kolicina=5)
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Pick Edit',
+            'telefon': '061343434',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Pick Edit')
+        old_item = order.stavke.get()
+        pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(pick.status_code, 200)
+        self.assertTrue(pick.context['can_edit_order'])
+
+        added = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'dodaj',
+                'product_id': str(extra.pk),
+                'kolicina': '1',
+                'mp_ok': '0',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(added.status_code, 200)
+        payload = added.json()
+        self.assertTrue(payload.get('ok'))
+        order.refresh_from_db()
+        self.assertEqual(order.stavke.count(), 2)
+        new_item = order.stavke.get(artikal=extra)
+
+        again = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        queue = json.loads(again.context['pick_queue_json'])
+        item_ids = {row['item_id'] for row in queue}
+        self.assertIn(old_item.pk, item_ids)
+        self.assertIn(new_item.pk, item_ids)
+
+        removed = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {'action': 'ukloni', 'stavka_id': str(old_item.pk)},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(removed.status_code, 200)
+        self.assertTrue(removed.json().get('ok'))
+        order.refresh_from_db()
+        self.assertEqual(list(order.stavke.values_list('artikal_id', flat=True)), [extra.pk])
+        self.assertFalse(
+            any(
+                (isinstance(row, dict) and row.get('item_id') == old_item.pk)
+                for row in (order.pick_state or {}).values()
+            )
+        )
+
+        final = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        queue = json.loads(final.context['pick_queue_json'])
+        item_ids = {row['item_id'] for row in queue}
+        self.assertNotIn(old_item.pk, item_ids)
+        self.assertIn(new_item.pk, item_ids)
+        self.assertNotIn('Test braid', [row['naziv'] for row in queue])
+        self.assertIn('Zamjena', [row['naziv'] for row in queue])
+
+        validate_order_stock(order, user=self.user)
+        blocked = self.client.get(reverse('staff_magacin_narudzba_nova'), {'broj': order.broj})
+        self.assertEqual(blocked.status_code, 302)
+        self.assertEqual(blocked['Location'], reverse('staff_order_detail', args=[order.broj]))
 
     def test_reservation_can_be_cancelled(self):
         self.client.force_login(self.user)
