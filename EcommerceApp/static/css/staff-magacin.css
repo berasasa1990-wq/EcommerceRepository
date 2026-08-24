@@ -4934,6 +4934,11 @@ tr.is-mp-lock {
     font-size: 13px;
     line-height: 1.4;
 }
+.mg-chip-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
 .vp-page .vp-chip {
     display: flex;
     align-items: center;

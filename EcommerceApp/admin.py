@@ -78,6 +78,7 @@ from .models import (
     WarehouseLocation,
     WarehouseMovement,
     WarehouseStock,
+    WarehouseCustomer,
     WarehouseSupplier,
     WarehouseSyncLog,
 )
@@ -3760,6 +3761,14 @@ class WarehouseLocationAdmin(admin.ModelAdmin):
 class WarehouseSupplierAdmin(admin.ModelAdmin):
     list_display = ('naziv', 'aktivan')
     search_fields = ('naziv',)
+
+
+@admin.register(WarehouseCustomer)
+class WarehouseCustomerAdmin(admin.ModelAdmin):
+    list_display = ('ime_prezime', 'telefon', 'grad', 'adresa', 'azuriran')
+    search_fields = ('ime_prezime', 'telefon', 'grad', 'adresa', 'email')
+    ordering = ('ime_prezime', 'id')
+    readonly_fields = ('kreiran', 'azuriran')
 
 
 @admin.register(ProductWarehouseMeta)

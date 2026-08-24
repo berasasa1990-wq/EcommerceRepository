@@ -30,13 +30,23 @@
              data-lookup="{{ customer_lookup_url }}"
              data-save="{{ customer_save_url }}">
         {% if draft.ime_prezime %}
-        <div class="vp-chip mg-customer-chip">
+        <div class="vp-chip mg-customer-chip"
+             data-id="{{ draft.customer_id|default:'' }}"
+             data-ime="{{ draft.ime_prezime }}"
+             data-telefon="{{ draft.telefon }}"
+             data-adresa="{{ draft.adresa }}"
+             data-grad="{{ draft.grad }}"
+             data-email="{{ draft.email }}"
+             data-postanski="{{ draft.postanski_broj }}">
             <div>
                 <span class="mg-locked-kicker">Kupac</span>
                 <strong class="vp-name">{{ draft.ime_prezime }}</strong>
                 <span>{{ draft.telefon }}{% if draft.grad %} · {{ draft.grad }}{% endif %}</span>
             </div>
-            <button type="button" class="mg-btn" id="vpCustomerChange">Promijeni</button>
+            <div class="mg-chip-actions">
+                <button type="button" class="mg-btn" id="vpCustomerEdit">Izmijeni</button>
+                <button type="button" class="mg-btn" id="vpCustomerChange">Promijeni</button>
+            </div>
         </div>
         {% endif %}
         <div class="vp-customer-edit">
@@ -159,7 +169,8 @@
 <div class="mg-modal" id="vpCustomerModal" hidden>
     <div class="mg-modal-bg" data-vp-cust-close></div>
     <div class="mg-modal-panel" role="dialog">
-        <h2>Dodaj kupca</h2>
+        <h2 id="vpCustomerModalTitle">Dodaj kupca</h2>
+        <input type="hidden" id="vpEditCustomerId" value="">
         <div class="mg-form-grid" style="grid-template-columns:1fr;">
             <div class="mg-field">
                 <label for="vpNewIme">Ime i prezime *</label>
@@ -176,6 +187,14 @@
             <div class="mg-field">
                 <label for="vpNewGrad">Grad</label>
                 <input id="vpNewGrad" maxlength="100">
+            </div>
+            <div class="mg-field">
+                <label for="vpNewPost">Poštanski broj</label>
+                <input id="vpNewPost" maxlength="20">
+            </div>
+            <div class="mg-field">
+                <label for="vpNewEmail">Email</label>
+                <input id="vpNewEmail" type="email" maxlength="254">
             </div>
         </div>
         <p class="mg-qty-hint is-warn" id="vpCustomerHint" hidden></p>
@@ -271,13 +290,18 @@
     var custForm = document.getElementById('vpCustomerForm');
     var custId = document.getElementById('vpCustomerId');
     var addBtn = document.getElementById('vpCustomerAdd');
+    var editBtn = document.getElementById('vpCustomerEdit');
     var modal = document.getElementById('vpCustomerModal');
+    var modalTitle = document.getElementById('vpCustomerModalTitle');
+    var editId = document.getElementById('vpEditCustomerId');
     var saveBtn = document.getElementById('vpCustomerSave');
     var hint = document.getElementById('vpCustomerHint');
     var newIme = document.getElementById('vpNewIme');
     var newTel = document.getElementById('vpNewTelefon');
     var newAdresa = document.getElementById('vpNewAdresa');
     var newGrad = document.getElementById('vpNewGrad');
+    var newPost = document.getElementById('vpNewPost');
+    var newEmail = document.getElementById('vpNewEmail');
     var custTimer = null;
     var saving = false;
 
@@ -328,10 +352,29 @@
     }
     function openAdd() {
         if (!modal) return;
+        if (editId) editId.value = '';
+        if (modalTitle) modalTitle.textContent = 'Dodaj kupca';
         if (newIme) newIme.value = (custSearch && custSearch.value) || '';
         if (newTel) newTel.value = '';
         if (newAdresa) newAdresa.value = '';
         if (newGrad) newGrad.value = '';
+        if (newPost) newPost.value = '';
+        if (newEmail) newEmail.value = '';
+        if (hint) { hint.hidden = true; hint.textContent = ''; }
+        modal.hidden = false;
+        window.setTimeout(function () { if (newIme) newIme.focus(); }, 40);
+    }
+    function openEdit() {
+        if (!modal) return;
+        var chip = custBox ? custBox.querySelector('.vp-chip') : null;
+        if (editId) editId.value = (chip && chip.getAttribute('data-id')) || (custId && custId.value) || '';
+        if (modalTitle) modalTitle.textContent = 'Izmijeni kupca';
+        if (newIme) newIme.value = (chip && chip.getAttribute('data-ime')) || '';
+        if (newTel) newTel.value = (chip && chip.getAttribute('data-telefon')) || '';
+        if (newAdresa) newAdresa.value = (chip && chip.getAttribute('data-adresa')) || '';
+        if (newGrad) newGrad.value = (chip && chip.getAttribute('data-grad')) || '';
+        if (newPost) newPost.value = (chip && chip.getAttribute('data-postanski')) || '';
+        if (newEmail) newEmail.value = (chip && chip.getAttribute('data-email')) || '';
         if (hint) { hint.hidden = true; hint.textContent = ''; }
         modal.hidden = false;
         window.setTimeout(function () { if (newIme) newIme.focus(); }, 40);
@@ -347,6 +390,7 @@
         });
     }
     if (addBtn) addBtn.addEventListener('click', openAdd);
+    if (editBtn) editBtn.addEventListener('click', openEdit);
     var changeBtn = document.getElementById('vpCustomerChange');
     var vpPage = document.querySelector('.vp-page');
     if (changeBtn && custBox) {
@@ -388,6 +432,9 @@
             body.set('telefon', tel);
             body.set('adresa', newAdresa ? newAdresa.value.trim() : '');
             body.set('grad', newGrad ? newGrad.value.trim() : '');
+            body.set('email', newEmail ? newEmail.value.trim() : '');
+            body.set('postanski_broj', newPost ? newPost.value.trim() : '');
+            if (editId && editId.value) body.set('customer_id', editId.value);
             saving = true;
             saveBtn.disabled = true;
             fetch(saveUrl, {

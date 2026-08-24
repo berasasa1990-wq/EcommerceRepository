@@ -35,7 +35,10 @@
                 <strong id="mgCustomerLockedName"></strong>
                 <p class="mg-muted" id="mgCustomerLockedMeta"></p>
             </div>
-            <button type="button" class="mg-btn" id="mgCustomerChange">Promijeni</button>
+            <div class="mg-chip-actions">
+                <button type="button" class="mg-btn" id="mgCustomerEdit">Izmijeni</button>
+                <button type="button" class="mg-btn" id="mgCustomerChange">Promijeni</button>
+            </div>
         </div>
         <input type="hidden" name="customer_id" id="id_customer_id" value="{{ form.customer_id|default:'' }}">
         <input type="hidden" name="ime_prezime" id="id_ime_prezime" value="{{ form.ime_prezime|default:'' }}">
@@ -169,6 +172,7 @@
     <div class="mg-modal-bg" data-customer-close></div>
     <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mgCustomerModalTitle">
         <h2 id="mgCustomerModalTitle">Dodaj kupca</h2>
+        <input type="hidden" id="mgEditCustomerId" value="">
         <div class="mg-form-grid" style="grid-template-columns:1fr;">
             <div class="mg-field">
                 <label for="mgNewIme">Ime i prezime *</label>
@@ -185,6 +189,14 @@
             <div class="mg-field">
                 <label for="mgNewGrad">Grad</label>
                 <input id="mgNewGrad" maxlength="100">
+            </div>
+            <div class="mg-field">
+                <label for="mgNewPost">Poštanski broj</label>
+                <input id="mgNewPost" maxlength="20">
+            </div>
+            <div class="mg-field">
+                <label for="mgNewEmail">Email</label>
+                <input id="mgNewEmail" type="email" maxlength="254">
             </div>
         </div>
         <p class="mg-qty-hint is-warn" id="mgCustomerModalHint" hidden></p>

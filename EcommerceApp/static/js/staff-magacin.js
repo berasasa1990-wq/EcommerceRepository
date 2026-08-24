@@ -252,6 +252,7 @@ function initCustomerPicker() {
     var nameEl = document.getElementById('mgCustomerLockedName');
     var metaEl = document.getElementById('mgCustomerLockedMeta');
     var changeBtn = document.getElementById('mgCustomerChange');
+    var editBtn = document.getElementById('mgCustomerEdit');
     var noteWrap = document.getElementById('mgOrderNoteWrap');
     var idInput = document.getElementById('id_customer_id');
     var imeInput = document.getElementById('id_ime_prezime');
@@ -261,10 +262,14 @@ function initCustomerPicker() {
     var emailInput = document.getElementById('id_email');
     var postInput = document.getElementById('id_postanski_broj');
     var modal = document.getElementById('mgCustomerModal');
+    var modalTitle = document.getElementById('mgCustomerModalTitle');
+    var editId = document.getElementById('mgEditCustomerId');
     var newIme = document.getElementById('mgNewIme');
     var newTel = document.getElementById('mgNewTelefon');
     var newAdresa = document.getElementById('mgNewAdresa');
     var newGrad = document.getElementById('mgNewGrad');
+    var newPost = document.getElementById('mgNewPost');
+    var newEmail = document.getElementById('mgNewEmail');
     var modalHint = document.getElementById('mgCustomerModalHint');
     var saveBtn = document.getElementById('mgCustomerSave');
     var form = document.getElementById('mgOrderForm');
@@ -293,15 +298,32 @@ function initCustomerPicker() {
     }
     function openAddModal() {
         var ime = (search.value || '').trim();
+        if (editId) editId.value = '';
+        if (modalTitle) modalTitle.textContent = 'Dodaj kupca';
         if (newIme) newIme.value = ime;
         if (newTel) newTel.value = '';
         if (newAdresa) newAdresa.value = '';
         if (newGrad) newGrad.value = '';
+        if (newPost) newPost.value = '';
+        if (newEmail) newEmail.value = '';
         showHint('');
         if (list) list.hidden = true;
         if (modal) modal.hidden = false;
         if (ime && newTel) newTel.focus();
         else if (newIme) newIme.focus();
+    }
+    function openEditModal() {
+        if (editId) editId.value = (idInput && idInput.value) || '';
+        if (modalTitle) modalTitle.textContent = 'Izmijeni kupca';
+        if (newIme) newIme.value = (imeInput && imeInput.value) || '';
+        if (newTel) newTel.value = (telInput && telInput.value) || '';
+        if (newAdresa) newAdresa.value = (adresaInput && adresaInput.value) || '';
+        if (newGrad) newGrad.value = (gradInput && gradInput.value) || '';
+        if (newPost) newPost.value = (postInput && postInput.value) || '';
+        if (newEmail) newEmail.value = (emailInput && emailInput.value) || '';
+        showHint('');
+        if (modal) modal.hidden = false;
+        if (newIme) newIme.focus();
     }
     function closeAddModal() {
         if (modal) modal.hidden = true;
@@ -404,6 +426,7 @@ function initCustomerPicker() {
         else searchCustomers(search.value);
     });
     if (addBtn) addBtn.addEventListener('click', openAddModal);
+    if (editBtn) editBtn.addEventListener('click', openEditModal);
     if (saveBtn) {
         saveBtn.addEventListener('click', function () {
             var ime = (newIme && newIme.value || '').trim();
@@ -425,6 +448,9 @@ function initCustomerPicker() {
             body.set('telefon', tel);
             body.set('adresa', newAdresa ? newAdresa.value.trim() : '');
             body.set('grad', newGrad ? newGrad.value.trim() : '');
+            body.set('email', newEmail ? newEmail.value.trim() : '');
+            body.set('postanski_broj', newPost ? newPost.value.trim() : '');
+            if (editId && editId.value) body.set('customer_id', editId.value);
             saving = true;
             saveBtn.disabled = true;
             showHint('');

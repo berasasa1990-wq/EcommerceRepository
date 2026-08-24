@@ -2496,28 +2496,51 @@ def magacin_kupci_save(request):
     telefon = (request.POST.get('telefon') or '').strip()
     if not ime or not telefon:
         return JsonResponse({'ok': False, 'error': 'Ime i telefon su obavezni.'}, status=400)
-    customer = _save_warehouse_customer(
-        ime=ime,
-        telefon=telefon,
-        adresa=request.POST.get('adresa') or '',
-        grad=request.POST.get('grad') or '',
-        email=request.POST.get('email') or '',
-        postanski_broj=request.POST.get('postanski_broj') or '',
-    )
+    try:
+        customer = _save_warehouse_customer(
+            ime=ime,
+            telefon=telefon,
+            adresa=request.POST.get('adresa') or '',
+            grad=request.POST.get('grad') or '',
+            email=request.POST.get('email') or '',
+            postanski_broj=request.POST.get('postanski_broj') or '',
+            customer_id=request.POST.get('customer_id') or None,
+            replace=bool((request.POST.get('customer_id') or '').strip()),
+        )
+    except MagacinError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    except (TypeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'Kupac nije sačuvan.'}, status=400)
     if not customer:
         return JsonResponse({'ok': False, 'error': 'Kupac nije sačuvan.'}, status=400)
     return JsonResponse({'ok': True, 'customer': _customer_payload(customer)})
 
 
-def _save_warehouse_customer(*, ime, telefon, adresa='', grad='', email='', postanski_broj=''):
+def _save_warehouse_customer(
+    *, ime, telefon, adresa='', grad='', email='', postanski_broj='',
+    customer_id=None, replace=False,
+):
     ime = (ime or '').strip()
     telefon = (telefon or '').strip()
     if not ime or not telefon:
         return None
-    customer = (
-        WarehouseCustomer.objects.filter(ime_prezime__iexact=ime, telefon=telefon).first()
-        or WarehouseCustomer.objects.filter(telefon=telefon).first()
-    )
+    customer = None
+    if customer_id:
+        customer = WarehouseCustomer.objects.filter(pk=int(customer_id)).first()
+        if customer is None:
+            return None
+        clash = (
+            WarehouseCustomer.objects.filter(telefon=telefon)
+            .exclude(pk=customer.pk)
+            .first()
+        )
+        if clash:
+            raise MagacinError('Već postoji kupac s tim telefonom.')
+    else:
+        customer = (
+            WarehouseCustomer.objects.filter(ime_prezime__iexact=ime, telefon=telefon).first()
+            or WarehouseCustomer.objects.filter(telefon=telefon).first()
+        )
     fields = {
         'ime_prezime': ime[:200],
         'telefon': telefon[:30],
@@ -2529,13 +2552,72 @@ def _save_warehouse_customer(*, ime, telefon, adresa='', grad='', email='', post
     if customer:
         changed = []
         for key, value in fields.items():
-            if value and getattr(customer, key) != value:
+            if not replace and not value:
+                continue
+            if getattr(customer, key) != value:
                 setattr(customer, key, value)
                 changed.append(key)
         if changed:
             customer.save(update_fields=changed)
         return customer
     return WarehouseCustomer.objects.create(**fields)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_kupci(request):
+    if request.method == 'POST':
+        action = (request.POST.get('action') or 'save').strip()
+        try:
+            if action == 'delete':
+                customer = get_object_or_404(WarehouseCustomer, pk=request.POST.get('customer_id'))
+                customer.delete()
+                messages.success(request, 'Kupac je obrisan.')
+            else:
+                customer = _save_warehouse_customer(
+                    ime=request.POST.get('ime_prezime') or '',
+                    telefon=request.POST.get('telefon') or '',
+                    adresa=request.POST.get('adresa') or '',
+                    grad=request.POST.get('grad') or '',
+                    email=request.POST.get('email') or '',
+                    postanski_broj=request.POST.get('postanski_broj') or '',
+                    customer_id=request.POST.get('customer_id') or None,
+                    replace=True,
+                )
+                if not customer:
+                    raise MagacinError('Ime i telefon su obavezni.')
+                messages.success(request, 'Kupac je sačuvan.')
+        except MagacinError as exc:
+            messages.error(request, str(exc))
+        except (TypeError, ValueError):
+            messages.error(request, 'Kupac nije sačuvan.')
+        return redirect('staff_magacin_kupci')
+
+    query = (request.GET.get('q') or '').strip()
+    qs = WarehouseCustomer.objects.order_by('ime_prezime', 'id')
+    if query:
+        digits = _phone_digits(query)
+        filt = (
+            Q(ime_prezime__icontains=query)
+            | Q(telefon__icontains=query)
+            | Q(grad__icontains=query)
+            | Q(adresa__icontains=query)
+        )
+        if digits:
+            filt |= Q(telefon__icontains=digits)
+        qs = qs.filter(filt)
+    editing = None
+    edit_id = (request.GET.get('id') or '').strip()
+    if edit_id:
+        editing = WarehouseCustomer.objects.filter(pk=edit_id).first()
+    context = _magacin_context(request, section='kupci', page_title='Kupci — Magacin')
+    context.update({
+        'customers': list(qs[:300]),
+        'customer_query': query,
+        'editing': editing,
+        'customer_count': qs.count(),
+    })
+    return render(request, 'staff/magacin/kupci.html', context)
 
 
 @login_required(login_url='login')

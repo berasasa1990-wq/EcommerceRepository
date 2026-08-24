@@ -1177,6 +1177,7 @@ class MagacinViewTests(TestCase):
             'staff_magacin_lokacije',
             'staff_magacin_zalihe',
             'staff_magacin_transferi',
+            'staff_magacin_kupci',
             'staff_magacin_dobavljaci',
             'staff_magacin_uvoz',
             'staff_magacin_nivelacije',
@@ -1338,7 +1339,9 @@ class MagacinViewTests(TestCase):
         with_cust = self.client.get(reverse('staff_magacin_vp_narudzba'))
         self.assertContains(with_cust, 'is-customer-set')
         self.assertContains(with_cust, 'vpCustomerChange')
+        self.assertContains(with_cust, 'vpCustomerEdit')
         self.assertContains(with_cust, 'Promijeni')
+        self.assertContains(with_cust, 'Izmijeni')
         added = self.client.post(reverse('staff_magacin_vp_narudzba'), {
             'action': 'dodaj',
             'product_id': self.product.pk,
@@ -2281,6 +2284,41 @@ class MagacinViewTests(TestCase):
         customer.refresh_from_db()
         self.assertEqual(WarehouseCustomer.objects.filter(telefon='065555555').count(), 1)
         self.assertEqual(customer.adresa, 'Kralja Tvrtka 3')
+
+        listed = self.client.get(reverse('staff_magacin_kupci'))
+        self.assertEqual(listed.status_code, 200)
+        self.assertContains(listed, 'Marko Savić')
+        self.assertContains(listed, 'Izmijeni')
+        edited = self.client.post(reverse('staff_magacin_kupci_save'), {
+            'customer_id': str(customer.pk),
+            'ime_prezime': 'Marko Savić',
+            'telefon': '065555555',
+            'adresa': 'Nova 8',
+            'grad': 'Sarajevo',
+            'email': 'marko@example.com',
+        })
+        self.assertEqual(edited.status_code, 200)
+        customer.refresh_from_db()
+        self.assertEqual(customer.adresa, 'Nova 8')
+        self.assertEqual(customer.grad, 'Sarajevo')
+        self.assertEqual(customer.email, 'marko@example.com')
+        page_edit = self.client.post(reverse('staff_magacin_kupci'), {
+            'action': 'save',
+            'customer_id': str(customer.pk),
+            'ime_prezime': 'Marko Ivić',
+            'telefon': '065555555',
+            'adresa': 'Nova 8',
+            'grad': 'Sarajevo',
+        })
+        self.assertEqual(page_edit.status_code, 302)
+        customer.refresh_from_db()
+        self.assertEqual(customer.ime_prezime, 'Marko Ivić')
+        from django.contrib import admin as django_admin
+        self.assertIn(WarehouseCustomer, django_admin.site._registry)
+
+        form = self.client.get(reverse('staff_magacin_narudzba_nova'))
+        self.assertContains(form, 'id="mgCustomerEdit"')
+        self.assertContains(form, 'Izmijeni')
 
     def test_lookup_returns_synced_and_zero_stock(self):
         self.client.force_login(self.user)
