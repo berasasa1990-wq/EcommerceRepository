@@ -433,6 +433,8 @@ def apply_movement(
         if new_reserved > stock.kolicina:
             raise MagacinError('Rezervisano ne može biti veće od količine na stanju.')
         signed = new_reserved - stock.rezervisano
+        if signed == 0:
+            return None
         stock.rezervisano = new_reserved
         qty = signed
     elif tip == WarehouseMovement.Tip.TRANSFER:
@@ -3325,7 +3327,7 @@ def recalculate_order_totals(order):
     return order
 
 
-def release_holds_for_product(order, product, variation=None, qty=None, *, user=None):
+def release_holds_for_product(order, product, variation=None, qty=None, *, user=None, napomena=None):
     holds = list(
         order.magacin_holds.filter(
             product=product,
@@ -3335,6 +3337,7 @@ def release_holds_for_product(order, product, variation=None, qty=None, *, user=
     )
     remaining = qty if qty is not None else sum(hold.kolicina for hold in holds)
     remaining = max(0, _int(remaining))
+    note = napomena or f'Izmjena #{order.broj}'
     for hold in holds:
         if remaining <= 0:
             break
@@ -3345,16 +3348,17 @@ def release_holds_for_product(order, product, variation=None, qty=None, *, user=
             product=hold.product, variation=hold.variation, location=hold.location,
         )
         new_reserved = max(0, stock.rezervisano - take)
-        apply_movement(
-            product=hold.product,
-            variation=hold.variation,
-            location=hold.location,
-            tip=WarehouseMovement.Tip.REZERVACIJA,
-            kolicina=1,
-            rezervisano=new_reserved,
-            napomena=f'Izmjena #{order.broj}',
-            user=user,
-        )
+        if new_reserved != stock.rezervisano:
+            apply_movement(
+                product=hold.product,
+                variation=hold.variation,
+                location=hold.location,
+                tip=WarehouseMovement.Tip.REZERVACIJA,
+                kolicina=1,
+                rezervisano=new_reserved,
+                napomena=note,
+                user=user,
+            )
         if take >= hold.kolicina:
             hold.status = OrderStockHold.Status.OTKAZANO
             hold.save(update_fields=['status'])
@@ -3811,6 +3815,21 @@ def _pick_line_loc_from_key(key):
     return ''
 
 
+def _stock_row_for_sale(product, variation, location):
+    """Red zalihe s koj se skida: varijacija, ili parent ako je varijacija prazna."""
+    _, sell_variation = _stock_scope(product, variation)
+    stock = get_or_create_stock(
+        product=product, variation=sell_variation, location=location,
+    )
+    if int(stock.kolicina or 0) > 0:
+        return stock, sell_variation
+    if sell_variation is not None:
+        parent = get_or_create_stock(product=product, variation=None, location=location)
+        if int(parent.kolicina or 0) > 0:
+            return parent, None
+    return stock, sell_variation
+
+
 def _sell_qty_from_location(order, product, variation, location, qty, *, user=None):
     """Skini količinu s lokacije. Prvo rezervacija te narudžbe, pa slobodno stanje."""
     remaining = max(0, _int(qty))
@@ -3833,19 +3852,17 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
     for hold in holds:
         if remaining <= 0:
             break
-        stock = get_or_create_stock(
-            product=hold.product, variation=hold.variation, location=hold.location,
+        stock, move_variation = _stock_row_for_sale(
+            hold.product, hold.variation or sell_variation, hold.location,
         )
         take = min(remaining, int(hold.kolicina or 0), int(stock.kolicina or 0))
         if take <= 0:
-            hold.status = OrderStockHold.Status.VALIDIRANO
-            hold.save(update_fields=['status'])
             continue
         from_reservation = int(stock.rezervisano or 0) >= take
         try:
             apply_movement(
                 product=hold.product,
-                variation=hold.variation,
+                variation=move_variation,
                 location=hold.location,
                 tip=WarehouseMovement.Tip.PRODAJA,
                 kolicina=take,
@@ -3864,16 +3881,14 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
         remaining -= take
         sold += take
     if remaining > 0:
-        stock = get_or_create_stock(
-            product=product, variation=sell_variation, location=location,
-        )
+        stock, move_variation = _stock_row_for_sale(product, variation, location)
         take = min(remaining, int(stock.kolicina or 0))
         if take > 0:
             from_reservation = int(stock.rezervisano or 0) >= take
             try:
                 apply_movement(
                     product=product,
-                    variation=sell_variation,
+                    variation=move_variation,
                     location=location,
                     tip=WarehouseMovement.Tip.PRODAJA,
                     kolicina=take,
@@ -3925,10 +3940,71 @@ def _release_leftover_holds(order, *, user=None):
         try:
             release_holds_for_product(
                 order, hold.product, hold.variation, qty=hold.kolicina, user=user,
+                napomena=f'Validacija #{order.broj}',
             )
         except MagacinError:
             hold.status = OrderStockHold.Status.OTKAZANO
             hold.save(update_fields=['status'])
+
+
+def _stock_key(product, variation=None):
+    product_id = getattr(product, 'pk', product)
+    variation_id = getattr(variation, 'pk', variation) if variation else None
+    return (product_id, variation_id)
+
+
+def _mp_picked_qty(order, item_id):
+    state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
+    total = 0
+    found = 0
+    for key, row in state.items():
+        if not isinstance(row, dict):
+            continue
+        loc_label = (row.get('loc') or '').strip() or _pick_line_loc_from_key(key)
+        if not _pick_location_skipped(loc_label):
+            continue
+        if (loc_label or '').strip().casefold() not in {'mp', 'provjeri u mp'}:
+            continue
+        try:
+            iid = int(row.get('item_id') or 0)
+        except (TypeError, ValueError):
+            iid = 0
+        if not iid and isinstance(key, str) and ':' in str(key):
+            try:
+                iid = int(str(key).split(':', 1)[0])
+            except (TypeError, ValueError):
+                iid = 0
+        if iid != item_id:
+            continue
+        try:
+            total += max(0, int(row.get('got') or 0))
+        except (TypeError, ValueError):
+            pass
+        try:
+            found = max(found, int(row.get('mp_found') or 0))
+        except (TypeError, ValueError):
+            pass
+    return max(total, found)
+
+
+def _warehouse_qty_still_needed(order, pick_rows):
+    needed = defaultdict(int)
+    if pick_rows:
+        for row in pick_rows:
+            needed[_stock_key(row['product'], row['variation'])] += int(row['qty'] or 0)
+        return needed
+    for item in order.stavke.all():
+        if getattr(item, 'rezervni_dio', False) or not item.artikal_id:
+            continue
+        if item.kolicina_pokupljeno is None:
+            qty = int(item.kolicina or 0)
+        else:
+            qty = int(item.kolicina_pokupljeno or 0)
+        qty = max(0, qty - _mp_picked_qty(order, item.pk))
+        if qty <= 0:
+            continue
+        needed[_stock_key(item.artikal, item.varijacija)] += qty
+    return needed
 
 
 @transaction.atomic
@@ -3940,33 +4016,49 @@ def validate_order_stock(order, *, user=None):
         raise MagacinError('Otkazana narudžba se ne može validirati.')
 
     pick_rows = _iter_pick_deduct_rows(order)
-    if pick_rows:
-        for row in pick_rows:
-            _sell_qty_from_location(
-                order, row['product'], row['variation'], row['location'], row['qty'],
-                user=user,
-            )
-        _release_leftover_holds(order, user=user)
-    elif order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO).exists():
-        _sell_remaining_holds(order, user=user)
-        _release_leftover_holds(order, user=user)
-    else:
-        for item in order.stavke.all():
-            if getattr(item, 'rezervni_dio', False) or not item.artikal_id:
-                continue
-            if item.kolicina_pokupljeno is None:
-                qty = int(item.kolicina or 0)
-            else:
-                qty = int(item.kolicina_pokupljeno or 0)
-            if qty <= 0:
-                continue
-            deduct_for_order(
-                item.artikal,
-                qty,
-                variation=item.varijacija,
-                user=user,
-                napomena=f'Validacija #{order.broj}',
-            )
+    needed = _warehouse_qty_still_needed(order, pick_rows)
+    if not any(needed.values()):
+        for hold in order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO):
+            needed[_stock_key(hold.product, hold.variation)] += int(hold.kolicina or 0)
+    for row in pick_rows:
+        sold = _sell_qty_from_location(
+            order, row['product'], row['variation'], row['location'], row['qty'],
+            user=user,
+        )
+        key = _stock_key(row['product'], row['variation'])
+        needed[key] = max(0, needed.get(key, 0) - sold)
+
+    for hold in list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO)):
+        key = _stock_key(hold.product, hold.variation)
+        still = needed.get(key, 0)
+        if still <= 0 and hold.variation_id:
+            key = _stock_key(hold.product, None)
+            still = needed.get(key, 0)
+        if still <= 0:
+            continue
+        sold = _sell_qty_from_location(
+            order, hold.product, hold.variation, hold.location, min(hold.kolicina, still),
+            user=user,
+        )
+        needed[key] = max(0, still - sold)
+
+    for (product_id, variation_id), still in list(needed.items()):
+        if still <= 0 or not product_id:
+            continue
+        product = Product.objects.filter(pk=product_id).first()
+        if product is None:
+            continue
+        variation = ProductVariation.objects.filter(pk=variation_id).first() if variation_id else None
+        leftover = deduct_for_order(
+            product,
+            still,
+            variation=variation,
+            user=user,
+            napomena=f'Validacija #{order.broj}',
+        )
+        needed[(product_id, variation_id)] = leftover
+
+    _release_leftover_holds(order, user=user)
 
     order.lager_status = Order.LagerStatus.VALIDIRANO
     update_fields = ['lager_status']

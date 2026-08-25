@@ -852,6 +852,54 @@ class ProductAdminVariationSortTests(TestCase):
         ordered = list(qs.order_by('-varijacije_broj', 'pk').values_list('pk', flat=True))
         self.assertEqual(ordered[0], self.with_vars.pk)
 
+    def test_filter_same_mt_code_in_name(self):
+        from django.contrib.admin.sites import site
+        from django.test import RequestFactory
+
+        from .admin import IstaMtSifraUNazivuFilter, ProductAdmin
+        from .product_options import duplicate_mt_name_product_ids, extract_mt_codes
+
+        first = Product.objects.create(
+            naziv='MT12122 MATE Old School Stick 274cm 100-180g',
+            slug='mt12122-a',
+            sifra='MT12122-A',
+            cijena=Decimal('10.00'),
+            na_stanju=False,
+        )
+        second = Product.objects.create(
+            naziv='MT-12122 MATE Old School Stick 274cm',
+            slug='mt12122-b',
+            sifra='OTHER',
+            cijena=Decimal('11.00'),
+            na_stanju=True,
+        )
+        unique = Product.objects.create(
+            naziv='MT99999 Unique rod',
+            slug='mt99999-u',
+            sifra='MT99999',
+            cijena=Decimal('12.00'),
+            na_stanju=True,
+        )
+        self.assertEqual(extract_mt_codes(first.naziv), ['MT12122'])
+        self.assertEqual(extract_mt_codes(second.naziv), ['MT12122'])
+        ids = duplicate_mt_name_product_ids()
+        self.assertEqual(ids, {first.pk, second.pk})
+        self.assertNotIn(unique.pk, ids)
+
+        self.assertIn(IstaMtSifraUNazivuFilter, ProductAdmin.list_filter)
+        request = RequestFactory().get(
+            '/admin/EcommerceApp/product/', {'ista_mt_sifra': 'da'},
+        )
+        request.user = self.admin
+        model_admin = ProductAdmin(Product, site)
+        qs = model_admin.get_queryset(request)
+        filtered = IstaMtSifraUNazivuFilter(
+            request, {'ista_mt_sifra': ['da']}, Product, model_admin,
+        ).queryset(request, qs)
+        self.assertEqual(set(filtered.values_list('pk', flat=True)), {first.pk, second.pk})
+        self.assertEqual(model_admin.mt_sifra_u_nazivu(first), 'MT12122')
+        self.assertEqual(model_admin.mt_sifra_u_nazivu(unique), 'MT99999')
+
 
 class StaffStorefrontEditModeTests(TestCase):
     def setUp(self):

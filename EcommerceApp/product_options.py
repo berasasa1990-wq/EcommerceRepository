@@ -39,6 +39,49 @@ _CLOTHING_SIZE = re.compile(r'^\d+$')
 # Interna šifra u nazivu (npr. MT12345 / MT-12345) — ne ulazi u podudaranje.
 _MT_CODE = re.compile(r'\bmt[\s\-]*\d+\b')
 _MT_TOKEN = re.compile(r'^mt\d+$')
+_MT_STRIP = re.compile(r'[\s\-]+')
+
+
+def extract_mt_codes(*texts):
+    """Šifre iz teksta koje počinju sa MT pa brojevi, npr. MT12122 / MT-12122."""
+    codes = []
+    seen = set()
+    for raw in texts:
+        text = unicodedata.normalize('NFKD', raw or '')
+        text = ''.join(ch for ch in text if not unicodedata.combining(ch)).casefold()
+        for match in _MT_CODE.finditer(text):
+            code = _MT_STRIP.sub('', match.group(0)).upper()
+            if code and code not in seen:
+                seen.add(code)
+                codes.append(code)
+    return codes
+
+
+def duplicate_mt_name_groups(products=None):
+    """Artikli čiji naziv dijeli istu MT+broj šifru s barem još jednim artiklom."""
+    from collections import defaultdict
+
+    from .models import Product
+
+    groups = defaultdict(list)
+    rows = products
+    if rows is None:
+        rows = Product.objects.all().only('pk', 'naziv')
+    for product in rows:
+        for code in extract_mt_codes(getattr(product, 'naziv', None)):
+            groups[code].append(product)
+    return {
+        code: members
+        for code, members in groups.items()
+        if len(members) >= 2
+    }
+
+
+def duplicate_mt_name_product_ids():
+    ids = []
+    for members in duplicate_mt_name_groups().values():
+        ids.extend(product.pk for product in members)
+    return set(ids)
 # Mjere i jedinice koje se zanemaruju u nazivu.
 _MEASURE_TOKENS = frozenset({'cm', 'mm', 'm', 'g', 'kg', 'ml', 'l'})
 

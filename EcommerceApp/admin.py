@@ -2065,6 +2065,50 @@ class BannerAdmin(admin.ModelAdmin):
         return 'Nema videa'
 
 
+class IstaMtSifraUNazivuFilter(admin.SimpleListFilter):
+    title = 'Ista MT šifra u nazivu'
+    parameter_name = 'ista_mt_sifra'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('da', 'Da — isti MT+broj u nazivu'),
+        )
+
+    def value(self):
+        val = super().value()
+        if isinstance(val, (list, tuple)):
+            return val[0] if val else None
+        return val
+
+    def queryset(self, request, queryset):
+        if self.value() != 'da':
+            return queryset
+        from django.db.models import Case, IntegerField, When
+
+        from .product_options import duplicate_mt_name_groups
+
+        groups = duplicate_mt_name_groups()
+        ordered_ids = []
+        seen = set()
+        for code in sorted(groups):
+            members = sorted(groups[code], key=lambda p: ((p.naziv or '').casefold(), p.pk))
+            for product in members:
+                if product.pk not in seen:
+                    seen.add(product.pk)
+                    ordered_ids.append(product.pk)
+        if not ordered_ids:
+            return queryset.none()
+        preserved = Case(
+            *[When(pk=pk, then=index) for index, pk in enumerate(ordered_ids)],
+            output_field=IntegerField(),
+        )
+        return (
+            queryset.filter(pk__in=ordered_ids)
+            .annotate(_mt_dup_ord=preserved)
+            .order_by('_mt_dup_ord')
+        )
+
+
 class ImaVarijacijeFilter(admin.SimpleListFilter):
     title = 'Varijacije'
     parameter_name = 'ima_varijacije'
@@ -2090,6 +2134,13 @@ class NaStanjuFilter(admin.SimpleListFilter):
     title = 'Na stanju'
     parameter_name = 'na_stanju'
 
+    def __init__(self, request, params, model, model_admin):
+        raw = params.get('ista_mt_sifra')
+        if isinstance(raw, (list, tuple)):
+            raw = raw[0] if raw else None
+        self._show_all_for_mt = raw == 'da'
+        super().__init__(request, params, model, model_admin)
+
     def lookups(self, request, model_admin):
         return (
             ('1', 'Da'),
@@ -2097,8 +2148,11 @@ class NaStanjuFilter(admin.SimpleListFilter):
         )
 
     def value(self):
-        # Default to 'Yes' (1) if no value provided in query
         val = super().value()
+        if isinstance(val, (list, tuple)):
+            val = val[0] if val else None
+        if val is None and getattr(self, '_show_all_for_mt', False):
+            return None
         if val is None:
             return '1'
         return val
@@ -2140,13 +2194,15 @@ class ProductAdmin(admin.ModelAdmin):
     ]
     filter_horizontal = ('tagovi',)
     list_display = (
-        'naziv', 'varijacije_broj', 'sifra', 'brend', 'kategorija', 'cijena', 'pakovanje_komada',
+        'naziv', 'varijacije_broj', 'sifra', 'mt_sifra_u_nazivu', 'brend', 'kategorija', 'cijena',
+        'pakovanje_komada',
         'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
         'prioritet_lagera', 'proizvedeno_u_japanu',
         'aktivan', 'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
     list_filter = (
-        'aktivan', NaStanjuFilter, ImaVarijacijeFilter, 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
+        'aktivan', NaStanjuFilter, ImaVarijacijeFilter, IstaMtSifraUNazivuFilter,
+        'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
         'prioritet_lagera', 'proizvedeno_u_japanu',
         'kategorija', 'brend', 'tagovi',
         ('kreiran', admin.DateFieldListFilter),
@@ -3555,6 +3611,13 @@ class ProductAdmin(admin.ModelAdmin):
         if n is None:
             n = obj.varijacije.count()
         return n or '—'
+
+    @admin.display(description='MT u nazivu')
+    def mt_sifra_u_nazivu(self, obj):
+        from .product_options import extract_mt_codes
+
+        codes = extract_mt_codes(obj.naziv)
+        return ', '.join(codes) or '—'
 
     @admin.display(description='Dodano', ordering='kreiran')
     def datum_dodavanja(self, obj):

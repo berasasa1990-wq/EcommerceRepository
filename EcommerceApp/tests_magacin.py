@@ -4210,6 +4210,84 @@ class MagacinViewTests(TestCase):
         self.assertEqual(stock_a.rezervisano, 0)
         self.assertEqual(stock_totals(self.product)['dostupno'], 9)
 
+    def test_validate_sells_hold_when_pick_location_has_no_stock(self):
+        from .views_magacin import apply_order_pick
+
+        loc_a = WarehouseLocation.objects.get(sifra='T-1')
+        loc_b = WarehouseLocation.objects.create(sifra='H02', naziv='H02', redoslijed=20)
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'VP H02 prazno',
+            'telefon': '061333223',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['3'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='VP H02 prazno')
+        item = order.stavke.get()
+        stock_a = WarehouseStock.objects.get(product=self.product, location=loc_a)
+        self.assertEqual(stock_a.kolicina, 8)
+        self.assertEqual(stock_a.rezervisano, 3)
+        apply_order_pick(order, [{
+            'key': f'{item.pk}:H02',
+            'item_id': item.pk,
+            'loc': 'H02',
+            'got': 3,
+            'need': 3,
+            'done': True,
+        }], finalize=True, user=self.user)
+        validate_order_stock(order, user=self.user)
+        order.refresh_from_db()
+        stock_a.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(stock_a.kolicina, 5)
+        self.assertEqual(stock_a.rezervisano, 0)
+        sale = WarehouseMovement.objects.filter(
+            product=self.product,
+            tip=WarehouseMovement.Tip.PRODAJA,
+            napomena__contains=order.broj,
+        ).first()
+        self.assertIsNotNone(sale)
+        self.assertEqual(sale.location_id, loc_a.pk)
+        self.assertEqual(sale.kolicina, -3)
+
+    def test_vp_validate_deducts_reserved_qty_after_order_edit(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'novi'})
+        customer = WarehouseCustomer.objects.create(
+            ime_prezime='VP Validacija', telefon='061444555',
+        )
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {
+            'action': 'kupac', 'customer_id': customer.pk,
+        })
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {
+            'action': 'dodaj', 'product_id': self.product.pk, 'kolicina': '2',
+        })
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'zavrsi'})
+        order = Order.objects.get(ime_prezime='VP Validacija')
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.rezervisano, 2)
+        validated = self.client.post(
+            reverse('staff_order_detail', args=[order.broj]),
+            {'action': 'validiraj'},
+        )
+        self.assertRedirects(validated, reverse('staff_magacin_narudzbe'))
+        stock.refresh_from_db()
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(stock.kolicina, 6)
+        self.assertEqual(stock.rezervisano, 0)
+        self.assertTrue(
+            WarehouseMovement.objects.filter(
+                product=self.product,
+                tip=WarehouseMovement.Tip.PRODAJA,
+                napomena__contains=order.broj,
+            ).exists()
+        )
+
     def test_narudzbe_click_opens_detail_not_picking(self):
         self.client.force_login(self.user)
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
