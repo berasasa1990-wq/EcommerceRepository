@@ -956,6 +956,21 @@ table.mg-table {
     letter-spacing: -.02em;
 }
 .mg-toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mg-lead {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: #4b5563;
+    max-width: 720px;
+    line-height: 1.45;
+}
+.mg-backup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+.mg-backup-actions form { margin: 0; }
 .mg-inline-form { display: inline; margin: 0; }
 
 .pp-page { max-width: 720px; }
@@ -3804,6 +3819,10 @@ tr.is-mp-lock {
         justify-content: center;
         font-size: 15px;
     }
+    .pk-clear-loc {
+        min-height: 48px;
+        font-size: 14px;
+    }
     .pk-done-all,
     .pk-empty {
         margin: 12px 0;
@@ -5646,6 +5665,27 @@ tr.is-mp-lock {
     font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
+}
+.pk-clear-loc {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    background: #dc2626;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.pk-clear-loc:active { background: #b91c1c; }
+.pk-clear-loc:disabled {
+    opacity: .55;
+    cursor: wait;
 }
 .pk-dock {
     position: static;

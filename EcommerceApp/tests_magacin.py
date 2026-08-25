@@ -2,10 +2,12 @@ import json
 import time
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -2345,6 +2347,130 @@ class MagacinViewTests(TestCase):
         extra_stock.refresh_from_db()
         self.assertEqual(extra_stock.kolicina, before - 1)
 
+    def test_pick_ocisti_zeros_location_keeps_order_item(self):
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga loc', redoslijed=20)
+        apply_movement(product=self.product, location=loc2, tip='prijem', kolicina=5)
+        other = Product.objects.create(
+            naziv='Ostaje na polici', sifra='STAY-1', cijena=Decimal('3.00'),
+            stanje=4, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        apply_movement(product=other, location=loc, tip='prijem', kolicina=4)
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ocisti Loc',
+            'telefon': '061505050',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['3'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Ocisti Loc')
+        item = order.stavke.get()
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.kolicina, 8)
+        self.assertEqual(stock.rezervisano, 3)
+        denied = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'pick_ocisti',
+                'item_id': str(item.pk),
+                'loc': 'T-1',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(denied.status_code, 403)
+        self.assertFalse(denied.json().get('ok'))
+        stock.refresh_from_db()
+        self.assertEqual(stock.kolicina, 8)
+        wrong = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'pick_ocisti',
+                'item_id': str(item.pk),
+                'loc': 'T-1',
+                'lozinka': 'pogresno',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(wrong.status_code, 403)
+        stock.refresh_from_db()
+        self.assertEqual(stock.kolicina, 8)
+        cleared = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'pick_ocisti',
+                'item_id': str(item.pk),
+                'loc': 'T-1',
+                'lozinka': 'admin',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(cleared.status_code, 200)
+        payload = cleared.json()
+        self.assertTrue(payload.get('ok'))
+        self.assertEqual(payload.get('cleared'), 8)
+        self.assertEqual(payload.get('relocated'), 3)
+        order.refresh_from_db()
+        self.assertNotEqual(order.status, Order.Status.OTKAZANA)
+        self.assertTrue(order.stavke.filter(pk=item.pk).exists())
+        self.assertEqual(order.stavke.get().kolicina, 3)
+        stock.refresh_from_db()
+        self.assertEqual(stock.kolicina, 0)
+        self.assertEqual(stock.rezervisano, 0)
+        stock2 = WarehouseStock.objects.get(product=self.product, location=loc2)
+        self.assertEqual(stock2.kolicina, 5)
+        self.assertEqual(stock2.rezervisano, 3)
+        other_stock = WarehouseStock.objects.get(product=other, location=loc)
+        self.assertEqual(other_stock.kolicina, 4)
+        move = WarehouseMovement.objects.filter(
+            product=self.product, location=loc, tip='korekcija',
+        ).latest('pk')
+        self.assertIn('Usputni popis', move.napomena)
+        self.assertFalse(
+            order.magacin_holds.filter(
+                location=loc, status='rezervisano',
+            ).exists()
+        )
+        self.assertTrue(
+            order.magacin_holds.filter(
+                location=loc2, status='rezervisano', kolicina=3,
+            ).exists()
+        )
+
+        blocked = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'pick_ocisti',
+                'item_id': str(item.pk),
+                'loc': 'MP',
+                'lozinka': 'admin',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(blocked.status_code, 400)
+        self.assertFalse(blocked.json().get('ok'))
+
+        again = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'pick_ocisti',
+                'item_id': str(item.pk),
+                'loc': 'T-1',
+                'lozinka': 'admin',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(again.status_code, 200)
+        self.assertTrue(again.json().get('ok'))
+        self.assertEqual(again.json().get('cleared'), 0)
+
+        page = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'id="pkPickApp"')
+        self.assertContains(page, 'T-2')
+
     def test_vp_add_uses_parent_stock_when_variation_has_none(self):
         self.client.force_login(self.user)
         product = Product.objects.create(
@@ -2618,6 +2744,68 @@ class MagacinViewTests(TestCase):
         self.assertContains(settings_page, 'Sync zaliha iz Odoo')
         self.assertContains(settings_page, 'Sync cijena iz Odoo')
         self.assertContains(settings_page, 'Sync šifri po nazivu')
+        self.assertContains(settings_page, 'Backup baze')
+        self.assertContains(page, 'Backup baze')
+        self.assertContains(page, reverse('staff_magacin_backup'))
+
+    def test_backup_create_list_and_download(self):
+        import sqlite3
+
+        self.client.force_login(self.user)
+        with TemporaryDirectory() as tmp:
+            with override_settings(MAGACIN_BACKUP_DIR=tmp):
+                created = self.client.post(
+                    reverse('staff_magacin_backup'),
+                    {'action': 'create'},
+                )
+                self.assertEqual(created.status_code, 302)
+                files = sorted(Path(tmp).glob('db-*.sqlite3'))
+                self.assertEqual(len(files), 1)
+                name = files[0].name
+                self.assertGreater(files[0].stat().st_size, 0)
+                conn = sqlite3.connect(str(files[0]))
+                try:
+                    names = [
+                        row[0]
+                        for row in conn.execute(
+                            'SELECT naziv FROM "EcommerceApp_product" WHERE sifra = ?',
+                            ['TST-1'],
+                        )
+                    ]
+                finally:
+                    conn.close()
+                self.assertEqual(names, ['Test braid'])
+                listing = self.client.get(reverse('staff_magacin_backup'))
+                self.assertContains(listing, name)
+                self.assertContains(listing, 'Restore')
+                download = self.client.get(
+                    reverse('staff_magacin_backup_download', args=[name]),
+                )
+                self.assertEqual(download.status_code, 200)
+                self.assertIn('attachment', download['Content-Disposition'])
+                missing = self.client.get(
+                    reverse('staff_magacin_backup_download', args=['db-19990101-000000.sqlite3']),
+                )
+                self.assertEqual(missing.status_code, 404)
+                self.product.naziv = 'Promijenjeno ime'
+                self.product.save(update_fields=['naziv'])
+                denied = self.client.post(reverse('staff_magacin_backup'), {
+                    'action': 'restore',
+                    'name': name,
+                    'lozinka': 'pogresno',
+                })
+                self.assertEqual(denied.status_code, 302)
+                self.product.refresh_from_db()
+                self.assertEqual(self.product.naziv, 'Promijenjeno ime')
+                with patch('EcommerceApp.views_magacin.restore_backup') as mocked:
+                    mocked.return_value = {'restored': name, 'safety': 'db-now.sqlite3'}
+                    restored = self.client.post(reverse('staff_magacin_backup'), {
+                        'action': 'restore',
+                        'name': name,
+                        'lozinka': 'admin',
+                    })
+                self.assertEqual(restored.status_code, 302)
+                mocked.assert_called_once_with(name)
 
     def test_pregled_shows_order_stats_and_chart(self):
         self.client.force_login(self.user)

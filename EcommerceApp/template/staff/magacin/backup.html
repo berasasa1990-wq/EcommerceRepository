@@ -1,0 +1,65 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <h1>Backup baze</h1>
+    <form method="post" action="{% url 'staff_magacin_backup' %}" onsubmit="return confirm('Napraviti backup baze? Kasnije ga možeš vratiti Restore-om.');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <button type="submit" class="mg-btn mg-btn-primary">Backup baze</button>
+    </form>
+</div>
+<p class="mg-lead">Svaki backup je cijela baza. Restore vraća artikle, narudžbe, zalihe i sve ostalo na to stanje. Prije restore-a sistem prvo sačuva trenutnu bazu.</p>
+<section class="mg-card">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>DATUM</th>
+                <th>FAJL</th>
+                <th>VELIČINA</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in backups %}
+            <tr>
+                <td>{% if row.created_at %}{{ row.created_at|date:"d.m.Y H:i:s" }}{% else %}—{% endif %}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.size_label }}</td>
+                <td class="mg-backup-actions">
+                    <a class="mg-btn" href="{% url 'staff_magacin_backup_download' row.name %}">Preuzmi</a>
+                    <form method="post" action="{% url 'staff_magacin_backup' %}" data-backup-restore>
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="restore">
+                        <input type="hidden" name="name" value="{{ row.name }}">
+                        <input type="hidden" name="lozinka" value="">
+                        <button type="submit" class="mg-btn mg-btn-danger">Restore</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="mg-muted">Još nema backup-a. Klikni „Backup baze”.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+<script>
+(function () {
+    document.querySelectorAll('[data-backup-restore]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (!window.confirm('Ovo prepisuje cijelu trenutnu bazu. Prije restore-a se pravi sigurnosni backup. Nastaviti?')) return;
+            var password = window.prompt('Unesi šifru:');
+            if (password === null) return;
+            if (String(password).trim() !== 'admin') {
+                window.alert('Pogrešna šifra.');
+                return;
+            }
+            var field = form.querySelector('[name=lozinka]');
+            if (field) field.value = String(password).trim();
+            form.submit();
+        });
+    });
+})();
+</script>
+{% endblock %}

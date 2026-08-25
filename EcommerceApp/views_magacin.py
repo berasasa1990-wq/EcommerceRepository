@@ -15,7 +15,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import FileResponse, Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -55,6 +55,7 @@ from .magacin import (
     set_order_item_qty,
     remove_item_from_order,
     drop_missing_pick_line,
+    clear_pick_location_stock,
     order_is_editable,
     mark_order_packed,
     skini_sa_sajta,
@@ -111,6 +112,7 @@ from .models import (
     WarehouseSyncLog,
     OrderStockHold,
 )
+from .db_backup import BackupError, create_backup, last_backup, list_backups, resolve_backup_file, restore_backup
 from .odoo_client import odoo_je_konfigurisan
 from .views import _base_context, _superuser_required
 
@@ -318,6 +320,7 @@ def _magacin_context(request, *, section='artikli', page_title='Magacin', hide_t
         'sync_job': _sync_job_view(
             request.session.get(MAGACIN_SYNC_SESSION_KEY) or load_running_sync_job()
         ),
+        'last_backup': last_backup(),
         'new_magacin_orders_count': counts['new_magacin_orders_count'],
         'new_pack_orders_count': counts['new_pack_orders_count'],
     }
@@ -4501,6 +4504,50 @@ def magacin_pakuj_detail(request, broj):
             if result.get('cancelled'):
                 return redirect('staff_magacin_pakuj')
             return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+        if action == 'pick_ocisti':
+            if not _packing_reprint_password_ok(request.POST.get('lozinka')):
+                if _pakuj_is_ajax(request):
+                    return JsonResponse(
+                        {'ok': False, 'error': 'Pogrešna šifra.'},
+                        status=403,
+                    )
+                messages.error(request, 'Pogrešna šifra.')
+                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+            try:
+                item = get_object_or_404(order.stavke, pk=int(request.POST.get('item_id') or 0))
+                loc = (request.POST.get('loc') or '').strip()
+                result = clear_pick_location_stock(
+                    order, item, loc=loc, user=request.user,
+                )
+            except (MagacinError, ValueError, TypeError) as exc:
+                if _pakuj_is_ajax(request):
+                    return JsonResponse(
+                        {'ok': False, 'error': str(exc) if str(exc) else 'Lokacija nije očišćena.'},
+                        status=400,
+                    )
+                messages.error(request, str(exc) if str(exc) else 'Lokacija nije očišćena.')
+                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
+            loc_label = result.get('loc') or loc
+            if result.get('relocated'):
+                message = (
+                    f'Lokacija {loc_label} očišćena — zaliha artikla je skinuta, '
+                    'rezervacija prebačena na drugu lokaciju.'
+                )
+            else:
+                message = (
+                    f'Lokacija {loc_label} očišćena — zaliha artikla je skinuta '
+                    '(usputni popis).'
+                )
+            if _pakuj_is_ajax(request):
+                return JsonResponse({
+                    'ok': True,
+                    'reload': True,
+                    'cleared': int(result.get('cleared') or 0),
+                    'relocated': int(result.get('relocated') or 0),
+                    'message': message,
+                })
+            messages.success(request, message)
+            return redirect('staff_magacin_pakuj_detail', broj=order.broj)
         if action in {'validiraj', 'pick_save'}:
             try:
                 apply_order_pick(
@@ -5317,6 +5364,57 @@ def magacin_sync_istorija(request):
     context = _magacin_context(request, section='podesavanja', page_title='Istorija sync-a — Magacin')
     context.update({'page': page})
     return render(request, 'staff/magacin/sync_istorija.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_backup(request):
+    if request.method == 'POST':
+        action = (request.POST.get('action') or 'create').strip()
+        if action == 'restore':
+            if not _packing_reprint_password_ok(request.POST.get('lozinka')):
+                messages.error(request, 'Pogrešna šifra.')
+                return redirect('staff_magacin_backup')
+            name = (request.POST.get('name') or '').strip()
+            try:
+                result = restore_backup(name)
+            except BackupError as exc:
+                messages.error(request, str(exc) if str(exc) else 'Restore nije uspio.')
+                return redirect('staff_magacin_backup')
+            safety = result.get('safety') or ''
+            extra = f' Trenutno stanje je sačuvano kao {safety}.' if safety else ''
+            messages.success(
+                request,
+                f'Baza je vraćena na backup {result.get("restored")}.{extra}',
+            )
+            return redirect('staff_magacin_backup')
+        try:
+            info = create_backup()
+        except BackupError as exc:
+            messages.error(request, str(exc) if str(exc) else 'Backup nije uspio.')
+            return redirect('staff_magacin_backup')
+        messages.success(
+            request,
+            f'Backup baze je spreman: {info["name"]} ({info["size_label"]}). '
+            'Možeš ga vratiti Restore-om.',
+        )
+        return redirect('staff_magacin_backup')
+
+    backups = list_backups()
+    context = _magacin_context(request, section='podesavanja', page_title='Backup baze — Magacin')
+    context.update({'backups': backups})
+    return render(request, 'staff/magacin/backup.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_backup_download(request, name):
+    try:
+        path = resolve_backup_file(name)
+    except BackupError as exc:
+        raise Http404(str(exc)) from exc
+    return FileResponse(path.open('rb'), as_attachment=True, filename=path.name)
 
 
 @login_required(login_url='login')

@@ -3648,6 +3648,90 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
 
 
 @transaction.atomic
+def clear_pick_location_stock(order, item, *, loc, user=None):
+    """Usputni popis na pickingu: skini svu zalihu tog artikla sa te lokacije.
+
+    Stavka ostaje na narudžbi. Ako ima zalihe drugdje, rezervacija se prebaci.
+    """
+    _assert_order_editable(order)
+    if item.narudzba_id != order.pk:
+        raise MagacinError('Stavka nije na ovoj narudžbi.')
+    loc = (loc or '').strip()
+    product = item.artikal
+    variation = item.varijacija
+    if (
+        loc in {'MP', 'Provjeri u MP', 'Rezervni dio'}
+        or getattr(item, 'rezervni_dio', False)
+        or product is None
+    ):
+        raise MagacinError('Ova lokacija se ne čisti s pickinga.')
+    location = _location_for_pick_label(loc)
+    if location is None:
+        raise MagacinError('Lokacija nije pronađena.')
+    if is_ignored_stock_location(location) or is_uncountable_stock_location(location):
+        raise MagacinError('Ova lokacija se ne čisti s pickinga.')
+
+    note = f'Usputni popis — očisti lokaciju picking #{order.broj}'
+    stock, sell_variation = _stock_row_for_sale(product, variation, location)
+    cleared = max(0, int(stock.kolicina or 0))
+    if cleared or int(stock.rezervisano or 0):
+        try:
+            apply_movement(
+                product=product,
+                variation=sell_variation,
+                location=location,
+                tip=WarehouseMovement.Tip.KOREKCIJA,
+                kolicina=0,
+                napomena=note,
+                user=user,
+            )
+        except MagacinError:
+            stock = get_or_create_stock(
+                product=product, variation=sell_variation, location=location,
+            )
+            stock.kolicina = 0
+            stock.rezervisano = 0
+            stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
+
+    hold_q = Q(**_hold_variation_filter(variation))
+    if sell_variation != variation:
+        hold_q |= Q(**_hold_variation_filter(sell_variation))
+    holds = list(
+        OrderStockHold.objects.select_for_update().filter(
+            hold_q,
+            product=product,
+            location=location,
+            status=OrderStockHold.Status.REZERVISANO,
+        )
+    )
+    this_qty = 0
+    for hold in holds:
+        if hold.narudzba_id == order.pk:
+            this_qty += max(0, int(hold.kolicina or 0))
+        hold.status = OrderStockHold.Status.OTKAZANO
+        hold.save(update_fields=['status'])
+
+    relocated = 0
+    if this_qty > 0:
+        leftover = reserve_for_order(
+            order,
+            product,
+            this_qty,
+            variation=variation,
+            user=user,
+            napomena=f'Usputni popis prebacivanje #{order.broj}',
+        )
+        relocated = this_qty - leftover
+
+    _clear_pick_state_for_item(order, item.pk)
+    return {
+        'cleared': cleared,
+        'relocated': relocated,
+        'loc': location.sifra or loc,
+    }
+
+
+@transaction.atomic
 def mark_order_packed(order):
     if order.lager_status != Order.LagerStatus.VALIDIRANO:
         raise MagacinError('Prvo validatuj narudžbu.')

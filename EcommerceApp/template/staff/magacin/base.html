@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260825skini">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260825backup">
 {% endblock %}
 
 {% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% endblock %}
@@ -141,7 +141,16 @@
                 <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
                 <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync šifri</button>
             </form>
+            <form method="post" action="{% url 'staff_magacin_backup' %}" class="mg-sync-form" onsubmit="return confirm('Napraviti backup baze? Kasnije ga možeš vratiti Restore-om.');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <button type="submit" class="mg-history-btn">Backup baze</button>
+            </form>
+            {% if last_backup %}
+            <p class="mg-sync-meta mg-sync-extra">Zadnji backup: <strong>{{ last_backup.created_at|date:"d.m.Y H:i" }}</strong></p>
+            {% endif %}
             <a class="mg-history-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
+            <a class="mg-history-btn" href="{% url 'staff_magacin_backup' %}">Backupi / Restore</a>
             <p class="mg-version">Verzija {{ site_version_label }}</p>
         </div>
     </aside>
@@ -245,6 +254,6 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260825pack"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260825ocisti2"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

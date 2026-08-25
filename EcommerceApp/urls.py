@@ -243,6 +243,12 @@ urlpatterns = [
     path('nalog/magacin/podesavanja/', views_magacin.magacin_podesavanja, name='staff_magacin_podesavanja'),
     path('nalog/magacin/sync/', views_magacin.magacin_sync, name='staff_magacin_sync'),
     path('nalog/magacin/sync/istorija/', views_magacin.magacin_sync_istorija, name='staff_magacin_sync_istorija'),
+    path('nalog/magacin/backup/', views_magacin.magacin_backup, name='staff_magacin_backup'),
+    path(
+        'nalog/magacin/backup/preuzmi/<str:name>/',
+        views_magacin.magacin_backup_download,
+        name='staff_magacin_backup_download',
+    ),
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
     path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),

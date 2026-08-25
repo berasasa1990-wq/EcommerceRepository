@@ -2502,7 +2502,10 @@ function initArticleScanner() {
                 : '<div class="pk-less-row">' +
                     '<input type="number" inputmode="numeric" min="0" max="' + item.need + '" step="1" placeholder="0 = nema" data-pk-less-qty aria-label="Količina">' +
                     '<button type="button" data-pk-less>Pokupi manje</button>' +
-                  '</div>');
+                  '</div>') +
+            (isNow && !st.done && !item.is_mp && !item.rezervni && item.loc
+                ? '<button type="button" class="pk-clear-loc" data-pk-clear-loc>Očisti lokaciju</button>'
+                : '');
         art.querySelector('[data-pk-minus]').addEventListener('click', function () {
             current = idx;
             setGot(item, itemState(item).got - 1);
@@ -2545,6 +2548,13 @@ function initArticleScanner() {
                 if (event.key !== 'Enter') return;
                 event.preventDefault();
                 pickLess();
+            });
+        }
+        var clearBtn = art.querySelector('[data-pk-clear-loc]');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                current = idx;
+                clearLocation(item, clearBtn);
             });
         }
         into.appendChild(art);
@@ -2688,6 +2698,51 @@ function initArticleScanner() {
         window.clearTimeout(saveTimer);
         saveTimer = window.setTimeout(saveServer, 250);
     }
+    function clearLocation(item, btn) {
+        if (!item) return;
+        var loc = item.loc || '';
+        if (!loc) return;
+        var password = window.prompt(
+            'Artikal fizički nema na lokaciji ' + loc + '.\n\n' +
+            'Očistiti lokaciju — skinuti svu zalihu ovog artikla sa te lokacije.\n' +
+            'Unesi šifru:'
+        );
+        if (password === null) return;
+        if (String(password).trim() !== 'admin') {
+            window.alert('Pogrešna šifra.');
+            return;
+        }
+        if (btn) btn.disabled = true;
+        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+        var body = new URLSearchParams();
+        body.set('action', 'pick_ocisti');
+        body.set('item_id', String(item.item_id || ''));
+        body.set('loc', loc);
+        body.set('key', item.key || '');
+        body.set('lozinka', String(password).trim());
+        if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
+        fetch(window.location.pathname, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrf ? csrf.value : '',
+            },
+            body: body,
+            credentials: 'same-origin',
+        }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+              if (!result.data || !result.data.ok) {
+                  if (btn) btn.disabled = false;
+                  window.alert((result.data && result.data.error) || 'Lokacija nije očišćena.');
+                  return;
+              }
+              window.location.reload();
+          }).catch(function () {
+              if (btn) btn.disabled = false;
+              window.alert('Lokacija nije očišćena.');
+          });
+    }
+
     function dropMissing(item) {
         if (!item) return;
         if (!window.confirm('Artikal nema na ovoj lokaciji. Skinuti s narudžbe i s lokacije?')) return;
