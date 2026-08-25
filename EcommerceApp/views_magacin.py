@@ -1843,6 +1843,33 @@ def magacin_lokacije(request):
     if request.method == 'POST':
         action = (request.POST.get('action') or 'save').strip()
         try:
+            if action == 'skini':
+                loc = get_object_or_404(WarehouseLocation, pk=request.POST.get('location_id'))
+                if is_ignored_stock_location(loc):
+                    raise MagacinError('Lokacija Prenos u MP se ne evidentira.')
+                product = get_object_or_404(Product, pk=int(request.POST.get('product_id') or 0))
+                variation = None
+                vid = (request.POST.get('variation_id') or '').strip()
+                if vid:
+                    variation = get_object_or_404(ProductVariation, pk=vid, artikal=product)
+                qty = _parse_qty(request.POST.get('kolicina') or '0')
+                if qty <= 0:
+                    raise MagacinError('Unesi količinu koju skidaš s lokacije.')
+                apply_movement(
+                    product=product,
+                    variation=variation,
+                    location=loc,
+                    tip='prodaja',
+                    kolicina=qty,
+                    napomena=request.POST.get('napomena') or f'Skini sa {loc.label}',
+                    user=request.user,
+                )
+                messages.success(request, f'Skinuto {qty} kom s {loc.label}.')
+                query = (request.POST.get('pretraga') or '').strip()
+                params = {'lokacija': loc.pk}
+                if query:
+                    params['pretraga'] = query
+                return redirect(f"{reverse('staff_magacin_lokacije')}?{urlencode(params)}")
             if action == 'delete':
                 loc = get_object_or_404(WarehouseLocation, pk=request.POST.get('location_id'))
                 if loc.zalihe.exclude(kolicina=0).exists():
@@ -1876,6 +1903,16 @@ def magacin_lokacije(request):
                 messages.success(request, 'Lokacija je sačuvana.')
         except MagacinError as exc:
             messages.error(request, str(exc))
+        except (ValueError, TypeError):
+            messages.error(request, 'Artikal ili lokacija nije validna.')
+        if action == 'skini':
+            loc_id = (request.POST.get('location_id') or '').strip()
+            query = (request.POST.get('pretraga') or '').strip()
+            if loc_id:
+                params = {'lokacija': loc_id}
+                if query:
+                    params['pretraga'] = query
+                return redirect(f"{reverse('staff_magacin_lokacije')}?{urlencode(params)}")
         return redirect('staff_magacin_lokacije')
 
     query = (request.GET.get('pretraga') or '').strip()

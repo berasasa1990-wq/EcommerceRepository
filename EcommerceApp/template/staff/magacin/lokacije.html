@@ -58,6 +58,7 @@
             <h2 class="mg-h">Artikli u {{ selected_location.label }}</h2>
             <a class="mg-btn" href="{% url 'staff_magacin_lokacije' %}">Zatvori</a>
         </div>
+        <p class="mg-muted" style="margin:-4px 0 12px;">Klikni artikal da skineš količinu s ove lokacije.</p>
         <div class="mg-table-wrap">
         <table class="mg-table">
             <thead>
@@ -71,7 +72,14 @@
             </thead>
             <tbody>
                 {% for row in location_stock %}
-                <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_artikal' row.product_id %}{% if row.variation_id %}?varijacija={{ row.variation_id }}{% endif %}'">
+                <tr class="is-clickable" data-loc-skini
+                    data-product-id="{{ row.product_id }}"
+                    data-variation-id="{{ row.variation_id|default:'' }}"
+                    data-location-id="{{ selected_location.pk }}"
+                    data-location-label="{{ selected_location.sifra }}"
+                    data-naziv="{{ row.product.naziv }}{% if row.variation %} — {{ row.variation.naziv }}{% endif %}"
+                    data-qty="{{ row.kolicina }}"
+                    data-available="{{ row.dostupno }}">
                     <td>
                         <strong>{{ row.product.naziv }}</strong>
                         {% if row.variation %}<span class="sub">{{ row.variation.naziv }}</span>{% endif %}
@@ -93,6 +101,18 @@
         {% endif %}
     </section>
 </div>
+
+{% if selected_location %}
+<form method="post" id="locSkiniForm" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="action" value="skini">
+    <input type="hidden" name="location_id" id="locSkiniLocation" value="{{ selected_location.pk }}">
+    <input type="hidden" name="product_id" id="locSkiniProduct" value="">
+    <input type="hidden" name="variation_id" id="locSkiniVariation" value="">
+    <input type="hidden" name="kolicina" id="locSkiniQty" value="">
+    <input type="hidden" name="pretraga" value="{{ location_query }}">
+</form>
+{% endif %}
 
 <div class="mg-modal" id="locModal" hidden>
     <div class="mg-modal-bg" data-loc-close></div>
@@ -184,6 +204,39 @@
     });
     document.querySelectorAll('[data-stop-row]').forEach(function (cell) {
         cell.addEventListener('click', function (event) { event.stopPropagation(); });
+    });
+    var skiniForm = document.getElementById('locSkiniForm');
+    document.querySelectorAll('[data-loc-skini]').forEach(function (row) {
+        row.addEventListener('click', function () {
+            if (!skiniForm) return;
+            var available = parseInt(row.getAttribute('data-available') || '0', 10) || 0;
+            var onHand = parseInt(row.getAttribute('data-qty') || '0', 10) || 0;
+            var loc = row.getAttribute('data-location-label') || '';
+            var name = row.getAttribute('data-naziv') || 'Artikal';
+            if (available <= 0) {
+                window.alert(name + ' na ' + loc + ' nema slobodne zalihe (na stanju ' + onHand + ').');
+                return;
+            }
+            var raw = window.prompt(
+                name + '\nLokacija ' + loc + '\nNa stanju ' + onHand + ', dostupno ' + available + '.\n\nKoliko skidaš?',
+                '1'
+            );
+            if (raw === null) return;
+            var qty = parseInt(String(raw).trim(), 10);
+            if (!qty || qty < 1) {
+                window.alert('Unesi količinu veću od nule.');
+                return;
+            }
+            if (qty > available) {
+                window.alert('Dostupno je ' + available + ' kom.');
+                return;
+            }
+            document.getElementById('locSkiniLocation').value = row.getAttribute('data-location-id') || '';
+            document.getElementById('locSkiniProduct').value = row.getAttribute('data-product-id') || '';
+            document.getElementById('locSkiniVariation').value = row.getAttribute('data-variation-id') || '';
+            document.getElementById('locSkiniQty').value = String(qty);
+            skiniForm.submit();
+        });
     });
 })();
 </script>

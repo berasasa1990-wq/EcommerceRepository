@@ -3108,7 +3108,29 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'Artikli u')
         self.assertContains(page, 'Test braid')
         self.assertContains(page, '8')
+        self.assertContains(page, 'data-loc-skini')
         self.assertEqual(other.sifra, 'Z-9')
+        taken = self.client.post(reverse('staff_magacin_lokacije'), {
+            'action': 'skini',
+            'location_id': loc.pk,
+            'product_id': self.product.pk,
+            'kolicina': '3',
+        })
+        self.assertEqual(taken.status_code, 302)
+        self.assertIn(f'lokacija={loc.pk}', taken['Location'])
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.product.refresh_from_db()
+        self.assertEqual(stock.kolicina, 5)
+        self.assertEqual(self.product.stanje, 5)
+        blocked = self.client.post(reverse('staff_magacin_lokacije'), {
+            'action': 'skini',
+            'location_id': loc.pk,
+            'product_id': self.product.pk,
+            'kolicina': '9',
+        })
+        self.assertEqual(blocked.status_code, 302)
+        stock.refresh_from_db()
+        self.assertEqual(stock.kolicina, 5)
 
     def test_narudzbe_has_manual_entry(self):
         self.client.force_login(self.user)
