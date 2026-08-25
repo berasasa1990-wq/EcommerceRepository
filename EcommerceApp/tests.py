@@ -851,3 +851,84 @@ class ProductAdminVariationSortTests(TestCase):
         self.assertEqual(list(without.values_list('pk', flat=True)), [self.plain.pk])
         ordered = list(qs.order_by('-varijacije_broj', 'pk').values_list('pk', flat=True))
         self.assertEqual(ordered[0], self.with_vars.pk)
+
+
+class StaffStorefrontEditModeTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        from .models import Category
+
+        self.admin = User.objects.create_superuser('editadmin', 'edit@example.com', 'pass')
+        self.guest = User.objects.create_user('kupac', 'kupac@example.com', 'pass')
+        self.category = Category.objects.create(naziv='Edit kat', slug='edit-kat')
+        self.incomplete = Product.objects.create(
+            naziv='Nepotpun artikal',
+            sifra='EDIT-MISS',
+            cijena=Decimal('0.00'),
+            na_stanju=True,
+            aktivan=True,
+            prikazi_na_pocetnoj=True,
+        )
+        self.complete = Product.objects.create(
+            naziv='Kompletan artikal',
+            sifra='EDIT-OK',
+            cijena=Decimal('12.50'),
+            opis='Ima opis.',
+            kategorija=self.category,
+            na_stanju=True,
+            aktivan=True,
+            slika='products/ok.jpg',
+        )
+
+    def test_missing_storefront_fields(self):
+        self.assertEqual(
+            self.incomplete.missing_storefront_fields(),
+            ['kategorija', 'cijena', 'slika', 'opis'],
+        )
+        self.assertEqual(self.complete.missing_storefront_fields(), [])
+
+    def test_edit_checkbox_only_for_superuser(self):
+        from django.urls import reverse
+
+        home = self.client.get(reverse('home'))
+        self.assertNotContains(home, 'staff-edit-toggle')
+        self.client.force_login(self.guest)
+        home = self.client.get(reverse('home'))
+        self.assertNotContains(home, 'staff-edit-toggle')
+        self.client.force_login(self.admin)
+        home = self.client.get(reverse('home'))
+        self.assertContains(home, 'staff-edit-toggle')
+        self.assertContains(home, 'Edit')
+        self.assertContains(home, reverse('staff_toggle_edit_mode'))
+
+    def test_edit_mode_shows_missing_and_opens_brzi_unos(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.admin)
+        toggled = self.client.post(reverse('staff_toggle_edit_mode'), {
+            'enabled': '1',
+            'next': reverse('category', args=[self.category.slug]),
+        })
+        self.assertEqual(toggled.status_code, 302)
+        home = self.client.get(reverse('home'), {'q': 'EDIT-MISS'})
+        self.assertContains(home, 'Fali kategorija')
+        self.assertContains(home, 'Fali cijena')
+        self.assertContains(home, 'Fali slika')
+        self.assertContains(home, 'Fali opis')
+        brzi = reverse('staff_magacin_brzi_unos_aktivacija', args=[self.incomplete.pk])
+        self.assertContains(home, brzi)
+        self.assertContains(home, f'href="{brzi}"')
+        self.assertContains(home, 'target="_blank"')
+        self.assertContains(home, 'rel="noopener"')
+        off = self.client.post(reverse('staff_toggle_edit_mode'), {
+            'enabled': '0',
+            'next': reverse('home'),
+        })
+        self.assertEqual(off.status_code, 302)
+        after = self.client.get(reverse('home'))
+        self.assertNotContains(after, 'Fali kategorija')
+        self.assertNotContains(
+            after,
+            reverse('staff_magacin_brzi_unos_aktivacija', args=[self.incomplete.pk]),
+        )

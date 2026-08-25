@@ -109,8 +109,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260824catGrid2" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260824catGrid2">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260825optName" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260825optName">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -281,6 +281,7 @@
                         <span class="nav-action-label">Moj nalog</span>
                     </a>
                     {% endif %}
+                    <div class="nav-cart-stack">
                     <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
                         <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
@@ -290,6 +291,18 @@
                         <span class="nav-action-label">Korpa</span>
                         {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
                     </a>
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="staff-edit-toggle-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <input type="hidden" name="enabled" value="0">
+                        <label class="staff-edit-toggle">
+                            <input type="checkbox" name="enabled" value="1"{% if staff_edit_mode %} checked{% endif %} onchange="this.form.submit()">
+                            Edit
+                        </label>
+                    </form>
+                    {% endif %}
+                    </div>
                 </div>
             </div>
 
@@ -560,7 +573,7 @@
     <script src="{% static 'js/visitor-presence.js' %}?v=20260814cpu2" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260713v2">
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260825edit">
     <div id="staffAlertsRoot" hidden
          data-poll-url="{% url 'staff_site_events_poll' %}"
          data-analytics-url="{% url 'staff_live_analytics' %}"

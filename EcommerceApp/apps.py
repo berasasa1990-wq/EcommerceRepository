@@ -22,6 +22,13 @@ class EcommerceappConfig(AppConfig):
     def ready(self):
         connection_created.connect(_configure_sqlite)
 
+        from django.db.models.signals import post_delete
+
+        from .magacin import fold_stock_after_variation_delete
+        from .models import ProductVariation
+
+        post_delete.connect(fold_stock_after_variation_delete, sender=ProductVariation)
+
         from django.contrib import admin
 
         admin.site.site_header = 'opremazaribolov.ba Admin'

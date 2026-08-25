@@ -138,11 +138,10 @@ STAFF_EDIT_MODE_SESSION_KEY = 'staff_edit_mode'
 
 
 def _staff_edit_mode_enabled(request):
-    """
-    Superuser edit mode on the storefront.
-    Uklonjen iz UI — uvijek isključen.
-    """
-    return False
+    """Superuser Edit mode na sajtu (checkbox ispod korpe)."""
+    if not _request_is_superuser(request):
+        return False
+    return bool(request.session.get(STAFF_EDIT_MODE_SESSION_KEY))
 
 
 def _can_view_out_of_stock(request=None):
@@ -5487,23 +5486,20 @@ def staff_order_packing(request, broj):
 @require_POST
 def staff_toggle_edit_mode(request):
     """Uključi/isključi edit mode na sajtu (superuser)."""
-    raw = (request.POST.get('enabled') or request.POST.get('edit_mode') or '').strip().lower()
-    if raw in ('1', 'true', 'on', 'yes', 'da'):
-        enabled = True
-    elif raw in ('0', 'false', 'off', 'no', 'ne'):
-        enabled = False
+    if 'enabled' in request.POST or 'edit_mode' in request.POST:
+        raw = (request.POST.get('enabled') or request.POST.get('edit_mode') or '').strip().lower()
+        enabled = raw in ('1', 'true', 'on', 'yes', 'da')
     else:
-        # toggle
         enabled = not _staff_edit_mode_enabled(request)
     request.session[STAFF_EDIT_MODE_SESSION_KEY] = enabled
     request.session.modified = True
     if enabled:
         messages.success(
             request,
-            'Edit mode uključen — klikni natpise da ih mijenjaš, boje u panelu desno.',
+            'Edit uključen — na artiklima piše šta fali, klik otvara Brzi unos.',
         )
     else:
-        messages.success(request, 'Edit mode isključen — artikli se prikazuju kao običnom korisniku.')
+        messages.success(request, 'Edit isključen.')
     next_url = (request.POST.get('next') or request.META.get('HTTP_REFERER') or '').strip()
     if next_url and next_url.startswith('/'):
         return redirect(next_url)

@@ -17,7 +17,7 @@
     <div class="product-card__top">
         <div class="product-card__media">
             <div class="product-image">
-                <a href="{{ product.get_absolute_url }}" class="product-card__media-link" aria-label="{{ product.naziv }}">
+                <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__media-link" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
                     {% if not product.je_novitet and not product.katalog_akcija_postotak and not product.je_hit and home_section_badge != 'novo' and home_section_badge != 'hit' %}
                     {% include 'partials/product_sale_ribbon.html' with product=product %}
                     {% endif %}
@@ -32,7 +32,8 @@
         </div>
 
         <div class="product-card__body">
-            <a href="{{ product.get_absolute_url }}" class="product-card__title" data-product-name>{{ product.naziv }}</a>
+            <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
+            {% include 'partials/product_staff_missing.html' with product=product %}
 
             {% if user.is_superuser and not product.na_stanju %}
             <span class="staff-stock-badge">Nije na stanju</span>

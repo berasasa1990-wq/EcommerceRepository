@@ -94,13 +94,6 @@
                         <a class="mg-row-more" href="{{ order.pick_open_url }}" aria-label="Otvori">›</a>
                     </td>
                 </tr>
-                {% if order.needs_print_packed %}
-                <tr class="pk-print-row">
-                    <td colspan="7">
-                        <a class="pk-print-packed" href="{% url 'staff_magacin_pakuj_stampaj_zapakovano' order.broj %}">Štampaj zapakovano</a>
-                    </td>
-                </tr>
-                {% endif %}
                 {% empty %}
                 <tr>
                     <td colspan="7" class="mg-muted">

@@ -116,6 +116,43 @@ class MagacinStockTests(TestCase):
         self.assertEqual(var.stanje, 87)
         self.assertEqual(self.product.stanje, 87)
 
+    def test_delete_variations_keeps_location_stock(self):
+        var = ProductVariation.objects.create(
+            artikal=self.product, naziv='8#', sifra='FOX12345-8', cijena=Decimal('29.90'),
+        )
+        apply_movement(product=self.product, variation=var, location=self.a10, tip='prijem', kolicina=25)
+        var.delete()
+        self.assertFalse(self.product.varijacije.exists())
+        stock = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        self.assertIsNone(stock.variation_id)
+        self.assertEqual(stock.variation_key, 0)
+        self.assertEqual(stock.kolicina, 25)
+        leftover = deduct_for_order(self.product, 3)
+        self.assertEqual(leftover, 0)
+        stock.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(stock.kolicina, 22)
+        self.assertEqual(self.product.stanje, 22)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 22)
+
+    def test_prodaja_uses_orphaned_variation_key_stock(self):
+        leftover = WarehouseStock.objects.create(
+            product=self.product, location=self.a10, kolicina=25, rezervisano=0,
+        )
+        WarehouseStock.objects.filter(pk=leftover.pk).update(variation_key=999)
+        WarehouseStock.objects.create(
+            product=self.product, location=self.a10, kolicina=0, rezervisano=0,
+        )
+        leftover.refresh_from_db()
+        self.assertEqual(leftover.variation_key, 999)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 25)
+        leftover_qty = deduct_for_order(self.product, 4)
+        self.assertEqual(leftover_qty, 0)
+        stock = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        self.assertEqual(stock.variation_key, 0)
+        self.assertEqual(stock.kolicina, 21)
+        self.assertEqual(WarehouseStock.objects.filter(product=self.product, location=self.a10).count(), 1)
+
     def test_location_rows_only_where_article_has_stock(self):
         apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
         rows, totals = location_rows(self.product)
@@ -1834,7 +1871,7 @@ class MagacinViewTests(TestCase):
         self.assertRedirects(validated, reverse('staff_magacin_pakuj'))
         order.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
-        self.assertFalse(order.zapakovana)
+        self.assertTrue(order.zapakovana)
         self.assertEqual(order.status, Order.Status.ZAVRSENA)
         self.assertEqual(order.get_status_label(), 'Validatovana')
         self.assertEqual(order.get_status_pill_class(), 'mg-st-zavrsena')
@@ -1851,10 +1888,10 @@ class MagacinViewTests(TestCase):
         )
         still = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'sve'})
         self.assertContains(still, 'Print Kupac')
-        self.assertContains(still, 'Štampaj zapakovano')
-        self.assertEqual(len(still.context['vp_orders']), 1)
-        self.assertEqual(still.context['new_pack_orders_count'], 1)
-        self.assertContains(still, reverse('staff_magacin_pakuj_stampaj_zapakovano', args=[order.broj]))
+        self.assertContains(still, 'Završeno')
+        self.assertNotContains(still, 'Štampaj zapakovano')
+        self.assertEqual(still.context['new_pack_orders_count'], 0)
+        self.assertNotContains(still, reverse('staff_magacin_pakuj_stampaj_zapakovano', args=[order.broj]))
         open_list = [row.broj for row in self.client.get(reverse('staff_magacin_narudzbe')).context['orders']]
         self.assertNotIn(order.broj, open_list)
         validated_page = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'})
@@ -1874,6 +1911,10 @@ class MagacinViewTests(TestCase):
         self.assertContains(qty_page, self.product.naziv)
         self.assertContains(qty_page, '>1<')
         self.assertNotContains(qty_page, 'KM')
+        self.assertContains(qty_page, '@page { size: A4 portrait; margin: 16mm 24mm; }')
+        self.assertContains(qty_page, 'font-size: 12px')
+        self.assertContains(qty_page, 'max-width: 100%')
+        self.assertContains(qty_page, 'margine sa strana 24 mm')
         printed = self.client.get(reverse('staff_magacin_pakuj_stampaj_zapakovano', args=[order.broj]))
         self.assertEqual(printed.status_code, 302)
         self.assertIn(reverse('staff_magacin_narudzbe_stampa'), printed['Location'])
@@ -2272,6 +2313,129 @@ class MagacinViewTests(TestCase):
         self.assertEqual(last_order.status, Order.Status.OTKAZANA)
         extra_stock.refresh_from_db()
         self.assertEqual(extra_stock.kolicina, before - 1)
+
+    def test_vp_add_uses_parent_stock_when_variation_has_none(self):
+        self.client.force_login(self.user)
+        product = Product.objects.create(
+            naziv='BKK Ready Rig Diamond - Sode NI 8# 0.16mm 70cm vezane udice',
+            sifra='BKK-SODE-8',
+            cijena=Decimal('4.50'),
+            stanje=25, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        var_a = ProductVariation.objects.create(
+            artikal=product, naziv='8#', sifra='BKK-SODE-8-A', cijena=Decimal('4.50'),
+        )
+        var_b = ProductVariation.objects.create(
+            artikal=product, naziv='10#', sifra='BKK-SODE-8-B', cijena=Decimal('4.50'),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=product, location=loc, tip='prijem', kolicina=25)
+        self.assertEqual(stock_totals(product)['dostupno'], 25)
+        self.assertEqual(stock_totals(product, var_a)['dostupno'], 25)
+        self.assertEqual(stock_totals(product, var_b)['dostupno'], 25)
+        lookup = self.client.get(reverse('staff_magacin_artikli_lookup'), {
+            'q': 'BKK Ready Rig Diamond', 'bez_zalihe': '1',
+        })
+        payload = lookup.json()['results'][0]
+        self.assertEqual(payload['dostupno'], 25)
+        self.assertEqual(payload['varijacije'][0]['na_stanju'], 25)
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'novi'})
+        WarehouseCustomer.objects.create(ime_prezime='VP Stock', telefon='061101010')
+        customer = WarehouseCustomer.objects.get(ime_prezime='VP Stock')
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {
+            'action': 'kupac', 'customer_id': customer.pk,
+        })
+        added = self.client.post(
+            reverse('staff_magacin_vp_narudzba'),
+            {
+                'action': 'dodaj',
+                'product_id': str(product.pk),
+                'variation_id': str(var_a.pk),
+                'kolicina': '2',
+                'mp_ok': '0',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(added.status_code, 200)
+        data = added.json()
+        self.assertTrue(data.get('ok'))
+        self.assertFalse(data.get('need_mp'))
+        draft = MagacinVpNarudzba.objects.get(status=MagacinVpNarudzba.Status.U_TOKU)
+        stavka = draft.stavke.get()
+        self.assertFalse(stavka.mp_ok)
+        self.assertEqual(stavka.kolicina, 2)
+        self.assertIsNone(stavka.variation_id)
+
+    def test_vp_without_variations_deducts_entered_qty(self):
+        self.client.force_login(self.user)
+        product = Product.objects.create(
+            naziv='BKK Ready Rig Diamond - Sode NI 8# bez varijacija',
+            sifra='BKK-SODE-NV',
+            cijena=Decimal('4.50'),
+            stanje=25, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        var = ProductVariation.objects.create(
+            artikal=product, naziv='8#', sifra='BKK-SODE-NV-A', cijena=Decimal('4.50'),
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_movement(product=product, variation=var, location=loc, tip='prijem', kolicina=25)
+        var.delete()
+        stock = WarehouseStock.objects.get(product=product, location=loc)
+        self.assertIsNone(stock.variation_id)
+        self.assertEqual(stock.kolicina, 25)
+        self.assertEqual(stock_totals(product)['dostupno'], 25)
+        lookup = self.client.get(reverse('staff_magacin_artikli_lookup'), {
+            'q': 'BKK Ready Rig Diamond - Sode NI', 'bez_zalihe': '1',
+        })
+        payload = lookup.json()['results'][0]
+        self.assertEqual(payload['dostupno'], 25)
+        self.assertEqual(payload['varijacije'], [])
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'novi'})
+        customer = WarehouseCustomer.objects.create(
+            ime_prezime='VP BezVar', telefon='061303030',
+        )
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {
+            'action': 'kupac', 'customer_id': customer.pk,
+        })
+        added = self.client.post(
+            reverse('staff_magacin_vp_narudzba'),
+            {
+                'action': 'dodaj',
+                'product_id': str(product.pk),
+                'kolicina': '3',
+                'mp_ok': '0',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(added.status_code, 200)
+        self.assertTrue(added.json().get('ok'))
+        self.assertFalse(added.json().get('need_mp'))
+        self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'zavrsi'})
+        order = Order.objects.get(ime_prezime='VP BezVar')
+        item = order.stavke.get()
+        finished = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'validiraj',
+                'pick_json': json.dumps([{
+                    'key': f'{item.pk}:T-1',
+                    'item_id': item.pk,
+                    'loc': 'T-1',
+                    'got': 3,
+                    'need': 3,
+                    'done': True,
+                }]),
+            },
+        )
+        self.assertRedirects(finished, reverse('staff_magacin_pakuj'))
+        stock.refresh_from_db()
+        product.refresh_from_db()
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(stock.kolicina, 22)
+        self.assertEqual(stock.rezervisano, 0)
+        self.assertEqual(product.stanje, 22)
+        self.assertEqual(stock_totals(product)['dostupno'], 22)
 
     def test_vp_picking_add_uses_vp_price_on_invoice(self):
         self.client.force_login(self.user)

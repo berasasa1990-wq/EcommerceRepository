@@ -23,12 +23,13 @@
         </svg>
     </button>
 
-    <a href="{{ product.get_absolute_url }}" class="hm-media" aria-label="{{ product.naziv }}">
+    <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-media" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
         {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 50vw, 16vw' %}
     </a>
 
     <div class="hm-body">
-        <a href="{{ product.get_absolute_url }}" class="hm-title" data-product-name>{{ product.naziv }}</a>
+        <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
+        {% include 'partials/product_staff_missing.html' with product=product %}
 
         <div class="hm-footer">
             <div class="hm-price-col">

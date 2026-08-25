@@ -1,7 +1,7 @@
 {% if products %}
 <div class="product-grid{% if not use_catalog_grid %} product-grid--home{% endif %}">
     {% for product in products %}
-    <a href="{{ product.get_absolute_url }}" class="product-card{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}">
+    <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
         {% if product.je_novitet %}
         <span class="product-card-corner-badge product-card-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
         {% elif product.je_hit %}

@@ -3247,6 +3247,22 @@ class Product(models.Model):
     def ima_sliku(self):
         return bool(self.prikazna_slika)
 
+    def missing_storefront_fields(self):
+        """Polja koja fale za uredan prikaz na sajtu (Edit mode)."""
+        missing = []
+        if not self.kategorija_id:
+            missing.append('kategorija')
+        try:
+            if self.cijena is None or self.cijena <= 0:
+                missing.append('cijena')
+        except (TypeError, ArithmeticError):
+            missing.append('cijena')
+        if not self.ima_sliku:
+            missing.append('slika')
+        if not (self.opis or '').strip():
+            missing.append('opis')
+        return missing
+
     @property
     def prikazna_slika_responsive(self):
         from .utils.images import product_image_responsive_meta
@@ -5491,7 +5507,7 @@ class WarehouseStock(models.Model):
     )
     variation = models.ForeignKey(
         ProductVariation,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='magacin_zalihe',

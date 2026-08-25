@@ -57,7 +57,6 @@ from .magacin import (
     drop_missing_pick_line,
     order_is_editable,
     mark_order_packed,
-    vp_waiting_print_ids,
     skini_sa_sajta,
     ubaci_na_sajt,
     reserve_for_order,
@@ -288,10 +287,7 @@ def _magacin_nav_counts():
         pack_qs = pack_qs.exclude(broj__in=locked)
     data = {
         'new_magacin_orders_count': Order.objects.filter(status=Order.Status.NOVA).exclude(_prenos_mp_q()).count(),
-        'new_pack_orders_count': (
-            pack_qs.count()
-            + Order.objects.filter(pk__in=list(vp_waiting_print_ids())).count()
-        ),
+        'new_pack_orders_count': pack_qs.count(),
         'notify_count': StaffSiteEvent.objects.filter(
             kreirano__gte=timezone.now() - timedelta(hours=24),
         ).count(),
@@ -3983,7 +3979,6 @@ def _order_pick_status(order):
     if (
         order.lager_status == Order.LagerStatus.VALIDIRANO
         or order.status == Order.Status.ZAVRSENA
-        or getattr(order, 'needs_print_packed', False)
     ):
         return 'zavrseno'
     claimed = bool(order.pick_claimed_by_id or (order.pick_claimed_name or '').strip())
@@ -4007,7 +4002,6 @@ def collect_pick_jobs():
         .order_by('-kreirana')
     )
     locked = pending_mp_brojevi(collect_mp_checks(qs))
-    vp_map = {order.pk: order for order in pending_vp_orders()}
     for order in qs:
         if not is_prenos_mp_order(order) and (
             order.broj in locked or order_needs_mp_check(order)
@@ -4016,19 +4010,6 @@ def collect_pick_jobs():
         order.pick_status = _order_pick_status(order)
         order.stavki = order.stavke.count()
         order.pick_open_url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
-        vp = vp_map.get(order.pk)
-        if vp and vp.needs_print_packed:
-            order.needs_print_packed = True
-            order.pick_status = 'zavrseno'
-            order.pick_open_url = reverse('staff_order_detail', args=[order.broj])
-        jobs.append(order)
-        seen.add(order.pk)
-    for order in vp_map.values():
-        if order.pk in seen or not order.needs_print_packed:
-            continue
-        order.pick_status = 'zavrseno'
-        order.stavki = getattr(order, 'vp_stavki', order.stavke.count())
-        order.pick_open_url = reverse('staff_order_detail', args=[order.broj])
         jobs.append(order)
         seen.add(order.pk)
     done_qs = (
@@ -4377,12 +4358,7 @@ def magacin_pakuj_detail(request, broj):
                 return redirect('staff_magacin_pakuj')
             try:
                 validate_order_stock(order, user=request.user)
-                if is_vp_order(order):
-                    messages.success(
-                        request,
-                        f'VP narudžba #{order.broj} je validatovana. Štampaj zapakovano da je skloniš.',
-                    )
-                elif not is_prenos_mp_order(order):
+                if not is_prenos_mp_order(order):
                     messages.success(request, f'Narudžba #{order.broj} je validatovana.')
                 return redirect('staff_magacin_pakuj')
             except MagacinError as exc:
@@ -4965,7 +4941,10 @@ def _vp_is_ajax(request):
 
 
 def _vp_stock_block(request, draft, product, variation, qty, *, mp_ok=False, replace=False, stavka=None):
-    existing = stavka or draft.stavke.filter(product=product, variation=variation).first()
+    from .magacin import _stock_scope
+
+    _, stock_variation = _stock_scope(product, variation)
+    existing = stavka or draft.stavke.filter(product=product, variation=stock_variation).first()
     available = stock_totals(product, variation)['dostupno']
     needed = qty if replace else qty + (existing.kolicina if existing else 0)
     if needed <= available or mp_ok or (existing and existing.mp_ok):
@@ -5044,6 +5023,8 @@ def magacin_vp_narudzba(request):
                     variation = get_object_or_404(ProductVariation, pk=int(var_id), artikal=product)
                 qty = _parse_qty(request.POST.get('kolicina') or '1')
                 mp_ok = request.POST.get('mp_ok') == '1'
+                from .magacin import _stock_scope
+                _, variation = _stock_scope(product, variation)
                 blocked = _vp_stock_block(request, draft, product, variation, qty, mp_ok=mp_ok)
                 if blocked:
                     return blocked

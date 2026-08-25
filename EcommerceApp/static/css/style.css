@@ -28570,7 +28570,7 @@ a.home-promo-card:hover {
     display: grid;
     grid-template-columns: 72px 1fr;
     gap: 10px 12px;
-    align-items: center;
+    align-items: start;
     padding: 10px;
     border: 1px solid #ececec;
     border-radius: 12px;
@@ -28600,16 +28600,16 @@ a.home-promo-card:hover {
     min-width: 0;
 }
 .product-other-options-row__name {
-    display: -webkit-box;
-    overflow: hidden;
+    display: block;
+    overflow: visible;
     color: #111;
     font-size: 14px;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.4;
     text-decoration: none;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 .product-other-options-row__name:hover {
     color: #2d6a06;
@@ -28669,7 +28669,7 @@ body.product-other-options-open {
     }
     .product-other-options-row {
         grid-template-columns: 72px minmax(0, 1fr) auto;
-        align-items: center;
+        align-items: start;
     }
     .product-other-options-form {
         grid-column: auto;

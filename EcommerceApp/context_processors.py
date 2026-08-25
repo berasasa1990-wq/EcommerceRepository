@@ -275,7 +275,12 @@ def nav_categories(request):
     gift_label = active_reward_label(request)
     social_proof = build_social_proof_context(request)
 
-    staff_edit_mode = False
+    staff_edit_mode = bool(
+        getattr(request, 'user', None)
+        and request.user.is_authenticated
+        and request.user.is_superuser
+        and request.session.get('staff_edit_mode')
+    )
 
     # SEO JSON-LD — cache (isti za sve HTML stranice)
     organization_json_ld = ''

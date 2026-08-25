@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if print_jobs|length == 1 %}Količine #{{ print_jobs.0.order.broj }}{% else %}Količine za fakturu ({{ print_jobs|length }}){% endif %}</title>
     <style>
-        @page { size: A4; margin: 16mm; }
+        @page { size: A4 portrait; margin: 16mm 24mm; }
         * { box-sizing: border-box; }
+        html, body { width: 100%; }
         body {
             margin: 0;
             padding: 20px;
@@ -30,7 +31,7 @@
             border: 1px solid #d1d5db;
             border-radius: 10px;
         }
-        .toolbar p { margin: 0; font-size: 14px; }
+        .toolbar p { margin: 0; font-size: 13px; }
         .toolbar button, .toolbar a {
             min-height: 38px;
             padding: 8px 14px;
@@ -55,49 +56,65 @@
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto 16px;
-            padding: 18mm 16mm;
+            padding: 16mm 24mm;
             background: #fff;
             box-shadow: 0 8px 24px rgba(0,0,0,.08);
         }
         h1 {
-            margin: 0 0 4px;
-            font-size: 18px;
-            letter-spacing: .04em;
+            margin: 0 0 3px;
+            font-size: 14px;
+            letter-spacing: .03em;
             text-transform: uppercase;
         }
-        .sub { margin: 0 0 16px; font-size: 13px; color: #6b7280; }
-        table { width: 100%; border-collapse: collapse; }
+        .sub { margin: 0 0 12px; font-size: 11px; color: #6b7280; }
+        table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td {
-            padding: 10px 8px;
+            padding: 6px 6px;
             border-bottom: 1px solid #e5e7eb;
             text-align: left;
-            font-size: 15px;
+            font-size: 12px;
+            vertical-align: top;
         }
         th {
-            font-size: 12px;
-            letter-spacing: .06em;
+            font-size: 10px;
+            letter-spacing: .05em;
             text-transform: uppercase;
             color: #6b7280;
         }
-        td.qty, th.qty { text-align: right; width: 90px; font-weight: 700; }
+        td.naziv, th.naziv { width: auto; overflow-wrap: anywhere; word-break: break-word; }
+        td.qty, th.qty { text-align: right; width: 56px; font-weight: 700; font-size: 13px; }
         @media print {
-            body { background: #fff; padding: 0; }
+            html, body {
+                width: auto !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+            }
             .toolbar { display: none !important; }
             .sheet {
-                width: auto;
-                min-height: 0;
-                margin: 0;
-                padding: 0;
+                width: auto !important;
+                max-width: 100% !important;
+                min-height: 0 !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 box-shadow: none;
+                overflow: visible;
                 page-break-after: always;
             }
             .sheet:last-child { page-break-after: auto; }
+            h1 { font-size: 13px; }
+            .sub { font-size: 10px; margin-bottom: 8px; }
+            th { font-size: 9px; }
+            td { font-size: 11px; padding: 5px 4px; }
+            td.qty, th.qty { font-size: 12px; width: 48px; }
         }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <p><strong>Količine za fakturu</strong> · {{ print_jobs|length }} narudžb{% if print_jobs|length == 1 %}a{% else %}i{% endif %}</p>
+        <p><strong>Količine za fakturu</strong> · {{ print_jobs|length }} narudžb{% if print_jobs|length == 1 %}a{% else %}i{% endif %} — A4 uspravno, margine sa strana 24 mm, skala 100%.</p>
         <div>
             <a href="{% url 'staff_magacin_narudzbe' %}?validirane=1">← Narudžbe</a>
             <button type="button" onclick="window.print()">Štampaj</button>
@@ -110,14 +127,14 @@
         <table>
             <thead>
                 <tr>
-                    <th>Naziv artikla</th>
+                    <th class="naziv">Naziv artikla</th>
                     <th class="qty">Količina</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in job.stavke %}
                 <tr>
-                    <td>{{ row.naziv }}</td>
+                    <td class="naziv">{{ row.naziv }}</td>
                     <td class="qty">{{ row.kolicina }}</td>
                 </tr>
                 {% empty %}

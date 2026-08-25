@@ -825,18 +825,23 @@ function initManualOrderForm() {
         var rows = [];
         (data.results || []).forEach(function (prod) {
             var vars = prod.varijacije || [];
-            if (vars.length) {
-                vars.forEach(function (v) {
-                    rows.push({
-                        item: prod,
-                        variation: v,
-                        naziv: (prod.naziv || '') + (v.naziv ? ' ' + v.naziv : ''),
-                        sifra: v.sifra || prod.sifra || '',
-                        barkod: prod.barkod || '',
-                        cijena: v.cijena || prod.cijena || '',
-                        dostupno: Number(v.na_stanju != null ? v.na_stanju : prod.dostupno) || 0,
-                    });
-                });
+            var parentQty = Number(prod.dostupno) || 0;
+            var varRows = (vars || []).map(function (v) {
+                return {
+                    item: prod,
+                    variation: v,
+                    naziv: (prod.naziv || '') + (v.naziv ? ' ' + v.naziv : ''),
+                    sifra: v.sifra || prod.sifra || '',
+                    barkod: prod.barkod || '',
+                    cijena: v.cijena || prod.cijena || '',
+                    dostupno: Number(v.na_stanju != null ? v.na_stanju : 0) || 0,
+                };
+            });
+            var varQty = varRows.reduce(function (sum, row) { return sum + (row.dostupno || 0); }, 0);
+            if (vars.length > 1 && varQty > 0) {
+                varRows.forEach(function (row) { rows.push(row); });
+            } else if (vars.length === 1 && varQty > 0) {
+                rows.push(varRows[0]);
             } else {
                 rows.push({
                     item: prod,
@@ -845,7 +850,7 @@ function initManualOrderForm() {
                     sifra: prod.sifra || '',
                     barkod: prod.barkod || '',
                     cijena: prod.cijena || '',
-                    dostupno: Number(prod.dostupno) || 0,
+                    dostupno: parentQty,
                 });
             }
         });
@@ -1539,7 +1544,10 @@ function initTransferPage() {
         var items = [];
         (results || []).forEach(function (item) {
             var vars = item.varijacije || [];
-            if (vars.length) {
+            var varQty = (vars || []).reduce(function (sum, v) {
+                return sum + (Number(v.na_stanju != null ? v.na_stanju : 0) || 0);
+            }, 0);
+            if (vars.length > 1 && varQty > 0) {
                 vars.forEach(function (variation) {
                     items.push({
                         id: item.id,
@@ -1556,7 +1564,7 @@ function initTransferPage() {
             } else {
                 items.push({
                     id: item.id,
-                    vid: '',
+                    vid: (vars.length === 1 && varQty > 0) ? vars[0].id : '',
                     naziv: item.naziv,
                     varNaziv: '',
                     sifra: item.sifra || '',
@@ -2880,25 +2888,28 @@ function initArticleScanner() {
         var rows = [];
         (data.results || []).forEach(function (prod) {
             var vars = prod.varijacije || [];
-            if (vars.length > 1) {
-                vars.forEach(function (v) {
-                    rows.push({
-                        id: prod.id,
-                        variation_id: v.id,
-                        naziv: (prod.naziv || '') + ' ' + (v.naziv || ''),
-                        sifra: v.sifra || prod.sifra || '',
-                        cijena: v.cijena || prod.cijena || '',
-                        dostupno: Number(v.na_stanju != null ? v.na_stanju : prod.dostupno) || 0,
-                    });
-                });
+            var parentQty = Number(prod.dostupno) || 0;
+            var varRows = (vars || []).map(function (v) {
+                return {
+                    id: prod.id,
+                    variation_id: v.id,
+                    naziv: (prod.naziv || '') + ' ' + (v.naziv || ''),
+                    sifra: v.sifra || prod.sifra || '',
+                    cijena: v.cijena || prod.cijena || '',
+                    dostupno: Number(v.na_stanju != null ? v.na_stanju : 0) || 0,
+                };
+            });
+            var varQty = varRows.reduce(function (sum, row) { return sum + (row.dostupno || 0); }, 0);
+            if (vars.length > 1 && varQty > 0) {
+                varRows.forEach(function (row) { rows.push(row); });
             } else {
                 rows.push({
                     id: prod.id,
-                    variation_id: '',
+                    variation_id: (vars.length === 1 && varQty > 0) ? vars[0].id : '',
                     naziv: prod.naziv,
                     sifra: prod.sifra,
                     cijena: prod.cijena || '',
-                    dostupno: Number(prod.dostupno) || 0,
+                    dostupno: parentQty,
                 });
             }
         });
@@ -3291,7 +3302,10 @@ function initPopisPage() {
         var rows = [];
         (results || []).forEach(function (prod) {
             var vars = prod.varijacije || [];
-            if (vars.length > 1) {
+            var varQty = (vars || []).reduce(function (sum, v) {
+                return sum + (Number(v.na_stanju != null ? v.na_stanju : 0) || 0);
+            }, 0);
+            if (vars.length > 1 && varQty > 0) {
                 vars.forEach(function (v) {
                     rows.push({
                         id: prod.id,
@@ -3304,7 +3318,7 @@ function initPopisPage() {
             } else {
                 rows.push({
                     id: prod.id,
-                    variation_id: '',
+                    variation_id: (vars.length === 1 && varQty > 0) ? vars[0].id : '',
                     naziv: prod.naziv,
                     sifra: prod.sifra,
                     barkod: prod.barkod || '',

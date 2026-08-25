@@ -60,8 +60,85 @@ def stock_filter(*, product, variation, location=None):
     return filt
 
 
+def _product_has_variations(product):
+    if product is None:
+        return False
+    return ProductVariation.objects.filter(artikal_id=product.pk).exists()
+
+
+def _merge_stock_rows(rows):
+    """Spoji zalihe iste lokacije na parent (variation_key=0)."""
+    if not rows:
+        return None
+    if len(rows) == 1:
+        keeper = rows[0]
+        if keeper.variation_id is not None or int(keeper.variation_key or 0) != 0:
+            keeper.variation = None
+            keeper.variation_key = 0
+            keeper.save(update_fields=['variation', 'variation_key', 'azurirano'])
+        return keeper
+    keeper = next((row for row in rows if int(row.variation_key or 0) == 0), rows[0])
+    qty = sum(int(row.kolicina or 0) for row in rows)
+    reserved = sum(max(0, int(row.rezervisano or 0)) for row in rows)
+    for row in rows:
+        if row.pk != keeper.pk:
+            row.delete()
+    keeper.variation = None
+    keeper.variation_key = 0
+    keeper.kolicina = qty
+    keeper.rezervisano = min(reserved, qty)
+    keeper.save(update_fields=['variation', 'variation_key', 'kolicina', 'rezervisano', 'azurirano'])
+    return keeper
+
+
+@transaction.atomic
+def coalesce_unassigned_stock(product):
+    """Bez varijacija: spoji leftover variation_key redove na parent po lokaciji."""
+    if product is None or _product_has_variations(product):
+        return
+    grouped = defaultdict(list)
+    for row in WarehouseStock.objects.select_for_update().filter(product=product):
+        grouped[row.location_id].append(row)
+    for group in grouped.values():
+        _merge_stock_rows(group)
+
+
+def fold_stock_after_variation_delete(sender, instance, **kwargs):
+    product_id = getattr(instance, 'artikal_id', None)
+    if not product_id:
+        return
+    product = Product.objects.filter(pk=product_id).first()
+    if product is None:
+        return
+    if not WarehouseStock.objects.filter(product_id=product_id).exists():
+        return
+    coalesce_unassigned_stock(product)
+    refresh_catalog_qty(product)
+
+
 def get_or_create_stock(*, product, variation, location):
-    variation_key = int(getattr(variation, 'pk', variation) or 0) if variation else 0
+    if variation is None:
+        qs = WarehouseStock.objects.select_for_update().filter(product=product, location=location)
+        if _product_has_variations(product):
+            qs = qs.filter(Q(variation__isnull=True) | Q(variation_key=0))
+        rows = list(qs)
+        if rows:
+            if (
+                len(rows) == 1
+                and rows[0].variation_id is None
+                and int(rows[0].variation_key or 0) == 0
+            ):
+                return rows[0]
+            return _merge_stock_rows(rows)
+        return WarehouseStock.objects.create(
+            product=product,
+            variation=None,
+            variation_key=0,
+            location=location,
+            kolicina=0,
+            rezervisano=0,
+        )
+    variation_key = int(getattr(variation, 'pk', variation) or 0)
     stock = (
         WarehouseStock.objects.select_for_update()
         .filter(product=product, variation_key=variation_key, location=location)
@@ -137,10 +214,7 @@ def countable_stock_qs(qs=None):
     return qs.exclude(uncountable_location_q('location'))
 
 
-def stock_totals(product, variation=None):
-    qs = countable_stock_qs(WarehouseStock.objects.filter(product=product))
-    if variation is not None:
-        qs = qs.filter(variation=variation)
+def _agg_stock(qs):
     agg = qs.aggregate(na_stanju=Sum('kolicina'), rezervisano=Sum('rezervisano'))
     na_stanju = _int(agg.get('na_stanju'))
     rezervisano = max(0, _int(agg.get('rezervisano')))
@@ -151,13 +225,30 @@ def stock_totals(product, variation=None):
     }
 
 
+def _stock_scope(product, variation=None):
+    """Zaliha za artikal/varijaciju. Bez varijacija — sve lokacije artikla. Inače fallback na parent."""
+    base = countable_stock_qs(WarehouseStock.objects.filter(product=product))
+    if not _product_has_variations(product) or variation is None:
+        return base, None
+    own = base.filter(variation=variation)
+    if own.filter(kolicina__gt=0).exists():
+        return own, variation
+    unassigned = base.filter(Q(variation__isnull=True) | Q(variation_key=0))
+    if unassigned.filter(kolicina__gt=0).exists():
+        return unassigned, None
+    return own, variation
+
+
+def stock_totals(product, variation=None):
+    qs, _ = _stock_scope(product, variation)
+    return _agg_stock(qs)
+
+
 def location_rows(product, variation=None, *, locations=None):
     if locations is None:
         locations = list(usable_locations())
     locations = [loc for loc in locations if not is_uncountable_stock_location(loc)]
-    qs = countable_stock_qs(WarehouseStock.objects.filter(product=product))
-    if variation is not None:
-        qs = qs.filter(variation=variation)
+    qs, _ = _stock_scope(product, variation)
     by_loc = defaultdict(lambda: {'kolicina': 0, 'rezervisano': 0})
     for row in qs:
         bucket = by_loc[row.location_id]
@@ -218,7 +309,7 @@ def clear_mp_without_location(product):
 
 def refresh_catalog_qty(product):
     """Usaglasi Product/Variation.stanje sa zbirom magacinskih lokacija."""
-    variations = list(product.varijacije.all())
+    variations = list(ProductVariation.objects.filter(artikal_id=product.pk))
     var_totals = []
     if variations:
         product_total = 0
@@ -230,8 +321,9 @@ def refresh_catalog_qty(product):
             var_totals.append((variation, total))
             product_total += total
     else:
+        coalesce_unassigned_stock(product)
         product_total = countable_stock_qs(WarehouseStock.objects.filter(
-            product=product, variation__isnull=True,
+            product=product,
         )).aggregate(s=Sum('kolicina'))['s'] or 0
         product_total = max(0, _int(product_total))
 
@@ -3078,6 +3170,7 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
+    _, hold_variation = _stock_scope(product, variation)
     rows, _ = location_rows(product, variation)
     for row in rows:
         if remaining <= 0:
@@ -3087,7 +3180,7 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
             continue
         apply_movement(
             product=product,
-            variation=variation,
+            variation=hold_variation,
             location=row['location'],
             tip=WarehouseMovement.Tip.PRODAJA,
             kolicina=take,
@@ -3103,6 +3196,7 @@ def reserve_for_order(order, product, qty, *, variation=None, user=None, napomen
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
+    _, hold_variation = _stock_scope(product, variation)
     rows, _ = location_rows(product, variation)
     if location is not None:
         loc_pk = getattr(location, 'pk', location)
@@ -3113,10 +3207,12 @@ def reserve_for_order(order, product, qty, *, variation=None, user=None, napomen
         take = min(row['dostupno'], remaining)
         if take <= 0:
             continue
-        stock = get_or_create_stock(product=product, variation=variation, location=row['location'])
+        stock = get_or_create_stock(
+            product=product, variation=hold_variation, location=row['location'],
+        )
         apply_movement(
             product=product,
-            variation=variation,
+            variation=hold_variation,
             location=row['location'],
             tip=WarehouseMovement.Tip.REZERVACIJA,
             kolicina=1,
@@ -3127,7 +3223,7 @@ def reserve_for_order(order, product, qty, *, variation=None, user=None, napomen
         OrderStockHold.objects.create(
             narudzba=order,
             product=product,
-            variation=variation,
+            variation=hold_variation,
             location=row['location'],
             kolicina=take,
             status=OrderStockHold.Status.REZERVISANO,
@@ -3720,14 +3816,18 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
     remaining = max(0, _int(qty))
     if remaining <= 0 or product is None or location is None:
         return 0
+    _, sell_variation = _stock_scope(product, variation)
     sold = 0
     napomena = f'Validacija #{order.broj}'
+    hold_filter = Q(**_hold_variation_filter(variation))
+    if sell_variation != variation:
+        hold_filter |= Q(**_hold_variation_filter(sell_variation))
     holds = list(
         order.magacin_holds.filter(
+            hold_filter,
             product=product,
             location=location,
             status=OrderStockHold.Status.REZERVISANO,
-            **_hold_variation_filter(variation),
         ).order_by('-kolicina', '-pk')
     )
     for hold in holds:
@@ -3765,7 +3865,7 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
         sold += take
     if remaining > 0:
         stock = get_or_create_stock(
-            product=product, variation=variation, location=location,
+            product=product, variation=sell_variation, location=location,
         )
         take = min(remaining, int(stock.kolicina or 0))
         if take > 0:
@@ -3773,7 +3873,7 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
             try:
                 apply_movement(
                     product=product,
-                    variation=variation,
+                    variation=sell_variation,
                     location=location,
                     tip=WarehouseMovement.Tip.PRODAJA,
                     kolicina=take,
@@ -3873,10 +3973,9 @@ def validate_order_stock(order, *, user=None):
     if order.status != Order.Status.OTKAZANA:
         order.status = Order.Status.ZAVRSENA
         update_fields.append('status')
-    if not is_vp_order(order):
-        order.zapakovana = True
-        order.zapakovana_at = timezone.now()
-        update_fields.extend(['zapakovana', 'zapakovana_at'])
+    order.zapakovana = True
+    order.zapakovana_at = timezone.now()
+    update_fields.extend(['zapakovana', 'zapakovana_at'])
     order.save(update_fields=update_fields)
     try:
         from .views_magacin import invalidate_magacin_nav_counts
