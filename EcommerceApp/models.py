@@ -3987,6 +3987,14 @@ class Order(models.Model):
             return 'Validatovana'
         return self.Status(self.status).label
 
+    def get_status_pill_class(self):
+        if (
+            self.lager_status == self.LagerStatus.VALIDIRANO
+            or self.status == self.Status.ZAVRSENA
+        ):
+            return 'mg-st-zavrsena'
+        return f'mg-st-{self.status}'
+
     def placeno_karticom(self):
         for row in (self.popust_detalji or []):
             if not isinstance(row, dict):

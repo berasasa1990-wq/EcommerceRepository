@@ -30,12 +30,15 @@
         {% if can_edit_order and edit_order_url %}
         <a class="mg-btn" href="{{ edit_order_url }}">Izmijeni narudžbu</a>
         {% endif %}
-        {% if order.lager_status == 'rezervisano' %}
+        {% if order.lager_status == 'rezervisano' or order.lager_status == 'nije' %}
+        <a class="mg-btn" href="{% url 'staff_magacin_pakuj_detail' order.broj %}">Picking</a>
         <form method="post" action="{% url 'staff_order_detail' broj=order.broj %}">
             {% csrf_token %}
             <input type="hidden" name="action" value="validiraj">
             <button type="submit" class="mg-btn mg-btn-primary">Validiraj narudžbu</button>
         </form>
+        {% endif %}
+        {% if order.lager_status == 'rezervisano' %}
         <form method="post" action="{% url 'staff_order_detail' broj=order.broj %}" class="staff-cancel-form">
             {% csrf_token %}
             <input type="hidden" name="action" value="otkazi">

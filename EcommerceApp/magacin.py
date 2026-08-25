@@ -1177,6 +1177,7 @@ MAGACIN_SYNC_SESSION_KEY = 'magacin_sync_job'
 STOCK_SYNC_BATCH = 180
 CATALOG_SYNC_BATCH = 20
 PRICE_SYNC_BATCH = 80
+SIFRA_SYNC_BATCH = 80
 DISCOVER_SYNC_BATCH = 300
 
 
@@ -1221,6 +1222,43 @@ def _variation_has_image(variation):
 
 def _norm_name_key(value):
     return ' '.join((value or '').split()).casefold()
+
+
+_ODOO_NAME_REF_PREFIX = re.compile(r'^\[[^\]]+\]\s*')
+
+
+def _bare_product_name(value):
+    """Naziv za match: trim, casefold, bez [REF] prefiksa iz Odoo display_name."""
+    text = _norm_ident('' if value in (None, False) else str(value))
+    if text.startswith('['):
+        text = _ODOO_NAME_REF_PREFIX.sub('', text).strip()
+    return _norm_name_key(text)
+
+
+def _odoo_reference_code(*records):
+    """Odoo Internal Reference (polje Reference / default_code)."""
+    for source in records:
+        if not source:
+            continue
+        for key in ('default_code', 'code', 'reference'):
+            raw = source.get(key)
+            if raw in (None, False, ''):
+                continue
+            text = _norm_ident(str(raw))
+            if text:
+                return text
+    return ''
+
+
+def _products_by_bare_name():
+    grouped = {}
+    qs = Product.objects.only('id', 'naziv', 'sifra', 'odoo_template_id', 'stanje', 'barkod')
+    for row in qs:
+        key = _bare_product_name(row.naziv)
+        if not key:
+            continue
+        grouped.setdefault(key, []).append(row)
+    return grouped
 
 
 def _bind_sync_product(product, odoo_id):
@@ -1549,6 +1587,78 @@ def _sync_variation_prices(client, product, template):
     return updated
 
 
+def sync_sifra_chunk(client, template_ids):
+    """Nađi isti naziv u Magacinu i upiši Odoo referencu. Nikad ne kreira artikal."""
+    stats = {'azurirano': 0, 'preskoceno': 0}
+    ids = [int(tid) for tid in (template_ids or []) if tid]
+    if not ids:
+        return stats
+    from .odoo_import import _odoo_template_name, _sifra_zauzeta
+
+    templates = client.get_templates_by_ids(ids) or []
+    need_variant_ids = []
+    for template in templates:
+        if _odoo_reference_code(template):
+            continue
+        for vid in template.get('product_variant_ids') or []:
+            if vid:
+                need_variant_ids.append(int(vid))
+    variants_by_id = {}
+    if need_variant_ids and hasattr(client, 'get_product_variants'):
+        for row in client.get_product_variants(need_variant_ids, with_images=False) or []:
+            vid = row.get('id')
+            if vid:
+                variants_by_id[int(vid)] = row
+
+    by_name = _products_by_bare_name()
+    for template in templates:
+        name_keys = []
+        for raw in (_odoo_template_name(template), template.get('display_name')):
+            key = _bare_product_name(raw)
+            if key and key not in name_keys:
+                name_keys.append(key)
+        variant_rows = [
+            variants_by_id[int(vid)]
+            for vid in (template.get('product_variant_ids') or [])
+            if vid and int(vid) in variants_by_id
+        ]
+        sifra = _odoo_reference_code(template, *variant_rows)
+        if not name_keys or not sifra:
+            stats['preskoceno'] += 1
+            continue
+        matches = []
+        seen = set()
+        for key in name_keys:
+            for row in by_name.get(key) or []:
+                if row.pk in seen:
+                    continue
+                seen.add(row.pk)
+                matches.append(row)
+        if not matches:
+            stats['preskoceno'] += 1
+            continue
+        new_sifra = sifra[:SIFRA_MAX_LENGTH]
+        keeper = max(matches, key=_keeper_rank)
+        if _sifra_zauzeta(new_sifra, product_pk=keeper.pk):
+            stats['preskoceno'] += 1
+            continue
+        changed = False
+        if (keeper.sifra or '') != new_sifra:
+            keeper.sifra = new_sifra
+            keeper.save(update_fields=['sifra'])
+            changed = True
+        odoo_id = template.get('id')
+        if odoo_id and not keeper.odoo_template_id:
+            bound = _bind_sync_product(keeper, odoo_id)
+            if bound.pk == keeper.pk:
+                changed = True
+        if changed:
+            stats['azurirano'] += 1
+        else:
+            stats['preskoceno'] += 1
+    return stats
+
+
 def sync_price_chunk(client, template_ids):
     """Po Odoo ID postavi MPC kao list_price u Odoo. Ne kreira artikle."""
     stats = {'azurirano': 0, 'preskoceno': 0}
@@ -1761,6 +1871,33 @@ def run_sync_chunk(job, *, user=None):
                 )
             return job
 
+        if phase == 'sifre':
+            template_ids = job.get('template_ids') or []
+            position = int(job.get('position') or 0)
+            batch = template_ids[position:position + SIFRA_SYNC_BATCH]
+            stats = sync_sifra_chunk(client, batch)
+            job['position'] = position + len(batch)
+            job['azurirano'] = int(job.get('azurirano') or 0) + int(stats.get('azurirano') or 0)
+            job['preskoceno'] = int(job.get('preskoceno') or 0) + int(stats.get('preskoceno') or 0)
+            _update_log_progress(
+                log, started,
+                f'Šifre: {job["position"]} / {len(template_ids)} '
+                f'(ažurirano {job.get("azurirano") or 0})…',
+                artikala=job.get('artikala') or 0,
+            )
+            if job['position'] >= len(template_ids):
+                job['done'] = True
+                job['phase'] = 'done'
+                _finish_log(
+                    log, started,
+                    poruka=(
+                        f'Šifre usklađene po nazivu: ažurirano {job.get("azurirano") or 0}, '
+                        f'preskočeno {job.get("preskoceno") or 0}. Nema novih artikala.'
+                    ),
+                    artikala=job.get('azurirano') or 0,
+                )
+            return job
+
         if phase == 'discover':
             offset = int(job.get('discover_offset') or 0)
             page = []
@@ -1784,10 +1921,25 @@ def run_sync_chunk(job, *, user=None):
             )
             if page_done:
                 all_odoo = set(discovered)
-                local_ids = set(local_odoo_template_ids())
-                missing = sorted(all_odoo - local_ids)
                 job['discovered_ids'] = []
                 job['odoo_ukupno'] = len(all_odoo)
+                if job.get('sifra_only'):
+                    job['template_ids'] = sorted(all_odoo)
+                    job['position'] = 0
+                    job['phase'] = 'sifre'
+                    if not job['template_ids']:
+                        job['done'] = True
+                        job['phase'] = 'done'
+                        _finish_log(log, started, 'Nema Odoo artikala za sync šifri.')
+                    else:
+                        _update_log_progress(
+                            log, started,
+                            f'Šifre iz Odoo po nazivu: {len(job["template_ids"])} artikala…',
+                            artikala=len(job['template_ids']),
+                        )
+                    return job
+                local_ids = set(local_odoo_template_ids())
+                missing = sorted(all_odoo - local_ids)
                 job['nedostaje'] = len(missing)
                 # Uvijek uvezi SVE što fali. Zalihe idu za cijeli magacin.
                 job['template_ids'] = missing
@@ -2117,6 +2269,46 @@ def _price_template_ids(*, product=None):
         used.add(tid)
         seen.append(tid)
     return seen
+
+
+def start_sifra_sync(*, user=None):
+    """Samo šifre: isti naziv u Magacinu ← Odoo referenca (default_code). Ne kreira artikle."""
+    from .odoo_client import odoo_je_konfigurisan
+
+    started = time.time()
+    log = WarehouseSyncLog.objects.create(
+        status=WarehouseSyncLog.Status.U_TOKU,
+        izvor='Odoo šifre',
+        korisnik=user if getattr(user, 'is_authenticated', False) else None,
+    )
+    if not odoo_je_konfigurisan():
+        _fail_log(log, started, 'Odoo nije konfigurisan.')
+        raise MagacinError('Odoo nije konfigurisan.')
+    attach_site_odoo_products_to_magacin()
+    _update_log_progress(log, started, 'Šifre iz Odoo po nazivu…')
+    return {
+        'log_id': log.pk,
+        'started': started,
+        'phase': 'discover',
+        'template_ids': [],
+        'position': 0,
+        'stock_ids': [],
+        'stock_extra_ids': [],
+        'changed_ids': [],
+        'discovered_ids': [],
+        'discover_offset': 0,
+        'stock_position': 0,
+        'artikala': 0,
+        'lokacija': 0,
+        'zaliha': 0,
+        'kreirano': 0,
+        'azurirano': 0,
+        'preskoceno': 0,
+        'done': False,
+        'incremental': False,
+        'sifra_only': True,
+        'single_product_id': None,
+    }
 
 
 def start_price_sync(*, user=None, product=None):
@@ -3450,58 +3642,232 @@ def _parse_move_qty(raw):
         raise MagacinError('Količina nije validan broj.')
 
 
-@transaction.atomic
-def validate_order_stock(order, *, user=None):
-    """Skini rezervisane količine s lokacija te narudžbe."""
-    from collections import defaultdict
+_PICK_SKIP_LOCS = {
+    'mp', 'provjeri u mp', 'rezervni dio', 'prenos u mp',
+}
 
-    if order.lager_status == Order.LagerStatus.VALIDIRANO:
-        return
-    if order.lager_status == Order.LagerStatus.OTKAZANO:
-        raise MagacinError('Otkazana narudžba se ne može validirati.')
-    reserved = defaultdict(int)
-    holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
-    for hold in holds:
-        reserved[(hold.product_id, hold.variation_id)] += int(hold.kolicina or 0)
-    picked = defaultdict(int)
-    for item in order.stavke.all():
-        if item.kolicina_pokupljeno is None:
-            qty = int(item.kolicina or 0)
-        else:
-            qty = int(item.kolicina_pokupljeno or 0)
-        picked[(item.artikal_id, item.varijacija_id)] += qty
-    for key, res in reserved.items():
-        extra = res - picked.get(key, 0)
-        if extra <= 0 or not key[0]:
+
+def _pick_location_skipped(label):
+    text = (label or '').strip().casefold()
+    if not text or text in _PICK_SKIP_LOCS:
+        return True
+    return is_uncountable_stock_location(name=label, sifra=label, path=label)
+
+
+def _location_for_pick_label(label):
+    text = (label or '').strip()
+    if not text or _pick_location_skipped(text):
+        return None
+    loc = WarehouseLocation.objects.filter(sifra__iexact=text).first()
+    if loc is not None:
+        return loc
+    loc = WarehouseLocation.objects.filter(naziv__iexact=text).first()
+    if loc is not None:
+        return loc
+    return WarehouseLocation.objects.filter(odoo_location_path__iexact=text).first()
+
+
+def _iter_pick_deduct_rows(order):
+    """Pokupljene količine po lokaciji iz pickinga. MP/rezervni se ne skidaju s magacina."""
+    state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
+    items = {item.pk: item for item in order.stavke.select_related('artikal', 'varijacija')}
+    rows = []
+    for key, row in state.items():
+        if not isinstance(row, dict):
             continue
-        product = Product.objects.filter(pk=key[0]).first()
-        if product is None:
+        try:
+            got = max(0, int(row.get('got') or 0))
+        except (TypeError, ValueError):
             continue
-        variation = ProductVariation.objects.filter(pk=key[1]).first() if key[1] else None
-        release_holds_for_product(order, product, variation, qty=extra, user=user)
-    holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
+        if got <= 0:
+            continue
+        loc_label = (row.get('loc') or '').strip() or _pick_line_loc_from_key(key)
+        if _pick_location_skipped(loc_label):
+            continue
+        location = _location_for_pick_label(loc_label)
+        if location is None or is_ignored_stock_location(location):
+            continue
+        try:
+            item_id = int(row.get('item_id') or 0)
+        except (TypeError, ValueError):
+            item_id = 0
+        if not item_id and isinstance(key, str) and ':' in str(key):
+            try:
+                item_id = int(str(key).split(':', 1)[0])
+            except (TypeError, ValueError):
+                item_id = 0
+        item = items.get(item_id)
+        if item is None or not item.artikal_id or getattr(item, 'rezervni_dio', False):
+            continue
+        rows.append({
+            'product': item.artikal,
+            'variation': item.varijacija,
+            'location': location,
+            'qty': got,
+        })
+    return rows
+
+
+def _pick_line_loc_from_key(key):
+    text = str(key or '')
+    if ':' in text:
+        return text.split(':', 1)[1].strip()
+    return ''
+
+
+def _sell_qty_from_location(order, product, variation, location, qty, *, user=None):
+    """Skini količinu s lokacije. Prvo rezervacija te narudžbe, pa slobodno stanje."""
+    remaining = max(0, _int(qty))
+    if remaining <= 0 or product is None or location is None:
+        return 0
+    sold = 0
+    napomena = f'Validacija #{order.broj}'
+    holds = list(
+        order.magacin_holds.filter(
+            product=product,
+            location=location,
+            status=OrderStockHold.Status.REZERVISANO,
+            **_hold_variation_filter(variation),
+        ).order_by('-kolicina', '-pk')
+    )
     for hold in holds:
+        if remaining <= 0:
+            break
+        stock = get_or_create_stock(
+            product=hold.product, variation=hold.variation, location=hold.location,
+        )
+        take = min(remaining, int(hold.kolicina or 0), int(stock.kolicina or 0))
+        if take <= 0:
+            hold.status = OrderStockHold.Status.VALIDIRANO
+            hold.save(update_fields=['status'])
+            continue
+        from_reservation = int(stock.rezervisano or 0) >= take
         try:
             apply_movement(
                 product=hold.product,
                 variation=hold.variation,
                 location=hold.location,
                 tip=WarehouseMovement.Tip.PRODAJA,
-                kolicina=hold.kolicina,
-                napomena=f'Validacija #{order.broj}',
+                kolicina=take,
+                napomena=napomena,
                 user=user,
-                from_reservation=True,
+                from_reservation=from_reservation,
             )
+        except MagacinError:
+            continue
+        if take >= int(hold.kolicina or 0):
             hold.status = OrderStockHold.Status.VALIDIRANO
             hold.save(update_fields=['status'])
-        except MagacinError:
+        else:
+            hold.kolicina = int(hold.kolicina or 0) - take
+            hold.save(update_fields=['kolicina'])
+        remaining -= take
+        sold += take
+    if remaining > 0:
+        stock = get_or_create_stock(
+            product=product, variation=variation, location=location,
+        )
+        take = min(remaining, int(stock.kolicina or 0))
+        if take > 0:
+            from_reservation = int(stock.rezervisano or 0) >= take
             try:
-                release_holds_for_product(
-                    order, hold.product, hold.variation, qty=hold.kolicina, user=user,
+                apply_movement(
+                    product=product,
+                    variation=variation,
+                    location=location,
+                    tip=WarehouseMovement.Tip.PRODAJA,
+                    kolicina=take,
+                    napomena=napomena,
+                    user=user,
+                    from_reservation=from_reservation,
                 )
+                remaining -= take
+                sold += take
             except MagacinError:
-                hold.status = OrderStockHold.Status.OTKAZANO
-                hold.save(update_fields=['status'])
+                pass
+    return sold
+
+
+def _sell_remaining_holds(order, *, user=None):
+    from collections import defaultdict
+
+    reserved = defaultdict(int)
+    holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
+    for hold in holds:
+        reserved[(hold.product_id, hold.variation_id)] += int(hold.kolicina or 0)
+    items = list(order.stavke.all())
+    picked = defaultdict(int)
+    for item in items:
+        if item.kolicina_pokupljeno is None:
+            qty = int(item.kolicina or 0)
+        else:
+            qty = int(item.kolicina_pokupljeno or 0)
+        picked[(item.artikal_id, item.varijacija_id)] += qty
+    if items:
+        for key, res in reserved.items():
+            extra = res - picked.get(key, 0)
+            if extra <= 0 or not key[0]:
+                continue
+            product = Product.objects.filter(pk=key[0]).first()
+            if product is None:
+                continue
+            variation = ProductVariation.objects.filter(pk=key[1]).first() if key[1] else None
+            release_holds_for_product(order, product, variation, qty=extra, user=user)
+    for hold in list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO)):
+        _sell_qty_from_location(
+            order, hold.product, hold.variation, hold.location, hold.kolicina, user=user,
+        )
+
+
+def _release_leftover_holds(order, *, user=None):
+    leftover = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
+    for hold in leftover:
+        try:
+            release_holds_for_product(
+                order, hold.product, hold.variation, qty=hold.kolicina, user=user,
+            )
+        except MagacinError:
+            hold.status = OrderStockHold.Status.OTKAZANO
+            hold.save(update_fields=['status'])
+
+
+@transaction.atomic
+def validate_order_stock(order, *, user=None):
+    """Skini količine s picking lokacija (ručna, VP, webshop). Nikad ne ostavi validirano bez skidanja."""
+    if order.lager_status == Order.LagerStatus.VALIDIRANO:
+        return
+    if order.lager_status == Order.LagerStatus.OTKAZANO:
+        raise MagacinError('Otkazana narudžba se ne može validirati.')
+
+    pick_rows = _iter_pick_deduct_rows(order)
+    if pick_rows:
+        for row in pick_rows:
+            _sell_qty_from_location(
+                order, row['product'], row['variation'], row['location'], row['qty'],
+                user=user,
+            )
+        _release_leftover_holds(order, user=user)
+    elif order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO).exists():
+        _sell_remaining_holds(order, user=user)
+        _release_leftover_holds(order, user=user)
+    else:
+        for item in order.stavke.all():
+            if getattr(item, 'rezervni_dio', False) or not item.artikal_id:
+                continue
+            if item.kolicina_pokupljeno is None:
+                qty = int(item.kolicina or 0)
+            else:
+                qty = int(item.kolicina_pokupljeno or 0)
+            if qty <= 0:
+                continue
+            deduct_for_order(
+                item.artikal,
+                qty,
+                variation=item.varijacija,
+                user=user,
+                napomena=f'Validacija #{order.broj}',
+            )
+
     order.lager_status = Order.LagerStatus.VALIDIRANO
     update_fields = ['lager_status']
     if order.status != Order.Status.OTKAZANA:

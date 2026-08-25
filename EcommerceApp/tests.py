@@ -757,6 +757,11 @@ class ProductNameOptionsTests(TestCase):
             'Fox Edges Armapoint MT111 Hook',
             'Korda Krank MT222 Hook',
         ))
+        # Brojevi, cm, g i navodnici se zanemaruju
+        self.assertTrue(names_are_similar('Fox Edges 12cm', 'Fox Edges 18cm'))
+        self.assertTrue(names_are_similar('Korda Dark Matter 15g', 'Korda Dark Matter 25g'))
+        self.assertTrue(names_are_similar('Carp hook 6"', "Carp hook 8'"))
+        self.assertGreaterEqual(name_similarity('Fox Edges 12cm MT9', 'Fox Edges 18cm MT88'), 0.90)
 
     def test_finds_similar_sku_in_same_category(self):
         from .product_options import find_similar_name_products

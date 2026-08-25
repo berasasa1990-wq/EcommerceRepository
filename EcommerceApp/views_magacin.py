@@ -80,6 +80,7 @@ from .magacin import (
     seed_default_locations,
     start_full_sync,
     start_price_sync,
+    start_sifra_sync,
     start_stock_sync,
     stock_totals,
     vp_cijena,
@@ -169,6 +170,10 @@ def _sync_job_view(job):
         total = max(1, len(template_ids))
         current = int(job.get('position') or 0)
         label = f'Usklađujem cijene s Odoo: {current} / {len(template_ids)}'
+    elif phase == 'sifre':
+        total = max(1, len(template_ids))
+        current = int(job.get('position') or 0)
+        label = f'Ažuriram šifre po nazivu: {current} / {len(template_ids)}'
     elif phase == 'catalog':
         total = max(1, len(template_ids))
         current = int(job.get('position') or 0)
@@ -5201,6 +5206,8 @@ def magacin_sync(request):
                 job = start_stock_sync(user=request.user, product=product)
             elif action == 'prices':
                 job = start_price_sync(user=request.user, product=product)
+            elif action == 'sifre':
+                job = start_sifra_sync(user=request.user)
             else:
                 job = start_full_sync(user=request.user, product=product)
             persist_sync_job(job)

@@ -6,7 +6,7 @@
     <dl class="mg-kv">
         <div class="mg-kv-row">
             <dt>Izvor zaliha</dt>
-            <dd>Svaki server ima svoju bazu. Git push šalje samo kod, ne artikle. „Sync sada” uvodi nove artikle iz Odoo. „Sync zaliha” postavi količinu po Odoo ID. „Sync cijena” postavi MPC (list_price) po Odoo ID.</dd>
+            <dd>Svaki server ima svoju bazu. Git push šalje samo kod, ne artikle. „Sync sada” uvodi nove artikle iz Odoo. „Sync zaliha” postavi količinu po Odoo ID. „Sync cijena” postavi MPC (list_price) po Odoo ID. „Sync šifri” nađe isti naziv u Magacinu i upiše Odoo referencu (Internal Reference) — ne pravi duplikate.</dd>
         </div>
         <div class="mg-kv-row">
             <dt>Odoo veza</dt>
@@ -37,6 +37,12 @@
             <input type="hidden" name="action" value="prices">
             <input type="hidden" name="next" value="{% url 'staff_magacin_podesavanja' %}">
             <button type="submit" class="mg-btn"{% if sync_job %} disabled{% endif %}>Sync cijena iz Odoo</button>
+        </form>
+        <form method="post" action="{% url 'staff_magacin_sync' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="sifre">
+            <input type="hidden" name="next" value="{% url 'staff_magacin_podesavanja' %}">
+            <button type="submit" class="mg-btn"{% if sync_job %} disabled{% endif %}>Sync šifri po nazivu</button>
         </form>
         <a class="mg-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
     </div>

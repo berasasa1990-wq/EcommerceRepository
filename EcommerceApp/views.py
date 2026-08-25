@@ -4801,11 +4801,8 @@ def _mark_order_completed(request, broj):
         order.status = Order.Status.ZAVRSENA
         order.save(update_fields=['status'])
     try:
-        if order.lager_status == Order.LagerStatus.REZERVISANO:
+        if order.lager_status != Order.LagerStatus.VALIDIRANO:
             validate_order_stock(order, user=request.user)
-        elif order.lager_status != Order.LagerStatus.VALIDIRANO:
-            order.lager_status = Order.LagerStatus.VALIDIRANO
-            order.save(update_fields=['lager_status'])
     except MagacinError as exc:
         messages.error(request, str(exc))
         return False
@@ -5190,6 +5187,38 @@ def _allocate_packing_locations(needed_qty, stock_locations):
     return picks, remaining
 
 
+def _magacin_stock_picks(items):
+    """Picks iz lokalnog Magacin stanja kad nema rezervacije (npr. webshop)."""
+    from .magacin import location_rows
+
+    picks_by_item = {}
+    for item in items:
+        if getattr(item, 'rezervni_dio', False) or not item.artikal_id:
+            continue
+        rows, _ = location_rows(item.artikal, item.varijacija)
+        remaining = int(item.kolicina or 0)
+        picks = []
+        for row in rows:
+            if remaining <= 0:
+                break
+            dostupno = max(0, int(row.get('dostupno') or 0))
+            if dostupno <= 0:
+                continue
+            take = min(dostupno, remaining)
+            loc = row['location']
+            picks.append({
+                'location_name': loc.sifra or loc.naziv or '?',
+                'location_id': loc.pk,
+                'take': take,
+                'on_hand': int(row.get('kolicina') or dostupno),
+                'location_path': loc.odoo_location_path or loc.naziv or '',
+            })
+            remaining -= take
+        if picks:
+            picks_by_item[item.pk] = (picks, remaining)
+    return picks_by_item
+
+
 def _magacin_hold_picks(order, items):
     """Picks iz lokalnih Magacin rezervacija (rezervisano / validirano)."""
     from .models import OrderStockHold
@@ -5277,6 +5306,9 @@ def _build_order_packing_lines(order):
     stock_by_product = {}
     template_variants = {}
     magacin_picks = _magacin_hold_picks(order, items)
+    if len(magacin_picks) < len(items):
+        for pk, val in _magacin_stock_picks(items).items():
+            magacin_picks.setdefault(pk, val)
     mp_confirmed = _mp_confirmed_item_ids(order)
     pick_state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
 

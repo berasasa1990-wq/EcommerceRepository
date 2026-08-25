@@ -99,7 +99,7 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% elif order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=pick{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}"{% if order.is_vp %} data-vp="1"{% endif %}>
+                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}"{% if order.is_vp %} data-vp="1"{% endif %}>
                     <td class="mg-check-col" data-stop-row>
                         <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.needs_mp_check %} data-mp="1"{% endif %}{% if order.is_vp %} data-vp="1"{% endif %}>
                     </td>
@@ -142,7 +142,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        <span class="mg-pill mg-st-{{ order.status }}">{{ order.get_status_label }}</span>
+                        <span class="mg-pill {{ order.get_status_pill_class }}">{{ order.get_status_label }}</span>
                     </td>
                     <td class="mg-order-loc">
                         {% if order.lager_lokacije %}
@@ -169,7 +169,7 @@
                         <a class="mg-order-print" href="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}?b={{ order.broj }}" target="_blank" rel="noopener" title="Štampaj količine za fakturu" aria-label="Štampaj količine za fakturu">Količine</a>
                         {% endif %}
                         {% endif %}
-                        <a class="mg-row-more" href="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% elif order.needs_mp_check %}{% url 'staff_magacin_pakuj_provjera' %}?narudzba={{ order.broj }}&next=pick{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" aria-label="Otvori narudžbu">
+                        <a class="mg-row-more" href="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" aria-label="Otvori narudžbu">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
                         </a>
                     </td>

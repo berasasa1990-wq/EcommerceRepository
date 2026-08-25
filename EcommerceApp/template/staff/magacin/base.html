@@ -135,6 +135,12 @@
                 <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
                 <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync cijena</button>
             </form>
+            <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="sifre">
+                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync šifri</button>
+            </form>
             <a class="mg-history-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
             <p class="mg-version">Verzija {{ site_version_label }}</p>
         </div>
