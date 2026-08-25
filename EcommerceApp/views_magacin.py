@@ -3672,14 +3672,30 @@ def _mp_group_key(item):
 
 
 def collect_mp_checks(orders=None):
-    """Artikli bez zalihe (Provjeri u MP) — samo lokalni Magacin, bez Odoo poziva."""
+    """Artikli bez zalihe (Provjeri u MP) — samo lokalni Magacin, bez Odoo poziva.
+
+    Online narudžbe nemaju rezervaciju; slobodna magacinska zaliha se i dalje
+    uzima s lokacije, ne šalje u MP.
+    """
     if orders is None:
         orders = list(
             _unvalidated_orders_qs()
-            .prefetch_related('stavke__artikal', 'magacin_holds')
+            .prefetch_related('stavke__artikal', 'stavke__varijacija', 'magacin_holds')
             .order_by('-kreirana')[:200]
         )
     grouped = {}
+    remaining_avail = {}
+
+    def _cover_from_warehouse(product, variation, qty):
+        if product is None or qty <= 0:
+            return 0
+        key = (product.pk, getattr(variation, 'pk', None))
+        if key not in remaining_avail:
+            remaining_avail[key] = stock_totals(product, variation)['dostupno']
+        take = min(qty, remaining_avail[key])
+        remaining_avail[key] -= take
+        return take
+
     for order in orders:
         state = order.pick_state or {}
         hold_qty = {}
@@ -3695,6 +3711,7 @@ def collect_mp_checks(orders=None):
             if reserved <= 0 and item.varijacija_id:
                 reserved = hold_qty.get((item.artikal_id, None), 0)
             short = max(0, int(item.kolicina or 0) - reserved)
+            short -= _cover_from_warehouse(item.artikal, item.varijacija, short)
             if short <= 0:
                 continue
             pick_key = f'{item.pk}:Provjeri u MP'

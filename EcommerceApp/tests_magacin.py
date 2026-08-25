@@ -4464,6 +4464,48 @@ class MagacinViewTests(TestCase):
         self.assertEqual(self.product.stanje, 6)
         self.assertEqual(stock_totals(self.product)['dostupno'], 6)
 
+    def test_webshop_order_with_warehouse_stock_picks_location_not_mp(self):
+        from .views_magacin import order_needs_mp_check
+
+        self.client.force_login(self.user)
+        order = Order.objects.create(
+            ime_prezime='Online Ima Lager', telefon='061777888', email='lager@example.com',
+            adresa='Web 2', grad='Sarajevo', ukupno=Decimal('20.00'),
+            izvor=Order.Izvor.WEBSHOP,
+        )
+        OrderItem.objects.create(
+            narudzba=order, naziv='Test braid', cijena=Decimal('10.00'), kolicina=2,
+            artikal=self.product, sifra=self.product.sifra,
+        )
+        self.assertEqual(stock_totals(self.product)['dostupno'], 8)
+        self.assertFalse(order_needs_mp_check(order))
+        listing = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertEqual(listing.status_code, 200)
+        self.assertContains(listing, 'Online Ima Lager')
+        self.assertNotContains(listing, 'pk-mp-cta')
+        pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(pick.status_code, 200)
+        queue = json.loads(pick.context['pick_queue_json'])
+        self.assertEqual(len(queue), 1)
+        self.assertEqual(queue[0]['loc'], 'T-1')
+        self.assertFalse(queue[0].get('is_mp'))
+        self.assertEqual(queue[0]['need'], 2)
+
+        empty = Product.objects.create(
+            naziv='Nema magacin', sifra='NO-LOC', cijena=Decimal('3.00'),
+            stanje=0, na_stanju=False, magacin_sync_at=timezone.now(),
+        )
+        mp_order = Order.objects.create(
+            ime_prezime='Online Nema Lager', telefon='061777889', email='nema@example.com',
+            adresa='Web 3', grad='Sarajevo', ukupno=Decimal('3.00'),
+            izvor=Order.Izvor.WEBSHOP,
+        )
+        OrderItem.objects.create(
+            narudzba=mp_order, naziv=empty.naziv, cijena=Decimal('3.00'), kolicina=1,
+            artikal=empty, sifra=empty.sifra,
+        )
+        self.assertTrue(order_needs_mp_check(mp_order))
+
     def test_validate_deducts_from_picking_location(self):
         from .views_magacin import apply_order_pick
 
