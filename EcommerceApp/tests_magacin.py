@@ -3859,34 +3859,65 @@ class MagacinViewTests(TestCase):
         self.assertTrue(today_order.packing_odstampana)
         self.assertEqual(len(packing_ready_orders()), 0)
 
-        yesterday = enter_pick_validate('Juce Pack', '062222222')
-        Order.objects.filter(pk=yesterday.pk).update(
+        yesterday_order = enter_pick_validate('Juce Pack', '062222222')
+        Order.objects.filter(pk=yesterday_order.pk).update(
             kreirana=timezone.now() - timedelta(days=1),
             zapakovana_at=timezone.now() - timedelta(days=1),
             packing_odstampana=True,
             packing_odstampana_at=timezone.now() - timedelta(days=1),
         )
 
-        blocked = self.client.post(reverse('staff_magacin_narudzbe_packing'), {
+        blocked = self.client.post(reverse('staff_magacin_narudzbe_packing_izbor'), {
             'lozinka': 'pogresno',
         })
         self.assertEqual(blocked.status_code, 302)
         self.assertEqual(blocked['Location'], reverse('staff_magacin_narudzbe'))
-        sneak = self.client.get(reverse('staff_magacin_narudzbe_packing'), {
-            'lozinka': 'admin',
-        })
+        sneak = self.client.get(reverse('staff_magacin_narudzbe_packing_izbor'))
         self.assertEqual(sneak.status_code, 302)
+        sneak_print = self.client.post(reverse('staff_magacin_narudzbe_packing'), {
+            'action': 'stampaj',
+            'datum': timezone.localdate().isoformat(),
+            'b': [today_order.broj],
+        })
+        self.assertEqual(sneak_print.status_code, 302)
 
-        reprint = self.client.post(reverse('staff_magacin_narudzbe_packing'), {
+        unlocked = self.client.post(reverse('staff_magacin_narudzbe_packing_izbor'), {
             'lozinka': 'admin',
         })
-        self.assertEqual(reprint.status_code, 200)
-        self.assertContains(reprint, 'Danas Pack')
-        self.assertNotContains(reprint, 'Juce Pack')
+        self.assertRedirects(unlocked, reverse('staff_magacin_narudzbe_packing_izbor'))
+        picker = self.client.get(reverse('staff_magacin_narudzbe_packing_izbor'))
+        self.assertEqual(picker.status_code, 200)
+        self.assertContains(picker, 'Reprint packinga')
+        self.assertContains(picker, 'name="datum"')
+        self.assertContains(picker, 'Danas Pack')
+        self.assertNotContains(picker, 'Juce Pack')
+        yesterday = timezone.localdate() - timedelta(days=1)
+        older = self.client.get(
+            reverse('staff_magacin_narudzbe_packing_izbor'),
+            {'datum': yesterday.isoformat()},
+        )
+        self.assertEqual(older.status_code, 200)
+        self.assertContains(older, 'Juce Pack')
+        self.assertNotContains(older, 'Danas Pack')
+        printed = self.client.post(reverse('staff_magacin_narudzbe_packing'), {
+            'action': 'stampaj',
+            'datum': yesterday.isoformat(),
+            'b': [yesterday_order.broj],
+        })
+        self.assertEqual(printed.status_code, 200)
+        self.assertContains(printed, 'Juce Pack')
+        self.assertNotContains(printed, 'Danas Pack')
+        skipped = self.client.post(reverse('staff_magacin_narudzbe_packing'), {
+            'action': 'stampaj',
+            'datum': timezone.localdate().isoformat(),
+            'b': [],
+        })
+        self.assertEqual(skipped.status_code, 302)
         idle = self.client.get(reverse('staff_magacin_narudzbe'))
         self.assertEqual(idle.context['packing_ready_count'], 0)
         self.assertContains(idle, 'data-packing-reprint="1"')
         self.assertContains(idle, 'id="mgPackingReprintForm"')
+        self.assertContains(idle, reverse('staff_magacin_narudzbe_packing_izbor'))
 
     def test_packing_print_marks_card_vs_cash(self):
         from .magacin import validate_order_stock

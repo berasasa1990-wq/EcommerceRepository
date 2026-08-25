@@ -198,6 +198,11 @@ urlpatterns = [
         name='staff_magacin_narudzbe_stampa_kolicine',
     ),
     path('nalog/magacin/narudzbe/packing/', views_magacin.magacin_narudzbe_packing, name='staff_magacin_narudzbe_packing'),
+    path(
+        'nalog/magacin/narudzbe/packing/izbor/',
+        views_magacin.magacin_narudzbe_packing_izbor,
+        name='staff_magacin_narudzbe_packing_izbor',
+    ),
     path('nalog/magacin/narudzbe/validiraj/', views_magacin.magacin_narudzbe_validiraj, name='staff_magacin_narudzbe_validiraj'),
     path(
         'nalog/magacin/narudzbe/odstampano/',

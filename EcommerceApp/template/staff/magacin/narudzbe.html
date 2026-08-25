@@ -203,7 +203,7 @@
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
 </form>
 {% endif %}
-<form id="mgPackingReprintForm" method="post" action="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener" hidden>
+<form id="mgPackingReprintForm" method="post" action="{% url 'staff_magacin_narudzbe_packing_izbor' %}" target="_blank" rel="noopener" hidden>
     {% csrf_token %}
     <input type="hidden" name="lozinka" value="">
 </form>

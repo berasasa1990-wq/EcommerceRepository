@@ -2341,6 +2341,8 @@ def _order_was_picked(order):
 PACKING_READY_LIMIT = 80
 PACKING_TODAY_LIMIT = 200
 PACKING_REPRINT_PASSWORD = 'admin'
+PACKING_REPRINT_SESSION_KEY = 'mg_packing_reprint_ok'
+PACKING_REPRINT_TTL = 15 * 60
 
 
 def _packing_reprint_password_ok(raw):
@@ -2349,6 +2351,19 @@ def _packing_reprint_password_ok(raw):
     if len(password) != len(expected):
         return False
     return hmac.compare_digest(password, expected)
+
+
+def _packing_reprint_unlocked(request):
+    raw = request.session.get(PACKING_REPRINT_SESSION_KEY)
+    try:
+        started = float(raw)
+    except (TypeError, ValueError):
+        return False
+    return (timezone.now().timestamp() - started) <= PACKING_REPRINT_TTL
+
+
+def _unlock_packing_reprint(request):
+    request.session[PACKING_REPRINT_SESSION_KEY] = timezone.now().timestamp()
 
 
 def _picked_item_exists():
@@ -2377,23 +2392,29 @@ def packing_ready_orders():
     return [order for order in orders if _order_was_picked(order)]
 
 
-def packing_today_orders():
-    """Sve pickovane pošiljke od danas, uključujući već odštampane packinge."""
-    today = timezone.localdate()
+def packing_orders_for_date(day):
+    """Pickovane i validatovane pošiljke za datum, uključujući već odštampane packinge."""
+    if day is None:
+        day = timezone.localdate()
     orders = list(
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
         .filter(_validated_orders_q())
         .filter(_picked_item_exists())
         .filter(
-            Q(zapakovana_at__date=today)
-            | Q(packing_odstampana_at__date=today)
-            | Q(kreirana__date=today)
+            Q(zapakovana_at__date=day)
+            | Q(packing_odstampana_at__date=day)
+            | Q(kreirana__date=day)
         )
         .prefetch_related('stavke', 'magacin_holds')
         .order_by('kreirana')[:PACKING_TODAY_LIMIT]
     )
     return [order for order in orders if _order_was_picked(order)]
+
+
+def packing_today_orders():
+    """Sve pickovane pošiljke od danas, uključujući već odštampane packinge."""
+    return packing_orders_for_date(timezone.localdate())
 
 
 def _trim_picks_to_qty(picks, qty):
@@ -2527,23 +2548,56 @@ def _render_packing_jobs(ordered):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
-def magacin_narudzbe_packing(request):
-    reprint_today = False
+def magacin_narudzbe_packing_izbor(request):
     if request.method == 'POST':
         if not _packing_reprint_password_ok(request.POST.get('lozinka')):
             messages.error(request, 'Pogrešna lozinka za reprint packinga.')
             return redirect('staff_magacin_narudzbe')
-        reprint_today = True
-    if reprint_today:
-        ordered = packing_today_orders()
-        if not ordered:
-            messages.info(request, 'Nema picking pošiljki od danas za packing.')
+        _unlock_packing_reprint(request)
+        return redirect('staff_magacin_narudzbe_packing_izbor')
+    if not _packing_reprint_unlocked(request):
+        messages.error(request, 'Unesi lozinku za reprint packinga.')
+        return redirect('staff_magacin_narudzbe')
+    day = _parse_iso_date(request.GET.get('datum')) or timezone.localdate()
+    orders = packing_orders_for_date(day)
+    context = _magacin_context(
+        request, section='narudzbe', page_title='Reprint packinga — Magacin',
+        hide_top_search=True,
+    )
+    context.update({
+        'orders': orders,
+        'datum': day.isoformat(),
+        'datum_label': day.strftime('%d.%m.%Y.'),
+        'print_url': reverse('staff_magacin_narudzbe_packing'),
+    })
+    return render(request, 'staff/magacin/packing_izbor.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_narudzbe_packing(request):
+    if request.method == 'POST' and request.POST.get('action') == 'stampaj':
+        if not _packing_reprint_unlocked(request):
+            messages.error(request, 'Unesi lozinku za reprint packinga.')
             return redirect('staff_magacin_narudzbe')
-    else:
-        ordered = packing_ready_orders()
+        day = _parse_iso_date(request.POST.get('datum')) or timezone.localdate()
+        wanted = [b.strip() for b in request.POST.getlist('b') if (b or '').strip()]
+        wanted = list(dict.fromkeys(wanted))[:PACKING_TODAY_LIMIT]
+        available = {order.broj: order for order in packing_orders_for_date(day)}
+        ordered = [available[broj] for broj in wanted if broj in available]
         if not ordered:
-            messages.info(request, 'Nema pickovanih i validatovanih narudžbi za packing.')
-            return redirect('staff_magacin_narudzbe')
+            messages.info(request, f'Nema označenih packing pošiljki za {day.strftime("%d.%m.%Y.")}.')
+            url = reverse('staff_magacin_narudzbe_packing_izbor')
+            return redirect(f'{url}?datum={day.isoformat()}')
+        return render(
+            request,
+            'staff/magacin/narudzbe_packing.html',
+            _render_packing_jobs(ordered),
+        )
+    ordered = packing_ready_orders()
+    if not ordered:
+        messages.info(request, 'Nema pickovanih i validatovanih narudžbi za packing.')
+        return redirect('staff_magacin_narudzbe')
     return render(
         request,
         'staff/magacin/narudzbe_packing.html',

@@ -1455,7 +1455,7 @@ function initOrderBulkPrint() {
             }
             event.preventDefault();
             var password = window.prompt(
-                'Packing je već odštampan. Lozinka za reprint svih picking pošiljki od danas:'
+                'Packing je već odštampan. Lozinka za reprint — zatim biraš datum i koje pošiljke da štampaš:'
             );
             if (password === null) return;
             if (String(password).trim() !== 'admin') {
