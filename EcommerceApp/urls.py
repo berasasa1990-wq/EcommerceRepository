@@ -143,6 +143,11 @@ urlpatterns = [
     path('nalog/magacin/artikli/', views_magacin.magacin_artikli, name='staff_magacin_artikli'),
     path('nalog/magacin/artikli/brzi-unos/', views_magacin.magacin_brzi_unos, name='staff_magacin_brzi_unos'),
     path(
+        'nalog/magacin/artikli/brzi-unos/novi/',
+        views_magacin.magacin_brzi_unos_novi,
+        name='staff_magacin_brzi_unos_novi',
+    ),
+    path(
         'nalog/magacin/artikli/brzi-unos/<int:product_id>/',
         views_magacin.magacin_brzi_unos_aktivacija,
         name='staff_magacin_brzi_unos_aktivacija',

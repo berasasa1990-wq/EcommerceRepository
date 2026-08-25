@@ -395,7 +395,7 @@
   <section class="bu-sheet">
     <header class="bu-head">
       <h1>Brzi unos / Aktivacija</h1>
-      <p>Skeniraj barkod, upiši šifru ili <strong>naziv</strong>. Sistem pronalazi postojeći artikal — ne kreira novi.</p>
+      <p>Skeniraj barkod, upiši šifru ili <strong>naziv</strong>. Ako artikal ne postoji, dodaj novi.</p>
     </header>
 
     <div class="bu-layout">
@@ -460,8 +460,8 @@
 
         {% if not_found %}
         <div class="bu-empty">
-          Nema artikla za „{{ query }}”. Traži po šifri, barkodu ili nazivu.
-          Artikli se ne kreiraju ovdje — moraju već postojati u bazi.
+          Nema artikla za „{{ query }}”. Traži po šifri, barkodu ili nazivu,
+          ili <a href="{% url 'staff_magacin_brzi_unos_novi' %}?q={{ query|urlencode }}">dodaj novi artikal</a>.
         </div>
         {% endif %}
 
@@ -500,6 +500,9 @@
         </div>
         {% endif %}
 
+        <a class="bu-find" href="{% url 'staff_magacin_brzi_unos_novi' %}{% if query %}?q={{ query|urlencode }}{% endif %}" style="margin-top:18px;width:100%;text-decoration:none;box-sizing:border-box;">
+          + Novi artikal
+        </a>
         <a class="bu-back" href="{% url 'staff_magacin_artikli' %}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
           Nazad na Artikle
@@ -519,7 +522,7 @@
             <span class="bu-tip-ico" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.2 2.2 4.8-5.2"/></svg>
             </span>
-            Sistem prikazuje samo postojeće artikle.
+            Ako artikal ne postoji, dodaj ga kao novi (dovoljni su naziv i cijena).
           </li>
           <li>
             <span class="bu-tip-ico" aria-hidden="true">

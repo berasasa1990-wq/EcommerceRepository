@@ -1386,6 +1386,37 @@ class MagacinViewTests(TestCase):
         self.assertContains(act, 'Test braid')
         self.assertContains(act, 'Google slike')
         self.assertContains(act, 'Otvori u ChatGPT-u')
+        self.assertContains(act, reverse('staff_magacin_brzi_unos_novi'))
+
+        missing = self.client.get(reverse('staff_magacin_brzi_unos'), {'q': 'XYZ-NOVI-99'})
+        self.assertEqual(missing.status_code, 200)
+        self.assertContains(missing, reverse('staff_magacin_brzi_unos_novi'))
+        self.assertContains(missing, '+ Novi artikal')
+
+        form = self.client.get(reverse('staff_magacin_brzi_unos_novi'), {'q': 'XYZ-NOVI-99'})
+        self.assertEqual(form.status_code, 200)
+        self.assertContains(form, 'Novi artikal')
+        self.assertContains(form, 'value="XYZ-NOVI-99"')
+        blocked = self.client.post(reverse('staff_magacin_brzi_unos_novi'), {
+            'naziv': '',
+            'cijena': '',
+        })
+        self.assertEqual(blocked.status_code, 200)
+        self.assertContains(blocked, 'Naziv je obavezan')
+        created = self.client.post(reverse('staff_magacin_brzi_unos_novi'), {
+            'naziv': 'Novi test artikal',
+            'cijena': '7,50',
+            'sifra': 'XYZ-NOVI-99',
+        })
+        self.assertRedirects(created, reverse('staff_magacin_brzi_unos'))
+        novi = Product.objects.get(sifra='XYZ-NOVI-99')
+        self.assertEqual(novi.naziv, 'Novi test artikal')
+        self.assertEqual(novi.cijena, Decimal('7.50'))
+        self.assertTrue(novi.aktivan)
+        self.assertTrue(novi.na_stanju)
+        self.assertGreaterEqual(novi.stanje, 1)
+        self.assertIsNone(novi.brend_id)
+        self.assertIsNone(novi.kategorija_id)
 
     def test_product_edit_updates_fields(self):
         self.client.force_login(self.user)

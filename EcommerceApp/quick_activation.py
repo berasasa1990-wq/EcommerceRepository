@@ -285,6 +285,43 @@ def category_choices():
     return choices
 
 
+def create_and_activate_product(
+    *,
+    naziv: str,
+    cijena: Decimal,
+    sifra: str | None = None,
+    brend: Brand | None = None,
+    kategorija: Category | None = None,
+) -> Product:
+    """Novi artikal za webshop. Obavezni su samo naziv i cijena."""
+    from django.utils import timezone
+
+    from .models import SIFRA_MAX_LENGTH
+    from .odoo_import import _sifra_zauzeta
+
+    naziv = (naziv or '').strip()[:200]
+    if not naziv:
+        raise ValueError('Naziv je obavezan.')
+    sifra = (sifra or '').strip()[:SIFRA_MAX_LENGTH] or None
+    if sifra and _sifra_zauzeta(sifra):
+        raise ValueError(f'Šifra {sifra} je već zauzeta.')
+    product = Product(
+        naziv=naziv,
+        sifra=sifra,
+        cijena=cijena,
+        brend=brend,
+        kategorija=kategorija,
+        aktivan=True,
+        na_stanju=True,
+        stanje=1,
+        naziv_normalized=naziv.casefold()[:220],
+        sifra_normalized=(sifra or '').casefold()[:80],
+        magacin_sync_at=timezone.now(),
+    )
+    product.save()
+    return product
+
+
 def take_off_stock(product: Product) -> Product:
     """
     Skini artikal sa stanja (jedan klik).

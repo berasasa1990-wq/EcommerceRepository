@@ -372,7 +372,7 @@ def magacin_brzi_unos(request):
                 messages.error(
                     request,
                     f'Nijedan artikal nije pronađen za „{query}”. '
-                    'Traži po šifri, barkodu ili nazivu (artikal mora već postojati).',
+                    'Traži po šifri, barkodu ili nazivu, ili dodaj novi artikal.',
                 )
             elif len(matches) == 1:
                 return redirect('staff_magacin_brzi_unos_aktivacija', product_id=matches[0].pk)
@@ -384,6 +384,103 @@ def magacin_brzi_unos(request):
         'not_found': not_found,
     })
     return render(request, 'staff/magacin/brzi_unos.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_brzi_unos_novi(request):
+    """Novi artikal iz Brzog unosa. Obavezni su samo naziv i cijena."""
+    from .quick_activation import category_choices, create_and_activate_product, parse_price
+
+    brands = Brand.objects.order_by('naziv')
+    categories = category_choices()
+    query = (request.GET.get('q') or request.POST.get('q') or '').strip()
+    looks_like_sifra = bool(re.fullmatch(r'[A-Za-z0-9._/-]{2,}', query or ''))
+    form_errors = []
+    form_data = {
+        'naziv': '' if looks_like_sifra else query,
+        'sifra': query if looks_like_sifra else '',
+        'cijena': '',
+        'brend_id': '',
+        'kategorija_id': '',
+    }
+
+    if request.method == 'POST':
+        form_data['naziv'] = (request.POST.get('naziv') or '').strip()
+        form_data['sifra'] = (request.POST.get('sifra') or '').strip()
+        form_data['cijena'] = (request.POST.get('cijena') or '').strip()
+        form_data['brend_id'] = (request.POST.get('brend_id') or '').strip()
+        form_data['kategorija_id'] = (request.POST.get('kategorija_id') or '').strip()
+
+        naziv = form_data['naziv']
+        if not naziv:
+            form_errors.append('Naziv je obavezan.')
+
+        try:
+            cijena = parse_price(form_data['cijena'])
+        except (InvalidOperation, ValueError):
+            form_errors.append('Unesi ispravnu cijenu (npr. 12.90).')
+            cijena = None
+
+        brend = None
+        if form_data['brend_id']:
+            brend = brands.filter(pk=form_data['brend_id']).first()
+            if brend is None:
+                form_errors.append('Odabrani brend ne postoji.')
+
+        kategorija = None
+        if form_data['kategorija_id']:
+            try:
+                kategorija = Category.objects.filter(
+                    pk=int(form_data['kategorija_id']),
+                    aktivan=True,
+                ).first()
+            except (TypeError, ValueError):
+                kategorija = None
+            if kategorija is None:
+                form_errors.append('Odabrana kategorija ne postoji.')
+
+        if not form_errors and cijena is not None:
+            try:
+                product = create_and_activate_product(
+                    naziv=naziv,
+                    cijena=cijena,
+                    sifra=form_data['sifra'],
+                    brend=brend,
+                    kategorija=kategorija,
+                )
+                extra = []
+                if product.sifra:
+                    extra.append(product.sifra)
+                if brend:
+                    extra.append(brend.naziv)
+                if kategorija:
+                    extra.append(kategorija.naziv)
+                note = f' ({", ".join(extra)})' if extra else ''
+                messages.success(
+                    request,
+                    f'✓ Novi artikal „{product.naziv}” je aktivan na sajtu ({cijena} KM){note}.',
+                )
+                return redirect('staff_magacin_brzi_unos')
+            except ValueError as exc:
+                form_errors.append(str(exc))
+            except Exception as exc:
+                logger.exception('Magacin brzi unos: kreiranje novog artikla nije uspjelo')
+                form_errors.append(f'Artikal nije snimljen: {exc}')
+
+    context = _magacin_context(
+        request, section='brzi_unos', page_title='Novi artikal — Brzi unos',
+        hide_top_search=True,
+    )
+    context.update({
+        'brands': brands,
+        'categories': categories,
+        'categories_json': categories,
+        'form_data': form_data,
+        'form_errors': form_errors,
+        'scan_url': reverse('staff_magacin_brzi_unos'),
+    })
+    return render(request, 'staff/magacin/brzi_unos_novi.html', context)
 
 
 @login_required(login_url='login')
