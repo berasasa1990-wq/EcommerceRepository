@@ -1670,6 +1670,12 @@ body.is-vp #mgScanModal .mg-btn {
     min-height: 52px;
     padding: 8px 12px;
 }
+.mg-qty-hint {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.35;
+}
 .mg-modal.is-qty-only .mg-btn-primary {
     min-height: 50px;
     width: 100%;

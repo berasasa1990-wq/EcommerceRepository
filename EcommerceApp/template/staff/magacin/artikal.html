@@ -146,7 +146,7 @@
             </thead>
             <tbody>
                 {% for row in location_rows %}
-                <tr class="is-clickable mg-stock-row" data-mg-open-move data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}">
+                <tr class="is-clickable mg-stock-row" data-mg-open-move data-mode="remove" data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}" data-qty="{{ row.kolicina }}" data-available="{{ row.dostupno }}">
                     <td><strong class="mg-loc-name">{{ row.location.sifra }}</strong></td>
                     <td class="num">{{ row.kolicina }}</td>
                     <td class="num">{{ row.rezervisano }}</td>
@@ -394,6 +394,7 @@
                 </div>
                 <div class="mg-field">
                     <label>Količina</label>
+                    <p class="mg-qty-hint" id="mgQtyHint" hidden></p>
                     <input name="kolicina" id="mgQtyInput" type="number" min="0" step="1" required>
                 </div>
             </div>

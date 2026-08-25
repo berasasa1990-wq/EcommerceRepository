@@ -2728,6 +2728,43 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'Transfer')
         self.assertNotContains(page, 'Ažuriraj postojeću')
 
+    def test_click_location_deducts_entered_qty(self):
+        self.client.force_login(self.user)
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        page = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
+        self.assertContains(page, 'data-mode="remove"')
+        self.assertContains(page, f'data-location-id="{loc.pk}"')
+        self.assertContains(page, 'data-available="8"')
+        response = self.client.post(
+            reverse('staff_magacin_artikal', args=[self.product.pk]),
+            {
+                'action': 'kretanje',
+                'mode': 'remove',
+                'location_id': loc.pk,
+                'kolicina': '3',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.product.refresh_from_db()
+        self.assertEqual(stock.kolicina, 5)
+        self.assertEqual(self.product.stanje, 5)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 5)
+        history = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
+        self.assertContains(history, 'Skini sa T-1')
+        blocked = self.client.post(
+            reverse('staff_magacin_artikal', args=[self.product.pk]),
+            {
+                'action': 'kretanje',
+                'mode': 'remove',
+                'location_id': loc.pk,
+                'kolicina': '9',
+            },
+        )
+        self.assertEqual(blocked.status_code, 302)
+        stock.refresh_from_db()
+        self.assertEqual(stock.kolicina, 5)
+
     def test_skini_sa_stanja_zeros_stock_and_hides_from_shop(self):
         self.client.force_login(self.user)
         loc2 = WarehouseLocation.objects.create(sifra='T-9', naziv='Druga')

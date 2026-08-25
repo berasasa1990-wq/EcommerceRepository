@@ -75,6 +75,7 @@
     var addQuery = document.getElementById('mgAddLocationQuery');
     var addList = document.getElementById('mgAddLocationList');
     var qtyInput = document.getElementById('mgQtyInput');
+    var qtyHint = document.getElementById('mgQtyHint');
     var updateLabel = document.getElementById('mgLocUpdateLabel');
     var addLabel = document.getElementById('mgLocAddLabel');
     var toLocation = document.getElementById('mgToLocation');
@@ -144,30 +145,58 @@
         if (qty != null) qtyInput.value = qty;
     }
 
-    function syncMode(mode) {
+    function syncMode(mode, meta) {
         var isAdd = mode === 'add';
         var isTransfer = mode === 'transfer';
         var isMp = mode === 'mp';
+        var isRemove = mode === 'remove';
+        var locLabel = (meta && meta.label) || '';
+        var available = meta && meta.available != null && meta.available !== ''
+            ? Number(meta.available)
+            : null;
         if (modeInput) {
-            modeInput.value = isMp ? 'mp' : (isTransfer ? 'transfer' : (isAdd ? 'add' : 'update'));
+            modeInput.value = isRemove
+                ? 'remove'
+                : (isMp ? 'mp' : (isTransfer ? 'transfer' : (isAdd ? 'add' : 'update')));
         }
         if (title) {
-            title.textContent = isMp
-                ? 'Prenos u MP'
-                : (isTransfer
-                    ? 'Transfer'
-                    : (isAdd ? 'Dodaj u novu lokaciju' : 'Zalihe'));
+            title.textContent = isRemove
+                ? ('Skini s ' + (locLabel || 'lokacije'))
+                : (isMp
+                    ? 'Prenos u MP'
+                    : (isTransfer
+                        ? 'Transfer'
+                        : (isAdd ? 'Dodaj u novu lokaciju' : 'Zalihe')));
         }
-        if (updateField) updateField.hidden = isAdd || isMp;
+        if (updateField) updateField.hidden = isAdd || isMp || isRemove;
         if (addField) addField.hidden = !(isAdd || isTransfer);
         if (updateLabel) updateLabel.textContent = isTransfer ? 'Sa lokacije' : 'Lokacija';
         if (addLabel) addLabel.textContent = isTransfer ? 'Na lokaciju' : 'Lokacija';
-        if (locSelect) locSelect.required = !(isAdd || isMp);
+        if (locSelect) locSelect.required = !(isAdd || isMp || isRemove);
         if (addSelect) addSelect.required = isAdd || isTransfer;
+        if (qtyHint) {
+            if (isRemove) {
+                qtyHint.hidden = false;
+                qtyHint.textContent = available != null
+                    ? ('Dostupno ' + available + ' kom. Unesi koliko skidaš.')
+                    : 'Unesi koliko skidaš s ove lokacije.';
+            } else {
+                qtyHint.hidden = true;
+                qtyHint.textContent = '';
+            }
+        }
         if (qtyInput) {
-            qtyInput.min = (isTransfer || isMp) ? '1' : '0';
+            qtyInput.min = (isTransfer || isMp || isRemove) ? '1' : '0';
+            if (isRemove && available != null && available >= 0) {
+                qtyInput.max = String(Math.max(0, available));
+            } else {
+                qtyInput.removeAttribute('max');
+            }
         }
         if (isMp) {
+            resetAddSearch();
+            if (qtyInput) qtyInput.value = '1';
+        } else if (isRemove) {
             resetAddSearch();
             if (qtyInput) qtyInput.value = '1';
         } else if (isAdd) {
@@ -184,14 +213,20 @@
 
     if (locSelect) locSelect.addEventListener('change', fillUpdateQty);
 
-    function openModal(locationId, mode) {
-        syncMode(mode || 'update');
+    function openModal(locationId, mode, meta) {
+        syncMode(mode || 'update', meta || {});
         if (locationId && locSelect && mode !== 'add') {
             locSelect.value = String(locationId);
-            fillUpdateQty();
+            if (mode !== 'remove' && mode !== 'mp' && mode !== 'transfer') fillUpdateQty();
         }
-        modal.classList.toggle('is-qty-only', mode === 'mp');
+        modal.classList.toggle('is-qty-only', mode === 'mp' || mode === 'remove');
         modal.hidden = false;
+        if ((mode === 'remove' || mode === 'mp') && qtyInput) {
+            window.setTimeout(function () {
+                qtyInput.focus();
+                qtyInput.select();
+            }, 40);
+        }
     }
     function closeModal() {
         modal.hidden = true;
@@ -200,7 +235,15 @@
     document.querySelectorAll('[data-mg-open-move]').forEach(function (el) {
         el.addEventListener('click', function () {
             if (el.disabled) return;
-            openModal(el.getAttribute('data-location-id'), el.getAttribute('data-mode') || 'update');
+            openModal(
+                el.getAttribute('data-location-id'),
+                el.getAttribute('data-mode') || 'update',
+                {
+                    label: el.getAttribute('data-location-label') || '',
+                    available: el.getAttribute('data-available') || '',
+                    qty: el.getAttribute('data-qty') || '',
+                }
+            );
         });
     });
     document.querySelectorAll('[data-mg-close]').forEach(function (el) {
@@ -217,6 +260,22 @@
                 event.preventDefault();
                 if (addQuery) addQuery.focus();
                 filterAddLocations(addQuery ? addQuery.value : '');
+                return;
+            }
+            if (modeInput && modeInput.value === 'remove' && qtyInput) {
+                var take = parseInt(qtyInput.value, 10) || 0;
+                var max = parseInt(qtyInput.getAttribute('max'), 10);
+                if (take < 1) {
+                    event.preventDefault();
+                    qtyInput.focus();
+                    return;
+                }
+                if (!isNaN(max) && take > max) {
+                    event.preventDefault();
+                    window.alert('Možeš skinuti najviše ' + max + ' kom s ove lokacije.');
+                    qtyInput.focus();
+                    qtyInput.select();
+                }
             }
         });
     }

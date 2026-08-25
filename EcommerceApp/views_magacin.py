@@ -851,6 +851,22 @@ def magacin_artikal(request, pk):
                             user=request.user,
                         )
                         messages.success(request, 'Artikal je dodat na lokaciju.')
+                    elif mode == 'remove':
+                        if loc_id not in stocked_ids:
+                            raise MagacinError('Odaberi postojeću lokaciju ovog artikla.')
+                        qty = _parse_qty(request.POST.get('kolicina') or '0')
+                        if qty <= 0:
+                            raise MagacinError('Unesi količinu koju skidaš s lokacije.')
+                        apply_movement(
+                            product=product,
+                            variation=variation,
+                            location=location,
+                            tip='prodaja',
+                            kolicina=qty,
+                            napomena=request.POST.get('napomena') or f'Skini sa {location.label}',
+                            user=request.user,
+                        )
+                        messages.success(request, f'Skinuto {qty} kom s {location.label}.')
                     else:
                         if loc_id not in stocked_ids:
                             raise MagacinError('Odaberi postojeću lokaciju ovog artikla.')
