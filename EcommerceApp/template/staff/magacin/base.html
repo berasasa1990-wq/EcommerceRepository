@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260826prenosCancel">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260826ponudaListBtn">
 {% endblock %}
 
 {% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% endblock %}
@@ -86,9 +86,9 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Kupci
             </a>
-            <a href="{% url 'staff_magacin_dobavljaci' %}" class="{% if magacin_section == 'dobavljaci' %}is-active{% endif %}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.2-3.2 3.7-4.8 7-4.8S17.8 15.8 19 19"/></svg>
-                Dobavljači
+            <a href="{% url 'staff_magacin_ponude' %}" class="{% if magacin_section == 'ponude' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+                Kreiraj ponudu
             </a>
             <a href="{% url 'staff_magacin_izvjestaji' %}" class="{% if magacin_section == 'izvjestaji' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="11" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="9" rx=".5"/><rect x="17" y="13" width="3" height="4" rx=".5"/></svg>
@@ -254,6 +254,6 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260826prenosCancel"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260826ponudaVat"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

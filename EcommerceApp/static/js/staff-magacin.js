@@ -58,6 +58,7 @@
     try { initZaliheMenu(); } catch (err) {}
     initCustomerPicker();
     initManualOrderForm();
+    initPonudaArticlePicker();
     initOrderBulkPrint();
     initTransferPage();
     initArticleScanner();
@@ -579,6 +580,535 @@ function initCustomerPicker() {
             adresa: adresaInput ? adresaInput.value : '',
             email: emailInput ? emailInput.value : '',
             postanski_broj: postInput ? postInput.value : '',
+        });
+    }
+}
+
+function initPonudaArticlePicker() {
+    var root = document.getElementById('pnApp');
+    if (!root) return;
+    var search = document.getElementById('pnQuery');
+    var list = document.getElementById('pnSuggest');
+    var catalog = document.getElementById('pnCatalog');
+    var catalogBtn = document.getElementById('pnCatalogBtn');
+    var qtyHint = document.getElementById('pnQtyHint');
+    var qtyModal = document.getElementById('pnQtyModal');
+    var qtyName = document.getElementById('pnQtyName');
+    var qtyMeta = document.getElementById('pnQtyMeta');
+    var qtyInput = document.getElementById('pnQtyInput');
+    var qtyAddBtn = document.getElementById('pnQtyAdd');
+    var addForm = document.getElementById('pnAddForm');
+    var pid = document.getElementById('pnProductId');
+    var vid = document.getElementById('pnVariationId');
+    var addQty = document.getElementById('pnAddQty');
+    var qtyForm = document.getElementById('pnQtyForm');
+    var qtyStavkaId = document.getElementById('pnQtyStavkaId');
+    var qtyValue = document.getElementById('pnQtyValue');
+    var removeForm = document.getElementById('pnRemoveForm');
+    var removeStavkaId = document.getElementById('pnRemoveStavkaId');
+    var lookupUrl = root.getAttribute('data-lookup') || '';
+    var timer = null;
+    var pick = null;
+    var lastResults = [];
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+    function catalogOpen() {
+        return !!(catalog && !catalog.hidden);
+    }
+    function showHint(text, isWarn) {
+        if (!qtyHint) return;
+        if (!text) {
+            qtyHint.hidden = true;
+            qtyHint.textContent = '';
+            qtyHint.classList.remove('is-warn');
+            return;
+        }
+        qtyHint.hidden = false;
+        qtyHint.textContent = text;
+        qtyHint.classList.toggle('is-warn', !!isWarn);
+    }
+    function closeQty() {
+        if (qtyModal) qtyModal.hidden = true;
+    }
+    function lineInfo(pidVal, vidVal) {
+        var el = root.querySelector(
+            'li[data-pid="' + pidVal + '"][data-vid="' + (vidVal || '') + '"]'
+        );
+        if (!el) return { qty: 0, sid: '' };
+        return {
+            qty: parseInt(el.getAttribute('data-qty'), 10) || 0,
+            sid: el.getAttribute('data-sid') || '',
+        };
+    }
+    function flatten(data) {
+        var rows = [];
+        (data.results || []).forEach(function (prod) {
+            var vars = prod.varijacije || [];
+            var parentQty = Number(prod.dostupno) || 0;
+            var varRows = (vars || []).map(function (v) {
+                return {
+                    item: prod,
+                    variation: v,
+                    naziv: (prod.naziv || '') + (v.naziv ? ' ' + v.naziv : ''),
+                    sifra: v.sifra || prod.sifra || '',
+                    barkod: prod.barkod || '',
+                    cijena: v.cijena || prod.cijena || '',
+                    dostupno: Number(v.na_stanju != null ? v.na_stanju : 0) || 0,
+                };
+            });
+            var varQty = varRows.reduce(function (sum, row) { return sum + (row.dostupno || 0); }, 0);
+            if (vars.length > 1 && varQty > 0) {
+                varRows.forEach(function (row) { rows.push(row); });
+            } else if (vars.length === 1 && varQty > 0) {
+                rows.push(varRows[0]);
+            } else {
+                rows.push({
+                    item: prod,
+                    variation: null,
+                    naziv: prod.naziv,
+                    sifra: prod.sifra || '',
+                    barkod: prod.barkod || '',
+                    cijena: prod.cijena || '',
+                    dostupno: parentQty,
+                });
+            }
+        });
+        return rows;
+    }
+    function norm(value) {
+        return String(value || '').replace(/\s+/g, '').toLowerCase();
+    }
+    function looksLikeBarcode(query) {
+        return /^\d{8,14}$/.test(String(query || '').replace(/\s+/g, ''));
+    }
+    function isBarcodeHit(item, query) {
+        var q = norm(query);
+        return !!q && norm(item.barkod) === q;
+    }
+    function isPrefixOfLongerBarcode(query, rows, hit) {
+        var q = norm(query);
+        if (!q) return false;
+        return rows.some(function (row) {
+            if (row === hit) return false;
+            var barkod = norm(row.barkod);
+            return barkod.length > q.length && barkod.indexOf(q) === 0;
+        });
+    }
+    function pickBarcode(rows, query) {
+        var hit = rows.filter(function (row) { return isBarcodeHit(row, query); })[0];
+        if (hit && !isPrefixOfLongerBarcode(query, rows, hit)) return hit;
+        if (looksLikeBarcode(query) && rows.length === 1) return rows[0];
+        return null;
+    }
+    function money(n) {
+        var x = (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
+        return x + ' KM';
+    }
+    function csrfToken() {
+        var el = addForm && addForm.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+    function postAction(body, afterAdd) {
+        body = body || {};
+        var params = new URLSearchParams();
+        Object.keys(body).forEach(function (key) { params.set(key, body[key]); });
+        params.set('csrfmiddlewaretoken', csrfToken());
+        return fetch(window.location.pathname, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken(),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            credentials: 'same-origin',
+            body: params.toString(),
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                return { ok: res.ok, data: data };
+            }, function () {
+                return { ok: false, data: { ok: false, error: 'Nije sačuvano.' } };
+            });
+        }).then(function (result) {
+              if (!result.data || !result.data.ok) {
+                  showHint((result.data && result.data.error) || 'Nije sačuvano.', true);
+                  return null;
+              }
+              applyPayload(result.data);
+              if (afterAdd) readyNext();
+              return result.data;
+          }).catch(function () {
+              showHint('Nije sačuvano. Pokušaj ponovo.', true);
+              return null;
+          });
+    }
+    function applyPayload(data) {
+        renderLines(data.stavke || []);
+        renderTotals(data.totals || {});
+        if (catalogOpen()) renderCatalog(lastResults);
+    }
+    function renderTotals(totals) {
+        var box = document.getElementById('pnSum');
+        if (!box) return;
+        function set(name, value, prefix) {
+            var el = box.querySelector('[data-sum="' + name + '"]');
+            if (el) el.textContent = (prefix || '') + money(value);
+        }
+        set('osnova', totals.osnova);
+        set('popust', totals.popust, '−');
+        set('net', totals.net);
+        set('pdv', totals.pdv);
+        set('gross', totals.ukupno_sa_pdv);
+        var disc = box.querySelector('.is-disc');
+        if (disc) disc.hidden = !(Number(totals.popust) > 0);
+    }
+    function renderLines(rows) {
+        var wrap = document.getElementById('pnLines');
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        if (!rows.length) {
+            wrap.innerHTML = '<li class="is-empty">Nema stavki. Dodaj iz kataloga ili ručno.</li>';
+            return;
+        }
+        rows.forEach(function (row) {
+            var li = document.createElement('li');
+            li.setAttribute('data-pid', String(row.product_id || ''));
+            li.setAttribute('data-vid', String(row.variation_id || ''));
+            li.setAttribute('data-sid', String(row.pk));
+            li.setAttribute('data-qty', String(row.kolicina));
+            li.innerHTML =
+                '<span class="vp-name"></span>' +
+                '<span class="vp-code"></span>' +
+                '<input class="vp-qty" data-line-qty type="number" min="1" step="1" aria-label="Količina">' +
+                '<input class="vp-qty" data-line-cijena inputmode="decimal" aria-label="Cijena sa PDV" style="width:88px;">' +
+                '<button type="button" class="mg-btn vp-remove" data-line-remove>Ukloni</button>';
+            var nameEl = li.querySelector('.vp-name');
+            nameEl.textContent = row.naziv || '';
+            if (row.manuelno) {
+                var mark = document.createElement('i');
+                mark.className = 'vp-mp';
+                mark.textContent = 'Ručno';
+                nameEl.appendChild(document.createTextNode(' '));
+                nameEl.appendChild(mark);
+            }
+            li.querySelector('.vp-code').textContent = row.sifra || '—';
+            li.querySelector('[data-line-qty]').value = String(row.kolicina);
+            li.querySelector('[data-line-cijena]').value = String(row.cijena);
+            wrap.appendChild(li);
+        });
+    }
+    function readyNext() {
+        pick = null;
+        closeQty();
+        showHint('');
+        if (list) list.hidden = true;
+        if (search) {
+            search.value = '';
+            window.setTimeout(function () {
+                if (!search) return;
+                if (typeof search.focus === 'function') {
+                    try { search.focus({ preventScroll: true }); }
+                    catch (err) { search.focus(); }
+                }
+            }, 40);
+        }
+    }
+    function submitAdd(item, variation, qty, afterAdd) {
+        return postAction({
+            action: 'dodaj',
+            product_id: String(item.id || ''),
+            variation_id: variation && variation.id ? String(variation.id) : '',
+            kolicina: String(qty || 1),
+        }, !!afterAdd);
+    }
+    function submitQty(sid, qty) {
+        return postAction({
+            action: 'kolicina',
+            stavka_id: String(sid),
+            kolicina: String(qty),
+        }, false);
+    }
+    function submitRemove(sid) {
+        return postAction({
+            action: 'ukloni',
+            stavka_id: String(sid),
+        }, false);
+    }
+    function submitCijena(sid, cijena) {
+        return postAction({
+            action: 'cijena',
+            stavka_id: String(sid),
+            cijena: String(cijena),
+        }, false);
+    }
+    function openQty(row) {
+        if (!row) return;
+        pick = { item: row.item, variation: row.variation };
+        if (list) list.hidden = true;
+        if (qtyName) qtyName.textContent = row.naziv || 'Artikal';
+        if (qtyMeta) {
+            qtyMeta.textContent = [
+                row.sifra,
+                row.cijena ? row.cijena + ' KM' : '',
+                (row.dostupno || 0) + ' na stanju',
+            ].filter(Boolean).join(' · ');
+        }
+        if (qtyInput) qtyInput.value = '1';
+        if (qtyModal) qtyModal.hidden = false;
+        showHint('');
+        window.setTimeout(function () {
+            if (!qtyInput) return;
+            qtyInput.focus();
+            qtyInput.select();
+        }, 40);
+    }
+    function commitPick() {
+        if (!pick) return;
+        var qty = parseInt(qtyInput && qtyInput.value, 10) || 0;
+        if (qty < 1) {
+            showHint('Unesi količinu.');
+            if (qtyInput) qtyInput.focus();
+            return;
+        }
+        var item = pick.item;
+        var variation = pick.variation;
+        readyNext();
+        submitAdd(item, variation, qty, false);
+    }
+    function setCatalog(on) {
+        if (!catalog || !catalogBtn) return;
+        catalog.hidden = !on;
+        catalogBtn.classList.toggle('is-on', on);
+        catalogBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (list) list.hidden = true;
+        if (on) {
+            if ((search && search.value || '').trim()) searchProducts({});
+            else renderCatalog([]);
+        }
+    }
+    function renderCatalog(rows) {
+        if (!catalog) return;
+        catalog.innerHTML = '';
+        if (!rows || !rows.length) {
+            catalog.innerHTML = '<p class="mg-empty">Ukucaj naziv, šifru ili barkod — izlistaće se artikli.</p>';
+            return;
+        }
+        rows.forEach(function (row) {
+            var pidVal = String(row.item.id);
+            var vidVal = row.variation ? String(row.variation.id) : '';
+            var info = lineInfo(pidVal, vidVal);
+            var qty = info.qty;
+            var card = document.createElement('article');
+            card.className = 'mg-catalog-item' + (qty ? ' is-added' : '') + ((row.dostupno || 0) <= 0 ? ' is-out' : '');
+            card.innerHTML =
+                '<strong></strong>' +
+                (row.variation && row.variation.naziv ? '<span class="sub"></span>' : '') +
+                '<p class="mg-catalog-meta"></p>' +
+                '<div class="mg-catalog-qty">' +
+                '<button type="button" class="mg-btn" data-cat-minus aria-label="Manje">−</button>' +
+                '<em data-cat-qty></em>' +
+                '<button type="button" class="mg-btn" data-cat-plus aria-label="Više">+</button>' +
+                '</div>';
+            card.querySelector('strong').textContent = row.item.naziv || row.naziv || '';
+            var sub = card.querySelector('.sub');
+            if (sub) sub.textContent = row.variation.naziv;
+            card.querySelector('.mg-catalog-meta').textContent = [
+                row.sifra,
+                row.cijena ? row.cijena + ' KM' : '',
+                (row.dostupno || 0) + ' na stanju',
+            ].filter(Boolean).join(' · ');
+            card.querySelector('[data-cat-qty]').textContent = String(qty);
+            var minus = card.querySelector('[data-cat-minus]');
+            minus.disabled = qty <= 0;
+            minus.addEventListener('click', function (event) {
+                event.preventDefault();
+                if (!info.sid) return;
+                if (qty <= 1) submitRemove(info.sid);
+                else submitQty(info.sid, qty - 1);
+            });
+            card.querySelector('[data-cat-plus]').addEventListener('click', function (event) {
+                event.preventDefault();
+                submitAdd(row.item, row.variation, 1);
+            });
+            catalog.appendChild(card);
+        });
+    }
+    function renderSuggest(items) {
+        lastResults = items || [];
+        if (!list) return;
+        list.innerHTML = '';
+        if (!lastResults.length) {
+            list.innerHTML = '<li class="is-empty">Nema rezultata.</li>';
+            list.hidden = false;
+            return;
+        }
+        lastResults.forEach(function (row) {
+            var li = document.createElement('li');
+            li.innerHTML = '<span class="vp-name"></span><span></span>';
+            li.querySelector('.vp-name').textContent = row.naziv || '';
+            li.querySelector('span:last-child').textContent =
+                [row.sifra, row.cijena ? row.cijena + ' KM' : '', (row.dostupno || 0) + ' na stanju'].filter(Boolean).join(' · ');
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                openQty(row);
+            });
+            list.appendChild(li);
+        });
+        list.hidden = false;
+    }
+    function searchProducts(opts) {
+        opts = opts || {};
+        var q = (search && search.value || '').trim();
+        if (q.length < 1) {
+            if (list) list.hidden = true;
+            lastResults = [];
+            if (catalogOpen()) renderCatalog([]);
+            return Promise.resolve(null);
+        }
+        var limit = catalogOpen() ? 80 : 20;
+        return fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=' + limit, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            var rows = flatten(data);
+            lastResults = rows;
+            var hit = pickBarcode(rows, q);
+            if (hit && (opts.fromScan || looksLikeBarcode(q) || isBarcodeHit(hit, q))) {
+                openQty(hit);
+                return hit;
+            }
+            if (opts.takeFirst && rows.length && !catalogOpen()) {
+                openQty(rows[0]);
+                return rows[0];
+            }
+            if (catalogOpen()) {
+                if (list) list.hidden = true;
+                renderCatalog(rows);
+                return null;
+            }
+            renderSuggest(rows);
+            return null;
+        }).catch(function () {
+            if (list) {
+                list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
+                list.hidden = false;
+            }
+            return null;
+        });
+    }
+
+    if (search) {
+        search.addEventListener('input', function () {
+            pick = null;
+            showHint('');
+            window.clearTimeout(timer);
+            timer = window.setTimeout(function () { searchProducts({}); }, 160);
+        });
+        search.addEventListener('keydown', function (event) {
+            if (event.key === 'Tab' && !event.shiftKey) {
+                event.preventDefault();
+                window.clearTimeout(timer);
+                if (lastResults.length) {
+                    openQty(lastResults[0]);
+                    return;
+                }
+                searchProducts({ takeFirst: true });
+                return;
+            }
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            window.clearTimeout(timer);
+            searchProducts({ fromScan: looksLikeBarcode(search.value) });
+        });
+        search.addEventListener('mg-scanned', function () {
+            window.clearTimeout(timer);
+            searchProducts({ fromScan: true });
+        });
+    }
+    if (catalogBtn) {
+        catalogBtn.addEventListener('click', function () {
+            setCatalog(!catalogOpen());
+            if (search) search.focus();
+        });
+    }
+    if (qtyInput) {
+        qtyInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeQty();
+                if (search) search.focus();
+                return;
+            }
+            if (event.key !== 'Enter' && event.key !== 'Tab') return;
+            event.preventDefault();
+            commitPick();
+        });
+    }
+    if (qtyAddBtn) qtyAddBtn.addEventListener('click', function () { commitPick(); });
+    if (qtyModal) {
+        qtyModal.querySelectorAll('[data-pn-qty-close]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                closeQty();
+                if (search) search.focus();
+            });
+        });
+    }
+    document.addEventListener('click', function (event) {
+        var box = document.getElementById('pnSearchBox');
+        if (box && !box.contains(event.target) && list) list.hidden = true;
+    });
+    var lines = document.getElementById('pnLines');
+    if (lines) {
+        lines.addEventListener('change', function (event) {
+            var row = event.target.closest('li[data-sid]');
+            if (!row) return;
+            var sid = row.getAttribute('data-sid');
+            if (event.target.matches('[data-line-qty]')) {
+                submitQty(sid, event.target.value);
+            } else if (event.target.matches('[data-line-cijena]')) {
+                submitCijena(sid, event.target.value);
+            }
+        });
+        lines.addEventListener('click', function (event) {
+            var btn = event.target.closest('[data-line-remove]');
+            if (!btn) return;
+            var row = btn.closest('li[data-sid]');
+            if (row) submitRemove(row.getAttribute('data-sid'));
+        });
+    }
+    var discForm = document.getElementById('pnDiscForm');
+    if (discForm) {
+        discForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            postAction({
+                action: 'popust',
+                popust_postotak: (document.getElementById('pnPct') || {}).value || '',
+                popust_iznos: (document.getElementById('pnKm') || {}).value || '0',
+            }, false);
+        });
+    }
+    var manual = root.querySelector('form.pn-manual');
+    if (manual) {
+        manual.addEventListener('submit', function (event) {
+            event.preventDefault();
+            postAction({
+                action: 'dodaj_rucno',
+                naziv: (document.getElementById('pnManNaziv') || {}).value || '',
+                sifra: (document.getElementById('pnManSifra') || {}).value || '',
+                kolicina: (document.getElementById('pnManQty') || {}).value || '1',
+                cijena: (document.getElementById('pnManCijena') || {}).value || '',
+            }, true).then(function (data) {
+                if (!data) return;
+                if (document.getElementById('pnManNaziv')) document.getElementById('pnManNaziv').value = '';
+                if (document.getElementById('pnManSifra')) document.getElementById('pnManSifra').value = '';
+                if (document.getElementById('pnManQty')) document.getElementById('pnManQty').value = '1';
+                if (document.getElementById('pnManCijena')) document.getElementById('pnManCijena').value = '';
+            });
         });
     }
 }

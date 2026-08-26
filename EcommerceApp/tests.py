@@ -996,3 +996,25 @@ class StaffStorefrontEditModeTests(TestCase):
             after,
             reverse('staff_magacin_brzi_unos_aktivacija', args=[self.incomplete.pk]),
         )
+
+
+class StaffLiveAlertTests(TestCase):
+    def test_only_purchase_creates_live_event(self):
+        from .models import StaffSiteEvent
+        from .staff_alerts import notify_cart_add, notify_purchase, notify_registration
+
+        self.assertIsNone(notify_cart_add(ime='Ana', product_name='Braid'))
+        self.assertIsNone(notify_registration(ime='Ana', email='ana@example.com'))
+        event = notify_purchase(
+            ime='Ana Ribic',
+            email='ana@example.com',
+            grad='Tuzla',
+            order_number='0042',
+            total='86.50',
+        )
+        self.assertIsNotNone(event)
+        self.assertEqual(event.tip, StaffSiteEvent.Tip.PURCHASE)
+        self.assertIn('ORDER:0042', event.poruka)
+        self.assertIn('TOTAL:86,50', event.poruka)
+        self.assertEqual(StaffSiteEvent.objects.filter(tip='cart').count(), 0)
+        self.assertEqual(StaffSiteEvent.objects.filter(tip='register').count(), 0)

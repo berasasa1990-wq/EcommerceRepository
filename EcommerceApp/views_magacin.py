@@ -33,6 +33,8 @@ from .magacin import (
     active_vp_narudzba,
     add_vp_stavka,
     add_vp_bulk_stavke,
+    ponuda_totals,
+    accept_ponuda,
     vp_draft_totals,
     apply_movement,
     attach_uvoz_list_metrics,
@@ -103,6 +105,8 @@ from .models import (
     UvozStavka,
     NivelacijaOznaka,
     MagacinPopis,
+    MagacinPonuda,
+    MagacinPonudaStavka,
     MagacinVpNarudzba,
     WarehouseLocation,
     WarehouseMovement,
@@ -5088,6 +5092,265 @@ def magacin_dobavljaci(request):
     context = _magacin_context(request, section='dobavljaci', page_title='Dobavljači — Magacin')
     context.update({'suppliers': suppliers})
     return render(request, 'staff/magacin/dobavljaci.html', context)
+
+
+def _ponuda_line_from_catalog(product, variation=None, qty=1):
+    qty = max(1, int(qty or 1))
+    if variation is not None:
+        naziv = f'{product.naziv} — {variation.naziv}'
+        sifra = (variation.sifra or product.sifra or '')[:SIFRA_MAX_LENGTH]
+        cijena = variation.prikazna_cijena or Decimal('0.00')
+    else:
+        naziv = product.naziv
+        sifra = (product.sifra or '')[:SIFRA_MAX_LENGTH]
+        cijena = product.prikazna_cijena or Decimal('0.00')
+    return {
+        'product': product,
+        'variation': variation,
+        'naziv': naziv[:200],
+        'sifra': sifra,
+        'kolicina': qty,
+        'cijena': Decimal(str(cijena)).quantize(Decimal('0.01')),
+        'manuelno': False,
+    }
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_ponude(request):
+    if request.method == 'POST' and (request.POST.get('action') or '') == 'nova':
+        ponuda = MagacinPonuda(kreirao=request.user)
+        ponuda.save()
+        return redirect('staff_magacin_ponuda_detail', pk=ponuda.pk)
+    nacrti = MagacinPonuda.objects.filter(status=MagacinPonuda.Status.NACRT).order_by('-azuriran')[:30]
+    objavljene = MagacinPonuda.objects.filter(status=MagacinPonuda.Status.OBJAVLJENA).order_by('-objavljena_at', '-id')[:40]
+    prihvacene = MagacinPonuda.objects.filter(status=MagacinPonuda.Status.PRIHVACENA).select_related('order').order_by('-prihvacena_at', '-id')[:40]
+    context = _magacin_context(request, section='ponude', page_title='Kreiraj ponudu — Magacin')
+    context.update({'nacrti': nacrti, 'objavljene': objavljene, 'prihvacene': prihvacene})
+    return render(request, 'staff/magacin/ponude.html', context)
+
+
+def _ponuda_ajax_payload(ponuda):
+    totals = ponuda_totals(ponuda)
+    stavke = []
+    for row in ponuda.stavke.all():
+        stavke.append({
+            'pk': row.pk,
+            'naziv': row.naziv,
+            'sifra': row.sifra or '',
+            'kolicina': int(row.kolicina or 0),
+            'cijena': f'{row.cijena:.2f}',
+            'ukupno': f'{row.ukupno:.2f}',
+            'manuelno': bool(row.manuelno),
+            'product_id': row.product_id or '',
+            'variation_id': row.variation_id or '',
+        })
+    return {
+        'ok': True,
+        'stavke': stavke,
+        'totals': {
+            'osnova': f'{totals["osnova"]:.2f}',
+            'popust': f'{totals["popust"]:.2f}',
+            'net': f'{totals["net"]:.2f}',
+            'pdv': f'{totals["pdv"]:.2f}',
+            'ukupno_sa_pdv': f'{totals["ukupno_sa_pdv"]:.2f}',
+        },
+        'status': ponuda.status,
+    }
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_ponuda_detail(request, pk):
+    ponuda = get_object_or_404(MagacinPonuda.objects.select_related('order'), pk=pk)
+    ajax_actions = {'dodaj', 'dodaj_rucno', 'kolicina', 'cijena', 'ukloni', 'popust'}
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        if ponuda.status == MagacinPonuda.Status.PRIHVACENA:
+            if _pakuj_is_ajax(request):
+                return JsonResponse(
+                    {'ok': False, 'error': 'Ponuda je prihvaćena. Otvori picking.'},
+                    status=400,
+                )
+            messages.error(request, 'Ponuda je prihvaćena. Otvori picking.')
+            pick = _ponuda_pick_url(ponuda)
+            return redirect(pick or reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]))
+        try:
+            if action == 'kupac':
+                ponuda.ime_prezime = (request.POST.get('ime_prezime') or '').strip()[:200]
+                ponuda.telefon = (request.POST.get('telefon') or '').strip()[:30]
+                ponuda.email = (request.POST.get('email') or '').strip()[:254]
+                ponuda.adresa = (request.POST.get('adresa') or '').strip()[:300]
+                ponuda.grad = (request.POST.get('grad') or '').strip()[:100]
+                ponuda.napomena = (request.POST.get('napomena') or '').strip()
+                ponuda.save()
+                messages.success(request, 'Podaci kupca su sačuvani.')
+            elif action == 'dodaj':
+                product = get_object_or_404(Product, pk=int(request.POST.get('product_id') or 0))
+                variation = None
+                vid = (request.POST.get('variation_id') or '').strip()
+                if vid:
+                    variation = get_object_or_404(ProductVariation, pk=int(vid), artikal=product)
+                qty = _parse_qty(request.POST.get('kolicina') or '1')
+                existing = ponuda.stavke.filter(
+                    product=product,
+                    variation=variation,
+                    manuelno=False,
+                ).first()
+                if existing:
+                    existing.kolicina = int(existing.kolicina or 0) + qty
+                    existing.save(update_fields=['kolicina'])
+                else:
+                    data = _ponuda_line_from_catalog(product, variation, qty)
+                    next_ord = (ponuda.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
+                    MagacinPonudaStavka.objects.create(ponuda=ponuda, redoslijed=next_ord, **data)
+            elif action == 'dodaj_rucno':
+                naziv = (request.POST.get('naziv') or '').strip()
+                if not naziv:
+                    raise MagacinError('Unesi naziv artikla.')
+                cijena = _parse_money(request.POST.get('cijena'))
+                if cijena is None or cijena < 0:
+                    raise MagacinError('Unesi cijenu sa PDV.')
+                qty = _parse_qty(request.POST.get('kolicina') or '1')
+                next_ord = (ponuda.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
+                MagacinPonudaStavka.objects.create(
+                    ponuda=ponuda,
+                    naziv=naziv[:200],
+                    sifra=(request.POST.get('sifra') or '').strip()[:SIFRA_MAX_LENGTH],
+                    kolicina=qty,
+                    cijena=cijena.quantize(Decimal('0.01')),
+                    manuelno=True,
+                    redoslijed=next_ord,
+                )
+            elif action == 'kolicina':
+                row = get_object_or_404(ponuda.stavke, pk=int(request.POST.get('stavka_id') or 0))
+                row.kolicina = max(1, _parse_qty(request.POST.get('kolicina') or '1'))
+                row.save(update_fields=['kolicina'])
+            elif action == 'cijena':
+                row = get_object_or_404(ponuda.stavke, pk=int(request.POST.get('stavka_id') or 0))
+                cijena = _parse_money(request.POST.get('cijena'))
+                if cijena is None or cijena < 0:
+                    raise MagacinError('Cijena nije validna.')
+                row.cijena = cijena.quantize(Decimal('0.01'))
+                row.save(update_fields=['cijena'])
+            elif action == 'ukloni':
+                get_object_or_404(ponuda.stavke, pk=int(request.POST.get('stavka_id') or 0)).delete()
+            elif action == 'popust':
+                pct_raw = (request.POST.get('popust_postotak') or '').strip()
+                km_raw = (request.POST.get('popust_iznos') or '').strip()
+                pct = _parse_money(pct_raw) if pct_raw else None
+                km = _parse_money(km_raw) if km_raw else Decimal('0.00')
+                if pct is not None and (pct < 0 or pct > 100):
+                    raise MagacinError('Popust % mora biti između 0 i 100.')
+                if km is None or km < 0:
+                    raise MagacinError('Popust u KM nije validan.')
+                ponuda.popust_postotak = pct
+                ponuda.popust_iznos = km.quantize(Decimal('0.01'))
+                ponuda.save(update_fields=['popust_postotak', 'popust_iznos', 'azuriran'])
+                messages.success(request, 'Popust je sačuvan.')
+            elif action == 'objavi':
+                if not ponuda.stavke.exists():
+                    raise MagacinError('Dodaj barem jedan artikal prije objave.')
+                ponuda.status = MagacinPonuda.Status.OBJAVLJENA
+                if not ponuda.objavljena_at:
+                    ponuda.objavljena_at = timezone.now()
+                ponuda.save(update_fields=['status', 'objavljena_at', 'azuriran'])
+                messages.success(request, 'Ponuda je spremna — kopiraj link.')
+            elif action == 'obrisi':
+                ponuda.delete()
+                messages.success(request, 'Ponuda je obrisana.')
+                return redirect('staff_magacin_ponude')
+            else:
+                raise MagacinError('Nepoznata akcija.')
+        except (MagacinError, ValueError, TypeError, Product.DoesNotExist) as exc:
+            if _pakuj_is_ajax(request):
+                return JsonResponse(
+                    {'ok': False, 'error': str(exc) if str(exc) else 'Greška pri spremanju ponude.'},
+                    status=400,
+                )
+            messages.error(request, str(exc) if str(exc) else 'Greška pri spremanju ponude.')
+            return redirect('staff_magacin_ponuda_detail', pk=ponuda.pk)
+        if _pakuj_is_ajax(request) and action in ajax_actions:
+            return JsonResponse(_ponuda_ajax_payload(ponuda))
+        if action == 'objavi':
+            return redirect(reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]) + '#pnLink')
+        return redirect('staff_magacin_ponuda_detail', pk=ponuda.pk)
+
+    totals = ponuda_totals(ponuda)
+    public_url = request.build_absolute_uri(reverse('ponuda_javna', args=[ponuda.token]))
+    context = _magacin_context(
+        request, section='ponude', page_title=f'Ponuda {ponuda.broj} — Magacin',
+    )
+    context.update({
+        'ponuda': ponuda,
+        'stavke': list(ponuda.stavke.all()),
+        'totals': totals,
+        'public_url': public_url,
+        'lookup_url': reverse('staff_magacin_artikli_lookup'),
+        'pick_url': _ponuda_pick_url(ponuda),
+    })
+    return render(request, 'staff/magacin/ponuda_detail.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def magacin_ponuda_prihvati(request, pk):
+    ponuda = get_object_or_404(MagacinPonuda, pk=pk)
+    try:
+        order = accept_ponuda(ponuda, user=request.user)
+    except MagacinError as exc:
+        messages.error(request, str(exc))
+        return redirect('staff_magacin_ponude')
+    if (ponuda.ime_prezime or '').strip() and (ponuda.telefon or '').strip():
+        try:
+            _save_warehouse_customer(
+                ime=ponuda.ime_prezime,
+                telefon=ponuda.telefon,
+                adresa=ponuda.adresa,
+                grad=ponuda.grad,
+                email=ponuda.email,
+            )
+        except MagacinError:
+            pass
+    invalidate_magacin_nav_counts()
+    messages.success(
+        request,
+        f'Ponuda {ponuda.broj} je prihvaćena — narudžba #{order.broj} je na pickingu.',
+    )
+    return redirect('staff_magacin_ponude')
+
+
+def _ponuda_pick_url(ponuda):
+    order = getattr(ponuda, 'order', None)
+    if order is None:
+        return ''
+    if order.lager_status == Order.LagerStatus.VALIDIRANO or order.zapakovana:
+        return reverse('staff_order_detail', args=[order.broj])
+    return reverse('staff_magacin_pakuj_detail', args=[order.broj])
+
+
+def ponuda_javna(request, token):
+    ponuda = get_object_or_404(
+        MagacinPonuda.objects.select_related('order').prefetch_related('stavke'),
+        token=token,
+        status__in=[MagacinPonuda.Status.OBJAVLJENA, MagacinPonuda.Status.PRIHVACENA],
+    )
+    settings_obj = SiteSettings.load()
+    is_staff = bool(
+        getattr(request.user, 'is_authenticated', False)
+        and getattr(request.user, 'is_superuser', False)
+    )
+    context = {
+        'ponuda': ponuda,
+        'stavke': list(ponuda.stavke.all()),
+        'totals': ponuda_totals(ponuda),
+        'site_settings': settings_obj,
+        'print_mode': (request.GET.get('print') or '') == '1',
+        'can_accept': is_staff and ponuda.status == MagacinPonuda.Status.OBJAVLJENA and not ponuda.order_id,
+        'pick_url': _ponuda_pick_url(ponuda) if is_staff else '',
+    }
+    return render(request, 'ponuda_pdf.html', context)
 
 
 @login_required(login_url='login')

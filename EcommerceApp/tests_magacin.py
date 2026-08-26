@@ -11,6 +11,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from .cart import izracunaj_pdv
 from .magacin import (
     MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
@@ -26,6 +27,7 @@ from .magacin import (
     local_odoo_template_ids,
     location_rows,
     magacin_products_qs,
+    ponuda_totals,
     reserve_for_order,
     seed_default_locations,
     stock_totals,
@@ -40,6 +42,8 @@ from .magacin import (
 )
 from .models import (
     MagacinPopis,
+    MagacinPonuda,
+    MagacinPonudaStavka,
     MagacinVpNarudzba,
     Order,
     OrderItem,
@@ -54,6 +58,7 @@ from .models import (
     WarehouseMovement,
     WarehouseStock,
     WarehouseSyncLog,
+    OrderStockHold,
 )
 
 
@@ -1136,6 +1141,155 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(blocked.status_code, 302)
 
+    def test_ponuda_catalog_manual_discount_and_public_pdf(self):
+        self.client.force_login(self.user)
+        listed = self.client.get(reverse('staff_magacin_ponude'))
+        self.assertEqual(listed.status_code, 200)
+        self.assertContains(listed, 'Kreiraj ponudu')
+        self.assertNotContains(listed, 'catalog-sidebar')
+        created = self.client.post(reverse('staff_magacin_ponude'), {'action': 'nova'})
+        self.assertEqual(created.status_code, 302)
+        ponuda = MagacinPonuda.objects.get()
+        self.assertEqual(ponuda.status, MagacinPonuda.Status.NACRT)
+        add = self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {
+                'action': 'dodaj',
+                'product_id': str(self.product.pk),
+                'kolicina': '2',
+            },
+        )
+        self.assertEqual(add.status_code, 302)
+        ajax = self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {
+                'action': 'dodaj',
+                'product_id': str(self.product.pk),
+                'kolicina': '1',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(ajax.status_code, 200)
+        payload = ajax.json()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(len(payload['stavke']), 1)
+        self.assertEqual(payload['stavke'][0]['kolicina'], 3)
+        self.assertIn('ukupno_sa_pdv', payload['totals'])
+        manual = self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {
+                'action': 'dodaj_rucno',
+                'naziv': 'Ručni štap',
+                'sifra': 'RUC-1',
+                'kolicina': '1',
+                'cijena': '20,00',
+            },
+        )
+        self.assertEqual(manual.status_code, 302)
+        disc = self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {'action': 'popust', 'popust_postotak': '10', 'popust_iznos': '0'},
+        )
+        self.assertEqual(disc.status_code, 302)
+        ponuda.refresh_from_db()
+        totals = ponuda_totals(ponuda)
+        self.assertEqual(totals['osnova'], Decimal('50.00'))
+        self.assertEqual(totals['popust'], Decimal('5.00'))
+        self.assertEqual(totals['ukupno_sa_pdv'], Decimal('45.00'))
+        split = izracunaj_pdv(Decimal('45.00'))
+        self.assertEqual(totals['net'], split['bez_pdv'])
+        self.assertEqual(totals['pdv'], split['pdv'])
+        self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {
+                'action': 'kupac',
+                'ime_prezime': 'Ana Ribic',
+                'grad': 'Tuzla',
+                'telefon': '061111222',
+            },
+        )
+        published = self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {'action': 'objavi'},
+        )
+        self.assertEqual(published.status_code, 302)
+        self.assertTrue((published.get('Location') or '').endswith('#pnLink'))
+        ponuda.refresh_from_db()
+        self.assertEqual(ponuda.status, MagacinPonuda.Status.OBJAVLJENA)
+        before_pub = self.client.get(reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]))
+        self.assertContains(before_pub, 'Dodaj artikle')
+        self.assertContains(before_pub, 'Katalog')
+        self.assertContains(before_pub, 'Skeniraj')
+        self.assertContains(before_pub, 'id="pnQtyModal"')
+        detail = self.client.get(reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]))
+        self.assertContains(detail, 'Copy link')
+        self.assertContains(detail, 'id="pnLink"')
+        self.assertNotContains(detail, 'Prihvaćena ponuda')
+        self.assertContains(detail, reverse('ponuda_javna', args=[ponuda.token]))
+        listed_pub = self.client.get(reverse('staff_magacin_ponude'))
+        self.assertContains(listed_pub, 'Prihvaćena ponuda')
+        self.assertContains(listed_pub, reverse('staff_magacin_ponuda_prihvati', args=[ponuda.pk]))
+        self.assertContains(detail, 'Iznos bez PDV')
+        self.assertContains(detail, 'PDV 17%')
+        self.assertContains(detail, 'Ukupno sa PDV')
+        public = self.client.get(reverse('ponuda_javna', args=[ponuda.token]))
+        self.assertEqual(public.status_code, 200)
+        self.assertContains(public, ponuda.broj)
+        self.assertContains(public, 'Ana Ribic')
+        self.assertContains(public, 'Test braid')
+        self.assertContains(public, 'Ručni štap')
+        self.assertContains(public, 'Iznos bez PDV')
+        self.assertContains(public, 'PDV 17%')
+        self.assertContains(public, 'Ukupno sa PDV')
+        self.assertContains(public, 'Štampaj / PDF')
+        self.assertNotContains(public, 'Prihvaćena ponuda')
+        missing = self.client.get(reverse('ponuda_javna', args=['nema-tog-tokena']))
+        self.assertEqual(missing.status_code, 404)
+
+    def test_ponuda_accept_goes_to_picking_and_deducts_location(self):
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_ponude'), {'action': 'nova'})
+        self.assertEqual(created.status_code, 302)
+        ponuda = MagacinPonuda.objects.get()
+        self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {'action': 'dodaj', 'product_id': str(self.product.pk), 'kolicina': '2'},
+        )
+        self.client.post(
+            reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]),
+            {'action': 'objavi'},
+        )
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        stock = WarehouseStock.objects.get(product=self.product, location=loc, variation__isnull=True)
+        self.assertEqual(stock.kolicina, 8)
+        self.assertEqual(stock.rezervisano, 0)
+        accepted = self.client.post(reverse('staff_magacin_ponuda_prihvati', args=[ponuda.pk]))
+        self.assertEqual(accepted.status_code, 302)
+        self.assertEqual(accepted['Location'], reverse('staff_magacin_ponude'))
+        ponuda.refresh_from_db()
+        self.assertEqual(ponuda.status, MagacinPonuda.Status.PRIHVACENA)
+        order = ponuda.order
+        self.assertIsNotNone(order)
+        hold = order.magacin_holds.get()
+        self.assertEqual(hold.location_id, loc.pk)
+        self.assertEqual(hold.kolicina, 2)
+        self.assertEqual(hold.status, OrderStockHold.Status.REZERVISANO)
+        stock.refresh_from_db()
+        self.assertEqual(stock.rezervisano, 2)
+        validate_order_stock(order, user=self.user)
+        stock.refresh_from_db()
+        self.assertEqual(stock.kolicina, 6)
+        self.assertEqual(stock.rezervisano, 0)
+        hold.refresh_from_db()
+        self.assertEqual(hold.status, OrderStockHold.Status.VALIDIRANO)
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        listed = self.client.get(reverse('staff_magacin_ponude'))
+        self.assertContains(listed, 'Prihvaćene')
+        self.assertNotContains(listed, reverse('staff_magacin_ponuda_prihvati', args=[ponuda.pk]))
+        public = self.client.get(reverse('ponuda_javna', args=[ponuda.token]))
+        self.assertEqual(public.status_code, 200)
+
     def test_artikli_and_detail_ok(self):
         self.client.force_login(self.user)
         list_res = self.client.get(reverse('staff_magacin_artikli'))
@@ -1559,6 +1713,7 @@ class MagacinViewTests(TestCase):
             'staff_magacin_transferi',
             'staff_magacin_kupci',
             'staff_magacin_dobavljaci',
+            'staff_magacin_ponude',
             'staff_magacin_uvoz',
             'staff_magacin_nivelacije',
             'staff_magacin_pakuj',

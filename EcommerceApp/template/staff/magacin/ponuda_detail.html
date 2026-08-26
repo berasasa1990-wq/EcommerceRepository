@@ -1,0 +1,271 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="vp-page pn-page" id="pnApp" data-lookup="{{ lookup_url }}">
+    <header class="vp-head mg-page-head">
+        <div>
+            <h1>Ponuda {{ ponuda.broj }}</h1>
+            <p>
+                {% if ponuda.status == 'objavljena' %}Objavljena{% elif ponuda.status == 'prihvacena' %}Prihvaćena{% else %}Nacrt{% endif %}
+                {% if stavke %} · {{ totals.ukupno_sa_pdv|floatformat:2 }} KM{% endif %}
+            </p>
+        </div>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_ponude' %}">← Ponude</a>
+    </header>
+
+    <section class="vp-box mg-card">
+        <h2 class="mg-h">Kupac</h2>
+        <form method="post" class="pn-customer">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="kupac">
+            <div class="mg-form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="mg-field">
+                    <label for="pnIme">Ime i prezime</label>
+                    <input id="pnIme" name="ime_prezime" value="{{ ponuda.ime_prezime }}" maxlength="200">
+                </div>
+                <div class="mg-field">
+                    <label for="pnTel">Telefon</label>
+                    <input id="pnTel" name="telefon" value="{{ ponuda.telefon }}" maxlength="30">
+                </div>
+                <div class="mg-field">
+                    <label for="pnMail">Email</label>
+                    <input id="pnMail" name="email" type="email" value="{{ ponuda.email }}" maxlength="254">
+                </div>
+                <div class="mg-field">
+                    <label for="pnGrad">Grad</label>
+                    <input id="pnGrad" name="grad" value="{{ ponuda.grad }}" maxlength="100">
+                </div>
+                <div class="mg-field" style="grid-column:1 / -1;">
+                    <label for="pnAdresa">Adresa</label>
+                    <input id="pnAdresa" name="adresa" value="{{ ponuda.adresa }}" maxlength="300">
+                </div>
+                <div class="mg-field" style="grid-column:1 / -1;">
+                    <label for="pnNote">Napomena na ponudi</label>
+                    <input id="pnNote" name="napomena" value="{{ ponuda.napomena }}">
+                </div>
+            </div>
+            <button type="submit" class="mg-btn" style="margin-top:10px;">Sačuvaj kupca</button>
+        </form>
+    </section>
+
+    <section class="mg-card vp-box vp-search" id="pnSearchBox">
+        <h2 class="mg-h">Dodaj artikle</h2>
+        <div class="vp-row vp-entry has-catalog mg-input-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg>
+                <input type="search" id="pnQuery" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off">
+            </div>
+            <button type="button" class="mg-btn" id="pnCatalogBtn" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg>
+                Katalog
+            </button>
+            <button type="button" class="vp-scan-btn" id="pnScanBtn" data-mg-scan-target="pnQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
+        </div>
+        <ul class="vp-suggest" id="pnSuggest" hidden></ul>
+        <div id="pnCatalog" class="mg-catalog" hidden></div>
+        <p id="pnQtyHint" class="mg-qty-hint" hidden></p>
+        <form method="post" id="pnAddForm" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="dodaj">
+            <input type="hidden" name="product_id" id="pnProductId">
+            <input type="hidden" name="variation_id" id="pnVariationId">
+            <input type="hidden" name="kolicina" id="pnAddQty" value="1">
+        </form>
+        <form method="post" id="pnQtyForm" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="kolicina">
+            <input type="hidden" name="stavka_id" id="pnQtyStavkaId">
+            <input type="hidden" name="kolicina" id="pnQtyValue" value="1">
+        </form>
+        <form method="post" id="pnRemoveForm" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="ukloni">
+            <input type="hidden" name="stavka_id" id="pnRemoveStavkaId">
+        </form>
+    </section>
+
+    <div class="mg-modal" id="pnQtyModal" hidden>
+        <div class="mg-modal-bg" data-pn-qty-close></div>
+        <div class="mg-modal-panel vp-qty-panel" role="dialog">
+            <p class="vp-qty-kicker">Količina</p>
+            <h2 id="pnQtyName">Artikal</h2>
+            <p id="pnQtyMeta" class="vp-qty-meta"></p>
+            <input id="pnQtyInput" class="vp-qty-big" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Količina">
+            <div class="vp-qty-actions">
+                <button type="button" class="mg-btn" data-pn-qty-close>Otkaži</button>
+                <button type="button" class="mg-btn mg-btn-primary" id="pnQtyAdd">Dodaj</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="vp-box mg-card">
+        <h2 class="mg-h">Ručni artikal</h2>
+        <form method="post" class="pn-manual">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="dodaj_rucno">
+            <div class="mg-form-grid" style="grid-template-columns:2fr 1fr 0.7fr 0.9fr auto;">
+                <div class="mg-field">
+                    <label for="pnManNaziv">Naziv *</label>
+                    <input id="pnManNaziv" name="naziv" required maxlength="200">
+                </div>
+                <div class="mg-field">
+                    <label for="pnManSifra">Šifra</label>
+                    <input id="pnManSifra" name="sifra" maxlength="200">
+                </div>
+                <div class="mg-field">
+                    <label for="pnManQty">Kol.</label>
+                    <input id="pnManQty" name="kolicina" type="number" min="1" step="1" value="1">
+                </div>
+                <div class="mg-field">
+                    <label for="pnManCijena">Cijena sa PDV</label>
+                    <input id="pnManCijena" name="cijena" inputmode="decimal" required>
+                </div>
+                <div class="mg-field" style="align-self:end;">
+                    <button type="submit" class="mg-btn">Dodaj</button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="vp-table mg-card">
+        <h2 class="mg-h">Stavke</h2>
+        <div class="vp-cols" aria-hidden="true">
+            <span>Artikal</span>
+            <span>Šifra</span>
+            <span>Količina</span>
+            <span>Cijena sa PDV</span>
+            <span></span>
+        </div>
+        <ul class="vp-lines" id="pnLines">
+            {% for row in stavke %}
+            <li data-pid="{{ row.product_id|default:'' }}" data-vid="{{ row.variation_id|default:'' }}" data-sid="{{ row.pk }}" data-qty="{{ row.kolicina }}">
+                <span class="vp-name">{{ row.naziv }}{% if row.manuelno %} <i class="vp-mp">Ručno</i>{% endif %}</span>
+                <span class="vp-code">{{ row.sifra|default:"—" }}</span>
+                <input class="vp-qty" data-line-qty type="number" min="1" step="1" value="{{ row.kolicina }}" aria-label="Količina">
+                <input class="vp-qty" data-line-cijena value="{{ row.cijena }}" inputmode="decimal" aria-label="Cijena sa PDV" style="width:88px;">
+                <button type="button" class="mg-btn vp-remove" data-line-remove>Ukloni</button>
+            </li>
+            {% empty %}
+            <li class="is-empty">Nema stavki. Dodaj iz kataloga ili ručno.</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section class="mg-card pn-sum-card">
+        <div class="pn-sum-layout">
+            <div class="pn-disc-col">
+                <h2 class="mg-h">Popust</h2>
+                <form method="post" class="pn-disc" id="pnDiscForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="popust">
+                    <div class="mg-form-grid" style="grid-template-columns:1fr 1fr auto;">
+                        <div class="mg-field">
+                            <label for="pnPct">Popust %</label>
+                            <input id="pnPct" name="popust_postotak" value="{{ ponuda.popust_postotak|default:'' }}" inputmode="decimal">
+                        </div>
+                        <div class="mg-field">
+                            <label for="pnKm">Popust KM (ima prednost)</label>
+                            <input id="pnKm" name="popust_iznos" value="{{ ponuda.popust_iznos }}" inputmode="decimal">
+                        </div>
+                        <div class="mg-field" style="align-self:end;">
+                            <button type="submit" class="mg-btn">Primijeni</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <aside class="pn-sum" id="pnSum">
+                <h2>Zbroj</h2>
+                <dl>
+                    <div>
+                        <dt>Osnova</dt>
+                        <dd data-sum="osnova">{{ totals.osnova|floatformat:2 }} KM</dd>
+                    </div>
+                    <div class="is-disc"{% if not totals.popust %} hidden{% endif %}>
+                        <dt>Popust</dt>
+                        <dd data-sum="popust">−{{ totals.popust|floatformat:2 }} KM</dd>
+                    </div>
+                    <div class="is-net">
+                        <dt>Iznos bez PDV</dt>
+                        <dd data-sum="net">{{ totals.net|floatformat:2 }} KM</dd>
+                    </div>
+                    <div>
+                        <dt>PDV 17%</dt>
+                        <dd data-sum="pdv">{{ totals.pdv|floatformat:2 }} KM</dd>
+                    </div>
+                    <div class="is-grand">
+                        <dt>Ukupno sa PDV</dt>
+                        <dd data-sum="gross">{{ totals.ukupno_sa_pdv|floatformat:2 }} KM</dd>
+                    </div>
+                </dl>
+            </aside>
+        </div>
+    </section>
+
+    <div class="mg-order-foot">
+        <form method="post" onsubmit="return confirm('Obrisati ponudu?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="obrisi">
+            <button type="submit" class="mg-btn">Obriši</button>
+        </form>
+        <div class="mg-order-foot-sum">
+            {% if ponuda.status == 'objavljena' or ponuda.status == 'prihvacena' %}
+            <div class="pn-link" id="pnLink">
+                <input id="pnPublicUrl" readonly value="{{ public_url }}">
+                <button type="button" class="mg-btn mg-btn-primary" id="pnCopyLink">Copy link</button>
+                <a class="mg-btn" href="{{ public_url }}" target="_blank" rel="noopener">Otvori PDF</a>
+                {% if ponuda.status == 'prihvacena' and pick_url %}
+                <a class="mg-btn mg-btn-primary" href="{{ pick_url }}">Picking{% if ponuda.order %} #{{ ponuda.order.broj }}{% endif %}</a>
+                {% endif %}
+            </div>
+            {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="objavi">
+                <button type="submit" class="mg-btn mg-btn-primary">Objavi i daj link</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var copyBtn = document.getElementById('pnCopyLink');
+    var urlEl = document.getElementById('pnPublicUrl');
+    var linkBox = document.getElementById('pnLink');
+    if (linkBox && window.location.hash === '#pnLink') {
+        window.setTimeout(function () {
+            linkBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (urlEl) {
+                urlEl.focus();
+                urlEl.select();
+            }
+        }, 60);
+    }
+    if (!copyBtn || !urlEl) return;
+    copyBtn.addEventListener('click', function () {
+        var text = urlEl.value || '';
+        function done() {
+            copyBtn.textContent = 'Kopirano';
+            window.setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 1200);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+                urlEl.select();
+                document.execCommand('copy');
+                done();
+            });
+        } else {
+            urlEl.select();
+            document.execCommand('copy');
+            done();
+        }
+    });
+})();
+</script>
+{% endblock %}

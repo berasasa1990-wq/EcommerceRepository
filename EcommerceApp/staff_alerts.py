@@ -58,31 +58,13 @@ def notify_visitor_online(*, ime='', email='', grad='', session_key='', trenutno
 
 
 def notify_cart_add(*, ime='', email='', grad='', session_key='', product_name=''):
-    label = _actor_label(ime=ime, email=email, grad=grad)
-    product = (product_name or '').strip()
-    detail = f'{label} je dodao/la u korpu: {product}.' if product else f'{label} je dodao/la artikal u korpu.'
-    return push_staff_event(
-        StaffSiteEvent.Tip.CART,
-        naslov='Dodano u korpu',
-        poruka=detail,
-        ime=ime,
-        email=email,
-        grad=grad,
-        session_key=session_key,
-    )
+    """Isključeno — live toast samo za narudžbu, ne za korpu."""
+    return None
 
 
 def notify_registration(*, ime='', email='', grad='', session_key=''):
-    label = _actor_label(ime=ime, email=email, grad=grad)
-    return push_staff_event(
-        StaffSiteEvent.Tip.REGISTER,
-        naslov='Nova registracija',
-        poruka=f'{label} se registrovao/la.',
-        ime=ime,
-        email=email,
-        grad=grad,
-        session_key=session_key,
-    )
+    """Isključeno — live toast samo za narudžbu, ne za registraciju."""
+    return None
 
 
 def notify_purchase(*, ime='', email='', grad='', session_key='', order_number='', total=''):
@@ -90,14 +72,15 @@ def notify_purchase(*, ime='', email='', grad='', session_key='', order_number='
     parts = [f'{label} je kupio/la preko sajta']
     if order_number:
         parts.append(f'(#{order_number})')
-    if total:
-        parts.append(f'— {total} KM')
+    total_fmt = _format_money(total) if total not in (None, '') else ''
+    if total_fmt:
+        parts.append(f'— {total_fmt} KM')
     # Strukturirani rep u poruci radi celebration popupa (order_number / total)
     meta = []
     if order_number:
         meta.append(f'ORDER:{order_number}')
-    if total:
-        meta.append(f'TOTAL:{total}')
+    if total_fmt:
+        meta.append(f'TOTAL:{total_fmt}')
     poruka = ' '.join(parts) + '.'
     if meta:
         poruka = poruka + ' [[' + '|'.join(meta) + ']]'

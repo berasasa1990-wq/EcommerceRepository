@@ -573,12 +573,12 @@
     <script src="{% static 'js/visitor-presence.js' %}?v=20260814cpu2" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260825edit">
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260826orderOnly">
     <div id="staffAlertsRoot" hidden
          data-poll-url="{% url 'staff_site_events_poll' %}"
          data-analytics-url="{% url 'staff_live_analytics' %}"
          {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20260814cpu2" defer></script>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260826orderOnly" defer></script>
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}

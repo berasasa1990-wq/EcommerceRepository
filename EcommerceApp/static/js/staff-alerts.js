@@ -1,12 +1,6 @@
 /**
- * Live toast obavijesti za superusere.
- *
- * Samo akcioni događaji (NE „kupac je online”):
- * - Dodavanje u korpu
- * - Prihvaćena popup / AI / staff ponuda
- * - Registracija
- * - Kupovina (celebration)
- * Klik → uživo analitika / online narudžbe.
+ * Live obavijesti za superusere.
+ * Samo nova narudžba — korpa i registracija se ne prikazuju.
  */
 (function () {
     const root = document.getElementById('staffAlertsRoot');
@@ -301,35 +295,25 @@
         overlay.setAttribute('aria-modal', 'true');
         overlay.setAttribute('aria-labelledby', 'staffOrderCelebrationTitle');
 
-        const confetti = [];
-        for (let i = 0; i < 36; i++) {
-            confetti.push('<span class="staff-order-confetti" style="--i:' + i + '"></span>');
-        }
-
         overlay.innerHTML =
             '<div class="staff-order-celebration__backdrop" data-order-celeb-close></div>' +
             '<div class="staff-order-celebration__card">' +
-            '<div class="staff-order-celebration__confetti" aria-hidden="true">' +
-            confetti.join('') +
-            '</div>' +
             '<button type="button" class="staff-order-celebration__close" data-order-celeb-close aria-label="Zatvori">×</button>' +
-            '<div class="staff-order-celebration__burst" aria-hidden="true">🎉</div>' +
-            '<p class="staff-order-celebration__kicker">Nova narudžba na sajtu</p>' +
-            '<h2 id="staffOrderCelebrationTitle" class="staff-order-celebration__title">Čestitamo!</h2>' +
-            '<p class="staff-order-celebration__lead">Stigla je nova online narudžba — odlična vijest!</p>' +
-            '<div class="staff-order-celebration__box">' +
-            (orderNo
-                ? '<div class="staff-order-celebration__row"><span>Broj</span><strong>#' +
-                  escapeHtml(orderNo) + '</strong></div>'
-                : '') +
+            '<p class="staff-order-celebration__kicker">Nova narudžba</p>' +
+            '<h2 id="staffOrderCelebrationTitle" class="staff-order-celebration__title">' +
+            (orderNo ? '#' + escapeHtml(orderNo) : 'Online narudžba') +
+            '</h2>' +
             (total
-                ? '<div class="staff-order-celebration__row"><span>Iznos</span><strong>' +
-                  escapeHtml(total) + ' KM</strong></div>'
+                ? '<p class="staff-order-celebration__amount">' + escapeHtml(total) + ' KM</p>'
                 : '') +
+            '<div class="staff-order-celebration__box">' +
             '<div class="staff-order-celebration__row"><span>Kupac</span><strong>' +
             escapeHtml(ime) +
-            (grad ? ' · ' + escapeHtml(grad) : '') +
             '</strong></div>' +
+            (grad
+                ? '<div class="staff-order-celebration__row"><span>Grad</span><strong>' +
+                  escapeHtml(grad) + '</strong></div>'
+                : '') +
             (email
                 ? '<div class="staff-order-celebration__row"><span>Email</span><strong>' +
                   escapeHtml(email) + '</strong></div>'
@@ -337,11 +321,10 @@
             '</div>' +
             '<div class="staff-order-celebration__actions">' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--primary" data-order-celeb-orders>' +
-            'Otvori online narudžbe</button>' +
+            'Otvori narudžbe</button>' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>' +
             'Zatvori</button>' +
             '</div>' +
-            '<p class="staff-order-celebration__hint">Zeleni broj pored „Online narudžbe” pokazuje koliko novih čeka.</p>' +
             '</div>';
 
         document.body.appendChild(overlay);
@@ -375,86 +358,8 @@
 
     function showEventToast(event) {
         if (!event) return;
-        const tip = event.tip || '';
-        // Dozvoljeno: cart, offer, register, purchase — NE online
-        if (tip !== 'register' && tip !== 'purchase' && tip !== 'cart' && tip !== 'offer') {
-            return;
-        }
-
-        // Kupovina: veliki celebration popup (uvijek, i u quiet mode)
-        if (tip === 'purchase') {
-            showOrderCelebration(event);
-        }
-
-        // Na uživo analitici: korpa/ponuda/kupovina (ne spam)
-        if (quietMode && tip !== 'offer' && tip !== 'purchase' && tip !== 'cart') {
-            return;
-        }
-
-        const host = ensureStack();
-        const toast = document.createElement('article');
-        toast.className = 'staff-alert-toast staff-alert-toast--' + tip +
-            ' staff-alert-toast--clickable';
-        toast.setAttribute('role', 'link');
-        toast.setAttribute('tabindex', '0');
-        toast.setAttribute(
-            'aria-label',
-            (event.naslov || tipLabel(tip)) + ' — otvori online narudžbe',
-        );
-        toast.title = tip === 'purchase'
-            ? 'Klikni da otvoriš online narudžbe'
-            : 'Klikni da otvoriš uživo analitiku';
-
-        const close = document.createElement('button');
-        close.type = 'button';
-        close.className = 'staff-alert-toast__close';
-        close.setAttribute('aria-label', 'Zatvori');
-        close.textContent = '×';
-        close.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            removeToastEl(toast);
-        });
-        toast.appendChild(close);
-
-        renderToastBody(toast, event, { sticky: false });
-        if (tip === 'purchase') {
-            const cta = toast.querySelector('.staff-alert-toast__cta');
-            if (cta) cta.textContent = 'Otvori online narudžbe →';
-            const meta = toast.querySelector('.staff-alert-toast__meta');
-            if (meta && !meta.classList.contains('staff-alert-toast__meta--live')) {
-                meta.textContent = (event.kreirano || '') + ' · klikni za narudžbe';
-            }
-        }
-
-        toast.addEventListener('click', function (e) {
-            if (e.target && e.target.closest && e.target.closest('.staff-alert-toast__close')) {
-                return;
-            }
-            if (tip === 'purchase') {
-                goToOnlineOrders(e);
-            } else {
-                goToAnalytics(e);
-            }
-        });
-        toast.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                if (tip === 'purchase') {
-                    goToOnlineOrders(e);
-                } else {
-                    goToAnalytics(e);
-                }
-            }
-        });
-
-        host.appendChild(toast);
-        requestAnimationFrame(function () {
-            toast.classList.add('is-visible');
-        });
-
-        window.setTimeout(function () {
-            removeToastEl(toast);
-        }, 12000);
+        if ((event.tip || '') !== 'purchase') return;
+        showOrderCelebration(event);
     }
 
     async function poll() {

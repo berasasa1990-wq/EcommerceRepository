@@ -3054,6 +3054,146 @@ def add_vp_bulk_stavke(draft, text):
     return {'added': added, 'skipped': skipped}
 
 
+def ponuda_totals(ponuda):
+    from .cart import izracunaj_pdv
+
+    osnova = Decimal('0.00')
+    for row in ponuda.stavke.all():
+        osnova += (row.cijena or Decimal('0.00')) * int(row.kolicina or 0)
+    osnova = osnova.quantize(Decimal('0.01'))
+    popust = Decimal(str(ponuda.popust_iznos or 0)).quantize(Decimal('0.01'))
+    pct = ponuda.popust_postotak
+    if (not popust or popust <= 0) and pct:
+        popust = (osnova * Decimal(str(pct)) / Decimal('100')).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP,
+        )
+    if popust < 0:
+        popust = Decimal('0.00')
+    if popust > osnova:
+        popust = osnova
+    split = izracunaj_pdv((osnova - popust).quantize(Decimal('0.01')))
+    return {
+        'osnova': osnova,
+        'popust': popust,
+        'net': split['bez_pdv'],
+        'pdv': split['pdv'],
+        'ukupno_sa_pdv': split['sa_pdvom'],
+    }
+
+
+@transaction.atomic
+def accept_ponuda(ponuda, *, user=None):
+    """Prihvaćena ponuda → magacin narudžba, rezervacija po lokacijama, picking."""
+    from .models import MagacinPonuda, Order, OrderItem
+
+    if ponuda.order_id:
+        return ponuda.order
+    if ponuda.status == MagacinPonuda.Status.NACRT:
+        raise MagacinError('Prvo objavi ponudu.')
+    stavke = list(ponuda.stavke.select_related('product', 'variation'))
+    if not stavke:
+        raise MagacinError('Ponuda nema stavki.')
+    ime = (ponuda.ime_prezime or '').strip() or f'Ponuda {ponuda.broj}'
+    telefon = (ponuda.telefon or '').strip() or '—'
+    email = (ponuda.email or '').strip() or 'carpologijabh@gmail.com'
+    adresa = (ponuda.adresa or '').strip() or 'Ponuda'
+    grad = (ponuda.grad or '').strip() or '—'
+    totals = ponuda_totals(ponuda)
+    napomena_parts = [f'Ponuda {ponuda.broj}']
+    if (ponuda.napomena or '').strip():
+        napomena_parts.append(ponuda.napomena.strip())
+    popust = totals['popust']
+    popust_detalji = []
+    if popust > 0:
+        if ponuda.popust_iznos and ponuda.popust_iznos > 0:
+            popust_detalji.append({
+                'opis': f'Popust na ponudi {ponuda.broj}',
+                'iznos': str(popust),
+            })
+        elif ponuda.popust_postotak:
+            pct = ponuda.popust_postotak
+            pct_label = str(int(pct)) if pct == pct.to_integral() else str(pct)
+            popust_detalji.append({
+                'opis': f'Popust na ponudi {ponuda.broj} {pct_label}%',
+                'iznos': str(popust),
+                'postotak': pct_label,
+            })
+        else:
+            popust_detalji.append({
+                'opis': f'Popust na ponudi {ponuda.broj}',
+                'iznos': str(popust),
+            })
+    order = Order.objects.create(
+        ime_prezime=ime[:200],
+        email=email[:254],
+        telefon=telefon[:30],
+        adresa=adresa[:300],
+        grad=grad[:100],
+        napomena='\n'.join(napomena_parts),
+        medjuzbir=totals['osnova'],
+        dostava=Decimal('0.00'),
+        popust=popust,
+        popust_detalji=popust_detalji,
+        ukupno=totals['ukupno_sa_pdv'],
+        status=Order.Status.NOVA,
+        izvor=Order.Izvor.MAGACIN,
+    )
+    for row in stavke:
+        product = row.product
+        variation = row.variation
+        qty = max(1, int(row.kolicina or 1))
+        if row.manuelno or product is None:
+            naziv = (row.naziv or 'Ručni artikal')[:200]
+            OrderItem.objects.create(
+                narudzba=order,
+                artikal=None,
+                varijacija=None,
+                naziv=naziv,
+                product_naziv=naziv,
+                varijacija_naziv='',
+                sifra=(row.sifra or 'RUCNO')[:SIFRA_MAX_LENGTH],
+                cijena=row.cijena,
+                bazna_cijena=row.cijena,
+                kolicina=qty,
+                rezervni_dio=True,
+            )
+            continue
+        bazna = variation.bazna_cijena if variation else product.bazna_cijena
+        OrderItem.objects.create(
+            narudzba=order,
+            artikal=product,
+            varijacija=variation,
+            naziv=(row.naziv or product.naziv)[:200],
+            product_naziv=product.naziv[:200],
+            varijacija_naziv=(variation.naziv[:100] if variation else ''),
+            sifra=(
+                (row.sifra or (variation.sifra if variation and variation.sifra else product.sifra) or '')
+                [:SIFRA_MAX_LENGTH]
+            ),
+            cijena=row.cijena,
+            bazna_cijena=bazna,
+            kolicina=qty,
+        )
+        available = stock_totals(product, variation)['dostupno']
+        take = min(qty, available)
+        if take:
+            reserve_for_order(
+                order,
+                product,
+                take,
+                variation=variation,
+                user=user,
+                napomena=f'Ponuda {ponuda.broj} #{order.broj}',
+            )
+    order.lager_status = Order.LagerStatus.REZERVISANO
+    order.save(update_fields=['lager_status'])
+    ponuda.status = MagacinPonuda.Status.PRIHVACENA
+    ponuda.order = order
+    ponuda.prihvacena_at = timezone.now()
+    ponuda.save(update_fields=['status', 'order', 'prihvacena_at', 'azuriran'])
+    return order
+
+
 def vp_draft_totals(osnova, *, bulk=False):
     from .cart import PDV_STOPA
 

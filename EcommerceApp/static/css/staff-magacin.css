@@ -2784,6 +2784,98 @@ tr.is-mp-lock {
     font-size: 28px;
     font-weight: 700;
 }
+.pn-sum-card .mg-h { margin-bottom: 12px; }
+.pn-sum-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    gap: 28px 36px;
+    align-items: start;
+}
+.pn-sum {
+    margin: 0;
+    padding: 0;
+    border: 1px solid #e6e8ea;
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(17, 24, 39, 0.05);
+}
+.pn-sum h2 {
+    margin: 0;
+    padding: 14px 20px 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #8b9198;
+}
+.pn-sum dl { margin: 0; padding: 8px 20px 0; }
+.pn-sum dl > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px solid #f0f1f2;
+    font-size: 14px;
+}
+.pn-sum dt {
+    color: #6b7280;
+    font-weight: 500;
+}
+.pn-sum dd {
+    margin: 0;
+    font-weight: 700;
+    color: #111;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
+}
+.pn-sum .is-disc dt,
+.pn-sum .is-disc dd { color: #b45309; }
+.pn-sum .is-net {
+    border-top: 1px dashed #d7dbe0;
+    margin-top: 2px;
+    padding-top: 12px;
+}
+.pn-sum .is-net dt { color: #374151; font-weight: 600; }
+.pn-sum .is-grand {
+    border-bottom: 0;
+    margin: 8px -20px 0;
+    padding: 14px 20px;
+    background: #111;
+    color: #fff;
+}
+.pn-sum .is-grand dt,
+.pn-sum .is-grand dd {
+    font-size: 15px;
+    color: #fff;
+    font-weight: 800;
+}
+@media (max-width: 860px) {
+    .pn-sum-layout {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    .pn-sum { max-width: none; }
+}
+.pn-link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    scroll-margin-top: 88px;
+}
+.pn-link form { margin: 0; }
+.pn-link input {
+    min-width: 220px;
+    flex: 1 1 240px;
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+}
 .pk-prenos-cancel {
     width: 100%;
     min-height: 44px;
@@ -6666,6 +6758,8 @@ tr.is-mp-lock {
     text-decoration: none;
     color: inherit;
 }
+.bp-row form { margin: 0; flex: 0 0 auto; }
+a.bp-row-main { text-decoration: none; color: inherit; }
 .bp-row:last-child { border-bottom: none; }
 .bp-row-main { flex: 1 1 auto; min-width: 0; }
 .bp-row-main strong { display: block; font-size: 15px; }

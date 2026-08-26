@@ -5466,6 +5466,110 @@ class WarehouseSupplier(models.Model):
         return self.naziv
 
 
+class MagacinPonuda(models.Model):
+    class Status(models.TextChoices):
+        NACRT = 'nacrt', 'Nacrt'
+        OBJAVLJENA = 'objavljena', 'Objavljena'
+        PRIHVACENA = 'prihvacena', 'Prihvaćena'
+
+    broj = models.CharField(max_length=20, unique=True, editable=False)
+    token = models.CharField(max_length=40, unique=True, db_index=True)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.NACRT, db_index=True,
+    )
+    ime_prezime = models.CharField(max_length=200, blank=True, verbose_name='Kupac')
+    telefon = models.CharField(max_length=30, blank=True)
+    email = models.EmailField(blank=True)
+    adresa = models.CharField(max_length=300, blank=True)
+    grad = models.CharField(max_length=100, blank=True)
+    napomena = models.TextField(blank=True)
+    popust_postotak = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name='Popust (%)',
+    )
+    popust_iznos = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        verbose_name='Popust (KM)',
+    )
+    kreiran = models.DateTimeField(auto_now_add=True)
+    azuriran = models.DateTimeField(auto_now=True)
+    objavljena_at = models.DateTimeField(null=True, blank=True)
+    prihvacena_at = models.DateTimeField(null=True, blank=True)
+    order = models.OneToOneField(
+        'Order',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_ponuda',
+    )
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_ponude',
+    )
+
+    class Meta:
+        verbose_name = 'Magacin ponuda'
+        verbose_name_plural = 'Magacin ponude'
+        ordering = ['-kreiran']
+
+    def __str__(self):
+        return f'Ponuda {self.broj}'
+
+    def save(self, *args, **kwargs):
+        import secrets
+
+        if not self.token:
+            self.token = secrets.token_urlsafe(18)[:32]
+        if not self.broj:
+            last = MagacinPonuda.objects.order_by('-id').values_list('id', flat=True).first() or 0
+            seq = int(last) + 1
+            self.broj = f'P-{seq:04d}'
+        super().save(*args, **kwargs)
+
+
+class MagacinPonudaStavka(models.Model):
+    ponuda = models.ForeignKey(MagacinPonuda, on_delete=models.CASCADE, related_name='stavke')
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ponuda_stavke',
+    )
+    variation = models.ForeignKey(
+        'ProductVariation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ponuda_stavke',
+    )
+    naziv = models.CharField(max_length=200)
+    sifra = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
+    kolicina = models.PositiveIntegerField(default=1)
+    cijena = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        verbose_name='Cijena sa PDV',
+    )
+    manuelno = models.BooleanField(default=False)
+    redoslijed = models.PositiveIntegerField(default=0)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Stavka ponude'
+        verbose_name_plural = 'Stavke ponude'
+        ordering = ['redoslijed', 'id']
+
+    @property
+    def ukupno(self):
+        return (self.cijena or Decimal('0.00')) * self.kolicina
+
+    def __str__(self):
+        return f'{self.naziv} × {self.kolicina}'
+
+
 class ProductWarehouseMeta(models.Model):
     product = models.OneToOneField(
         Product, on_delete=models.CASCADE, related_name='magacin_meta',

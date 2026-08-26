@@ -1,0 +1,78 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-orders-page">
+<div class="mg-page-head">
+    <div>
+        <h1>Kreiraj ponudu</h1>
+        <p class="mg-count">Katalog ili ručni unos, popust po želji, pa kopiraj link za PDF.</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="nova">
+        <button type="submit" class="mg-btn mg-btn-primary">Nova ponuda</button>
+    </form>
+</div>
+
+<section class="mg-card">
+    <h2 class="mg-h">Nacrti</h2>
+    {% if nacrti %}
+    <div class="bp-list">
+        {% for p in nacrti %}
+        <a class="bp-row" href="{% url 'staff_magacin_ponuda_detail' p.pk %}">
+            <span class="bp-row-main">
+                <strong>{{ p.broj }}</strong>
+                <span>{{ p.ime_prezime|default:"Bez kupca" }} · {{ p.kreiran|date:"d.m.Y. H:i" }}</span>
+            </span>
+            <span class="bp-badge bp-badge--wait">Nacrt</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="mg-empty">Nema nacrta. Otvori novu ponudu.</p>
+    {% endif %}
+</section>
+
+<section class="mg-card">
+    <h2 class="mg-h">Objavljene</h2>
+    {% if objavljene %}
+    <div class="bp-list">
+        {% for p in objavljene %}
+        <div class="bp-row">
+            <a class="bp-row-main" href="{% url 'staff_magacin_ponuda_detail' p.pk %}">
+                <strong>{{ p.broj }}</strong>
+                <span>{{ p.ime_prezime|default:"Bez kupca" }} · {{ p.objavljena_at|date:"d.m.Y. H:i" }}</span>
+            </a>
+            <span class="bp-badge">Objavljena</span>
+            <form method="post" action="{% url 'staff_magacin_ponuda_prihvati' p.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="mg-btn mg-btn-primary">Prihvaćena ponuda</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="mg-empty">Još nema objavljenih ponuda.</p>
+    {% endif %}
+</section>
+
+<section class="mg-card">
+    <h2 class="mg-h">Prihvaćene</h2>
+    {% if prihvacene %}
+    <div class="bp-list">
+        {% for p in prihvacene %}
+        <a class="bp-row" href="{% url 'staff_magacin_ponuda_detail' p.pk %}">
+            <span class="bp-row-main">
+                <strong>{{ p.broj }}</strong>
+                <span>{{ p.ime_prezime|default:"Bez kupca" }}{% if p.order %} · #{{ p.order.broj }}{% endif %} · {{ p.prihvacena_at|date:"d.m.Y. H:i" }}</span>
+            </span>
+            <span class="bp-badge">Prihvaćena</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="mg-empty">Još nema prihvaćenih ponuda.</p>
+    {% endif %}
+</section>
+</div>
+{% endblock %}
