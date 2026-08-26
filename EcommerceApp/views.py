@@ -5117,6 +5117,7 @@ def staff_order_brza_posta(request, broj):
         'vrijeme': created.strftime('%H:%M'),
         'site_name': 'opremazaribolov.ba',
         'iznos_sa_dostavom': order.ukupno,
+        'iznos_copy': f'{order.ukupno:.2f}'.replace('.', ','),
         'packing_lines': packing_lines,
         'packing_error': packing_error,
         'deduct_details': deduct_details,

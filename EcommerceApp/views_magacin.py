@@ -2332,7 +2332,7 @@ def magacin_brza_posta_detail(request, broj):
         'grad_value': ' '.join(
             part for part in ((order.postanski_broj or '').strip(), (order.grad or '').strip()) if part
         ),
-        'iznos_copy': f'{order.ukupno:.2f}',
+        'iznos_copy': f'{order.ukupno:.2f}'.replace('.', ','),
     })
     return render(request, 'staff/magacin/brza_posta_detail.html', context)
 

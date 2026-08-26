@@ -2257,6 +2257,11 @@ class MagacinViewTests(TestCase):
         self.assertContains(detail, 'brza@example.com')
         self.assertContains(detail, '065111222')
         self.assertContains(detail, order.broj)
+        iznos_copy = f'{order.ukupno:.2f}'.replace('.', ',')
+        self.assertIn(',', iznos_copy)
+        self.assertContains(detail, f'data-copy="{iznos_copy}"')
+        self.assertNotContains(detail, f'data-copy="{order.ukupno:.2f}"')
+        self.assertNotContains(detail, f'{iznos_copy} KM')
         self.assertContains(detail, 'Copy')
         self.assertContains(detail, 'Unijeto')
         marked = self.client.post(
