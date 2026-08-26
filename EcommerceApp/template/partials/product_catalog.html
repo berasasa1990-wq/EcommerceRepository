@@ -1,12 +1,6 @@
 <section class="product-catalog{% if catalog_compact %} product-catalog--compact{% endif %}">
-    <div class="catalog-layout">
-        {% include 'partials/product_filter_sidebar.html' with filter_action=filter_action filter_size_groups=filter_size_groups %}
-
+    <div class="catalog-layout catalog-layout--full">
         <div class="catalog-products">
-            {% if category or catalog_title %}
-            {% include 'partials/catalog_mobile_filter.html' %}
-            {% endif %}
-
             {% if category %}
             <div class="category-header">
                 <h1>{{ seo_h1|default:category.naziv }}</h1>
@@ -18,18 +12,15 @@
             </div>
             {% endif %}
 
-            {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
-
-            {% if filter_params.velicina %}
-            <p class="catalog-filter-active-hint">
-                Filter <strong>{{ filter_params.velicina }}</strong> —
-                {% if page_obj %}
-                prikazano <strong>{{ page_obj.paginator.count }}</strong> artikala
-                {% else %}
-                prikazano <strong>{{ products|length }}</strong> artikala
-                {% endif %}
-            </p>
+            {% if category_subnav %}
+            <div class="catalog-mobile-zone" id="catalogMobileZone">
+                <div class="catalog-mobile-zone__subnav">
+                    {% include 'partials/category_subnav.html' %}
+                </div>
+            </div>
             {% endif %}
+
+            {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
             {% if page_obj %}
             {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='top' %}
@@ -38,11 +29,11 @@
             {% if products %}
             <div class="product-grid product-grid--catalog">
                 {% for product in products %}
-                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 25vw' %}
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
                 {% endfor %}
             </div>
             {% else %}
-            <p class="catalog-empty">Nema artikala za odabrane filtere.</p>
+            <p class="catalog-empty">Nema artikala.</p>
             {% endif %}
 
             {% if page_obj %}

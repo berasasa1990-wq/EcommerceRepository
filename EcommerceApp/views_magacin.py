@@ -4549,18 +4549,21 @@ def magacin_pakuj_detail(request, broj):
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
         if action == 'otkazi':
-            if prenos_mp:
-                messages.error(request, 'Prenos u MP se ne otkazuje ovdje.')
-                return redirect('staff_magacin_pakuj_detail', broj=order.broj)
             try:
                 cancel_order_stock(order, user=request.user)
             except MagacinError as exc:
                 messages.error(request, str(exc))
                 return redirect('staff_magacin_pakuj_detail', broj=order.broj)
-            messages.success(
-                request,
-                f'Narudžba #{order.broj} je otkazana — rezervacija je vraćena na lokacije.',
-            )
+            if prenos_mp:
+                messages.success(
+                    request,
+                    'Prenos u MP je otkazan — artikal je vraćen na lokaciju.',
+                )
+            else:
+                messages.success(
+                    request,
+                    f'Narudžba #{order.broj} je otkazana — rezervacija je vraćena na lokacije.',
+                )
             return redirect('staff_magacin_pakuj')
         if action in {'dodaj', 'ukloni', 'kolicina'}:
             if not order_is_editable(order):

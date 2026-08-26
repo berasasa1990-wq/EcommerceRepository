@@ -41,6 +41,11 @@
             <input type="hidden" name="pick_json" id="pkPrenosPickJson" value="">
             <button type="submit" name="action" value="validiraj" class="pk-prenos-valid" id="pkPrenosValid">Validatuj</button>
         </form>
+        <form method="post" class="pk-prenos-form" id="pkPrenosCancelForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="otkazi">
+            <button type="submit" class="pk-prenos-cancel">Otkaži prenos</button>
+        </form>
         <button type="button" class="pk-prenos-clear" id="pkPrenosClear">Ukloni iz lokacije</button>
         <input type="text" id="pkPrenosScan" class="pk-scan-hidden" inputmode="none" autocomplete="off" aria-label="Barkod ili šifra">
     </section>

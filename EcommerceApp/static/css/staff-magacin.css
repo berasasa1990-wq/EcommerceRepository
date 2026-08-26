@@ -2784,6 +2784,18 @@ tr.is-mp-lock {
     font-size: 28px;
     font-weight: 700;
 }
+.pk-prenos-cancel {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    border: 1px solid #111;
+    background: #fff;
+    color: #111;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
 .pk-prenos-clear {
     width: 100%;
     max-width: 360px;

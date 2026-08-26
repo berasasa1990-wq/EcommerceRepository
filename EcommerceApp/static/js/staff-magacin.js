@@ -3777,6 +3777,14 @@ function initPopisPage() {
             if (!window.confirm(msgText)) event.preventDefault();
         });
     }
+    var cancelForm = document.getElementById('pkPrenosCancelForm');
+    if (cancelForm) {
+        cancelForm.addEventListener('submit', function (event) {
+            if (!window.confirm('Otkazati prenos u MP? Artikal ostaje na lokaciji, ništa se ne prenosi.')) {
+                event.preventDefault();
+            }
+        });
+    }
     if (clearBtn) {
         clearBtn.addEventListener('click', function () {
             if (!itemId || !loc) return;

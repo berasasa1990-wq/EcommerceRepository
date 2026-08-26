@@ -3115,6 +3115,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(pick, 'id="pkPrenosScanCam"')
         self.assertContains(pick, 'aria-label="Skener"')
         self.assertContains(pick, 'Ukloni iz lokacije')
+        self.assertContains(pick, 'Otkaži prenos')
         self.assertContains(pick, 'id="pkPrenosGot"')
         self.assertContains(pick, 'Test braid')
         self.assertContains(pick, 'pk-prenos-sifra')
@@ -3166,6 +3167,36 @@ class MagacinViewTests(TestCase):
         self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
         stock = WarehouseStock.objects.get(product=self.product, location=loc)
         self.assertEqual(stock.kolicina, 7)
+
+    def test_prenos_mp_cancel_returns_stock_without_transfer(self):
+        self.client.force_login(self.user)
+        created = self.client.post(
+            reverse('staff_magacin_artikal', args=[self.product.pk]),
+            {'action': 'kretanje', 'mode': 'mp', 'kolicina': '3'},
+        )
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Prenos u MP')
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.kolicina, 8)
+        self.assertEqual(stock.rezervisano, 3)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 5)
+        cancelled = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {'action': 'otkazi'},
+        )
+        self.assertRedirects(cancelled, reverse('staff_magacin_pakuj'))
+        order.refresh_from_db()
+        stock.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.OTKAZANA)
+        self.assertEqual(order.lager_status, Order.LagerStatus.OTKAZANO)
+        self.assertEqual(stock.kolicina, 8)
+        self.assertEqual(stock.rezervisano, 0)
+        self.assertEqual(self.product.stanje, 8)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 8)
+        listing = self.client.get(reverse('staff_magacin_pakuj'))
+        self.assertNotContains(listing, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
 
     def test_prenos_mp_clear_location_requires_admin_password(self):
         loc = WarehouseLocation.objects.get(sifra='T-1')

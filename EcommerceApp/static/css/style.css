@@ -3866,8 +3866,8 @@ body.search-results-active main {
     width: 100%;
 }
 
-.product-catalog--compact .catalog-products .product-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+.product-catalog--compact .catalog-products .product-grid:not(.product-grid--category-showcase) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 20px;
 }
 

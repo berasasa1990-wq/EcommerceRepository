@@ -929,6 +929,22 @@ class StaffStorefrontEditModeTests(TestCase):
             slika='products/ok.jpg',
         )
 
+    def test_catalog_pages_hide_filters(self):
+        from django.urls import reverse
+
+        category = self.client.get(reverse('category', args=[self.category.slug]))
+        self.assertEqual(category.status_code, 200)
+        self.assertContains(category, 'catalog-layout--full')
+        self.assertContains(category, 'product-grid--catalog')
+        self.assertNotContains(category, 'catalog-sidebar')
+        self.assertNotContains(category, 'catalog-filter-title')
+        self.assertNotContains(category, 'Filter i sortiranje')
+        search = self.client.get(reverse('home'), {'q': 'EDIT-OK'})
+        self.assertEqual(search.status_code, 200)
+        self.assertContains(search, 'catalog-layout--full')
+        self.assertNotContains(search, 'catalog-sidebar')
+        self.assertNotContains(search, 'Filter i sortiranje')
+
     def test_missing_storefront_fields(self):
         self.assertEqual(
             self.incomplete.missing_storefront_fields(),
