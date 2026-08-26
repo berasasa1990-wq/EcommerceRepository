@@ -11,6 +11,7 @@
             <tr>
                 <th>DATUM</th>
                 <th>TIP</th>
+                <th>KUPAC</th>
                 <th>VARIJACIJA</th>
                 <th>LOKACIJA</th>
                 <th class="num">KOLIČINA</th>
@@ -23,6 +24,7 @@
             <tr>
                 <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
                 <td>{{ m.get_tip_display }}</td>
+                <td>{% if m.kupac_label %}{{ m.kupac_label }}{% else %}—{% endif %}</td>
                 <td>{{ m.variation.naziv|default:"—" }}</td>
                 <td>{{ m.location.sifra }}{% if m.to_location %} → {{ m.to_location.sifra }}{% endif %}</td>
                 <td class="num {% if m.kolicina > 0 %}num-plus{% elif m.kolicina < 0 %}num-minus{% endif %}">{{ m.kolicina }}</td>
@@ -30,7 +32,7 @@
                 <td>{% if m.korisnik %}{{ m.korisnik.get_username }}{% else %}—{% endif %}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="7" class="mg-muted">Nema kretanja.</td></tr>
+            <tr><td colspan="8" class="mg-muted">Nema kretanja.</td></tr>
             {% endfor %}
         </tbody>
     </table>

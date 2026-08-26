@@ -3379,13 +3379,17 @@ def _order_item_unit_price(order, product, variation=None):
     return cijena, bazna
 
 
-def _assert_order_editable(order):
-    if is_prenos_mp_order(order):
-        raise MagacinError('Prenos u MP se ne može mijenjati.')
+def _assert_order_open(order):
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
         raise MagacinError('Validirana narudžba se ne može mijenjati.')
     if order.lager_status == Order.LagerStatus.OTKAZANO or order.status == Order.Status.OTKAZANA:
         raise MagacinError('Otkazana narudžba se ne može mijenjati.')
+
+
+def _assert_order_editable(order):
+    if is_prenos_mp_order(order):
+        raise MagacinError('Prenos u MP se ne može mijenjati.')
+    _assert_order_open(order)
 
 
 def order_is_editable(order):
@@ -3653,7 +3657,7 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
 
     Stavka ostaje na narudžbi. Ako ima zalihe drugdje, rezervacija se prebaci.
     """
-    _assert_order_editable(order)
+    _assert_order_open(order)
     if item.narudzba_id != order.pk:
         raise MagacinError('Stavka nije na ovoj narudžbi.')
     loc = (loc or '').strip()

@@ -1,30 +1,49 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pk-app pk-prenos" id="pkPrenosApp">
+{% with item=prenos_item hold=prenos_hold %}
+<div class="pk-app pk-prenos" id="pkPrenosApp"
+     data-item-id="{{ item.pk|default:'' }}"
+     data-loc="{{ hold.location.sifra|default:order.adresa }}"
+     data-need="{{ item.kolicina|default:0 }}">
+    <script type="application/json" id="pkPrenosCodes">{{ prenos_codes_json|safe }}</script>
     <header class="pk-bar">
         <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
         <div class="pk-bar-title">
             <strong>Prenos u MP</strong>
         </div>
+        <button type="button" class="pk-bar-scan" id="pkPrenosScanCam" data-mg-scan-target="pkPrenosScan" data-mg-scan-title="Skeniraj artikal" title="Skener" aria-label="Skener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+        </button>
     </header>
 
     {% if odoo_error %}
     <p class="pk-alert">{{ odoo_error }}</p>
     {% endif %}
 
-    {% with item=order.stavke.first hold=order.magacin_holds.first %}
     <section class="pk-prenos-screen">
         <p class="pk-prenos-kicker">Lokacija</p>
         <p class="pk-prenos-loc">{{ hold.location.sifra|default:order.adresa }}</p>
-        <p class="pk-prenos-name">{{ item.naziv }}</p>
+        <p class="pk-prenos-kicker">Artikal</p>
+        <p class="pk-prenos-name">{{ item.puni_naziv }}</p>
+        <p class="pk-prenos-sifra">{% if item.sifra %}{{ item.sifra }}{% elif item.artikal.sifra %}{{ item.artikal.sifra }}{% else %}—{% endif %}</p>
         <p class="pk-prenos-kicker">Količina</p>
-        <p class="pk-prenos-qty">{{ item.kolicina }}</p>
-        <form method="post" class="pk-prenos-form">
+        <p class="pk-prenos-qty" id="pkPrenosQtyView">{{ item.kolicina }}</p>
+        <p class="pk-prenos-qty-of" id="pkPrenosQtyOf">od {{ item.kolicina }}</p>
+        <div class="pk-prenos-step">
+            <button type="button" id="pkPrenosMinus" aria-label="Manje">−</button>
+            <input type="number" id="pkPrenosGot" min="1" max="{{ item.kolicina|default:1 }}" step="1" value="{{ item.kolicina|default:1 }}" inputmode="numeric" aria-label="Količina za prenos">
+            <button type="button" id="pkPrenosPlus" aria-label="Više">+</button>
+        </div>
+        <p class="pk-msg" id="pkPrenosMsg" hidden></p>
+        <form method="post" class="pk-prenos-form" id="pkPrenosForm">
             {% csrf_token %}
-            <button type="submit" name="action" value="validiraj" class="pk-prenos-valid">Validatuj</button>
+            <input type="hidden" name="pick_json" id="pkPrenosPickJson" value="">
+            <button type="submit" name="action" value="validiraj" class="pk-prenos-valid" id="pkPrenosValid">Validatuj</button>
         </form>
+        <button type="button" class="pk-prenos-clear" id="pkPrenosClear">Ukloni iz lokacije</button>
+        <input type="text" id="pkPrenosScan" class="pk-scan-hidden" inputmode="none" autocomplete="off" aria-label="Barkod ili šifra">
     </section>
-    {% endwith %}
 </div>
+{% endwith %}
 {% endblock %}

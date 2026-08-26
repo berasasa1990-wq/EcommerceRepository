@@ -137,11 +137,40 @@ def _user_display(user):
 _ORDER_STOCK_NOTE_RE = re.compile(
     r'(?i)(?:validacija|rezervacija|otkazivanje|izmjena|prenos u mp)\s*#|#\d+|ru[cč]na narud[zž]ba',
 )
+_MOVEMENT_ORDER_BROJ_RE = re.compile(r'#(\d+)')
 
 
 def _movement_from_order(movement):
     note = (getattr(movement, 'napomena', None) or '').strip()
     return bool(note and _ORDER_STOCK_NOTE_RE.search(note))
+
+
+def _movement_order_broj(movement):
+    note = (getattr(movement, 'napomena', None) or '').strip()
+    match = _MOVEMENT_ORDER_BROJ_RE.search(note)
+    return match.group(1) if match else ''
+
+
+def _attach_movement_kupci(movements):
+    """Na kretanjima iz narudžbe stavi ime kupca (za prikaz u istoriji)."""
+    brojevi = []
+    seen = set()
+    for movement in movements:
+        broj = _movement_order_broj(movement)
+        movement.kupac_label = ''
+        movement.kupac_broj = broj
+        if broj and broj not in seen:
+            seen.add(broj)
+            brojevi.append(broj)
+    if not brojevi:
+        return movements
+    by_broj = {
+        order.broj: (order.ime_prezime or '').strip()
+        for order in Order.objects.filter(broj__in=brojevi).only('broj', 'ime_prezime')
+    }
+    for movement in movements:
+        movement.kupac_label = by_broj.get(getattr(movement, 'kupac_broj', ''), '')
+    return movements
 
 
 def _movement_korisnik_label(movement):
@@ -1018,6 +1047,7 @@ def magacin_artikal(request, pk):
     if variation:
         movements = movements.filter(variation=variation)
     movements = list(movements[:10])
+    _attach_movement_kupci(movements)
 
     variant_rows = []
     for var in variations:
@@ -1636,6 +1666,7 @@ def magacin_istorija(request, pk):
         qs = qs.filter(variation_id=variation_id)
     paginator = Paginator(qs, 50)
     page = paginator.get_page(request.GET.get('page') or 1)
+    _attach_movement_kupci(page.object_list)
     context = _magacin_context(request, section='artikli', page_title=f'Istorija — {product.naziv}', hide_top_search=True)
     context.update({'product': product, 'page': page})
     return render(request, 'staff/magacin/istorija.html', context)
@@ -3693,6 +3724,25 @@ def _pick_queue(location_groups):
     return queue
 
 
+def _prenos_scan_codes(item):
+    if item is None:
+        return []
+    codes = []
+    product = getattr(item, 'artikal', None)
+    variation = getattr(item, 'varijacija', None)
+    for raw in (
+        getattr(item, 'sifra', '') or '',
+        getattr(variation, 'sifra', '') or '' if variation else '',
+        getattr(product, 'sifra', '') or '' if product else '',
+        getattr(product, 'barkod', '') or '' if product else '',
+        getattr(variation, 'barkod', '') or '' if variation else '',
+    ):
+        text = str(raw or '').strip()
+        if text and text.casefold() not in [c.casefold() for c in codes]:
+            codes.append(text)
+    return codes
+
+
 def _order_pick_bundle(order):
     from .views import _build_order_packing_lines
 
@@ -4029,6 +4079,9 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             continue
         prev = state.get(key) if isinstance(state.get(key), dict) else {}
         row = {'got': got, 'done': done, 'item_id': item_id or None, 'need': need}
+        loc = _pick_line_loc(raw)
+        if loc:
+            row['loc'] = loc
         if prev.get('mp_checked') or raw.get('mp_checked'):
             row['mp_checked'] = True
         state[key] = row
@@ -4582,7 +4635,20 @@ def magacin_pakuj_detail(request, broj):
                 messages.error(request, str(exc) if str(exc) else 'Lokacija nije očišćena.')
                 return redirect('staff_magacin_pakuj_detail', broj=order.broj)
             loc_label = result.get('loc') or loc
-            if result.get('relocated'):
+            cancelled = False
+            if prenos_mp and not result.get('relocated'):
+                try:
+                    cancel_order_stock(order, user=request.user)
+                except MagacinError:
+                    order.lager_status = Order.LagerStatus.OTKAZANO
+                    order.status = Order.Status.OTKAZANA
+                    order.save(update_fields=['lager_status', 'status'])
+                cancelled = True
+                message = (
+                    f'Lokacija {loc_label} očišćena — artikal je skinut s lokacije, '
+                    'prenos u MP je uklonjen.'
+                )
+            elif result.get('relocated'):
                 message = (
                     f'Lokacija {loc_label} očišćena — zaliha artikla je skinuta, '
                     'rezervacija prebačena na drugu lokaciju.'
@@ -4593,20 +4659,40 @@ def magacin_pakuj_detail(request, broj):
                     '(usputni popis).'
                 )
             if _pakuj_is_ajax(request):
-                return JsonResponse({
+                payload = {
                     'ok': True,
-                    'reload': True,
+                    'reload': not cancelled,
                     'cleared': int(result.get('cleared') or 0),
                     'relocated': int(result.get('relocated') or 0),
+                    'cancelled': cancelled,
                     'message': message,
-                })
+                }
+                if cancelled:
+                    payload['redirect'] = reverse('staff_magacin_pakuj')
+                return JsonResponse(payload)
             messages.success(request, message)
+            if cancelled:
+                return redirect('staff_magacin_pakuj')
             return redirect('staff_magacin_pakuj_detail', broj=order.broj)
         if action in {'validiraj', 'pick_save'}:
             try:
+                pick_lines = _parse_pick_lines(request.POST.get('pick_json'))
+                if prenos_mp and action == 'validiraj' and pick_lines:
+                    got = 0
+                    for row in pick_lines:
+                        try:
+                            got += max(0, int(row.get('got') or 0))
+                        except (TypeError, ValueError):
+                            continue
+                    if got <= 0:
+                        messages.error(
+                            request,
+                            'Unesi količinu za prenos ili ukloni iz lokacije.',
+                        )
+                        return redirect('staff_magacin_pakuj_detail', broj=order.broj)
                 apply_order_pick(
                     order,
-                    _parse_pick_lines(request.POST.get('pick_json')),
+                    pick_lines,
                     finalize=(action == 'validiraj'),
                     user=request.user,
                 )
@@ -4635,6 +4721,13 @@ def magacin_pakuj_detail(request, broj):
 
     queue, location_groups, odoo_error = _order_pick_bundle(order)
     mp_count = sum(1 for item in queue if item.get('is_mp'))
+    prenos_item = order.stavke.select_related('artikal', 'varijacija').first() if prenos_mp else None
+    prenos_hold = (
+        order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO)
+        .select_related('location')
+        .first()
+        if prenos_mp else None
+    )
     context = _magacin_context(request, section='pakuj', page_title=f'Pick #{order.broj} — Magacin')
     context.update({
         'order': order,
@@ -4646,6 +4739,9 @@ def magacin_pakuj_detail(request, broj):
         'pick_fullscreen': True,
         'mp_count': mp_count,
         'is_prenos_mp': prenos_mp,
+        'prenos_item': prenos_item,
+        'prenos_hold': prenos_hold,
+        'prenos_codes_json': json.dumps(_prenos_scan_codes(prenos_item), ensure_ascii=False).replace('<', '\\u003c'),
         'can_edit_order': order_is_editable(order),
         'edit_form_url': (
             f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}"

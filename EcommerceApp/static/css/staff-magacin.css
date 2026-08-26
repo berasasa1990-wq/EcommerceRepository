@@ -2714,11 +2714,19 @@ tr.is-mp-lock {
     color: #111;
 }
 .pk-prenos-name {
-    margin: 0 0 28px;
+    margin: 6px 0 8px;
     max-width: 22em;
-    font-size: 15px;
-    line-height: 1.35;
-    color: #666;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #111;
+}
+.pk-prenos-sifra {
+    margin: 0 0 28px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #111;
 }
 .pk-prenos-qty {
     margin: 6px 0 32px;
@@ -2742,6 +2750,60 @@ tr.is-mp-lock {
     font-weight: 700;
     cursor: pointer;
 }
+.pk-prenos-qty-of {
+    margin: -22px 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #888;
+}
+.pk-prenos-step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 0 22px;
+}
+.pk-prenos-step button {
+    width: 48px;
+    height: 48px;
+    border: 1px solid #111;
+    background: #fff;
+    color: #111;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+.pk-prenos-step input {
+    width: 96px;
+    height: 48px;
+    border: 1px solid #111;
+    text-align: center;
+    font: inherit;
+    font-size: 28px;
+    font-weight: 700;
+}
+.pk-prenos-clear {
+    width: 100%;
+    max-width: 360px;
+    min-height: 44px;
+    margin-top: 12px;
+    border: 1px solid #b91c1c;
+    background: #fff;
+    color: #b91c1c;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.pk-prenos .pk-msg {
+    min-height: 1.3em;
+    margin: 0 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+}
+.pk-prenos .pk-msg.is-ok { color: #166534; }
 .pk-check-card.is-focus {
     border-color: #111;
 }
@@ -3889,6 +3951,9 @@ tr.is-mp-lock {
         border-radius: 14px;
         background: var(--mg-green);
     }
+    .pk-prenos-step button,
+    .pk-prenos-step input { height: 52px; }
+    .pk-prenos-clear { border-radius: 12px; }
     .pk-scan-only .pk-scan-home {
         min-height: auto;
         flex: 1;

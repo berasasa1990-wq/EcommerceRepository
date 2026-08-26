@@ -3648,3 +3648,182 @@ function initPopisPage() {
 
     focusQuery();
 }
+
+(function initPrenosPick() {
+    var root = document.getElementById('pkPrenosApp');
+    if (!root) return;
+    var need = parseInt(root.getAttribute('data-need') || '0', 10) || 0;
+    var itemId = root.getAttribute('data-item-id') || '';
+    var loc = root.getAttribute('data-loc') || '';
+    var codes = [];
+    try {
+        codes = JSON.parse((document.getElementById('pkPrenosCodes') || {}).textContent || '[]') || [];
+    } catch (err) { codes = []; }
+    codes = codes.map(function (c) { return String(c || '').replace(/\s+/g, '').toLowerCase(); }).filter(Boolean);
+    var gotEl = document.getElementById('pkPrenosGot');
+    var viewEl = document.getElementById('pkPrenosQtyView');
+    var ofEl = document.getElementById('pkPrenosQtyOf');
+    var pickJson = document.getElementById('pkPrenosPickJson');
+    var form = document.getElementById('pkPrenosForm');
+    var validBtn = document.getElementById('pkPrenosValid');
+    var scan = document.getElementById('pkPrenosScan');
+    var msg = document.getElementById('pkPrenosMsg');
+    var minus = document.getElementById('pkPrenosMinus');
+    var plus = document.getElementById('pkPrenosPlus');
+    var clearBtn = document.getElementById('pkPrenosClear');
+    var got = need;
+
+    function showMsg(text, ok) {
+        if (!msg) return;
+        if (!text) { msg.hidden = true; return; }
+        msg.hidden = false;
+        msg.textContent = text;
+        msg.classList.toggle('is-ok', !!ok);
+    }
+    function clampGot(value) {
+        var n = parseInt(value, 10);
+        if (isNaN(n)) n = 0;
+        return Math.max(0, Math.min(need, n));
+    }
+    function payload() {
+        return [{
+            key: itemId ? (itemId + ':' + loc) : loc,
+            item_id: itemId,
+            loc: loc,
+            got: got,
+            need: need,
+            done: got > 0,
+        }];
+    }
+    function sync() {
+        if (gotEl) gotEl.value = String(got);
+        if (viewEl) viewEl.textContent = String(got);
+        if (ofEl) ofEl.textContent = need ? ('od ' + need) : '';
+        if (pickJson) pickJson.value = JSON.stringify(payload());
+        if (validBtn) validBtn.disabled = got < 1;
+        if (gotEl) {
+            gotEl.min = need ? '1' : '0';
+            gotEl.max = String(need || 0);
+        }
+    }
+    function setGot(value, fromScan) {
+        got = clampGot(value);
+        sync();
+        if (fromScan) showMsg(got >= need && need > 0 ? 'Sve pokupljeno.' : 'Sken OK', true);
+    }
+    function applyScan(code) {
+        var value = String(code || '').replace(/\s+/g, '').toLowerCase();
+        if (!value) return;
+        if (!codes.length) {
+            showMsg('Artikal nema šifru/barkod za sken.');
+            return;
+        }
+        if (codes.indexOf(value) === -1) {
+            showMsg('Pogrešan artikal.');
+            return;
+        }
+        if (got >= need && need > 0) {
+            showMsg('Sve pokupljeno.', true);
+            return;
+        }
+        setGot(got + 1, true);
+    }
+
+    if (minus) minus.addEventListener('click', function () { setGot(got - 1); showMsg(''); });
+    if (plus) plus.addEventListener('click', function () { setGot(got + 1); showMsg(''); });
+    if (gotEl) {
+        gotEl.addEventListener('change', function () { setGot(gotEl.value); });
+        gotEl.addEventListener('input', function () { setGot(gotEl.value); });
+    }
+    if (scan) {
+        function consumeScan() {
+            var value = (scan.value || '').trim();
+            if (!value) return;
+            applyScan(value);
+            scan.value = '';
+        }
+        scan.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            consumeScan();
+        });
+        scan.addEventListener('change', consumeScan);
+        scan.addEventListener('mg-scanned', function (event) {
+            applyScan((event.detail && event.detail.code) || scan.value);
+            scan.value = '';
+        });
+        scan.addEventListener('input', function () {
+            var value = scan.value.trim();
+            if (value.length < 3) return;
+            window.clearTimeout(scan._pkTimer);
+            scan._pkTimer = window.setTimeout(function () {
+                if (scan.value.trim() !== value) return;
+                applyScan(value);
+                scan.value = '';
+            }, 60);
+        });
+    }
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            sync();
+            if (got < 1) {
+                event.preventDefault();
+                showMsg('Unesi količinu za prenos ili ukloni iz lokacije.');
+                return;
+            }
+            var msgText = got < need
+                ? 'Prenijeti ' + got + ' od ' + need + ' kom? Višak ostaje na lokaciji.'
+                : 'Validatovati prenos u MP? Skida se sa stanja.';
+            if (!window.confirm(msgText)) event.preventDefault();
+        });
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            if (!itemId || !loc) return;
+            var password = window.prompt(
+                'Artikal fizički nema na lokaciji ' + loc + '.\n\n' +
+                'Ukloniti iz lokacije — skinuti svu zalihu ovog artikla sa te lokacije.\n' +
+                'Unesi šifru:'
+            );
+            if (password === null) return;
+            if (String(password).trim() !== 'admin') {
+                window.alert('Pogrešna šifra.');
+                return;
+            }
+            clearBtn.disabled = true;
+            var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+            var body = new URLSearchParams();
+            body.set('action', 'pick_ocisti');
+            body.set('item_id', String(itemId));
+            body.set('loc', loc);
+            body.set('lozinka', String(password).trim());
+            if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
+            fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrf ? csrf.value : '',
+                },
+                body: body,
+                credentials: 'same-origin',
+            }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+              .then(function (result) {
+                  if (!result.data || !result.data.ok) {
+                      clearBtn.disabled = false;
+                      window.alert((result.data && result.data.error) || 'Lokacija nije očišćena.');
+                      return;
+                  }
+                  if (result.data.redirect) {
+                      window.location.href = result.data.redirect;
+                      return;
+                  }
+                  window.location.reload();
+              }).catch(function () {
+                  clearBtn.disabled = false;
+                  window.alert('Lokacija nije očišćena.');
+              });
+        });
+    }
+    sync();
+    if (scan) window.setTimeout(function () { scan.focus(); }, 40);
+})();

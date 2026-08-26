@@ -273,6 +273,7 @@
                 <tr>
                     <th>DATUM</th>
                     <th>TIP</th>
+                    <th>KUPAC</th>
                     <th>LOKACIJA</th>
                     <th class="num">KOLIČINA</th>
                     <th>NAPOMENA</th>
@@ -283,6 +284,7 @@
                 <tr>
                     <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
                     <td>{{ m.get_tip_display }}</td>
+                    <td>{% if m.kupac_label %}{{ m.kupac_label }}{% else %}—{% endif %}</td>
                     <td>
                         {{ m.location.sifra }}
                         {% if m.to_location %} → {{ m.to_location.sifra }}{% endif %}
@@ -293,7 +295,7 @@
                     <td>{{ m.napomena|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" class="mg-muted">Nema kretanja.</td></tr>
+                <tr><td colspan="6" class="mg-muted">Nema kretanja.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
