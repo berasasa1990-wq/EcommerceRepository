@@ -3049,6 +3049,9 @@ class MagacinViewTests(TestCase):
         stock2 = WarehouseStock.objects.get(product=self.product, location=loc2)
         self.assertEqual(stock2.kolicina, 5)
         self.assertEqual(stock2.rezervisano, 3)
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.na_stanju)
+        self.assertEqual(self.product.stanje, 5)
         other_stock = WarehouseStock.objects.get(product=other, location=loc)
         self.assertEqual(other_stock.kolicina, 4)
         move = WarehouseMovement.objects.filter(
@@ -3874,8 +3877,50 @@ class MagacinViewTests(TestCase):
         self.assertEqual(stock.kolicina, 0)
         self.assertEqual(stock.rezervisano, 0)
         self.assertEqual(self.product.stanje, 0)
+        self.assertFalse(self.product.na_stanju)
         other_stock = WarehouseStock.objects.get(product=other, location=loc)
         self.assertEqual(other_stock.kolicina, 4)
+
+    def test_pick_ocisti_keeps_on_site_when_other_location_has_qty(self):
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
+        if mp is None:
+            mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        apply_movement(product=self.product, location=mp, tip='prijem', kolicina=2)
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ocisti Ostaje',
+            'telefon': '061505051',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Ocisti Ostaje')
+        item = order.stavke.get()
+        cleared = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {
+                'action': 'pick_ocisti',
+                'item_id': str(item.pk),
+                'loc': 'T-1',
+                'lozinka': 'admin',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(cleared.status_code, 200)
+        self.assertTrue(cleared.json().get('ok'))
+        self.assertIn('ostaje na sajtu', (cleared.json().get('message') or '').casefold())
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.kolicina, 0)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            2,
+        )
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.na_stanju)
+        self.assertEqual(self.product.stanje, 2)
 
     def test_location_click_lists_articles(self):
         self.client.force_login(self.user)

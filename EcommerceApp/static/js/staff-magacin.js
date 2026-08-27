@@ -3237,7 +3237,8 @@ function initArticleScanner() {
         if (!loc) return;
         var password = window.prompt(
             'Artikal fizički nema na lokaciji ' + loc + '.\n\n' +
-            'Očistiti lokaciju — skinuti svu zalihu ovog artikla sa te lokacije.\n' +
+            'Očistiti lokaciju — količine ovog artikla na TOJ lokaciji idu na 0. ' +
+            'Druge lokacije se ne diraju. Sa sajta ide tek ako nema ništa nigdje.\n' +
             'Unesi šifru:'
         );
         if (password === null) return;
@@ -4476,7 +4477,8 @@ function initPopisPage() {
             if (!itemId || !loc) return;
             var password = window.prompt(
                 'Artikal fizički nema na lokaciji ' + loc + '.\n\n' +
-                'Ukloniti iz lokacije — skinuti svu zalihu ovog artikla sa te lokacije.\n' +
+                'Ukloniti iz lokacije — količine ovog artikla na TOJ lokaciji idu na 0. ' +
+                'Druge lokacije se ne diraju. Sa sajta ide tek ako nema ništa nigdje.\n' +
                 'Unesi šifru:'
             );
             if (password === null) return;

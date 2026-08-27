@@ -4764,9 +4764,10 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
 
 @transaction.atomic
 def clear_pick_location_stock(order, item, *, loc, user=None):
-    """Usputni popis na pickingu: skini svu zalihu tog artikla sa te lokacije.
+    """Usputni popis: količine ovog artikla na toj lokaciji na 0.
 
-    Stavka ostaje na narudžbi. Ako ima zalihe drugdje, rezervacija se prebaci.
+    Druge lokacije se ne diraju. Sa sajta ide tek ako UKUPNO (sve lokacije + MP) padne na 0.
+    Stavka ostaje na narudžbi; rezervacija se prebaci ako ima zalihe drugdje.
     """
     _assert_order_open(order)
     if item.narudzba_id != order.pk:
@@ -4807,6 +4808,7 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
             stock.kolicina = 0
             stock.rezervisano = 0
             stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
+            refresh_catalog_qty(product)
 
     hold_q = Q(**_hold_variation_filter(variation))
     if sell_variation != variation:
@@ -4838,11 +4840,13 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
         )
         relocated = this_qty - leftover
 
+    refresh_catalog_qty(product)
     _clear_pick_state_for_item(order, item.pk)
     return {
         'cleared': cleared,
         'relocated': relocated,
         'loc': location.sifra or loc,
+        'on_site': bool(getattr(product, 'na_stanju', False)),
     }
 
 

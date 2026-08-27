@@ -4862,6 +4862,10 @@ def magacin_pakuj_detail(request, broj):
                 return redirect('staff_magacin_pakuj_detail', broj=order.broj)
             loc_label = result.get('loc') or loc
             cancelled = False
+            product = item.artikal
+            if product is not None:
+                product.refresh_from_db(fields=['na_stanju', 'stanje'])
+            still_on_site = bool(product and product.na_stanju)
             if prenos_mp and not result.get('relocated'):
                 try:
                     cancel_order_stock(order, user=request.user)
@@ -4871,19 +4875,20 @@ def magacin_pakuj_detail(request, broj):
                     order.save(update_fields=['lager_status', 'status'])
                 cancelled = True
                 message = (
-                    f'Lokacija {loc_label} očišćena — artikal je skinut s lokacije, '
-                    'prenos u MP je uklonjen.'
+                    f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0. '
+                    'Prenos u MP je uklonjen.'
                 )
             elif result.get('relocated'):
                 message = (
-                    f'Lokacija {loc_label} očišćena — zaliha artikla je skinuta, '
+                    f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0, '
                     'rezervacija prebačena na drugu lokaciju.'
                 )
             else:
-                message = (
-                    f'Lokacija {loc_label} očišćena — zaliha artikla je skinuta '
-                    '(usputni popis).'
-                )
+                message = f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0.'
+            if still_on_site:
+                message += ' Artikal ostaje na sajtu.'
+            else:
+                message += ' Nema ga ni na jednoj lokaciji — Nije na stanju, skinut sa sajta.'
             if _pakuj_is_ajax(request):
                 payload = {
                     'ok': True,
