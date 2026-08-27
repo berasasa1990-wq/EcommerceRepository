@@ -3761,6 +3761,7 @@ function initPopisPage() {
     var qtyName = document.getElementById('ppQtyName');
     var qtySifra = document.getElementById('ppQtySifra');
     var qtySave = document.getElementById('ppQtySave');
+    var qtyExpected = document.getElementById('ppQtyExpected');
     var csrfEl = addForm && addForm.querySelector('[name=csrfmiddlewaretoken]');
     var csrf = csrfEl ? csrfEl.value : '';
     var popisIdEl = addForm && addForm.querySelector('[name=popis_id]');
@@ -3776,6 +3777,58 @@ function initPopisPage() {
     var editId = 0;
     var pendingItem = null;
 
+    function csrfToken() {
+        var el = root.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : csrf;
+    }
+    function currentPopisId() {
+        return (popisIdEl && popisIdEl.value) || root.getAttribute('data-popis-id') || '';
+    }
+    function toggleCheck(id, checked) {
+        var body = new URLSearchParams();
+        body.set('action', 'cekiraj');
+        body.set('csrfmiddlewaretoken', csrfToken());
+        if (currentPopisId()) body.set('popis_id', currentPopisId());
+        body.set('stavka_id', String(id));
+        body.set('cekirano', checked ? '1' : '0');
+        fetch(window.location.pathname, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: body,
+            credentials: 'same-origin',
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            var ready = !!(data && data.all_checked);
+            var btn = document.getElementById('ppPrintBtn');
+            var hint = document.getElementById('ppPrintHint');
+            if (btn) {
+                btn.setAttribute('aria-disabled', ready ? 'false' : 'true');
+                btn.classList.toggle('is-disabled', !ready);
+            }
+            if (hint) hint.hidden = ready;
+        }).catch(function () {});
+    }
+    if (list) {
+        list.addEventListener('change', function (event) {
+            var box = event.target.closest('[data-pp-check]');
+            if (!box) return;
+            var rowEl = box.closest('li[data-id]');
+            if (!rowEl) return;
+            toggleCheck(rowEl.getAttribute('data-id'), box.checked);
+            rowEl.classList.toggle('is-checked', box.checked);
+        });
+        list.addEventListener('click', function (event) {
+            var btn = event.target.closest('#ppPrintBtn, a[aria-disabled="true"]');
+            if (!btn || btn.id !== 'ppPrintBtn') return;
+            if (btn.getAttribute('aria-disabled') === 'true') event.preventDefault();
+        });
+    }
+    var printBtn = document.getElementById('ppPrintBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function (event) {
+            if (printBtn.getAttribute('aria-disabled') === 'true') event.preventDefault();
+        });
+    }
+
     var pause = document.getElementById('ppPauseForm');
     if (pause) {
         pause.addEventListener('submit', function (event) {
@@ -3785,7 +3838,7 @@ function initPopisPage() {
     var finish = document.getElementById('ppFinishForm');
     if (finish) {
         finish.addEventListener('submit', function (event) {
-            if (!window.confirm('Završiti popis?')) event.preventDefault();
+            if (!window.confirm('Potvrdi popis? Količine na odabranoj lokaciji postavit će se na popisane. Ako se poklapaju, ostaje tačna količina.')) event.preventDefault();
         });
     }
     var del = document.getElementById('ppDeleteForm');
@@ -3845,17 +3898,34 @@ function initPopisPage() {
         });
     }
 
+    function fmtDiff(n) {
+        var v = Number(n) || 0;
+        return (v > 0 ? '+' : '') + String(v);
+    }
+
     function render(highlightId) {
         if (!stavke.length) {
             list.innerHTML = '<li class="is-empty">Još nema stavki. Skeniraj barkod ili unesi artikal.</li>';
         } else {
             list.innerHTML = stavke.map(function (row) {
                 var flash = highlightId && Number(row.id) === Number(highlightId) ? ' is-flash' : '';
-                return '<li class="' + flash + '" data-id="' + row.id + '" data-qty="' + row.kolicina + '">' +
+                var expected = Number(row.ocekivano) || 0;
+                var counted = Number(row.kolicina) || 0;
+                var diff = row.razlika != null ? Number(row.razlika) : (counted - expected);
+                var tone = diff === 0 ? ' is-match' : (diff > 0 ? ' is-over' : ' is-under');
+                var checked = row.cekirano ? ' is-checked' : '';
+                var diffCls = diff === 0 ? 'is-ok' : 'is-diff';
+                return '<li class="' + flash + tone + checked + '" data-id="' + row.id + '" data-qty="' + counted + '">' +
+                    '<label class="pp-check"><input type="checkbox" data-pp-check' + (row.cekirano ? ' checked' : '') + ' aria-label="Čekiraj"></label>' +
                     '<div class="pp-line-info"><strong>' + esc(row.naziv) + '</strong><span>' + esc(row.sifra || '—') + '</span></div>' +
+                    '<div class="pp-counts">' +
+                    '<span class="pp-count-box">Na stanju <b>' + expected + '</b></span>' +
+                    '<span class="pp-count-box is-got">Popisano <b>' + counted + '</b></span>' +
+                    '<span class="pp-count-box ' + diffCls + '">Razlika <b>' + fmtDiff(diff) + '</b></span>' +
+                    '</div>' +
                     '<div class="pp-step">' +
                     '<button type="button" class="pp-step-btn" data-pp-delta="-1" aria-label="Smanji">−</button>' +
-                    '<button type="button" class="pp-step-qty" data-pp-edit>' + esc(row.kolicina) + '</button>' +
+                    '<button type="button" class="pp-step-qty" data-pp-edit>' + esc(counted) + '</button>' +
                     '<button type="button" class="pp-step-btn" data-pp-delta="1" aria-label="Povećaj">+</button>' +
                     '</div></li>';
             }).join('');
@@ -4022,7 +4092,7 @@ function initPopisPage() {
             if (commit) {
                 if (hit || (data.exact && rows.length === 1)) {
                     hideSuggest();
-                    askQty(hit || rows[0]);
+                    addItem(hit || rows[0], 1);
                     return;
                 }
                 if (rows.length === 1) {
@@ -4047,21 +4117,32 @@ function initPopisPage() {
 
     function closeQty() {
         if (modal) modal.hidden = true;
+        document.body.classList.remove('pp-qty-open');
         editId = 0;
         pendingItem = null;
         focusQuery();
     }
 
-    function showQtyModal(name, sifra, qty, saveLabel) {
+    function showQtyModal(name, sifra, qty, saveLabel, expected) {
         if (!modal) return;
         if (qtyName) qtyName.textContent = name || 'Količina';
         if (qtySifra) qtySifra.textContent = sifra || '';
+        if (qtyExpected) {
+            if (expected == null || expected === '') {
+                qtyExpected.hidden = true;
+                qtyExpected.textContent = '';
+            } else {
+                qtyExpected.hidden = false;
+                qtyExpected.innerHTML = 'Na stanju <b>' + esc(expected) + '</b>';
+            }
+        }
         if (qtyInput) {
             qtyInput.min = pendingItem ? '1' : '0';
             qtyInput.value = String(qty == null ? 1 : qty);
         }
         if (qtySave) qtySave.textContent = saveLabel || 'Ubaci';
         modal.hidden = false;
+        document.body.classList.add('pp-qty-open');
         window.setTimeout(function () {
             if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
         }, 40);
@@ -4071,14 +4152,18 @@ function initPopisPage() {
         if (!item) return;
         pendingItem = item;
         editId = 0;
-        showQtyModal(item.naziv, item.sifra, 1, 'Ubaci');
+        var existing = stavke.filter(function (row) {
+            return Number(row.id) && item.sifra && String(row.sifra || '') === String(item.sifra || '');
+        })[0];
+        var expected = existing ? existing.ocekivano : null;
+        showQtyModal(item.naziv, item.sifra, 1, 'Ubaci', expected);
     }
 
     function openQty(row) {
         if (!row) return;
         pendingItem = null;
         editId = row.id;
-        showQtyModal(row.naziv, row.sifra, row.kolicina || 1, 'Sačuvaj');
+        showQtyModal(row.naziv, row.sifra, row.kolicina || 1, 'Sačuvaj', row.ocekivano);
     }
 
     function readModalQty() {

@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260826ponudaListBtn">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260827popisPhone">
 {% endblock %}
 
 {% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% endblock %}
@@ -50,6 +50,10 @@
             <a href="{% url 'staff_magacin_zalihe' %}" class="{% if magacin_section == 'zalihe' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
                 Zalihe
+            </a>
+            <a href="{% url 'staff_magacin_mp_dnevno' %}" class="{% if magacin_section == 'mp_dnevno' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
+                Dnevno skidanje MP lagera
             </a>
             <a href="{% url 'staff_magacin_transferi' %}" class="{% if magacin_section == 'transferi' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 7h13v10H2z"/><path d="M15 10h4l3 3v4h-7"/><circle cx="6.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></svg>
@@ -254,6 +258,6 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260826ponudaVat"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260827popisPhone"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

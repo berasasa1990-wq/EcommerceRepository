@@ -12,7 +12,6 @@ from pathlib import Path
 from django.conf import settings
 from django.utils import timezone
 
-BACKUP_KEEP = 30
 BACKUP_NAME_RE = re.compile(r'^(db|postgres)-(\d{8})-(\d{6})\.(sqlite3|dump)$')
 
 
@@ -204,16 +203,6 @@ def _restore_postgres(src_path: Path) -> None:
         ) from exc
 
 
-def _prune(root: Path, *, keep: int = BACKUP_KEEP, protect: set[str] | None = None) -> None:
-    protect = protect or set()
-    files = [p for p in root.iterdir() if p.is_file() and BACKUP_NAME_RE.match(p.name)]
-    files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    for extra in files[max(0, int(keep)):]:
-        if extra.name in protect:
-            continue
-        extra.unlink(missing_ok=True)
-
-
 def _info(path: Path) -> dict:
     created = _parse_created(path.name, path)
     return {
@@ -226,7 +215,7 @@ def _info(path: Path) -> dict:
     }
 
 
-def create_backup(*, out_dir: Path | str | None = None, keep: int = BACKUP_KEEP, protect=None) -> dict:
+def create_backup(*, out_dir: Path | str | None = None, keep=None, protect=None) -> dict:
     root = Path(out_dir).expanduser().resolve() if out_dir else backup_root()
     root.mkdir(parents=True, exist_ok=True)
     kind = engine_kind()
@@ -241,7 +230,6 @@ def create_backup(*, out_dir: Path | str | None = None, keep: int = BACKUP_KEEP,
         _backup_sqlite(dest)
     else:
         _backup_postgres(dest)
-    _prune(root, keep=keep, protect=set(protect or ()))
     return _info(dest)
 
 

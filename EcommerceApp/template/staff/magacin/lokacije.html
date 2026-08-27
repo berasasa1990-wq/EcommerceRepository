@@ -56,7 +56,10 @@
         {% if selected_location %}
         <div class="mg-card-head">
             <h2 class="mg-h">Artikli u {{ selected_location.label }}</h2>
-            <a class="mg-btn" href="{% url 'staff_magacin_lokacije' %}">Zatvori</a>
+            <div class="mg-toolbar-actions">
+                <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_lokacija_stampa' selected_location.pk %}" target="_blank">Štampaj popis</a>
+                <a class="mg-btn" href="{% url 'staff_magacin_lokacije' %}">Zatvori</a>
+            </div>
         </div>
         <p class="mg-muted" style="margin:-4px 0 12px;">Klikni artikal da skineš količinu s ove lokacije.</p>
         <div class="mg-table-wrap">

@@ -5316,6 +5316,13 @@ class MagacinPopis(models.Model):
         ZAVRSEN = 'zavrsen', 'Završen'
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.U_TOKU, db_index=True)
+    location = models.ForeignKey(
+        'WarehouseLocation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='popisi',
+    )
     kreiran = models.DateTimeField(auto_now_add=True)
     azuriran = models.DateTimeField(auto_now=True)
     zavrsen_at = models.DateTimeField(null=True, blank=True)
@@ -5354,7 +5361,9 @@ class MagacinPopisStavka(models.Model):
     )
     naziv = models.CharField(max_length=200)
     sifra = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
+    ocekivano = models.PositiveIntegerField(default=0)
     kolicina = models.PositiveIntegerField(default=1)
+    cekirano = models.BooleanField(default=False)
     redoslijed = models.PositiveIntegerField(default=0)
     kreiran = models.DateTimeField(auto_now_add=True)
 
@@ -5568,6 +5577,61 @@ class MagacinPonudaStavka(models.Model):
 
     def __str__(self):
         return f'{self.naziv} × {self.kolicina}'
+
+
+class MagacinMpDnevnoSkidanje(models.Model):
+    kreiran = models.DateTimeField(auto_now_add=True, db_index=True)
+    datum = models.DateField(null=True, blank=True, db_index=True)
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='mp_dnevna_skidanja',
+    )
+    fajl = models.FileField(upload_to='magacin/mp_dnevno/', blank=True)
+    fajl_naziv = models.CharField(max_length=200, blank=True)
+    raw_text = models.TextField(blank=True)
+    skinuto_stavki = models.PositiveIntegerField(default=0)
+    skinuto_komada = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Dnevno skidanje MP lagera'
+        verbose_name_plural = 'Dnevna skidanja MP lagera'
+        ordering = ['-datum', '-kreiran', '-id']
+
+    def __str__(self):
+        if self.datum:
+            return f'MP skidanje {self.datum:%d.%m.%Y}'
+        return f'MP skidanje {self.kreiran:%d.%m.%Y %H:%M}'
+
+
+class MagacinMpDnevnoStavka(models.Model):
+    skidanje = models.ForeignKey(
+        MagacinMpDnevnoSkidanje, on_delete=models.CASCADE, related_name='stavke',
+    )
+    product = models.ForeignKey(
+        'Product', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='mp_dnevno_stavke',
+    )
+    variation = models.ForeignKey(
+        'ProductVariation', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='mp_dnevno_stavke',
+    )
+    sifra = models.CharField(max_length=SIFRA_MAX_LENGTH)
+    naziv = models.CharField(max_length=200, blank=True)
+    trazeno = models.PositiveIntegerField(default=0)
+    kolicina = models.PositiveIntegerField(default=0)
+    lokacija = models.CharField(max_length=300, blank=True)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Stavka dnevnog MP skidanja'
+        verbose_name_plural = 'Stavke dnevnog MP skidanja'
+        ordering = ['id']
+
+    def __str__(self):
+        return f'{self.sifra} × {self.kolicina}'
 
 
 class ProductWarehouseMeta(models.Model):

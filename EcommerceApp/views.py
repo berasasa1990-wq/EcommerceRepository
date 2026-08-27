@@ -7708,6 +7708,137 @@ def staff_product_quick_edit(request, slug):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+@require_POST
+def staff_product_bulk_edit(request):
+    if not _staff_edit_mode_enabled(request):
+        return JsonResponse({'ok': False, 'error': 'Edit mode je isključen.'}, status=403)
+    if 'application/json' in (request.content_type or ''):
+        try:
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return JsonResponse({'ok': False, 'error': 'Neispravan zahtjev.'}, status=400)
+        if not isinstance(payload, dict):
+            return JsonResponse({'ok': False, 'error': 'Neispravan zahtjev.'}, status=400)
+        raw_ids = payload.get('product_ids') or []
+    else:
+        payload = request.POST
+        raw_ids = request.POST.getlist('product_ids')
+    ids = []
+    seen = set()
+    for raw in raw_ids:
+        try:
+            pk = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if pk <= 0 or pk in seen:
+            continue
+        seen.add(pk)
+        ids.append(pk)
+        if len(ids) >= 200:
+            break
+    if not ids:
+        return JsonResponse({'ok': False, 'error': 'Odaberi artikle.'}, status=400)
+
+    updates = {}
+    raw_cat = str(payload.get('kategorija_id') or '').strip()
+    if raw_cat:
+        try:
+            category = Category.objects.filter(pk=int(raw_cat)).first()
+        except (TypeError, ValueError):
+            category = None
+        if category is None:
+            return JsonResponse({'ok': False, 'error': 'Kategorija nije pronađena.'}, status=400)
+        updates['kategorija'] = category
+
+    raw_brand = str(payload.get('brend_id') or '').strip()
+    if raw_brand:
+        try:
+            brand = Brand.objects.filter(pk=int(raw_brand)).first()
+        except (TypeError, ValueError):
+            brand = None
+        if brand is None:
+            return JsonResponse({'ok': False, 'error': 'Brend nije pronađen.'}, status=400)
+        updates['brend'] = brand
+
+    if 'opis' in payload:
+        opis = str(payload.get('opis') or '').strip()
+        if opis:
+            updates['opis'] = opis
+
+    raw_pct = str(payload.get('akcija_postotak') or '').strip().replace(',', '.')
+    if raw_pct:
+        try:
+            pct = Decimal(raw_pct)
+        except (InvalidOperation, ValueError):
+            return JsonResponse({'ok': False, 'error': 'Unesi ispravan akcijski % (npr. 15).'}, status=400)
+        if pct < 0 or pct >= 100:
+            return JsonResponse({'ok': False, 'error': 'Akcijski % mora biti između 0 i 100.'}, status=400)
+        if pct == 0:
+            updates['akcija_postotak'] = None
+            updates['akcijska_cijena'] = None
+        else:
+            updates['akcija_postotak'] = pct.quantize(Decimal('0.01'))
+            updates['akcijska_cijena'] = None
+
+    raw_hit = str(payload.get('je_hit') or '').strip().lower()
+    if raw_hit in ('1', 'true', 'on', 'da', 'yes'):
+        updates['je_hit'] = True
+    elif raw_hit in ('0', 'false', 'off', 'ne', 'no'):
+        updates['je_hit'] = False
+
+    per_opis = {}
+    per_slika = {}
+    files = getattr(request, 'FILES', None)
+    for pk in ids:
+        raw_item_opis = str(payload.get(f'opis_{pk}') or '').strip()
+        if raw_item_opis:
+            per_opis[pk] = raw_item_opis
+        uploaded = files.get(f'slika_{pk}') if files is not None else None
+        if not uploaded:
+            continue
+        if not _staff_upload_is_image(uploaded):
+            return JsonResponse({'ok': False, 'error': 'Slika mora biti slika.'}, status=400)
+        per_slika[pk] = uploaded
+
+    if not updates and not per_opis and not per_slika:
+        return JsonResponse({'ok': False, 'error': 'Unesi barem jedno polje.'}, status=400)
+
+    products = list(Product.objects.filter(pk__in=ids))
+    if not products:
+        return JsonResponse({'ok': False, 'error': 'Artikli nisu pronađeni.'}, status=400)
+    for product in products:
+        for field, value in updates.items():
+            setattr(product, field, value)
+        if product.pk in per_opis:
+            product.opis = per_opis[product.pk]
+        if product.pk in per_slika:
+            product.slika = per_slika[product.pk]
+        product.save()
+    parts = []
+    if 'kategorija' in updates:
+        parts.append('kategorija')
+    if 'brend' in updates:
+        parts.append('brend')
+    if 'opis' in updates or per_opis:
+        parts.append('opis')
+    if per_slika:
+        parts.append('slika')
+    if 'akcija_postotak' in updates:
+        if updates['akcija_postotak'] is None:
+            parts.append('akcija skinuta')
+        else:
+            parts.append(f'akcijski {updates["akcija_postotak"]}%')
+    if 'je_hit' in updates:
+        parts.append('HIT ponuda ' + ('uključeno' if updates['je_hit'] else 'isključeno'))
+    return JsonResponse({
+        'ok': True,
+        'count': len(products),
+        'message': f'Primijenjeno na {len(products)} artikal(a): {", ".join(parts)}.',
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 @require_GET
 def staff_category_search(request):
     query = request.GET.get('q', '').strip()

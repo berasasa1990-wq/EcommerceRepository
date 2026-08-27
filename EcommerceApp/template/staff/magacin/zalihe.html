@@ -3,6 +3,9 @@
 {% block magacin_content %}
 <div class="mg-toolbar">
     <h1>Zalihe</h1>
+    {% if selected_location %}
+    <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_lokacija_stampa' selected_location %}" target="_blank">Štampaj popis</a>
+    {% endif %}
     <form method="get" class="mg-page-search" style="margin:0;max-width:420px;flex:1;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
         <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Artikal, šifra, barkod..." autocomplete="off">
@@ -31,6 +34,7 @@
         <thead>
             <tr>
                 <th>ARTIKAL</th>
+                <th>ŠIFRA</th>
                 <th>LOKACIJA</th>
                 <th class="num">NA STANJU</th>
                 <th class="num">REZ.</th>
@@ -44,13 +48,14 @@
                     <strong>{{ row.product.naziv }}</strong>
                     {% if row.variation %}<div class="mg-muted">{{ row.variation.naziv }}</div>{% endif %}
                 </td>
+                <td>{{ row.variation.sifra|default:row.product.sifra|default:"—" }}</td>
                 <td>{{ row.location.label }}</td>
                 <td class="num">{{ row.kolicina }}</td>
                 <td class="num">{{ row.rezervisano }}</td>
                 <td class="num num-ok">{{ row.dostupno }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="mg-muted">Nema zaliha za ovaj filter.</td></tr>
+            <tr><td colspan="6" class="mg-muted">Nema zaliha za ovaj filter.</td></tr>
             {% endfor %}
         </tbody>
     </table>

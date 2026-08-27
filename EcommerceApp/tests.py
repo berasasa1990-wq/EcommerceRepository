@@ -997,6 +997,66 @@ class StaffStorefrontEditModeTests(TestCase):
             reverse('staff_magacin_brzi_unos_aktivacija', args=[self.incomplete.pk]),
         )
 
+    def test_edit_mode_bulk_applies_only_filled_fields(self):
+        import json
+        from django.urls import reverse
+
+        from .models import Brand
+
+        brand = Brand.objects.create(naziv='Fox Bulk', slug='fox-bulk')
+        self.client.force_login(self.admin)
+        blocked = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            data=json.dumps({'product_ids': [self.complete.pk], 'je_hit': '1'}),
+            content_type='application/json',
+        )
+        self.assertEqual(blocked.status_code, 403)
+        self.client.post(reverse('staff_toggle_edit_mode'), {'enabled': '1'})
+        home = self.client.get(reverse('home'))
+        self.assertContains(home, 'id="staffBulkPanel"')
+        self.assertContains(home, reverse('staff_product_bulk_edit'))
+        empty = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            data=json.dumps({'product_ids': [self.complete.pk, self.incomplete.pk]}),
+            content_type='application/json',
+        )
+        self.assertEqual(empty.status_code, 400)
+        applied = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            data=json.dumps({
+                'product_ids': [self.complete.pk, self.incomplete.pk],
+                'brend_id': str(brand.pk),
+                'akcija_postotak': '20',
+                'je_hit': '1',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(applied.status_code, 200)
+        payload = applied.json()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(payload['count'], 2)
+        self.complete.refresh_from_db()
+        self.incomplete.refresh_from_db()
+        self.assertEqual(self.complete.brend_id, brand.pk)
+        self.assertEqual(self.incomplete.brend_id, brand.pk)
+        self.assertEqual(self.complete.opis, 'Ima opis.')
+        self.assertEqual(self.incomplete.kategorija_id, None)
+        self.assertTrue(self.complete.je_hit)
+        self.assertTrue(self.incomplete.je_hit)
+        self.assertEqual(self.complete.akcija_postotak, Decimal('20.00'))
+        self.assertEqual(self.incomplete.akcija_postotak, Decimal('20.00'))
+        per_item = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            {
+                'product_ids': str(self.incomplete.pk),
+                f'opis_{self.incomplete.pk}': 'Veći opis s ChatGPT-a.',
+            },
+        )
+        self.assertEqual(per_item.status_code, 200)
+        self.assertTrue(per_item.json()['ok'])
+        self.incomplete.refresh_from_db()
+        self.assertEqual(self.incomplete.opis, 'Veći opis s ChatGPT-a.')
+
 
 class StaffLiveAlertTests(TestCase):
     def test_only_purchase_creates_live_event(self):

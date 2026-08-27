@@ -48,9 +48,16 @@
                 <span>{{ row.location.sifra }}</span>
                 <b>{{ row.dostupno }}</b>
             </li>
-            {% empty %}
-            <li class="is-empty">Nema zalihe</li>
             {% endfor %}
+            {% for row in mp_location_rows %}
+            <li class="is-mp">
+                <span>{{ row.location.sifra }} · MP</span>
+                <b>{{ row.dostupno }}</b>
+            </li>
+            {% endfor %}
+            {% if not location_rows and not mp_location_rows %}
+            <li class="is-empty">Nema zalihe</li>
+            {% endif %}
         </ul>
     </div>
     <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
@@ -102,7 +109,7 @@
                 {% if totals.na_stanju <= 0 %}
                 <span class="mg-pill is-out">Nije na stanju</span>
                 {% elif product.aktivan %}
-                <span class="mg-pill">Aktivan</span>
+                <span class="mg-pill">Na stanju</span>
                 {% else %}
                 <span class="mg-pill is-off">Neaktivan</span>
                 {% endif %}
@@ -153,10 +160,23 @@
                     <td class="num num-ok mg-loc-qty">{{ row.dostupno }}</td>
                 </tr>
                 {% empty %}
+                {% if not mp_location_rows %}
                 <tr><td colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
+                {% endif %}
+                {% endfor %}
+                {% for row in mp_location_rows %}
+                <tr class="is-clickable mg-stock-row is-mp" data-mg-open-move data-mode="remove" data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}" data-qty="{{ row.kolicina }}" data-available="{{ row.dostupno }}">
+                    <td>
+                        <strong class="mg-loc-name">{{ row.location.sifra }}</strong>
+                        <span class="mg-mp-tag">Maloprodaja</span>
+                    </td>
+                    <td class="num">{{ row.kolicina }}</td>
+                    <td class="num">{{ row.rezervisano }}</td>
+                    <td class="num mg-loc-qty">{{ row.dostupno }}</td>
+                </tr>
                 {% endfor %}
             </tbody>
-            {% if location_rows %}
+            {% if location_rows or mp_location_rows %}
             <tfoot>
                 <tr>
                     <td>UKUPNO</td>
@@ -374,9 +394,13 @@
                     <select name="location_id" id="mgMoveLocation">
                         {% for row in location_rows %}
                         <option value="{{ row.location.pk }}" data-qty="{{ row.kolicina }}"{% if forloop.first %} selected{% endif %}>{{ row.location.sifra }}</option>
-                        {% empty %}
-                        <option value="" disabled>Nema lokacije sa zalihom</option>
                         {% endfor %}
+                        {% for row in mp_location_rows %}
+                        <option value="{{ row.location.pk }}" data-qty="{{ row.kolicina }}"{% if not location_rows and forloop.first %} selected{% endif %}>{{ row.location.sifra }} · MP</option>
+                        {% endfor %}
+                        {% if not location_rows and not mp_location_rows %}
+                        <option value="" disabled>Nema lokacije sa zalihom</option>
+                        {% endif %}
                     </select>
                 </div>
                 <div class="mg-field" id="mgLocAddField" hidden>

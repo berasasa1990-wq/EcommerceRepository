@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -23,9 +23,18 @@ from .magacin import (
     apply_movement,
     attach_site_odoo_products_to_magacin,
     cancel_order_stock,
+    create_prenos_mp_pick,
     deduct_for_order,
+    deduct_mp_daily_stock,
     local_odoo_template_ids,
     location_rows,
+    maloprodaja_location_rows,
+    display_stock_totals,
+    save_mp_daily_skidanje,
+    parse_mp_daily_datum,
+    parse_mp_daily_text,
+    preview_mp_daily_rows,
+    _normalize_mp_vision_text,
     magacin_products_qs,
     ponuda_totals,
     reserve_for_order,
@@ -41,6 +50,8 @@ from .magacin import (
     validate_order_stock,
 )
 from .models import (
+    MagacinMpDnevnoSkidanje,
+    MagacinMpDnevnoStavka,
     MagacinPopis,
     MagacinPonuda,
     MagacinPonudaStavka,
@@ -186,6 +197,153 @@ class MagacinStockTests(TestCase):
         self.assertEqual(stock_totals(self.product)['dostupno'], 4)
         self.assertEqual([row['location'].sifra for row in rows], ['A-10'])
         self.assertFalse(any('maloprodaja' in row['location'].naziv.casefold() for row in rows))
+        mp_rows = maloprodaja_location_rows(self.product)
+        self.assertEqual(len(mp_rows), 1)
+        self.assertEqual(mp_rows[0]['location'].sifra, 'B-03')
+        self.assertEqual(mp_rows[0]['kolicina'], 20)
+        self.assertTrue(mp_rows[0]['is_mp'])
+
+    def test_maloprodaja_only_keeps_in_stock_status(self):
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=5)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 5)
+        self.assertTrue(self.product.na_stanju)
+        self.assertEqual(stock_totals(self.product)['na_stanju'], 0)
+        self.assertEqual(display_stock_totals(self.product)['dostupno'], 5)
+
+    def test_prenos_mp_moves_qty_to_maloprodaja(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
+        order = create_prenos_mp_pick(
+            product=self.product, location=self.a10, qty=3,
+        )
+        validate_order_stock(order)
+        magacin = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        mp = WarehouseStock.objects.get(product=self.product, location=self.b03)
+        self.assertEqual(magacin.kolicina, 7)
+        self.assertEqual(magacin.rezervisano, 0)
+        self.assertEqual(mp.kolicina, 3)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 7)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 10)
+        rows, totals = location_rows(self.product)
+        self.assertEqual([row['location'].sifra for row in rows], ['A-10'])
+        self.assertEqual(totals['na_stanju'], 7)
+        mp_rows = maloprodaja_location_rows(self.product)
+        self.assertEqual(mp_rows[0]['kolicina'], 3)
+        self.assertEqual(display_stock_totals(self.product)['dostupno'], 10)
+
+    def test_prenos_all_to_mp_stays_na_stanju(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=3)
+        order = create_prenos_mp_pick(
+            product=self.product, location=self.a10, qty=3,
+        )
+        validate_order_stock(order)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 3)
+        self.assertTrue(self.product.na_stanju)
+        self.assertEqual(stock_totals(self.product)['dostupno'], 0)
+        self.assertEqual(display_stock_totals(self.product)['dostupno'], 3)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=self.b03).kolicina,
+            3,
+        )
+
+    def test_zero_ukupno_takes_product_off_site(self):
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=2)
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.na_stanju)
+        self.assertEqual(self.product.stanje, 2)
+        apply_movement(product=self.product, location=self.b03, tip='prodaja', kolicina=2)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 0)
+        self.assertFalse(self.product.na_stanju)
+
+    def test_parse_mp_daily_text_reads_sifra_and_qty(self):
+        rows = parse_mp_daily_text(
+            'Šifra\tNaziv\tKoličina\nFOX12345\tFox braid\t2\nFOX12345\tFox braid\t1\nTST-1 4'
+        )
+        by_sifra = {row['sifra']: row['qty'] for row in rows}
+        self.assertEqual(by_sifra['FOX12345'], 3)
+        self.assertEqual(by_sifra['TST-1'], 4)
+        column_rows = parse_mp_daily_text(
+            'SIFRA\tNaziv\tKolicina\nFOX12345\tFox braid\t2\nTST-1\tTest\t5'
+        )
+        by_col = {row['sifra']: row['qty'] for row in column_rows}
+        self.assertEqual(by_col['FOX12345'], 2)
+        self.assertEqual(by_col['TST-1'], 5)
+        vision = _normalize_mp_vision_text(
+            '{"stavke":[{"sifra":"FOX12345","kolicina":2},{"sifra":"TST-1","kolicina":4}]}'
+        )
+        by_vision = {row['sifra']: row['qty'] for row in parse_mp_daily_text(vision)}
+        self.assertEqual(by_vision['FOX12345'], 2)
+        self.assertEqual(by_vision['TST-1'], 4)
+        promet = parse_mp_daily_text(
+            'AS252 AS Feeder hranilica pl. 9.903.300422761541 3.00026/08/2026 0.000\n'
+            'AS252 AS Feeder hranilica pl. 6.603.300422711542 2.00026/08/2026 0.000\n'
+            '10829NP-BN-6-U10MUSTAD 6.506.50078511548 1.00026/08/2026 0.000\n'
+        )
+        by_promet = {row['sifra']: row['qty'] for row in promet}
+        self.assertEqual(by_promet['785'], 1)
+        self.assertEqual(by_promet['4227'], 5)
+        high_rbr = parse_mp_daily_text(
+            'Cline Minnow 70 Silver 4.754.7504647591533 1.00025/08/2026 0.000\n'
+            'MT14251 MATE SLIM 10.5910.5909742451533 1.00025/08/2026 0.000\n'
+            'MT14255 MATE SLIM 10.5910.5909745431534 1.00025/08/2026 0.000\n'
+        )
+        by_high = {row['sifra']: row['qty'] for row in high_rbr}
+        self.assertEqual(by_high['4647'], 1)
+        self.assertEqual(by_high['9742'], 1)
+        self.assertEqual(by_high['9745'], 1)
+        self.assertNotIn('46475', by_high)
+        self.assertNotIn('97424', by_high)
+        self.assertNotIn('97454', by_high)
+        Product.objects.create(
+            naziv='Mustad 785', sifra='785', cijena=Decimal('1.00'),
+        )
+        three_digit = parse_mp_daily_text(
+            'MUSTAD 6.506.500785121548 1.00025/08/2026 0.000\n'
+            'MUSTAD 6.506.500785131548 2.00025/08/2026 0.000\n'
+        )
+        self.assertEqual({row['sifra'] for row in three_digit}, {'785'})
+        self.assertEqual(three_digit[0]['qty'], 3)
+        self.assertEqual(
+            parse_mp_daily_datum(
+                'DATUM : 26.08.2026\n'
+                'AS252 AS Feeder hranilica pl. 9.903.300422761541 3.00026/08/2026 0.000\n'
+            ),
+            date(2026, 8, 26),
+        )
+        vision_dated = _normalize_mp_vision_text(
+            '{"datum":"26/08/2026","stavke":[{"sifra":"785","kolicina":1}]}'
+        )
+        self.assertEqual(parse_mp_daily_datum(vision_dated), date(2026, 8, 26))
+        self.assertIn('785', vision_dated)
+
+    def test_mp_daily_deducts_only_from_retail_location(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=5)
+        result = deduct_mp_daily_stock('FOX12345 2\nNEMA-XYZ 1')
+        self.assertEqual(result['taken'][0]['taken'], 2)
+        self.assertEqual(result['taken'][0]['sifra'], 'FOX12345')
+        skipped_sifre = [row['sifra'] for row in result['skipped']]
+        self.assertIn('NEMA-XYZ', skipped_sifre)
+        magacin = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        mp = WarehouseStock.objects.get(product=self.product, location=self.b03)
+        self.assertEqual(magacin.kolicina, 10)
+        self.assertEqual(mp.kolicina, 3)
+        batch = save_mp_daily_skidanje(result, raw_text='DATUM : 26.08.2026\nFOX12345 2')
+        self.assertEqual(batch.skinuto_komada, 2)
+        self.assertEqual(batch.datum, date(2026, 8, 26))
+        self.assertEqual(MagacinMpDnevnoStavka.objects.filter(skidanje=batch).count(), 1)
+        self.assertFalse(MagacinMpDnevnoStavka.objects.filter(sifra='NEMA-XYZ').exists())
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=2)
+        preview = preview_mp_daily_rows([{'sifra': 'FOX12345', 'qty': 6}])
+        self.assertEqual(preview[0]['mp_dostupno'], 5)
+        self.assertEqual(preview[0]['ostaje'], 0)
+        over = deduct_mp_daily_stock(parsed=[{'sifra': 'FOX12345', 'qty': 6}])
+        self.assertEqual(over['taken'][0]['taken'], 5)
+        mp.refresh_from_db()
+        self.assertEqual(mp.kolicina, 0)
 
     def test_seed_default_locations(self):
         created = seed_default_locations()
@@ -1108,6 +1266,104 @@ class MagacinViewTests(TestCase):
         loc = WarehouseLocation.objects.create(sifra='T-1', naziv='Test loc')
         apply_movement(product=self.product, location=loc, tip='prijem', kolicina=8)
 
+    def test_mp_daily_page_deducts_only_retail(self):
+        self.client.force_login(self.user)
+        page = self.client.get(reverse('staff_magacin_mp_dnevno'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Dnevno skidanje MP lagera')
+        self.assertContains(page, 'name="fajl"')
+        self.assertContains(page, 'Urađena skidanja')
+        self.assertContains(page, 'Još nema sačuvanih skidanja')
+        mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
+        if mp is None:
+            mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        apply_movement(product=self.product, location=mp, tip='prijem', kolicina=5)
+        mag = WarehouseLocation.objects.get(sifra='T-1')
+        from unittest.mock import patch
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake = SimpleUploadedFile('izvjestaj.png', b'not-an-image', content_type='image/png')
+        with patch(
+            'EcommerceApp.views_magacin.extract_mp_daily_text_from_upload',
+            return_value='DATUM : 26.08.2026\nŠifra\tKoličina\nTST-1\t2\nNEMA-XYZ\t1',
+        ):
+            posted = self.client.post(
+                reverse('staff_magacin_mp_dnevno'),
+                {'fajl': fake, 'action': 'ocitaj'},
+            )
+        self.assertEqual(posted.status_code, 200)
+        self.assertContains(posted, 'TST-1')
+        self.assertContains(posted, 'mg-sifra-ok')
+        self.assertContains(posted, 'NEMA-XYZ')
+        self.assertContains(posted, 'mg-sifra-bad')
+        self.assertContains(posted, 'Skini sa stanja')
+        self.assertContains(posted, 'Ukloni unos')
+        self.assertContains(posted, 'KOLIČINA U MP-u')
+        self.assertContains(posted, 'OSTAJE NA MP')
+        self.assertContains(posted, 'Datum dokumenta')
+        self.assertContains(posted, '26.08.2026')
+        self.assertContains(posted, 'još nije skinuto')
+        self.assertNotContains(posted, 'class="mg-mp-date"')
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            5,
+        )
+        skini = self.client.post(reverse('staff_magacin_mp_dnevno'), {'action': 'skini'})
+        self.assertEqual(skini.status_code, 302)
+        self.assertIn('datum=2026-08-26', skini['Location'])
+        detail = self.client.get(reverse('staff_magacin_mp_dnevno') + '?datum=2026-08-26')
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'Skidanje 26.08.2026')
+        self.assertContains(detail, 'TST-1')
+        self.assertNotContains(detail, 'NEMA-XYZ')
+        dash = self.client.get(reverse('staff_magacin_mp_dnevno'))
+        self.assertContains(dash, 'class="mg-mp-date"')
+        self.assertContains(dash, '26.08.2026')
+        self.assertTrue(MagacinMpDnevnoStavka.objects.filter(sifra='TST-1', kolicina=2).exists())
+        self.assertEqual(MagacinMpDnevnoSkidanje.objects.get().datum, date(2026, 8, 26))
+        self.assertFalse(MagacinMpDnevnoStavka.objects.filter(sifra='NEMA-XYZ').exists())
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            3,
+        )
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mag).kolicina,
+            8,
+        )
+
+    def test_mp_daily_ukloni_preview_does_not_deduct(self):
+        self.client.force_login(self.user)
+        mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
+        if mp is None:
+            mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        apply_movement(product=self.product, location=mp, tip='prijem', kolicina=5)
+        from unittest.mock import patch
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake = SimpleUploadedFile('pogresan.png', b'not-an-image', content_type='image/png')
+        with patch(
+            'EcommerceApp.views_magacin.extract_mp_daily_text_from_upload',
+            return_value='DATUM : 26.08.2026\nŠifra\tKoličina\nTST-1\t2',
+        ):
+            posted = self.client.post(
+                reverse('staff_magacin_mp_dnevno'),
+                {'fajl': fake, 'action': 'ocitaj'},
+            )
+        self.assertContains(posted, 'TST-1')
+        self.assertContains(posted, 'Ukloni unos')
+        ukloni = self.client.post(reverse('staff_magacin_mp_dnevno'), {'action': 'ukloni'})
+        self.assertEqual(ukloni.status_code, 302)
+        page = self.client.get(reverse('staff_magacin_mp_dnevno'))
+        self.assertContains(page, 'Unos je uklonjen')
+        self.assertNotContains(page, 'Prepoznato sa dokumenta')
+        self.assertNotContains(page, 'Ukloni unos')
+        self.assertNotContains(page, 'TST-1')
+        self.assertFalse(MagacinMpDnevnoStavka.objects.filter(sifra='TST-1').exists())
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            5,
+        )
+
     def test_admin_panel_has_magacin_not_carts(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse('staff_admin_panel'))
@@ -1724,12 +1980,46 @@ class MagacinViewTests(TestCase):
             response = self.client.get(reverse(name))
             self.assertEqual(response.status_code, 200, name)
 
+    def test_popis_without_location_asks_for_location(self):
+        self.client.force_login(self.user)
+        MagacinPopis.objects.create(kreirao=self.user)
+        page = self.client.get(reverse('staff_magacin_popis'))
+        self.assertContains(page, 'Prvo izaberi lokaciju')
+        self.assertContains(page, 'Šifra ili naziv lokacije')
+        self.assertNotContains(page, 'Popisuj ovu lokaciju')
+        self.assertNotContains(page, 'id="ppQuery"')
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        found = self.client.get(reverse('staff_magacin_popis'), {'q': 'T-1'})
+        self.assertContains(found, 'Popisuj ovu lokaciju')
+        self.assertContains(found, 'T-1')
+        chosen = self.client.post(reverse('staff_magacin_popis'), {
+            'action': 'novi', 'location_id': loc.pk,
+        })
+        self.assertEqual(chosen.status_code, 302)
+        popis = MagacinPopis.objects.get()
+        self.assertEqual(popis.location_id, loc.pk)
+        live = self.client.get(reverse('staff_magacin_popis'))
+        self.assertContains(live, 'Popisuješ lokaciju')
+        self.assertContains(live, 'T-1')
+        self.assertContains(live, 'id="ppQuery"')
+
     def test_popis_persists_until_delete_or_finish(self):
         self.client.force_login(self.user)
-        start = self.client.post(reverse('staff_magacin_popis'), {'action': 'novi'})
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        home = self.client.get(reverse('staff_magacin_popis'))
+        self.assertContains(home, 'Prvo izaberi lokaciju')
+        self.assertContains(home, 'Šifra ili naziv lokacije')
+        self.assertNotContains(home, 'Popisuj ovu lokaciju')
+        found = self.client.get(reverse('staff_magacin_popis'), {'q': 'T-1'})
+        self.assertContains(found, 'Popisuj ovu lokaciju')
+        self.assertContains(found, 'T-1')
+        start = self.client.post(reverse('staff_magacin_popis'), {
+            'action': 'novi', 'location_id': loc.pk,
+        })
         self.assertEqual(start.status_code, 302)
         popis = MagacinPopis.objects.get()
         self.assertEqual(popis.status, MagacinPopis.Status.U_TOKU)
+        self.assertEqual(popis.location_id, loc.pk)
         added = self.client.post(reverse('staff_magacin_popis'), {
             'action': 'dodaj',
             'product_id': self.product.pk,
@@ -1737,34 +2027,91 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(added.status_code, 302)
         again = self.client.get(reverse('staff_magacin_popis'))
+        self.assertContains(again, 'Popisuješ lokaciju')
         self.assertContains(again, self.product.naziv)
+        self.assertContains(again, 'Na stanju')
+        self.assertContains(again, 'Popisano')
+        self.assertContains(again, 'Razlika')
+        self.assertContains(again, 'pp-count-box')
+        self.assertContains(again, 'započet')
         self.assertContains(again, '3')
         self.assertEqual(MagacinPopis.objects.count(), 1)
-        printed = self.client.get(reverse('staff_magacin_popis_stampa'))
-        self.assertContains(printed, self.product.naziv)
-        self.assertContains(printed, self.product.sifra)
-        self.assertContains(printed, '3')
         finished = self.client.post(reverse('staff_magacin_popis'), {'action': 'zavrsi'})
         self.assertEqual(finished.status_code, 302)
         popis.refresh_from_db()
         self.assertEqual(popis.status, MagacinPopis.Status.ZAVRSEN)
-        self.client.post(reverse('staff_magacin_popis'), {'action': 'novi'})
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.kolicina, 3)
+        done = self.client.get(reverse('staff_magacin_popis_detail', args=[popis.pk]))
+        self.assertContains(done, 'Ažurirano na 3')
+        self.assertContains(done, 'Štampaj')
+        self.assertContains(done, 'Razlike')
+        printed = self.client.get(reverse('staff_magacin_popis_stampa') + f'?id={popis.pk}')
+        self.assertEqual(printed.status_code, 200)
+        self.assertContains(printed, 'Popisano')
+        self.assertContains(printed, self.product.naziv)
+        self.assertContains(printed, self.product.sifra)
+        self.assertContains(printed, '3')
+        diffs = self.client.get(reverse('staff_magacin_popis_stampa') + f'?id={popis.pk}&razlike=1')
+        self.assertEqual(diffs.status_code, 200)
+        self.assertContains(diffs, 'Razlike popisa')
+        self.assertContains(diffs, 'is-diff')
+        html = diffs.content.decode()
+        self.assertLess(html.find('Popisano'), html.find('Prije'))
+        self.assertLess(html.find('Prije'), html.find('Razlika'))
+        listing = self.client.get(reverse('staff_magacin_popis') + '?nova=1')
+        self.assertContains(listing, 'Završeni popisi')
+        self.assertContains(listing, f'Popis #{popis.pk}')
+        self.assertContains(listing, 'Štampaj')
+        self.assertContains(listing, 'Razlike')
+        self.assertNotContains(listing, 'Čekiraj')
+        self.client.post(reverse('staff_magacin_popis'), {
+            'action': 'novi', 'location_id': loc.pk,
+        })
         self.assertEqual(MagacinPopis.objects.filter(status=MagacinPopis.Status.U_TOKU).count(), 1)
         live = MagacinPopis.objects.get(status=MagacinPopis.Status.U_TOKU)
         self.client.post(reverse('staff_magacin_popis'), {'action': 'obrisi'})
         self.assertFalse(MagacinPopis.objects.filter(pk=live.pk).exists())
 
+    def test_popis_matching_qty_marked_correct(self):
+        self.client.force_login(self.user)
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        self.client.post(reverse('staff_magacin_popis'), {
+            'action': 'novi', 'location_id': loc.pk,
+        })
+        self.client.post(reverse('staff_magacin_popis'), {
+            'action': 'dodaj',
+            'product_id': self.product.pk,
+            'kolicina': '8',
+        })
+        finished = self.client.post(reverse('staff_magacin_popis'), {'action': 'zavrsi'})
+        self.assertEqual(finished.status_code, 302)
+        stock = WarehouseStock.objects.get(product=self.product, location=loc)
+        self.assertEqual(stock.kolicina, 8)
+        page = self.client.get(finished['Location'])
+        self.assertContains(page, 'Tačna količina')
+        diffs = self.client.get(reverse('staff_magacin_popis_stampa') + f'?id={MagacinPopis.objects.get(status=MagacinPopis.Status.ZAVRSEN).pk}&razlike=1')
+        self.assertContains(diffs, 'class="is-ok"')
+        self.assertNotContains(diffs, 'class="is-diff"')
+        missing = self.client.post(reverse('staff_magacin_popis'), {'action': 'novi'})
+        self.assertEqual(missing.status_code, 302)
+        self.assertEqual(MagacinPopis.objects.filter(status=MagacinPopis.Status.U_TOKU).count(), 0)
+
     def test_popis_phone_scan_ajax_counts(self):
         self.client.force_login(self.user)
         url = reverse('staff_magacin_popis')
         page = self.client.get(url)
-        self.assertContains(page, 'Započni popis')
-        self.client.post(url, {'action': 'novi'})
+        self.assertContains(page, 'Šifra ili naziv lokacije')
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        self.client.post(url, {'action': 'novi', 'location_id': loc.pk})
         live = self.client.get(url)
         self.assertContains(live, 'id="ppQuery"')
         self.assertContains(live, 'Skeniraj')
         self.assertContains(live, 'data-mg-scan-target="ppQuery"')
         self.assertContains(live, 'pp-dock')
+        self.assertContains(live, 'pp-foot')
+        self.assertContains(live, 'form="ppFinishForm"')
+        self.assertContains(live, 'Skeniraj barkod')
         added = self.client.post(url, {
             'action': 'dodaj',
             'product_id': self.product.pk,
@@ -1776,6 +2123,9 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload['count'], 1)
         self.assertEqual(payload['total_qty'], 1)
         self.assertEqual(payload['stavke'][0]['naziv'], self.product.naziv)
+        self.assertEqual(payload['stavke'][0]['ocekivano'], 8)
+        self.assertEqual(payload['stavke'][0]['kolicina'], 1)
+        self.assertEqual(payload['stavke'][0]['razlika'], -7)
         stavka_id = payload['added_id']
         again = self.client.post(url, {
             'action': 'dodaj',
@@ -1798,7 +2148,8 @@ class MagacinViewTests(TestCase):
     def test_popis_pause_then_new_and_resume(self):
         self.client.force_login(self.user)
         url = reverse('staff_magacin_popis')
-        self.client.post(url, {'action': 'novi'})
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        self.client.post(url, {'action': 'novi', 'location_id': loc.pk})
         first = MagacinPopis.objects.get()
         self.client.post(url, {
             'action': 'dodaj',
@@ -1813,11 +2164,11 @@ class MagacinViewTests(TestCase):
         first.refresh_from_db()
         self.assertEqual(first.status, MagacinPopis.Status.PAUZIRAN)
         home = self.client.get(url)
-        self.assertContains(home, 'Započni popis')
+        self.assertContains(home, 'Šifra ili naziv lokacije')
         self.assertContains(home, 'Pauzirani popisi')
         self.assertContains(home, f'Popis #{first.pk}')
         self.assertContains(home, 'Nastavi')
-        created = self.client.post(url, {'action': 'novi'})
+        created = self.client.post(url, {'action': 'novi', 'location_id': loc.pk})
         self.assertEqual(created.status_code, 302)
         second = MagacinPopis.objects.get(status=MagacinPopis.Status.U_TOKU)
         self.assertNotEqual(second.pk, first.pk)
@@ -3185,14 +3536,32 @@ class MagacinViewTests(TestCase):
         self.assertFalse(self.product.na_stanju)
         self.assertEqual(stock_totals(self.product)['dostupno'], 0)
         self.assertEqual(stock_totals(self.product)['na_stanju'], 0)
+        self.assertFalse(self.product.na_stanju)
 
-    def test_ubaci_na_sajt_puts_store_stock_on_site_without_warehouse_qty(self):
+    def test_skini_sa_stanja_zeros_maloprodaja_too(self):
+        self.client.force_login(self.user)
+        mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        apply_movement(product=self.product, location=mp, tip='prijem', kolicina=3)
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.na_stanju)
+        self.assertGreater(self.product.stanje, 0)
+        response = self.client.post(
+            reverse('staff_magacin_artikal', args=[self.product.pk]),
+            {'action': 'skini'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stanje, 0)
+        self.assertFalse(self.product.na_stanju)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            0,
+        )
+
+    def test_ubaci_na_sajt_requires_location_qty(self):
         self.client.force_login(self.user)
         self.zero.aktivan = False
         self.zero.save(update_fields=['aktivan'])
-        var = ProductVariation.objects.create(
-            artikal=self.zero, naziv='M', cijena=Decimal('2.00'), stanje=0, na_stanju=False,
-        )
         page = self.client.get(reverse('staff_magacin_artikal', args=[self.zero.pk]))
         self.assertContains(page, 'Dodaj na stanje')
         self.assertContains(page, 'name="action" value="ubaci"')
@@ -3202,14 +3571,9 @@ class MagacinViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.zero.refresh_from_db()
-        var.refresh_from_db()
         self.assertTrue(self.zero.aktivan)
-        self.assertTrue(self.zero.na_stanju)
-        self.assertGreaterEqual(self.zero.stanje, 1)
-        self.assertTrue(var.na_stanju)
-        self.assertGreaterEqual(var.stanje, 1)
-        self.assertEqual(stock_totals(self.zero)['na_stanju'], 0)
-        self.assertEqual(stock_totals(self.zero)['dostupno'], 0)
+        self.assertFalse(self.zero.na_stanju)
+        self.assertEqual(self.zero.stanje, 0)
 
     def test_article_transfer_between_locations(self):
         self.client.force_login(self.user)
@@ -3238,6 +3602,8 @@ class MagacinViewTests(TestCase):
     def test_prenos_mp_opens_picking_and_validate_deducts(self):
         self.client.force_login(self.user)
         src = WarehouseLocation.objects.get(sifra='T-1')
+        if not WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').exists():
+            WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
         response = self.client.post(
             reverse('staff_magacin_artikal', args=[self.product.pk]),
             {
@@ -3285,12 +3651,33 @@ class MagacinViewTests(TestCase):
         order.refresh_from_db()
         self.product.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
-        self.assertEqual(self.product.stanje, 5)
+        self.assertEqual(self.product.stanje, 8)
         self.assertEqual(stock_totals(self.product)['dostupno'], 5)
+        self.assertEqual(display_stock_totals(self.product)['dostupno'], 8)
         self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
+        src_stock = WarehouseStock.objects.get(product=self.product, location=src)
+        self.assertEqual(src_stock.kolicina, 5)
+        mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
+        self.assertIsNotNone(mp)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            3,
+        )
+        detail = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
+        self.assertContains(detail, 'is-mp')
+        self.assertContains(detail, 'Maloprodaja')
+        html = detail.content.decode()
+        table_pos = html.find('Zalihe po lokacijama')
+        mp_pos = html.find('mg-stock-row is-mp', table_pos)
+        ukupno_pos = html.find('>UKUPNO<', table_pos)
+        self.assertGreater(mp_pos, table_pos)
+        self.assertGreater(ukupno_pos, mp_pos)
+        self.assertContains(detail, '>8<')
 
     def test_prenos_mp_can_validate_less_qty(self):
         self.client.force_login(self.user)
+        if not WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').exists():
+            WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
         response = self.client.post(
             reverse('staff_magacin_artikal', args=[self.product.pk]),
             {'action': 'kretanje', 'mode': 'mp', 'kolicina': '3'},
@@ -3317,11 +3704,17 @@ class MagacinViewTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
         self.assertEqual(item.kolicina_pokupljeno, 1)
-        self.assertEqual(self.product.stanje, 7)
+        self.assertEqual(self.product.stanje, 8)
         self.assertEqual(stock_totals(self.product)['dostupno'], 7)
+        self.assertEqual(display_stock_totals(self.product)['dostupno'], 8)
         self.assertEqual(stock_totals(self.product)['rezervisano'], 0)
         stock = WarehouseStock.objects.get(product=self.product, location=loc)
         self.assertEqual(stock.kolicina, 7)
+        mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            1,
+        )
 
     def test_prenos_mp_cancel_returns_stock_without_transfer(self):
         self.client.force_login(self.user)
@@ -3434,6 +3827,36 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'Test braid')
         self.assertContains(page, '8')
         self.assertContains(page, 'data-loc-skini')
+        self.assertContains(page, 'Štampaj popis')
+        stampa = self.client.get(reverse('staff_magacin_lokacija_stampa', args=[loc.pk]))
+        self.assertEqual(stampa.status_code, 200)
+        self.assertContains(stampa, 'Popis lokacije T-1')
+        self.assertContains(stampa, 'Test braid')
+        self.assertContains(stampa, 'TST-1')
+        self.assertContains(stampa, '8')
+        self.assertContains(stampa, 'Naziv artikla')
+        self.assertContains(stampa, 'Šifra')
+        self.assertContains(stampa, 'Količina')
+        zalihe = self.client.get(reverse('staff_magacin_zalihe'), {'lokacija': loc.pk})
+        self.assertContains(zalihe, 'Test braid')
+        self.assertContains(zalihe, 'TST-1')
+        self.assertContains(zalihe, 'Štampaj popis')
+        uvoz = WarehouseLocation.objects.create(sifra='UVOZ', naziv='Novi uvoz')
+        for i in range(8):
+            ghost = Product.objects.create(
+                naziv=f'Uvoz ghost {i}', sifra=f'UVOZ-G-{i}', cijena=Decimal('1.00'),
+            )
+            WarehouseStock.objects.create(product=ghost, location=uvoz, kolicina=0)
+        listed_uvoz = self.client.get(reverse('staff_magacin_lokacije'), {'pretraga': 'UVOZ'})
+        self.assertContains(listed_uvoz, 'Novi uvoz')
+        uvoz_row = next(
+            row for row in listed_uvoz.context['locations']
+            if row['location'].pk == uvoz.pk
+        )
+        self.assertEqual(uvoz_row['artikala'], 0)
+        self.assertEqual(uvoz_row['na_stanju'], 0)
+        uvoz_page = self.client.get(reverse('staff_magacin_lokacije'), {'lokacija': uvoz.pk})
+        self.assertContains(uvoz_page, 'Nema artikala na ovoj lokaciji')
         self.assertEqual(other.sifra, 'Z-9')
         taken = self.client.post(reverse('staff_magacin_lokacije'), {
             'action': 'skini',
@@ -5735,6 +6158,9 @@ class MagacinUvozTests(TestCase):
         )
         leftover = Product.objects.get(naziv='Samo na Uvoz MP')
         novi = WarehouseLocation.objects.get(naziv=NOVI_UVOZ_NAZIV)
+        mp = WarehouseLocation.objects.create(
+            sifra='B-03', naziv='Maloprodaja Sarajevo', redoslijed=20,
+        )
         self.assertEqual(WarehouseStock.objects.get(product=leftover, location=novi).kolicina, 6)
         listing = self.client.get(reverse('staff_magacin_uvoz'))
         self.assertContains(listing, 'Uvoz lokacija u MP')
@@ -5743,11 +6169,12 @@ class MagacinUvozTests(TestCase):
         leftover.refresh_from_db()
         self.existing.refresh_from_db()
         self.assertEqual(WarehouseStock.objects.get(product=leftover, location=novi).kolicina, 0)
+        self.assertEqual(WarehouseStock.objects.get(product=leftover, location=mp).kolicina, 6)
         self.assertTrue(leftover.na_stanju)
         self.assertTrue(leftover.aktivan)
         self.assertEqual(leftover.stanje, 6)
-        self.assertTrue(leftover.magacin_meta.mp_bez_lokacije)
         self.assertEqual(stock_totals(leftover)['na_stanju'], 0)
+        self.assertEqual(display_stock_totals(leftover)['dostupno'], 6)
         from .magacin import refresh_catalog_qty
         refresh_catalog_qty(leftover)
         leftover.refresh_from_db()

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import base64
 import csv
+import json
+import logging
+import os
 import re
 import time
 from collections import defaultdict
-from datetime import timedelta
-from io import StringIO
+from datetime import date, timedelta
+from io import BytesIO, StringIO
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum
@@ -42,6 +46,9 @@ VP_MPC_DIVISOR = Decimal('1.38')
 
 class MagacinError(Exception):
     pass
+
+
+logger = logging.getLogger(__name__)
 
 
 def _int(value, default=0):
@@ -185,8 +192,8 @@ def _location_keyword_q(keywords, prefix=''):
     return query
 
 
-def ignored_location_q():
-    return _location_keyword_q(_IGNORED_LOCATION_KEYWORDS)
+def ignored_location_q(prefix=''):
+    return _location_keyword_q(_IGNORED_LOCATION_KEYWORDS, prefix=prefix)
 
 
 def uncountable_location_q(prefix=''):
@@ -203,6 +210,30 @@ def is_uncountable_stock_location(location=None, *, name='', path='', sifra=''):
     """Prenos i maloprodaja nisu magacinsko stanje."""
     text = _location_match_text(location, name=name, path=path, sifra=sifra)
     return any(key in text for key in _UNCOUNTABLE_LOCATION_KEYWORDS)
+
+
+def maloprodaja_locations():
+    return WarehouseLocation.objects.filter(aktivan=True).filter(
+        _location_keyword_q(('maloprodaja',))
+    ).exclude(ignored_location_q())
+
+
+def default_maloprodaja_location(product=None):
+    qs = maloprodaja_locations().order_by('redoslijed', 'id')
+    if product is not None:
+        loc_id = (
+            WarehouseStock.objects.filter(
+                product=product,
+                location__in=qs,
+                kolicina__gt=0,
+            )
+            .order_by('location__redoslijed', 'location_id')
+            .values_list('location_id', flat=True)
+            .first()
+        )
+        if loc_id:
+            return qs.filter(pk=loc_id).first()
+    return qs.first()
 
 
 def usable_locations():
@@ -281,6 +312,68 @@ def location_rows(product, variation=None, *, locations=None):
     }
 
 
+def _mp_stock_qty(product, variation=None):
+    locations = list(maloprodaja_locations())
+    if not locations or product is None:
+        return 0
+    qs = WarehouseStock.objects.filter(product=product, location__in=locations)
+    if variation is not None:
+        own = qs.filter(variation=variation)
+        if own.filter(kolicina__gt=0).exists():
+            qs = own
+        else:
+            qs = qs.filter(Q(variation__isnull=True) | Q(variation_key=0))
+    elif not _product_has_variations(product):
+        qs = qs.filter(Q(variation__isnull=True) | Q(variation_key=0))
+    return max(0, _int(qs.aggregate(s=Sum('kolicina'))['s'] or 0))
+
+
+def maloprodaja_location_rows(product, variation=None):
+    """Zaliha na maloprodaji — prikaz ispod magacinskih lokacija, ne ulazi u magacinski zbir."""
+    locations = list(maloprodaja_locations().order_by('redoslijed', 'id'))
+    if not locations:
+        return []
+    qs = WarehouseStock.objects.filter(product=product, location__in=locations)
+    if variation is not None:
+        own = qs.filter(variation=variation)
+        if own.filter(kolicina__gt=0).exists():
+            qs = own
+        else:
+            qs = qs.filter(Q(variation__isnull=True) | Q(variation_key=0))
+    elif not _product_has_variations(product):
+        qs = qs.filter(Q(variation__isnull=True) | Q(variation_key=0))
+    by_loc = defaultdict(lambda: {'kolicina': 0, 'rezervisano': 0})
+    for row in qs:
+        bucket = by_loc[row.location_id]
+        bucket['kolicina'] += _int(row.kolicina)
+        bucket['rezervisano'] += max(0, _int(row.rezervisano))
+    rows = []
+    for loc in locations:
+        data = by_loc.get(loc.id, {'kolicina': 0, 'rezervisano': 0})
+        qty = _int(data['kolicina'])
+        reserved = max(0, _int(data['rezervisano']))
+        if qty <= 0:
+            continue
+        rows.append({
+            'location': loc,
+            'kolicina': qty,
+            'rezervisano': reserved,
+            'dostupno': max(0, qty - reserved),
+            'is_mp': True,
+        })
+    return rows
+
+
+def display_stock_totals(product, variation=None):
+    """Ukupno na stanju i dostupno, uključujući maloprodaju kao ostale lokacije."""
+    totals = dict(stock_totals(product, variation))
+    for row in maloprodaja_location_rows(product, variation):
+        totals['na_stanju'] += int(row.get('kolicina') or 0)
+        totals['rezervisano'] += int(row.get('rezervisano') or 0)
+    totals['dostupno'] = max(0, totals['na_stanju'] - totals['rezervisano'])
+    return totals
+
+
 def _keeps_site_without_locations(product):
     try:
         return bool(product.magacin_meta.mp_bez_lokacije)
@@ -308,9 +401,10 @@ def clear_mp_without_location(product):
 
 
 def refresh_catalog_qty(product):
-    """Usaglasi Product/Variation.stanje sa zbirom magacinskih lokacija."""
+    """Na sajtu dok UKUPNO NA STANJU (magacin + MP) nije 0."""
     variations = list(ProductVariation.objects.filter(artikal_id=product.pk))
     var_totals = []
+    mp_by_var = {}
     if variations:
         product_total = 0
         for variation in variations:
@@ -319,36 +413,39 @@ def refresh_catalog_qty(product):
             )).aggregate(s=Sum('kolicina'))['s'] or 0
             total = max(0, _int(total))
             var_totals.append((variation, total))
+            mp_by_var[variation.pk] = _mp_stock_qty(product, variation)
             product_total += total
+        mp_total = sum(mp_by_var.values())
     else:
         coalesce_unassigned_stock(product)
         product_total = countable_stock_qs(WarehouseStock.objects.filter(
             product=product,
         )).aggregate(s=Sum('kolicina'))['s'] or 0
         product_total = max(0, _int(product_total))
+        mp_total = _mp_stock_qty(product)
 
-    if product_total <= 0 and _keeps_site_without_locations(product):
-        return product_total
-    if product_total > 0:
-        clear_mp_without_location(product)
+    catalog_qty = product_total + mp_total
+    in_stock = catalog_qty > 0
+    clear_mp_without_location(product)
 
     for variation, total in var_totals:
-        if variation.stanje != total or variation.na_stanju != (total > 0):
-            variation.stanje = total
-            variation.na_stanju = total > 0
+        var_qty = total + mp_by_var.get(variation.pk, 0)
+        var_in_stock = var_qty > 0
+        if variation.stanje != var_qty or variation.na_stanju != var_in_stock:
+            variation.stanje = var_qty
+            variation.na_stanju = var_in_stock
             variation.save(update_fields=['stanje', 'na_stanju'])
 
-    na_stanju = product_total > 0
     update_fields = []
-    if product.stanje != product_total:
-        product.stanje = product_total
+    if product.stanje != catalog_qty:
+        product.stanje = catalog_qty
         update_fields.append('stanje')
-    if product.na_stanju != na_stanju:
-        product.na_stanju = na_stanju
+    if product.na_stanju != in_stock:
+        product.na_stanju = in_stock
         update_fields.append('na_stanju')
     if update_fields:
         product.save(update_fields=update_fields)
-    return product_total
+    return catalog_qty
 
 
 @transaction.atomic
@@ -446,12 +543,21 @@ def apply_movement(
             raise MagacinError('Odredište mora biti druga lokacija.')
         if not to_location.aktivan:
             raise MagacinError('Odredišna lokacija nije aktivna.')
+        if is_ignored_stock_location(to_location):
+            raise MagacinError('Lokacija Prenos u MP se ne evidentira.')
+        if from_reservation:
+            if stock.rezervisano < qty:
+                raise MagacinError(
+                    f'Nedovoljno rezervacije na {location.label} (ima {stock.rezervisano}, treba {qty}).'
+                )
         if stock.kolicina < qty:
             raise MagacinError(
                 f'Nedovoljno zalihe na {location.label} (ima {stock.kolicina}, treba {qty}).'
             )
         dest = get_or_create_stock(product=product, variation=variation, location=to_location)
         stock.kolicina -= qty
+        if from_reservation:
+            stock.rezervisano = max(0, stock.rezervisano - qty)
         if stock.rezervisano > stock.kolicina:
             stock.rezervisano = stock.kolicina
         dest.kolicina += qty
@@ -925,60 +1031,35 @@ def leftover_uvoz_stocks():
 
 @transaction.atomic
 def move_uvoz_leftovers_to_mp(*, user=None):
-    """
-    Skini s magacinskih lokacija uvozne artikle koji su ostali samo na Uvoz.
-    Na sajtu ostaju na stanju (fizički su u MP). Zapise uvoza ne dira.
-    """
+    """Uvozne količine koje su ostale samo na Uvoz prebaci na maloprodaju."""
     leftover, location = leftover_uvoz_stocks()
     if not leftover:
         return {'count': 0, 'qty': 0, 'product_ids': []}
+    dest = default_maloprodaja_location()
+    if dest is None:
+        raise MagacinError('Nema maloprodajne lokacije za prenos uvoza.')
     moved_ids = []
     qty_total = 0
     seen = set()
     user_obj = user if getattr(user, 'is_authenticated', False) else None
     for stock in leftover:
         qty = _int(stock.kolicina)
-        qty_total += qty
-        stock.kolicina = 0
-        stock.rezervisano = 0
-        stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
-        WarehouseMovement.objects.create(
+        if qty <= 0:
+            continue
+        apply_movement(
             product=stock.product,
             variation=stock.variation,
             location=location,
-            tip=WarehouseMovement.Tip.KOREKCIJA,
-            kolicina=-qty,
+            to_location=dest,
+            tip=WarehouseMovement.Tip.TRANSFER,
+            kolicina=qty,
             napomena='Uvoz lokacija u MP',
-            korisnik=user_obj,
+            user=user_obj,
         )
-        if stock.product_id in seen:
-            continue
-        product = Product.objects.get(pk=stock.product_id)
-        fields = []
-        if not product.aktivan:
-            product.aktivan = True
-            fields.append('aktivan')
-        if not product.na_stanju:
-            product.na_stanju = True
-            fields.append('na_stanju')
-        if not product.stanje or product.stanje < 1:
-            product.stanje = max(qty, 1)
-            fields.append('stanje')
-        if fields:
-            product.save(update_fields=fields)
-        for var in product.varijacije.all():
-            var_fields = []
-            if not var.na_stanju:
-                var.na_stanju = True
-                var_fields.append('na_stanju')
-            if not var.stanje or var.stanje < 1:
-                var.stanje = 1
-                var_fields.append('stanje')
-            if var_fields:
-                var.save(update_fields=var_fields)
-        mark_mp_without_location(product)
-        seen.add(stock.product_id)
-        moved_ids.append(stock.product_id)
+        qty_total += qty
+        if stock.product_id not in seen:
+            seen.add(stock.product_id)
+            moved_ids.append(stock.product_id)
     return {
         'count': len(moved_ids),
         'qty': qty_total,
@@ -2545,9 +2626,10 @@ def sync_from_odoo(*, user=None, product=None):
 
 @transaction.atomic
 def skini_sa_sajta(product, *, user=None):
-    """Rasprodato: sve magacinske količine na 0, artikal nestaje sa sajta."""
+    """Rasprodato: sve lokacije na 0 (i MP), artikal nestaje sa sajta."""
     stocks = list(
-        countable_stock_qs(WarehouseStock.objects.filter(product=product))
+        WarehouseStock.objects.filter(product=product)
+        .exclude(ignored_location_q('location'))
         .filter(Q(kolicina__gt=0) | Q(rezervisano__gt=0))
         .select_related('location', 'variation')
     )
@@ -2571,30 +2653,11 @@ def skini_sa_sajta(product, *, user=None):
 
 @transaction.atomic
 def ubaci_na_sajt(product):
-    """Stavi artikal na sajt bez magacinske zalihe (ima ga u radnji)."""
-    update_fields = []
+    """Aktiviraj artikal. Na sajtu je samo ako UKUPNO NA STANJU nije 0."""
     if not product.aktivan:
         product.aktivan = True
-        update_fields.append('aktivan')
-    if not product.na_stanju:
-        product.na_stanju = True
-        update_fields.append('na_stanju')
-    if not product.stanje or product.stanje < 1:
-        product.stanje = 1
-        update_fields.append('stanje')
-    if update_fields:
-        product.save(update_fields=update_fields)
-
-    for var in product.varijacije.all():
-        var_fields = []
-        if not var.na_stanju:
-            var.na_stanju = True
-            var_fields.append('na_stanju')
-        if not var.stanje or var.stanje < 1:
-            var.stanje = 1
-            var_fields.append('stanje')
-        if var_fields:
-            var.save(update_fields=var_fields)
+        product.save(update_fields=['aktivan'])
+    refresh_catalog_qty(product)
     return product
 
 
@@ -2603,7 +2666,8 @@ def active_popis():
 
     try:
         return (
-            MagacinPopis.objects.filter(status=MagacinPopis.Status.U_TOKU)
+            MagacinPopis.objects.select_related('location')
+            .filter(status=MagacinPopis.Status.U_TOKU)
             .order_by('-kreiran')
             .first()
         )
@@ -2611,13 +2675,66 @@ def active_popis():
         return None
 
 
-def start_popis(*, user=None):
+def _popis_location_qty(location, product, variation=None):
+    if location is None or product is None:
+        return 0
+    qs = WarehouseStock.objects.filter(product=product, location=location)
+    if variation is not None:
+        own = qs.filter(variation=variation)
+        qs = own if own.filter(kolicina__gt=0).exists() else qs.filter(
+            Q(variation__isnull=True) | Q(variation_key=0)
+        )
+    else:
+        qs = qs.filter(Q(variation__isnull=True) | Q(variation_key=0))
+    return max(0, _int(qs.aggregate(s=Sum('kolicina'))['s'] or 0))
+
+
+def start_popis(*, user=None, location=None):
+    if location is None:
+        raise MagacinError('Odaberi lokaciju za popis.')
+    if is_ignored_stock_location(location):
+        raise MagacinError('Ova lokacija se ne popisuje.')
+    if not getattr(location, 'aktivan', True):
+        raise MagacinError('Lokacija nije aktivna.')
     existing = active_popis()
     if existing:
-        return existing
+        if existing.location_id is None:
+            existing.location = location
+            existing.save(update_fields=['location'])
+            return existing
+        if existing.location_id == location.pk:
+            return existing
+        pause_popis(existing)
     return MagacinPopis.objects.create(
         kreirao=user if getattr(user, 'is_authenticated', False) else None,
+        location=location,
     )
+
+
+def finished_popisi():
+    from django.db import OperationalError, ProgrammingError
+    from django.db.models import Count, Q, Sum
+
+    try:
+        return (
+            MagacinPopis.objects.filter(status=MagacinPopis.Status.ZAVRSEN)
+            .select_related('location')
+            .annotate(
+                n_stavke=Count('stavke', distinct=True),
+                n_kom=Sum('stavke__kolicina'),
+                n_cekirano=Count('stavke', filter=Q(stavke__cekirano=True), distinct=True),
+            )
+            .order_by('-zavrsen_at', '-kreiran')[:50]
+        )
+    except (ProgrammingError, OperationalError):
+        return MagacinPopis.objects.none()
+
+
+def popis_spreman_za_stampu(popis):
+    if not popis or popis.status != MagacinPopis.Status.ZAVRSEN:
+        return False
+    stavke = list(popis.stavke.all())
+    return bool(stavke) and all(bool(row.cekirano) for row in stavke)
 
 
 def paused_popisi():
@@ -2627,6 +2744,7 @@ def paused_popisi():
     try:
         return (
             MagacinPopis.objects.filter(status=MagacinPopis.Status.PAUZIRAN)
+            .select_related('location')
             .annotate(
                 n_stavke=Count('stavke'),
                 n_kom=Sum('stavke__kolicina'),
@@ -2663,6 +2781,8 @@ def add_popis_stavka(popis, *, product, qty, variation=None):
     qty = max(1, _int(qty))
     if popis.status != MagacinPopis.Status.U_TOKU:
         raise MagacinError('Ovaj popis nije u toku. Nastavi ga pa dodaj artikle.')
+    if not popis.location_id:
+        raise MagacinError('Prvo izaberi lokaciju koju popisuješ.')
     if variation and variation.artikal_id != product.pk:
         raise MagacinError('Varijacija ne pripada artiklu.')
     naziv = product.naziv
@@ -2670,6 +2790,7 @@ def add_popis_stavka(popis, *, product, qty, variation=None):
     if variation:
         naziv = f'{product.naziv} {variation.naziv}'.strip()
         sifra = variation.sifra or product.sifra or ''
+    expected = _popis_location_qty(popis.location, product, variation)
     existing = popis.stavke.filter(product=product, variation=variation).first()
     if existing:
         existing.kolicina += qty
@@ -2684,14 +2805,36 @@ def add_popis_stavka(popis, *, product, qty, variation=None):
         variation=variation,
         naziv=naziv[:200],
         sifra=(sifra or '')[:SIFRA_MAX_LENGTH],
+        ocekivano=expected,
         kolicina=qty,
         redoslijed=next_rb,
     )
 
 
-def finish_popis(popis):
+def finish_popis(popis, *, user=None):
     if popis.status == MagacinPopis.Status.ZAVRSEN:
         return popis
+    location = popis.location
+    if location is None:
+        raise MagacinError('Popis nema lokaciju. Otvori novi popis i odaberi lokaciju.')
+    if is_ignored_stock_location(location):
+        raise MagacinError('Ova lokacija se ne popisuje.')
+    for stavka in popis.stavke.select_related('product', 'variation'):
+        if stavka.product_id is None:
+            continue
+        counted = max(0, _int(stavka.kolicina))
+        current = _popis_location_qty(location, stavka.product, stavka.variation)
+        if current == counted:
+            continue
+        apply_movement(
+            product=stavka.product,
+            variation=stavka.variation,
+            location=location,
+            tip=WarehouseMovement.Tip.KOREKCIJA,
+            kolicina=counted,
+            napomena=f'Popis #{popis.pk}',
+            user=user,
+        )
     popis.status = MagacinPopis.Status.ZAVRSEN
     popis.zavrsen_at = timezone.now()
     popis.save(update_fields=['status', 'zavrsen_at'])
@@ -2711,6 +2854,17 @@ def set_popis_stavka_qty(popis, stavka_id, qty):
     if stavka.kolicina != qty:
         stavka.kolicina = qty
         stavka.save(update_fields=['kolicina'])
+    return stavka
+
+
+def set_popis_cekirano(popis, stavka_id, checked):
+    stavka = popis.stavke.filter(pk=stavka_id).first()
+    if not stavka:
+        raise MagacinError('Stavka nije pronađena.')
+    flag = bool(checked)
+    if stavka.cekirano != flag:
+        stavka.cekirano = flag
+        stavka.save(update_fields=['cekirano'])
     return stavka
 
 
@@ -2958,6 +3112,716 @@ def _bulk_parse_chunk(chunk):
         'cijena': cijena,
         'ukupno': ukupno,
     }
+
+
+_MP_SKIP_TOKENS = {
+    'šifra', 'sifra', 'sku', 'barkod', 'barcode', 'naziv', 'artikal',
+    'kolicina', 'količina', 'kol', 'kol.', 'qty', 'kom', 'komada',
+    'cijena', 'ukupno', 'iznos', 'mpc', 'pdv', 'r.b.', 'rb', '#', 'rb.', 'r.b',
+}
+_MP_SIFRA_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._/-]{1,39}$')
+
+
+def _mp_norm_cell(value):
+    return (value or '').replace('\xa0', ' ').strip()
+
+
+def _mp_parse_qty_token(token):
+    text = _mp_norm_cell(token).casefold().replace('×', 'x').replace('*', 'x')
+    text = re.sub(r'^x\s*', '', text)
+    text = re.sub(r'\s*(kom|kom\.|pcs|x)\s*$', '', text).strip().replace(' ', '').replace(',', '.')
+    if re.fullmatch(r'\d+[.]000', text):
+        text = text.split('.', 1)[0]
+    if not re.fullmatch(r'\d+', text):
+        return None
+    qty = int(text)
+    if 1 <= qty <= 9999:
+        return qty
+    return None
+
+
+def _mp_is_sifra_token(token):
+    text = _mp_norm_cell(token)
+    if not _MP_SIFRA_RE.fullmatch(text):
+        return False
+    folded = text.casefold().rstrip('.')
+    if folded in _MP_SKIP_TOKENS:
+        return False
+    if re.fullmatch(r'\d+[.,]\d{1,2}', text):
+        return False
+    if text.isdigit() and len(text) <= 3:
+        return False
+    return True
+
+
+def _mp_is_sifra_from_column(token):
+    """Šifra iz kolone SIFRA — uzmi kako piše, uključujući kratke brojeve (785)."""
+    text = _mp_norm_cell(token)
+    if not text or len(text) > 40:
+        return False
+    folded = text.casefold().rstrip('.')
+    if folded in _MP_SKIP_TOKENS:
+        return False
+    if re.fullmatch(r'\d+[.,]\d+', text):
+        return False
+    return bool(_MP_SIFRA_RE.fullmatch(text))
+
+
+_PROMET_GLUED_RE = re.compile(
+    r'\.\d{3}(\d{8,14})\s+(\d+)[.,]000\s*\d{2}/\d{2}/\d{4}'
+)
+
+
+def _split_sifra_rbr_dok_candidates(blob):
+    """ŠIFRA + RBR (1–2 znamenke) + DOK (4). RBR može biti 43, 59, …"""
+    blob = str(blob or '')
+    if len(blob) < 8 or not blob.isdigit():
+        return []
+    rest = blob[:-4]
+    found = []
+    seen = set()
+    for slen in (4, 3, 5):
+        if len(rest) <= slen:
+            continue
+        rbr = rest[slen:]
+        if not rbr.isdigit() or not (1 <= len(rbr) <= 2):
+            continue
+        rbr_n = int(rbr)
+        if not (1 <= rbr_n <= 99):
+            continue
+        sifra = rest[:slen]
+        if sifra in seen:
+            continue
+        seen.add(sifra)
+        found.append(sifra)
+    return found
+
+
+def _split_sifra_rbr_dok(blob):
+    cands = _split_sifra_rbr_dok_candidates(blob)
+    return cands[0] if cands else None
+
+
+def _mp_existing_sifre(sifre):
+    keys = []
+    seen = set()
+    for raw in sifre or []:
+        key = str(raw or '').strip()
+        folded = key.casefold()
+        if not key or folded in seen:
+            continue
+        seen.add(folded)
+        keys.append(key)
+    if not keys:
+        return set()
+    q = Q()
+    for key in keys:
+        q |= Q(sifra__iexact=key)
+    found = {val.casefold() for val in Product.objects.filter(q).values_list('sifra', flat=True)}
+    found.update(
+        val.casefold()
+        for val in ProductVariation.objects.filter(q).values_list('sifra', flat=True)
+    )
+    return found
+
+
+def _pick_promet_sifra(candidates, existing):
+    if not candidates:
+        return None
+    for sifra in candidates:
+        if sifra.casefold() in existing:
+            return sifra
+    return candidates[0]
+
+
+def _parse_promet_glued(text):
+    """
+    'Promet po artiklima' PDF lijepi cijenu, šifru, rbr, dok i količinu 1.000+datum.
+    Npr. 3.300422761541 3.00026/08/2026 → šifra 4227, količina 3.
+    6.50078511548 1.00026/08/2026 → šifra 785, količina 1.
+    10.5909745431534 1.00025/08/2026 → šifra 9745 (RBR 43), ne 97454.
+    """
+    pending = []
+    all_cands = []
+    for match in _PROMET_GLUED_RE.finditer(text or ''):
+        cands = _split_sifra_rbr_dok_candidates(match.group(1))
+        qty = int(match.group(2))
+        if not cands or qty <= 0:
+            continue
+        pending.append((cands, qty))
+        all_cands.extend(cands)
+    if not pending:
+        return []
+    existing = _mp_existing_sifre(all_cands)
+    rows = []
+    for cands, qty in pending:
+        sifra = _pick_promet_sifra(cands, existing)
+        if sifra:
+            rows.append((sifra, qty))
+    return rows
+
+
+def _merge_sifra_qty(pairs):
+    merged = {}
+    order = []
+    for sifra, qty in pairs:
+        sifra = str(sifra or '').strip()
+        qty = int(qty or 0)
+        if not sifra or qty <= 0:
+            continue
+        key = sifra.casefold()
+        if key not in merged:
+            merged[key] = {'sifra': sifra, 'qty': 0}
+            order.append(key)
+        merged[key]['qty'] += qty
+    return [merged[key] for key in order if merged[key]['qty'] > 0]
+
+
+def _mp_split_line(line):
+    text = _mp_norm_cell(line)
+    if not text:
+        return []
+    if '\t' in text:
+        return [_mp_norm_cell(part) for part in text.split('\t') if _mp_norm_cell(part)]
+    if text.count(';') >= 1:
+        return [_mp_norm_cell(part) for part in text.split(';') if _mp_norm_cell(part)]
+    if text.count(',') >= 2:
+        try:
+            return [
+                _mp_norm_cell(part)
+                for part in next(csv.reader(StringIO(text)))
+                if _mp_norm_cell(part)
+            ]
+        except Exception:
+            pass
+    return [_mp_norm_cell(part) for part in re.split(r'\s+', text) if _mp_norm_cell(part)]
+
+
+def _mp_header_indexes(cells):
+    sifra_i = None
+    qty_i = None
+    for index, cell in enumerate(cells):
+        folded = cell.casefold().replace(':', '').strip()
+        if sifra_i is None and (
+            folded in {'šifra', 'sifra', 'sku', 'sifra artikla', 'šifra artikla', 'barkod'}
+            or folded.startswith('šifr')
+            or folded.startswith('sifr')
+        ):
+            sifra_i = index
+            continue
+        if 'cijen' in folded or 'iznos' in folded or 'ukupn' in folded:
+            continue
+        if qty_i is None and (
+            folded in {'količina', 'kolicina', 'kol', 'kol.', 'qty', 'kom', 'komada', 'prodano', 'prodato'}
+            or folded.startswith('koli')
+        ):
+            qty_i = index
+    if sifra_i is None or qty_i is None:
+        return None
+    return sifra_i, qty_i
+
+
+def _mp_pair_from_cells(cells):
+    tokens = [_mp_norm_cell(cell) for cell in cells if _mp_norm_cell(cell)]
+    if not tokens:
+        return None
+    if _mp_parse_qty_token(tokens[0]) is not None and not _mp_is_sifra_token(tokens[0]) and len(tokens) > 1:
+        tokens = tokens[1:]
+    sifra = None
+    qty = None
+    for index in range(len(tokens) - 1, -1, -1):
+        token = tokens[index]
+        parsed = _mp_parse_qty_token(token)
+        if parsed is None or _mp_is_sifra_token(token):
+            continue
+        qty = parsed
+        tokens = tokens[:index] + tokens[index + 1:]
+        break
+    for token in tokens:
+        if _mp_is_sifra_token(token):
+            sifra = token
+            break
+    if not sifra:
+        return None
+    return sifra, qty or 1
+
+
+_MP_DATE_RE = re.compile(
+    r'(?:datum\s*:?\s*)?(\d{1,2})[./-](\d{1,2})[./-](\d{4})',
+    re.IGNORECASE,
+)
+
+
+def _mp_date_from_parts(day, month, year):
+    try:
+        parsed = date(int(year), int(month), int(day))
+    except (TypeError, ValueError):
+        return None
+    if parsed.year < 2000 or parsed.year > 2100:
+        return None
+    return parsed
+
+
+def parse_mp_daily_datum(text, *, filename=''):
+    """Datum dokumenta, npr. DATUM : 26.08.2026 ili 26/08/2026 u redovima."""
+    sources = [text or '', filename or '']
+    labeled = None
+    first = None
+    for source in sources:
+        for match in _MP_DATE_RE.finditer(source):
+            parsed = _mp_date_from_parts(*match.groups())
+            if parsed is None:
+                continue
+            around = source[max(0, match.start() - 16):match.end()].casefold()
+            if 'datum' in around:
+                labeled = parsed
+                break
+            if first is None:
+                first = parsed
+        if labeled is not None:
+            return labeled
+    return labeled or first
+
+
+def parse_mp_daily_text(text):
+    """Iz teksta izvuci šifre ispod SIFRA i količine ispod Količina. Iste šifre se sabiraju."""
+    raw = (text or '').replace('\r\n', '\n').replace('\r', '\n')
+    glued = _parse_promet_glued(raw)
+    if len(glued) >= 2:
+        return _merge_sifra_qty(glued)
+    lines = [line.strip() for line in raw.split('\n') if line.strip()]
+    header = None
+    pairs = []
+    for line in lines:
+        cells = _mp_split_line(line)
+        if not cells:
+            continue
+        joined = ' '.join(cells).casefold()
+        if any(mark in joined for mark in ('ukupno', 'smjena', 'skladište', 'skladiste')) and not header:
+            if not any(_mp_is_sifra_from_column(cell) for cell in cells):
+                continue
+        if header is None:
+            found = _mp_header_indexes(cells)
+            if found:
+                header = found
+                continue
+        if header is not None:
+            sifra_i, qty_i = header
+            if (
+                sifra_i < len(cells)
+                and qty_i < len(cells)
+                and _mp_is_sifra_from_column(cells[sifra_i])
+            ):
+                pair = (cells[sifra_i], _mp_parse_qty_token(cells[qty_i]) or 1)
+            else:
+                pair = _mp_pair_from_cells(cells)
+        else:
+            pair = _mp_pair_from_cells(cells)
+        if pair:
+            pairs.append(pair)
+    return _merge_sifra_qty(pairs)
+
+
+def preview_mp_daily_rows(parsed):
+    """Za svaku šifru: ima li artikal u bazi (zeleno) ili ne (crveno)."""
+    rows = []
+    for row in parsed or []:
+        sifra = str(row.get('sifra') or '').strip()
+        qty = int(row.get('qty') or 0)
+        product, variation = find_product_by_sifra(sifra)
+        mp_qty = 0
+        if product is not None:
+            mp_qty = sum(int(stock.kolicina or 0) for stock in _mp_stock_rows(product, variation))
+        ostaje = max(0, mp_qty - qty) if product is not None else None
+        rows.append({
+            'sifra': sifra,
+            'qty': qty,
+            'found': product is not None,
+            'naziv': product.naziv if product is not None else '',
+            'mp_dostupno': mp_qty,
+            'ostaje': ostaje,
+            'product_id': product.pk if product is not None else None,
+            'variation_id': variation.pk if variation is not None else None,
+        })
+    return rows
+
+
+def find_product_by_sifra(sifra):
+    key = (sifra or '').strip()
+    if not key:
+        return None, None
+    variation = (
+        ProductVariation.objects.select_related('artikal')
+        .filter(sifra__iexact=key)
+        .first()
+    )
+    if variation is not None and variation.artikal_id:
+        return variation.artikal, variation
+    product = Product.objects.filter(sifra__iexact=key).first()
+    if product is not None:
+        return product, None
+    return None, None
+
+
+def _mp_stock_rows(product, variation=None):
+    locations = list(maloprodaja_locations())
+    if not locations:
+        return []
+    qs = WarehouseStock.objects.filter(
+        product=product,
+        location__in=locations,
+        kolicina__gt=0,
+    ).select_related('location')
+    if variation is not None:
+        own = qs.filter(variation=variation)
+        if own.exists():
+            qs = own
+        else:
+            qs = qs.filter(variation__isnull=True)
+    else:
+        qs = qs.filter(variation__isnull=True)
+    return list(qs.order_by('-kolicina', 'location__redoslijed', 'id'))
+
+
+@transaction.atomic
+def deduct_mp_daily_stock(text=None, *, parsed=None, user=None):
+    """Skini prepoznate količine samo s maloprodajnih lokacija artikla."""
+    if parsed is None:
+        parsed = parse_mp_daily_text(text)
+    if not parsed:
+        raise MagacinError('Nisam prepoznao šifre i količine na dokumentu.')
+    if not maloprodaja_locations().exists():
+        raise MagacinError('Nema maloprodajne lokacije.')
+    taken = []
+    skipped = []
+    for row in parsed:
+        sifra = row['sifra']
+        qty = int(row['qty'] or 0)
+        product, variation = find_product_by_sifra(sifra)
+        if product is None:
+            skipped.append({'sifra': sifra, 'qty': qty, 'razlog': 'šifra nije pronađena'})
+            continue
+        remaining = qty
+        used = []
+        for stock in _mp_stock_rows(product, variation):
+            if remaining <= 0:
+                break
+            take = min(int(stock.dostupno or 0), remaining)
+            if take <= 0:
+                continue
+            apply_movement(
+                product=product,
+                variation=variation if stock.variation_id else None,
+                location=stock.location,
+                tip=WarehouseMovement.Tip.PRODAJA,
+                kolicina=take,
+                napomena=f'Dnevno skidanje MP lagera {sifra}',
+                user=user,
+            )
+            used.append({'location': stock.location.label, 'qty': take})
+            remaining -= take
+        if not used:
+            skipped.append({
+                'sifra': sifra,
+                'qty': qty,
+                'naziv': product.naziv,
+                'razlog': 'nema količine na maloprodajnoj lokaciji',
+            })
+            continue
+        taken.append({
+            'sifra': sifra,
+            'naziv': product.naziv,
+            'qty': qty,
+            'taken': qty - remaining,
+            'leftover': remaining,
+            'lokacije': used,
+            'product_id': product.pk,
+            'variation_id': variation.pk if variation is not None else None,
+        })
+        if remaining > 0:
+            skipped.append({
+                'sifra': sifra,
+                'qty': remaining,
+                'naziv': product.naziv,
+                'razlog': f'skinuto {qty - remaining}, nedostaje {remaining} na MP',
+            })
+    return {'parsed': parsed, 'taken': taken, 'skipped': skipped}
+
+
+_XAI_API_URL = 'https://api.x.ai/v1/chat/completions'
+_MP_VISION_PROMPT = (
+    'Na slici je tabela „Promet po artiklima” ili sličan izvještaj.\n'
+    '1) Nađi DATUM dokumenta (npr. DATUM : 26.08.2026 ili 26/08/2026). Vrati ga u polju datum.\n'
+    '2) Nađi zaglavlje kolone ŠIFRA / SIFRA / Sifra.\n'
+    '3) Svaki broj ISPOD tog zaglavlja je šifra (npr. 785, 4227). Prepiši tačno.\n'
+    '4) Nađi zaglavlje kolone KOLIČINA / Kolicina.\n'
+    '5) U ISTOM REDU, broj ispod KOLIČINA je količina pored te šifre '
+    '(1.000 znači 1, 3.000 znači 3, 2.000 znači 2).\n'
+    '6) Ako se ista šifra pojavi više puta, vrati SVAKI red (npr. 4227 količina 3 i 4227 količina 2).\n'
+    '7) Ignoriši DOK, RBR, naziv, cijenu, %RAB, vrijednost, ukupno, smjenu.\n'
+    'Vrati SAMO JSON:\n'
+    '{"datum":"26/08/2026","stavke":[{"sifra":"785","kolicina":1},{"sifra":"4227","kolicina":3}]}\n'
+)
+
+
+def _mp_resize_image_bytes(data, *, mime='image/jpeg'):
+    from PIL import Image
+
+    image = Image.open(BytesIO(data))
+    if image.mode not in ('RGB', 'L'):
+        image = image.convert('RGB')
+    elif image.mode == 'L':
+        image = image.convert('RGB')
+    image.thumbnail((2200, 2200))
+    buf = BytesIO()
+    image.save(buf, format='JPEG', quality=82)
+    return buf.getvalue(), 'image/jpeg'
+
+
+def _mp_vision_table(image_bytes, *, mime='image/jpeg'):
+    from .quick_activation import xai_api_key
+
+    import requests
+
+    api_key = xai_api_key()
+    if not api_key:
+        raise MagacinError('Za očitavanje slike treba XAI_API_KEY u .env.')
+    payload_bytes, mime = _mp_resize_image_bytes(image_bytes, mime=mime)
+    b64 = base64.b64encode(payload_bytes).decode('ascii')
+    model = (os.environ.get('XAI_MODEL') or '').strip() or 'grok-4.5'
+    try:
+        resp = requests.post(
+            _XAI_API_URL,
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': model,
+                'temperature': 0,
+                'max_tokens': 4000,
+                'messages': [
+                    {
+                        'role': 'user',
+                        'content': [
+                            {'type': 'text', 'text': _MP_VISION_PROMPT},
+                            {
+                                'type': 'image_url',
+                                'image_url': {'url': f'data:{mime};base64,{b64}'},
+                            },
+                        ],
+                    }
+                ],
+            },
+            timeout=70,
+        )
+    except requests.RequestException as exc:
+        raise MagacinError(f'Očitavanje slike nije uspjelo: {exc}') from exc
+    if resp.status_code >= 400:
+        raise MagacinError(
+            'Očitavanje slike nije uspjelo. Provjeri XAI_API_KEY i pokušaj jasniju sliku.'
+        )
+    try:
+        content = (((resp.json() or {}).get('choices') or [{}])[0].get('message') or {}).get('content') or ''
+    except ValueError as exc:
+        raise MagacinError('Odgovor očitavanja nije validan.') from exc
+    return _normalize_mp_vision_text(content)
+
+
+def _mp_rows_to_tsv(rows):
+    lines = ['Šifra\tKoličina']
+    for sifra, qty in rows:
+        if sifra:
+            lines.append(f'{sifra}\t{qty}')
+    return '\n'.join(lines)
+
+
+def _mp_parse_vision_json(stripped):
+    try:
+        data = json.loads(stripped)
+    except (TypeError, ValueError):
+        match = re.search(r'(\{.*\}|\[.*\])', stripped, re.DOTALL)
+        if not match:
+            return None
+        try:
+            data = json.loads(match.group(1))
+        except (TypeError, ValueError):
+            return None
+    datum_raw = ''
+    if isinstance(data, dict):
+        datum_raw = str(
+            data.get('datum') or data.get('date') or data.get('Datum') or ''
+        ).strip()
+        data = data.get('stavke') or data.get('rows') or data.get('items') or []
+    if not isinstance(data, list):
+        return None
+    rows = []
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        sifra = str(
+            row.get('sifra') or row.get('SIFRA') or row.get('sku') or row.get('code') or ''
+        ).strip()
+        qty = row.get('kolicina') or row.get('količina') or row.get('Kolicina') or row.get('qty')
+        if not sifra or not _mp_is_sifra_from_column(sifra):
+            continue
+        parsed_qty = _mp_parse_qty_token(str(qty if qty is not None else '1'))
+        rows.append((sifra, parsed_qty or 1))
+    if not rows:
+        return None
+    return rows, datum_raw
+
+
+def _mp_parse_markdown_table(stripped):
+    rows = []
+    header = None
+    for raw_line in stripped.split('\n'):
+        line = raw_line.strip()
+        if not line.startswith('|'):
+            continue
+        cells = [_mp_norm_cell(part) for part in line.strip('|').split('|')]
+        if not cells or set(''.join(cells)) <= set('-: '):
+            continue
+        if header is None:
+            found = _mp_header_indexes(cells)
+            if found:
+                header = found
+            continue
+        sifra_i, qty_i = header
+        if sifra_i >= len(cells) or qty_i >= len(cells):
+            continue
+        sifra = cells[sifra_i]
+        if not _mp_is_sifra_from_column(sifra):
+            continue
+        rows.append((sifra, _mp_parse_qty_token(cells[qty_i]) or 1))
+    return rows or None
+
+
+def _normalize_mp_vision_text(raw):
+    text = (raw or '').strip()
+    if not text:
+        return ''
+    if text.startswith('```'):
+        text = re.sub(r'^```(?:\w+)?\s*', '', text)
+        text = re.sub(r'\s*```$', '', text)
+    stripped = text.strip()
+    parsed = _mp_parse_vision_json(stripped)
+    if parsed:
+        rows, datum_raw = parsed
+        text = _mp_rows_to_tsv(rows)
+        if datum_raw:
+            text = f'DATUM: {datum_raw}\n{text}'
+        return text
+    parsed = _mp_parse_markdown_table(stripped)
+    if parsed:
+        return _mp_rows_to_tsv(parsed)
+    return stripped
+
+
+def _mp_pdf_text_and_images(data):
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise MagacinError('pypdf nije instaliran. Pokreni: pip install pypdf') from exc
+    reader = PdfReader(BytesIO(data))
+    texts = []
+    images = []
+    for page in reader.pages[:6]:
+        extracted = (page.extract_text() or '').strip()
+        if extracted:
+            texts.append(extracted)
+        try:
+            page_images = list(page.images or [])
+        except Exception:
+            page_images = []
+        for img in page_images[:4]:
+            blob = getattr(img, 'data', None)
+            if blob:
+                images.append(blob)
+    return '\n'.join(texts), images
+
+
+def extract_mp_daily_text_from_upload(uploaded):
+    """Iz slike ili PDF-a izvuci tekst šifra+količina."""
+    name = (getattr(uploaded, 'name', '') or '').strip().casefold()
+    content_type = (getattr(uploaded, 'content_type', '') or '').casefold()
+    data = uploaded.read()
+    if hasattr(uploaded, 'seek'):
+        try:
+            uploaded.seek(0)
+        except Exception:
+            pass
+    if not data:
+        raise MagacinError('Fajl je prazan.')
+    is_pdf = content_type == 'application/pdf' or name.endswith('.pdf')
+    is_image = content_type.startswith('image/') or name.endswith((
+        '.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp',
+    ))
+    if not is_pdf and not is_image:
+        raise MagacinError('Uploaduj sliku (JPG/PNG) ili PDF.')
+    if is_pdf:
+        pdf_text, images = _mp_pdf_text_and_images(data)
+        parsed = parse_mp_daily_text(pdf_text)
+        if parsed:
+            return pdf_text
+        chunks = []
+        for blob in images[:4]:
+            chunks.append(_mp_vision_table(blob))
+        if not chunks:
+            raise MagacinError(
+                'PDF nema čitljiv tekst ni slike. Sačuvaj stranicu kao sliku pa uploaduj.'
+            )
+        return '\n'.join(chunks)
+    return _mp_vision_table(data, mime=content_type or 'image/jpeg')
+
+
+def save_mp_daily_skidanje(result, *, user=None, fajl=None, raw_text='', datum=None):
+    from .models import MagacinMpDnevnoSkidanje, MagacinMpDnevnoStavka
+
+    taken = list((result or {}).get('taken') or [])
+    komada = sum(int(row.get('taken') or 0) for row in taken)
+    naziv = ''
+    if fajl is not None:
+        naziv = (getattr(fajl, 'name', '') or '')[:200]
+        if hasattr(fajl, 'seek'):
+            try:
+                fajl.seek(0)
+            except Exception:
+                pass
+    if datum is None:
+        datum = parse_mp_daily_datum(raw_text, filename=naziv) or timezone.localdate()
+    batch = MagacinMpDnevnoSkidanje(
+        kreirao=user if getattr(user, 'is_authenticated', False) else None,
+        datum=datum,
+        fajl_naziv=naziv,
+        raw_text=(raw_text or '')[:20000],
+        skinuto_stavki=len(taken),
+        skinuto_komada=komada,
+    )
+    if fajl is not None:
+        batch.fajl = fajl
+    batch.save()
+    stavke = []
+    for row in taken:
+        lokacije = row.get('lokacije') or []
+        loc_label = ', '.join(
+            f"{item.get('location')} (−{item.get('qty')})"
+            for item in lokacije
+            if isinstance(item, dict)
+        )
+        stavke.append(MagacinMpDnevnoStavka(
+            skidanje=batch,
+            product_id=row.get('product_id'),
+            variation_id=row.get('variation_id'),
+            sifra=(row.get('sifra') or '')[:200],
+            naziv=(row.get('naziv') or '')[:200],
+            trazeno=int(row.get('qty') or 0),
+            kolicina=int(row.get('taken') or 0),
+            lokacija=loc_label[:300],
+        ))
+    if stavke:
+        MagacinMpDnevnoStavka.objects.bulk_create(stavke)
+    return batch
 
 
 def parse_vp_bulk_text(text):
@@ -3899,7 +4763,7 @@ def mark_order_packed(order):
 
 @transaction.atomic
 def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
-    """Napravi picking za prenos u MP — Validate skida zalihu s odabrane lokacije."""
+    """Napravi picking za prenos u MP — Validate prebacuje zalihu na maloprodaju."""
     from .models import Order, OrderItem
 
     qty = _parse_move_qty(qty)
@@ -4066,6 +4930,29 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
     _, sell_variation = _stock_scope(product, variation)
     sold = 0
     napomena = f'Validacija #{order.broj}'
+    prenos_mp = is_prenos_mp_order(order)
+    mp_dest = default_maloprodaja_location(product) if prenos_mp else None
+    if prenos_mp and mp_dest is None:
+        raise MagacinError('Nema maloprodajne lokacije za prenos u MP.')
+    if prenos_mp:
+        napomena = f'Prenos u MP #{order.broj}'
+
+    def _apply_take(move_product, move_variation, move_location, take, *, from_reservation):
+        kwargs = {
+            'product': move_product,
+            'variation': move_variation,
+            'location': move_location,
+            'tip': WarehouseMovement.Tip.PRODAJA,
+            'kolicina': take,
+            'napomena': napomena,
+            'user': user,
+            'from_reservation': from_reservation,
+        }
+        if prenos_mp:
+            kwargs['tip'] = WarehouseMovement.Tip.TRANSFER
+            kwargs['to_location'] = mp_dest
+        apply_movement(**kwargs)
+
     hold_filter = Q(**_hold_variation_filter(variation))
     if sell_variation != variation:
         hold_filter |= Q(**_hold_variation_filter(sell_variation))
@@ -4088,17 +4975,13 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
             continue
         from_reservation = int(stock.rezervisano or 0) >= take
         try:
-            apply_movement(
-                product=hold.product,
-                variation=move_variation,
-                location=hold.location,
-                tip=WarehouseMovement.Tip.PRODAJA,
-                kolicina=take,
-                napomena=napomena,
-                user=user,
+            _apply_take(
+                hold.product, move_variation, hold.location, take,
                 from_reservation=from_reservation,
             )
         except MagacinError:
+            if prenos_mp:
+                raise
             continue
         if take >= int(hold.kolicina or 0):
             hold.status = OrderStockHold.Status.VALIDIRANO
@@ -4114,20 +4997,15 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
         if take > 0:
             from_reservation = int(stock.rezervisano or 0) >= take
             try:
-                apply_movement(
-                    product=product,
-                    variation=move_variation,
-                    location=location,
-                    tip=WarehouseMovement.Tip.PRODAJA,
-                    kolicina=take,
-                    napomena=napomena,
-                    user=user,
+                _apply_take(
+                    product, move_variation, location, take,
                     from_reservation=from_reservation,
                 )
                 remaining -= take
                 sold += take
             except MagacinError:
-                pass
+                if prenos_mp:
+                    raise
     return sold
 
 

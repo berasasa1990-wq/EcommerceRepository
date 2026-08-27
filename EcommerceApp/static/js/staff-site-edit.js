@@ -576,3 +576,337 @@
         init();
     }
 })();
+
+/**
+ * Edit mode: klik na artikal = odabir, desni panel = bulk izmjena.
+ * Primjenjuje se samo popunjeno. Cmd/Ctrl+klik i dalje otvara artikal.
+ */
+(function () {
+    'use strict';
+
+    function initBulk() {
+        var root = document.getElementById('staffSiteEditorRoot');
+        var panel = document.getElementById('staffBulkPanel');
+        var form = document.getElementById('staffBulkForm');
+        if (!root || !panel || !form) return;
+
+        var bulkUrl = root.getAttribute('data-bulk-url') || '';
+        var catUrl = root.getAttribute('data-category-url') || '';
+        var brandUrl = root.getAttribute('data-brand-url') || '';
+        var countEl = document.getElementById('staffBulkCount');
+        var statusEl = document.getElementById('staffBulkStatus');
+        var applyBtn = document.getElementById('staffBulkApply');
+        var picksEl = document.getElementById('staffBulkPicks');
+        var selected = {};
+        var catTimer = null;
+        var brandTimer = null;
+        var googleIcon =
+            '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">' +
+            '<path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>' +
+            '<path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>' +
+            '<path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>' +
+            '<path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>' +
+            '</svg>';
+
+        function cardName(card) {
+            var fromData = (card.getAttribute('data-default-name') || '').trim();
+            var nameEl = card.querySelector('[data-product-name]');
+            var fromEl = nameEl ? (nameEl.textContent || '').trim() : '';
+            return fromData || fromEl || ('Artikal #' + (card.getAttribute('data-product-id') || ''));
+        }
+
+        function chatgptUrl(name) {
+            return 'https://chatgpt.com/?q=' + encodeURIComponent(name + ' veci opis za ovaj artikal i tagove');
+        }
+
+        function googleImagesUrl(name) {
+            return 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(name);
+        }
+
+        function addPickRow(id, name) {
+            if (!picksEl || picksEl.querySelector('[data-pick-id="' + id + '"]')) return;
+            var row = document.createElement('article');
+            row.className = 'staff-bulk-pick';
+            row.setAttribute('data-pick-id', id);
+            row.innerHTML =
+                '<strong></strong>' +
+                '<div class="staff-bulk-pick-links">' +
+                '<a class="staff-bulk-chatgpt" target="_blank" rel="noopener noreferrer">Otvori u ChatGPT-u</a>' +
+                '<a class="staff-bulk-google" target="_blank" rel="noopener noreferrer">' + googleIcon + ' Google slike</a>' +
+                '</div>' +
+                '<p class="staff-bulk-pick-hint">ChatGPT → zalijepi opis. Google → sačuvaj sliku pa uploaduj.</p>' +
+                '<textarea class="staff-edit-input" rows="3" placeholder="Zalijepi opis s ChatGPT-a…"></textarea>' +
+                '<label class="staff-bulk-file">Slika <input type="file" accept="image/*"></label>';
+            row.querySelector('strong').textContent = name;
+            row.querySelector('.staff-bulk-chatgpt').href = chatgptUrl(name);
+            row.querySelector('.staff-bulk-google').href = googleImagesUrl(name);
+            picksEl.appendChild(row);
+        }
+
+        function removePickRow(id) {
+            if (!picksEl) return;
+            var row = picksEl.querySelector('[data-pick-id="' + id + '"]');
+            if (row) row.remove();
+        }
+
+        function csrf() {
+            var m = document.cookie.match(/csrftoken=([^;]+)/);
+            if (m) return decodeURIComponent(m[1]);
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') || '' : '';
+        }
+
+        function ids() {
+            return Object.keys(selected).map(function (id) { return parseInt(id, 10); });
+        }
+
+        function setStatus(msg, isError) {
+            if (!statusEl) return;
+            if (!msg) {
+                statusEl.hidden = true;
+                statusEl.textContent = '';
+                return;
+            }
+            statusEl.hidden = false;
+            statusEl.textContent = msg;
+            statusEl.classList.toggle('is-error', !!isError);
+            statusEl.classList.toggle('is-ok', !isError);
+        }
+
+        function cardOf(el) {
+            if (!el || !el.closest) return null;
+            return el.closest('[data-product-card][data-product-id]');
+        }
+
+        function syncCards() {
+            document.querySelectorAll('[data-product-card][data-product-id]').forEach(function (card) {
+                var id = card.getAttribute('data-product-id');
+                card.classList.toggle('is-bulk-selected', !!selected[id]);
+            });
+        }
+
+        function renderCount() {
+            var n = ids().length;
+            if (countEl) {
+                countEl.textContent = n
+                    ? (n === 1 ? '1 artikal odabran' : n + ' artikla odabrano')
+                    : 'Odaberi artikle';
+            }
+            if (n) {
+                panel.hidden = false;
+                document.body.classList.add('staff-bulk-open');
+            } else {
+                panel.hidden = true;
+                document.body.classList.remove('staff-bulk-open');
+            }
+        }
+
+        function syncFindTools() {
+            if (!picksEl) return;
+            var selectedIds = ids();
+            if (selectedIds.length !== 1) {
+                picksEl.innerHTML = '';
+                picksEl.hidden = true;
+                return;
+            }
+            picksEl.hidden = false;
+            var id = String(selectedIds[0]);
+            var info = selected[id];
+            var name = (info && info.name) || '';
+            if (!picksEl.querySelector('[data-pick-id="' + id + '"]')) {
+                picksEl.innerHTML = '';
+                addPickRow(id, name);
+            }
+        }
+
+        function toggleCard(card) {
+            var id = card.getAttribute('data-product-id');
+            if (!id) return;
+            if (selected[id]) {
+                delete selected[id];
+            } else {
+                selected[id] = { name: cardName(card) };
+            }
+            syncCards();
+            renderCount();
+            syncFindTools();
+            setStatus('');
+        }
+
+        function clearSelection() {
+            selected = {};
+            if (picksEl) {
+                picksEl.innerHTML = '';
+                picksEl.hidden = true;
+            }
+            syncCards();
+            renderCount();
+            setStatus('');
+        }
+
+        function hideLists() {
+            form.querySelectorAll('.staff-bulk-lookup-list').forEach(function (list) {
+                list.hidden = true;
+            });
+        }
+
+        function bindLookup(kind, input, hidden, list, url) {
+            if (!input || !hidden || !list || !url) return;
+            function render(items) {
+                list.innerHTML = '';
+                if (!items.length) {
+                    list.innerHTML = '<div class="staff-bulk-empty">Nema rezultata.</div>';
+                    list.hidden = false;
+                    return;
+                }
+                items.forEach(function (item) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'staff-bulk-option';
+                    btn.textContent = item.label || '';
+                    btn.addEventListener('mousedown', function (event) {
+                        event.preventDefault();
+                        hidden.value = String(item.id);
+                        input.value = item.label || '';
+                        list.hidden = true;
+                    });
+                    list.appendChild(btn);
+                });
+                list.hidden = false;
+            }
+            input.addEventListener('input', function () {
+                hidden.value = '';
+                var q = (input.value || '').trim();
+                window.clearTimeout(kind === 'kategorija' ? catTimer : brandTimer);
+                var timer = window.setTimeout(function () {
+                    if (!q) {
+                        list.hidden = true;
+                        list.innerHTML = '';
+                        return;
+                    }
+                    fetch(url + '?q=' + encodeURIComponent(q), {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                    }).then(function (res) { return res.json(); }).then(function (data) {
+                        render(data.results || []);
+                    }).catch(function () {
+                        list.innerHTML = '<div class="staff-bulk-empty">Pretraga nije uspjela.</div>';
+                        list.hidden = false;
+                    });
+                }, 160);
+                if (kind === 'kategorija') catTimer = timer;
+                else brandTimer = timer;
+            });
+            input.addEventListener('focus', function () {
+                if (list.innerHTML) list.hidden = false;
+            });
+            input.addEventListener('blur', function () {
+                window.setTimeout(function () { list.hidden = true; }, 180);
+            });
+        }
+
+        bindLookup(
+            'kategorija',
+            document.getElementById('staffBulkCat'),
+            document.getElementById('staffBulkCatId'),
+            form.querySelector('[data-bulk-lookup="kategorija"] .staff-bulk-lookup-list'),
+            catUrl
+        );
+        bindLookup(
+            'brend',
+            document.getElementById('staffBulkBrand'),
+            document.getElementById('staffBulkBrandId'),
+            form.querySelector('[data-bulk-lookup="brend"] .staff-bulk-lookup-list'),
+            brandUrl
+        );
+
+        document.addEventListener('click', function (event) {
+            if (!document.body.classList.contains('staff-edit-mode-on')) return;
+            if (event.metaKey || event.ctrlKey) return;
+            var t = event.target;
+            if (t && t.nodeType === 3) t = t.parentElement;
+            if (panel.contains(t)) return;
+            var card = cardOf(t);
+            if (!card) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            toggleCard(card);
+        }, true);
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            var productIds = ids();
+            if (!productIds.length) {
+                setStatus('Odaberi artikle.', true);
+                return;
+            }
+            var fd = new FormData();
+            productIds.forEach(function (id) { fd.append('product_ids', String(id)); });
+            fd.append('kategorija_id', (document.getElementById('staffBulkCatId') || {}).value || '');
+            fd.append('brend_id', (document.getElementById('staffBulkBrandId') || {}).value || '');
+            fd.append('opis', (document.getElementById('staffBulkOpis') || {}).value || '');
+            fd.append('akcija_postotak', (document.getElementById('staffBulkPct') || {}).value || '');
+            fd.append('je_hit', (document.getElementById('staffBulkHit') || {}).value || '');
+            form.querySelectorAll('.staff-bulk-pick').forEach(function (row) {
+                var pid = row.getAttribute('data-pick-id');
+                if (!pid) return;
+                var ta = row.querySelector('textarea');
+                if (ta && ta.value.trim()) fd.append('opis_' + pid, ta.value);
+                var fileInput = row.querySelector('input[type="file"]');
+                if (fileInput && fileInput.files && fileInput.files[0]) {
+                    fd.append('slika_' + pid, fileInput.files[0]);
+                }
+            });
+            if (applyBtn) applyBtn.disabled = true;
+            setStatus('Snimam…');
+            fetch(bulkUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrf(),
+                },
+                credentials: 'same-origin',
+                body: fd,
+            }).then(function (res) {
+                return res.json().then(function (data) {
+                    return { ok: res.ok, data: data };
+                }, function () {
+                    return { ok: false, data: { error: 'Nije sačuvano.' } };
+                });
+            }).then(function (result) {
+                if (!result.data || !result.data.ok) {
+                    setStatus((result.data && result.data.error) || 'Nije sačuvano.', true);
+                    return;
+                }
+                setStatus(result.data.message || 'Sačuvano.', false);
+            }).catch(function () {
+                setStatus('Nije sačuvano. Pokušaj ponovo.', true);
+            }).then(function () {
+                if (applyBtn) applyBtn.disabled = false;
+            });
+        });
+
+        var clearBtn = document.getElementById('staffBulkClear');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                clearSelection();
+                hideLists();
+            });
+        }
+        var closeBtn = document.getElementById('staffBulkClose');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                clearSelection();
+                hideLists();
+            });
+        }
+        renderCount();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBulk);
+    } else {
+        initBulk();
+    }
+})();

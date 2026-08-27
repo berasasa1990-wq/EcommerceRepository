@@ -29,6 +29,8 @@ from .magacin import (
     add_popis_stavka,
     pause_popis,
     paused_popisi,
+    finished_popisi,
+    popis_spreman_za_stampu,
     resume_popis,
     active_vp_narudzba,
     add_vp_stavka,
@@ -45,6 +47,7 @@ from .magacin import (
     finish_vp_narudzba,
     remove_popis_stavka,
     remove_vp_stavka,
+    set_popis_cekirano,
     set_popis_stavka_qty,
     set_vp_customer,
     set_vp_stavka_qty,
@@ -66,12 +69,21 @@ from .magacin import (
     release_holds_for_product,
     cancel_order_stock,
     is_ignored_stock_location,
+    ignored_location_q,
     last_sync,
     load_running_sync_job,
     persist_sync_job,
     run_sync_until,
     location_rows,
+    maloprodaja_location_rows,
+    display_stock_totals,
     countable_stock_qs,
+    deduct_mp_daily_stock,
+    extract_mp_daily_text_from_upload,
+    parse_mp_daily_datum,
+    parse_mp_daily_text,
+    preview_mp_daily_rows,
+    save_mp_daily_skidanje,
     magacin_in_stock_q,
     magacin_products_qs,
     usable_locations,
@@ -105,6 +117,7 @@ from .models import (
     UvozStavka,
     NivelacijaOznaka,
     MagacinPopis,
+    MagacinMpDnevnoSkidanje,
     MagacinPonuda,
     MagacinPonudaStavka,
     MagacinVpNarudzba,
@@ -923,7 +936,10 @@ def magacin_artikal(request, pk):
             if action == 'kretanje':
                 mode = (request.POST.get('mode') or 'update').strip()
                 stocked_rows = location_rows(product, variation)[0]
-                stocked_ids = {row['location'].pk for row in stocked_rows}
+                mp_stocked = maloprodaja_location_rows(product, variation)
+                stocked_ids = {row['location'].pk for row in stocked_rows} | {
+                    row['location'].pk for row in mp_stocked
+                }
                 if mode == 'mp':
                     loc_id = int(request.POST.get('location_id') or 0)
                     location = next(
@@ -1018,7 +1034,14 @@ def magacin_artikal(request, pk):
                 messages.success(request, 'Artikal je skinut sa stanja i sa sajta.')
             elif action == 'ubaci':
                 ubaci_na_sajt(product)
-                messages.success(request, 'Artikal je na sajtu (na stanju). Magacinska zaliha nije mijenjana.')
+                product.refresh_from_db()
+                if product.na_stanju:
+                    messages.success(request, 'Artikal je na sajtu (na stanju).')
+                else:
+                    messages.warning(
+                        request,
+                        'Artikal nije na sajtu jer je UKUPNO NA STANJU 0. Ubaci količinu na lokaciju.',
+                    )
             elif action == 'meta':
                 _save_product_meta(request, product)
                 messages.success(request, 'Osnovne informacije su sačuvane.')
@@ -1038,8 +1061,10 @@ def magacin_artikal(request, pk):
         return redirect(url)
 
     locations = list(usable_locations())
-    rows, totals = location_rows(product, variation, locations=locations)
-    stocked_ids = {row['location'].pk for row in rows}
+    rows, _ = location_rows(product, variation, locations=locations)
+    mp_rows = maloprodaja_location_rows(product, variation)
+    totals = display_stock_totals(product, variation)
+    stocked_ids = {row['location'].pk for row in rows} | {row['location'].pk for row in mp_rows}
     add_locations = [loc for loc in locations if loc.pk not in stocked_ids]
     meta = getattr(product, 'magacin_meta', None)
     tags = list(product.tagovi.all())
@@ -1055,7 +1080,7 @@ def magacin_artikal(request, pk):
 
     variant_rows = []
     for var in variations:
-        v_totals = stock_totals(product, var)
+        v_totals = display_stock_totals(product, var)
         variant_rows.append({
             'variation': var,
             'na_stanju': v_totals['na_stanju'],
@@ -1073,6 +1098,7 @@ def magacin_artikal(request, pk):
         'vpc': vpc,
         'tags': tags,
         'location_rows': rows,
+        'mp_location_rows': mp_rows,
         'totals': totals,
         'locations': locations,
         'add_locations': add_locations,
@@ -1971,7 +1997,10 @@ def magacin_lokacije(request):
         loc_qs = loc_qs.none()
     locations = []
     for loc in loc_qs:
-        agg = loc.zalihe.aggregate(na_stanju=Sum('kolicina'), artikala=Count('product', distinct=True))
+        agg = loc.zalihe.filter(kolicina__gt=0).aggregate(
+            na_stanju=Sum('kolicina'),
+            artikala=Count('product', distinct=True),
+        )
         locations.append({
             'location': loc,
             'na_stanju': int(agg['na_stanju'] or 0),
@@ -1997,6 +2026,49 @@ def magacin_lokacije(request):
     return render(request, 'staff/magacin/lokacije.html', context)
 
 
+def _location_print_rows(location):
+    stocks = (
+        WarehouseStock.objects.filter(location=location, kolicina__gt=0)
+        .select_related('product', 'variation')
+        .order_by('product__naziv', 'variation__naziv', 'id')
+    )
+    rows = []
+    for stock in stocks:
+        product = stock.product
+        variation = stock.variation
+        naziv = product.naziv if product else '—'
+        if variation:
+            naziv = f'{naziv} — {variation.naziv}'.strip()
+        sifra = ''
+        if variation and variation.sifra:
+            sifra = variation.sifra
+        elif product:
+            sifra = product.sifra or ''
+        rows.append({
+            'naziv': naziv,
+            'sifra': sifra,
+            'kolicina': int(stock.kolicina or 0),
+        })
+    return rows
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_lokacija_stampa(request, pk):
+    location = get_object_or_404(WarehouseLocation, pk=pk)
+    if is_ignored_stock_location(location):
+        raise Http404('Lokacija se ne štampa.')
+    rows = _location_print_rows(location)
+    komada = sum(row['kolicina'] for row in rows)
+    return render(request, 'staff/magacin/lokacija_print.html', {
+        'location': location,
+        'rows': rows,
+        'artikala': len(rows),
+        'komada': komada,
+        'print_mode': True,
+    })
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_zalihe(request):
@@ -2005,13 +2077,13 @@ def magacin_zalihe(request):
     query = _magacin_search_query(request)
     only_low = request.GET.get('nisko') == '1'
 
-    qs = countable_stock_qs(
-        WarehouseStock.objects.select_related(
-            'product', 'product__kategorija', 'variation', 'location',
-        )
-    )
+    qs = WarehouseStock.objects.select_related(
+        'product', 'product__kategorija', 'variation', 'location',
+    ).exclude(ignored_location_q('location'))
     if location_id:
         qs = qs.filter(location_id=location_id)
+    else:
+        qs = countable_stock_qs(qs)
     if query:
         qs = qs.filter(
             Q(product__naziv__icontains=query)
@@ -2035,6 +2107,127 @@ def magacin_zalihe(request):
         'magacin_search': query,
     })
     return render(request, 'staff/magacin/zalihe.html', context)
+
+
+def _mp_datum_from_iso(value):
+    text = str(value or '').strip()
+    if not text:
+        return None
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        return parse_mp_daily_datum(text)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_mp_dnevno_skidanje(request):
+    _ensure_magacin_locations()
+    result = None
+    preview = None
+    preview_datum = None
+    if request.method == 'POST':
+        action = (request.POST.get('action') or 'ocitaj').strip()
+        try:
+            if action == 'ukloni':
+                request.session.pop('mp_dnevno_preview', None)
+                messages.success(request, 'Unos je uklonjen. Ništa nije skinuto sa stanja.')
+                return redirect('staff_magacin_mp_dnevno')
+            if action == 'skini':
+                payload = request.session.get('mp_dnevno_preview') or {}
+                parsed = payload.get('rows') or []
+                if not parsed:
+                    raise MagacinError('Nema prepoznatih šifara. Prvo uploaduj izvještaj.')
+                result = deduct_mp_daily_stock(parsed=parsed, user=request.user)
+                datum = (
+                    _mp_datum_from_iso(payload.get('datum'))
+                    or parse_mp_daily_datum(
+                        payload.get('raw_text') or '',
+                        filename=payload.get('fajl_naziv') or '',
+                    )
+                    or timezone.localdate()
+                )
+                request.session.pop('mp_dnevno_preview', None)
+                if result['taken']:
+                    batch = save_mp_daily_skidanje(
+                        result,
+                        user=request.user,
+                        raw_text=payload.get('raw_text') or '',
+                        datum=datum,
+                    )
+                    messages.success(
+                        request,
+                        f'Skinuto {len(result["taken"])} šifara s maloprodaje'
+                        + (f', {len(result["skipped"])} nije skinuto' if result['skipped'] else '')
+                        + '.',
+                    )
+                    dest = reverse('staff_magacin_mp_dnevno')
+                    if batch.datum:
+                        dest = f'{dest}?datum={batch.datum.isoformat()}'
+                    return redirect(dest)
+                messages.warning(request, 'Ništa nije skinuto s maloprodaje.')
+            else:
+                fajl = request.FILES.get('fajl')
+                if fajl is None:
+                    raise MagacinError('Uploaduj sliku ili PDF izvještaja.')
+                tekst = extract_mp_daily_text_from_upload(fajl)
+                parsed = parse_mp_daily_text(tekst)
+                if not parsed:
+                    raise MagacinError('Nisam našao šifre ispod kolone ŠIFRA.')
+                preview = preview_mp_daily_rows(parsed)
+                fajl_naziv = (getattr(fajl, 'name', '') or '')[:200]
+                preview_datum = parse_mp_daily_datum(tekst, filename=fajl_naziv) or timezone.localdate()
+                request.session['mp_dnevno_preview'] = {
+                    'rows': [{'sifra': row['sifra'], 'qty': row['qty']} for row in parsed],
+                    'raw_text': tekst[:20000],
+                    'fajl_naziv': fajl_naziv,
+                    'datum': preview_datum.isoformat(),
+                }
+                request.session.modified = True
+        except MagacinError as exc:
+            messages.error(request, str(exc))
+    elif request.session.get('mp_dnevno_preview'):
+        payload = request.session.get('mp_dnevno_preview') or {}
+        preview = preview_mp_daily_rows(payload.get('rows') or [])
+        preview_datum = _mp_datum_from_iso(payload.get('datum')) or parse_mp_daily_datum(
+            payload.get('raw_text') or '',
+            filename=payload.get('fajl_naziv') or '',
+        )
+    odabrani_datum = _mp_datum_from_iso(request.GET.get('datum'))
+    skidanja = []
+    datumi = []
+    qs = MagacinMpDnevnoSkidanje.objects.select_related('kreirao')
+    if odabrani_datum:
+        skidanja = list(
+            qs.filter(datum=odabrani_datum)
+            .prefetch_related('stavke')
+            .order_by('-kreiran', '-id')
+        )
+    else:
+        datumi = list(
+            qs.exclude(datum__isnull=True)
+            .values('datum')
+            .annotate(
+                stavki=Sum('skinuto_stavki'),
+                komada=Sum('skinuto_komada'),
+                broj=Count('id'),
+            )
+            .order_by('-datum')
+        )
+    context = _magacin_context(
+        request,
+        section='mp_dnevno',
+        page_title='Dnevno skidanje MP lagera — Magacin',
+    )
+    context.update({
+        'result': result,
+        'preview': preview,
+        'preview_datum': preview_datum,
+        'skidanja': skidanja,
+        'datumi': datumi,
+        'odabrani_datum': odabrani_datum,
+    })
+    return render(request, 'staff/magacin/mp_dnevno_skidanje.html', context)
 
 
 def _resolve_transfer_product(request, *, product_id=None, variation_id=None):
@@ -5372,7 +5565,7 @@ def magacin_izvjestaji(request):
         )
     by_location = []
     for loc in usable_locations():
-        agg = loc.zalihe.aggregate(
+        agg = loc.zalihe.filter(kolicina__gt=0).aggregate(
             na_stanju=Sum('kolicina'),
             rezervisano=Sum('rezervisano'),
             artikala=Count('product', distinct=True),
@@ -5419,6 +5612,7 @@ def _popis_payload(popis, *, added_id=None):
         'popis_id': popis.pk if popis else None,
         'count': len(stavke),
         'total_qty': sum(int(row.kolicina or 0) for row in stavke),
+        'all_checked': bool(stavke) and all(bool(row.cekirano) for row in stavke),
         'added_id': added_id,
         'stavke': [
             {
@@ -5426,6 +5620,10 @@ def _popis_payload(popis, *, added_id=None):
                 'naziv': row.naziv,
                 'sifra': row.sifra or '',
                 'kolicina': int(row.kolicina or 0),
+                'ocekivano': int(row.ocekivano or 0),
+                'razlika': int(row.kolicina or 0) - int(row.ocekivano or 0),
+                'cekirano': bool(row.cekirano),
+                'tacno': int(row.ocekivano or 0) == int(row.kolicina or 0),
             }
             for row in stavke
         ],
@@ -5442,7 +5640,7 @@ def _popis_from_request(request, pk=None):
     raw = pk if pk is not None else (request.POST.get('popis_id') or request.GET.get('id'))
     if raw not in (None, ''):
         try:
-            return MagacinPopis.objects.filter(pk=int(raw)).first()
+            return MagacinPopis.objects.select_related('location').filter(pk=int(raw)).first()
         except (TypeError, ValueError):
             return None
     return active_popis()
@@ -5457,7 +5655,14 @@ def magacin_popis(request, pk=None):
         ajax = _popis_is_ajax(request)
         try:
             if action == 'novi':
-                popis = start_popis(user=request.user)
+                loc_id = (request.POST.get('location_id') or '').strip()
+                if not loc_id:
+                    messages.error(request, 'Prvo izaberi lokaciju koju popisuješ.')
+                    return redirect('staff_magacin_popis')
+                location = WarehouseLocation.objects.filter(pk=loc_id).first()
+                if location is None:
+                    raise MagacinError('Lokacija nije pronađena.')
+                popis = start_popis(user=request.user, location=location)
                 return _popis_redirect(popis)
             if action == 'nastavi':
                 target = _popis_from_request(request, pk)
@@ -5502,6 +5707,15 @@ def magacin_popis(request, pk=None):
                 if ajax:
                     return JsonResponse(_popis_payload(popis))
                 return _popis_redirect(popis)
+            if action == 'cekiraj':
+                set_popis_cekirano(
+                    popis,
+                    request.POST.get('stavka_id'),
+                    (request.POST.get('cekirano') or '') in {'1', 'true', 'True', 'on'},
+                )
+                if ajax:
+                    return JsonResponse(_popis_payload(popis))
+                return _popis_redirect(popis)
             if action == 'pauziraj':
                 pause_popis(popis)
                 return redirect('staff_magacin_popis')
@@ -5509,8 +5723,9 @@ def magacin_popis(request, pk=None):
                 popis.delete()
                 return redirect('staff_magacin_popis')
             if action == 'zavrsi':
-                finish_popis(popis)
-                return redirect('staff_magacin_popis')
+                finish_popis(popis, user=request.user)
+                messages.success(request, f'Popis #{popis.pk} je potvrđen. Količine na lokaciji su ažurirane.')
+                return _popis_redirect(popis)
             raise MagacinError('Nepoznata akcija.')
         except (MagacinError, Product.DoesNotExist, ValueError) as exc:
             if ajax:
@@ -5524,12 +5739,30 @@ def magacin_popis(request, pk=None):
     if pk and popis is None:
         messages.error(request, 'Popis nije pronađen.')
         return redirect('staff_magacin_popis')
-    if not pk:
-        popis = active_popis()
+    pick_location = request.GET.get('nova') == '1'
+    if pick_location and not pk:
+        popis = None
+    elif not pk:
+        popis = popis or active_popis()
+    loc_query = (request.GET.get('q') or '').strip()
+    popis_lokacije = []
+    if (not popis or not popis.location_id) and loc_query:
+        popis_lokacije = list(
+            usable_locations().filter(
+                Q(sifra__icontains=loc_query)
+                | Q(naziv__icontains=loc_query)
+                | Q(opis__icontains=loc_query)
+            ).order_by('redoslijed', 'sifra')[:40]
+        )
     paused = list(paused_popisi())
     if popis and popis.status == MagacinPopis.Status.PAUZIRAN:
         paused = [row for row in paused if row.pk != popis.pk]
+    finished = list(finished_popisi())
+    if popis and popis.status == MagacinPopis.Status.ZAVRSEN:
+        finished = [row for row in finished if row.pk != popis.pk]
     stavke = _popis_stavka_rows(popis)
+    for row in stavke:
+        row.razlika = int(row.kolicina or 0) - int(row.ocekivano or 0)
     context = _magacin_context(
         request, section='popis', page_title='Popis — Magacin', hide_top_search=True,
     )
@@ -5538,7 +5771,12 @@ def magacin_popis(request, pk=None):
         'stavke': stavke,
         'total_qty': sum(int(row.kolicina or 0) for row in stavke),
         'paused_popisi': paused,
+        'finished_popisi': finished,
+        'popis_spreman_za_stampu': popis_spreman_za_stampu(popis),
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
+        'popis_lokacija_q': loc_query,
+        'popis_lokacije': popis_lokacije,
+        'nova': pick_location,
         'pp_boot': _popis_payload(popis) if popis else {'ok': True, 'stavke': [], 'count': 0, 'total_qty': 0},
     })
     return render(request, 'staff/magacin/popis.html', context)
@@ -5550,17 +5788,26 @@ def magacin_popis_stampa(request):
     popis = None
     raw_id = request.GET.get('id')
     if raw_id:
-        popis = MagacinPopis.objects.filter(pk=raw_id).first()
+        popis = MagacinPopis.objects.select_related('location').filter(pk=raw_id).first()
     if popis is None:
-        popis = active_popis() or MagacinPopis.objects.order_by('-kreiran').first()
+        popis = active_popis() or MagacinPopis.objects.select_related('location').order_by('-kreiran').first()
     if popis is None:
         messages.error(request, 'Nema popisa za štampu.')
         return redirect('staff_magacin_popis')
     stavke = list(popis.stavke.all())
+    if not stavke:
+        messages.error(request, 'Nema stavki za štampu.')
+        if popis.pk:
+            return redirect('staff_magacin_popis_detail', pk=popis.pk)
+        return redirect('staff_magacin_popis')
+    razlike = (request.GET.get('razlike') or '') == '1'
+    for row in stavke:
+        row.razlika = int(row.kolicina or 0) - int(row.ocekivano or 0)
     context = _magacin_context(request, section='popis', page_title='Štampa popisa — Magacin')
     context.update({
         'popis': popis,
         'stavke': stavke,
+        'razlike': razlike,
         'print_mode': True,
     })
     return render(request, 'staff/magacin/popis_print.html', context)

@@ -232,3 +232,196 @@ body.staff-edit-mode-on {
     color: #64748b;
     line-height: 1.35;
 }
+
+body.staff-edit-mode-on [data-product-card] {
+    position: relative;
+    cursor: pointer;
+}
+body.staff-edit-mode-on [data-product-card].is-bulk-selected {
+    outline: 3px solid #5BB805;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 4px rgba(91, 184, 5, 0.18);
+}
+body.staff-edit-mode-on [data-product-card].is-bulk-selected::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 4;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #5BB805 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.2' d='M3.5 8.2l3 3 6-6'/%3E%3C/svg%3E") center / 14px no-repeat;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.staff-bulk-panel {
+    position: fixed;
+    top: 72px;
+    right: 0;
+    z-index: 13000;
+    width: min(360px, 100vw);
+    height: calc(100vh - 72px);
+    overflow: auto;
+    background: #fff;
+    border-left: 1px solid #e5e7eb;
+    box-shadow: -12px 0 40px rgba(15, 23, 42, 0.12);
+    padding: 16px 16px 24px;
+    box-sizing: border-box;
+}
+.staff-bulk-panel[hidden] { display: none !important; }
+.staff-bulk-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.staff-bulk-head h2 {
+    margin: 0;
+    font-size: 16px;
+}
+.staff-bulk-head p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+.staff-bulk-hint {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+}
+.staff-bulk-form { margin: 0; }
+.staff-bulk-opis {
+    min-height: 96px;
+    resize: vertical;
+    font-weight: 500;
+}
+.staff-bulk-lookup { position: relative; }
+.staff-bulk-lookup-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 2;
+    max-height: 220px;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+}
+.staff-bulk-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: #fff;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.staff-bulk-option:hover { background: #f8fafc; }
+.staff-bulk-empty {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #64748b;
+}
+.staff-bulk-picks {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+.staff-bulk-pick {
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+.staff-bulk-pick strong {
+    display: block;
+    font-size: 13px;
+    line-height: 1.35;
+    margin-bottom: 8px;
+}
+.staff-bulk-pick-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.staff-bulk-chatgpt,
+.staff-bulk-google {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex: 1 1 140px;
+    min-height: 34px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none !important;
+    text-align: center;
+}
+.staff-bulk-chatgpt {
+    background: #10a37f;
+    color: #fff !important;
+}
+.staff-bulk-chatgpt:hover { background: #0d8c6d; }
+.staff-bulk-google {
+    background: #fff;
+    color: #111 !important;
+    border: 1px solid #d1d5db;
+}
+.staff-bulk-google:hover { background: #f3f4f6; }
+.staff-bulk-pick-hint {
+    margin: 0 0 8px;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.3;
+}
+.staff-bulk-pick textarea {
+    min-height: 72px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+.staff-bulk-file {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+.staff-bulk-file input { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.staff-bulk-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+body.staff-bulk-open {
+    padding-right: min(360px, 100vw);
+}
+@media (max-width: 860px) {
+    .staff-bulk-panel {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: min(68vh, 560px);
+        border-left: 0;
+        border-top: 1px solid #e5e7eb;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.14);
+    }
+    body.staff-bulk-open { padding-right: 0; padding-bottom: min(68vh, 560px); }
+}

@@ -1,5 +1,6 @@
 Django>=6.0,<7.0
 Pillow>=11.0
+pypdf>=5.0
 qrcode[pil]>=8.0
 python-barcode>=0.15
 openpyxl>=3.1.0
