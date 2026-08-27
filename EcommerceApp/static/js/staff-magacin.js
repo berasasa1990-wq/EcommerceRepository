@@ -3938,10 +3938,20 @@ function initPopisPage() {
         }
     }
 
-    function focusQuery() {
-        window.setTimeout(function () {
-            try { input.focus(); input.select(); } catch (e) {}
-        }, 30);
+    function focusQuery(immediate) {
+        if (!input) return;
+        input.value = '';
+        hideSuggest();
+        function go() {
+            try {
+                input.focus({ preventScroll: false });
+                input.select();
+            } catch (e) {
+                try { input.focus(); } catch (e2) {}
+            }
+        }
+        if (immediate) go();
+        else window.setTimeout(go, 30);
     }
 
     function esc(text) {
@@ -3996,10 +4006,12 @@ function initPopisPage() {
         if (addedLabel) {
             showToast(addedLabel, false);
             beep(true);
-            input.value = '';
-            if (suggest) suggest.hidden = true;
         }
-        focusQuery();
+        if (document.activeElement !== input) focusQuery(true);
+        else {
+            input.value = '';
+            hideSuggest();
+        }
     }
 
     function post(action, extra) {
@@ -4144,7 +4156,7 @@ function initPopisPage() {
             if (commit) {
                 if (hit || (data.exact && rows.length === 1)) {
                     hideSuggest();
-                    addItem(hit || rows[0], 1);
+                    askQty(hit || rows[0]);
                     return;
                 }
                 if (rows.length === 1) {
@@ -4167,12 +4179,12 @@ function initPopisPage() {
         });
     }
 
-    function closeQty() {
+    function closeQty(opts) {
         if (modal) modal.hidden = true;
         document.body.classList.remove('pp-qty-open');
         editId = 0;
         pendingItem = null;
-        focusQuery();
+        if (!(opts && opts.keepFocus)) focusQuery(true);
     }
 
     function showQtyModal(name, sifra, qty, saveLabel, expected) {
@@ -4190,13 +4202,16 @@ function initPopisPage() {
         }
         if (qtyInput) {
             qtyInput.min = pendingItem ? '1' : '0';
-            qtyInput.value = String(qty == null ? 1 : qty);
+            qtyInput.value = pendingItem ? '' : String(qty == null ? 1 : qty);
         }
         if (qtySave) qtySave.textContent = saveLabel || 'Ubaci';
         modal.hidden = false;
         document.body.classList.add('pp-qty-open');
         window.setTimeout(function () {
-            if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
+            if (!qtyInput) return;
+            qtyInput.focus();
+            qtyInput.select();
+            try { qtyInput.click(); } catch (e) {}
         }, 40);
     }
 
@@ -4237,13 +4252,17 @@ function initPopisPage() {
         var qty = readModalQty();
         if (pendingItem) {
             var item = pendingItem;
-            closeQty();
+            closeQty({ keepFocus: true });
+            if (qtyInput) try { qtyInput.blur(); } catch (e) {}
+            focusQuery(true);
             addItem(item, qty);
             return;
         }
         if (editId) {
             var id = editId;
-            closeQty();
+            closeQty({ keepFocus: true });
+            if (qtyInput) try { qtyInput.blur(); } catch (e) {}
+            focusQuery(true);
             setQty(id, qty);
         }
     }

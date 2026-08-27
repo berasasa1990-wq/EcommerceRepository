@@ -137,7 +137,7 @@
             </button>
             <ul class="pp-suggest" id="ppSuggest" hidden></ul>
         </div>
-        <p class="mg-muted pp-hint">Skeniraj barkod — dodaje 1 kom. Ili ukucaj i izaberi količinu.</p>
+        <p class="mg-muted pp-hint">Skeniraj barkod ili izaberi artikal, pa unesi količinu.</p>
         <p class="pp-toast" id="ppToast" hidden></p>
     </div>
     {% elif popis.status == 'pauziran' %}
@@ -185,7 +185,7 @@
     {% endif %}
     {% endif %}
 
-    {% if paused_popisi %}
+    {% if paused_popisi and popis.status != 'u_toku' %}
     <section class="pp-paused">
         <h2>Pauzirani popisi</h2>
         <ul>
@@ -207,7 +207,7 @@
     </section>
     {% endif %}
 
-    {% if finished_popisi %}
+    {% if finished_popisi and popis.status != 'u_toku' %}
     <section class="pp-paused pp-finished">
         <h2>Završeni popisi</h2>
         <ul>
@@ -245,7 +245,7 @@
             <label for="ppQty">Koliko komada?</label>
             <div class="pp-qty-entry">
                 <button type="button" class="pp-step-btn" data-pp-modal-delta="-1" aria-label="Smanji">−</button>
-                <input id="ppQty" type="number" min="1" step="1" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" value="1">
+                <input id="ppQty" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" value="">
                 <button type="button" class="pp-step-btn" data-pp-modal-delta="1" aria-label="Povećaj">+</button>
             </div>
         </div>
