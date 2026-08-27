@@ -374,6 +374,91 @@ def display_stock_totals(product, variation=None):
     return totals
 
 
+def missing_maloprodaja_rows(*, query=''):
+    """Artikli na magacinskim lokacijama koji nemaju ništa u maloprodaji."""
+    mp_ids = list(maloprodaja_locations().values_list('pk', flat=True))
+    mp_keys = set()
+    if mp_ids:
+        mp_keys = set(
+            WarehouseStock.objects.filter(location_id__in=mp_ids, kolicina__gt=0)
+            .values_list('product_id', 'variation_key')
+        )
+    pending_keys = set(
+        OrderItem.objects.filter(narudzba__ime_prezime='Prenos u MP')
+        .exclude(narudzba__status=Order.Status.OTKAZANA)
+        .exclude(narudzba__lager_status=Order.LagerStatus.VALIDIRANO)
+        .values_list('artikal_id', 'varijacija_id')
+    )
+    pending_keys = {(pid, vid or 0) for pid, vid in pending_keys if pid}
+    stocks = (
+        countable_stock_qs()
+        .filter(kolicina__gt=0)
+        .select_related('product', 'variation', 'location')
+        .order_by('product__naziv', 'location__sifra')
+    )
+    q = (query or '').strip()
+    if q:
+        stocks = stocks.filter(
+            Q(product__naziv__icontains=q)
+            | Q(product__sifra__icontains=q)
+            | Q(product__barkod__icontains=q)
+            | Q(variation__sifra__icontains=q)
+            | Q(variation__naziv__icontains=q)
+        )
+    grouped = {}
+    for stock in stocks:
+        dostupno = max(0, int(stock.kolicina or 0) - max(0, int(stock.rezervisano or 0)))
+        if dostupno <= 0:
+            continue
+        key = (stock.product_id, int(stock.variation_key or 0))
+        if key in mp_keys:
+            continue
+        bucket = grouped.get(key)
+        if bucket is None:
+            bucket = {
+                'product': stock.product,
+                'variation': stock.variation,
+                'locations': [],
+                'max_qty': 0,
+                'pending_prenos': key in pending_keys,
+            }
+            grouped[key] = bucket
+        bucket['locations'].append({
+            'location': stock.location,
+            'kolicina': int(stock.kolicina or 0),
+            'rezervisano': max(0, int(stock.rezervisano or 0)),
+            'dostupno': dostupno,
+        })
+        bucket['max_qty'] += dostupno
+    rows = [row for row in grouped.values() if row['max_qty'] > 0]
+    rows.sort(key=lambda row: (
+        (row['product'].naziv or '').casefold(),
+        (row['variation'].naziv if row['variation'] else ''),
+    ))
+    return rows
+
+
+def order_location_rows(product, variation=None):
+    """Lokacije za narudžbu: magacin pa maloprodaja zadnja. Prenos se i dalje preskače."""
+    rows, totals = location_rows(product, variation)
+    extra_qty = 0
+    extra_res = 0
+    for row in maloprodaja_location_rows(product, variation):
+        rows.append(row)
+        extra_qty += int(row.get('kolicina') or 0)
+        extra_res += int(row.get('rezervisano') or 0)
+    totals = {
+        'na_stanju': int(totals.get('na_stanju') or 0) + extra_qty,
+        'rezervisano': int(totals.get('rezervisano') or 0) + extra_res,
+    }
+    totals['dostupno'] = max(0, totals['na_stanju'] - totals['rezervisano'])
+    return rows, totals
+
+
+NIJE_POPISAN_LABEL = 'Nije popisan'
+VIRTUAL_PICK_LOCS = frozenset({'MP', 'Provjeri u MP', 'Rezervni dio', NIJE_POPISAN_LABEL})
+
+
 def _keeps_site_without_locations(product):
     try:
         return bool(product.magacin_meta.mp_bez_lokacije)
@@ -2841,6 +2926,15 @@ def finish_popis(popis, *, user=None):
     return popis
 
 
+def mark_popis_odstampan(popis):
+    if popis is None:
+        return None
+    if not popis.odstampan:
+        popis.odstampan = True
+        popis.save(update_fields=['odstampan'])
+    return popis
+
+
 def set_popis_stavka_qty(popis, stavka_id, qty):
     if popis.status != MagacinPopis.Status.U_TOKU:
         raise MagacinError('Ovaj popis nije u toku.')
@@ -4091,12 +4185,12 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
     for row in stavke:
         if not row.product_id:
             raise MagacinError(f'Artikal „{row.naziv}” više ne postoji.')
-        available = stock_totals(row.product, row.variation)['dostupno']
+        available = display_stock_totals(row.product, row.variation)['dostupno']
         shortfall = max(0, row.kolicina - available)
         if shortfall > 0 and not row.mp_ok:
             raise MagacinError(
-                f'„{row.naziv}” nema dovoljno zalihe u magacinu ({available}). '
-                'Provjeri maloprodaju pa dodaj, ili makni stavku.'
+                f'„{row.naziv}” nema dostupnog artikla ({available}). '
+                f'Označi {NIJE_POPISAN_LABEL} da ga dodaš, ili makni stavku.'
             )
         if shortfall > 0 and row.mp_ok:
             mp_names.append(row.naziv)
@@ -4122,7 +4216,7 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
         )
         medjuzbir = totals['ukupno_sa_pdv']
     if mp_names:
-        napomena = f'{napomena}\nMaloprodaja: {", ".join(mp_names)}'
+        napomena = f'{napomena}\n{NIJE_POPISAN_LABEL}: {", ".join(mp_names)}'
     with transaction.atomic():
         order = Order.objects.create(
             ime_prezime=draft.ime_prezime[:200],
@@ -4176,14 +4270,14 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
-    _, hold_variation = _stock_scope(product, variation)
-    rows, _ = location_rows(product, variation)
+    rows, _ = order_location_rows(product, variation)
     for row in rows:
         if remaining <= 0:
             break
         take = min(row['dostupno'], remaining)
         if take <= 0:
             continue
+        _stock, hold_variation = _stock_row_for_sale(product, variation, row['location'])
         apply_movement(
             product=product,
             variation=hold_variation,
@@ -4202,20 +4296,18 @@ def reserve_for_order(order, product, qty, *, variation=None, user=None, napomen
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
-    _, hold_variation = _stock_scope(product, variation)
-    rows, _ = location_rows(product, variation)
+    rows, _ = order_location_rows(product, variation)
     if location is not None:
         loc_pk = getattr(location, 'pk', location)
         rows = [row for row in rows if row['location'].pk == loc_pk]
     for row in rows:
         if remaining <= 0:
             break
-        take = min(row['dostupno'], remaining)
+        stock, hold_variation = _stock_row_for_sale(product, variation, row['location'])
+        avail = max(0, int(stock.kolicina or 0) - max(0, int(stock.rezervisano or 0)))
+        take = min(avail, remaining)
         if take <= 0:
             continue
-        stock = get_or_create_stock(
-            product=product, variation=hold_variation, location=row['location'],
-        )
         apply_movement(
             product=product,
             variation=hold_variation,
@@ -4404,15 +4496,30 @@ def order_is_editable(order):
         return False
 
 
-def _note_maloprodaja(order, product, variation=None):
+def _note_nije_popisan(order, product, variation=None):
     naziv = f'{product.naziv} {variation.naziv}'.strip() if variation else product.naziv
     note = (order.napomena or '').strip()
-    marker = f'Maloprodaja: {naziv}'
+    marker = f'{NIJE_POPISAN_LABEL}: {naziv}'
     if marker in note:
         return
-    extra = marker if 'Maloprodaja:' in note else f'Maloprodaja: {naziv}'
+    extra = marker if f'{NIJE_POPISAN_LABEL}:' in note else f'{NIJE_POPISAN_LABEL}: {naziv}'
     order.napomena = f'{note}\n{extra}'.strip() if note else extra
     order.save(update_fields=['napomena'])
+
+
+def order_has_nije_popisan(order, item=None):
+    note = order.napomena or ''
+    if f'{NIJE_POPISAN_LABEL}:' not in note:
+        return False
+    if item is None:
+        return True
+    naziv = (getattr(item, 'product_naziv', None) or getattr(item, 'naziv', None) or '').strip()
+    if naziv and naziv in note:
+        return True
+    product = getattr(item, 'artikal', None)
+    if product is not None and product.naziv and product.naziv in note:
+        return True
+    return False
 
 
 @transaction.atomic
@@ -4421,12 +4528,12 @@ def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=
     qty = max(1, _int(qty))
     if variation and variation.artikal_id != product.pk:
         raise MagacinError('Varijacija ne pripada artiklu.')
-    available = stock_totals(product, variation)['dostupno']
+    available = display_stock_totals(product, variation)['dostupno']
     shortfall = max(0, qty - available)
     if shortfall > 0 and not mp_ok:
         raise MagacinError(
-            f'„{product.naziv}” nema dovoljno zalihe u magacinu ({available}). '
-            'Provjeri maloprodaju pa dodaj, ili makni stavku.'
+            f'„{product.naziv}” nema dostupnog artikla ({available}). '
+            f'Označi {NIJE_POPISAN_LABEL} da ga dodaš, ili makni stavku.'
         )
     cijena, bazna = _order_item_unit_price(order, product, variation)
     existing = OrderItem.objects.filter(
@@ -4462,7 +4569,7 @@ def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=
     if leftover and not mp_ok:
         raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
     if shortfall > 0:
-        _note_maloprodaja(order, product, variation)
+        _note_nije_popisan(order, product, variation)
     _clear_pick_state_for_item(order, item.pk)
     recalculate_order_totals(order)
     return item
@@ -4482,13 +4589,13 @@ def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
     if qty == current and not mp_ok:
         return item
     delta = qty - current
-    available = stock_totals(product, variation)['dostupno']
+    available = display_stock_totals(product, variation)['dostupno']
     if delta > 0:
         shortfall = max(0, delta - available)
         if shortfall > 0 and not mp_ok:
             raise MagacinError(
-                f'„{product.naziv}” nema dovoljno zalihe u magacinu ({available}). '
-                'Provjeri maloprodaju pa dodaj, ili makni stavku.'
+                f'„{product.naziv}” nema dostupnog artikla ({available}). '
+                f'Označi {NIJE_POPISAN_LABEL} da ga dodaš, ili makni stavku.'
             )
         leftover = reserve_for_order(
             order,
@@ -4501,7 +4608,7 @@ def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
         if leftover and not mp_ok:
             raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
         if shortfall > 0:
-            _note_maloprodaja(order, product, variation)
+            _note_nije_popisan(order, product, variation)
     elif delta < 0:
         release_holds_for_product(order, product, variation, -delta, user=user)
     item.kolicina = qty
@@ -4578,7 +4685,7 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
     product = item.artikal
     variation = item.varijacija
     skip_stock = (
-        loc in {'MP', 'Provjeri u MP', 'Rezervni dio'}
+        loc in VIRTUAL_PICK_LOCS
         or getattr(item, 'rezervni_dio', False)
         or product is None
     )
@@ -4668,7 +4775,7 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
     product = item.artikal
     variation = item.varijacija
     if (
-        loc in {'MP', 'Provjeri u MP', 'Rezervni dio'}
+        loc in VIRTUAL_PICK_LOCS
         or getattr(item, 'rezervni_dio', False)
         or product is None
     ):

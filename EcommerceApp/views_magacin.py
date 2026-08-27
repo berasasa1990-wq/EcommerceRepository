@@ -44,6 +44,7 @@ from .magacin import (
     leftover_uvoz_stocks,
     move_uvoz_leftovers_to_mp,
     finish_popis,
+    mark_popis_odstampan,
     finish_vp_narudzba,
     remove_popis_stavka,
     remove_vp_stavka,
@@ -69,6 +70,8 @@ from .magacin import (
     release_holds_for_product,
     cancel_order_stock,
     is_ignored_stock_location,
+    is_uncountable_stock_location,
+    maloprodaja_locations,
     ignored_location_q,
     last_sync,
     load_running_sync_job,
@@ -76,6 +79,7 @@ from .magacin import (
     run_sync_until,
     location_rows,
     maloprodaja_location_rows,
+    missing_maloprodaja_rows,
     display_stock_totals,
     countable_stock_qs,
     deduct_mp_daily_stock,
@@ -2856,7 +2860,7 @@ def _build_picked_packing_lines(order):
         picks = sorted(
             picks,
             key=lambda p: (
-                1 if (p.get('location_name') or '') in {'MP', 'Provjeri u MP'} else 0,
+                1 if (p.get('location_name') or '') in {'MP', 'Provjeri u MP', 'Nije popisan'} else 0,
                 (p.get('location_name') or '').casefold(),
             ),
         )
@@ -2880,6 +2884,7 @@ def _build_picked_packing_lines(order):
             'pick_text': pick_text,
             'shortfall': 0,
             'check_mp': any((p.get('location_name') or '') in {'MP', 'Provjeri u MP'} for p in picks),
+            'nije_popisan': any((p.get('location_name') or '') == 'Nije popisan' for p in picks),
         })
     return lines, ''
 
@@ -2985,7 +2990,9 @@ def magacin_artikli_lookup(request):
         products = [exact]
     results = []
     for product in products:
-        totals = stock_totals(product)
+        totals = display_stock_totals(product)
+        if not include_zero and totals['na_stanju'] <= 0 and totals['dostupno'] <= 0:
+            continue
         results.append({
             'id': product.pk,
             'naziv': product.naziv,
@@ -3000,7 +3007,7 @@ def magacin_artikli_lookup(request):
                     'naziv': var.naziv,
                     'sifra': var.sifra or '',
                     'cijena': str(var.prikazna_cijena),
-                    'na_stanju': stock_totals(product, var)['dostupno'],
+                    'na_stanju': display_stock_totals(product, var)['dostupno'],
                 }
                 for var in product.varijacije.all()
             ],
@@ -3337,7 +3344,7 @@ def _posted_display_lines(request):
         if raw_vid:
             variation = ProductVariation.objects.filter(pk=int(raw_vid), artikal=product).first()
         cijena = variation.prikazna_cijena if variation else product.prikazna_cijena
-        available = stock_totals(product, variation)['dostupno']
+        available = display_stock_totals(product, variation)['dostupno']
         lines.append({
             'product': product,
             'variation': variation,
@@ -3369,14 +3376,14 @@ def _order_display_lines(order):
         variation = item.varijacija
         available = 0
         if product is not None:
-            available = stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
+            available = display_stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
                 order, product, variation,
             )
         lines.append({
             'product': product,
             'variation': variation,
             'qty': item.kolicina,
-            'mp_ok': 'Maloprodaja' in (order.napomena or ''),
+            'mp_ok': 'Nije popisan' in (order.napomena or ''),
             'cijena': item.cijena,
             'dostupno': available,
             'rezervni': bool(getattr(item, 'rezervni_dio', False)),
@@ -3451,13 +3458,13 @@ def _create_manual_order(request, *, existing=None):
         elif product.varijacije.exists():
             raise MagacinError(f'Odaberi varijaciju za „{product.naziv}”.')
         mp_ok = (mp_flags[index] if index < len(mp_flags) else '') == '1'
-        available = stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
+        available = display_stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
             existing, product, variation,
         )
         if available < qty and not mp_ok:
             raise MagacinError(
-                f'„{product.naziv}” nema dovoljno zalihe u magacinu ({available}). '
-                'Provjeri maloprodaju pa klikni Dodaj, ili makni stavku.'
+                f'„{product.naziv}” nema dostupnog artikla ({available}). '
+                'Označi Nije popisan da ga dodaš, ili makni stavku.'
             )
         cijena = variation.prikazna_cijena if variation else product.prikazna_cijena
         bazna = variation.bazna_cijena if variation else product.bazna_cijena
@@ -3572,12 +3579,12 @@ def _save_manual_order(
 ):
     napomena = _strip_card_pay_note((request.POST.get('napomena') or '').strip())
     mp_names = [
-        (line['variation'].naziv if line['variation'] else line['product'].naziv)
+        (f"{line['product'].naziv} {line['variation'].naziv}".strip() if line['variation'] else line['product'].naziv)
         for line in lines
         if line.get('product') and line['mp_ok'] and line['shortfall'] > 0
     ]
     if mp_names:
-        extra = 'Maloprodaja: ' + ', '.join(mp_names)
+        extra = 'Nije popisan: ' + ', '.join(mp_names)
         napomena = f'{napomena}\n{extra}'.strip() if napomena else extra
     if placanje == 'kartica':
         napomena = f'{napomena}\nPlaćeno karticom'.strip() if napomena else 'Plaćeno karticom'
@@ -3763,6 +3770,7 @@ def _packing_location_groups(lines):
     groups = {}
     mp_items = []
     mp_confirmed_items = []
+    nije_items = []
     for line in lines:
         picks = line.get('picks') or []
         for pick in picks:
@@ -3781,9 +3789,12 @@ def _packing_location_groups(lines):
                 'loc_path': pick.get('location_path') or '',
                 'kolicina': line.get('kolicina'),
                 'rezervni': bool(line.get('rezervni') or name == 'Rezervni dio'),
+                'nije_popisan': name == 'Nije popisan',
             }
             if name == 'MP':
                 mp_confirmed_items.append(row)
+            elif name == 'Nije popisan':
+                nije_items.append(row)
             else:
                 groups.setdefault(name, []).append(row)
         if line.get('check_mp'):
@@ -3838,6 +3849,14 @@ def _packing_location_groups(lines):
             'rb_label': f'{index:02d}',
             'items': _number_items(mp_confirmed_items),
         })
+    if nije_items:
+        index = len(ordered) + 1
+        ordered.append({
+            'label': 'Nije popisan',
+            'rb': index,
+            'rb_label': f'{index:02d}',
+            'items': _number_items(nije_items),
+        })
     return ordered
 
 
@@ -3869,6 +3888,8 @@ def _pick_queue(location_groups):
         loc_path = ''
         if loc['label'] in {'MP', 'Provjeri u MP'}:
             loc_path = 'Maloprodaja'
+        elif loc['label'] == 'Nije popisan':
+            loc_path = 'Nije popisan'
         elif loc['label'] == 'Rezervni dio':
             loc_path = 'Slanje rezervnog dijela'
         elif loc_obj:
@@ -3916,6 +3937,7 @@ def _pick_queue(location_groups):
                 'on_hand': on_hand,
                 'codes': codes,
                 'is_mp': loc['label'] in {'MP', 'Provjeri u MP'},
+                'nije_popisan': loc['label'] == 'Nije popisan' or bool(item.get('nije_popisan')),
                 'rezervni': bool(item.get('rezervni') or loc['label'] == 'Rezervni dio'),
             })
     return queue
@@ -3959,8 +3981,10 @@ def collect_mp_checks(orders=None):
     """Artikli bez zalihe (Provjeri u MP) — samo lokalni Magacin, bez Odoo poziva.
 
     Online narudžbe nemaju rezervaciju; slobodna magacinska zaliha se i dalje
-    uzima s lokacije, ne šalje u MP.
+    uzima s lokacije, ne šalje u MP. Nije popisan se ne šalje na provjeru.
     """
+    from .magacin import order_has_nije_popisan
+
     if orders is None:
         orders = list(
             _unvalidated_orders_qs()
@@ -3975,7 +3999,7 @@ def collect_mp_checks(orders=None):
             return 0
         key = (product.pk, getattr(variation, 'pk', None))
         if key not in remaining_avail:
-            remaining_avail[key] = stock_totals(product, variation)['dostupno']
+            remaining_avail[key] = display_stock_totals(product, variation)['dostupno']
         take = min(qty, remaining_avail[key])
         remaining_avail[key] -= take
         return take
@@ -3997,6 +4021,8 @@ def collect_mp_checks(orders=None):
             short = max(0, int(item.kolicina or 0) - reserved)
             short -= _cover_from_warehouse(item.artikal, item.varijacija, short)
             if short <= 0:
+                continue
+            if order_has_nije_popisan(order, item):
                 continue
             pick_key = f'{item.pk}:Provjeri u MP'
             saved = state.get(pick_key) or {}
@@ -4982,8 +5008,8 @@ def _pakuj_order_payload(order):
 
 def _pakuj_need_mp(request, order, product, variation, qty, *, available, naziv):
     message = (
-        f'„{naziv}” nema dovoljno zalihe u magacinu ({available}). '
-        'Provjeri maloprodaju pa klikni Dodaj, ili makni stavku.'
+        f'„{naziv}” nema dostupnog artikla ({available}). '
+        'Označi Nije popisan da ga dodaš, ili makni stavku.'
     )
     if _pakuj_is_ajax(request):
         return JsonResponse({
@@ -5012,7 +5038,7 @@ def _pakuj_edit_order(request, order):
                 variation = get_object_or_404(ProductVariation, pk=int(var_id), artikal=product)
             qty = _parse_qty(request.POST.get('kolicina') or '1')
             mp_ok = request.POST.get('mp_ok') == '1'
-            available = stock_totals(product, variation)['dostupno']
+            available = display_stock_totals(product, variation)['dostupno']
             if qty > available and not mp_ok:
                 naziv = f'{product.naziv} {variation.naziv}'.strip() if variation else product.naziv
                 return _pakuj_need_mp(
@@ -5036,7 +5062,7 @@ def _pakuj_edit_order(request, order):
                 raise MagacinError('Artikal više ne postoji.')
             delta = qty - int(item.kolicina or 0)
             if delta > 0 and not mp_ok:
-                available = stock_totals(product, item.varijacija)['dostupno']
+                available = display_stock_totals(product, item.varijacija)['dostupno']
                 if delta > available:
                     return _pakuj_need_mp(
                         request, order, product, item.varijacija, qty,
@@ -5724,8 +5750,8 @@ def magacin_popis(request, pk=None):
                 return redirect('staff_magacin_popis')
             if action == 'zavrsi':
                 finish_popis(popis, user=request.user)
-                messages.success(request, f'Popis #{popis.pk} je potvrđen. Količine na lokaciji su ažurirane.')
-                return _popis_redirect(popis)
+                messages.success(request, f'Popis #{popis.pk} je završen. Količine na lokaciji su ažurirane.')
+                return redirect('staff_magacin_popis')
             raise MagacinError('Nepoznata akcija.')
         except (MagacinError, Product.DoesNotExist, ValueError) as exc:
             if ajax:
@@ -5786,7 +5812,8 @@ def magacin_popis(request, pk=None):
 @user_passes_test(_superuser_required)
 def magacin_popis_stampa(request):
     popis = None
-    raw_id = request.GET.get('id')
+    data = request.POST if request.method == 'POST' else request.GET
+    raw_id = data.get('id')
     if raw_id:
         popis = MagacinPopis.objects.select_related('location').filter(pk=raw_id).first()
     if popis is None:
@@ -5800,7 +5827,9 @@ def magacin_popis_stampa(request):
         if popis.pk:
             return redirect('staff_magacin_popis_detail', pk=popis.pk)
         return redirect('staff_magacin_popis')
-    razlike = (request.GET.get('razlike') or '') == '1'
+    razlike = (data.get('razlike') or '') == '1'
+    if request.method == 'POST':
+        mark_popis_odstampan(popis)
     for row in stavke:
         row.razlika = int(row.kolicina or 0) - int(row.ocekivano or 0)
     context = _magacin_context(request, section='popis', page_title='Štampa popisa — Magacin')
@@ -5813,6 +5842,58 @@ def magacin_popis_stampa(request):
     return render(request, 'staff/magacin/popis_print.html', context)
 
 
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_fali_na_sajtu(request):
+    _ensure_magacin_locations()
+    query = (request.GET.get('q') or request.POST.get('q') or '').strip()
+    if request.method == 'POST' and (request.POST.get('action') or '').strip() == 'prenos_mp':
+        try:
+            product = get_object_or_404(
+                magacin_products_qs(), pk=int(request.POST.get('product_id') or 0),
+            )
+            variation = None
+            raw_vid = (request.POST.get('variation_id') or '').strip()
+            if raw_vid:
+                variation = get_object_or_404(ProductVariation, pk=int(raw_vid), artikal=product)
+            location = get_object_or_404(
+                usable_locations(), pk=int(request.POST.get('location_id') or 0),
+            )
+            if is_uncountable_stock_location(location):
+                raise MagacinError('Prenos u MP ide s magacinske lokacije, ne s maloprodaje.')
+            order = create_prenos_mp_pick(
+                product=product,
+                variation=variation,
+                location=location,
+                qty=_parse_qty(request.POST.get('kolicina') or '1'),
+                user=request.user,
+            )
+            qty = order.stavke.first().kolicina if order.stavke.exists() else request.POST.get('kolicina')
+            messages.success(
+                request,
+                f'Prenos u MP ({qty} kom) je na Pickingu. Otvori Picking pa klikni tu stavku.',
+            )
+        except (MagacinError, Product.DoesNotExist, ProductVariation.DoesNotExist, WarehouseLocation.DoesNotExist, TypeError, ValueError) as exc:
+            messages.error(request, str(exc) if str(exc) else 'Prenos u MP nije uspio.')
+        url = reverse('staff_magacin_fali_na_sajtu')
+        if query:
+            url = f'{url}?{urlencode({"q": query})}'
+        return redirect(url)
+    rows = missing_maloprodaja_rows(query=query)
+    paginator = Paginator(rows, 40)
+    page = paginator.get_page(request.GET.get('page') or 1)
+    context = _magacin_context(
+        request, section='fali_na_sajtu', page_title='Fali na sajtu — Magacin',
+    )
+    context.update({
+        'page': page,
+        'result_count': paginator.count,
+        'fali_q': query,
+        'has_mp_location': maloprodaja_locations().exists(),
+    })
+    return render(request, 'staff/magacin/fali_na_sajtu.html', context)
+
+
 def _vp_is_ajax(request):
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
@@ -5822,7 +5903,7 @@ def _vp_stock_block(request, draft, product, variation, qty, *, mp_ok=False, rep
 
     _, stock_variation = _stock_scope(product, variation)
     existing = stavka or draft.stavke.filter(product=product, variation=stock_variation).first()
-    available = stock_totals(product, variation)['dostupno']
+    available = display_stock_totals(product, variation)['dostupno']
     needed = qty if replace else qty + (existing.kolicina if existing else 0)
     if needed <= available or mp_ok or (existing and existing.mp_ok):
         return None
@@ -5830,8 +5911,8 @@ def _vp_stock_block(request, draft, product, variation, qty, *, mp_ok=False, rep
     if variation:
         naziv = f'{product.naziv} {variation.naziv}'.strip()
     message = (
-        f'„{naziv}” nema dovoljno zalihe u magacinu ({available}). '
-        'Provjeri maloprodaju pa klikni Dodaj, ili makni stavku.'
+        f'„{naziv}” nema dostupnog artikla ({available}). '
+        'Označi Nije popisan da ga dodaš, ili makni stavku.'
     )
     if _vp_is_ajax(request):
         return JsonResponse({

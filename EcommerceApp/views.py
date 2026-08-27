@@ -5189,13 +5189,13 @@ def _allocate_packing_locations(needed_qty, stock_locations):
 
 def _magacin_stock_picks(items):
     """Picks iz lokalnog Magacin stanja kad nema rezervacije (npr. webshop)."""
-    from .magacin import location_rows
+    from .magacin import order_location_rows
 
     picks_by_item = {}
     for item in items:
         if getattr(item, 'rezervni_dio', False) or not item.artikal_id:
             continue
-        rows, _ = location_rows(item.artikal, item.varijacija)
+        rows, _ = order_location_rows(item.artikal, item.varijacija)
         remaining = int(item.kolicina or 0)
         picks = []
         for row in rows:
@@ -5297,6 +5297,7 @@ def _build_order_packing_lines(order):
     Lokacije se čiste abecedno; količina se uzima redom s prvih lokacija.
     """
     from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
+    from .magacin import NIJE_POPISAN_LABEL, order_has_nije_popisan
 
     items = list(
         order.stavke.select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija').all()
@@ -5392,12 +5393,25 @@ def _build_order_packing_lines(order):
                     'on_hand': mp_take,
                 })
             shortfall = 0
+        if shortfall > 0 and order_has_nije_popisan(order, item):
+            picks = list(picks or [])
+            picks.append({
+                'location_name': NIJE_POPISAN_LABEL,
+                'location_id': None,
+                'take': shortfall,
+                'on_hand': shortfall,
+                'location_path': NIJE_POPISAN_LABEL,
+            })
+            shortfall = 0
         if picks:
             picks = sorted(
                 picks,
-                key=lambda p: (1 if (p.get('location_name') or '') == 'MP' else 0, (p.get('location_name') or '').casefold()),
+                key=lambda p: (
+                    1 if (p.get('location_name') or '') in {'MP', 'Provjeri u MP', 'Nije popisan'} else 0,
+                    (p.get('location_name') or '').casefold(),
+                ),
             )
-        # Ako ima Odoo zalihe: lokacija + koliko uzimaš; inače (ili ostatak) → Provjeri u MP
+        # Ako ima zalihe: lokacija + koliko uzimaš; inače ostatak → Provjeri u MP (online) ili Nije popisan
         if picks:
             pick_parts = [
                 f"{p['take']}× {p['location_name']}"
@@ -5455,7 +5469,11 @@ def _build_order_packing_lines(order):
             'picks': picks,
             'pick_text': pick_text,
             'shortfall': shortfall,
-            'check_mp': item.pk not in mp_confirmed and (not picks or shortfall > 0),
+            'check_mp': (
+                item.pk not in mp_confirmed
+                and (not picks or shortfall > 0)
+                and not any((p.get('location_name') or '') == 'Nije popisan' for p in (picks or []))
+            ),
             'stock_locations': stock_locations,
         })
 

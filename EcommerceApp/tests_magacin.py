@@ -203,6 +203,38 @@ class MagacinStockTests(TestCase):
         self.assertEqual(mp_rows[0]['kolicina'], 20)
         self.assertTrue(mp_rows[0]['is_mp'])
 
+    def test_missing_maloprodaja_rows_skips_retail_stock(self):
+        from .magacin import missing_maloprodaja_rows
+
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=4)
+        rows = missing_maloprodaja_rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['product'].pk, self.product.pk)
+        self.assertEqual(rows[0]['max_qty'], 4)
+        self.assertEqual(rows[0]['locations'][0]['location'].sifra, 'A-10')
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=1)
+        self.assertEqual(missing_maloprodaja_rows(), [])
+
+    def test_order_location_rows_puts_maloprodaja_last(self):
+        from .magacin import order_location_rows, reserve_for_order
+
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=4)
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=6)
+        rows, totals = order_location_rows(self.product)
+        self.assertEqual(totals['na_stanju'], 10)
+        self.assertEqual([row['location'].sifra for row in rows], ['A-10', 'B-03'])
+        self.assertTrue(rows[-1].get('is_mp'))
+        order = Order.objects.create(
+            ime_prezime='MP Reserve', email='a@b.c', telefon='061',
+            adresa='x', grad='y', medjuzbir=0, dostava=0, ukupno=0,
+        )
+        leftover = reserve_for_order(order, self.product, 5)
+        self.assertEqual(leftover, 0)
+        mag = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        mp = WarehouseStock.objects.get(product=self.product, location=self.b03)
+        self.assertEqual(mag.rezervisano, 4)
+        self.assertEqual(mp.rezervisano, 1)
+
     def test_maloprodaja_only_keeps_in_stock_status(self):
         apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=5)
         self.product.refresh_from_db()
@@ -1975,10 +2007,41 @@ class MagacinViewTests(TestCase):
             'staff_magacin_pakuj',
             'staff_magacin_izvjestaji',
             'staff_magacin_popis',
+            'staff_magacin_fali_na_sajtu',
             'staff_magacin_vp_narudzba',
         ):
             response = self.client.get(reverse(name))
             self.assertEqual(response.status_code, 200, name)
+
+    def test_fali_na_sajtu_lists_warehouse_only_and_prenos_mp(self):
+        self.client.force_login(self.user)
+        mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
+        if mp is None:
+            mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        listed = self.client.get(reverse('staff_magacin_fali_na_sajtu'))
+        self.assertEqual(listed.status_code, 200)
+        self.assertContains(listed, 'Fali na sajtu')
+        self.assertContains(listed, self.product.naziv)
+        self.assertContains(listed, 'T-1')
+        self.assertContains(listed, 'Max za prenos')
+        self.assertContains(listed, 'Prenesi u MP')
+        self.assertNotContains(listed, self.zero.naziv)
+        src = WarehouseLocation.objects.get(sifra='T-1')
+        sent = self.client.post(reverse('staff_magacin_fali_na_sajtu'), {
+            'action': 'prenos_mp',
+            'product_id': str(self.product.pk),
+            'variation_id': '',
+            'location_id': str(src.pk),
+            'kolicina': '3',
+        })
+        self.assertEqual(sent.status_code, 302)
+        order = Order.objects.get(ime_prezime='Prenos u MP')
+        self.assertEqual(order.stavke.get().kolicina, 3)
+        pending = self.client.get(reverse('staff_magacin_fali_na_sajtu'))
+        self.assertContains(pending, 'Prenos je već na Pickingu')
+        apply_movement(product=self.product, location=mp, tip='prijem', kolicina=1)
+        gone = self.client.get(reverse('staff_magacin_fali_na_sajtu'))
+        self.assertNotContains(gone, self.product.naziv)
 
     def test_popis_without_location_asks_for_location(self):
         self.client.force_login(self.user)
@@ -2059,12 +2122,24 @@ class MagacinViewTests(TestCase):
         html = diffs.content.decode()
         self.assertLess(html.find('Popisano'), html.find('Prije'))
         self.assertLess(html.find('Prije'), html.find('Razlika'))
-        listing = self.client.get(reverse('staff_magacin_popis') + '?nova=1')
+        listing = self.client.get(finished['Location'])
         self.assertContains(listing, 'Završeni popisi')
         self.assertContains(listing, f'Popis #{popis.pk}')
+        self.assertNotContains(listing, 'is-done')
         self.assertContains(listing, 'Štampaj')
         self.assertContains(listing, 'Razlike')
+        self.assertContains(listing, reverse('staff_magacin_popis_detail', args=[popis.pk]))
         self.assertNotContains(listing, 'Čekiraj')
+        popis.refresh_from_db()
+        self.assertFalse(popis.odstampan)
+        stamped = self.client.post(reverse('staff_magacin_popis_stampa'), {'id': str(popis.pk)})
+        self.assertEqual(stamped.status_code, 200)
+        popis.refresh_from_db()
+        self.assertTrue(popis.odstampan)
+        again_list = self.client.get(reverse('staff_magacin_popis') + '?nova=1')
+        self.assertContains(again_list, 'is-done')
+        self.assertContains(again_list, 'Završeno')
+        self.assertContains(again_list, f'Popis #{popis.pk}')
         self.client.post(reverse('staff_magacin_popis'), {
             'action': 'novi', 'location_id': loc.pk,
         })
@@ -2088,8 +2163,21 @@ class MagacinViewTests(TestCase):
         self.assertEqual(finished.status_code, 302)
         stock = WarehouseStock.objects.get(product=self.product, location=loc)
         self.assertEqual(stock.kolicina, 8)
-        page = self.client.get(finished['Location'])
+        home = self.client.get(finished['Location'])
+        self.assertContains(home, 'Završeni popisi')
+        self.assertNotContains(home, 'is-done')
+        self.client.post(reverse('staff_magacin_popis_stampa'), {
+            'id': str(MagacinPopis.objects.get(status=MagacinPopis.Status.ZAVRSEN).pk),
+        })
+        marked = self.client.get(reverse('staff_magacin_popis') + '?nova=1')
+        self.assertContains(marked, 'is-done')
+        self.assertContains(marked, 'Završeno')
+        page = self.client.get(reverse('staff_magacin_popis_detail', args=[
+            MagacinPopis.objects.get(status=MagacinPopis.Status.ZAVRSEN).pk
+        ]))
         self.assertContains(page, 'Tačna količina')
+        self.assertContains(page, 'Štampaj')
+        self.assertContains(page, 'Razlike')
         diffs = self.client.get(reverse('staff_magacin_popis_stampa') + f'?id={MagacinPopis.objects.get(status=MagacinPopis.Status.ZAVRSEN).pk}&razlike=1')
         self.assertContains(diffs, 'class="is-ok"')
         self.assertNotContains(diffs, 'class="is-diff"')
@@ -2111,6 +2199,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(live, 'pp-dock')
         self.assertContains(live, 'pp-foot')
         self.assertContains(live, 'form="ppFinishForm"')
+        self.assertContains(live, 'Završeno')
         self.assertContains(live, 'Skeniraj barkod')
         added = self.client.post(url, {
             'action': 'dodaj',
@@ -3196,39 +3285,16 @@ class MagacinViewTests(TestCase):
         finished = self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'zavrsi'})
         self.assertEqual(finished.status_code, 302)
         order = Order.objects.get(ime_prezime='MP Kupac')
-        self.assertIn('Maloprodaja', order.napomena)
+        self.assertIn('Nije popisan', order.napomena)
         self.assertEqual(finished['Location'], reverse('staff_magacin_narudzbe'))
         picking = self.client.get(reverse('staff_magacin_pakuj'))
         self.assertEqual(picking.status_code, 200)
-        self.assertContains(picking, 'Artikli u MP')
-        self.assertEqual(picking.context['new_pack_orders_count'], 0)
-        check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {'next': 'pick'})
-        self.assertEqual(check.status_code, 200)
-        self.assertContains(check, 'Artikli u MP')
-        self.assertContains(check, 'MP Kupac')
-        self.assertTrue(check.context['customers'])
-        items = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': order.broj, 'next': 'pick',
-        })
-        groups = items.context['groups']
-        self.assertTrue(groups)
-        confirmed = self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': groups[0]['key'],
-            'action': 'ima',
-            'narudzba': order.broj,
-            'next': 'pick',
-        })
-        self.assertEqual(confirmed.status_code, 302)
-        self.assertEqual(confirmed['Location'], reverse('staff_magacin_pakuj'))
-        ready = self.client.get(confirmed['Location'])
-        self.assertEqual(ready.status_code, 200)
-        self.assertContains(ready, 'MP Kupac')
         pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(pick.status_code, 200)
         queue = json.loads(pick.context['pick_queue_json'])
         self.assertTrue(queue)
-        self.assertTrue(all(item.get('is_mp') for item in queue))
-        self.assertTrue(all(item.get('loc') == 'MP' for item in queue))
+        self.assertTrue(all(item.get('nije_popisan') for item in queue))
+        self.assertTrue(all(item.get('loc') == 'Nije popisan' for item in queue))
         self.assertFalse(any((item.get('loc') or '').startswith('T-') for item in queue))
         self.assertContains(pick, 'id="pkLocKicker"')
 
@@ -3925,8 +3991,8 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'id="mgMpModal"')
         self.assertContains(form, 'id="mgMpAdd"')
         self.assertContains(form, 'Izbaci')
-        self.assertContains(form, 'Provjeri u maloprodaji')
-        self.assertContains(form, 'stavi na narudžbu')
+        self.assertContains(form, 'Nema dostupnog artikla')
+        self.assertContains(form, 'Nije popisan — dodaj')
         self.assertContains(form, 'name="popust_pct"')
         self.assertContains(form, 'Popust %')
         self.assertContains(form, 'id="mgOrderDisc"')
@@ -4212,6 +4278,34 @@ class MagacinViewTests(TestCase):
         self.assertContains(listed, '1 za pakovanje')
         self.assertContains(listed, 'is-blink-pack')
         self.assertNotContains(listed, 'novih narudžbi')
+
+    def test_order_from_maloprodaja_stock_without_nije_popisan(self):
+        self.client.force_login(self.user)
+        mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        only_mp = Product.objects.create(
+            naziv='Samo MP', sifra='MP-ONLY', cijena=Decimal('7.00'),
+            stanje=0, na_stanju=False, magacin_sync_at=timezone.now(),
+        )
+        apply_movement(product=only_mp, location=mp, tip='prijem', kolicina=4)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'MP Kupac Nar',
+            'telefon': '061909090',
+            'product_id': [str(only_mp.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='MP Kupac Nar')
+        self.assertNotIn('Nije popisan', order.napomena or '')
+        hold = OrderStockHold.objects.get(narudzba=order)
+        self.assertEqual(hold.location_id, mp.pk)
+        self.assertEqual(hold.kolicina, 2)
+        pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(pick.status_code, 200)
+        queue = json.loads(pick.context['pick_queue_json'])
+        self.assertEqual(queue[0]['loc'], 'B-03')
+        self.assertFalse(queue[0].get('nije_popisan'))
 
     def test_spare_part_line_on_order_and_picking(self):
         self.client.force_login(self.user)
@@ -4950,7 +5044,7 @@ class MagacinViewTests(TestCase):
             'mp_ok': ['0'],
         })
         self.assertEqual(blocked.status_code, 200)
-        self.assertContains(blocked, 'maloprodaju')
+        self.assertContains(blocked, 'Nije popisan')
         self.assertFalse(Order.objects.filter(izvor=Order.Izvor.MAGACIN).exists())
 
         allowed = self.client.post(reverse('staff_magacin_narudzba_nova'), {
@@ -4963,83 +5057,24 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(allowed.status_code, 302)
         order = Order.objects.get(izvor=Order.Izvor.MAGACIN)
-        self.assertIn('Maloprodaja', order.napomena)
+        self.assertIn('Nije popisan', order.napomena)
         self.assertEqual(order.stavke.get().artikal_id, self.zero.pk)
         self.assertEqual(allowed['Location'], reverse('staff_magacin_narudzbe'))
         orders_list = self.client.get(reverse('staff_magacin_narudzbe'))
-        self.assertContains(orders_list, 'is-mp-lock')
-        self.assertContains(orders_list, 'Prvo Provjera MP')
+        self.assertNotContains(orders_list, 'is-mp-lock')
         self.assertContains(orders_list, reverse('staff_order_detail', args=[order.broj]))
-        self.assertNotContains(orders_list, reverse('staff_magacin_pakuj_provjera'))
-        print_page = self.client.get(reverse('staff_magacin_narudzbe_stampa'), {'b': [order.broj]})
-        self.assertEqual(print_page.status_code, 302)
-        self.assertIn('/nalog/magacin/pakuj/provjera/', print_page['Location'])
-        self.assertIn(f'narudzba={order.broj}', print_page['Location'])
-        focused = self.client.get(reverse('staff_magacin_pakuj_provjera'), {'narudzba': order.broj, 'next': 'stampa'})
-        self.assertEqual(focused.status_code, 200)
-        self.assertContains(focused, 'Prazan lager')
-        self.assertContains(focused, f'#{order.broj}')
-
-        listing = self.client.get(reverse('staff_magacin_pakuj'))
-        self.assertEqual(listing.status_code, 200)
-        self.assertContains(listing, 'Artikli u MP')
-        self.assertContains(listing, reverse('staff_magacin_pakuj_provjera'))
-        self.assertNotContains(listing, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
-        blocked = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
-        self.assertEqual(blocked.status_code, 302)
-        self.assertIn('/nalog/magacin/pakuj/provjera/', blocked['Location'])
-        self.assertIn(f'narudzba={order.broj}', blocked['Location'])
-        scanned = self.client.get(reverse('staff_magacin_pakuj_sken'), {'q': order.barkod})
-        self.assertEqual(scanned.status_code, 302)
-        self.assertIn('/nalog/magacin/pakuj/provjera/', scanned['Location'])
-        self.assertIn(f'narudzba={order.broj}', scanned['Location'])
-        popup = self.client.get(reverse('staff_magacin_pakuj_provjera'), {'next': 'pick'})
-        self.assertEqual(popup.status_code, 200)
-        self.assertContains(popup, 'Artikli u MP')
-        self.assertContains(popup, 'Marko')
-        self.assertNotContains(popup, 'Ima u MP')
-        check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': order.broj, 'next': 'stampa',
-        })
-        self.assertEqual(check.status_code, 200)
-        self.assertContains(check, 'Prazan lager')
-        self.assertContains(check, 'Artikli u MP')
-        self.assertContains(check, order.broj)
-        self.assertContains(check, 'Ima u MP')
-        self.assertContains(check, 'Nema — izbaci')
-        groups = check.context['groups']
-        self.assertTrue(groups)
-        found = self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': groups[0]['key'],
-            'action': 'ima',
-            'narudzba': order.broj,
-            'next': 'stampa',
-        })
-        self.assertEqual(found.status_code, 302)
-        self.assertEqual(found['Location'], reverse('staff_magacin_narudzbe'))
-        order.refresh_from_db()
-        self.assertTrue(order.pick_state)
-        back_on_orders = self.client.get(found['Location'])
-        self.assertContains(back_on_orders, 'je provjerena')
-        self.assertNotContains(back_on_orders, 'is-mp-lock')
         print_ok = self.client.get(reverse('staff_magacin_narudzbe_stampa'), {'b': [order.broj]})
         self.assertEqual(print_ok.status_code, 200)
         self.assertContains(print_ok, 'print-job')
-        self.assertContains(print_ok, 'Online Narudžbe br.')
-        self.assertContains(print_ok, 'd.o.o. CarpologijaBH')
-        self.assertContains(print_ok, 'carpologijabh@gmail.com')
-        self.assertContains(print_ok, 'sajt www.opremazaribolov.ba')
-        self.assertNotContains(print_ok, 'class="doc-logo"')
-        gone = self.client.get(reverse('staff_magacin_pakuj_provjera'))
-        self.assertEqual(gone.status_code, 302)
-        self.assertEqual(gone['Location'], reverse('staff_magacin_pakuj'))
-        self.assertIsNone(order.stavke.get().kolicina_pokupljeno)
+        self.assertContains(print_ok, 'Nije popisan')
         opened = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(opened.status_code, 200)
-        self.assertContains(opened, order.broj)
+        queue = json.loads(opened.context['pick_queue_json'])
+        self.assertTrue(queue)
+        self.assertTrue(any(item.get('loc') == 'Nije popisan' for item in queue))
+        self.assertTrue(any(item.get('nije_popisan') for item in queue))
+        self.assertFalse(any(item.get('is_mp') for item in queue))
         unlocked = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'sve'})
-        self.assertContains(unlocked, 'Skeniraj narudžbu')
-        self.assertNotContains(unlocked, 'Picking kreće poslije provjere')
         self.assertContains(unlocked, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(unlocked.context['new_pack_orders_count'], 1)
 
@@ -5430,7 +5465,7 @@ class MagacinViewTests(TestCase):
             'mp_ok': ['0'],
         })
         self.assertEqual(blocked.status_code, 200)
-        self.assertContains(blocked, 'maloprodaju')
+        self.assertContains(blocked, 'Nije popisan')
         self.assertEqual(Order.objects.filter(izvor=Order.Izvor.MAGACIN).count(), 1)
 
     def test_pack_locations_sorted_alpha_and_numbered(self):
@@ -5485,32 +5520,13 @@ class MagacinViewTests(TestCase):
         self.assertEqual(created['Location'], reverse('staff_magacin_narudzbe'))
         listing = self.client.get(reverse('staff_magacin_pakuj'))
         self.assertEqual(listing.status_code, 200)
-        self.assertContains(listing, 'Artikli u MP')
-        blocked = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
-        self.assertEqual(blocked.status_code, 302)
-        self.assertIn(f'narudzba={order.broj}', blocked['Location'])
-        check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': order.broj, 'next': 'pick',
-        })
-        groups = check.context['groups']
-        self.assertTrue(groups)
-        confirmed = self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': groups[0]['key'],
-            'action': 'ima',
-            'narudzba': order.broj,
-            'next': 'pick',
-        })
-        self.assertEqual(confirmed.status_code, 302)
-        self.assertEqual(confirmed['Location'], reverse('staff_magacin_pakuj'))
-        ready = self.client.get(confirmed['Location'])
-        self.assertEqual(ready.status_code, 200)
-        self.assertContains(ready, 'Mjesovita')
         pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(pick.status_code, 200)
         queue = json.loads(pick.context['pick_queue_json'])
         self.assertTrue(queue)
         self.assertFalse(any(item.get('loc') == 'Provjeri u MP' for item in queue))
-        self.assertTrue(any(item.get('loc') == 'MP' for item in queue))
+        self.assertTrue(any(item.get('loc') == 'Nije popisan' for item in queue))
+        self.assertTrue(any(item.get('loc') == 'T-1' for item in queue))
 
     def test_picking_blocked_until_all_mp_checks_done(self):
         self.client.force_login(self.user)
@@ -5523,7 +5539,6 @@ class MagacinViewTests(TestCase):
             'mp_ok': ['0'],
         })
         self.assertEqual(stocked.status_code, 302)
-        self.assertEqual(stocked['Location'], reverse('staff_magacin_narudzbe'))
         mp_created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
             'ime_prezime': 'Mp Pack',
             'telefon': '061555555',
@@ -5533,61 +5548,19 @@ class MagacinViewTests(TestCase):
             'mp_ok': ['1'],
         })
         self.assertEqual(mp_created.status_code, 302)
-        other_mp = self.client.post(reverse('staff_magacin_narudzba_nova'), {
-            'ime_prezime': 'Mp Drugi',
-            'telefon': '061555556',
-            'product_id': [str(self.zero.pk)],
-            'variation_id': [''],
-            'kolicina': ['1'],
-            'mp_ok': ['1'],
-        })
-        self.assertEqual(other_mp.status_code, 302)
         warehouse = Order.objects.get(ime_prezime='Skladiste Pack')
         mp_order = Order.objects.get(ime_prezime='Mp Pack')
-        mp_other = Order.objects.get(ime_prezime='Mp Drugi')
-        home = self.client.get(reverse('staff_magacin_pakuj'))
-        self.assertEqual(home.status_code, 200)
-        self.assertContains(home, 'Artikli u MP')
-        self.assertContains(home, 'Skladiste Pack')
-        self.assertNotContains(home, reverse('staff_magacin_pakuj_detail', args=[mp_order.broj]))
         opened_stock = self.client.get(reverse('staff_magacin_pakuj_detail', args=[warehouse.broj]))
         self.assertEqual(opened_stock.status_code, 200)
-        self.assertContains(opened_stock, 'Skladiste Pack')
-        blocked_mp = self.client.get(reverse('staff_magacin_pakuj_detail', args=[mp_order.broj]))
-        self.assertEqual(blocked_mp.status_code, 302)
-        self.assertIn(f'narudzba={mp_order.broj}', blocked_mp['Location'])
-        check = self.client.get(reverse('staff_magacin_pakuj_provjera'))
-        self.assertContains(check, 'Mp Pack')
-        self.assertTrue(check.context['customers'])
-        items = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': mp_order.broj, 'next': 'pick',
-        })
-        groups = items.context['groups']
-        self.assertTrue(groups)
-        done = self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': groups[0]['key'],
-            'action': 'ima',
-            'narudzba': mp_order.broj,
-            'next': 'pick',
-        })
-        self.assertEqual(done.status_code, 302)
-        self.assertEqual(done['Location'], reverse('staff_magacin_pakuj'))
-        ready = self.client.get(done['Location'])
-        self.assertContains(ready, 'Mp Pack')
-        self.assertContains(ready, reverse('staff_magacin_pakuj_detail', args=[mp_order.broj]))
-        self.assertContains(ready, 'Artikli u MP')
-        self.assertNotContains(ready, reverse('staff_magacin_pakuj_detail', args=[mp_other.broj]))
-        still_mp = self.client.get(reverse('staff_magacin_pakuj_provjera'))
-        self.assertContains(still_mp, 'Mp Drugi')
-        self.assertNotContains(still_mp, 'Mp Pack')
-        opened = self.client.get(reverse('staff_magacin_pakuj_detail', args=[mp_order.broj]))
-        self.assertEqual(opened.status_code, 200)
-        self.assertContains(opened, 'Mp Pack')
-        blocked_other = self.client.get(reverse('staff_magacin_pakuj_detail', args=[mp_other.broj]))
-        self.assertEqual(blocked_other.status_code, 302)
-        self.assertIn(f'narudzba={mp_other.broj}', blocked_other['Location'])
+        opened_np = self.client.get(reverse('staff_magacin_pakuj_detail', args=[mp_order.broj]))
+        self.assertEqual(opened_np.status_code, 200)
+        queue = json.loads(opened_np.context['pick_queue_json'])
+        self.assertTrue(any(item.get('loc') == 'Nije popisan' for item in queue))
 
     def test_mp_nema_removes_item_from_order(self):
+        from .views_magacin import apply_order_pick
+        from .magacin import drop_missing_pick_line
+
         self.client.force_login(self.user)
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
             'ime_prezime': 'Izbaci Mp',
@@ -5600,19 +5573,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(created.status_code, 302)
         order = Order.objects.get(ime_prezime='Izbaci Mp')
         self.assertEqual(order.stavke.count(), 2)
-        check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': order.broj, 'next': 'pick',
-        })
-        groups = check.context['groups']
-        self.assertTrue(groups)
-        removed = self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': groups[0]['key'],
-            'action': 'nema',
-            'narudzba': order.broj,
-            'next': 'pick',
-        })
-        self.assertEqual(removed.status_code, 302)
-        self.assertEqual(removed['Location'], reverse('staff_magacin_pakuj'))
+        zero_item = order.stavke.get(artikal=self.zero)
+        drop_missing_pick_line(order, zero_item, loc='Nije popisan', qty=1, user=self.user)
         order.refresh_from_db()
         names = list(order.stavke.values_list('naziv', flat=True))
         self.assertEqual(len(names), 1)
@@ -5621,6 +5583,7 @@ class MagacinViewTests(TestCase):
 
     def test_mp_partial_found_goes_on_invoice(self):
         from .views import _order_print_job
+        from .views_magacin import apply_order_pick
 
         self.client.force_login(self.user)
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
@@ -5635,89 +5598,22 @@ class MagacinViewTests(TestCase):
         order = Order.objects.get(ime_prezime='Nasao Manje')
         item = order.stavke.get()
         self.assertEqual(item.kolicina, 5)
-        check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': order.broj, 'next': 'pick',
-        })
-        self.assertContains(check, 'name="kolicina"')
-        self.assertContains(check, 'Našao')
-        groups = check.context['groups']
-        self.assertEqual(groups[0]['need'], 5)
-        partial = self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': groups[0]['key'],
-            'action': 'ima',
-            'kolicina': '2',
-            'narudzba': order.broj,
-            'next': 'pick',
-        })
-        self.assertEqual(partial.status_code, 302)
-        item.refresh_from_db()
-        self.assertEqual(item.kolicina, 5)
-        self.assertEqual(item.kolicina_pokupljeno, 2)
-        self.assertEqual(item.kolicina_faktura, 2)
-        job = _order_print_job(order)
-        self.assertEqual(job['stavke'][0]['kolicina'], 2)
-        self.assertEqual(job['stavke'][0]['ukupno'], Decimal('4.00'))
         pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(pick.status_code, 200)
         queue = json.loads(pick.context['pick_queue_json'])
-        self.assertEqual(sum(row['need'] for row in queue if row.get('is_mp')), 2)
-
-        zeroed = self.client.post(reverse('staff_magacin_narudzba_nova'), {
-            'ime_prezime': 'Nasao Nula',
-            'telefon': '061121316',
-            'product_id': [str(self.product.pk), str(self.zero.pk)],
-            'variation_id': ['', ''],
-            'kolicina': ['1', '3'],
-            'mp_ok': ['0', '1'],
-        })
-        self.assertEqual(zeroed.status_code, 302)
-        zero_order = Order.objects.get(ime_prezime='Nasao Nula')
-        zero_check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': zero_order.broj, 'next': 'pick',
-        })
-        zero_groups = zero_check.context['groups']
-        self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': zero_groups[0]['key'],
-            'action': 'ima',
-            'kolicina': '0',
-            'narudzba': zero_order.broj,
-            'next': 'pick',
-        })
-        zero_order.refresh_from_db()
-        names = list(zero_order.stavke.values_list('naziv', flat=True))
-        self.assertEqual(names, ['Test braid'])
-
-        mixed = self.client.post(reverse('staff_magacin_narudzba_nova'), {
-            'ime_prezime': 'Nasao Mix',
-            'telefon': '061121315',
-            'product_id': [str(self.product.pk)],
-            'variation_id': [''],
-            'kolicina': ['10'],
-            'mp_ok': ['1'],
-        })
-        self.assertEqual(mixed.status_code, 302)
-        mix_order = Order.objects.get(ime_prezime='Nasao Mix')
-        mix_item = mix_order.stavke.get()
-        self.assertEqual(mix_item.kolicina, 10)
-        mix_check = self.client.get(reverse('staff_magacin_pakuj_provjera'), {
-            'narudzba': mix_order.broj, 'next': 'pick',
-        })
-        mix_groups = mix_check.context['groups']
-        mix_need = mix_groups[0]['need']
-        self.assertGreaterEqual(mix_need, 1)
-        reserved = mix_item.kolicina - mix_need
-        self.client.post(reverse('staff_magacin_pakuj_provjera'), {
-            'group': mix_groups[0]['key'],
-            'action': 'ima',
-            'kolicina': '1',
-            'narudzba': mix_order.broj,
-            'next': 'pick',
-        })
-        mix_item.refresh_from_db()
-        self.assertEqual(mix_item.kolicina_pokupljeno, reserved + 1)
-        mix_pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[mix_order.broj]))
-        mix_queue = json.loads(mix_pick.context['pick_queue_json'])
-        self.assertEqual(sum(row['need'] for row in mix_queue if row.get('is_mp')), 1)
+        self.assertEqual(sum(row['need'] for row in queue if row.get('nije_popisan')), 5)
+        apply_order_pick(order, [{
+            'key': f'{item.pk}:Nije popisan',
+            'item_id': item.pk,
+            'got': 2,
+            'need': 5,
+            'done': True,
+        }])
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina_pokupljeno, 2)
+        job = _order_print_job(order)
+        self.assertEqual(job['stavke'][0]['kolicina'], 2)
+        self.assertEqual(job['stavke'][0]['ukupno'], Decimal('4.00'))
 
     def test_pick_less_qty_prints_on_invoice(self):
         from .views import _order_print_job

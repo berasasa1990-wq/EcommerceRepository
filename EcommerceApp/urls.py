@@ -191,6 +191,7 @@ urlpatterns = [
     path('nalog/magacin/popis/', views_magacin.magacin_popis, name='staff_magacin_popis'),
     path('nalog/magacin/popis/<int:pk>/', views_magacin.magacin_popis, name='staff_magacin_popis_detail'),
     path('nalog/magacin/popis/stampa/', views_magacin.magacin_popis_stampa, name='staff_magacin_popis_stampa'),
+    path('nalog/magacin/fali-na-sajtu/', views_magacin.magacin_fali_na_sajtu, name='staff_magacin_fali_na_sajtu'),
     path('nalog/magacin/narudzbe/', views_magacin.magacin_narudzbe, name='staff_magacin_narudzbe'),
     path('nalog/magacin/narudzbe/nova/', views_magacin.magacin_narudzba_nova, name='staff_magacin_narudzba_nova'),
     path('nalog/magacin/narudzbe/vp/', views_magacin.magacin_vp_narudzba, name='staff_magacin_vp_narudzba'),

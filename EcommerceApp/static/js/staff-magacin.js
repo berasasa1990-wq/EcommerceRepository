@@ -63,6 +63,7 @@
     initTransferPage();
     initArticleScanner();
     initPopisPage();
+    initFaliPrenos();
 
     var modal = document.getElementById('mgMoveModal');
     if (!modal) return;
@@ -1276,9 +1277,9 @@ function initManualOrderForm() {
         var available = pending.available;
         if (mpText) {
             mpText.innerHTML =
-                '„' + escapeHtml(name) + '” nije na stanju u magacinu' +
+                '„' + escapeHtml(name) + '” nema dostupnog artikla' +
                 (available != null ? ' (' + available + ' kom).' : '.') +
-                ' Provjeri u <strong>maloprodaji</strong> ima li ga.';
+                ' Nema ga ni na jednoj lokaciji.';
         }
         if (mpModal) mpModal.hidden = false;
     }
@@ -1306,7 +1307,7 @@ function initManualOrderForm() {
                     var existingName = existing.querySelector('td');
                     var existingMark = document.createElement('span');
                     existingMark.className = 'mg-pill is-manual';
-                    existingMark.textContent = 'Maloprodaja';
+                    existingMark.textContent = 'Nije popisan';
                     if (existingName) existingName.appendChild(existingMark);
                 }
             }
@@ -1328,7 +1329,7 @@ function initManualOrderForm() {
         tr.innerHTML =
             '<td><strong>' + escapeHtml(naziv) + '</strong>' +
             (varNaziv ? '<span class="sub">' + escapeHtml(varNaziv) + '</span>' : '') +
-            (mpOk ? '<span class="mg-pill is-manual">Maloprodaja</span>' : '') +
+            (mpOk ? '<span class="mg-pill is-manual">Nije popisan</span>' : '') +
             '<input type="hidden" name="product_id" value="' + escapeHtml(pid) + '">' +
             '<input type="hidden" name="variation_id" value="' + escapeHtml(vid) + '">' +
             '<input type="hidden" name="mp_ok" value="' + (mpOk ? '1' : '0') + '">' +
@@ -1785,7 +1786,7 @@ function initManualOrderForm() {
                     var td = pending.row.querySelector('td');
                     var mark = document.createElement('span');
                     mark.className = 'mg-pill is-manual';
-                    mark.textContent = 'Maloprodaja';
+                    mark.textContent = 'Nije popisan';
                     if (td) td.appendChild(mark);
                 }
                 refreshTotal();
@@ -3033,7 +3034,7 @@ function initArticleScanner() {
                     '<input type="number" inputmode="numeric" min="0" max="' + item.need + '" step="1" placeholder="0 = nema" data-pk-less-qty aria-label="Količina">' +
                     '<button type="button" data-pk-less>Pokupi manje</button>' +
                   '</div>') +
-            (isNow && !st.done && !item.is_mp && !item.rezervni && item.loc
+            (isNow && !st.done && !item.is_mp && !item.rezervni && !item.nije_popisan && item.loc
                 ? '<button type="button" class="pk-clear-loc" data-pk-clear-loc>Očisti lokaciju</button>'
                 : '');
         art.querySelector('[data-pk-minus]').addEventListener('click', function () {
@@ -3183,7 +3184,9 @@ function initArticleScanner() {
         if (customer) customer.hidden = false;
         if (els.locKicker) {
             var cur = queue[current];
-            els.locKicker.textContent = cur && cur.is_mp ? 'Uzmi iz maloprodaje' : 'Lokacija (odakle se uzima)';
+            els.locKicker.textContent = cur && cur.nije_popisan
+                ? 'Nije popisan'
+                : (cur && cur.is_mp ? 'Uzmi iz maloprodaje' : 'Lokacija (odakle se uzima)');
         }
         if (pickView === 'now') showMsg('');
         if (els.scan && pickView === 'now') {
@@ -3744,6 +3747,44 @@ function initArticleScanner() {
     if (isVp && totalEl) totalEl.setAttribute('data-vp', '1');
 })();
 
+function initFaliPrenos() {
+    var root = document.getElementById('mgFaliPage');
+    if (!root) return;
+    root.querySelectorAll('[data-fali-prenos]').forEach(function (form) {
+        var loc = form.querySelector('[data-fali-loc]');
+        var qty = form.querySelector('[data-fali-qty]');
+        function syncMax() {
+            if (!loc || !qty) return;
+            var opt = loc.options[loc.selectedIndex];
+            var max = opt ? parseInt(opt.getAttribute('data-max'), 10) : 0;
+            if (!max || max < 1) max = 1;
+            qty.max = String(max);
+            var n = parseInt(qty.value, 10) || 1;
+            if (n > max) qty.value = String(max);
+            if (n < 1) qty.value = '1';
+        }
+        if (loc) loc.addEventListener('change', syncMax);
+        syncMax();
+        form.addEventListener('submit', function (event) {
+            syncMax();
+            var max = parseInt(qty && qty.max, 10) || 0;
+            var n = parseInt(qty && qty.value, 10) || 0;
+            if (n < 1 || (max && n > max)) {
+                event.preventDefault();
+                if (qty) {
+                    qty.focus();
+                    qty.select();
+                }
+                window.alert(max ? ('Možeš prenijeti najviše ' + max + ' kom s te lokacije.') : 'Unesi količinu.');
+                return;
+            }
+            if (!window.confirm('Prenijeti ' + n + ' kom u maloprodaju? Stavka ide na Picking.')) {
+                event.preventDefault();
+            }
+        });
+    });
+}
+
 function initPopisPage() {
     var root = document.getElementById('ppApp');
     if (!root) return;
@@ -3838,7 +3879,7 @@ function initPopisPage() {
     var finish = document.getElementById('ppFinishForm');
     if (finish) {
         finish.addEventListener('submit', function (event) {
-            if (!window.confirm('Potvrdi popis? Količine na odabranoj lokaciji postavit će se na popisane. Ako se poklapaju, ostaje tačna količina.')) event.preventDefault();
+            if (!window.confirm('Završiti popis? Količine na odabranoj lokaciji postavit će se na popisane. Ako se poklapaju, ostaje tačna količina.')) event.preventDefault();
         });
     }
     var del = document.getElementById('ppDeleteForm');
@@ -3847,6 +3888,17 @@ function initPopisPage() {
             if (!window.confirm('Obrisati cijeli popis?')) event.preventDefault();
         });
     }
+    root.querySelectorAll('.pp-print-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Štampati popis? Nakon potvrde bit će označen kao završen.')) {
+                event.preventDefault();
+                return;
+            }
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 350);
+        });
+    });
     if (!live || !input || !list) return;
 
     function beep(ok) {

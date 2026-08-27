@@ -5326,6 +5326,7 @@ class MagacinPopis(models.Model):
     kreiran = models.DateTimeField(auto_now_add=True)
     azuriran = models.DateTimeField(auto_now=True)
     zavrsen_at = models.DateTimeField(null=True, blank=True)
+    odstampan = models.BooleanField(default=False)
     kreirao = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

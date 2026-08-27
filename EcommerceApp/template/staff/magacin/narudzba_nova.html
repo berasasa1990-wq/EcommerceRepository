@@ -120,7 +120,7 @@
                     <td>
                         <strong>{{ line.product.naziv }}</strong>
                         {% if line.variation %}<span class="sub">{{ line.variation.naziv }}</span>{% endif %}
-                        {% if line.mp_ok %}<span class="mg-pill is-manual">Maloprodaja</span>{% endif %}
+                        {% if line.mp_ok %}<span class="mg-pill is-manual">Nije popisan</span>{% endif %}
                         <input type="hidden" name="product_id" value="{{ line.product.pk }}">
                         <input type="hidden" name="variation_id" value="{{ line.variation.pk|default:'' }}">
                         <input type="hidden" name="mp_ok" value="{% if line.mp_ok %}1{% else %}0{% endif %}">
@@ -276,17 +276,17 @@
 <div class="mg-modal" id="mgMpModal" hidden>
     <div class="mg-modal-bg" data-mp-skip></div>
     <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mgMpTitle">
-        <h2 id="mgMpTitle">Provjeri u maloprodaji</h2>
+        <h2 id="mgMpTitle">Nema dostupnog artikla</h2>
         <p id="mgMpText" class="mg-mp-lead">
-            Artikal nije na stanju u magacinu. Provjeri u <strong>maloprodaji</strong> ima li ga.
+            Artikal nije na nijednoj lokaciji.
         </p>
         <p class="mg-muted">
-            <strong>Dodaj</strong> = imaš ga u maloprodaji, stavi na narudžbu.
-            <strong>Izbaci</strong> = nema ga, ne dodaji / skini sa narudžbe.
+            <strong>Nije popisan — dodaj</strong> = stavi na narudžbu. Na pickingu ide kao lokacija „Nije popisan”, bez evidencije zalihe.
+            <strong>Izbaci</strong> = ne dodaji / skini sa narudžbe.
         </p>
         <div class="mg-modal-actions">
             <button type="button" class="mg-btn mg-btn-danger" id="mgMpSkip">Izbaci</button>
-            <button type="button" class="mg-btn mg-btn-primary" id="mgMpAdd">Dodaj</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="mgMpAdd">Nije popisan — dodaj</button>
         </div>
     </div>
 </div>

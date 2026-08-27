@@ -13,7 +13,7 @@
             {% elif popis.status == 'pauziran' %}
             <p class="mg-count" id="ppMeta">Pauziran{% if popis.location %} · {{ popis.location.sifra }}{% endif %} · započet {{ popis.kreiran|date:"d.m.Y H:i" }} · {{ stavke|length }} stavki · {{ total_qty }} kom</p>
             {% else %}
-            <p class="mg-count" id="ppMeta">Potvrđen {{ popis.zavrsen_at|date:"d.m.Y H:i" }}{% if popis.location %} · {{ popis.location.sifra }}{% endif %} · započet {{ popis.kreiran|date:"d.m.Y H:i" }} · {{ stavke|length }} stavki · {{ total_qty }} kom</p>
+            <p class="mg-count" id="ppMeta">Završen {{ popis.zavrsen_at|date:"d.m.Y H:i" }}{% if popis.location %} · {{ popis.location.sifra }}{% endif %} · započet {{ popis.kreiran|date:"d.m.Y H:i" }} · {{ stavke|length }} stavki · {{ total_qty }} kom</p>
 
             {% endif %}
         </div>
@@ -30,7 +30,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="zavrsi">
                 <input type="hidden" name="popis_id" value="{{ popis.pk }}">
-                <button type="submit" class="mg-btn mg-btn-primary pp-confirm">Potvrdi popis</button>
+                <button type="submit" class="mg-btn mg-btn-primary pp-confirm">Završeno</button>
             </form>
             <form method="post" id="ppDeleteForm">
                 {% csrf_token %}
@@ -54,8 +54,17 @@
             </form>
             {% else %}
             <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_popis' %}?nova=1">Nova lokacija</a>
-            <a class="mg-btn" href="{% url 'staff_magacin_popis_stampa' %}?id={{ popis.pk }}" target="_blank">Štampaj</a>
-            <a class="mg-btn" href="{% url 'staff_magacin_popis_stampa' %}?id={{ popis.pk }}&razlike=1" target="_blank">Razlike</a>
+            <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn" data-pp-print>Štampaj</button>
+            </form>
+            <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ popis.pk }}">
+                <input type="hidden" name="razlike" value="1">
+                <button type="submit" class="mg-btn" data-pp-print>Razlike</button>
+            </form>
             {% endif %}
         </div>
         {% endif %}
@@ -171,7 +180,7 @@
     </ol>
     {% if popis.status == 'u_toku' %}
     <div class="pp-foot">
-        <button type="submit" form="ppFinishForm" class="mg-btn mg-btn-primary">Potvrdi popis</button>
+        <button type="submit" form="ppFinishForm" class="mg-btn mg-btn-primary">Završeno</button>
     </div>
     {% endif %}
     {% endif %}
@@ -203,13 +212,22 @@
         <h2>Završeni popisi</h2>
         <ul>
             {% for row in finished_popisi %}
-            <li>
+            <li{% if row.odstampan %} class="is-done"{% endif %}>
                 <a class="pp-paused-main" href="{% url 'staff_magacin_popis_detail' row.pk %}">
-                    <strong>Popis #{{ row.pk }}{% if row.location %} · {{ row.location.sifra }}{% endif %}</strong>
+                    <strong>Popis #{{ row.pk }}{% if row.location %} · {{ row.location.sifra }}{% endif %}{% if row.odstampan %} <em class="pp-done-tag">Završeno</em>{% endif %}</strong>
                     <span>završen {{ row.zavrsen_at|date:"d.m.Y H:i" }} · započet {{ row.kreiran|date:"d.m.Y H:i" }} · {{ row.n_stavke|default:0 }} stavki · {{ row.n_kom|default:0 }} kom</span>
                 </a>
-                <a class="mg-btn" href="{% url 'staff_magacin_popis_stampa' %}?id={{ row.pk }}" target="_blank">Štampaj</a>
-                <a class="mg-btn" href="{% url 'staff_magacin_popis_stampa' %}?id={{ row.pk }}&razlike=1" target="_blank">Razlike</a>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <button type="submit" class="mg-btn" data-pp-print>Štampaj</button>
+                </form>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <input type="hidden" name="razlike" value="1">
+                    <button type="submit" class="mg-btn" data-pp-print>Razlike</button>
+                </form>
             </li>
             {% endfor %}
         </ul>
