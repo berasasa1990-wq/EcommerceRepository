@@ -12,6 +12,7 @@
     </div>
     <div class="mg-toolbar-actions">
         <a href="{% url 'staff_magacin_uvoz' %}" class="mg-btn">← Svi uvozi</a>
+        <a href="{% url 'staff_magacin_uvoz_stampa' uvoz.pk %}" class="mg-btn mg-btn-primary" target="_blank" rel="noopener">Štampaj</a>
         <form method="post" onsubmit="return confirm('Obrisati ovaj uvoz iz liste? Zalihe na Novi uvoz ostaju.');">
             {% csrf_token %}
             <input type="hidden" name="action" value="delete">

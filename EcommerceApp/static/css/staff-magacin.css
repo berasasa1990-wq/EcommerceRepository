@@ -2782,6 +2782,13 @@ tr.is-mp-lock {
     gap: 8px;
     margin-top: 14px;
 }
+.mg-uvoz-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+    white-space: nowrap;
+}
 .mg-uvoz-review td .mg-muted { font-size: 12px; margin-top: 2px; }
 
 .magacin-page.is-pick {
@@ -7080,9 +7087,12 @@ tr.is-mp-lock {
     }
     .mg-table-stack-uvozi td:nth-child(8) {
         grid-column: 1 / -1;
+        display: flex;
+        gap: 8px;
     }
     .mg-table-stack-uvozi td:nth-child(8) .mg-btn {
-        width: 100%;
+        flex: 1 1 0;
+        width: auto;
         justify-content: center;
         min-height: 44px;
     }

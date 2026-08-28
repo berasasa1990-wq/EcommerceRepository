@@ -43,7 +43,10 @@
                     <td class="num">{% if u.list_kreirano %}{{ u.list_kreirano }}{% else %}—{% endif %}</td>
                     <td class="num">{% if u.list_mpc %}{{ u.list_mpc }}{% else %}—{% endif %}</td>
                     <td class="num">{% if u.list_fakturna %}{{ u.list_fakturna }} KM{% else %}—{% endif %}</td>
-                    <td class="num"><a class="mg-btn" href="{% url 'staff_magacin_uvoz_detail' u.pk %}">Otvori</a></td>
+                    <td class="mg-uvoz-row-actions" onclick="event.stopPropagation()">
+                        <a class="mg-btn" href="{% url 'staff_magacin_uvoz_detail' u.pk %}">Otvori</a>
+                        <a class="mg-btn" href="{% url 'staff_magacin_uvoz_stampa' u.pk %}" target="_blank" rel="noopener">Štampaj</a>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>

@@ -17295,6 +17295,23 @@ button.nav-action-link {
     letter-spacing: 0.04em;
 }
 
+.staff-stock-badge--photo {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    bottom: 6px;
+    z-index: 4;
+    margin: 0;
+    text-align: center;
+    pointer-events: none;
+    line-height: 1.2;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+body.staff-edit-mode-on .staff-stock-badge--photo {
+    display: inline-block !important;
+}
+
 .staff-order-detail-page {
     max-width: 920px;
     margin: 0 auto;
@@ -25298,6 +25315,7 @@ a.home-promo-card:hover {
 
 /* Image area */
 .hm-media {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;

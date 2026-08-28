@@ -1057,6 +1057,32 @@ class StaffStorefrontEditModeTests(TestCase):
         self.incomplete.refresh_from_db()
         self.assertEqual(self.incomplete.opis, 'Veći opis s ChatGPT-a.')
 
+    def test_edit_mode_marks_out_of_stock_on_catalog(self):
+        from django.urls import reverse
+
+        oos = Product.objects.create(
+            naziv='Nema ga na lageru',
+            sifra='EDIT-OOS',
+            cijena=Decimal('9.90'),
+            opis='Ima opis.',
+            kategorija=self.category,
+            na_stanju=False,
+            aktivan=True,
+            slika='products/oos.jpg',
+        )
+        self.client.force_login(self.admin)
+        hidden = self.client.get(reverse('category', args=[self.category.slug]))
+        self.assertNotContains(hidden, 'Nema ga na lageru')
+        self.client.post(reverse('staff_toggle_edit_mode'), {
+            'enabled': '1',
+            'next': reverse('category', args=[self.category.slug]),
+        })
+        shown = self.client.get(reverse('category', args=[self.category.slug]))
+        self.assertContains(shown, 'Nema ga na lageru')
+        self.assertContains(shown, 'staff-stock-badge--photo')
+        self.assertContains(shown, 'Nije na stanju')
+        self.assertContains(shown, 'staff-edit-mode-on')
+
 
 class StaffLiveAlertTests(TestCase):
     def test_only_purchase_creates_live_event(self):

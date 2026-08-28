@@ -25,6 +25,9 @@
 
     <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-media" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
         {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 50vw, 16vw' %}
+        {% if staff_edit_mode and not product.na_stanju %}
+        <span class="staff-stock-badge staff-stock-badge--photo">Nije na stanju</span>
+        {% endif %}
     </a>
 
     <div class="hm-body">

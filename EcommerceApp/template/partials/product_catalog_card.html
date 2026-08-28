@@ -22,6 +22,9 @@
                     {% include 'partials/product_sale_ribbon.html' with product=product %}
                     {% endif %}
                     {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}
+                    {% if staff_edit_mode and not product.na_stanju %}
+                    <span class="staff-stock-badge staff-stock-badge--photo">Nije na stanju</span>
+                    {% endif %}
                 </a>
             </div>
             <div class="variation-swatches{% if hide_variations or not product.variation_count %} variation-swatches--empty{% endif %}">
@@ -34,10 +37,6 @@
         <div class="product-card__body">
             <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
             {% include 'partials/product_staff_missing.html' with product=product %}
-
-            {% if user.is_superuser and not product.na_stanju %}
-            <span class="staff-stock-badge">Nije na stanju</span>
-            {% endif %}
 
             <p class="stock-badge{% if product.na_stanju %} stock-badge--in{% else %} stock-badge--out{% endif %} product-card__stock">
                 {% if product.na_stanju %}Na stanju{% else %}Rasprodato{% endif %}

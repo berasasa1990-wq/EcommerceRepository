@@ -20,6 +20,9 @@
             {% else %}
             {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 50vw, 16vw' %}
             {% endif %}
+            {% if staff_edit_mode and not product.na_stanju %}
+            <span class="staff-stock-badge staff-stock-badge--photo">Nije na stanju</span>
+            {% endif %}
         </div>
         <div class="variation-swatches variation-swatches--empty"></div>
         {% include 'partials/product_card_info.html' with product=product %}

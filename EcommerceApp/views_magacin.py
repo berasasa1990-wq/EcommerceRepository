@@ -5260,6 +5260,24 @@ def magacin_uvoz_detail(request, pk):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+def magacin_uvoz_stampa(request, pk):
+    uvoz = get_object_or_404(
+        Uvoz.objects.select_related('kreirao'),
+        pk=pk,
+        izvor=Uvoz.Izvor.MAGACIN,
+    )
+    stavke = list(uvoz.stavke.select_related('product').all())
+    kolicina_ukupno = sum((row.kolicina or Decimal('0')) for row in stavke)
+    return render(request, 'staff/magacin/uvoz_print.html', {
+        'uvoz': uvoz,
+        'stavke': stavke,
+        'kolicina_ukupno': kolicina_ukupno,
+        'print_mode': True,
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 def magacin_nivelacije(request):
     query = _magacin_search_query(request)
     show_done = (request.GET.get('izmjenjene') or request.POST.get('izmjenjene') or '') == '1'
