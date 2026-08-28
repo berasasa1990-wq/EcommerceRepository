@@ -567,6 +567,12 @@ SYNC_TIMEOUT = int(_env('SYNC_TIMEOUT', '15'))
 # Ako želiš, možeš postaviti RENDER=true u environment za custom logiku.
 SYNC_ENABLED = bool(SYNC_REMOTE_URL and SYNC_API_KEY)
 
+# X-Express (najava pošiljke) — username/password iz .env, nikad u kodu
+XEXPRESS_USERNAME = _env('XEXPRESS_USERNAME', '').strip()
+XEXPRESS_PASSWORD = _env('XEXPRESS_PASSWORD', '').strip()
+XEXPRESS_API_URL = _env('XEXPRESS_API_URL', 'https://api.x-express.ba/v1').rstrip('/')
+XEXPRESS_TIMEOUT = int(_env('XEXPRESS_TIMEOUT', '20') or 20)
+
 # Catalog Sync API — daj partneru ovaj ključ da vuče artikle/kategorije/brendove (read-only)
 # Header: X-Api-Key: ...  ili  Authorization: Bearer ...
 CATALOG_SYNC_API_KEY = _env('CATALOG_SYNC_API_KEY', '') or SYNC_API_KEY

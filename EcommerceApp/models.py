@@ -3969,6 +3969,18 @@ class Order(models.Model):
         blank=True,
         verbose_name='Odoo SO kreiran u',
     )
+    xexpress_sifra = models.CharField(
+        max_length=40,
+        blank=True,
+        db_index=True,
+        verbose_name='X-Express šifra',
+        help_text='Šifra pošiljke koju vrati X-Express API.',
+    )
+    xexpress_poslano_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='X-Express poslano u',
+    )
 
     class Meta:
         verbose_name = 'Narudžba'

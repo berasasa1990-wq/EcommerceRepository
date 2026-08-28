@@ -5500,6 +5500,121 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(page, 'Nazad na Online narudžbe')
         self.assertNotContains(page, 'preko 250 KM besplatna')
         self.assertContains(page, '11.00 KM')
+        self.assertContains(page, 'Pošalji u X-Express')
+        self.assertContains(page, reverse('staff_order_xexpress', args=[order.broj]))
+
+    def test_xexpress_send_from_order_detail(self):
+        import requests
+        from unittest.mock import Mock
+
+        from .xexpress_service import build_shipment_payload, extract_sifra
+
+        self.client.force_login(self.user)
+        order = Order.objects.create(
+            ime_prezime='Ana Ribić',
+            email='ana@example.com',
+            telefon='061111111',
+            adresa='Test 1',
+            grad='Sarajevo',
+            postanski_broj='71000',
+            ukupno=Decimal('30.00'),
+            izvor=Order.Izvor.MAGACIN,
+        )
+        payload = build_shipment_payload(order)
+        self.assertEqual(payload['sifraExt'], order.broj)
+        self.assertEqual(payload['nazivPrim'], 'Ana Ribić')
+        self.assertEqual(payload['kontaktPrim'], 'Ana Ribić')
+        self.assertEqual(payload['adresaPrim'], 'Test 1')
+        self.assertEqual(payload['pttPrim'], '71000')
+        self.assertEqual(payload['telefonPrim'], '061111111')
+        self.assertEqual(payload['opisPosiljke'], 'Ribolovačka oprema')
+        self.assertEqual(payload['brojPaketa'], 1)
+        self.assertEqual(payload['tezina'], 2)
+        self.assertEqual(payload['uslugaSifra'], 1)
+        self.assertEqual(payload['obveznikPlacanja'], 1)
+        self.assertEqual(payload['nacinPlacanja'], 9)
+        self.assertEqual(payload['vrednostPosiljke'], 30.0)
+        self.assertTrue(payload['otkupnina'])
+        self.assertEqual(payload['iznosOtkupnine'], 30.0)
+        self.assertEqual(extract_sifra([{'sifra': 'XE-1'}]), 'XE-1')
+        self.assertEqual(extract_sifra({'data': {'sifra': 'XE-2'}}), 'XE-2')
+
+        order.popust_detalji = [{'placanje': 'kartica'}]
+        order.save(update_fields=['popust_detalji'])
+        card_payload = build_shipment_payload(order)
+        self.assertFalse(card_payload['otkupnina'])
+        self.assertEqual(card_payload['iznosOtkupnine'], 0)
+
+        missing = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))
+        self.assertEqual(missing.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, '')
+
+        fake = Mock()
+        fake.status_code = 200
+        fake.content = b'[{"sifra":"XE-999"}]'
+        fake.json.return_value = [{'sifra': 'XE-999'}]
+        with override_settings(
+            XEXPRESS_USERNAME='xe-user',
+            XEXPRESS_PASSWORD='xe-pass',
+            XEXPRESS_API_URL='https://api.x-express.ba/v1',
+        ):
+            with patch('EcommerceApp.xexpress_service.requests.post', return_value=fake) as mocked:
+                sent = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))
+            mocked.assert_called_once()
+            called_url = mocked.call_args.args[0] if mocked.call_args.args else mocked.call_args.kwargs.get('url')
+            kwargs = mocked.call_args.kwargs
+            self.assertTrue(str(called_url).endswith('/najava/v2'))
+            self.assertEqual(kwargs['auth'], ('xe-user', 'xe-pass'))
+            self.assertEqual(kwargs['timeout'], 20)
+            body = kwargs['json']
+            self.assertIsInstance(body, list)
+            self.assertEqual(body[0]['sifraExt'], order.broj)
+        self.assertEqual(sent.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, 'XE-999')
+        self.assertIsNotNone(order.xexpress_poslano_at)
+
+        done = self.client.get(reverse('staff_order_detail', args=[order.broj]))
+        self.assertContains(done, 'X-Express XE-999')
+        self.assertNotContains(done, '>Pošalji u X-Express<')
+
+        with override_settings(XEXPRESS_USERNAME='xe-user', XEXPRESS_PASSWORD='xe-pass'):
+            with patch('EcommerceApp.xexpress_service.requests.post') as blocked:
+                again = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))
+            blocked.assert_not_called()
+        self.assertEqual(again.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, 'XE-999')
+
+        order.xexpress_sifra = ''
+        order.xexpress_poslano_at = None
+        order.save(update_fields=['xexpress_sifra', 'xexpress_poslano_at'])
+        with override_settings(XEXPRESS_USERNAME='xe-user', XEXPRESS_PASSWORD='xe-pass'):
+            with patch(
+                'EcommerceApp.xexpress_service.requests.post',
+                side_effect=requests.Timeout('slow'),
+            ):
+                timed = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))
+        self.assertEqual(timed.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, '')
+
+        err = Mock()
+        err.status_code = 400
+        err.content = b'{"message":"Neispravna adresa"}'
+        err.text = '{"message":"Neispravna adresa"}'
+        err.json.return_value = {'message': 'Neispravna adresa'}
+        with override_settings(XEXPRESS_USERNAME='xe-user', XEXPRESS_PASSWORD='xe-pass'):
+            with patch('EcommerceApp.xexpress_service.requests.post', return_value=err):
+                failed = self.client.post(
+                    reverse('staff_order_xexpress', args=[order.broj]),
+                    {'next': reverse('staff_order_detail', args=[order.broj])},
+                    follow=True,
+                )
+        self.assertContains(failed, 'Neispravna adresa')
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, '')
 
     def test_validated_orders_hidden_until_validated_list(self):
         self.client.force_login(self.user)

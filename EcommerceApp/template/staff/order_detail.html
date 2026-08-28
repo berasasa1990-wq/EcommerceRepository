@@ -51,6 +51,15 @@
             <input type="hidden" name="force" value="0" class="staff-odoo-force">
             <button type="submit" class="mg-btn mg-btn-odoo{% if order.odoo_sale_order_id %} is-done{% endif %}" title="{% if order.odoo_sale_order_id %}Već u Odoo: {{ order.odoo_sale_order_name }} — klik za ponovni unos{% else %}Kreiraj Sales narudžbu u Odoo{% endif %}">{% if order.odoo_sale_order_id %}Odoo ↻ {{ order.odoo_sale_order_name }}{% else %}Odoo narudžba{% endif %}</button>
         </form>
+        {% if order.xexpress_sifra %}
+        <button type="button" class="mg-btn is-done" disabled title="Već poslana u X-Express">X-Express {{ order.xexpress_sifra }}</button>
+        {% else %}
+        <form method="post" action="{% url 'staff_order_xexpress' broj=order.broj %}" class="staff-xexpress-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'staff_order_detail' broj=order.broj %}">
+            <button type="submit" class="mg-btn mg-btn-primary">Pošalji u X-Express</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 
@@ -82,6 +91,9 @@
     {% endif %}
     {% if order.odoo_sale_order_id %}
     <span class="mg-pill is-odoo">Odoo {{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}</span>
+    {% endif %}
+    {% if order.xexpress_sifra %}
+    <span class="mg-pill">X-Express {{ order.xexpress_sifra }}</span>
     {% endif %}
 </div>
 
@@ -121,6 +133,19 @@ document.querySelectorAll('.staff-odoo-form').forEach(function (form) {
         if (btn) {
             btn.disabled = true;
             btn.textContent = 'Odoo…';
+        }
+    });
+});
+document.querySelectorAll('.staff-xexpress-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        if (!window.confirm('Poslati ovu narudžbu u X-Express i kreirati pošiljku?')) {
+            event.preventDefault();
+            return;
+        }
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'X-Express…';
         }
     });
 });

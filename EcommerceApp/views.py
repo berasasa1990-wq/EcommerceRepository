@@ -4865,6 +4865,9 @@ def staff_order_detail(request, broj):
         if action == 'odoo_narudzba':
             _create_odoo_sale_order_from_web(request, broj)
             return redirect('staff_order_detail', broj=broj)
+        if action == 'xexpress':
+            _send_order_to_xexpress(request, broj)
+            return redirect('staff_order_detail', broj=broj)
         if action == 'validiraj':
             from .magacin import MagacinError, validate_order_stock
             try:
@@ -4898,6 +4901,41 @@ def staff_order_detail(request, broj):
         ),
     }
     return render(request, 'staff/order_detail.html', context)
+
+
+def _send_order_to_xexpress(request, broj):
+    from .xexpress_service import XExpressAlreadySent, XExpressError, create_shipment
+
+    order = Order.objects.filter(broj=broj).first()
+    if order is None:
+        messages.error(request, f'Narudžba #{broj} nije pronađena.')
+        return None
+    try:
+        result = create_shipment(order)
+    except XExpressAlreadySent as exc:
+        messages.info(request, str(exc))
+        return None
+    except XExpressError as exc:
+        messages.error(request, str(exc))
+        return None
+    except Exception as exc:
+        logger.exception('X-Express slanje nije uspjelo za #%s', broj)
+        messages.error(request, f'X-Express greška: {exc}')
+        return None
+    sifra = (result or {}).get('sifra') or order.xexpress_sifra
+    messages.success(request, f'Pošiljka je kreirana u X-Express. Šifra: {sifra}.')
+    return result
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_order_xexpress(request, broj):
+    _send_order_to_xexpress(request, broj)
+    nxt = (request.POST.get('next') or '').strip()
+    if nxt.startswith('/') and not nxt.startswith('//'):
+        return redirect(nxt)
+    return redirect('staff_order_detail', broj=broj)
 
 
 def _order_print_job(order):

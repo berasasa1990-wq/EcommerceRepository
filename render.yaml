@@ -67,6 +67,12 @@ services:
         sync: false
       - key: ODOO_API_KEY
         sync: false
+      - key: XEXPRESS_USERNAME
+        sync: false
+      - key: XEXPRESS_PASSWORD
+        sync: false
+      - key: XEXPRESS_API_URL
+        value: https://api.x-express.ba/v1
       - key: TURNSTILE_SITE_KEY
         sync: false
       - key: TURNSTILE_SECRET_KEY

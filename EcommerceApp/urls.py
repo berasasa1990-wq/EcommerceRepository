@@ -130,6 +130,11 @@ urlpatterns = [
         views.staff_order_brza_posta,
         name='staff_order_brza_posta',
     ),
+    path(
+        'nalog/provjera-narudzbi/<str:broj>/x-express/',
+        views.staff_order_xexpress,
+        name='staff_order_xexpress',
+    ),
 
 
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),

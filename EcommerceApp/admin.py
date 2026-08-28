@@ -103,13 +103,15 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'broj', 'korisnik', 'ime_prezime', 'email', 'telefon',
-        'ukupno', 'status', 'izvor', 'lager_status', 'odstampana', 'zapakovana', 'kreirana',
+        'ukupno', 'status', 'izvor', 'lager_status', 'xexpress_sifra',
+        'odstampana', 'zapakovana', 'kreirana',
     )
     list_filter = ('status', 'izvor', 'lager_status', 'odstampana', 'zapakovana', 'kreirana')
-    search_fields = ('broj', 'ime_prezime', 'email', 'telefon', 'korisnik__email')
+    search_fields = ('broj', 'ime_prezime', 'email', 'telefon', 'korisnik__email', 'xexpress_sifra')
     readonly_fields = (
         'broj', 'kreirana', 'medjuzbir', 'dostava', 'popust',
         'ukupno', 'popust_detalji', 'odstampana', 'odstampana_at',
+        'xexpress_sifra', 'xexpress_poslano_at',
     )
     autocomplete_fields = ('korisnik',)
     inlines = [OrderItemInline]
@@ -123,6 +125,7 @@ class OrderAdmin(admin.ModelAdmin):
         }),
         ('Kupac', {'fields': ('korisnik', 'ime_prezime', 'email', 'telefon')}),
         ('Dostava', {'fields': ('adresa', 'grad', 'postanski_broj', 'napomena')}),
+        ('X-Express', {'fields': ('xexpress_sifra', 'xexpress_poslano_at')}),
     )
 
 
