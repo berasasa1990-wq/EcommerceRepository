@@ -5604,7 +5604,8 @@ class MagacinViewTests(TestCase):
         self.assertFalse(card_payload['otkupnina'])
         self.assertEqual(card_payload['iznosOtkupnine'], 0)
 
-        missing = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))
+        with override_settings(XEXPRESS_USERNAME='', XEXPRESS_PASSWORD=''):
+            missing = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))
         self.assertEqual(missing.status_code, 302)
         order.refresh_from_db()
         self.assertEqual(order.xexpress_sifra, '')
@@ -5626,6 +5627,7 @@ class MagacinViewTests(TestCase):
             self.assertTrue(str(called_url).endswith('/najava/v2'))
             self.assertEqual(kwargs['auth'], ('xe-user', 'xe-pass'))
             self.assertEqual(kwargs['timeout'], 20)
+            self.assertEqual(kwargs.get('params'), {'lokacija': 1})
             body = kwargs['json']
             self.assertIsInstance(body, list)
             self.assertEqual(body[0]['sifraExt'], order.broj)
@@ -5689,11 +5691,14 @@ class MagacinViewTests(TestCase):
         looked.json.return_value = {'Sifra': 'X00998877'}
         with override_settings(XEXPRESS_USERNAME='xe-user', XEXPRESS_PASSWORD='xe-pass'):
             with patch('EcommerceApp.xexpress_service.requests.post', return_value=dup):
-                with patch('EcommerceApp.xexpress_service.requests.get', return_value=looked):
+                with patch('EcommerceApp.xexpress_service.requests.get', return_value=looked) as get_mock:
                     exists = self.client.post(
                         reverse('staff_order_xexpress', args=[order.broj]),
                         follow=True,
                     )
+        get_mock.assert_called()
+        get_kwargs = get_mock.call_args.kwargs
+        self.assertEqual(get_kwargs.get('params'), {'sifra_ext': order.broj})
         self.assertContains(exists, 'već postoji')
         order.refresh_from_db()
         self.assertEqual(order.xexpress_sifra, 'X00998877')

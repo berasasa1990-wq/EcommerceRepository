@@ -72,6 +72,15 @@ def _int_setting(name: str, default: int) -> int:
         return default
 
 
+def _najava_query() -> dict:
+    """Pickup lokacija na X-Express nalogu (1 = Glavna adresa)."""
+    params = {}
+    lokacija = _int_setting('XEXPRESS_LOKACIJA', 1)
+    if lokacija:
+        params['lokacija'] = lokacija
+    return params
+
+
 def _fix_api_text(text: str) -> str:
     """API ponekad vrati UTF-8 pročitan kao Latin-1 (poÅ¡iljke → pošiljke)."""
     if not text:
@@ -397,24 +406,21 @@ def _is_duplicate_error(text: str) -> bool:
 
 
 def _lookup_existing_sifra(sifra_ext: str) -> str:
-    """Ako je najava već u X-Expressu, pokušaj povući njihovu šifru po našem broju narudžbe."""
+    """Ako je najava već u X-Expressu, povuci šifru po našem broju ili njihovoj šifri."""
     ext = (sifra_ext or '').strip()
     if not ext:
         return ''
     username, password = _credentials()
     timeout = min(12, _timeout())
-    urls = [
-        f'{_api_base()}/posiljka/{ext}',
-        f'{_api_base()}/posiljke/{ext}',
-        f'{_api_base()}/posiljka/ext/{ext}',
-        f'{_api_base()}/posiljka?sifraExt={ext}',
-        f'{_api_base()}/posiljke?sifraExt={ext}',
-        f'{_api_base()}/posiljka?ibp={ext}',
-        f'{_api_base()}/posiljke?ibp={ext}',
-    ]
-    for url in urls:
+    url = f'{_api_base()}/posiljka'
+    for params in (
+        {'sifra_ext': ext},
+        {'sifra': ext},
+    ):
         try:
-            response = requests.get(url, auth=(username, password), timeout=timeout)
+            response = requests.get(
+                url, auth=(username, password), params=params, timeout=timeout,
+            )
         except requests.RequestException:
             continue
         if response.status_code >= 400 or not response.content:
@@ -475,6 +481,7 @@ def create_shipment(order) -> dict:
             url,
             json=payload,
             auth=(username, password),
+            params=_najava_query() or None,
             timeout=_timeout(),
         )
     except requests.Timeout as exc:
