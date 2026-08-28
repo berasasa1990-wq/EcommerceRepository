@@ -283,12 +283,7 @@ _SIFRA_KEYS = {
     'kodposiljke',
     'posiljkasifra',
 }
-_SKIP_SIFRA_KEYS = {
-    'sifraext',
-    'externalsifra',
-    'externalid',
-    'sifraexterna',
-}
+_XEXPRESS_CODE = re.compile(r'^[A-Z]\d{6,}$', re.I)
 
 
 def extract_sifra(data, *, ignore=()) -> str:
@@ -313,6 +308,10 @@ def _leaf_code(value, skip_values: set[str]) -> str:
     return text
 
 
+def _is_xexpress_code(text: str) -> bool:
+    return bool(text and _XEXPRESS_CODE.match(text))
+
+
 def _extract_sifra(data, skip_values: set[str], depth: int) -> str:
     if depth > 8:
         return ''
@@ -328,20 +327,25 @@ def _extract_sifra(data, skip_values: set[str], depth: int) -> str:
     if not isinstance(data, dict):
         return ''
     nested = []
+    mapped = []
     for key, value in data.items():
+        key_text = str(key).strip()
         nk = _norm_key(key)
-        if nk in _SKIP_SIFRA_KEYS:
-            continue
+        leaf = _leaf_code(value, skip_values)
+        # {"0136": "X018719554"} — naša referenca je ključ, X-šifra je vrijednost
+        if leaf and _is_xexpress_code(leaf):
+            return leaf
+        if leaf and key_text in skip_values:
+            mapped.append(leaf)
         if nk in _SIFRA_KEYS or nk.endswith('sifra'):
-            found = _leaf_code(value, skip_values)
-            if found:
-                return found
+            if leaf:
+                return leaf
             if isinstance(value, (dict, list)):
-                found = _extract_sifra(value, skip_values, depth + 1)
-                if found:
-                    return found
+                nested.append(value)
         elif isinstance(value, (dict, list)):
             nested.append(value)
+    if mapped:
+        return mapped[0]
     for value in nested:
         found = _extract_sifra(value, skip_values, depth + 1)
         if found:

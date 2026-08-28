@@ -5586,6 +5586,17 @@ class MagacinViewTests(TestCase):
             '556677',
         )
         self.assertEqual(extract_sifra({'sifraExt': '0133'}, ignore={'0133'}), '')
+        real = {
+            'Status': 'OK',
+            'Posiljke': {'0136': 'X018719554'},
+            'PosiljkeDetaljno': [
+                {'referenca': '0136', 'sifraExt': 'X018719554', 'brojPaketa': 1},
+            ],
+            'ID najave': 424573259,
+            'Broj pošiljki': 1,
+            'Status najave': 3,
+        }
+        self.assertEqual(extract_sifra(real, ignore={'0136'}), 'X018719554')
 
         order.popust_detalji = [{'placanje': 'kartica'}]
         order.save(update_fields=['popust_detalji'])
