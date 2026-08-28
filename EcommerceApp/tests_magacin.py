@@ -1978,6 +1978,21 @@ class MagacinViewTests(TestCase):
         self.assertEqual(miss.status_code, 302)
         self.assertIn(f'/nalog/magacin/artikli/{self.zero.pk}/', miss['Location'])
 
+    def test_search_shows_in_stock_when_any_location_has_qty(self):
+        self.client.force_login(self.user)
+        mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        apply_movement(product=self.zero, location=mp, tip='prijem', kolicina=3)
+        found = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'Prazan'})
+        self.assertEqual(found.status_code, 200)
+        self.assertContains(found, 'Prazan lager')
+        self.assertContains(found, '>Na stanju<')
+        self.assertNotContains(found, 'Nije na stanju')
+        lookup = self.client.get(reverse('staff_magacin_artikli_lookup'), {'q': 'Prazan'})
+        ids = [row['id'] for row in lookup.json()['results']]
+        self.assertIn(self.zero.pk, ids)
+        row = next(item for item in lookup.json()['results'] if item['id'] == self.zero.pk)
+        self.assertGreater(row['na_stanju'], 0)
+
     def test_search_only_synced_magacin_articles(self):
         self.client.force_login(self.user)
         listed = self.client.get(reverse('staff_magacin_artikli'))

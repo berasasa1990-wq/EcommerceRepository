@@ -82,6 +82,7 @@ from .magacin import (
     missing_maloprodaja_rows,
     display_stock_totals,
     countable_stock_qs,
+    recorded_stock_qs,
     deduct_mp_daily_stock,
     extract_mp_daily_text_from_upload,
     parse_mp_daily_datum,
@@ -877,7 +878,7 @@ def magacin_artikli(request):
     totals_by_product = {}
     if product_ids:
         for row in (
-            countable_stock_qs(WarehouseStock.objects.filter(product_id__in=product_ids))
+            recorded_stock_qs(WarehouseStock.objects.filter(product_id__in=product_ids))
             .values('product_id')
             .annotate(na_stanju=Sum('kolicina'), rezervisano=Sum('rezervisano'))
         ):
@@ -900,7 +901,7 @@ def magacin_artikli(request):
     locs_by_product = {}
     if product_ids:
         for stock in (
-            countable_stock_qs(WarehouseStock.objects.filter(product_id__in=product_ids, kolicina__gt=0))
+            recorded_stock_qs(WarehouseStock.objects.filter(product_id__in=product_ids, kolicina__gt=0))
             .select_related('location')
             .order_by('location__sifra')
         ):

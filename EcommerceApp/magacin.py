@@ -245,6 +245,12 @@ def countable_stock_qs(qs=None):
     return qs.exclude(uncountable_location_q('location'))
 
 
+def recorded_stock_qs(qs=None):
+    """Zaliha na svim lokacijama koje se evidentiraju (magacin + maloprodaja, ne Prenos)."""
+    qs = WarehouseStock.objects.all() if qs is None else qs
+    return qs.exclude(ignored_location_q('location'))
+
+
 def _agg_stock(qs):
     agg = qs.aggregate(na_stanju=Sum('kolicina'), rezervisano=Sum('rezervisano'))
     na_stanju = _int(agg.get('na_stanju'))
@@ -487,11 +493,7 @@ def clear_mp_without_location(product):
 
 def _location_stock_qty_qs():
     """Zaliha po artiklu na svim evidentiranim lokacijama osim Prenos u MP."""
-    return (
-        WarehouseStock.objects.exclude(ignored_location_q('location'))
-        .values('product_id')
-        .annotate(qty=Sum('kolicina'))
-    )
+    return recorded_stock_qs().values('product_id').annotate(qty=Sum('kolicina'))
 
 
 def refresh_catalog_qty(product):
@@ -1201,11 +1203,11 @@ def magacin_products_qs():
 
 
 def magacin_in_stock_q():
-    """Artikal ima zalihu na barem jednoj magacinskoj lokaciji (ne Prenos / maloprodaja)."""
+    """Artikal ima zalihu na barem jednoj lokaciji (magacin ili maloprodaja; ne Prenos)."""
     from django.db.models import Exists, OuterRef
 
     return Exists(
-        countable_stock_qs(
+        recorded_stock_qs(
             WarehouseStock.objects.filter(product_id=OuterRef('pk'), kolicina__gt=0)
         )
     )
