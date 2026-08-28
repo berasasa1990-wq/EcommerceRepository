@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from decimal import Decimal, ROUND_HALF_UP
 
 import requests
@@ -83,16 +84,160 @@ def order_is_pouzece(order) -> bool:
     return not bool(getattr(order, 'placeno_karticom', lambda: False)())
 
 
-def build_shipment_payload(order) -> dict:
-    ukupno = _money(getattr(order, 'ukupno', 0))
-    pouzece = order_is_pouzece(order)
+_PTT_RE = re.compile(r'\b(\d{5})\b')
+_DIACRITICS = str.maketrans('čćžšđČĆŽŠĐ', 'cczsdCCZSD')
+
+# Glavni PTT po gradu — kad na narudžbi nema broja, uzmi iz grada.
+_BIH_PTT = {
+    'banja luka': '78000',
+    'banjaluka': '78000',
+    'banovici': '75280',
+    'bihac': '77000',
+    'bileca': '89230',
+    'bosanska krupa': '77240',
+    'bosanski petrovac': '77250',
+    'brcko': '76100',
+    'bugojno': '70230',
+    'busovaca': '72260',
+    'cazin': '77220',
+    'capljina': '88300',
+    'celinac': '78240',
+    'citluk': '88260',
+    'derventa': '74400',
+    'doboj': '74000',
+    'donji vakuf': '70220',
+    'foca': '73300',
+    'fojnica': '71270',
+    'gorazde': '73000',
+    'gornji vakuf': '70240',
+    'gradacac': '76250',
+    'gradiska': '78400',
+    'grude': '88340',
+    'hadzici': '71240',
+    'ilidza': '71210',
+    'istocno sarajevo': '71123',
+    'jajce': '70101',
+    'kakanj': '72240',
+    'kalesija': '75260',
+    'kiseljak': '71250',
+    'konjic': '88400',
+    'livno': '80101',
+    'ljubuski': '88320',
+    'lukavac': '75300',
+    'maglaj': '74250',
+    'modrica': '74480',
+    'mostar': '88000',
+    'mrkonjic grad': '70260',
+    'neum': '79400',
+    'novi grad': '79220',
+    'novi travnik': '72290',
+    'orasje': '76270',
+    'pale': '71420',
+    'posusje': '88240',
+    'prijedor': '79101',
+    'prnjavor': '78430',
+    'sanski most': '79260',
+    'sarajevo': '71000',
+    'srebrenik': '75350',
+    'srebrenica': '75430',
+    'stolac': '88360',
+    'tesanj': '74260',
+    'teslic': '74270',
+    'tomislavgrad': '80240',
+    'travnik': '72270',
+    'trebinje': '89101',
+    'tuzla': '75000',
+    'velika kladusa': '77230',
+    'visoko': '71300',
+    'vitez': '72250',
+    'vogosca': '71320',
+    'zavidovici': '72220',
+    'zenica': '72000',
+    'zivinice': '75270',
+    'zvornik': '75400',
+    'siroki brijeg': '88220',
+}
+
+
+def _norm_place(text: str) -> str:
+    return ' '.join((text or '').translate(_DIACRITICS).casefold().split())
+
+
+def _digits_ptt(*parts: str) -> str:
+    for part in parts:
+        match = _PTT_RE.search(part or '')
+        if match:
+            return match.group(1)
+    return ''
+
+
+def _ptt_from_city(grad: str) -> str:
+    key = _norm_place(grad)
+    if not key:
+        return ''
+    if key in _BIH_PTT:
+        return _BIH_PTT[key]
+    for name, ptt in _BIH_PTT.items():
+        if name in key or key in name:
+            return ptt
+    return ''
+
+
+def _clean_city(grad: str) -> str:
+    text = (grad or '').strip()
+    text = _PTT_RE.sub('', text)
+    return ' '.join(text.split())
+
+
+def recipient_from_order(order) -> dict:
+    """Ime, telefon, adresa, grad, PTT i ukupno s narudžbe."""
     ime = (getattr(order, 'ime_prezime', None) or '').strip()
+    telefon = (getattr(order, 'telefon', None) or '').strip()
+    adresa = (getattr(order, 'adresa', None) or '').strip()
+    grad_raw = (getattr(order, 'grad', None) or '').strip()
+    ptt_raw = (getattr(order, 'postanski_broj', None) or '').strip()
+    ptt = _digits_ptt(ptt_raw, adresa, grad_raw) or _ptt_from_city(grad_raw)
+    grad = _clean_city(grad_raw) or _clean_city(adresa)
     return {
+        'ime': ime,
+        'telefon': telefon,
+        'adresa': adresa,
+        'grad': grad,
+        'ptt': ptt,
+        'ukupno': _money(getattr(order, 'ukupno', 0)),
+    }
+
+
+def _missing_recipient_fields(data: dict) -> list[str]:
+    missing = []
+    if not data['ime']:
+        missing.append('ime i prezime')
+    if not data['telefon']:
+        missing.append('telefon')
+    if not data['adresa']:
+        missing.append('adresa')
+    if not data['ptt']:
+        missing.append('poštanski broj')
+    return missing
+
+
+def build_shipment_payload(order) -> dict:
+    dest = recipient_from_order(order)
+    missing = _missing_recipient_fields(dest)
+    if missing:
+        raise XExpressError(
+            'Na narudžbi fali: ' + ', '.join(missing) + '. Dopuni podatke pa pošalji ponovo.'
+        )
+    pouzece = order_is_pouzece(order)
+    ukupno = dest['ukupno']
+    ime = dest['ime']
+    payload = {
         'sifraExt': str(getattr(order, 'broj', '') or '').strip(),
         'nazivPrim': ime,
-        'adresaPrim': (getattr(order, 'adresa', None) or '').strip(),
-        'pttPrim': (getattr(order, 'postanski_broj', None) or '').strip(),
-        'telefonPrim': (getattr(order, 'telefon', None) or '').strip(),
+        'adresaPrim': dest['adresa'],
+        'mjestoPrim': dest['grad'],
+        'pttPrim': dest['ptt'],
+        'telefonPrim': dest['telefon'],
         'kontaktPrim': ime,
         'opisPosiljke': 'Ribolovačka oprema',
         'brojPaketa': 1,
@@ -108,6 +253,9 @@ def build_shipment_payload(order) -> dict:
         'otkupnina': pouzece,
         'iznosOtkupnine': ukupno if pouzece else 0,
     }
+    if dest['grad']:
+        payload['mestoPrim'] = dest['grad']
+    return payload
 
 
 def extract_sifra(data) -> str:

@@ -5507,7 +5507,7 @@ class MagacinViewTests(TestCase):
         import requests
         from unittest.mock import Mock
 
-        from .xexpress_service import build_shipment_payload, extract_sifra
+        from .xexpress_service import XExpressError, build_shipment_payload, extract_sifra
 
         self.client.force_login(self.user)
         order = Order.objects.create(
@@ -5525,8 +5525,50 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload['nazivPrim'], 'Ana Ribić')
         self.assertEqual(payload['kontaktPrim'], 'Ana Ribić')
         self.assertEqual(payload['adresaPrim'], 'Test 1')
+        self.assertEqual(payload['mjestoPrim'], 'Sarajevo')
         self.assertEqual(payload['pttPrim'], '71000')
         self.assertEqual(payload['telefonPrim'], '061111111')
+        self.assertEqual(payload['vrednostPosiljke'], 30.0)
+
+        no_zip = Order(
+            broj='0099',
+            ime_prezime='Ana Ribić',
+            telefon='061111111',
+            adresa='Ulica 12',
+            grad='Sarajevo',
+            postanski_broj='',
+            ukupno=Decimal('30.00'),
+        )
+        from_city = build_shipment_payload(no_zip)
+        self.assertEqual(from_city['pttPrim'], '71000')
+        self.assertEqual(from_city['mjestoPrim'], 'Sarajevo')
+
+        in_city = Order(
+            broj='0100',
+            ime_prezime='Ana Ribić',
+            telefon='061111111',
+            adresa='Ulica 12',
+            grad='71000 Tuzla',
+            postanski_broj='',
+            ukupno=Decimal('12.00'),
+        )
+        parsed = build_shipment_payload(in_city)
+        self.assertEqual(parsed['pttPrim'], '71000')
+        self.assertEqual(parsed['mjestoPrim'], 'Tuzla')
+        self.assertEqual(parsed['vrednostPosiljke'], 12.0)
+
+        blank = Order(
+            broj='0101',
+            ime_prezime='Ana Ribić',
+            telefon='061111111',
+            adresa='Ulica 12',
+            grad='',
+            postanski_broj='',
+            ukupno=Decimal('12.00'),
+        )
+        with self.assertRaises(XExpressError) as raised:
+            build_shipment_payload(blank)
+        self.assertIn('poštanski broj', str(raised.exception))
         self.assertEqual(payload['opisPosiljke'], 'Ribolovačka oprema')
         self.assertEqual(payload['brojPaketa'], 1)
         self.assertEqual(payload['tezina'], 2)
