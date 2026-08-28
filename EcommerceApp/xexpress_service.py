@@ -72,12 +72,23 @@ def _int_setting(name: str, default: int) -> int:
         return default
 
 
+def _bool_setting(name: str, default: bool) -> bool:
+    raw = getattr(settings, name, None)
+    if raw in (None, ''):
+        return default
+    if isinstance(raw, bool):
+        return raw
+    return str(raw).strip().lower() in ('1', 'true', 'yes', 'da', 'on')
+
+
 def _najava_query() -> dict:
-    """Pickup lokacija na X-Express nalogu (1 = Glavna adresa)."""
+    """lokacija=1 Glavna adresa; rezervacija=true → WEB-PRIPREMA (vidljivo na sajtu)."""
     params = {}
     lokacija = _int_setting('XEXPRESS_LOKACIJA', 1)
     if lokacija:
         params['lokacija'] = lokacija
+    if _bool_setting('XEXPRESS_REZERVACIJA', True):
+        params['rezervacija'] = True
     return params
 
 

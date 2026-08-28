@@ -4926,14 +4926,13 @@ def _send_order_to_xexpress(request, broj):
     if (result or {}).get('duplicate'):
         messages.success(
             request,
-            f'Pošiljka već postoji u X-Express. Šifra: {sifra}. '
-            'Na online.x-express.ba potraži tu šifru u najavljenim (nije u Pripremi).',
+            f'Pošiljka već postoji u X-Express. Šifra: {sifra}.',
         )
     else:
         messages.success(
             request,
-            f'Pošiljka je kreirana na X-Express nalogu. Šifra: {sifra}. '
-            'Na online.x-express.ba potraži tu šifru u najavljenim pošiljkama (nije u Pripremi).',
+            f'Pošiljka je unijeta na X-Express nalog (Priprema). Šifra: {sifra}. '
+            'Na online.x-express.ba otvori meni Pošiljke.',
         )
     return result
 

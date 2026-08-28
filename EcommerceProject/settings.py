@@ -574,6 +574,8 @@ XEXPRESS_API_URL = _env('XEXPRESS_API_URL', 'https://api.x-express.ba/v1').rstri
 XEXPRESS_TIMEOUT = int(_env('XEXPRESS_TIMEOUT', '20') or 20)
 # 1 = Glavna adresa (pickup lokacija na nalogu). Bez ovoga web lista može biti prazna.
 XEXPRESS_LOKACIJA = int(_env('XEXPRESS_LOKACIJA', '1') or 1)
+# true = u Pripremi na online.x-express.ba (lista Pošiljke). false = odmah najavljeno (Najave).
+XEXPRESS_REZERVACIJA = _env('XEXPRESS_REZERVACIJA', 'true').lower() in ('1', 'true', 'yes', 'da', 'on')
 # 1 = gotovina (API 420 ako je 9 = po računu uz obveznika 1)
 XEXPRESS_NACIN_PLACANJA = int(_env('XEXPRESS_NACIN_PLACANJA', '1') or 1)
 XEXPRESS_OBVEZNIK_PLACANJA = int(_env('XEXPRESS_OBVEZNIK_PLACANJA', '1') or 1)

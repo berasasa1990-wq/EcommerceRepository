@@ -76,6 +76,8 @@ services:
         value: https://api.x-express.ba/v1
       - key: XEXPRESS_LOKACIJA
         value: "1"
+      - key: XEXPRESS_REZERVACIJA
+        value: "true"
       - key: TURNSTILE_SITE_KEY
         sync: false
       - key: TURNSTILE_SECRET_KEY

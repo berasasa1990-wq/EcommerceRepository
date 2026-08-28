@@ -5627,7 +5627,7 @@ class MagacinViewTests(TestCase):
             self.assertTrue(str(called_url).endswith('/najava/v2'))
             self.assertEqual(kwargs['auth'], ('xe-user', 'xe-pass'))
             self.assertEqual(kwargs['timeout'], 20)
-            self.assertEqual(kwargs.get('params'), {'lokacija': 1})
+            self.assertEqual(kwargs.get('params'), {'lokacija': 1, 'rezervacija': True})
             body = kwargs['json']
             self.assertIsInstance(body, list)
             self.assertEqual(body[0]['sifraExt'], order.broj)
