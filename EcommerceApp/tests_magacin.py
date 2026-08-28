@@ -290,6 +290,37 @@ class MagacinStockTests(TestCase):
         self.assertEqual(self.product.stanje, 0)
         self.assertFalse(self.product.na_stanju)
 
+    def test_sync_takes_off_site_without_location_stock(self):
+        from .magacin import sync_site_visibility_from_locations
+
+        ghost = Product.objects.create(
+            naziv='Bez lokacije',
+            sifra='NO-LOC-1',
+            cijena=Decimal('1.00'),
+            stanje=12,
+            na_stanju=True,
+        )
+        stats = sync_site_visibility_from_locations()
+        ghost.refresh_from_db()
+        self.assertFalse(ghost.na_stanju)
+        self.assertEqual(ghost.stanje, 0)
+        self.assertGreaterEqual(stats['off'], 1)
+
+    def test_any_location_qty_puts_product_back_on_site(self):
+        from .magacin import sync_site_visibility_from_locations
+
+        self.product.na_stanju = False
+        self.product.stanje = 0
+        self.product.save(update_fields=['na_stanju', 'stanje'])
+        WarehouseStock.objects.create(
+            product=self.product, location=self.a10, kolicina=4, rezervisano=0,
+        )
+        stats = sync_site_visibility_from_locations(product_ids=[self.product.pk])
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.na_stanju)
+        self.assertEqual(self.product.stanje, 4)
+        self.assertEqual(stats['on'], 1)
+
     def test_parse_mp_daily_text_reads_sifra_and_qty(self):
         rows = parse_mp_daily_text(
             'Šifra\tNaziv\tKoličina\nFOX12345\tFox braid\t2\nFOX12345\tFox braid\t1\nTST-1 4'
@@ -1884,8 +1915,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(novi.naziv, 'Novi test artikal')
         self.assertEqual(novi.cijena, Decimal('7.50'))
         self.assertTrue(novi.aktivan)
-        self.assertTrue(novi.na_stanju)
-        self.assertGreaterEqual(novi.stanje, 1)
+        self.assertFalse(novi.na_stanju)
+        self.assertEqual(novi.stanje, 0)
         self.assertIsNone(novi.brend_id)
         self.assertIsNone(novi.kategorija_id)
 

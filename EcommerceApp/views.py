@@ -7327,10 +7327,19 @@ def staff_product_quick_edit(request, slug):
     action = (request.POST.get('action') or '').strip()
 
     if action == 'toggle_stock':
-        product.na_stanju = not product.na_stanju
-        product.save(update_fields=['na_stanju'])
-        status = 'na stanju' if product.na_stanju else 'nije na stanju'
-        messages.success(request, f'Artikal „{product.naziv}” sada je {status}.')
+        from .magacin import refresh_catalog_qty
+        refresh_catalog_qty(product)
+        product.refresh_from_db(fields=['na_stanju', 'stanje'])
+        if product.na_stanju:
+            messages.success(
+                request,
+                f'Artikal „{product.naziv}” je na sajtu jer ima zalihu na lokaciji.',
+            )
+        else:
+            messages.success(
+                request,
+                f'Artikal „{product.naziv}” nije na sajtu jer nema zalihe na lokacijama.',
+            )
         return _staff_product_edit_redirect(request, slug)
     elif action == 'toggle_japan':
         product.proizvedeno_u_japanu = not product.proizvedeno_u_japanu

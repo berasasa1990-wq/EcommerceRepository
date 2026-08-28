@@ -312,13 +312,15 @@ def create_and_activate_product(
         brend=brend,
         kategorija=kategorija,
         aktivan=True,
-        na_stanju=True,
-        stanje=1,
+        na_stanju=False,
+        stanje=0,
         naziv_normalized=naziv.casefold()[:220],
         sifra_normalized=(sifra or '').casefold()[:80],
         magacin_sync_at=timezone.now(),
     )
     product.save()
+    from .magacin import refresh_catalog_qty
+    refresh_catalog_qty(product)
     return product
 
 
@@ -355,18 +357,15 @@ def activate_product(
     Aktiviraj postojeći artikal za webshop:
     - cijena, brend, kategorija, opcionalno opis, tagovi, barkod
     - pakovanje (komada) i Made in Japan kad se proslijede
-    - na_stanju=True, aktivan=True
-    - stanje min 1 ako je bilo 0
+    - aktivan=True
+    - na sajtu samo ako ima zalihu na bilo kojoj lokaciji
     - opcionalno nova glavna slika + dodatne slike (galerija)
     """
     product.cijena = cijena
     product.brend = brend
     if kategorija is not None:
         product.kategorija = kategorija
-    product.na_stanju = True
     product.aktivan = True
-    if not product.stanje or product.stanje < 1:
-        product.stanje = 1
     if opis is not None:
         product.opis = (opis or '').strip()
     if barkod is not None:
@@ -437,4 +436,6 @@ def activate_product(
                     product.pk,
                 )
 
+    from .magacin import refresh_catalog_qty
+    refresh_catalog_qty(product)
     return product

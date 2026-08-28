@@ -485,41 +485,35 @@ def clear_mp_without_location(product):
     meta.save(update_fields=['mp_bez_lokacije'])
 
 
+def _location_stock_qty_qs():
+    """Zaliha po artiklu na svim evidentiranim lokacijama osim Prenos u MP."""
+    return (
+        WarehouseStock.objects.exclude(ignored_location_q('location'))
+        .values('product_id')
+        .annotate(qty=Sum('kolicina'))
+    )
+
+
 def refresh_catalog_qty(product):
-    """Na sajtu dok UKUPNO NA STANJU (magacin + MP) nije 0."""
+    """Na sajtu dok ima količinu na bilo kojoj lokaciji (magacin + MP). Bez zalihe = skini sa sajta."""
     variations = list(ProductVariation.objects.filter(artikal_id=product.pk))
-    var_totals = []
-    mp_by_var = {}
-    if variations:
-        product_total = 0
-        for variation in variations:
-            total = countable_stock_qs(WarehouseStock.objects.filter(
-                product=product, variation=variation,
-            )).aggregate(s=Sum('kolicina'))['s'] or 0
-            total = max(0, _int(total))
-            var_totals.append((variation, total))
-            mp_by_var[variation.pk] = _mp_stock_qty(product, variation)
-            product_total += total
-        mp_total = sum(mp_by_var.values())
-    else:
+    if not variations:
         coalesce_unassigned_stock(product)
-        product_total = countable_stock_qs(WarehouseStock.objects.filter(
-            product=product,
+
+    for variation in variations:
+        total = countable_stock_qs(WarehouseStock.objects.filter(
+            product=product, variation=variation,
         )).aggregate(s=Sum('kolicina'))['s'] or 0
-        product_total = max(0, _int(product_total))
-        mp_total = _mp_stock_qty(product)
-
-    catalog_qty = product_total + mp_total
-    in_stock = catalog_qty > 0
-    clear_mp_without_location(product)
-
-    for variation, total in var_totals:
-        var_qty = total + mp_by_var.get(variation.pk, 0)
+        var_qty = max(0, _int(total)) + _mp_stock_qty(product, variation)
         var_in_stock = var_qty > 0
         if variation.stanje != var_qty or variation.na_stanju != var_in_stock:
             variation.stanje = var_qty
             variation.na_stanju = var_in_stock
             variation.save(update_fields=['stanje', 'na_stanju'])
+
+    catalog_qty = max(0, _int(display_stock_totals(product)['na_stanju']))
+    in_stock = catalog_qty > 0
+    clear_mp_without_location(product)
 
     update_fields = []
     if product.stanje != catalog_qty:
@@ -531,6 +525,53 @@ def refresh_catalog_qty(product):
     if update_fields:
         product.save(update_fields=update_fields)
     return catalog_qty
+
+
+def sync_site_visibility_from_locations(*, product_ids=None):
+    """Uskladi sajt: nema lokacije / zalihe = skini, ima zalihu na bilo kojoj lokaciji = vrati."""
+    qty_rows = _location_stock_qty_qs()
+    if product_ids is not None:
+        id_set = {int(pk) for pk in product_ids}
+        qty_rows = qty_rows.filter(product_id__in=id_set)
+    else:
+        id_set = None
+    qty_map = {
+        int(row['product_id']): max(0, _int(row['qty']))
+        for row in qty_rows
+    }
+    qs = Product.objects.only('id', 'na_stanju', 'stanje')
+    if id_set is not None:
+        qs = qs.filter(pk__in=id_set)
+
+    off_ids = []
+    refresh_ids = []
+    for product in qs.iterator():
+        qty = qty_map.get(product.pk, 0)
+        should_be_on = qty > 0
+        if product.na_stanju != should_be_on or int(product.stanje or 0) != qty:
+            if should_be_on:
+                refresh_ids.append(product.pk)
+            else:
+                off_ids.append(product.pk)
+
+    if off_ids:
+        for chunk in (off_ids[i:i + 500] for i in range(0, len(off_ids), 500)):
+            Product.objects.filter(pk__in=chunk).update(na_stanju=False, stanje=0)
+            ProductVariation.objects.filter(artikal_id__in=chunk).update(
+                na_stanju=False, stanje=0,
+            )
+            ProductWarehouseMeta.objects.filter(
+                product_id__in=chunk, mp_bez_lokacije=True,
+            ).update(mp_bez_lokacije=False)
+
+    for pk in refresh_ids:
+        refresh_catalog_qty(Product.objects.get(pk=pk))
+
+    return {
+        'off': len(off_ids),
+        'on': len(refresh_ids),
+        'checked': qs.count() if id_set is not None else Product.objects.count(),
+    }
 
 
 @transaction.atomic
@@ -872,7 +913,7 @@ def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
                 product = Product(
                     naziv=name[:200],
                     cijena=price,
-                    na_stanju=True,
+                    na_stanju=False,
                     stanje=0,
                     aktivan=True,
                     prikazi_na_pocetnoj=False,
@@ -1665,7 +1706,6 @@ def _create_sync_product(template, *, image_b64=None, synced_at=None):
     cijena = _decimal_price(template.get('list_price'))
     sifra = _safe_sifra(template.get('default_code'), odoo_id=odoo_id)
     now = synced_at or timezone.now()
-    qty = _template_qty(template)
     product = Product(
         naziv=naziv,
         sifra=sifra,
@@ -1674,8 +1714,8 @@ def _create_sync_product(template, *, image_b64=None, synced_at=None):
         odoo_template_id=odoo_id,
         magacin_sync_at=now,
         aktivan=True,
-        na_stanju=qty > 0,
-        stanje=qty,
+        na_stanju=False,
+        stanje=0,
     )
     if image_b64:
         _apply_image_once(product.slika, image_b64, f'odoo-template-{odoo_id}.jpg')
@@ -2299,6 +2339,7 @@ def run_sync_chunk(job, *, user=None):
                 lokacija=job.get('lokacija') or 0,
             )
             if job['stock_position'] >= len(stock_ids):
+                sync_site_visibility_from_locations()
                 job['done'] = True
                 job['phase'] = 'done'
                 magacin_odoo = Product.objects.exclude(odoo_template_id=None).count()

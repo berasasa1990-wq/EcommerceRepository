@@ -90,18 +90,13 @@ def _odoo_qty_from_record(record):
 
 def _odoo_stock_update_fields(qty, *, existing=False):
     """
-    Odoo stanje → sajt:
-    - qty > 0: stavi na stanje (stanje + na_stanju=True)
-    - qty == 0 i postojeći artikal: NE skidaj sa stanja (ručno ostaje na sajtu)
-    - qty == 0 i novi artikal: dozvoli 0 / nije na stanju
-    Vraća dict polja za update, ili prazan dict ako ne dirati stanje.
+    Sajt prati magacinske lokacije, ne Odoo qty.
+    Novi artikal kreće sa sajta dok nema zalihe na lokaciji.
+    Postojeći: ne diraj ovdje — refresh_catalog_qty usklađuje na_stanju.
     """
-    qty = _int_qty(qty)
-    if qty > 0:
-        return {'stanje': qty, 'na_stanju': True}
-    if not existing:
-        return {'stanje': 0, 'na_stanju': False}
-    return {}
+    if existing:
+        return {}
+    return {'stanje': 0, 'na_stanju': False}
 
 
 def _sifra_zauzeta(sifra, *, product_pk=None, variation_pk=None):
@@ -417,15 +412,11 @@ def _commit_merged_variation_import(
         variation.save()
 
     product = variation.artikal
-    if stock_fields:
-        sync_primary_stock(product)
-        if qty > 0:
-            product.stanje = max(_int_qty(product.stanje), qty)
-            product.na_stanju = True
-        product.save(update_fields=['stanje', 'na_stanju'])
-    elif qty > 0 and product:
-        # Odoo ima zalihu — stavi parent artikal na stanju
-        _apply_product_in_stock(product, qty)
+    if product:
+        from .magacin import refresh_catalog_qty
+        if stock_fields:
+            sync_primary_stock(product)
+        refresh_catalog_qty(product)
 
     return {
         'action': 'azurirano',
@@ -767,20 +758,11 @@ def _find_product_for_template(template):
 
 
 def _apply_product_in_stock(product, qty):
-    """Forsiraj artikal na stanju kad Odoo ima količinu > 0."""
-    qty = _int_qty(qty)
-    if qty <= 0:
-        return False
-    product.stanje = qty
-    product.na_stanju = True
-    product.save(update_fields=['stanje', 'na_stanju'])
-    logger.info(
-        'Odoo stock: product #%s (odoo=%s) → stanje=%s, na_stanju=True',
-        product.pk,
-        product.odoo_template_id,
-        qty,
-    )
-    return True
+    """Sajt prati lokacije: na sajtu samo ako ima zalihu na bilo kojoj lokaciji."""
+    from .magacin import refresh_catalog_qty
+    refresh_catalog_qty(product)
+    product.refresh_from_db(fields=['na_stanju', 'stanje'])
+    return bool(product.na_stanju)
 
 
 def _commit_stock_only(product, template, variant_payloads):
@@ -829,29 +811,14 @@ def _commit_stock_only(product, template, variant_payloads):
             variations_updated += 1
             stats['azurirano'] += 1
 
-    effective_qty = max(template_qty, variant_qty_sum)
-
-    site_was_on_stock = bool(product.na_stanju)
-    site_stanje = _int_qty(product.stanje)
+    from .magacin import refresh_catalog_qty
 
     if variations_updated:
         sync_primary_stock(product)
-        # Ako sync ostavi 0 a Odoo ima zalihu — forsira na stanju
-        if effective_qty > 0:
-            product.stanje = max(_int_qty(product.stanje), effective_qty)
-            product.na_stanju = True
-        elif site_was_on_stock:
-            # Odoo 0 — ne skidaj sa stanja na sajtu
-            product.na_stanju = True
-            product.stanje = max(_int_qty(product.stanje), site_stanje)
-        product.save(update_fields=['stanje', 'na_stanju'])
-        return stats
-
-    # Nema varijacija na sajtu (ili nijedna nije matchana) — piši na Product
-    if effective_qty > 0:
-        if _apply_product_in_stock(product, effective_qty):
-            stats['azurirano'] = 1
-    # effective_qty == 0 → ne diraj postojeće stanje na sajtu
+    refresh_catalog_qty(product)
+    product.refresh_from_db(fields=['na_stanju', 'stanje'])
+    if product.na_stanju or variations_updated:
+        stats['azurirano'] = max(int(stats.get('azurirano') or 0), 1 if product.na_stanju else stats['azurirano'])
     return stats
 
 
@@ -897,9 +864,6 @@ def _commit_template_import(prepared):
         return _preskoceno_rezultat()
 
     created = product is None
-    # Sačuvaj stanje/opis sa sajta prije bilo kakvog overwrite-a
-    site_was_on_stock = bool(product.na_stanju) if product else False
-    site_stanje = _int_qty(product.stanje) if product else 0
     site_opis = (product.opis or '') if product else ''
 
     raw_code = template.get('default_code')
@@ -933,19 +897,7 @@ def _commit_template_import(prepared):
             odoo_opis = ''
         values['opis'] = str(odoo_opis)
 
-    # Stanje: Odoo > 0 → na stanju; Odoo 0 na postojećem → NE skidaj sa stanja
-    template_qty = _odoo_qty_from_record(template)
-    variant_qty_sum = sum(
-        _odoo_qty_from_record(p.get('variant') or {})
-        for p in (variant_payloads or [])
-    )
-    effective_qty = max(template_qty, variant_qty_sum)
-    values.update(
-        _odoo_stock_update_fields(
-            effective_qty,
-            existing=not created,
-        )
-    )
+    values.update(_odoo_stock_update_fields(0, existing=not created))
 
     if product is None:
         product = Product(**values)
@@ -1000,25 +952,8 @@ def _commit_template_import(prepared):
 
     if variant_payloads:
         sync_primary_stock(product)
-        product.save(update_fields=['stanje', 'na_stanju'])
-
-    # Odoo > 0 → na stanju; Odoo 0 → vrati/ostavi stanje sa sajta (ne skidaj)
-    if effective_qty > 0:
-        if not product.na_stanju or _int_qty(product.stanje) < effective_qty:
-            product.stanje = max(_int_qty(product.stanje), effective_qty)
-            product.na_stanju = True
-            product.save(update_fields=['stanje', 'na_stanju'])
-    elif not created and site_was_on_stock:
-        # Odoo nema zalihu — ne skidaj artikal sa stanja na sajtu
-        if not product.na_stanju or _int_qty(product.stanje) < site_stanje:
-            product.na_stanju = True
-            product.stanje = max(_int_qty(product.stanje), site_stanje)
-            product.save(update_fields=['stanje', 'na_stanju'])
-            logger.info(
-                'Odoo stock 0: product #%s ostaje na stanju (sajt stanje=%s)',
-                product.pk,
-                product.stanje,
-            )
+    from .magacin import refresh_catalog_qty
+    refresh_catalog_qty(product)
 
     # Još jednom: postojeći opis se ne dira
     if not created and (product.opis or '') != site_opis:

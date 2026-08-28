@@ -510,9 +510,14 @@ def magacin_brzi_unos_novi(request):
                 if kategorija:
                     extra.append(kategorija.naziv)
                 note = f' ({", ".join(extra)})' if extra else ''
+                product.refresh_from_db(fields=['na_stanju'])
+                if product.na_stanju:
+                    site_note = 'na sajtu'
+                else:
+                    site_note = 'sačuvan — na sajt ide kad dobije zalihu na lokaciji'
                 messages.success(
                     request,
-                    f'✓ Novi artikal „{product.naziv}” je aktivan na sajtu ({cijena} KM){note}.',
+                    f'✓ Novi artikal „{product.naziv}” je {site_note} ({cijena} KM){note}.',
                 )
                 return redirect('staff_magacin_brzi_unos')
             except ValueError as exc:
