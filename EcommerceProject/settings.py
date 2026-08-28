@@ -572,12 +572,15 @@ XEXPRESS_USERNAME = _env('XEXPRESS_USERNAME', '').strip()
 XEXPRESS_PASSWORD = _env('XEXPRESS_PASSWORD', '').strip()
 XEXPRESS_API_URL = _env('XEXPRESS_API_URL', 'https://api.x-express.ba/v1').rstrip('/')
 XEXPRESS_TIMEOUT = int(_env('XEXPRESS_TIMEOUT', '20') or 20)
-# 1 = Glavna adresa (pickup lokacija na nalogu). Bez ovoga web lista može biti prazna.
-XEXPRESS_LOKACIJA = int(_env('XEXPRESS_LOKACIJA', '1') or 1)
+# rb iz GET /lokacije. Nalog 3425 = 0 (Glavna adresa). 0 je validan, nije „isključeno“.
+try:
+    XEXPRESS_LOKACIJA = int(_env('XEXPRESS_LOKACIJA', '0'))
+except (TypeError, ValueError):
+    XEXPRESS_LOKACIJA = 0
 # true = u Pripremi na online.x-express.ba (lista Pošiljke). false = odmah najavljeno (Najave).
 XEXPRESS_REZERVACIJA = _env('XEXPRESS_REZERVACIJA', 'true').lower() in ('1', 'true', 'yes', 'da', 'on')
-# OpenAPI: 0=gotovina, 1=banka, 9=po računu (420 ako ugovor ne dozvoljava 9)
-XEXPRESS_NACIN_PLACANJA = int(_env('XEXPRESS_NACIN_PLACANJA', '1') or 1)
+# OpenAPI: 0=gotovina, 1=banka, 9=po računu. Nalog 3425 ne dozvoljava 1 (žiralno).
+XEXPRESS_NACIN_PLACANJA = int(_env('XEXPRESS_NACIN_PLACANJA', '0') or 0)
 XEXPRESS_OBVEZNIK_PLACANJA = int(_env('XEXPRESS_OBVEZNIK_PLACANJA', '1') or 1)
 
 # Catalog Sync API — daj partneru ovaj ključ da vuče artikle/kategorije/brendove (read-only)

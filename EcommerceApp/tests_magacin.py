@@ -5568,12 +5568,25 @@ class MagacinViewTests(TestCase):
         with self.assertRaises(XExpressError) as raised:
             build_shipment_payload(blank)
         self.assertIn('poštanski broj', str(raised.exception))
-        self.assertEqual(payload['opisPosiljke'], 'Ribolovačka oprema')
+        self.assertEqual(payload['opisPosiljke'], f'Magacin narudžba br. #{order.broj}')
+        self.assertEqual(payload['napomenaInterna'], payload['opisPosiljke'])
+        webshop = Order(
+            broj='0146',
+            ime_prezime='Ana Ribić',
+            telefon='061111111',
+            adresa='Test 1',
+            grad='Sarajevo',
+            postanski_broj='71000',
+            ukupno=Decimal('30.00'),
+            izvor=Order.Izvor.WEBSHOP,
+        )
+        web_payload = build_shipment_payload(webshop)
+        self.assertEqual(web_payload['opisPosiljke'], 'Online Narudžbe br. #0146')
         self.assertEqual(payload['brojPaketa'], 1)
         self.assertEqual(payload['tezina'], 2)
         self.assertEqual(payload['uslugaSifra'], 1)
         self.assertEqual(payload['obveznikPlacanja'], 1)
-        self.assertEqual(payload['nacinPlacanja'], 1)
+        self.assertEqual(payload['nacinPlacanja'], 0)
         self.assertEqual(payload['vrednostPosiljke'], 30.0)
         self.assertTrue(payload['otkupnina'])
         self.assertEqual(payload['iznosOtkupnine'], 30.0)
@@ -5617,6 +5630,7 @@ class MagacinViewTests(TestCase):
             XEXPRESS_USERNAME='xe-user',
             XEXPRESS_PASSWORD='xe-pass',
             XEXPRESS_API_URL='https://api.x-express.ba/v1',
+            XEXPRESS_LOKACIJA=1,
         ):
             with patch('EcommerceApp.xexpress_service.requests.post', return_value=fake) as mocked:
                 sent = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))

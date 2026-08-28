@@ -81,12 +81,66 @@ def _bool_setting(name: str, default: bool) -> bool:
     return str(raw).strip().lower() in ('1', 'true', 'yes', 'da', 'on')
 
 
+def _fetch_lokacije() -> list:
+    try:
+        username, password = _credentials()
+        response = requests.get(
+            f'{_api_base()}/lokacije',
+            auth=(username, password),
+            timeout=min(8, _timeout()),
+        )
+    except (XExpressError, requests.RequestException):
+        return []
+    if response.status_code >= 400 or not response.content:
+        return []
+    try:
+        data = response.json()
+    except ValueError:
+        return []
+    return data if isinstance(data, list) else []
+
+
+def _resolve_lokacija() -> str | None:
+    """rb iz GET /lokacije. 0 je validan (nalog 3425)."""
+    raw = getattr(settings, 'XEXPRESS_LOKACIJA', None)
+    configured = None
+    if raw not in (None, ''):
+        try:
+            configured = int(raw)
+        except (TypeError, ValueError):
+            configured = None
+    locations = _fetch_lokacije()
+    rbs = []
+    glavna = None
+    for item in locations:
+        if not isinstance(item, dict) or item.get('rb') is None:
+            continue
+        try:
+            rb = int(item['rb'])
+        except (TypeError, ValueError):
+            continue
+        rbs.append(rb)
+        if 'glavna' in str(item.get('naziv') or '').casefold():
+            glavna = rb
+    if configured is not None and (not rbs or configured in rbs):
+        return str(configured)
+    if len(rbs) == 1:
+        return str(rbs[0])
+    if glavna is not None:
+        return str(glavna)
+    if rbs:
+        return str(rbs[0])
+    if configured is not None:
+        return str(configured)
+    return None
+
+
 def _najava_query() -> dict:
-    """OpenAPI: lokacija = rb iz GET /lokacije; rezervacija=true = Priprema (nije potvrđena najava)."""
+    """OpenAPI: lokacija = rb iz GET /lokacije; rezervacija=true = Priprema."""
     params = {}
-    lokacija = _int_setting('XEXPRESS_LOKACIJA', 1)
-    if lokacija:
-        params['lokacija'] = str(lokacija)
+    lokacija = _resolve_lokacija()
+    if lokacija is not None:
+        params['lokacija'] = lokacija
     if _bool_setting('XEXPRESS_REZERVACIJA', True):
         params['rezervacija'] = 'true'
     return params
@@ -256,6 +310,10 @@ def build_shipment_payload(order) -> dict:
     ukupno = dest['ukupno']
     ime = dest['ime']
     broj = str(getattr(order, 'broj', '') or '').strip()
+    if getattr(order, 'izvor', None) == 'magacin':
+        opis = f'Magacin narudžba br. #{broj}'
+    else:
+        opis = f'Online Narudžbe br. #{broj}'
     # PosiljkaDto iz X-Express OpenAPI — samo njihova polja, bez sifra (generiše API).
     payload = {
         'sifraExt': broj,
@@ -264,7 +322,7 @@ def build_shipment_payload(order) -> dict:
         'pttPrim': dest['ptt'],
         'telefonPrim': dest['telefon'],
         'kontaktPrim': ime,
-        'opisPosiljke': 'Ribolovačka oprema',
+        'opisPosiljke': opis,
         'brojPaketa': 1,
         'duzina': 0,
         'sirina': 0,
@@ -273,13 +331,13 @@ def build_shipment_payload(order) -> dict:
         'uslugaSifra': 1,
         # 1 = pošiljalac. 2 = primalac.
         'obveznikPlacanja': _int_setting('XEXPRESS_OBVEZNIK_PLACANJA', 1),
-        # 0 = gotovina, 1 = banka, 9 = po računu (420 ako ugovor ne dozvoljava 9).
-        'nacinPlacanja': _int_setting('XEXPRESS_NACIN_PLACANJA', 1),
+        # 0 = gotovina, 1 = banka, 9 = po računu. Nalog 3425: 1 (žiralno) vraća 420.
+        'nacinPlacanja': _int_setting('XEXPRESS_NACIN_PLACANJA', 0),
         'vrednostPosiljke': ukupno,
         'otkupnina': pouzece,
         'iznosOtkupnine': ukupno if pouzece else 0,
         'tipNajave': 0,
-        'napomenaInterna': f'Narudžba #{broj}',
+        'napomenaInterna': opis,
     }
     return payload
 
