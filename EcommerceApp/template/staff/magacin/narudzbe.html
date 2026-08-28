@@ -11,7 +11,7 @@
             {% elif show_validated and show_all_validated %}
             Sve validatovane iz pickinga — pretraži po imenu ili broju.
             {% elif show_validated %}
-            Validatovane danas — zaliha je skinuta s lokacija.
+            Validatovane {{ day|date:"d.m.Y." }} — zaliha je skinuta s lokacija.
             {% else %}
             Nove narudžbe ostaju ovdje na rezervaciji. Validacija skida zalihu i sklanja ih s liste.
             {% endif %}
@@ -20,7 +20,7 @@
     <div class="mg-toolbar-actions">
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzba_nova' %}">+ Nova ručna narudžba</a>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_vp_narudzba' %}">VP narudžbe</a>
-        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}">Unesi Brzu poštu</a>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}">Pošalji u X-Express</a>
         {% if show_validated %}
         {% if show_all_validated %}
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}{% if qs_today %}?{{ qs_today }}{% endif %}">Samo danas</a>
@@ -29,7 +29,7 @@
         {% endif %}
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
         {% else %}
-        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}?validirane=1&sve=1">
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}{% if qs_validated %}?{{ qs_validated }}{% else %}?validirane=1{% endif %}">
             Pokaži validatovane{% if validated_count %} ({{ validated_count }}){% endif %}
         </a>
         {% endif %}
@@ -40,9 +40,27 @@
     <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_magacin }}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">Ručne</a>
     <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_webshop }}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">Webshop</a>
 </div>
+{% if show_validated and not show_all_validated %}
+<nav class="bp-days" aria-label="Datum validacije">
+    <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?{{ qs_prev_day }}">← {{ prev_day|date:"d.m." }}</a>
+    <form method="get" action="{% url 'staff_magacin_narudzbe' %}" class="bp-days-form">
+        <input type="hidden" name="validirane" value="1">
+        {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
+        <label class="bp-days-label">
+            Datum
+            <input type="date" name="datum" value="{{ day|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}" onchange="this.form.submit()">
+        </label>
+    </form>
+    {% if can_go_next %}
+    <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?{{ qs_next_day }}">{{ next_day|date:"d.m." }} →</a>
+    {% else %}
+    <span class="mg-btn is-disabled" aria-disabled="true">Danas</span>
+    {% endif %}
+</nav>
+{% endif %}
 <form method="get" action="{% url 'staff_magacin_narudzbe' %}" class="mg-orders-find" role="search">
     {% if show_validated %}<input type="hidden" name="validirane" value="1">{% endif %}
-    {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% endif %}
+    {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% elif show_validated and not is_today %}<input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">{% endif %}
     {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
     <div class="mg-icon-field">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
@@ -67,6 +85,9 @@
         {% if show_validated %}
         <button type="submit" class="mg-btn mg-btn-pill" id="mgPrintQtySelected" formaction="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}" formtarget="_blank" disabled>
             Štampaj količine za fakturu
+        </button>
+        <button type="button" class="mg-btn mg-btn-pill mg-btn-primary" id="mgXexpressSelected" disabled>
+            Pošalji u X-Express
         </button>
         {% endif %}
         {% if not show_validated %}
@@ -93,6 +114,7 @@
                     <th>STATUS</th>
                     <th>LAGER</th>
                     <th>DATUM</th>
+                    <th>X-EXPRESS</th>
                     <th class="num">UKUPNO</th>
                     <th class="mg-more-col"></th>
                 </tr>
@@ -159,6 +181,13 @@
                         <span>{{ order.kreirana|date:"d.m.Y" }}</span>
                         <span class="sub">{{ order.kreirana|date:"H:i" }}</span>
                     </td>
+                    <td>
+                        {% if order.xexpress_sifra %}
+                        <span class="mg-pill is-xexpress">{{ order.xexpress_sifra }}</span>
+                        {% else %}
+                        <span class="mg-muted">—</span>
+                        {% endif %}
+                    </td>
                     <td class="num mg-order-sum">{{ order.ukupno }} KM</td>
                     <td class="mg-more-col" data-stop-row>
                         {% if show_validated %}
@@ -176,11 +205,11 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="mg-muted">
+                    <td colspan="10" class="mg-muted">
                         {% if order_query %}
                         Nema narudžbi za „{{ order_query }}”.
                         {% elif show_validated and not show_all_validated %}
-                        Nema validatovanih narudžbi za danas.
+                        Nema validatovanih narudžbi za {{ day|date:"d.m.Y." }}.
                         {% elif show_validated %}
                         Nema validatovanih narudžbi.
                         {% elif izvor_filter == 'magacin' %}
@@ -201,6 +230,13 @@
 <form id="mgValidateForm" method="post" action="{% url 'staff_magacin_narudzbe_validiraj' %}">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
+</form>
+{% endif %}
+{% if show_validated %}
+<form id="mgXexpressForm" method="post" action="{% url 'staff_magacin_xexpress_bulk' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">
 </form>
 {% endif %}
 <form id="mgPackingReprintForm" method="post" action="{% url 'staff_magacin_narudzbe_packing_izbor' %}" target="_blank" rel="noopener" hidden>

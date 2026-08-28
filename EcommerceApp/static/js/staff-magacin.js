@@ -1910,10 +1910,12 @@ function initOrderBulkPrint() {
     var printBtn = document.getElementById('mgPrintSelected');
     var qtyPrintBtn = document.getElementById('mgPrintQtySelected');
     var validateBtn = document.getElementById('mgValidateSelected');
+    var xexpressBtn = document.getElementById('mgXexpressSelected');
     var validateForm = document.getElementById('mgValidateForm');
+    var xexpressForm = document.getElementById('mgXexpressForm');
     var countEl = document.getElementById('mgSelectedCount');
     var checks = function () {
-        return Array.prototype.slice.call(form.querySelectorAll('.mg-order-check'));
+        return Array.prototype.slice.call(form.querySelectorAll('.mg-order-check:not([disabled])'));
     };
 
     function sync() {
@@ -1921,6 +1923,7 @@ function initOrderBulkPrint() {
         if (printBtn) printBtn.disabled = selected.length === 0;
         if (qtyPrintBtn) qtyPrintBtn.disabled = selected.length === 0;
         if (validateBtn) validateBtn.disabled = selected.length === 0;
+        if (xexpressBtn) xexpressBtn.disabled = selected.length === 0;
         if (countEl) countEl.textContent = selected.length + ' odabrano';
         if (selectAll) {
             var all = checks();
@@ -1943,6 +1946,16 @@ function initOrderBulkPrint() {
         if (!selected.length) {
             event.preventDefault();
             return;
+        }
+        var action = (form.getAttribute('action') || '');
+        if (action.indexOf('x-express') !== -1) {
+            var msg = selected.length === 1
+                ? 'Poslati 1 narudžbu u X-Express?'
+                : ('Poslati ' + selected.length + ' narudžbe u X-Express?');
+            if (!window.confirm(msg)) {
+                event.preventDefault();
+                return;
+            }
         }
         var locked = selected.find(function (box) {
             return box.getAttribute('data-mp') === '1' ||
@@ -1971,6 +1984,25 @@ function initOrderBulkPrint() {
                 validateForm.appendChild(hidden);
             });
             validateForm.submit();
+        });
+    }
+    if (xexpressBtn && xexpressForm) {
+        xexpressBtn.addEventListener('click', function () {
+            var selected = checks().filter(function (box) { return box.checked; });
+            if (!selected.length) return;
+            var msg = selected.length === 1
+                ? 'Poslati 1 narudžbu u X-Express?'
+                : ('Poslati ' + selected.length + ' narudžbe u X-Express?');
+            if (!window.confirm(msg)) return;
+            xexpressForm.querySelectorAll('input[name="b"]').forEach(function (el) { el.remove(); });
+            selected.forEach(function (box) {
+                var hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'b';
+                hidden.value = box.value;
+                xexpressForm.appendChild(hidden);
+            });
+            xexpressForm.submit();
         });
     }
     var packingBtn = document.getElementById('mgPackingSelected');

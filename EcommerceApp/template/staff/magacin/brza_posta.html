@@ -4,14 +4,14 @@
 <div class="mg-orders-page bp-page">
 <div class="mg-page-head">
     <div>
-        <h1>Unesi Brzu poštu</h1>
+        <h1>Pošalji u X-Express</h1>
         <p class="mg-count">
             Validatovane narudžbe za {{ day|date:"d.m.Y." }}
-            {% if pending_count %} — čeka unos: {{ pending_count }}{% endif %}
+            {% if pending_count %} — čeka slanje: {{ pending_count }}{% endif %}
         </p>
     </div>
     <div class="mg-toolbar-actions">
-        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}?validirane=1{% if not is_today %}&datum={{ day|date:'Y-m-d' }}{% endif %}">← Validatovane</a>
     </div>
 </div>
 
@@ -30,27 +30,47 @@
     {% endif %}
 </nav>
 
-<section class="mg-card mg-orders-card">
-    {% if orders %}
-    <div class="bp-list">
-        {% for order in orders %}
-        <a class="bp-row{% if order.brza_posta_unijeta %} is-done{% endif %}" href="{% url 'staff_magacin_brza_posta_detail' order.broj %}?datum={{ day|date:'Y-m-d' }}">
-            <span class="bp-row-main">
-                <strong>{{ order.ime_prezime }}</strong>
-                <span>#{{ order.broj }} · {{ order.grad }}{% if order.xexpress_sifra %} · {{ order.xexpress_sifra }}{% endif %}</span>
-            </span>
-            <span class="bp-row-sum">{{ order.ukupno }} KM</span>
-            {% if order.brza_posta_unijeta %}
-            <span class="bp-badge">Unijeto</span>
-            {% else %}
-            <span class="bp-badge bp-badge--wait">Čeka</span>
-            {% endif %}
-        </a>
-        {% endfor %}
+<form id="mgPrintForm" method="post" action="{% url 'staff_magacin_xexpress_bulk' %}" class="mg-orders-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">
+    <div class="mg-bulk-bar">
+        <label class="mg-check">
+            <input type="checkbox" id="mgSelectAll">
+            Odaberi sve
+        </label>
+        <button type="submit" class="mg-btn mg-btn-pill mg-btn-primary" id="mgPrintSelected" disabled>
+            Pošalji u X-Express
+        </button>
+        <span class="mg-muted" id="mgSelectedCount">0 odabrano</span>
     </div>
-    {% else %}
-    <p class="mg-empty">Nema validatovanih narudžbi za ovaj dan.</p>
-    {% endif %}
-</section>
+    <section class="mg-card mg-orders-card">
+        {% if orders %}
+        <div class="bp-list">
+            {% for order in orders %}
+            <div class="bp-row{% if order.xexpress_sifra %} is-done{% endif %}">
+                <label class="mg-check bp-row-check" data-stop-row>
+                    <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.xexpress_sifra %} disabled{% endif %}>
+                </label>
+                <a class="bp-row-main" href="{% url 'staff_magacin_brza_posta_detail' order.broj %}?datum={{ day|date:'Y-m-d' }}">
+                    <strong>{{ order.ime_prezime }}</strong>
+                    <span>#{{ order.broj }} · {{ order.grad }}{% if order.xexpress_sifra %} · {{ order.xexpress_sifra }}{% endif %}</span>
+                </a>
+                <span class="bp-row-sum">{{ order.ukupno }} KM</span>
+                {% if order.xexpress_sifra %}
+                <span class="bp-badge">Poslano</span>
+                {% elif order.brza_posta_unijeta %}
+                <span class="bp-badge">Unijeto</span>
+                {% else %}
+                <span class="bp-badge bp-badge--wait">Čeka</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="mg-empty">Nema validatovanih narudžbi za ovaj dan.</p>
+        {% endif %}
+    </section>
+</form>
 </div>
 {% endblock %}

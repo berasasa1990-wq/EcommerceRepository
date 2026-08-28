@@ -2527,6 +2527,10 @@ def magacin_narudzbe(request):
     show_validated = (request.GET.get('validirane') or '') == '1'
     show_all_validated = (request.GET.get('sve') or '') == '1'
     order_query = (request.GET.get('pretraga') or request.GET.get('q') or '').strip()
+    today = timezone.localdate()
+    day = _parse_brza_posta_day(request.GET.get('datum')) if show_validated else today
+    prev_day = day - timedelta(days=1)
+    next_day = day + timedelta(days=1)
     orders = (
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
@@ -2547,11 +2551,7 @@ def magacin_narudzbe(request):
     if show_validated:
         orders = orders.filter(validated_q)
         if not order_query and not show_all_validated:
-            today = timezone.localdate()
-            orders = orders.filter(
-                Q(zapakovana_at__date=today)
-                | Q(zapakovana_at__isnull=True, kreirana__date=today)
-            )
+            orders = orders.filter(_brza_posta_day_q(day))
     else:
         orders = orders.exclude(validated_q)
     if order_query:
@@ -2576,12 +2576,21 @@ def magacin_narudzbe(request):
         order.lager_lokacije = seen
     base_qs = Order.objects.exclude(status=Order.Status.OTKAZANA).exclude(_prenos_mp_q())
 
-    def _list_qs(*, izvor_value=izvor, all_validated=show_all_validated, query=order_query):
+    def _list_qs(
+        *,
+        izvor_value=izvor,
+        all_validated=show_all_validated,
+        query=order_query,
+        day_value=day,
+        validated=show_validated,
+    ):
         params = {}
-        if show_validated:
+        if validated:
             params['validirane'] = '1'
             if all_validated:
                 params['sve'] = '1'
+            elif day_value and day_value != today:
+                params['datum'] = day_value.isoformat()
         if query:
             params['pretraga'] = query
         if izvor_value and izvor_value != 'sve':
@@ -2595,12 +2604,21 @@ def magacin_narudzbe(request):
         'show_validated': show_validated,
         'show_all_validated': show_all_validated,
         'order_query': order_query,
+        'day': day,
+        'today': today,
+        'prev_day': prev_day,
+        'next_day': next_day,
+        'can_go_next': next_day <= today,
+        'is_today': day == today,
         'qs_sve': _list_qs(izvor_value='sve'),
         'qs_magacin': _list_qs(izvor_value='magacin'),
         'qs_webshop': _list_qs(izvor_value='webshop'),
-        'qs_today': _list_qs(all_validated=False),
-        'qs_all': _list_qs(all_validated=True),
+        'qs_today': _list_qs(all_validated=False, day_value=today, query=''),
+        'qs_all': _list_qs(all_validated=True, query=''),
         'qs_clear': _list_qs(query=''),
+        'qs_prev_day': _list_qs(all_validated=False, day_value=prev_day, query=''),
+        'qs_next_day': _list_qs(all_validated=False, day_value=next_day, query=''),
+        'qs_validated': _list_qs(validated=True, all_validated=False, day_value=today, query=''),
         'rucne_count': base_qs.filter(
             izvor=Order.Izvor.MAGACIN,
         ).exclude(validated_q).count(),
@@ -2647,9 +2665,9 @@ def magacin_brza_posta(request):
     prev_day = day - timedelta(days=1)
     next_day = day + timedelta(days=1)
     orders = list(_brza_posta_orders_qs(day))
-    pending = sum(1 for row in orders if not row.brza_posta_unijeta)
+    pending = sum(1 for row in orders if not (row.xexpress_sifra or '').strip())
     context = _magacin_context(
-        request, section='narudzbe', page_title='Unesi Brzu poštu — Magacin',
+        request, section='narudzbe', page_title='Pošalji u X-Express — Magacin',
     )
     context.update({
         'day': day,
@@ -2699,6 +2717,72 @@ def magacin_brza_posta_detail(request, broj):
         'iznos_copy': f'{order.ukupno:.2f}'.replace('.', ','),
     })
     return render(request, 'staff/magacin/brza_posta_detail.html', context)
+
+
+def _mark_brza_posta_entered(order):
+    if getattr(order, 'brza_posta_unijeta', False):
+        return
+    order.brza_posta_unijeta = True
+    order.brza_posta_unijeta_at = timezone.now()
+    order.save(update_fields=['brza_posta_unijeta', 'brza_posta_unijeta_at'])
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def magacin_xexpress_bulk(request):
+    from .xexpress_service import XExpressAlreadySent, XExpressError, create_shipment
+
+    brojevi = [b.strip() for b in request.POST.getlist('b') if (b or '').strip()]
+    brojevi = list(dict.fromkeys(brojevi))[:40]
+    day = _parse_brza_posta_day(request.POST.get('datum'))
+    nxt = (request.POST.get('next') or '').strip()
+    if not brojevi:
+        messages.error(request, 'Odaberi barem jednu narudžbu za X-Express.')
+    else:
+        sent, skipped, errors = [], [], []
+        for broj in brojevi:
+            order = Order.objects.filter(broj=broj).exclude(status=Order.Status.OTKAZANA).first()
+            if order is None:
+                errors.append(f'#{broj} nije pronađena')
+                continue
+            if not (
+                order.lager_status == Order.LagerStatus.VALIDIRANO
+                or order.status == Order.Status.ZAVRSENA
+            ):
+                errors.append(f'#{broj} nije validatovana')
+                continue
+            try:
+                result = create_shipment(order)
+            except XExpressAlreadySent:
+                skipped.append(broj)
+                continue
+            except XExpressError as exc:
+                errors.append(f'#{broj}: {exc}')
+                continue
+            except Exception as exc:
+                logger.exception('X-Express bulk #%s', broj)
+                errors.append(f'#{broj}: {exc}')
+                continue
+            sifra = (result or {}).get('sifra') or order.xexpress_sifra
+            sent.append(f'#{broj} {sifra}'.strip())
+            order.refresh_from_db()
+            _mark_brza_posta_entered(order)
+        if sent:
+            messages.success(
+                request,
+                'X-Express: ' + ', '.join(sent) + '.',
+            )
+        if skipped:
+            messages.info(
+                request,
+                'Već poslane: ' + ', '.join(f'#{b}' for b in skipped) + '.',
+            )
+        if errors:
+            messages.error(request, 'X-Express greške: ' + '; '.join(errors))
+    if nxt.startswith('/') and not nxt.startswith('//'):
+        return redirect(nxt)
+    return redirect(f"{reverse('staff_magacin_brza_posta')}?datum={day.isoformat()}")
 
 
 @login_required(login_url='login')

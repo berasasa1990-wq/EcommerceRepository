@@ -7394,6 +7394,7 @@ tr.is-mp-lock {
     color: inherit;
 }
 .bp-row form { margin: 0; flex: 0 0 auto; }
+.bp-row-check { flex: 0 0 auto; margin: 0; }
 a.bp-row-main { text-decoration: none; color: inherit; }
 .bp-row:last-child { border-bottom: none; }
 .bp-row-main { flex: 1 1 auto; min-width: 0; }

@@ -3052,7 +3052,8 @@ class MagacinViewTests(TestCase):
     def test_brza_posta_list_copy_fields_and_mark_entered(self):
         self.client.force_login(self.user)
         listed = self.client.get(reverse('staff_magacin_narudzbe'))
-        self.assertContains(listed, 'Unesi Brzu poštu')
+        self.assertContains(listed, 'Pošalji u X-Express')
+        self.assertNotContains(listed, 'Unesi Brzu poštu')
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
             'ime_prezime': 'Brza Kupac',
             'telefon': '065111222',
@@ -3070,8 +3071,11 @@ class MagacinViewTests(TestCase):
         validate_order_stock(order, user=self.user)
         page = self.client.get(reverse('staff_magacin_brza_posta'))
         self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Pošalji u X-Express')
         self.assertContains(page, 'Brza Kupac')
         self.assertContains(page, 'Čeka')
+        self.assertContains(page, 'name="b"')
+        self.assertContains(page, reverse('staff_magacin_xexpress_bulk'))
         yesterday = timezone.localdate() - timedelta(days=1)
         older = self.client.get(
             reverse('staff_magacin_brza_posta'),
@@ -3115,6 +3119,33 @@ class MagacinViewTests(TestCase):
         self.assertIsNotNone(order.brza_posta_unijeta_at)
         again = self.client.get(reverse('staff_magacin_brza_posta'))
         self.assertContains(again, 'Unijeto')
+        from unittest.mock import Mock
+        fake = Mock()
+        fake.status_code = 200
+        fake.content = b'[{"sifra":"XE-BULK"}]'
+        fake.json.return_value = [{'sifra': 'XE-BULK'}]
+        missing_loc = Mock()
+        missing_loc.status_code = 200
+        missing_loc.content = b'[{"rb":0,"naziv":"Glavna adresa"}]'
+        missing_loc.json.return_value = [{'rb': 0, 'naziv': 'Glavna adresa'}]
+        with override_settings(
+            XEXPRESS_USERNAME='xe-user',
+            XEXPRESS_PASSWORD='xe-pass',
+            XEXPRESS_LOKACIJA=0,
+            XEXPRESS_REZERVACIJA=True,
+        ):
+            with patch('EcommerceApp.xexpress_service.requests.post', return_value=fake):
+                with patch('EcommerceApp.xexpress_service.requests.get', return_value=missing_loc):
+                    bulk = self.client.post(reverse('staff_magacin_xexpress_bulk'), {
+                        'b': [order.broj],
+                        'datum': timezone.localdate().isoformat(),
+                    })
+        self.assertEqual(bulk.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, 'XE-BULK')
+        sent_list = self.client.get(reverse('staff_magacin_brza_posta'))
+        self.assertContains(sent_list, 'XE-BULK')
+        self.assertContains(sent_list, 'Poslano')
 
     def test_pick_zero_removes_item_and_location_qty(self):
         extra = Product.objects.create(
@@ -4352,7 +4383,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(listed.status_code, 200)
         self.assertContains(listed, 'Nova ručna narudžba')
         self.assertContains(listed, 'Pokaži validatovane')
-        self.assertContains(listed, 'validirane=1&sve=1')
+        self.assertContains(listed, 'validirane=1')
+        self.assertNotContains(listed, 'validirane=1&sve=1')
         self.assertContains(listed, 'Pretraži po imenu ili broju narudžbe')
         self.assertContains(listed, 'Ime ili broj narudžbe')
         self.assertNotContains(listed, 'Broj narudžbe, ime ili telefon')
@@ -6310,12 +6342,23 @@ class MagacinViewTests(TestCase):
         )
         home = self.client.get(reverse('staff_magacin_narudzbe'))
         self.assertEqual(home.context['validated_count'], 2)
-        self.assertContains(home, 'validirane=1&sve=1')
+        self.assertContains(home, 'validirane=1')
+        self.assertNotContains(home, 'validirane=1&sve=1')
         page = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1'})
         listed = [row.broj for row in page.context['orders']]
         self.assertIn(today.broj, listed)
         self.assertNotIn(old.broj, listed)
         self.assertContains(page, 'Prikaži sve')
+        self.assertContains(page, 'name="datum"')
+        self.assertContains(page, 'Pošalji u X-Express')
+        self.assertContains(page, reverse('staff_magacin_xexpress_bulk'))
+        yesterday = self.client.get(reverse('staff_magacin_narudzbe'), {
+            'validirane': '1',
+            'datum': (timezone.localdate() - timedelta(days=1)).isoformat(),
+        })
+        ylisted = [row.broj for row in yesterday.context['orders']]
+        self.assertIn(old.broj, ylisted)
+        self.assertNotIn(today.broj, ylisted)
         all_page = self.client.get(reverse('staff_magacin_narudzbe'), {'validirane': '1', 'sve': '1'})
         all_listed = [row.broj for row in all_page.context['orders']]
         self.assertIn(today.broj, all_listed)

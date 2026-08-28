@@ -220,6 +220,11 @@ urlpatterns = [
         views_magacin.magacin_brza_posta_detail,
         name='staff_magacin_brza_posta_detail',
     ),
+    path(
+        'nalog/magacin/narudzbe/x-express/',
+        views_magacin.magacin_xexpress_bulk,
+        name='staff_magacin_xexpress_bulk',
+    ),
     path('nalog/magacin/kupci/', views_magacin.magacin_kupci, name='staff_magacin_kupci'),
     path('nalog/magacin/kupci/lookup/', views_magacin.magacin_kupci_lookup, name='staff_magacin_kupci_lookup'),
     path('nalog/magacin/kupci/sacuvaj/', views_magacin.magacin_kupci_save, name='staff_magacin_kupci_save'),
