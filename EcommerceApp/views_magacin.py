@@ -55,6 +55,8 @@ from .magacin import (
     start_popis,
     start_vp_narudzba,
     create_prenos_mp_pick,
+    drop_prenos_mp_item,
+    trim_prenos_mp_item,
     is_prenos_mp_order,
     is_vp_order,
     add_item_to_order,
@@ -967,10 +969,15 @@ def magacin_artikal(request, pk):
                         qty=_parse_qty(request.POST.get('kolicina') or '1'),
                         user=request.user,
                     )
-                    qty = order.stavke.first().kolicina if order.stavke.exists() else request.POST.get('kolicina')
+                    stavki = order.stavke.count()
+                    qty = request.POST.get('kolicina')
+                    if stavki == 1:
+                        qty = order.stavke.first().kolicina
                     messages.success(
                         request,
-                        f'Prenos u MP ({qty} kom) je na Pickingu. Otvori Picking pa klikni tu stavku.',
+                        f'Prenos u MP ({qty} kom) je na Pickingu #{order.broj}'
+                        f' ({stavki} stavk{"a" if stavki == 1 else "i"}). '
+                        'Otvori Picking pa pokupi sve stavke.',
                     )
                 else:
                     loc_raw = request.POST.get('add_location_id') if mode == 'add' else request.POST.get('location_id')
@@ -4326,6 +4333,12 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     order.save(update_fields=['pick_state'])
 
     def _drop_zero(item, loc, qty):
+        if is_prenos_mp_order(order):
+            try:
+                cancelled = drop_prenos_mp_item(order, item, user=user)
+            except MagacinError:
+                cancelled = False
+            return {'cancelled': cancelled, 'removed': True}
         try:
             return drop_missing_pick_line(
                 order, item, loc=loc, qty=qty, user=user,
@@ -4430,7 +4443,8 @@ def pending_prenos_mp_jobs():
     )
     jobs = []
     for order in orders:
-        item = order.stavke.first()
+        items = list(order.stavke.all())
+        item = items[0] if items else None
         hold = order.magacin_holds.first()
         product = item.artikal if item else None
         slika = ''
@@ -4441,11 +4455,16 @@ def pending_prenos_mp_jobs():
                     slika = img.url
                 except ValueError:
                     slika = ''
+        qty = sum(int(row.kolicina or 0) for row in items)
         jobs.append({
             'order': order,
-            'naziv': (item.naziv if item else 'Prenos u MP'),
-            'sifra': (item.sifra if item else ''),
-            'qty': int(item.kolicina) if item else 0,
+            'naziv': (
+                item.naziv if len(items) == 1 and item
+                else f'Prenos u MP ({len(items)} stavki)'
+            ),
+            'sifra': (item.sifra if item and len(items) == 1 else ''),
+            'qty': qty,
+            'stavki': len(items),
             'lokacija': hold.location.sifra if hold and hold.location else '',
             'slika': slika,
         })
@@ -4786,7 +4805,7 @@ def magacin_pakuj_detail(request, broj):
             if prenos_mp:
                 messages.success(
                     request,
-                    'Prenos u MP je otkazan — artikal je vraćen na lokaciju.',
+                    'Prenos u MP je otkazan — artikli su vraćeni na lokacije.',
                 )
             else:
                 messages.success(
@@ -4873,17 +4892,26 @@ def magacin_pakuj_detail(request, broj):
                 product.refresh_from_db(fields=['na_stanju', 'stanje'])
             still_on_site = bool(product and product.na_stanju)
             if prenos_mp and not result.get('relocated'):
+                item_id = item.pk
                 try:
-                    cancel_order_stock(order, user=request.user)
+                    cancelled = trim_prenos_mp_item(order, item, user=request.user)
                 except MagacinError:
-                    order.lager_status = Order.LagerStatus.OTKAZANO
-                    order.status = Order.Status.OTKAZANA
-                    order.save(update_fields=['lager_status', 'status'])
-                cancelled = True
-                message = (
-                    f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0. '
-                    'Prenos u MP je uklonjen.'
-                )
+                    cancelled = False
+                if cancelled:
+                    message = (
+                        f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0. '
+                        'Prenos u MP je uklonjen.'
+                    )
+                elif not order.stavke.filter(pk=item_id).exists():
+                    message = (
+                        f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0. '
+                        'Stavka je skinuta s prenosa u MP.'
+                    )
+                else:
+                    message = (
+                        f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0. '
+                        'Količina na prenosu je usklađena.'
+                    )
             elif result.get('relocated'):
                 message = (
                     f'Lokacija {loc_label} očišćena — količine na toj lokaciji su 0, '
@@ -4958,12 +4986,16 @@ def magacin_pakuj_detail(request, broj):
 
     queue, location_groups, odoo_error = _order_pick_bundle(order)
     mp_count = sum(1 for item in queue if item.get('is_mp'))
-    prenos_item = order.stavke.select_related('artikal', 'varijacija').first() if prenos_mp else None
+    prenos_items = list(
+        order.stavke.select_related('artikal', 'varijacija')
+    ) if prenos_mp else []
+    prenos_single = prenos_mp and len(prenos_items) <= 1
+    prenos_item = prenos_items[0] if prenos_single and prenos_items else None
     prenos_hold = (
         order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO)
         .select_related('location')
         .first()
-        if prenos_mp else None
+        if prenos_item else None
     )
     context = _magacin_context(request, section='pakuj', page_title=f'Pick #{order.broj} — Magacin')
     context.update({
@@ -4978,6 +5010,7 @@ def magacin_pakuj_detail(request, broj):
         'is_prenos_mp': prenos_mp,
         'prenos_item': prenos_item,
         'prenos_hold': prenos_hold,
+        'prenos_items': prenos_items,
         'prenos_codes_json': json.dumps(_prenos_scan_codes(prenos_item), ensure_ascii=False).replace('<', '\\u003c'),
         'can_edit_order': order_is_editable(order),
         'edit_form_url': (
@@ -4989,7 +5022,7 @@ def magacin_pakuj_detail(request, broj):
         'order_items': list(order.stavke.select_related('artikal', 'varijacija')),
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
     })
-    template = 'staff/magacin/pakuj_prenos.html' if prenos_mp else 'staff/magacin/pakuj_detail.html'
+    template = 'staff/magacin/pakuj_prenos.html' if prenos_single else 'staff/magacin/pakuj_detail.html'
     return render(request, template, context)
 
 
@@ -5879,10 +5912,15 @@ def magacin_fali_na_sajtu(request):
                 qty=_parse_qty(request.POST.get('kolicina') or '1'),
                 user=request.user,
             )
-            qty = order.stavke.first().kolicina if order.stavke.exists() else request.POST.get('kolicina')
+            stavki = order.stavke.count()
+            qty = request.POST.get('kolicina')
+            if stavki == 1:
+                qty = order.stavke.first().kolicina
             messages.success(
                 request,
-                f'Prenos u MP ({qty} kom) je na Pickingu. Otvori Picking pa klikni tu stavku.',
+                f'Prenos u MP ({qty} kom) je na Pickingu #{order.broj}'
+                f' ({stavki} stavk{"a" if stavki == 1 else "i"}). '
+                'Otvori Picking pa pokupi sve stavke.',
             )
         except (MagacinError, Product.DoesNotExist, ProductVariation.DoesNotExist, WarehouseLocation.DoesNotExist, TypeError, ValueError) as exc:
             messages.error(request, str(exc) if str(exc) else 'Prenos u MP nije uspio.')

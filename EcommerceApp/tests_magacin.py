@@ -24,6 +24,7 @@ from .magacin import (
     attach_site_odoo_products_to_magacin,
     cancel_order_stock,
     create_prenos_mp_pick,
+    drop_prenos_mp_item,
     deduct_for_order,
     deduct_mp_daily_stock,
     local_odoo_template_ids,
@@ -279,6 +280,37 @@ class MagacinStockTests(TestCase):
             WarehouseStock.objects.get(product=self.product, location=self.b03).kolicina,
             3,
         )
+
+    def test_prenos_mp_groups_items_into_one_picking(self):
+        other = Product.objects.create(
+            naziv='Drugi artikal', sifra='DRG-1', cijena=Decimal('4.00'),
+            stanje=0, na_stanju=False,
+        )
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=6)
+        apply_movement(product=other, location=self.a10, tip='prijem', kolicina=4)
+        first = create_prenos_mp_pick(product=self.product, location=self.a10, qty=2)
+        second = create_prenos_mp_pick(product=other, location=self.a10, qty=3)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(Order.objects.filter(ime_prezime='Prenos u MP').count(), 1)
+        self.assertEqual(first.stavke.count(), 2)
+        again = create_prenos_mp_pick(product=self.product, location=self.a10, qty=1)
+        self.assertEqual(again.pk, first.pk)
+        first.refresh_from_db()
+        self.assertEqual(first.stavke.get(artikal=self.product).kolicina, 3)
+        self.assertEqual(first.stavke.get(artikal=other).kolicina, 3)
+        self.assertEqual(first.dostava, Decimal('0.00'))
+        dropped = drop_prenos_mp_item(first, first.stavke.get(artikal=other))
+        self.assertFalse(dropped)
+        self.assertEqual(first.stavke.count(), 1)
+        create_prenos_mp_pick(product=other, location=self.a10, qty=3)
+        first.refresh_from_db()
+        self.assertEqual(first.stavke.count(), 2)
+        validate_order_stock(first)
+        first.refresh_from_db()
+        self.assertEqual(first.lager_status, Order.LagerStatus.VALIDIRANO)
+        nxt = create_prenos_mp_pick(product=other, location=self.a10, qty=1)
+        self.assertNotEqual(nxt.pk, first.pk)
+        self.assertEqual(nxt.stavke.count(), 1)
 
     def test_zero_ukupno_takes_product_off_site(self):
         apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=2)
@@ -3757,6 +3789,28 @@ class MagacinViewTests(TestCase):
         self.assertContains(pick, 'pk-prenos-sifra')
         self.assertContains(pick, 'TST-1')
         self.assertNotContains(pick, 'Odnio kod Slobe')
+        other = Product.objects.create(
+            naziv='Drugi prenos', sifra='DRG-MP', cijena=Decimal('4.00'),
+            stanje=0, na_stanju=False, magacin_sync_at=timezone.now(),
+        )
+        apply_movement(product=other, location=src, tip='prijem', kolicina=5)
+        second = self.client.post(
+            reverse('staff_magacin_artikal', args=[other.pk]),
+            {'action': 'kretanje', 'mode': 'mp', 'kolicina': '2'},
+        )
+        self.assertEqual(second.status_code, 302)
+        self.assertEqual(Order.objects.filter(ime_prezime='Prenos u MP').count(), 1)
+        order.refresh_from_db()
+        self.assertEqual(order.stavke.count(), 2)
+        grouped = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertContains(grouped, 'id="pkPickApp"')
+        self.assertContains(grouped, 'Drugi prenos')
+        self.assertContains(grouped, 'Test braid')
+        self.assertContains(grouped, '2 stavki')
+        listing2 = self.client.get(reverse('staff_magacin_pakuj'), {'status': 'sve'})
+        self.assertContains(listing2, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertContains(listing2, '2 stavki')
+        self.assertNotContains(pick, 'Odnio kod Slobe')
         self.assertNotContains(pick, 'Provjera')
         self.assertNotContains(pick, 'Skeniraj narudžbu')
         validated = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]), {
@@ -3830,6 +3884,58 @@ class MagacinViewTests(TestCase):
             WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
             1,
         )
+
+    def test_prenos_mp_grouped_validate_drops_unpicked_item(self):
+        self.client.force_login(self.user)
+        src = WarehouseLocation.objects.get(sifra='T-1')
+        if not WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').exists():
+            WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        self.client.post(
+            reverse('staff_magacin_artikal', args=[self.product.pk]),
+            {'action': 'kretanje', 'mode': 'mp', 'kolicina': '3'},
+        )
+        other = Product.objects.create(
+            naziv='Preskoci prenos', sifra='SKIP-MP', cijena=Decimal('4.00'),
+            stanje=0, na_stanju=False, magacin_sync_at=timezone.now(),
+        )
+        apply_movement(product=other, location=src, tip='prijem', kolicina=4)
+        self.client.post(
+            reverse('staff_magacin_artikal', args=[other.pk]),
+            {'action': 'kretanje', 'mode': 'mp', 'kolicina': '2'},
+        )
+        order = Order.objects.get(ime_prezime='Prenos u MP')
+        keep = order.stavke.get(artikal=self.product)
+        skip = order.stavke.get(artikal=other)
+        pick_json = json.dumps([
+            {
+                'key': f'{keep.pk}:{src.sifra}',
+                'item_id': keep.pk,
+                'loc': src.sifra,
+                'got': 3,
+                'need': 3,
+                'done': True,
+            },
+            {
+                'key': f'{skip.pk}:{src.sifra}',
+                'item_id': skip.pk,
+                'loc': src.sifra,
+                'got': 0,
+                'need': 2,
+                'done': True,
+            },
+        ])
+        validated = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {'action': 'validiraj', 'pick_json': pick_json},
+        )
+        self.assertEqual(validated.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertFalse(order.stavke.filter(pk=skip.pk).exists())
+        self.assertEqual(order.stavke.get(pk=keep.pk).kolicina_pokupljeno, 3)
+        other_stock = WarehouseStock.objects.get(product=other, location=src)
+        self.assertEqual(other_stock.kolicina, 4)
+        self.assertEqual(other_stock.rezervisano, 0)
 
     def test_prenos_mp_cancel_returns_stock_without_transfer(self):
         self.client.force_login(self.user)

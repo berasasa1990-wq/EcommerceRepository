@@ -8,8 +8,13 @@
     <header class="pk-bar pk-bar-light">
         <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}" aria-label="Nazad">←</a>
         <div class="pk-bar-title">
+            {% if is_prenos_mp %}
+            <strong>Prenos u MP</strong>
+            <span>#{{ order.broj }} · {{ prenos_items|length }} stavki</span>
+            {% else %}
             <strong>Pick lista PL-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
             <span>#{{ order.broj }} · {{ order.ime_prezime }}{% if order.pick_claimed_name %} · Preuzeo {{ order.pick_claimed_name }}{% endif %}</span>
+            {% endif %}
         </div>
         <span class="pk-status-pill" id="pkStatusPill">Čeka picking</span>
         <button type="button" class="pk-bar-scan" id="pkScanCam" data-mg-scan-target="pkScanInput" title="Skener" aria-label="Skener">
@@ -36,13 +41,11 @@
             Pauziraj
         </a>
         <button type="button" class="pk-reset" id="pkReset">Poništi</button>
-        {% if not is_prenos_mp %}
         <form method="post" class="pk-cancel-form" id="pkCancelForm">
             {% csrf_token %}
             <input type="hidden" name="action" value="otkazi">
-            <button type="submit" class="mg-btn mg-btn-danger">Otkaži</button>
+            <button type="submit" class="mg-btn mg-btn-danger">{% if is_prenos_mp %}Otkaži prenos{% else %}Otkaži{% endif %}</button>
         </form>
-        {% endif %}
         <button type="button" class="pk-finish" id="pkValidDoneBtn2">Završi</button>
     </footer>
 

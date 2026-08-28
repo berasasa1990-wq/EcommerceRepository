@@ -3468,7 +3468,10 @@ function initArticleScanner() {
     var cancelForm = document.getElementById('pkCancelForm');
     if (cancelForm) {
         cancelForm.addEventListener('submit', function (event) {
-            if (!window.confirm('Otkazati narudžbu i vratiti rezervaciju na lokacije?')) {
+            var cancelMsg = isPrenosMp
+                ? 'Otkazati prenos u MP? Artikli ostaju na lokacijama, ništa se ne prenosi.'
+                : 'Otkazati narudžbu i vratiti rezervaciju na lokacije?';
+            if (!window.confirm(cancelMsg)) {
                 event.preventDefault();
             }
         });

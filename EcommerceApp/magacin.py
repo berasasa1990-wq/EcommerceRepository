@@ -4448,7 +4448,7 @@ def recalculate_order_totals(order):
         Decimal('0.00'),
     ).quantize(Decimal('0.01'))
     popust = Decimal(str(order.popust or 0)).quantize(Decimal('0.01'))
-    if is_vp_order(order):
+    if is_vp_order(order) or is_prenos_mp_order(order):
         dostava = Decimal('0.00')
     elif getattr(order, 'izvor', '') == Order.Izvor.MAGACIN:
         from .pricing import _standardna_dostava
@@ -4915,9 +4915,28 @@ def mark_order_packed(order):
     return order
 
 
+def open_prenos_mp_order():
+    """Jedan otvoreni picking za sve prenose u MP, dok se ne validira ili otkaže."""
+    from .models import Order
+
+    return (
+        Order.objects.select_for_update()
+        .filter(ime_prezime='Prenos u MP')
+        .exclude(status=Order.Status.OTKAZANA)
+        .exclude(
+            lager_status__in=[
+                Order.LagerStatus.VALIDIRANO,
+                Order.LagerStatus.OTKAZANO,
+            ]
+        )
+        .order_by('kreirana', 'pk')
+        .first()
+    )
+
+
 @transaction.atomic
 def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
-    """Napravi picking za prenos u MP — Validate prebacuje zalihu na maloprodaju."""
+    """Dodaj stavku na isti Prenos u MP picking. Validate prebacuje zalihu na maloprodaju."""
     from .models import Order, OrderItem
 
     qty = _parse_move_qty(qty)
@@ -4928,32 +4947,53 @@ def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
     if row is None or row['dostupno'] < qty:
         raise MagacinError('Nema dovoljno dostupne količine na toj lokaciji.')
     cijena = product.cijena or Decimal('0.00')
-    order = Order.objects.create(
-        ime_prezime='Prenos u MP',
-        email='prenos@carpologijabh.local',
-        telefon='-',
-        adresa=(location.label or location.sifra or '')[:300],
-        grad='Magacin',
-        napomena=f'Prenos u MP sa {location.label}',
-        medjuzbir=cijena * qty,
-        dostava=Decimal('0.00'),
-        ukupno=cijena * qty,
-        status=Order.Status.NOVA,
-        izvor=Order.Izvor.MAGACIN,
-        pick_state={'kind': 'prenos_mp', 'from_location_id': location.pk},
-    )
-    OrderItem.objects.create(
-        narudzba=order,
-        artikal=product,
-        varijacija=variation,
-        naziv=product.naziv[:200],
-        product_naziv=product.naziv[:200],
-        varijacija_naziv=(variation.naziv[:100] if variation else ''),
-        sifra=((variation.sifra if variation and variation.sifra else product.sifra) or '')[:200],
-        cijena=cijena,
-        bazna_cijena=cijena,
-        kolicina=qty,
-    )
+    order = open_prenos_mp_order()
+    created = order is None
+    loc_label = location.label or location.sifra or ''
+    if created:
+        order = Order.objects.create(
+            ime_prezime='Prenos u MP',
+            email='prenos@carpologijabh.local',
+            telefon='-',
+            adresa=loc_label[:300],
+            grad='Magacin',
+            napomena=f'Prenos u MP sa {loc_label}',
+            medjuzbir=cijena * qty,
+            dostava=Decimal('0.00'),
+            ukupno=cijena * qty,
+            status=Order.Status.NOVA,
+            izvor=Order.Izvor.MAGACIN,
+            pick_state={'kind': 'prenos_mp'},
+        )
+    else:
+        state = dict(order.pick_state) if isinstance(order.pick_state, dict) else {}
+        state['kind'] = 'prenos_mp'
+        order.pick_state = state
+        note = (order.napomena or '').strip()
+        extra = f'sa {loc_label}'
+        if extra not in note:
+            order.napomena = f'{note}; {extra}'.strip('; ')[:300] if note else f'Prenos u MP {extra}'
+        order.save(update_fields=['pick_state', 'napomena'])
+
+    existing = OrderItem.objects.filter(
+        narudzba=order, artikal=product, **_item_variation_filter(variation),
+    ).first()
+    if existing:
+        existing.kolicina = int(existing.kolicina or 0) + qty
+        existing.save(update_fields=['kolicina'])
+    else:
+        OrderItem.objects.create(
+            narudzba=order,
+            artikal=product,
+            varijacija=variation,
+            naziv=product.naziv[:200],
+            product_naziv=product.naziv[:200],
+            varijacija_naziv=(variation.naziv[:100] if variation else ''),
+            sifra=((variation.sifra if variation and variation.sifra else product.sifra) or '')[:200],
+            cijena=cijena,
+            bazna_cijena=cijena,
+            kolicina=qty,
+        )
     leftover = reserve_for_order(
         order,
         product,
@@ -4967,6 +5007,8 @@ def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
         raise MagacinError('Nije rezervisana puna količina za prenos u MP.')
     order.lager_status = Order.LagerStatus.REZERVISANO
     order.save(update_fields=['lager_status'])
+    if not created:
+        recalculate_order_totals(order)
     try:
         from .views_magacin import invalidate_magacin_nav_counts
 
@@ -4974,6 +5016,55 @@ def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
     except Exception:
         pass
     return order
+
+
+@transaction.atomic
+def drop_prenos_mp_item(order, item, *, user=None):
+    """Skini jednu stavku s Prenos u MP pickinga. Ako ne ostane nijedna, otkaži picking."""
+    if not is_prenos_mp_order(order):
+        raise MagacinError('Ova narudžba nije Prenos u MP.')
+    if item.narudzba_id != order.pk:
+        raise MagacinError('Stavka nije na ovom prenosu.')
+    product = item.artikal
+    variation = item.varijacija
+    if product is not None:
+        release_holds_for_product(order, product, variation, user=user)
+    item_id = item.pk
+    item.delete()
+    _clear_pick_state_for_item(order, item_id)
+    if not OrderItem.objects.filter(narudzba_id=order.pk).exists():
+        cancel_order_stock(order, user=user)
+        return True
+    recalculate_order_totals(order)
+    return False
+
+
+@transaction.atomic
+def trim_prenos_mp_item(order, item, *, user=None):
+    """Usputni popis na Prenosu u MP: ostavi preostalu rezervaciju ili skini stavku."""
+    if not is_prenos_mp_order(order):
+        raise MagacinError('Ova narudžba nije Prenos u MP.')
+    if item.narudzba_id != order.pk:
+        raise MagacinError('Stavka nije na ovom prenosu.')
+    product = item.artikal
+    variation = item.varijacija
+    remaining = 0
+    if product is not None:
+        remaining = sum(
+            int(hold.kolicina or 0)
+            for hold in order.magacin_holds.filter(
+                product=product,
+                status=OrderStockHold.Status.REZERVISANO,
+                **_hold_variation_filter(variation),
+            )
+        )
+    if remaining <= 0:
+        return drop_prenos_mp_item(order, item, user=user)
+    if int(item.kolicina or 0) != remaining:
+        item.kolicina = remaining
+        item.save(update_fields=['kolicina'])
+        recalculate_order_totals(order)
+    return False
 
 
 def _parse_move_qty(raw):
