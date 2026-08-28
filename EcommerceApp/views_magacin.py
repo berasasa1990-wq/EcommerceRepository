@@ -12,7 +12,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear
 from django.http import FileResponse, Http404, HttpResponseRedirect, JsonResponse
@@ -130,6 +130,7 @@ from .models import (
     MagacinVpNarudzba,
     WarehouseLocation,
     WarehouseMovement,
+    MagacinDeklaracijaBrend,
     WarehouseCustomer,
     WarehouseStock,
     WarehouseSupplier,
@@ -1355,6 +1356,115 @@ def magacin_stampa_cijena_print(request):
     n = _etiketa_copy_count(raw_n)
     payload = _artikal_etiketa_payload(product, variation)
     return _render_etiketa_print(request, [payload] * n)
+
+
+DEKLARACIJA_A4_COLS = 5
+DEKLARACIJA_A4_ROWS = 13
+DEKLARACIJA_A4_COUNT = DEKLARACIJA_A4_COLS * DEKLARACIJA_A4_ROWS
+
+
+def _deklaracija_copy_count(raw, default=DEKLARACIJA_A4_COUNT):
+    try:
+        n = int(str(raw or '').strip() or default)
+    except (TypeError, ValueError):
+        n = default
+    return max(1, min(n, DEKLARACIJA_A4_COUNT * 10))
+
+
+def _deklaracija_sheets(n):
+    pages = []
+    items = [True] * n
+    for i in range(0, len(items), DEKLARACIJA_A4_COUNT):
+        pages.append(items[i:i + DEKLARACIJA_A4_COUNT])
+    return pages
+
+
+def _deklaracija_fields_from_post(data):
+    fields = {}
+    for attr, _label in MagacinDeklaracijaBrend.POLJA:
+        raw = (data.get(attr) or '').strip()
+        field = MagacinDeklaracijaBrend._meta.get_field(attr)
+        fields[attr] = raw[: field.max_length]
+    return fields
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_stampa_deklaracije(request):
+    if request.method == 'POST':
+        action = (request.POST.get('action') or 'save').strip()
+        try:
+            if action == 'delete':
+                brend = get_object_or_404(
+                    MagacinDeklaracijaBrend, pk=request.POST.get('brend_id'),
+                )
+                brend.delete()
+                messages.success(request, 'Brend je obrisan.')
+                return redirect('staff_magacin_stampa_deklaracije')
+            fields = _deklaracija_fields_from_post(request.POST)
+            if not fields['naziv']:
+                raise MagacinError('Unesi naziv.')
+            brend_id = (request.POST.get('brend_id') or '').strip()
+            with transaction.atomic():
+                if brend_id:
+                    brend = get_object_or_404(MagacinDeklaracijaBrend, pk=brend_id)
+                    for attr, value in fields.items():
+                        setattr(brend, attr, value)
+                    brend.save()
+                else:
+                    MagacinDeklaracijaBrend.objects.create(**fields)
+            messages.success(request, 'Brend je sačuvan.')
+        except MagacinError as exc:
+            messages.error(request, str(exc))
+        except IntegrityError:
+            messages.error(request, 'Brend s tim nazivom već postoji.')
+        except (TypeError, ValueError):
+            messages.error(request, 'Brend nije sačuvan.')
+        return redirect('staff_magacin_stampa_deklaracije')
+
+    editing = None
+    edit_id = (request.GET.get('id') or '').strip()
+    if edit_id:
+        editing = MagacinDeklaracijaBrend.objects.filter(pk=edit_id).first()
+    context = _magacin_context(
+        request,
+        section='stampa_deklaracije',
+        page_title='Štampaj deklaracije — Magacin',
+        hide_top_search=True,
+    )
+    form_polja = []
+    for attr, label in MagacinDeklaracijaBrend.POLJA:
+        field = MagacinDeklaracijaBrend._meta.get_field(attr)
+        form_polja.append({
+            'attr': attr,
+            'label': label,
+            'value': (getattr(editing, attr) or '') if editing else '',
+            'max_length': field.max_length,
+            'required': attr == 'naziv',
+        })
+    context.update({
+        'brendovi': list(MagacinDeklaracijaBrend.objects.all()),
+        'editing': editing,
+        'sheet_count': DEKLARACIJA_A4_COUNT,
+        'form_polja': form_polja,
+    })
+    return render(request, 'staff/magacin/stampa_deklaracije.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_stampa_deklaracije_print(request, pk):
+    brend = get_object_or_404(MagacinDeklaracijaBrend, pk=pk)
+    n = _deklaracija_copy_count(request.GET.get('n'))
+    return render(request, 'staff/magacin/deklaracija_etiketa.html', {
+        'brend': brend,
+        'deklaracija_redovi': brend.deklaracija_redovi(),
+        'sheets': _deklaracija_sheets(n),
+        'etiketa_count': n,
+        'cols': DEKLARACIJA_A4_COLS,
+        'rows': DEKLARACIJA_A4_ROWS,
+    })
 
 
 def _uvoz_marza_pct(stavka):

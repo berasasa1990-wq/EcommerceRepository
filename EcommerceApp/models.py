@@ -5816,6 +5816,54 @@ class WarehouseCustomer(models.Model):
         return f'{self.ime_prezime} {self.telefon}'.strip()
 
 
+class MagacinDeklaracijaBrend(models.Model):
+    """Brend s fiksnim poljima deklaracije za štampu naljepnica 65/A4."""
+
+    POLJA = (
+        ('naziv', 'Naziv'),
+        ('uvoznik', 'Uvoznik'),
+        ('adresa', 'Adresa'),
+        ('zemlja_izvoza', 'Zemlja izvoza'),
+        ('zemlja_porijekla', 'Zemlja porijekla'),
+        ('godina_uvoza', 'Godina uvoza'),
+        ('telefon', 'Telefon'),
+    )
+
+    naziv = models.CharField(max_length=120, unique=True, verbose_name='Naziv')
+    uvoznik = models.CharField(max_length=200, blank=True, verbose_name='Uvoznik')
+    adresa = models.CharField(max_length=300, blank=True, verbose_name='Adresa')
+    zemlja_izvoza = models.CharField(max_length=80, blank=True, verbose_name='Zemlja izvoza')
+    zemlja_porijekla = models.CharField(max_length=80, blank=True, verbose_name='Zemlja porijekla')
+    godina_uvoza = models.CharField(max_length=20, blank=True, verbose_name='Godina uvoza')
+    telefon = models.CharField(max_length=40, blank=True, verbose_name='Telefon')
+    kreiran = models.DateTimeField(auto_now_add=True)
+    azuriran = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Deklaracija brend'
+        verbose_name_plural = 'Deklaracije brendovi'
+        ordering = ['naziv', 'id']
+
+    def deklaracija_redovi(self):
+        rows = []
+        for attr, label in self.POLJA:
+            rows.append({
+                'attr': attr,
+                'label': label,
+                'value': (getattr(self, attr) or '').strip(),
+            })
+        return rows
+
+    def deklaracija_text(self):
+        return '\n'.join(
+            f'{row["label"]}: {row["value"]}'.rstrip()
+            for row in self.deklaracija_redovi()
+        )
+
+    def __str__(self):
+        return self.naziv
+
+
 class NivelacijaOznaka(models.Model):
     """Artikal označen kao izmjenjen za konkretan uvoz (zadnju promjenu cijene)."""
 

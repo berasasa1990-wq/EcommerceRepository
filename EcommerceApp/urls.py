@@ -166,6 +166,16 @@ urlpatterns = [
         views_magacin.magacin_stampa_cijena_print,
         name='staff_magacin_stampa_cijena_print',
     ),
+    path(
+        'nalog/magacin/stampa-deklaracije/',
+        views_magacin.magacin_stampa_deklaracije,
+        name='staff_magacin_stampa_deklaracije',
+    ),
+    path(
+        'nalog/magacin/stampa-deklaracije/<int:pk>/stampa/',
+        views_magacin.magacin_stampa_deklaracije_print,
+        name='staff_magacin_stampa_deklaracije_print',
+    ),
     path('nalog/magacin/artikli/<int:pk>/', views_magacin.magacin_artikal, name='staff_magacin_artikal'),
     path(
         'nalog/magacin/artikli/<int:pk>/stampa/',

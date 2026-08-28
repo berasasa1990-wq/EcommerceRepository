@@ -81,6 +81,7 @@ from .models import (
     WarehouseCustomer,
     WarehouseSupplier,
     WarehouseSyncLog,
+    MagacinDeklaracijaBrend,
 )
 
 
@@ -3862,6 +3863,14 @@ class WarehouseCustomerAdmin(admin.ModelAdmin):
     list_display = ('ime_prezime', 'telefon', 'grad', 'adresa', 'azuriran')
     search_fields = ('ime_prezime', 'telefon', 'grad', 'adresa', 'email')
     ordering = ('ime_prezime', 'id')
+    readonly_fields = ('kreiran', 'azuriran')
+
+
+@admin.register(MagacinDeklaracijaBrend)
+class MagacinDeklaracijaBrendAdmin(admin.ModelAdmin):
+    list_display = ('naziv', 'uvoznik', 'godina_uvoza', 'azuriran')
+    search_fields = ('naziv', 'uvoznik', 'adresa', 'telefon')
+    ordering = ('naziv', 'id')
     readonly_fields = ('kreiran', 'azuriran')
 
 

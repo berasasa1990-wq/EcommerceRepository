@@ -1,0 +1,129 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="sd-page">
+    <div class="mg-page-head">
+        <div>
+            <h1>Štampaj deklaracije</h1>
+            <p class="mg-count">A4 papir, 65 naljepnica 38,1 × 21,2 mm (5 u redu × 13 naniže). Labele su fiksne — unosiš vrijednosti.</p>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="mg-flash">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="mg-grid-2">
+        <section class="mg-card">
+            <h2 class="mg-h">Brendovi</h2>
+            <table class="mg-table">
+                <thead>
+                    <tr>
+                        <th>NAZIV</th>
+                        <th>DEKLARACIJA</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in brendovi %}
+                    <tr{% if editing and editing.pk == row.pk %} class="is-active"{% endif %}>
+                        <td><strong>{{ row.naziv }}</strong></td>
+                        <td><div class="sd-opis">{{ row.deklaracija_text }}</div></td>
+                        <td class="num">
+                            <div class="sd-actions">
+                                <form method="get" action="{% url 'staff_magacin_stampa_deklaracije_print' row.pk %}" target="_blank" rel="noopener" class="sd-print">
+                                    <input type="number" name="n" value="{{ sheet_count }}" min="1" max="650" step="1" required inputmode="numeric" aria-label="Koliko naljepnica" title="Koliko naljepnica">
+                                    <button type="submit" class="mg-btn mg-btn-primary">Štampaj</button>
+                                </form>
+                                <a class="mg-btn" href="?id={{ row.pk }}">Izmijeni</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="mg-muted">Još nema brendova. Unesi prvi desno.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        <section class="mg-card">
+            <h2 class="mg-h">{% if editing %}Izmijeni brend{% else %}Novi brend{% endif %}</h2>
+            <form method="post" id="sdForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save">
+                <input type="hidden" name="brend_id" value="{{ editing.pk|default:'' }}">
+                {% for polje in form_polja %}
+                <div class="mg-field">
+                    <label for="sd-{{ polje.attr }}">{{ polje.label }}{% if polje.required %} *{% endif %}</label>
+                    <input name="{{ polje.attr }}" id="sd-{{ polje.attr }}" {% if polje.required %}required {% endif %}maxlength="{{ polje.max_length }}" value="{{ polje.value }}" {% if polje.attr == 'godina_uvoza' %}inputmode="numeric" placeholder="npr. 2026"{% elif polje.attr == 'telefon' %}inputmode="tel"{% endif %}>
+                </div>
+                {% endfor %}
+                <p class="mg-muted sd-preview-label">Pregled naljepnice 38,1 × 21,2 mm</p>
+                <div class="sd-preview" id="sdPreview" aria-hidden="true"></div>
+                <div class="sd-form-actions">
+                    <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
+                    {% if editing %}
+                    <a class="mg-btn" href="{% url 'staff_magacin_stampa_deklaracije' %}">Novi</a>
+                    {% endif %}
+                </div>
+            </form>
+            {% if editing %}
+            <form method="post" class="sd-delete" onsubmit="return confirm('Obrisati brend {{ editing.naziv }}?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="brend_id" value="{{ editing.pk }}">
+                <button type="submit" class="mg-btn mg-btn-danger">Obriši</button>
+            </form>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var form = document.getElementById('sdForm');
+    var preview = document.getElementById('sdPreview');
+    if (!form || !preview) return;
+    var fields = [
+        ['naziv', 'Naziv'],
+        ['uvoznik', 'Uvoznik'],
+        ['adresa', 'Adresa'],
+        ['zemlja_izvoza', 'Zemlja izvoza'],
+        ['zemlja_porijekla', 'Zemlja porijekla'],
+        ['godina_uvoza', 'Godina uvoza'],
+        ['telefon', 'Telefon']
+    ];
+    function fit(el) {
+        var size = 5.6;
+        el.style.fontSize = size + 'pt';
+        while (size > 3.6 && el.scrollHeight > el.clientHeight + 0.5) {
+            size -= 0.12;
+            el.style.fontSize = size + 'pt';
+        }
+    }
+    function sync() {
+        preview.innerHTML = '';
+        fields.forEach(function (pair) {
+            var input = form.elements[pair[0]];
+            var row = document.createElement('div');
+            row.className = 'sd-preview-row';
+            var lab = document.createElement('b');
+            lab.textContent = pair[1] + ':';
+            var val = document.createElement('span');
+            val.textContent = input ? (input.value || '') : '';
+            row.appendChild(lab);
+            row.appendChild(val);
+            preview.appendChild(row);
+        });
+        fit(preview);
+    }
+    form.addEventListener('input', sync);
+    sync();
+})();
+</script>
+{% endblock %}

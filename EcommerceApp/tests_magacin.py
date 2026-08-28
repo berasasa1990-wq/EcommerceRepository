@@ -53,6 +53,7 @@ from .magacin import (
 from .models import (
     MagacinMpDnevnoSkidanje,
     MagacinMpDnevnoStavka,
+    MagacinDeklaracijaBrend,
     MagacinPopis,
     MagacinPonuda,
     MagacinPonudaStavka,
@@ -1894,6 +1895,133 @@ class MagacinViewTests(TestCase):
         self.assertContains(mixed, '10,00')
         self.assertContains(mixed, '2,00')
 
+    def test_stampa_deklaracije_brands_and_print(self):
+        self.client.force_login(self.user)
+        nav = self.client.get(reverse('staff_magacin_artikli'))
+        html = nav.content.decode()
+        cijena = html.find(reverse('staff_magacin_stampa_cijena'))
+        dekl = html.find(reverse('staff_magacin_stampa_deklaracije'))
+        self.assertNotEqual(cijena, -1)
+        self.assertNotEqual(dekl, -1)
+        self.assertLess(cijena, dekl)
+        self.assertContains(nav, 'Štampaj deklaracije')
+
+        page = self.client.get(reverse('staff_magacin_stampa_deklaracije'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Štampaj deklaracije')
+        self.assertContains(page, '65 naljepnica')
+        self.assertContains(page, '38,1 × 21,2 mm')
+        self.assertContains(page, 'Novi brend')
+        self.assertContains(page, 'Naziv')
+        self.assertContains(page, 'Uvoznik')
+        self.assertContains(page, 'Adresa')
+        self.assertContains(page, 'Zemlja izvoza')
+        self.assertContains(page, 'Zemlja porijekla')
+        self.assertContains(page, 'Godina uvoza')
+        self.assertContains(page, 'Telefon')
+
+        missing = self.client.post(reverse('staff_magacin_stampa_deklaracije'), {
+            'action': 'save',
+            'naziv': '',
+            'uvoznik': 'Oprema za ribolov',
+        })
+        self.assertEqual(missing.status_code, 302)
+        self.assertFalse(MagacinDeklaracijaBrend.objects.exists())
+
+        payload = {
+            'action': 'save',
+            'naziv': 'Fox',
+            'uvoznik': 'Oprema za ribolov',
+            'adresa': 'Sarajevo, BiH',
+            'zemlja_izvoza': 'UK',
+            'zemlja_porijekla': 'Kina',
+            'godina_uvoza': '2026',
+            'telefon': '033 000 000',
+        }
+        created = self.client.post(reverse('staff_magacin_stampa_deklaracije'), payload)
+        self.assertEqual(created.status_code, 302)
+        brend = MagacinDeklaracijaBrend.objects.get(naziv='Fox')
+        self.assertEqual(brend.uvoznik, 'Oprema za ribolov')
+        self.assertEqual(brend.adresa, 'Sarajevo, BiH')
+        self.assertEqual(brend.zemlja_izvoza, 'UK')
+        self.assertEqual(brend.zemlja_porijekla, 'Kina')
+        self.assertEqual(brend.godina_uvoza, '2026')
+        self.assertEqual(brend.telefon, '033 000 000')
+
+        listed = self.client.get(reverse('staff_magacin_stampa_deklaracije'))
+        self.assertContains(listed, 'Fox')
+        self.assertContains(listed, reverse('staff_magacin_stampa_deklaracije_print', args=[brend.pk]))
+        self.assertContains(listed, 'Štampaj')
+        self.assertContains(listed, 'Uvoznik: Oprema za ribolov')
+
+        duplicate = self.client.post(reverse('staff_magacin_stampa_deklaracije'), payload)
+        self.assertEqual(duplicate.status_code, 302)
+        self.assertEqual(MagacinDeklaracijaBrend.objects.filter(naziv='Fox').count(), 1)
+
+        printed = self.client.get(
+            reverse('staff_magacin_stampa_deklaracije_print', args=[brend.pk]),
+        )
+        self.assertEqual(printed.status_code, 200)
+        self.assertContains(printed, 'size: A4 portrait')
+        self.assertContains(printed, 'margin: 0')
+        self.assertContains(printed, 'grid-template-columns: repeat(5, 38.1mm)')
+        self.assertContains(printed, 'grid-template-rows: repeat(13, 21.2mm)')
+        self.assertContains(printed, 'width: 38.1mm')
+        self.assertContains(printed, 'height: 21.2mm')
+        self.assertContains(printed, '<article class="label"', count=65)
+        self.assertContains(printed, 'Naziv:')
+        self.assertContains(printed, 'Fox')
+        self.assertContains(printed, 'Uvoznik:')
+        self.assertContains(printed, 'Oprema za ribolov')
+        self.assertContains(printed, 'Adresa:')
+        self.assertContains(printed, 'Sarajevo, BiH')
+        self.assertContains(printed, 'Zemlja izvoza:')
+        self.assertContains(printed, 'Zemlja porijekla:')
+        self.assertContains(printed, 'Godina uvoza:')
+        self.assertContains(printed, '2026')
+        self.assertContains(printed, 'Telefon:')
+        self.assertContains(printed, '033 000 000')
+        self.assertContains(printed, 'window.print()')
+        self.assertContains(printed, 'margine nijedne')
+
+        few = self.client.get(
+            reverse('staff_magacin_stampa_deklaracije_print', args=[brend.pk]),
+            {'n': '3'},
+        )
+        self.assertEqual(few.status_code, 200)
+        self.assertContains(few, '<article class="label"', count=3)
+
+        edited = self.client.get(
+            reverse('staff_magacin_stampa_deklaracije'),
+            {'id': brend.pk},
+        )
+        self.assertContains(edited, 'Izmijeni brend')
+        self.assertContains(edited, 'Oprema za ribolov')
+        self.assertContains(edited, 'value="2026"')
+
+        updated = self.client.post(reverse('staff_magacin_stampa_deklaracije'), {
+            'action': 'save',
+            'brend_id': brend.pk,
+            'naziv': 'Fox Rage',
+            'uvoznik': 'Oprema za ribolov',
+            'adresa': 'Sarajevo, BiH',
+            'zemlja_izvoza': 'UK',
+            'zemlja_porijekla': 'UK',
+            'godina_uvoza': '2026',
+            'telefon': '033 000 000',
+        })
+        self.assertEqual(updated.status_code, 302)
+        brend.refresh_from_db()
+        self.assertEqual(brend.naziv, 'Fox Rage')
+        self.assertEqual(brend.zemlja_porijekla, 'UK')
+
+        deleted = self.client.post(reverse('staff_magacin_stampa_deklaracije'), {
+            'action': 'delete',
+            'brend_id': brend.pk,
+        })
+        self.assertEqual(deleted.status_code, 302)
+        self.assertFalse(MagacinDeklaracijaBrend.objects.filter(pk=brend.pk).exists())
+
     def test_brzi_unos_same_as_admin_flow(self):
         self.client.force_login(self.user)
         nav = self.client.get(reverse('staff_magacin_artikli'))
@@ -1901,6 +2029,8 @@ class MagacinViewTests(TestCase):
         self.assertContains(nav, reverse('staff_magacin_brzi_unos'))
         self.assertContains(nav, 'Štampaj cijenu')
         self.assertContains(nav, reverse('staff_magacin_stampa_cijena'))
+        self.assertContains(nav, 'Štampaj deklaracije')
+        self.assertContains(nav, reverse('staff_magacin_stampa_deklaracije'))
 
         page = self.client.get(reverse('staff_magacin_brzi_unos'))
         self.assertEqual(page.status_code, 200)
