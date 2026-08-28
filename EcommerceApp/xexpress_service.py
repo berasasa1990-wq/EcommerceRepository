@@ -82,13 +82,13 @@ def _bool_setting(name: str, default: bool) -> bool:
 
 
 def _najava_query() -> dict:
-    """lokacija=1 Glavna adresa; rezervacija=true → WEB-PRIPREMA (vidljivo na sajtu)."""
+    """OpenAPI: lokacija = rb iz GET /lokacije; rezervacija=true = Priprema (nije potvrđena najava)."""
     params = {}
     lokacija = _int_setting('XEXPRESS_LOKACIJA', 1)
     if lokacija:
-        params['lokacija'] = lokacija
+        params['lokacija'] = str(lokacija)
     if _bool_setting('XEXPRESS_REZERVACIJA', True):
-        params['rezervacija'] = True
+        params['rezervacija'] = 'true'
     return params
 
 
@@ -255,11 +255,12 @@ def build_shipment_payload(order) -> dict:
     pouzece = order_is_pouzece(order)
     ukupno = dest['ukupno']
     ime = dest['ime']
+    broj = str(getattr(order, 'broj', '') or '').strip()
+    # PosiljkaDto iz X-Express OpenAPI — samo njihova polja, bez sifra (generiše API).
     payload = {
-        'sifraExt': str(getattr(order, 'broj', '') or '').strip(),
+        'sifraExt': broj,
         'nazivPrim': ime,
         'adresaPrim': dest['adresa'],
-        'mjestoPrim': dest['grad'],
         'pttPrim': dest['ptt'],
         'telefonPrim': dest['telefon'],
         'kontaktPrim': ime,
@@ -270,15 +271,16 @@ def build_shipment_payload(order) -> dict:
         'visina': 0,
         'tezina': 2,
         'uslugaSifra': 1,
-        # 1 = pošiljalac. 9 = po računu — API 420: za ovaj tip najave to nije dozvoljeno.
+        # 1 = pošiljalac. 2 = primalac.
         'obveznikPlacanja': _int_setting('XEXPRESS_OBVEZNIK_PLACANJA', 1),
+        # 0 = gotovina, 1 = banka, 9 = po računu (420 ako ugovor ne dozvoljava 9).
         'nacinPlacanja': _int_setting('XEXPRESS_NACIN_PLACANJA', 1),
         'vrednostPosiljke': ukupno,
         'otkupnina': pouzece,
         'iznosOtkupnine': ukupno if pouzece else 0,
+        'tipNajave': 0,
+        'napomenaInterna': f'Narudžba #{broj}',
     }
-    if dest['grad']:
-        payload['mestoPrim'] = dest['grad']
     return payload
 
 

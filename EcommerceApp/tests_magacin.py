@@ -5525,8 +5525,9 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload['nazivPrim'], 'Ana Ribić')
         self.assertEqual(payload['kontaktPrim'], 'Ana Ribić')
         self.assertEqual(payload['adresaPrim'], 'Test 1')
-        self.assertEqual(payload['mjestoPrim'], 'Sarajevo')
         self.assertEqual(payload['pttPrim'], '71000')
+        self.assertNotIn('mjestoPrim', payload)
+        self.assertEqual(payload['tipNajave'], 0)
         self.assertEqual(payload['telefonPrim'], '061111111')
         self.assertEqual(payload['vrednostPosiljke'], 30.0)
 
@@ -5541,7 +5542,6 @@ class MagacinViewTests(TestCase):
         )
         from_city = build_shipment_payload(no_zip)
         self.assertEqual(from_city['pttPrim'], '71000')
-        self.assertEqual(from_city['mjestoPrim'], 'Sarajevo')
 
         in_city = Order(
             broj='0100',
@@ -5554,7 +5554,6 @@ class MagacinViewTests(TestCase):
         )
         parsed = build_shipment_payload(in_city)
         self.assertEqual(parsed['pttPrim'], '71000')
-        self.assertEqual(parsed['mjestoPrim'], 'Tuzla')
         self.assertEqual(parsed['vrednostPosiljke'], 12.0)
 
         blank = Order(
@@ -5627,7 +5626,7 @@ class MagacinViewTests(TestCase):
             self.assertTrue(str(called_url).endswith('/najava/v2'))
             self.assertEqual(kwargs['auth'], ('xe-user', 'xe-pass'))
             self.assertEqual(kwargs['timeout'], 20)
-            self.assertEqual(kwargs.get('params'), {'lokacija': 1, 'rezervacija': True})
+            self.assertEqual(kwargs.get('params'), {'lokacija': '1', 'rezervacija': 'true'})
             body = kwargs['json']
             self.assertIsInstance(body, list)
             self.assertEqual(body[0]['sifraExt'], order.broj)
