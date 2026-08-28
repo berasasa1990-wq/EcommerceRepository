@@ -12,6 +12,8 @@
         th, td { border-bottom: 1px solid #ddd; padding: 6px 5px; text-align: left; vertical-align: top; }
         th { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #555; }
         td.n { width: 28px; }
+        td.sifra, th.sifra { white-space: nowrap; }
+        .sifra { color: #444; font-size: 12px; }
         td.q, th.q { text-align: right; white-space: nowrap; }
         td.q { font-weight: 700; width: 88px; }
         tfoot td { font-weight: 700; border-bottom: 0; padding-top: 10px; }
@@ -42,6 +44,7 @@
             <tr>
                 <th class="n">#</th>
                 <th>Artikal</th>
+                <th class="sifra">Šifra</th>
                 <th class="q">Količina</th>
                 <th class="q">Fakturna</th>
                 <th class="q">VPC netto</th>
@@ -53,13 +56,14 @@
             <tr>
                 <td class="n">{{ forloop.counter }}</td>
                 <td>{{ s.artikal_naziv }}</td>
+                <td class="sifra">{% if s.product.sifra %}{{ s.product.sifra }}{% else %}—{% endif %}</td>
                 <td class="q">{% if s.kolicina != None %}{{ s.kolicina|floatformat:"-3" }}{% else %}—{% endif %}</td>
                 <td class="q">{% if s.fakturna != None %}{{ s.fakturna|floatformat:2 }}{% else %}—{% endif %}</td>
                 <td class="q">{% if s.vpc_netto != None %}{{ s.vpc_netto|floatformat:2 }}{% else %}—{% endif %}</td>
                 <td class="q">{% if s.mpc_brutto != None %}{{ s.mpc_brutto|floatformat:2 }}{% else %}—{% endif %}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="6">Nema stavki.</td></tr>
+            <tr><td colspan="7">Nema stavki.</td></tr>
             {% endfor %}
         </tbody>
         {% if stavke %}
@@ -67,6 +71,7 @@
             <tr>
                 <td></td>
                 <td>UKUPNO</td>
+                <td></td>
                 <td class="q">{{ kolicina_ukupno|floatformat:"-3" }}</td>
                 <td class="q">{% if uvoz.ukupna_fakturna %}{{ uvoz.ukupna_fakturna|floatformat:2 }}{% endif %}</td>
                 <td></td>

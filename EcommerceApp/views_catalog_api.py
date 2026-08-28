@@ -185,7 +185,10 @@ def _serialize_product(product: Product, request, *, detail: bool = False) -> di
         'url': f"{_site_base(request)}{product.get_absolute_url()}",
         'aktivan': bool(product.aktivan),
         'na_stanju': bool(product.na_stanju),
-        'stanje': int(product.stanje or 0),
+        # stanje = raspoloživo za prodaju (magacin + maloprodaja).
+        # Ako nije na sajtu, šaljemo 0 da partneri ne povuku staro stanje od 1 kom.
+        'stanje': int(product.stanje or 0) if product.na_stanju else 0,
+        'dostupno': int(product.stanje or 0) if product.na_stanju else 0,
         'cijena': _dec(bazna),
         'prikazna_cijena': _dec(prikazna),
         'na_akciji': na_akciji,

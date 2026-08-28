@@ -39,15 +39,15 @@
             padding: 0;
             background: #fff;
             display: grid;
-            grid-template-columns: repeat(3, 50mm);
+            grid-template-columns: repeat(4, 45mm);
             grid-template-rows: repeat(7, 36mm);
             justify-content: center;
             align-content: start;
-            column-gap: 8mm;
+            column-gap: 3.3mm;
             row-gap: 3mm;
         }
         .label {
-            width: 50mm;
+            width: 45mm;
             height: 36mm;
             min-width: 0;
             min-height: 0;
@@ -88,9 +88,9 @@
         .sifra {
             flex-shrink: 0;
             margin: 0 0 0.25mm;
-            font-size: 1.7mm;
-            font-weight: 700;
-            letter-spacing: .04em;
+            font-size: 3mm;
+            font-weight: 800;
+            letter-spacing: .02em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -114,10 +114,10 @@
         }
         .barcode span {
             display: block;
-            margin-top: 0.15mm;
-            font-size: 1.7mm;
-            letter-spacing: .06em;
-            font-weight: 700;
+            margin-top: 0.2mm;
+            font-size: 2.2mm;
+            letter-spacing: .05em;
+            font-weight: 800;
         }
         .cijena-row {
             display: flex;
@@ -169,7 +169,7 @@
 <body>
     <div class="bar">
         <button type="button" onclick="window.print()">Štampaj</button>
-        <span>A4 — 3 uže cijene u redu, 7 naniže. Papir A4, skala 100%, margine najmanje 10 mm, bez sječenja.</span>
+        <span>A4 — 4 cijene u redu, 7 naniže. Papir A4, skala 100%, margine najmanje 10 mm, bez sječenja.</span>
     </div>
     {% for sheet in sheets %}
     <div class="sheet">

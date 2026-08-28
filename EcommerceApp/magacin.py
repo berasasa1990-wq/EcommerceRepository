@@ -503,17 +503,18 @@ def refresh_catalog_qty(product):
         coalesce_unassigned_stock(product)
 
     for variation in variations:
-        total = countable_stock_qs(WarehouseStock.objects.filter(
+        mag_qty = _agg_stock(countable_stock_qs(WarehouseStock.objects.filter(
             product=product, variation=variation,
-        )).aggregate(s=Sum('kolicina'))['s'] or 0
-        var_qty = max(0, _int(total)) + _mp_stock_qty(product, variation)
+        )))['dostupno']
+        mp_qty = sum(int(row.get('dostupno') or 0) for row in maloprodaja_location_rows(product, variation))
+        var_qty = max(0, mag_qty) + max(0, mp_qty)
         var_in_stock = var_qty > 0
         if variation.stanje != var_qty or variation.na_stanju != var_in_stock:
             variation.stanje = var_qty
             variation.na_stanju = var_in_stock
             variation.save(update_fields=['stanje', 'na_stanju'])
 
-    catalog_qty = max(0, _int(display_stock_totals(product)['na_stanju']))
+    catalog_qty = max(0, _int(display_stock_totals(product)['dostupno']))
     in_stock = catalog_qty > 0
     clear_mp_without_location(product)
 

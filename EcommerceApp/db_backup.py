@@ -13,6 +13,7 @@ from django.conf import settings
 from django.utils import timezone
 
 BACKUP_NAME_RE = re.compile(r'^(db|postgres)-(\d{8})-(\d{6})\.(sqlite3|dump)$')
+BACKUP_FILE_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*\.(sqlite3|dump)$')
 
 
 class BackupError(Exception):
@@ -29,6 +30,40 @@ def backup_root(*, create: bool = True) -> Path:
     if create:
         root.mkdir(parents=True, exist_ok=True)
     return root.resolve()
+
+
+def backup_search_dirs() -> list[Path]:
+    """Svi folderi u kojima mogu stajati backupi — ništa se ne briše, prikazuju se svi."""
+    seen = set()
+    dirs = []
+
+    def _add(raw):
+        if not raw:
+            return
+        try:
+            path = Path(raw).expanduser().resolve()
+        except OSError:
+            return
+        key = str(path)
+        if key in seen:
+            return
+        seen.add(key)
+        dirs.append(path)
+
+    custom = getattr(settings, 'MAGACIN_BACKUP_DIR', None)
+    if custom:
+        _add(custom)
+    disk = (os.environ.get('RENDER_DISK_PATH') or '').strip()
+    if disk:
+        _add(Path(disk) / 'db-backups')
+    _add(Path(settings.BASE_DIR) / 'backups')
+    return [path for path in dirs if path.is_dir()]
+
+
+def _is_backup_file(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    return bool(BACKUP_FILE_RE.match(path.name))
 
 
 def engine_kind() -> str:
@@ -216,15 +251,21 @@ def _info(path: Path) -> dict:
 
 
 def create_backup(*, out_dir: Path | str | None = None, keep=None, protect=None) -> dict:
+    """Napravi novi backup. Stari se nikad ne brišu."""
     root = Path(out_dir).expanduser().resolve() if out_dir else backup_root()
     root.mkdir(parents=True, exist_ok=True)
     kind = engine_kind()
     stamp = _stamp()
-    dest = root / (f'db-{stamp}.sqlite3' if kind == 'sqlite' else f'postgres-{stamp}.dump')
-    if dest.exists():
-        stamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
-        dest = root / (f'db-{stamp}.sqlite3' if kind == 'sqlite' else f'postgres-{stamp}.dump')
-    if dest.exists():
+    dest = None
+    for extra in range(30):
+        suffix = '' if extra == 0 else f'-{extra}'
+        candidate = root / (
+            f'db-{stamp}{suffix}.sqlite3' if kind == 'sqlite' else f'postgres-{stamp}{suffix}.dump'
+        )
+        if not candidate.exists():
+            dest = candidate
+            break
+    if dest is None:
         raise BackupError('Backup fajl već postoji — pokušaj ponovo.')
     if kind == 'sqlite':
         _backup_sqlite(dest)
@@ -235,13 +276,36 @@ def create_backup(*, out_dir: Path | str | None = None, keep=None, protect=None)
 
 def list_backups(*, out_dir: Path | str | None = None) -> list[dict]:
     try:
-        root = Path(out_dir).expanduser().resolve() if out_dir else backup_root(create=False)
+        if out_dir:
+            roots = [Path(out_dir).expanduser().resolve()]
+        else:
+            roots = backup_search_dirs()
     except (OSError, BackupError):
         return []
-    if not root.is_dir():
-        return []
-    rows = [_info(p) for p in root.iterdir() if p.is_file() and BACKUP_NAME_RE.match(p.name)]
-    rows.sort(key=lambda row: row['name'], reverse=True)
+    found = {}
+    for root in roots:
+        if not root.is_dir():
+            continue
+        try:
+            entries = list(root.iterdir())
+        except OSError:
+            continue
+        for path in entries:
+            if not _is_backup_file(path):
+                continue
+            info = _info(path)
+            prev = found.get(info['name'])
+            if prev is None:
+                found[info['name']] = info
+            elif info['created_at'] and (
+                not prev.get('created_at') or info['created_at'] >= prev['created_at']
+            ):
+                found[info['name']] = info
+    rows = list(found.values())
+    rows.sort(
+        key=lambda row: (row['created_at'] is not None, row['created_at'], row['name']),
+        reverse=True,
+    )
     return rows
 
 
@@ -255,13 +319,23 @@ def last_backup(*, out_dir: Path | str | None = None) -> dict | None:
 
 def resolve_backup_file(name: str, *, out_dir: Path | str | None = None) -> Path:
     raw = (name or '').strip()
-    if not raw or raw != Path(raw).name or not BACKUP_NAME_RE.match(raw):
+    if not raw or raw != Path(raw).name or not BACKUP_FILE_RE.match(raw):
         raise BackupError('Nepoznat backup fajl.')
-    root = Path(out_dir).expanduser().resolve() if out_dir else backup_root(create=False)
-    path = (root / raw).resolve()
-    if not path.is_relative_to(root) or not path.is_file():
-        raise BackupError('Backup fajl nije pronađen.')
-    return path
+    roots = (
+        [Path(out_dir).expanduser().resolve()]
+        if out_dir
+        else backup_search_dirs()
+    )
+    for root in roots:
+        if not root.is_dir():
+            continue
+        path = (root / raw).resolve()
+        try:
+            if path.is_relative_to(root) and _is_backup_file(path):
+                return path
+        except (OSError, ValueError):
+            continue
+    raise BackupError('Backup fajl nije pronađen.')
 
 
 def restore_backup(name: str, *, out_dir: Path | str | None = None, safety: bool = True) -> dict:

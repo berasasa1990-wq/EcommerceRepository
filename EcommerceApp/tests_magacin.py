@@ -1781,10 +1781,12 @@ class MagacinViewTests(TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'size: A4 portrait')
         self.assertContains(page, 'margin: 10mm')
-        self.assertContains(page, 'grid-template-columns: repeat(3, 50mm)')
+        self.assertContains(page, 'grid-template-columns: repeat(4, 45mm)')
         self.assertContains(page, 'grid-template-rows: repeat(7, 36mm)')
-        self.assertContains(page, 'class="label"', count=21)
-        self.assertContains(page, 'Test braid', count=21)
+        self.assertContains(page, 'class="label"', count=28)
+        self.assertContains(page, 'Test braid', count=28)
+        self.assertContains(page, 'font-size: 3mm')
+        self.assertContains(page, 'font-size: 2.2mm')
         self.assertContains(page, 'ŠIFRA: TST-1')
         self.assertContains(page, '3870123456789')
         self.assertContains(page, '10,00')
@@ -1846,6 +1848,8 @@ class MagacinViewTests(TestCase):
 
         home = self.client.get(reverse('staff_magacin_stampa_cijena'))
         self.assertEqual(home.status_code, 200)
+        self.assertContains(home, '4 u redu')
+        self.assertContains(home, '28 etiketa')
         self.assertContains(home, 'Ista cijena')
         self.assertContains(home, 'Različite cijene')
         self.assertContains(home, reverse('staff_magacin_stampa_cijena_ista'))
@@ -3491,6 +3495,33 @@ class MagacinViewTests(TestCase):
                     })
                 self.assertEqual(restored.status_code, 302)
                 mocked.assert_called_once_with(name)
+
+    def test_backup_lists_all_and_never_deletes(self):
+        from .db_backup import create_backup, list_backups
+
+        self.client.force_login(self.user)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            odd = root / 'db-prije-restore-20260723-1410.sqlite3'
+            odd.write_bytes(b'sqlite')
+            sidecar = root / 'db-20260807-113727.sqlite3-wal'
+            sidecar.write_bytes(b'')
+            with override_settings(MAGACIN_BACKUP_DIR=tmp):
+                first = create_backup()
+                second = create_backup()
+                names = {row['name'] for row in list_backups()}
+                self.assertIn(odd.name, names)
+                self.assertIn(first['name'], names)
+                self.assertIn(second['name'], names)
+                self.assertNotIn(sidecar.name, names)
+                self.assertTrue(odd.is_file())
+                self.assertTrue(Path(first['path']).is_file())
+                self.assertTrue(Path(second['path']).is_file())
+                listing = self.client.get(reverse('staff_magacin_backup'))
+                self.assertContains(listing, odd.name)
+                self.assertContains(listing, first['name'])
+                self.assertContains(listing, second['name'])
+                self.assertContains(listing, 'backup-a')
 
     def test_pregled_shows_order_stats_and_chart(self):
         self.client.force_login(self.user)
@@ -6168,6 +6199,8 @@ class MagacinUvozTests(TestCase):
         self.assertEqual(printed.status_code, 200)
         self.assertContains(printed, 'Fox Edges Lead Clip')
         self.assertContains(printed, 'Excel Novi Artikal')
+        self.assertContains(printed, 'Šifra')
+        self.assertContains(printed, 'FOX-UVOZ-1')
         self.assertContains(printed, 'Količina')
         self.assertContains(printed, 'Fakturna')
         self.assertContains(printed, 'VPC netto')

@@ -1132,7 +1132,7 @@ def magacin_artikal(request, pk):
     return render(request, 'staff/magacin/artikal.html', context)
 
 
-ETIKETA_A4_COLS = 3
+ETIKETA_A4_COLS = 4
 ETIKETA_A4_ROWS = 7
 ETIKETA_A4_COUNT = ETIKETA_A4_COLS * ETIKETA_A4_ROWS
 
