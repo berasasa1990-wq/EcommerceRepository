@@ -5664,6 +5664,29 @@ class MagacinViewTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.xexpress_sifra, '')
 
+        dup = Mock()
+        dup.status_code = 420
+        dup.content = b'{"message":"duplicate key value violates unique constraint \\"xo_posiljka_ix1\\" Detail: Key (ibp, ugovor_id)=(0134, 4147) already exists."}'
+        dup.text = dup.content.decode()
+        dup.json.return_value = {
+            'message': 'duplicate key value violates unique constraint "xo_posiljka_ix1" '
+            'Detail: Key (ibp, ugovor_id)=(0134, 4147) already exists.',
+        }
+        looked = Mock()
+        looked.status_code = 200
+        looked.content = b'{"Sifra":"X00998877"}'
+        looked.json.return_value = {'Sifra': 'X00998877'}
+        with override_settings(XEXPRESS_USERNAME='xe-user', XEXPRESS_PASSWORD='xe-pass'):
+            with patch('EcommerceApp.xexpress_service.requests.post', return_value=dup):
+                with patch('EcommerceApp.xexpress_service.requests.get', return_value=looked):
+                    exists = self.client.post(
+                        reverse('staff_order_xexpress', args=[order.broj]),
+                        follow=True,
+                    )
+        self.assertContains(exists, 'već postoji')
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, 'X00998877')
+
     def test_validated_orders_hidden_until_validated_list(self):
         self.client.force_login(self.user)
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {

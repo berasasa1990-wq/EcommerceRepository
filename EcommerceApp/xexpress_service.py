@@ -26,9 +26,12 @@ class XExpressAlreadySent(XExpressError):
     """Narudžba je već poslana u X-Express."""
 
 
+def _api_base() -> str:
+    return (getattr(settings, 'XEXPRESS_API_URL', None) or DEFAULT_API_URL).strip().rstrip('/')
+
+
 def _api_url() -> str:
-    base = (getattr(settings, 'XEXPRESS_API_URL', None) or DEFAULT_API_URL).strip().rstrip('/')
-    return f'{base}{NAJAVA_PATH}'
+    return f'{_api_base()}{NAJAVA_PATH}'
 
 
 def xexpress_configured() -> bool:
@@ -374,6 +377,62 @@ def _body_error_message(body) -> str:
     return ''
 
 
+def _is_duplicate_error(text: str) -> bool:
+    blob = (text or '').casefold()
+    return any(
+        token in blob
+        for token in (
+            'duplicate key',
+            'already exists',
+            'xo_posiljka_ix1',
+            'već postoji',
+            'vec postoji',
+            'unique constraint',
+        )
+    )
+
+
+def _lookup_existing_sifra(sifra_ext: str) -> str:
+    """Ako je najava već u X-Expressu, pokušaj povući njihovu šifru po našem broju narudžbe."""
+    ext = (sifra_ext or '').strip()
+    if not ext:
+        return ''
+    username, password = _credentials()
+    timeout = min(12, _timeout())
+    urls = [
+        f'{_api_base()}/posiljka/{ext}',
+        f'{_api_base()}/posiljke/{ext}',
+        f'{_api_base()}/posiljka/ext/{ext}',
+        f'{_api_base()}/posiljka?sifraExt={ext}',
+        f'{_api_base()}/posiljke?sifraExt={ext}',
+        f'{_api_base()}/posiljka?ibp={ext}',
+        f'{_api_base()}/posiljke?ibp={ext}',
+    ]
+    for url in urls:
+        try:
+            response = requests.get(url, auth=(username, password), timeout=timeout)
+        except requests.RequestException:
+            continue
+        if response.status_code >= 400 or not response.content:
+            continue
+        try:
+            body = response.json()
+        except ValueError:
+            continue
+        found = extract_sifra(body, ignore={ext})
+        if found:
+            return found
+    return ''
+
+
+def _save_sifra(order, sifra: str) -> str:
+    code = (sifra or '').strip()[:40]
+    order.xexpress_sifra = code
+    order.xexpress_poslano_at = timezone.now()
+    order.save(update_fields=['xexpress_sifra', 'xexpress_poslano_at'])
+    return code
+
+
 def _response_error_message(response: requests.Response) -> str:
     try:
         payload = response.json()
@@ -421,9 +480,26 @@ def create_shipment(order) -> dict:
         logger.warning('X-Express mrežna greška za #%s: %s', getattr(order, 'broj', ''), exc)
         raise XExpressError(f'X-Express mrežna greška: {exc}') from exc
 
+    order_broj = str(getattr(order, 'broj', '') or '').strip()
+    ignore = {order_broj, payload[0].get('sifraExt')}
+
     if response.status_code >= 400:
+        err = _response_error_message(response)
+        if _is_duplicate_error(err) or _is_duplicate_error(response.text or ''):
+            found = extract_sifra(
+                _safe_json(response), ignore=ignore,
+            ) or _lookup_existing_sifra(order_broj)
+            if not found:
+                found = f'IBP-{order_broj}'
+            _save_sifra(order, found)
+            return {
+                'sifra': order.xexpress_sifra,
+                'payload': payload,
+                'response': _safe_json(response),
+                'duplicate': True,
+            }
         raise XExpressError(
-            f'X-Express greška ({response.status_code}): {_response_error_message(response)}'
+            f'X-Express greška ({response.status_code}): {err}'
         )
 
     try:
@@ -434,8 +510,7 @@ def create_shipment(order) -> dict:
             f'X-Express je vratio neispravan odgovor (nije JSON). {preview}'.strip()
         ) from exc
 
-    order_broj = str(getattr(order, 'broj', '') or '').strip()
-    sifra = extract_sifra(body, ignore={order_broj, payload[0].get('sifraExt')})
+    sifra = extract_sifra(body, ignore=ignore)
     if not sifra:
         logger.warning(
             'X-Express odgovor bez šifre za #%s HTTP %s: %s',
@@ -452,11 +527,16 @@ def create_shipment(order) -> dict:
             + (f': {preview}' if preview else '.')
         )
 
-    order.xexpress_sifra = sifra[:40]
-    order.xexpress_poslano_at = timezone.now()
-    order.save(update_fields=['xexpress_sifra', 'xexpress_poslano_at'])
+    _save_sifra(order, sifra)
     return {
         'sifra': order.xexpress_sifra,
         'payload': payload,
         'response': body,
     }
+
+
+def _safe_json(response: requests.Response):
+    try:
+        return response.json() if response.content else {}
+    except ValueError:
+        return {}

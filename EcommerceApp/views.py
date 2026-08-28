@@ -4923,7 +4923,13 @@ def _send_order_to_xexpress(request, broj):
         messages.error(request, f'X-Express greška: {exc}')
         return None
     sifra = (result or {}).get('sifra') or order.xexpress_sifra
-    messages.success(request, f'Pošiljka je kreirana u X-Express. Šifra: {sifra}.')
+    if (result or {}).get('duplicate'):
+        messages.success(
+            request,
+            f'Pošiljka već postoji u X-Express. Šifra: {sifra}.',
+        )
+    else:
+        messages.success(request, f'Pošiljka je kreirana u X-Express. Šifra: {sifra}.')
     return result
 
 
