@@ -5580,6 +5580,12 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload['iznosOtkupnine'], 30.0)
         self.assertEqual(extract_sifra([{'sifra': 'XE-1'}]), 'XE-1')
         self.assertEqual(extract_sifra({'data': {'sifra': 'XE-2'}}), 'XE-2')
+        self.assertEqual(extract_sifra({'Posiljke': [{'Sifra': '99001'}]}), '99001')
+        self.assertEqual(
+            extract_sifra({'sifraExt': '0133', 'SifraPosiljke': 556677}, ignore={'0133'}),
+            '556677',
+        )
+        self.assertEqual(extract_sifra({'sifraExt': '0133'}, ignore={'0133'}), '')
 
         order.popust_detalji = [{'placanje': 'kartica'}]
         order.save(update_fields=['popust_detalji'])

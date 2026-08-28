@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from decimal import Decimal, ROUND_HALF_UP
@@ -258,25 +259,118 @@ def build_shipment_payload(order) -> dict:
     return payload
 
 
-def extract_sifra(data) -> str:
+def _norm_key(key) -> str:
+    return re.sub(r'[^a-z0-9]', '', str(key).casefold())
+
+
+_SIFRA_KEYS = {
+    'sifra',
+    'sifraposiljke',
+    'brojposiljke',
+    'tovarnilist',
+    'brojtovarnoglista',
+    'sifratovarnoglista',
+    'tracking',
+    'trackingnumber',
+    'trackingno',
+    'barcode',
+    'barkod',
+    'shipmentid',
+    'idposiljke',
+    'kodposiljke',
+    'posiljkasifra',
+}
+_SKIP_SIFRA_KEYS = {
+    'sifraext',
+    'externalsifra',
+    'externalid',
+    'sifraexterna',
+}
+
+
+def extract_sifra(data, *, ignore=()) -> str:
+    """Nađi X-Express šifru u bilo kojem obliku JSON odgovora (i velika slova)."""
+    skip_values = {str(x).strip() for x in ignore if x not in (None, '')}
+    return _extract_sifra(data, skip_values, 0)
+
+
+def _leaf_code(value, skip_values: set[str]) -> str:
+    if isinstance(value, bool):
+        return ''
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and not value.is_integer():
+            return ''
+        text = str(int(value)).strip()
+    elif isinstance(value, str):
+        text = value.strip()
+    else:
+        return ''
+    if not text or text in skip_values or text in {'0', '-'}:
+        return ''
+    return text
+
+
+def _extract_sifra(data, skip_values: set[str], depth: int) -> str:
+    if depth > 8:
+        return ''
+    found = _leaf_code(data, skip_values)
+    if found and depth == 0 and not isinstance(data, (dict, list)):
+        return found
     if isinstance(data, list):
         for item in data:
-            found = extract_sifra(item)
+            found = _extract_sifra(item, skip_values, depth + 1)
             if found:
                 return found
         return ''
     if not isinstance(data, dict):
         return ''
-    for key in ('sifra', 'Sifra', 'sifraPosiljke'):
-        value = data.get(key)
-        if value not in (None, ''):
-            return str(value).strip()
-    for nested_key in ('data', 'result', 'posiljke', 'items', 'response'):
-        nested = data.get(nested_key)
-        if nested is not None:
-            found = extract_sifra(nested)
+    nested = []
+    for key, value in data.items():
+        nk = _norm_key(key)
+        if nk in _SKIP_SIFRA_KEYS:
+            continue
+        if nk in _SIFRA_KEYS or nk.endswith('sifra'):
+            found = _leaf_code(value, skip_values)
             if found:
                 return found
+            if isinstance(value, (dict, list)):
+                found = _extract_sifra(value, skip_values, depth + 1)
+                if found:
+                    return found
+        elif isinstance(value, (dict, list)):
+            nested.append(value)
+    for value in nested:
+        found = _extract_sifra(value, skip_values, depth + 1)
+        if found:
+            return found
+    return ''
+
+
+def _preview_body(body) -> str:
+    try:
+        text = json.dumps(body, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        text = str(body)
+    text = _fix_api_text(text.replace('\n', ' ').strip())
+    return text[:280]
+
+
+def _body_error_message(body) -> str:
+    if isinstance(body, dict):
+        for key, value in body.items():
+            nk = _norm_key(key)
+            if nk in ('message', 'poruka', 'error', 'greska', 'detail') and value not in (None, '', [], {}):
+                if isinstance(value, (dict, list)):
+                    continue
+                return _fix_api_text(str(value).strip())
+        ok = None
+        for key, value in body.items():
+            if _norm_key(key) in ('success', 'ok'):
+                ok = value
+        if ok in (False, 0, '0', 'false', 'False'):
+            return _body_error_message(body.get('errors') or body) or 'X-Express je vratio grešku.'
+    if isinstance(body, list) and body:
+        return _body_error_message(body[0])
     return ''
 
 
@@ -335,11 +429,28 @@ def create_shipment(order) -> dict:
     try:
         body = response.json() if response.content else {}
     except ValueError as exc:
-        raise XExpressError('X-Express je vratio neispravan odgovor (nije JSON).') from exc
+        preview = _fix_api_text((response.text or '')[:280])
+        raise XExpressError(
+            f'X-Express je vratio neispravan odgovor (nije JSON). {preview}'.strip()
+        ) from exc
 
-    sifra = extract_sifra(body)
+    order_broj = str(getattr(order, 'broj', '') or '').strip()
+    sifra = extract_sifra(body, ignore={order_broj, payload[0].get('sifraExt')})
     if not sifra:
-        raise XExpressError('X-Express nije vratio šifru pošiljke.')
+        logger.warning(
+            'X-Express odgovor bez šifre za #%s HTTP %s: %s',
+            order_broj,
+            response.status_code,
+            _preview_body(body),
+        )
+        extra = _body_error_message(body)
+        preview = _preview_body(body)
+        if extra:
+            raise XExpressError(f'X-Express: {extra}')
+        raise XExpressError(
+            'X-Express nije vratio šifru pošiljke'
+            + (f': {preview}' if preview else '.')
+        )
 
     order.xexpress_sifra = sifra[:40]
     order.xexpress_poslano_at = timezone.now()
