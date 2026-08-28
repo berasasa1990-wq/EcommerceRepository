@@ -51,9 +51,7 @@
             <input type="hidden" name="force" value="0" class="staff-odoo-force">
             <button type="submit" class="mg-btn mg-btn-odoo{% if order.odoo_sale_order_id %} is-done{% endif %}" title="{% if order.odoo_sale_order_id %}Već u Odoo: {{ order.odoo_sale_order_name }} — klik za ponovni unos{% else %}Kreiraj Sales narudžbu u Odoo{% endif %}">{% if order.odoo_sale_order_id %}Odoo ↻ {{ order.odoo_sale_order_name }}{% else %}Odoo narudžba{% endif %}</button>
         </form>
-        {% if order.xexpress_sifra %}
-        <button type="button" class="mg-btn is-done" disabled title="Već poslana u X-Express">X-Express {{ order.xexpress_sifra }}</button>
-        {% else %}
+        {% if not order.xexpress_sifra %}
         <form method="post" action="{% url 'staff_order_xexpress' broj=order.broj %}" class="staff-xexpress-form">
             {% csrf_token %}
             <input type="hidden" name="next" value="{% url 'staff_order_detail' broj=order.broj %}">
@@ -93,9 +91,23 @@
     <span class="mg-pill is-odoo">Odoo {{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}</span>
     {% endif %}
     {% if order.xexpress_sifra %}
-    <span class="mg-pill">X-Express {{ order.xexpress_sifra }}</span>
+    <span class="mg-pill is-xexpress">X-Express {{ order.xexpress_sifra }}</span>
     {% endif %}
 </div>
+
+{% if order.xexpress_sifra %}
+<section class="mg-card mg-xexpress-card">
+    <p class="mg-xexpress-label">X-Express šifra pošiljke</p>
+    <p class="mg-xexpress-code" id="xeSifra">{{ order.xexpress_sifra }}</p>
+    {% if order.xexpress_poslano_at %}
+    <p class="mg-muted">Poslano {{ order.xexpress_poslano_at|date:"d.m.Y. H:i" }}</p>
+    {% endif %}
+    <div class="mg-xexpress-actions">
+        <button type="button" class="mg-btn mg-btn-primary" id="xeCopy" data-sifra="{{ order.xexpress_sifra }}">Kopiraj šifru</button>
+        <a class="mg-btn" href="https://www.x-express.ba/pracenjeposiljaka.php?sifra={{ order.xexpress_sifra|urlencode }}" target="_blank" rel="noopener">Prati pošiljku</a>
+    </div>
+</section>
+{% endif %}
 
 <section class="mg-card mg-order-invoice-card">
     <div class="staff-order-invoice">
@@ -149,5 +161,23 @@ document.querySelectorAll('.staff-xexpress-form').forEach(function (form) {
         }
     });
 });
+var xeCopy = document.getElementById('xeCopy');
+if (xeCopy) {
+    xeCopy.addEventListener('click', function () {
+        var text = xeCopy.getAttribute('data-sifra') || '';
+        if (!text) return;
+        function done() {
+            xeCopy.textContent = 'Kopirano';
+            window.setTimeout(function () { xeCopy.textContent = 'Kopiraj šifru'; }, 1400);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+                window.prompt('Kopiraj šifru:', text);
+            });
+        } else {
+            window.prompt('Kopiraj šifru:', text);
+        }
+    });
+}
 </script>
 {% endblock %}

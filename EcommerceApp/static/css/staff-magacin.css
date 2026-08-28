@@ -910,6 +910,39 @@ table.mg-table {
     gap: 8px;
     margin: -4px 0 14px;
 }
+.mg-pill.is-xexpress {
+    background: #ecfdf3;
+    color: #166534;
+    font-weight: 800;
+}
+.mg-xexpress-card {
+    margin: 0 0 14px;
+    padding: 16px 18px;
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+}
+.mg-xexpress-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #166534;
+}
+.mg-xexpress-code {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    color: #14532d;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.mg-xexpress-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
 .mg-order-invoice-card { padding: 12px; }
 .mg-order-invoice-card .staff-order-invoice {
     border: 0;

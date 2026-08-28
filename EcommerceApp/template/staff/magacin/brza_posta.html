@@ -37,7 +37,7 @@
         <a class="bp-row{% if order.brza_posta_unijeta %} is-done{% endif %}" href="{% url 'staff_magacin_brza_posta_detail' order.broj %}?datum={{ day|date:'Y-m-d' }}">
             <span class="bp-row-main">
                 <strong>{{ order.ime_prezime }}</strong>
-                <span>#{{ order.broj }} · {{ order.grad }}</span>
+                <span>#{{ order.broj }} · {{ order.grad }}{% if order.xexpress_sifra %} · {{ order.xexpress_sifra }}{% endif %}</span>
             </span>
             <span class="bp-row-sum">{{ order.ukupno }} KM</span>
             {% if order.brza_posta_unijeta %}

@@ -10,7 +10,7 @@
     <div class="mg-toolbar-actions">
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}?datum={{ day|date:'Y-m-d' }}">← Lista {{ day|date:"d.m.Y." }}</a>
         {% if order.xexpress_sifra %}
-        <button type="button" class="mg-btn is-done" disabled>X-Express {{ order.xexpress_sifra }}</button>
+        <a class="mg-btn mg-btn-primary" href="https://www.x-express.ba/pracenjeposiljaka.php?sifra={{ order.xexpress_sifra|urlencode }}" target="_blank" rel="noopener">{{ order.xexpress_sifra }}</a>
         {% else %}
         <form method="post" action="{% url 'staff_order_xexpress' broj=order.broj %}" class="staff-xexpress-form">
             {% csrf_token %}
@@ -52,6 +52,13 @@
         <span class="bp-value">{{ order.broj }}</span>
         <button type="button" class="mg-btn bp-copy" data-copy="{{ order.broj }}">Copy</button>
     </div>
+    {% if order.xexpress_sifra %}
+    <div class="bp-field">
+        <span class="bp-label">X-Express šifra</span>
+        <span class="bp-value">{{ order.xexpress_sifra }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ order.xexpress_sifra }}">Copy</button>
+    </div>
+    {% endif %}
     <div class="bp-field">
         <span class="bp-label">Iznos</span>
         <span class="bp-value bp-value--sum">{{ iznos_copy }}</span>
