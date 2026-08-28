@@ -5532,7 +5532,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload['tezina'], 2)
         self.assertEqual(payload['uslugaSifra'], 1)
         self.assertEqual(payload['obveznikPlacanja'], 1)
-        self.assertEqual(payload['nacinPlacanja'], 9)
+        self.assertEqual(payload['nacinPlacanja'], 1)
         self.assertEqual(payload['vrednostPosiljke'], 30.0)
         self.assertTrue(payload['otkupnina'])
         self.assertEqual(payload['iznosOtkupnine'], 30.0)

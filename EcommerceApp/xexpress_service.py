@@ -57,6 +57,28 @@ def _timeout() -> int:
         return REQUEST_TIMEOUT
 
 
+def _int_setting(name: str, default: int) -> int:
+    raw = getattr(settings, name, None)
+    if raw in (None, ''):
+        return default
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
+
+
+def _fix_api_text(text: str) -> str:
+    """API ponekad vrati UTF-8 pročitan kao Latin-1 (poÅ¡iljke → pošiljke)."""
+    if not text:
+        return text
+    if 'Å' in text or 'Ä' in text or 'Ã' in text:
+        try:
+            return text.encode('latin-1').decode('utf-8')
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            pass
+    return text
+
+
 def order_is_pouzece(order) -> bool:
     return not bool(getattr(order, 'placeno_karticom', lambda: False)())
 
@@ -79,8 +101,9 @@ def build_shipment_payload(order) -> dict:
         'visina': 0,
         'tezina': 2,
         'uslugaSifra': 1,
-        'obveznikPlacanja': 1,
-        'nacinPlacanja': 9,
+        # 1 = pošiljalac. 9 = po računu — API 420: za ovaj tip najave to nije dozvoljeno.
+        'obveznikPlacanja': _int_setting('XEXPRESS_OBVEZNIK_PLACANJA', 1),
+        'nacinPlacanja': _int_setting('XEXPRESS_NACIN_PLACANJA', 1),
         'vrednostPosiljke': ukupno,
         'otkupnina': pouzece,
         'iznosOtkupnine': ukupno if pouzece else 0,
@@ -114,20 +137,20 @@ def _response_error_message(response: requests.Response) -> str:
         payload = response.json()
     except ValueError:
         text = (response.text or '').strip()
-        return text[:400] if text else f'HTTP {response.status_code}'
+        return _fix_api_text(text[:400]) if text else f'HTTP {response.status_code}'
     if isinstance(payload, dict):
         for key in ('message', 'poruka', 'error', 'greska', 'detail'):
             value = payload.get(key)
             if value:
-                return str(value).strip()
+                return _fix_api_text(str(value).strip())
     if isinstance(payload, list) and payload:
         first = payload[0]
         if isinstance(first, dict):
             for key in ('message', 'poruka', 'error', 'greska'):
                 value = first.get(key)
                 if value:
-                    return str(value).strip()
-        return str(first)[:400]
+                    return _fix_api_text(str(value).strip())
+        return _fix_api_text(str(first)[:400])
     return f'HTTP {response.status_code}'
 
 
