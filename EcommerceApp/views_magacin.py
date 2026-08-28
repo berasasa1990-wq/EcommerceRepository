@@ -137,7 +137,16 @@ from .models import (
     WarehouseSyncLog,
     OrderStockHold,
 )
-from .db_backup import BackupError, create_backup, last_backup, list_backups, resolve_backup_file, restore_backup
+from .db_backup import (
+    BackupError,
+    backup_storage_status,
+    create_backup,
+    last_backup,
+    list_backups,
+    resolve_backup_file,
+    restore_backup,
+    save_uploaded_backup,
+)
 from .odoo_client import odoo_je_konfigurisan
 from .views import _base_context, _superuser_required
 
@@ -6265,10 +6274,20 @@ def magacin_vp_narudzba(request):
     return render(request, 'staff/magacin/vp_narudzba.html', context)
 
 
+def _backup_page_context(request, *, page_title='Backup baze — Magacin'):
+    context = _magacin_context(request, section='podesavanja', page_title=page_title)
+    context.update({
+        'backups': list_backups(),
+        'backup_status': backup_storage_status(),
+        'backup_next': reverse('staff_magacin_podesavanja'),
+    })
+    return context
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_podesavanja(request):
-    context = _magacin_context(request, section='podesavanja', page_title='Podešavanja — Magacin')
+    context = _backup_page_context(request, page_title='Podešavanja — Magacin')
     context.update({
         'odoo_configured': odoo_je_konfigurisan(),
         'location_count': WarehouseLocation.objects.count(),
@@ -6287,43 +6306,69 @@ def magacin_sync_istorija(request):
     return render(request, 'staff/magacin/sync_istorija.html', context)
 
 
+def _backup_redirect(request):
+    nxt = (request.POST.get('next') or request.GET.get('next') or '').strip()
+    if nxt.startswith('/') and not nxt.startswith('//'):
+        return redirect(nxt)
+    return redirect('staff_magacin_backup')
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_backup(request):
     if request.method == 'POST':
         action = (request.POST.get('action') or 'create').strip()
+        if action in {'restore', 'upload_restore'} and not _packing_reprint_password_ok(
+            request.POST.get('lozinka')
+        ):
+            messages.error(request, 'Pogrešna šifra.')
+            return _backup_redirect(request)
+        if action == 'upload_restore':
+            uploaded = request.FILES.get('fajl')
+            if not uploaded:
+                messages.error(request, 'Odaberi backup fajl sa diska (.sqlite3 ili .dump).')
+                return _backup_redirect(request)
+            try:
+                info = save_uploaded_backup(uploaded)
+                result = restore_backup(info['name'])
+            except BackupError as exc:
+                messages.error(request, str(exc) if str(exc) else 'Restore nije uspio.')
+                return _backup_redirect(request)
+            safety = result.get('safety') or ''
+            extra = f' Trenutno stanje je sačuvano kao {safety}.' if safety else ''
+            messages.success(
+                request,
+                f'Baza je vraćena iz {result.get("restored")}.{extra}',
+            )
+            return _backup_redirect(request)
         if action == 'restore':
-            if not _packing_reprint_password_ok(request.POST.get('lozinka')):
-                messages.error(request, 'Pogrešna šifra.')
-                return redirect('staff_magacin_backup')
             name = (request.POST.get('name') or '').strip()
             try:
                 result = restore_backup(name)
             except BackupError as exc:
                 messages.error(request, str(exc) if str(exc) else 'Restore nije uspio.')
-                return redirect('staff_magacin_backup')
+                return _backup_redirect(request)
             safety = result.get('safety') or ''
             extra = f' Trenutno stanje je sačuvano kao {safety}.' if safety else ''
             messages.success(
                 request,
                 f'Baza je vraćena na backup {result.get("restored")}.{extra}',
             )
-            return redirect('staff_magacin_backup')
+            return _backup_redirect(request)
         try:
             info = create_backup()
         except BackupError as exc:
             messages.error(request, str(exc) if str(exc) else 'Backup nije uspio.')
-            return redirect('staff_magacin_backup')
+            return _backup_redirect(request)
         messages.success(
             request,
             f'Backup baze je spreman: {info["name"]} ({info["size_label"]}). '
-            'Možeš ga vratiti Restore-om.',
+            'Preuzmi ga na svoj disk.',
         )
-        return redirect('staff_magacin_backup')
+        return _backup_redirect(request)
 
-    backups = list_backups()
-    context = _magacin_context(request, section='podesavanja', page_title='Backup baze — Magacin')
-    context.update({'backups': backups})
+    context = _backup_page_context(request)
+    context['backup_next'] = reverse('staff_magacin_backup')
     return render(request, 'staff/magacin/backup.html', context)
 
 
@@ -6335,6 +6380,19 @@ def magacin_backup_download(request, name):
         path = resolve_backup_file(name)
     except BackupError as exc:
         raise Http404(str(exc)) from exc
+    return FileResponse(path.open('rb'), as_attachment=True, filename=path.name)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_backup_download_current(request):
+    try:
+        info = create_backup()
+        path = resolve_backup_file(info['name'])
+    except BackupError as exc:
+        messages.error(request, str(exc) if str(exc) else 'Backup nije uspio.')
+        return _backup_redirect(request)
     return FileResponse(path.open('rb'), as_attachment=True, filename=path.name)
 
 

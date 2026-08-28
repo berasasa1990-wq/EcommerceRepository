@@ -350,6 +350,9 @@ LANGUAGE_CODE = 'en-us'
 
 # Bulk admin akcije (npr. tagovi na mnogo podkategorija) šalju puno POST polja
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
+# Restore baze: dump može biti stotine MB. Fajl preko 10 MB ide na disk, ne u RAM.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 600 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 TIME_ZONE = 'Europe/Sarajevo'
 

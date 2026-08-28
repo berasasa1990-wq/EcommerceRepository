@@ -56,8 +56,120 @@ def backup_search_dirs() -> list[Path]:
     disk = (os.environ.get('RENDER_DISK_PATH') or '').strip()
     if disk:
         _add(Path(disk) / 'db-backups')
+        _add(Path(disk) / 'backups')
     _add(Path(settings.BASE_DIR) / 'backups')
     return [path for path in dirs if path.is_dir()]
+
+
+def _on_render() -> bool:
+    return bool(
+        (os.environ.get('RENDER_EXTERNAL_HOSTNAME') or '').strip()
+        or (os.environ.get('RENDER') or '').strip()
+    )
+
+
+def backup_storage_status() -> dict:
+    """Gdje stoje backupi i da li prežive deploy."""
+    disk = (os.environ.get('RENDER_DISK_PATH') or '').strip()
+    disk_path = Path(disk) if disk else None
+    disk_ok = bool(disk_path and disk_path.is_dir())
+    try:
+        root = backup_root(create=True)
+    except OSError:
+        root = backup_root(create=False)
+    persistent = False
+    if disk_ok:
+        try:
+            persistent = root.resolve().is_relative_to(disk_path.resolve())
+        except (OSError, ValueError, AttributeError):
+            persistent = str(root).startswith(str(disk_path))
+    on_render = _on_render()
+    warning = ''
+    if on_render and not persistent:
+        warning = (
+            'Backupi nisu na trajnom disku servera. Nestaju pri svakom deployu ili restartu. '
+            'Preuzmi fajl na svoj računar i čuvaj ga lokalno.'
+        )
+    try:
+        kind = engine_kind()
+    except BackupError:
+        kind = ''
+    return {
+        'root': str(root),
+        'persistent': persistent,
+        'on_render': on_render,
+        'kind': kind,
+        'warning': warning,
+    }
+
+
+def absorb_ephemeral_backups() -> int:
+    """Prebaci backup-e iz foldera aplikacije na trajni disk, ako postoji."""
+    if getattr(settings, 'MAGACIN_BACKUP_DIR', None):
+        return 0
+    disk = (os.environ.get('RENDER_DISK_PATH') or '').strip()
+    if not disk:
+        return 0
+    try:
+        persistent = (Path(disk) / 'db-backups').resolve()
+        persistent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return 0
+    moved = 0
+    for folder in backup_search_dirs():
+        try:
+            if folder.resolve() == persistent:
+                continue
+        except OSError:
+            continue
+        try:
+            entries = list(folder.iterdir())
+        except OSError:
+            continue
+        for path in entries:
+            if not _is_backup_file(path):
+                continue
+            dest = persistent / path.name
+            if dest.exists():
+                continue
+            try:
+                shutil.copy2(path, dest)
+                moved += 1
+            except OSError:
+                continue
+    return moved
+
+
+def save_uploaded_backup(uploaded) -> dict:
+    """Sačuvaj uploadani .sqlite3 / .dump u folder backup-a."""
+    original = Path(getattr(uploaded, 'name', '') or '').name
+    lower = original.lower()
+    if lower.endswith('.sqlite3'):
+        suffix = '.sqlite3'
+        prefix = 'db'
+    elif lower.endswith('.dump'):
+        suffix = '.dump'
+        prefix = 'postgres'
+    else:
+        raise BackupError('Fajl mora biti .sqlite3 (lokalna baza) ili .dump (sajt / Postgres).')
+    safe = original if BACKUP_FILE_RE.match(original) else f'{prefix}-upload-{_stamp()}{suffix}'
+    root = backup_root()
+    dest = root / safe
+    extra = 0
+    while dest.exists():
+        extra += 1
+        dest = root / f'{Path(safe).stem}-{extra}{suffix}'
+    with dest.open('wb') as out:
+        if hasattr(uploaded, 'chunks'):
+            for chunk in uploaded.chunks():
+                out.write(chunk)
+        else:
+            data = uploaded.read() if hasattr(uploaded, 'read') else uploaded
+            out.write(data)
+    if not dest.is_file() or dest.stat().st_size <= 0:
+        dest.unlink(missing_ok=True)
+        raise BackupError('Upload je prazan.')
+    return _info(dest)
 
 
 def _is_backup_file(path: Path) -> bool:
@@ -279,6 +391,7 @@ def list_backups(*, out_dir: Path | str | None = None) -> list[dict]:
         if out_dir:
             roots = [Path(out_dir).expanduser().resolve()]
         else:
+            absorb_ephemeral_backups()
             roots = backup_search_dirs()
     except (OSError, BackupError):
         return []

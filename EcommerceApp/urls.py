@@ -280,6 +280,11 @@ urlpatterns = [
         views_magacin.magacin_backup_download,
         name='staff_magacin_backup_download',
     ),
+    path(
+        'nalog/magacin/backup/preuzmi-sada/',
+        views_magacin.magacin_backup_download_current,
+        name='staff_magacin_backup_download_current',
+    ),
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
     path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),

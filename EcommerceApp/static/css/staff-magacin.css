@@ -971,6 +971,31 @@ table.mg-table {
     justify-content: flex-end;
 }
 .mg-backup-actions form { margin: 0; }
+.mg-backup-upload {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--mg-line);
+}
+.mg-backup-upload .mg-field span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mg-label);
+}
+.mg-warn {
+    background: #fff7ed;
+    color: #9a3412;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.45;
+}
 .mg-inline-form { display: inline; margin: 0; }
 
 .pp-page { max-width: 720px; }

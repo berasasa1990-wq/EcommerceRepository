@@ -1,0 +1,96 @@
+<section class="mg-card" id="backupBaze">
+    <h2 class="mg-h">Backup baze</h2>
+    <p class="mg-lead">Preuzmi bazu na svoj disk i čuvaj je kod sebe. Uploadom istog fajla vraćaš sajt na to stanje. Prije restore-a sistem prvo sačuva trenutnu bazu.</p>
+    {% if backup_status.warning %}
+    <p class="mg-warn">{{ backup_status.warning }}</p>
+    {% endif %}
+    <p class="mg-muted">
+        {% if backup_status.kind == 'postgres' %}
+        Ovaj sajt je Postgres — preuzima se <strong>.dump</strong> fajl. Restore prima isti .dump.
+        {% else %}
+        Ova instanca je SQLite — preuzima se <strong>.sqlite3</strong> fajl. Restore prima isti .sqlite3.
+        {% endif %}
+        Folder na serveru: <code>{{ backup_status.root }}</code>
+        {% if backup_status.persistent %} · trajni disk{% endif %}
+    </p>
+    <div class="mg-toolbar-actions" style="margin-top:14px;">
+        <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_backup_download_current' %}?next={{ backup_next }}">Preuzmi bazu na disk</a>
+        <form method="post" action="{% url 'staff_magacin_backup' %}" onsubmit="return confirm('Napraviti backup na serveru? Svejedno ga preuzmi kod sebe.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <input type="hidden" name="next" value="{{ backup_next }}">
+            <button type="submit" class="mg-btn">Backup na server</button>
+        </form>
+    </div>
+    <form method="post" action="{% url 'staff_magacin_backup' %}" enctype="multipart/form-data" class="mg-backup-upload" data-backup-restore>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload_restore">
+        <input type="hidden" name="next" value="{{ backup_next }}">
+        <input type="hidden" name="lozinka" value="">
+        <label class="mg-field" style="margin:0;flex:1 1 240px;">
+            <span>Vrati iz fajla sa diska</span>
+            <input type="file" name="fajl" accept=".sqlite3,.dump,application/octet-stream" required>
+        </label>
+        <button type="submit" class="mg-btn mg-btn-danger">Upload i restore</button>
+    </form>
+    <div class="mg-table-wrap" style="margin-top:18px;">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>DATUM</th>
+                <th>FAJL</th>
+                <th>VELIČINA</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in backups %}
+            <tr>
+                <td>{% if row.created_at %}{{ row.created_at|date:"d.m.Y H:i:s" }}{% else %}—{% endif %}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.size_label }}</td>
+                <td class="mg-backup-actions">
+                    <a class="mg-btn" href="{% url 'staff_magacin_backup_download' row.name %}">Preuzmi</a>
+                    <form method="post" action="{% url 'staff_magacin_backup' %}" data-backup-restore>
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="restore">
+                        <input type="hidden" name="name" value="{{ row.name }}">
+                        <input type="hidden" name="next" value="{{ backup_next }}">
+                        <input type="hidden" name="lozinka" value="">
+                        <button type="submit" class="mg-btn mg-btn-danger">Restore</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="mg-muted">Još nema backup-a na serveru. Klikni „Preuzmi bazu na disk”.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+<script>
+(function () {
+    document.querySelectorAll('[data-backup-restore]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            var isUpload = (form.querySelector('[name=action]') || {}).value === 'upload_restore';
+            if (isUpload && form.querySelector('[name=fajl]') && !form.querySelector('[name=fajl]').files.length) {
+                window.alert('Odaberi backup fajl.');
+                return;
+            }
+            if (!window.confirm(isUpload
+                ? 'Ovo prepisuje cijelu trenutnu bazu fajlom sa diska. Prije restore-a se pravi sigurnosni backup. Nastaviti?'
+                : 'Ovo prepisuje cijelu trenutnu bazu. Prije restore-a se pravi sigurnosni backup. Nastaviti?')) return;
+            var password = window.prompt('Unesi šifru:');
+            if (password === null) return;
+            if (String(password).trim() !== 'admin') {
+                window.alert('Pogrešna šifra.');
+                return;
+            }
+            var field = form.querySelector('[name=lozinka]');
+            if (field) field.value = String(password).trim();
+            form.submit();
+        });
+    });
+})();
+</script>

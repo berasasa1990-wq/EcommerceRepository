@@ -3568,6 +3568,9 @@ class MagacinViewTests(TestCase):
         self.assertContains(settings_page, 'Sync cijena iz Odoo')
         self.assertContains(settings_page, 'Sync šifri po nazivu')
         self.assertContains(settings_page, 'Backup baze')
+        self.assertContains(settings_page, 'Preuzmi bazu na disk')
+        self.assertContains(settings_page, 'Upload i restore')
+        self.assertContains(settings_page, reverse('staff_magacin_backup_download_current'))
         self.assertContains(page, 'Backup baze')
         self.assertContains(page, reverse('staff_magacin_backup'))
 
@@ -3629,6 +3632,41 @@ class MagacinViewTests(TestCase):
                     })
                 self.assertEqual(restored.status_code, 302)
                 mocked.assert_called_once_with(name)
+
+                settings_page = self.client.get(reverse('staff_magacin_podesavanja'))
+                self.assertContains(settings_page, name)
+                self.assertContains(settings_page, 'Preuzmi bazu na disk')
+                self.assertContains(settings_page, 'name="fajl"')
+
+                current = self.client.get(reverse('staff_magacin_backup_download_current'))
+                self.assertEqual(current.status_code, 200)
+                self.assertIn('attachment', current['Content-Disposition'])
+                self.assertGreaterEqual(len(list(Path(tmp).glob('db-*.sqlite3'))), 2)
+
+                from django.core.files.uploadedfile import SimpleUploadedFile
+                payload = SimpleUploadedFile(
+                    'db-upload-test.sqlite3',
+                    files[0].read_bytes(),
+                    content_type='application/octet-stream',
+                )
+                with patch('EcommerceApp.views_magacin.restore_backup') as uploaded_restore:
+                    uploaded_restore.return_value = {
+                        'restored': 'db-upload-test.sqlite3',
+                        'safety': 'db-now.sqlite3',
+                    }
+                    uploaded = self.client.post(
+                        reverse('staff_magacin_backup'),
+                        {
+                            'action': 'upload_restore',
+                            'lozinka': 'admin',
+                            'next': reverse('staff_magacin_podesavanja'),
+                            'fajl': payload,
+                        },
+                    )
+                self.assertEqual(uploaded.status_code, 302)
+                self.assertEqual(uploaded['Location'], reverse('staff_magacin_podesavanja'))
+                uploaded_restore.assert_called_once()
+                self.assertTrue((Path(tmp) / 'db-upload-test.sqlite3').is_file())
 
     def test_backup_lists_all_and_never_deletes(self):
         from .db_backup import create_backup, list_backups
