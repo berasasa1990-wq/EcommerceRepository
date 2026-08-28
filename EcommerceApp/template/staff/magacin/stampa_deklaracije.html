@@ -5,7 +5,7 @@
     <div class="mg-page-head">
         <div>
             <h1>Štampaj deklaracije</h1>
-            <p class="mg-count">A4 papir, 65 naljepnica 38,1 × 21,2 mm (5 u redu × 13 naniže). Labele su fiksne — unosiš vrijednosti.</p>
+            <p class="mg-count">Tip Top Office, A4 210 × 297 mm, 65 deklaracija 38 × 21,2 mm (5 × 13). Labele su fiksne — unosiš vrijednosti.</p>
         </div>
     </div>
 
@@ -61,7 +61,7 @@
                     <input name="{{ polje.attr }}" id="sd-{{ polje.attr }}" {% if polje.required %}required {% endif %}maxlength="{{ polje.max_length }}" value="{{ polje.value }}" {% if polje.attr == 'godina_uvoza' %}inputmode="numeric" placeholder="npr. 2026"{% elif polje.attr == 'telefon' %}inputmode="tel"{% endif %}>
                 </div>
                 {% endfor %}
-                <p class="mg-muted sd-preview-label">Pregled naljepnice 38,1 × 21,2 mm</p>
+                <p class="mg-muted sd-preview-label">Pregled deklaracije 38 × 21,2 mm</p>
                 <div class="sd-preview" id="sdPreview" aria-hidden="true"></div>
                 <div class="sd-form-actions">
                     <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
