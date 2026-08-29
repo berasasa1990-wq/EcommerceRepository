@@ -710,6 +710,7 @@ def magacin_brzi_unos_aktivacija(request, product_id):
                     set_pakovanje=True,
                     pakovanje_komada=pack_value if form_data['je_pakovanje'] else None,
                     proizvedeno_u_japanu=bool(form_data['proizvedeno_u_japanu']),
+                    image_manual_fit=(request.POST.get('slika_rucno') or '') == '1',
                 )
                 tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
                 cat_note = f', {kategorija.naziv}' if kategorija else ''
@@ -1236,13 +1237,15 @@ def _zpl_text(value, max_len=40):
 
 
 def _zebra_price_zpl(payload):
-    naziv = _zpl_text(payload.get('naziv'), 42)
+    naziv = _zpl_text(payload.get('naziv'), 60)
     sifra = _zpl_text(payload.get('sifra'), 24) or '-'
     barkod = _zpl_text(payload.get('barkod'), 40)
     cijena = _zpl_text(payload.get('cijena_label'), 12) or '-'
     width = int((ZEBRA_BARCODE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    left = 42
+    text_w = max(200, width - left - 24)
     lines = [
         '^XA',
         '^MNY',
@@ -1252,14 +1255,14 @@ def _zebra_price_zpl(payload):
         '^LH0,0',
         '^PON',
         '^FWN',
-        f'^FO16,2^A0N,26,26^FD{naziv}^FS',
-        f'^FO16,32^A0N,22,22^FDSIFRA: {sifra}^FS',
+        f'^FO{left},2^A0N,22,22^FB{text_w},2,0,L^FD{naziv}^FS',
+        f'^FO{left},50^A0N,20,20^FDSIFRA: {sifra}^FS',
     ]
     if barkod:
-        lines.append(f'^FO16,58^BY2,2.2,70^BCN,70,N,N,N^FD{barkod}^FS')
-        lines.append(f'^FO16,136^A0N,20,20^FD{barkod}^FS')
-    lines.append(f'^FO420,148^A0N,48,48^FD{cijena}^FS')
-    lines.append('^FO640,166^A0N,26,26^FDKM^FS')
+        lines.append(f'^FO{left},74^BY2,2.0,56^BCN,56,N,N,N^FD{barkod}^FS')
+        lines.append(f'^FO{left},136^A0N,18,18^FD{barkod}^FS')
+    lines.append(f'^FO{left + 380},148^A0N,44,44^FD{cijena}^FS')
+    lines.append(f'^FO{left + 580},166^A0N,24,24^FDKM^FS')
     lines.append('^XZ')
     return '\n'.join(lines) + '\n'
 

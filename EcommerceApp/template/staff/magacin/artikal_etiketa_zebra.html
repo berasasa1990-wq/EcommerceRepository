@@ -39,7 +39,7 @@
             width: {{ label_width }}in;
             height: {{ label_height }}in;
             margin: 12px auto;
-            padding: {{ label_top }}in 0.08in 0.04in 0.06in;
+            padding: {{ label_top }}in 0.10in 0.04in 0.16in;
             background: #fff;
             display: flex;
             flex-direction: column;
@@ -55,21 +55,28 @@
         }
         .naziv {
             flex: 0 0 auto;
-            font-size: 9pt;
+            max-width: 100%;
+            font-size: 7.2pt;
             font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
+            line-height: 1.12;
+            letter-spacing: -0.03em;
             text-transform: uppercase;
-            white-space: nowrap;
+            white-space: normal;
             overflow: hidden;
-            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            max-height: 0.28in;
         }
         .sifra {
             flex: 0 0 auto;
             margin: 0.02in 0 0.03in;
-            font-size: 8pt;
+            font-size: 7pt;
             font-weight: 800;
-            letter-spacing: .02em;
+            letter-spacing: .01em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -81,13 +88,14 @@
             align-items: stretch;
             justify-content: center;
             min-height: 0;
+            max-width: 92%;
         }
         .barcode img {
             display: block;
             width: 100%;
-            height: 0.42in;
-            object-fit: fill;
-            object-position: center;
+            height: 0.38in;
+            object-fit: contain;
+            object-position: left center;
         }
         .barcode span {
             display: block;

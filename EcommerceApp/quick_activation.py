@@ -17,6 +17,7 @@ from django.db.models import Q
 from .models import Brand, Category, Product, ProductImage, Tag
 from .utils.images import (
     prepared_product_image_payload,
+    process_product_image,
     process_quick_activation_image,
     save_prepared_product_image,
     unique_product_image_basename,
@@ -352,6 +353,7 @@ def activate_product(
     pakovanje_komada: int | None = None,
     set_pakovanje: bool = False,
     proizvedeno_u_japanu: bool | None = None,
+    image_manual_fit: bool = False,
 ) -> Product:
     """
     Aktiviraj postojeći artikal za webshop:
@@ -384,7 +386,10 @@ def activate_product(
             fallback='artikal',
         )
         safe_name = f'{base}.jpg'
-        processed = process_quick_activation_image(image_upload, filename=safe_name)
+        if image_manual_fit:
+            processed = process_product_image(image_upload, filename=safe_name)
+        else:
+            processed = process_quick_activation_image(image_upload, filename=safe_name)
         prepared = prepared_product_image_payload(processed)
         # Sačuvaj polja prvo, pa novu sliku (save_prepared briše staru putanju ako postoji)
         product.save()

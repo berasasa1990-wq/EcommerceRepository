@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_css %}
+{% if staff_product_tools %}
+<link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
+{% endif %}
+{% endblock %}
+
 {% block lcp_preload %}
 {% if lcp_image_url %}
 <link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
@@ -307,7 +313,20 @@
                                     <img src="{{ product.prikazna_slika.url }}" alt="Glavna slika" loading="lazy">
                                 </div>
                                 {% endif %}
-                                <input type="file" name="glavna_slika" accept="image/*" class="staff-file-input">
+                                <input type="file" name="glavna_slika" accept="image/*" class="staff-file-input" id="id_glavna_slika">
+                                <div class="img-fit" data-image-fit data-fit-files="id_glavna_slika" hidden>
+                                    <div class="img-fit-stage" data-fit-stage>
+                                        <img data-fit-img alt="Podesi sliku">
+                                    </div>
+                                    <div class="img-fit-tools">
+                                        <button type="button" data-fit-zoom-out aria-label="Odzumiraj">−</button>
+                                        <input type="range" data-fit-range min="45" max="320" value="100" aria-label="Zum">
+                                        <button type="button" data-fit-zoom-in aria-label="Zumiraj">+</button>
+                                        <button type="button" class="img-fit-reset" data-fit-reset>Reset</button>
+                                    </div>
+                                    <p class="img-fit-hint">Povuci sliku da je smjestiš u polje. Zumiraj sliderom, točkićem ili prstima.</p>
+                                    <input type="hidden" name="slika_rucno" value="0" data-fit-flag>
+                                </div>
                             </label>
                             {% if product.dodatne_slike.exists %}
                             <div class="staff-extra-images">
@@ -670,6 +689,9 @@
 
 {% block extra_js %}
 <script src="{% static 'js/product-detail.min.js' %}?v=20260824otherOpts" defer></script>
+{% if staff_product_tools %}
+<script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
+{% endif %}
 {% if staff_product_tools %}
 <script src="{% static 'js/staff-product-objava.js' %}?v=20260725v7" defer></script>
 {% endif %}

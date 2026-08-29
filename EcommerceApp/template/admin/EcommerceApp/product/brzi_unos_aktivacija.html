@@ -3,6 +3,7 @@
 
 {% block extrastyle %}
 {{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <style>
   /* Admin chrome: manje mjesta odozgo */
@@ -1000,6 +1001,19 @@
               <div class="bu-preview" id="bu-preview">
                 <img id="bu-preview-img" alt="Pregled nove slike">
               </div>
+              <div class="img-fit" data-image-fit data-fit-files="id_slika,id_slika_kamera" hidden>
+                <div class="img-fit-stage" data-fit-stage>
+                  <img data-fit-img alt="Podesi sliku">
+                </div>
+                <div class="img-fit-tools">
+                  <button type="button" data-fit-zoom-out aria-label="Odzumiraj">−</button>
+                  <input type="range" data-fit-range min="45" max="320" value="100" aria-label="Zum">
+                  <button type="button" data-fit-zoom-in aria-label="Zumiraj">+</button>
+                  <button type="button" class="img-fit-reset" data-fit-reset>Reset</button>
+                </div>
+                <p class="img-fit-hint">Povuci sliku da je smjestiš u polje. Zumiraj sliderom, točkićem ili prstima.</p>
+                <input type="hidden" name="slika_rucno" value="0" data-fit-flag>
+              </div>
               {% if current_image_url %}
               <div class="bu-current">
                 <p>Trenutna (ostaje ako ne dodaš novu):</p>
@@ -1241,6 +1255,7 @@
   })();
 
   function showPreview(file) {
+    if (document.querySelector('[data-image-fit]')) return;
     if (!preview || !previewImg || !file) return;
     var url = URL.createObjectURL(file);
     previewImg.onload = function () { URL.revokeObjectURL(url); };
@@ -1631,4 +1646,5 @@
   }
 })();
 </script>
+<script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
 {% endblock %}

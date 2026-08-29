@@ -2787,6 +2787,7 @@ class ProductAdmin(admin.ModelAdmin):
                         set_pakovanje=True,
                         pakovanje_komada=pack_value if form_data['je_pakovanje'] else None,
                         proizvedeno_u_japanu=bool(form_data['proizvedeno_u_japanu']),
+                        image_manual_fit=(request.POST.get('slika_rucno') or '') == '1',
                     )
                     tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
                     cat_note = f', {kategorija.naziv}' if kategorija else ''
