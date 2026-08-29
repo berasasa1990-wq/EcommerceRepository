@@ -502,6 +502,12 @@ function initCustomerPicker() {
                 if (newTel) newTel.focus();
                 return;
             }
+            var post = (newPost && newPost.value || '').trim();
+            if (!post) {
+                showHint('Unesi poštanski broj.');
+                if (newPost) newPost.focus();
+                return;
+            }
             if (saving) return;
             var csrf = form.querySelector('[name=csrfmiddlewaretoken]');
             var body = new URLSearchParams();

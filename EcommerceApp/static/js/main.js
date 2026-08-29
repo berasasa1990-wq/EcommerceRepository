@@ -1277,23 +1277,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (onSale === true || onSale === 'true') {
             const base = Number(originalPrice);
             const original = Number.isFinite(base) ? base.toFixed(2) : String(originalPrice);
-            let badge = '';
-            if (Number.isFinite(base) && base > 0 && Number.isFinite(sale) && sale < base) {
-                const pct = Math.round(((base - sale) / base) * 100);
-                if (pct > 0) {
-                    badge = `<span class="card-dwell-badge">−${pct}%</span>`;
-                }
-            }
-            // Isti markup kao card-dwell akcija (ukosa precrt + −% badge)
             return (
-                `<span class="price-original card-dwell-was">${original} KM</span>` +
-                `<div class="card-dwell-sale-cluster">` +
-                `<span class="price-sale card-dwell-now">${formatted} KM</span>` +
-                badge +
-                `</div>`
+                `<div class="product-sale-box">` +
+                `<span class="card-dwell-label">AKCIJA</span>` +
+                `<span class="price-sale card-dwell-now">${formatted}<span class="price-currency"> KM</span></span>` +
+                `</div>` +
+                `<span class="price-original card-dwell-was">${original}<span class="price-currency"> KM</span></span>`
             );
         }
-        return `<span class="price-current">${formatted} KM</span>`;
+        return `<span class="price-current">${formatted}<span class="price-currency"> KM</span></span>`;
     }
 
     /** 1 bod = 1 KM (zaokruženo); ažurira badge na kartici pri promjeni cijene. */

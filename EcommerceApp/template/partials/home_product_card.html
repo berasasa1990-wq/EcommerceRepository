@@ -10,9 +10,9 @@
 >
     {# Badge: −% na akciji, inače NOVO #}
     {% if product.katalog_akcija_postotak %}
-    <span class="hm-badge hm-badge--sale" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
     {% elif product.katalog_na_akciji %}
-    <span class="hm-badge hm-badge--sale" aria-label="Akcija">Akcija</span>
+    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Akcija">Akcija</span>
     {% elif product.je_novitet or home_section_badge == 'novo' or home_section_badge == 'hit' %}
     <span class="hm-badge hm-badge--novo" aria-label="Novo">NOVO</span>
     {% endif %}
@@ -31,6 +31,7 @@
     </a>
 
     <div class="hm-body">
+        <p class="product-card__pack"{% if product.pakovanje_label %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.pakovanje_label %}{{ product.pakovanje_label }}{% else %}&nbsp;{% endif %}</p>
         <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
         {% include 'partials/product_staff_missing.html' with product=product %}
 
@@ -44,7 +45,7 @@
                     <span class="hm-price__now">{{ product.katalog_prikazna_cijena }} KM</span>
                     {% endif %}
                 </div>
-                {% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena compact=True %}
+
             </div>
 
             {% if card_variations|length > 1 %}
@@ -58,13 +59,12 @@
             {% if product.na_stanju %}
             <button
                 type="button"
-                class="hm-cart-btn"
+                class="product-card-add-btn hm-cart-btn"
                 data-catalog-add
                 data-product-slug="{{ product.slug }}"
                 data-product-id="{{ product.pk }}"
                 data-product-name="{{ product.naziv }}"
                 data-almost-cart
-                title="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}"
                 aria-label="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }} — {{ product.naziv }}"
                 {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
                 {% if card_variations|length == 1 %}
@@ -73,19 +73,16 @@
                     {% endfor %}
                 {% endif %}
             >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
                     <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
                     <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
                 </svg>
+                <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
             </button>
             {% else %}
-            <button type="button" class="hm-cart-btn hm-cart-btn--disabled" disabled title="Rasprodato" aria-label="Rasprodato">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
-                    <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                    <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                </svg>
+            <button type="button" class="product-card-add-btn hm-cart-btn hm-cart-btn--disabled" disabled aria-label="{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}">
+                <span>{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}</span>
             </button>
             {% endif %}
         </div>

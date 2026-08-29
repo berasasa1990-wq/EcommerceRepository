@@ -692,6 +692,35 @@
 }
 .mg-meta-grid dt { color: var(--mg-label); font-weight: 400; }
 .mg-meta-grid dd { margin: 0; color: var(--mg-text); }
+.mg-barkod-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.mg-print-barcode {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: #111;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+.mg-print-barcode:hover { background: #111; color: #fff; border-color: #111; }
+.mg-print-barcode svg { width: 18px; height: 18px; }
+.mg-phone-barkod {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: -8px 0 14px;
+    font-size: 14px;
+    color: var(--mg-muted);
+}
 .mg-meta-price { font-weight: 800; }
 
 .mg-hero-aside { min-width: 340px; }
@@ -951,6 +980,12 @@ table.mg-table {
 }
 .staff-complete-form,
 .staff-odoo-form { margin: 0; }
+
+.magacin-page .flash-messages,
+.magacin-page .mg-flash,
+.magacin-page .pk-alert {
+    display: none !important;
+}
 
 @media print {
     .header,
@@ -4637,6 +4672,7 @@ tr.is-mp-lock {
         font-size: 16px;
         color: var(--mg-muted);
     }
+    .mg-phone-barkod { display: inline-flex; }
     .mg-phone-vpc {
         display: block;
         margin-top: 4px;

@@ -109,8 +109,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260828oosBadge" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260828oosBadge">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260829addCartBtn" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260829addCartBtn">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -503,6 +503,7 @@
     })();
     </script>
 
+    {% block flash_messages %}
     {% if messages %}
     <div class="flash-messages">
         {% for message in messages %}
@@ -510,6 +511,7 @@
         {% endfor %}
     </div>
     {% endif %}
+    {% endblock %}
 
     <main>
         {% block content %}{% endblock %}
@@ -551,7 +553,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260812loyaltyPts" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260828kmInline" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}

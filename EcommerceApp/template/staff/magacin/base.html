@@ -8,8 +8,10 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260828xexpressBulk">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260829zebraBarkod">
 {% endblock %}
+
+{% block flash_messages %}{% endblock %}
 
 {% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% endblock %}
 
@@ -266,6 +268,6 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260828xexpressBulk"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260829postanski"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

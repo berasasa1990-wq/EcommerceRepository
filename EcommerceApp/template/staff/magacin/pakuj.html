@@ -13,11 +13,6 @@
         </a>
     </div>
 
-    {% if messages %}
-    <div class="pk-alert">
-        {% for message in messages %}{{ message }}{% endfor %}
-    </div>
-    {% endif %}
     {% if claimed_order %}
     <form method="post" action="{% url 'staff_magacin_pakuj_oslobodi' claimed_order.broj %}" class="pk-release">
         {% csrf_token %}

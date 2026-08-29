@@ -187,6 +187,11 @@ urlpatterns = [
         views_magacin.magacin_artikal_stampa,
         name='staff_magacin_artikal_stampa',
     ),
+    path(
+        'nalog/magacin/artikli/<int:pk>/stampa-barkod/',
+        views_magacin.magacin_artikal_stampa_barkod,
+        name='staff_magacin_artikal_stampa_barkod',
+    ),
     path('nalog/magacin/artikli/<int:pk>/izmjena/', views_magacin.magacin_artikal_izmjena, name='staff_magacin_artikal_izmjena'),
     path('nalog/magacin/artikli/<int:pk>/istorija/', views_magacin.magacin_istorija, name='staff_magacin_istorija'),
     path('nalog/magacin/lokacije/lookup/', views_magacin.magacin_lokacije_lookup, name='staff_magacin_lokacije_lookup'),

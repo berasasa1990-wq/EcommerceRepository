@@ -71,8 +71,8 @@
                 <input name="grad" id="custGrad" maxlength="100" value="{{ editing.grad|default:'' }}">
             </div>
             <div class="mg-field">
-                <label for="custPost">Poštanski broj</label>
-                <input name="postanski_broj" id="custPost" maxlength="20" value="{{ editing.postanski_broj|default:'' }}">
+                <label for="custPost">Poštanski broj *</label>
+                <input name="postanski_broj" id="custPost" required maxlength="20" value="{{ editing.postanski_broj|default:'' }}">
             </div>
             <div class="mg-field">
                 <label for="custEmail">Email</label>

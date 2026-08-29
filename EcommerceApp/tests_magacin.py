@@ -1829,6 +1829,30 @@ class MagacinViewTests(TestCase):
         self.assertContains(no_bar, '2,00')
         self.assertContains(no_bar, 'data:image/png;base64,')
 
+    def test_artikal_zebra_barcode_print(self):
+        self.client.force_login(self.user)
+        self.product.barkod = '3870123456789'
+        self.product.save(update_fields=['barkod'])
+        detail = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, reverse('staff_magacin_artikal_stampa_barkod', args=[self.product.pk]))
+        self.assertContains(detail, 'mg-print-barcode')
+        self.assertContains(detail, 'Štampaj barkod na Zebra')
+        page = self.client.get(reverse('staff_magacin_artikal_stampa_barkod', args=[self.product.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'size: 3.559in 1.224in')
+        self.assertContains(page, 'padding: 0.100in 0.08in 0.04in 0')
+        self.assertContains(page, '3870123456789')
+        self.assertContains(page, '^MNY')
+        self.assertContains(page, '^PW722')
+        self.assertContains(page, '^LL248')
+        self.assertContains(page, '^LT20')
+        self.assertContains(page, '^BCN')
+        self.assertContains(page, 'Label with gaps')
+        self.assertContains(page, 'window.print()')
+        self.assertContains(page, 'data:image/png;base64,')
+        self.assertNotContains(page, 'Nema barkoda')
+
         missing = self.client.get(
             reverse('staff_magacin_artikal_stampa', args=[self.product.pk]),
             {'varijacija': '999999'},
@@ -4413,6 +4437,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'id="mgCustomerSearch"')
         self.assertContains(form, 'Dodaj kupca')
         self.assertContains(form, 'id="mgCustomerModal"')
+        self.assertContains(form, 'Poštanski broj *')
         self.assertContains(form, reverse('staff_magacin_kupci_lookup'))
         self.assertContains(form, reverse('staff_magacin_kupci_save'))
         self.assertContains(form, 'id="mgOrderCatalog"')
@@ -4585,21 +4610,34 @@ class MagacinViewTests(TestCase):
 
     def test_save_customer_persists_without_order(self):
         self.client.force_login(self.user)
+        missing_post = self.client.post(reverse('staff_magacin_kupci_save'), {
+            'ime_prezime': 'Marko Savić',
+            'telefon': '065555555',
+            'adresa': 'Titova 12',
+            'grad': 'Mostar',
+        })
+        self.assertEqual(missing_post.status_code, 400)
+        self.assertFalse(missing_post.json()['ok'])
+        self.assertIn('Poštanski broj', missing_post.json()['error'])
+        self.assertFalse(WarehouseCustomer.objects.filter(telefon='065555555').exists())
         saved = self.client.post(reverse('staff_magacin_kupci_save'), {
             'ime_prezime': 'Marko Savić',
             'telefon': '065555555',
             'adresa': 'Titova 12',
             'grad': 'Mostar',
+            'postanski_broj': '88000',
         })
         self.assertEqual(saved.status_code, 200)
         payload = saved.json()
         self.assertTrue(payload['ok'])
         self.assertEqual(payload['customer']['ime_prezime'], 'Marko Savić')
         self.assertEqual(payload['customer']['telefon'], '065555555')
+        self.assertEqual(payload['customer']['postanski_broj'], '88000')
         customer = WarehouseCustomer.objects.get(telefon='065555555')
         self.assertEqual(customer.ime_prezime, 'Marko Savić')
         self.assertEqual(customer.adresa, 'Titova 12')
         self.assertEqual(customer.grad, 'Mostar')
+        self.assertEqual(customer.postanski_broj, '88000')
         self.assertFalse(Order.objects.filter(izvor=Order.Izvor.MAGACIN).exists())
         found = self.client.get(reverse('staff_magacin_kupci_lookup'), {'q': 'Marko'})
         self.assertEqual(found.json()['results'][0]['ime_prezime'], 'Marko Savić')
@@ -4613,6 +4651,7 @@ class MagacinViewTests(TestCase):
             'telefon': '065555555',
             'adresa': 'Kralja Tvrtka 3',
             'grad': 'Mostar',
+            'postanski_broj': '88000',
         })
         self.assertEqual(again.status_code, 200)
         customer.refresh_from_db()
@@ -4623,6 +4662,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(listed.status_code, 200)
         self.assertContains(listed, 'Marko Savić')
         self.assertContains(listed, 'Izmijeni')
+        self.assertContains(listed, 'Poštanski broj *')
+        self.assertContains(listed, 'id="custPost" required')
         edited = self.client.post(reverse('staff_magacin_kupci_save'), {
             'customer_id': str(customer.pk),
             'ime_prezime': 'Marko Savić',

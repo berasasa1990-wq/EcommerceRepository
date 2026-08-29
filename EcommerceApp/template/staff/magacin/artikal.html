@@ -42,6 +42,14 @@
             {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
             <span class="mg-phone-vpc">Vpc {{ vpc }} KM</span>
         </p>
+        {% if product.barkod or product.sifra %}
+        <p class="mg-phone-barkod">
+            <span>{{ product.barkod|default:product.sifra }}</span>
+            <a class="mg-print-barcode" href="{% url 'staff_magacin_artikal_stampa_barkod' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}" target="_blank" rel="noopener" title="Štampaj barkod na Zebra" aria-label="Štampaj barkod na Zebra">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+            </a>
+        </p>
+        {% endif %}
         <ul class="mg-phone-locs">
             {% for row in location_rows %}
             <li>
@@ -90,7 +98,14 @@
                 <dt>Šifra</dt>
                 <dd>{{ product.sifra|default:"—" }}</dd>
                 <dt>Barkod</dt>
-                <dd>{{ product.barkod|default:"—" }}</dd>
+                <dd class="mg-barkod-cell">
+                    <span>{{ product.barkod|default:"—" }}</span>
+                    {% if product.barkod or product.sifra %}
+                    <a class="mg-print-barcode" href="{% url 'staff_magacin_artikal_stampa_barkod' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}" target="_blank" rel="noopener" title="Štampaj barkod na Zebra" aria-label="Štampaj barkod na Zebra">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+                    </a>
+                    {% endif %}
+                </dd>
                 <dt>Kategorija</dt>
                 <dd>{{ product.kategorija.naziv|default:"—" }}</dd>
                 <dt>Brend</dt>

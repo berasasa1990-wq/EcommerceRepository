@@ -20,14 +20,6 @@
         {% endif %}
     </div>
 
-    {% if messages %}
-    <ul class="mg-flash">
-        {% for message in messages %}
-        <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-
     {% if mode == 'izbor' %}
     <div class="sc-modes">
         <a class="sc-mode" href="{% url 'staff_magacin_stampa_cijena_ista' %}">

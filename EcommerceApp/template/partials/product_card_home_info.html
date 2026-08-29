@@ -5,7 +5,7 @@
     {% endif %}
     {% if product.katalog_na_akciji %}
     <div class="card-dwell-deal is-active is-pulse product-sale-card-deal product-price--home">
-        <span class="card-dwell-label">{% if product.akcija_istice_oznaka %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}</span>
+        <span class="card-dwell-label">AKCIJA{% if product.katalog_akcija_postotak %} -{{ product.katalog_akcija_postotak }}%{% endif %}</span>
         <div class="product-price product-price--home card-dwell-prices" data-product-price>
             <span class="price-original card-dwell-was">{{ product.katalog_bazna_cijena }} KM</span>
             <div class="card-dwell-sale-cluster">

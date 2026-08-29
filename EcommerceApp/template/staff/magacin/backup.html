@@ -8,12 +8,5 @@
     </div>
     <a class="mg-btn" href="{% url 'staff_magacin_podesavanja' %}">Podešavanja</a>
 </div>
-{% if messages %}
-<ul class="mg-flash">
-    {% for message in messages %}
-    <li class="{{ message.tags }}">{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
 {% include 'staff/magacin/_backup_panel.html' %}
 {% endblock %}

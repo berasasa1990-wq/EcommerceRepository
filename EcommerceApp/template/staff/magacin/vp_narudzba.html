@@ -189,8 +189,8 @@
                 <input id="vpNewGrad" maxlength="100">
             </div>
             <div class="mg-field">
-                <label for="vpNewPost">Poštanski broj</label>
-                <input id="vpNewPost" maxlength="20">
+                <label for="vpNewPost">Poštanski broj *</label>
+                <input id="vpNewPost" required maxlength="20">
             </div>
             <div class="mg-field">
                 <label for="vpNewEmail">Email</label>
@@ -424,6 +424,12 @@
             if (!tel) {
                 if (hint) { hint.hidden = false; hint.textContent = 'Unesi telefon.'; }
                 if (newTel) newTel.focus();
+                return;
+            }
+            var post = (newPost && newPost.value || '').trim();
+            if (!post) {
+                if (hint) { hint.hidden = false; hint.textContent = 'Unesi poštanski broj.'; }
+                if (newPost) newPost.focus();
                 return;
             }
             if (saving || !saveUrl) return;

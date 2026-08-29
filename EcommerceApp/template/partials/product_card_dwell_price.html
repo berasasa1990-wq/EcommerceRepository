@@ -2,42 +2,30 @@
 {# AI dwell na karticama: snizena cijena BEZ tajmera (tajmer samo na product page) #}
 {% with deal=dwell_catalog_by_id|dict_get:product.pk %}
 {% if deal %}
-<div class="card-dwell-deal is-active{% if dwell_ui.sale_pulse %} is-pulse{% endif %}"
+<div class="card-dwell-deal is-active is-pulse product-sale-card-deal"
      data-dwell-card-deal
      data-dwell-product-id="{{ product.pk }}">
-    {% if dwell_ui.catalog_label %}
-    <span class="card-dwell-label">{{ dwell_ui.catalog_label }}</span>
-    {% endif %}
-    <div class="product-price product-card__price card-dwell-prices" data-product-price data-dwell-price-block>
-        <span class="price-original card-dwell-was">{{ deal.base }} KM</span>
-        <div class="card-dwell-sale-cluster">
-            <span class="price-sale card-dwell-now">{{ deal.sale }} KM{% if product.pakovanje_uz_cijenu_kartica %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu_kartica }}</span>{% endif %}</span>
-            {% if deal.percent %}
-            <span class="card-dwell-badge">−{{ deal.percent }}%</span>
-            {% endif %}
+    <div class="product-sale-row" data-product-price data-dwell-price-block>
+        <div class="product-sale-box">
+            <span class="card-dwell-label">{% if dwell_ui.catalog_label %}{{ dwell_ui.catalog_label }}{% else %}AKCIJA{% endif %}{% if deal.percent %} -{{ deal.percent }}%{% endif %}</span>
+            <span class="price-sale card-dwell-now">{{ deal.sale }}<span class="price-currency"> KM</span></span>
         </div>
+        <span class="price-original card-dwell-was">{{ deal.base }}<span class="price-currency"> KM</span></span>
     </div>
-    {% include 'partials/product_loyalty_points.html' with product=product price=deal.sale compact=True tip_suffix='dwell' %}
 </div>
 {% elif product.katalog_na_akciji %}
-{# Redovna akcija — isti vizuelni jezik kao AI dwell (bez tajmera) #}
 <div class="card-dwell-deal is-active is-pulse product-sale-card-deal">
-    <span class="card-dwell-label">{% if product.akcija_istice_oznaka %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}</span>
-    <div class="product-price product-card__price card-dwell-prices" data-product-price>
-        <span class="price-original card-dwell-was">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }} KM</span>
-        <div class="card-dwell-sale-cluster">
-            <span class="price-sale card-dwell-now">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM{% if product.pakovanje_uz_cijenu_kartica %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu_kartica }}</span>{% endif %}</span>
-            {% if product.katalog_akcija_postotak %}
-            <span class="card-dwell-badge">−{{ product.katalog_akcija_postotak }}%</span>
-            {% endif %}
+    <div class="product-sale-row" data-product-price>
+        <div class="product-sale-box">
+            <span class="card-dwell-label">AKCIJA{% if product.katalog_akcija_postotak %} -{{ product.katalog_akcija_postotak }}%{% endif %}</span>
+            <span class="price-sale card-dwell-now">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }}<span class="price-currency"> KM</span></span>
         </div>
+        <span class="price-original card-dwell-was">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }}<span class="price-currency"> KM</span></span>
     </div>
-    {% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena compact=True tip_suffix='sale' %}
 </div>
 {% else %}
 <div class="product-price product-card__price" data-product-price>
-    <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }} KM{% if product.pakovanje_uz_cijenu_kartica %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu_kartica }}</span>{% endif %}</span>
+    <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }}<span class="price-currency"> KM</span></span>
 </div>
-{% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena compact=True %}
 {% endif %}
 {% endwith %}

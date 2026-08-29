@@ -675,6 +675,11 @@ class SiteSettings(models.Model):
         verbose_name='Boja „Dodaj u korpu” hover',
         help_text='Boja na prelazak miša. Hex npr. #4fa104',
     )
+    boja_ikonica_korpa = models.CharField(
+        max_length=7, default='#111111', blank=True,
+        verbose_name='Boja ikonice korpe',
+        help_text='Kvadratna ikonica korpe na karticama (početna, katalog) i ikona u headeru. Hex npr. #111111',
+    )
     boja_dugme_banner = models.CharField(
         max_length=7, default='#5BB805', blank=True,
         verbose_name='Boja dugmadi na bannerima',
@@ -757,6 +762,25 @@ class SiteSettings(models.Model):
             return v
         return default
 
+    @staticmethod
+    def _hover_shade(value, default='#222222'):
+        """Svjetlija/tamnija nijansa za hover — iz jedne unesene boje."""
+        v = (value or '').lstrip('#')
+        if len(v) == 3:
+            v = ''.join(c * 2 for c in v)
+        if len(v) != 6:
+            return default
+        try:
+            r, g, b = int(v[0:2], 16), int(v[2:4], 16), int(v[4:6], 16)
+        except ValueError:
+            return default
+        luma = (r * 299 + g * 587 + b * 114) / 1000
+        delta = 17 if luma < 150 else -17
+        r = max(0, min(255, r + delta))
+        g = max(0, min(255, g + delta))
+        b = max(0, min(255, b + delta))
+        return f'#{r:02x}{g:02x}{b:02x}'
+
     def get_theme_ui(self):
         """
         Boje dugmadi (korpa, banneri, kontakt) kao CSS varijable za :root.
@@ -764,6 +788,8 @@ class SiteSettings(models.Model):
         hx = self._dwell_hex
         cart = hx(self.boja_dugme_korpa, '#5BB805')
         cart_hover = hx(self.boja_dugme_korpa_hover, '#4fa104')
+        cart_icon = hx(getattr(self, 'boja_ikonica_korpa', None), '#111111')
+        cart_icon_hover = self._hover_shade(cart_icon, '#222222')
         banner = hx(self.boja_dugme_banner, '#5BB805')
         banner_hover = hx(self.boja_dugme_banner_hover, '#4fa104')
         wa = hx(self.kontakt_boja_whatsapp, '#25d366')
@@ -772,6 +798,8 @@ class SiteSettings(models.Model):
         css_vars = (
             f'--btn-cart:{cart};'
             f'--btn-cart-hover:{cart_hover};'
+            f'--cart-icon:{cart_icon};'
+            f'--cart-icon-hover:{cart_icon_hover};'
             f'--btn-banner:{banner};'
             f'--btn-banner-hover:{banner_hover};'
             f'--contact-whatsapp:{wa};'

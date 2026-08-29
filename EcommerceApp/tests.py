@@ -1104,3 +1104,65 @@ class StaffLiveAlertTests(TestCase):
         self.assertIn('TOTAL:86,50', event.poruka)
         self.assertEqual(StaffSiteEvent.objects.filter(tip='cart').count(), 0)
         self.assertEqual(StaffSiteEvent.objects.filter(tip='register').count(), 0)
+
+
+class CatalogNameSearchTests(TestCase):
+    def setUp(self):
+        self.itana = Product.objects.create(
+            naziv='MATE itana tournament spin',
+            slug='mate-itana-tournament-spin',
+            sifra='ITANA-1',
+            cijena=Decimal('10.00'),
+            na_stanju=True,
+            aktivan=True,
+        )
+        self.other = Product.objects.create(
+            naziv='Fox Warrior S feeder',
+            slug='fox-warrior-s-feeder',
+            sifra='FOX-1',
+            cijena=Decimal('20.00'),
+            na_stanju=True,
+            aktivan=True,
+        )
+
+    def _ids(self, query):
+        from .views import _apply_search_filter
+
+        return set(
+            _apply_search_filter(Product.objects.all(), query).values_list('pk', flat=True)
+        )
+
+    def test_one_word_from_middle_of_name(self):
+        self.assertEqual(self._ids('itana'), {self.itana.pk})
+
+    def test_two_words_any_order(self):
+        self.assertEqual(self._ids('tournament spin'), {self.itana.pk})
+        self.assertEqual(self._ids('spin tournament'), {self.itana.pk})
+
+    def test_non_consecutive_words(self):
+        self.assertEqual(self._ids('itana spin'), {self.itana.pk})
+        self.assertEqual(self._ids('mate spin'), {self.itana.pk})
+
+    def test_does_not_return_unrelated(self):
+        self.assertNotIn(self.other.pk, self._ids('itana spin'))
+        self.assertEqual(self._ids('feeder'), {self.other.pk})
+
+
+class CartIconThemeTests(TestCase):
+    def test_theme_css_uses_cart_icon_color(self):
+        from .models import SiteSettings
+
+        site = SiteSettings.load()
+        site.boja_ikonica_korpa = '#ff5500'
+        css = site.get_theme_ui()['css_vars']
+        self.assertIn('--cart-icon:#ff5500', css)
+        self.assertRegex(css, r'--cart-icon-hover:#[0-9a-fA-F]{6}')
+        self.assertNotIn('--cart-icon-hover:#ff5500', css)
+
+    def test_default_cart_icon_is_black(self):
+        from .models import SiteSettings
+
+        site = SiteSettings.load()
+        css = site.get_theme_ui()['css_vars']
+        self.assertIn('--cart-icon:#111111', css)
+        self.assertIn('--cart-icon-hover:#222222', css)

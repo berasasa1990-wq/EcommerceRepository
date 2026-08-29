@@ -1276,6 +1276,72 @@ def _render_etiketa_print(request, items):
     })
 
 
+ZEBRA_BARCODE_WIDTH_IN = Decimal('3.559')
+ZEBRA_BARCODE_HEIGHT_IN = Decimal('1.224')
+ZEBRA_BARCODE_TOP_IN = Decimal('0.100')
+ZEBRA_BARCODE_DPI = 203
+
+
+def _artikal_barkod_value(product, variation=None):
+    barkod = (getattr(product, 'barkod', None) or '').strip()
+    if barkod:
+        return barkod
+    if variation:
+        sifra = (variation.sifra or '').strip()
+        if sifra:
+            return sifra
+    return (product.sifra or '').strip()
+
+
+def _zebra_barcode_zpl(code):
+    raw = (code or '').strip()
+    if not raw:
+        return ''
+    safe = re.sub(r'[\^~\\]', '', raw)[:40]
+    width = int((ZEBRA_BARCODE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    bar_h = max(80, height - top - 50)
+    return (
+        '^XA\n'
+        '^MNY\n'
+        f'^PW{width}\n'
+        f'^LL{height}\n'
+        f'^LT{top}\n'
+        '^LH0,0\n'
+        '^PON\n'
+        '^FWN\n'
+        f'^FO28,4^BY2,2.4,{bar_h}^BCN,{bar_h},Y,N,N^FD{safe}^FS\n'
+        '^XZ\n'
+    )
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def magacin_artikal_stampa_barkod(request, pk):
+    product = get_object_or_404(magacin_products_qs(), pk=pk)
+    variations = list(product.varijacije.all())
+    variation = None
+    variation_id = (request.GET.get('varijacija') or '').strip()
+    if variation_id:
+        variation = next((row for row in variations if str(row.pk) == variation_id), None)
+        if variation is None:
+            messages.error(request, 'Varijacija nije pronađena.')
+            return redirect('staff_magacin_artikal', pk=product.pk)
+    barkod = _artikal_barkod_value(product, variation)
+    return render(request, 'staff/magacin/artikal_barkod_zebra.html', {
+        'product': product,
+        'variation': variation,
+        'barkod': barkod,
+        'barcode_src': _etiketa_barcode_data_uri(barkod) if barkod else '',
+        'zpl': _zebra_barcode_zpl(barkod) if barkod else '',
+        'label_width': str(ZEBRA_BARCODE_WIDTH_IN),
+        'label_height': str(ZEBRA_BARCODE_HEIGHT_IN),
+        'label_top': str(ZEBRA_BARCODE_TOP_IN),
+    })
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 @require_GET
@@ -3289,8 +3355,12 @@ def _customer_payload(customer):
 def magacin_kupci_save(request):
     ime = (request.POST.get('ime_prezime') or '').strip()
     telefon = (request.POST.get('telefon') or '').strip()
+    postanski_broj = (request.POST.get('postanski_broj') or '').strip()
+    customer_id = (request.POST.get('customer_id') or '').strip() or None
     if not ime or not telefon:
         return JsonResponse({'ok': False, 'error': 'Ime i telefon su obavezni.'}, status=400)
+    if not customer_id and not postanski_broj:
+        return JsonResponse({'ok': False, 'error': 'Poštanski broj je obavezan.'}, status=400)
     try:
         customer = _save_warehouse_customer(
             ime=ime,
@@ -3298,9 +3368,9 @@ def magacin_kupci_save(request):
             adresa=request.POST.get('adresa') or '',
             grad=request.POST.get('grad') or '',
             email=request.POST.get('email') or '',
-            postanski_broj=request.POST.get('postanski_broj') or '',
-            customer_id=request.POST.get('customer_id') or None,
-            replace=bool((request.POST.get('customer_id') or '').strip()),
+            postanski_broj=postanski_broj,
+            customer_id=customer_id,
+            replace=bool(customer_id),
         )
     except MagacinError as exc:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
@@ -3369,6 +3439,10 @@ def magacin_kupci(request):
                 customer.delete()
                 messages.success(request, 'Kupac je obrisan.')
             else:
+                if not (request.POST.get('customer_id') or '').strip() and not (
+                    request.POST.get('postanski_broj') or ''
+                ).strip():
+                    raise MagacinError('Poštanski broj je obavezan.')
                 customer = _save_warehouse_customer(
                     ime=request.POST.get('ime_prezime') or '',
                     telefon=request.POST.get('telefon') or '',

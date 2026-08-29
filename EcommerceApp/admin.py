@@ -192,6 +192,34 @@ class ProductImageInline(admin.TabularInline):
         return '—'
 
 
+class _HexColorWidget(forms.TextInput):
+    """Color picker + hex tekst — za unos boje ikonice korpe."""
+
+    def __init__(self, attrs=None):
+        defaults = {
+            'class': 'vTextField',
+            'maxlength': '7',
+            'placeholder': '#111111',
+            'style': 'max-width:8rem;',
+        }
+        if attrs:
+            defaults.update(attrs)
+        super().__init__(defaults)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        text_html = super().render(name, value, attrs, renderer)
+        color_val = value if (value or '').startswith('#') else '#111111'
+        return format_html(
+            '<span class="ozr-color-field" style="display:inline-flex;align-items:center;gap:8px;">'
+            '<input type="color" value="{}" style="width:2.4rem;height:2.1rem;padding:0;'
+            'border:1px solid #ccc;cursor:pointer;background:transparent;" '
+            'oninput="this.nextElementSibling.value=this.value">'
+            '{}</span>',
+            color_val,
+            mark_safe(text_html),
+        )
+
+
 class SiteSettingsAdminForm(forms.ModelForm):
     """
     Snimanje Podešavanja: opciona polja ne smiju blokirati Save,
@@ -441,6 +469,12 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'all': ('admin/css/ozr_admin.css',),
         }
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == 'boja_ikonica_korpa' and formfield:
+            formfield.widget = _HexColorWidget()
+        return formfield
+
     def get_inline_instances(self, request, obj=None):
         # Uvijek vrati svih 6 tabela (ne filtriraj)
         instances = super().get_inline_instances(request, obj)
@@ -591,12 +625,16 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
         ('⑤ Boje dugmadi', {
             'fields': (
+                'boja_ikonica_korpa',
                 'boja_dugme_korpa',
                 'boja_dugme_korpa_hover',
                 'boja_dugme_banner',
                 'boja_dugme_banner_hover',
             ),
-            'description': 'Zelena #5BB805 = mockup. Korpa na karticama + CTA na bannerima.',
+            'description': (
+                'Ikonica korpe: kvadrat na karticama (početna + katalog) i ikona u headeru. '
+                '„Dodaj u korpu” i banneri su odvojene boje.'
+            ),
         }),
         ('⑥ Dostava', {
             'fields': ('dostava_naziv', 'dostava_cijena', 'besplatna_dostava_od'),

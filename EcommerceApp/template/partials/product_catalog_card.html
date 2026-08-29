@@ -1,5 +1,5 @@
 <article
-    class="product-card product-card--catalog{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}"
+    class="product-card product-card--catalog{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
     data-product-card
     data-product-id="{{ product.pk }}"
     data-product-slug="{{ product.slug }}"
@@ -10,7 +10,7 @@
     {% if product.je_novitet or home_section_badge == 'novo' %}
     <span class="product-card-corner-badge product-card-corner-badge--novitet" aria-label="Novo">NOVO</span>
     {% elif product.katalog_akcija_postotak %}
-    <span class="product-card-corner-badge product-card-corner-badge--sale" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    <span class="product-card-corner-badge product-card-corner-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
     {% elif product.je_hit or home_section_badge == 'hit' %}
     <span class="product-card-corner-badge product-card-corner-badge--hit" aria-label="Izdvojeno">HIT</span>
     {% endif %}
@@ -35,6 +35,7 @@
         </div>
 
         <div class="product-card__body">
+            <p class="product-card__pack"{% if product.pakovanje_label %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.pakovanje_label %}{{ product.pakovanje_label }}{% else %}&nbsp;{% endif %}</p>
             <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
             {% include 'partials/product_staff_missing.html' with product=product %}
 
@@ -74,7 +75,6 @@
     </div>
     {% endif %}
 
-    {# Cijena lijevo + ikona korpe desno (kao na početnoj) #}
     <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
         <div class="product-card__price-block">
             {% if card_variations|length > 1 %}
@@ -87,13 +87,12 @@
         {% if product.na_stanju %}
         <button
             type="button"
-            class="product-card-cart-icon"
+            class="product-card-add-btn"
             data-catalog-add
             data-product-slug="{{ product.slug }}"
             data-product-id="{{ product.pk }}"
             data-product-name="{{ product.naziv }}"
             data-almost-cart
-            title="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}"
             aria-label="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }} — {{ product.naziv }}"
             {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
             {% if card_variations|length == 1 %}
@@ -102,19 +101,16 @@
                 {% endfor %}
             {% endif %}
         >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
                 <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
                 <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
             </svg>
+            <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
         </button>
         {% else %}
-        <button type="button" class="product-card-cart-icon product-card-cart-icon--disabled" disabled title="Rasprodato" aria-label="Rasprodato">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
-                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-            </svg>
+        <button type="button" class="product-card-add-btn product-card-add-btn--disabled" disabled aria-label="{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}">
+            <span>{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}</span>
         </button>
         {% endif %}
     </div>

@@ -411,7 +411,7 @@
             <div class="card-dwell-deal is-active is-pulse product-sale-card-deal product-sale-deal--detail" id="detailPrice"
                  data-base-price="{{ product.prikazna_cijena }}"
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
-                <span class="card-dwell-label">{% if product.akcija_istice_oznaka %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}</span>
+                <span class="card-dwell-label">{% if product.akcija_istice_oznaka and product.akcija_istice_oznaka != 'AKCIJA' %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}{% if product.akcija_postotak_prikaz %} -{{ product.akcija_postotak_prikaz }}%{% endif %}</span>
                 <div class="product-price product-price--detail card-dwell-prices">
                     <span class="price-original card-dwell-was">{{ product.bazna_cijena }} KM</span>
                     <div class="card-dwell-sale-cluster">
