@@ -6,7 +6,7 @@
         <div>
             {% if mode == 'izbor' %}
             <h1>Štampaj cijenu</h1>
-            <p class="mg-count">A4 list, 4 u redu × 7 naniže = 28 etiketa. Izaberi način.</p>
+            <p class="mg-count">A4 (4 × 7 = 28) ili Zebra (3,559" × 1,224"). Izaberi način, pa papir.</p>
             {% elif mode == 'ista' %}
             <h1>Ista cijena</h1>
             <p class="mg-count">Nađi artikal, pa reci koliko cijena da odstampa.</p>
@@ -51,6 +51,7 @@
             <input type="hidden" name="varijacija" id="scVariationId" value="{% if picked %}{{ picked.variation_id }}{% endif %}">
             <label class="sc-label" for="scQty">Koliko cijena da odstampa?</label>
             <input type="number" name="n" id="scQty" min="1" max="280" step="1" required inputmode="numeric" placeholder="npr. 28">
+            {% include 'staff/magacin/partials/stampa_papir.html' %}
             <button type="submit" class="mg-btn mg-btn-primary" id="scIstaPrint">Štampaj</button>
         </form>
     </section>
@@ -71,6 +72,7 @@
             <div id="scStavke"></div>
             <ul class="sc-list" id="scList"></ul>
             <p class="sc-empty" id="scEmpty">Još nema artikala.</p>
+            {% include 'staff/magacin/partials/stampa_papir.html' %}
             <button type="submit" class="mg-btn mg-btn-primary" id="scDiffPrint" disabled>Štampaj</button>
         </form>
     </section>

@@ -1873,8 +1873,8 @@ class MagacinViewTests(TestCase):
 
         home = self.client.get(reverse('staff_magacin_stampa_cijena'))
         self.assertEqual(home.status_code, 200)
-        self.assertContains(home, '4 u redu')
-        self.assertContains(home, '28 etiketa')
+        self.assertContains(home, 'A4')
+        self.assertContains(home, 'Zebra')
         self.assertContains(home, 'Ista cijena')
         self.assertContains(home, 'Različite cijene')
         self.assertContains(home, reverse('staff_magacin_stampa_cijena_ista'))
@@ -1884,6 +1884,9 @@ class MagacinViewTests(TestCase):
         self.assertEqual(ista.status_code, 200)
         self.assertContains(ista, 'Test braid')
         self.assertContains(ista, 'Koliko cijena da odstampa')
+        self.assertContains(ista, 'name="papir"')
+        self.assertContains(ista, 'value="a4"')
+        self.assertContains(ista, 'value="zebra"')
 
         missing_n = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
             'mod': 'ista',
@@ -1916,6 +1919,34 @@ class MagacinViewTests(TestCase):
         self.assertContains(mixed, 'class="label"', count=2)
         self.assertContains(mixed, 'Test braid', count=1)
         self.assertContains(mixed, 'Prazan lager', count=1)
+
+        zebra = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+            'mod': 'ista',
+            'artikal': self.product.pk,
+            'n': '3',
+            'papir': 'zebra',
+        })
+        self.assertEqual(zebra.status_code, 200)
+        self.assertContains(zebra, 'size: 3.559in 1.224in')
+        self.assertContains(zebra, 'padding: 0.100in 0.08in 0.04in 0.06in')
+        self.assertContains(zebra, 'class="label"', count=3)
+        self.assertContains(zebra, '3 etiketa')
+        self.assertContains(zebra, 'Test braid')
+        self.assertContains(zebra, '10,00')
+        self.assertContains(zebra, '^MNY')
+        self.assertContains(zebra, 'Štampaj na Zebra')
+        self.assertNotContains(zebra, 'size: A4 portrait')
+
+        zebra_mixed = self.client.post(reverse('staff_magacin_stampa_cijena_print'), {
+            'mod': 'razlicite',
+            'papir': 'zebra',
+            'stavka': [str(self.product.pk), str(self.zero.pk)],
+        })
+        self.assertEqual(zebra_mixed.status_code, 200)
+        self.assertContains(zebra_mixed, 'size: 3.559in 1.224in')
+        self.assertContains(zebra_mixed, 'class="label"', count=2)
+        self.assertContains(zebra_mixed, 'Test braid')
+        self.assertContains(zebra_mixed, 'Prazan lager')
         self.assertContains(mixed, '10,00')
         self.assertContains(mixed, '2,00')
 
@@ -2488,6 +2519,9 @@ class MagacinViewTests(TestCase):
         })
         live = self.client.get(reverse('staff_magacin_popis_detail', args=[first.pk]))
         self.assertContains(live, 'Pauziraj')
+        self.assertContains(live, 'Prikaži sve')
+        self.assertContains(live, 'id="ppShowAll"')
+        self.assertContains(live, 'pp-list is-collapsed')
         paused = self.client.post(url, {'action': 'pauziraj', 'popis_id': first.pk})
         self.assertEqual(paused.status_code, 302)
         first.refresh_from_db()

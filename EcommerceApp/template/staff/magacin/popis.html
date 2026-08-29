@@ -26,6 +26,7 @@
                 <input type="hidden" name="popis_id" value="{{ popis.pk }}">
                 <button type="submit" class="mg-btn">Pauziraj</button>
             </form>
+            <button type="button" class="mg-btn" id="ppShowAll" aria-pressed="false">Prikaži sve</button>
             <form method="post" id="ppFinishForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="zavrsi">
@@ -144,7 +145,7 @@
     <p class="pp-paused-banner">Popis je pauziran. Otvori ga s <b>Nastavi</b> da dodaješ artikle.</p>
     {% endif %}
 
-    <ol class="pp-list" id="ppList">
+    <ol class="pp-list{% if popis.status == 'u_toku' %} is-collapsed{% endif %}" id="ppList">
         {% for row in stavke %}
         <li data-id="{{ row.pk }}" data-qty="{{ row.kolicina }}" class="{% if row.razlika == 0 %}is-match {% elif row.razlika > 0 %}is-over {% else %}is-under {% endif %}{% if row.cekirano %}is-checked{% endif %}">
             <label class="pp-check">

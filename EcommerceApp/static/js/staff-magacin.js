@@ -3912,6 +3912,24 @@ function initPopisPage() {
         });
     }
 
+    var showAllBtn = document.getElementById('ppShowAll');
+    var listOpen = !(list && list.classList.contains('is-collapsed'));
+    function setListOpen(open) {
+        listOpen = !!open;
+        if (list) list.classList.toggle('is-collapsed', !listOpen);
+        if (showAllBtn) {
+            showAllBtn.textContent = listOpen ? 'Sakrij' : 'Prikaži sve';
+            showAllBtn.setAttribute('aria-pressed', listOpen ? 'true' : 'false');
+        }
+    }
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', function () {
+            setListOpen(!listOpen);
+            if (listOpen && list) {
+                try { list.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+            }
+        });
+    }
     var pause = document.getElementById('ppPauseForm');
     if (pause) {
         pause.addEventListener('submit', function (event) {

@@ -9989,8 +9989,12 @@ body.mobile-nav-open {
 
 .header .nav-action-link.cart-btn,
 .header .nav-action-link.cart-btn svg {
-    color: var(--cart-icon, #111111);
-    stroke: var(--cart-icon, #111111);
+    color: #fff;
+    stroke: #fff;
+}
+
+.header .nav-action-link.cart-btn svg circle {
+    fill: #fff;
 }
 
 .cart-btn-svg {

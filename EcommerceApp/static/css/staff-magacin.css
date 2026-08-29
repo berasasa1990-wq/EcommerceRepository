@@ -1442,6 +1442,7 @@ table.mg-table {
     flex-direction: column;
     gap: 8px;
 }
+.pp-list.is-collapsed { display: none; }
 .pp-check {
     display: grid;
     place-items: center;
@@ -7234,6 +7235,35 @@ tr.is-mp-lock {
     font-size: 13px;
     font-weight: 700;
 }
+.sc-papir {
+    margin: 16px 0 0;
+    padding: 0;
+    border: 0;
+}
+.sc-papir-opts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.sc-papir-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    padding: 10px 12px;
+    border: 1px solid var(--mg-line);
+    border-radius: 10px;
+    cursor: pointer;
+    background: #fff;
+}
+.sc-papir-opt:has(input:checked) {
+    border-color: var(--mg-green);
+    box-shadow: 0 0 0 1px var(--mg-green);
+}
+.sc-papir-opt input { flex: 0 0 auto; accent-color: var(--mg-green); }
+.sc-papir-opt span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sc-papir-opt strong { font-size: 15px; }
+.sc-papir-opt em { font-style: normal; font-size: 12px; color: var(--mg-muted); }
 .sc-search { position: relative; margin-bottom: 16px; }
 .sc-search input[type="search"],
 .sc-card input[type="number"] {
@@ -7305,6 +7335,7 @@ tr.is-mp-lock {
 .sc-empty { color: var(--mg-muted); margin: 0 0 12px; }
 @media (max-width: 720px) {
     .sc-modes { grid-template-columns: 1fr; }
+    .sc-papir-opts { grid-template-columns: 1fr; }
     .sc-picked, .sc-list li { flex-wrap: wrap; }
     .sc-entry { flex-wrap: wrap; }
     .sc-entry .mg-btn-pill { min-height: 44px; }

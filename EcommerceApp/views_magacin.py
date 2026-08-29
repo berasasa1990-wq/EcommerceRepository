@@ -1224,6 +1224,46 @@ def _etiketa_copy_count(raw, default=1):
     return max(1, min(n, ETIKETA_A4_COUNT * 10))
 
 
+def _papir_kind(raw):
+    value = (raw or 'a4').strip().casefold()
+    if value in ('zebra', 'zebru', 'z'):
+        return 'zebra'
+    return 'a4'
+
+
+def _zpl_text(value, max_len=40):
+    return re.sub(r'[\^~\\]', '', (value or '').strip())[:max_len]
+
+
+def _zebra_price_zpl(payload):
+    naziv = _zpl_text(payload.get('naziv'), 42)
+    sifra = _zpl_text(payload.get('sifra'), 24) or '-'
+    barkod = _zpl_text(payload.get('barkod'), 40)
+    cijena = _zpl_text(payload.get('cijena_label'), 12) or '-'
+    width = int((ZEBRA_BARCODE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    lines = [
+        '^XA',
+        '^MNY',
+        f'^PW{width}',
+        f'^LL{height}',
+        f'^LT{top}',
+        '^LH0,0',
+        '^PON',
+        '^FWN',
+        f'^FO16,2^A0N,26,26^FD{naziv}^FS',
+        f'^FO16,32^A0N,22,22^FDSIFRA: {sifra}^FS',
+    ]
+    if barkod:
+        lines.append(f'^FO16,58^BY2,2.2,70^BCN,70,N,N,N^FD{barkod}^FS')
+        lines.append(f'^FO16,136^A0N,20,20^FD{barkod}^FS')
+    lines.append(f'^FO420,148^A0N,48,48^FD{cijena}^FS')
+    lines.append('^FO640,166^A0N,26,26^FDKM^FS')
+    lines.append('^XZ')
+    return '\n'.join(lines) + '\n'
+
+
 def _etiketa_resolve(product_id, variation_id=None):
     try:
         pk = int(str(product_id or '').strip())
@@ -1266,10 +1306,20 @@ def _stampa_cijena_context(request, *, mode='izbor'):
     return context
 
 
-def _render_etiketa_print(request, items):
+def _render_etiketa_print(request, items, papir='a4'):
     if not items:
         messages.error(request, 'Nema artikala za štampu.')
         return redirect('staff_magacin_stampa_cijena')
+    kind = _papir_kind(papir)
+    if kind == 'zebra':
+        return render(request, 'staff/magacin/artikal_etiketa_zebra.html', {
+            'items': items,
+            'etiketa_count': len(items),
+            'zpl': ''.join(_zebra_price_zpl(row) for row in items),
+            'label_width': str(ZEBRA_BARCODE_WIDTH_IN),
+            'label_height': str(ZEBRA_BARCODE_HEIGHT_IN),
+            'label_top': str(ZEBRA_BARCODE_TOP_IN),
+        })
     return render(request, 'staff/magacin/artikal_etiketa.html', {
         'sheets': _etiketa_sheets(items),
         'etiketa_count': len(items),
@@ -1414,7 +1464,7 @@ def magacin_stampa_cijena_print(request):
         if not items:
             messages.error(request, 'Unesi barem jedan artikal.')
             return redirect('staff_magacin_stampa_cijena_razlicite')
-        return _render_etiketa_print(request, items)
+        return _render_etiketa_print(request, items, papir=data.get('papir'))
 
     product, variation = _etiketa_resolve(data.get('artikal'), data.get('varijacija'))
     if product is None:
@@ -1430,7 +1480,7 @@ def magacin_stampa_cijena_print(request):
         return redirect(f'{url}?{urlencode(params)}')
     n = _etiketa_copy_count(raw_n)
     payload = _artikal_etiketa_payload(product, variation)
-    return _render_etiketa_print(request, [payload] * n)
+    return _render_etiketa_print(request, [payload] * n, papir=data.get('papir'))
 
 
 DEKLARACIJA_A4_COLS = 5
