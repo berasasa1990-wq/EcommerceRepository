@@ -8,7 +8,7 @@
         <span class="product-detail-variation-price product-price--detail card-dwell-deal is-active is-pulse product-sale-card-deal pd-var-sale--card">
             <span class="price-original card-dwell-was">{{ var.bazna_cijena }} KM</span>
             <span class="card-dwell-sale-cluster">
-                <span class="price-sale card-dwell-now">{{ var.prikazna_cijena }} KM{% if var.pakovanje_uz_cijenu %} <span class="price-pack-suffix">- {{ var.pakovanje_uz_cijenu }}</span>{% elif product.pakovanje_uz_cijenu %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu }}</span>{% endif %}</span>
+                <span class="price-sale card-dwell-now">{{ var.prikazna_cijena }} KM</span>
                 {% if var.akcija_postotak_prikaz %}
                 <span class="card-dwell-badge">−{{ var.akcija_postotak_prikaz }}%</span>
                 {% endif %}
@@ -23,7 +23,7 @@
     <form method="post" action="{% url 'add_to_cart' product.slug %}" class="product-detail-variation-form">
         {% csrf_token %}
         <input type="hidden" name="variation_id" value="{{ var.pk }}">
-        {% include 'partials/product_qty_selector.html' %}
+        {% include 'partials/product_qty_selector.html' with qty_max=var.stanje %}
         <button type="submit" class="btn btn-detail-variation-add"
                 data-product-id="{{ product.pk }}"
                 data-product-name="{{ product.naziv }}"

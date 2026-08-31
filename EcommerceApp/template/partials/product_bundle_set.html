@@ -1,0 +1,88 @@
+{% if product_bundle and product_bundle.items %}
+{% with akcija=product_bundle.akcija items=product_bundle.items pricing=product_bundle.pricing %}
+<section class="pd-flash pd-flash--bundle" aria-label="Bundle set akcija">
+    <div class="pd-flash__banner">
+        <div class="pd-flash__brand">
+            <span class="pd-flash__flame" aria-hidden="true">🎁</span>
+            <div class="pd-flash__brand-text">
+                <strong>BUNDLE</strong>
+                <strong>SET</strong>
+                <span>KOMPLET</span>
+            </div>
+        </div>
+        <div class="pd-flash__copy">
+            <h2 class="pd-flash__title">BUNDLE SET AKCIJA – {% if pricing.count == 1 %}1 ARTIKAL{% elif pricing.count < 5 %}{{ pricing.count }} ARTIKLA{% else %}{{ pricing.count }} ARTIKALA{% endif %}, VIŠE UŠTEDE!</h2>
+        </div>
+        <p class="pd-flash__foot">
+            Ponuda važi za kompletan set ispod. Dodaj set u korpu jednim klikom.
+        </p>
+    </div>
+
+    <div class="pd-flash__related pd-flash__related--bundle">
+        <div class="pd-flash__track" data-flash-track>
+            {% for item in items %}
+            <article class="pd-flash__card{% if item.quantity > 1 %} pd-flash__card--qty{% endif %}">
+                <h3 class="pd-flash__card-name">{{ item.product.naziv }}</h3>
+                <a href="{{ item.product.get_absolute_url }}" class="pd-flash__card-media">
+                    {% if item.product.prikazna_slika %}
+                    <img src="{{ item.product.prikazna_slika.url }}" alt="{{ item.product.naziv }}" width="180" height="180" loading="lazy" decoding="async">
+                    {% else %}
+                    <span aria-hidden="true">📦</span>
+                    {% endif %}
+                    {% if item.quantity > 1 %}
+                    <span class="pd-flash__qty" aria-label="{{ item.quantity }} komada u setu">×{{ item.quantity }}</span>
+                    {% endif %}
+                    {% if item.pct_label %}
+                    <span class="pd-flash__badge">−{{ item.pct_label }}%</span>
+                    {% endif %}
+                </a>
+                {% include 'partials/product_pack_label.html' with product=item.product %}
+                <p class="pd-flash__qty-label">{% if item.quantity > 1 %}{{ item.quantity }} kom. u setu{% else %}&nbsp;{% endif %}</p>
+                <p class="pd-flash__card-prices">
+                    <strong>{{ item.line_snizena|default:item.snizena|floatformat:2 }} KM</strong>
+                    {% if item.has_discount %}
+                    <s>{{ item.line_bazna|default:item.bazna|floatformat:2 }} KM</s>
+                    {% endif %}
+                </p>
+            </article>
+            {% if not forloop.last %}
+            <div class="pd-bundle__plus" aria-hidden="true"><span>+</span></div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <aside class="pd-bundle__offer">
+            <span class="pd-bundle__ribbon">NAJBOLJA PONUDA</span>
+            {% if pricing.has_discount %}
+            <p class="pd-bundle__regular-row">
+                <span class="pd-bundle__regular-label">REDOVNA CIJENA:</span>
+                <s class="pd-bundle__regular">{{ pricing.total_bazna|floatformat:2 }} KM</s>
+            </p>
+            {% endif %}
+            <p class="pd-bundle__set-label">CIJENA SETA:</p>
+            <p class="pd-bundle__set-price">{{ pricing.total_snizena|floatformat:2 }} KM</p>
+            {% if pricing.has_discount %}
+            <p class="pd-bundle__save">
+                <span class="pd-bundle__save-ico" aria-hidden="true">$</span>
+                UŠTEDA {{ pricing.usteda|floatformat:2 }} KM{% if pricing.pct_label %} ({{ pricing.pct_label }}%){% endif %}
+            </p>
+            {% endif %}
+            <form method="post" action="{% url 'add_to_cart' items.0.product.slug %}" class="pd-bundle__form">
+                {% csrf_token %}
+                <input type="hidden" name="quantity" value="1">
+                <input type="hidden" name="stay" value="1">
+                <input type="hidden" name="akcija_id" value="{{ akcija.id }}">
+                <button type="submit" class="pd-bundle__cta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                        <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                        <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                    </svg>
+                    DODAJ SET U KORPU
+                </button>
+            </form>
+        </aside>
+    </div>
+</section>
+{% endwith %}
+{% endif %}

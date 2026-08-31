@@ -14,19 +14,5 @@
             ovo u proteklih 24h
         </span>
     </p>
-    {% if product_urgency.show_stock and product_urgency.stock_left %}
-    <p class="product-urgency-stock">
-        <span class="product-urgency-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
-        </span>
-        <span>
-            Žuri — ostalo još samo
-            <strong class="product-urgency-stock-count">{{ product_urgency.stock_left }}</strong>
-            na stanju
-        </span>
-    </p>
-    {% endif %}
 </div>
 {% endif %}

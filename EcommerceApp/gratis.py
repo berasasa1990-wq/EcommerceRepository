@@ -458,6 +458,8 @@ def apply_qty_deal_from_popup(cart, akcija, *, quantity=None, tier_id=None, vari
         chosen = tiers[0]
 
     qty = max(2, int(chosen['quantity']))
+    if cart.remaining_stock(product, variation) < qty:
+        return None
     pct = chosen['popust_postotak']
 
     from .models import _izracunaj_akcijsku_od_postotka

@@ -109,11 +109,12 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260829headerCartWhite" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260829headerCartWhite">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260831akc" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260831akc">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
+    <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}</style>
     {% if dwell_ui and dwell_ui.css_vars %}
     <style id="ai-dwell-theme">:root{ {{ dwell_ui.css_vars }} }</style>
     {% endif %}
@@ -174,7 +175,7 @@
     <!-- End Meta Pixel Code -->
     {% endif %}
 </head>
-<body class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}">
+<body class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
@@ -237,13 +238,15 @@
 
                 <div class="header-search" id="headerSearch">
                     <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <circle cx="11" cy="11" r="8"/>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                        </svg>
                         <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
-                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu" autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
                         </div>
+                        <button type="submit" class="header-search-submit" aria-label="Pretraži">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                        </button>
                         <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -260,17 +263,20 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
                         </svg>
-                        <span class="nav-action-label header-phone__num">{{ contact_phone }}</span>
+                        <span class="nav-action-label header-phone__text">
+                            <span class="header-phone__kicker">POZOVI NAS</span>
+                            <span class="header-phone__num">{{ contact_phone }}</span>
+                        </span>
                     </a>
                     {% endif %}
 
                     {% if user.is_authenticated %}
-                    <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Moj nalog">
+                    <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Nalog">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                             <circle cx="12" cy="7" r="4"/>
                         </svg>
-                        <span class="nav-action-label">Moj nalog</span>
+                        <span class="nav-action-label">Nalog</span>
                     </a>
                     {% else %}
                     <a href="{% url 'login' %}" class="nav-action-link account-btn" aria-label="Prijava">
@@ -278,18 +284,20 @@
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                             <circle cx="12" cy="7" r="4"/>
                         </svg>
-                        <span class="nav-action-label">Moj nalog</span>
+                        <span class="nav-action-label">Nalog</span>
                     </a>
                     {% endif %}
                     <div class="nav-cart-stack">
                     <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
-                        <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
-                            <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                            <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                        </svg>
+                        <span class="nav-action-icon">
+                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                            </svg>
+                            <span class="cart-badge">{{ cart_count|default:0 }}</span>
+                        </span>
                         <span class="nav-action-label">Korpa</span>
-                        {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
                     </a>
                     {% if user.is_authenticated and user.is_superuser %}
                     <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="staff-edit-toggle-form">
@@ -307,6 +315,61 @@
             </div>
 
             <nav class="header-row header-row--categories" aria-label="Kategorije">
+                <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
+                    <button type="button" class="cats-dropdown__btn" id="catsDropdownBtn" aria-expanded="{% if cats_sidebar_open %}true{% else %}false{% endif %}" aria-controls="catsDropdownPanel"{% if cats_sidebar_open %} aria-disabled="true"{% endif %}>
+                        <span class="cats-dropdown__burger" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                <line x1="4" y1="7" x2="20" y2="7"/>
+                                <line x1="4" y1="12" x2="20" y2="12"/>
+                                <line x1="4" y1="17" x2="20" y2="17"/>
+                            </svg>
+                        </span>
+                        <span class="cats-dropdown__btn-label">Sve kategorije</span>
+                        <span class="cats-dropdown__btn-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                    </button>
+                    <div class="cats-dropdown__panel" id="catsDropdownPanel"{% if not cats_sidebar_open %} hidden{% endif %}>
+                        <ul class="cats-dropdown__list">
+                            {% for nav_cat in nav_categories %}
+                            <li class="cats-dropdown__item{% if nav_cat.podkategorije.all %} cats-dropdown__item--has-sub{% endif %}{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %} is-open is-current{% endif %}{% endif %}">
+                                <a href="{{ nav_cat.get_absolute_url }}" class="cats-dropdown__link"{% if nav_cat.podkategorije.all %} data-cats-toggle="1" aria-expanded="{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %}true{% else %}false{% endif %}{% else %}false{% endif %}"{% endif %}>
+                                    {% include 'partials/nav_category_icon.html' with naziv=nav_cat.naziv slug=nav_cat.slug %}
+                                    <span class="cats-dropdown__name">{{ nav_cat.naziv }}</span>
+                                    {% if nav_cat.podkategorije.all %}
+                                    <span class="cats-dropdown__chevron" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                {% if nav_cat.podkategorije.all %}
+                                <ul class="cats-dropdown__sub">
+                                    <li class="cats-dropdown__sub-all">
+                                        <a href="{{ nav_cat.get_absolute_url }}?all=1"{% if category and category.pk == nav_cat.pk %} class="is-current"{% endif %}>
+                                            <span class="cats-dropdown__sub-arrow" aria-hidden="true">›</span>
+                                            Sve {{ nav_cat.naziv|lower }}
+                                        </a>
+                                    </li>
+                                    {% for sub in nav_cat.podkategorije.all %}
+                                    <li>
+                                        <a href="{{ sub.get_absolute_url }}"{% if category and category.pk == sub.pk %} class="is-current"{% endif %}>{{ sub.naziv }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                            <li class="cats-dropdown__item cats-dropdown__item--sale{% if filter_params.akcija %} is-current{% endif %}">
+                                <a href="{% url 'home' %}?akcija=1#product-showcase" class="cats-dropdown__link cats-dropdown__link--sale">
+                                    <span class="cat-ico" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><circle cx="16" cy="16" r="2.2"/><path d="M7 17L17 7"/></svg>
+                                    </span>
+                                    <span class="cats-dropdown__name">Akcije i popusti</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
                 <div class="mobile-nav-panel" id="mobileNavPanel">
                     <div class="mobile-nav-panel__header">
                         <button type="button" class="mobile-nav-panel__back" id="mobileNavClose" aria-label="Zatvori meni kategorija">
@@ -350,7 +413,7 @@
                         <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJE</a>
                     </li>
                     <li class="nav-item nav-item--brendovi">
-                        <a href="{% url 'home' %}#brendovi" class="nav-link-brendovi">BRENDOVI</a>
+                        <a href="{% url 'brands_list' %}" class="nav-link-brendovi{% if request.resolver_match.url_name == 'brands_list' %} is-current{% endif %}">BRENDOVI</a>
                     </li>
                     <li class="nav-item nav-item--noviteti nav-item--akcija-mobile">
                         <a href="{% url 'home' %}?noviteti=1#product-showcase" class="nav-link-noviteti">NOVITETI</a>
@@ -553,7 +616,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260828kmInline" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260831stock" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}

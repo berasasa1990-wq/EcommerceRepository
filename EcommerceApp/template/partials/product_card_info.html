@@ -3,7 +3,9 @@
     <span class="staff-stock-badge">Nije na stanju</span>
     {% endif %}
     <h2 data-product-name>{{ product.naziv }}</h2>
+    {% include 'partials/product_pack_label.html' with product=product %}
     {% include 'partials/product_staff_missing.html' with product=product %}
+    {% include 'partials/product_stock_label.html' with product=product %}
     {# Fiksna visina — samo Made in Japan #}
     <div class="product-origin-slot">
         {% if product.proizvedeno_u_japanu %}

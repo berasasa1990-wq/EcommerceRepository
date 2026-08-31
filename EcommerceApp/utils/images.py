@@ -19,9 +19,9 @@ PRODUCT_MAX_DIMENSION = 600
 PRODUCT_RESPONSIVE_WIDTHS = (120, 200, 320, 480)
 AVIF_SPEED = 6
 BANNER_AVIF_SPEED = 4
-MAX_VLOG_AVIF_BYTES = 18 * 1024
-VLOG_MAX_DIMENSION = 360
-VLOG_RESPONSIVE_WIDTHS = (200, 280, 320)
+MAX_VLOG_AVIF_BYTES = 48 * 1024
+VLOG_MAX_DIMENSION = 800
+VLOG_RESPONSIVE_WIDTHS = (400, 640, 800)
 BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 1920
 # Viši hero (mockup) — cijela upload slika se bolje vidi (ranije 420, sada 640)
@@ -57,10 +57,9 @@ PRODUCT_VARIANT_MAX_BYTES = {
     600: MAX_PRODUCT_AVIF_BYTES,
 }
 VLOG_VARIANT_MAX_BYTES = {
-    200: 6 * 1024,
-    280: 10 * 1024,
-    320: 14 * 1024,
-    360: MAX_VLOG_AVIF_BYTES,
+    400: 22 * 1024,
+    640: 34 * 1024,
+    800: MAX_VLOG_AVIF_BYTES,
 }
 BANNER_GRID_VARIANT_MAX_BYTES = {
     280: 24 * 1024,
@@ -758,7 +757,7 @@ def product_image_responsive_meta(image_field, *, default=(600, 600)):
     )
 
 
-def vlog_image_responsive_meta(image_field, *, default=(360, 360)):
+def vlog_image_responsive_meta(image_field, *, default=(800, 500)):
     return image_responsive_meta(
         image_field,
         widths=VLOG_RESPONSIVE_WIDTHS,
@@ -928,7 +927,7 @@ def _encode_banner_avif(
 
 
 def process_vlog_image(image_field):
-    """Vlog slike: AVIF max 18KB, max 360px + responsive 180/280w."""
+    """Vlog slike: 800×500 (8:5), AVIF + responsive 400/640/800w."""
     img = Image.open(image_field)
     filename = image_field.name if hasattr(image_field, 'name') else 'vlog.jpg'
     rgb = _image_to_rgb(img)

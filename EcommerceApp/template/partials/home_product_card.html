@@ -13,15 +13,11 @@
     <span class="hm-badge hm-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
     {% elif product.katalog_na_akciji %}
     <span class="hm-badge hm-badge--sale is-pulse" aria-label="Akcija">Akcija</span>
-    {% elif product.je_novitet or home_section_badge == 'novo' or home_section_badge == 'hit' %}
+    {% elif home_section_badge == 'hit' %}
+    <span class="hm-badge hm-badge--top" aria-label="Hit">HIT</span>
+    {% elif product.je_novitet or home_section_badge == 'novo' %}
     <span class="hm-badge hm-badge--novo" aria-label="Novo">NOVO</span>
     {% endif %}
-
-    <button type="button" class="hm-wish" aria-label="Lista želja" title="Lista želja" tabindex="-1">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.3l7.8-7.9 1-1a5.5 5.5 0 0 0 0-7.8z"/>
-        </svg>
-    </button>
 
     <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-media" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
         {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 50vw, 16vw' %}
@@ -31,9 +27,10 @@
     </a>
 
     <div class="hm-body">
-        <p class="product-card__pack"{% if product.pakovanje_label %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.pakovanje_label %}{{ product.pakovanje_label }}{% else %}&nbsp;{% endif %}</p>
+        <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
         <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
         {% include 'partials/product_staff_missing.html' with product=product %}
+        {% include 'partials/product_stock_label.html' with product=product %}
 
         <div class="hm-footer">
             <div class="hm-price-col">
@@ -81,8 +78,8 @@
                 <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
             </button>
             {% else %}
-            <button type="button" class="product-card-add-btn hm-cart-btn hm-cart-btn--disabled" disabled aria-label="{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}">
-                <span>{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}</span>
+            <button type="button" class="product-card-add-btn hm-cart-btn product-card-add-btn--sold" disabled aria-label="Rasprodato — {{ product.naziv }}">
+                <span>Rasprodato</span>
             </button>
             {% endif %}
         </div>

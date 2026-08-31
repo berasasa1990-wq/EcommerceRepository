@@ -40,6 +40,7 @@ from .models import (
     AIProdajaSettings,
     ProductDwellItem,
     AkcijaBundleLine,
+    AkcijaFlashLine,
     AkcijaQtyTier,
     CityVisitTotal,
     LiveVisitor,
@@ -1112,6 +1113,70 @@ class AkcijaBundleLineForm(forms.ModelForm):
         return product
 
 
+class AkcijaFlashLineForm(forms.ModelForm):
+    class Meta:
+        model = AkcijaFlashLine
+        fields = '__all__'
+
+    def clean_product(self):
+        product = self.cleaned_data.get('product')
+        if product and not getattr(product, 'aktivan', False):
+            raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
+        if product and not getattr(product, 'na_stanju', False):
+            raise forms.ValidationError('Izaberi samo artikle na stanju.')
+        return product
+
+
+class AkcijaFlashLineInline(admin.TabularInline):
+    model = AkcijaFlashLine
+    form = AkcijaFlashLineForm
+    extra = 4
+    max_num = 4
+    min_num = 0
+    autocomplete_fields = ('product',)
+    fields = ('product', 'popust_postotak', 'redoslijed')
+    ordering = ('redoslijed', 'id')
+    verbose_name = 'Artikal u ponudi'
+    verbose_name_plural = 'AKCIJSKA PONUDA — do 4 artikla na stanju'
+    classes = ('akcija-inline-flash-lines',)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'product':
+            kwargs['queryset'] = Product.objects.filter(
+                aktivan=True, na_stanju=True,
+            ).order_by('naziv')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        original_clean = formset.clean
+
+        def clean(self):
+            if original_clean:
+                original_clean(self)
+            if any(self.errors):
+                return
+            parent = getattr(self, 'instance', None)
+            tip = getattr(parent, 'tip', None) if parent is not None else None
+            if tip != 'akcijska' and request is not None:
+                tip = request.POST.get('tip') or tip
+            if tip != 'akcijska':
+                return
+            count = 0
+            for form in self.forms:
+                if not hasattr(form, 'cleaned_data'):
+                    continue
+                if form.cleaned_data.get('DELETE'):
+                    continue
+                if form.cleaned_data.get('product'):
+                    count += 1
+            if count > 4:
+                raise forms.ValidationError('Akcijska ponuda može imati najviše 4 artikla.')
+
+        formset.clean = clean
+        return formset
+
+
 class AkcijaBundleLineInline(admin.TabularInline):
     model = AkcijaBundleLine
     form = AkcijaBundleLineForm
@@ -1483,8 +1548,8 @@ class AkcijaAdmin(admin.ModelAdmin):
     inlines = [AkcijaBundleLineInline]
 
     class Media:
-        js = ('admin/js/akcija_admin.js',)
-        css = {'all': ('admin/css/ozr_admin.css',)}
+        js = ('admin/js/akcija_admin.v20260830.js',)
+        css = {'all': ('admin/css/ozr_admin.v20260830.css',)}
 
     # --- Fieldseti: svako polje SAMO JEDNOM (admin.E012) ---
     # JS pri promjeni tipa prikaže/sakrije relevantne sekcije.
@@ -1493,7 +1558,7 @@ class AkcijaAdmin(admin.ModelAdmin):
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
                 'Odaberi tip akcije — prikazuju se samo polja za taj tip '
-                '(bundle / kupi više / + ponuda / AI dwell).'
+                '(bundle / kupi više / + ponuda / akcijska ponuda / AI dwell).'
             ),
         }),
     )
@@ -1513,6 +1578,22 @@ class AkcijaAdmin(admin.ModelAdmin):
                 '3) Ponuda artikal = što se nudi u popupu. '
                 '—— Kupi više: Trigger artikal; modal pri dodavanju u korpu (samo 2+ kom). '
                 '—— Bundle: % seta; trigger artikal samo ako je trigger „odabrani artikal”.'
+            ),
+        }),
+    )
+    _FS_FLASH = (
+        ('Akcijska ponuda', {
+            'fields': (
+                'flash_trigger',
+                'pocetak',
+                'trajanje_sati',
+                'flash_naslov',
+                'flash_podnaslov',
+            ),
+            'description': (
+                'Trigger: artikal, kategorija ili bilo koji od artikala u ponudi. '
+                'Trajanje u satima (od početka). Do 4 artikla u tabeli ispod. '
+                'Prikaz ispod stranice artikla — nije popup.'
             ),
         }),
     )
@@ -1633,6 +1714,7 @@ class AkcijaAdmin(admin.ModelAdmin):
         _FS_BASE
         + _FS_ARTIKLI
         + _FS_BUNDLE_EXTRA
+        + _FS_FLASH
         + _FS_QTY
         + _FS_PRIKAZ
         + _FS_AI
@@ -1658,6 +1740,21 @@ class AkcijaAdmin(admin.ModelAdmin):
             return self._FS_BASE + self._FS_ARTIKLI
         if tip == Akcija.Tip.BUNDLE:
             return self._FS_BASE + self._FS_ARTIKLI + self._FS_BUNDLE_EXTRA + self._FS_PRIKAZ
+        if tip == Akcija.Tip.AKCIJSKA:
+            return self._FS_BASE + (
+                ('Trigger i popust', {
+                    'fields': ('flash_trigger', 'artikal', 'kategorija', 'popust_postotak'),
+                    'description': (
+                        'Artikal = samo taj artikal. '
+                        'Kategorija = svaki artikal iz kategorije. '
+                        'Artikal iz ponude = bilo koji od 4 artikla ispod.'
+                    ),
+                }),
+                ('Trajanje i tekst', {
+                    'fields': ('pocetak', 'trajanje_sati', 'flash_naslov', 'flash_podnaslov'),
+                    'description': 'Od početka traje uneseni broj sati. Countdown je na stranici artikla.',
+                }),
+            )
         if tip == Akcija.Tip.QTY_DEAL:
             return self._FS_BASE + self._FS_ARTIKLI + self._FS_QTY + self._FS_PRIKAZ
         if tip == Akcija.Tip.AI_PRODAJA:
@@ -1671,12 +1768,15 @@ class AkcijaAdmin(admin.ModelAdmin):
         tip = self._resolve_akcija_tip(request, obj)
         dwell = ProductDwellItemAkcijaInline(SiteSettings, self.admin_site)
         bundle = AkcijaBundleLineInline(self.model, self.admin_site)
+        flash = AkcijaFlashLineInline(self.model, self.admin_site)
 
-        # Novi red: oba u DOM-u (JS sakrije po tipu)
+        # Novi red: u DOM-u (JS sakrije po tipu)
         if obj is None and tip is None:
-            return [bundle, dwell]
+            return [bundle, flash, dwell]
         if tip == Akcija.Tip.BUNDLE:
             return [bundle]
+        if tip == Akcija.Tip.AKCIJSKA:
+            return [flash]
         if tip == Akcija.Tip.AI_PRODAJA:
             # Obavezno: tabela „AI dwell artikli” za unos popusta po artiklu
             return [dwell]
@@ -1720,6 +1820,7 @@ class AkcijaAdmin(admin.ModelAdmin):
                 (Akcija.Tip.BUNDLE, Akcija.Tip.BUNDLE.label),
                 (Akcija.Tip.QTY_DEAL, Akcija.Tip.QTY_DEAL.label),
                 (Akcija.Tip.PONUDA, Akcija.Tip.PONUDA.label),
+                (Akcija.Tip.AKCIJSKA, Akcija.Tip.AKCIJSKA.label),
                 (Akcija.Tip.AI_PRODAJA, Akcija.Tip.AI_PRODAJA.label),
             ]
         return super().formfield_for_choice_field(db_field, request, **kwargs)
@@ -1797,6 +1898,9 @@ class AkcijaAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if obj.tip not in Akcija.ACTIVE_TIPS:
             obj.tip = Akcija.Tip.BUNDLE
+        if obj.tip == Akcija.Tip.AKCIJSKA and not obj.pocetak:
+            from django.utils import timezone
+            obj.pocetak = timezone.now()
         # Samo jedan AI red — ne dupliciraj
         if obj.tip == Akcija.Tip.AI_PRODAJA:
             existing = (
@@ -1828,7 +1932,7 @@ class AkcijaAdmin(admin.ModelAdmin):
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
         # Potvrda izmjene / kreiranja artikala (nije potrebno brisanje i nova akcija)
-        if obj.tip in (Akcija.Tip.PONUDA, Akcija.Tip.QTY_DEAL, Akcija.Tip.BUNDLE):
+        if obj.tip in (Akcija.Tip.PONUDA, Akcija.Tip.QTY_DEAL, Akcija.Tip.BUNDLE, Akcija.Tip.AKCIJSKA):
             from django.contrib import messages as django_messages
             if obj.tip == Akcija.Tip.PONUDA:
                 t = obj.artikal.naziv if obj.artikal_id else '—'
@@ -1875,6 +1979,14 @@ class AkcijaAdmin(admin.ModelAdmin):
                 django_messages.warning(
                     request,
                     '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).',
+                )
+        elif obj.tip == Akcija.Tip.AKCIJSKA:
+            n = obj.flash_lines.count()
+            if n < 1:
+                from django.contrib import messages as django_messages
+                django_messages.warning(
+                    request,
+                    'Akcijska ponuda treba barem 1 artikal (najviše 4).',
                 )
         elif obj.tip == Akcija.Tip.PONUDA:
             if not obj.artikal_id or not obj.gratis_artikal_id:
@@ -1998,10 +2110,10 @@ class HomeVlogAdmin(admin.ModelAdmin):
                 'slika', 'pregled_slike_velika', 'sadrzaj',
             ),
             'description': (
-                'Prikaz na početnoj (sekcija Vlog/Blog + newsletter). '
+                'Prikaz na početnoj (sekcija Vlog/Blog). '
                 'Prva 3 aktivna po redoslijedu. '
-                'Naslov sekcije: Podešavanja → „naslov_blog”. '
-                'Upload slike: AVIF optimizacija.'
+                'Slika: 800×500 px (8:5), JPG/PNG. Za oštrinu 1600×1000. '
+                'Naslov sekcije: Podešavanja → „naslov_blog”.'
             ),
         }),
         ('Redoslijed i status', {

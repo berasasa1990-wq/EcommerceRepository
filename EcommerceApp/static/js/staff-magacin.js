@@ -3961,40 +3961,51 @@ function initPopisPage() {
     });
     if (!live || !input || !list) return;
 
-    function beep(ok) {
+    function beep(ok, warn) {
         try {
             var Ctx = window.AudioContext || window.webkitAudioContext;
             if (Ctx) {
                 var ctx = new Ctx();
-                var osc = ctx.createOscillator();
-                var gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = ok ? 880 : 240;
-                gain.gain.value = 0.06;
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.09);
+                function tone(freq, start, dur) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.type = warn ? 'square' : 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.value = warn ? 0.08 : 0.06;
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + start);
+                    osc.stop(ctx.currentTime + start + dur);
+                }
+                if (warn) {
+                    tone(620, 0, 0.12);
+                    tone(320, 0.16, 0.18);
+                } else {
+                    tone(ok ? 880 : 240, 0, 0.09);
+                }
                 window.setTimeout(function () {
                     try { ctx.close(); } catch (e) {}
-                }, 200);
+                }, warn ? 450 : 200);
             }
         } catch (e) {}
-        if (ok && navigator.vibrate) {
-            try { navigator.vibrate(30); } catch (e2) {}
+        if (navigator.vibrate) {
+            try {
+                navigator.vibrate(warn ? [90, 60, 90, 60, 120] : (ok ? 30 : 80));
+            } catch (e2) {}
         }
     }
 
-    function showToast(msg, isError) {
+    function showToast(msg, isError, isWarn) {
         if (!toast) return;
         toast.textContent = msg || '';
         toast.hidden = !msg;
         toast.classList.toggle('is-error', !!isError);
+        toast.classList.toggle('is-warn', !!isWarn && !isError);
         window.clearTimeout(toastTimer);
         if (msg) {
             toastTimer = window.setTimeout(function () {
                 toast.hidden = true;
-            }, 1800);
+            }, isWarn ? 7000 : 1800);
         }
     }
 
@@ -4025,12 +4036,13 @@ function initPopisPage() {
         return (v > 0 ? '+' : '') + String(v);
     }
 
-    function render(highlightId) {
+    function render(highlightId, warn) {
         if (!stavke.length) {
             list.innerHTML = '<li class="is-empty">Još nema stavki. Skeniraj barkod ili unesi artikal.</li>';
         } else {
             list.innerHTML = stavke.map(function (row) {
                 var flash = highlightId && Number(row.id) === Number(highlightId) ? ' is-flash' : '';
+                if (warn && highlightId && Number(row.id) === Number(highlightId)) flash += ' is-repeat';
                 var expected = Number(row.ocekivano) || 0;
                 var counted = Number(row.kolicina) || 0;
                 var diff = row.razlika != null ? Number(row.razlika) : (counted - expected);
@@ -4060,13 +4072,14 @@ function initPopisPage() {
         }
     }
 
-    function applyPayload(data, addedLabel) {
+    function applyPayload(data, addedLabel, warn) {
         stavke = data.stavke || [];
-        render(data.added_id);
+        render(data.added_id, warn);
         if (addedLabel) {
-            showToast(addedLabel, false);
-            beep(true);
+            showToast(addedLabel, false, !!warn);
+            beep(true, !!warn);
         }
+        if (warn) setListOpen(true);
         if (document.activeElement !== input) focusQuery(true);
         else {
             input.value = '';
@@ -4117,6 +4130,14 @@ function initPopisPage() {
             kolicina: String(amount),
         }).then(function (data) {
             if (!data) return;
+            if (data.already_on_list) {
+                applyPayload(
+                    data,
+                    data.warning || 'Artikal je već na ovom popisu. Provjeri je li netko izmiješao artikle.',
+                    true,
+                );
+                return;
+            }
             applyPayload(data, 'Dodano: ' + (item.naziv || '') + ' × ' + amount);
         });
     }

@@ -7,88 +7,367 @@
 {% block title %}Moj nalog — opremazaribolov.ba{% endblock %}
 
 {% block content %}
-<section class="account-page">
-    <div class="account-header">
-        <div>
-            <h1>Moj nalog</h1>
-            <p class="account-greeting">Zdravo, {{ user.first_name|default:user.email }}</p>
-        </div>
-        <div class="account-header-actions">
-            {% if user.is_superuser or user.is_staff %}
-            <a href="{% url 'staff_admin_panel' %}" class="btn btn-admin-panel">Admin panel</a>
-            {% endif %}
-            <a href="{% url 'logout' %}" class="btn btn-logout">Odjavi se</a>
-        </div>
-    </div>
+<section
+    class="account-page acc-dash"
+    data-account-dash
+    data-initial-section="{{ account_initial_section|default:'pregled' }}"
+>
+    <nav class="shop-breadcrumb acc-dash-crumb" aria-label="Putanja">
+        <a href="{% url 'home' %}">Početna</a>
+        <span aria-hidden="true">›</span>
+        <span class="shop-breadcrumb__current">Moj nalog</span>
+    </nav>
 
-    {% if loyalty %}
-    <section class="account-loyalty-card-section" aria-label="Loyalty kartica">
-        <div class="account-loyalty-card-header">
-            <h2>Vaša loyalty kartica</h2>
-            <p>U korpi kliknite <strong>Primjeni Loyalty karticu</strong> — popust prema vašem nivou (ne vrijedi na akcije).</p>
+    <header class="acc-dash-hero">
+        <div class="acc-dash-welcome">
+            <p class="acc-dash-kicker">Moj nalog</p>
+            <h1>Dobrodošli nazad, <span class="acc-dash-name">{{ welcome_name }}</span></h1>
+            <p class="acc-dash-welcome-sub">Pregled narudžbi, loyalty kartice i podataka naloga.</p>
         </div>
-        <div class="account-loyalty-card-preview">
-            {% include 'partials/loyalty_card_print.html' with loyalty=loyalty cardholder_name=cardholder_name %}
-        </div>
-        <div class="account-loyalty-card-actions">
-            <a href="{% url 'cart' %}" class="btn btn-primary">Primjeni u korpi</a>
-        </div>
-    </section>
-    {% endif %}
-
-    <div class="account-grid">
-        <aside class="account-profile">
-            <h2>Podaci naloga</h2>
-            <form method="post" class="account-form">
-                {% csrf_token %}
-                {% for field in profile_form %}
-                <div class="form-group{% if field.errors %} form-group--error{% endif %}">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% for error in field.errors %}
-                    <p class="form-error">{{ error }}</p>
-                    {% endfor %}
-                </div>
-                {% endfor %}
-                <button type="submit" class="btn btn-primary">Sačuvaj promjene</button>
-            </form>
+        {% if loyalty %}
+        <aside class="acc-loyalty-mini" aria-label="Loyalty kartica">
+            <div class="acc-loyalty-ring" style="--pct: {{ loyalty_progress_pct }};" aria-hidden="true">
+                <svg viewBox="0 0 36 36">
+                    <path class="acc-loyalty-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path class="acc-loyalty-ring-fg" stroke-dasharray="{{ loyalty_progress_pct }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <span>{{ loyalty_progress_pct }}%</span>
+            </div>
+            <div class="acc-loyalty-mini-copy">
+                <p class="acc-loyalty-mini-label">Loyalty</p>
+                <p class="acc-loyalty-mini-tier">{{ loyalty_tier_en }}</p>
+                <p class="acc-loyalty-mini-spend">
+                    {{ loyalty_spend|floatformat:0 }}{% if loyalty.next_tier %} / {{ loyalty_cap|floatformat:0 }}{% endif %} KM
+                </p>
+                <p class="acc-loyalty-mini-next">{{ loyalty.next_line }}</p>
+            </div>
         </aside>
+        {% endif %}
+    </header>
 
-        <div class="account-orders">
-            <h2>Moje narudžbe</h2>
-            {% if orders %}
-            <div class="orders-list">
-                {% for order in orders %}
-                <article class="order-card">
-                    <div class="order-card-head">
+    <div class="acc-dash-layout">
+        <nav class="acc-dash-nav" aria-label="Nalog">
+            {% if user.is_superuser or user.is_staff %}
+            <a href="{% url 'staff_admin_panel' %}" class="acc-dash-nav-link acc-dash-nav-link--staff">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                Admin panel
+            </a>
+            {% endif %}
+            <a href="#pregled" class="acc-dash-nav-link is-active" data-acc-nav="pregled">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                Pregled
+            </a>
+            <a href="#narudzbe" class="acc-dash-nav-link" data-acc-nav="narudzbe">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                Narudžbe
+                {% if orders_count %}<span class="acc-dash-nav-count">{{ orders_count }}</span>{% endif %}
+            </a>
+            <a href="#loyalty" class="acc-dash-nav-link" data-acc-nav="loyalty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                Loyalty
+            </a>
+            <a href="#adrese" class="acc-dash-nav-link" data-acc-nav="adrese">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-4.4 7-10a7 7 0 1 0-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
+                Adrese
+            </a>
+            <a href="#sacuvani" class="acc-dash-nav-link" data-acc-nav="sacuvani">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+                Sačuvani
+            </a>
+            <a href="#pregledano" class="acc-dash-nav-link" data-acc-nav="pregledano">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                Pregledano
+            </a>
+            <a href="#kuponi" class="acc-dash-nav-link" data-acc-nav="kuponi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                Kuponi
+                {% if coupons_count %}<span class="acc-dash-nav-count">{{ coupons_count }}</span>{% endif %}
+            </a>
+            <a href="#reklamacije" class="acc-dash-nav-link" data-acc-nav="reklamacije">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 .4-6.7L1 10"/></svg>
+                Reklamacije
+            </a>
+            <a href="#postavke" class="acc-dash-nav-link" data-acc-nav="postavke">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+                Postavke
+            </a>
+            <a href="{% url 'logout' %}" class="acc-dash-nav-link acc-dash-nav-link--logout">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Odjava
+            </a>
+        </nav>
+
+        <div class="acc-dash-main">
+            {# —— Pregled —— #}
+            <div class="acc-panel" data-acc-panel="pregled">
+                <div class="acc-stats">
+                    <article class="acc-stat">
+                        <span class="acc-stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        </span>
                         <div>
-                            <h3>Narudžba #{{ order.broj }}</h3>
-                            <p class="order-card-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</p>
+                            <p class="acc-stat-value">{{ orders_count }}</p>
+                            <p class="acc-stat-label">Narudžbe</p>
+                            <p class="acc-stat-sub">{{ active_orders_count }} aktivnih</p>
                         </div>
-                        <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+                    </article>
+                    <article class="acc-stat">
+                        <span class="acc-stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                        </span>
+                        <div>
+                            <p class="acc-stat-value">{{ loyalty_spend|floatformat:0 }} KM</p>
+                            <p class="acc-stat-label">Loyalty potrošnja</p>
+                            <p class="acc-stat-sub">{{ loyalty.tier.label }} · {{ loyalty.tier.postotak|floatformat:0 }}%</p>
+                        </div>
+                    </article>
+                    <article class="acc-stat">
+                        <span class="acc-stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+                        </span>
+                        <div>
+                            <p class="acc-stat-value">0</p>
+                            <p class="acc-stat-label">Sačuvani</p>
+                            <p class="acc-stat-sub">Lista želja uskoro</p>
+                        </div>
+                    </article>
+                    <article class="acc-stat">
+                        <span class="acc-stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                        </span>
+                        <div>
+                            <p class="acc-stat-value">{{ coupons_count }}</p>
+                            <p class="acc-stat-label">Kuponi</p>
+                            <p class="acc-stat-sub">Aktivni kodovi</p>
+                        </div>
+                    </article>
+                </div>
+
+                <section class="acc-card">
+                    <header class="acc-card-head">
+                        <h2>Posljednje narudžbe</h2>
+                        <a href="#narudzbe" class="acc-card-more">Sve narudžbe</a>
+                    </header>
+                    {% include 'partials/account_orders_table.html' with orders=orders_recent empty_text='Još nemate narudžbi povezanih s ovim nalogom.' %}
+                </section>
+
+                <div class="acc-split">
+                    <section class="acc-card">
+                        <header class="acc-card-head">
+                            <h2>Adresa dostave</h2>
+                            <a href="#postavke" class="acc-card-more">{% if has_address %}Uredi{% else %}Dodaj{% endif %}</a>
+                        </header>
+                        {% if has_address %}
+                        <div class="acc-address">
+                            <p class="acc-address-name">{{ cardholder_name }}</p>
+                            {% if profil.adresa %}<p>{{ profil.adresa }}</p>{% endif %}
+                            <p>{% if profil.postanski_broj %}{{ profil.postanski_broj }} {% endif %}{{ profil.grad }}</p>
+                            {% if profil.telefon %}<p>{{ profil.telefon }}</p>{% endif %}
+                        </div>
+                        {% else %}
+                        <p class="acc-empty-inline">Nemate sačuvanu adresu. Dodajte je u postavkama da checkout ide brže.</p>
+                        {% endif %}
+                    </section>
+                    <section class="acc-card">
+                        <header class="acc-card-head">
+                            <h2>Brza akcija</h2>
+                        </header>
+                        <div class="acc-quick">
+                            <a href="{% url 'home' %}" class="acc-quick-btn acc-quick-btn--primary">Nastavi kupovinu</a>
+                            <a href="{% url 'cart' %}" class="acc-quick-btn">Idi u korpu</a>
+                            {% if loyalty %}
+                            <button type="button" class="acc-quick-btn" data-copy="accLoyaltyCode">Kopiraj loyalty kod</button>
+                            {% endif %}
+                            <a href="#reklamacije" class="acc-quick-btn">Reklamacija</a>
+                        </div>
+                    </section>
+                </div>
+
+                {% if recommended_products %}
+                <section class="acc-card acc-card--flush">
+                    <header class="acc-card-head acc-card-head--pad">
+                        <h2>Preporučeno za vas</h2>
+                    </header>
+                    {% include 'partials/home_product_carousel.html' with products=recommended_products carousel_no_arrows=False hide_brand=False visible_desktop=4 %}
+                </section>
+                {% endif %}
+            </div>
+
+            {# —— Narudžbe —— #}
+            <div class="acc-panel" data-acc-panel="narudzbe" hidden>
+                <section class="acc-card">
+                    <header class="acc-card-head">
+                        <h2>Moje narudžbe</h2>
+                    </header>
+                    {% include 'partials/account_orders_table.html' with orders=orders empty_text='Još nemate narudžbi povezanih s ovim nalogom.' %}
+                </section>
+            </div>
+
+            {# —— Loyalty —— #}
+            <div class="acc-panel" data-acc-panel="loyalty" hidden>
+                {% if loyalty %}
+                <section class="acc-card acc-loyalty-detail">
+                    <header class="acc-card-head">
+                        <h2>Vaša loyalty kartica</h2>
+                    </header>
+                    <p class="acc-loyalty-help">U korpi kliknite <strong>Primjeni Loyalty karticu</strong> — popust prema vašem nivou (ne vrijedi na akcije).</p>
+                    <div class="acc-loyalty-progress-row">
+                        <div>
+                            <p class="acc-loyalty-code-label">Broj kartice</p>
+                            <p class="acc-loyalty-code" id="accLoyaltyCode">{{ loyalty.kartica.kod }}</p>
+                            <button type="button" class="acc-copy-btn" data-copy="accLoyaltyCode">Kopiraj</button>
+                        </div>
+                        <div>
+                            <p class="acc-loyalty-code-label">Nivo</p>
+                            <p class="acc-loyalty-code">{{ loyalty.tier.label }} · {{ loyalty.tier.postotak|floatformat:0 }}%</p>
+                            <p class="acc-muted">{{ loyalty.next_line }}</p>
+                        </div>
                     </div>
-                    <ul class="order-card-items">
-                        {% for item in order.stavke.all %}
-                        <li>
-                            <span>{{ item.puni_naziv }} × {{ item.kolicina }}</span>
-                            <span>{{ item.ukupno }} KM</span>
+                    <ul class="acc-loyalty-tiers">
+                        {% for t in loyalty.tiers %}
+                        <li class="{% if t.nivo == loyalty.tier.nivo %}is-active{% endif %}">
+                            <strong>{{ t.label }}</strong>
+                            <span>{{ t.postotak|floatformat:0 }}%</span>
                         </li>
                         {% endfor %}
                     </ul>
-                    <div class="order-card-footer">
-                        <strong>{{ order.ukupno }} KM</strong>
-                        <a href="{% url 'account_order_detail' broj=order.broj %}" class="order-card-link">Detalji narudžbe</a>
+                    <div class="account-loyalty-card-preview">
+                        {% include 'partials/loyalty_card_print.html' with loyalty=loyalty cardholder_name=cardholder_name %}
                     </div>
-                </article>
-                {% endfor %}
+                    <div class="account-loyalty-card-actions">
+                        <a href="{% url 'cart' %}" class="btn acc-btn-orange">Primjeni u korpi</a>
+                    </div>
+                </section>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="account-empty">
-                <p>Još nemate narudžbi povezanih s ovim nalogom.</p>
-                <a href="{% url 'home' %}" class="btn btn-primary">Kreni u kupovinu</a>
+
+            {# —— Adrese —— #}
+            <div class="acc-panel" data-acc-panel="adrese" hidden>
+                <section class="acc-card">
+                    <header class="acc-card-head">
+                        <h2>Adrese</h2>
+                        <a href="#postavke" class="acc-card-more">Uredi u postavkama</a>
+                    </header>
+                    <div class="acc-address-grid">
+                        <article class="acc-address-card">
+                            <p class="acc-address-tag">Dostava</p>
+                            {% if has_address %}
+                            <p class="acc-address-name">{{ cardholder_name }}</p>
+                            {% if profil.adresa %}<p>{{ profil.adresa }}</p>{% endif %}
+                            <p>{% if profil.postanski_broj %}{{ profil.postanski_broj }} {% endif %}{{ profil.grad }}</p>
+                            {% if profil.telefon %}<p>{{ profil.telefon }}</p>{% endif %}
+                            {% else %}
+                            <p class="acc-empty-inline">Adresa još nije unesena.</p>
+                            {% endif %}
+                        </article>
+                        <article class="acc-address-card acc-address-card--muted">
+                            <p class="acc-address-tag">Račun</p>
+                            <p class="acc-empty-inline">Ista kao adresa dostave.</p>
+                        </article>
+                    </div>
+                </section>
             </div>
-            {% endif %}
+
+            {# —— Sačuvani —— #}
+            <div class="acc-panel" data-acc-panel="sacuvani" hidden>
+                <section class="acc-card">
+                    <header class="acc-card-head"><h2>Sačuvani artikli</h2></header>
+                    <div class="acc-empty">
+                        <p>Lista sačuvanih artikala još nije dostupna.</p>
+                        <a href="{% url 'home' %}" class="btn acc-btn-orange">Kreni u kupovinu</a>
+                    </div>
+                </section>
+            </div>
+
+            {# —— Pregledano —— #}
+            <div class="acc-panel" data-acc-panel="pregledano" hidden>
+                <section class="acc-card acc-card--flush">
+                    <header class="acc-card-head acc-card-head--pad"><h2>Nedavno pregledano</h2></header>
+                    {% if recently_viewed_products %}
+                    {% include 'partials/home_product_carousel.html' with products=recently_viewed_products carousel_no_arrows=False hide_brand=False visible_desktop=4 %}
+                    {% else %}
+                    <div class="acc-empty">
+                        <p>Još niste pregledali artikle u ovoj sesiji.</p>
+                        <a href="{% url 'home' %}" class="btn acc-btn-orange">Istraži katalog</a>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+
+            {# —— Kuponi —— #}
+            <div class="acc-panel" data-acc-panel="kuponi" hidden>
+                <section class="acc-card">
+                    <header class="acc-card-head"><h2>Moji kuponi</h2></header>
+                    {% if coupons %}
+                    <ul class="acc-coupon-list">
+                        {% for coupon in coupons %}
+                        <li class="acc-coupon">
+                            <div>
+                                <p class="acc-coupon-name">{{ coupon.naziv }}</p>
+                                <p class="acc-coupon-code" id="accCoupon{{ coupon.pk }}">{{ coupon.kod }}</p>
+                            </div>
+                            <div class="acc-coupon-meta">
+                                <span class="acc-coupon-pct">−{{ coupon.postotak|floatformat:0 }}%</span>
+                                <button type="button" class="acc-copy-btn" data-copy="accCoupon{{ coupon.pk }}">Kopiraj</button>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <p class="acc-muted">Kod unesite u korpi. Loyalty kupon ne vrijedi na akcijske artikle.</p>
+                    {% else %}
+                    <div class="acc-empty">
+                        <p>Trenutno nemate aktivnih kupona.</p>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+
+            {# —— Reklamacije —— #}
+            <div class="acc-panel" data-acc-panel="reklamacije" hidden>
+                <section class="acc-card">
+                    <header class="acc-card-head"><h2>Reklamacije i garancija</h2></header>
+                    <p class="acc-reklamacije-lead">Postupak reklamacije je jednostavan i u skladu sa zakonskim propisima. Navedite broj narudžbe, artikal i razlog.</p>
+                    <ul class="acc-reklamacije-steps">
+                        <li>Otvorite chat u donjem uglu ili nas kontaktirajte putem Vibera / WhatsAppa.</li>
+                        <li>Pošaljite broj narudžbe i fotografiju artikla ako je potrebno.</li>
+                        <li>Odgovaramo u najkraćem roku i dogovaramo zamjenu ili povrat.</li>
+                    </ul>
+                    {% if orders_recent %}
+                    <p class="acc-muted">Vaše posljednje narudžbe za referencu:</p>
+                    <ul class="acc-reklamacije-orders">
+                        {% for order in orders_recent %}
+                        <li>
+                            <a href="{% url 'account_order_detail' broj=order.broj %}">#{{ order.broj }}</a>
+                            <span>{{ order.kreirana|date:"d.m.Y." }} · {{ order.get_status_label }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </section>
+            </div>
+
+            {# —— Postavke —— #}
+            <div class="acc-panel" data-acc-panel="postavke" hidden>
+                <section class="acc-card">
+                    <header class="acc-card-head"><h2>Postavke naloga</h2></header>
+                    <form method="post" class="account-form acc-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="account_section" value="postavke">
+                        {% for field in profile_form %}
+                        <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                            <p class="form-error">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn acc-btn-orange">Sačuvaj promjene</button>
+                    </form>
+                </section>
+            </div>
         </div>
     </div>
 </section>
+{% include 'partials/home_trust_bar.html' %}
 {% endblock %}

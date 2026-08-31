@@ -1912,7 +1912,6 @@ def magacin_artikal_izmjena(request, pk):
         try:
             with transaction.atomic():
                 _save_product_edit(request, product)
-            messages.success(request, 'Artikal je ažuriran.')
             url = reverse('staff_magacin_artikal', args=[product.pk])
             q = _magacin_search_query(request)
             if q:
@@ -6022,7 +6021,12 @@ def _popis_stavka_rows(popis):
     return list(popis.stavke.select_related('product', 'variation').order_by('-redoslijed', '-id'))
 
 
-def _popis_payload(popis, *, added_id=None):
+POPIS_DUPLICATE_WARNING = (
+    'Artikal je već na ovom popisu. Provjeri je li netko izmiješao artikle.'
+)
+
+
+def _popis_payload(popis, *, added_id=None, already_on_list=False):
     stavke = _popis_stavka_rows(popis)
     return {
         'ok': True,
@@ -6032,6 +6036,8 @@ def _popis_payload(popis, *, added_id=None):
         'total_qty': sum(int(row.kolicina or 0) for row in stavke),
         'all_checked': bool(stavke) and all(bool(row.cekirano) for row in stavke),
         'added_id': added_id,
+        'already_on_list': bool(already_on_list),
+        'warning': POPIS_DUPLICATE_WARNING if already_on_list else '',
         'stavke': [
             {
                 'id': row.pk,
@@ -6108,8 +6114,15 @@ def magacin_popis(request, pk=None):
                     variation=variation,
                     qty=_parse_qty(request.POST.get('kolicina') or '1'),
                 )
+                already = bool(getattr(stavka, 'already_on_list', False))
+                if already and not ajax:
+                    messages.warning(request, POPIS_DUPLICATE_WARNING)
                 if ajax:
-                    return JsonResponse(_popis_payload(popis, added_id=stavka.pk if stavka else None))
+                    return JsonResponse(_popis_payload(
+                        popis,
+                        added_id=stavka.pk if stavka else None,
+                        already_on_list=already,
+                    ))
                 return _popis_redirect(popis)
             if action == 'set_qty':
                 stavka = set_popis_stavka_qty(

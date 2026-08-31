@@ -35,13 +35,11 @@
         </div>
 
         <div class="product-card__body">
-            <p class="product-card__pack"{% if product.pakovanje_label %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.pakovanje_label %}{{ product.pakovanje_label }}{% else %}&nbsp;{% endif %}</p>
+            <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
             <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
             {% include 'partials/product_staff_missing.html' with product=product %}
 
-            <p class="stock-badge{% if product.na_stanju %} stock-badge--in{% else %} stock-badge--out{% endif %} product-card__stock">
-                {% if product.na_stanju %}Na stanju{% else %}Rasprodato{% endif %}
-            </p>
+            {% include 'partials/product_stock_label.html' with product=product %}
 
             {# Fiksna visina — samo Made in Japan (ne pomjera brend/cijena) #}
             <div class="product-origin-slot product-card__origin-slot">
@@ -84,6 +82,7 @@
             {% endif %}
         </div>
 
+        <div class="product-card__cart-row">
         {% if product.na_stanju %}
         <button
             type="button"
@@ -109,10 +108,11 @@
             <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
         </button>
         {% else %}
-        <button type="button" class="product-card-add-btn product-card-add-btn--disabled" disabled aria-label="{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}">
-            <span>{{ site_settings.tekst_dugme_rasprodato|default:'Rasprodato' }}</span>
+        <button type="button" class="product-card-add-btn product-card-add-btn--sold" disabled aria-label="Rasprodato — {{ product.naziv }}">
+            <span>Rasprodato</span>
         </button>
         {% endif %}
+        </div>
     </div>
     {% endwith %}
 </article>

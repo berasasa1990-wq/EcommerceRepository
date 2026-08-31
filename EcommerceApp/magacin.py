@@ -2926,9 +2926,10 @@ def add_popis_stavka(popis, *, product, qty, variation=None):
         next_rb = (popis.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
         existing.redoslijed = next_rb
         existing.save(update_fields=['kolicina', 'redoslijed'])
+        existing.already_on_list = True
         return existing
     next_rb = (popis.stavke.order_by('-redoslijed').values_list('redoslijed', flat=True).first() or 0) + 1
-    return MagacinPopisStavka.objects.create(
+    stavka = MagacinPopisStavka.objects.create(
         popis=popis,
         product=product,
         variation=variation,
@@ -2938,6 +2939,8 @@ def add_popis_stavka(popis, *, product, qty, variation=None):
         kolicina=qty,
         redoslijed=next_rb,
     )
+    stavka.already_on_list = False
+    return stavka
 
 
 def finish_popis(popis, *, user=None):

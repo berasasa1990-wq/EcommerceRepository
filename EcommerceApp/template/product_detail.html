@@ -14,7 +14,7 @@
 {% endblock %}
 
 {% block page_title %}
-<title>{% if not product_available %}Nije dostupno — {% endif %}{{ seo_title|default:product.seo_title }}</title>
+<title>{{ seo_title|default:product.seo_title }}</title>
 {% endblock %}
 
 {% block meta_description %}
@@ -35,19 +35,19 @@
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 <section class="product-detail"{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
     {% include 'partials/product_detail_badge.html' %}
-    <a href="{{ product_back_url }}" class="product-detail-back" id="productDetailBack" aria-label="Nazad na prethodnu stranicu">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M15 18l-6-6 6-6"/>
-        </svg>
-        Nazad
-    </a>
     <div class="product-detail-grid">
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">
-                {% include 'partials/product_sale_ribbon.html' with product=product %}
+                <div class="product-gallery-overlays">
+                    {% if product.je_novitet %}
+                    <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
+                    {% elif product.je_hit %}
+                    <span class="product-detail-corner-badge product-detail-corner-badge--hit is-pulse" aria-label="Hit ponuda">HIT PONUDA</span>
+                    {% endif %}
+                </div>
                 {% if product.prikazna_slika %}
                 {% with img=product.prikazna_slika_responsive %}
-                <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 100vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
+                <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 42vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
                 {% endwith %}
                 {% else %}
                 <div class="product-image-placeholder product-image-placeholder--large" id="mainProductImage">
@@ -85,26 +85,34 @@
              data-product-id="{{ product.pk }}"
              data-product-name="{{ product.naziv }}"
              {% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
-            {% if product.je_novitet %}
-            <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
-            {% elif product.je_hit %}
-            <span class="product-detail-corner-badge product-detail-corner-badge--hit is-pulse" aria-label="Hit ponuda">HIT PONUDA</span>
-            {% endif %}
-            <div class="product-detail-brand">
-                {% include 'partials/brand_display.html' with brand=product.brend %}
+            <div class="product-detail-title-row">
+                <h1>{{ seo_h1|default:product.naziv }}</h1>
+                <a href="{{ product_back_url }}" class="product-detail-back" id="productDetailBack" aria-label="Nazad na prethodnu stranicu">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                    Nazad
+                </a>
             </div>
-            <h1>{{ seo_h1|default:product.naziv }}</h1>
+            <div class="pd-meta">
+                {% if product.sifra %}
+                <span class="pd-meta__item"><span class="pd-meta__k">Šifra:</span> {{ product.sifra }}</span>
+                {% endif %}
+                {% if product.brend %}
+                <span class="pd-meta__item pd-meta__brand">
+                    <span class="pd-meta__k">Brend:</span>
+                    {% include 'partials/brand_display.html' with brand=product.brend %}
+                </span>
+                {% endif %}
+                {% include 'partials/product_stock_label.html' with product=product %}
+                <span class="pd-meta__item pd-meta__ship">Isporuka: 24h Brza Pošta</span>
+            </div>
+            <div class="product-detail-body">
             {% if similar_name_products %}
             <button type="button" class="product-other-options-btn" id="productOtherOptionsBtn" data-other-options-open>
                 Druge opcije artikla
                 <span class="product-other-options-btn__count">{{ similar_name_products|length }}</span>
             </button>
-            {% endif %}
-            {% if not product_available %}
-            <div class="product-unavailable-banner" role="status">
-                <strong>Artikal više nije dostupan</strong>
-                <span>Ovaj artikal trenutno nije na stanju i ne može se naručiti. Link je i dalje otvoren da vidiš o čemu se radi.</span>
-            </div>
             {% endif %}
             {% if product.proizvedeno_u_japanu %}
             <div class="made-in-japan made-in-japan--detail" role="note" aria-label="Proizvedeno u Japanu">
@@ -427,14 +435,13 @@
             {% if not product.varijacije.count %}
             {% if product.na_akciji %}
             {# Redovna akcija — isti izgled kao na akcijskoj ponudi (card-dwell) #}
-            <div class="card-dwell-deal is-active is-pulse product-sale-card-deal product-sale-deal--detail" id="detailPrice"
+            <div class="card-dwell-deal is-active product-sale-card-deal product-sale-deal--detail" id="detailPrice"
                  data-base-price="{{ product.prikazna_cijena }}"
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
-                <span class="card-dwell-label">{% if product.akcija_istice_oznaka and product.akcija_istice_oznaka != 'AKCIJA' %}{{ product.akcija_istice_oznaka }}{% else %}AKCIJA{% endif %}{% if product.akcija_postotak_prikaz %} -{{ product.akcija_postotak_prikaz }}%{% endif %}</span>
                 <div class="product-price product-price--detail card-dwell-prices">
                     <span class="price-original card-dwell-was">{{ product.bazna_cijena }} KM</span>
                     <div class="card-dwell-sale-cluster">
-                        <span class="price-sale card-dwell-now">{{ product.prikazna_cijena }} KM{% if product.pakovanje_uz_cijenu %} <span class="price-pack-suffix">- {{ product.pakovanje_uz_cijenu }}</span>{% endif %}</span>
+                        <span class="price-sale card-dwell-now">{{ product.prikazna_cijena }} KM</span>
                         {% if product.akcija_postotak_prikaz %}
                         <span class="card-dwell-badge">−{{ product.akcija_postotak_prikaz }}%</span>
                         {% endif %}
@@ -444,7 +451,7 @@
             {% else %}
             <div class="product-detail-price product-price--detail" id="detailPrice"
                  data-base-price="{{ product.prikazna_cijena }}"
-                 data-pack-suffix="{{ product.pakovanje_uz_cijenu|default:'' }}"
+                 data-pack-suffix=""
                  {% if dwell_flash_config.flash %}hidden{% endif %}>
                 {% include 'partials/product_price.html' with item=product %}
             </div>
@@ -469,29 +476,38 @@
                     </div>
                 </div>
             </div>
-            {% include 'partials/product_loyalty_points.html' with product=product price=product.prikazna_cijena tip_suffix='detail' %}
-
             {% include 'partials/product_urgency.html' %}
 
+            {% if product.je_pakovanje %}
             <div class="product-detail-meta">
-                {% if product.sifra %}<p><strong>Šifra:</strong> {{ product.sifra }}</p>{% endif %}
-                {% if product.barkod %}<p><strong>Barkod:</strong> {{ product.barkod }}</p>{% endif %}
-                {% if product.je_pakovanje and product.pakovanje_label %}
-                <p><strong>Pakovanje:</strong> {{ product.pakovanje_label }}</p>
-                {% endif %}
+                <p>{{ product.pakovanje_label|default:"Pakovanje" }}</p>
             </div>
+            {% endif %}
 
-            {% if product.na_stanju %}
+            {% if not product.na_stanju %}
+            <div class="product-detail-purchase">
+                <button type="button" class="btn btn-primary btn-add-to-bag btn-add-to-bag--sold" disabled>
+                    Rasprodato
+                </button>
+            </div>
+            {% else %}
             <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form" id="mainAddToCartForm">
                 {% csrf_token %}
                 <div class="product-detail-purchase{% if gratis_akcija_hint or qty_deal_hint %} product-detail-purchase--with-ponuda{% endif %}">
-                    {% include 'partials/product_qty_selector.html' %}
+                    {% include 'partials/product_qty_selector.html' with qty_max=product.stanje %}
                     <div class="product-detail-purchase__cta">
                         <button type="submit" class="btn btn-primary btn-add-to-bag"
                                 data-product-id="{{ product.pk }}"
                                 data-product-name="{{ product.naziv }}"
                                 data-almost-cart
-                                id="mainAddToCartBtn">{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                                id="mainAddToCartBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                            </svg>
+                            {{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}
+                        </button>
                         {% include 'partials/qty_deal_promo.html' %}
                         {% include 'partials/gratis_promo.html' %}
                     </div>
@@ -520,13 +536,6 @@
                 </div>
                 {% endif %}
             </form>
-            {% else %}
-            <div class="add-to-cart-form">
-                <div class="product-unavailable-cta">
-                    <span class="sold-out-text">Artikal više nije dostupan</span>
-                    <span class="product-unavailable-hint">Nije na stanju — naručivanje trenutno nije moguće.</span>
-                </div>
-            </div>
             {% endif %}
             {% endif %}
 
@@ -552,7 +561,9 @@
                     </div>
                 </div>
             </div>
-            {% include 'partials/product_loyalty_points.html' with product=product price=product.katalog_prikazna_cijena tip_suffix='detail-var' %}
+            <div class="product-detail-brand">
+                {% include 'partials/brand_display.html' with brand=product.brend %}
+            </div>
             {% endif %}
 
             {% if in_stock_variations %}
@@ -564,31 +575,41 @@
                 {% include 'partials/qty_deal_promo.html' %}
                 {% include 'partials/gratis_promo.html' %}
             </div>
-            {% elif product.varijacije.count %}
-            <div class="add-to-cart-form">
-                <div class="product-unavailable-cta">
-                    <span class="sold-out-text">Artikal više nije dostupan</span>
-                    <span class="product-unavailable-hint">Nije na stanju — naručivanje trenutno nije moguće.</span>
-                </div>
-            </div>
             {% endif %}
-
-            <div class="product-detail-policies">
-                <div class="product-detail-policy-item">
-                    <span class="product-detail-policy-label">Uslovi dostave:</span>
-                    <span class="product-detail-policy-text">{{ site_settings.politika_dostava }}</span>
-                </div>
-                <div class="product-detail-policy-item">
-                    <span class="product-detail-policy-label">Povrat robe:</span>
-                    <span class="product-detail-policy-text">{{ site_settings.politika_povrat }}</span>
-                </div>
-                <div class="product-detail-policy-item">
-                    <span class="product-detail-policy-label">Garancija:</span>
-                    <span class="product-detail-policy-text">{{ site_settings.politika_garancija }}</span>
-                </div>
             </div>
         </div>
     </div>
+
+    {% include 'partials/product_flash_offer.html' %}
+    {% include 'partials/product_bundle_set.html' %}
+    {% include 'partials/product_qty_deal.html' %}
+
+    {% if site_settings.politika_dostava or site_settings.politika_povrat %}
+    <div class="product-detail-policies">
+        {% if site_settings.politika_dostava %}
+        <div class="product-detail-policy-item">
+            <span class="product-detail-policy-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="1.5"/><path d="M16 10h3.2a1.5 1.5 0 0 1 1.3.7l1.7 2.6V17h-6"/><circle cx="6.5" cy="18.5" r="1.7"/><circle cx="18" cy="18.5" r="1.7"/><path d="M8.2 18.5h8"/></svg>
+            </span>
+            <span class="product-detail-policy-copy">
+                <span class="product-detail-policy-label">Uslovi dostave:</span>
+                <span class="product-detail-policy-text">{{ site_settings.politika_dostava }}</span>
+            </span>
+        </div>
+        {% endif %}
+        {% if site_settings.politika_povrat %}
+        <div class="product-detail-policy-item">
+            <span class="product-detail-policy-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 8.2 12 3.8l8.4 4.4v9.4L12 22l-8.4-4.4V8.2Z"/><path d="M3.6 8.2 12 12.6l8.4-4.4M12 12.6V22"/><path d="M8 10.2 12 8l4 2.2"/></svg>
+            </span>
+            <span class="product-detail-policy-copy">
+                <span class="product-detail-policy-label">Povrat robe:</span>
+                <span class="product-detail-policy-text">{{ site_settings.politika_povrat }}</span>
+            </span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 
     <div class="product-detail-content">
         {% if product.opis %}
@@ -598,7 +619,7 @@
                 {% if '<' in product.opis and '>' in product.opis %}
                 {{ product.opis|safe }}
                 {% else %}
-                <div class="product-detail-description-text">{{ product.opis|linebreaksbr }}</div>
+                <div class="product-detail-description-text">{{ product.opis|linebreaks }}</div>
                 {% endif %}
             </div>
         </div>
@@ -644,6 +665,7 @@
                 </a>
                 <div class="product-other-options-row__info">
                     <a href="{{ opt.get_absolute_url }}" class="product-other-options-row__name">{{ opt.naziv }}</a>
+                    {% include 'partials/product_pack_label.html' with product=opt %}
                     <div class="product-other-options-row__price">
                         {% if opt.katalog_na_akciji %}
                         <span class="price-original">{{ opt.katalog_bazna_cijena }} KM</span>
@@ -660,7 +682,7 @@
                 <form method="post" action="{% url 'add_to_cart' opt.slug %}" class="product-other-options-form">
                     {% csrf_token %}
                     <input type="hidden" name="variation_id" value="{{ opt_vars.0.pk }}">
-                    {% include 'partials/product_qty_selector.html' %}
+                    {% include 'partials/product_qty_selector.html' with qty_max=opt_vars.0.stanje %}
                     <button type="submit" class="btn btn-primary product-other-options-add"
                             data-product-id="{{ opt.pk }}"
                             data-product-name="{{ opt.naziv }}"
@@ -669,14 +691,12 @@
                 {% elif opt.na_stanju %}
                 <form method="post" action="{% url 'add_to_cart' opt.slug %}" class="product-other-options-form">
                     {% csrf_token %}
-                    {% include 'partials/product_qty_selector.html' %}
+                    {% include 'partials/product_qty_selector.html' with qty_max=opt.stanje %}
                     <button type="submit" class="btn btn-primary product-other-options-add"
                             data-product-id="{{ opt.pk }}"
                             data-product-name="{{ opt.naziv }}"
                             data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
                 </form>
-                {% else %}
-                <span class="product-other-options-row__sold">Nije na stanju</span>
                 {% endif %}
             </article>
             {% endwith %}
@@ -688,7 +708,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260824otherOpts" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260831stock" defer></script>
 {% if staff_product_tools %}
 <script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
 {% endif %}

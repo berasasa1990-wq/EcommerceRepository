@@ -1401,6 +1401,12 @@ table.mg-table {
     background: #fee2e2;
     color: #b91c1c;
 }
+.pp-toast.is-warn {
+    background: #fff4e5;
+    color: #9a3412;
+    border: 1px solid #fdba74;
+    box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.12);
+}
 .pp-suggest {
     position: absolute;
     left: 0;
@@ -1479,6 +1485,16 @@ table.mg-table {
 .pp-list li.is-flash {
     border-color: var(--mg-green);
     box-shadow: 0 0 0 3px var(--mg-green-soft);
+}
+.pp-list li.is-repeat {
+    border-color: #ea580c;
+    background: #fff7ed;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.22);
+    animation: ppRepeatPulse 0.9s ease-in-out 2;
+}
+@keyframes ppRepeatPulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.22); }
+    50% { box-shadow: 0 0 0 7px rgba(234, 88, 12, 0.12); }
 }
 .pp-line-info { min-width: 0; }
 .pp-list strong {

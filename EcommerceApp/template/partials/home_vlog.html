@@ -5,7 +5,7 @@
             <div class="home-section-header__text">
                 <h2 class="home-section-header__title"
                     data-site-edit="naslov_blog"
-                    data-site-edit-placeholder="Vlog / Blog">{% if site_settings.naslov_blog %}{{ site_settings.naslov_blog }}{% endif %}</h2>
+                    data-site-edit-placeholder="Blog">{% if site_settings.naslov_blog %}{{ site_settings.naslov_blog }}{% endif %}</h2>
             </div>
             <div class="home-section-header__actions">
                 <a href="{% url 'vlog_list' %}" class="home-section-header__see-all">
@@ -15,7 +15,7 @@
             </div>
         </div>
 
-        <div class="home-vlog__layout{% if not site_settings.prikazi_newsletter %} home-vlog__layout--full{% endif %}">
+        <div class="home-vlog__layout home-vlog__layout--full">
             {% if home_vlogs %}
             <div class="home-vlog-grid home-vlog-grid--cards">
                 {% for vlog in home_vlogs %}
@@ -25,9 +25,9 @@
                              {% if vlog.slika_srcset %}srcset="{{ vlog.slika_srcset }}"{% endif %}
                              alt="{{ vlog.naslov }}"
                              class="home-vlog-card-image"
-                             width="{{ vlog.image_width }}"
-                             height="{{ vlog.image_height }}"
-                             sizes="(max-width: 768px) 50vw, 280px"
+                             width="800"
+                             height="500"
+                             sizes="(max-width: 768px) 100vw, 33vw"
                              loading="lazy"
                              decoding="async">
                     </div>

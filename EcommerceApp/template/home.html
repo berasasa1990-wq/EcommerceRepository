@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-{% if not filter_params.q and not filter_params.akcija and not filter_params.noviteti %}
+{% if not filters_active %}
 {% if hero_slides %}
 <section class="hero-carousel" id="heroCarousel">
     <div class="carousel-track">
@@ -89,44 +89,7 @@
 {% include 'partials/home_trust_bar.html' %}
 {% endif %}
 
-{% if grid_banners %}
-<section class="grid-banners">
-    {% for card in grid_banners %}
-    {% if card.url %}
-    <a href="{{ card.url }}" class="grid-banner grid-banner--linked">
-    {% else %}
-    <article class="grid-banner">
-    {% endif %}
-                {% if card.has_video %}
-                <video class="card-image card-image--grid banner-media-video" src="{{ card.video }}" autoplay muted loop playsinline preload="metadata"{% if card.image %} poster="{{ card.image }}"{% endif %} width="{{ card.image_width }}" height="{{ card.image_height }}" aria-label="{{ card.title|default:'Banner' }}"></video>
-                {% else %}
-                <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="card-image card-image--grid" width="{{ card.image_width }}" height="{{ card.image_height }}" sizes="(max-width: 768px) 50vw, 360px"{% if forloop.first and not has_hero_slides %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% if forloop.first %} fetchpriority="low"{% endif %}{% endif %} decoding="async">
-                {% endif %}
-        {% if card.title or card.subtitle or card.actions %}
-        <div class="card-overlay">
-            {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}
-            {% if card.subtitle %}<p>{{ card.subtitle }}</p>{% endif %}
-            {% if card.actions %}
-            <div class="card-actions">
-                {% for action in card.actions %}
-                {% if card.url %}
-                <span class="btn btn-banner">{{ action.label }}</span>
-                {% else %}
-                <a href="{{ action.url }}" class="btn btn-banner">{{ action.label }}</a>
-                {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-    {% if card.url %}
-    </a>
-    {% else %}
-    </article>
-    {% endif %}
-    {% endfor %}
-</section>
-{% endif %}
+
 
 {% if featured_cards %}
 <section class="featured-grid">
@@ -188,35 +151,15 @@
 {% endif %}
 
 {% if filters_active %}
-<section class="category-page home-search-results{% if filter_params.q %} home-search-results--search{% endif %}{% if filter_params.akcija %} home-search-results--akcija{% endif %}{% if filter_params.noviteti %} home-search-results--noviteti{% endif %}" id="product-showcase">
+<section class="category-page category-page--shop" id="product-showcase">
     {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action filter_categories=filter_categories filter_reset_url=filter_reset_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_groups=filter_size_groups filter_params=filter_params selected_brand=selected_brand seo_h1=seo_h1 seo_tekst_iznad=seo_tekst_iznad seo_tekst_ispod=seo_tekst_ispod %}
 </section>
 {% else %}
 
-{% if seo_h1 %}
-<div class="seo-home-h1-wrap">
-    <h1 class="seo-home-h1">{{ seo_h1 }}</h1>
-</div>
-{% endif %}
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
-{# —— 1) Izdvojeni (bivši TOP PROIZVODI) —— #}
-{% if featured_products %}
-<section class="category-page home-products home-products--izdvojeno home-products--mockup">
-    <div class="product-catalog product-catalog--compact home-product-catalog">
-        <div class="catalog-layout catalog-layout--full">
-            <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title=site_settings.naslov_izdvojeno subtitle=site_settings.podnaslov_izdvojeno edit_title='naslov_izdvojeno' edit_title_placeholder='Izdvojeni' edit_subtitle='podnaslov_izdvojeno' header_mod='izdvojeno' %}
-                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
-            </div>
-        </div>
-    </div>
-</section>
-{% endif %}
-
-{# —— 2) Noviteti —— #}
 {% if latest_products %}
-<section class="category-page home-products home-products--novo home-products--mockup">
+<section class="category-page category-page--shop home-products home-products--novo">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
@@ -228,9 +171,21 @@
 </section>
 {% endif %}
 
-{# —— 3) Akcijska ponuda —— #}
+{% if featured_products %}
+<section class="category-page category-page--shop home-products home-products--izdvojeno">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title=site_settings.naslov_izdvojeno subtitle=site_settings.podnaslov_izdvojeno edit_title='naslov_izdvojeno' edit_title_placeholder='HIT ponude' edit_subtitle='podnaslov_izdvojeno' header_mod='izdvojeno' %}
+                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
 {% if sale_products %}
-<section class="category-page home-products home-products--akcija home-products--mockup">
+<section class="category-page category-page--shop home-products home-products--akcija">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
@@ -242,12 +197,28 @@
 </section>
 {% endif %}
 
-{# —— 4) Promo kartice —— #}
-{% if home_promo_cards %}
-{% include 'partials/home_promo_cards.html' %}
+{% if grid_banners %}
+<section class="home-image-trio" aria-label="Izdvojene slike">
+    {% for card in grid_banners %}
+    {% if card.url %}
+    <a href="{{ card.url }}" class="home-image-trio__item">
+    {% else %}
+    <article class="home-image-trio__item">
+    {% endif %}
+        {% if card.has_video %}
+        <video class="home-image-trio__media" src="{{ card.video }}" autoplay muted loop playsinline preload="metadata"{% if card.image %} poster="{{ card.image }}"{% endif %} width="800" height="500" aria-label="{{ card.title|default:'Banner' }}"></video>
+        {% else %}
+        <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="home-image-trio__media" width="800" height="500" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" decoding="async">
+        {% endif %}
+    {% if card.url %}
+    </a>
+    {% else %}
+    </article>
+    {% endif %}
+    {% endfor %}
+</section>
 {% endif %}
 
-{# —— 5) Kategorije / brend showcases (opcionalno iz admina) —— #}
 {% if home_category_showcases %}
 {% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}
 {% endif %}
@@ -256,12 +227,10 @@
 {% include 'partials/home_brand_showcase.html' with sections=home_brand_showcases %}
 {% endif %}
 
-{# —— 6) Vlog / Blog + Newsletter —— #}
 {% if home_vlogs or site_settings.prikazi_newsletter %}
 {% include 'partials/home_vlog.html' %}
 {% endif %}
 
-{# —— 7) Naši brendovi —— #}
 {% if showcase_brands %}
 <section class="home-brand-strip-section home-brand-strip-section--mockup" id="brendovi">
     {% if site_settings.naslov_brendovi %}

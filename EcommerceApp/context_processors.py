@@ -58,7 +58,7 @@ def _build_nav_categories():
     """Meniji kategorija — skupo, pa se cache-ira."""
     from django.core.cache import cache
 
-    cache_key = 'nav_categories_tree_v1'
+    cache_key = 'nav_categories_tree_v2'
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -111,10 +111,13 @@ def _cached_popup_akcije():
     """Lista aktivnih popup akcija — cache 30s (filter po useru ostaje u Pythonu)."""
     from django.core.cache import cache
 
-    cache_key = 'active_popup_akcije_v2'
+    cache_key = 'active_popup_akcije_v3'
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
+    if not Akcija.POPUP_TIPS:
+        cache.set(cache_key, [], 60)
+        return []
     rows = list(
         Akcija.objects.filter(
             aktivan=True,
@@ -129,6 +132,14 @@ def _cached_popup_akcije():
     )
     cache.set(cache_key, rows, 60)
     return rows
+
+
+def _cats_sidebar_open(request):
+    """Kategorije su uvijek otvorene na sajtu (ne može se sklopiti)."""
+    path = getattr(request, 'path', '') or ''
+    if path.startswith('/nalog/magacin/') or path.startswith('/staff/'):
+        return False
+    return True
 
 
 def nav_categories(request):
@@ -178,6 +189,7 @@ def nav_categories(request):
             'staff_edit_mode': False,
             'organization_json_ld': '',
             'website_json_ld': '',
+            'cats_sidebar_open': False,
         }
 
     categories = _build_nav_categories()
@@ -333,4 +345,5 @@ def nav_categories(request):
         'staff_edit_mode': staff_edit_mode,
         'organization_json_ld': organization_json_ld,
         'website_json_ld': website_json_ld,
+        'cats_sidebar_open': _cats_sidebar_open(request),
     }

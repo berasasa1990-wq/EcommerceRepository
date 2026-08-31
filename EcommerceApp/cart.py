@@ -6,6 +6,23 @@ from .upsell import get_deal_info_for_cart_item, get_quantity_deal, calculate_de
 PDV_STOPA = Decimal('0.17')
 
 
+def stock_on_hand(product=None, variation=None):
+    """Količina na stanju za SKU (varijacija ima prednost)."""
+    if variation is not None:
+        return max(0, int(getattr(variation, 'stanje', 0) or 0))
+    if product is not None:
+        return max(0, int(getattr(product, 'stanje', 0) or 0))
+    return 0
+
+
+def stock_limit_message(on_hand):
+    if on_hand <= 0:
+        return 'Artikal je rasprodan.'
+    if on_hand == 1:
+        return 'Na stanju je samo 1 kom.'
+    return f'Na stanju je samo {on_hand} kom.'
+
+
 def izracunaj_pdv(ukupno_sa_pdvom):
     ukupno_sa_pdvom = Decimal(ukupno_sa_pdvom)
     bez_pdv = (ukupno_sa_pdvom / (Decimal('1') + PDV_STOPA)).quantize(
@@ -65,6 +82,10 @@ class Cart:
             promo=is_promo,
         )
         quantity = max(1, int(quantity or 1))
+        remaining = self.remaining_stock(product, variation)
+        if remaining <= 0:
+            return 0
+        quantity = min(quantity, remaining)
         prikazna = variation.prikazna_cijena if variation else product.prikazna_cijena
         if custom_price is not None:
             price = Decimal(str(custom_price))
@@ -146,6 +167,60 @@ class Cart:
                 self.cart[key]['gratis_promo'] = True
         self.save()
         self._track_line(key)
+        return quantity
+
+    def qty_for_sku(self, product_id, variation_id=None, *, exclude_key=None):
+        vid = variation_id or 0
+        total = 0
+        for key, item in self.cart.items():
+            if exclude_key and key == exclude_key:
+                continue
+            if item.get('product_id') != product_id:
+                continue
+            if (item.get('variation_id') or 0) != vid:
+                continue
+            total += max(0, int(item.get('quantity') or 0))
+        return total
+
+    def remaining_stock(self, product, variation=None, *, exclude_key=None):
+        on_hand = stock_on_hand(product, variation)
+        in_cart = self.qty_for_sku(
+            product.pk,
+            variation.pk if variation else None,
+            exclude_key=exclude_key,
+        )
+        return max(0, on_hand - in_cart)
+
+    def clamp_to_stock(self):
+        """Smanji / ukloni stavke iznad stanja. Vraća (changed, poruke)."""
+        changed = False
+        notices = []
+        for key in list(self.cart.keys()):
+            item = self.cart.get(key)
+            if not item:
+                continue
+            product, variation = self.get_product_and_variation(item)
+            if not product:
+                continue
+            on_hand = stock_on_hand(product, variation)
+            others = self.qty_for_sku(
+                product.pk,
+                variation.pk if variation else None,
+                exclude_key=key,
+            )
+            max_qty = max(0, on_hand - others)
+            qty = max(0, int(item.get('quantity') or 0))
+            if max_qty <= 0:
+                self.remove(key)
+                changed = True
+                notices.append(stock_limit_message(on_hand))
+            elif qty > max_qty:
+                self.cart[key]['quantity'] = max_qty
+                self.save()
+                self._track_line(key)
+                changed = True
+                notices.append(stock_limit_message(on_hand))
+        return changed, notices
 
     def remove(self, key):
         if key in self.cart:
@@ -155,13 +230,30 @@ class Cart:
 
     def set_quantity(self, key, quantity):
         if key not in self.cart:
-            return
+            return 0
         if quantity <= 0:
             self.remove(key)
-        else:
-            self.cart[key]['quantity'] = quantity
-            self.save()
-            self._track_line(key)
+            return 0
+        item = self.cart[key]
+        product, variation = self.get_product_and_variation(item)
+        if not product:
+            self.remove(key)
+            return 0
+        on_hand = stock_on_hand(product, variation)
+        others = self.qty_for_sku(
+            product.pk,
+            variation.pk if variation else None,
+            exclude_key=key,
+        )
+        max_qty = max(0, on_hand - others)
+        if max_qty <= 0:
+            self.remove(key)
+            return 0
+        quantity = min(int(quantity), max_qty)
+        self.cart[key]['quantity'] = quantity
+        self.save()
+        self._track_line(key)
+        return quantity
 
     def clear(self):
         self._untrack_all()
@@ -282,6 +374,7 @@ class Cart:
             item['pakovanje_label'] = ''
             item['pakovanje_cijena_hint'] = ''
             item['pakovanje_komada'] = 0
+            item['max_quantity'] = 99
 
             # Compute deal if exists
             deal_info = None
@@ -292,6 +385,7 @@ class Cart:
                     deal_info = get_deal_info_for_cart_item(item, product)
                     pack_src = product
                     var_id = item.get('variation_id')
+                    var = None
                     if var_id:
                         from .models import ProductVariation
                         var = ProductVariation.objects.filter(
@@ -299,6 +393,7 @@ class Cart:
                         ).first()
                         if var and var.je_pakovanje:
                             pack_src = var
+                    item['max_quantity'] = stock_on_hand(product, var)
                     if pack_src.je_pakovanje:
                         item['pakovanje_label'] = pack_src.pakovanje_label
                         item['pakovanje_cijena_hint'] = pack_src.pakovanje_cijena_hint

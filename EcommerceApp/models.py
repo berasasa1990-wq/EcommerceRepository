@@ -721,10 +721,13 @@ class SiteSettings(models.Model):
             from django.core.cache import cache
             cache.delete('site_settings_singleton_v1')
             cache.delete('nav_categories_tree_v1')
+            cache.delete('nav_categories_tree_v2')
             cache.delete('category_ids_with_products_v1')
+            cache.delete('category_ids_with_products_v2')
             cache.delete('seo_org_json_ld_v1')
             cache.delete('seo_web_json_ld_v1')
             cache.delete('showcase_brands_v1')
+            cache.delete('showcase_brands_v2')
         except Exception:
             pass
 
@@ -1794,7 +1797,7 @@ class HomeVlog(models.Model):
     slika = models.ImageField(
         upload_to='vlogs/',
         verbose_name='Slika',
-        help_text='Upload: AVIF max 18KB + responsive 180/280/360w. Prikaz na početnoj (3 u redu) i stranici vloga.',
+        help_text='Upload 800×500 px (omjer 8:5). Za oštrinu: 1600×1000. Prikaz na početnoj — 3 u nizu.',
     )
     sadrzaj = models.TextField(
         verbose_name='Opis vloga',
@@ -1869,6 +1872,7 @@ class Akcija(models.Model):
         QTY_DEAL = 'qty_deal', 'Kupi više (količinski %)'
         PONUDA = 'ponuda', '+ Ponuda'
         AI_PRODAJA = 'ai_prodaja', 'AI prodaja / AI dwell'
+        AKCIJSKA = 'akcijska', 'Akcijska ponuda'
         # Zastarjeli (zadržani zbog postojećih redova; više se ne nude)
         SLIKA = 'slika', 'Pop-up + slika (zastarjelo)'
         TIMER = 'timer', 'Akcija + tajmer (zastarjelo)'
@@ -1878,10 +1882,10 @@ class Akcija(models.Model):
         GRATIS = 'gratis', '+ Gratis (zastarjelo)'
 
     # Tipovi u listi Akcije (admin)
-    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AI_PRODAJA)
-    # Samo ovi idu u popup queue na sajtu (site_popup kašnjenje)
-    # Kupi više (qty_deal) NIJE page popup — iskače tek kad kupac doda artikal u korpu
-    POPUP_TIPS = (Tip.BUNDLE,)
+    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AI_PRODAJA, Tip.AKCIJSKA)
+    # Site-wide popup queue. Bundle više nije popup — prikaz ispod artikla.
+    # Kupi više (qty_deal) iskače tek kad kupac doda artikal u korpu.
+    POPUP_TIPS = ()
     # Add-to-cart cross-sell (modal DA/NE)
     CART_OFFER_TIPS = (Tip.PONUDA, Tip.GRATIS)
 
@@ -1890,6 +1894,11 @@ class Akcija(models.Model):
         BUNDLE_PRODUCT = 'bundle_product', 'Kad gleda artikal iz seta'
         TRIGGER_PRODUCT = 'trigger_product', 'Kad gleda odabrani trigger artikal'
         CATEGORY = 'category', 'Kad gleda odabranu kategoriju'
+
+    class FlashTrigger(models.TextChoices):
+        PRODUCT = 'product', 'Odabrani artikal'
+        CATEGORY = 'category', 'Kategorija'
+        OFFER_PRODUCT = 'offer_product', 'Artikal iz akcijske ponude'
 
     naziv = models.CharField(
         max_length=100,
@@ -1948,6 +1957,30 @@ class Akcija(models.Model):
         blank=True,
         verbose_name='Šta trigeruje pop-up bundle',
         help_text='Kada se bundle prikaže. Samo tada iskače.',
+    )
+    flash_trigger = models.CharField(
+        max_length=20,
+        choices=FlashTrigger.choices,
+        default=FlashTrigger.OFFER_PRODUCT,
+        blank=True,
+        verbose_name='Trigger akcijske ponude',
+        help_text=(
+            'Artikal = samo odabrani trigger artikal. '
+            'Kategorija = svaki artikal iz te kategorije. '
+            'Artikal iz ponude = bilo koji od do 4 artikla u ponudi.'
+        ),
+    )
+    flash_naslov = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Naslov ponude',
+        help_text='Prazno = „POSEBNA PONUDA – SAMO SADA!”',
+    )
+    flash_podnaslov = models.CharField(
+        max_length=220,
+        blank=True,
+        verbose_name='Podnaslov ponude',
+        help_text='Prazno = automatski tekst s preostalim vremenom.',
     )
     gratis_popup = models.BooleanField(
         default=False,
@@ -2074,7 +2107,7 @@ class Akcija(models.Model):
         return self.aktivan
 
     def je_popup(self):
-        """Samo Pop-up bundle i Kupi više — AI prodaja/dwell nije popup akcija."""
+        """Da li akcija ide u site-wide popup queue. Bundle se prikazuje na artiklu."""
         return self.tip in self.POPUP_TIPS
 
     def bundle_line_rows(self):
@@ -2564,6 +2597,78 @@ class Akcija(models.Model):
             ),
         )
 
+    def qty_deal_page_offer(self):
+        """
+        Product-page blok: 1 kom (redovna) + svi tierovi.
+        Zadnji tier prikazuje se kao N+ (otvorena količina).
+        """
+        product = self.artikal
+        if not product or self.tip != self.Tip.QTY_DEAL:
+            return None
+        bazna = product.prikazna_cijena
+        if bazna is None:
+            return None
+        deal_opts = self.qty_deal_display_options()
+        if not deal_opts:
+            return None
+        best = self.qty_deal_best_option()
+        best_id = best['id'] if best else None
+        q1 = bazna.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        columns = [{
+            'id': '',
+            'quantity': 1,
+            'qty_label': '1x',
+            'title': 'KUPI 1 KOM',
+            'subtitle': 'Redovna cijena',
+            'pct_label': None,
+            'unit_bazna': bazna,
+            'unit_snizena': bazna,
+            'line_bazna': q1,
+            'line_snizena': q1,
+            'is_single': True,
+            'is_best': False,
+            'is_open': False,
+            'cta': f'{q1} KM / kom',
+        }]
+        n = len(deal_opts)
+        for i, opt in enumerate(deal_opts):
+            is_last = i == n - 1
+            qty = opt['quantity']
+            unit_s = opt['unit_snizena']
+            if is_last:
+                title = f'KUPI {qty}+ KOM'
+                subtitle = 'NAJVIŠE UŠTEDE'
+                qty_label = f'{qty}x+'
+            elif i == 0:
+                title = f'KUPI {qty} KOM'
+                subtitle = f'POPUST {opt["pct_label"]}%'
+                qty_label = f'{qty}x'
+            else:
+                title = f'KUPI {qty} KOM'
+                subtitle = 'JOŠ VIŠE POPUSTA'
+                qty_label = f'{qty}x'
+            columns.append({
+                **opt,
+                'qty_label': qty_label,
+                'title': title,
+                'subtitle': subtitle,
+                'is_best': bool(best_id and opt['id'] == best_id),
+                'is_open': is_last,
+                'cta': f'{unit_s} KM / kom',
+            })
+        usteda_unit = Decimal('0')
+        best_col = next((c for c in columns if c.get('is_best')), None)
+        if best_col:
+            usteda_unit = (
+                best_col['unit_bazna'] - best_col['unit_snizena']
+            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return {
+            'akcija': self,
+            'product': product,
+            'columns': columns,
+            'usteda_po_komadu': usteda_unit,
+        }
+
     def get_link_href(self):
         if self.artikal_id and self.tip in {
             self.Tip.TIMER, self.Tip.USLOV, self.Tip.QTY_DEAL,
@@ -2574,6 +2679,79 @@ class Akcija(models.Model):
                 return self.link_dugmeta
             return f'/{self.link_dugmeta.strip("/")}/'
         return reverse('register')
+
+    def flash_still_running(self):
+        """Akcijska ponuda: aktivan i (nema kraja ili još nije istekla)."""
+        if self.tip != self.Tip.AKCIJSKA or not self.aktivan:
+            return False
+        end = self.zavrsava
+        if end is None:
+            return True
+        return timezone.now() < end
+
+    def flash_remaining_seconds(self):
+        end = self.zavrsava
+        if not end:
+            return 0
+        delta = end - timezone.now()
+        return max(0, int(delta.total_seconds()))
+
+    def flash_applies_to_product(self, product):
+        if not product or not self.flash_still_running():
+            return False
+        trigger = (self.flash_trigger or self.FlashTrigger.OFFER_PRODUCT).strip()
+        if trigger == self.FlashTrigger.PRODUCT:
+            return bool(self.artikal_id and product.pk == self.artikal_id)
+        if trigger == self.FlashTrigger.CATEGORY:
+            if not self.kategorija_id or not getattr(product, 'kategorija', None):
+                return False
+            return self._category_matches_root(product.kategorija, self.kategorija_id)
+        # offer_product: bilo koji artikal iz ponude (max 4)
+        if not self.pk:
+            return False
+        return self.flash_lines.filter(product_id=product.pk).exists()
+
+    def flash_line_rows(self):
+        if self.tip != self.Tip.AKCIJSKA or not self.pk:
+            return []
+        return list(
+            self.flash_lines.select_related('product', 'product__kategorija')
+            .filter(product__aktivan=True)
+            .order_by('redoslijed', 'id')[:4]
+        )
+
+    def flash_item_pricing(self, product, popust_postotak=None):
+        """Redovna vs akcijska cijena za artikal u ovoj ponudi."""
+        if product is None:
+            return None
+        bazna = product.bazna_cijena
+        pct = popust_postotak if popust_postotak is not None else self.popust_postotak
+        snizena = _izracunaj_akcijsku_od_postotka(bazna, pct)
+        if snizena is None:
+            snizena = product.prikazna_cijena
+            has_discount = bool(snizena is not None and bazna is not None and snizena < bazna)
+        else:
+            has_discount = bool(bazna is not None and snizena < bazna)
+        usteda = (
+            (bazna - snizena).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            if has_discount
+            else Decimal('0')
+        )
+        pct_label = ''
+        if pct is not None:
+            try:
+                pct_d = Decimal(str(pct))
+                pct_label = str(int(pct_d)) if pct_d == int(pct_d) else str(pct_d)
+            except Exception:
+                pct_label = str(pct)
+        return {
+            'bazna': bazna,
+            'snizena': snizena,
+            'usteda': usteda,
+            'has_discount': has_discount,
+            'pct': pct,
+            'pct_label': pct_label,
+        }
 
     def __str__(self):
         status = 'aktivan' if self.aktivan else 'neaktivan'
@@ -2637,6 +2815,52 @@ class AkcijaBundleLine(models.Model):
         pct = self.popust_postotak
         extra = f', -{pct}%' if pct is not None else ''
         return f'{naziv} ×{self.quantity}{extra}'
+
+
+class AkcijaFlashLine(models.Model):
+    """Artikal u akcijskoj ponudi (max 4)."""
+    akcija = models.ForeignKey(
+        Akcija,
+        on_delete=models.CASCADE,
+        related_name='flash_lines',
+        verbose_name='Akcija',
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='akcija_flash_lines',
+        verbose_name='Artikal',
+        limit_choices_to={'aktivan': True, 'na_stanju': True},
+    )
+    popust_postotak = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Popust %',
+        help_text='Opcionalno. Prazno = % akcijske ponude.',
+    )
+    redoslijed = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name='Redoslijed',
+    )
+
+    class Meta:
+        verbose_name = 'Artikal akcijske ponude'
+        verbose_name_plural = 'Artikli akcijske ponude'
+        ordering = ['redoslijed', 'id']
+
+    def effective_discount_percent(self, akcija=None):
+        if self.popust_postotak is not None:
+            return self.popust_postotak
+        akcija = akcija or self.akcija
+        return getattr(akcija, 'popust_postotak', None)
+
+    def __str__(self):
+        naziv = self.product.naziv if self.product_id else '?'
+        pct = self.popust_postotak
+        extra = f' (−{pct}%)' if pct is not None else ''
+        return f'{naziv}{extra}'
 
 
 class AkcijaQtyTier(models.Model):
@@ -3136,12 +3360,14 @@ class Product(models.Model):
 
     @property
     def pakovanje_label(self):
-        """Kratka oznaka npr. „Pakovanje 9 kom.” ili „Pakovanje” ako su količine različite."""
+        """Npr. „Pakovanje: 9 komada” ili „Pakovanje” ako količine nisu iste."""
         if not self.je_pakovanje:
             return ''
         n = self.pakovanje_jedinstvena_kolicina
+        if n <= 1:
+            n = self.pakovanje_komada_prikaz
         if n > 1:
-            return f'Pakovanje {n} kom.'
+            return f'Pakovanje: {n} komada'
         return 'Pakovanje'
 
     @property
@@ -3486,7 +3712,7 @@ class ProductVariation(models.Model):
         n = self.pakovanje_komada_prikaz
         if n <= 1:
             return ''
-        return f'Pakovanje {n} kom.'
+        return f'Pakovanje: {n} komada'
 
     @property
     def pakovanje_cijena_hint(self):

@@ -2,25 +2,55 @@
     <div class="catalog-layout catalog-layout--full">
         <div class="catalog-products">
             {% if category %}
+            <nav class="shop-breadcrumb" aria-label="Putanja">
+                <a href="{% url 'home' %}">Početna</a>
+                {% if category.roditelj %}
+                <span aria-hidden="true">›</span>
+                <a href="{{ category.roditelj.get_absolute_url }}">{{ category.roditelj.naziv }}</a>
+                {% endif %}
+                <span aria-hidden="true">›</span>
+                <span>{{ category.naziv }}</span>
+            </nav>
             <div class="category-header">
                 <h1>{{ seo_h1|default:category.naziv }}</h1>
+                {% if seo_tekst_iznad %}
+                <div class="category-header__desc">{{ seo_tekst_iznad|striptags|truncatewords:40 }}</div>
+                {% elif seo_description %}
+                <p>{{ seo_description }}</p>
+                {% endif %}
             </div>
             {% elif catalog_title %}
+            <nav class="shop-breadcrumb" aria-label="Putanja">
+                <a href="{% url 'home' %}">Početna</a>
+                {% if filter_params.brend %}
+                <span aria-hidden="true">›</span>
+                <a href="{% url 'brands_list' %}">Brendovi</a>
+                <span aria-hidden="true">›</span>
+                <span>{{ catalog_title }}</span>
+                {% elif filter_params.akcija %}
+                <span aria-hidden="true">›</span>
+                <span>Akcija</span>
+                {% elif filter_params.noviteti %}
+                <span aria-hidden="true">›</span>
+                <span>Noviteti</span>
+                {% elif filter_params.q %}
+                <span aria-hidden="true">›</span>
+                <span>Pretraga</span>
+                {% else %}
+                <span aria-hidden="true">›</span>
+                <span>{{ catalog_title }}</span>
+                {% endif %}
+            </nav>
             <div class="category-header">
                 <h1>{{ seo_h1|default:catalog_title }}</h1>
                 {% if catalog_subtitle %}<p>{{ catalog_subtitle }}</p>{% endif %}
             </div>
             {% endif %}
 
-            {% if category_subnav %}
-            <div class="catalog-mobile-zone" id="catalogMobileZone">
-                <div class="catalog-mobile-zone__subnav">
-                    {% include 'partials/category_subnav.html' %}
-                </div>
-            </div>
-            {% endif %}
-
+            {% if not category %}
             {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
+            {% endif %}
+            {% include 'partials/catalog_mobile_filter.html' %}
 
             {% if page_obj %}
             {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='top' %}

@@ -288,6 +288,58 @@ document.addEventListener('DOMContentLoaded', () => {
         navToggle.setAttribute('aria-controls', 'mobileNavPanel');
     }
 
+    const catsDropdown = document.getElementById('catsDropdown');
+    const catsDropdownBtn = document.getElementById('catsDropdownBtn');
+    const catsDropdownPanel = document.getElementById('catsDropdownPanel');
+    const catsLockedOpen = Boolean(
+        catsDropdown?.classList.contains('cats-dropdown--locked')
+        || document.body.classList.contains('cats-sidebar-open')
+    );
+    function setCatsDropdownOpen(open) {
+        if (!catsDropdown || !catsDropdownBtn) return;
+        if (catsLockedOpen && !open) return;
+        catsDropdown.classList.toggle('is-open', open);
+        catsDropdownBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (catsDropdownPanel) catsDropdownPanel.hidden = !open;
+        document.body.classList.toggle('cats-sidebar-open', open && window.innerWidth > 1024);
+    }
+    if (catsDropdown?.classList.contains('is-open') || catsLockedOpen) {
+        setCatsDropdownOpen(true);
+    }
+    if (catsDropdownBtn && catsDropdown) {
+        catsDropdownBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (catsLockedOpen) return;
+            setCatsDropdownOpen(!catsDropdown.classList.contains('is-open'));
+        });
+        catsDropdown.addEventListener('click', (e) => {
+            const toggle = e.target.closest('[data-cats-toggle]');
+            if (!toggle || !catsDropdown.contains(toggle)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const item = toggle.closest('.cats-dropdown__item--has-sub');
+            if (!item) return;
+            const willOpen = !item.classList.contains('is-open');
+            catsDropdown.querySelectorAll('.cats-dropdown__item--has-sub.is-open').forEach((el) => {
+                if (el !== item) {
+                    el.classList.remove('is-open');
+                    const btn = el.querySelector('[data-cats-toggle]');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+            item.classList.toggle('is-open', willOpen);
+            toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        });
+        document.addEventListener('click', (e) => {
+            if (catsLockedOpen) return;
+            if (!catsDropdown.contains(e.target)) setCatsDropdownOpen(false);
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !catsLockedOpen) setCatsDropdownOpen(false);
+        });
+    }
+
     mobileNavClose?.addEventListener('click', (e) => {
         e.preventDefault();
         setMobileNavOpen(false);
@@ -467,9 +519,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
                 : placeholderThumbSvg;
             const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
+            const pack = item.pack
+                ? `<span class="search-suggestion-pack">${escapeHtml(item.pack)}</span>`
+                : '';
             return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
                 <span class="search-suggestion-thumb">${thumb}</span>
-                <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
+                <span class="search-suggestion-copy">
+                    <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
+                    ${pack}
+                </span>
                 <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>
             </a>`;
         }).join('');
@@ -853,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             function visibleCount() {
                 const mobile = parseInt(root.dataset.visibleMobile, 10) || 2;
-                const desktop = parseInt(root.dataset.visibleDesktop, 10) || 6;
+                const desktop = parseInt(root.dataset.visibleDesktop, 10) || 5;
                 return window.innerWidth <= 768 ? mobile : desktop;
             }
 
@@ -1102,7 +1160,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initHomeProductCarousels();
+    initAccountDashboard();
     initContactFloat();
+
+    function initAccountDashboard() {
+        const root = document.querySelector('[data-account-dash]');
+        if (!root) return;
+
+        const panels = Array.from(root.querySelectorAll('[data-acc-panel]'));
+        const links = Array.from(root.querySelectorAll('[data-acc-nav]'));
+        const valid = new Set(panels.map((panel) => panel.dataset.accPanel));
+
+        function show(id) {
+            const section = valid.has(id) ? id : 'pregled';
+            panels.forEach((panel) => {
+                panel.hidden = panel.dataset.accPanel !== section;
+            });
+            links.forEach((link) => {
+                link.classList.toggle('is-active', link.dataset.accNav === section);
+            });
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        function fromHash() {
+            const fromUrl = (window.location.hash || '').replace('#', '');
+            const initial = root.dataset.initialSection || 'pregled';
+            show(fromUrl || initial);
+        }
+
+        window.addEventListener('hashchange', fromHash);
+        fromHash();
+
+        root.querySelectorAll('[data-copy]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const target = document.getElementById(btn.getAttribute('data-copy'));
+                const text = (target && target.textContent || '').trim();
+                if (!text) return;
+                try {
+                    await navigator.clipboard.writeText(text);
+                } catch (err) {
+                    const range = document.createRange();
+                    range.selectNodeContents(target);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    document.execCommand('copy');
+                    sel.removeAllRanges();
+                }
+                const original = btn.textContent;
+                btn.textContent = 'Kopirano';
+                window.setTimeout(() => {
+                    btn.textContent = original;
+                }, 1600);
+            });
+        });
+    }
 
     function initContactFloat() {
         const group = document.getElementById('contactFloatGroup');
@@ -1172,24 +1284,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const previousCount = parseInt(cartBtn.dataset.cartCount || '0', 10);
         const nextCount = Math.max(0, parseInt(count, 10) || 0);
         let badge = cartBtn.querySelector('.cart-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'cart-badge';
+            const icon = cartBtn.querySelector('.nav-action-icon');
+            (icon || cartBtn).appendChild(badge);
+        }
+        badge.hidden = false;
+        badge.style.display = '';
+        badge.textContent = String(nextCount);
         if (nextCount > 0) {
             cartBtn.classList.add('cart-btn--has-items');
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.className = 'cart-badge';
-                cartBtn.appendChild(badge);
-            }
-            badge.hidden = false;
-            badge.style.display = '';
-            badge.textContent = nextCount;
             if (nextCount > previousCount) {
                 triggerCartAddPulse(cartBtn);
             }
         } else {
             cartBtn.classList.remove('cart-btn--has-items', 'cart-btn--pulse-once');
-            if (badge) {
-                badge.remove();
-            }
         }
         cartBtn.dataset.cartCount = String(nextCount);
         cartBtn.setAttribute('data-cart-count', String(nextCount));
@@ -1198,19 +1308,24 @@ document.addEventListener('DOMContentLoaded', () => {
     window.updateCartBadge = updateCartBadge;
 
     function showCartToast(message) {
+        const text = String(message || '').trim();
+        if (!text) return;
+        const isError = /nije uspjelo|rasprodan|odaberite|nije dostup|greška|na stanju|smanjena na dostupno/i.test(text);
+        if (!isError) return;
         let toast = document.querySelector('.cart-toast');
         if (!toast) {
             toast = document.createElement('p');
             toast.className = 'cart-toast';
             document.body.appendChild(toast);
         }
-        toast.textContent = message;
+        toast.textContent = text;
         toast.classList.add('cart-toast--visible');
         clearTimeout(showCartToast.timer);
         showCartToast.timer = setTimeout(() => {
             toast.classList.remove('cart-toast--visible');
         }, 2200);
     }
+    window.showCartToast = showCartToast;
 
     async function addVariationToCart(slug, variationId) {
         const body = new URLSearchParams({

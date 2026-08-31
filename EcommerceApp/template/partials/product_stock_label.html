@@ -1,0 +1,10 @@
+<p class="product-stock-label{% if product.na_stanju %} product-stock-label--in{% else %} product-stock-label--out{% endif %}">
+    <span class="product-stock-label__icon" aria-hidden="true">
+        {% if product.na_stanju %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12.5 10 16l7.5-8"/></svg>
+        {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 8l8 8M16 8l-8 8"/></svg>
+        {% endif %}
+    </span>
+    {% if product.na_stanju %}Na stanju{% else %}Nije na stanju{% endif %}
+</p>

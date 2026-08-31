@@ -31,7 +31,7 @@ from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from .cart import Cart
+from .cart import Cart, stock_limit_message, stock_on_hand
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .loyalty import (
     azuriraj_loyalty_nakon_narudzbe,
@@ -97,6 +97,8 @@ from .models import (
     HomePromoCard,
     HomeTrustItem,
     HomeVlog,
+    Coupon,
+    LiveVisitor,
     LoyaltyCard,
     MarketingSubscriber,
     Order,
@@ -146,20 +148,15 @@ def _staff_edit_mode_enabled(request):
 
 def _can_view_out_of_stock(request=None):
     """
-    Superuser vidi artikle van stanja samo kad je Edit mode UKLJUČEN.
-    Edit off → isto kao običan kupac (samo na stanju).
+    Superuser u Edit mode vidi i neaktivne artikle (product_detail).
+    Artikli van stanja su javno vidljivi; korpa je i dalje blokirana.
     """
     return _staff_edit_mode_enabled(request)
 
 
 def _product_queryset(request=None):
-    qs = Product.objects.filter(aktivan=True)
-    if not _can_view_out_of_stock(request):
-        # Parent na_stanju ILI barem jedna varijacija na stanju
-        qs = qs.filter(
-            Q(na_stanju=True) | Q(varijacije__na_stanju=True),
-        ).distinct()
-    return _prefetch_product_cards(qs)
+    """Aktivni artikli na sajtu — i oni koji nisu na stanju (bez korpe)."""
+    return _prefetch_product_cards(Product.objects.filter(aktivan=True))
 
 
 def _bind_variation_parents(product):
@@ -512,7 +509,7 @@ def _showcase_brands():
     """Brendovi s logom + artiklima — cache da DISTINCT ne usporava svaki home load."""
     from django.core.cache import cache
 
-    cache_key = 'showcase_brands_v1'
+    cache_key = 'showcase_brands_v2'
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -520,7 +517,6 @@ def _showcase_brands():
     # Brži put: brendovi koji imaju logo, pa filter po postojanju artikla
     brand_ids = (
         Product.objects.filter(aktivan=True)
-        .filter(Q(na_stanju=True) | Q(varijacije__na_stanju=True))
         .exclude(brend_id__isnull=True)
         .values_list('brend_id', flat=True)
         .distinct()
@@ -1496,6 +1492,24 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     return sorted(products, key=key)
 
 
+def _sort_products_by_price(products, *, descending=False):
+    """Katalog: cijena rastuće / opadajuće. Nema na stanju ide na dno."""
+    if not products:
+        return products
+
+    def key(p):
+        in_stock = 0 if getattr(p, 'na_stanju', False) else 1
+        try:
+            _bind_variation_parents(p)
+            price = float(_effective_product_price(p) or 0)
+        except Exception:
+            price = 0.0
+        name = (p.naziv or '').lower()
+        return (in_stock, -price if descending else price, name)
+
+    return sorted(products, key=key)
+
+
 def _order_qs_by_lager_priority(qs, *extra_order):
     """QuerySet: prioritet_lagera DESC, zatim dodatni order_by."""
     return qs.order_by('-prioritet_lagera', *extra_order)
@@ -1538,8 +1552,6 @@ def _suggest_product_queryset(request=None):
     Lagani queryset za autocomplete — minimum polja, bez tagova M2M.
     """
     qs = Product.objects.filter(aktivan=True)
-    if not _can_view_out_of_stock(request):
-        qs = qs.filter(na_stanju=True)
     return qs.defer(
         'opis', 'meta_title', 'meta_description',
         'olx_listing_url', 'olx_listing_slug', 'olx_listing_id',
@@ -1724,6 +1736,7 @@ def search_suggest(request):
             'image': _suggest_thumb_url(image_field) if image_field else '',
             'price': f'{price:.2f}',
             'on_sale': _product_is_on_sale(product),
+            'pack': product.pakovanje_label or '',
         })
 
     response = JsonResponse({'results': results, 'query': query, 'has_more': has_more})
@@ -1804,24 +1817,24 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             if _product_matches_size(product, size_label)
         ]
 
-    if params['sort'] == 'opadajuca':
-        price_sort = 'opadajuca'
-    else:
-        price_sort = 'rastuca'
-    # Fine re-rank: za pretragu samo vrh liste (SQL već drži naziv gore);
-    # ostatak ostaje po SQL score — štedi CPU kad ima 500–1000+ pogodaka.
-    if search_q and len(search_q) >= 2 and len(products) > SEARCH_FINE_RANK_TOP:
+    sort = (params.get('sort') or '').strip()
+    if sort in ('rastuca', 'opadajuca'):
+        products = _sort_products_by_price(
+            products,
+            descending=(sort == 'opadajuca'),
+        )
+    elif search_q and len(search_q) >= 2 and len(products) > SEARCH_FINE_RANK_TOP:
         head = _sort_products_by_lager_priority(
             products[:SEARCH_FINE_RANK_TOP],
             query=search_q,
-            price_sort=price_sort,
+            price_sort='rastuca',
         )
         products = head + products[SEARCH_FINE_RANK_TOP:]
     else:
         products = _sort_products_by_lager_priority(
             products,
             query=search_q,
-            price_sort=price_sort,
+            price_sort='rastuca',
         )
 
     return products, params
@@ -2071,10 +2084,26 @@ def _banners_with_media(qs):
 
 
 HOME_SECTION_PRODUCT_LIMIT = 10
-HOME_SECTION_PRODUCT_VISIBLE = 6
+HOME_SECTION_PRODUCT_VISIBLE = 5
 HOME_SECTION_PRODUCT_VISIBLE_MOBILE = 2
-HOME_CATEGORY_SHOWCASE_LIMIT = 4
+HOME_CATEGORY_SHOWCASE_LIMIT = 6
 HOME_VLOG_LIMIT = 3
+
+
+def _fill_home_section_products(products, request=None):
+    """Dopuni sekciju do HOME_SECTION_PRODUCT_LIMIT da karusel ima 5 u nizu."""
+    items = list(products or [])
+    if len(items) >= HOME_SECTION_PRODUCT_LIMIT:
+        return items[:HOME_SECTION_PRODUCT_LIMIT]
+    seen = {p.pk for p in items}
+    extra_qs = _product_queryset(request)
+    if seen:
+        extra_qs = extra_qs.exclude(pk__in=seen)
+    extra_qs = _order_qs_by_lager_priority(extra_qs, '-kreiran', '-id')[
+        : HOME_SECTION_PRODUCT_LIMIT - len(items)
+    ]
+    items.extend(extra_qs)
+    return items
 
 
 def _home_latest_products(request=None):
@@ -2082,7 +2111,7 @@ def _home_latest_products(request=None):
     Noviteti na početnoj:
     1) Artikli označeni „Noviteti” (je_novitet) — prioritet
     2) Ručni odabir (HomeNovoProduct) ako je mod manual
-    3) Fallback: zadnjih 10 unesenih
+    3) Dopuna: najnoviji artikli da bude 5 u nizu
     """
     base_qs = _product_queryset(request)
     marked = list(
@@ -2091,32 +2120,26 @@ def _home_latest_products(request=None):
             '-kreiran', '-id',
         )[:HOME_SECTION_PRODUCT_LIMIT],
     )
-    if marked:
+    if len(marked) >= HOME_SECTION_PRODUCT_LIMIT:
         return marked
 
-    site_settings = SiteSettings.load()
-    if site_settings.noviteti_mod == SiteSettings.NovitetiMod.MANUAL:
-        entries_qs = HomeNovoProduct.objects.filter(
-            aktivan=True,
-            artikal__aktivan=True,
-        )
-        if not _can_view_out_of_stock(request):
-            entries_qs = entries_qs.filter(
-                Q(artikal__na_stanju=True) | Q(artikal__varijacije__na_stanju=True),
-            ).distinct()
-        entries = entries_qs.select_related(
-            'artikal', 'artikal__kategorija', 'artikal__brend',
-        ).prefetch_related(
-            Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
-        ).order_by(
-            '-artikal__prioritet_lagera', 'redoslijed', '-id',
-        )[:HOME_SECTION_PRODUCT_LIMIT]
-        products = [entry.artikal for entry in entries]
-        if products:
-            return products
-    return list(
-        _order_qs_by_lager_priority(base_qs, '-kreiran')[:HOME_SECTION_PRODUCT_LIMIT],
-    )
+    if not marked:
+        site_settings = SiteSettings.load()
+        if site_settings.noviteti_mod == SiteSettings.NovitetiMod.MANUAL:
+            entries_qs = HomeNovoProduct.objects.filter(
+                aktivan=True,
+                artikal__aktivan=True,
+            )
+            entries = entries_qs.select_related(
+                'artikal', 'artikal__kategorija', 'artikal__brend',
+            ).prefetch_related(
+                Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
+            ).order_by(
+                '-artikal__prioritet_lagera', 'redoslijed', '-id',
+            )[:HOME_SECTION_PRODUCT_LIMIT]
+            marked = [entry.artikal for entry in entries]
+
+    return _fill_home_section_products(marked, request)
 
 
 def _home_featured_products(request=None):
@@ -2140,10 +2163,6 @@ def _home_featured_products(request=None):
         aktivan=True,
         artikal__aktivan=True,
     )
-    if not _can_view_out_of_stock(request):
-        entries_qs = entries_qs.filter(
-            Q(artikal__na_stanju=True) | Q(artikal__varijacije__na_stanju=True),
-        ).distinct()
     entries = entries_qs.select_related(
         'artikal', 'artikal__kategorija', 'artikal__brend',
     ).prefetch_related(
@@ -2298,7 +2317,7 @@ def _vlog_cards(limit=None):
             continue
         from .utils.images import vlog_image_responsive_meta
 
-        image_meta = vlog_image_responsive_meta(vlog.slika, default=(360, 360))
+        image_meta = vlog_image_responsive_meta(vlog.slika, default=(800, 500))
         display_date = getattr(vlog, 'display_date', None)
         teaser = ''
         if hasattr(vlog, 'short_teaser'):
@@ -2320,7 +2339,7 @@ def _vlog_cards(limit=None):
 def _home_vlogs():
     from django.core.cache import cache
 
-    cache_key = f'home_vlogs_v1:{HOME_VLOG_LIMIT}'
+    cache_key = f'home_vlogs_v2:{HOME_VLOG_LIMIT}'
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -2389,7 +2408,7 @@ def home(request):
     grid_banners = _filter_banners_for_empty_categories(
         _banners_with_media(Banner.objects.filter(
             tip=Banner.BannerType.GRID, aktivan=True,
-        ).select_related('kategorija').order_by('redoslijed', '-id'))[:8]
+        ).select_related('kategorija').order_by('redoslijed', '-id'))[:3]
     )
     featured_banners = _banners_with_media(Banner.objects.filter(
         tip=Banner.BannerType.FEATURED, aktivan=True,
@@ -2422,7 +2441,7 @@ def home(request):
         scope_qs = _filter_size_scope_qs(filter_params, request=request)
         filter_sizes = _available_sizes(scope_qs)
         filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
-        page_obj = _paginate_home_products(request, products, filter_params)
+        page_obj = _paginate_catalog_products(request, products)
         search_products = page_obj.object_list
         result_count = page_obj.paginator.count
         if filter_params.get('q'):
@@ -2485,7 +2504,7 @@ def home(request):
         if site_settings.prikazi_akcijsku_sekciju:
             sale_products = _home_sale_products(request)
         home_trust_items = _home_trust_items()
-        home_promo_cards = _home_promo_cards()
+        home_promo_cards = []
         home_category_showcases = _home_category_showcases(request)
         home_brand_showcases = _home_brand_showcases(request)
         home_vlogs = _home_vlogs()
@@ -2526,8 +2545,8 @@ def home(request):
             )
             lcp_image_srcset = grid_lcp.get('srcset') or None
             lcp_image_sizes = '(max-width: 768px) 50vw, 360px'
-        elif latest_products:
-            first_product = latest_products[0]
+        elif latest_products or featured_products or sale_products:
+            first_product = (latest_products or featured_products or sale_products)[0]
             if first_product.prikazna_slika:
                 product_lcp = first_product.prikazna_slika_responsive
                 if product_lcp:
@@ -2581,15 +2600,13 @@ def home(request):
         'page_obj': page_obj,
         'filters_active': filters_active,
         'filter_params': filter_params,
-        'filter_categories': _filter_categories() if filters_active else [],
+        'filter_categories': _filter_categories(),
         'filter_size_groups': filter_size_groups,
         'filter_action': home_url,
-        'filter_reset_url': (
-            _filter_reset_url(home_url, filter_params) if filters_active else ''
-        ),
+        'filter_reset_url': _filter_reset_url(home_url, filter_params),
         'catalog_title': catalog_title,
         'catalog_subtitle': catalog_subtitle,
-        'catalog_query': _catalog_query_string(filter_params) if filters_active else '',
+        'catalog_query': _catalog_query_string(filter_params),
         'elided_page_range': (
             page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []
         ),
@@ -2648,6 +2665,7 @@ def home(request):
             'seo_description': site_settings.meta_description or '',
             'seo_h1': '',
         }))
+        context['seo_h1'] = ''
     return render(request, 'home.html', context)
 
 
@@ -2661,7 +2679,7 @@ def vlog_detail(request, slug):
         raise Http404 from None
     from .utils.images import vlog_image_responsive_meta
 
-    vlog_image = vlog_image_responsive_meta(vlog.slika, default=(360, 360))
+    vlog_image = vlog_image_responsive_meta(vlog.slika, default=(800, 500))
     other_vlogs = []
     for other in HomeVlog.objects.filter(aktivan=True).exclude(slika='').exclude(pk=vlog.pk).order_by(
         'redoslijed', '-id',
@@ -2724,6 +2742,53 @@ def payment_methods(request):
         'canonical_url': settings.SITE_URL.rstrip('/') + reverse('payment_methods'),
     }
     return render(request, 'pages/payment.html', context)
+
+
+def brands_list(request):
+    brands_qs = Brand.objects.filter(
+        id__in=(
+            Product.objects.filter(aktivan=True)
+            .exclude(brend_id__isnull=True)
+            .values_list('brend_id', flat=True)
+            .distinct()
+        )
+    )
+    sort = (request.GET.get('sort') or 'az').strip().lower()
+    if sort == 'za':
+        brands_qs = brands_qs.order_by('-naziv')
+    else:
+        sort = 'az'
+        brands_qs = brands_qs.order_by('naziv')
+
+    page_obj = _paginate_catalog_products(request, brands_qs, per_page=24)
+    total = page_obj.paginator.count
+    start = page_obj.start_index() if total else 0
+    end = page_obj.end_index() if total else 0
+    canonical = settings.SITE_URL.rstrip('/') + reverse('brands_list')
+    context = {
+        **_base_context(),
+        'brands': page_obj.object_list,
+        'page_obj': page_obj,
+        'elided_page_range': page_obj.paginator.get_elided_page_range(page_obj.number),
+        'brands_sort': sort,
+        'brands_shown_start': start,
+        'brands_shown_end': end,
+        'brands_total': total,
+        **page_seo_context('brands', defaults={
+            'seo_title': 'Brendovi — opremazaribolov.ba',
+            'seo_description': (
+                'Svi brendovi ribolovne opreme na opremazaribolov.ba — Fox, Shimano, '
+                'Daiwa, Korda i drugi. Pronađite vrhunsku opremu poznatih brendova.'
+            ),
+            'seo_h1': 'Svi brendovi',
+        }),
+        'canonical_url': canonical,
+        'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
+            {'name': 'Početna', 'url': settings.SITE_URL.rstrip('/') + '/'},
+            {'name': 'Brendovi', 'url': canonical},
+        ])),
+    }
+    return render(request, 'brands.html', context)
 
 
 def vlog_list(request):
@@ -2920,8 +2985,8 @@ def _staff_product_edit_redirect(request, slug, *, stay_on_error=False):
 
 
 def product_detail(request, slug):
-    # Edit mode ON → superuser vidi i neaktivne / van stanja.
-    # Kupci: aktivni artikli i kad nisu na stanju (stranica ostaje, poruka „nije dostupno”).
+    # Edit mode ON → superuser vidi i neaktivne.
+    # Kupci: aktivni artikli i kad nisu na stanju (stranica ostaje, bez korpe).
     # Neaktivni (aktivan=False) → 404 za kupce.
     if _can_view_out_of_stock(request):
         product_qs = Product.objects.all()
@@ -3030,9 +3095,9 @@ def product_detail(request, slug):
         context['gratis_akcija_hint'] = True
 
     from .gratis import get_active_qty_deal_for_product
-    qty_deal_akcija_hint = get_active_qty_deal_for_product(product)
-    if qty_deal_akcija_hint:
-        context['qty_deal_hint'] = True
+    qty_deal_akcija = get_active_qty_deal_for_product(product)
+    if qty_deal_akcija:
+        context['qty_deal_page'] = qty_deal_akcija.qty_deal_page_offer()
 
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
     context['meta_view_content_event_id'] = view_content_event_id
@@ -3120,8 +3185,137 @@ def product_detail(request, slug):
 
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
     context['staff_product_tools'] = _staff_edit_mode_enabled(request)
+    context['product_bundle'] = _product_page_bundle(product)
+    context['flash_offer'] = _product_page_flash_offer(product)
 
     return render(request, 'product_detail.html', context)
+
+
+def _product_page_bundle(product):
+    """Aktivni bundle za ovu stranicu artikla.
+
+    Prikazuje se ako je artikal u setu, ili ako je trigger kategorija
+    i artikal pripada toj kategoriji (uključujući potkategorije).
+    """
+    from .models import Akcija, AkcijaBundleLine
+
+    akcije = (
+        Akcija.objects.filter(aktivan=True, tip=Akcija.Tip.BUNDLE)
+        .filter(
+            Q(bundle_lines__product=product)
+            | Q(bundle_artikli=product)
+            | Q(
+                bundle_trigger=Akcija.BundleTrigger.CATEGORY,
+                kategorija_id__isnull=False,
+            )
+        )
+        .select_related('kategorija', 'kategorija__roditelj')
+        .prefetch_related(
+            Prefetch(
+                'bundle_lines',
+                queryset=AkcijaBundleLine.objects.select_related(
+                    'product', 'product__kategorija',
+                ).order_by('redoslijed', 'id'),
+            ),
+            'bundle_artikli',
+        )
+        .distinct()
+        .order_by('redoslijed', '-id')
+    )
+    product_category = getattr(product, 'kategorija', None)
+    chosen = None
+    category_fallback = None
+    for akcija in akcije:
+        if not akcija.jos_traje():
+            continue
+        items = akcija.bundle_display_items()
+        pricing = akcija.bundle_pricing_summary()
+        if not items or len(items) < 2 or not pricing:
+            continue
+        in_set = any(
+            item.get('product') is not None and item['product'].pk == product.pk
+            for item in items
+        )
+        trigger = (akcija.bundle_trigger or '').strip()
+        category_ok = (
+            trigger == Akcija.BundleTrigger.CATEGORY
+            and akcija.kategorija_id
+            and product_category is not None
+            and akcija._category_matches_root(product_category, akcija.kategorija_id)
+        )
+        if not in_set and not category_ok:
+            continue
+        pack = (akcija, items, pricing)
+        if in_set:
+            chosen = pack
+            break
+        if category_fallback is None:
+            category_fallback = pack
+    chosen = chosen or category_fallback
+    if not chosen:
+        return None
+    akcija, items, pricing = chosen
+    price_parts = ' + '.join(
+        f'{item["bazna"]:.2f} KM' if item.get('bazna') is not None else '—'
+        for item in items
+    )
+    return {
+        'akcija': akcija,
+        'items': items,
+        'pricing': pricing,
+        'price_parts': price_parts,
+    }
+
+
+def _product_page_flash_offer(product):
+    """Akcijska ponuda za ovu stranicu artikla (nije popup)."""
+    from .models import Akcija, AkcijaFlashLine
+
+    akcije = (
+        Akcija.objects.filter(aktivan=True, tip=Akcija.Tip.AKCIJSKA)
+        .select_related('kategorija', 'kategorija__roditelj', 'artikal')
+        .prefetch_related(
+            Prefetch(
+                'flash_lines',
+                queryset=AkcijaFlashLine.objects.select_related(
+                    'product', 'product__kategorija',
+                ).prefetch_related('product__varijacije').order_by('redoslijed', 'id'),
+            ),
+        )
+        .order_by('redoslijed', '-id')
+    )
+    for akcija in akcije:
+        if not akcija.flash_applies_to_product(product):
+            continue
+        rows = akcija.flash_line_rows()
+        related = []
+        for line in rows:
+            p = line.product
+            pct = line.effective_discount_percent(akcija)
+            pricing = akcija.flash_item_pricing(p, pct)
+            if not pricing:
+                continue
+            related.append({
+                'product': p,
+                'pricing': pricing,
+                'in_stock': bool(
+                    p.na_stanju
+                    or p.varijacije.filter(na_stanju=True).exists()
+                ),
+            })
+        remaining = akcija.flash_remaining_seconds()
+        hours_left = max(1, (remaining + 3599) // 3600) if remaining else (akcija.trajanje_sati or 0)
+        end = akcija.zavrsava
+        return {
+            'akcija': akcija,
+            'related': related[:4],
+            'remaining_seconds': remaining,
+            'expires_ts': int(end.timestamp()) if end else 0,
+            'hours_left': hours_left,
+            'naslov': (akcija.flash_naslov or '').strip() or 'POSEBNA PONUDA – SAMO SADA!',
+            'podnaslov': (akcija.flash_podnaslov or '').strip(),
+        }
+    return None
 
 
 @require_POST
@@ -3180,8 +3374,9 @@ def add_to_cart(request, slug):
                 variation = in_stock.first()
             elif is_qty_deal_popup_add and in_stock.exists():
                 variation = in_stock.first()
-            elif timer_akcija_from_popup and in_stock.count() == 1:
-                variation = in_stock.first()
+            elif timer_akcija_from_popup or request.POST.get('flash_offer_id'):
+                # Bundle / akcijska ponuda: varijanta triggera nije obavezna.
+                variation = in_stock.first() if in_stock.exists() else None
             elif stay_on_page:
                 return JsonResponse({'ok': False, 'message': 'Odaberite varijantu.'}, status=400)
             else:
@@ -3206,6 +3401,15 @@ def add_to_cart(request, slug):
         messages.error(request, msg)
         return redirect('product_detail', slug=slug)
 
+    on_hand = stock_on_hand(product, variation)
+    remaining = cart.remaining_stock(product, variation)
+    if remaining <= 0 or quantity > remaining:
+        msg = stock_limit_message(on_hand)
+        if stay_on_page:
+            return JsonResponse({'ok': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('product_detail', slug=slug)
+
     custom_price = None
     promo_bazna = None
     promo_akcija = None
@@ -3224,6 +3428,44 @@ def add_to_cart(request, slug):
                 promo_bazna = base
                 # mark for cart — source set at cart.add below
                 request._dwell_discount_percent = dwell_deal['percent']
+        except Exception:
+            pass
+
+    # Akcijska ponuda — cijena sa stranice artikla / vezanih kartica
+    if custom_price is None and not is_exit_popup_add:
+        try:
+            from .models import Akcija as _Akcija, _izracunaj_akcijsku_od_postotka
+            flash_id = (request.POST.get('flash_offer_id') or '').strip()
+            flash_akcija = None
+            if flash_id:
+                flash_akcija = (
+                    _Akcija.objects.filter(
+                        pk=flash_id, aktivan=True, tip=_Akcija.Tip.AKCIJSKA,
+                    )
+                    .prefetch_related('flash_lines')
+                    .first()
+                )
+                if flash_akcija and not flash_akcija.flash_applies_to_product(product):
+                    # Vezani artikal iz ponude: dozvoli i ako trigger nije ovaj artikal
+                    in_offer = any(
+                        getattr(ln, 'product_id', None) == product.pk
+                        for ln in flash_akcija.flash_line_rows()
+                    )
+                    if not in_offer:
+                        flash_akcija = None
+            if flash_akcija and flash_akcija.flash_still_running():
+                pct = flash_akcija.popust_postotak
+                for ln in flash_akcija.flash_line_rows():
+                    if ln.product_id == product.pk:
+                        pct = ln.effective_discount_percent(flash_akcija)
+                        break
+                base = variation.prikazna_cijena if variation else product.bazna_cijena
+                sale = _izracunaj_akcijsku_od_postotka(base, pct)
+                if sale is not None:
+                    custom_price = sale
+                    promo_bazna = base
+                    promo_akcija = flash_akcija
+                    request._flash_discount_percent = pct
         except Exception:
             pass
 
@@ -3330,7 +3572,6 @@ def add_to_cart(request, slug):
                             ),
                         },
                     })
-                messages.success(request, message)
                 return redirect('cart')
 
         # Kupi više: N komada istog artikla s tier %
@@ -3388,7 +3629,6 @@ def add_to_cart(request, slug):
                             'quantity': deal_qty,
                         },
                     })
-                messages.success(request, message)
                 return redirect('cart')
 
         gratis_bundle_akcija = Akcija.objects.filter(
@@ -3433,7 +3673,6 @@ def add_to_cart(request, slug):
                             'quantity': quantity,
                         },
                     })
-                messages.success(request, message)
                 if request.POST.get('redirect_to') == 'cart':
                     return redirect('cart')
                 return redirect('product_detail', slug=slug)
@@ -3537,18 +3776,17 @@ def add_to_cart(request, slug):
                         'quantity': quantity,
                     },
                 })
-            messages.success(request, message)
             if request.POST.get('redirect_to') == 'cart':
                 return redirect('cart')
             return redirect('product_detail', slug=slug)
 
     qty_deal_choice = (request.POST.get('qty_deal_choice') or '').strip().lower()
 
-    if stay_on_page and not gratis_choice and not akcija_id:
+    if stay_on_page and not gratis_choice and not akcija_id and not request.POST.get('flash_offer_id'):
         # 1) Kupi više: iskači tek pri dodavanju u korpu (bez 1 kom u modalu)
         if qty_deal_choice not in ('no', 'skip'):
             qty_offer_akcija = get_active_qty_deal_for_product(product)
-            if qty_offer_akcija:
+            if qty_offer_akcija and cart.remaining_stock(product, variation) >= 2:
                 qty_offer = build_qty_deal_offer_response(qty_offer_akcija)
                 if qty_offer:
                     return JsonResponse({
@@ -3581,7 +3819,7 @@ def add_to_cart(request, slug):
         disc_pct = exit_popup_percent
     elif custom_price is not None and promo_akcija:
         tip_label = promo_akcija.get_tip_display() if hasattr(promo_akcija, 'get_tip_display') else 'Akcija'
-        pct = promo_akcija.popust_postotak
+        pct = getattr(request, '_flash_discount_percent', None) or promo_akcija.popust_postotak
         if pct:
             disc_src = f'Akcija: {tip_label} „{promo_akcija.naziv}” (−{pct}%)'
             disc_pct = pct
@@ -3711,7 +3949,6 @@ def add_to_cart(request, slug):
                 'quantity': quantity,
             },
         })
-    messages.success(request, message)
     if request.POST.get('redirect_to') == 'cart':
         return redirect('cart')
     return redirect('product_detail', slug=slug)
@@ -3857,7 +4094,6 @@ def add_upsell_to_cart(request, offer_id, product_id):
         if request.POST.get('next') == 'checkout':
             payload.update(_checkout_summary_payload(request, cart))
         return JsonResponse(payload)
-    messages.success(request, success_message)
     return redirect(_upsell_redirect_target(request))
 
 
@@ -3946,6 +4182,10 @@ def cart_view(request):
     from .upsell import get_cart_banner_upsell_offers
 
     cart = Cart(request)
+    stock_changed, stock_notices = cart.clamp_to_stock()
+    if stock_changed:
+        for notice in dict.fromkeys(stock_notices):
+            messages.error(request, notice)
     try:
         sync_active_cart(request, cart)
     except OperationalError:
@@ -3972,13 +4212,19 @@ def cart_view(request):
 @require_POST
 def update_cart(request):
     cart = Cart(request)
+    capped = False
     for key in list(cart.cart.keys()):
         qty = request.POST.get(f'quantity_{key}')
         if qty is not None:
             try:
-                cart.set_quantity(key, int(qty))
+                requested = int(qty)
             except (TypeError, ValueError):
-                pass
+                continue
+            applied = cart.set_quantity(key, requested)
+            if requested > 0 and applied < requested:
+                capped = True
+    if capped:
+        messages.error(request, 'Količina je smanjena na dostupno stanje.')
     cart.clear_coupon()
     return redirect('cart')
 
@@ -4116,6 +4362,16 @@ def checkout(request):
     if not cart.item_count:
         messages.warning(request, 'Korpa je prazna.')
         return redirect('home')
+
+    stock_changed, stock_notices = cart.clamp_to_stock()
+    if stock_changed:
+        for notice in dict.fromkeys(stock_notices):
+            messages.error(request, notice)
+        if not cart.item_count:
+            messages.warning(request, 'Korpa je prazna.')
+            return redirect('home')
+        if request.method == 'POST':
+            return redirect('cart')
 
     form = CheckoutForm(initial=_checkout_initial(request))
     if request.method == 'POST':
@@ -4622,6 +4878,106 @@ def logout_view(request):
     return redirect('home')
 
 
+_ACCOUNT_SECTIONS = frozenset({
+    'pregled',
+    'narudzbe',
+    'loyalty',
+    'adrese',
+    'sacuvani',
+    'pregledano',
+    'kuponi',
+    'reklamacije',
+    'postavke',
+})
+
+_LOYALTY_TIER_EN = {
+    'bronza': 'BRONZE',
+    'srebrna': 'SILVER',
+    'zlatna': 'GOLD',
+    'platinum': 'PLATINUM',
+}
+
+
+def _account_section_from_post(request):
+    section = (request.POST.get('account_section') or 'postavke').strip()
+    if section not in _ACCOUNT_SECTIONS:
+        return 'postavke'
+    return section
+
+
+def _account_recently_viewed(request, limit=10):
+    visitor = (
+        LiveVisitor.objects.filter(user=request.user)
+        .order_by('-last_seen')
+        .first()
+    )
+    if visitor is None:
+        session_key = request.session.session_key
+        if session_key:
+            visitor = LiveVisitor.objects.filter(session_key=session_key).first()
+    raw = (visitor.pregledani_proizvodi if visitor else None) or []
+    ids = []
+    seen = set()
+    for item in raw:
+        pk = None
+        if isinstance(item, dict):
+            pk = item.get('id')
+        elif isinstance(item, int):
+            pk = item
+        try:
+            pk = int(pk)
+        except (TypeError, ValueError):
+            continue
+        if pk in seen:
+            continue
+        seen.add(pk)
+        ids.append(pk)
+        if len(ids) >= limit:
+            break
+    if not ids:
+        return []
+    by_id = {
+        product.pk: product
+        for product in _product_queryset(request).filter(pk__in=ids)
+    }
+    return [by_id[pk] for pk in ids if pk in by_id]
+
+
+def _account_dashboard_extras(request, *, orders, loyalty, loyalty_card, profil):
+    spend = loyalty_card.ukupna_potrosnja or Decimal('0')
+    tier = loyalty.get('tier') or {}
+    next_tier = loyalty.get('next_tier')
+    cap = tier.get('do') if next_tier else spend
+    if cap in (None, Decimal('0')) and next_tier:
+        cap = next_tier.get('od')
+    if cap:
+        progress_pct = int(min(100, max(0, (spend / cap) * 100)))
+    else:
+        progress_pct = 100
+    coupons = list(
+        Coupon.objects.filter(
+            Q(vlasnik=request.user) | Q(loyalty_kartica=loyalty_card),
+            aktivan=True,
+        ).order_by('automatski', '-kreiran')
+    )
+    closed = {Order.Status.ZAVRSENA, Order.Status.OTKAZANA}
+    return {
+        'orders_recent': orders[:5],
+        'orders_count': len(orders),
+        'active_orders_count': sum(1 for order in orders if order.status not in closed),
+        'coupons': coupons,
+        'coupons_count': len(coupons),
+        'loyalty_spend': spend,
+        'loyalty_cap': cap,
+        'loyalty_progress_pct': progress_pct,
+        'loyalty_tier_en': _LOYALTY_TIER_EN.get(tier.get('nivo'), (tier.get('label') or '').upper()),
+        'recommended_products': _home_featured_products(request),
+        'recently_viewed_products': _account_recently_viewed(request),
+        'home_trust_items': _home_trust_items(),
+        'has_address': bool((profil.adresa or '').strip() or (profil.grad or '').strip()),
+    }
+
+
 @login_required(login_url='login')
 def account(request):
     from .loyalty import ba_mobile_local
@@ -4636,7 +4992,9 @@ def account(request):
         'postanski_broj': profil.postanski_broj,
     }, exclude_user_id=request.user.pk)
 
+    account_initial_section = 'pregled'
     if request.method == 'POST':
+        account_initial_section = _account_section_from_post(request)
         profile_form = ProfileForm(request.POST, exclude_user_id=request.user.pk)
         if profile_form.is_valid():
             email = profile_form.cleaned_data['email'].strip().lower()
@@ -4657,8 +5015,9 @@ def account(request):
                 logger.info("Profile update: sync_korisnik za %s", request.user.email)
                 sync_korisnik(request.user)
                 messages.success(request, 'Podaci naloga su ažurirani.')
+                return redirect(f"{reverse('account')}#{account_initial_section}")
 
-    orders = (
+    orders = list(
         Order.objects.filter(korisnik=request.user)
         .prefetch_related('stavke')
         .order_by('-kreirana')
@@ -4670,6 +5029,10 @@ def account(request):
         or request.user.first_name
         or (request.user.email or '').strip().lower()
     )
+    welcome_name = (
+        (request.user.get_full_name() or request.user.first_name or '').strip()
+        or cardholder_name
+    )
 
     context = {
         **_base_context(),
@@ -4677,6 +5040,16 @@ def account(request):
         'orders': orders,
         'loyalty': loyalty,
         'cardholder_name': cardholder_name,
+        'welcome_name': welcome_name,
+        'account_initial_section': account_initial_section,
+        'profil': profil,
+        **_account_dashboard_extras(
+            request,
+            orders=orders,
+            loyalty=loyalty,
+            loyalty_card=loyalty_card,
+            profil=profil,
+        ),
     }
     return render(request, 'account/index.html', context)
 
@@ -7395,24 +7768,10 @@ def staff_product_quick_edit(request, slug):
         from .magacin import refresh_catalog_qty
         refresh_catalog_qty(product)
         product.refresh_from_db(fields=['na_stanju', 'stanje'])
-        if product.na_stanju:
-            messages.success(
-                request,
-                f'Artikal „{product.naziv}” je na sajtu jer ima zalihu na lokaciji.',
-            )
-        else:
-            messages.success(
-                request,
-                f'Artikal „{product.naziv}” nije na sajtu jer nema zalihe na lokacijama.',
-            )
         return _staff_product_edit_redirect(request, slug)
     elif action == 'toggle_japan':
         product.proizvedeno_u_japanu = not product.proizvedeno_u_japanu
         product.save(update_fields=['proizvedeno_u_japanu'])
-        if product.proizvedeno_u_japanu:
-            messages.success(request, f'„{product.naziv}” označen kao Made in Japan.')
-        else:
-            messages.success(request, f'Made in Japan uklonjen sa „{product.naziv}”.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'save_all':
         # Jedan Save: brend, kategorija, opis, cijena, glavna slika, noviteti
@@ -7518,7 +7877,6 @@ def staff_product_quick_edit(request, slug):
         product.save()
         # Dodatne slike (opcionalno u istom save-u)
         uploads = request.FILES.getlist('dodatne_slike')
-        extra_n = 0
         if uploads:
             max_order = (
                 product.dodatne_slike.aggregate(max_red=Max('redoslijed')).get('max_red') or 0
@@ -7531,7 +7889,6 @@ def staff_product_quick_edit(request, slug):
                     slika=up,
                     redoslijed=max_order + index,
                 )
-                extra_n += 1
         # Tagovi (chipovi + ručni unos zarezom)
         tags_touched = (
             'tag_ids' in request.POST
@@ -7544,34 +7901,6 @@ def staff_product_quick_edit(request, slug):
             product.tagovi.set(tags)
             changed.append('tagovi')
 
-        parts = []
-        if 'cijena' in changed:
-            parts.append(f'cijena {product.cijena} KM')
-        if 'kategorija' in changed:
-            parts.append('kategorija')
-        if 'brend' in changed:
-            parts.append('brend')
-        if 'opis' in changed:
-            parts.append('opis')
-        if 'slika' in changed:
-            parts.append('glavna slika')
-        if 'je_novitet' in changed:
-            parts.append('noviteti ' + ('uključeno' if product.je_novitet else 'isključeno'))
-        if 'je_hit' in changed:
-            parts.append('HIT ponuda ' + ('uključeno' if product.je_hit else 'isključeno'))
-        if 'pakovanje' in changed:
-            if product.pakovanje_komada and product.pakovanje_komada > 1:
-                parts.append(f'pakovanje {product.pakovanje_komada} kom.')
-            else:
-                parts.append('pakovanje isključeno')
-        if 'tagovi' in changed:
-            parts.append(f'tagovi ({product.tagovi.count()})')
-        if extra_n:
-            parts.append(f'+{extra_n} slika')
-        messages.success(
-            request,
-            'Sačuvano: ' + (', '.join(parts) if parts else 'bez izmjena') + '.',
-        )
         return _staff_product_edit_redirect(request, slug)
     # Legacy single-field actions (zadržano radi kompatibilnosti)
     elif action == 'set_price':
@@ -7588,14 +7917,12 @@ def staff_product_quick_edit(request, slug):
         if product.akcija_postotak:
             product.akcijska_cijena = None
         product.save()
-        messages.success(request, f'Cijena ažurirana na {new_price} KM.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'set_category':
         raw_id = (request.POST.get('kategorija_id') or '').strip()
         if not raw_id:
             product.kategorija = None
             product.save(update_fields=['kategorija'])
-            messages.success(request, 'Kategorija uklonjena sa artikla.')
         else:
             try:
                 category_id = int(raw_id)
@@ -7608,14 +7935,12 @@ def staff_product_quick_edit(request, slug):
                 return redirect('product_detail', slug=slug)
             product.kategorija = category
             product.save(update_fields=['kategorija'])
-            messages.success(request, f'Kategorija postavljena na „{category}”.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'set_brand':
         raw_id = (request.POST.get('brend_id') or '').strip()
         if not raw_id:
             product.brend = None
             product.save(update_fields=['brend'])
-            messages.success(request, 'Brend uklonjen sa artikla.')
         else:
             try:
                 brand_id = int(raw_id)
@@ -7628,12 +7953,10 @@ def staff_product_quick_edit(request, slug):
                 return redirect('product_detail', slug=slug)
             product.brend = brand
             product.save(update_fields=['brend'])
-            messages.success(request, f'Brend postavljen na „{brand.naziv}”.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'set_opis':
         product.opis = (request.POST.get('opis') or '').strip()
         product.save(update_fields=['opis'])
-        messages.success(request, 'Opis artikla je ažuriran.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'upload_main_image':
         uploaded = request.FILES.get('glavna_slika')
@@ -7645,7 +7968,6 @@ def staff_product_quick_edit(request, slug):
             return redirect('product_detail', slug=slug)
         product.slika = uploaded
         product.save()
-        messages.success(request, 'Glavna slika je ažurirana.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'upload_extra_images':
         uploads = request.FILES.getlist('dodatne_slike')
@@ -7668,7 +7990,6 @@ def staff_product_quick_edit(request, slug):
         if not created:
             messages.error(request, 'Nijedna odabrana datoteka nije validna slika.')
             return redirect('product_detail', slug=slug)
-        messages.success(request, f'Dodano {created} dodatnih slika.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'delete_extra_image':
         raw_image_id = (request.POST.get('image_id') or '').strip()
@@ -7682,12 +8003,10 @@ def staff_product_quick_edit(request, slug):
             messages.error(request, 'Slika nije pronađena.')
             return redirect('product_detail', slug=slug)
         image.delete()
-        messages.success(request, 'Dodatna slika je uklonjena.')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'set_tags':
         tags = _staff_resolve_product_tags(request)
         product.tagovi.set(tags)
-        messages.success(request, f'Tagovi ažurirani ({len(tags)}).')
         return _staff_product_edit_redirect(request, slug)
     elif action == 'activate_akcija':
         # JSON: iz objave (Akcija) — postavi isti % popust + opcionalni rok
@@ -7781,17 +8100,12 @@ def staff_product_quick_edit(request, slug):
                 akcija_do=akcija_do.isoformat() if akcija_do else None,
                 prikazna_cijena=str(product.prikazna_cijena),
             )
-        messages.success(request, msg)
         return _staff_product_edit_redirect(request, slug)
     elif action == 'deactivate_akcija':
         product.akcija_postotak = None
         product.akcijska_cijena = None
         product.akcija_do = None
         product.save(update_fields=['akcija_postotak', 'akcijska_cijena', 'akcija_do'])
-        messages.success(
-            request,
-            f'Akcija skinuta s „{product.naziv}”. Vraćena redovna cijena {product.cijena} KM.',
-        )
         return _staff_product_edit_redirect(request, slug)
     else:
         messages.error(request, 'Nepoznata akcija.')

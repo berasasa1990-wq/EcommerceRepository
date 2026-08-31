@@ -75,34 +75,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const previousCount = parseInt(cartBtn.dataset.cartCount || '0', 10);
         const nextCount = Math.max(0, parseInt(count, 10) || 0);
         let badge = cartBtn.querySelector('.cart-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'cart-badge';
+            const icon = cartBtn.querySelector('.nav-action-icon');
+            (icon || cartBtn).appendChild(badge);
+        }
+        badge.textContent = String(nextCount);
         if (nextCount > 0) {
             cartBtn.classList.add('cart-btn--has-items');
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.className = 'cart-badge';
-                cartBtn.appendChild(badge);
-            }
-            badge.textContent = nextCount;
             if (nextCount > previousCount) {
                 triggerCartAddPulse(cartBtn);
             }
         } else {
             cartBtn.classList.remove('cart-btn--has-items', 'cart-btn--pulse-once');
-            if (badge) {
-                badge.remove();
-            }
         }
         cartBtn.dataset.cartCount = String(nextCount);
     }
 
     function showCartToast(message) {
+        if (typeof window.showCartToast === 'function' && window.showCartToast !== showCartToast) {
+            window.showCartToast(message);
+            return;
+        }
+        const text = String(message || '').trim();
+        if (!text) return;
+        const isError = /nije uspjelo|rasprodan|odaberite|nije dostup|greška|na stanju|smanjena na dostupno/i.test(text);
+        if (!isError) return;
         let toast = document.querySelector('.cart-toast');
         if (!toast) {
             toast = document.createElement('p');
             toast.className = 'cart-toast';
             document.body.appendChild(toast);
         }
-        toast.textContent = message;
+        toast.textContent = text;
         toast.classList.add('cart-toast--visible');
         clearTimeout(showCartToast.timer);
         showCartToast.timer = setTimeout(() => {
@@ -473,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.querySelectorAll('form.add-to-cart-form, form.product-detail-variation-form, form.product-other-options-form').forEach((form) => {
+    document.querySelectorAll('form.add-to-cart-form, form.product-detail-variation-form, form.product-other-options-form, form.pd-bundle__form, form.pd-flash__form, form.pd-qtydeal__form').forEach((form) => {
         form.addEventListener('submit', (event) => {
             event.preventDefault();
             submitAddToCartForm(form);
@@ -651,6 +657,45 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             hideFlash();
         }
+    })();
+
+    (function initAkcijskaPonuda() {
+        document.querySelectorAll('.pd-flash').forEach((root) => {
+            const expires = parseInt(root.getAttribute('data-flash-expires') || '0', 10) || 0;
+            const hEl = root.querySelector('[data-flash-h]');
+            const mEl = root.querySelector('[data-flash-m]');
+            const sEl = root.querySelector('[data-flash-s]');
+            function pad(n) {
+                return String(Math.max(0, n)).padStart(2, '0');
+            }
+            function tick() {
+                if (!expires || !hEl || !mEl || !sEl) return;
+                let left = Math.floor(expires - Date.now() / 1000);
+                if (left < 0) left = 0;
+                const h = Math.floor(left / 3600);
+                const m = Math.floor((left % 3600) / 60);
+                const s = left % 60;
+                hEl.textContent = pad(h);
+                mEl.textContent = pad(m);
+                sEl.textContent = pad(s);
+            }
+            if (hEl && mEl && sEl) {
+                tick();
+                if (expires) setInterval(tick, 1000);
+            }
+
+            const track = root.querySelector('[data-flash-track]');
+            const prev = root.querySelector('[data-flash-prev]');
+            const next = root.querySelector('[data-flash-next]');
+            function scrollByCard(dir) {
+                if (!track) return;
+                const card = track.querySelector('.pd-flash__card');
+                const w = card ? card.getBoundingClientRect().width + 12 : 240;
+                track.scrollBy({ left: dir * w, behavior: 'smooth' });
+            }
+            prev?.addEventListener('click', () => scrollByCard(-1));
+            next?.addEventListener('click', () => scrollByCard(1));
+        });
     })();
 
 });

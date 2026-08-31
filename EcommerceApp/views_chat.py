@@ -258,6 +258,12 @@ def chat_add_product(request):
         return JsonResponse({'ok': False, 'error': 'Artikal više nije dostupan.'}, status=400)
 
     cart = Cart(request)
+    from .cart import stock_limit_message, stock_on_hand
+    if cart.remaining_stock(product) <= 0:
+        return JsonResponse({
+            'ok': False,
+            'error': stock_limit_message(stock_on_hand(product)),
+        }, status=400)
     bazna = message.product_bazna_cijena or product.prikazna_cijena
     cijena = message.product_cijena
     pct = message.product_popust_postotak

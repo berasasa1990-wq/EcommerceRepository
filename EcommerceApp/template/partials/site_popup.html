@@ -1,6 +1,7 @@
 {% if popup_queue %}
 {% load static %}
 {% for akcija in popup_queue %}
+{% if akcija.tip != 'bundle' %}
 <div class="site-popup-overlay" id="sitePopupOverlay-{{ akcija.id }}" hidden
      data-popup-id="{{ akcija.id }}"
      {% if akcija.tip == 'bundle' and request.resolver_match.url_name == 'product_detail' %}
@@ -247,9 +248,7 @@
                 </div>
                 <div class="qty-deal-product-info">
                     <p class="qty-deal-product-name">{{ product.naziv }}</p>
-                    {% if product.je_pakovanje %}
-                    <p class="bundle-pack-card-pack">📦 {{ product.pakovanje_label }}</p>
-                    {% endif %}
+                    <p class="bundle-pack-card-pack">{% if product.je_pakovanje %}📦 {{ product.pakovanje_label }}{% else %}&nbsp;{% endif %}</p>
                     <p class="qty-deal-product-base">
                         Regularna cijena: <strong>{{ product.prikazna_cijena }} KM</strong>
                     </p>
@@ -396,5 +395,6 @@
 
     </div>
 </div>
+{% endif %}
 {% endfor %}
 {% endif %}

@@ -72,13 +72,17 @@
             window.showCartToast(message);
             return;
         }
+        const text = String(message || '').trim();
+        if (!text) return;
+        const isError = /nije uspjelo|rasprodan|odaberite|nije dostup|greška|na stanju|smanjena na dostupno/i.test(text);
+        if (!isError) return;
         let toast = document.querySelector('.cart-toast');
         if (!toast) {
             toast = document.createElement('p');
             toast.className = 'cart-toast';
             document.body.appendChild(toast);
         }
-        toast.textContent = message;
+        toast.textContent = text;
         toast.classList.add('cart-toast--visible');
         window.setTimeout(function () {
             toast.classList.remove('cart-toast--visible');
@@ -676,16 +680,13 @@
                         cartBtn.dataset.cartCount = String(data.cart_count);
                         cartBtn.classList.toggle('cart-btn--has-items', data.cart_count > 0);
                         let badge = cartBtn.querySelector('.cart-badge');
-                        if (data.cart_count > 0) {
-                            if (!badge) {
-                                badge = document.createElement('span');
-                                badge.className = 'cart-badge';
-                                cartBtn.appendChild(badge);
-                            }
-                            badge.textContent = String(data.cart_count);
-                        } else if (badge) {
-                            badge.remove();
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.className = 'cart-badge';
+                            const icon = cartBtn.querySelector('.nav-action-icon');
+                            (icon || cartBtn).appendChild(badge);
                         }
+                        badge.textContent = String(data.cart_count);
                     }
                 } catch (err) {
                     alert(err.message || 'Dodavanje u korpu nije uspjelo.');

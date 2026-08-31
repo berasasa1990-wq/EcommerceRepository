@@ -1,5 +1,6 @@
 <div class="product-info product-info--home">
     <h2 class="product-info__name" data-product-name>{{ product.naziv }}</h2>
+    {% include 'partials/product_pack_label.html' with product=product %}
     {% if product.kategorija %}
     <p class="product-info__category">{{ product.kategorija.naziv }}</p>
     {% endif %}

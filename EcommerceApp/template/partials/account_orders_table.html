@@ -1,0 +1,33 @@
+{% if orders %}
+<div class="acc-table-wrap">
+    <table class="acc-table">
+        <thead>
+            <tr>
+                <th>Narudžba</th>
+                <th>Datum</th>
+                <th>Status</th>
+                <th>Stavke</th>
+                <th>Iznos</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td data-label="Narudžba"><strong>#{{ order.broj }}</strong></td>
+                <td data-label="Datum">{{ order.kreirana|date:"d.m.Y." }}</td>
+                <td data-label="Status"><span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span></td>
+                <td data-label="Stavke">{{ order.stavke.all|length }}</td>
+                <td data-label="Iznos"><strong>{{ order.ukupno }} KM</strong></td>
+                <td data-label=""><a href="{% url 'account_order_detail' broj=order.broj %}" class="acc-table-link">Detalji</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="acc-empty">
+    <p>{{ empty_text|default:'Još nemate narudžbi povezanih s ovim nalogom.' }}</p>
+    <a href="{% url 'home' %}" class="btn acc-btn-orange">Kreni u kupovinu</a>
+</div>
+{% endif %}

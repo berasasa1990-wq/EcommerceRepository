@@ -269,6 +269,29 @@ class AkcijaAdminForm(forms.ModelForm):
             )
             if tip == Akcija.Tip.PONUDA:
                 self.fields['gratis_artikal'].label = '3. Artikal u ponudi (sa ili bez %)'
+        if 'flash_trigger' in self.fields:
+            self.fields['flash_trigger'].required = False
+            if not self.data and not (self.instance and self.instance.flash_trigger):
+                self.initial.setdefault('flash_trigger', Akcija.FlashTrigger.OFFER_PRODUCT)
+        if tip == Akcija.Tip.AKCIJSKA:
+            if 'artikal' in self.fields:
+                self.fields['artikal'].label = 'Trigger artikal'
+                self.fields['artikal'].help_text = (
+                    'Samo ako je trigger „Odabrani artikal” — ponuda se prikaže na toj stranici.'
+                )
+            if 'kategorija' in self.fields:
+                self.fields['kategorija'].help_text = (
+                    'Samo ako je trigger „Kategorija” — ponuda na svakom artiklu iz te kategorije.'
+                )
+            if 'popust_postotak' in self.fields:
+                self.fields['popust_postotak'].label = 'Popust (%) na ponudu'
+                self.fields['popust_postotak'].help_text = (
+                    '% za artikle u tabeli ispod. Linija može imati svoj %. Prazno = bez dodatnog %.'
+                )
+            if 'trajanje_sati' in self.fields:
+                self.fields['trajanje_sati'].help_text = 'Koliko sati ponuda traje od početka.'
+            if 'pocetak' in self.fields:
+                self.fields['pocetak'].help_text = 'Prazno = vrijeme spremanja.'
 
         # Učitaj postojeće tierove u polja 2–6
         instance = getattr(self, 'instance', None)
@@ -431,7 +454,7 @@ class AkcijaAdminForm(forms.ModelForm):
         if tip not in Akcija.ACTIVE_TIPS:
             self.add_error(
                 'tip',
-                'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, AI prodaja / AI dwell.',
+                'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, Akcijska ponuda, AI prodaja / AI dwell.',
             )
             return cleaned
 
@@ -445,6 +468,15 @@ class AkcijaAdminForm(forms.ModelForm):
                 self.add_error('artikal', 'Odaberite trigger artikal.')
             if trigger == Akcija.BundleTrigger.CATEGORY and not cleaned.get('kategorija'):
                 self.add_error('kategorija', 'Odaberite trigger kategoriju.')
+
+        if tip == Akcija.Tip.AKCIJSKA:
+            trigger = cleaned.get('flash_trigger') or Akcija.FlashTrigger.OFFER_PRODUCT
+            if trigger == Akcija.FlashTrigger.PRODUCT and not cleaned.get('artikal'):
+                self.add_error('artikal', 'Odaberite trigger artikal.')
+            if trigger == Akcija.FlashTrigger.CATEGORY and not cleaned.get('kategorija'):
+                self.add_error('kategorija', 'Odaberite trigger kategoriju.')
+            if not cleaned.get('trajanje_sati'):
+                self.add_error('trajanje_sati', 'Unesite trajanje akcijske ponude u satima.')
 
         elif tip == Akcija.Tip.QTY_DEAL:
             if not cleaned.get('artikal'):
