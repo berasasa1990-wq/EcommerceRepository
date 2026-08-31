@@ -826,8 +826,17 @@
             if (!document.hidden) pollOffer();
         }, pollIntervalMs);
     }
-    pollOffer();
-    schedulePoll();
+    function startLiveOfferPoll() {
+        pollOffer();
+        schedulePoll();
+    }
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(function () {
+            window.setTimeout(startLiveOfferPoll, 2500);
+        }, { timeout: 4000 });
+    } else {
+        window.setTimeout(startLiveOfferPoll, 3500);
+    }
     document.addEventListener('visibilitychange', function () {
         if (!document.hidden) pollOffer();
         schedulePoll();

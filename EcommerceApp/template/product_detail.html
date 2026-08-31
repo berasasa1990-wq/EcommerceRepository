@@ -34,7 +34,6 @@
 {% block content %}
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 <section class="product-detail"{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
-    {% include 'partials/product_detail_badge.html' %}
     <div class="product-detail-grid">
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">

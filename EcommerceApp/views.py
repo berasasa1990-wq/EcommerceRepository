@@ -2088,6 +2088,21 @@ HOME_SECTION_PRODUCT_VISIBLE = 5
 HOME_SECTION_PRODUCT_VISIBLE_MOBILE = 2
 HOME_CATEGORY_SHOWCASE_LIMIT = 6
 HOME_VLOG_LIMIT = 3
+HOME_CACHE_TTL = 60
+
+
+def _home_cache_get(key, factory, ttl=HOME_CACHE_TTL):
+    from django.core.cache import cache
+
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    value = factory()
+    try:
+        cache.set(key, value, ttl)
+    except Exception:
+        logger.exception('Home cache set failed: %s', key)
+    return value
 
 
 def _fill_home_section_products(products, request=None):
@@ -2113,6 +2128,13 @@ def _home_latest_products(request=None):
     2) Ručni odabir (HomeNovoProduct) ako je mod manual
     3) Dopuna: najnoviji artikli da bude 5 u nizu
     """
+    return _home_cache_get(
+        'home_latest_products_v3',
+        lambda: _home_latest_products_uncached(request),
+    )
+
+
+def _home_latest_products_uncached(request=None):
     base_qs = _product_queryset(request)
     marked = list(
         _order_qs_by_lager_priority(
@@ -2149,6 +2171,13 @@ def _home_featured_products(request=None):
     2) Fallback: ručni HomeFeaturedProduct
     Među njima: redukovanje lagera ima prednost.
     """
+    return _home_cache_get(
+        'home_featured_products_v3',
+        lambda: _home_featured_products_uncached(request),
+    )
+
+
+def _home_featured_products_uncached(request=None):
     base_qs = _product_queryset(request)
     marked = list(
         _order_qs_by_lager_priority(
@@ -2175,6 +2204,13 @@ def _home_featured_products(request=None):
 
 def _home_sale_products(request=None):
     """Akcijska ponuda na početnoj — artikli sa sniženom cijenom."""
+    return _home_cache_get(
+        'home_sale_products_v3',
+        lambda: _home_sale_products_uncached(request),
+    )
+
+
+def _home_sale_products_uncached(request=None):
     base_qs = _product_queryset(request)
     sale_qs = _akcija_products_qs(base_qs)
     return list(
@@ -2220,10 +2256,19 @@ def _home_promo_cards():
 
 
 def _home_category_showcases(request=None):
+    return _home_cache_get(
+        f'home_cat_show_v4:{HOME_CATEGORY_SHOWCASE_LIMIT}',
+        lambda: _home_category_showcases_uncached(request),
+    )
+
+
+def _home_category_showcases_uncached(request=None):
     entries = HomeCategoryShowcase.objects.filter(
         aktivan=True,
         kategorija__aktivan=True,
-    ).select_related('kategorija').order_by('redoslijed', 'id')
+    ).select_related('kategorija').prefetch_related(
+        'kategorija__podkategorije__podkategorije',
+    ).order_by('redoslijed', 'id')
 
     sections = []
     for entry in entries:
@@ -2250,6 +2295,13 @@ def _home_brand_showcases(request=None):
     Brend sekcije na početnoj — karusel do 10 artikala po brendu (vrte se).
     Admin: Postavke sajta → ⑥ Brend karuseli.
     """
+    return _home_cache_get(
+        'home_brand_show_v3',
+        lambda: _home_brand_showcases_uncached(request),
+    )
+
+
+def _home_brand_showcases_uncached(request=None):
     entries = HomeBrandShowcase.objects.filter(
         aktivan=True,
     ).select_related('brend').order_by('redoslijed', 'id')
@@ -2600,7 +2652,7 @@ def home(request):
         'page_obj': page_obj,
         'filters_active': filters_active,
         'filter_params': filter_params,
-        'filter_categories': _filter_categories(),
+        'filter_categories': _filter_categories() if filters_active else [],
         'filter_size_groups': filter_size_groups,
         'filter_action': home_url,
         'filter_reset_url': _filter_reset_url(home_url, filter_params),

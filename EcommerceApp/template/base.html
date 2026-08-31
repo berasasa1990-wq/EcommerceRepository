@@ -33,6 +33,13 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    {% if meta_pixel_id %}
+    <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
+    <link rel="dns-prefetch" href="https://www.facebook.com">
+    {% endif %}
     <meta name="facebook-domain-verification" content="kqrup8bjdtrxwf6mmy8bu5qp01g4tn" />
     {% if site_settings.google_site_verification %}
     <meta name="google-site-verification" content="{{ site_settings.google_site_verification }}">
@@ -121,58 +128,70 @@
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
-    <!-- Meta Pixel Code -->
+    <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
     <script data-cfasync="false">
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '{{ meta_pixel_id|escapejs }}');
-    var metaPageViewEventId = '{{ meta_page_view_event_id|default:""|escapejs }}';
-    if (metaPageViewEventId) {
-        fbq('track', 'PageView', {}, { eventID: metaPageViewEventId });
-    } else {
-        fbq('track', 'PageView');
-    }
+    window._fbqPending = [];
     window.trackMetaAddToCart = function (meta) {
-        if (!meta || typeof fbq !== 'function') return;
-        fbq('track', 'AddToCart', {
-            content_ids: [String(meta.content_id)],
-            content_type: 'product',
-            content_name: meta.content_name,
-            contents: [{ id: String(meta.content_id), quantity: meta.quantity || 1 }],
-            value: meta.value,
-            currency: 'BAM'
-        }, meta.event_id ? { eventID: meta.event_id } : {});
+        if (typeof fbq === 'function') {
+            fbq('track', 'AddToCart', {
+                content_ids: [String(meta.content_id)],
+                content_type: 'product',
+                content_name: meta.content_name,
+                contents: [{ id: String(meta.content_id), quantity: meta.quantity || 1 }],
+                value: meta.value,
+                currency: 'BAM'
+            }, meta.event_id ? { eventID: meta.event_id } : {});
+            return;
+        }
+        window._fbqPending.push(['atc', meta]);
     };
     window.trackMetaPurchase = function (el) {
-        if (!el || typeof fbq !== 'function') return;
-        var payload = {
-            value: parseFloat(el.dataset.value, 10),
-            currency: 'BAM',
-            content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean),
-            content_type: 'product',
-            num_items: parseInt(el.dataset.numItems, 10) || 0
-        };
-        if (el.dataset.orderId) {
-            payload.order_id = el.dataset.orderId;
-        }
-        if (el.dataset.contents) {
-            try {
-                payload.contents = JSON.parse(el.dataset.contents);
-            } catch (e) {}
-        }
-        fbq('track', 'Purchase', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
+        window._fbqPending.push(['purchase', el]);
     };
+    function loadMetaPixel() {
+        if (window.fbq) return;
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '{{ meta_pixel_id|escapejs }}');
+        var metaPageViewEventId = '{{ meta_page_view_event_id|default:""|escapejs }}';
+        if (metaPageViewEventId) {
+            fbq('track', 'PageView', {}, { eventID: metaPageViewEventId });
+        } else {
+            fbq('track', 'PageView');
+        }
+        window.trackMetaPurchase = function (el) {
+            if (!el || typeof fbq !== 'function') return;
+            var payload = {
+                value: parseFloat(el.dataset.value, 10),
+                currency: 'BAM',
+                content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean),
+                content_type: 'product',
+                num_items: parseInt(el.dataset.numItems, 10) || 0
+            };
+            if (el.dataset.orderId) payload.order_id = el.dataset.orderId;
+            if (el.dataset.contents) {
+                try { payload.contents = JSON.parse(el.dataset.contents); } catch (e) {}
+            }
+            fbq('track', 'Purchase', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
+        };
+        (window._fbqPending || []).forEach(function (item) {
+            if (item[0] === 'atc') window.trackMetaAddToCart(item[1]);
+            else if (item[0] === 'purchase') window.trackMetaPurchase(item[1]);
+        });
+        window._fbqPending = [];
+    }
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadMetaPixel, { timeout: 2500 });
+    } else {
+        window.addEventListener('load', loadMetaPixel);
+    }
     </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id={{ meta_pixel_id }}&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- End Meta Pixel Code -->
     {% endif %}
 </head>
 <body class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
@@ -616,7 +635,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260831stock" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260831fast" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
     {% endif %}
@@ -635,7 +654,7 @@
          data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
          data-leave-url="{% url 'live_visitor_leave' %}"
          data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script src="{% static 'js/visitor-presence.js' %}?v=20260814cpu2" defer></script>
+    <script src="{% static 'js/visitor-presence.js' %}?v=20260831fast" defer></script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
     <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260826orderOnly">

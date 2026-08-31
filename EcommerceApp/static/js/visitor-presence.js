@@ -138,10 +138,7 @@
         startHeartbeat();
     });
 
-    // Prvi ping odmah (staff vidi „Sada:” bez čekanja)
-    startHeartbeat();
-    // Drugi ping ~0.6 s (session cookie + early track)
     window.setTimeout(function () {
-        if (!leftSent) sendHeartbeat();
-    }, 600);
+        if (!leftSent) startHeartbeat();
+    }, 3000);
 })();

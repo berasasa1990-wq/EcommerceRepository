@@ -1,3 +1,21 @@
 {% load static %}
 <div id="liveOfferMount"></div>
-<script src="{% static 'js/live-offer-poll.min.js' %}?v=20260831stock" defer></script>
+<script>
+(function () {
+    function loadLiveOfferPoll() {
+        if (document.getElementById('liveOfferPollScript')) return;
+        var s = document.createElement('script');
+        s.id = 'liveOfferPollScript';
+        s.src = "{% static 'js/live-offer-poll.min.js' %}?v=20260831fast";
+        s.defer = true;
+        document.body.appendChild(s);
+    }
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadLiveOfferPoll, { timeout: 4000 });
+    } else {
+        window.addEventListener('load', function () {
+            window.setTimeout(loadLiveOfferPoll, 2000);
+        });
+    }
+})();
+</script>
