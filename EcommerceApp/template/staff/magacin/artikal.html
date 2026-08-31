@@ -9,8 +9,17 @@
         <button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>
         <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena_ista' %}?artikal={{ product.pk }}{% if variation %}&varijacija={{ variation.pk }}{% endif %}">Štampaj Cijenu</a>
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
+        <form method="post" class="mg-obrisi-artikal-form" onsubmit="return confirm('OBRISATI artikal „{{ product.naziv|escapejs }}”{% if product.sifra %} ({{ product.sifra|escapejs }}){% endif %} SKROZ iz baze?\n\nOvo nije skidanje sa sajta — artikal se briše trajno i ne može se vratiti.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="obrisi">
+            {% if magacin_search %}<input type="hidden" name="pretraga" value="{{ magacin_search }}">{% endif %}
+            <button type="submit" class="mg-btn mg-btn-danger">Obriši artikal</button>
+        </form>
     </div>
 </div>
+{% if artikal_error %}
+<p class="mg-mp-alert" role="alert">{{ artikal_error }}</p>
+{% endif %}
 
 <section class="mg-card mg-artikal-top">
     <div class="mg-phone-artikal{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">

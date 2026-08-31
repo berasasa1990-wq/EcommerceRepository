@@ -584,6 +584,10 @@ body.search-suggest-open .header-float-ctas {
     align-items: center;
 }
 
+.header-search {
+    overflow: visible;
+}
+
 .header-search .search-suggestions {
     position: absolute;
     top: calc(100% + 6px);
@@ -594,7 +598,11 @@ body.search-suggest-open .header-float-ctas {
     border: 1px solid var(--gray-200);
     border-radius: 8px;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
-    z-index: 1005;
+    z-index: 14000;
+}
+
+.header-search .search-suggestions:not([hidden]) {
+    display: block !important;
 }
 
 .header-row--primary .nav-actions {
@@ -11374,12 +11382,12 @@ button.nav-action-link {
         right: auto;
         max-width: none;
         padding: 0;
-        background: #FF5A00;
+        background: transparent;
         border-radius: 8px;
         border-top: none;
         box-shadow: none;
-        z-index: 1;
-        overflow: hidden;
+        z-index: 8;
+        overflow: visible;
     }
 
     .header-search .search-close {
@@ -28009,6 +28017,40 @@ a.home-promo-card:hover {
 
 .header .search-suggestions-footer a {
     color: #111 !important;
+}
+
+@media (max-width: 768px) {
+    .header-search .search-suggestions,
+    .header .header-search .search-suggestions {
+        max-height: min(70vh, 440px) !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        z-index: 14000 !important;
+    }
+
+    .header .search-suggestions-footer,
+    .header .header-search .search-suggestions-footer {
+        padding: 8px 12px 10px !important;
+        margin: 0;
+        border-top: 1px solid #f0f0f0;
+        background: #fff !important;
+    }
+
+    .header .search-suggestions-footer a,
+    .header .header-search .search-suggestions-footer a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 14px;
+        background: #111 !important;
+        color: #fff !important;
+        font-weight: 700;
+        font-size: 15px;
+        text-decoration: none !important;
+        border-radius: 8px;
+    }
 }
 
 /* —— SEO text blocks (PageSEO / entity SEO) —— */

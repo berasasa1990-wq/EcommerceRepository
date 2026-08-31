@@ -493,8 +493,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!searchSuggestions) return;
         searchSuggestions.innerHTML = '';
         searchSuggestions.hidden = true;
+        searchSuggestions.style.position = '';
+        searchSuggestions.style.left = '';
+        searchSuggestions.style.top = '';
+        searchSuggestions.style.width = '';
+        searchSuggestions.style.right = '';
         setSuggestionsExpanded(false);
         setSearchSuggestActive(false);
+    }
+
+    function positionSearchSuggestions() {
+        if (!searchSuggestions || searchSuggestions.hidden || !headerSearch) return;
+        const rect = headerSearch.getBoundingClientRect();
+        searchSuggestions.style.position = 'fixed';
+        searchSuggestions.style.left = Math.round(rect.left) + 'px';
+        searchSuggestions.style.width = Math.round(rect.width) + 'px';
+        searchSuggestions.style.right = 'auto';
+        searchSuggestions.style.top = Math.round(rect.bottom + 4) + 'px';
+        searchSuggestions.style.zIndex = '14000';
+    }
+
+    function searchSuggestLimit() {
+        return window.innerWidth <= 768 ? 4 : 8;
     }
 
     function renderSearchSuggestions(results, query, hasMore = false) {
@@ -510,10 +530,13 @@ document.addEventListener('DOMContentLoaded', () => {
             searchSuggestions.hidden = false;
             setSuggestionsExpanded(true);
             setSearchSuggestActive(true);
+            positionSearchSuggestions();
             return;
         }
 
-        const items = results.map((item, index) => {
+        const mobile = window.innerWidth <= 768;
+        const shown = mobile ? results.slice(0, 4) : results;
+        const items = shown.map((item) => {
             // Sve lazy — ne čekaj slike prije prikaza liste (brži osjećaj pretrage)
             const thumb = item.image
                 ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
@@ -534,14 +557,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const base = searchForm?.getAttribute('action') || '/';
         const allResultsUrl = `${base}?q=${encodeURIComponent(query)}#product-showcase`;
-        const footer = hasMore
-            ? `<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">Vidi sve rezultate za „${escapeHtml(query)}"</a></p>`
+        const showFooter = mobile ? shown.length > 0 : hasMore;
+        const footerLabel = mobile ? 'Otvori sve' : `Vidi sve rezultate za „${escapeHtml(query)}"`;
+        const footer = showFooter
+            ? `<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">${footerLabel}</a></p>`
             : '';
 
         searchSuggestions.innerHTML = items + footer;
         searchSuggestions.hidden = false;
         setSuggestionsExpanded(true);
         setSearchSuggestActive(true);
+        positionSearchSuggestions();
     }
 
     function escapeHtml(value) {
@@ -565,10 +591,11 @@ document.addEventListener('DOMContentLoaded', () => {
             searchSuggestions.hidden = false;
             setSuggestionsExpanded(true);
             setSearchSuggestActive(true);
+            positionSearchSuggestions();
         }, 140);
 
         try {
-            const response = await fetch(`${searchSuggestUrl}?q=${encodeURIComponent(query)}`, {
+            const response = await fetch(`${searchSuggestUrl}?q=${encodeURIComponent(query)}&limit=${searchSuggestLimit()}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                 signal: searchFetchController.signal,
             });
@@ -583,6 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
             searchSuggestions.hidden = false;
             setSearchSuggestActive(true);
+            positionSearchSuggestions();
         }
     }
 
@@ -645,6 +673,10 @@ document.addEventListener('DOMContentLoaded', () => {
     headerSearch?.addEventListener('mouseenter', forceCloseMegaMenu);
 
     searchInput?.addEventListener('input', queueSearchSuggestions);
+    searchInput?.addEventListener('keyup', queueSearchSuggestions);
+    searchInput?.addEventListener('search', queueSearchSuggestions);
+    window.addEventListener('resize', positionSearchSuggestions, { passive: true });
+    window.addEventListener('scroll', positionSearchSuggestions, { passive: true });
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeSearchQuery = urlParams.get('q')?.trim();

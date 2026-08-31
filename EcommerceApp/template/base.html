@@ -116,8 +116,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260831brnd" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260831brnd">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260831sug2" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260831sug2">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -635,18 +635,33 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260831bund" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260831sug2" defer></script>
+    <script>
+    window.idleLoadScript = function (src) {
+        function go() {
+            var s = document.createElement('script');
+            s.src = src;
+            s.defer = true;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(go, { timeout: 3500 });
+        } else {
+            window.addEventListener('load', function () { window.setTimeout(go, 1500); });
+        }
+    };
+    </script>
     {% if site_settings.savjetnik_aktivan %}
-    <script src="{% static 'js/fishing-advisor.js' %}?v=20260716v4" defer></script>
+    <script>idleLoadScript("{% static 'js/fishing-advisor.js' %}?v=20260716v4");</script>
     {% endif %}
     {% if site_settings.javno_online_posjetioci %}
-    <script src="{% static 'js/public-online-visitors.js' %}?v=20260716v1" defer></script>
+    <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20260716v1");</script>
     {% endif %}
     {% if not user.is_authenticated or not user.is_superuser %}
-    <script src="{% static 'js/almost-cart.js' %}?v=20260712v3" defer></script>
+    <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20260712v3");</script>
     {% endif %}
     {% if online_gift %}
-    <script src="{% static 'js/online-gift.js' %}?v=20260814cpu2" defer></script>
+    <script>idleLoadScript("{% static 'js/online-gift.js' %}?v=20260814cpu2");</script>
     {% endif %}
     {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
     {% if not user.is_authenticated or not user.is_superuser %}
@@ -654,7 +669,7 @@
          data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
          data-leave-url="{% url 'live_visitor_leave' %}"
          data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script src="{% static 'js/visitor-presence.js' %}?v=20260831fast" defer></script>
+    <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20260831fast");</script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
     <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260826orderOnly">

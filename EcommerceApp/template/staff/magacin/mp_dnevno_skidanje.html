@@ -8,7 +8,11 @@
     </div>
 </div>
 
-<form method="post" class="mg-uvoz-new" enctype="multipart/form-data">
+{% if mp_error %}
+<p class="mg-mp-alert" role="alert">{{ mp_error }}</p>
+{% endif %}
+
+<form method="post" class="mg-uvoz-new" id="mpDailyUploadForm" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="action" value="ocitaj">
     <section class="mg-card">
@@ -16,16 +20,34 @@
             <label for="mpDailyFile">Slika ili PDF</label>
             <input id="mpDailyFile" name="fajl" type="file" accept="image/*,.pdf,application/pdf" required>
         </div>
-        <button type="submit" class="mg-btn" style="margin-top:12px;">Učitaj i prepoznaj</button>
+        <label class="mg-check" style="margin-top:12px;">
+            <input type="checkbox" name="samo_promjene" value="1"{% if samo_promjene %} checked{% endif %}>
+            Samo artikli kojima se stanje promijenilo
+        </label>
+        <button type="submit" class="mg-btn" id="mpDailyUploadBtn" style="margin-top:12px;">Učitaj i prepoznaj</button>
+        <p class="mg-count" id="mpDailyUploadHint" hidden>Čitam sliku — sačekaj, može potrajati do minute.</p>
     </section>
 </form>
 
-{% if preview %}
+{% if preview is not None %}
 <section class="mg-card">
     <h2 class="mg-h">Prepoznato sa dokumenta</h2>
     {% if preview_datum %}
     <p class="mg-mp-daily-batch-head">Datum dokumenta: <strong>{{ preview_datum|date:"d.m.Y" }}</strong> — još nije skinuto sa stanja.</p>
     {% endif %}
+    <form method="get" class="mg-mp-daily-filter">
+        <input type="hidden" name="samo_promjene" value="0">
+        <label class="mg-check">
+            <input type="checkbox" name="samo_promjene" value="1"{% if samo_promjene %} checked{% endif %} onchange="this.form.submit()">
+            Samo artikli kojima se stanje promijenilo
+        </label>
+        {% if odabrani_datum %}
+        <input type="hidden" name="datum" value="{{ odabrani_datum|date:'Y-m-d' }}">
+        {% endif %}
+        {% if samo_promjene %}
+        <span class="mg-count">Prikazano {{ preview|length }} od {{ preview_ukupno }}</span>
+        {% endif %}
+    </form>
     <table class="mg-table">
         <thead>
             <tr>
@@ -48,6 +70,10 @@
                 </td>
                 <td class="num">{% if row.found %}{{ row.mp_dostupno }}{% else %}—{% endif %}</td>
                 <td class="num">{% if row.found %}{{ row.ostaje }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">Nijedan artikal na slici nema promjenu stanja.{% if preview_ukupno %} Prepoznato ukupno {{ preview_ukupno }} — isključi filter da ih vidiš.{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -192,4 +218,20 @@
     {% endif %}
 </section>
 {% endif %}
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var form = document.getElementById('mpDailyUploadForm');
+    var btn = document.getElementById('mpDailyUploadBtn');
+    var hint = document.getElementById('mpDailyUploadHint');
+    if (!form || !btn) return;
+    form.addEventListener('submit', function () {
+        btn.disabled = true;
+        btn.textContent = 'Čitam sliku…';
+        if (hint) hint.hidden = false;
+    });
+})();
+</script>
 {% endblock %}

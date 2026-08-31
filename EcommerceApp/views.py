@@ -1695,7 +1695,13 @@ def search_suggest(request):
         _suggest_rel=_suggest_relevance_annotation(query),
     ).order_by('-_suggest_rel', '-prioritet_lagera', 'naziv')
 
-    pool = list(products_qs[: max(SEARCH_SUGGEST_CANDIDATE_POOL, SEARCH_SUGGEST_LIMIT + 1)])
+    try:
+        limit = int(request.GET.get('limit') or SEARCH_SUGGEST_LIMIT)
+    except (TypeError, ValueError):
+        limit = SEARCH_SUGGEST_LIMIT
+    limit = max(1, min(limit, SEARCH_SUGGEST_LIMIT))
+    pool_size = max(limit + 4, min(SEARCH_SUGGEST_CANDIDATE_POOL, limit * 4))
+    pool = list(products_qs[:pool_size])
     # Dedup po pk (zaštita ako JOIN ikad procuri)
     seen = set()
     unique_pool = []
@@ -1721,8 +1727,8 @@ def search_suggest(request):
         ),
     )
 
-    has_more = len(pool) > SEARCH_SUGGEST_LIMIT
-    products = pool[:SEARCH_SUGGEST_LIMIT]
+    has_more = len(pool) > limit
+    products = pool[:limit]
 
     results = []
     for product in products:
@@ -1740,7 +1746,7 @@ def search_suggest(request):
         })
 
     response = JsonResponse({'results': results, 'query': query, 'has_more': has_more})
-    response['Cache-Control'] = 'private, max-age=30'
+    response['Cache-Control'] = 'private, max-age=60'
     return response
 
 
@@ -2111,7 +2117,7 @@ HOME_SECTION_PRODUCT_VISIBLE = 5
 HOME_SECTION_PRODUCT_VISIBLE_MOBILE = 2
 HOME_CATEGORY_SHOWCASE_LIMIT = 6
 HOME_VLOG_LIMIT = 3
-HOME_CACHE_TTL = 60
+HOME_CACHE_TTL = 180
 
 
 def _home_cache_get(key, factory, ttl=HOME_CACHE_TTL):

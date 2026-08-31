@@ -90,6 +90,7 @@ from .magacin import (
     parse_mp_daily_datum,
     parse_mp_daily_text,
     preview_mp_daily_rows,
+    obrisi_artikal_iz_baze,
     save_mp_daily_skidanje,
     magacin_in_stock_q,
     magacin_products_qs,
@@ -866,6 +867,7 @@ def magacin_artikli(request):
         'recent_movements': recent_movements,
         'page': None,
         'result_count': 0,
+        'magacin_notice': request.session.pop('magacin_page_notice', '') or '',
     })
     if not searched:
         return render(request, 'staff/magacin/artikli.html', context)
@@ -1070,13 +1072,31 @@ def magacin_artikal(request, pk):
                         request,
                         'Artikal nije na sajtu jer je UKUPNO NA STANJU 0. Ubaci količinu na lokaciju.',
                     )
+            elif action == 'obrisi':
+                naziv = product.naziv or ''
+                sifra = product.sifra or ''
+                obrisi_artikal_iz_baze(product)
+                request.session['magacin_page_notice'] = (
+                    f'Artikal „{naziv}”'
+                    + (f' ({sifra})' if sifra else '')
+                    + ' je obrisan iz baze.'
+                )
+                request.session.modified = True
+                dest = reverse('staff_magacin_artikli')
+                q = _magacin_search_query(request)
+                if q:
+                    dest = f'{dest}?{urlencode({"pretraga": q})}'
+                return redirect(dest)
             elif action == 'meta':
                 _save_product_meta(request, product)
                 messages.success(request, 'Osnovne informacije su sačuvane.')
             else:
                 raise MagacinError('Nepoznata akcija.')
         except (MagacinError, WarehouseLocation.DoesNotExist, ValueError) as exc:
-            messages.error(request, str(exc) if str(exc) else 'Greška pri spremanju.')
+            text = str(exc) if str(exc) else 'Greška pri spremanju.'
+            messages.error(request, text)
+            request.session['magacin_page_error'] = text
+            request.session.modified = True
         url = reverse('staff_magacin_artikal', args=[product.pk])
         params = []
         q = _magacin_search_query(request)
@@ -1139,6 +1159,7 @@ def magacin_artikal(request, pk):
         'edit_url': reverse('staff_magacin_artikal_izmjena', args=[product.pk]),
         'price_history': price_history,
         'price_chart': price_chart,
+        'artikal_error': request.session.pop('magacin_page_error', '') or '',
     })
     return render(request, 'staff/magacin/artikal.html', context)
 
@@ -2373,6 +2394,14 @@ def _mp_datum_from_iso(value):
         return parse_mp_daily_datum(text)
 
 
+def _mp_samo_promjene_flag(request):
+    if request.method == 'POST' and (request.POST.get('action') or 'ocitaj').strip() == 'ocitaj':
+        return request.POST.get('samo_promjene') == '1'
+    if request.GET.get('samo_promjene') is not None:
+        return request.GET.get('samo_promjene') == '1'
+    return bool(request.session.get('mp_dnevno_samo_promjene'))
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_mp_dnevno_skidanje(request):
@@ -2380,6 +2409,10 @@ def magacin_mp_dnevno_skidanje(request):
     result = None
     preview = None
     preview_datum = None
+    mp_error = ''
+    samo_promjene = _mp_samo_promjene_flag(request)
+    request.session['mp_dnevno_samo_promjene'] = bool(samo_promjene)
+    request.session.modified = True
     if request.method == 'POST':
         action = (request.POST.get('action') or 'ocitaj').strip()
         try:
@@ -2420,6 +2453,7 @@ def magacin_mp_dnevno_skidanje(request):
                         dest = f'{dest}?datum={batch.datum.isoformat()}'
                     return redirect(dest)
                 messages.warning(request, 'Ništa nije skinuto s maloprodaje.')
+                mp_error = 'Ništa nije skinuto s maloprodaje.'
             else:
                 fajl = request.FILES.get('fajl')
                 if fajl is None:
@@ -2439,7 +2473,12 @@ def magacin_mp_dnevno_skidanje(request):
                 }
                 request.session.modified = True
         except MagacinError as exc:
-            messages.error(request, str(exc))
+            mp_error = str(exc)
+            messages.error(request, mp_error)
+        except Exception as exc:
+            logger.exception('MP dnevno očitavanje nije uspjelo')
+            mp_error = f'Očitavanje slike nije uspjelo: {exc}'
+            messages.error(request, mp_error)
     elif request.session.get('mp_dnevno_preview'):
         payload = request.session.get('mp_dnevno_preview') or {}
         preview = preview_mp_daily_rows(payload.get('rows') or [])
@@ -2473,10 +2512,16 @@ def magacin_mp_dnevno_skidanje(request):
         section='mp_dnevno',
         page_title='Dnevno skidanje MP lagera — Magacin',
     )
+    preview_ukupno = len(preview or [])
+    if preview and samo_promjene:
+        preview = [row for row in preview if row.get('changed')]
     context.update({
         'result': result,
         'preview': preview,
+        'preview_ukupno': preview_ukupno,
         'preview_datum': preview_datum,
+        'samo_promjene': samo_promjene,
+        'mp_error': mp_error,
         'skidanja': skidanja,
         'datumi': datumi,
         'odabrani_datum': odabrani_datum,

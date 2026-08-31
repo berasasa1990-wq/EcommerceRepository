@@ -13,6 +13,9 @@
         </p>
     </div>
 </div>
+{% if magacin_notice %}
+<p class="mg-mp-alert is-ok" role="status">{{ magacin_notice }}</p>
+{% endif %}
 
 {% if not searched %}
 <section class="mg-card">

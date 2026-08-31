@@ -1427,6 +1427,34 @@ class MagacinViewTests(TestCase):
             8,
         )
 
+    def test_mp_daily_samo_promjene_hides_unchanged(self):
+        self.client.force_login(self.user)
+        mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
+        if mp is None:
+            mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        apply_movement(product=self.product, location=mp, tip='prijem', kolicina=5)
+        from unittest.mock import patch
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake = SimpleUploadedFile('izvjestaj.png', b'not-an-image', content_type='image/png')
+        with patch(
+            'EcommerceApp.views_magacin.extract_mp_daily_text_from_upload',
+            return_value='DATUM : 26.08.2026\nŠifra\tKoličina\nTST-1\t2\nZERO-1\t3\nNEMA-XYZ\t1',
+        ):
+            posted = self.client.post(
+                reverse('staff_magacin_mp_dnevno'),
+                {'fajl': fake, 'action': 'ocitaj', 'samo_promjene': '1'},
+            )
+        self.assertEqual(posted.status_code, 200)
+        self.assertContains(posted, 'TST-1')
+        self.assertContains(posted, 'Prikazano 1 od 3')
+        self.assertNotContains(posted, 'ZERO-1')
+        self.assertNotContains(posted, 'NEMA-XYZ')
+        shown = self.client.get(reverse('staff_magacin_mp_dnevno') + '?samo_promjene=0')
+        self.assertContains(shown, 'TST-1')
+        self.assertContains(shown, 'ZERO-1')
+        self.assertContains(shown, 'NEMA-XYZ')
+
     def test_mp_daily_ukloni_preview_does_not_deduct(self):
         self.client.force_login(self.user)
         mp = WarehouseLocation.objects.filter(naziv__icontains='maloprodaja').first()
@@ -1693,6 +1721,16 @@ class MagacinViewTests(TestCase):
         out_page = self.client.get(reverse('staff_magacin_artikal', args=[self.zero.pk]))
         self.assertContains(out_page, 'mg-hero is-out')
         self.assertNotContains(out_page, 'mg-hero is-stock')
+
+    def test_magacin_artikal_obrisi_from_db(self):
+        self.client.force_login(self.user)
+        pk = self.zero.pk
+        sifra = self.zero.sifra
+        res = self.client.post(reverse('staff_magacin_artikal', args=[pk]), {'action': 'obrisi'})
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res['Location'], reverse('staff_magacin_artikli'))
+        self.assertFalse(Product.objects.filter(pk=pk).exists())
+        self.assertFalse(Product.objects.filter(sifra=sifra).exists())
 
     def test_artikal_history_shows_customer_from_order(self):
         self.client.force_login(self.user)

@@ -48,6 +48,36 @@ class MagacinError(Exception):
     pass
 
 
+def obrisi_artikal_iz_baze(product):
+    """Trajno obriši artikal iz baze, uključujući slike i magacin zalihe."""
+    from django.db.models.deletion import ProtectedError
+
+    if product is None or not getattr(product, 'pk', None):
+        raise MagacinError('Artikal nije pronađen.')
+    try:
+        with transaction.atomic():
+            if getattr(product, 'slika', None):
+                try:
+                    product.slika.delete(save=False)
+                except Exception:
+                    pass
+            for img in list(product.dodatne_slike.all()):
+                try:
+                    if img.slika:
+                        img.slika.delete(save=False)
+                except Exception:
+                    pass
+            product.delete()
+    except ProtectedError as exc:
+        raise MagacinError(
+            'Artikal se ne može obrisati jer postoje povezani podaci koji to sprečavaju.'
+        ) from exc
+    except IntegrityError as exc:
+        raise MagacinError(
+            'Artikal se ne može obrisati zbog povezanih zapisa u bazi.'
+        ) from exc
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -3574,6 +3604,7 @@ def preview_mp_daily_rows(parsed):
         if product is not None:
             mp_qty = sum(int(stock.kolicina or 0) for stock in _mp_stock_rows(product, variation))
         ostaje = max(0, mp_qty - qty) if product is not None else None
+        changed = product is not None and ostaje is not None and ostaje != mp_qty
         rows.append({
             'sifra': sifra,
             'qty': qty,
@@ -3581,6 +3612,7 @@ def preview_mp_daily_rows(parsed):
             'naziv': product.naziv if product is not None else '',
             'mp_dostupno': mp_qty,
             'ostaje': ostaje,
+            'changed': changed,
             'product_id': product.pk if product is not None else None,
             'variation_id': variation.pk if variation is not None else None,
         })

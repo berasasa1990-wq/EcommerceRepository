@@ -2811,6 +2811,31 @@ tr.is-mp-lock {
 }
 .mg-uvoz-errors li { margin: 4px 0; }
 .mg-uvoz-new .mg-card + .mg-card { margin-top: 14px; }
+.mg-mp-alert {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: 14px;
+    font-weight: 600;
+}
+.mg-mp-alert.is-ok {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #166534;
+}
+.mg-obrisi-artikal-form {
+    margin: 0;
+}
+.mg-mp-daily-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 12px;
+}
 .mg-mp-daily-actions {
     display: flex;
     flex-wrap: wrap;
