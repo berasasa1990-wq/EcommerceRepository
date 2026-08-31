@@ -1807,6 +1807,33 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!response.ok || !data.ok) {
                             throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
                         }
+                        if (data.requires_bundle_confirm) {
+                            const n = parseInt(data.available_sets, 10) || 0;
+                            const ok = window.confirm(data.message || 'Nema dovoljno setova na stanju.');
+                            if (ok && n > 0) {
+                                formData.set('bundle_confirm', '1');
+                                formData.set('quantity', String(n));
+                                const retry = await fetch(akcijaForm.action, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded',
+                                        'X-CSRFToken': getCsrfToken(),
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                    },
+                                    body: new URLSearchParams(formData).toString(),
+                                });
+                                const retryData = await retry.json();
+                                if (!retry.ok || !retryData.ok) {
+                                    throw new Error(retryData.message || 'Dodavanje u korpu nije uspjelo.');
+                                }
+                                updateCartBadge(retryData.cart_count || 0);
+                                showCartToast(retryData.message || 'Artikal je dodan u korpu.');
+                                if (retryData.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
+                                    window.trackMetaAddToCart(retryData.meta_add_to_cart);
+                                }
+                            }
+                            return;
+                        }
                         updateCartBadge(data.cart_count || 0);
                         showCartToast(data.message || 'Artikal je dodan u korpu.');
                         if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {

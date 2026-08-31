@@ -448,6 +448,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok || !data.ok) {
                 throw new Error(data.message || 'Dodavanje u korpu nije uspjelo.');
             }
+            if (data.requires_bundle_confirm) {
+                const n = parseInt(data.available_sets, 10) || 0;
+                const ok = window.confirm(data.message || 'Nema dovoljno setova na stanju.');
+                if (ok && n > 0) {
+                    await submitAddToCartForm(form, {
+                        bundle_confirm: '1',
+                        quantity: String(n),
+                    });
+                }
+                return;
+            }
             if (data.requires_qty_deal_choice && data.qty_deal_offer) {
                 // Još NIJE u korpi — izaberi količinski tier ili odbij (onda se doda originalna količina)
                 if (typeof window.closeProductOtherOptionsModal === 'function') {

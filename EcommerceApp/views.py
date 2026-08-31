@@ -3414,6 +3414,14 @@ def add_to_cart(request, slug):
             artikal_id=product.pk,
         ).exists()
     )
+    is_bundle_add = bool(
+        timer_akcija_from_popup
+        and Akcija.objects.filter(
+            pk=timer_akcija_from_popup,
+            aktivan=True,
+            tip=Akcija.Tip.BUNDLE,
+        ).exists()
+    )
 
     if product.varijacije.exists():
         if variation_id:
@@ -3453,14 +3461,15 @@ def add_to_cart(request, slug):
         messages.error(request, msg)
         return redirect('product_detail', slug=slug)
 
-    on_hand = stock_on_hand(product, variation)
-    remaining = cart.remaining_stock(product, variation)
-    if remaining <= 0 or quantity > remaining:
-        msg = stock_limit_message(on_hand)
-        if stay_on_page:
-            return JsonResponse({'ok': False, 'message': msg}, status=400)
-        messages.error(request, msg)
-        return redirect('product_detail', slug=slug)
+    if not is_bundle_add:
+        on_hand = stock_on_hand(product, variation)
+        remaining = cart.remaining_stock(product, variation)
+        if remaining <= 0 or quantity > remaining:
+            msg = stock_limit_message(on_hand)
+            if stay_on_page:
+                return JsonResponse({'ok': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('product_detail', slug=slug)
 
     custom_price = None
     promo_bazna = None
@@ -3546,6 +3555,7 @@ def add_to_cart(request, slug):
         apply_gratis_bundle_from_popup,
         apply_popup_bundle_from_popup,
         apply_qty_deal_from_popup,
+        bundle_stock_confirm_message,
         build_gratis_choice_message,
         build_gratis_offer_response,
         build_gratis_popup_message,
@@ -3554,6 +3564,7 @@ def add_to_cart(request, slug):
         build_qty_deal_offer_response,
         get_active_qty_deal_for_product,
         get_active_gratis_akcija_for_product,
+        max_complete_bundle_sets,
     )
 
     gratis_choice = request.POST.get('gratis_choice', '').strip()
@@ -3589,8 +3600,28 @@ def add_to_cart(request, slug):
             .first()
         )
         if popup_bundle_akcija and popup_bundle_akcija.jos_traje():
-            # Bundle set — smije se dodavati više puta (količina se sabira)
             quantity = max(1, int(quantity or 1))
+            available_sets = max_complete_bundle_sets(cart, popup_bundle_akcija)
+            confirm = (request.POST.get('bundle_confirm') or '') == '1'
+            if available_sets <= 0:
+                msg = bundle_stock_confirm_message(0)
+                if stay_on_page:
+                    return JsonResponse({'ok': False, 'message': msg}, status=400)
+                messages.error(request, msg)
+                return redirect('product_detail', slug=slug)
+            if quantity > available_sets and not confirm:
+                msg = bundle_stock_confirm_message(available_sets)
+                if stay_on_page:
+                    return JsonResponse({
+                        'ok': True,
+                        'requires_bundle_confirm': True,
+                        'available_sets': available_sets,
+                        'requested_sets': quantity,
+                        'message': msg,
+                    })
+                messages.error(request, msg)
+                return redirect('product_detail', slug=slug)
+            quantity = min(quantity, available_sets)
             bundle_result = apply_popup_bundle_from_popup(
                 cart, popup_bundle_akcija, quantity=quantity,
             )

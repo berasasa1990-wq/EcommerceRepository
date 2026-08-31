@@ -303,15 +303,10 @@ def _add_bundle_discounted_line(cart, akcija, product, *, quantity=1, popust_pos
     return True
 
 
-def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
-    """
-    Pop-up bundle: artikli iz seta u korpu.
-    % po liniji (ako uneseno) inače % seta; qty na liniji se sabira.
-    """
-    if akcija.tip != Akcija.Tip.BUNDLE:
-        return None
-
-    sets = max(1, int(quantity or 1))
+def _bundle_apply_rows(akcija):
+    """Linije seta za dodavanje u korpu (qty + %)."""
+    if not akcija or akcija.tip != Akcija.Tip.BUNDLE:
+        return []
     rows = akcija.bundle_line_rows()
     if not rows:
         products = akcija.bundle_products()
@@ -329,16 +324,78 @@ def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
             {'product': p, 'quantity': 1, 'popust_postotak': akcija.popust_postotak}
             for p in products
         ]
+    return rows
 
+
+def max_complete_bundle_sets(cart, akcija):
+    """Koliko kompletnih setova stane na stanje (umanjeno za korpu)."""
+    rows = _bundle_apply_rows(akcija)
+    if not rows:
+        return 0
+    unit_total = sum(max(1, int(r.get('quantity') or 1)) for r in rows)
+    if unit_total < 2:
+        return 0
+    needed = {}
+    resolved = {}
+    for row in rows:
+        product = row.get('product')
+        if not product:
+            return 0
+        variation = _resolve_product_variation(product)
+        if not _product_is_available(product, variation):
+            return 0
+        sku = (product.pk, variation.pk if variation else 0)
+        line_qty = max(1, int(row.get('quantity') or 1))
+        needed[sku] = needed.get(sku, 0) + line_qty
+        resolved[sku] = (product, variation)
+    max_sets = None
+    for sku, per_set in needed.items():
+        product, variation = resolved[sku]
+        remaining = cart.remaining_stock(product, variation)
+        can = remaining // per_set
+        max_sets = can if max_sets is None else min(max_sets, can)
+        if max_sets <= 0:
+            return 0
+    return int(max_sets or 0)
+
+
+def bundle_stock_confirm_message(available_sets):
+    n = max(0, int(available_sets or 0))
+    if n <= 0:
+        return 'Nema dovoljno na stanju za kompletan set.'
+    if n == 1:
+        return (
+            'Na stanju je samo 1 kompletan set. '
+            'Želiš li dodati 1 set u korpu?'
+        )
+    return (
+        f'Na stanju je samo {n} kompletnih setova. '
+        f'Želiš li dodati {n} setova u korpu?'
+    )
+
+
+def apply_popup_bundle_from_popup(cart, akcija, *, quantity=1):
+    """
+    Pop-up bundle: uvijek cijeli set u korpu.
+    quantity = broj kompletnih setova. Ne dodaje nepotpun set.
+    """
+    if akcija.tip != Akcija.Tip.BUNDLE:
+        return None
+
+    sets = max(1, int(quantity or 1))
+    rows = _bundle_apply_rows(akcija)
     unit_total = sum(max(1, int(r.get('quantity') or 1)) for r in rows)
     if unit_total < 2:
         return None
 
-    # Mora postojati barem jedan % (set ili linija)
     has_any_pct = akcija.popust_postotak is not None or any(
         r.get('popust_postotak') is not None for r in rows
     )
     if not has_any_pct:
+        return None
+
+    available = max_complete_bundle_sets(cart, akcija)
+    if sets > available:
         return None
 
     added_units = 0
