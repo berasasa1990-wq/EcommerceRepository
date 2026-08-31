@@ -3744,9 +3744,22 @@ body.search-results-active main {
 }
 
 .catalog-pagination--compact .catalog-page-link--active {
-    background: #5BB805;
-    border-color: #5BB805;
+    background: var(--ozr-orange, #FF5A00);
+    border-color: var(--ozr-orange, #FF5A00);
     color: #ffffff;
+}
+
+.catalog-page-link--last {
+    min-width: auto;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.catalog-page-link--edge {
+    font-weight: 800;
 }
 
 .scroll-top-btn {
@@ -5736,6 +5749,95 @@ body.catalog-variation-modal-open {
     object-fit: contain;
     object-position: center;
     background: var(--white);
+}
+
+.product-gallery-main {
+    cursor: zoom-in;
+}
+
+.product-gallery-zoom-hint {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 5;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.product-gallery-zoom-hint svg {
+    width: 16px;
+    height: 16px;
+}
+
+.pd-zoom[hidden] {
+    display: none !important;
+}
+
+.pd-zoom {
+    position: fixed;
+    inset: 0;
+    z-index: 14000;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+}
+
+.pd-zoom__close {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(17, 17, 17, 0.55);
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.pd-zoom__close:focus-visible {
+    outline: 2px solid #111;
+    outline-offset: 2px;
+}
+
+.pd-zoom__stage {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+    background: transparent;
+}
+
+.pd-zoom__stage img {
+    max-width: 96%;
+    max-height: 96%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transform-origin: center center;
+    user-select: none;
+    -webkit-user-drag: none;
+    cursor: zoom-out;
+}
+
+body.pd-zoom-open {
+    overflow: hidden;
 }
 
 .product-thumbnails {
@@ -13869,16 +13971,16 @@ button.nav-action-link {
         flex-direction: column;
     }
 
-    /* Product detail: naslov, pa slika lijevo + meta desno */
+    /* Product detail: naslov, pa slika lijevo (što veća) + meta uz desni rub */
     .product-detail-grid {
         display: grid;
-        grid-template-columns: minmax(120px, 42%) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) max-content;
         grid-template-areas:
             "title title"
             "image meta"
             "thumbs thumbs"
             "body body";
-        gap: 10px 12px;
+        gap: 8px 8px;
         align-items: stretch;
     }
 
@@ -13889,10 +13991,12 @@ button.nav-action-link {
     .product-gallery-main {
         grid-area: image;
         width: 100%;
+        min-width: 0;
         max-width: none;
         max-height: none;
         margin: 0;
         aspect-ratio: 1;
+        cursor: zoom-in;
     }
 
     .product-thumbnails {
@@ -13915,34 +14019,48 @@ button.nav-action-link {
         flex-direction: column;
         flex-wrap: nowrap;
         align-items: flex-start;
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 8px;
         margin: 0;
         min-width: 0;
-        height: 100%;
-        align-self: stretch;
-        padding: 2px 0;
+        max-width: 38vw;
+        height: auto;
+        align-self: start;
+        padding: 2px 0 2px 6px;
         box-sizing: border-box;
+        text-align: left;
     }
 
     .pd-meta__item,
     .pd-meta .product-stock-label {
-        font-size: 14px;
-        line-height: 1.4;
+        font-size: 13px;
+        line-height: 1.35;
         flex-wrap: wrap;
+        justify-content: flex-start;
+        max-width: 100%;
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: left;
     }
 
     .pd-meta__k {
-        font-size: 14px;
+        font-size: 13px;
+    }
+
+    .pd-meta__brand .product-brand {
+        justify-content: flex-start;
     }
 
     .pd-meta__brand .brand-name {
-        font-size: 14px;
+        font-size: 13px;
+        text-align: left;
     }
 
     .pd-meta__brand .brand-logo {
-        max-width: 88px;
-        max-height: 22px;
+        max-width: min(64px, 100%);
+        max-height: 20px;
+        object-position: left center;
     }
 
     .pd-meta .product-stock-label__icon {
@@ -13984,8 +14102,9 @@ button.nav-action-link {
     }
 
     .pd-meta__brand .brand-logo {
-        max-width: 88px;
-        max-height: 22px;
+        max-width: min(64px, 100%);
+        max-height: 20px;
+        object-position: left center;
     }
 
     .product-detail-brand .brand-name {
@@ -24379,7 +24498,7 @@ a.home-promo-card:hover {
 .header .header-search-form {
     position: relative;
     background: #111 !important;
-    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border: 1px solid #fff !important;
     border-radius: 8px;
     padding: 0 52px 0 18px;
     overflow: hidden;
@@ -24391,8 +24510,8 @@ a.home-promo-card:hover {
 }
 
 .header .header-search-form:focus-within {
-    border-color: rgba(255, 90, 0, 0.75) !important;
-    box-shadow: inset -52px 0 0 0 #FF5A00, 0 0 0 2px rgba(255, 90, 0, 0.35);
+    border-color: #fff !important;
+    box-shadow: inset -52px 0 0 0 #FF5A00;
 }
 
 .header .header-search-form svg {
@@ -26968,7 +27087,7 @@ a.home-promo-card:hover {
     /* —— Header crni + bijeli search —— */
     .header .header-search-form {
         background: #FF5A00 !important;
-        border-width: 0 !important;
+        border: 1px solid #fff !important;
         border-radius: 8px !important;
         padding: 0 !important;
         min-height: 42px;
@@ -28795,7 +28914,10 @@ body.product-other-options-open {
     pointer-events: none;
 }
 
-.product-card--catalog .product-card__brand-row--hidden {
+.product-card--catalog .product-card__brand-row--hidden,
+.product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__brand-row--hidden,
+.category-page .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__brand-row--hidden,
+.category-page--shop .product-card--catalog .product-card__brand-row--hidden {
     display: none !important;
 }
 
@@ -29107,6 +29229,12 @@ body.product-other-options-open {
         z-index: 6;
     }
 
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__brand-row--hidden,
+    .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row--hidden,
+    .category-page--shop .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__brand-row--hidden {
+        display: none !important;
+    }
+
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-logo,
     .category-page:not(.home-products--category-showcase) .product-catalog--compact:not(.home-category-showcase) .product-grid--catalog .product-card--catalog .product-card__brand-row .brand-logo {
         max-width: 70px;
@@ -29135,7 +29263,21 @@ body.product-other-options-open {
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-image {
-        padding: 6px 4px 0;
+        padding: 8px;
+        overflow: hidden;
+    }
+
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-image img,
+    .product-catalog--compact .product-grid--catalog .product-card--catalog .product-image .product-image-placeholder {
+        object-fit: contain;
+        object-position: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Logo brenda je preko slike — ostavi prostor da se artikal ne siječe */
+    .product-catalog--compact .product-grid--catalog .product-card--catalog:not(:has(.product-card__brand-row--hidden)) .product-image {
+        padding: 26px 8px 8px;
     }
 
     .product-catalog--compact .product-grid--catalog .product-card--catalog .product-card__footer {
@@ -30218,12 +30360,25 @@ body.product-other-options-open {
 }
 
 .category-page--shop .category-header p,
-.category-page--shop .category-header__desc {
+.category-page--shop .category-header__desc,
+.category-page--shop .category-header .seo-text-block {
     max-width: 720px;
     color: #6b6b6b;
     font-size: 15px;
     line-height: 1.55;
     margin: 0;
+}
+
+.category-page--shop .category-header .seo-text-block {
+    padding: 0;
+}
+
+.category-page--shop .category-header .seo-text-block__toggle {
+    color: var(--ozr-orange, #FF5A00);
+}
+
+.category-page--shop .category-header .seo-text-block__toggle:hover {
+    color: var(--ozr-orange-hover, #E04F00);
 }
 
 .category-page--shop .catalog-pagination--top {
@@ -30626,7 +30781,7 @@ body.product-other-options-open {
     display: none !important;
 }
 
-.category-page--shop .product-card__brand-row,
+.category-page--shop:not(.home-search-results) .product-card__brand-row,
 .category-page--shop .product-card__origin-slot,
 .category-page--shop .variation-swatches {
     display: none !important;

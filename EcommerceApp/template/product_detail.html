@@ -36,7 +36,7 @@
 <section class="product-detail"{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
     <div class="product-detail-grid">
         <div class="product-gallery">
-            <div class="product-gallery-main" id="mainProductImageWrap">
+            <div class="product-gallery-main" id="mainProductImageWrap"{% if product.prikazna_slika %} role="button" tabindex="0" aria-label="Uvećaj sliku"{% endif %}>
                 <div class="product-gallery-overlays">
                     {% if product.je_novitet %}
                     <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
@@ -46,8 +46,15 @@
                 </div>
                 {% if product.prikazna_slika %}
                 {% with img=product.prikazna_slika_responsive %}
-                <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 42vw, 50vw" loading="eager" fetchpriority="high" decoding="async">
+                <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 70vw, 50vw" loading="eager" fetchpriority="high" decoding="async" data-full-src="{{ product.prikazna_slika.url }}">
                 {% endwith %}
+                <span class="product-gallery-zoom-hint" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"/>
+                        <path d="M20 20l-3-3"/>
+                        <path d="M11 8v6M8 11h6"/>
+                    </svg>
+                </span>
                 {% else %}
                 <div class="product-image-placeholder product-image-placeholder--large" id="mainProductImage">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -64,6 +71,7 @@
                 {% with r=img.prikazna_slika_responsive %}
                 <button type="button" class="product-thumbnail"
                     data-src="{% if r %}{{ r.src }}{% else %}{{ img.slika.url }}{% endif %}"
+                    data-full="{{ img.slika.url }}"
                     {% if r.srcset %}data-srcset="{{ r.srcset }}"{% endif %}
                     data-width="{{ r.width|default:400 }}"
                     data-height="{{ r.height|default:400 }}"
@@ -104,7 +112,7 @@
                 </span>
                 {% endif %}
                 {% include 'partials/product_stock_label.html' with product=product %}
-                <span class="pd-meta__item pd-meta__ship">Isporuka: 24h Brza Pošta</span>
+                <span class="pd-meta__item pd-meta__ship">Isporuka: 24h</span>
             </div>
             <div class="product-detail-body">
             {% if similar_name_products %}
@@ -625,6 +633,12 @@
         {% endif %}
         {% include 'partials/product_why_buy.html' %}
     </div>
+    <div id="productImageZoom" class="pd-zoom" hidden role="dialog" aria-modal="true" aria-label="Uvećana slika">
+        <button type="button" class="pd-zoom__close" id="productImageZoomClose" aria-label="Zatvori">×</button>
+        <div class="pd-zoom__stage" id="productImageZoomStage">
+            <img id="productImageZoomImg" alt="">
+        </div>
+    </div>
 </section>
 
 {% if related_products %}
@@ -707,7 +721,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260831bund" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260831zoom2" defer></script>
 {% if staff_product_tools %}
 <script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
 {% endif %}

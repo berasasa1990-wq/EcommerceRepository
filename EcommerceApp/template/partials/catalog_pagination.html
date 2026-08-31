@@ -2,6 +2,11 @@
 <nav class="catalog-pagination catalog-pagination--compact{% if pagination_placement %} catalog-pagination--{{ pagination_placement }}{% endif %}" aria-label="Stranice artikala">
     {% if page_obj.paginator.num_pages > 1 %}
     <div class="catalog-pagination-links">
+        {% if page_obj.number > 1 %}
+        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}{% endif %}#product-showcase" class="catalog-page-link catalog-page-link--edge" aria-label="Prva strana">«</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">«</span>
+        {% endif %}
         {% if page_obj.has_previous %}
         <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.previous_page_number }}#product-showcase" class="catalog-page-link" aria-label="Prethodna strana">‹</a>
         {% else %}
@@ -9,7 +14,7 @@
         {% endif %}
 
         {% for page_num in elided_page_range|default:page_obj.paginator.page_range %}
-            {% if page_num == page_obj.paginator.ELLIPSIS %}
+            {% if page_num == '…' or page_num == page_obj.paginator.ELLIPSIS %}
             <span class="catalog-page-ellipsis">…</span>
             {% elif page_num == page_obj.number %}
             <span class="catalog-page-link catalog-page-link--active" aria-current="page">{{ page_num }}</span>
@@ -24,6 +29,11 @@
         <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.next_page_number }}#product-showcase" class="catalog-page-link" aria-label="Sljedeća strana">›</a>
         {% else %}
         <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">›</span>
+        {% endif %}
+        {% if page_obj.number < page_obj.paginator.num_pages %}
+        <a href="{{ filter_action }}{% if catalog_query %}?{{ catalog_query }}&{% else %}?{% endif %}page={{ page_obj.paginator.num_pages }}#product-showcase" class="catalog-page-link catalog-page-link--last" aria-label="Zadnja strana">Zadnja</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">Zadnja</span>
         {% endif %}
     </div>
     {% endif %}

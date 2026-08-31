@@ -1896,6 +1896,29 @@ def _size_filter_groups(filter_action, filter_params, sizes):
     return groups
 
 
+def _catalog_page_numbers(page_obj, *, around=2):
+    """Brojevi stranica: uvijek 1 i zadnja, plus susjedi trenutne."""
+    if not page_obj:
+        return []
+    last = page_obj.paginator.num_pages
+    current = page_obj.number
+    if last <= 1:
+        return [1] if last == 1 else []
+    keep = {1, last, current}
+    for n in range(current - around, current + around + 1):
+        if 1 <= n <= last:
+            keep.add(n)
+    ordered = sorted(keep)
+    out = []
+    prev = None
+    for n in ordered:
+        if prev is not None and n > prev + 1:
+            out.append('…')
+        out.append(n)
+        prev = n
+    return out
+
+
 def _paginate_catalog_products(request, products, *, per_page=CATALOG_PRODUCTS_PER_PAGE):
     page_number = request.GET.get('page', '1')
     paginator = Paginator(products, per_page)
@@ -2659,9 +2682,7 @@ def home(request):
         'catalog_title': catalog_title,
         'catalog_subtitle': catalog_subtitle,
         'catalog_query': _catalog_query_string(filter_params),
-        'elided_page_range': (
-            page_obj.paginator.get_elided_page_range(page_obj.number) if page_obj else []
-        ),
+        'elided_page_range': _catalog_page_numbers(page_obj),
         'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
         'home_section_product_visible': HOME_SECTION_PRODUCT_VISIBLE,
         'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
@@ -2821,7 +2842,7 @@ def brands_list(request):
         **_base_context(),
         'brands': page_obj.object_list,
         'page_obj': page_obj,
-        'elided_page_range': page_obj.paginator.get_elided_page_range(page_obj.number),
+        'elided_page_range': _catalog_page_numbers(page_obj),
         'brands_sort': sort,
         'brands_shown_start': start,
         'brands_shown_end': end,
@@ -2938,7 +2959,7 @@ def category_detail(request, slug):
         'category': category,
         'products': page_obj.object_list,
         'page_obj': page_obj,
-        'elided_page_range': page_obj.paginator.get_elided_page_range(page_obj.number),
+        'elided_page_range': _catalog_page_numbers(page_obj),
         'catalog_query': _catalog_query_string(catalog_url_params),
         'filter_categories': _filter_categories(),
         'filter_params': filter_params,

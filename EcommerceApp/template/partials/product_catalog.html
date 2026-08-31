@@ -14,9 +14,9 @@
             <div class="category-header">
                 <h1>{{ seo_h1|default:category.naziv }}</h1>
                 {% if seo_tekst_iznad %}
-                <div class="category-header__desc">{{ seo_tekst_iznad|striptags|truncatewords:40 }}</div>
+                {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
                 {% elif seo_description %}
-                <p>{{ seo_description }}</p>
+                <p>{{ seo_description|truncatechars:100 }}</p>
                 {% endif %}
             </div>
             {% elif catalog_title %}
@@ -59,7 +59,7 @@
             {% if products %}
             <div class="product-grid product-grid--catalog">
                 {% for product in products %}
-                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations hide_brand=hide_brand show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
                 {% endfor %}
             </div>
             {% else %}

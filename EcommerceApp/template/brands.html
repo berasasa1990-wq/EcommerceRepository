@@ -62,13 +62,18 @@
 
     {% if page_obj and page_obj.paginator.num_pages > 1 %}
     <nav class="brands-pagination" aria-label="Stranice brendova">
+        {% if page_obj.number > 1 %}
+        <a href="?sort={{ brands_sort }}" class="catalog-page-link catalog-page-link--edge" aria-label="Prva strana">«</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">«</span>
+        {% endif %}
         {% if page_obj.has_previous %}
         <a href="?sort={{ brands_sort }}&amp;page={{ page_obj.previous_page_number }}" class="catalog-page-link" aria-label="Prethodna">‹</a>
         {% else %}
         <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">‹</span>
         {% endif %}
         {% for page_num in elided_page_range %}
-            {% if page_num == page_obj.paginator.ELLIPSIS %}
+            {% if page_num == '…' or page_num == page_obj.paginator.ELLIPSIS %}
             <span class="catalog-page-ellipsis">…</span>
             {% elif page_num == page_obj.number %}
             <span class="catalog-page-link catalog-page-link--active">{{ page_num }}</span>
@@ -82,6 +87,11 @@
         <a href="?sort={{ brands_sort }}&amp;page={{ page_obj.next_page_number }}" class="catalog-page-link" aria-label="Sljedeća">›</a>
         {% else %}
         <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">›</span>
+        {% endif %}
+        {% if page_obj.number < page_obj.paginator.num_pages %}
+        <a href="?sort={{ brands_sort }}&amp;page={{ page_obj.paginator.num_pages }}" class="catalog-page-link catalog-page-link--last" aria-label="Zadnja strana">Zadnja</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">Zadnja</span>
         {% endif %}
     </nav>
     {% endif %}
