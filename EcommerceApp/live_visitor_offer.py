@@ -129,6 +129,7 @@ def product_allowed_for_dwell(product_id):
             settings=s,
             product_id=pid,
             product__aktivan=True,
+            product__sakriven_do_stanja=False,
             product__na_stanju=True,
         ).exists()
     except Exception:

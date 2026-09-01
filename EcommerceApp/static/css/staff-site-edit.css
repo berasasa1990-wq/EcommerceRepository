@@ -237,6 +237,11 @@ body.staff-edit-mode-on [data-product-card] {
     position: relative;
     cursor: pointer;
 }
+.staff-stock-badge--hidden,
+body.staff-edit-mode-on .staff-stock-badge--hidden {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+}
 body.staff-edit-mode-on [data-product-card].is-bulk-selected {
     outline: 3px solid #5BB805;
     outline-offset: 3px;
@@ -291,6 +296,10 @@ body.staff-edit-mode-on [data-product-card].is-bulk-selected::after {
     font-size: 12px;
     color: #64748b;
     line-height: 1.4;
+}
+.staff-edit-field .staff-bulk-hint {
+    display: block;
+    margin: 6px 0 0;
 }
 .staff-bulk-form { margin: 0; }
 .staff-bulk-opis {
@@ -401,6 +410,10 @@ body.staff-edit-mode-on [data-product-card].is-bulk-selected::after {
     color: #64748b;
 }
 .staff-bulk-file input { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.staff-bulk-same-image {
+    width: 100%;
+    margin: 4px 0 10px;
+}
 .staff-bulk-actions {
     display: flex;
     gap: 8px;

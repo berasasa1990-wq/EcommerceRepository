@@ -2,6 +2,8 @@
     class="product-card product-card--catalog{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
     data-product-card
     data-product-id="{{ product.pk }}"
+    {% if product.slika %}data-image-key="{{ product.slika.name }}"{% endif %}
+    {% if product.sakriven_do_stanja %}data-hidden-until-stock="1"{% endif %}
     data-product-slug="{{ product.slug }}"
     {% if not hide_variations %}data-cart-on-swatch{% endif %}
     data-default-name="{{ product.naziv }}"
@@ -22,9 +24,7 @@
                     {% include 'partials/product_sale_ribbon.html' with product=product %}
                     {% endif %}
                     {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}
-                    {% if staff_edit_mode and not product.na_stanju %}
-                    <span class="staff-stock-badge staff-stock-badge--photo">Nije na stanju</span>
-                    {% endif %}
+                    {% include 'partials/product_staff_overlay.html' with product=product %}
                 </a>
             </div>
             <div class="variation-swatches{% if hide_variations or not product.variation_count %} variation-swatches--empty{% endif %}">

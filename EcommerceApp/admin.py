@@ -2352,10 +2352,10 @@ class ProductAdmin(admin.ModelAdmin):
         'pakovanje_komada',
         'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
         'prioritet_lagera', 'proizvedeno_u_japanu',
-        'aktivan', 'datum_dodavanja', 'olx_status', 'pregled_slike',
+        'aktivan', 'sakriven_do_stanja', 'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
     list_filter = (
-        'aktivan', NaStanjuFilter, ImaVarijacijeFilter, IstaMtSifraUNazivuFilter,
+        'aktivan', 'sakriven_do_stanja', NaStanjuFilter, ImaVarijacijeFilter, IstaMtSifraUNazivuFilter,
         'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
         'prioritet_lagera', 'proizvedeno_u_japanu',
         'kategorija', 'brend', 'tagovi',
@@ -2365,7 +2365,7 @@ class ProductAdmin(admin.ModelAdmin):
     ordering = ('-prioritet_lagera', '-kreiran')
     list_editable = (
         'prikazi_na_pocetnoj', 'je_novitet', 'je_hit', 'prioritet_lagera',
-        'proizvedeno_u_japanu', 'aktivan', 'na_stanju',
+        'proizvedeno_u_japanu', 'aktivan', 'sakriven_do_stanja', 'na_stanju',
     )
     search_fields = (
         'naziv', 'sifra', 'barkod', 'tagovi__naziv',
@@ -2454,11 +2454,13 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': (
                 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
                 'prioritet_lagera', 'proizvedeno_u_japanu', 'aktivan',
+                'sakriven_do_stanja',
             ),
             'description': (
                 '„Proizvedeno u Japanu” — na sajtu se ispod naziva prikaže badge Made in Japan. '
                 '„Redukovanje lagera”: Normalno / Favorizuj / Hit — prioritet samo među '
-                'relevantnim rezultatima pretrage, kategorije i preporuka (ne gura nerelevantne).'
+                'relevantnim rezultatima pretrage, kategorije i preporuka (ne gura nerelevantne). '
+                '„Sakriven sa sajta”: kupci ga ne vide dok opet ne dođe na stanje.'
             ),
         }),
         ('SEO (Google) — artikal', {

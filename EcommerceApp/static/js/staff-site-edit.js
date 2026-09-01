@@ -591,11 +591,13 @@
         if (!root || !panel || !form) return;
 
         var bulkUrl = root.getAttribute('data-bulk-url') || '';
+        var sameImageUrl = root.getAttribute('data-same-image-url') || '';
         var catUrl = root.getAttribute('data-category-url') || '';
         var brandUrl = root.getAttribute('data-brand-url') || '';
         var countEl = document.getElementById('staffBulkCount');
         var statusEl = document.getElementById('staffBulkStatus');
         var applyBtn = document.getElementById('staffBulkApply');
+        var sameImageBtn = document.getElementById('staffBulkSameImage');
         var picksEl = document.getElementById('staffBulkPicks');
         var selected = {};
         var catTimer = null;
@@ -848,6 +850,13 @@
             fd.append('opis', (document.getElementById('staffBulkOpis') || {}).value || '');
             fd.append('akcija_postotak', (document.getElementById('staffBulkPct') || {}).value || '');
             fd.append('je_hit', (document.getElementById('staffBulkHit') || {}).value || '');
+            fd.append('sakriven_do_stanja', (document.getElementById('staffBulkHide') || {}).value || '');
+            var extraInput = document.getElementById('staffBulkExtraImages');
+            if (extraInput && extraInput.files && extraInput.files.length) {
+                Array.prototype.forEach.call(extraInput.files, function (file) {
+                    fd.append('dodatne_slike', file);
+                });
+            }
             form.querySelectorAll('.staff-bulk-pick').forEach(function (row) {
                 var pid = row.getAttribute('data-pick-id');
                 if (!pid) return;
@@ -880,12 +889,89 @@
                     return;
                 }
                 setStatus(result.data.message || 'Sačuvano.', false);
+                if (extraInput) extraInput.value = '';
+                if (result.data.hidden === true) {
+                    productIds.forEach(function (id) {
+                        document.querySelectorAll('[data-product-card][data-product-id="' + id + '"]').forEach(function (card) {
+                            card.setAttribute('data-hidden-until-stock', '1');
+                            if (!card.querySelector('.staff-stock-badge--hidden')) {
+                                var badge = document.createElement('span');
+                                badge.className = 'staff-stock-badge staff-stock-badge--photo staff-stock-badge--hidden';
+                                badge.textContent = 'Sakriven sa sajta';
+                                var media = card.querySelector('.product-image, .hm-media, .product-card__media');
+                                (media || card).appendChild(badge);
+                            }
+                        });
+                    });
+                } else if (result.data.hidden === false) {
+                    productIds.forEach(function (id) {
+                        document.querySelectorAll('[data-product-card][data-product-id="' + id + '"]').forEach(function (card) {
+                            card.removeAttribute('data-hidden-until-stock');
+                            card.querySelectorAll('.staff-stock-badge--hidden').forEach(function (el) {
+                                el.remove();
+                            });
+                        });
+                    });
+                }
             }).catch(function () {
                 setStatus('Nije sačuvano. Pokušaj ponovo.', true);
             }).then(function () {
                 if (applyBtn) applyBtn.disabled = false;
             });
         });
+
+        if (sameImageBtn) {
+            sameImageBtn.addEventListener('click', function () {
+                var productIds = ids();
+                if (!productIds.length) {
+                    setStatus('Odaberi artikle.', true);
+                    return;
+                }
+                if (!sameImageUrl) {
+                    setStatus('Pretraga iste slike nije dostupna.', true);
+                    return;
+                }
+                sameImageBtn.disabled = true;
+                setStatus('Tražim artikle s istom slikom…');
+                var qs = productIds.map(function (id) {
+                    return 'product_ids=' + encodeURIComponent(String(id));
+                }).join('&');
+                fetch(sameImageUrl + '?' + qs, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                }).then(function (res) {
+                    return res.json().then(function (data) {
+                        return { ok: res.ok, data: data };
+                    }, function () {
+                        return { ok: false, data: { error: 'Pretraga nije uspjela.' } };
+                    });
+                }).then(function (result) {
+                    if (!result.data || !result.data.ok) {
+                        setStatus((result.data && result.data.error) || 'Pretraga nije uspjela.', true);
+                        return;
+                    }
+                    var added = 0;
+                    (result.data.results || []).forEach(function (item) {
+                        var id = String(item.id);
+                        if (!id || selected[id]) return;
+                        selected[id] = { name: item.label || ('Artikal #' + id) };
+                        added += 1;
+                    });
+                    syncCards();
+                    renderCount();
+                    syncFindTools();
+                    if (added) {
+                        setStatus('Dodano ' + added + ' artikal(a) s istom slikom.', false);
+                    } else {
+                        setStatus('Nema drugih artikala s istom slikom.', false);
+                    }
+                }).catch(function () {
+                    setStatus('Pretraga nije uspjela. Pokušaj ponovo.', true);
+                }).then(function () {
+                    sameImageBtn.disabled = false;
+                });
+            });
+        }
 
         var clearBtn = document.getElementById('staffBulkClear');
         if (clearBtn) {

@@ -59,6 +59,11 @@ urlpatterns = [
     path('api/v1/ping/', views_catalog_api.catalog_api_ping, name='catalog_api_ping'),
     path('api/v1/products/', views_catalog_api.catalog_api_products, name='catalog_api_products'),
     path(
+        'api/v1/magacin-stanje/',
+        views_catalog_api.catalog_api_magacin_stanje,
+        name='catalog_api_magacin_stanje',
+    ),
+    path(
         'api/v1/products/<slug:slug>/',
         views_catalog_api.catalog_api_product_detail,
         name='catalog_api_product_detail',
@@ -143,6 +148,7 @@ urlpatterns = [
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),
     path('nalog/artikli/bulk-izmjena/', views.staff_product_bulk_edit, name='staff_product_bulk_edit'),
+    path('nalog/artikli/ista-slika/', views.staff_same_image_products, name='staff_same_image_products'),
     path('nalog/aktiviraj-korisnika/', views.staff_activate_user, name='staff_activate_user'),
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
     path('nalog/magacin/', views_magacin.magacin_home, name='staff_magacin'),

@@ -344,7 +344,7 @@ def _category_bestseller_ids(focus_cat, *, exclude_ids=None, limit=8):
         return []
     exclude_ids = {int(x) for x in (exclude_ids or set()) if x}
     qs = (
-        Product.objects.filter(aktivan=True, kategorija__naziv=focus_cat)
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False, kategorija__naziv=focus_cat)
         .filter(Q(na_stanju=True) | Q(varijacije__na_stanju=True))
         .exclude(pk__in=exclude_ids)
         .distinct()
@@ -395,7 +395,7 @@ def _candidate_product_ids(visitor, *, exclude_ids=None, pool_size=24):
         )
         if brand_ids:
             same_brand = (
-                Product.objects.filter(aktivan=True, brend_id__in=brand_ids)
+                Product.objects.filter(aktivan=True, sakriven_do_stanja=False, brend_id__in=brand_ids)
                 .filter(Q(na_stanju=True) | Q(varijacije__na_stanju=True))
                 .exclude(pk__in=exclude_ids)
                 .exclude(pk__in=ordered)

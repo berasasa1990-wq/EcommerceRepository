@@ -17807,6 +17807,11 @@ body.staff-edit-mode-on .staff-stock-badge--photo {
     display: inline-block !important;
 }
 
+.staff-stock-badge--hidden {
+    background: #1e293b;
+    color: #f8fafc;
+}
+
 .staff-order-detail-page {
     max-width: 920px;
     margin: 0 auto;

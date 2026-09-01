@@ -1,7 +1,7 @@
 {% if products %}
 <div class="product-grid{% if not use_catalog_grid %} product-grid--home{% endif %}">
     {% for product in products %}
-    <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
+    <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if home_mobile_product_limit and forloop.counter > home_mobile_product_limit %} product-card--home-mobile-hide{% endif %}" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}"{% if product.slika %} data-image-key="{{ product.slika.name }}"{% endif %}{% if product.sakriven_do_stanja %} data-hidden-until-stock="1"{% endif %}{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
         {% if product.je_novitet %}
         <span class="product-card-corner-badge product-card-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
         {% elif product.je_hit %}
@@ -20,9 +20,7 @@
             {% else %}
             {% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 768px) 50vw, 16vw' %}
             {% endif %}
-            {% if staff_edit_mode and not product.na_stanju %}
-            <span class="staff-stock-badge staff-stock-badge--photo">Nije na stanju</span>
-            {% endif %}
+            {% include 'partials/product_staff_overlay.html' with product=product %}
         </div>
         <div class="variation-swatches variation-swatches--empty"></div>
         {% include 'partials/product_card_info.html' with product=product %}

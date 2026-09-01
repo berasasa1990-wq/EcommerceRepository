@@ -2,7 +2,7 @@ from django.core.cache import cache
 
 from .models import Category, Product
 
-_CACHE_KEY = 'category_ids_with_products_v2'
+_CACHE_KEY = 'category_ids_with_products_v3'
 _CACHE_TTL = 300  # 5 min — meni se rijetko mijenja
 
 
@@ -14,6 +14,7 @@ def get_category_ids_with_products():
 
     product_category_ids = Product.objects.filter(
         aktivan=True,
+        sakriven_do_stanja=False,
         kategorija_id__isnull=False,
     ).values_list('kategorija_id', flat=True).distinct()
 
@@ -34,6 +35,8 @@ def get_category_ids_with_products():
 
 def invalidate_category_product_cache():
     cache.delete(_CACHE_KEY)
+    cache.delete('category_ids_with_products_v1')
+    cache.delete('category_ids_with_products_v2')
     cache.delete('nav_categories_tree_v1')
     cache.delete('nav_categories_tree_v2')
 

@@ -724,6 +724,7 @@ class SiteSettings(models.Model):
             cache.delete('nav_categories_tree_v2')
             cache.delete('category_ids_with_products_v1')
             cache.delete('category_ids_with_products_v2')
+            cache.delete('category_ids_with_products_v3')
             cache.delete('seo_org_json_ld_v1')
             cache.delete('seo_web_json_ld_v1')
             cache.delete('showcase_brands_v1')
@@ -2119,7 +2120,7 @@ class Akcija(models.Model):
             return []
         lines = list(
             self.bundle_lines.select_related('product')
-            .filter(product__aktivan=True)
+            .filter(product__aktivan=True, product__sakriven_do_stanja=False)
             .order_by('redoslijed', 'id')
         )
         if lines:
@@ -2142,7 +2143,9 @@ class Akcija(models.Model):
                 'line': None,
                 'popust_postotak': default_pct,
             }
-            for p in self.bundle_artikli.filter(aktivan=True).order_by('naziv', 'id')
+            for p in self.bundle_artikli.filter(
+                aktivan=True, sakriven_do_stanja=False,
+            ).order_by('naziv', 'id')
         ]
 
     def bundle_unit_count(self):
@@ -2716,7 +2719,7 @@ class Akcija(models.Model):
             return []
         return list(
             self.flash_lines.select_related('product', 'product__kategorija')
-            .filter(product__aktivan=True)
+            .filter(product__aktivan=True, product__sakriven_do_stanja=False)
             .order_by('redoslijed', 'id')[:4]
         )
 
@@ -3163,6 +3166,15 @@ class Product(models.Model):
         default=False, verbose_name='Proizvedeno u Japanu',
     )
     aktivan = models.BooleanField(default=True)
+    sakriven_do_stanja = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='Sakriven sa sajta',
+        help_text=(
+            'Sakriven od kupaca. Kad artikal opet dođe na stanje '
+            '(ili se količina poveća), automatski se prikaže.'
+        ),
+    )
     odoo_template_id = models.PositiveIntegerField(
         blank=True, null=True, unique=True, verbose_name='Odoo template ID',
     )

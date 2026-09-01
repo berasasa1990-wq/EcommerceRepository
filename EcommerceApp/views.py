@@ -11,6 +11,7 @@ from urllib.parse import urlencode, urlparse
 from django.conf import settings
 from .models import SiteSettings
 from django import forms as django_forms
+from django.core.files.base import ContentFile
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -156,9 +157,29 @@ def _can_view_out_of_stock(request=None):
     return _staff_edit_mode_enabled(request)
 
 
+def _invalidate_storefront_product_caches():
+    from django.core.cache import cache
+
+    from .category_visibility import invalidate_category_product_cache
+
+    invalidate_category_product_cache()
+    for key in (
+        'home_latest_products_v3',
+        'home_featured_products_v3',
+        'home_sale_products_v3',
+        'home_brand_show_v3',
+        'showcase_brands_v2',
+        'home_cat_show_v4:6',
+    ):
+        cache.delete(key)
+
+
 def _product_queryset(request=None):
     """Aktivni artikli na sajtu — i oni koji nisu na stanju (bez korpe)."""
-    return _prefetch_product_cards(Product.objects.filter(aktivan=True))
+    qs = Product.objects.filter(aktivan=True)
+    if not _staff_edit_mode_enabled(request):
+        qs = qs.filter(sakriven_do_stanja=False)
+    return _prefetch_product_cards(qs)
 
 
 def _bind_variation_parents(product):
@@ -530,7 +551,7 @@ def _showcase_brands():
 
     # Brži put: brendovi koji imaju logo, pa filter po postojanju artikla
     brand_ids = (
-        Product.objects.filter(aktivan=True)
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
         .exclude(brend_id__isnull=True)
         .values_list('brend_id', flat=True)
         .distinct()
@@ -1566,6 +1587,8 @@ def _suggest_product_queryset(request=None):
     Lagani queryset za autocomplete — minimum polja, bez tagova M2M.
     """
     qs = Product.objects.filter(aktivan=True)
+    if not _staff_edit_mode_enabled(request):
+        qs = qs.filter(sakriven_do_stanja=False)
     return qs.defer(
         'opis', 'meta_title', 'meta_description',
         'olx_listing_url', 'olx_listing_slug', 'olx_listing_id',
@@ -2856,7 +2879,7 @@ def payment_methods(request):
 def brands_list(request):
     brands_qs = Brand.objects.filter(
         id__in=(
-            Product.objects.filter(aktivan=True)
+            Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
             .exclude(brend_id__isnull=True)
             .values_list('brend_id', flat=True)
             .distinct()
@@ -3100,7 +3123,7 @@ def product_detail(request, slug):
     if _can_view_out_of_stock(request):
         product_qs = Product.objects.all()
     else:
-        product_qs = Product.objects.filter(aktivan=True)
+        product_qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
     product = get_object_or_404(
         product_qs
         .select_related('kategorija', 'brend')
@@ -3430,7 +3453,10 @@ def _product_page_flash_offer(product):
 @require_POST
 def add_to_cart(request, slug):
     # Fetch product allowing sold-out (we validate stock below)
-    product = get_object_or_404(Product.objects.filter(aktivan=True).select_related('kategorija'), slug=slug)
+    product = get_object_or_404(
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False).select_related('kategorija'),
+        slug=slug,
+    )
     cart = Cart(request)
     variation = None
     variation_id = request.POST.get('variation_id', '').strip()
@@ -4147,7 +4173,9 @@ def add_upsell_to_cart(request, offer_id, product_id):
     if not offer:
         return _upsell_add_error_response(request, 'Ponuda više nije dostupna.')
 
-    product = Product.objects.filter(aktivan=True, na_stanju=True, pk=product_id).first()
+    product = Product.objects.filter(
+        aktivan=True, sakriven_do_stanja=False, na_stanju=True, pk=product_id,
+    ).first()
     if not product:
         return _upsell_add_error_response(request, 'Artikal nije dostupan.')
 
@@ -5237,6 +5265,40 @@ def _staff_required(user):
 def _staff_upload_is_image(uploaded_file):
     content_type = getattr(uploaded_file, 'content_type', '') or ''
     return content_type.startswith('image/')
+
+
+def _clone_uploaded_image(uploaded_file):
+    """Kopija uploadane slike — isti file se može sačuvati na više artikala."""
+    if hasattr(uploaded_file, 'seek'):
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+    data = uploaded_file.read()
+    if hasattr(uploaded_file, 'seek'):
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+    name = (getattr(uploaded_file, 'name', None) or 'slika.jpg').replace('\\', '/').rsplit('/', 1)[-1]
+    return ContentFile(data, name=name or 'slika.jpg')
+
+
+def _parse_staff_product_ids(raw_ids, *, limit=200):
+    ids = []
+    seen = set()
+    for raw in raw_ids or []:
+        try:
+            pk = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if pk <= 0 or pk in seen:
+            continue
+        seen.add(pk)
+        ids.append(pk)
+        if len(ids) >= limit:
+            break
+    return ids
 
 
 def _staff_parse_tag_ids(request):
@@ -7956,6 +8018,18 @@ def staff_product_quick_edit(request, slug):
         refresh_catalog_qty(product)
         product.refresh_from_db(fields=['na_stanju', 'stanje'])
         return _staff_product_edit_redirect(request, slug)
+    elif action == 'hide_until_stock':
+        product.sakriven_do_stanja = not product.sakriven_do_stanja
+        product.save(update_fields=['sakriven_do_stanja'])
+        _invalidate_storefront_product_caches()
+        if product.sakriven_do_stanja:
+            messages.success(
+                request,
+                'Artikal je sakriven sa sajta. Kad opet dođe na stanje, prikazat će se automatski.',
+            )
+        else:
+            messages.success(request, 'Artikal je ponovo vidljiv na sajtu.')
+        return _staff_product_edit_redirect(request, slug)
     elif action == 'toggle_japan':
         product.proizvedeno_u_japanu = not product.proizvedeno_u_japanu
         product.save(update_fields=['proizvedeno_u_japanu'])
@@ -8316,19 +8390,7 @@ def staff_product_bulk_edit(request):
     else:
         payload = request.POST
         raw_ids = request.POST.getlist('product_ids')
-    ids = []
-    seen = set()
-    for raw in raw_ids:
-        try:
-            pk = int(raw)
-        except (TypeError, ValueError):
-            continue
-        if pk <= 0 or pk in seen:
-            continue
-        seen.add(pk)
-        ids.append(pk)
-        if len(ids) >= 200:
-            break
+    ids = _parse_staff_product_ids(raw_ids)
     if not ids:
         return JsonResponse({'ok': False, 'error': 'Odaberi artikle.'}, status=400)
 
@@ -8379,6 +8441,14 @@ def staff_product_bulk_edit(request):
     elif raw_hit in ('0', 'false', 'off', 'ne', 'no'):
         updates['je_hit'] = False
 
+    raw_hide = str(
+        payload.get('sakriven_do_stanja') or payload.get('hide_from_site') or '',
+    ).strip().lower()
+    if raw_hide in ('1', 'true', 'on', 'da', 'yes', 'hide', 'sakrij'):
+        updates['sakriven_do_stanja'] = True
+    elif raw_hide in ('0', 'false', 'off', 'ne', 'no', 'show', 'prikazi', 'prikaži'):
+        updates['sakriven_do_stanja'] = False
+
     per_opis = {}
     per_slika = {}
     files = getattr(request, 'FILES', None)
@@ -8393,7 +8463,18 @@ def staff_product_bulk_edit(request):
             return JsonResponse({'ok': False, 'error': 'Slika mora biti slika.'}, status=400)
         per_slika[pk] = uploaded
 
-    if not updates and not per_opis and not per_slika:
+    extra_uploads = []
+    if files is not None:
+        for uploaded in files.getlist('dodatne_slike'):
+            if not uploaded:
+                continue
+            if not _staff_upload_is_image(uploaded):
+                return JsonResponse({'ok': False, 'error': 'Dodatna slika mora biti slika.'}, status=400)
+            extra_uploads.append(uploaded)
+            if len(extra_uploads) >= 12:
+                break
+
+    if not updates and not per_opis and not per_slika and not extra_uploads:
         return JsonResponse({'ok': False, 'error': 'Unesi barem jedno polje.'}, status=400)
 
     products = list(Product.objects.filter(pk__in=ids))
@@ -8407,6 +8488,16 @@ def staff_product_bulk_edit(request):
         if product.pk in per_slika:
             product.slika = per_slika[product.pk]
         product.save()
+        if extra_uploads:
+            max_order = (
+                product.dodatne_slike.aggregate(max_red=Max('redoslijed')).get('max_red') or 0
+            )
+            for index, uploaded in enumerate(extra_uploads, start=1):
+                ProductImage.objects.create(
+                    product=product,
+                    slika=_clone_uploaded_image(uploaded),
+                    redoslijed=max_order + index,
+                )
     parts = []
     if 'kategorija' in updates:
         parts.append('kategorija')
@@ -8416,6 +8507,8 @@ def staff_product_bulk_edit(request):
         parts.append('opis')
     if per_slika:
         parts.append('slika')
+    if extra_uploads:
+        parts.append(f'dodatne slike ({len(extra_uploads)})')
     if 'akcija_postotak' in updates:
         if updates['akcija_postotak'] is None:
             parts.append('akcija skinuta')
@@ -8423,10 +8516,54 @@ def staff_product_bulk_edit(request):
             parts.append(f'akcijski {updates["akcija_postotak"]}%')
     if 'je_hit' in updates:
         parts.append('HIT ponuda ' + ('uključeno' if updates['je_hit'] else 'isključeno'))
-    return JsonResponse({
+    if 'sakriven_do_stanja' in updates:
+        parts.append(
+            'sakriven sa sajta' if updates['sakriven_do_stanja'] else 'vraćen na sajt',
+        )
+        _invalidate_storefront_product_caches()
+    payload = {
         'ok': True,
         'count': len(products),
         'message': f'Primijenjeno na {len(products)} artikal(a): {", ".join(parts)}.',
+    }
+    if 'sakriven_do_stanja' in updates:
+        payload['hidden'] = bool(updates['sakriven_do_stanja'])
+    return JsonResponse(payload)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_same_image_products(request):
+    """Artikli koji dijele istu glavnu sliku s odabranima — za bulk dodatne slike."""
+    if not _staff_edit_mode_enabled(request):
+        return JsonResponse({'ok': False, 'error': 'Edit mode je isključen.'}, status=403)
+    ids = _parse_staff_product_ids(request.GET.getlist('product_ids'))
+    if not ids:
+        return JsonResponse({'ok': False, 'error': 'Odaberi artikle.'}, status=400)
+    image_names = [
+        name for name in (
+            Product.objects.filter(pk__in=ids)
+            .exclude(slika='')
+            .exclude(slika__isnull=True)
+            .values_list('slika', flat=True)
+        )
+        if name
+    ]
+    if not image_names:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Odabrani artikli nemaju glavnu sliku.',
+        }, status=400)
+    matches = list(
+        Product.objects.filter(slika__in=image_names)
+        .order_by('naziv', 'id')
+        .values('id', 'naziv')[:200]
+    )
+    return JsonResponse({
+        'ok': True,
+        'count': len(matches),
+        'results': [{'id': row['id'], 'label': row['naziv']} for row in matches],
     })
 
 

@@ -54,12 +54,12 @@ def _pick_profile(request=None):
 
 def _pick_product(exclude_ids=None):
     exclude_ids = {int(x) for x in (exclude_ids or []) if x}
-    qs = Product.objects.filter(aktivan=True, na_stanju=True)
+    qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False, na_stanju=True)
     if exclude_ids:
         qs = qs.exclude(pk__in=exclude_ids)
     product_ids = list(qs.order_by('?').values_list('pk', flat=True)[:1])
     if not product_ids:
-        qs = Product.objects.filter(aktivan=True)
+        qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
         if exclude_ids:
             qs = qs.exclude(pk__in=exclude_ids)
         product_ids = list(qs.order_by('?').values_list('pk', flat=True)[:1])

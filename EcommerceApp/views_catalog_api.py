@@ -10,6 +10,7 @@ Endpointi:
   GET /api/v1/ping/
   GET /api/v1/products/?page=1&page_size=50&updated_since=2026-01-01T00:00:00
   GET /api/v1/products/<slug>/
+  GET /api/v1/magacin-stanje/?page=1&page_size=100
   GET /api/v1/categories/
   GET /api/v1/brands/
 """
@@ -21,12 +22,14 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.paginator import Paginator
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET
 
-from .models import Brand, Category, Product
+from .models import Brand, Category, Product, WarehouseStock
+from .magacin import ignored_location_q
 
 
 def _api_key_expected() -> str:
@@ -149,6 +152,25 @@ def _serialize_brand(brand: Brand | None, request=None) -> dict | None:
     return data
 
 
+def _magacin_qty_map(product_ids) -> dict[int, int]:
+    """Dostupna količina u magacinu (sve lokacije osim Prenos), minus rezervisano."""
+    ids = [int(pk) for pk in product_ids if pk]
+    if not ids:
+        return {}
+    rows = (
+        WarehouseStock.objects.exclude(ignored_location_q('location'))
+        .filter(product_id__in=ids)
+        .values('product_id')
+        .annotate(qty=Sum('kolicina'), res=Sum('rezervisano'))
+    )
+    out = {}
+    for row in rows:
+        qty = int(row.get('qty') or 0)
+        reserved = max(0, int(row.get('res') or 0))
+        out[int(row['product_id'])] = max(0, qty - reserved)
+    return out
+
+
 def _serialize_variation(var, request) -> dict:
     return {
         'id': var.pk,
@@ -162,7 +184,13 @@ def _serialize_variation(var, request) -> dict:
     }
 
 
-def _serialize_product(product: Product, request, *, detail: bool = False) -> dict:
+def _serialize_product(
+    product: Product,
+    request,
+    *,
+    detail: bool = False,
+    magacin_qty: int | None = None,
+) -> dict:
     prikazna = product.prikazna_cijena
     bazna = product.bazna_cijena
     na_akciji = bool(product.na_akciji)
@@ -185,10 +213,13 @@ def _serialize_product(product: Product, request, *, detail: bool = False) -> di
         'url': f"{_site_base(request)}{product.get_absolute_url()}",
         'aktivan': bool(product.aktivan),
         'na_stanju': bool(product.na_stanju),
-        # stanje = raspoloživo za prodaju (magacin + maloprodaja).
+        # stanje = raspoloživo za prodaju na sajtu.
         # Ako nije na sajtu, šaljemo 0 da partneri ne povuku staro stanje od 1 kom.
         'stanje': int(product.stanje or 0) if product.na_stanju else 0,
         'dostupno': int(product.stanje or 0) if product.na_stanju else 0,
+        # magacin/kolicina = fizička zaliha u magacinu (i kad artikal nije na sajtu).
+        'magacin': int(magacin_qty if magacin_qty is not None else (product.stanje or 0)),
+        'kolicina': int(magacin_qty if magacin_qty is not None else (product.stanje or 0)),
         'cijena': _dec(bazna),
         'prikazna_cijena': _dec(prikazna),
         'na_akciji': na_akciji,
@@ -247,7 +278,7 @@ def catalog_api_ping(request):
 def catalog_api_products(request):
     qs = (
         Product.objects
-        .filter(aktivan=True)
+        .filter(aktivan=True, sakriven_do_stanja=False)
         .select_related('kategorija', 'kategorija__roditelj', 'brend')
         .order_by('id')
     )
@@ -290,7 +321,16 @@ def catalog_api_products(request):
     paginator = Paginator(qs, page_size)
     page_obj = paginator.get_page(page)
 
-    results = [_serialize_product(p, request, detail=False) for p in page_obj.object_list]
+    qty_map = _magacin_qty_map(p.pk for p in page_obj.object_list)
+    results = [
+        _serialize_product(
+            p,
+            request,
+            detail=False,
+            magacin_qty=qty_map[p.pk] if p.pk in qty_map else int(p.stanje or 0),
+        )
+        for p in page_obj.object_list
+    ]
     return JsonResponse({
         'ok': True,
         'count': paginator.count,
@@ -309,16 +349,54 @@ def catalog_api_products(request):
 def catalog_api_product_detail(request, slug):
     product = (
         Product.objects
-        .filter(aktivan=True, slug=slug)
+        .filter(aktivan=True, sakriven_do_stanja=False, slug=slug)
         .select_related('kategorija', 'kategorija__roditelj', 'brend')
         .prefetch_related('dodatne_slike', 'tagovi', 'varijacije')
         .first()
     )
     if not product:
         return JsonResponse({'ok': False, 'error': 'Artikal nije pronađen.'}, status=404)
+    qty_map = _magacin_qty_map([product.pk])
+    magacin_qty = qty_map[product.pk] if product.pk in qty_map else int(product.stanje or 0)
     return JsonResponse({
         'ok': True,
-        'product': _serialize_product(product, request, detail=True),
+        'product': _serialize_product(
+            product, request, detail=True, magacin_qty=magacin_qty,
+        ),
+    })
+
+
+@require_GET
+@_require_catalog_auth
+def catalog_api_magacin_stanje(request):
+    """Naziv + količina iz magacina. Partner matchuje po istom nazivu."""
+    qs = Product.objects.order_by('id').only('id', 'naziv', 'stanje')
+    page, page_size = _page_params(request)
+    paginator = Paginator(qs, page_size)
+    page_obj = paginator.get_page(page)
+    qty_map = _magacin_qty_map(p.pk for p in page_obj.object_list)
+    results = []
+    for product in page_obj.object_list:
+        kolicina = (
+            qty_map[product.pk]
+            if product.pk in qty_map
+            else int(product.stanje or 0)
+        )
+        results.append({
+            'naziv': product.naziv,
+            'kolicina': kolicina,
+            'magacin': kolicina,
+        })
+    return JsonResponse({
+        'ok': True,
+        'count': paginator.count,
+        'page': page_obj.number,
+        'page_size': page_size,
+        'total_pages': paginator.num_pages,
+        'has_next': page_obj.has_next(),
+        'has_previous': page_obj.has_previous(),
+        'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        'results': results,
     })
 
 

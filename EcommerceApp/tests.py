@@ -1125,6 +1125,163 @@ class StaffStorefrontEditModeTests(TestCase):
         self.assertContains(shown, 'Nije na stanju')
         self.assertContains(shown, 'staff-edit-mode-on')
 
+    def test_bulk_hide_from_site_until_restock(self):
+        import json
+        from django.test import RequestFactory
+        from django.urls import reverse
+
+        from .magacin import apply_movement, refresh_catalog_qty
+        from .models import WarehouseLocation
+        from .views import STAFF_EDIT_MODE_SESSION_KEY, _product_queryset
+
+        self.client.force_login(self.admin)
+        self.client.post(reverse('staff_toggle_edit_mode'), {'enabled': '1'})
+        hidden = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            data=json.dumps({
+                'product_ids': [self.complete.pk],
+                'sakriven_do_stanja': '1',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(hidden.status_code, 200)
+        self.assertTrue(hidden.json()['ok'])
+        self.assertTrue(hidden.json()['hidden'])
+        self.complete.refresh_from_db()
+        self.assertTrue(self.complete.sakriven_do_stanja)
+
+        self.assertNotIn(
+            self.complete.pk,
+            _product_queryset().values_list('pk', flat=True),
+        )
+        guest = self.client_class()
+        detail = guest.get(reverse('product_detail', args=[self.complete.slug]))
+        self.assertEqual(detail.status_code, 404)
+
+        staff_request = RequestFactory().get('/')
+        staff_request.user = self.admin
+        staff_request.session = {STAFF_EDIT_MODE_SESSION_KEY: True}
+        self.assertIn(
+            self.complete.pk,
+            _product_queryset(staff_request).values_list('pk', flat=True),
+        )
+
+        shown = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            data=json.dumps({
+                'product_ids': [self.complete.pk],
+                'sakriven_do_stanja': '0',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(shown.status_code, 200)
+        self.assertFalse(shown.json()['hidden'])
+        self.complete.refresh_from_db()
+        self.assertFalse(self.complete.sakriven_do_stanja)
+
+        self.complete.sakriven_do_stanja = True
+        self.complete.na_stanju = False
+        self.complete.stanje = 0
+        self.complete.save(update_fields=['sakriven_do_stanja', 'na_stanju', 'stanje'])
+        refresh_catalog_qty(self.complete)
+        self.complete.refresh_from_db()
+        self.assertTrue(self.complete.sakriven_do_stanja)
+
+        loc = WarehouseLocation.objects.create(sifra='HIDE-1', naziv='Hide restock')
+        apply_movement(product=self.complete, location=loc, tip='prijem', kolicina=4)
+        self.complete.refresh_from_db()
+        self.assertFalse(self.complete.sakriven_do_stanja)
+        self.assertTrue(self.complete.na_stanju)
+        self.assertIn(
+            self.complete.pk,
+            _product_queryset().values_list('pk', flat=True),
+        )
+
+    def test_hidden_in_stock_unhides_only_when_qty_increases(self):
+        from .magacin import maybe_unhide_on_restock
+
+        product = self.complete
+        product.sakriven_do_stanja = True
+        product.na_stanju = True
+        product.stanje = 5
+        self.assertFalse(maybe_unhide_on_restock(product, now_in_stock=True, new_qty=5))
+        self.assertTrue(product.sakriven_do_stanja)
+        self.assertFalse(maybe_unhide_on_restock(product, now_in_stock=False, new_qty=0))
+        self.assertTrue(product.sakriven_do_stanja)
+        self.assertTrue(maybe_unhide_on_restock(product, now_in_stock=True, new_qty=6))
+        self.assertFalse(product.sakriven_do_stanja)
+
+        product.sakriven_do_stanja = True
+        product.na_stanju = False
+        product.stanje = 0
+        self.assertTrue(maybe_unhide_on_restock(product, now_in_stock=True, new_qty=2))
+        self.assertFalse(product.sakriven_do_stanja)
+
+    def test_bulk_extra_images_apply_to_products_with_same_image(self):
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.urls import reverse
+        from PIL import Image
+
+        from .models import Product, ProductImage
+
+        def jpeg(name):
+            buf = BytesIO()
+            Image.new('RGB', (48, 48), 'red').save(buf, format='JPEG')
+            return SimpleUploadedFile(name, buf.getvalue(), content_type='image/jpeg')
+
+        shared = jpeg('shared.jpg')
+        self.complete.slika = shared
+        self.complete.save()
+        self.complete.refresh_from_db()
+        twin = Product.objects.create(
+            naziv='Ista slika twin',
+            sifra='EDIT-TWIN',
+            cijena=Decimal('13.50'),
+            opis='Isti artikal, druga varijanta.',
+            kategorija=self.category,
+            na_stanju=True,
+            aktivan=True,
+        )
+        Product.objects.filter(pk=twin.pk).update(slika=self.complete.slika.name)
+        twin.refresh_from_db()
+        other = Product.objects.create(
+            naziv='Druga slika',
+            sifra='EDIT-OTHER-IMG',
+            cijena=Decimal('8.00'),
+            opis='Druga slika.',
+            kategorija=self.category,
+            na_stanju=True,
+            aktivan=True,
+            slika='products/other.jpg',
+        )
+        self.client.force_login(self.admin)
+        self.client.post(reverse('staff_toggle_edit_mode'), {'enabled': '1'})
+        same = self.client.get(
+            reverse('staff_same_image_products'),
+            {'product_ids': self.complete.pk},
+        )
+        self.assertEqual(same.status_code, 200)
+        same_ids = {row['id'] for row in same.json()['results']}
+        self.assertIn(self.complete.pk, same_ids)
+        self.assertIn(twin.pk, same_ids)
+        self.assertNotIn(other.pk, same_ids)
+
+        extra = jpeg('extra.jpg')
+        applied = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            {
+                'product_ids': [str(self.complete.pk), str(twin.pk)],
+                'dodatne_slike': extra,
+            },
+        )
+        self.assertEqual(applied.status_code, 200)
+        self.assertTrue(applied.json()['ok'])
+        self.assertEqual(ProductImage.objects.filter(product=self.complete).count(), 1)
+        self.assertEqual(ProductImage.objects.filter(product=twin).count(), 1)
+        self.assertEqual(ProductImage.objects.filter(product=other).count(), 0)
+
 
 class StaffLiveAlertTests(TestCase):
     def test_only_purchase_creates_live_event(self):

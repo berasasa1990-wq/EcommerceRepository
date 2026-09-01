@@ -60,7 +60,7 @@ def _build_feed_item(request, product, variation, category_cache):
 
 def _feed_items(request):
     products = (
-        Product.objects.filter(aktivan=True)
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
         .select_related('kategorija', 'kategorija__roditelj', 'brend')
         .prefetch_related(
             Prefetch(

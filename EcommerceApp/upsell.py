@@ -55,7 +55,9 @@ def _discounted_price(base_price, offer):
 
 def build_upsell_offer_context(offer):
     offered_products = []
-    for product in offer.ponuda_artikli.filter(aktivan=True, na_stanju=True):
+    for product in offer.ponuda_artikli.filter(
+        aktivan=True, sakriven_do_stanja=False, na_stanju=True,
+    ):
         original = product.prikazna_cijena
         discounted = _discounted_price(original, offer)
 

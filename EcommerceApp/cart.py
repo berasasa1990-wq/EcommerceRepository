@@ -503,7 +503,9 @@ class Cart:
 
     def get_product_and_variation(self, item):
         try:
-            product = Product.objects.get(pk=item['product_id'], aktivan=True, na_stanju=True)
+            product = Product.objects.get(
+                pk=item['product_id'], aktivan=True, na_stanju=True, sakriven_do_stanja=False,
+            )
         except Product.DoesNotExist:
             return None, None
         variation = None

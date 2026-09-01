@@ -412,7 +412,7 @@ def _category_url(cats, fallback_q=''):
 
 def _base_qs(require_stock=False):
     qs = (
-        Product.objects.filter(aktivan=True)
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
         .exclude(naziv__icontains='gift card')
         .exclude(naziv__icontains='testni')
         .select_related('brend', 'kategorija')

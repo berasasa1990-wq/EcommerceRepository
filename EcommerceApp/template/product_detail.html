@@ -118,6 +118,9 @@
                     {% if not product.aktivan %}
                     <span class="staff-product-badge staff-product-badge--warn">Neaktivan artikal</span>
                     {% endif %}
+                    {% if product.sakriven_do_stanja %}
+                    <span class="staff-product-badge staff-product-badge--warn">Sakriven sa sajta</span>
+                    {% endif %}
                     {% if product.na_stanju %}
                     <span class="staff-product-badge staff-product-badge--in">Na stanju</span>
                     {% else %}
@@ -131,6 +134,14 @@
                         <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
                         <button type="submit" class="btn btn-sm staff-product-btn">
                             {% if product.na_stanju %}Skini sa stanja{% else %}Vrati na stanje{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="hide_until_stock">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
+                        <button type="submit" class="btn btn-sm staff-product-btn">
+                            {% if product.sakriven_do_stanja %}Prikaži na sajtu{% else %}Sakrij sa sajta{% endif %}
                         </button>
                     </form>
                     {% if product.na_akciji or product.akcija_postotak or product.akcijska_cijena %}

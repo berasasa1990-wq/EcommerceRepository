@@ -526,6 +526,24 @@ def _location_stock_qty_qs():
     return recorded_stock_qs().values('product_id').annotate(qty=Sum('kolicina'))
 
 
+def maybe_unhide_on_restock(product, *, now_in_stock, new_qty):
+    """
+    Ako je staff sakrio artikal sa sajta, vrati ga kad opet dođe na stanje
+    ili kad se količina poveća.
+    """
+    if not getattr(product, 'sakriven_do_stanja', False):
+        return False
+    if not now_in_stock:
+        return False
+    old_in_stock = bool(product.na_stanju)
+    old_qty = _int(product.stanje)
+    qty = _int(new_qty)
+    if old_in_stock and qty <= old_qty:
+        return False
+    product.sakriven_do_stanja = False
+    return True
+
+
 def refresh_catalog_qty(product):
     """Na sajtu dok ima količinu na bilo kojoj lokaciji (magacin + MP). Bez zalihe = skini sa sajta."""
     variations = list(ProductVariation.objects.filter(artikal_id=product.pk))
@@ -549,6 +567,8 @@ def refresh_catalog_qty(product):
     clear_mp_without_location(product)
 
     update_fields = []
+    if maybe_unhide_on_restock(product, now_in_stock=in_stock, new_qty=catalog_qty):
+        update_fields.append('sakriven_do_stanja')
     if product.stanje != catalog_qty:
         product.stanje = catalog_qty
         update_fields.append('stanje')

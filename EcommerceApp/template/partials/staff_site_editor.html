@@ -2,6 +2,7 @@
 <div id="staffSiteEditorRoot"
      data-save-url="{% url 'staff_site_edit_save' %}"
      data-bulk-url="{% url 'staff_product_bulk_edit' %}"
+     data-same-image-url="{% url 'staff_same_image_products' %}"
      data-category-url="{% url 'staff_category_search' %}"
      data-brand-url="{% url 'staff_brand_search' %}"
      data-tekst-korpa="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}"
@@ -72,6 +73,21 @@
                 <option value="0">Isključi</option>
             </select>
         </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Hide sa sajta</span>
+            <select class="staff-edit-input" name="sakriven_do_stanja" id="staffBulkHide">
+                <option value="">Ne mijenjaj</option>
+                <option value="1">Sakrij — ne prikazuj kupcima</option>
+                <option value="0">Prikaži na sajtu</option>
+            </select>
+            <span class="staff-bulk-hint">Sakriveni artikal se automatski vrati kad opet dođe na stanje.</span>
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Dodatne slike</span>
+            <input type="file" class="staff-edit-input" name="dodatne_slike" id="staffBulkExtraImages" accept="image/*" multiple>
+            <span class="staff-bulk-hint">Dodaje se svim odabranim artiklima. Koristi za artikle koji već imaju istu glavnu sliku.</span>
+        </label>
+        <button type="button" class="staff-edit-btn staff-edit-btn--ghost staff-bulk-same-image" id="staffBulkSameImage">Odaberi sve s istom slikom</button>
         <p class="staff-edit-popover-status" id="staffBulkStatus" hidden></p>
         <div class="staff-bulk-actions">
             <button type="button" class="staff-edit-btn staff-edit-btn--ghost" id="staffBulkClear">Očisti odabir</button>

@@ -93,7 +93,7 @@ class ProductSitemap(Sitemap):
 
     def items(self):
         return (
-            Product.objects.filter(aktivan=True)
+            Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
             .filter(Q(na_stanju=True) | Q(varijacije__na_stanju=True))
             .distinct()
             .only('id', 'slug', 'azuriran')
@@ -117,7 +117,7 @@ class BrandSitemap(Sitemap):
 
     def items(self):
         used = (
-            Product.objects.filter(aktivan=True, brend__isnull=False)
+            Product.objects.filter(aktivan=True, sakriven_do_stanja=False, brend__isnull=False)
             .filter(Q(na_stanju=True) | Q(varijacije__na_stanju=True))
             .values_list('brend_id', flat=True)
             .distinct()
