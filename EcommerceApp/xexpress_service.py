@@ -268,19 +268,20 @@ def _clean_city(grad: str) -> str:
 
 
 def _shipment_amounts(order) -> tuple[float, bool, float]:
-    """Vrijednost i otkupnina. Skinuta poštarina i dalje ide u X-Express."""
+    """Vrijednost pošiljke i otkupnina.
+
+    Otkupnina je samo ono što kupac još treba platiti (ukupno).
+    Ako je međuzbir 22 KM, popust 22 KM, ukupno 0 — otkupnina je 0.
+    """
     ukupno = Decimal(str(getattr(order, 'ukupno', 0) or 0))
+    if ukupno < 0:
+        ukupno = Decimal('0.00')
     medjuzbir = Decimal(str(getattr(order, 'medjuzbir', 0) or 0))
-    if ukupno > 0:
-        declared = ukupno
-    elif medjuzbir > 0:
-        declared = medjuzbir
-    else:
-        declared = Decimal('0.00')
-    if declared < 0:
-        declared = Decimal('0.00')
-    pouzece = order_is_pouzece(order)
-    otkup = declared if pouzece else Decimal('0.00')
+    if medjuzbir < 0:
+        medjuzbir = Decimal('0.00')
+    declared = ukupno if ukupno > 0 else medjuzbir
+    pouzece = order_is_pouzece(order) and ukupno > 0
+    otkup = ukupno if pouzece else Decimal('0.00')
     return _money(declared), pouzece, _money(otkup)
 
 

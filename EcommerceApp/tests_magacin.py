@@ -6013,6 +6013,23 @@ class MagacinViewTests(TestCase):
         self.assertFalse(card_payload['otkupnina'])
         self.assertEqual(card_payload['iznosOtkupnine'], 0)
 
+        fully_discounted = Order(
+            broj='0220',
+            ime_prezime='Ana Ribić',
+            telefon='061111111',
+            adresa='Test 1',
+            grad='Sarajevo',
+            postanski_broj='71000',
+            medjuzbir=Decimal('22.00'),
+            popust=Decimal('22.00'),
+            dostava=Decimal('0.00'),
+            ukupno=Decimal('0.00'),
+            izvor=Order.Izvor.MAGACIN,
+        )
+        zero_cod = build_shipment_payload(fully_discounted)
+        self.assertFalse(zero_cod['otkupnina'])
+        self.assertEqual(zero_cod['iznosOtkupnine'], 0)
+
         with override_settings(XEXPRESS_USERNAME='', XEXPRESS_PASSWORD=''):
             missing = self.client.post(reverse('staff_order_xexpress', args=[order.broj]))
         self.assertEqual(missing.status_code, 302)
