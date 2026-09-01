@@ -26,6 +26,9 @@
                 {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}<br>
                 Telefon: {{ order.telefon }}<br>
                 Email: {{ order.email }}
+                {% if summary.loyalty_label %}
+                <br><strong>{{ summary.loyalty_label }}</strong>
+                {% endif %}
                 {% if order.xexpress_sifra %}
                 <br>X-Express: {{ order.xexpress_sifra }}
                 {% endif %}
@@ -98,7 +101,7 @@
                 </tr>
                 {% if summary.popust %}
                 <tr>
-                    <td>Popust</td>
+                    <td>{{ summary.popust_opis|default:"Popust" }}</td>
                     <td>-{{ summary.popust }} KM</td>
                 </tr>
                 {% endif %}

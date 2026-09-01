@@ -4516,6 +4516,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'Poštanski broj *')
         self.assertContains(form, reverse('staff_magacin_kupci_lookup'))
         self.assertContains(form, reverse('staff_magacin_kupci_save'))
+        self.assertContains(form, reverse('staff_magacin_loyalty_telefon'))
         self.assertContains(form, 'id="mgOrderCatalog"')
         self.assertContains(form, 'id="mgOrderCatalogBtn"')
         self.assertContains(form, 'Katalog')
@@ -4951,6 +4952,81 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(blocked.status_code, 200)
         self.assertContains(blocked, 'Popust mora biti od 0 do 100')
+
+    def test_manual_order_applies_loyalty_discount_from_phone(self):
+        from .loyalty import azuriraj_loyalty_karticu, osiguraj_loyalty_karticu
+        from .models import UserProfile
+
+        member = User.objects.create_user(
+            'loy-mag@example.com', 'loy-mag@example.com', 'lozinka12',
+            first_name='Ana', last_name='Loy',
+        )
+        UserProfile.objects.create(user=member, telefon='061234567')
+        card = osiguraj_loyalty_karticu(member)
+        card.ukupna_potrosnja = Decimal('400.00')
+        card.save(update_fields=['ukupna_potrosnja'])
+        azuriraj_loyalty_karticu(card)
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Loyalty Telefon',
+            'telefon': '+387 61 234 567',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Loyalty Telefon')
+        self.assertEqual(order.medjuzbir, Decimal('20.00'))
+        self.assertEqual(order.popust, Decimal('1.00'))
+        self.assertEqual(order.kupon_kod, card.kod)
+        self.assertIn('Loyalty član — 5% popusta', order.popust_detalji[0]['opis'])
+        info = order.loyalty_popust_info()
+        self.assertEqual(info['postotak'], '5')
+        self.assertEqual(info['label'], 'Loyalty član — 5% popusta')
+
+        staff_override = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Loyalty Override',
+            'telefon': '061234567',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'popust_pct': '10',
+        })
+        self.assertEqual(staff_override.status_code, 302)
+        overridden = Order.objects.get(ime_prezime='Loyalty Override')
+        self.assertEqual(overridden.popust, Decimal('2.00'))
+        self.assertIn('Ručni popust 10%', overridden.popust_detalji[0]['opis'])
+
+        filled_auto = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Loyalty Auto Flag',
+            'telefon': '061234567',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['2'],
+            'mp_ok': ['0'],
+            'popust_pct': '5',
+            'loyalty_auto': '1',
+        })
+        self.assertEqual(filled_auto.status_code, 302)
+        auto_order = Order.objects.get(ime_prezime='Loyalty Auto Flag')
+        self.assertEqual(auto_order.popust, Decimal('1.00'))
+        self.assertIn('Loyalty član — 5% popusta', auto_order.popust_detalji[0]['opis'])
+
+        lookup = self.client.get(reverse('staff_magacin_loyalty_telefon'), {'telefon': '+387 61 234 567'})
+        self.assertEqual(lookup.status_code, 200)
+        payload = lookup.json()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(payload['loyalty']['postotak_label'], '5')
+        self.assertIn('5% popusta', payload['loyalty']['label'])
+
+        from .pricing import sazetak_iz_narudzbe
+        summary = sazetak_iz_narudzbe(order)
+        self.assertEqual(summary['loyalty_postotak'], '5')
+        self.assertIn('5% popusta', summary['popust_opis'])
+        self.assertEqual(summary['loyalty_label'], 'Loyalty član — 5% popusta')
 
     def test_manual_order_can_waive_shipping(self):
         from .pricing import sazetak_iz_narudzbe

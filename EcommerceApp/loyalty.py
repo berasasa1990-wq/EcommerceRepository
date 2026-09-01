@@ -5,7 +5,7 @@ import re
 import secrets
 import time
 import unicodedata
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from urllib.parse import quote, quote_plus
 
 from django.conf import settings
@@ -357,6 +357,87 @@ def validiraj_loyalty_telefon(telefon, *, strani=False):
     if strani:
         return validiraj_strani_mobilni(telefon)
     return validiraj_ba_mobilni(telefon)
+
+
+def loyalty_kartica_po_telefonu(telefon):
+    """Loyalty kartica čiji vlasnik ima isti telefon (svi formati 06 / +387)."""
+    user = _pronadji_korisnika_po_telefonu(telefon)
+    if not user:
+        return None
+    return getattr(user, 'loyalty_kartica', None)
+
+
+def loyalty_coupon_za_telefon(telefon):
+    """Aktivan loyalty kupon za karticu pronađenu po telefonu, ili None."""
+    card = loyalty_kartica_po_telefonu(telefon)
+    if not card:
+        return None
+    azuriraj_loyalty_karticu(card)
+    coupon = (
+        Coupon.objects
+        .filter(loyalty_kartica=card, aktivan=True)
+        .select_related('loyalty_kartica', 'vlasnik')
+        .first()
+    )
+    if coupon:
+        return coupon
+    return (
+        Coupon.objects
+        .filter(kod__iexact=card.kod, aktivan=True)
+        .select_related('loyalty_kartica', 'vlasnik')
+        .first()
+    )
+
+
+def _pct_label(postotak):
+    try:
+        pct = Decimal(postotak)
+    except (TypeError, ValueError, InvalidOperation):
+        return ''
+    if pct == pct.to_integral():
+        return str(int(pct))
+    return format(pct.normalize(), 'f')
+
+
+def loyalty_info_za_telefon(telefon):
+    """Podaci za magacin formu: popust, nivo i kod kartice po telefonu."""
+    coupon = loyalty_coupon_za_telefon(telefon)
+    if not coupon or not coupon.postotak or coupon.postotak <= 0:
+        return None
+    card = coupon.loyalty_kartica or loyalty_kartica_po_telefonu(telefon)
+    tier = tier_info(card.nivo) if card else None
+    pct_label = _pct_label(coupon.postotak)
+    nivo_label = (tier or {}).get('label') or ''
+    ime = ''
+    if card and getattr(card, 'user', None):
+        ime = (card.user.get_full_name() or '').strip()
+    label = f'Loyalty član — {pct_label}% popusta'
+    if nivo_label:
+        label = f'Loyalty član ({nivo_label}) — {pct_label}% popusta'
+    return {
+        'kod': coupon.kod,
+        'postotak': str(coupon.postotak),
+        'postotak_label': pct_label,
+        'nivo': getattr(card, 'nivo', '') or '',
+        'nivo_label': nivo_label,
+        'ime': ime,
+        'label': label,
+    }
+
+
+def maybe_apply_loyalty_coupon_from_phone(cart, telefon):
+    """
+    Ako u korpi još nema kupona, a telefon se poklapa s loyalty karticom —
+    primijeni popust s te kartice.
+    """
+    if cart is None or cart.is_coupon_applied():
+        return None
+    coupon = loyalty_coupon_za_telefon(telefon)
+    if not coupon or not coupon.postotak or coupon.postotak <= 0:
+        return None
+    cart.set_coupon_code(coupon.kod)
+    cart.mark_coupon_keep_after_apply()
+    return coupon
 
 
 def _pronadji_korisnika_po_telefonu(telefon):

@@ -2685,6 +2685,33 @@ tr.is-mp-lock {
     white-space: nowrap;
     max-width: 220px;
 }
+.mg-customer-chip.is-loyalty {
+    border-color: #fdba74;
+    background: #fff7ed;
+}
+.mg-loyalty-flag {
+    margin: 8px 0 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 8px;
+    background: #ffedd5;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+.mg-order-loyalty-note {
+    color: #9a3412;
+    font-weight: 750;
+    font-size: 13px;
+    white-space: nowrap;
+}
+.mg-pill.is-loyalty {
+    background: #ffedd5;
+    color: #9a3412;
+}
 .mg-order-page.is-ready .mg-order-build {
     display: flex;
 }

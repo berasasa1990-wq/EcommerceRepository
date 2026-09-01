@@ -14,7 +14,7 @@
         </span>
     </div>
     <div class="order-totals-row order-totals-row--discount">
-        <span>POPUST</span>
+        <span>{{ summary.popust_opis|default:"POPUST" }}</span>
         <span>{% if summary.popust %}-{{ summary.popust }}{% else %}0.00{% endif %} KM</span>
     </div>
     <div class="order-totals-row order-totals-row--total">

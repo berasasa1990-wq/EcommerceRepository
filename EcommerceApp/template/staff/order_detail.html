@@ -93,6 +93,9 @@
     {% if order.xexpress_sifra %}
     <span class="mg-pill is-xexpress">X-Express {{ order.xexpress_sifra }}</span>
     {% endif %}
+    {% if order.loyalty_popust_info %}
+    <span class="mg-pill is-loyalty">{{ order.loyalty_popust_info.label }}</span>
+    {% endif %}
 </div>
 
 {% if order.xexpress_sifra %}

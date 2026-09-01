@@ -12,7 +12,7 @@
         <span>{{ summary.medjuzbir }} KM</span>
     </div>
     <div class="order-totals-row order-totals-row--discount">
-        <span>Popust</span>
+        <span>{{ summary.popust_opis|default:"Popust" }}</span>
         <span>{% if summary.popust %}-{{ summary.popust }}{% else %}0.00{% endif %} KM</span>
     </div>
     {% if summary.pogodnosti %}

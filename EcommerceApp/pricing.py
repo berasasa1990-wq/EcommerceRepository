@@ -292,14 +292,24 @@ def sazetak_iz_narudzbe(order):
     pogodnosti = []
     if order_paid_by_card(order):
         pogodnosti.append('Plaćeno karticom')
+    loyalty_info = None
+    loyalty_fn = getattr(order, 'loyalty_popust_info', None)
+    if callable(loyalty_fn):
+        loyalty_info = loyalty_fn()
+    popust_opis = (loyalty_info or {}).get('opis') or ''
+    if not popust_opis and popust:
+        popust_opis = 'Popust'
     return {
         'medjuzbir': medjuzbir,
         'pdv_artikli': izracunaj_pdv(medjuzbir),
         'popust': order.popust,
+        'popust_opis': popust_opis,
+        'loyalty_label': (loyalty_info or {}).get('label') or '',
+        'loyalty_postotak': (loyalty_info or {}).get('postotak') or '',
         'kupon_popust': Decimal('0.00'),
         'ostali_popust': order.popust,
         'kupon_primijenjen': bool(order.kupon_kod),
-        'kupon_postotak': None,
+        'kupon_postotak': (loyalty_info or {}).get('postotak') or None,
         'pogodnosti': pogodnosti,
         'ima_novu_pogodnost': False,
         'pogodnosti_dostupne_gostu': False,

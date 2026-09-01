@@ -1350,3 +1350,74 @@ class LoyaltyPopupRegistrationCouponTests(TestCase):
             Coupon.objects.filter(vlasnik=user, naziv=REGISTRATION_COUPON_NAME).count(),
             1,
         )
+
+
+class LoyaltyPhoneAutoDiscountTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        from .loyalty import osiguraj_loyalty_karticu, sync_loyalty_coupon
+        from .models import LoyaltyCard, UserProfile
+
+        self.user = User.objects.create_user(
+            'loy@example.com', 'loy@example.com', 'lozinka12',
+            first_name='Ana', last_name='Loy',
+        )
+        UserProfile.objects.create(user=self.user, telefon='061234567')
+        self.card = osiguraj_loyalty_karticu(self.user)
+        self.card.ukupna_potrosnja = Decimal('400.00')
+        self.card.save(update_fields=['ukupna_potrosnja'])
+        from .loyalty import azuriraj_loyalty_karticu
+        azuriraj_loyalty_karticu(self.card)
+        self.card.refresh_from_db()
+
+    def _cart(self):
+        from django.contrib.sessions.backends.db import SessionStore
+        from django.test import RequestFactory
+
+        from .cart import Cart
+
+        request = RequestFactory().get('/narudzba/')
+        session = SessionStore()
+        session.save()
+        request.session = session
+        return Cart(request)
+
+    def test_finds_card_by_phone_formats(self):
+        from .loyalty import loyalty_coupon_za_telefon, loyalty_kartica_po_telefonu
+
+        self.assertEqual(loyalty_kartica_po_telefonu('061234567').pk, self.card.pk)
+        self.assertEqual(loyalty_kartica_po_telefonu('+38761234567').pk, self.card.pk)
+        self.assertEqual(loyalty_kartica_po_telefonu('387 61 234 567').pk, self.card.pk)
+        coupon = loyalty_coupon_za_telefon('061234567')
+        self.assertIsNotNone(coupon)
+        self.assertEqual(coupon.postotak, Decimal('5'))
+        from .loyalty import loyalty_info_za_telefon
+        info = loyalty_info_za_telefon('+38761234567')
+        self.assertIsNotNone(info)
+        self.assertEqual(info['postotak_label'], '5')
+        self.assertIn('5% popusta', info['label'])
+
+    def test_applies_loyalty_coupon_to_cart_when_no_coupon(self):
+        from .loyalty import maybe_apply_loyalty_coupon_from_phone
+
+        cart = self._cart()
+        applied = maybe_apply_loyalty_coupon_from_phone(cart, '061234567')
+        self.assertIsNotNone(applied)
+        self.assertEqual(cart.get_coupon_code(), self.card.kod)
+
+    def test_does_not_override_existing_coupon(self):
+        from .loyalty import maybe_apply_loyalty_coupon_from_phone
+
+        cart = self._cart()
+        cart.set_coupon_code('MANUAL1')
+        applied = maybe_apply_loyalty_coupon_from_phone(cart, '061234567')
+        self.assertIsNone(applied)
+        self.assertEqual(cart.get_coupon_code(), 'MANUAL1')
+
+    def test_unknown_phone_does_nothing(self):
+        from .loyalty import maybe_apply_loyalty_coupon_from_phone
+
+        cart = self._cart()
+        self.assertIsNone(maybe_apply_loyalty_coupon_from_phone(cart, '069999999'))
+        self.assertFalse(cart.is_coupon_applied())

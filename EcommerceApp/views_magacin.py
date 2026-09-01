@@ -3448,6 +3448,17 @@ def _customer_payload(customer):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+@require_GET
+def magacin_loyalty_telefon(request):
+    from .loyalty import loyalty_info_za_telefon
+
+    telefon = (request.GET.get('telefon') or request.GET.get('q') or '').strip()
+    info = loyalty_info_za_telefon(telefon) if telefon else None
+    return JsonResponse({'ok': True, 'loyalty': info})
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 @require_POST
 def magacin_kupci_save(request):
     ime = (request.POST.get('ime_prezime') or '').strip()
@@ -3608,6 +3619,7 @@ def magacin_narudzba_nova(request):
         page_title = 'Nova ručna narudžba'
     context = _magacin_context(request, section='narudzbe', page_title=page_title)
     context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
+    context['loyalty_lookup_url'] = reverse('staff_magacin_loyalty_telefon')
     context['existing_order'] = existing
     if request.method == 'POST':
         if (request.POST.get('action') or '').strip() == 'otkazi':
@@ -3652,6 +3664,7 @@ def magacin_narudzba_nova(request):
     if existing:
         from .pricing import order_waived_shipping
 
+        loyalty_info = existing.loyalty_popust_info()
         context['form'] = {
             'ime_prezime': existing.ime_prezime,
             'telefon': existing.telefon,
@@ -3663,6 +3676,7 @@ def magacin_narudzba_nova(request):
             'popust_pct': _manual_popust_pct_display(existing),
             'bez_dostave': '1' if order_waived_shipping(existing) else '',
             'placanje': _manual_placanje(existing),
+            'loyalty_auto': '1' if loyalty_info else '',
         }
         context['form_lines'] = _order_display_lines(existing)
     else:
@@ -3868,12 +3882,41 @@ def _create_manual_order(request, *, existing=None):
         })
 
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
-    from .pricing import _postotni_popust, _standardna_dostava
+    from .pricing import _loyalty_osnovica_iz_korpe, _postotni_popust, _standardna_dostava
+    from .loyalty import loyalty_coupon_za_telefon
     placanje = (request.POST.get('placanje') or 'gotovina').strip().lower()
     if placanje not in ('gotovina', 'kartica'):
         placanje = 'gotovina'
     popust_pct = _parse_manual_popust_pct(request.POST.get('popust_pct'))
-    popust = _postotni_popust(medjuzbir, popust_pct) if popust_pct else Decimal('0.00')
+    loyalty_auto = (request.POST.get('loyalty_auto') or '').strip().lower() in (
+        '1', 'on', 'true', 'da',
+    )
+    loyalty_coupon = None
+    if loyalty_auto or not popust_pct:
+        loyalty_coupon = loyalty_coupon_za_telefon(telefon)
+        if loyalty_coupon and loyalty_coupon.postotak and loyalty_coupon.postotak > 0:
+            if loyalty_auto and popust_pct and popust_pct != loyalty_coupon.postotak:
+                loyalty_coupon = None
+            else:
+                popust_pct = loyalty_coupon.postotak
+        else:
+            loyalty_coupon = None
+    if loyalty_coupon and popust_pct:
+        cart_items = []
+        for line in lines:
+            cijena = line['cijena']
+            bazna = line.get('bazna') if line.get('bazna') is not None else cijena
+            cart_items.append({
+                'cijena': cijena,
+                'bazna_cijena': bazna,
+                'cijena_decimal': cijena,
+                'bazna_cijena_decimal': bazna,
+                'quantity': line['qty'],
+                'na_akciji': bool(bazna and cijena < bazna),
+            })
+        popust = _postotni_popust(_loyalty_osnovica_iz_korpe(cart_items), popust_pct)
+    else:
+        popust = _postotni_popust(medjuzbir, popust_pct) if popust_pct else Decimal('0.00')
     if popust > medjuzbir:
         popust = medjuzbir
     dostava, _, _, _ = _standardna_dostava(medjuzbir)
@@ -3881,6 +3924,7 @@ def _create_manual_order(request, *, existing=None):
         '1', 'on', 'true', 'da',
     )
     if placanje == 'kartica':
+        loyalty_coupon = None
         popust_pct = Decimal('100')
         popust = medjuzbir
         bez_dostave = True
@@ -3904,6 +3948,7 @@ def _create_manual_order(request, *, existing=None):
             popust_pct=popust_pct,
             bez_dostave=bez_dostave,
             placanje=placanje,
+            loyalty_coupon=loyalty_coupon,
         )
     return order
 
@@ -3962,7 +4007,7 @@ def _clear_order_items_and_holds(order, user=None):
 def _save_manual_order(
     request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
     *, existing=None, rezervacija=False, popust=None, popust_pct=None,
-    bez_dostave=False, placanje='gotovina',
+    bez_dostave=False, placanje='gotovina', loyalty_coupon=None,
 ):
     napomena = _strip_card_pay_note((request.POST.get('napomena') or '').strip())
     mp_names = [
@@ -3991,11 +4036,19 @@ def _save_manual_order(
             if popust_pct == popust_pct.to_integral()
             else str(popust_pct)
         )
-        popust_detalji.append({
-            'opis': f'Ručni popust {pct_label}%',
-            'iznos': str(popust),
-            'postotak': pct_label,
-        })
+        if loyalty_coupon:
+            popust_detalji.append({
+                'opis': f'Loyalty član — {pct_label}% popusta',
+                'iznos': str(popust),
+                'postotak': pct_label,
+                'kupon': loyalty_coupon.kod,
+            })
+        else:
+            popust_detalji.append({
+                'opis': f'Ručni popust {pct_label}%',
+                'iznos': str(popust),
+                'postotak': pct_label,
+            })
     if bez_dostave:
         popust_detalji.append({
             'opis': 'Bez dostave',
@@ -4021,6 +4074,8 @@ def _save_manual_order(
         existing.popust_detalji = popust_detalji
         existing.ukupno = ukupno
         existing.status = status
+        if loyalty_coupon:
+            existing.kupon_kod = loyalty_coupon.kod
         existing.save()
         order = existing
     else:
@@ -4039,6 +4094,7 @@ def _save_manual_order(
             ukupno=ukupno,
             status=status,
             izvor=Order.Izvor.MAGACIN,
+            kupon_kod=loyalty_coupon.kod if loyalty_coupon else '',
         )
     for line in lines:
         if line.get('rezervni'):

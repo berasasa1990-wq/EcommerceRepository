@@ -234,6 +234,11 @@ urlpatterns = [
     path('nalog/magacin/kupci/', views_magacin.magacin_kupci, name='staff_magacin_kupci'),
     path('nalog/magacin/kupci/lookup/', views_magacin.magacin_kupci_lookup, name='staff_magacin_kupci_lookup'),
     path('nalog/magacin/kupci/sacuvaj/', views_magacin.magacin_kupci_save, name='staff_magacin_kupci_save'),
+    path(
+        'nalog/magacin/kupci/loyalty/',
+        views_magacin.magacin_loyalty_telefon,
+        name='staff_magacin_loyalty_telefon',
+    ),
     path('nalog/magacin/narudzbe/stampa/', views_magacin.magacin_narudzbe_stampa, name='staff_magacin_narudzbe_stampa'),
     path(
         'nalog/magacin/narudzbe/stampa-kolicine/',

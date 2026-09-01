@@ -14,7 +14,7 @@
         </a>
     </div>
 
-<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
+<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
     {% if existing_order %}<input type="hidden" name="order_broj" value="{{ existing_order.broj }}">{% endif %}
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
@@ -34,6 +34,7 @@
                 <span class="mg-locked-kicker">Kupac</span>
                 <strong id="mgCustomerLockedName"></strong>
                 <p class="mg-muted" id="mgCustomerLockedMeta"></p>
+                <p class="mg-loyalty-flag" id="mgCustomerLoyalty"{% if not form.loyalty_auto %} hidden{% endif %}>{% if form.loyalty_auto %}Loyalty član — {{ form.popust_pct }}% popusta{% endif %}</p>
             </div>
             <div class="mg-chip-actions">
                 <button type="button" class="mg-btn" id="mgCustomerEdit">Izmijeni</button>
@@ -176,6 +177,8 @@
                 Popust %
                 <input type="number" name="popust_pct" id="mgOrderDisc" min="0" max="100" step="1" inputmode="numeric" placeholder="0" value="{{ form.popust_pct|default:'' }}">
             </label>
+            <input type="hidden" name="loyalty_auto" id="mgLoyaltyAuto" value="{{ form.loyalty_auto|default:'' }}">
+            <span class="mg-order-loyalty-note" id="mgOrderLoyaltyNote"{% if not form.loyalty_auto %} hidden{% endif %}>{% if form.loyalty_auto %}Loyalty {{ form.popust_pct }}%{% endif %}</span>
             <span class="mg-order-disc-amt" id="mgOrderDiscAmt" hidden></span>
             <input type="hidden" name="bez_dostave" id="mgOrderNoShip" value="{% if form.bez_dostave == '1' %}1{% endif %}">
             <button type="button" class="mg-btn mg-order-noship" id="mgOrderNoShipBtn">Skini dostavu</button>

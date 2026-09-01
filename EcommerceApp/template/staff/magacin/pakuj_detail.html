@@ -66,6 +66,12 @@
                     </span>
                     <strong>{{ order.ime_prezime }}</strong>
                 </div>
+                {% if order.loyalty_popust_info %}
+                <div class="pk-meta-row">
+                    <span>Loyalty</span>
+                    <strong>{{ order.loyalty_popust_info.label }}</strong>
+                </div>
+                {% endif %}
                 <div class="pk-meta-row">
                     <span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>

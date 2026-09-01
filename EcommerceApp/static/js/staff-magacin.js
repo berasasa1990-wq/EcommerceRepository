@@ -341,9 +341,11 @@ function initCustomerPicker() {
     if (!search || !form) return;
     var lookupUrl = form.getAttribute('data-customer-lookup') || '';
     var saveUrl = form.getAttribute('data-customer-save') || '';
+    var loyaltyUrl = form.getAttribute('data-loyalty-lookup') || '';
     var timer = null;
     var lastResults = [];
     var saving = false;
+    var loyaltyReq = 0;
 
     function escapeHtml(value) {
         return String(value == null ? '' : value)
@@ -420,8 +422,82 @@ function initCustomerPicker() {
         }
         if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         closeAddModal();
+        applyLoyaltyForPhone(data.telefon || '');
         var articleSearch = document.getElementById('mgOrderSearch');
         if (articleSearch) window.setTimeout(function () { articleSearch.focus(); }, 40);
+    }
+    function refreshOrderTotal() {
+        var discInput = document.getElementById('mgOrderDisc');
+        if (discInput) discInput.dispatchEvent(new Event('input', { bubbles: true }));
+        if (typeof window.mgRefreshOrderTotal === 'function') window.mgRefreshOrderTotal();
+    }
+    function setLoyaltyUi(info, applyDiscount) {
+        var flag = document.getElementById('mgCustomerLoyalty');
+        var note = document.getElementById('mgOrderLoyaltyNote');
+        var autoInput = document.getElementById('mgLoyaltyAuto');
+        var discInput = document.getElementById('mgOrderDisc');
+        var chip = document.getElementById('mgCustomerLocked');
+        var pct = info && (info.postotak_label || info.postotak);
+        var label = info && info.label;
+        if (info && pct) {
+            if (flag) {
+                flag.hidden = false;
+                flag.textContent = label || ('Loyalty član — ' + pct + '% popusta');
+            }
+            if (note) {
+                note.hidden = false;
+                note.textContent = 'Loyalty ' + pct + '%';
+            }
+            if (chip) chip.classList.add('is-loyalty');
+            if (autoInput) autoInput.setAttribute('data-loyalty-pct', String(pct));
+            if (applyDiscount && discInput) {
+                var current = String(discInput.value || '').trim();
+                var alreadyAuto = !!(autoInput && autoInput.value === '1');
+                if (!current || alreadyAuto) {
+                    discInput.value = String(pct);
+                    if (autoInput) autoInput.value = '1';
+                    refreshOrderTotal();
+                }
+            }
+        } else {
+            if (flag) {
+                flag.hidden = true;
+                flag.textContent = '';
+            }
+            if (note) {
+                note.hidden = true;
+                note.textContent = '';
+            }
+            if (chip) chip.classList.remove('is-loyalty');
+            if (autoInput) {
+                autoInput.removeAttribute('data-loyalty-pct');
+                autoInput.value = '';
+            }
+            if (applyDiscount && discInput) {
+                discInput.value = '';
+                refreshOrderTotal();
+            }
+        }
+    }
+    function applyLoyaltyForPhone(telefon) {
+        var tel = String(telefon || '').trim();
+        if (!tel || !loyaltyUrl) {
+            setLoyaltyUi(null, true);
+            return;
+        }
+        var req = ++loyaltyReq;
+        fetch(loyaltyUrl + '?telefon=' + encodeURIComponent(tel), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (req !== loyaltyReq) return;
+                setLoyaltyUi(data && data.loyalty, true);
+            })
+            .catch(function () {
+                if (req !== loyaltyReq) return;
+            });
     }
     function unlockCustomer() {
         if (wrap) wrap.hidden = false;
@@ -435,6 +511,7 @@ function initCustomerPicker() {
         }
         if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         if (idInput) idInput.value = '';
+        setLoyaltyUi(null, true);
         if (search) {
             search.value = (imeInput && imeInput.value) || search.value || '';
             search.focus();
@@ -1829,6 +1906,14 @@ function initManualOrderForm() {
             var cleaned = String(discInput.value || '').replace(/[^\d]/g, '');
             if (cleaned !== discInput.value) discInput.value = cleaned;
             if (parseInt(cleaned, 10) > 100) discInput.value = '100';
+            var autoInput = document.getElementById('mgLoyaltyAuto');
+            var note = document.getElementById('mgOrderLoyaltyNote');
+            if (autoInput) {
+                var expected = autoInput.getAttribute('data-loyalty-pct') || '';
+                var isAuto = !!(expected && String(discInput.value || '').trim() === expected);
+                autoInput.value = isAuto ? '1' : '';
+                if (note && expected) note.hidden = !isAuto;
+            }
             refreshTotal();
         });
     }
@@ -1906,6 +1991,7 @@ function initManualOrderForm() {
             submitSpare();
         });
     });
+    window.mgRefreshOrderTotal = refreshTotal;
     refreshTotal();
 }
 

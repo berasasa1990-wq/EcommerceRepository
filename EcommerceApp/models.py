@@ -4292,6 +4292,28 @@ class Order(models.Model):
     def packing_placanje_label(self):
         return 'KARTICA' if self.placeno_karticom() else 'GOTOVINSKI'
 
+    def loyalty_popust_info(self):
+        """Ako je na narudžbi loyalty popust — {postotak, kod, opis, label}."""
+        for row in (self.popust_detalji or []):
+            if not isinstance(row, dict):
+                continue
+            opis = str(row.get('opis') or '')
+            if not (row.get('kupon') or opis.casefold().startswith('loyalty')):
+                continue
+            pct = row.get('postotak')
+            pct_label = str(pct).strip() if pct not in (None, '') else ''
+            label = (
+                f'Loyalty član — {pct_label}% popusta'
+                if pct_label else (opis or 'Loyalty popust')
+            )
+            return {
+                'postotak': pct_label,
+                'kod': row.get('kupon') or self.kupon_kod or '',
+                'opis': opis or label,
+                'label': label,
+            }
+        return None
+
     @property
     def barkod(self):
         """Code128 vrijednost za picking skener — jedinstvena po broju naloga."""

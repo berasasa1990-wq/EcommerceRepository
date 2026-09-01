@@ -132,6 +132,9 @@
                     <td>
                         <strong class="mg-order-name">{{ order.ime_prezime }}</strong>
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
+                        {% if order.loyalty_popust_info %}
+                        <span class="mg-pill is-loyalty">{{ order.loyalty_popust_info.label }}</span>
+                        {% endif %}
                         {% if order.pick_claimed_name %}
                         <span class="mg-pick-claim">
                             Preuzeo {{ order.pick_claimed_name }}

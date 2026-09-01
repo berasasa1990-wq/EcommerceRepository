@@ -38,6 +38,7 @@ from .loyalty import (
     izdaj_loyalty_karticu,
     kreiraj_loyalty_karticu,
     loyalty_kontekst,
+    maybe_apply_loyalty_coupon_from_phone,
     osiguraj_loyalty_karticu,
     validiraj_kupon,
 )
@@ -4484,9 +4485,17 @@ def checkout(request):
             return redirect('cart')
 
     form = CheckoutForm(initial=_checkout_initial(request))
+    if request.method != 'POST':
+        maybe_apply_loyalty_coupon_from_phone(
+            cart,
+            (form.initial or {}).get('telefon') or '',
+        )
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
         if form.is_valid():
+            maybe_apply_loyalty_coupon_from_phone(
+                cart, form.cleaned_data.get('telefon') or '',
+            )
             summary = cart.sazetak(user=request.user)
             popust_detalji = []
             for p_label in (summary.get('pogodnosti') or []):
