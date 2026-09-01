@@ -5262,9 +5262,17 @@ def _staff_required(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
+_STAFF_IMAGE_EXTS = (
+    '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.heic', '.heif', '.bmp',
+)
+
+
 def _staff_upload_is_image(uploaded_file):
-    content_type = getattr(uploaded_file, 'content_type', '') or ''
-    return content_type.startswith('image/')
+    content_type = (getattr(uploaded_file, 'content_type', '') or '').lower()
+    if content_type.startswith('image/'):
+        return True
+    name = (getattr(uploaded_file, 'name', '') or '').lower()
+    return any(name.endswith(ext) for ext in _STAFF_IMAGE_EXTS)
 
 
 def _clone_uploaded_image(uploaded_file):
@@ -8464,7 +8472,13 @@ def staff_product_bulk_edit(request):
         per_slika[pk] = uploaded
 
     extra_uploads = []
+    main_upload = None
     if files is not None:
+        main_upload = files.get('glavna_slika') or files.get('slika')
+        if main_upload and not _staff_upload_is_image(main_upload):
+            return JsonResponse({'ok': False, 'error': 'Glavna slika mora biti slika.'}, status=400)
+        if main_upload and not getattr(main_upload, 'size', 1):
+            main_upload = None
         for uploaded in files.getlist('dodatne_slike'):
             if not uploaded:
                 continue
@@ -8474,12 +8488,13 @@ def staff_product_bulk_edit(request):
             if len(extra_uploads) >= 12:
                 break
 
-    if not updates and not per_opis and not per_slika and not extra_uploads:
+    if not updates and not per_opis and not per_slika and not extra_uploads and not main_upload:
         return JsonResponse({'ok': False, 'error': 'Unesi barem jedno polje.'}, status=400)
 
     products = list(Product.objects.filter(pk__in=ids))
     if not products:
         return JsonResponse({'ok': False, 'error': 'Artikli nisu pronađeni.'}, status=400)
+    image_urls = {}
     for product in products:
         for field, value in updates.items():
             setattr(product, field, value)
@@ -8487,7 +8502,14 @@ def staff_product_bulk_edit(request):
             product.opis = per_opis[product.pk]
         if product.pk in per_slika:
             product.slika = per_slika[product.pk]
+        elif main_upload:
+            product.slika = _clone_uploaded_image(main_upload)
         product.save()
+        if product.pk in per_slika or main_upload:
+            try:
+                image_urls[str(product.pk)] = product.prikazna_slika.url if product.prikazna_slika else ''
+            except Exception:
+                image_urls[str(product.pk)] = ''
         if extra_uploads:
             max_order = (
                 product.dodatne_slike.aggregate(max_red=Max('redoslijed')).get('max_red') or 0
@@ -8505,8 +8527,9 @@ def staff_product_bulk_edit(request):
         parts.append('brend')
     if 'opis' in updates or per_opis:
         parts.append('opis')
-    if per_slika:
-        parts.append('slika')
+    if per_slika or main_upload:
+        parts.append('glavna slika')
+        _invalidate_storefront_product_caches()
     if extra_uploads:
         parts.append(f'dodatne slike ({len(extra_uploads)})')
     if 'akcija_postotak' in updates:
@@ -8526,6 +8549,8 @@ def staff_product_bulk_edit(request):
         'count': len(products),
         'message': f'Primijenjeno na {len(products)} artikal(a): {", ".join(parts)}.',
     }
+    if image_urls:
+        payload['image_urls'] = image_urls
     if 'sakriven_do_stanja' in updates:
         payload['hidden'] = bool(updates['sakriven_do_stanja'])
     return JsonResponse(payload)

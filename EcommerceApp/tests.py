@@ -1282,6 +1282,30 @@ class StaffStorefrontEditModeTests(TestCase):
         self.assertEqual(ProductImage.objects.filter(product=twin).count(), 1)
         self.assertEqual(ProductImage.objects.filter(product=other).count(), 0)
 
+        old_complete = self.complete.slika.name
+        old_twin = twin.slika.name
+        main = jpeg('nova-glavna.jpg')
+        replaced = self.client.post(
+            reverse('staff_product_bulk_edit'),
+            {
+                'product_ids': [str(self.complete.pk), str(twin.pk)],
+                'glavna_slika': main,
+            },
+        )
+        self.assertEqual(replaced.status_code, 200)
+        self.assertTrue(replaced.json()['ok'])
+        self.assertIn('glavna slika', replaced.json()['message'])
+        self.complete.refresh_from_db()
+        twin.refresh_from_db()
+        other.refresh_from_db()
+        self.assertTrue(self.complete.slika)
+        self.assertTrue(twin.slika)
+        self.assertNotEqual(self.complete.slika.name, old_complete)
+        self.assertNotEqual(twin.slika.name, old_twin)
+        self.assertEqual(other.slika.name, 'products/other.jpg')
+        self.assertIn(str(self.complete.pk), replaced.json().get('image_urls') or {})
+        self.assertIn(str(twin.pk), replaced.json().get('image_urls') or {})
+
 
 class StaffLiveAlertTests(TestCase):
     def test_only_purchase_creates_live_event(self):

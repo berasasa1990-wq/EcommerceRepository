@@ -83,9 +83,14 @@
             <span class="staff-bulk-hint">Sakriveni artikal se automatski vrati kad opet dođe na stanje.</span>
         </label>
         <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Glavna slika</span>
+            <input type="file" class="staff-edit-input" name="glavna_slika" id="staffBulkMainImage" accept="image/*">
+            <span class="staff-bulk-hint">Mijenja sliku na karticama svih odabranih artikala.</span>
+        </label>
+        <label class="staff-edit-field">
             <span class="staff-edit-field-label">Dodatne slike</span>
             <input type="file" class="staff-edit-input" name="dodatne_slike" id="staffBulkExtraImages" accept="image/*" multiple>
-            <span class="staff-bulk-hint">Dodaje se svim odabranim artiklima. Koristi za artikle koji već imaju istu glavnu sliku.</span>
+            <span class="staff-bulk-hint">Galerija — dodaje se svim odabranim artiklima, ne mijenja glavnu sliku.</span>
         </label>
         <button type="button" class="staff-edit-btn staff-edit-btn--ghost staff-bulk-same-image" id="staffBulkSameImage">Odaberi sve s istom slikom</button>
         <p class="staff-edit-popover-status" id="staffBulkStatus" hidden></p>

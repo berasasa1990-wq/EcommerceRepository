@@ -851,6 +851,10 @@
             fd.append('akcija_postotak', (document.getElementById('staffBulkPct') || {}).value || '');
             fd.append('je_hit', (document.getElementById('staffBulkHit') || {}).value || '');
             fd.append('sakriven_do_stanja', (document.getElementById('staffBulkHide') || {}).value || '');
+            var mainInput = document.getElementById('staffBulkMainImage');
+            if (mainInput && mainInput.files && mainInput.files[0]) {
+                fd.append('glavna_slika', mainInput.files[0]);
+            }
             var extraInput = document.getElementById('staffBulkExtraImages');
             if (extraInput && extraInput.files && extraInput.files.length) {
                 Array.prototype.forEach.call(extraInput.files, function (file) {
@@ -889,7 +893,21 @@
                     return;
                 }
                 setStatus(result.data.message || 'Sačuvano.', false);
+                if (mainInput) mainInput.value = '';
                 if (extraInput) extraInput.value = '';
+                var imageUrls = result.data.image_urls || {};
+                Object.keys(imageUrls).forEach(function (id) {
+                    var url = imageUrls[id];
+                    if (!url) return;
+                    var bust = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();
+                    document.querySelectorAll('[data-product-card][data-product-id="' + id + '"]').forEach(function (card) {
+                        var img = card.querySelector('img[data-main-image], .product-image img, .hm-media img, .product-card__media img');
+                        if (img) {
+                            img.removeAttribute('srcset');
+                            img.src = bust;
+                        }
+                    });
+                });
                 if (result.data.hidden === true) {
                     productIds.forEach(function (id) {
                         document.querySelectorAll('[data-product-card][data-product-id="' + id + '"]').forEach(function (card) {
