@@ -267,6 +267,23 @@ def _clean_city(grad: str) -> str:
     return ' '.join(text.split())
 
 
+def _shipment_amounts(order) -> tuple[float, bool, float]:
+    """Vrijednost i otkupnina. Skinuta poštarina i dalje ide u X-Express."""
+    ukupno = Decimal(str(getattr(order, 'ukupno', 0) or 0))
+    medjuzbir = Decimal(str(getattr(order, 'medjuzbir', 0) or 0))
+    if ukupno > 0:
+        declared = ukupno
+    elif medjuzbir > 0:
+        declared = medjuzbir
+    else:
+        declared = Decimal('0.00')
+    if declared < 0:
+        declared = Decimal('0.00')
+    pouzece = order_is_pouzece(order)
+    otkup = declared if pouzece else Decimal('0.00')
+    return _money(declared), pouzece, _money(otkup)
+
+
 def recipient_from_order(order) -> dict:
     """Ime, telefon, adresa, grad, PTT i ukupno s narudžbe."""
     ime = (getattr(order, 'ime_prezime', None) or '').strip()
@@ -276,13 +293,14 @@ def recipient_from_order(order) -> dict:
     ptt_raw = (getattr(order, 'postanski_broj', None) or '').strip()
     ptt = _digits_ptt(ptt_raw, adresa, grad_raw) or _ptt_from_city(grad_raw)
     grad = _clean_city(grad_raw) or _clean_city(adresa)
+    declared, _, _ = _shipment_amounts(order)
     return {
         'ime': ime,
         'telefon': telefon,
         'adresa': adresa,
         'grad': grad,
         'ptt': ptt,
-        'ukupno': _money(getattr(order, 'ukupno', 0)),
+        'ukupno': declared,
     }
 
 
@@ -306,14 +324,21 @@ def build_shipment_payload(order) -> dict:
         raise XExpressError(
             'Na narudžbi fali: ' + ', '.join(missing) + '. Dopuni podatke pa pošalji ponovo.'
         )
-    pouzece = order_is_pouzece(order)
-    ukupno = dest['ukupno']
+    declared, pouzece, otkup = _shipment_amounts(order)
     ime = dest['ime']
     broj = str(getattr(order, 'broj', '') or '').strip()
     if getattr(order, 'izvor', None) == 'magacin':
         opis = f'Magacin narudžba br. #{broj}'
     else:
         opis = f'Online Narudžbe br. #{broj}'
+    waived = False
+    try:
+        from .pricing import order_waived_shipping
+        waived = bool(order_waived_shipping(order))
+    except Exception:
+        waived = False
+    if waived:
+        opis = f'{opis} — bez poštarine'
     # PosiljkaDto iz X-Express OpenAPI — samo njihova polja, bez sifra (generiše API).
     payload = {
         'sifraExt': broj,
@@ -329,13 +354,13 @@ def build_shipment_payload(order) -> dict:
         'visina': 0,
         'tezina': 2,
         'uslugaSifra': 1,
-        # 1 = pošiljalac. 2 = primalac.
+        # 1 = pošiljalac. 2 = primalac. Skinuta poštarina: i dalje šaljemo, plaća pošiljalac.
         'obveznikPlacanja': _int_setting('XEXPRESS_OBVEZNIK_PLACANJA', 1),
         # 0 = gotovina, 1 = banka, 9 = po računu. Nalog 3425: 1 (žiralno) vraća 420.
         'nacinPlacanja': _int_setting('XEXPRESS_NACIN_PLACANJA', 0),
-        'vrednostPosiljke': ukupno,
+        'vrednostPosiljke': declared,
         'otkupnina': pouzece,
-        'iznosOtkupnine': ukupno if pouzece else 0,
+        'iznosOtkupnine': otkup,
         'tipNajave': 0,
         'napomenaInterna': opis,
     }

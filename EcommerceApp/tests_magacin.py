@@ -3301,6 +3301,63 @@ class MagacinViewTests(TestCase):
         self.assertContains(sent_list, 'XE-BULK')
         self.assertContains(sent_list, 'Poslano')
 
+    def test_xexpress_sends_order_with_waived_shipping(self):
+        from unittest.mock import Mock, patch
+
+        from .xexpress_service import build_shipment_payload
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Bez Postarine Xe',
+            'telefon': '065333444',
+            'email': 'bezpost@example.com',
+            'adresa': 'Ulica 8',
+            'grad': 'Tuzla',
+            'postanski_broj': '75000',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'bez_dostave': '1',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Bez Postarine Xe')
+        self.assertEqual(order.dostava, Decimal('0.00'))
+        self.assertEqual(order.ukupno, Decimal('10.00'))
+        payload = build_shipment_payload(order)
+        self.assertEqual(payload['vrednostPosiljke'], 10.0)
+        self.assertTrue(payload['otkupnina'])
+        self.assertEqual(payload['iznosOtkupnine'], 10.0)
+        self.assertIn('bez poštarine', payload['opisPosiljke'])
+        validate_order_stock(order, user=self.user)
+        fake = Mock()
+        fake.status_code = 200
+        fake.content = b'[{"sifra":"XE-FREE"}]'
+        fake.json.return_value = [{'sifra': 'XE-FREE'}]
+        missing_loc = Mock()
+        missing_loc.status_code = 200
+        missing_loc.content = b'[{"rb":0,"naziv":"Glavna adresa"}]'
+        missing_loc.json.return_value = [{'rb': 0, 'naziv': 'Glavna adresa'}]
+        with override_settings(
+            XEXPRESS_USERNAME='xe-user',
+            XEXPRESS_PASSWORD='xe-pass',
+            XEXPRESS_LOKACIJA=0,
+            XEXPRESS_REZERVACIJA=True,
+        ):
+            with patch('EcommerceApp.xexpress_service.requests.post', return_value=fake) as mocked:
+                with patch('EcommerceApp.xexpress_service.requests.get', return_value=missing_loc):
+                    sent = self.client.post(reverse('staff_magacin_xexpress_bulk'), {
+                        'b': [order.broj],
+                        'datum': timezone.localdate().isoformat(),
+                    })
+        self.assertEqual(sent.status_code, 302)
+        mocked.assert_called_once()
+        body = mocked.call_args.kwargs.get('json') or mocked.call_args[1].get('json')
+        self.assertEqual(body[0]['vrednostPosiljke'], 10.0)
+        self.assertEqual(body[0]['iznosOtkupnine'], 10.0)
+        order.refresh_from_db()
+        self.assertEqual(order.xexpress_sifra, 'XE-FREE')
+
     def test_pick_zero_removes_item_and_location_qty(self):
         extra = Product.objects.create(
             naziv='Drugi artikal', sifra='ADD-0', cijena=Decimal('4.00'),
