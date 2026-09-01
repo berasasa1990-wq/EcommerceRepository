@@ -1552,6 +1552,25 @@ def product_image_filename_base(text, *, fallback='artikal', max_length=100):
     return base[:max_length].rstrip('-') or fallback
 
 
+PRODUCT_IMAGE_SEO_PREFIX = 'oprema-za-ribolov-carpologijabh'
+
+
+def product_image_seo_label(product_name, *, extra='', fallback='artikal', max_length=70):
+    """Ime fajla: oprema-za-ribolov-carpologijabh-{naziv-artikla}[-extra]."""
+    extra_slug = ''
+    if extra:
+        extra_slug = product_image_filename_base(str(extra), fallback='', max_length=24)
+        if extra_slug == fallback:
+            extra_slug = ''
+    reserved = len(PRODUCT_IMAGE_SEO_PREFIX) + 1 + (len(extra_slug) + 1 if extra_slug else 0)
+    name_room = max(8, max_length - reserved)
+    name = product_image_filename_base(product_name, fallback=fallback, max_length=name_room)
+    parts = [PRODUCT_IMAGE_SEO_PREFIX, name]
+    if extra_slug:
+        parts.append(extra_slug)
+    return '-'.join(parts)[:max_length].rstrip('-')
+
+
 def unique_product_image_basename(text, *, fallback='artikal', max_length=100):
     """
     Jedinstveno ime pri svakom uploadu.
@@ -1707,10 +1726,7 @@ def rename_product_images_to_title(product):
     Vraća listu rezultata (kind, label, result_dict).
     """
     results = []
-    base = (
-        (getattr(product, 'slug', None) or '').strip()
-        or product_image_filename_base(product.naziv)
-    )
+    base = product_image_seo_label(product.naziv or getattr(product, 'slug', None) or 'artikal')
 
     if product.slika:
         r = rename_stored_image_field(product.slika, base)
@@ -1720,7 +1736,10 @@ def rename_product_images_to_title(product):
 
     extras = list(product.dodatne_slike.exclude(slika='').order_by('redoslijed', 'id'))
     for idx, extra in enumerate(extras, start=1):
-        label = f'{base}-galerija-{idx}'
+        label = product_image_seo_label(
+            product.naziv or getattr(product, 'slug', None) or 'artikal',
+            extra=f'galerija-{idx}',
+        )
         r = rename_stored_image_field(extra.slika, label)
         if r['changed']:
             extra.save(update_fields=['slika'])
@@ -1730,12 +1749,10 @@ def rename_product_images_to_title(product):
         product.varijacije.exclude(slika='').exclude(slika=None).order_by('redoslijed', 'id'),
     )
     for var in variations:
-        var_part = product_image_filename_base(
-            var.naziv,
-            fallback=str(var.pk),
-            max_length=60,
+        label = product_image_seo_label(
+            product.naziv or getattr(product, 'slug', None) or 'artikal',
+            extra=var.naziv or str(var.pk),
         )
-        label = f'{base}-{var_part}'
         r = rename_stored_image_field(var.slika, label)
         if r['changed']:
             var.save(update_fields=['slika'])

@@ -59,15 +59,9 @@ class Command(BaseCommand):
         for product in qs:
             try:
                 if dry:
-                    from EcommerceApp.utils.images import (
-                        product_image_filename_base,
-                        rename_stored_image_field,
-                    )
+                    from EcommerceApp.utils.images import product_image_seo_label
                     # dry-run: samo usporedi imena, ne piši
-                    base = (
-                        (product.slug or '').strip()
-                        or product_image_filename_base(product.naziv)
-                    )
+                    base = product_image_seo_label(product.naziv or product.slug or 'artikal')
                     planned = []
                     if product.slika:
                         old = product.slika.name
@@ -78,15 +72,18 @@ class Command(BaseCommand):
                         product.dodatne_slike.exclude(slika='').order_by('redoslijed', 'id'),
                         start=1,
                     ):
-                        label = f'{base}-galerija-{idx}'
+                        label = product_image_seo_label(
+                            product.naziv or product.slug or 'artikal',
+                            extra=f'galerija-{idx}',
+                        )
                         stem = extra.slika.name.rsplit('/', 1)[-1].rsplit('.', 1)[0]
                         if stem != label:
                             planned.append(f'  extra: {extra.slika.name} → …/{label}.*')
                     for var in product.varijacije.exclude(slika='').exclude(slika=None):
-                        var_part = product_image_filename_base(
-                            var.naziv, fallback=str(var.pk), max_length=60,
+                        label = product_image_seo_label(
+                            product.naziv or product.slug or 'artikal',
+                            extra=var.naziv or str(var.pk),
                         )
-                        label = f'{base}-{var_part}'
                         stem = var.slika.name.rsplit('/', 1)[-1].rsplit('.', 1)[0]
                         if stem != label:
                             planned.append(f'  var: {var.slika.name} → …/{label}.*')

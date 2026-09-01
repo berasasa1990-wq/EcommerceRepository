@@ -4,6 +4,17 @@ from django.test import SimpleTestCase, TestCase
 
 from .models import Product, ProductVariation
 from .pricing import _loyalty_osnovica_iz_korpe
+from .utils.images import product_image_seo_label
+
+
+class ProductImageSeoNameTests(SimpleTestCase):
+    def test_upload_name_has_shop_prefix_and_product_title(self):
+        name = product_image_seo_label('Fox EOS Pro 12ft 3.00lb')
+        self.assertTrue(name.startswith('oprema-za-ribolov-carpologijabh-'))
+        self.assertIn('fox-eos-pro-12ft-300lb', name)
+        gallery = product_image_seo_label('Fox EOS Pro', extra='galerija')
+        self.assertTrue(gallery.startswith('oprema-za-ribolov-carpologijabh-'))
+        self.assertTrue(gallery.endswith('-galerija'))
 
 
 class AkcijaProductsQueryTests(TestCase):

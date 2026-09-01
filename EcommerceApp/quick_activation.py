@@ -19,6 +19,7 @@ from .utils.images import (
     prepared_product_image_payload,
     process_product_image,
     process_quick_activation_image,
+    product_image_seo_label,
     save_prepared_product_image,
     unique_product_image_basename,
 )
@@ -382,7 +383,7 @@ def activate_product(
     # Prvo polja (bez otvaranja stare slike ako fajl fali na disku)
     if image_upload and not keep_existing_image:
         base = unique_product_image_basename(
-            (product.slug or product.naziv or 'artikal'),
+            product_image_seo_label(product.naziv or product.slug or 'artikal'),
             fallback='artikal',
         )
         safe_name = f'{base}.jpg'
