@@ -2,14 +2,13 @@
 <!DOCTYPE html>
 <html lang="bs">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5GVT50WMXB"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-5GVT50WMXB');
       gtag('config', 'AW-18301637370');
       window.trackGooglePurchase = function (data) {
@@ -30,9 +29,48 @@
         });
         return true;
       };
+      window.idleLoadScript = function (src) {
+        function go() {
+          var s = document.createElement('script');
+          s.src = src;
+          s.defer = true;
+          document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 1500); });
+        }
+      };
+      window.idleLoadStylesheet = function (href) {
+        function go() {
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = href;
+          document.head.appendChild(l);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 800); });
+        }
+      };
+      (function loadGtagLater() {
+        function go() {
+          if (window._gtagSrcLoaded) return;
+          window._gtagSrcLoaded = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-5GVT50WMXB';
+          document.head.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 1200); });
+        }
+      })();
     </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
@@ -115,9 +153,10 @@
     {% endif %}
 
     {% block lcp_preload %}{% endblock %}
+    <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260901pdsale2" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260901pdsale2">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260901fast" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260901fast">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -635,22 +674,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260901cart" defer></script>
-    <script>
-    window.idleLoadScript = function (src) {
-        function go() {
-            var s = document.createElement('script');
-            s.src = src;
-            s.defer = true;
-            document.body.appendChild(s);
-        }
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(go, { timeout: 3500 });
-        } else {
-            window.addEventListener('load', function () { window.setTimeout(go, 1500); });
-        }
-    };
-    </script>
+    <script src="{% static 'js/main.min.js' %}?v=20260901fast" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script>idleLoadScript("{% static 'js/fishing-advisor.js' %}?v=20260716v4");</script>
     {% endif %}

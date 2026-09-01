@@ -204,6 +204,11 @@ urlpatterns = [
     path('nalog/magacin/lokacije/', views_magacin.magacin_lokacije, name='staff_magacin_lokacije'),
     path('nalog/magacin/zalihe/', views_magacin.magacin_zalihe, name='staff_magacin_zalihe'),
     path(
+        'nalog/magacin/rezervni-dijelovi/',
+        views_magacin.magacin_rezervni_dijelovi,
+        name='staff_magacin_rezervni_dijelovi',
+    ),
+    path(
         'nalog/magacin/dnevno-skidanje-mp/',
         views_magacin.magacin_mp_dnevno_skidanje,
         name='staff_magacin_mp_dnevno',

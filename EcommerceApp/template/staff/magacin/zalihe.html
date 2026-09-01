@@ -7,7 +7,7 @@
     <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_lokacija_stampa' selected_location %}" target="_blank">Štampaj popis</a>
     {% endif %}
     <form method="get" class="mg-page-search" style="margin:0;max-width:420px;flex:1;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <svg class="mg-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
         <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Artikal, šifra, barkod..." autocomplete="off">
         {% if selected_location %}<input type="hidden" name="lokacija" value="{{ selected_location }}">{% endif %}
         {% if only_low %}<input type="hidden" name="nisko" value="1">{% endif %}

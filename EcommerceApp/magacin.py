@@ -2848,6 +2848,29 @@ def _popis_location_qty(location, product, variation=None):
     return max(0, _int(qs.aggregate(s=Sum('kolicina'))['s'] or 0))
 
 
+def location_stock_qty(location, product, variation=None):
+    return _popis_location_qty(location, product, variation)
+
+
+def set_location_counted_qty(*, location, product, variation=None, qty, user=None):
+    """Postavi apsolutnu količinu na lokaciji (korekcija). Vraća novo stanje."""
+    qty = max(0, _int(qty))
+    current = _popis_location_qty(location, product, variation)
+    if current == qty:
+        return current
+    with transaction.atomic():
+        apply_movement(
+            product=product,
+            variation=variation,
+            location=location,
+            tip=WarehouseMovement.Tip.KOREKCIJA,
+            kolicina=qty,
+            napomena='Provjera popisa',
+            user=user,
+        )
+    return _popis_location_qty(location, product, variation)
+
+
 def start_popis(*, user=None, location=None):
     if location is None:
         raise MagacinError('Odaberi lokaciju za popis.')
@@ -4765,7 +4788,6 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
     variation = item.varijacija
     skip_stock = (
         loc in VIRTUAL_PICK_LOCS
-        or getattr(item, 'rezervni_dio', False)
         or product is None
     )
     if not skip_stock:
@@ -4854,11 +4876,7 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
     loc = (loc or '').strip()
     product = item.artikal
     variation = item.varijacija
-    if (
-        loc in VIRTUAL_PICK_LOCS
-        or getattr(item, 'rezervni_dio', False)
-        or product is None
-    ):
+    if loc in VIRTUAL_PICK_LOCS or product is None:
         raise MagacinError('Ova lokacija se ne čisti s pickinga.')
     location = _location_for_pick_label(loc)
     if location is None:
@@ -5170,7 +5188,7 @@ def _iter_pick_deduct_rows(order):
             except (TypeError, ValueError):
                 item_id = 0
         item = items.get(item_id)
-        if item is None or not item.artikal_id or getattr(item, 'rezervni_dio', False):
+        if item is None or not item.artikal_id:
             continue
         rows.append({
             'product': item.artikal,
@@ -5381,7 +5399,7 @@ def _warehouse_qty_still_needed(order, pick_rows):
             needed[_stock_key(row['product'], row['variation'])] += int(row['qty'] or 0)
         return needed
     for item in order.stavke.all():
-        if getattr(item, 'rezervni_dio', False) or not item.artikal_id:
+        if not item.artikal_id:
             continue
         if item.kolicina_pokupljeno is None:
             qty = int(item.kolicina or 0)

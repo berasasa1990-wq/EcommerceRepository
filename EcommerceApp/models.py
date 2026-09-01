@@ -749,7 +749,7 @@ class SiteSettings(models.Model):
         if obj is not None:
             return obj
         obj, _ = cls.objects.get_or_create(pk=1)
-        cache.set(cache_key, obj, 120)
+        cache.set(cache_key, obj, 300)
         return obj
 
     @property

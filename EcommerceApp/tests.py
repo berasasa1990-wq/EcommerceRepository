@@ -6,6 +6,37 @@ from .models import Product, ProductVariation
 from .pricing import _loyalty_osnovica_iz_korpe
 
 
+class AkcijaProductsQueryTests(TestCase):
+    def test_sale_filter_uses_sql_not_full_scan(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from .views import _akcija_products_qs, _product_queryset
+
+        regular = Product.objects.create(
+            naziv='Regularan', sifra='REG-1', cijena=Decimal('20.00'),
+            aktivan=True, na_stanju=True,
+        )
+        sale = Product.objects.create(
+            naziv='Na akciji', sifra='SALE-1', cijena=Decimal('20.00'),
+            akcijska_cijena=Decimal('15.00'),
+            akcija_do=timezone.localdate(),
+            aktivan=True, na_stanju=True,
+        )
+        expired = Product.objects.create(
+            naziv='Istekla akcija', sifra='OLD-1', cijena=Decimal('20.00'),
+            akcijska_cijena=Decimal('12.00'),
+            akcija_do=timezone.localdate() - timedelta(days=2),
+            aktivan=True, na_stanju=True,
+        )
+        qs = _akcija_products_qs(_product_queryset())
+        ids = set(qs.values_list('pk', flat=True))
+        self.assertIn(sale.pk, ids)
+        self.assertNotIn(regular.pk, ids)
+        self.assertNotIn(expired.pk, ids)
+
+
 class LoyaltyCouponPricingTests(SimpleTestCase):
     def test_loyalty_excludes_discounted_items(self):
         cart_items = [

@@ -1,12 +1,14 @@
 {% extends 'staff/magacin/base.html' %}
 
 {% block magacin_content %}
-<div class="pp-page mg-orders-page{% if popis and popis.location and popis.status == 'u_toku' %} is-live{% endif %}" id="ppApp" data-lookup="{{ lookup_url }}" data-popis-id="{{ popis.pk|default:'' }}" data-live="{% if popis and popis.location_id and popis.status == 'u_toku' %}1{% else %}0{% endif %}">
-    {% if popis %}{% csrf_token %}{% endif %}
+<div class="pp-page mg-orders-page{% if popis and popis.location and popis.status == 'u_toku' %} is-live{% endif %}{% if provjera_mode %} is-provjera{% if provjera_location %} is-live{% endif %}{% endif %}" id="ppApp" data-lookup="{{ lookup_url }}" data-popis-id="{{ popis.pk|default:'' }}" data-live="{% if popis and popis.location_id and popis.status == 'u_toku' %}1{% elif provjera_mode and provjera_location %}1{% else %}0{% endif %}" data-mode="{% if provjera_mode %}provjera{% else %}popis{% endif %}" data-location-id="{{ provjera_location.pk|default:'' }}">
+    {% csrf_token %}
     <div class="mg-page-head">
         <div>
-            <h1>{% if popis and popis.location %}Popis {{ popis.location.sifra }} · #{{ popis.pk }}{% elif popis %}Popis #{{ popis.pk }}{% else %}Popis{% endif %}</h1>
-            {% if not popis or not popis.location %}
+            <h1>{% if provjera_mode and provjera_location %}Provjera {{ provjera_location.sifra }}{% elif provjera_mode %}Provjera{% elif popis and popis.location %}Popis {{ popis.location.sifra }} · #{{ popis.pk }}{% elif popis %}Popis #{{ popis.pk }}{% else %}Popis{% endif %}</h1>
+            {% if provjera_mode and not provjera_location %}
+            <p class="mg-count">Izaberi lokaciju, pa skeniraj artikal da vidiš stanje i potvrdiš ili izmijeniš količinu.</p>
+            {% elif not popis or not popis.location %}
             <p class="mg-count">Prvo izaberi lokaciju koju popisuješ, pa u njoj broji artikle.</p>
             {% elif popis.status == 'u_toku' %}
             <p class="mg-count" id="ppMeta">U toku{% if popis.location %} · {{ popis.location.sifra }}{% endif %} · započet {{ popis.kreiran|date:"d.m.Y H:i" }} · <span id="ppCount">{{ stavke|length }}</span> stavki · <span id="ppTotal">{{ total_qty }}</span> kom</p>
@@ -17,8 +19,14 @@
 
             {% endif %}
         </div>
-        {% if popis and popis.location %}
+        {% if provjera_mode and provjera_location %}
         <div class="pp-actions">
+            <a class="mg-btn" href="{% url 'staff_magacin_popis' %}?mode=provjera">Promijeni lokaciju</a>
+            <a class="mg-btn" href="{% url 'staff_magacin_popis' %}">Nazad na popis</a>
+        </div>
+        {% elif popis and popis.location %}
+        <div class="pp-actions">
+            <a class="mg-btn" href="{% url 'staff_magacin_popis' %}?mode=provjera">Provjera</a>
             {% if popis.status == 'u_toku' %}
             <form method="post" id="ppPauseForm">
                 {% csrf_token %}
@@ -71,11 +79,49 @@
         {% endif %}
     </div>
 
-    {% if not popis or not popis.location %}
+    {% if provjera_mode and provjera_location %}
+    <p class="pp-loc-banner">Provjeravaš lokaciju <strong>{{ provjera_location.sifra }}</strong>{% if provjera_location.naziv %} — {{ provjera_location.naziv }}{% endif %}</p>
+    <div class="pp-dock">
+        <label class="pp-scan-label" for="ppQuery">Artikal</label>
+        <div class="mg-input-row pp-scan-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input id="ppQuery" type="search" placeholder="Šifra, barkod ili naziv…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="go" autofocus>
+            </div>
+            <button type="button" class="vp-scan-btn" id="ppScanBtn" data-mg-scan-target="ppQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
+            <ul class="pp-suggest" id="ppSuggest" hidden></ul>
+        </div>
+        <p class="mg-muted pp-hint">Skeniraj artikal. Ako se stanje poklapa, stisni Tačno. Ako ne, ispravi količinu pa Izmijeni.</p>
+        <p class="pp-toast" id="ppToast" hidden></p>
+    </div>
+    <section class="pp-check-card" id="ppCheckCard" hidden>
+        <p class="pp-check-kicker">Na stanju</p>
+        <h2 id="ppCheckName"></h2>
+        <p class="mg-muted" id="ppCheckSifra"></p>
+        <p class="pp-check-expected" id="ppCheckExpected"></p>
+        <div class="pp-qty-entry pp-check-step">
+            <button type="button" class="pp-step-btn" id="ppCheckMinus" aria-label="Smanji">−</button>
+            <input id="ppCheckQty" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" value="0" aria-label="Količina">
+            <button type="button" class="pp-step-btn" id="ppCheckPlus" aria-label="Povećaj">+</button>
+        </div>
+        <div class="pp-check-actions">
+            <button type="button" class="mg-btn mg-btn-primary" id="ppCheckOk">Tačno</button>
+            <button type="button" class="mg-btn" id="ppCheckEdit">Izmijeni</button>
+        </div>
+    </section>
+    {% elif not popis or not popis.location %}
     <section class="mg-card mg-orders-card pp-start-card">
-        <p>Ukucaj šifru ili naziv lokacije, pa je izaberi. Tek onda u njoj skeniraj artikle.</p>
+        <div class="pp-mode-tabs" role="tablist">
+            <a href="{% url 'staff_magacin_popis' %}{% if nova %}?nova=1{% endif %}" class="{% if not provjera_mode %}is-on{% endif %}">Popis</a>
+            <a href="{% url 'staff_magacin_popis' %}?mode=provjera{% if nova %}&amp;nova=1{% endif %}" class="{% if provjera_mode %}is-on{% endif %}">Provjera</a>
+        </div>
+        <p>{% if provjera_mode %}Ukucaj šifru ili naziv lokacije, pa je izaberi. Skeniraš artikal po artikal i odmah vidiš stanje.{% else %}Ukucaj šifru ili naziv lokacije, pa je izaberi. Tek onda u njoj skeniraj artikle.{% endif %}</p>
         <form method="get" class="mg-page-search pp-loc-search" role="search">
             {% if nova %}<input type="hidden" name="nova" value="1">{% endif %}
+            {% if provjera_mode %}<input type="hidden" name="mode" value="provjera">{% endif %}
             <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
             <input type="search" name="q" value="{{ popis_lokacija_q }}" placeholder="Šifra ili naziv lokacije…" autocomplete="off" enterkeyhint="search" autofocus>
             <button type="submit" class="mg-btn mg-btn-primary">Pronađi</button>
@@ -85,14 +131,14 @@
             <li>
                 <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="action" value="novi">
+                    <input type="hidden" name="action" value="{% if provjera_mode %}provjera_start{% else %}novi{% endif %}">
                     <input type="hidden" name="location_id" value="{{ loc.pk }}">
                     <button type="submit" class="pp-loc-choose">
                         <span class="pp-loc-choose-text">
                             <strong>{{ loc.sifra }}</strong>
                             <span>{{ loc.naziv|default:"—" }}</span>
                         </span>
-                        <em>Popisuj ovu lokaciju</em>
+                        <em>{% if provjera_mode %}Provjeri ovu lokaciju{% else %}Popisuj ovu lokaciju{% endif %}</em>
                     </button>
                 </form>
             </li>
@@ -186,7 +232,7 @@
     {% endif %}
     {% endif %}
 
-    {% if paused_popisi and popis.status != 'u_toku' %}
+    {% if paused_popisi and not provjera_location and popis.status != 'u_toku' %}
     <section class="pp-paused">
         <h2>Pauzirani popisi</h2>
         <ul>
@@ -208,7 +254,7 @@
     </section>
     {% endif %}
 
-    {% if finished_popisi and popis.status != 'u_toku' %}
+    {% if finished_popisi and not provjera_location and popis.status != 'u_toku' %}
     <section class="pp-paused pp-finished">
         <h2>Završeni popisi</h2>
         <ul>

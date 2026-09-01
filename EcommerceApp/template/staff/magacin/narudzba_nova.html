@@ -98,19 +98,21 @@
             <tbody id="mgOrderLines">
                 {% for line in form_lines %}
                 {% if line.rezervni %}
-                <tr data-line="1" data-pid="" data-vid="" data-cijena="{{ line.cijena }}" data-available="0" data-rezervni="1" class="is-spare-row">
+                <tr data-line="1" data-pid="{{ line.product.pk|default:'' }}" data-vid="" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}" data-rezervni="1" class="is-spare-row{% if line.dostupno <= 0 %} is-out-row{% endif %}">
                     <td>
-                        <strong>{{ line.naziv }}</strong>
+                        <strong>{{ line.product.naziv|default:line.naziv }}</strong>
+                        {% if line.product %}<span class="sub mg-spare-missing">Fali: {{ line.naziv }}</span>{% endif %}
                         <span class="mg-pill is-spare">Rezervni dio</span>
-                        <input type="hidden" name="product_id" value="">
+                        {% if line.mp_ok %}<span class="mg-pill is-manual">Nije popisan</span>{% endif %}
+                        <input type="hidden" name="product_id" value="{{ line.product.pk|default:'' }}">
                         <input type="hidden" name="variation_id" value="">
-                        <input type="hidden" name="mp_ok" value="0">
+                        <input type="hidden" name="mp_ok" value="{% if line.mp_ok %}1{% else %}0{% endif %}">
                         <input type="hidden" name="rezervni" value="1">
                         <input type="hidden" name="spare_naziv" value="{{ line.naziv }}">
                         <input type="hidden" name="spare_cijena" value="{{ line.cijena }}">
                     </td>
-                    <td>REZERVNI</td>
-                    <td class="num">—</td>
+                    <td>{{ line.product.sifra|default:"REZERVNI" }}</td>
+                    <td class="num {% if line.dostupno <= 0 %}num-out{% else %}num-ok{% endif %}">{{ line.dostupno }}</td>
                     <td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="{{ line.qty }}" data-prev="{{ line.qty }}" required></td>
                     <td class="num">{{ line.cijena }} KM</td>
                     <td class="num" data-line-total>{{ line.cijena }} KM</td>
@@ -239,11 +241,21 @@
     <div class="mg-modal-bg" data-spare-close></div>
     <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mgSpareTitle">
         <h2 id="mgSpareTitle">Slanje rezervnog dijela</h2>
-        <p class="mg-muted">Unesi naziv dijela, količinu i naplatu. Artikal ne ide s lagera.</p>
+        <p class="mg-muted">Prvo odaberi artikal iz baze, pa ispod unesi što šalješ, količinu i naplatu. Ne skida se s lagera.</p>
         <div class="mg-form-grid" style="grid-template-columns:1fr;">
             <div class="mg-field">
-                <label for="mgSpareNaziv">Naziv *</label>
-                <input id="mgSpareNaziv" maxlength="200" placeholder="npr. MATE Rage Feeder GORNJA SEKCIJA">
+                <label for="mgSpareProductSearch">Artikal *</label>
+                <div class="mg-icon-field">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                    <input id="mgSpareProductSearch" type="search" maxlength="200" placeholder="Pretraži artikal (naziv, šifra, barkod)…" autocomplete="off">
+                </div>
+                <input type="hidden" id="mgSpareProductId" value="">
+                <p class="mg-muted" id="mgSpareProductMeta" hidden></p>
+                <ul id="mgSpareProductSuggest" class="mg-loc-suggest" hidden></ul>
+            </div>
+            <div class="mg-field">
+                <label for="mgSpareNaziv">Šta šalješ *</label>
+                <input id="mgSpareNaziv" maxlength="200" placeholder="npr. GORNJA SEKCIJA">
             </div>
             <div class="mg-field">
                 <label for="mgSpareQty">Količina *</label>

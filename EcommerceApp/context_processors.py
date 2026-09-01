@@ -93,14 +93,14 @@ def _build_nav_categories():
         for sub in cat.podkategorije.all():
             list(sub.podkategorije.all())
 
-    cache.set(cache_key, categories, 300)
+    cache.set(cache_key, categories, 600)
     return categories
 
 
 def _is_light_request_path(path: str) -> bool:
     """Putanje bez menija/popupova/marketing contexta (brži TTFB)."""
     path = path or ''
-    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/')):
+    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/nalog/magacin/')):
         return True
     if path.startswith(('/sitemap', '/robots.txt', '/healthz', '/favicon', '/feeds/')):
         return True

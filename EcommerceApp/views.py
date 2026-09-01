@@ -17,7 +17,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Case, Count, Exists, IntegerField, Max, OuterRef, Prefetch, Q, Value, When
+from django.db.models import Case, Count, Exists, F, IntegerField, Max, OuterRef, Prefetch, Q, Value, When
+from django.utils import timezone
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -188,14 +189,26 @@ def _product_is_on_sale(product):
 
 
 def _akcija_products_qs(products_qs):
-    sale_ids = [
-        product.pk
-        for product in products_qs
-        if _product_is_on_sale(product)
-    ]
-    if not sale_ids:
-        return products_qs.none()
-    return products_qs.filter(pk__in=sale_ids)
+    """Artikli na akciji — u SQL-u, bez učitavanja cijelog kataloga u Python."""
+    today = timezone.localdate()
+    product_sale = (
+        Q(akcijska_cijena__isnull=False)
+        & Q(akcijska_cijena__lt=F('cijena'))
+        & (Q(akcija_do__isnull=True) | Q(akcija_do__gte=today))
+    )
+    variation_own_price = (
+        Q(varijacije__akcijska_cijena__isnull=False)
+        & Q(varijacije__cijena__isnull=False)
+        & Q(varijacije__akcijska_cijena__lt=F('varijacije__cijena'))
+    )
+    variation_inherit_price = (
+        Q(varijacije__akcijska_cijena__isnull=False)
+        & Q(varijacije__cijena__isnull=True)
+        & Q(varijacije__akcijska_cijena__lt=F('cijena'))
+    )
+    return products_qs.filter(
+        product_sale | variation_own_price | variation_inherit_price
+    ).distinct()
 
 
 def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
@@ -1759,6 +1772,22 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     search_q = _normalize_phrase(params.get('q') or '')
 
     products_qs = _apply_search_filter(products_qs, params['q'])
+
+    if params.get('akcija'):
+        products_qs = _akcija_products_qs(products_qs)
+    if params.get('noviteti'):
+        products_qs = products_qs.filter(je_novitet=True)
+    if params.get('brend'):
+        brand = Brand.objects.filter(slug=params['brend']).first()
+        products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
+    if params.get('kategorija'):
+        category = Category.objects.filter(slug=params['kategorija'], aktivan=True).first()
+        if category:
+            products_qs = products_qs.filter(kategorija_id__in=category.get_descendant_ids())
+        else:
+            products_qs = products_qs.none()
+    if allowed_category_ids is not None:
+        products_qs = products_qs.filter(kategorija_id__in=allowed_category_ids)
 
     # SQL pre-order za pretragu — naziv/šifra gore; NE sijeći na 200 (fali ostatak)
     if search_q and len(search_q) >= 2:
@@ -5755,7 +5784,7 @@ def _magacin_stock_picks(items):
 
     picks_by_item = {}
     for item in items:
-        if getattr(item, 'rezervni_dio', False) or not item.artikal_id:
+        if not item.artikal_id:
             continue
         rows, _ = order_location_rows(item.artikal, item.varijacija)
         remaining = int(item.kolicina or 0)
@@ -5792,33 +5821,53 @@ def _magacin_hold_picks(order, items):
     if not holds:
         return {}
 
-    by_key = {}
-    for hold in holds:
-        key = (hold.product_id, hold.variation_id)
-        by_key.setdefault(key, []).append(hold)
+    buckets = [
+        {
+            'product_id': hold.product_id,
+            'variation_id': hold.variation_id,
+            'left': int(hold.kolicina or 0),
+            'location': hold.location,
+        }
+        for hold in holds
+    ]
+
+    def consume(item, variation_id, need):
+        picks = []
+        for bucket in buckets:
+            if need <= 0:
+                break
+            if bucket['product_id'] != item.artikal_id:
+                continue
+            if bucket['variation_id'] != variation_id:
+                continue
+            take = min(bucket['left'], need)
+            if take <= 0:
+                continue
+            loc = bucket['location']
+            picks.append({
+                'location_name': loc.sifra or loc.naziv or '?',
+                'location_id': loc.pk,
+                'take': take,
+                'on_hand': take,
+                'location_path': loc.odoo_location_path or loc.naziv or '',
+            })
+            bucket['left'] -= take
+            need -= take
+        return picks, need
 
     picks_by_item = {}
     for item in items:
-        item_holds = by_key.get((item.artikal_id, item.varijacija_id))
-        if not item_holds and item.varijacija_id:
-            item_holds = by_key.get((item.artikal_id, None))
-        if not item_holds:
+        if not item.artikal_id:
             continue
-        picks = []
-        taken = 0
-        for hold in item_holds:
-            loc = hold.location
-            name = loc.sifra or loc.naziv or '?'
-            picks.append({
-                'location_name': name,
-                'location_id': loc.pk,
-                'take': hold.kolicina,
-                'on_hand': hold.kolicina,
-                'location_path': loc.odoo_location_path or loc.naziv or '',
-            })
-            taken += hold.kolicina
+        need = int(item.kolicina or 0)
+        picks, need = consume(item, item.varijacija_id, need)
+        if need > 0 and item.varijacija_id:
+            extra, need = consume(item, None, need)
+            picks.extend(extra)
+        if not picks:
+            continue
         picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
-        picks_by_item[item.pk] = (picks, max(0, item.kolicina - taken))
+        picks_by_item[item.pk] = (picks, max(0, need))
     return picks_by_item
 
 
@@ -5908,9 +5957,10 @@ def _build_order_packing_lines(order):
             odoo_error = f'Odoo greška: {exc}'
 
     for index, item in enumerate(items, start=1):
-        if getattr(item, 'rezervni_dio', False):
+        if getattr(item, 'rezervni_dio', False) and not item.artikal_id:
             qty = int(item.kolicina or 0)
-            display_name = item.product_naziv or item.naziv or 'Rezervni dio'
+            part_name = (item.naziv or '').strip()
+            display_name = part_name or item.product_naziv or 'Rezervni dio'
             lines.append({
                 'rb': index,
                 'item_id': item.pk,
@@ -5929,7 +5979,7 @@ def _build_order_packing_lines(order):
                     'take': qty,
                     'on_hand': qty,
                 }],
-                'pick_text': f'{qty}× Rezervni dio',
+                'pick_text': f'{qty}× {part_name or "Rezervni dio"}',
                 'shortfall': 0,
                 'check_mp': False,
                 'stock_locations': [],
@@ -5988,6 +6038,16 @@ def _build_order_packing_lines(order):
         display_name = item.product_naziv or item.naziv
         if item.varijacija_naziv:
             display_name = f'{display_name} — {item.varijacija_naziv}'
+        if getattr(item, 'rezervni_dio', False):
+            parent_name = ''
+            if item.artikal_id:
+                parent_name = item.artikal.naziv or ''
+            parent_name = parent_name or item.product_naziv or ''
+            part_name = (item.naziv or '').strip()
+            if parent_name and part_name and part_name.casefold() != parent_name.casefold():
+                display_name = f'{parent_name} — {part_name}'
+            else:
+                display_name = parent_name or part_name or display_name
 
         product = item.artikal
         brend = ''
@@ -6032,11 +6092,13 @@ def _build_order_packing_lines(order):
             'pick_text': pick_text,
             'shortfall': shortfall,
             'check_mp': (
-                item.pk not in mp_confirmed
+                not getattr(item, 'rezervni_dio', False)
+                and item.pk not in mp_confirmed
                 and (not picks or shortfall > 0)
                 and not any((p.get('location_name') or '') == 'Nije popisan' for p in (picks or []))
             ),
             'stock_locations': stock_locations,
+            'rezervni': bool(getattr(item, 'rezervni_dio', False)),
         })
 
     return lines, odoo_error

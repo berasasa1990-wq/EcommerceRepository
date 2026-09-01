@@ -792,57 +792,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     catalogFilterForm?.addEventListener('submit', saveCatalogScroll);
     catalogFilterForm?.querySelector('.btn-filter.btn-secondary')?.addEventListener('click', saveCatalogScroll);
-
-    const catalogMobileFilterSheet = document.getElementById('catalogMobileFilterSheet');
-    const catalogMobileFilterOpen = document.getElementById('catalogMobileFilterOpen');
-    const catalogMobileFilterCloseBtn = document.getElementById('catalogMobileFilterCloseBtn');
-    const catalogMobileFilterBackdrop = document.getElementById('catalogMobileFilterClose');
-
-    function setCatalogMobileFilterOpen(isOpen) {
-        if (!catalogMobileFilterSheet) return;
-        if (isOpen) {
-            catalogMobileFilterSheet.hidden = false;
-            requestAnimationFrame(() => {
-                document.body.classList.add('catalog-mobile-filter-open');
-            });
-        } else {
-            document.body.classList.remove('catalog-mobile-filter-open');
-            window.setTimeout(() => {
-                if (!document.body.classList.contains('catalog-mobile-filter-open')) {
-                    catalogMobileFilterSheet.hidden = true;
-                }
-            }, 280);
-        }
-        catalogMobileFilterOpen?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    }
-
-    catalogMobileFilterOpen?.addEventListener('click', () => setCatalogMobileFilterOpen(true));
-    catalogMobileFilterCloseBtn?.addEventListener('click', () => setCatalogMobileFilterOpen(false));
-    catalogMobileFilterBackdrop?.addEventListener('click', () => setCatalogMobileFilterOpen(false));
-    catalogMobileFilterSheet?.querySelector('.catalog-mobile-filter-form')?.addEventListener('submit', saveCatalogScroll);
-    catalogMobileFilterSheet?.querySelector('.catalog-mobile-filter-reset')?.addEventListener('click', saveCatalogScroll);
-
-    document.querySelectorAll('.catalog-mobile-filter-section--collapsible .catalog-mobile-filter-section__toggle').forEach((toggle) => {
-        toggle.addEventListener('click', () => {
-            const section = toggle.closest('.catalog-mobile-filter-section--collapsible');
-            if (!section) return;
-            const willOpen = !section.classList.contains('is-open');
-            document.querySelectorAll('.catalog-mobile-filter-section--collapsible').forEach((other) => {
-                if (other !== section) {
-                    other.classList.remove('is-open');
-                    other.querySelector('.catalog-mobile-filter-section__toggle')?.setAttribute('aria-expanded', 'false');
-                }
-            });
-            section.classList.toggle('is-open', willOpen);
-            toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-        });
+    document.querySelectorAll('.catalog-desktop-filter').forEach((form) => {
+        form.addEventListener('submit', saveCatalogScroll);
+        form.querySelector('.catalog-desktop-filter__reset')?.addEventListener('click', saveCatalogScroll);
     });
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeSearchOverlay();
             closeMegaMenu();
-            setCatalogMobileFilterOpen(false);
             if (mobileNavSubview?.classList.contains('is-open')) {
                 closeMobileNavSubview();
             } else {
