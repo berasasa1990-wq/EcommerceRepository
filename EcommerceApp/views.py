@@ -4640,6 +4640,7 @@ def checkout(request):
                         session_key=get_cart_session_key(request),
                         order_number=order.broj,
                         total=str(order.ukupno),
+                        shipping=order.dostava_naziv,
                     )
             except Exception:
                 pass
@@ -4834,7 +4835,12 @@ def register(request):
                 logger.info("Register: sync_korisnik za novog korisnika %s", email)
                 sync_korisnik(user)
 
-                from .live_visitor_offer import claim_registration_invite_reward
+                from .live_visitor_offer import (
+                    claim_registration_invite_reward,
+                    mark_loyalty_popup_registration_pending,
+                )
+                if (request.POST.get('loyalty_popup') or '').strip() == '1':
+                    mark_loyalty_popup_registration_pending(request)
                 reg_reward = claim_registration_invite_reward(request, user)
 
                 try:

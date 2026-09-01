@@ -116,8 +116,8 @@
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260831sug2" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260831sug2">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260901cart" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260901cart">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -635,7 +635,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260831sug2" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260901cart" defer></script>
     <script>
     window.idleLoadScript = function (src) {
         function go() {
@@ -661,7 +661,7 @@
     <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20260712v3");</script>
     {% endif %}
     {% if online_gift %}
-    <script>idleLoadScript("{% static 'js/online-gift.js' %}?v=20260814cpu2");</script>
+    <script>idleLoadScript("{% static 'js/online-gift.js' %}?v=20260901cart");</script>
     {% endif %}
     {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
     {% if not user.is_authenticated or not user.is_superuser %}
@@ -672,12 +672,13 @@
     <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20260831fast");</script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260826orderOnly">
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260831orderpop">
     <div id="staffAlertsRoot" hidden
          data-poll-url="{% url 'staff_site_events_poll' %}"
          data-analytics-url="{% url 'staff_live_analytics' %}"
+         data-orders-url="{% url 'staff_online_orders' %}"
          {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20260826orderOnly" defer></script>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260831orderpop" defer></script>
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}

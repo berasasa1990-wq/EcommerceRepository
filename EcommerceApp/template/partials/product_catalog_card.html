@@ -58,12 +58,6 @@
         </div>
     </div>
 
-    <div class="product-card__brand-row{% if hide_brand %} product-card__brand-row--hidden{% endif %}">
-        {% if not hide_brand and product.brend %}
-        {% include 'partials/brand_display.html' with brand=product.brend %}
-        {% endif %}
-    </div>
-
     {% with card_variations=product.varijacije.all %}
     {% if card_variations|length > 1 %}
     <div class="catalog-variation-data" hidden aria-hidden="true">
@@ -74,12 +68,19 @@
     {% endif %}
 
     <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
-        <div class="product-card__price-block">
-            {% if card_variations|length > 1 %}
-            {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
-            {% else %}
-            {% include 'partials/product_card_dwell_price.html' with product=product %}
-            {% endif %}
+        <div class="product-card__price-row">
+            <div class="product-card__price-block">
+                {% if card_variations|length > 1 %}
+                {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
+                {% else %}
+                {% include 'partials/product_card_dwell_price.html' with product=product %}
+                {% endif %}
+            </div>
+            <div class="product-card__brand-row{% if hide_brand %} product-card__brand-row--hidden{% endif %}">
+                {% if not hide_brand and product.brend %}
+                {% include 'partials/brand_display.html' with brand=product.brend %}
+                {% endif %}
+            </div>
         </div>
 
         <div class="product-card__cart-row">

@@ -559,7 +559,7 @@
     }
 }
 
-/* —— Nova narudžba: elegantan popup —— */
+/* —— Nova narudžba: popup za superusere —— */
 body.staff-order-celebration-open {
     overflow: hidden;
 }
@@ -571,10 +571,10 @@ body.staff-order-celebration-open {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding: 20px;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.32s ease, visibility 0.32s ease;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
 }
 
 .staff-order-celebration.is-visible {
@@ -585,25 +585,21 @@ body.staff-order-celebration-open {
 .staff-order-celebration__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(10, 12, 14, 0.48);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(17, 17, 17, 0.42);
 }
 
 .staff-order-celebration__card {
+    --order-orange: #ff5a00;
     position: relative;
     z-index: 1;
     width: min(420px, 100%);
-    padding: 36px 32px 28px;
-    border-radius: 18px;
-    background: #fafaf8;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.9) inset,
-        0 24px 60px rgba(15, 18, 16, 0.22);
+    padding: 28px 28px 24px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 24px 64px rgba(15, 18, 16, 0.22);
     text-align: center;
-    transform: translateY(10px);
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(12px);
+    transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .staff-order-celebration.is-visible .staff-order-celebration__card {
@@ -614,127 +610,197 @@ body.staff-order-celebration-open {
     position: absolute;
     top: 14px;
     right: 14px;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: #8b9198;
-    font-size: 22px;
+    color: #9aa0a6;
+    font-size: 26px;
     line-height: 1;
     cursor: pointer;
 }
 
 .staff-order-celebration__close:hover {
-    color: #16181d;
-    background: #f0f1f2;
+    color: #111;
+    background: #f3f4f6;
 }
 
-.staff-order-celebration__kicker {
-    margin: 0 0 10px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #6b7280;
+.staff-order-celebration__hero {
+    width: 118px;
+    height: 118px;
+    margin: 6px auto 14px;
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.staff-order-celebration__hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-conic-gradient(
+        from -10deg,
+        var(--order-orange) 0deg 7deg,
+        transparent 7deg 45deg
+    );
+    -webkit-mask: radial-gradient(circle, transparent 48px, #000 49px, #000 58px, transparent 59px);
+    mask: radial-gradient(circle, transparent 48px, #000 49px, #000 58px, transparent 59px);
+    opacity: 0.9;
+}
+
+.staff-order-celebration__cart {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: #fff1e8;
+    color: var(--order-orange);
+    display: grid;
+    place-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.staff-order-celebration__cart svg {
+    width: 42px;
+    height: 42px;
+}
+
+.staff-order-celebration__badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--order-orange);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 22px;
+    box-shadow: 0 0 0 3px #fff;
 }
 
 .staff-order-celebration__title {
-    margin: 0 0 6px;
-    font-size: clamp(1.65rem, 4vw, 2rem);
-    font-weight: 650;
+    margin: 0 0 8px;
+    font-size: clamp(1.35rem, 3.4vw, 1.7rem);
+    font-weight: 800;
     letter-spacing: -0.03em;
-    color: #16181d;
+    color: #111;
 }
 
-.staff-order-celebration__amount {
+.staff-order-celebration__lead {
     margin: 0 0 22px;
-    font-size: 1.35rem;
-    font-weight: 650;
-    letter-spacing: -0.02em;
-    color: #3d8f04;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #8b9198;
 }
 
 .staff-order-celebration__box {
     text-align: left;
     margin: 0 0 22px;
-    padding: 4px 0;
-    border-top: 1px solid #eceeef;
-    border-bottom: 1px solid #eceeef;
+    display: grid;
+    gap: 16px;
 }
 
 .staff-order-celebration__row {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    gap: 16px;
-    padding: 11px 0;
-    border-bottom: 1px solid #f3f4f5;
-    font-size: 14px;
+    align-items: center;
+    gap: 12px;
 }
 
-.staff-order-celebration__row:last-child {
-    border-bottom: none;
-}
-
-.staff-order-celebration__row span {
-    color: #8b9198;
+.staff-order-celebration__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #6b7280;
+    font-size: 15px;
     font-weight: 500;
-    letter-spacing: 0.02em;
 }
 
-.staff-order-celebration__row strong {
-    color: #16181d;
-    font-weight: 600;
+.staff-order-celebration__ico {
+    width: 22px;
+    height: 22px;
+    color: #111;
+    flex: 0 0 auto;
+}
+
+.staff-order-celebration__ico svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+}
+
+.staff-order-celebration__value {
+    color: #111;
+    font-size: 15px;
+    font-weight: 700;
     text-align: right;
     word-break: break-word;
 }
 
+.staff-order-celebration__value.is-accent {
+    color: var(--order-orange);
+}
+
 .staff-order-celebration__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1fr 1.45fr;
+    gap: 12px;
 }
 
 .staff-order-celebration__btn {
     appearance: none;
     border: none;
-    border-radius: 999px;
-    padding: 11px 22px;
-    font-size: 13px;
-    font-weight: 650;
-    letter-spacing: 0.02em;
+    border-radius: 14px;
+    min-height: 52px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+}
+
+.staff-order-celebration__btn svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
 }
 
 .staff-order-celebration__btn--primary {
-    background: #16181d;
+    background: var(--order-orange);
     color: #fff;
+    letter-spacing: 0.04em;
 }
 
 .staff-order-celebration__btn--primary:hover {
-    background: #3d8f04;
+    filter: brightness(0.94);
 }
 
 .staff-order-celebration__btn--ghost {
-    background: transparent;
-    color: #6b7280;
-    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #111;
+    border: 1.5px solid #d7dbe0;
 }
 
 .staff-order-celebration__btn--ghost:hover {
-    color: #16181d;
-    border-color: #cfd2d6;
+    border-color: #b8bec6;
+    background: #fafafa;
 }
 
 @media (max-width: 520px) {
     .staff-order-celebration__card {
-        padding: 30px 20px 22px;
+        padding: 24px 18px 18px;
+        border-radius: 20px;
     }
     .staff-order-celebration__actions {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
     .staff-order-celebration__btn {
         width: 100%;

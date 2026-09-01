@@ -192,7 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getCsrfToken() {
-        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.content) return meta.content;
+        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (input && input.value) return input.value;
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
         return match ? decodeURIComponent(match[1]) : '';
     }
 

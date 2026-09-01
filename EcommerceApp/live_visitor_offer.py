@@ -15,6 +15,7 @@ REGISTRATION_INVITE_DISCOUNT = Decimal('0')
 REGISTRATION_COUPON_NAME = 'Registracijski popust (uživo)'
 REGISTRATION_FREE_SHIPPING_NAME = 'Besplatna dostava (registracija uživo)'
 SESSION_REG_INVITE_KEY = 'live_reg_invite_pending'
+LOYALTY_POPUP_WELCOME_PERCENT = Decimal('10')
 SESSION_FREE_SHIPPING_KEY = 'cart_free_shipping_first'
 # Welcome reg popup — uključuje se u SiteSettings
 WELCOME_REG_DELAY_DEFAULT = 8
@@ -938,6 +939,46 @@ def mark_registration_invite_pending(request, offer):
     request.session.modified = True
 
 
+def mark_loyalty_popup_registration_pending(request):
+    """Loyalty Club popup: jednokratni 10% na prvu narudžbu."""
+    if request is None:
+        return
+    request.session[SESSION_REG_INVITE_KEY] = (
+        f'percent:{LOYALTY_POPUP_WELCOME_PERCENT}'
+    )
+    request.session.modified = True
+
+
+def _pending_invite_percent(pending):
+    if not isinstance(pending, str) or not pending.startswith('percent:'):
+        return None
+    try:
+        percent = _clamp_percent(pending.split(':', 1)[1])
+    except Exception:
+        percent = LOYALTY_POPUP_WELCOME_PERCENT
+    if percent <= 0:
+        return LOYALTY_POPUP_WELCOME_PERCENT
+    return percent
+
+
+def _create_registration_reward_coupon(user, percent):
+    existing = get_active_registration_reward_coupon(user)
+    if existing:
+        return existing
+    code = f'REG{secrets.token_hex(3).upper()[:6]}'
+    while Coupon.objects.filter(kod=code).exists():
+        code = f'REG{secrets.token_hex(3).upper()[:6]}'
+    return Coupon.objects.create(
+        kod=code,
+        naziv=REGISTRATION_COUPON_NAME,
+        postotak=percent,
+        vlasnik=user,
+        aktivan=True,
+        # Ne loyalty-kupon: 10% na prvu narudžbu, ne samo na artikle bez akcije.
+        automatski=False,
+    )
+
+
 def claim_registration_invite_reward(request, user):
     """
     Nakon registracije: % kupon ili besplatna dostava na prvu narudžbu.
@@ -947,6 +988,7 @@ def claim_registration_invite_reward(request, user):
 
     session_key = get_cart_session_key(request)
     pending = request.session.get(SESSION_REG_INVITE_KEY)
+    pending_percent = _pending_invite_percent(pending)
 
     offer = None
     if session_key:
@@ -978,23 +1020,25 @@ def claim_registration_invite_reward(request, user):
 
     percent = Decimal('0')
     free_ship = True
-    if offer:
+    if pending_percent:
+        percent = pending_percent
+        free_ship = False
+    elif offer:
         percent = _clamp_percent(offer.discount_percent or 0)
         free_ship = bool(offer.besplatna_dostava) and percent <= 0
+
+    if offer:
         offer.user = user
         offer.kod_aktiviran = True
         offer.show_popup = False
+        if percent > 0:
+            offer.discount_percent = percent
+            offer.besplatna_dostava = False
         offer.save(update_fields=[
-            'user', 'kod_aktiviran', 'show_popup', 'azurirano',
+            'user', 'kod_aktiviran', 'show_popup',
+            'discount_percent', 'besplatna_dostava', 'azurirano',
         ])
     else:
-        # Pending iz sesije
-        if isinstance(pending, str) and pending.startswith('percent:'):
-            try:
-                percent = _clamp_percent(pending.split(':', 1)[1])
-            except Exception:
-                percent = Decimal('10')
-            free_ship = False
         sk = session_key or f'reg-user-{user.pk}'
         LiveVisitorOffer.objects.create(
             session_key=sk,
@@ -1011,20 +1055,16 @@ def claim_registration_invite_reward(request, user):
     request.session.modified = True
 
     if percent > 0:
-        # Kreiraj jednokratni kupon za prvu narudžbu
-        import secrets
-        code = f'REG{secrets.token_hex(3).upper()[:6]}'
-        while Coupon.objects.filter(kod=code).exists():
-            code = f'REG{secrets.token_hex(3).upper()[:6]}'
-        Coupon.objects.create(
-            kod=code,
-            naziv=REGISTRATION_COUPON_NAME,
-            postotak=percent,
-            vlasnik=user,
-            aktivan=True,
-            automatski=True,
+        coupon = _create_registration_reward_coupon(user, percent)
+        pct = coupon.postotak
+        percent_label = (
+            str(int(pct)) if pct == pct.to_integral_value() else str(pct)
         )
-        return {'percent': str(percent), 'type': 'registration', 'coupon': code}
+        return {
+            'percent': percent_label,
+            'type': 'registration',
+            'coupon': coupon.kod,
+        }
 
     set_session_free_shipping(request, True)
     return {'free_shipping': True, 'type': 'registration'}

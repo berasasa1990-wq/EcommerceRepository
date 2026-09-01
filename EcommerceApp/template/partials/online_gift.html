@@ -1,94 +1,109 @@
-{% if online_gift %}
+{% if online_gift and not user.is_authenticated %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260713v9">
-<div id="onlineGiftOverlay" class="og-overlay og-side" hidden
+<link rel="stylesheet" href="{% static 'css/online-gift.css' %}?v=20260901cart">
+{% if turnstile_site_key %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
+<div id="onlineGiftOverlay" class="og-overlay lc-overlay" hidden
      data-id="{{ online_gift.id }}"
      data-delay="{{ online_gift.delay_seconds|default:0 }}"
      data-show-now="{% if online_gift.show_now %}1{% else %}0{% endif %}"
      data-force-show="{% if online_gift.force_show %}1{% else %}0{% endif %}"
-     data-side-mode="1"
+     data-side-mode="0"
      data-source="{{ online_gift.source|default:'auto' }}"
-     data-claim-url="{% url 'online_gift_reveal' %}"
      data-dismiss-url="{% url 'online_gift_dismiss' %}"
-     data-poll-url="{% url 'online_gift_poll' %}"
-     data-cart-url="{% url 'cart' %}"
-     data-requires-registration="0"
-     data-requires-email="{% if online_gift.requires_email %}1{% else %}0{% endif %}"
-     data-is-registered="{% if online_gift.is_registered %}1{% else %}0{% endif %}"
-     data-register-url="{% url 'register' %}?next=/"
-     data-user-email="{{ online_gift.user_email|default:'' }}">
+     data-register-url="{% url 'register' %}?next=/">
 
-    <div class="og-card" role="dialog" aria-modal="true" aria-labelledby="ogTitle">
-        <button type="button" class="og-x" data-og-close aria-label="Zatvori">×</button>
+    <div class="lc-modal" role="dialog" aria-modal="true" aria-labelledby="lcTitle">
+        <button type="button" class="lc-close" data-og-close aria-label="Zatvori">×</button>
 
-        <div id="ogIntro" class="og-step">
-            <div class="og-gift-icon" aria-hidden="true">🎁</div>
-            <p class="og-kicker">Nagradna igra · unesi email i igraj</p>
-            <h2 id="ogTitle" class="og-title">{{ online_gift.naslov }}</h2>
-            {% if online_gift.poruka %}
-            <p class="og-text" id="ogPoruka">{{ online_gift.poruka }}</p>
-            {% else %}
-            <p class="og-text" id="ogPoruka" hidden></p>
-            {% endif %}
-            <p class="og-choice-hint" id="ogChoiceHint">
-                Unesite email da biste igrali — nije potrebna aktivacija naloga.
-            </p>
-            <div id="ogRegisterGate" class="og-register-gate" hidden>
-                <p class="og-register-msg">Nagradna igra je dostupna samo registrovanim kupcima.</p>
-                <a href="{% url 'register' %}" class="og-btn og-btn-main" id="ogRegisterBtn">
-                    Registruj se i igraj
-                </a>
+        <div class="lc-left">
+            <div class="lc-card" aria-hidden="true">
+                {% if site_settings.logo %}
+                <img src="{{ site_settings.logo.url }}" alt="" class="lc-card-logo">
+                {% endif %}
+                <p class="lc-card-brand">LOYALTY CLUB</p>
+                <p class="lc-card-tag">OPREMA RIBOLOVA ZA PRAVE RIBOLOVCE!</p>
+                <p class="lc-card-num">1234 5678 9012 3456</p>
             </div>
-            <div id="ogPlayGate">
-                <label class="og-email-label" for="ogEmailInput">
-                    Email
-                    <input type="email"
-                           id="ogEmailInput"
-                           class="og-email-input"
-                           name="email"
-                           autocomplete="email"
-                           inputmode="email"
-                           placeholder="vas@email.com"
-                           value="{{ online_gift.user_email|default:'' }}"
-                           {% if not online_gift.requires_email and online_gift.user_email %}readonly{% endif %}>
+            <h2 class="lc-left-title">REGISTRUJ SE I<br>KORISTI <span>LOYALTY</span><br>POPUSTE<br>PRI KUPOVINAMA!</h2>
+            <ul class="lc-perks">
+                <li>
+                    <span class="lc-perk-ico" aria-hidden="true">%</span>
+                    <span><strong>10% popusta na prvu narudžbu</strong> i loyalty popusti pri svakoj kupovini</span>
+                </li>
+                <li>
+                    <span class="lc-perk-ico" aria-hidden="true">●</span>
+                    <span>Skupljaj bodove i ostvaruj veće popuste</span>
+                </li>
+                <li>
+                    <span class="lc-perk-ico" aria-hidden="true">🎁</span>
+                    <span>Ekskluzivne ponude samo za članove</span>
+                </li>
+                <li>
+                    <span class="lc-perk-ico" aria-hidden="true">★</span>
+                    <span>Brže i lakše naručivanje</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="lc-right">
+            <div class="lc-gift" aria-hidden="true">🎁</div>
+            <h3 id="lcTitle" class="lc-right-title">Pridruži se našem <span>LOYALTY CLUB-u!</span></h3>
+            <p class="lc-right-lead">Registruj se besplatno i ostvari posebne pogodnosti već danas.</p>
+
+            <form method="post" action="{% url 'register' %}?next=/" class="lc-form" id="lcRegisterForm">
+                {% csrf_token %}
+                <input type="hidden" name="loyalty_popup" value="1">
+                <input type="hidden" name="ime_prezime" id="lcImePrezime" value="">
+                <label class="lc-field">
+                    <span class="lc-field-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.4-3.2 3.8-4.8 7-4.8s5.6 1.6 7 4.8"/></svg>
+                    </span>
+                    <input type="text" name="lc_ime" id="lcIme" autocomplete="given-name" placeholder="Ime" required>
                 </label>
-                <p class="og-email-hint" id="ogEmailHint">Samo za kontakt oko nagrade — bez aktivacije.</p>
-                <button type="button" class="og-btn og-btn-main" id="ogRevealBtn">
-                    Da, igraj
-                </button>
-            </div>
-            <button type="button" class="og-btn og-btn-ghost" id="ogDeclineBtn" data-og-close>
-                Ne, hvala
-            </button>
-        </div>
-
-        <div id="ogLoading" class="og-step" hidden>
-            <div class="og-spinner" aria-hidden="true"></div>
-            <p class="og-loading-text">Otkrivamo nagradu…</p>
-        </div>
-
-        <div id="ogResult" class="og-step" hidden>
-            <div class="og-result-emoji" id="ogResultEmoji">🎉</div>
-            <h3 class="og-result-title" id="ogResultTitle">Čestitamo!</h3>
-            <p class="og-result-msg" id="ogResultMsg"></p>
-
-            <div class="og-product" id="ogProduct" hidden>
-                <div class="og-product-img-wrap">
-                    <img src="" alt="" id="ogProductImg" width="160" height="160">
-                    <span class="og-product-tag">GRATIS</span>
+                <label class="lc-field">
+                    <span class="lc-field-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.4-3.2 3.8-4.8 7-4.8s5.6 1.6 7 4.8"/></svg>
+                    </span>
+                    <input type="text" name="lc_prezime" id="lcPrezime" autocomplete="family-name" placeholder="Prezime" required>
+                </label>
+                <label class="lc-field">
+                    <span class="lc-field-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11z"/><path d="m5 7 7 5 7-5"/></svg>
+                    </span>
+                    <input type="email" name="email" id="lcEmail" autocomplete="email" placeholder="Email" required>
+                </label>
+                <label class="lc-field">
+                    <span class="lc-field-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7A2 2 0 0 1 22 16.9z"/></svg>
+                    </span>
+                    <input type="tel" name="telefon" id="lcTelefon" inputmode="numeric" autocomplete="tel" placeholder="Broj telefona (06...)" required pattern="06[0-9]{7,8}" maxlength="10">
+                </label>
+                <label class="lc-field">
+                    <span class="lc-field-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                    </span>
+                    <input type="password" name="lozinka" id="lcLozinka" autocomplete="new-password" placeholder="Lozinka" minlength="8" required>
+                </label>
+                <label class="lc-field">
+                    <span class="lc-field-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                    </span>
+                    <input type="password" name="lozinka_potvrda" id="lcLozinka2" autocomplete="new-password" placeholder="Potvrdi lozinku" minlength="8" required>
+                </label>
+                <label class="lc-terms">
+                    <input type="checkbox" id="lcTerms" required>
+                    <span>Saglasan sam sa <a href="https://carpologijabh.ba/uslovi-kupovine" target="_blank" rel="noopener">uslovima korištenja</a> i <a href="https://carpologijabh.ba/izjava-o-privatnosti/" target="_blank" rel="noopener">politikom privatnosti</a>.</span>
+                </label>
+                {% if turnstile_site_key %}
+                <div class="lc-turnstile">
+                    <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="light" data-response-field-name="cf_turnstile_response"></div>
                 </div>
-                <strong class="og-product-name" id="ogProductName"></strong>
-                <div class="og-product-price">
-                    <s id="ogProductOld"></s>
-                    <b>0,00 KM</b>
-                </div>
-                <p class="og-product-note">✓ U korpi · dostava se naplaćuje</p>
-            </div>
-
-            <div class="og-actions">
-                <a href="{% url 'cart' %}" class="og-btn og-btn-main" id="ogCartBtn" hidden>Otvori korpu</a>
-                <button type="button" class="og-btn og-btn-main" id="ogBackBtn" hidden>Nazad na sajt</button>
-            </div>
+                {% endif %}
+                <button type="submit" class="lc-submit">REGISTRUJ SE</button>
+            </form>
+            <p class="lc-login">Već imate nalog? <a href="{% url 'login' %}?next=/" class="lc-login-link">Prijavite se</a></p>
         </div>
     </div>
 </div>

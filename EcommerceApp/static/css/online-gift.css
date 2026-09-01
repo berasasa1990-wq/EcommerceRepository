@@ -27,6 +27,11 @@
   pointer-events: auto !important;
 }
 
+.og-overlay:not(.is-open),
+.og-overlay:not(.is-open) * {
+  pointer-events: none !important;
+}
+
 /* —— Bočni pulsirajući popup (sa strane, ne fullscreen) —— */
 /* Overlay ne hvata touch/wheel — scroll stranice radi ispod */
 .og-overlay.og-side {
@@ -670,5 +675,284 @@
   .og-product-img-wrap {
     width: min(130px, 42vw);
     height: min(130px, 42vw);
+  }
+}
+
+/* —— Loyalty Club registracija (umjesto nagradne igre) —— */
+body.og-open {
+  overflow: hidden;
+}
+
+.lc-overlay {
+  align-items: center !important;
+  justify-content: center !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 16px !important;
+  background: rgba(8, 8, 8, 0.62) !important;
+  pointer-events: none;
+}
+.lc-overlay.is-open {
+  pointer-events: auto !important;
+}
+.lc-modal {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(300px, 1.05fr);
+  width: min(920px, calc(100vw - 24px));
+  max-height: min(92vh, 760px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+.lc-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f3f3;
+  color: #111;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lc-left {
+  background: #0a0a0a;
+  color: #fff;
+  padding: 28px 26px 30px;
+}
+.lc-card {
+  position: relative;
+  margin: 0 0 22px;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  border: 1.5px solid #FF5A00;
+  background: linear-gradient(160deg, #1a1a1a 0%, #0a0a0a 70%);
+  min-height: 132px;
+  overflow: hidden;
+}
+.lc-card-logo {
+  display: block;
+  height: 42px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+.lc-card-brand {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #FF5A00;
+}
+.lc-card-tag {
+  margin: 4px 0 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.lc-card-num {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #FF5A00;
+}
+.lc-left-title {
+  margin: 0 0 18px;
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.lc-left-title span {
+  color: #FF5A00;
+}
+.lc-perks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.lc-perks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.lc-perk-ico {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #FF5A00;
+  font-size: 16px;
+  font-weight: 800;
+}
+.lc-right {
+  padding: 28px 28px 24px;
+  background: #fff;
+}
+.lc-gift {
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 10px;
+  border-radius: 50%;
+  background: #FF5A00;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 8px 20px rgba(255, 90, 0, 0.28);
+}
+.lc-right-title {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #111;
+}
+.lc-right-title span {
+  color: #FF5A00;
+}
+.lc-right-lead {
+  margin: 0 0 18px;
+  text-align: center;
+  color: #555;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.lc-form {
+  display: grid;
+  gap: 10px;
+}
+.lc-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 12px;
+  background: #fff;
+}
+.lc-field:focus-within {
+  border-color: #FF5A00;
+}
+.lc-field-ico {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: #111;
+}
+.lc-field-ico svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.lc-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  color: #111;
+  height: 46px;
+}
+.lc-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 2px;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+}
+.lc-terms input {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: #FF5A00;
+}
+.lc-terms a {
+  color: #111;
+  font-weight: 700;
+}
+.lc-submit {
+  appearance: none;
+  border: 0;
+  border-radius: 12px;
+  min-height: 48px;
+  background: #FF5A00;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.lc-submit:hover {
+  background: #E04F00;
+}
+.lc-login {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+}
+.lc-login a,
+.lc-login-link {
+  color: #FF5A00;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+.lc-turnstile {
+  min-height: 0;
+}
+@media (max-width: 768px) {
+  .lc-modal {
+    grid-template-columns: 1fr;
+    max-height: min(94vh, 860px);
+  }
+  .lc-left {
+    padding: 20px 18px 16px;
+  }
+  .lc-card {
+    min-height: 0;
+    margin-bottom: 14px;
+  }
+  .lc-left-title {
+    font-size: 22px;
+  }
+  .lc-right {
+    padding: 18px 16px 20px;
+  }
+  .lc-right-title {
+    font-size: 22px;
   }
 }

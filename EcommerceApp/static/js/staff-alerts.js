@@ -15,7 +15,7 @@
         || root.dataset.disableToasts === '1'
     );
 
-    const pollMs = 15000;
+    const pollMs = 5000;
     const storageKey = 'staff_alerts_since_id';
     const dismissedOnlineKey = 'staff_alerts_online_summary_dismissed';
     let sinceId = 0;
@@ -247,6 +247,52 @@
         window.location.href = '/nalog/online-narudzbe/';
     }
 
+    function goToOrder(url, clickEvent) {
+        if (clickEvent) {
+            clickEvent.preventDefault();
+            clickEvent.stopPropagation();
+        }
+        window.location.href = url || '/nalog/online-narudzbe/';
+    }
+
+    function pendingOrdersCopy(count) {
+        const n = Math.max(1, parseInt(count, 10) || 1);
+        if (n === 1) return 'Imate 1 novu narudžbu koja čeka obradu.';
+        if (n >= 2 && n <= 4) return 'Imate ' + n + ' nove narudžbe koje čekaju obradu.';
+        return 'Imate ' + n + ' novih narudžbi koje čekaju obradu.';
+    }
+
+    function rowIcon(kind) {
+        if (kind === 'tag') {
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg>';
+        }
+        if (kind === 'user') {
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.4-3.2 3.8-4.8 7-4.8s5.6 1.6 7 4.8"/></svg>';
+        }
+        if (kind === 'date') {
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>';
+        }
+        if (kind === 'total') {
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.2c-.7-.8-1.7-1.2-3-1.2-1.8 0-3 1-3 2.3 0 3.2 6 1.4 6 4.4 0 1.4-1.3 2.3-3.2 2.3-1.4 0-2.5-.5-3.2-1.3"/></svg>';
+        }
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h13l3 5H8"/><path d="M3 7v11h13"/><circle cx="7.5" cy="19.5" r="1.5"/><circle cx="16.5" cy="19.5" r="1.5"/></svg>';
+    }
+
+    function detailRow(kind, label, value, accent) {
+        if (!value) return '';
+        return (
+            '<div class="staff-order-celebration__row">' +
+            '<span class="staff-order-celebration__label">' +
+            '<span class="staff-order-celebration__ico" aria-hidden="true">' + rowIcon(kind) + '</span>' +
+            escapeHtml(label) +
+            '</span>' +
+            '<strong class="staff-order-celebration__value' +
+            (accent ? ' is-accent' : '') +
+            '">' + escapeHtml(value) + '</strong>' +
+            '</div>'
+        );
+    }
+
     function updateNewOrdersBadge(count) {
         const n = Math.max(0, parseInt(count, 10) || 0);
         document.querySelectorAll('#adminNewOrdersBadge, [data-new-orders-badge]').forEach(function (badge) {
@@ -276,17 +322,21 @@
             .replace(/"/g, '&quot;');
     }
 
-    function showOrderCelebration(event) {
+    function showOrderCelebration(event, pendingCount) {
         if (!event) return;
-        // Jedan celebration u isto vrijeme
         const existing = document.getElementById('staffOrderCelebration');
         if (existing) existing.remove();
 
         const orderNo = event.order_number || '';
         const total = event.order_total || '';
         const ime = event.ime || 'Kupac';
-        const grad = event.grad || '';
-        const email = event.email || '';
+        const dateLabel = event.order_date || '';
+        const shipping = event.shipping || 'Brza dostava';
+        const orderUrl = event.order_url || (orderNo
+            ? '/nalog/provjera-narudzbi/' + encodeURIComponent(orderNo) + '/'
+            : '/nalog/online-narudzbe/');
+        const pending = Math.max(1, parseInt(pendingCount, 10) || 1);
+        const totalLabel = total ? (String(total).indexOf('KM') >= 0 ? total : total + ' KM') : '';
 
         const overlay = document.createElement('div');
         overlay.id = 'staffOrderCelebration';
@@ -299,31 +349,31 @@
             '<div class="staff-order-celebration__backdrop" data-order-celeb-close></div>' +
             '<div class="staff-order-celebration__card">' +
             '<button type="button" class="staff-order-celebration__close" data-order-celeb-close aria-label="Zatvori">×</button>' +
-            '<p class="staff-order-celebration__kicker">Nova narudžba</p>' +
-            '<h2 id="staffOrderCelebrationTitle" class="staff-order-celebration__title">' +
-            (orderNo ? '#' + escapeHtml(orderNo) : 'Online narudžba') +
-            '</h2>' +
-            (total
-                ? '<p class="staff-order-celebration__amount">' + escapeHtml(total) + ' KM</p>'
-                : '') +
+            '<div class="staff-order-celebration__hero" aria-hidden="true">' +
+            '<span class="staff-order-celebration__cart">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">' +
+            '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/>' +
+            '<path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.5L21 8H7"/>' +
+            '</svg>' +
+            '<span class="staff-order-celebration__badge">' + pending + '</span>' +
+            '</span>' +
+            '</div>' +
+            '<h2 id="staffOrderCelebrationTitle" class="staff-order-celebration__title">Stigla je nova narudžba!</h2>' +
+            '<p class="staff-order-celebration__lead">' + escapeHtml(pendingOrdersCopy(pending)) + '</p>' +
             '<div class="staff-order-celebration__box">' +
-            '<div class="staff-order-celebration__row"><span>Kupac</span><strong>' +
-            escapeHtml(ime) +
-            '</strong></div>' +
-            (grad
-                ? '<div class="staff-order-celebration__row"><span>Grad</span><strong>' +
-                  escapeHtml(grad) + '</strong></div>'
-                : '') +
-            (email
-                ? '<div class="staff-order-celebration__row"><span>Email</span><strong>' +
-                  escapeHtml(email) + '</strong></div>'
-                : '') +
+            detailRow('tag', 'Broj narudžbe:', orderNo ? '#' + orderNo : '', true) +
+            detailRow('user', 'Kupac:', ime, false) +
+            detailRow('date', 'Datum:', dateLabel, false) +
+            detailRow('total', 'Ukupno:', totalLabel, true) +
+            detailRow('ship', 'Način dostave:', shipping, false) +
             '</div>' +
             '<div class="staff-order-celebration__actions">' +
+            '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>Kasnije</button>' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--primary" data-order-celeb-orders>' +
-            'Otvori narudžbe</button>' +
-            '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>' +
-            'Zatvori</button>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
+            '<path d="M8 7h8M8 12h8M8 17h5"/><path d="M5 4h14a1 1 0 0 1 1 1v16l-3-2-3 2-3-2-3 2-3-2V5a1 1 0 0 1 1-1z"/>' +
+            '</svg>' +
+            'PREGLEDAJ NARUDŽBU</button>' +
             '</div>' +
             '</div>';
 
@@ -336,30 +386,29 @@
         function closeCeleb() {
             overlay.classList.remove('is-visible');
             document.body.classList.remove('staff-order-celebration-open');
+            document.removeEventListener('keydown', onKey);
             window.setTimeout(function () {
-                overlay.remove();
+                if (overlay.parentNode) overlay.remove();
             }, 280);
+        }
+
+        function onKey(e) {
+            if (e.key === 'Escape') closeCeleb();
         }
 
         overlay.querySelectorAll('[data-order-celeb-close]').forEach(function (el) {
             el.addEventListener('click', closeCeleb);
         });
         overlay.querySelector('[data-order-celeb-orders]')?.addEventListener('click', function (e) {
-            goToOnlineOrders(e);
+            goToOrder(orderUrl, e);
         });
-
-        // Auto-zatvori poslije 18s (može i ručno)
-        window.setTimeout(function () {
-            if (document.getElementById('staffOrderCelebration') === overlay) {
-                closeCeleb();
-            }
-        }, 18000);
+        document.addEventListener('keydown', onKey);
     }
 
-    function showEventToast(event) {
+    function showEventToast(event, pendingCount) {
         if (!event) return;
         if ((event.tip || '') !== 'purchase') return;
-        showOrderCelebration(event);
+        showOrderCelebration(event, pendingCount);
     }
 
     async function poll() {
@@ -378,9 +427,13 @@
             const nextId = parseInt(data.latest_id || sinceId, 10) || sinceId;
             const events = data.events || [];
             if (events.length) {
+                let lastPurchase = null;
                 events.forEach(function (event) {
-                    showEventToast(event);
+                    if ((event.tip || '') === 'purchase') lastPurchase = event;
                 });
+                if (lastPurchase) {
+                    showEventToast(lastPurchase, data.new_orders_count);
+                }
             }
 
             // Online sticky summary isključen — ne prikazuj „kupac je na sajtu”

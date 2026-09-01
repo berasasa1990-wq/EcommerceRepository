@@ -67,7 +67,7 @@ def notify_registration(*, ime='', email='', grad='', session_key=''):
     return None
 
 
-def notify_purchase(*, ime='', email='', grad='', session_key='', order_number='', total=''):
+def notify_purchase(*, ime='', email='', grad='', session_key='', order_number='', total='', shipping=''):
     label = _actor_label(ime=ime, email=email, grad=grad)
     parts = [f'{label} je kupio/la preko sajta']
     if order_number:
@@ -81,9 +81,19 @@ def notify_purchase(*, ime='', email='', grad='', session_key='', order_number='
         meta.append(f'ORDER:{order_number}')
     if total_fmt:
         meta.append(f'TOTAL:{total_fmt}')
+    ship = (shipping or '').strip()[:80]
+    if ship:
+        meta.append(f'SHIP:{ship}')
     poruka = ' '.join(parts) + '.'
     if meta:
-        poruka = poruka + ' [[' + '|'.join(meta) + ']]'
+        suffix = ' [[' + '|'.join(meta) + ']]'
+        max_main = 300 - len(suffix)
+        if max_main < 8:
+            poruka = suffix[:300]
+        else:
+            if len(poruka) > max_main:
+                poruka = poruka[: max_main - 1] + '…'
+            poruka = poruka + suffix
     return push_staff_event(
         StaffSiteEvent.Tip.PURCHASE,
         naslov='Nova kupovina',
@@ -171,6 +181,55 @@ def _format_money(value):
         amount = 0.0
     text = f'{amount:.2f}'.replace('.', ',')
     return text
+
+
+def _format_money_dot(value):
+    try:
+        amount = float(str(value).replace(',', '.') or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    return f'{amount:.2f}'
+
+
+def _format_order_datetime(value):
+    if not value:
+        return ''
+    local = timezone.localtime(value)
+    return local.strftime('%d.%m.%Y. u %H:%M')
+
+
+def _purchase_order_fields(event, order_number='', order_total='', shipping=''):
+    """Podaci za popup nove narudžbe (broj, datum, dostava, link)."""
+    from django.urls import reverse
+
+    from .models import Order
+
+    fields = {
+        'order_number': (order_number or '').strip(),
+        'order_total': _format_money_dot(order_total) if order_total not in (None, '') else '',
+        'order_date': _format_order_datetime(getattr(event, 'kreirano', None)),
+        'shipping': (shipping or '').strip(),
+        'order_url': '',
+    }
+    broj = fields['order_number']
+    if broj:
+        try:
+            fields['order_url'] = reverse('staff_order_detail', args=[broj])
+        except Exception:
+            fields['order_url'] = f'/nalog/provjera-narudzbi/{broj}/'
+        order = Order.objects.filter(broj=broj).first()
+        if order:
+            fields['order_number'] = order.broj
+            fields['order_total'] = _format_money_dot(order.ukupno)
+            fields['order_date'] = _format_order_datetime(order.kreirana)
+            ship = (order.dostava_naziv or '').strip()
+            if ship:
+                fields['shipping'] = ship
+            if order.ime_prezime:
+                fields['ime'] = order.ime_prezime
+    if not fields['shipping']:
+        fields['shipping'] = 'Brza dostava'
+    return fields
 
 
 def _offer_reject_flags(offer):
@@ -344,6 +403,7 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
         raw_poruka = event.poruka or ''
         order_number = ''
         order_total = ''
+        shipping = ''
         display_poruka = raw_poruka
         if '[[' in raw_poruka and ']]' in raw_poruka:
             try:
@@ -355,6 +415,8 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
                         order_number = part[6:].strip()
                     elif part.startswith('TOTAL:'):
                         order_total = part[6:].strip()
+                    elif part.startswith('SHIP:'):
+                        shipping = part[5:].strip()
             except Exception:
                 display_poruka = raw_poruka
         if not order_number:
@@ -364,17 +426,29 @@ def get_staff_events_since(since_id=0, *, limit=MAX_EVENTS_RETURN):
             if m:
                 order_number = m.group(1)
 
+        order_fields = {}
+        if event.tip == StaffSiteEvent.Tip.PURCHASE:
+            order_fields = _purchase_order_fields(
+                event, order_number, order_total, shipping,
+            )
+            order_number = order_fields.get('order_number') or order_number
+            order_total = order_fields.get('order_total') or order_total
+            shipping = order_fields.get('shipping') or shipping
+
         payload.append({
             'id': event.id,
             'tip': event.tip,
             'naslov': event.naslov,
             'poruka': display_poruka,
-            'ime': event.ime or state.get('ime') or '',
+            'ime': order_fields.get('ime') or event.ime or state.get('ime') or '',
             'email': event.email or state.get('email') or '',
             'grad': event.grad or state.get('grad') or '',
             'session_key': session_key,
             'order_number': order_number,
             'order_total': order_total,
+            'order_date': order_fields.get('order_date') or '',
+            'shipping': shipping,
+            'order_url': order_fields.get('order_url') or '',
             'can_register': can_register,
             'can_offer': can_act or bool(state.get('can_offer')),
             'sticky': sticky,

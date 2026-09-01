@@ -346,4 +346,5 @@ def nav_categories(request):
         'organization_json_ld': organization_json_ld,
         'website_json_ld': website_json_ld,
         'cats_sidebar_open': _cats_sidebar_open(request),
+        'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', '') or '',
     }

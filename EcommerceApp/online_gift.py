@@ -194,7 +194,14 @@ def clear_gift_after_auth(request):
 
 def _blocked_staff_path(request):
     path = getattr(request, 'path', '') or ''
-    return path.startswith('/nalog/') or path.startswith('/admin')
+    return (
+        path.startswith('/nalog/')
+        or path.startswith('/admin')
+        or path.startswith('/prijava')
+        or path.startswith('/registracija')
+        or path.startswith('/odjava')
+        or path.startswith('/activate')
+    )
 
 
 def _base_eligible(request, campaign):

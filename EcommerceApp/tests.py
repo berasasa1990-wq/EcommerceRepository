@@ -1097,13 +1097,59 @@ class StaffLiveAlertTests(TestCase):
             grad='Tuzla',
             order_number='0042',
             total='86.50',
+            shipping='Brza dostava',
         )
         self.assertIsNotNone(event)
         self.assertEqual(event.tip, StaffSiteEvent.Tip.PURCHASE)
         self.assertIn('ORDER:0042', event.poruka)
         self.assertIn('TOTAL:86,50', event.poruka)
+        self.assertIn('SHIP:Brza dostava', event.poruka)
         self.assertEqual(StaffSiteEvent.objects.filter(tip='cart').count(), 0)
         self.assertEqual(StaffSiteEvent.objects.filter(tip='register').count(), 0)
+
+    def test_purchase_poll_includes_order_popup_fields(self):
+        from django.contrib.auth.models import User
+
+        from .models import Order, StaffSiteEvent
+        from .staff_alerts import get_staff_events_since, notify_purchase
+
+        User.objects.create_superuser('boss', 'boss@example.com', 'pass')
+        order = Order.objects.create(
+            ime_prezime='Marko Marković',
+            email='marko@example.com',
+            telefon='061234567',
+            adresa='Ulica 1',
+            grad='Sarajevo',
+            ukupno=Decimal('159.00'),
+        )
+        seed = StaffSiteEvent.objects.create(
+            tip=StaffSiteEvent.Tip.ONLINE,
+            naslov='seed',
+            poruka='',
+        )
+        notify_purchase(
+            ime=order.ime_prezime,
+            email=order.email,
+            grad=order.grad,
+            order_number=order.broj,
+            total=str(order.ukupno),
+            shipping='Brza dostava',
+        )
+        data = get_staff_events_since(seed.id)
+        self.assertTrue(data['events'])
+        event = data['events'][-1]
+        self.assertEqual(event['tip'], 'purchase')
+        self.assertEqual(event['order_number'], order.broj)
+        self.assertEqual(event['order_total'], '159.00')
+        self.assertEqual(event['ime'], 'Marko Marković')
+        self.assertTrue(event['order_date'])
+        self.assertIn(' u ', event['order_date'])
+        self.assertTrue(event['shipping'])
+        self.assertEqual(
+            event['order_url'],
+            f'/nalog/provjera-narudzbi/{order.broj}/',
+        )
+        self.assertGreaterEqual(data['new_orders_count'], 1)
 
 
 class CatalogNameSearchTests(TestCase):
@@ -1166,3 +1212,141 @@ class CartIconThemeTests(TestCase):
         css = site.get_theme_ui()['css_vars']
         self.assertIn('--cart-icon:#111111', css)
         self.assertIn('--cart-icon-hover:#222222', css)
+
+
+class OnlineGiftAuthPathTests(SimpleTestCase):
+    def test_login_and_register_hide_registration_popup(self):
+        from django.test import RequestFactory
+
+        from .online_gift import _blocked_staff_path
+
+        rf = RequestFactory()
+        self.assertTrue(_blocked_staff_path(rf.get('/prijava/')))
+        self.assertTrue(_blocked_staff_path(rf.get('/prijava/?next=/')))
+        self.assertTrue(_blocked_staff_path(rf.get('/registracija/')))
+        self.assertFalse(_blocked_staff_path(rf.get('/')))
+        self.assertFalse(_blocked_staff_path(rf.get('/kategorija/spin/')))
+
+
+class LoyaltyPopupRegistrationCouponTests(TestCase):
+    def _register(self, email, loyalty_popup=False, telefon='061234567'):
+        data = {
+            'ime_prezime': 'Test Korisnik',
+            'email': email,
+            'telefon': telefon,
+            'lozinka': 'lozinka12',
+            'lozinka_potvrda': 'lozinka12',
+        }
+        if loyalty_popup:
+            data['loyalty_popup'] = '1'
+        return self.client.post('/registracija/?next=/', data)
+
+    def test_popup_registration_creates_one_time_10_percent_coupon(self):
+        from django.contrib.auth.models import User
+
+        from .live_visitor_offer import (
+            REGISTRATION_COUPON_NAME,
+            consume_registration_reward,
+            get_active_registration_reward_coupon,
+        )
+        from .models import Coupon
+        from .pricing import izracunaj_sazetak
+
+        response = self._register('popup-welcome@example.com', loyalty_popup=True)
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(email='popup-welcome@example.com')
+        coupon = get_active_registration_reward_coupon(user)
+        self.assertIsNotNone(coupon)
+        self.assertEqual(coupon.postotak, Decimal('10.00'))
+        self.assertFalse(coupon.automatski)
+        self.assertEqual(coupon.naziv, REGISTRATION_COUPON_NAME)
+        self.assertEqual(
+            Coupon.objects.filter(vlasnik=user, naziv=REGISTRATION_COUPON_NAME).count(),
+            1,
+        )
+
+        summary = izracunaj_sazetak(
+            Decimal('100.00'), user=user, coupon_code=coupon.kod,
+        )
+        self.assertTrue(summary['kupon_primijenjen'])
+        self.assertTrue(
+            any('Registracijski popust 10% (jednokratno)' in p for p in summary['pogodnosti'])
+        )
+
+        consume_registration_reward(user)
+        self.assertIsNone(get_active_registration_reward_coupon(user))
+        coupon.refresh_from_db()
+        self.assertFalse(coupon.aktivan)
+
+    def test_normal_registration_does_not_get_welcome_coupon(self):
+        from django.contrib.auth.models import User
+
+        from .live_visitor_offer import get_active_registration_reward_coupon
+
+        response = self._register(
+            'normal-welcome@example.com',
+            loyalty_popup=False,
+            telefon='061234568',
+        )
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(email='normal-welcome@example.com')
+        self.assertIsNone(get_active_registration_reward_coupon(user))
+
+    def test_pending_percent_overrides_existing_free_shipping_offer(self):
+        from django.contrib.auth.models import User
+        from django.test import RequestFactory
+
+        from .live_visitor_offer import (
+            claim_registration_invite_reward,
+            get_active_registration_reward_coupon,
+            mark_loyalty_popup_registration_pending,
+        )
+        from .models import LiveVisitorOffer
+
+        user = User.objects.create_user(
+            'override@example.com', 'override@example.com', 'lozinka12',
+        )
+        session = self.client.session
+        session.save()
+        LiveVisitorOffer.objects.create(
+            session_key=session.session_key,
+            tip=LiveVisitorOffer.Tip.REGISTRACIJA,
+            discount_percent=Decimal('0'),
+            besplatna_dostava=True,
+            kod_aktiviran=False,
+            show_popup=True,
+        )
+        request = RequestFactory().post('/registracija/')
+        request.session = session
+        mark_loyalty_popup_registration_pending(request)
+        reward = claim_registration_invite_reward(request, user)
+        self.assertEqual(reward['percent'], '10')
+        coupon = get_active_registration_reward_coupon(user)
+        self.assertIsNotNone(coupon)
+        self.assertEqual(coupon.postotak, Decimal('10.00'))
+
+    def test_claim_does_not_create_second_coupon(self):
+        from django.contrib.auth.models import User
+        from django.test import RequestFactory
+
+        from .live_visitor_offer import (
+            REGISTRATION_COUPON_NAME,
+            claim_registration_invite_reward,
+            mark_loyalty_popup_registration_pending,
+        )
+        from .models import Coupon
+
+        user = User.objects.create_user(
+            'dup@example.com', 'dup@example.com', 'lozinka12',
+        )
+        request = RequestFactory().post('/registracija/')
+        request.session = self.client.session
+        mark_loyalty_popup_registration_pending(request)
+        first = claim_registration_invite_reward(request, user)
+        mark_loyalty_popup_registration_pending(request)
+        second = claim_registration_invite_reward(request, user)
+        self.assertEqual(first['coupon'], second['coupon'])
+        self.assertEqual(
+            Coupon.objects.filter(vlasnik=user, naziv=REGISTRATION_COUPON_NAME).count(),
+            1,
+        )
