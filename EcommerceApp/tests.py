@@ -1281,6 +1281,12 @@ class StaffStorefrontEditModeTests(TestCase):
         self.assertEqual(ProductImage.objects.filter(product=self.complete).count(), 1)
         self.assertEqual(ProductImage.objects.filter(product=twin).count(), 1)
         self.assertEqual(ProductImage.objects.filter(product=other).count(), 0)
+        extra_names = list(
+            ProductImage.objects.filter(product__in=[self.complete, twin])
+            .values_list('slika', flat=True)
+        )
+        self.assertEqual(len(set(extra_names)), 1)
+        self.assertTrue(extra_names[0].lower().endswith('.avif'))
 
         old_complete = self.complete.slika.name
         old_twin = twin.slika.name
@@ -1300,6 +1306,9 @@ class StaffStorefrontEditModeTests(TestCase):
         other.refresh_from_db()
         self.assertTrue(self.complete.slika)
         self.assertTrue(twin.slika)
+        self.assertEqual(self.complete.slika.name, twin.slika.name)
+        self.assertTrue(self.complete.slika.name.lower().endswith('.avif'))
+        self.assertIn('kompletan-artikal', self.complete.slika.name)
         self.assertNotEqual(self.complete.slika.name, old_complete)
         self.assertNotEqual(twin.slika.name, old_twin)
         self.assertEqual(other.slika.name, 'products/other.jpg')

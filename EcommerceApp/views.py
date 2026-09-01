@@ -5292,6 +5292,33 @@ def _clone_uploaded_image(uploaded_file):
     return ContentFile(data, name=name or 'slika.jpg')
 
 
+def _store_bulk_shared_avif(uploaded, *, product_name, extra='', dest_field):
+    """
+    Obradi upload jednom u AVIF. Ime fajla je po prvom označenom artiklu,
+    isti fajl se dijeli na sve odabrane.
+    """
+    from .utils.images import (
+        PRODUCT_RESPONSIVE_WIDTHS,
+        process_product_image,
+        product_image_seo_label,
+        save_processed_image,
+        unique_product_image_basename,
+    )
+
+    label = product_image_seo_label(product_name or 'artikal', extra=extra)
+    basename = unique_product_image_basename(label)
+    processed = process_product_image(
+        _clone_uploaded_image(uploaded),
+        filename=f'{basename}.avif',
+    )
+    save_processed_image(
+        dest_field,
+        processed,
+        responsive_widths=PRODUCT_RESPONSIVE_WIDTHS,
+    )
+    return dest_field.name
+
+
 def _parse_staff_product_ids(raw_ids, *, limit=200):
     ids = []
     seen = set()
@@ -8491,33 +8518,71 @@ def staff_product_bulk_edit(request):
     if not updates and not per_opis and not per_slika and not extra_uploads and not main_upload:
         return JsonResponse({'ok': False, 'error': 'Unesi barem jedno polje.'}, status=400)
 
-    products = list(Product.objects.filter(pk__in=ids))
+    found = {p.pk: p for p in Product.objects.filter(pk__in=ids)}
+    products = [found[pk] for pk in ids if pk in found]
     if not products:
         return JsonResponse({'ok': False, 'error': 'Artikli nisu pronađeni.'}, status=400)
+    first = products[0]
+    name_source = first.naziv or first.slug or 'artikal'
     image_urls = {}
     for product in products:
+        dirty = False
         for field, value in updates.items():
             setattr(product, field, value)
+            dirty = True
         if product.pk in per_opis:
             product.opis = per_opis[product.pk]
+            dirty = True
         if product.pk in per_slika:
             product.slika = per_slika[product.pk]
-        elif main_upload:
-            product.slika = _clone_uploaded_image(main_upload)
-        product.save()
-        if product.pk in per_slika or main_upload:
+            dirty = True
+        if dirty:
+            product.save()
+        if product.pk in per_slika:
             try:
-                image_urls[str(product.pk)] = product.prikazna_slika.url if product.prikazna_slika else ''
+                image_urls[str(product.pk)] = (
+                    product.prikazna_slika.url if product.prikazna_slika else ''
+                )
             except Exception:
                 image_urls[str(product.pk)] = ''
-        if extra_uploads:
+
+    if main_upload:
+        first = Product.objects.get(pk=first.pk)
+        shared_main = _store_bulk_shared_avif(
+            main_upload,
+            product_name=name_source,
+            dest_field=first.slika,
+        )
+        Product.objects.filter(pk__in=[p.pk for p in products]).update(slika=shared_main)
+        shared_url = ''
+        try:
+            shared_url = first.slika.url if first.slika else ''
+        except Exception:
+            shared_url = ''
+        for product in products:
+            image_urls[str(product.pk)] = shared_url
+
+    if extra_uploads:
+        shared_extra_names = []
+        for index, uploaded in enumerate(extra_uploads, start=1):
+            extra = 'galerija' if len(extra_uploads) == 1 else f'galerija-{index}'
+            holder = ProductImage(product=first, redoslijed=0)
+            shared_extra_names.append(
+                _store_bulk_shared_avif(
+                    uploaded,
+                    product_name=name_source,
+                    extra=extra,
+                    dest_field=holder.slika,
+                )
+            )
+        for product in products:
             max_order = (
                 product.dodatne_slike.aggregate(max_red=Max('redoslijed')).get('max_red') or 0
             )
-            for index, uploaded in enumerate(extra_uploads, start=1):
+            for index, stored_name in enumerate(shared_extra_names, start=1):
                 ProductImage.objects.create(
                     product=product,
-                    slika=_clone_uploaded_image(uploaded),
+                    slika=stored_name,
                     redoslijed=max_order + index,
                 )
     parts = []
