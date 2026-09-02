@@ -2872,7 +2872,7 @@ def location_stock_qty(location, product, variation=None):
     return _popis_location_qty(location, product, variation)
 
 
-def set_location_counted_qty(*, location, product, variation=None, qty, user=None):
+def set_location_counted_qty(*, location, product, variation=None, qty, user=None, napomena='Provjera popisa'):
     """Postavi apsolutnu količinu na lokaciji (korekcija). Vraća novo stanje."""
     qty = max(0, _int(qty))
     current = _popis_location_qty(location, product, variation)
@@ -2885,7 +2885,7 @@ def set_location_counted_qty(*, location, product, variation=None, qty, user=Non
             location=location,
             tip=WarehouseMovement.Tip.KOREKCIJA,
             kolicina=qty,
-            napomena='Provjera popisa',
+            napomena=napomena or 'Provjera popisa',
             user=user,
         )
     return _popis_location_qty(location, product, variation)
@@ -3676,7 +3676,110 @@ def find_product_by_sifra(sifra):
     product = Product.objects.filter(sifra__iexact=key).first()
     if product is not None:
         return product, None
+    folded = key.casefold()
+    variation = (
+        ProductVariation.objects.select_related('artikal')
+        .filter(sifra_normalized__iexact=folded)
+        .first()
+    )
+    if variation is not None and variation.artikal_id:
+        return variation.artikal, variation
     return None, None
+
+
+def _lager_compare_locations(mode):
+    if mode == 'mp':
+        return maloprodaja_locations()
+    return usable_locations().exclude(_location_keyword_q(('maloprodaja',)))
+
+
+def _lager_qty_on_locations(product, variation, locations):
+    if product is None or not locations:
+        return 0, []
+    qs = WarehouseStock.objects.filter(
+        product=product,
+        location__in=locations,
+        kolicina__gt=0,
+    ).select_related('location')
+    if variation is not None:
+        own = list(qs.filter(variation=variation))
+        stocks = own if own else list(qs.filter(variation__isnull=True))
+    else:
+        stocks = list(qs.filter(variation__isnull=True))
+    total = sum(int(row.kolicina or 0) for row in stocks)
+    labels = [
+        f'{row.location.sifra} ({int(row.kolicina or 0)})'
+        for row in stocks
+        if row.location_id
+    ]
+    return total, labels
+
+
+def compare_lager_document(parsed, *, mode):
+    """Uporedi šifre/količine sa dokumenta sa MP ili VP lokacijama. Ne mijenja zalihe."""
+    if mode not in {'mp', 'vp'}:
+        raise MagacinError('Izaberi Maloprodaju ili Veleprodaju.')
+    locations = list(_lager_compare_locations(mode))
+    rows = []
+    for item in parsed or []:
+        raw_sifra = str(item.get('sifra') or '').strip()
+        sifra = _lager_sifra_from_cell(raw_sifra) or (
+            raw_sifra if any(ch.isdigit() for ch in raw_sifra) else ''
+        )
+        dokument = max(0, int(item.get('qty') or 0))
+        pdf_naziv = str(item.get('naziv') or '').strip()
+        if not sifra:
+            continue
+        product, variation = find_product_by_sifra(sifra)
+        if product is None:
+            rows.append({
+                'sifra': sifra,
+                'naziv': pdf_naziv,
+                'dokument': dokument,
+                'lager': None,
+                'razlika': None,
+                'status': 'nema_sifre',
+                'status_label': 'Šifra nije pronađena',
+                'lokacije': '',
+                'on_location': False,
+                'product_id': None,
+                'variation_id': None,
+            })
+            continue
+        katalog_naziv = product.naziv
+        if variation:
+            katalog_naziv = f'{product.naziv} {variation.naziv}'.strip()
+        naziv = pdf_naziv or katalog_naziv
+        lager, loc_labels = _lager_qty_on_locations(product, variation, locations)
+        kasa = dokument - lager
+        if kasa > 0:
+            status, label = 'visak', f'Kasa +{kasa} Višak'
+        elif kasa < 0:
+            status, label = 'manjak', f'Kasa {kasa} Manjak'
+        else:
+            status, label = 'tacno', 'Tačno'
+        rows.append({
+            'sifra': sifra,
+            'naziv': naziv or pdf_naziv,
+            'dokument': dokument,
+            'lager': lager,
+            'lokacije': ', '.join(loc_labels),
+            'product_id': product.pk,
+            'variation_id': variation.pk if variation is not None else None,
+            'razlika': kasa,
+            'status': status,
+            'status_label': label,
+            'on_location': lager > 0,
+        })
+    summary = {
+        'ukupno': len(rows),
+        'tacno': sum(1 for row in rows if row['status'] == 'tacno'),
+        'manjak': sum(1 for row in rows if row['status'] == 'manjak'),
+        'visak': sum(1 for row in rows if row['status'] == 'visak'),
+        'nije_na_lokaciji': sum(1 for row in rows if row['status'] == 'nije_na_lokaciji'),
+        'nema_sifre': sum(1 for row in rows if row['status'] == 'nema_sifre'),
+    }
+    return {'rows': rows, 'summary': summary, 'mode': mode}
 
 
 def _mp_stock_rows(product, variation=None):
@@ -3794,7 +3897,7 @@ def _mp_resize_image_bytes(data, *, mime='image/jpeg'):
     return buf.getvalue(), 'image/jpeg'
 
 
-def _mp_vision_table(image_bytes, *, mime='image/jpeg'):
+def _mp_vision_content(image_bytes, *, mime='image/jpeg', prompt=None, max_tokens=4000, timeout=90):
     from .quick_activation import xai_api_key
 
     import requests
@@ -3815,12 +3918,12 @@ def _mp_vision_table(image_bytes, *, mime='image/jpeg'):
             json={
                 'model': model,
                 'temperature': 0,
-                'max_tokens': 4000,
+                'max_tokens': max_tokens,
                 'messages': [
                     {
                         'role': 'user',
                         'content': [
-                            {'type': 'text', 'text': _MP_VISION_PROMPT},
+                            {'type': 'text', 'text': prompt or _MP_VISION_PROMPT},
                             {
                                 'type': 'image_url',
                                 'image_url': {'url': f'data:{mime};base64,{b64}'},
@@ -3829,7 +3932,7 @@ def _mp_vision_table(image_bytes, *, mime='image/jpeg'):
                     }
                 ],
             },
-            timeout=70,
+            timeout=timeout,
         )
     except requests.RequestException as exc:
         raise MagacinError(f'Očitavanje slike nije uspjelo: {exc}') from exc
@@ -3838,10 +3941,13 @@ def _mp_vision_table(image_bytes, *, mime='image/jpeg'):
             'Očitavanje slike nije uspjelo. Provjeri XAI_API_KEY i pokušaj jasniju sliku.'
         )
     try:
-        content = (((resp.json() or {}).get('choices') or [{}])[0].get('message') or {}).get('content') or ''
+        return (((resp.json() or {}).get('choices') or [{}])[0].get('message') or {}).get('content') or ''
     except ValueError as exc:
         raise MagacinError('Odgovor očitavanja nije validan.') from exc
-    return _normalize_mp_vision_text(content)
+
+
+def _mp_vision_table(image_bytes, *, mime='image/jpeg'):
+    return _normalize_mp_vision_text(_mp_vision_content(image_bytes, mime=mime))
 
 
 def _mp_rows_to_tsv(rows):
@@ -3934,7 +4040,7 @@ def _normalize_mp_vision_text(raw):
     return stripped
 
 
-def _mp_pdf_text_and_images(data):
+def _mp_pdf_text_and_images(data, *, max_pages=6, max_images_per_page=4):
     try:
         from pypdf import PdfReader
     except ImportError as exc:
@@ -3942,7 +4048,8 @@ def _mp_pdf_text_and_images(data):
     reader = PdfReader(BytesIO(data))
     texts = []
     images = []
-    for page in reader.pages[:6]:
+    pages = reader.pages if not max_pages else reader.pages[:max_pages]
+    for page in pages:
         extracted = (page.extract_text() or '').strip()
         if extracted:
             texts.append(extracted)
@@ -3950,7 +4057,9 @@ def _mp_pdf_text_and_images(data):
             page_images = list(page.images or [])
         except Exception:
             page_images = []
-        for img in page_images[:4]:
+        if max_images_per_page:
+            page_images = page_images[:max_images_per_page]
+        for img in page_images:
             blob = getattr(img, 'data', None)
             if blob:
                 images.append(blob)
@@ -3989,6 +4098,444 @@ def extract_mp_daily_text_from_upload(uploaded):
             )
         return '\n'.join(chunks)
     return _mp_vision_table(data, mime=content_type or 'image/jpeg')
+
+
+_LAGER_VISION_PROMPT = (
+    'Na slici je tabela „Stanje lagera”. Kolone slijeva:\n'
+    'ŠIFRA | BARKOD | NAZIV | JM | KOLIČINA | MAL.CIJENA | VRIJEDNOST.\n'
+    'Za SVAKI red:\n'
+    '- sifra = SAMO BROJ iz kolone ŠIFRA (npr. 2, 16, 73). '
+    'To NIJE barkod (702…) i NIJE kod iz naziva (60554NP-TX-…).\n'
+    '- naziv = kolona NAZIV.\n'
+    '- kolicina = kolona KOLIČINA (2.000 znači 2). '
+    'To NIJE MAL.CIJENA (8.000) i NIJE VRIJEDNOST (16.00).\n'
+    'Primjer: šifra 73, naziv „60554NP-TX-6-Y10 Ultra NP Carp XV2 Chodda”, količina 2.\n'
+    'Vrati SAMO JSON:\n'
+    '{"stavke":[{"sifra":"73","naziv":"60554NP-TX-6-Y10 Ultra NP Carp XV2 Chodda","kolicina":2}]}\n'
+)
+
+_STANJE_LAGERA_LINE = re.compile(
+    r'^(\d{1,6})\s+(.+?)\s+(\d+)[.,]000\s+(\d+[.,]\d{2,3})\s+(-?\d+[.,]\d{2})\s*(?:kom\d*)?\s*$',
+    re.IGNORECASE,
+)
+
+_LAGER_QTY_INDEX = 4  # 5. polje od početka (0-based)
+
+_LAGER_SIFRA_SKIP = {
+    'šifra', 'sifra', 'sku', 'naziv', 'kolicina', 'količina', 'artikal',
+    'kol', 'kol.', 'qty', 'kom', 'komada', 'ukupno', 'rbr', 'dok',
+}
+
+
+def _lager_cell_text(token):
+    if token is None or isinstance(token, bool):
+        return ''
+    if isinstance(token, int):
+        return str(token)
+    if isinstance(token, float):
+        if token.is_integer():
+            return str(int(token))
+        return str(token).strip()
+    return _mp_norm_cell(token)
+
+
+def _lager_sifra_from_cell(token):
+    """Šifra sa dokumenta — samo brojevi."""
+    text = _lager_cell_text(token)
+    if not text:
+        return ''
+    folded = text.casefold().replace(':', '').strip()
+    if folded in _LAGER_SIFRA_SKIP or folded in {'za', 'za.'}:
+        return ''
+    if folded.startswith('šifr') or folded.startswith('sifr'):
+        return ''
+    compact = re.sub(r'\s+', '', text)
+    if compact.isdigit():
+        return compact[:80]
+    match = re.match(r'^(\d+)', compact)
+    if match:
+        return match.group(1)[:80]
+    return ''
+
+
+def _lager_looks_like_sifra(token):
+    text = _lager_sifra_from_cell(token)
+    return bool(text and text.isdigit())
+
+
+def _lager_looks_like_price(token):
+    text = _lager_cell_text(token).replace(' ', '').replace(',', '.')
+    text = re.sub(r'(km|bam)$', '', text, flags=re.I)
+    if re.fullmatch(r'\d+\.\d{1,2}', text) and not re.fullmatch(r'\d+\.000', text):
+        return True
+    if isinstance(token, float) and not token.is_integer():
+        return True
+    return False
+
+
+def _lager_parse_qty(token):
+    if isinstance(token, bool):
+        return None
+    if _lager_looks_like_price(token):
+        return None
+    if isinstance(token, int):
+        return token if token >= 0 else None
+    if isinstance(token, float) and token.is_integer():
+        qty = int(token)
+        return qty if qty >= 0 else None
+    parsed = _mp_parse_qty_token(_lager_cell_text(token))
+    if parsed is not None:
+        return parsed
+    text = _lager_cell_text(token).replace(' ', '').replace(',', '.')
+    if re.fullmatch(r'0+(\.0+)?', text):
+        return 0
+    return None
+
+
+def _lager_dot000_qty(token):
+    text = _lager_cell_text(token).replace(' ', '').replace(',', '.')
+    match = re.fullmatch(r'(\d+)\.000', text)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def _lager_unstick_qty(naziv, qty):
+    """Ako je u količinu upala cijena, a količina zalijepljena na naziv — rastavi."""
+    naziv = (naziv or '').strip()
+    glued = re.search(r'^(.*\S)\s+(\d+)[.,]000$', naziv)
+    if glued:
+        return glued.group(1).strip(), int(glued.group(2))
+    if qty is not None and _lager_looks_like_price(qty):
+        qty = None
+    match = re.search(r'^(.*\S)\s+(\d{1,4})$', naziv)
+    if qty is None and match:
+        return match.group(1).strip(), int(match.group(2))
+    return naziv, qty
+
+
+def _lager_header_indexes(cells):
+    sifra_i = None
+    naziv_i = None
+    qty_i = None
+    cijena_i = None
+    for index, cell in enumerate(cells):
+        folded = cell.casefold().replace(':', '').strip()
+        if sifra_i is None and (
+            folded in {'šifra', 'sifra', 'sku', 'sifra artikla', 'šifra artikla'}
+            or folded.startswith('šifr')
+            or folded.startswith('sifr')
+        ):
+            sifra_i = index
+            continue
+        if naziv_i is None and (
+            folded in {'naziv', 'naziv artikla', 'artikal', 'artikel', 'name', 'opis'}
+            or folded.startswith('naziv')
+        ):
+            naziv_i = index
+            continue
+        if (
+            'cijen' in folded
+            or 'iznos' in folded
+            or 'ukupn' in folded
+            or 'vrijed' in folded
+            or folded in {'mpc', 'vpc', 'pdv', 'rabat', '%rab'}
+        ):
+            if cijena_i is None:
+                cijena_i = index
+            continue
+        if qty_i is None and (
+            folded in {'količina', 'kolicina', 'kol', 'kol.', 'qty', 'kom', 'komada'}
+            or folded.startswith('koli')
+        ):
+            qty_i = index
+    if sifra_i is None or qty_i is None:
+        return None
+    return sifra_i, naziv_i, qty_i, cijena_i
+
+
+def _lager_skip_rbr(tokens):
+    if len(tokens) < 2:
+        return tokens
+    first = tokens[0]
+    if not first.isdigit():
+        return tokens
+    try:
+        rbr = int(first)
+    except ValueError:
+        return tokens
+    if not 1 <= rbr <= 199:
+        return tokens
+    if _lager_looks_like_sifra(tokens[1]) and (
+        not tokens[1].isdigit() or len(tokens[1]) >= 4
+    ):
+        return tokens[1:]
+    return tokens
+
+
+def _lager_first_dot000(tokens, *, start_at=0):
+    for index in range(max(0, start_at), len(tokens)):
+        qty = _lager_dot000_qty(tokens[index])
+        if qty is not None:
+            return index, qty
+    return None, None
+
+
+def _lager_qty_from_fifth(tokens):
+    """Količina je 5. polje od početka reda."""
+    if len(tokens) >= 5:
+        qty = _lager_parse_qty(tokens[_LAGER_QTY_INDEX])
+        if qty is not None:
+            return _LAGER_QTY_INDEX, qty
+        dot_i, dot_qty = _lager_first_dot000(tokens, start_at=_LAGER_QTY_INDEX)
+        if dot_i is not None:
+            return dot_i, dot_qty
+    return None, None
+
+
+def _lager_pick_sifra(tokens, header=None, skip_indexes=None):
+    skip = {i for i in (skip_indexes or []) if i is not None}
+    if header:
+        sifra_i = header[0]
+        if sifra_i is not None and sifra_i < len(tokens) and sifra_i not in skip:
+            sifra = _lager_sifra_from_cell(tokens[sifra_i])
+            if sifra:
+                return sifra, sifra_i
+    for index, token in enumerate(tokens):
+        if index in skip:
+            continue
+        if index == _LAGER_QTY_INDEX:
+            continue
+        if index == 0 and token.isdigit() and 1 <= int(token) <= 199 and len(tokens) > 1:
+            continue
+        sifra = _lager_sifra_from_cell(token)
+        if sifra:
+            return sifra, index
+    return '', None
+
+
+def _lager_triple_from_cells(cells, header=None):
+    tokens = [_mp_norm_cell(cell) for cell in cells if _mp_norm_cell(cell)]
+    if not tokens:
+        return None
+    qty_i, qty = _lager_qty_from_fifth(tokens)
+    if header and qty is None:
+        header_qty_i = header[2]
+        if header_qty_i is not None and header_qty_i < len(tokens):
+            qty = _lager_parse_qty(tokens[header_qty_i])
+            if qty is not None:
+                qty_i = header_qty_i
+    sifra, sifra_at = _lager_pick_sifra(tokens, header, skip_indexes={qty_i})
+    if header and not sifra:
+        sifra_i = header[0]
+        if sifra_i is not None and sifra_i < len(tokens):
+            sifra = _lager_sifra_from_cell(tokens[sifra_i])
+            sifra_at = sifra_i
+    if not sifra or qty is None:
+        return None
+    naziv = ''
+    if header and header[1] is not None and header[1] < len(tokens):
+        naziv_i = header[1]
+        end = qty_i if qty_i is not None and qty_i > naziv_i else naziv_i + 1
+        cijena_i = header[3] if header else None
+        if cijena_i is not None and naziv_i < cijena_i < end:
+            end = cijena_i
+        parts = []
+        for index in range(naziv_i, end):
+            if index in {sifra_at, qty_i, cijena_i}:
+                continue
+            if _lager_looks_like_price(tokens[index]):
+                continue
+            parts.append(tokens[index])
+        naziv = ' '.join(parts).strip()
+    elif sifra_at is not None and qty_i is not None and qty_i > sifra_at:
+        parts = []
+        for token in tokens[sifra_at + 1:qty_i]:
+            if _lager_looks_like_price(token):
+                continue
+            parts.append(token)
+        naziv = ' '.join(parts).strip()
+    naziv, qty = _lager_unstick_qty(naziv, qty)
+    return sifra, naziv, qty
+
+
+def _merge_lager_rows(triples):
+    merged = {}
+    order = []
+    for sifra, naziv, qty in triples:
+        sifra = str(sifra or '').strip()
+        naziv = str(naziv or '').strip()
+        try:
+            qty = int(qty or 0)
+        except (TypeError, ValueError):
+            continue
+        if not sifra or qty < 0:
+            continue
+        key = sifra.casefold()
+        if key not in merged:
+            merged[key] = {'sifra': sifra, 'naziv': naziv, 'qty': 0}
+            order.append(key)
+        merged[key]['qty'] += qty
+        if naziv and not merged[key]['naziv']:
+            merged[key]['naziv'] = naziv
+    return [merged[key] for key in order]
+
+
+def _lager_parse_vision_json(stripped):
+    try:
+        data = json.loads(stripped)
+    except (TypeError, ValueError):
+        match = re.search(r'(\{.*\}|\[.*\])', stripped, re.DOTALL)
+        if not match:
+            return None
+        try:
+            data = json.loads(match.group(1))
+        except (TypeError, ValueError):
+            return None
+    if isinstance(data, dict):
+        data = data.get('stavke') or data.get('rows') or data.get('items') or []
+    if not isinstance(data, list):
+        return None
+    triples = []
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        sifra = _lager_sifra_from_cell(
+            row.get('sifra') or row.get('SIFRA') or row.get('sku') or row.get('code') or ''
+        )
+        naziv = str(
+            row.get('naziv') or row.get('Naziv') or row.get('name') or row.get('artikal') or ''
+        ).strip()
+        qty = row.get('kolicina')
+        if qty is None:
+            qty = row.get('količina')
+        if qty is None:
+            qty = row.get('Kolicina')
+        if qty is None:
+            qty = row.get('qty')
+        if not sifra:
+            continue
+        parsed_qty = _lager_parse_qty(qty if qty is not None else 1)
+        naziv, parsed_qty = _lager_unstick_qty(naziv, parsed_qty)
+        triples.append((sifra, naziv, parsed_qty if parsed_qty is not None else 1))
+    return triples or None
+
+
+def parse_stanje_lagera_text(text):
+    """PDF „Stanje lagera”: ŠIFRA, NAZIV, KOLIČINA (ne barkod, ne mal.cijena)."""
+    triples = []
+    for line in (text or '').replace('\r\n', '\n').replace('\r', '\n').split('\n'):
+        line = line.strip()
+        if not line or re.fullmatch(r'\d{1,2}/\d{1,2}/\d{2,4}', line):
+            continue
+        match = _STANJE_LAGERA_LINE.match(line)
+        if not match:
+            continue
+        sifra = match.group(1)
+        naziv = re.sub(r'\s+', ' ', match.group(2)).strip()
+        qty = int(match.group(3))
+        if sifra and naziv:
+            triples.append((sifra, naziv, qty))
+    return _merge_lager_rows(triples) if triples else []
+
+
+def parse_lager_document_text(text):
+    """Iz teksta/JSON-a izvuci kolone Šifra, Naziv i Količina."""
+    raw = (text or '').replace('\r\n', '\n').replace('\r', '\n').strip()
+    if not raw:
+        return []
+    stanje = parse_stanje_lagera_text(raw)
+    if stanje:
+        return stanje
+    if raw.startswith('```'):
+        raw = re.sub(r'^```(?:\w+)?\s*', '', raw)
+        raw = re.sub(r'\s*```$', '', raw)
+        raw = raw.strip()
+    from_json = _lager_parse_vision_json(raw)
+    if from_json:
+        return _merge_lager_rows(from_json)
+    lines = [line.strip() for line in raw.split('\n') if line.strip()]
+    header = None
+    triples = []
+    for line in lines:
+        if line.startswith('|'):
+            cells = [_mp_norm_cell(part) for part in line.strip('|').split('|')]
+            if cells and set(''.join(cells)) <= set('-: '):
+                continue
+        else:
+            cells = _mp_split_line(line)
+        if not cells:
+            continue
+        if header is None:
+            found = _lager_header_indexes(cells)
+            if found:
+                header = found
+                continue
+        triple = _lager_triple_from_cells(cells, header)
+        if triple:
+            triples.append(triple)
+    if triples:
+        return _merge_lager_rows(triples)
+    fallback = parse_mp_daily_text(raw)
+    return [{'sifra': row['sifra'], 'naziv': '', 'qty': row['qty']} for row in fallback]
+
+
+def extract_lager_document_rows(uploaded):
+    """Sa PDF/slike pročitaj kolone Šifra, Naziv i Količina."""
+    name = (getattr(uploaded, 'name', '') or '').strip().casefold()
+    content_type = (getattr(uploaded, 'content_type', '') or '').strip().casefold()
+    data = uploaded.read()
+    if hasattr(uploaded, 'seek'):
+        try:
+            uploaded.seek(0)
+        except Exception:
+            pass
+    if not data:
+        raise MagacinError('Fajl je prazan.')
+    is_pdf = content_type == 'application/pdf' or name.endswith('.pdf')
+    is_image = content_type.startswith('image/') or name.endswith((
+        '.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp',
+    ))
+    if not is_pdf and not is_image:
+        raise MagacinError('Uploaduj PDF ili sliku tabele (Šifra, Naziv, Količina).')
+
+    def from_image(blob, mime='image/jpeg'):
+        content = _mp_vision_content(
+            blob,
+            mime=mime,
+            prompt=_LAGER_VISION_PROMPT,
+            max_tokens=32768,
+            timeout=180,
+        )
+        return parse_lager_document_text(content)
+
+    if is_pdf:
+        pdf_text, images = _mp_pdf_text_and_images(
+            data, max_pages=None, max_images_per_page=None,
+        )
+        text_rows = parse_lager_document_text(pdf_text)
+        if text_rows:
+            return text_rows
+        triples = []
+        for blob in images:
+            try:
+                triples.extend(from_image(blob) or [])
+            except MagacinError:
+                continue
+        if triples:
+            return _merge_lager_rows(
+                (row['sifra'], row.get('naziv') or '', row.get('qty') or 0)
+                for row in triples
+            )
+        raise MagacinError(
+            'Nisam pročitao kolone Šifra, Naziv i Količina. Uploaduj jasniji PDF ili sliku tabele.'
+        )
+    rows = from_image(data, mime=content_type or 'image/jpeg')
+    if not rows:
+        raise MagacinError(
+            'Nisam pročitao kolone Šifra, Naziv i Količina sa slike. Probaj jasniji snimak tabele.'
+        )
+    return rows
 
 
 def save_mp_daily_skidanje(result, *, user=None, fajl=None, raw_text='', datum=None):

@@ -34,6 +34,8 @@ from .magacin import (
     save_mp_daily_skidanje,
     parse_mp_daily_datum,
     parse_mp_daily_text,
+    compare_lager_document,
+    parse_lager_document_text,
     preview_mp_daily_rows,
     _normalize_mp_vision_text,
     magacin_products_qs,
@@ -414,6 +416,125 @@ class MagacinStockTests(TestCase):
         )
         self.assertEqual(parse_mp_daily_datum(vision_dated), date(2026, 8, 26))
         self.assertIn('785', vision_dated)
+
+    def test_parse_lager_document_reads_sifra_naziv_kolicina(self):
+        rows = parse_lager_document_text(
+            'Šifra\tNaziv\tKoličina\n785\tFox braid\t2\n785\tFox braid\t1\n12\tTest braid\t4'
+        )
+        by_sifra = {row['sifra']: row for row in rows}
+        self.assertEqual(by_sifra['785']['qty'], 3)
+        self.assertEqual(by_sifra['785']['naziv'], 'Fox braid')
+        self.assertEqual(by_sifra['12']['qty'], 4)
+        self.assertEqual(by_sifra['12']['naziv'], 'Test braid')
+        vision = parse_lager_document_text(
+            '{"stavke":[{"sifra":"785","naziv":"Fox braid","kolicina":2},'
+            '{"sifra":"12","naziv":"Test braid","kolicina":4}]}'
+        )
+        by_vision = {row['sifra']: row for row in vision}
+        self.assertEqual(by_vision['785']['naziv'], 'Fox braid')
+        self.assertEqual(by_vision['12']['qty'], 4)
+        spaced = parse_lager_document_text(
+            'Sifra Naziv Kolicina\n785 Fox Submerge Braid 5'
+        )
+        self.assertEqual(spaced[0]['sifra'], '785')
+        self.assertEqual(spaced[0]['naziv'], 'Fox Submerge Braid')
+        self.assertEqual(spaced[0]['qty'], 5)
+        raw_codes = parse_lager_document_text(
+            'Šifra\tNaziv\tKoličina\n12-AB/3\tKratka šifra\t1\nA 100\tSa razmakom\t2'
+        )
+        self.assertEqual([row['sifra'] for row in raw_codes], ['12'])
+        numeric = parse_lager_document_text(
+            'Šifra\tNaziv\tKoličina\n785\tMustad\t1\n12\tSitna\t2'
+        )
+        by_num = {row['sifra']: row for row in numeric}
+        self.assertEqual(by_num['785']['qty'], 1)
+        self.assertEqual(by_num['785']['naziv'], 'Mustad')
+        self.assertEqual(by_num['12']['qty'], 2)
+        vision_num = parse_lager_document_text(
+            '{"stavke":[{"sifra":785,"naziv":"Mustad","kolicina":1},'
+            '{"sifra":"12","naziv":"Sitna","kolicina":2}]}'
+        )
+        self.assertEqual([row['sifra'] for row in vision_num], ['785', '12'])
+        self.assertEqual(vision_num[0]['qty'], 1)
+        skip_za = parse_lager_document_text(
+            'Šifra\tNaziv\tKoličina\n785\tMustad\t1\nZA\tPodnožje\t2'
+        )
+        self.assertEqual([row['sifra'] for row in skip_za], ['785'])
+        with_price = parse_lager_document_text(
+            'Šifra\tNaziv\tKoličina\tCijena\n'
+            '785\tMustad hook extra long name\t2\t12.50'
+        )
+        self.assertEqual(with_price[0]['sifra'], '785')
+        self.assertEqual(with_price[0]['qty'], 2)
+        self.assertEqual(with_price[0]['naziv'], 'Mustad hook extra long name')
+        price_before_qty = parse_lager_document_text(
+            'Šifra\tNaziv\tCijena\tKoličina\n785\tMustad\t12.50\t2'
+        )
+        self.assertEqual(price_before_qty[0]['qty'], 2)
+        self.assertEqual(price_before_qty[0]['naziv'], 'Mustad')
+        glued = parse_lager_document_text(
+            '{"stavke":[{"sifra":"785","naziv":"Mustad hook 2","kolicina":12.50}]}'
+        )
+        self.assertEqual(glued[0]['qty'], 2)
+        self.assertEqual(glued[0]['naziv'], 'Mustad hook')
+        chodda = parse_lager_document_text(
+            '73 60554NP-TX-6-Y10  Ultra NP Carp XV2 Chodda 2.000 8.000 16.00KOM7021560038060'
+        )
+        self.assertEqual(chodda[0]['sifra'], '73')
+        self.assertEqual(chodda[0]['qty'], 2)
+        self.assertIn('Chodda', chodda[0]['naziv'])
+        self.assertNotEqual(chodda[0]['qty'], 8)
+        fifth_col = parse_lager_document_text(
+            '16 BBS-60552NP-TX-8-Y05BBS Continental 4.8 2.000 8.000 16.00KOM7021560037377'
+        )
+        self.assertEqual(fifth_col[0]['sifra'], '16')
+        self.assertEqual(fifth_col[0]['qty'], 2)
+        zero_qty = parse_lager_document_text(
+            '2 BBS-60550NP-TX-2-Y05  BBS Wide Gap 4.8 0.000 8.000 0.00KOM7021560037032'
+        )
+        self.assertEqual(zero_qty[0]['sifra'], '2')
+        self.assertEqual(zero_qty[0]['qty'], 0)
+        later_page = parse_lager_document_text(
+            '3925 AS156 AS Olovo suza sa virblom 7 gr 35.000 0.400 14.00kom\n'
+            '5326 BKK SOFT SHELL JACKET Black 2XL 3.000 108.800 326.40kom'
+        )
+        by_later = {row['sifra']: row for row in later_page}
+        self.assertEqual(by_later['3925']['qty'], 35)
+        self.assertEqual(by_later['5326']['qty'], 3)
+        vision_chodda = parse_lager_document_text(
+            '{"stavke":[{"sifra":"73","naziv":"60554NP-TX-6-Y10 Ultra NP Carp XV2 Chodda","kolicina":2}]}'
+        )
+        self.assertEqual(vision_chodda[0]['sifra'], '73')
+        self.assertEqual(vision_chodda[0]['qty'], 2)
+
+    def test_compare_lager_document_mp_vs_vp_quantities(self):
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=8)
+        apply_movement(product=self.product, location=self.b03, tip='prijem', kolicina=3)
+        parsed = [{'sifra': 'FOX12345', 'qty': 5}]
+        mp = compare_lager_document(parsed, mode='mp')
+        self.assertEqual(mp['rows'][0]['status'], 'visak')
+        self.assertEqual(mp['rows'][0]['lager'], 3)
+        self.assertEqual(mp['rows'][0]['dokument'], 5)
+        self.assertEqual(mp['rows'][0]['razlika'], 2)
+        self.assertEqual(mp['rows'][0]['status_label'], 'Kasa +2 Višak')
+        vp = compare_lager_document(parsed, mode='vp')
+        self.assertEqual(vp['rows'][0]['status'], 'manjak')
+        self.assertEqual(vp['rows'][0]['lager'], 8)
+        self.assertEqual(vp['rows'][0]['dokument'], 5)
+        self.assertEqual(vp['rows'][0]['razlika'], -3)
+        self.assertEqual(vp['rows'][0]['status_label'], 'Kasa -3 Manjak')
+        missing = compare_lager_document([{'sifra': '999888', 'qty': 2}], mode='mp')
+        self.assertEqual(missing['rows'][0]['status'], 'nema_sifre')
+        other = Product.objects.create(naziv='Samo VP', sifra='VP-9', cijena=Decimal('1.00'))
+        apply_movement(product=other, location=self.a10, tip='prijem', kolicina=4)
+        not_on_mp = compare_lager_document([{'sifra': 'VP-9', 'qty': 2}], mode='mp')
+        self.assertEqual(not_on_mp['rows'][0]['status'], 'visak')
+        self.assertEqual(not_on_mp['rows'][0]['lager'], 0)
+        self.assertEqual(not_on_mp['rows'][0]['status_label'], 'Kasa +2 Višak')
+        short = compare_lager_document([{'sifra': 'FOX12345', 'qty': 2}], mode='vp')
+        self.assertEqual(short['rows'][0]['status_label'], 'Kasa -6 Manjak')
+        exact = compare_lager_document([{'sifra': 'FOX12345', 'qty': 3}], mode='mp')
+        self.assertEqual(exact['rows'][0]['status'], 'tacno')
 
     def test_mp_daily_deducts_only_from_retail_location(self):
         apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
@@ -2320,6 +2441,8 @@ class MagacinViewTests(TestCase):
             'staff_magacin_pakuj',
             'staff_magacin_izvjestaji',
             'staff_magacin_popis',
+            'staff_magacin_popis_test',
+            'staff_magacin_provjera_lagera',
             'staff_magacin_fali_na_sajtu',
             'staff_magacin_vp_narudzba',
         ):
@@ -6799,6 +6922,176 @@ class MagacinViewTests(TestCase):
         self.assertEqual(order.status, Order.Status.ZAVRSENA)
         gone = self.client.get(reverse('staff_magacin_pakuj'))
         self.assertNotContains(gone, order.broj)
+
+    def test_popis_test_page_scans_and_writes_counted_qty_to_location(self):
+        self.client.force_login(self.user)
+        nav = self.client.get(reverse('staff_magacin_pregled'))
+        self.assertContains(nav, reverse('staff_magacin_popis_test'))
+        self.assertContains(nav, 'Popis robe')
+        self.assertNotRegex(nav.content.decode(), r'>\s*Popis\s*</a>')
+        page = self.client.get(reverse('staff_magacin_popis_test'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Popisivanje artikala')
+        self.assertContains(page, 'Prvo izaberi lokaciju')
+        self.assertContains(page, 'Šifra ili naziv lokacije')
+        self.assertNotContains(page, 'Skeniraj barkod artikla')
+        self.assertNotContains(page, 'Polica')
+        self.assertNotContains(page, 'Nivo')
+        blocked = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'scan', 'q': 'TST-1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(blocked.status_code, 400)
+        self.assertIn('lokaciju', blocked.json()['error'].lower())
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        found = self.client.get(reverse('staff_magacin_popis_test'), {'q': 'T-1'})
+        self.assertContains(found, 'T-1')
+        self.assertContains(found, 'Popisuj ovu lokaciju')
+        self.assertContains(found, 'pt-loc-btn')
+        self.assertContains(found, 'pt-loc-choose')
+        chosen = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'set_location', 'location_id': loc.pk},
+        )
+        self.assertEqual(chosen.status_code, 302)
+        live = self.client.get(reverse('staff_magacin_popis_test'))
+        self.assertContains(live, 'Skeniraj barkod artikla')
+        self.assertContains(live, 'Popisuješ lokaciju')
+        self.assertContains(live, 'Završi popis')
+        self.assertNotContains(live, 'Sačuvaj popis')
+        self.assertContains(live, '+ 1 kom (brzi unos)')
+        self.assertNotContains(live, 'Polica')
+        self.assertNotContains(live, '>Red<')
+        self.assertNotContains(live, 'Nivo')
+        scanned = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'scan', 'q': 'TST-1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(scanned.status_code, 200)
+        payload = scanned.json()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(payload['location']['sifra'], 'T-1')
+        self.assertEqual(payload['current']['sifra'], 'TST-1')
+        self.assertEqual(payload['current']['sistem'], 8)
+        self.assertEqual(payload['current']['popisano'], 0)
+        self.assertNotIn('polica', payload['current'])
+        plus = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'brzi', 'key': payload['current']['key']},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(plus.json()['current']['popisano'], 1)
+        self.assertEqual(plus.json()['current']['razlika'], -7)
+        stock = WarehouseStock.objects.get(product=self.product, location__sifra='T-1')
+        self.assertEqual(stock.kolicina, 8)
+        finished = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'zavrsi'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        payload_done = finished.json()
+        self.assertTrue(payload_done['cleared'])
+        self.assertIsNone(payload_done['location'])
+        self.assertEqual(payload_done['applied'], 1)
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location__sifra='T-1').kolicina,
+            1,
+        )
+        after = self.client.get(reverse('staff_magacin_popis_test'))
+        self.assertContains(after, 'Prvo izaberi lokaciju')
+        self.assertNotContains(after, 'Skeniraj barkod artikla')
+        loc_page = self.client.get(reverse('staff_magacin_lokacije'), {'lokacija': loc.pk})
+        self.assertContains(loc_page, self.product.naziv)
+        self.assertContains(loc_page, f'data-qty="1"')
+
+    def test_provjera_lagera_compares_uploaded_pdf_with_location_stock(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.force_login(self.user)
+        nav = self.client.get(reverse('staff_magacin_pregled'))
+        self.assertContains(nav, reverse('staff_magacin_provjera_lagera'))
+        self.assertContains(nav, 'Provjera LAGERA')
+        home = self.client.get(reverse('staff_magacin_provjera_lagera'))
+        self.assertEqual(home.status_code, 200)
+        self.assertContains(home, 'Maloprodaja')
+        self.assertContains(home, 'Veleprodaja')
+        mp_page = self.client.get(reverse('staff_magacin_provjera_lagera'), {'mode': 'mp'})
+        self.assertContains(mp_page, 'PDF ili slika tabele')
+        self.assertContains(mp_page, 'name="fajl"')
+        self.assertContains(mp_page, 'Šifra')
+        self.assertContains(mp_page, 'Naziv')
+        self.assertContains(mp_page, 'Količina')
+        self.assertNotContains(mp_page, 'data-sifra=')
+        mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
+        apply_movement(product=self.product, location=mp, tip='prijem', kolicina=3)
+        fake = SimpleUploadedFile('lager.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        parsed_mp = [
+            {'sifra': 'TST-1', 'naziv': 'Test braid', 'qty': 5},
+            {'sifra': '999888', 'naziv': 'Nepoznat', 'qty': 2},
+        ]
+        with patch(
+            'EcommerceApp.views_magacin.extract_lager_document_rows',
+            return_value=parsed_mp,
+        ):
+            posted = self.client.post(
+                reverse('staff_magacin_provjera_lagera'),
+                {'mode': 'mp', 'action': 'uporedi', 'fajl': fake},
+            )
+        self.assertEqual(posted.status_code, 302)
+        compared = self.client.get(reverse('staff_magacin_provjera_lagera'), {'mode': 'mp'})
+        self.assertContains(compared, 'data-sifra="TST-1"')
+        self.assertContains(compared, 'data-status="visak"')
+        self.assertContains(compared, 'data-dokument="5"')
+        self.assertContains(compared, 'data-lager="3"')
+        self.assertContains(compared, 'Kasa +2 Višak')
+        self.assertContains(compared, 'Test braid')
+        self.assertContains(compared, 'data-sifra="999888"')
+        self.assertContains(compared, 'data-status="nema_sifre"')
+        self.assertContains(compared, 'Nepoznat')
+        self.assertContains(compared, 'Prikaz samo Manjak i Višak')
+        self.assertContains(compared, 'Šifra nije pronađena')
+        only_diff = self.client.get(reverse('staff_magacin_provjera_lagera'), {
+            'mode': 'mp', 'prikaz': 'razlike',
+        })
+        self.assertContains(only_diff, 'data-sifra="TST-1"')
+        self.assertNotContains(only_diff, 'data-sifra="999888"')
+        only_missing = self.client.get(reverse('staff_magacin_provjera_lagera'), {
+            'mode': 'mp', 'prikaz': 'nema_sifre',
+        })
+        self.assertContains(only_missing, 'data-sifra="999888"')
+        self.assertNotContains(only_missing, 'data-sifra="TST-1"')
+        self.assertContains(compared, reverse('staff_magacin_provjera_lagera_stampa'))
+        printed = self.client.get(reverse('staff_magacin_provjera_lagera_stampa'), {'mode': 'mp'})
+        self.assertEqual(printed.status_code, 200)
+        self.assertContains(printed, 'Manjak i višak')
+        self.assertContains(printed, 'Kasa +2 Višak')
+        self.assertContains(printed, 'TST-1')
+        self.assertNotContains(printed, '999888')
+        self.assertNotContains(printed, 'Nepoznat')
+        self.assertEqual(
+            WarehouseStock.objects.get(product=self.product, location=mp).kolicina,
+            3,
+        )
+        fake_vp = SimpleUploadedFile('vp.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        with patch(
+            'EcommerceApp.views_magacin.extract_lager_document_rows',
+            return_value=[{'sifra': 'TST-1', 'naziv': 'Test braid', 'qty': 5}],
+        ):
+            posted_vp = self.client.post(
+                reverse('staff_magacin_provjera_lagera'),
+                {'mode': 'vp', 'action': 'uporedi', 'fajl': fake_vp},
+            )
+        self.assertEqual(posted_vp.status_code, 302)
+        vp_compared = self.client.get(reverse('staff_magacin_provjera_lagera'), {'mode': 'vp'})
+        self.assertContains(vp_compared, 'data-sifra="TST-1"')
+        self.assertContains(vp_compared, 'data-status="manjak"')
+        self.assertContains(vp_compared, 'data-dokument="5"')
+        self.assertContains(vp_compared, 'data-lager="8"')
+        self.assertContains(vp_compared, 'Kasa -3 Manjak')
+        self.assertContains(vp_compared, 'T-1 (8)')
+        self.assertNotContains(vp_compared, 'B-03')
 
 
 class OdooCustomerAddressTests(TestCase):

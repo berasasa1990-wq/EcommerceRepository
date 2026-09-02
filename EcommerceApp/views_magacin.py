@@ -90,6 +90,8 @@ from .magacin import (
     parse_mp_daily_datum,
     parse_mp_daily_text,
     preview_mp_daily_rows,
+    compare_lager_document,
+    extract_lager_document_rows,
     obrisi_artikal_iz_baze,
     save_mp_daily_skidanje,
     magacin_in_stock_q,
@@ -3303,6 +3305,7 @@ def _build_picked_packing_lines(order):
 def _order_packing_job(order):
     packing_lines, odoo_error = _build_picked_packing_lines(order)
     created = timezone.localtime(order.kreirana)
+    order.is_vp = is_vp_order(order)
     return {
         'order': order,
         'packing_lines': packing_lines,
@@ -4245,6 +4248,7 @@ def magacin_pakovanje(request):
             broj=selected_broj,
         )
         packing_lines, odoo_error = _build_order_packing_lines(packing_order)
+        packing_order.is_vp = is_vp_order(packing_order)
         created = timezone.localtime(packing_order.kreirana)
         datum = created.strftime('%d.%m.%Y.')
         vrijeme = created.strftime('%H:%M')
@@ -6602,6 +6606,450 @@ def magacin_popis_stampa(request):
         'print_mode': True,
     })
     return render(request, 'staff/magacin/popis_print.html', context)
+
+
+POPIS_TEST_SESSION_KEY = 'mg_popis_test_v1'
+
+
+def _popis_test_state(request):
+    raw = request.session.get(POPIS_TEST_SESSION_KEY)
+    if not isinstance(raw, dict):
+        raw = {}
+    items = raw.get('items')
+    if not isinstance(items, list):
+        items = []
+    try:
+        location_id = int(raw.get('location_id') or 0)
+    except (TypeError, ValueError):
+        location_id = 0
+    return {
+        'items': items,
+        'current': raw.get('current') or '',
+        'location_id': location_id or None,
+    }
+
+
+def _popis_test_save(request, state):
+    request.session[POPIS_TEST_SESSION_KEY] = {
+        'items': state.get('items') or [],
+        'current': state.get('current') or '',
+        'location_id': state.get('location_id') or None,
+    }
+    request.session.modified = True
+
+
+def _popis_test_get_location(state):
+    loc_id = state.get('location_id')
+    if not loc_id:
+        return None
+    return usable_locations().filter(pk=int(loc_id)).first()
+
+
+def _popis_test_location_payload(location):
+    if location is None:
+        return None
+    return {
+        'id': location.pk,
+        'sifra': location.sifra or '',
+        'naziv': location.naziv or '',
+        'label': location.label,
+    }
+
+
+def _popis_test_image_url(product, variation=None):
+    for img in (
+        getattr(variation, 'prikazna_slika', None) if variation else None,
+        getattr(product, 'prikazna_slika', None),
+    ):
+        if not img:
+            continue
+        try:
+            return img.url
+        except Exception:
+            continue
+    return ''
+
+
+def _popis_test_item_key(product_id, variation_id, location_id):
+    return f'p{int(product_id)}:v{int(variation_id or 0)}:l{int(location_id or 0)}'
+
+
+def _popis_test_build_item(product, variation, location):
+    sistem = location_stock_qty(location, product, variation) if location else 0
+    naziv = product.naziv
+    sifra = product.sifra or ''
+    barkod = (product.barkod or '').strip()
+    if variation:
+        naziv = f'{product.naziv} {variation.naziv}'.strip()
+        sifra = variation.sifra or product.sifra or ''
+    return {
+        'key': _popis_test_item_key(product.pk, variation.pk if variation else 0, location.pk if location else 0),
+        'product_id': product.pk,
+        'variation_id': variation.pk if variation else None,
+        'location_id': location.pk if location else None,
+        'naziv': naziv,
+        'sifra': sifra or '',
+        'barkod': barkod,
+        'brend': product.brend.naziv if getattr(product, 'brend', None) else '',
+        'kategorija': product.kategorija.naziv if getattr(product, 'kategorija', None) else '',
+        'slika': _popis_test_image_url(product, variation),
+        'sistem': int(sistem),
+        'popisano': 0,
+        'na_stanju': bool(sistem > 0 or product.na_stanju),
+    }
+
+
+def _popis_test_resolve(query):
+    q = (query or '').strip()
+    if not q:
+        raise MagacinError('Unesi barkod, šifru ili naziv.')
+    folded = q.casefold()
+    variation = (
+        ProductVariation.objects.filter(
+            Q(sifra__iexact=q) | Q(sifra_normalized__iexact=folded)
+        )
+        .select_related('artikal', 'artikal__brend', 'artikal__kategorija')
+        .first()
+    )
+    if variation:
+        return variation.artikal, variation
+    products, exact = search_products(q, limit=8, include_zero=True)
+    product = exact
+    if product is None:
+        items = list(products)
+        if len(items) == 1:
+            product = items[0]
+        elif items:
+            raise MagacinError('Više rezultata. Unesi tačan barkod ili šifru.')
+        else:
+            raise MagacinError('Artikal nije pronađen.')
+    if product.varijacije.exists():
+        matched = product.varijacije.filter(
+            Q(sifra__iexact=q) | Q(sifra_normalized__iexact=folded)
+        ).first()
+        if matched:
+            return product, matched
+    return product, None
+
+
+def _popis_test_decorate(item):
+    if not isinstance(item, dict):
+        return item
+    sistem = int(item.get('sistem') or 0)
+    popisano = int(item.get('popisano') or 0)
+    item['sistem'] = sistem
+    item['popisano'] = popisano
+    item['razlika'] = popisano - sistem
+    return item
+
+
+def _popis_test_payload(state):
+    items = [_popis_test_decorate(dict(row)) for row in (state.get('items') or [])]
+    current_key = state.get('current') or ''
+    current = next((row for row in items if row.get('key') == current_key), None)
+    if current is None and items:
+        current = items[0]
+        current_key = current.get('key') or ''
+    location = _popis_test_get_location(state)
+    return {
+        'ok': True,
+        'current': current,
+        'items': items,
+        'count': len(items),
+        'location': _popis_test_location_payload(location),
+    }
+
+
+def _popis_test_apply_counts(state, location, *, user=None):
+    """Upiši popisane količine na izabranu lokaciju (korekcija)."""
+    applied = 0
+    with transaction.atomic():
+        for row in (state.get('items') or []):
+            try:
+                product_id = int(row.get('product_id') or 0)
+            except (TypeError, ValueError):
+                continue
+            if not product_id:
+                continue
+            product = Product.objects.filter(pk=product_id).first()
+            if product is None:
+                continue
+            variation = None
+            var_id = row.get('variation_id')
+            if var_id not in (None, '', 0, '0'):
+                try:
+                    variation = ProductVariation.objects.filter(
+                        pk=int(var_id), artikal=product,
+                    ).first()
+                except (TypeError, ValueError):
+                    variation = None
+            try:
+                qty = max(0, int(row.get('popisano') or 0))
+            except (TypeError, ValueError):
+                qty = 0
+            set_location_counted_qty(
+                location=location,
+                product=product,
+                variation=variation,
+                qty=qty,
+                user=user,
+                napomena=f'Popis TEST {location.sifra}',
+            )
+            applied += 1
+    return applied
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_popis_test(request):
+    state = _popis_test_state(request)
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        ajax = _popis_is_ajax(request)
+        try:
+            if action == 'set_location':
+                loc_id = (request.POST.get('location_id') or '').strip()
+                location = usable_locations().filter(pk=int(loc_id)).first() if loc_id else None
+                if location is None:
+                    raise MagacinError('Prvo izaberi lokaciju koju popisuješ.')
+                if state.get('location_id') != location.pk:
+                    state['items'] = []
+                    state['current'] = ''
+                state['location_id'] = location.pk
+                _popis_test_save(request, state)
+                if ajax:
+                    return JsonResponse(_popis_test_payload(state))
+                return redirect('staff_magacin_popis_test')
+            if action == 'clear_location':
+                state['location_id'] = None
+                state['items'] = []
+                state['current'] = ''
+                _popis_test_save(request, state)
+                if ajax:
+                    return JsonResponse(_popis_test_payload(state))
+                return redirect('staff_magacin_popis_test')
+            if action == 'scan':
+                location = _popis_test_get_location(state)
+                if location is None:
+                    raise MagacinError('Prvo izaberi lokaciju koju popisuješ.')
+                product, variation = _popis_test_resolve(
+                    request.POST.get('q') or request.POST.get('barkod') or '',
+                )
+                built = _popis_test_build_item(product, variation, location)
+                existing = next(
+                    (row for row in state['items'] if row.get('key') == built['key']),
+                    None,
+                )
+                if existing is None:
+                    state['items'].insert(0, built)
+                    existing = built
+                state['current'] = existing['key']
+                _popis_test_save(request, state)
+            elif action == 'select':
+                key = (request.POST.get('key') or '').strip()
+                if not any(row.get('key') == key for row in state['items']):
+                    raise MagacinError('Stavka nije na popisu.')
+                state['current'] = key
+                _popis_test_save(request, state)
+            elif action in {'set_qty', 'plus', 'minus', 'brzi'}:
+                key = (request.POST.get('key') or state.get('current') or '').strip()
+                item = next((row for row in state['items'] if row.get('key') == key), None)
+                if item is None:
+                    raise MagacinError('Prvo skeniraj artikal.')
+                qty = int(item.get('popisano') or 0)
+                if action == 'set_qty':
+                    qty = max(0, _parse_qty(
+                        request.POST.get('kolicina') if request.POST.get('kolicina') not in (None, '') else '0'
+                    ))
+                elif action == 'plus':
+                    qty += 1
+                elif action == 'minus':
+                    qty = max(0, qty - 1)
+                else:
+                    qty += 1
+                item['popisano'] = qty
+                state['current'] = item['key']
+                _popis_test_save(request, state)
+            elif action == 'sacuvaj':
+                _popis_test_save(request, state)
+                if ajax:
+                    payload = _popis_test_payload(state)
+                    payload['saved'] = True
+                    payload['message'] = 'Popis je sačuvan (TEST — ne mijenja zalihe).'
+                    return JsonResponse(payload)
+                messages.success(request, 'Popis je sačuvan (TEST — ne mijenja zalihe).')
+                return redirect('staff_magacin_popis_test')
+            elif action == 'zavrsi':
+                location = _popis_test_get_location(state)
+                if location is None:
+                    raise MagacinError('Prvo izaberi lokaciju koju popisuješ.')
+                applied = _popis_test_apply_counts(state, location, user=request.user)
+                request.session.pop(POPIS_TEST_SESSION_KEY, None)
+                request.session.modified = True
+                loc_label = location.sifra or location.label
+                message = (
+                    f'Popis je završen. {applied} artikala upisano na lokaciju {loc_label}.'
+                    if applied
+                    else f'Popis je završen. Nema artikala za upis na lokaciju {loc_label}.'
+                )
+                if ajax:
+                    return JsonResponse({
+                        'ok': True,
+                        'cleared': True,
+                        'applied': applied,
+                        'current': None,
+                        'items': [],
+                        'count': 0,
+                        'location': None,
+                        'message': message,
+                    })
+                messages.success(request, message)
+                return redirect('staff_magacin_popis_test')
+            else:
+                raise MagacinError('Nepoznata akcija.')
+            if ajax:
+                return JsonResponse(_popis_test_payload(state))
+            return redirect('staff_magacin_popis_test')
+        except (MagacinError, ValueError) as exc:
+            if ajax:
+                return JsonResponse(
+                    {'ok': False, 'error': str(exc) if str(exc) else 'Greška na popisu.'},
+                    status=400,
+                )
+            messages.error(request, str(exc) if str(exc) else 'Greška na popisu.')
+            return redirect('staff_magacin_popis_test')
+
+    payload = _popis_test_payload(state)
+    loc_query = (request.GET.get('q') or '').strip()
+    popis_lokacije = []
+    location = _popis_test_get_location(state)
+    if location is None and loc_query:
+        popis_lokacije = list(
+            usable_locations().filter(
+                Q(sifra__icontains=loc_query)
+                | Q(naziv__icontains=loc_query)
+                | Q(opis__icontains=loc_query)
+            ).order_by('redoslijed', 'sifra')[:40]
+        )
+    context = _magacin_context(
+        request,
+        section='popis_test',
+        page_title='Popis robe — Magacin',
+        hide_top_search=True,
+    )
+    context.update({
+        'current': payload['current'],
+        'items': payload['items'],
+        'location': location,
+        'popis_lokacija_q': loc_query,
+        'popis_lokacije': popis_lokacije,
+        'lookup_url': reverse('staff_magacin_artikli_lookup'),
+    })
+    return render(request, 'staff/magacin/popis_test.html', context)
+
+
+PROVJERA_LAGERA_SESSION_KEY = 'mg_provjera_lagera'
+
+
+def _provjera_lagera_mode(request):
+    raw = (request.POST.get('mode') or request.GET.get('mode') or '').strip().lower()
+    return raw if raw in {'mp', 'vp'} else ''
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_provjera_lagera(request):
+    _ensure_magacin_locations()
+    mode = _provjera_lagera_mode(request)
+    lager_error = ''
+    if request.method == 'POST':
+        action = (request.POST.get('action') or 'uporedi').strip()
+        try:
+            if not mode:
+                raise MagacinError('Izaberi Maloprodaju ili Veleprodaju.')
+            if action == 'ukloni':
+                request.session.pop(PROVJERA_LAGERA_SESSION_KEY, None)
+                request.session.modified = True
+                return redirect(f"{reverse('staff_magacin_provjera_lagera')}?mode={mode}")
+            fajl = request.FILES.get('fajl')
+            if fajl is None:
+                raise MagacinError('Uploaduj PDF ili sliku tabele (kolone Šifra, Naziv, Količina).')
+            parsed = extract_lager_document_rows(fajl)
+            if not parsed:
+                raise MagacinError('Nisam našao kolone Šifra, Naziv i Količina na dokumentu.')
+            compared = compare_lager_document(parsed, mode=mode)
+            request.session[PROVJERA_LAGERA_SESSION_KEY] = {
+                'mode': mode,
+                'fajl_naziv': (getattr(fajl, 'name', '') or '')[:200],
+                'rows': compared['rows'],
+                'summary': compared['summary'],
+            }
+            request.session.modified = True
+            return redirect(f"{reverse('staff_magacin_provjera_lagera')}?mode={mode}")
+        except MagacinError as exc:
+            lager_error = str(exc)
+            messages.error(request, lager_error)
+
+    payload = request.session.get(PROVJERA_LAGERA_SESSION_KEY) or {}
+    result_rows = []
+    summary = None
+    fajl_naziv = ''
+    if mode and payload.get('mode') == mode:
+        result_rows = payload.get('rows') or []
+        summary = payload.get('summary')
+        fajl_naziv = payload.get('fajl_naziv') or ''
+    prikaz = (request.GET.get('prikaz') or '').strip().lower()
+    if prikaz not in {'razlike', 'nema_sifre'}:
+        prikaz = ''
+    shown_rows = result_rows
+    if prikaz == 'razlike':
+        shown_rows = [
+            row for row in result_rows
+            if row.get('status') in {'manjak', 'visak'}
+        ]
+    elif prikaz == 'nema_sifre':
+        shown_rows = [
+            row for row in result_rows
+            if row.get('status') == 'nema_sifre'
+        ]
+    context = _magacin_context(
+        request,
+        section='provjera_lagera',
+        page_title='Provjera lagera — Magacin',
+        hide_top_search=True,
+    )
+    context.update({
+        'lager_mode': mode,
+        'has_mp_location': maloprodaja_locations().exists(),
+        'lager_error': lager_error,
+        'result_rows': shown_rows,
+        'result_all_count': len(result_rows),
+        'summary': summary,
+        'fajl_naziv': fajl_naziv,
+        'lager_prikaz': prikaz,
+    })
+    return render(request, 'staff/magacin/provjera_lagera.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_provjera_lagera_stampa(request):
+    mode = _provjera_lagera_mode(request)
+    payload = request.session.get(PROVJERA_LAGERA_SESSION_KEY) or {}
+    rows = []
+    if mode and payload.get('mode') == mode:
+        rows = [
+            row for row in (payload.get('rows') or [])
+            if row.get('status') in {'manjak', 'visak'}
+        ]
+    label = 'Maloprodaja' if mode == 'mp' else 'Veleprodaja' if mode == 'vp' else 'Lager'
+    return render(request, 'staff/magacin/provjera_lagera_print.html', {
+        'lager_mode': mode,
+        'label': label,
+        'fajl_naziv': payload.get('fajl_naziv') or '',
+        'rows': rows,
+        'print_mode': True,
+    })
 
 
 @login_required(login_url='login')

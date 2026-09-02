@@ -68,6 +68,16 @@
         }
         .pack-who strong { font-size: 14px; }
         .pack-who span { color: #444; }
+        .pack-src {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            padding: 1px 7px;
+            border: 1px solid #111;
+        }
+        .pack-src.is-vp { background: #111; color: #fff; }
+        .pack-src.is-web { color: #444; border-color: #9ca3af; font-weight: 700; }
+        .pack-src.is-rucna { color: #9a3412; border-color: #9a3412; }
         .pack-pay {
             margin-left: auto;
             font-size: 12px;
@@ -80,31 +90,46 @@
         .pack-pay.is-cash { color: #166534; border-color: #166534; }
         .pack-lines {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
         }
         .pack-lines td {
             padding: 1px 6px 1px 0;
             vertical-align: top;
-            font-size: 12px;
+            font-size: 11px;
         }
         .pack-lines .col-qty {
-            width: 2.4em;
+            width: 2.2em;
             text-align: right;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
             padding-right: 8px;
         }
-        .pack-lines .col-loc {
-            width: 38%;
+        .pack-lines .col-name {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .pack-lines .col-sifra {
+            width: 7.2em;
+            text-align: right;
             white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+            color: #333;
+            padding-left: 8px;
+        }
+        .pack-lines .col-loc {
+            width: 30%;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
         .pk-loc { font-weight: 700; }
         .pack-empty { color: #666; font-size: 12px; }
-        @page { size: A4 portrait; margin: 8mm; }
+        @page { size: A4 portrait; margin: 5mm; }
         @media print {
+            html { zoom: 0.9; }
             body { background: #fff; padding: 0; }
             .print-toolbar { display: none !important; }
-            .pack-run { max-width: none; margin: 0; padding: 0; border: 0; }
+            .pack-run { max-width: none; width: 100%; margin: 0; padding: 0; border: 0; box-sizing: border-box; }
             .pack-block {
                 page-break-before: auto;
                 page-break-after: auto;
@@ -134,6 +159,13 @@
             <div class="pack-who">
                 <strong>{{ job.order.ime_prezime }}</strong>
                 <span>#{{ job.order.broj }}</span>
+                {% if job.order.is_vp %}
+                <span class="pack-src is-vp">VP</span>
+                {% elif job.order.izvor == 'magacin' %}
+                <span class="pack-src is-rucna">RUČNA</span>
+                {% else %}
+                <span class="pack-src is-web">WEBSHOP</span>
+                {% endif %}
                 {% if job.order.telefon %}<span>{{ job.order.telefon }}</span>{% endif %}
                 <span class="pack-pay {% if job.order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ job.order.packing_placanje_label }}</span>
             </div>
@@ -142,7 +174,8 @@
                 {% for line in job.packing_lines %}
                 <tr>
                     <td class="col-qty">{{ line.kolicina }}</td>
-                    <td>{{ line.naziv }}{% if line.sifra %} <span>({{ line.sifra }})</span>{% endif %}</td>
+                    <td class="col-name">{{ line.naziv }}</td>
+                    <td class="col-sifra">{% if line.sifra %}{{ line.sifra }}{% endif %}</td>
                     <td class="col-loc">
                         {% for pick in line.picks %}
                         <span class="pk-loc">{{ pick.take }}× {{ pick.location_name }}</span>{% if not forloop.last %} · {% endif %}

@@ -6210,6 +6210,8 @@ def staff_order_packing(request, broj):
     order = get_object_or_404(Order, broj=broj)
     packing_lines, odoo_error = _build_order_packing_lines(order)
     created = timezone.localtime(order.kreirana)
+    from .magacin import is_vp_order
+    order.is_vp = is_vp_order(order)
     context = {
         'order': order,
         'packing_lines': packing_lines,

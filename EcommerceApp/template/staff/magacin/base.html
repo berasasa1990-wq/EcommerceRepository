@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260901spare3">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260902lagerKasa">
 {% endblock %}
 
 {% block flash_messages %}{% endblock %}
@@ -69,9 +69,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 7h13v10H2z"/><path d="M15 10h4l3 3v4h-7"/><circle cx="6.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></svg>
                 Transferi
             </a>
-            <a href="{% url 'staff_magacin_popis' %}" class="{% if magacin_section == 'popis' %}is-active{% endif %}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
-                Popis
+            <a href="{% url 'staff_magacin_popis_test' %}" class="{% if magacin_section == 'popis_test' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h8"/></svg>
+                Popis robe
+            </a>
+            <a href="{% url 'staff_magacin_provjera_lagera' %}" class="{% if magacin_section == 'provjera_lagera' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                Provjera LAGERA
             </a>
             <a href="{% url 'staff_magacin_fali_na_sajtu' %}" class="{% if magacin_section == 'fali_na_sajtu' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M12 8v5M12 16h.01"/></svg>
@@ -272,6 +276,6 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260901spare"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260902popisUi"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

@@ -223,6 +223,13 @@ urlpatterns = [
     path('nalog/magacin/popis/', views_magacin.magacin_popis, name='staff_magacin_popis'),
     path('nalog/magacin/popis/<int:pk>/', views_magacin.magacin_popis, name='staff_magacin_popis_detail'),
     path('nalog/magacin/popis/stampa/', views_magacin.magacin_popis_stampa, name='staff_magacin_popis_stampa'),
+    path('nalog/magacin/popis-test/', views_magacin.magacin_popis_test, name='staff_magacin_popis_test'),
+    path('nalog/magacin/provjera-lagera/', views_magacin.magacin_provjera_lagera, name='staff_magacin_provjera_lagera'),
+    path(
+        'nalog/magacin/provjera-lagera/stampa/',
+        views_magacin.magacin_provjera_lagera_stampa,
+        name='staff_magacin_provjera_lagera_stampa',
+    ),
     path('nalog/magacin/fali-na-sajtu/', views_magacin.magacin_fali_na_sajtu, name='staff_magacin_fali_na_sajtu'),
     path('nalog/magacin/narudzbe/', views_magacin.magacin_narudzbe, name='staff_magacin_narudzbe'),
     path('nalog/magacin/narudzbe/nova/', views_magacin.magacin_narudzba_nova, name='staff_magacin_narudzba_nova'),

@@ -85,8 +85,33 @@
         font-size: 14px;
         font-weight: 400;
     }
-    .pack-table .item-name { display: block; font-weight: 400; font-size: 13px; }
-    .pack-table .item-sifra { display: block; margin-top: 2px; font-size: 11px; }
+    .pack-table .item-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .pack-table .item-name { font-weight: 400; font-size: 13px; overflow-wrap: anywhere; }
+    .pack-table .item-sifra {
+        flex: 0 0 auto;
+        margin: 0;
+        font-size: 12px;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+        color: #333;
+    }
+    .pk-src {
+        display: inline-block;
+        margin-top: 6px;
+        margin-right: 6px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        padding: 2px 8px;
+        border: 1px solid #111;
+    }
+    .pk-src.is-vp { background: #111; color: #fff; }
+    .pk-src.is-web { color: #444; border-color: #9ca3af; font-weight: 700; }
     .pk-box {
         display: inline-block;
         width: 14px;
@@ -135,6 +160,13 @@
                 <span class="pk-buyer-name">{{ order.ime_prezime }}</span>
                 <span>{{ order.telefon }}</span>
                 <span>{{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}</span>
+                {% if order.is_vp %}
+                <span class="pk-src is-vp">VP</span>
+                {% elif order.izvor == 'magacin' %}
+                <span class="pk-src is-web">RUČNA</span>
+                {% else %}
+                <span class="pk-src is-web">WEBSHOP</span>
+                {% endif %}
                 <span class="pk-pay {% if order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ order.packing_placanje_label }}</span>
             </div>
         </div>
@@ -159,8 +191,10 @@
                     <td class="col-ok"><span class="pk-box"></span></td>
                     <td class="col-rb">{{ line.rb }}</td>
                     <td>
-                        <span class="item-name">{{ line.naziv }}</span>
-                        {% if line.sifra %}<span class="item-sifra">{{ line.sifra }}</span>{% endif %}
+                        <div class="item-row">
+                            <span class="item-name">{{ line.naziv }}</span>
+                            {% if line.sifra %}<span class="item-sifra">{{ line.sifra }}</span>{% endif %}
+                        </div>
                     </td>
                     <td class="col-qty">{{ line.kolicina }}</td>
                     <td>
