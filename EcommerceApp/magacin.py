@@ -4978,7 +4978,7 @@ def vp_draft_totals(osnova, *, bulk=False):
     }
 
 
-def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
+def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
     if draft.status == MagacinVpNarudzba.Status.ZAVRSENA:
         return draft.order
     if not (draft.ime_prezime or '').strip() or not (draft.telefon or '').strip():
@@ -4986,6 +4986,13 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
     stavke = list(draft.stavke.select_related('product', 'variation'))
     if not stavke:
         raise MagacinError('Dodaj barem jedan artikal.')
+    pay = (placanje or '').strip().lower()
+    if not rezervacija:
+        if pay not in {
+            MagacinVpNarudzba.Placanje.GOTOVINA,
+            MagacinVpNarudzba.Placanje.ZIRALNO,
+        }:
+            raise MagacinError('Izaberi način plaćanja: žiralno ili gotovinski.')
     lines = []
     mp_names = []
     for row in stavke:
@@ -5023,6 +5030,14 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
         medjuzbir = totals['ukupno_sa_pdv']
     if mp_names:
         napomena = f'{napomena}\n{NIJE_POPISAN_LABEL}: {", ".join(mp_names)}'
+    popust_detalji = []
+    if not rezervacija:
+        pay_label = 'žiralno' if pay == MagacinVpNarudzba.Placanje.ZIRALNO else 'gotovinski'
+        napomena = f'{napomena}\nPlaćanje: {pay_label}'
+        popust_detalji.append({
+            'opis': f'Plaćanje: {pay_label}',
+            'placanje': pay,
+        })
     with transaction.atomic():
         order = Order.objects.create(
             ime_prezime=draft.ime_prezime[:200],
@@ -5036,6 +5051,7 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
             dostava=Decimal('0.00'),
             popust=Decimal('0.00'),
             ukupno=medjuzbir,
+            popust_detalji=popust_detalji,
             status=Order.Status.REZERVACIJA if rezervacija else Order.Status.NOVA,
             izvor=Order.Izvor.MAGACIN,
         )
@@ -5067,7 +5083,11 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False):
         draft.status = MagacinVpNarudzba.Status.ZAVRSENA
         draft.order = order
         draft.zavrsen_at = timezone.now()
-        draft.save(update_fields=['status', 'order', 'zavrsen_at'])
+        update_fields = ['status', 'order', 'zavrsen_at']
+        if not rezervacija:
+            draft.placanje = pay
+            update_fields.append('placanje')
+        draft.save(update_fields=update_fields)
     return order
 
 
@@ -5153,6 +5173,30 @@ def is_vp_order(order):
     found = MagacinVpNarudzba.objects.filter(order_id=order.pk).exists()
     order._is_vp_order = found
     return found
+
+
+def vp_order_ziralno(order):
+    """VP plaćena žiralno — ne ide na packing štampu."""
+    if not is_vp_order(order):
+        return False
+    for row in (getattr(order, 'popust_detalji', None) or []):
+        if isinstance(row, dict) and str(row.get('placanje') or '').strip().lower() == 'ziralno':
+            return True
+    note = (getattr(order, 'napomena', '') or '').casefold()
+    if 'plaćanje: žiralno' in note or 'placanje: ziralno' in note:
+        return True
+    return MagacinVpNarudzba.objects.filter(
+        order_id=order.pk,
+        placanje=MagacinVpNarudzba.Placanje.ZIRALNO,
+    ).exists()
+
+
+def vp_ziralno_order_ids():
+    return MagacinVpNarudzba.objects.filter(
+        status=MagacinVpNarudzba.Status.ZAVRSENA,
+        placanje=MagacinVpNarudzba.Placanje.ZIRALNO,
+        order_id__isnull=False,
+    ).values_list('order_id', flat=True)
 
 
 def vp_waiting_print_ids():

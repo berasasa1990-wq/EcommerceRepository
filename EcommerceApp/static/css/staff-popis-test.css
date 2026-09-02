@@ -61,6 +61,12 @@
     color: #4b5563;
 }
 .pt-finish--ghost:hover { background: #f3f4f6; }
+.pt-finish--danger {
+    border-color: #dc2626;
+    background: #dc2626;
+    color: #fff;
+}
+.pt-finish--danger:hover { background: #b91c1c; border-color: #b91c1c; }
 .pt-loc-banner {
     margin: 0 0 12px;
     padding: 10px 14px;
@@ -364,9 +370,16 @@
     min-width: 0;
 }
 .pt-row-info strong,
-.pt-row-info em { display: block; }
+.pt-row-info em,
+.pt-row-stock { display: block; }
 .pt-row-info strong { font-size: 13px; font-weight: 700; line-height: 1.25; }
 .pt-row-info em { font-style: normal; font-size: 11px; color: #9ca3af; }
+.pt-row-stock {
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+}
 .pt-row-num {
     text-align: center;
     font-size: 13px;

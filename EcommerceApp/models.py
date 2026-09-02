@@ -4308,6 +4308,11 @@ class Order(models.Model):
         return 'plaćeno karticom' in note or 'placeno karticom' in note
 
     def packing_placanje_label(self):
+        for row in (self.popust_detalji or []):
+            if not isinstance(row, dict):
+                continue
+            if str(row.get('placanje') or '').strip().lower() == 'ziralno':
+                return 'ŽIRALNO'
         return 'KARTICA' if self.placeno_karticom() else 'GOTOVINSKI'
 
     def loyalty_popust_info(self):
@@ -5688,6 +5693,10 @@ class MagacinVpNarudzba(models.Model):
         U_TOKU = 'u_toku', 'U toku'
         ZAVRSENA = 'zavrsena', 'Završena'
 
+    class Placanje(models.TextChoices):
+        GOTOVINA = 'gotovina', 'Gotovinski'
+        ZIRALNO = 'ziralno', 'Žiralno'
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.U_TOKU, db_index=True)
     customer = models.ForeignKey(
         'WarehouseCustomer',
@@ -5720,6 +5729,14 @@ class MagacinVpNarudzba(models.Model):
         related_name='magacin_vp_narudzbe',
     )
     bulk = models.BooleanField(default=False)
+    placanje = models.CharField(
+        max_length=20,
+        choices=Placanje.choices,
+        blank=True,
+        db_index=True,
+        verbose_name='Plaćanje',
+        help_text='Žiralno se ne štampa na packing listi. Gotovinski ide na packing.',
+    )
 
     class Meta:
         verbose_name = 'Magacin VP narudžba'

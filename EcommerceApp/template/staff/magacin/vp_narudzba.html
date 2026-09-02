@@ -159,11 +159,27 @@
             <form method="post" id="vpFinishForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="zavrsi">
+                <input type="hidden" name="placanje" id="vpPlacanje" value="">
                 <button type="submit" class="mg-btn mg-btn-primary">Završi</button>
             </form>
         </div>
     </div>
     {% endif %}
+</div>
+
+<div class="mg-modal" id="vpPayModal" hidden>
+    <div class="mg-modal-bg" data-vp-pay-close></div>
+    <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="vpPayTitle">
+        <h2 id="vpPayTitle">Način plaćanja</h2>
+        <p class="mg-muted">Kako je ova VP narudžba plaćena?</p>
+        <div class="vp-pay-choices">
+            <button type="button" class="vp-pay-choice" data-vp-pay="ziralno">Žiralno</button>
+            <button type="button" class="vp-pay-choice is-cash" data-vp-pay="gotovina">Gotovinski</button>
+        </div>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-vp-pay-close>Odustani</button>
+        </div>
+    </div>
 </div>
 
 <div class="mg-modal" id="vpCustomerModal" hidden>
@@ -262,9 +278,36 @@
     document.body.classList.add('is-vp');
 
     var finish = document.getElementById('vpFinishForm');
+    var payModal = document.getElementById('vpPayModal');
+    var payInput = document.getElementById('vpPlacanje');
+    function openPayModal() {
+        if (!payModal) return;
+        payModal.hidden = false;
+    }
+    function closePayModal() {
+        if (!payModal) return;
+        payModal.hidden = true;
+    }
     if (finish) {
         finish.addEventListener('submit', function (event) {
-            if (!window.confirm('Završiti VP narudžbu?')) event.preventDefault();
+            var pay = payInput && String(payInput.value || '').trim();
+            if (pay === 'ziralno' || pay === 'gotovina') return;
+            event.preventDefault();
+            openPayModal();
+        });
+    }
+    if (payModal) {
+        payModal.addEventListener('click', function (event) {
+            if (event.target.closest('[data-vp-pay-close]')) {
+                closePayModal();
+                return;
+            }
+            var choice = event.target.closest('[data-vp-pay]');
+            if (!choice || !finish) return;
+            if (payInput) payInput.value = choice.getAttribute('data-vp-pay') || '';
+            closePayModal();
+            if (typeof finish.requestSubmit === 'function') finish.requestSubmit();
+            else finish.submit();
         });
     }
     var reserve = document.getElementById('vpReserveForm');

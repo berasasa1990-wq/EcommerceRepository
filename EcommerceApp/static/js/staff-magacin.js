@@ -5372,7 +5372,7 @@ function initPopisProvjera() {
             return (
                 '<button type="button" class="pt-row' + on + hidden + '" data-key="' + row.key + '">' +
                 '<span class="pt-row-info"><span class="pt-thumb">' + thumb + '</span><span>' +
-                '<strong></strong><em></em></span></span>' +
+                '<strong></strong><em></em><b class="pt-row-stock"></b></span></span>' +
                 '<span class="pt-row-num"></span>' +
                 '<span class="pt-row-num' + qtyClass(row.popisano, row.sistem) + '"></span>' +
                 '<span class="pt-row-num' + diffClass(row.razlika) + '"></span>' +
@@ -5384,8 +5384,10 @@ function initPopisProvjera() {
             if (!row) return;
             var name = btn.querySelector('.pt-row-info strong');
             var bar = btn.querySelector('.pt-row-info em');
+            var stock = btn.querySelector('.pt-row-stock');
             if (name) name.textContent = row.naziv || '';
             if (bar) bar.textContent = 'Barkod: ' + (row.barkod || '—');
+            if (stock) stock.textContent = 'Ukupno stanje: ' + (parseInt(row.sistem, 10) || 0) + ' kom';
             var nums = btn.querySelectorAll('.pt-row-num');
             if (nums[0]) nums[0].textContent = String(row.sistem || 0);
             if (nums[1]) nums[1].textContent = String(row.popisano || 0);
@@ -5711,6 +5713,13 @@ function initPopisProvjera() {
         finishBtn.addEventListener('click', function () {
             if (!window.confirm('Završiti popis? Popisane količine će se upisati na ovu lokaciju.')) return;
             post('zavrsi');
+        });
+    }
+    var cancelBtn = document.getElementById('ptCancel');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function () {
+            if (!window.confirm('Otkazati popis? Popisane količine se neće upisati na lokaciju.')) return;
+            post('otkazi');
         });
     }
 })();

@@ -59,6 +59,8 @@ from .magacin import (
     trim_prenos_mp_item,
     is_prenos_mp_order,
     is_vp_order,
+    vp_order_ziralno,
+    vp_ziralno_order_ids,
     add_item_to_order,
     set_order_item_qty,
     remove_item_from_order,
@@ -3169,12 +3171,16 @@ def packing_ready_orders():
     orders = list(
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
+        .exclude(pk__in=vp_ziralno_order_ids())
         .filter(_validated_orders_q(), packing_odstampana=False)
         .filter(_picked_item_exists())
         .prefetch_related('stavke', 'magacin_holds')
         .order_by('kreirana')[:PACKING_READY_LIMIT]
     )
-    return [order for order in orders if _order_was_picked(order)]
+    return [
+        order for order in orders
+        if _order_was_picked(order) and not vp_order_ziralno(order)
+    ]
 
 
 def packing_orders_for_date(day):
@@ -3184,6 +3190,7 @@ def packing_orders_for_date(day):
     orders = list(
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
+        .exclude(pk__in=vp_ziralno_order_ids())
         .filter(_validated_orders_q())
         .filter(_picked_item_exists())
         .filter(
@@ -3194,7 +3201,10 @@ def packing_orders_for_date(day):
         .prefetch_related('stavke', 'magacin_holds')
         .order_by('kreirana')[:PACKING_TODAY_LIMIT]
     )
-    return [order for order in orders if _order_was_picked(order)]
+    return [
+        order for order in orders
+        if _order_was_picked(order) and not vp_order_ziralno(order)
+    ]
 
 
 def packing_today_orders():
@@ -6699,7 +6709,7 @@ def _popis_test_build_item(product, variation, location):
         'kategorija': product.kategorija.naziv if getattr(product, 'kategorija', None) else '',
         'slika': _popis_test_image_url(product, variation),
         'sistem': int(sistem),
-        'popisano': int(sistem),
+        'popisano': max(1, int(sistem)),
         'na_stanju': bool(sistem > 0 or product.na_stanju),
     }
 
@@ -6963,6 +6973,23 @@ def magacin_popis_test(request):
                     payload['message'] = 'Popis je sačuvan (TEST — ne mijenja zalihe).'
                     return JsonResponse(payload)
                 messages.success(request, 'Popis je sačuvan (TEST — ne mijenja zalihe).')
+                return redirect('staff_magacin_popis_test')
+            elif action == 'otkazi':
+                request.session.pop(POPIS_TEST_SESSION_KEY, None)
+                request.session.modified = True
+                message = 'Popis je otkazan. Količine nisu upisane.'
+                if ajax:
+                    return JsonResponse({
+                        'ok': True,
+                        'cleared': True,
+                        'applied': 0,
+                        'current': None,
+                        'items': [],
+                        'count': 0,
+                        'location': None,
+                        'message': message,
+                    })
+                messages.info(request, message)
                 return redirect('staff_magacin_popis_test')
             elif action == 'zavrsi':
                 location = _popis_test_get_location(state)
@@ -7352,7 +7379,10 @@ def magacin_vp_narudzba(request):
                 return redirect('staff_magacin_vp_narudzba')
             if action in {'zavrsi', 'rezervacija'}:
                 order = finish_vp_narudzba(
-                    draft, user=request.user, rezervacija=(action == 'rezervacija'),
+                    draft,
+                    user=request.user,
+                    rezervacija=(action == 'rezervacija'),
+                    placanje=request.POST.get('placanje') or '',
                 )
                 invalidate_magacin_nav_counts()
                 if action == 'rezervacija':
