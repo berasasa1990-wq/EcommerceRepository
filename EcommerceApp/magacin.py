@@ -1479,6 +1479,143 @@ def search_products(query, *, limit=40, include_zero=False):
     return qs[: max(0, int(limit))], None
 
 
+def _lookup_product_field_q(query):
+    q = (query or '').strip()
+    folded = q.casefold()
+    return (
+        Q(naziv__icontains=q)
+        | Q(sifra__icontains=q)
+        | Q(barkod__icontains=q)
+        | Q(naziv_normalized__icontains=folded)
+        | Q(sifra_normalized__icontains=folded)
+        | Q(barkod_normalized__icontains=folded)
+        | Q(search_keywords__icontains=q)
+    )
+
+
+def search_products_for_lookup(query, *, limit=30, include_zero=False):
+    """Brža pretraga za autocomplete: bez JOIN+DISTINCT i bez N+1 zalihe."""
+    q = (query or '').strip()
+    base = magacin_products_qs()
+    exact = None
+    if q:
+        folded = q.casefold()
+        exact_list = list(
+            base.filter(
+                Q(sifra__iexact=q)
+                | Q(barkod__iexact=q)
+                | Q(naziv__iexact=q)
+                | Q(naziv_normalized__iexact=folded)
+            )[:2]
+        )
+        if len(exact_list) != 1:
+            var = (
+                ProductVariation.objects.filter(
+                    Q(sifra__iexact=q)
+                    | Q(sifra_normalized__iexact=folded)
+                    | Q(naziv__iexact=q)
+                )
+                .select_related('artikal')
+                .first()
+            )
+            product = var.artikal if var else None
+            if product is not None and (
+                product.magacin_sync_at is not None or product.odoo_template_id is not None
+            ):
+                exact_list = [product]
+        if len(exact_list) == 1:
+            exact = exact_list[0]
+            return list(base.filter(pk=exact.pk).prefetch_related('varijacije')), exact
+        var_ids = list(
+            ProductVariation.objects.filter(
+                Q(naziv__icontains=q)
+                | Q(sifra__icontains=q)
+                | Q(naziv_normalized__icontains=folded)
+                | Q(sifra_normalized__icontains=folded)
+            ).values_list('artikal_id', flat=True)[:300]
+        )
+        qs = base.filter(_lookup_product_field_q(q) | Q(pk__in=var_ids))
+    else:
+        qs = base
+    if not include_zero:
+        qs = qs.filter(magacin_in_stock_q())
+    qs = qs.order_by('-na_stanju', 'naziv').prefetch_related('varijacije')
+    return list(qs[: max(0, int(limit))]), exact
+
+
+def lookup_stock_payload(products):
+    """Zaliha za lookup rezultate u 2 upita umjesto display_stock_totals po stavci."""
+    products = list(products or [])
+    if not products:
+        return {}
+    ids = [product.pk for product in products]
+    mp_ids = set(maloprodaja_locations().values_list('pk', flat=True))
+    rows = list(
+        recorded_stock_qs(WarehouseStock.objects.filter(product_id__in=ids))
+        .values('product_id', 'variation_id', 'variation_key', 'location_id', 'kolicina', 'rezervisano')
+    )
+    by_product = defaultdict(list)
+    for row in rows:
+        by_product[row['product_id']].append(row)
+
+    def _sum_rows(items):
+        na_stanju = 0
+        rezervisano = 0
+        for row in items:
+            na_stanju += int(row.get('kolicina') or 0)
+            rezervisano += max(0, int(row.get('rezervisano') or 0))
+        return {
+            'na_stanju': na_stanju,
+            'rezervisano': rezervisano,
+            'dostupno': max(0, na_stanju - rezervisano),
+        }
+
+    def _has_qty(items):
+        return any(int(row.get('kolicina') or 0) > 0 for row in items)
+
+    def _scope(items, variation_id, has_variations):
+        if not has_variations or variation_id is None:
+            return items
+        own = [row for row in items if row.get('variation_id') == variation_id]
+        if _has_qty(own):
+            return own
+        unassigned = [
+            row for row in items
+            if row.get('variation_id') is None or int(row.get('variation_key') or 0) == 0
+        ]
+        if _has_qty(unassigned):
+            return unassigned
+        return own
+
+    payload = {}
+    for product in products:
+        all_rows = by_product.get(product.pk, [])
+        warehouse = [row for row in all_rows if row.get('location_id') not in mp_ids]
+        mp_rows = [row for row in all_rows if row.get('location_id') in mp_ids]
+        variations = list(product.varijacije.all())
+        has_variations = bool(variations)
+        product_wh = _sum_rows(_scope(warehouse, None, False))
+        product_mp = _sum_rows(_scope(mp_rows, None, False))
+        na_stanju = product_wh['na_stanju'] + product_mp['na_stanju']
+        rezervisano = product_wh['rezervisano'] + product_mp['rezervisano']
+        var_map = {}
+        for variation in variations:
+            var_wh = _sum_rows(_scope(warehouse, variation.pk, has_variations))
+            var_mp = _sum_rows(_scope(mp_rows, variation.pk, has_variations))
+            var_na = var_wh['na_stanju'] + var_mp['na_stanju']
+            var_res = var_wh['rezervisano'] + var_mp['rezervisano']
+            var_map[variation.pk] = {
+                'na_stanju': var_na,
+                'dostupno': max(0, var_na - var_res),
+            }
+        payload[product.pk] = {
+            'na_stanju': na_stanju,
+            'dostupno': max(0, na_stanju - rezervisano),
+            'varijacije': var_map,
+        }
+    return payload
+
+
 def query_looks_like_name(query):
     text = (query or '').strip()
     return ' ' in text and not any(ch.isdigit() for ch in text)

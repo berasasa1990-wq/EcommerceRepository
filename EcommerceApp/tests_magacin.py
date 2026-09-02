@@ -6934,7 +6934,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'Popisivanje artikala')
         self.assertContains(page, 'Prvo izaberi lokaciju')
         self.assertContains(page, 'Šifra ili naziv lokacije')
-        self.assertNotContains(page, 'Skeniraj barkod artikla')
+        self.assertNotContains(page, 'Naziv, šifra ili barkod')
         self.assertNotContains(page, 'Polica')
         self.assertNotContains(page, 'Nivo')
         blocked = self.client.post(
@@ -6956,14 +6956,38 @@ class MagacinViewTests(TestCase):
         )
         self.assertEqual(chosen.status_code, 302)
         live = self.client.get(reverse('staff_magacin_popis_test'))
-        self.assertContains(live, 'Skeniraj barkod artikla')
+        self.assertContains(live, 'Naziv, šifra ili barkod')
+        self.assertContains(live, reverse('staff_magacin_artikli_lookup'))
+        self.assertContains(live, 'id="ptSuggest"')
         self.assertContains(live, 'Popisuješ lokaciju')
         self.assertContains(live, 'Završi popis')
         self.assertNotContains(live, 'Sačuvaj popis')
-        self.assertContains(live, '+ 1 kom (brzi unos)')
+        self.assertContains(live, 'id="ptQtyInput"')
+        self.assertContains(live, 'id="ptNext"')
+        self.assertContains(live, 'Sljedeći')
         self.assertNotContains(live, 'Polica')
         self.assertNotContains(live, '>Red<')
         self.assertNotContains(live, 'Nivo')
+        self.product.barkod = '387111222'
+        self.product.save(update_fields=['barkod'])
+        by_name = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'scan', 'q': 'Test braid'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(by_name.json()['current']['sifra'], 'TST-1')
+        by_bar = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'scan', 'q': '387111222'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(by_bar.json()['current']['sifra'], 'TST-1')
+        by_id = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'scan', 'product_id': str(self.product.pk)},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(by_id.json()['current']['sifra'], 'TST-1')
         scanned = self.client.post(
             reverse('staff_magacin_popis_test'),
             {'action': 'scan', 'q': 'TST-1'},
@@ -6978,6 +7002,25 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload['current']['popisano'], 8)
         self.assertEqual(payload['current']['razlika'], 0)
         self.assertNotIn('polica', payload['current'])
+        same = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'next', 'key': payload['current']['key'], 'kolicina': '8'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        same_payload = same.json()
+        self.assertTrue(same_payload['ok'])
+        self.assertIsNone(same_payload['current'])
+        same_page = self.client.get(reverse('staff_magacin_popis_test'))
+        self.assertContains(same_page, 'Naziv, šifra ili barkod')
+        self.assertContains(same_page, 'id="ptCurrent" hidden')
+        self.assertContains(same_page, 'id="ptListWrap" hidden')
+        self.assertNotContains(same_page, self.product.naziv)
+        scanned = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'scan', 'q': 'TST-1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        payload = scanned.json()
         plus = self.client.post(
             reverse('staff_magacin_popis_test'),
             {'action': 'brzi', 'key': payload['current']['key']},
@@ -6985,6 +7028,22 @@ class MagacinViewTests(TestCase):
         )
         self.assertEqual(plus.json()['current']['popisano'], 9)
         self.assertEqual(plus.json()['current']['razlika'], 1)
+        nxt = self.client.post(
+            reverse('staff_magacin_popis_test'),
+            {'action': 'next', 'key': payload['current']['key'], 'kolicina': '9'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        nxt_payload = nxt.json()
+        self.assertTrue(nxt_payload['ok'])
+        self.assertIsNone(nxt_payload['current'])
+        self.assertEqual(len(nxt_payload['items']), 1)
+        self.assertEqual(nxt_payload['items'][0]['popisano'], 9)
+        self.assertEqual(nxt_payload['items'][0]['razlika'], 1)
+        listed = self.client.get(reverse('staff_magacin_popis_test'))
+        self.assertContains(listed, 'Naziv, šifra ili barkod')
+        self.assertContains(listed, 'Skenirani artikli sa promjenom lagera')
+        self.assertContains(listed, self.product.naziv)
+        self.assertContains(listed, 'id="ptCurrent" hidden')
         stock = WarehouseStock.objects.get(product=self.product, location__sifra='T-1')
         self.assertEqual(stock.kolicina, 8)
         finished = self.client.post(
@@ -7002,7 +7061,7 @@ class MagacinViewTests(TestCase):
         )
         after = self.client.get(reverse('staff_magacin_popis_test'))
         self.assertContains(after, 'Prvo izaberi lokaciju')
-        self.assertNotContains(after, 'Skeniraj barkod artikla')
+        self.assertNotContains(after, 'Naziv, šifra ili barkod')
         loc_page = self.client.get(reverse('staff_magacin_lokacije'), {'lokacija': loc.pk})
         self.assertContains(loc_page, self.product.naziv)
         self.assertContains(loc_page, f'data-qty="9"')

@@ -3,17 +3,22 @@
     var root = document.getElementById('ptApp');
     if (!root) return;
     var url = root.getAttribute('data-url') || '';
+    var lookupUrl = root.getAttribute('data-lookup') || '';
     var csrf = (document.querySelector('#ptApp [name=csrfmiddlewaretoken]') || {}).value || '';
     var query = document.getElementById('ptQuery');
+    var suggest = document.getElementById('ptSuggest');
     var toast = document.getElementById('ptToast');
+    var searchTimer = 0;
     var currentWrap = document.getElementById('ptCurrent');
     var listEl = document.getElementById('ptList');
+    var listWrap = document.getElementById('ptListWrap');
     var colsEl = document.getElementById('ptCols');
     var countEl = document.getElementById('ptCount');
     var showAllBtn = document.getElementById('ptShowAll');
     var showAll = false;
     var listPreview = 3;
     var currentKey = '';
+    var qtyTouched = false;
 
     function csrfToken() {
         if (csrf) return csrf;
@@ -83,7 +88,13 @@
         var razlika = parseInt(item.razlika, 10);
         if (isNaN(razlika)) razlika = popisano - sistem;
         set('ptSistem', sistem);
-        set('ptPopisano', popisano);
+        var qtyInpRender = document.getElementById('ptQtyInput');
+        if (qtyInpRender) {
+            if (!(document.activeElement === qtyInpRender && qtyTouched)) {
+                qtyInpRender.value = String(popisano);
+            }
+            qtyInpRender.setAttribute('data-key', currentKey);
+        }
         set('ptSumSistem', sistem + ' kom');
         set('ptSumPopisano', popisano + ' kom');
         set('ptSumDiff', signed(razlika) + ' kom');
@@ -98,14 +109,25 @@
         }
     }
 
+    function itemDiff(row) {
+        var razlika = parseInt(row && row.razlika, 10);
+        if (!isNaN(razlika)) return razlika;
+        return (parseInt(row && row.popisano, 10) || 0) - (parseInt(row && row.sistem, 10) || 0);
+    }
+
+    function changedItems(items) {
+        return (items || []).filter(function (row) { return itemDiff(row) !== 0; });
+    }
+
     function renderList(items, current) {
-        items = items || [];
+        items = changedItems(items);
+        if (listWrap) listWrap.hidden = !items.length;
         if (countEl) countEl.textContent = String(items.length);
         if (colsEl) colsEl.hidden = !items.length;
         if (showAllBtn) showAllBtn.hidden = items.length <= listPreview;
         if (!listEl) return;
         if (!items.length) {
-            listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>';
+            listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Nema artikala sa promjenom lagera.</p>';
             return;
         }
         var curKey = (current && current.key) || '';
@@ -186,31 +208,223 @@
         });
     }
 
-    function scan() {
-        var q = (query && query.value || '').trim();
-        if (!q) {
-            showToast('Unesi ili skeniraj barkod.', false);
+    function hideSuggest() {
+        if (suggest) suggest.hidden = true;
+    }
+
+    function flattenLookup(results) {
+        var rows = [];
+        (results || []).forEach(function (prod) {
+            var vars = prod.varijacije || [];
+            if (vars.length > 1) {
+                vars.forEach(function (v) {
+                    rows.push({
+                        id: prod.id,
+                        variation_id: v.id,
+                        naziv: (prod.naziv || '') + ' ' + (v.naziv || ''),
+                        sifra: v.sifra || prod.sifra || '',
+                        barkod: prod.barkod || '',
+                    });
+                });
+            } else {
+                rows.push({
+                    id: prod.id,
+                    variation_id: vars.length === 1 ? vars[0].id : '',
+                    naziv: prod.naziv,
+                    sifra: (vars.length === 1 && vars[0].sifra) ? vars[0].sifra : (prod.sifra || ''),
+                    barkod: prod.barkod || '',
+                });
+            }
+        });
+        return rows;
+    }
+
+    function isExactMatch(item, value) {
+        var q = String(value || '').replace(/\s+/g, '').toLowerCase();
+        if (!q) return false;
+        return String(item.sifra || '').replace(/\s+/g, '').toLowerCase() === q
+            || String(item.barkod || '').replace(/\s+/g, '').toLowerCase() === q;
+    }
+
+    function showSuggest(items) {
+        if (!suggest) return;
+        suggest.innerHTML = '';
+        if (!items.length) {
+            var empty = document.createElement('li');
+            empty.className = 'is-empty';
+            empty.textContent = 'Nema rezultata.';
+            suggest.appendChild(empty);
+            suggest.hidden = false;
             return;
         }
-        post('scan', { q: q }).then(function (data) {
-            if (data && query) query.value = '';
+        items.forEach(function (item) {
+            var li = document.createElement('li');
+            li.innerHTML = '<strong></strong><span></span>';
+            li.querySelector('strong').textContent = item.naziv || '';
+            var meta = [];
+            if (item.sifra) meta.push(item.sifra);
+            if (item.barkod) meta.push(item.barkod);
+            li.querySelector('span').textContent = meta.join(' · ');
+            li.addEventListener('click', function () {
+                hideSuggest();
+                pickItem(item);
+            });
+            suggest.appendChild(li);
+        });
+        suggest.hidden = false;
+    }
+
+    function afterScan(data) {
+        if (!data) {
+            if (!currentKey && currentWrap) currentWrap.hidden = true;
+            return;
+        }
+        if (query) query.value = '';
+        hideSuggest();
+        var qtyPanel = document.getElementById('ptQtyPanel');
+        if (qtyPanel && typeof qtyPanel.scrollIntoView === 'function') {
+            qtyPanel.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+        }
+        if (!qtyTouched) focusQty();
+    }
+
+    function pickItem(item) {
+        if (!item || !item.id) return;
+        focusQty();
+        var extra = { product_id: item.id };
+        if (item.variation_id) extra.variation_id = item.variation_id;
+        post('scan', extra).then(afterScan);
+    }
+
+    function searchArticles(value, commit) {
+        var q = String(value || '').trim();
+        if (!q) {
+            hideSuggest();
+            if (commit) showToast('Unesi naziv, šifru ili barkod.', false);
+            return;
+        }
+        if (!lookupUrl) {
+            if (commit) {
+                focusQty();
+                post('scan', { q: q }).then(afterScan);
+            }
+            return;
+        }
+        fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=20', {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            var rows = flattenLookup(data.results || []);
+            var exactRows = rows.filter(function (row) { return isExactMatch(row, q); });
+            if (commit) {
+                if (exactRows.length === 1) {
+                    hideSuggest();
+                    pickItem(exactRows[0]);
+                    return;
+                }
+                if (exactRows.length > 1) {
+                    showSuggest(exactRows);
+                    return;
+                }
+                if (rows.length === 1) {
+                    hideSuggest();
+                    pickItem(rows[0]);
+                    return;
+                }
+                if (!rows.length) {
+                    showSuggest([]);
+                    showToast('Artikal nije pronađen.', false);
+                    return;
+                }
+                showSuggest(rows);
+                return;
+            }
+            showSuggest(rows);
+        }).catch(function () {
+            if (commit) showToast('Pretraga nije uspjela.', false);
         });
     }
 
+    function scan() {
+        searchArticles(query && query.value, true);
+    }
+
+    function focusQty() {
+        var inp = document.getElementById('ptQtyInput');
+        if (!inp) return;
+        if (currentWrap) {
+            currentWrap.hidden = false;
+            void currentWrap.offsetHeight;
+        }
+        qtyTouched = false;
+        inp.focus();
+        try {
+            inp.select();
+            if (typeof inp.setSelectionRange === 'function') {
+                inp.setSelectionRange(0, String(inp.value || '').length);
+            }
+        } catch (err) {}
+    }
+
+    function focusQuery() {
+        if (!query) return;
+        query.focus();
+        try {
+            if (typeof query.select === 'function') query.select();
+            if (typeof query.setSelectionRange === 'function') {
+                query.setSelectionRange(0, String(query.value || '').length);
+            }
+        } catch (err) {}
+    }
+
+    function goNext() {
+        var inp = document.getElementById('ptQtyInput');
+        var raw = inp ? String(inp.value || '').trim() : '';
+        var key = currentKey;
+        if (query) query.value = '';
+        hideSuggest();
+        renderCurrent(null);
+        focusQuery();
+        if (!key) return;
+        var extra = { key: key };
+        if (raw !== '') extra.kolicina = raw;
+        post('next', extra);
+    }
+
     if (query) {
+        query.addEventListener('input', function () {
+            window.clearTimeout(searchTimer);
+            var q = (query.value || '').trim();
+            if (!q) {
+                hideSuggest();
+                return;
+            }
+            searchTimer = window.setTimeout(function () { searchArticles(q, false); }, 180);
+        });
         query.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hideSuggest();
+                return;
+            }
             if (event.key !== 'Enter') return;
             event.preventDefault();
+            window.clearTimeout(searchTimer);
             scan();
         });
         query.addEventListener('mg-scanned', function (event) {
             var code = (event.detail && event.detail.code) || query.value;
             if (code) {
                 query.value = code;
+                window.clearTimeout(searchTimer);
                 scan();
             }
         });
     }
+    document.addEventListener('click', function (event) {
+        if (!suggest || suggest.hidden) return;
+        if (suggest.contains(event.target) || (query && query.contains(event.target))) return;
+        hideSuggest();
+    });
     var scanBtn = document.getElementById('ptScanBtn');
     if (scanBtn) {
         scanBtn.addEventListener('click', function (event) {
@@ -223,15 +437,27 @@
     }
     var minus = document.getElementById('ptMinus');
     var plus = document.getElementById('ptPlus');
-    var quick = document.getElementById('ptQuick');
+    var qtyInp = document.getElementById('ptQtyInput');
+    var nextBtn = document.getElementById('ptNext');
     if (minus) minus.addEventListener('click', function () { post('minus', { key: currentKey }); });
     if (plus) plus.addEventListener('click', function () { post('plus', { key: currentKey }); });
-    if (quick) quick.addEventListener('click', function () { post('brzi', { key: currentKey }); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { goNext(); });
+    if (qtyInp) {
+        qtyInp.addEventListener('input', function () { qtyTouched = true; });
+        qtyInp.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            goNext();
+        });
+    }
     if (listEl) {
         listEl.addEventListener('click', function (event) {
             var row = event.target.closest('[data-key]');
             if (!row) return;
-            post('select', { key: row.getAttribute('data-key') });
+            focusQty();
+            post('select', { key: row.getAttribute('data-key') }).then(function (data) {
+                if (data && !qtyTouched) focusQty();
+            });
         });
     }
     if (showAllBtn) {

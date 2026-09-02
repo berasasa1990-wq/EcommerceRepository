@@ -2,13 +2,13 @@
 {% load static %}
 
 {% block magacin_content %}
-<div class="pt-page" id="ptApp" data-url="{% url 'staff_magacin_popis_test' %}" data-has-location="{% if location %}1{% else %}0{% endif %}">
+<div class="pt-page" id="ptApp" data-url="{% url 'staff_magacin_popis_test' %}" data-lookup="{{ lookup_url }}" data-has-location="{% if location %}1{% else %}0{% endif %}">
     {% csrf_token %}
     <header class="pt-head">
         <div>
             <h1>Popisivanje artikala</h1>
             {% if location %}
-            <p>Popisuješ <strong>{{ location.sifra }}</strong>{% if location.naziv %} — {{ location.naziv }}{% endif %}. Skeniraj barkod i unesi količinu.</p>
+            <p>Popisuješ <strong>{{ location.sifra }}</strong>{% if location.naziv %} — {{ location.naziv }}{% endif %}. Pronađi artikal po nazivu, šifri ili barkodu i unesi količinu.</p>
             {% else %}
             <p>Prvo izaberi lokaciju koju popisuješ, pa skeniraj artikle.</p>
             {% endif %}
@@ -62,19 +62,43 @@
     {% else %}
 
     <p class="pt-loc-banner">Popisuješ lokaciju <strong>{{ location.sifra }}</strong>{% if location.naziv %} — {{ location.naziv }}{% endif %}</p>
-    <div class="pt-scan">
-        <div class="pt-scan-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/><path d="M4 7V5a1 1 0 0 1 1-1h2M18 4h2a1 1 0 0 1 1 1v2M21 17v2a1 1 0 0 1-1 1h-2M6 21H4a1 1 0 0 1-1-1v-2"/></svg>
+    <div class="pt-scan-wrap">
+        <div class="pt-scan">
+            <div class="pt-scan-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/><path d="M4 7V5a1 1 0 0 1 1-1h2M18 4h2a1 1 0 0 1 1 1v2M21 17v2a1 1 0 0 1-1 1h-2M6 21H4a1 1 0 0 1-1-1v-2"/></svg>
+            </div>
+            <input id="ptQuery" type="search" placeholder="Naziv, šifra ili barkod…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="go" autofocus>
+            <button type="button" class="pt-scan-btn" id="ptScanBtn" data-mg-scan-target="ptQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
         </div>
-        <input id="ptQuery" type="search" placeholder="Skeniraj barkod artikla…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="go" autofocus>
-        <button type="button" class="pt-scan-btn" id="ptScanBtn" data-mg-scan-target="ptQuery" data-mg-scan-title="Skeniraj artikal">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
-            Skeniraj
-        </button>
+        <ul class="pt-suggest" id="ptSuggest" hidden></ul>
     </div>
     <p class="pt-toast" id="ptToast" hidden></p>
 
     <section class="pt-current" id="ptCurrent"{% if not current %} hidden{% endif %}>
+        <div class="pt-qty-panel" id="ptQtyPanel">
+            <div class="pt-sistem">
+                <span>Trenutno stanje</span>
+                <strong><em id="ptSistem">{{ current.sistem|default:0 }}</em> kom</strong>
+                <i class="pt-box-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                </i>
+            </div>
+            <span class="pt-arrow" aria-hidden="true">→</span>
+            <div class="pt-count">
+                <span>Popisana količina</span>
+                <div class="pt-step">
+                    <button type="button" id="ptMinus" aria-label="Smanji">−</button>
+                    <input id="ptQtyInput" class="pt-qty-input" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" autocomplete="off" aria-label="Popisana količina" value="{{ current.popisano|default:0 }}">
+                    <span class="pt-qty-unit">kom</span>
+                    <button type="button" id="ptPlus" aria-label="Povećaj">+</button>
+                </div>
+                <button type="button" class="pt-quick" id="ptNext">Sljedeći</button>
+            </div>
+        </div>
+
         <h2>Trenutni artikal</h2>
         <article class="pt-card">
             <div class="pt-card-main">
@@ -92,26 +116,6 @@
                 </div>
             </div>
         </article>
-
-        <div class="pt-qty-panel">
-            <div class="pt-sistem">
-                <span>Trenutno stanje</span>
-                <strong><em id="ptSistem">{{ current.sistem|default:0 }}</em> kom</strong>
-                <i class="pt-box-ico" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
-                </i>
-            </div>
-            <span class="pt-arrow" aria-hidden="true">→</span>
-            <div class="pt-count">
-                <span>Popisana količina</span>
-                <div class="pt-step">
-                    <button type="button" id="ptMinus" aria-label="Smanji">−</button>
-                    <strong><em id="ptPopisano">{{ current.popisano|default:0 }}</em> kom</strong>
-                    <button type="button" id="ptPlus" aria-label="Povećaj">+</button>
-                </div>
-                <button type="button" class="pt-quick" id="ptQuick">+ 1 kom (brzi unos)</button>
-            </div>
-        </div>
 
         <div class="pt-summary">
             <p class="pt-sum-kicker">Rezime popisa</p>
@@ -132,9 +136,9 @@
         </div>
     </section>
 
-    <section class="pt-list-wrap">
+    <section class="pt-list-wrap" id="ptListWrap"{% if not items %} hidden{% endif %}>
         <div class="pt-list-head">
-            <h2>Skenirani artikli (<span id="ptCount">{{ items|length }}</span>)</h2>
+            <h2>Skenirani artikli sa promjenom lagera (<span id="ptCount">{{ items|length }}</span>)</h2>
             <button type="button" class="pt-showall" id="ptShowAll"{% if items|length <= 3 %} hidden{% endif %}>Prikaži sve</button>
         </div>
         <div class="pt-cols" id="ptCols"{% if not items %} hidden{% endif %}>
@@ -160,7 +164,7 @@
                 <span class="pt-chev" aria-hidden="true">›</span>
             </button>
             {% empty %}
-            <p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>
+            <p class="pt-empty" id="ptEmpty">Nema artikala sa promjenom lagera.</p>
             {% endfor %}
         </div>
     </section>

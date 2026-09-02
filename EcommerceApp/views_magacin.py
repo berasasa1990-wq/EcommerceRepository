@@ -103,6 +103,8 @@ from .magacin import (
     run_sync_chunk,
     validate_order_stock,
     search_products,
+    search_products_for_lookup,
+    lookup_stock_payload,
     seed_default_locations,
     start_full_sync,
     start_price_sync,
@@ -3399,14 +3401,16 @@ def magacin_artikli_lookup(request):
     except (TypeError, ValueError):
         limit = 30
     limit = max(1, min(limit, 200))
-    products, exact = search_products(query, limit=limit, include_zero=include_zero)
+    products, exact = search_products_for_lookup(query, limit=limit, include_zero=include_zero)
     if exact:
-        products = [exact]
+        products = list(products)
+    stock_map = lookup_stock_payload(products)
     results = []
     for product in products:
-        totals = display_stock_totals(product)
+        totals = stock_map.get(product.pk) or {'na_stanju': 0, 'dostupno': 0, 'varijacije': {}}
         if not include_zero and totals['na_stanju'] <= 0 and totals['dostupno'] <= 0:
             continue
+        var_stock = totals.get('varijacije') or {}
         results.append({
             'id': product.pk,
             'naziv': product.naziv,
@@ -3421,7 +3425,7 @@ def magacin_artikli_lookup(request):
                     'naziv': var.naziv,
                     'sifra': var.sifra or '',
                     'cijena': str(var.prikazna_cijena),
-                    'na_stanju': display_stock_totals(product, var)['dostupno'],
+                    'na_stanju': (var_stock.get(var.pk) or {}).get('dostupno', 0),
                 }
                 for var in product.varijacije.all()
             ],
@@ -6699,10 +6703,37 @@ def _popis_test_build_item(product, variation, location):
     }
 
 
+def _popis_test_resolve_ids(product_id, variation_id=None):
+    try:
+        pid = int(product_id)
+    except (TypeError, ValueError):
+        raise MagacinError('Artikal nije pronađen.')
+    product = (
+        Product.objects.filter(pk=pid)
+        .select_related('brend', 'kategorija')
+        .first()
+    )
+    if product is None:
+        raise MagacinError('Artikal nije pronađen.')
+    variation = None
+    raw_var = variation_id if variation_id is not None else ''
+    if isinstance(raw_var, str):
+        raw_var = raw_var.strip()
+    if raw_var not in (None, '', '0', 0):
+        try:
+            vid = int(raw_var)
+        except (TypeError, ValueError):
+            raise MagacinError('Varijacija nije pronađena.')
+        variation = ProductVariation.objects.filter(pk=vid, artikal=product).first()
+        if variation is None:
+            raise MagacinError('Varijacija nije pronađena.')
+    return product, variation
+
+
 def _popis_test_resolve(query):
     q = (query or '').strip()
     if not q:
-        raise MagacinError('Unesi barkod, šifru ili naziv.')
+        raise MagacinError('Unesi naziv, šifru ili barkod.')
     folded = q.casefold()
     variation = (
         ProductVariation.objects.filter(
@@ -6720,7 +6751,7 @@ def _popis_test_resolve(query):
         if len(items) == 1:
             product = items[0]
         elif items:
-            raise MagacinError('Više rezultata. Unesi tačan barkod ili šifru.')
+            raise MagacinError('Više rezultata. Izaberi artikal iz liste.')
         else:
             raise MagacinError('Artikal nije pronađen.')
     if product.varijacije.exists():
@@ -6747,9 +6778,6 @@ def _popis_test_payload(state):
     items = [_popis_test_decorate(dict(row)) for row in (state.get('items') or [])]
     current_key = state.get('current') or ''
     current = next((row for row in items if row.get('key') == current_key), None)
-    if current is None and items:
-        current = items[0]
-        current_key = current.get('key') or ''
     location = _popis_test_get_location(state)
     return {
         'ok': True,
@@ -6832,9 +6860,15 @@ def magacin_popis_test(request):
                 location = _popis_test_get_location(state)
                 if location is None:
                     raise MagacinError('Prvo izaberi lokaciju koju popisuješ.')
-                product, variation = _popis_test_resolve(
-                    request.POST.get('q') or request.POST.get('barkod') or '',
-                )
+                product_id = (request.POST.get('product_id') or '').strip()
+                if product_id:
+                    product, variation = _popis_test_resolve_ids(
+                        product_id, request.POST.get('variation_id'),
+                    )
+                else:
+                    product, variation = _popis_test_resolve(
+                        request.POST.get('q') or request.POST.get('barkod') or '',
+                    )
                 built = _popis_test_build_item(product, variation, location)
                 existing = next(
                     (row for row in state['items'] if row.get('key') == built['key']),
@@ -6851,16 +6885,16 @@ def magacin_popis_test(request):
                     raise MagacinError('Stavka nije na popisu.')
                 state['current'] = key
                 _popis_test_save(request, state)
-            elif action in {'set_qty', 'plus', 'minus', 'brzi'}:
+            elif action in {'set_qty', 'plus', 'minus', 'brzi', 'next'}:
                 key = (request.POST.get('key') or state.get('current') or '').strip()
                 item = next((row for row in state['items'] if row.get('key') == key), None)
                 if item is None:
                     raise MagacinError('Prvo skeniraj artikal.')
                 qty = int(item.get('popisano') or 0)
-                if action == 'set_qty':
-                    qty = max(0, _parse_qty(
-                        request.POST.get('kolicina') if request.POST.get('kolicina') not in (None, '') else '0'
-                    ))
+                if action in {'set_qty', 'next'}:
+                    raw_qty = request.POST.get('kolicina')
+                    if raw_qty not in (None, '') or action == 'set_qty':
+                        qty = max(0, _parse_qty(raw_qty if raw_qty not in (None, '') else '0'))
                 elif action == 'plus':
                     qty += 1
                 elif action == 'minus':
@@ -6868,7 +6902,7 @@ def magacin_popis_test(request):
                 else:
                     qty += 1
                 item['popisano'] = qty
-                state['current'] = item['key']
+                state['current'] = '' if action == 'next' else item['key']
                 _popis_test_save(request, state)
             elif action == 'sacuvaj':
                 _popis_test_save(request, state)
@@ -6920,6 +6954,7 @@ def magacin_popis_test(request):
             return redirect('staff_magacin_popis_test')
 
     payload = _popis_test_payload(state)
+    changed_items = [row for row in (payload['items'] or []) if int(row.get('razlika') or 0)]
     loc_query = (request.GET.get('q') or '').strip()
     popis_lokacije = []
     location = _popis_test_get_location(state)
@@ -6939,7 +6974,7 @@ def magacin_popis_test(request):
     )
     context.update({
         'current': payload['current'],
-        'items': payload['items'],
+        'items': changed_items,
         'location': location,
         'popis_lokacija_q': loc_query,
         'popis_lokacije': popis_lokacije,
