@@ -26,16 +26,18 @@
         return m ? decodeURIComponent(m[1]) : '';
     }
 
-    function showToast(msg, ok) {
+    function showToast(msg, ok, isDup) {
         if (!toast) return;
         if (!msg) {
             toast.hidden = true;
             toast.textContent = '';
+            toast.classList.remove('is-ok', 'is-dup');
             return;
         }
         toast.hidden = false;
         toast.textContent = msg;
-        toast.classList.toggle('is-ok', !!ok);
+        toast.classList.toggle('is-ok', !!ok && !isDup);
+        toast.classList.toggle('is-dup', !!isDup);
     }
 
     function photoHtml(src) {
@@ -68,6 +70,7 @@
         if (!item) {
             currentWrap.hidden = true;
             currentKey = '';
+            markRepeat(false);
             return;
         }
         currentWrap.hidden = false;
@@ -109,25 +112,55 @@
         }
     }
 
-    function itemDiff(row) {
-        var razlika = parseInt(row && row.razlika, 10);
-        if (!isNaN(razlika)) return razlika;
-        return (parseInt(row && row.popisano, 10) || 0) - (parseInt(row && row.sistem, 10) || 0);
+    function alarmDuplicate() {
+        try {
+            var Ctx = window.AudioContext || window.webkitAudioContext;
+            if (Ctx) {
+                var ctx = new Ctx();
+                function tone(freq, start, dur) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.0001, ctx.currentTime + start);
+                    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + start + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + start);
+                    osc.stop(ctx.currentTime + start + dur + 0.02);
+                }
+                tone(1400, 0, 0.14);
+                tone(520, 0.15, 0.16);
+                tone(1400, 0.33, 0.14);
+                tone(520, 0.48, 0.16);
+                tone(1600, 0.68, 0.14);
+                tone(380, 0.84, 0.28);
+                window.setTimeout(function () { try { ctx.close(); } catch (e) {} }, 1300);
+            }
+        } catch (err) {}
+        if (navigator.vibrate) {
+            try { navigator.vibrate([220, 60, 220, 60, 220, 60, 400]); } catch (err2) {}
+        }
     }
 
-    function changedItems(items) {
-        return (items || []).filter(function (row) { return itemDiff(row) !== 0; });
+    function markRepeat(on) {
+        var panel = document.getElementById('ptQtyPanel');
+        if (!panel) return;
+        panel.classList.remove('is-repeat');
+        void panel.offsetWidth;
+        panel.classList.toggle('is-repeat', !!on);
     }
 
-    function renderList(items, current) {
-        items = changedItems(items);
+    function renderList(items, current, isDup) {
+        items = items || [];
         if (listWrap) listWrap.hidden = !items.length;
         if (countEl) countEl.textContent = String(items.length);
         if (colsEl) colsEl.hidden = !items.length;
         if (showAllBtn) showAllBtn.hidden = items.length <= listPreview;
         if (!listEl) return;
         if (!items.length) {
-            listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Nema artikala sa promjenom lagera.</p>';
+            listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>';
             return;
         }
         var curKey = (current && current.key) || '';
@@ -168,7 +201,12 @@
             return;
         }
         renderCurrent(data.current);
+        markRepeat(!!data.already_on_list);
         renderList(data.items || [], data.current);
+        if (data.already_on_list) {
+            alarmDuplicate();
+            return;
+        }
         if (data.message) showToast(data.message, true);
     }
 

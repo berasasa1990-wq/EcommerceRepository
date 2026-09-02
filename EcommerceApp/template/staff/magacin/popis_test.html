@@ -29,6 +29,32 @@
     </header>
 
     {% if not location %}
+    {% if finished_popisi %}
+    <section class="pp-paused pp-finished pt-finished">
+        <h2>Završeni popisi</h2>
+        <ul>
+            {% for row in finished_popisi %}
+            <li{% if row.odstampan %} class="is-done"{% endif %}>
+                <a class="pp-paused-main" href="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    <strong>Popis #{{ row.pk }}{% if row.location %} · {{ row.location.sifra }}{% endif %}{% if row.odstampan %} <em class="pp-done-tag">Završeno</em>{% endif %}</strong>
+                    <span>završen {{ row.zavrsen_at|date:"d.m.Y H:i" }} · {{ row.n_stavke|default:0 }} stavki · {{ row.n_kom|default:0 }} kom</span>
+                </a>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <button type="submit" class="mg-btn" data-pp-print>Štampaj</button>
+                </form>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <input type="hidden" name="razlike" value="1">
+                    <button type="submit" class="mg-btn" data-pp-print>Razlike</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
     <section class="mg-card mg-orders-card pp-start-card">
         <p>Ukucaj šifru ili naziv lokacije, pa je izaberi. Tek onda skeniraj artikle na toj lokaciji.</p>
         <form method="get" class="mg-page-search pp-loc-search" role="search">
@@ -138,7 +164,7 @@
 
     <section class="pt-list-wrap" id="ptListWrap"{% if not items %} hidden{% endif %}>
         <div class="pt-list-head">
-            <h2>Skenirani artikli sa promjenom lagera (<span id="ptCount">{{ items|length }}</span>)</h2>
+            <h2>Skenirani artikli (<span id="ptCount">{{ items|length }}</span>)</h2>
             <button type="button" class="pt-showall" id="ptShowAll"{% if items|length <= 3 %} hidden{% endif %}>Prikaži sve</button>
         </div>
         <div class="pt-cols" id="ptCols"{% if not items %} hidden{% endif %}>
@@ -164,7 +190,7 @@
                 <span class="pt-chev" aria-hidden="true">›</span>
             </button>
             {% empty %}
-            <p class="pt-empty" id="ptEmpty">Nema artikala sa promjenom lagera.</p>
+            <p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>
             {% endfor %}
         </div>
     </section>

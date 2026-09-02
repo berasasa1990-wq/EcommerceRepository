@@ -131,6 +131,7 @@ from .models import (
     UvozStavka,
     NivelacijaOznaka,
     MagacinPopis,
+    MagacinPopisStavka,
     MagacinMpDnevnoSkidanje,
     MagacinPonuda,
     MagacinPonudaStavka,
@@ -6774,7 +6775,7 @@ def _popis_test_decorate(item):
     return item
 
 
-def _popis_test_payload(state):
+def _popis_test_payload(state, *, already_on_list=False):
     items = [_popis_test_decorate(dict(row)) for row in (state.get('items') or [])]
     current_key = state.get('current') or ''
     current = next((row for row in items if row.get('key') == current_key), None)
@@ -6785,7 +6786,55 @@ def _popis_test_payload(state):
         'items': items,
         'count': len(items),
         'location': _popis_test_location_payload(location),
+        'already_on_list': bool(already_on_list),
     }
+
+
+def _popis_test_archive(state, location, user=None):
+    items = list(state.get('items') or [])
+    if not items or location is None:
+        return None
+    popis = MagacinPopis.objects.create(
+        kreirao=user if getattr(user, 'is_authenticated', False) else None,
+        location=location,
+        status=MagacinPopis.Status.ZAVRSEN,
+        zavrsen_at=timezone.now(),
+    )
+    stavke = []
+    for i, row in enumerate(items):
+        product_id = row.get('product_id') or None
+        variation_id = row.get('variation_id')
+        if variation_id in (None, '', '0', 0):
+            variation_id = None
+        try:
+            product_id = int(product_id) if product_id else None
+        except (TypeError, ValueError):
+            product_id = None
+        try:
+            variation_id = int(variation_id) if variation_id else None
+        except (TypeError, ValueError):
+            variation_id = None
+        try:
+            qty = max(0, int(row.get('popisano') or 0))
+        except (TypeError, ValueError):
+            qty = 0
+        try:
+            expected = max(0, int(row.get('sistem') or 0))
+        except (TypeError, ValueError):
+            expected = 0
+        stavke.append(MagacinPopisStavka(
+            popis=popis,
+            product_id=product_id,
+            variation_id=variation_id,
+            naziv=(row.get('naziv') or '')[:200],
+            sifra=((row.get('sifra') or '')[:SIFRA_MAX_LENGTH]),
+            ocekivano=expected,
+            kolicina=qty,
+            cekirano=True,
+            redoslijed=i,
+        ))
+    MagacinPopisStavka.objects.bulk_create(stavke)
+    return popis
 
 
 def _popis_test_apply_counts(state, location, *, user=None):
@@ -6834,6 +6883,7 @@ def magacin_popis_test(request):
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
         ajax = _popis_is_ajax(request)
+        already_on_list = False
         try:
             if action == 'set_location':
                 loc_id = (request.POST.get('location_id') or '').strip()
@@ -6874,6 +6924,7 @@ def magacin_popis_test(request):
                     (row for row in state['items'] if row.get('key') == built['key']),
                     None,
                 )
+                already_on_list = existing is not None
                 if existing is None:
                     state['items'].insert(0, built)
                     existing = built
@@ -6918,6 +6969,7 @@ def magacin_popis_test(request):
                 if location is None:
                     raise MagacinError('Prvo izaberi lokaciju koju popisuješ.')
                 applied = _popis_test_apply_counts(state, location, user=request.user)
+                _popis_test_archive(state, location, user=request.user)
                 request.session.pop(POPIS_TEST_SESSION_KEY, None)
                 request.session.modified = True
                 loc_label = location.sifra or location.label
@@ -6942,7 +6994,7 @@ def magacin_popis_test(request):
             else:
                 raise MagacinError('Nepoznata akcija.')
             if ajax:
-                return JsonResponse(_popis_test_payload(state))
+                return JsonResponse(_popis_test_payload(state, already_on_list=already_on_list))
             return redirect('staff_magacin_popis_test')
         except (MagacinError, ValueError) as exc:
             if ajax:
@@ -6954,7 +7006,6 @@ def magacin_popis_test(request):
             return redirect('staff_magacin_popis_test')
 
     payload = _popis_test_payload(state)
-    changed_items = [row for row in (payload['items'] or []) if int(row.get('razlika') or 0)]
     loc_query = (request.GET.get('q') or '').strip()
     popis_lokacije = []
     location = _popis_test_get_location(state)
@@ -6974,10 +7025,11 @@ def magacin_popis_test(request):
     )
     context.update({
         'current': payload['current'],
-        'items': changed_items,
+        'items': payload['items'],
         'location': location,
         'popis_lokacija_q': loc_query,
         'popis_lokacije': popis_lokacije,
+        'finished_popisi': list(finished_popisi()) if location is None else [],
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
     })
     return render(request, 'staff/magacin/popis_test.html', context)

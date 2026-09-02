@@ -7885,6 +7885,24 @@ a.bp-row-main { text-decoration: none; color: inherit; }
 .pt-page .pp-loc-choose em {
     background: var(--pt-orange);
 }
+.pt-page .pt-finished {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+.pt-qty-panel.is-repeat {
+    border-color: #dc2626;
+    animation: pt-dup-pulse-box .7s ease-in-out infinite;
+}
+@keyframes pt-dup-pulse-box {
+    0%, 100% {
+        background-color: #fee2e2;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, .45);
+    }
+    50% {
+        background-color: #facc15;
+        box-shadow: 0 0 0 4px rgba(220, 38, 38, .75);
+    }
+}
 .pt-scan-wrap {
     position: relative;
     margin: 0 0 10px;

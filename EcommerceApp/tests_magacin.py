@@ -7013,14 +7013,15 @@ class MagacinViewTests(TestCase):
         same_page = self.client.get(reverse('staff_magacin_popis_test'))
         self.assertContains(same_page, 'Naziv, šifra ili barkod')
         self.assertContains(same_page, 'id="ptCurrent" hidden')
-        self.assertContains(same_page, 'id="ptListWrap" hidden')
-        self.assertNotContains(same_page, self.product.naziv)
+        self.assertContains(same_page, 'Skenirani artikli')
+        self.assertContains(same_page, self.product.naziv)
         scanned = self.client.post(
             reverse('staff_magacin_popis_test'),
             {'action': 'scan', 'q': 'TST-1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
         payload = scanned.json()
+        self.assertTrue(payload['already_on_list'])
         plus = self.client.post(
             reverse('staff_magacin_popis_test'),
             {'action': 'brzi', 'key': payload['current']['key']},
@@ -7041,7 +7042,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(nxt_payload['items'][0]['razlika'], 1)
         listed = self.client.get(reverse('staff_magacin_popis_test'))
         self.assertContains(listed, 'Naziv, šifra ili barkod')
-        self.assertContains(listed, 'Skenirani artikli sa promjenom lagera')
+        self.assertContains(listed, 'Skenirani artikli')
         self.assertContains(listed, self.product.naziv)
         self.assertContains(listed, 'id="ptCurrent" hidden')
         stock = WarehouseStock.objects.get(product=self.product, location__sifra='T-1')
@@ -7061,7 +7062,12 @@ class MagacinViewTests(TestCase):
         )
         after = self.client.get(reverse('staff_magacin_popis_test'))
         self.assertContains(after, 'Prvo izaberi lokaciju')
+        self.assertContains(after, 'Završeni popisi')
+        self.assertContains(after, 'T-1')
         self.assertNotContains(after, 'Naziv, šifra ili barkod')
+        archived = MagacinPopis.objects.filter(status=MagacinPopis.Status.ZAVRSEN)
+        self.assertEqual(archived.count(), 1)
+        self.assertEqual(archived.get().stavke.count(), 1)
         loc_page = self.client.get(reverse('staff_magacin_lokacije'), {'lokacija': loc.pk})
         self.assertContains(loc_page, self.product.naziv)
         self.assertContains(loc_page, f'data-qty="9"')
