@@ -6975,15 +6975,16 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload['location']['sifra'], 'T-1')
         self.assertEqual(payload['current']['sifra'], 'TST-1')
         self.assertEqual(payload['current']['sistem'], 8)
-        self.assertEqual(payload['current']['popisano'], 0)
+        self.assertEqual(payload['current']['popisano'], 8)
+        self.assertEqual(payload['current']['razlika'], 0)
         self.assertNotIn('polica', payload['current'])
         plus = self.client.post(
             reverse('staff_magacin_popis_test'),
             {'action': 'brzi', 'key': payload['current']['key']},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
-        self.assertEqual(plus.json()['current']['popisano'], 1)
-        self.assertEqual(plus.json()['current']['razlika'], -7)
+        self.assertEqual(plus.json()['current']['popisano'], 9)
+        self.assertEqual(plus.json()['current']['razlika'], 1)
         stock = WarehouseStock.objects.get(product=self.product, location__sifra='T-1')
         self.assertEqual(stock.kolicina, 8)
         finished = self.client.post(
@@ -6997,14 +6998,14 @@ class MagacinViewTests(TestCase):
         self.assertEqual(payload_done['applied'], 1)
         self.assertEqual(
             WarehouseStock.objects.get(product=self.product, location__sifra='T-1').kolicina,
-            1,
+            9,
         )
         after = self.client.get(reverse('staff_magacin_popis_test'))
         self.assertContains(after, 'Prvo izaberi lokaciju')
         self.assertNotContains(after, 'Skeniraj barkod artikla')
         loc_page = self.client.get(reverse('staff_magacin_lokacije'), {'lokacija': loc.pk})
         self.assertContains(loc_page, self.product.naziv)
-        self.assertContains(loc_page, f'data-qty="1"')
+        self.assertContains(loc_page, f'data-qty="9"')
 
     def test_provjera_lagera_compares_uploaded_pdf_with_location_stock(self):
         from django.core.files.uploadedfile import SimpleUploadedFile

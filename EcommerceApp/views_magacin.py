@@ -6694,7 +6694,7 @@ def _popis_test_build_item(product, variation, location):
         'kategorija': product.kategorija.naziv if getattr(product, 'kategorija', None) else '',
         'slika': _popis_test_image_url(product, variation),
         'sistem': int(sistem),
-        'popisano': 0,
+        'popisano': int(sistem),
         'na_stanju': bool(sistem > 0 or product.na_stanju),
     }
 
