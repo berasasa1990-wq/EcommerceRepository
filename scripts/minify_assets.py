@@ -13,6 +13,7 @@ PAIRS = [
     (STATIC / 'js' / 'cart-qty.js', STATIC / 'js' / 'cart-qty.min.js'),
     (STATIC / 'js' / 'live-offer-poll.js', STATIC / 'js' / 'live-offer-poll.min.js'),
     (STATIC / 'js' / 'chat.js', STATIC / 'js' / 'chat.min.js'),
+    (STATIC / 'js' / 'set-builder.js', STATIC / 'js' / 'set-builder.min.js'),
 ]
 
 

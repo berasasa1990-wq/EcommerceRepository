@@ -1312,8 +1312,7 @@ class Banner(models.Model):
         verbose_name='Slika (mobilni)',
         help_text=(
             'Opcionalno — SAMO na telefonu (≤768px). '
-            'Preporuka: JPG 720×900 (4:5), max ~2 MB. '
-            'Server automatski smanjuje; prevelike slike mogu srušiti free hosting. '
+            'Preporuka: JPG 1080×1350 (4:5), max ~2 MB. '
             'Ako je prazno — koristi se desktop slika.'
         ),
     )

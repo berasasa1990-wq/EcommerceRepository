@@ -155,8 +155,8 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260901fast" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260901fast">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260903beta" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260903beta">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -296,14 +296,17 @@
 
                 <div class="header-search" id="headerSearch">
                     <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">
-                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
-                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri ili tagu..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
-                        </div>
-                        <button type="submit" class="header-search-submit" aria-label="Pretraži">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
-                                <circle cx="11" cy="11" r="8"/>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <span class="header-search-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="7"/>
+                                <path d="M20 20l-3-3"/>
                             </svg>
+                        </span>
+                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri, brandu ili tagu..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                        </div>
+                        <button type="submit" class="header-search-submit">
+                            <span class="header-search-submit-label">TRAŽI</span>
                         </button>
                         <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -472,6 +475,12 @@
                     </li>
                     <li class="nav-item nav-item--brendovi">
                         <a href="{% url 'brands_list' %}" class="nav-link-brendovi{% if request.resolver_match.url_name == 'brands_list' %} is-current{% endif %}">BRENDOVI</a>
+                    </li>
+                    <li class="nav-item nav-item--set">
+                        <a href="{% url 'set_builder' %}" class="nav-link-set{% if request.resolver_match.url_name == 'set_builder' %} is-current{% endif %}" data-set-builder-gate>
+                            Kreiraj svoj set
+                            <span class="nav-link-set__beta">BETA</span>
+                        </a>
                     </li>
                     <li class="nav-item nav-item--noviteti nav-item--akcija-mobile">
                         <a href="{% url 'home' %}?noviteti=1#product-showcase" class="nav-link-noviteti">NOVITETI</a>
@@ -709,6 +718,26 @@
     <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260901bulkMainImg">
     <script src="{% static 'js/staff-site-edit.js' %}?v=20260901bulkMainImg" defer></script>
     {% endif %}
+    <div class="setb-gate" id="setBuilderGate" hidden
+         data-unlock-url="{% url 'set_builder_unlock' %}"
+         data-target-url="{% url 'set_builder' %}"
+         {% if request.session.set_builder_ok %}data-unlocked="1"{% endif %}
+         {% if set_builder_gate_open %}data-auto-open="1"{% endif %}>
+        <div class="setb-gate__backdrop" data-set-builder-close></div>
+        <div class="setb-gate__panel" role="dialog" aria-modal="true" aria-labelledby="setBuilderGateTitle">
+            <button type="button" class="setb-gate__close" data-set-builder-close aria-label="Zatvori">×</button>
+            <p class="setb-gate__beta">BETA</p>
+            <h2 id="setBuilderGateTitle">Kreiraj svoj set</h2>
+            <p class="setb-gate__msg">Funkcija je u test fazi i uskoro će biti dostupna svim kupcima.</p>
+            <form class="setb-gate__form" id="setBuilderGateForm">
+                <label for="setBuilderGatePassword">Lozinka za testni pristup</label>
+                <input type="password" id="setBuilderGatePassword" name="password" autocomplete="current-password" placeholder="Lozinka">
+                <p class="setb-gate__error" id="setBuilderGateError" hidden></p>
+                <button type="submit" class="setb-gate__submit">Uđi</button>
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'js/set-builder-gate.js' %}?v=20260903beta" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

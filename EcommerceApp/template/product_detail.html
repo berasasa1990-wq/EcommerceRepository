@@ -478,7 +478,9 @@
                     </div>
                     {% endif %}
                 </div>
-                <span class="pd-price-stock{% if not product.na_stanju %} pd-price-stock--out{% endif %}">{% if product.na_stanju %}Na stanju{% else %}Nije na stanju{% endif %}</span>
+                <div class="pd-price-stock{% if not product.na_stanju %} pd-price-stock--out{% endif %}">
+                    {% include 'partials/product_stock_label.html' with product=product %}
+                </div>
             </div>
 
             {% if not product.varijacije.count %}

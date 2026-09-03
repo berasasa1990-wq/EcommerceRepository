@@ -15,7 +15,7 @@
     --gray-600: #707072;
     --footer-muted: #a3a3a3;
     /* Fiksni chrome: JS (syncSiteChromeOffset) mjeri stvarne visine i overwrite-a */
-    --header-top-height: 100px;
+    --header-top-height: 112px;
     --header-nav-height: 48px;
     --header-height: calc(var(--header-top-height) + var(--header-nav-height));
     --promo-height: 40px;
@@ -520,10 +520,10 @@ body.search-suggest-open .header-float-ctas {
 
 .logo-image {
     /* Puni bijeli header red od vrha do dna (malo zraka za padding) */
-    height: calc(var(--header-top-height) - 8px);
-    max-height: calc(var(--header-top-height) - 8px);
+    height: calc(var(--header-top-height) - 6px);
+    max-height: calc(var(--header-top-height) - 6px);
     width: auto;
-    max-width: min(480px, 42vw);
+    max-width: min(560px, 48vw);
     object-fit: contain;
     object-position: left center;
     background: transparent;
@@ -531,8 +531,8 @@ body.search-suggest-open .header-float-ctas {
 
 /* Kad postoji „by Carpologija” red, logo ostavlja mjesta ispod */
 .logo-brand:has(.logo-byline) .logo-image {
-    height: calc(var(--header-top-height) - 28px);
-    max-height: calc(var(--header-top-height) - 28px);
+    height: calc(var(--header-top-height) - 24px);
+    max-height: calc(var(--header-top-height) - 24px);
 }
 
 .header-row--primary .logo-brand {
@@ -813,14 +813,14 @@ body.search-suggest-open .header-float-ctas {
     }
 
     .logo-image {
-        height: calc(var(--header-top-height) - 8px);
-        max-height: calc(var(--header-top-height) - 8px);
-        max-width: min(480px, 40vw);
+        height: calc(var(--header-top-height) - 6px);
+        max-height: calc(var(--header-top-height) - 6px);
+        max-width: min(560px, 46vw);
     }
 
     .logo-brand:has(.logo-byline) .logo-image {
-        height: calc(var(--header-top-height) - 28px);
-        max-height: calc(var(--header-top-height) - 28px);
+        height: calc(var(--header-top-height) - 24px);
+        max-height: calc(var(--header-top-height) - 24px);
     }
 
     .header-row--categories .nav-chevron {
@@ -5401,6 +5401,7 @@ body.catalog-variation-modal-open {
     font-weight: 700;
     letter-spacing: 0;
     line-height: 1.2;
+    white-space: nowrap;
 }
 
 .product-stock-label__icon {
@@ -5409,22 +5410,44 @@ body.catalog-variation-modal-open {
     justify-content: center;
     width: 16px;
     height: 16px;
-    border-radius: 50%;
     flex-shrink: 0;
 }
 
 .product-stock-label__icon svg {
-    width: 10px;
-    height: 10px;
+    width: 16px;
+    height: 16px;
+    display: block;
 }
 
 .product-stock-label--in {
-    color: #16a34a;
+    color: #111;
 }
 
 .product-stock-label--in .product-stock-label__icon {
-    background: #16a34a;
-    color: #fff;
+    background: none;
+    color: #111;
+}
+
+.product-stock-label__icon--package {
+    width: 16px;
+    height: 16px;
+    overflow: visible;
+}
+
+.product-stock-label__icon--package svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+.product-stock-label__text {
+    color: #111;
+    font-weight: 700;
+}
+
+.product-stock-label__qty {
+    color: #16a34a;
+    font-weight: 700;
 }
 
 .product-stock-label--out {
@@ -5432,8 +5455,16 @@ body.catalog-variation-modal-open {
 }
 
 .product-stock-label--out .product-stock-label__icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
     background: #dc2626;
     color: #fff;
+}
+
+.product-stock-label--out .product-stock-label__icon svg {
+    width: 10px;
+    height: 10px;
 }
 
 .stock-badge--in {
@@ -5800,8 +5831,13 @@ body.catalog-variation-modal-open {
     font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
-    color: #15803d;
+    color: #111;
     white-space: nowrap;
+}
+
+.pd-price-stock .product-stock-label {
+    margin: 0;
+    font-size: 15px;
 }
 
 .pd-price-stock--out {
@@ -5819,12 +5855,18 @@ body.catalog-variation-modal-open {
     .pd-price-stock {
         margin-left: 0;
         display: inline-block;
+    }
+
+    .pd-price-stock .product-stock-label__qty {
+        display: inline-block;
         transform-origin: left center;
         animation: pd-stock-pulse-in 1.35s ease-in-out infinite;
     }
 
-    .pd-price-stock--out {
-        animation-name: pd-stock-pulse-out;
+    .pd-price-stock--out .product-stock-label {
+        display: inline-block;
+        transform-origin: left center;
+        animation: pd-stock-pulse-out 1.35s ease-in-out infinite;
     }
 }
 
@@ -5855,7 +5897,9 @@ body.catalog-variation-modal-open {
 }
 
 @media (min-width: 1025px) and (prefers-reduced-motion: reduce) {
-    .pd-price-stock {
+    .pd-price-stock,
+    .pd-price-stock .product-stock-label__qty,
+    .pd-price-stock--out .product-stock-label {
         animation: none;
     }
 }
@@ -11337,7 +11381,7 @@ button.nav-action-link {
 @media (max-width: 1024px) {
     :root {
         /* Default dok JS ne izmjeri — veći bijeli header da logo puni visinu */
-        --header-top-height: 112px;
+        --header-top-height: 124px;
         --header-nav-height: 0px;
         --header-height: var(--header-top-height);
         --promo-height: 36px;
@@ -11405,10 +11449,10 @@ button.nav-action-link {
 
     .logo-image {
         /* Mobitel: logo red ~56–64px + search ispod; logo puni gornji red */
-        height: 58px;
-        max-height: 58px;
+        height: 68px;
+        max-height: 68px;
         width: auto;
-        max-width: min(58vw, 240px);
+        max-width: min(64vw, 280px);
         object-fit: contain;
         object-position: center center;
         margin-left: auto;
@@ -11416,8 +11460,8 @@ button.nav-action-link {
     }
 
     .logo-brand:has(.logo-byline) .logo-image {
-        height: 48px;
-        max-height: 48px;
+        height: 56px;
+        max-height: 56px;
     }
 
     .product-catalog--full .catalog-products {
@@ -11664,7 +11708,7 @@ button.nav-action-link {
     .header-row--primary .logo-brand {
         grid-area: logo;
         min-width: 0;
-        max-width: min(58vw, 240px);
+        max-width: min(64vw, 280px);
         width: max-content;
         align-items: center;
         justify-self: center;
@@ -12444,11 +12488,11 @@ button.nav-action-link {
     }
 
     .carousel-track {
-        aspect-ratio: 1920 / 640;
+        aspect-ratio: 4 / 5;
         width: 100%;
         height: auto;
         padding-bottom: 0;
-        min-height: 160px;
+        min-height: 280px;
     }
 
     .carousel-slide {
@@ -12491,15 +12535,15 @@ button.nav-action-link {
     }
 
     .logo-image {
-        height: 54px;
-        max-height: 54px;
-        max-width: min(54vw, 210px);
+        height: 62px;
+        max-height: 62px;
+        max-width: min(60vw, 250px);
         object-position: center center;
     }
 
     .logo-brand:has(.logo-byline) .logo-image {
-        height: 44px;
-        max-height: 44px;
+        height: 52px;
+        max-height: 52px;
     }
 
     .logo-parent-image {
@@ -14914,9 +14958,9 @@ button.nav-action-link {
         width: 100%;
         max-width: none;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
-        background: #ffffff;
+        background: #0a0a0a;
     }
 
     .vlog-article-image {
@@ -14935,17 +14979,17 @@ button.nav-action-link {
     }
 
     .logo-image {
-        max-width: min(56vw, 200px);
-        height: 52px;
-        max-height: 52px;
+        max-width: min(62vw, 230px);
+        height: 60px;
+        max-height: 60px;
         width: auto;
         object-fit: contain;
         object-position: center center;
     }
 
     .logo-brand:has(.logo-byline) .logo-image {
-        height: 42px;
-        max-height: 42px;
+        height: 50px;
+        max-height: 50px;
     }
 
     .logo-parent-image {
@@ -14955,7 +14999,7 @@ button.nav-action-link {
     }
 
     .hero-carousel .carousel-track {
-        aspect-ratio: 1920 / 640;
+        aspect-ratio: 4 / 5;
         padding-bottom: 0;
         height: auto;
     }
@@ -15082,14 +15126,14 @@ button.nav-action-link {
     }
 
     .logo-image {
-        height: 50px;
-        max-height: 50px;
-        max-width: min(58vw, 200px);
+        height: 56px;
+        max-height: 56px;
+        max-width: min(64vw, 220px);
     }
 
     .logo-brand:has(.logo-byline) .logo-image {
-        height: 40px;
-        max-height: 40px;
+        height: 46px;
+        max-height: 46px;
     }
 
     .nav-actions {
@@ -24252,12 +24296,62 @@ body.fish-advisor-open .public-online {
 
 .home-section-header--brands {
     justify-content: center;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 18px;
     padding: 0 var(--home-product-inset);
+    flex-wrap: wrap;
+}
+
+.home-brands-heading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
 }
 
 .home-section-header--brands .home-section-header__title {
     text-align: center;
+}
+
+.home-create-set-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex: none !important;
+    padding: 10px 18px !important;
+    height: auto !important;
+    min-height: 40px;
+    border-radius: 10px !important;
+    background: var(--ozr-orange, #FF5A00) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: none !important;
+    border: 0 !important;
+}
+
+.home-create-set-btn:hover {
+    background: var(--ozr-orange-hover, #E04F00) !important;
+    color: #fff !important;
+}
+
+.home-brand-strip-section--mockup .home-create-set-btn--grid {
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 6px !important;
+}
+
+@media (max-width: 768px) {
+    .home-create-set-btn {
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+        min-height: 36px;
+    }
 }
 
 /* Mockup product sections */
@@ -25002,6 +25096,30 @@ a.home-promo-card:hover {
     color: var(--ozr-green, #5BB805);
 }
 
+.header-row--categories .nav-item--set > a.nav-link-set {
+    background: var(--ozr-orange, #FF5A00);
+    color: #fff !important;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 6px;
+    line-height: 1.2;
+    box-shadow: none;
+}
+
+.header-row--categories .nav-item--set > a.nav-link-set::after {
+    display: none;
+}
+
+.header-row--categories .nav-item--set > a.nav-link-set:hover {
+    background: var(--ozr-orange-hover, #E04F00);
+    color: #fff !important;
+    transform: none;
+    box-shadow: none;
+}
+
 /* Chevron na crnom headeru */
 .header-row--categories .nav-chevron {
     border-color: rgba(255, 255, 255, 0.55);
@@ -25030,6 +25148,12 @@ a.home-promo-card:hover {
         letter-spacing: 0.08em;
         background: transparent;
         box-shadow: none;
+    }
+
+    .header-row--categories .nav-item--set > a.nav-link-set {
+        margin-left: 4px;
+        padding: 7px 12px;
+        font-size: 11px;
     }
 
     .header-row--categories .nav-item--noviteti > a.nav-link-noviteti {
@@ -27485,11 +27609,11 @@ a.home-promo-card:hover {
         stroke: #fff;
     }
 
-    /* —— Hero: ne prevelik na telefonu —— */
+    /* —— Hero: 1080×1350 (4:5) na telefonu —— */
     .hero-carousel .carousel-track {
-        aspect-ratio: 16 / 9 !important;
-        min-height: 160px;
-        max-height: 52vh;
+        aspect-ratio: 4 / 5 !important;
+        min-height: 280px;
+        max-height: none;
     }
 
     .slide-content {
@@ -27887,10 +28011,10 @@ a.home-promo-card:hover {
 }
 
 @media (max-width: 768px) {
-    /* Bolje za portret mobilni banner (4:5) */
+    /* Mobilni hero: 1080×1350 (4:5) — bez cropa kad je slika tog omjera */
     .hero-carousel .carousel-track {
         aspect-ratio: 4 / 5 !important;
-        max-height: 70vh;
+        max-height: none;
         min-height: 280px;
     }
 }
@@ -27994,6 +28118,21 @@ a.home-promo-card:hover {
         box-shadow: none !important;
         justify-content: flex-start !important;
         padding: 12px 4px !important;
+    }
+
+    .nav-menu.mobile-open .nav-item--set > a.nav-link-set {
+        justify-content: center !important;
+        margin: 6px 0 2px !important;
+        padding: 10px 14px !important;
+        min-height: 40px !important;
+        border-radius: 8px !important;
+        background: var(--ozr-orange, #FF5A00) !important;
+        color: #fff !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.06em !important;
+        text-transform: uppercase !important;
     }
 
     /* Panel header */
@@ -29985,6 +30124,22 @@ body.product-other-options-open {
     color: var(--ozr-orange, #FF5A00);
 }
 
+.header-row--categories .nav-item--set > a.nav-link-set,
+.header-row--categories .nav-item--set > a.nav-link-set:hover {
+    background: var(--ozr-orange, #FF5A00) !important;
+    color: #fff !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    transform: none;
+    border-radius: 6px !important;
+    padding: 6px 14px !important;
+    font-weight: 800 !important;
+}
+
+.header-row--categories .nav-item--set > a.nav-link-set:hover {
+    background: var(--ozr-orange-hover, #E04F00) !important;
+}
+
 .header .staff-edit-mode-toggle.is-on,
 .header .staff-edit-mode-toggle.is-on svg {
     color: var(--ozr-orange, #FF5A00);
@@ -30624,7 +30779,7 @@ body.product-other-options-open {
         padding-left: 16px;
     }
 
-    .header-row--categories .nav-menu > .nav-item:not(.nav-item--akcija):not(.nav-item--brendovi):not(.nav-item--noviteti) {
+    .header-row--categories .nav-menu > .nav-item:not(.nav-item--akcija):not(.nav-item--brendovi):not(.nav-item--set):not(.nav-item--noviteti) {
         display: none;
     }
 
@@ -30969,6 +31124,10 @@ body.product-other-options-open {
 }
 
 .category-page--shop .product-stock-label--in {
+    color: #111;
+}
+
+.category-page--shop .product-stock-label--in .product-stock-label__qty {
     color: #16a34a;
 }
 
@@ -32430,7 +32589,18 @@ body.product-other-options-open {
 
 .product-card .product-stock-label--in,
 .home-products--mockup .product-stock-label--in {
+    color: #111 !important;
+}
+
+.product-card .product-stock-label--in .product-stock-label__qty,
+.home-products--mockup .product-stock-label--in .product-stock-label__qty {
     color: #16a34a !important;
+}
+
+.product-card .product-stock-label--in .product-stock-label__icon,
+.home-products--mockup .product-stock-label--in .product-stock-label__icon {
+    background: none !important;
+    color: #111 !important;
 }
 
 .product-card .product-stock-label--out,
@@ -33457,5 +33627,333 @@ body.page-account main {
 
     .acc-dash-welcome h1 {
         font-size: 1.4rem;
+    }
+}
+
+/* ==========================================================================
+   Search bar: ikona lijevo, TRAŽI desno (desktop + mobile)
+   ========================================================================== */
+
+.header-search-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    padding: 0 0 0 14px;
+    color: rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+}
+
+.header-search-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+}
+
+.header-search-submit-label {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+}
+
+.header .header-search-form,
+.header-search-form {
+    display: flex !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 !important;
+    overflow: hidden;
+    background: #111 !important;
+    border: 1px solid rgba(255, 255, 255, 0.92) !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    box-sizing: border-box;
+}
+
+.header .header-search-form::after {
+    display: none !important;
+}
+
+.header .header-search-form .search-combobox {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    background: transparent !important;
+    min-height: 0 !important;
+    padding: 0 10px 0 10px !important;
+    border-radius: 0 !important;
+}
+
+.header .header-search-form input,
+.header-search-form input {
+    height: 46px;
+    padding: 0;
+    color: #fff !important;
+    font-size: 15px;
+}
+
+.header .header-search-form input::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.header-search-submit {
+    position: static !important;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 88px !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 46px !important;
+    padding: 0 18px !important;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--ozr-orange, #FF5A00) !important;
+    color: #fff !important;
+    z-index: 2;
+}
+
+.header-search-submit:hover,
+.header-search-submit:focus-visible {
+    background: var(--ozr-orange-hover, #E04F00) !important;
+}
+
+.header-search-form .search-close {
+    display: none !important;
+}
+
+/* AKCIJE / BRENDOVI / Kreiraj svoj set — ista visina, jedan red */
+@media (min-width: 1025px) {
+    .header-row--categories .nav-menu {
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .header-row--categories .nav-item--akcija,
+    .header-row--categories .nav-item--brendovi,
+    .header-row--categories .nav-item--set {
+        display: flex;
+        align-items: center;
+        height: 52px;
+    }
+
+    .header-row--categories .nav-item--akcija > a,
+    .header-row--categories .nav-item--brendovi > a,
+    .header-row--categories .nav-item--set > a {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center;
+        height: 34px !important;
+        padding: 0 14px !important;
+        margin: 0 4px !important;
+        font-size: 12px !important;
+        line-height: 1 !important;
+        box-sizing: border-box;
+        white-space: nowrap;
+        transform: none !important;
+    }
+
+    .header-row--categories .nav-item--set > a {
+        padding-right: 22px !important;
+    }
+}
+
+.nav-link-set {
+    position: relative;
+}
+
+.nav-link-set__beta {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: #111;
+    color: #FF5A00;
+    border: 1px solid #FF5A00;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.setb-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.setb-gate[hidden] {
+    display: none !important;
+}
+
+.setb-gate__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.setb-gate__panel {
+    position: relative;
+    width: min(420px, 100%);
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.setb-gate__close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+    line-height: 1;
+    color: #666;
+    cursor: pointer;
+}
+
+.setb-gate__beta {
+    display: inline-block;
+    margin: 0 0 10px;
+    background: #111;
+    color: #FF5A00;
+    border: 1px solid #FF5A00;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.setb-gate__panel h2 {
+    margin: 0 0 10px;
+    font-size: 24px;
+}
+
+.setb-gate__msg {
+    margin: 0 0 18px;
+    color: #444;
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.setb-gate__form label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.setb-gate__form input {
+    width: 100%;
+    height: 44px;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 16px;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.setb-gate__error {
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 700;
+    margin: -4px 0 10px;
+}
+
+.setb-gate__submit {
+    width: 100%;
+    border: 0;
+    background: #FF5A00;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    height: 46px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.setb-locked {
+    max-width: 640px;
+    margin: 40px auto 80px;
+    padding: 0 16px;
+    text-align: center;
+}
+
+.setb-locked h1 {
+    font-size: 28px;
+    margin: 0 0 10px;
+}
+
+.setb-locked p {
+    color: #555;
+    font-size: 16px;
+}
+
+@media (max-width: 768px) {
+    .header .header-search-form,
+    .header-search-form {
+        min-height: 44px;
+        border-radius: 12px !important;
+        background: #111 !important;
+    }
+
+    .header .header-search-form .search-combobox {
+        background: transparent !important;
+        min-height: 44px !important;
+        padding: 0 8px 0 8px !important;
+    }
+
+    .header .header-search-form input,
+    .header-search-form input {
+        height: 44px;
+        font-size: 16px !important;
+    }
+
+    .header-search-icon {
+        padding-left: 12px;
+    }
+
+    .header-search-submit {
+        min-width: 78px !important;
+        min-height: 44px !important;
+        padding: 0 14px !important;
+        background: var(--ozr-orange, #FF5A00) !important;
+    }
+
+    .header-search-submit-label {
+        font-size: 12px;
+    }
+
+    /* Mobile hero: 1080×1350 (4:5) — pobjedi starije 16:9 / max-height */
+    .hero-carousel .carousel-track {
+        aspect-ratio: 4 / 5 !important;
+        max-height: none !important;
+        min-height: 280px !important;
+        height: auto !important;
+    }
+
+    .hero-carousel .slide-image-img,
+    .hero-carousel .slide-image-video {
+        object-fit: cover !important;
+        object-position: center center;
     }
 }

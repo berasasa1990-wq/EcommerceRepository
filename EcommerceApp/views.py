@@ -164,12 +164,12 @@ def _invalidate_storefront_product_caches():
 
     invalidate_category_product_cache()
     for key in (
-        'home_latest_products_v3',
-        'home_featured_products_v3',
-        'home_sale_products_v3',
-        'home_brand_show_v3',
+        'home_latest_products_v4',
+        'home_featured_products_v4',
+        'home_sale_products_v4',
+        'home_brand_show_v4',
         'showcase_brands_v2',
-        'home_cat_show_v4:6',
+        'home_cat_show_v5:6',
     ):
         cache.delete(key)
 
@@ -180,6 +180,11 @@ def _product_queryset(request=None):
     if not _staff_edit_mode_enabled(request):
         qs = qs.filter(sakriven_do_stanja=False)
     return _prefetch_product_cards(qs)
+
+
+def _home_product_queryset(request=None):
+    """Početna: samo artikli koji su na stanju, s količinom iz magacina."""
+    return _product_queryset(request).filter(na_stanju=True, stanje__gt=0)
 
 
 def _bind_variation_parents(product):
@@ -1482,12 +1487,27 @@ def _search_relevance_score(product, query):
     return best
 
 
+def _oos_at_end(products):
+    """Artikli koji nisu na stanju uvijek idu na kraj, redoslijed unutar grupa ostaje."""
+    if not products:
+        return products
+    in_stock = []
+    oos = []
+    for product in products:
+        if getattr(product, 'na_stanju', False):
+            in_stock.append(product)
+        else:
+            oos.append(product)
+    return in_stock + oos
+
+
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
     Katalog / pretraga / kategorija:
-    0) Ako ima search upit: relevantnost (score bandovi) prvo
-    1) Hit redukovanje lagera → Favorizuj → Normal
-    2) Unutar nivoa: cijena rastuće / opadajuće
+    0) Na stanju prvo, rasprodato na dnu
+    1) Ako ima search upit: relevantnost (score bandovi)
+    2) Hit redukovanje lagera → Favorizuj → Normal
+    3) Unutar nivoa: cijena rastuće / opadajuće
     """
     if not products:
         return products
@@ -1521,8 +1541,8 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
             price = 0.0
         in_stock = 0 if getattr(p, 'na_stanju', False) else 1
         if price_sort == 'opadajuca':
-            return (rel, in_stock, -prio, -price, name)
-        return (rel, in_stock, -prio, price, name)
+            return (in_stock, rel, -prio, -price, name)
+        return (in_stock, rel, -prio, price, name)
 
     return sorted(products, key=key)
 
@@ -1730,7 +1750,7 @@ def search_suggest(request):
     products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
     products_qs = products_qs.annotate(
         _suggest_rel=_suggest_relevance_annotation(query),
-    ).order_by('-_suggest_rel', '-prioritet_lagera', 'naziv')
+    ).order_by('-na_stanju', '-_suggest_rel', '-prioritet_lagera', 'naziv')
 
     try:
         limit = int(request.GET.get('limit') or SEARCH_SUGGEST_LIMIT)
@@ -1758,6 +1778,7 @@ def search_suggest(request):
     pool = sorted(
         pool,
         key=lambda p: (
+            0 if getattr(p, 'na_stanju', False) else 1,
             -_search_relevance_score(p, query),
             -_product_lager_priority(p),
             (p.naziv or '').lower(),
@@ -1816,7 +1837,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if search_q and len(search_q) >= 2:
         products_qs = products_qs.annotate(
             _search_sql_rel=_suggest_relevance_annotation(search_q),
-        ).order_by('-_search_sql_rel', '-prioritet_lagera', 'naziv')
+        ).order_by('-na_stanju', '-_search_sql_rel', '-prioritet_lagera', 'naziv')
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
@@ -1896,7 +1917,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             price_sort='rastuca',
         )
 
-    return products, params
+    return _oos_at_end(products), params
 
 
 CATALOG_PRODUCTS_PER_PAGE = 49
@@ -2116,8 +2137,8 @@ def _banner_to_hero_slide(banner):
     mobile = {
         'image_mobile': '',
         'image_mobile_srcset': '',
-        'image_mobile_width': 720,
-        'image_mobile_height': 900,
+        'image_mobile_width': 1080,
+        'image_mobile_height': 1350,
         'has_mobile_image': False,
     }
     if getattr(banner, 'slika_mobilna', None):
@@ -2125,13 +2146,13 @@ def _banner_to_hero_slide(banner):
         m = banner_image_responsive_meta(
             banner.slika_mobilna,
             tip='hero_mobile',
-            default=(720, 900),
+            default=(1080, 1350),
         )
         mobile = {
             'image_mobile': m['src'],
             'image_mobile_srcset': m.get('srcset') or '',
-            'image_mobile_width': m.get('width') or 720,
-            'image_mobile_height': m.get('height') or 900,
+            'image_mobile_width': m.get('width') or 1080,
+            'image_mobile_height': m.get('height') or 1350,
             'has_mobile_image': bool(m.get('src')),
         }
     return {
@@ -2189,11 +2210,14 @@ def _home_cache_get(key, factory, ttl=HOME_CACHE_TTL):
 
 def _fill_home_section_products(products, request=None):
     """Dopuni sekciju do HOME_SECTION_PRODUCT_LIMIT da karusel ima 5 u nizu."""
-    items = list(products or [])
+    items = [
+        p for p in (products or [])
+        if getattr(p, 'na_stanju', False) and int(getattr(p, 'stanje', 0) or 0) > 0
+    ]
     if len(items) >= HOME_SECTION_PRODUCT_LIMIT:
         return items[:HOME_SECTION_PRODUCT_LIMIT]
     seen = {p.pk for p in items}
-    extra_qs = _product_queryset(request)
+    extra_qs = _home_product_queryset(request)
     if seen:
         extra_qs = extra_qs.exclude(pk__in=seen)
     extra_qs = _order_qs_by_lager_priority(extra_qs, '-kreiran', '-id')[
@@ -2211,13 +2235,13 @@ def _home_latest_products(request=None):
     3) Dopuna: najnoviji artikli da bude 5 u nizu
     """
     return _home_cache_get(
-        'home_latest_products_v3',
+        'home_latest_products_v4',
         lambda: _home_latest_products_uncached(request),
     )
 
 
 def _home_latest_products_uncached(request=None):
-    base_qs = _product_queryset(request)
+    base_qs = _home_product_queryset(request)
     marked = list(
         _order_qs_by_lager_priority(
             base_qs.filter(je_novitet=True),
@@ -2233,7 +2257,11 @@ def _home_latest_products_uncached(request=None):
             entries_qs = HomeNovoProduct.objects.filter(
                 aktivan=True,
                 artikal__aktivan=True,
+                artikal__na_stanju=True,
+                artikal__stanje__gt=0,
             )
+            if not _staff_edit_mode_enabled(request):
+                entries_qs = entries_qs.filter(artikal__sakriven_do_stanja=False)
             entries = entries_qs.select_related(
                 'artikal', 'artikal__kategorija', 'artikal__brend',
             ).prefetch_related(
@@ -2254,13 +2282,13 @@ def _home_featured_products(request=None):
     Među njima: redukovanje lagera ima prednost.
     """
     return _home_cache_get(
-        'home_featured_products_v3',
+        'home_featured_products_v4',
         lambda: _home_featured_products_uncached(request),
     )
 
 
 def _home_featured_products_uncached(request=None):
-    base_qs = _product_queryset(request)
+    base_qs = _home_product_queryset(request)
     marked = list(
         _order_qs_by_lager_priority(
             base_qs.filter(je_hit=True),
@@ -2273,7 +2301,11 @@ def _home_featured_products_uncached(request=None):
     entries_qs = HomeFeaturedProduct.objects.filter(
         aktivan=True,
         artikal__aktivan=True,
+        artikal__na_stanju=True,
+        artikal__stanje__gt=0,
     )
+    if not _staff_edit_mode_enabled(request):
+        entries_qs = entries_qs.filter(artikal__sakriven_do_stanja=False)
     entries = entries_qs.select_related(
         'artikal', 'artikal__kategorija', 'artikal__brend',
     ).prefetch_related(
@@ -2287,13 +2319,13 @@ def _home_featured_products_uncached(request=None):
 def _home_sale_products(request=None):
     """Akcijska ponuda na početnoj — artikli sa sniženom cijenom."""
     return _home_cache_get(
-        'home_sale_products_v3',
+        'home_sale_products_v4',
         lambda: _home_sale_products_uncached(request),
     )
 
 
 def _home_sale_products_uncached(request=None):
-    base_qs = _product_queryset(request)
+    base_qs = _home_product_queryset(request)
     sale_qs = _akcija_products_qs(base_qs)
     return list(
         _order_qs_by_lager_priority(sale_qs, '-kreiran', '-id')[:HOME_SECTION_PRODUCT_LIMIT],
@@ -2339,7 +2371,7 @@ def _home_promo_cards():
 
 def _home_category_showcases(request=None):
     return _home_cache_get(
-        f'home_cat_show_v4:{HOME_CATEGORY_SHOWCASE_LIMIT}',
+        f'home_cat_show_v5:{HOME_CATEGORY_SHOWCASE_LIMIT}',
         lambda: _home_category_showcases_uncached(request),
     )
 
@@ -2357,7 +2389,7 @@ def _home_category_showcases_uncached(request=None):
         category_ids = entry.kategorija.get_descendant_ids()
         products = list(
             _order_qs_by_lager_priority(
-                _product_queryset(request).filter(kategorija_id__in=category_ids),
+                _home_product_queryset(request).filter(kategorija_id__in=category_ids),
                 '-kreiran',
             )[:HOME_CATEGORY_SHOWCASE_LIMIT],
         )
@@ -2378,7 +2410,7 @@ def _home_brand_showcases(request=None):
     Admin: Postavke sajta → ⑥ Brend karuseli.
     """
     return _home_cache_get(
-        'home_brand_show_v3',
+        'home_brand_show_v4',
         lambda: _home_brand_showcases_uncached(request),
     )
 
@@ -2395,7 +2427,7 @@ def _home_brand_showcases_uncached(request=None):
     for entry in entries:
         products = list(
             _order_qs_by_lager_priority(
-                _product_queryset(request).filter(brend_id=entry.brend_id),
+                _home_product_queryset(request).filter(brend_id=entry.brend_id),
                 '-kreiran',
             )[:brand_limit],
         )
@@ -7288,6 +7320,173 @@ def ai_dwell_activate(request):
         'expires_ts': flash['expires_ts'],
         'base': flash.get('base'),
         'sale': flash.get('sale'),
+    })
+
+
+SET_BUILDER_SESSION_KEY = 'set_builder_ok'
+SET_BUILDER_PASSWORD = 'admin'
+
+
+def _set_builder_unlocked(request):
+    return bool(request.session.get(SET_BUILDER_SESSION_KEY))
+
+
+@require_POST
+def set_builder_unlock(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except (TypeError, ValueError, json.JSONDecodeError):
+        payload = request.POST
+    password = (payload.get('password') or '').strip()
+    if password != SET_BUILDER_PASSWORD:
+        return JsonResponse({'ok': False, 'message': 'Pogrešna lozinka.'}, status=403)
+    request.session[SET_BUILDER_SESSION_KEY] = True
+    return JsonResponse({'ok': True, 'redirect': reverse('set_builder')})
+
+
+def set_builder_page(request):
+    """Čarobnjak „Kreiraj svoj set” — korak po korak."""
+    from .set_builder import page_config
+
+    if not _set_builder_unlocked(request):
+        context = {
+            **_base_context(),
+            **page_seo_context('set_builder', defaults={
+                'seo_title': 'Kreiraj svoj set | Oprema za ribolov',
+                'seo_description': 'Kreiraj svoj set je u test fazi.',
+                'seo_h1': 'Kreiraj svoj set',
+            }),
+            'set_builder_gate_open': True,
+        }
+        return render(request, 'set_builder_locked.html', context)
+
+    cfg = page_config(request)
+    context = {
+        **_base_context(),
+        'set_builder': cfg,
+        **page_seo_context('set_builder', defaults={
+            'seo_title': 'Kreiraj svoj set | Oprema za ribolov',
+            'seo_description': (
+                'Sastavi svoj ribolovni set u 5 koraka: vrsta ribolova, nivo opreme, '
+                'artikli, budžet i preporučeni komplet.'
+            ),
+            'seo_h1': 'Kreiraj svoj set',
+        }),
+    }
+    return render(request, 'set_builder.html', context)
+
+
+def _set_builder_forbidden():
+    return JsonResponse({'ok': False, 'message': 'Set builder je u test fazi.'}, status=403)
+
+
+@require_POST
+def set_builder_recommend(request):
+    if not _set_builder_unlocked(request):
+        return _set_builder_forbidden()
+    from .set_builder import build_set
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except (TypeError, ValueError, json.JSONDecodeError):
+        payload = request.POST
+    slots = payload.get('slots') or []
+    if isinstance(slots, str):
+        slots = [s.strip() for s in slots.split(',') if s.strip()]
+    try:
+        budget = int(payload.get('budget') or 300)
+    except (TypeError, ValueError):
+        budget = 300
+    data = build_set(
+        fish_code=payload.get('fish') or '',
+        tier=payload.get('tier') or 'preporuka',
+        slots=slots,
+        budget=budget,
+        request=request,
+    )
+    return JsonResponse(data)
+
+
+@require_POST
+def set_builder_alternatives(request):
+    if not _set_builder_unlocked(request):
+        return _set_builder_forbidden()
+    from .set_builder import alternatives
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except (TypeError, ValueError, json.JSONDecodeError):
+        payload = request.POST
+    exclude = payload.get('exclude') or []
+    try:
+        exclude_ids = [int(x) for x in exclude]
+    except (TypeError, ValueError):
+        exclude_ids = []
+    try:
+        product_id = int(payload.get('product_id') or 0)
+    except (TypeError, ValueError):
+        product_id = 0
+    try:
+        budget = int(payload.get('budget') or 300)
+    except (TypeError, ValueError):
+        budget = 300
+    rows = alternatives(
+        slot=payload.get('slot') or '',
+        product_id=product_id,
+        fish_code=payload.get('fish') or '',
+        budget=budget,
+        exclude_ids=exclude_ids,
+        request=request,
+    )
+    return JsonResponse({'ok': True, 'items': rows})
+
+
+@require_POST
+def set_builder_add_cart(request):
+    if not _set_builder_unlocked(request):
+        return _set_builder_forbidden()
+    from .cart import Cart
+    from .cart_tracking import sync_active_cart
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except (TypeError, ValueError, json.JSONDecodeError):
+        payload = request.POST
+    raw_ids = payload.get('product_ids') or payload.get('ids') or []
+    if isinstance(raw_ids, str):
+        raw_ids = [x for x in raw_ids.split(',') if x.strip()]
+    ids = []
+    for raw in raw_ids:
+        try:
+            ids.append(int(raw))
+        except (TypeError, ValueError):
+            continue
+    if not ids:
+        return JsonResponse({'ok': False, 'message': 'Nema artikala za dodati.'}, status=400)
+    products = list(
+        Product.objects.filter(pk__in=ids, aktivan=True, na_stanju=True, sakriven_do_stanja=False)
+    )
+    by_id = {p.pk: p for p in products}
+    cart = Cart(request)
+    added = 0
+    for pk in ids:
+        product = by_id.get(pk)
+        if not product:
+            continue
+        added += cart.add(product, quantity=1, discount_source='Kreiraj svoj set') or 0
+    try:
+        sync_active_cart(request)
+    except Exception:
+        pass
+    if added <= 0:
+        return JsonResponse({'ok': False, 'message': 'Artikli nisu dostupni.'}, status=400)
+    buy_now = bool(payload.get('buy_now'))
+    return JsonResponse({
+        'ok': True,
+        'message': f'Set dodan u korpu ({added} kom).',
+        'cart_count': len(cart),
+        'added_qty': added,
+        'redirect': reverse('checkout') if buy_now else reverse('cart'),
     })
 
 

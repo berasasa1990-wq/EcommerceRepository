@@ -71,11 +71,10 @@ BANNER_WIDE_VARIANT_MAX_BYTES = {
     1200: MAX_BANNER_UPLOAD_BYTES,
 }
 
-# Mobilni hero: 4:5 portret — manje dimenzije radi Render free (512 MB RAM)
-# 720×900 dovoljno za telefone, ~3× manje memorije od 1080×1350
-HERO_MOBILE_MAX_WIDTH = 720
-HERO_MOBILE_MAX_HEIGHT = 900
-MAX_HERO_MOBILE_BYTES = 100 * 1024  # ~100 KB
+# Mobilni hero: 1080×1350 (4:5) — isti okvir kao CSS na telefonu
+HERO_MOBILE_MAX_WIDTH = 1080
+HERO_MOBILE_MAX_HEIGHT = 1350
+MAX_HERO_MOBILE_BYTES = 160 * 1024  # ~160 KB
 
 BANNER_AVIF_SETTINGS = {
     'grid': {
@@ -1196,7 +1195,7 @@ def process_banner_image_for_admin(image_field, tip='hero'):
             except Exception as exc2:
                 raise ValueError(
                     f'Mobilni banner je prevelik za server ({exc2}). '
-                    f'Uploadaj manju sliku (npr. 720×900 JPG).',
+                    f'Uploadaj 1080×1350 JPG (4:5).',
                 ) from exc2
 
     if not needs_resize:
