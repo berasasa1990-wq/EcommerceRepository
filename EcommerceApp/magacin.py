@@ -5379,9 +5379,7 @@ def is_vp_order(order):
 
 
 def vp_order_ziralno(order):
-    """VP plaćena žiralno — ne ide na packing štampu."""
-    if not is_vp_order(order):
-        return False
+    """Žiralno plaćanje — ne ide na packing štampu (VP i ručne Magacin narudžbe)."""
     for row in (getattr(order, 'popust_detalji', None) or []):
         if isinstance(row, dict) and str(row.get('placanje') or '').strip().lower() == 'ziralno':
             return True
@@ -5896,6 +5894,39 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
         'loc': location.sifra or loc,
         'on_site': bool(getattr(product, 'na_stanju', False)),
     }
+
+
+@transaction.atomic
+def wipe_product_location_stock(product, location, *, variation=None, user=None, napomena=''):
+    """Stavi količinu ovog artikla na lokaciji na 0 (poslije kratkog prenosa u MP)."""
+    if product is None or location is None:
+        return 0
+    if is_ignored_stock_location(location) or is_uncountable_stock_location(location):
+        return 0
+    stock, sell_variation = _stock_row_for_sale(product, variation, location)
+    cleared = max(0, int(stock.kolicina or 0))
+    if not cleared and not int(stock.rezervisano or 0):
+        return 0
+    note = (napomena or 'Očisti lokaciju nakon prenosa u MP')[:300]
+    try:
+        apply_movement(
+            product=product,
+            variation=sell_variation,
+            location=location,
+            tip=WarehouseMovement.Tip.KOREKCIJA,
+            kolicina=0,
+            napomena=note,
+            user=user,
+        )
+    except MagacinError:
+        stock = get_or_create_stock(
+            product=product, variation=sell_variation, location=location,
+        )
+        stock.kolicina = 0
+        stock.rezervisano = 0
+        stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
+        refresh_catalog_qty(product)
+    return cleared
 
 
 @transaction.atomic

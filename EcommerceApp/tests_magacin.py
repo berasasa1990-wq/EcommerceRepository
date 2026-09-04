@@ -284,6 +284,56 @@ class MagacinStockTests(TestCase):
             3,
         )
 
+    def test_prenos_mp_short_qty_wipe_clears_source_location(self):
+        user = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
+        order = create_prenos_mp_pick(product=self.product, location=self.a10, qty=5)
+        self.client.force_login(user)
+        item = order.stavke.get()
+        pick = [{
+            'key': f'{item.pk}:A-10',
+            'item_id': item.pk,
+            'loc': 'A-10',
+            'got': 3,
+            'need': 5,
+            'done': True,
+        }]
+        res = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]), {
+            'action': 'validiraj',
+            'pick_json': json.dumps(pick),
+            'ocisti_lokaciju': '1',
+        })
+        self.assertEqual(res.status_code, 302)
+        magacin = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        mp = WarehouseStock.objects.get(product=self.product, location=self.b03)
+        self.assertEqual(mp.kolicina, 3)
+        self.assertEqual(magacin.kolicina, 0)
+
+    def test_prenos_mp_short_qty_keeps_leftover_when_not_wiped(self):
+        user = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+        apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
+        order = create_prenos_mp_pick(product=self.product, location=self.a10, qty=5)
+        self.client.force_login(user)
+        item = order.stavke.get()
+        pick = [{
+            'key': f'{item.pk}:A-10',
+            'item_id': item.pk,
+            'loc': 'A-10',
+            'got': 3,
+            'need': 5,
+            'done': True,
+        }]
+        res = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]), {
+            'action': 'validiraj',
+            'pick_json': json.dumps(pick),
+            'ocisti_lokaciju': '0',
+        })
+        self.assertEqual(res.status_code, 302)
+        magacin = WarehouseStock.objects.get(product=self.product, location=self.a10)
+        mp = WarehouseStock.objects.get(product=self.product, location=self.b03)
+        self.assertEqual(mp.kolicina, 3)
+        self.assertEqual(magacin.kolicina, 7)
+
     def test_prenos_mp_groups_items_into_one_picking(self):
         other = Product.objects.create(
             naziv='Drugi artikal', sifra='DRG-1', cijena=Decimal('4.00'),
@@ -4910,9 +4960,11 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'Skini dostavu')
         self.assertContains(form, 'name="bez_dostave"')
         self.assertContains(form, 'name="placanje"')
-        self.assertContains(form, 'Gotovina')
-        self.assertContains(form, 'Kartica')
+        self.assertContains(form, 'Gotovinski')
+        self.assertContains(form, 'Kartično')
+        self.assertContains(form, 'Žiralno')
         self.assertContains(form, 'value="gotovina"')
+        self.assertContains(form, 'value="ziralno"')
         self.assertContains(form, 'checked')
         self.assertContains(form, 'id="id_napomena"')
         self.assertContains(form, 'mg-order-meta-note')
@@ -5636,6 +5688,42 @@ class MagacinViewTests(TestCase):
         self.assertEqual(cash_order.dostava, Decimal('11.00'))
         self.assertEqual(cash_order.ukupno, Decimal('21.00'))
         self.assertNotIn('Plaćeno karticom', cash_order.napomena)
+
+    def test_manual_order_ziralno_skips_packing_print(self):
+        from .views_magacin import apply_order_pick, packing_ready_orders
+
+        self.client.force_login(self.user)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ziralno Kupac',
+            'telefon': '061555669',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'placanje': 'ziralno',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='Ziralno Kupac')
+        self.assertEqual(order.dostava, Decimal('11.00'))
+        self.assertEqual(order.ukupno, Decimal('21.00'))
+        self.assertEqual(order.popust, Decimal('0.00'))
+        self.assertIn('Plaćanje: žiralno', order.napomena)
+        self.assertTrue(any(row.get('placanje') == 'ziralno' for row in order.popust_detalji))
+        self.assertEqual(order.packing_placanje_label(), 'ŽIRALNO')
+        item = order.stavke.get()
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        apply_order_pick(order, [{
+            'key': f'{item.pk}:{loc.sifra}',
+            'item_id': item.pk,
+            'got': 1,
+            'need': 1,
+            'done': True,
+        }], finalize=True)
+        validate_order_stock(order, user=self.user)
+        order.refresh_from_db()
+        self.assertFalse(any(row.pk == order.pk for row in packing_ready_orders()))
+        printed = self.client.get(reverse('staff_magacin_narudzbe_packing'))
+        self.assertEqual(printed.status_code, 302)
 
     def test_manual_reservation_holds_stock_and_stays_editable(self):
         self.client.force_login(self.user)

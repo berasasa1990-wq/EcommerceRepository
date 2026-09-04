@@ -177,18 +177,23 @@
                         Način plaćanja
                     </h3>
                     <select id="mgPaySelect" aria-label="Način plaćanja">
-                        <option value="gotovina"{% if form.placanje != 'kartica' %} selected{% endif %}>Gotovinski</option>
-                        <option value="kartica"{% if form.placanje == 'kartica' %} selected{% endif %}>Kartica</option>
+                        <option value="gotovina"{% if form.placanje != 'kartica' and form.placanje != 'ziralno' %} selected{% endif %}>Gotovinski</option>
+                        <option value="kartica"{% if form.placanje == 'kartica' %} selected{% endif %}>Kartično</option>
+                        <option value="ziralno"{% if form.placanje == 'ziralno' %} selected{% endif %}>Žiralno</option>
                     </select>
                     <div class="mg-order-pay" role="group" aria-label="Način plaćanja">
                         <span>Plaćanje</span>
                         <label>
-                            <input type="radio" name="placanje" value="gotovina"{% if form.placanje != 'kartica' %} checked{% endif %}>
-                            Gotovina
+                            <input type="radio" name="placanje" value="gotovina"{% if form.placanje != 'kartica' and form.placanje != 'ziralno' %} checked{% endif %}>
+                            Gotovinski
                         </label>
                         <label>
                             <input type="radio" name="placanje" value="kartica"{% if form.placanje == 'kartica' %} checked{% endif %}>
-                            Kartica
+                            Kartično
+                        </label>
+                        <label>
+                            <input type="radio" name="placanje" value="ziralno"{% if form.placanje == 'ziralno' %} checked{% endif %}>
+                            Žiralno
                         </label>
                     </div>
                     <input type="hidden" name="loyalty_auto" id="mgLoyaltyAuto" value="{{ form.loyalty_auto|default:'' }}">

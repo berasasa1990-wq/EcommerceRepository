@@ -2231,7 +2231,10 @@ function initManualOrderForm() {
         });
     }
     form.querySelectorAll('input[name="placanje"]').forEach(function (el) {
-        el.addEventListener('change', refreshTotal);
+        el.addEventListener('change', function () {
+            if (paySelect) paySelect.value = el.value;
+            refreshTotal();
+        });
     });
     var clearBtn = document.getElementById('mgOrderClear');
     if (clearBtn) {
@@ -4068,10 +4071,39 @@ function initArticleScanner() {
             if (!isPrenosMp && (hasZero || (queue.length && doneCount() < queue.length))) {
                 msg = 'Artikli s 0 kom se skidaju s narudžbe. Završiti picking #' + broj + '?';
             }
-            if (!window.confirm(msg)) event.preventDefault();
-            else {
-                try { window.localStorage.removeItem(storageKey); } catch (err) {}
+            var ocistiInp = els.form.querySelector('input[name="ocisti_lokaciju"]');
+            if (!ocistiInp) {
+                ocistiInp = document.createElement('input');
+                ocistiInp.type = 'hidden';
+                ocistiInp.name = 'ocisti_lokaciju';
+                els.form.appendChild(ocistiInp);
             }
+            ocistiInp.value = '0';
+            if (isPrenosMp) {
+                var shortLines = queue.filter(function (item) {
+                    var st = itemState(item);
+                    return (st.got || 0) > 0 && (st.got || 0) < (item.need || 0);
+                });
+                if (shortLines.length) {
+                    var first = shortLines[0];
+                    var gotN = itemState(first).got || 0;
+                    var locLabel = first.loc || 'lokacije';
+                    var ocisti = window.confirm(
+                        'Treba ' + (first.need || 0) + ' kom, donosiš ' + gotN + '.\n\n' +
+                        'Očistiti lokaciju ' + locLabel + '?\n\n' +
+                        'DA = preostalo tog artikla na toj lokaciji ide na 0 (možda nema više).\n' +
+                        'NE = višak ostaje na lokaciji.'
+                    );
+                    ocistiInp.value = ocisti ? '1' : '0';
+                } else if (!window.confirm(msg)) {
+                    event.preventDefault();
+                    return;
+                }
+            } else if (!window.confirm(msg)) {
+                event.preventDefault();
+                return;
+            }
+            try { window.localStorage.removeItem(storageKey); } catch (err) {}
         });
     }
 
@@ -5394,10 +5426,26 @@ function initPopisProvjera() {
                 showMsg('Unesi količinu za prenos ili ukloni iz lokacije.');
                 return;
             }
-            var msgText = got < need
-                ? 'Prenijeti ' + got + ' od ' + need + ' kom? Višak ostaje na lokaciji.'
-                : 'Validatovati prenos u MP? Skida se sa stanja.';
-            if (!window.confirm(msgText)) event.preventDefault();
+            var ocistiInp = form.querySelector('input[name="ocisti_lokaciju"]');
+            if (!ocistiInp) {
+                ocistiInp = document.createElement('input');
+                ocistiInp.type = 'hidden';
+                ocistiInp.name = 'ocisti_lokaciju';
+                form.appendChild(ocistiInp);
+            }
+            ocistiInp.value = '0';
+            if (got < need) {
+                var locLabel = loc || 'ove lokacije';
+                var ocisti = window.confirm(
+                    'Treba ' + need + ' kom, donosiš ' + got + '.\n\n' +
+                    'Očistiti lokaciju ' + locLabel + '?\n\n' +
+                    'DA = preostalo tog artikla na toj lokaciji ide na 0 (možda nema više).\n' +
+                    'NE = višak ostaje na lokaciji.'
+                );
+                ocistiInp.value = ocisti ? '1' : '0';
+            } else if (!window.confirm('Validatovati prenos u MP? Skida se sa stanja.')) {
+                event.preventDefault();
+            }
         });
     }
     var cancelForm = document.getElementById('pkPrenosCancelForm');

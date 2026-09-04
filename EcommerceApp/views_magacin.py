@@ -74,6 +74,8 @@ from .magacin import (
     remove_item_from_order,
     drop_missing_pick_line,
     clear_pick_location_stock,
+    wipe_product_location_stock,
+    _location_for_pick_label,
     order_is_editable,
     mark_order_packed,
     skini_sa_sajta,
@@ -3424,6 +3426,7 @@ def packing_ready_orders():
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
         .exclude(pk__in=vp_ziralno_order_ids())
+        .exclude(napomena__icontains='Plaćanje: žiralno')
         .filter(_validated_orders_q(), packing_odstampana=False)
         .filter(_picked_item_exists())
         .prefetch_related('stavke', 'magacin_holds')
@@ -3443,6 +3446,7 @@ def packing_orders_for_date(day):
         Order.objects.exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
         .exclude(pk__in=vp_ziralno_order_ids())
+        .exclude(napomena__icontains='Plaćanje: žiralno')
         .filter(_validated_orders_q())
         .filter(_picked_item_exists())
         .filter(
@@ -4280,7 +4284,7 @@ def _create_manual_order(request, *, existing=None):
     from .pricing import _loyalty_osnovica_iz_korpe, _postotni_popust, _standardna_dostava
     from .loyalty import loyalty_coupon_za_telefon
     placanje = (request.POST.get('placanje') or 'gotovina').strip().lower()
-    if placanje not in ('gotovina', 'kartica'):
+    if placanje not in ('gotovina', 'kartica', 'ziralno'):
         placanje = 'gotovina'
     popust_pct = _parse_manual_popust_pct(request.POST.get('popust_pct'))
     loyalty_auto = (request.POST.get('loyalty_auto') or '').strip().lower() in (
@@ -4381,11 +4385,28 @@ def _manual_popust_pct_display(order):
 def _manual_placanje(order):
     from .pricing import order_paid_by_card
 
-    return 'kartica' if order_paid_by_card(order) else 'gotovina'
+    for row in (getattr(order, 'popust_detalji', None) or []):
+        if not isinstance(row, dict):
+            continue
+        pay = str(row.get('placanje') or '').strip().lower()
+        if pay in ('kartica', 'ziralno', 'gotovina'):
+            return pay
+    if order_paid_by_card(order):
+        return 'kartica'
+    from .magacin import vp_order_ziralno
+    if vp_order_ziralno(order):
+        return 'ziralno'
+    return 'gotovina'
 
 
 def _strip_card_pay_note(napomena):
-    skip = {'plaćeno karticom', 'placeno karticom'}
+    skip = {
+        'plaćeno karticom',
+        'placeno karticom',
+        'plaćanje: žiralno',
+        'placanje: ziralno',
+        'plaćanje: ziralno',
+    }
     lines = [
         line for line in (napomena or '').splitlines()
         if line.strip().casefold() not in skip
@@ -4399,6 +4420,9 @@ def _order_list_napomena(napomena):
         'vp narudzba',
         'plaćeno karticom',
         'placeno karticom',
+        'plaćanje: žiralno',
+        'placanje: ziralno',
+        'plaćanje: ziralno',
     }
     kept = []
     for line in (napomena or '').splitlines():
@@ -4442,6 +4466,8 @@ def _save_manual_order(
         napomena = f'{napomena}\n{extra}'.strip() if napomena else extra
     if placanje == 'kartica':
         napomena = f'{napomena}\nPlaćeno karticom'.strip() if napomena else 'Plaćeno karticom'
+    elif placanje == 'ziralno':
+        napomena = f'{napomena}\nPlaćanje: žiralno'.strip() if napomena else 'Plaćanje: žiralno'
     popust = popust if popust is not None else Decimal('0.00')
     popust_pct = popust_pct if popust_pct is not None else Decimal('0')
     popust_detalji = []
@@ -4451,6 +4477,12 @@ def _save_manual_order(
             'iznos': str(popust),
             'postotak': '100',
             'placanje': 'kartica',
+        })
+    elif placanje == 'ziralno':
+        popust_detalji.append({
+            'opis': 'Žiralno',
+            'iznos': '0.00',
+            'placanje': 'ziralno',
         })
     elif popust > 0 and popust_pct > 0:
         pct_label = (
@@ -5971,7 +6003,37 @@ def magacin_pakuj_detail(request, broj):
                 return redirect('staff_magacin_pakuj')
             try:
                 validate_order_stock(order, user=request.user)
-                if not is_prenos_mp_order(order):
+                ocisti = (request.POST.get('ocisti_lokaciju') or '').strip() == '1'
+                if prenos_mp and ocisti:
+                    for raw in pick_lines or []:
+                        try:
+                            got = max(0, int(raw.get('got') or 0))
+                            need = max(0, int(raw.get('need') or 0))
+                        except (TypeError, ValueError):
+                            continue
+                        if got <= 0 or need <= 0 or got >= need:
+                            continue
+                        loc = _pick_line_loc(raw)
+                        try:
+                            item = order.stavke.filter(pk=int(raw.get('item_id') or 0)).first()
+                        except (TypeError, ValueError):
+                            item = None
+                        product = item.artikal if item else None
+                        location = _location_for_pick_label(loc) if loc else None
+                        if product is None or location is None:
+                            continue
+                        wipe_product_location_stock(
+                            product,
+                            location,
+                            variation=item.varijacija if item else None,
+                            user=request.user,
+                            napomena=f'Očisti lokaciju nakon prenosa u MP #{order.broj}',
+                        )
+                    messages.success(
+                        request,
+                        f'Prenos u MP #{order.broj} je validatovan. Lokacija je očišćena.',
+                    )
+                elif not is_prenos_mp_order(order):
                     messages.success(request, f'Narudžba #{order.broj} je validatovana.')
                 return redirect('staff_magacin_pakuj')
             except MagacinError as exc:
