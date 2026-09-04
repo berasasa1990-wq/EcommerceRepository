@@ -308,7 +308,27 @@ urlpatterns = [
     path('nalog/magacin/uvoz/', views_magacin.magacin_uvoz, name='staff_magacin_uvoz'),
     path('nalog/magacin/uvoz/novi/', views_magacin.magacin_uvoz_novi, name='staff_magacin_uvoz_novi'),
     path('nalog/magacin/uvoz/<int:pk>/stampa/', views_magacin.magacin_uvoz_stampa, name='staff_magacin_uvoz_stampa'),
+    path(
+        'nalog/magacin/uvoz/<int:pk>/popis/stampa/',
+        views_magacin.magacin_uvoz_popis_stampa,
+        name='staff_magacin_uvoz_popis_stampa',
+    ),
+    path(
+        'nalog/magacin/uvoz/<int:pk>/popis/',
+        views_magacin.magacin_uvoz_popis,
+        name='staff_magacin_uvoz_popis',
+    ),
     path('nalog/magacin/uvoz/<int:pk>/', views_magacin.magacin_uvoz_detail, name='staff_magacin_uvoz_detail'),
+    path(
+        'nalog/magacin/nivelacije/stampa/',
+        views_magacin.magacin_nivelacije_stampa,
+        name='staff_magacin_nivelacije_stampa',
+    ),
+    path(
+        'nalog/magacin/nivelacije/izmjenjene/<int:pk>/',
+        views_magacin.magacin_nivelacije_uvoz,
+        name='staff_magacin_nivelacije_uvoz',
+    ),
     path('nalog/magacin/nivelacije/', views_magacin.magacin_nivelacije, name='staff_magacin_nivelacije'),
     path('nalog/magacin/dobavljaci/', views_magacin.magacin_dobavljaci, name='staff_magacin_dobavljaci'),
     path('nalog/magacin/ponude/', views_magacin.magacin_ponude, name='staff_magacin_ponude'),

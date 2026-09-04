@@ -43,6 +43,12 @@ from .magacin import (
     apply_movement,
     attach_uvoz_list_metrics,
     create_magacin_uvoz_from_rows,
+    match_uvoz_popis_stavka,
+    set_uvoz_popis_qty,
+    finish_uvoz_popis,
+    reverse_uvoz_location_stock,
+    uvoz_popis_line_status,
+    uvoz_popis_delta,
     leftover_uvoz_stocks,
     move_uvoz_leftovers_to_mp,
     finish_popis,
@@ -890,8 +896,18 @@ def magacin_artikli(request):
             include_zero = True
             products, exact = zero_products, zero_exact
             context['include_zero'] = True
-    if exact:
-        url = reverse('staff_magacin_artikal', args=[exact.pk])
+    unique = exact
+    if unique is None:
+        if hasattr(products, 'count'):
+            if products.count() == 1:
+                unique = products.first()
+        else:
+            listed = list(products)
+            products = listed
+            if len(listed) == 1:
+                unique = listed[0]
+    if unique is not None:
+        url = reverse('staff_magacin_artikal', args=[unique.pk])
         params = {'pretraga': query}
         if include_zero:
             params['bez_zalihe'] = '1'
@@ -1790,14 +1806,99 @@ def _product_uvoz_price_history(product):
     return list(reversed(history)), chart
 
 
+def _fmt_pct(value):
+    if value is None:
+        return '—'
+    return f'{value}%'
+
+
 def _nivelacija_kljuc(product=None, naziv=''):
     if product is not None:
         return f'p:{product.pk}'
     return f'n:{(naziv or "").strip().casefold()}'
 
 
-def _nivelacije_rows(query=''):
-    """Artikli kojima se Mpc ili Vpc promijenio između uvoza (ista evidencija kao na artiklu)."""
+def _parse_nivelacija_money(value):
+    if value is None or value == '':
+        return None
+    if isinstance(value, Decimal):
+        return value
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+
+
+def _nivelacije_prices(stavka):
+    return {
+        'mpc': stavka.mpc_brutto,
+        'vpc': stavka.vpc_netto,
+        'nabavna': stavka.nabavna,
+        'fakturna': stavka.fakturna,
+        'marza': _uvoz_marza_pct(stavka),
+    }
+
+
+def _nivelacije_prices_from_prije(stavka):
+    raw = stavka.cijene_prije
+    if not isinstance(raw, dict) or not raw:
+        return None
+    return {
+        'mpc': _parse_nivelacija_money(raw.get('mpc')),
+        'vpc': _parse_nivelacija_money(raw.get('vpc')),
+        'nabavna': _parse_nivelacija_money(raw.get('nabavna')),
+        'fakturna': _parse_nivelacija_money(raw.get('fakturna')),
+        'marza': _parse_nivelacija_money(raw.get('marza')),
+    }
+
+
+def _nivelacije_diff(old, new, keys=None):
+    """Sve cijene koje su se promijenile. keys ograničava polja (prvi uvoz vs cijena na sajtu)."""
+    changes = []
+    for key, label, fmt in (
+        ('mpc', 'Mpc', _fmt_km),
+        ('vpc', 'Vpc', _fmt_km),
+        ('nabavna', 'Nabavna', _fmt_km),
+        ('fakturna', 'Fakturna', _fmt_km),
+        ('marza', 'Marža', _fmt_pct),
+    ):
+        if keys is not None and key not in keys:
+            continue
+        item = _change_row(label, fmt(old.get(key)), fmt(new.get(key)), new.get(key), old.get(key))
+        if item:
+            changes.append(item)
+    return changes
+
+
+def _nivelacije_event_row(stavka, changes, old, new, prev_stavka=None):
+    product = stavka.product or (prev_stavka.product if prev_stavka is not None else None)
+    naziv = product.naziv if product else (
+        stavka.artikal_naziv or (prev_stavka.artikal_naziv if prev_stavka is not None else '')
+    )
+    return {
+        'product': product,
+        'naziv': naziv,
+        'sifra': (product.sifra or '') if product else '',
+        'kljuc': _nivelacija_kljuc(product, naziv),
+        'uvoz': stavka.uvoz,
+        'prev_mpc': old.get('mpc'),
+        'mpc': new.get('mpc'),
+        'prev_vpc': old.get('vpc'),
+        'vpc': new.get('vpc'),
+        'prev_nabavna': old.get('nabavna'),
+        'nabavna': new.get('nabavna'),
+        'prev_fakturna': old.get('fakturna'),
+        'fakturna': new.get('fakturna'),
+        'prev_marza': old.get('marza'),
+        'marza': new.get('marza'),
+        'mpc_change': next((item for item in changes if item['field'] == 'Mpc'), None),
+        'vpc_change': next((item for item in changes if item['field'] == 'Vpc'), None),
+        'changes': changes,
+    }
+
+
+def _nivelacije_events(query=''):
+    """Svaka izmjena cijene pri uvozu, kronološki po artiklu."""
     stavke = list(
         UvozStavka.objects.select_related('uvoz', 'product')
         .order_by('uvoz__kreiran', 'id')
@@ -1813,48 +1914,134 @@ def _nivelacije_rows(query=''):
     rows = []
     for items in groups.values():
         prev = None
-        last = None
         change_count = 0
+        article_rows = []
         for stavka in items:
             if prev is not None:
-                mpc_changed = stavka.mpc_brutto != prev.mpc_brutto
-                vpc_changed = stavka.vpc_netto != prev.vpc_netto
-                if mpc_changed or vpc_changed:
+                old = _nivelacije_prices(prev)
+                new = _nivelacije_prices(stavka)
+                changes = _nivelacije_diff(old, new)
+                if changes:
                     change_count += 1
-                    product = stavka.product or prev.product
-                    naziv = product.naziv if product else (stavka.artikal_naziv or prev.artikal_naziv)
-                    last = {
-                        'product': product,
-                        'naziv': naziv,
-                        'sifra': (product.sifra or '') if product else '',
-                        'kljuc': _nivelacija_kljuc(product, naziv),
-                        'uvoz': stavka.uvoz,
-                        'prev_mpc': prev.mpc_brutto,
-                        'mpc': stavka.mpc_brutto,
-                        'prev_vpc': prev.vpc_netto,
-                        'vpc': stavka.vpc_netto,
-                        'mpc_change': _change_row(
-                            'Mpc', _fmt_km(prev.mpc_brutto), _fmt_km(stavka.mpc_brutto),
-                            stavka.mpc_brutto, prev.mpc_brutto,
-                        ),
-                        'vpc_change': _change_row(
-                            'Vpc', _fmt_km(prev.vpc_netto), _fmt_km(stavka.vpc_netto),
-                            stavka.vpc_netto, prev.vpc_netto,
-                        ),
-                    }
+                    article_rows.append(
+                        _nivelacije_event_row(stavka, changes, old, new, prev_stavka=prev)
+                    )
+            else:
+                raw = stavka.cijene_prije if isinstance(stavka.cijene_prije, dict) else {}
+                old = _nivelacije_prices_from_prije(stavka)
+                if old:
+                    keys = {key for key in old if raw.get(key) not in (None, '')}
+                    new = _nivelacije_prices(stavka)
+                    changes = _nivelacije_diff(old, new, keys=keys)
+                    if changes:
+                        change_count += 1
+                        article_rows.append(_nivelacije_event_row(stavka, changes, old, new))
             prev = stavka
-        if last:
-            last['change_count'] = change_count
-            rows.append(last)
+        for row in article_rows:
+            row['change_count'] = change_count
+            rows.append(row)
 
     q = (query or '').strip().casefold()
     if q:
         rows = [
             row for row in rows
-            if q in (row['naziv'] or '').casefold() or q in (row['sifra'] or '').casefold()
+            if q in (row['naziv'] or '').casefold()
+            or q in (row['sifra'] or '').casefold()
+            or q in (row['uvoz'].naziv or '').casefold()
         ]
-    rows.sort(key=lambda row: (row['uvoz'].kreiran, row['uvoz'].pk), reverse=True)
     return rows
+
+
+def _nivelacije_build(query=''):
+    """Pending = zadnja neoznačena izmjena po artiklu. Done = sve označene, za arhivu."""
+    events = _nivelacije_events(query)
+    if not events:
+        return [], []
+    marks = {
+        (oznaka.kljuc, oznaka.uvoz_id): oznaka
+        for oznaka in NivelacijaOznaka.objects.filter(
+            kljuc__in=[row['kljuc'] for row in events],
+            uvoz_id__in=[row['uvoz'].pk for row in events],
+        ).select_related('uvoz', 'kreirao')
+    }
+    for row in events:
+        oznaka = marks.get((row['kljuc'], row['uvoz'].pk))
+        row['izmjenjen'] = oznaka is not None
+        row['oznaka'] = oznaka
+
+    latest = {}
+    for row in events:
+        latest[row['kljuc']] = row
+    pending = [row for row in latest.values() if not row['izmjenjen']]
+    pending.sort(key=lambda row: (row['uvoz'].kreiran, row['uvoz'].pk), reverse=True)
+    done = [row for row in events if row['izmjenjen']]
+    return pending, done
+
+
+def _nivelacije_done_groups(rows):
+    """Izmjenjene nivelacije: datum označavanja, zatim uvoz iz kojeg su došle."""
+    by_date = {}
+    for row in rows:
+        marked = timezone.localtime(row['oznaka'].kreiran) if row.get('oznaka') else timezone.localtime(row['uvoz'].kreiran)
+        by_date.setdefault(marked.date(), []).append(row)
+
+    groups = []
+    for day in sorted(by_date.keys(), reverse=True):
+        day_rows = sorted(
+            by_date[day],
+            key=lambda row: (-row['uvoz'].kreiran.timestamp(), -row['uvoz'].pk, (row['naziv'] or '').casefold()),
+        )
+        uvozi = []
+        uvoz_map = {}
+        for row in day_rows:
+            uvoz_id = row['uvoz'].pk
+            if uvoz_id not in uvoz_map:
+                block = {'uvoz': row['uvoz'], 'rows': []}
+                uvoz_map[uvoz_id] = block
+                uvozi.append(block)
+            uvoz_map[uvoz_id]['rows'].append(row)
+        for block in uvozi:
+            block['rows'].sort(key=lambda row: (row['naziv'] or '').casefold())
+            marked_times = [
+                row['oznaka'].kreiran
+                for row in block['rows']
+                if row.get('oznaka') and row['oznaka'].kreiran
+            ]
+            marked = max(marked_times) if marked_times else block['uvoz'].kreiran
+            block['count'] = len(block['rows'])
+            block['marked_at'] = timezone.localtime(marked)
+        groups.append({
+            'date': day,
+            'date_label': day.strftime('%d.%m.%Y.'),
+            'count': len(day_rows),
+            'uvozi': uvozi,
+        })
+    return groups
+
+
+def _nivelacije_list_url(query='', show_done=False, uvoz_id=None):
+    if uvoz_id:
+        url = reverse('staff_magacin_nivelacije_uvoz', args=[uvoz_id])
+        params = {}
+        if query:
+            params['pretraga'] = query
+        if params:
+            return f'{url}?{urlencode(params)}'
+        return url
+    url = reverse('staff_magacin_nivelacije')
+    params = {}
+    if query:
+        params['pretraga'] = query
+    if show_done:
+        params['izmjenjene'] = '1'
+    if params:
+        return f'{url}?{urlencode(params)}'
+    return url
+
+
+def _nivelacije_rows(query=''):
+    pending, _done = _nivelacije_build(query)
+    return pending
 
 
 def _save_product_meta(request, product):
@@ -6015,11 +6202,12 @@ def magacin_uvoz_novi(request):
                 rows,
                 naziv=draft_naziv,
                 user=request.user,
+                apply_stock=False,
             )
             messages.success(
                 request,
                 f'Uvoz „{uvoz.naziv}” sačuvan: {result["updated"]} ažurirano, '
-                f'{result["created"]} kreirano, {result["qty_total"]} kom na Novi uvoz.',
+                f'{result["created"]} kreirano. Količine idu na lokaciju Uvoz nakon popisa.',
             )
             if result.get('errors'):
                 messages.warning(
@@ -6052,8 +6240,21 @@ def magacin_uvoz_detail(request, pk):
     )
     if request.method == 'POST' and request.POST.get('action') == 'delete':
         naziv = uvoz.naziv
-        uvoz.delete()
-        messages.success(request, f'Uvoz „{naziv}” je obrisan.')
+        try:
+            with transaction.atomic():
+                removed = reverse_uvoz_location_stock(uvoz, user=request.user)
+                uvoz.delete()
+        except MagacinError as exc:
+            messages.error(request, str(exc))
+            return redirect('staff_magacin_uvoz_detail', pk=uvoz.pk)
+        if removed['qty']:
+            messages.success(
+                request,
+                f'Uvoz „{naziv}” je obrisan. '
+                f'Sa lokacije Uvoz skinuto {removed["artikala"]} artikala ({removed["qty"]} kom).',
+            )
+        else:
+            messages.success(request, f'Uvoz „{naziv}” je obrisan.')
         return redirect('staff_magacin_uvoz')
 
     stavke = list(uvoz.stavke.select_related('product').all())
@@ -6061,6 +6262,7 @@ def magacin_uvoz_detail(request, pk):
     context.update({
         'uvoz': uvoz,
         'stavke': stavke,
+        'popis_stats': _uvoz_popis_stats(stavke),
     })
     return render(request, 'staff/magacin/uvoz_detail.html', context)
 
@@ -6083,6 +6285,244 @@ def magacin_uvoz_stampa(request, pk):
     })
 
 
+def _qty_num(value):
+    if value is None:
+        return None
+    amount = Decimal(value)
+    if amount == amount.to_integral_value():
+        return int(amount)
+    return float(amount)
+
+
+def _uvoz_popis_image(stavka):
+    product = stavka.product
+    if product is None:
+        return ''
+    image = product.prikazna_slika
+    if not image:
+        return ''
+    try:
+        return image.url
+    except ValueError:
+        return ''
+
+
+def _uvoz_popis_item(stavka):
+    product = stavka.product
+    expected = stavka.kolicina
+    counted = stavka.popisano
+    status = uvoz_popis_line_status(stavka)
+    delta = None if counted is None else uvoz_popis_delta(expected, counted)
+    return {
+        'id': stavka.pk,
+        'naziv': (product.naziv if product else stavka.artikal_naziv) or stavka.artikal_naziv,
+        'sifra': (product.sifra or '') if product else '',
+        'barkod': (product.barkod or '') if product else '',
+        'slika': _uvoz_popis_image(stavka),
+        'product_id': product.pk if product else None,
+        'ocekivano': _qty_num(expected),
+        'popisano': _qty_num(counted),
+        'razlika': _qty_num(delta) if delta is not None else None,
+        'status': status,
+        'status_label': {
+            'nije': 'Nije popisano',
+            'tacno': 'Tačno',
+            'visak': 'Višak',
+            'manjak': 'Manjak',
+        }.get(status, status),
+    }
+
+
+def _uvoz_popis_stats(stavke):
+    countable = [
+        row for row in stavke
+        if row.status not in (UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR)
+    ]
+    statuses = [uvoz_popis_line_status(row) for row in countable]
+    expected_qty = sum((row.kolicina or Decimal('0')) for row in countable)
+    counted_qty = sum((row.popisano or Decimal('0')) for row in countable if row.popisano is not None)
+    fakturna = sum((row.ukupno_fakturna or Decimal('0')) for row in countable)
+    return {
+        'artikala': len(countable),
+        'popisano_artikala': sum(1 for status in statuses if status != 'nije'),
+        'nije': sum(1 for status in statuses if status == 'nije'),
+        'tacno': sum(1 for status in statuses if status == 'tacno'),
+        'visak': sum(1 for status in statuses if status == 'visak'),
+        'manjak': sum(1 for status in statuses if status == 'manjak'),
+        'ocekivano_kom': _qty_num(expected_qty),
+        'popisano_kom': _qty_num(counted_qty),
+        'fakturna': fakturna,
+        'pct': (
+            round(100 * sum(1 for status in statuses if status != 'nije') / len(countable), 1)
+            if countable else 0
+        ),
+    }
+
+
+def _uvoz_popis_payload(uvoz, current_id=None):
+    stavke = list(
+        uvoz.stavke.select_related('product')
+        .exclude(status__in=[UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR])
+        .order_by('redoslijed', 'id')
+    )
+    items = [_uvoz_popis_item(row) for row in stavke]
+    current = None
+    if current_id:
+        current = next((item for item in items if item['id'] == current_id), None)
+    if current is None:
+        current = next((item for item in items if item['status'] == 'nije'), None)
+    if current is None and items:
+        current = items[0]
+    return {
+        'ok': True,
+        'uvoz_id': uvoz.pk,
+        'broj': uvoz.popis_broj,
+        'naziv': uvoz.naziv,
+        'zavrsen': uvoz.popis_status == Uvoz.PopisStatus.ZAVRSEN,
+        'zaliha_primljena': uvoz.zaliha_primljena,
+        'current_id': current['id'] if current else None,
+        'current': current,
+        'items': items,
+        'stats': _uvoz_popis_stats(stavke),
+    }
+
+
+def _uvoz_popis_parse_qty(raw):
+    text = str(raw or '').strip().replace(',', '.')
+    if not text:
+        raise MagacinError('Unesi količinu.')
+    try:
+        qty = Decimal(text)
+    except (InvalidOperation, ValueError):
+        raise MagacinError('Količina nije validan broj.')
+    if qty < 0:
+        qty = Decimal('0')
+    return qty
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_uvoz_popis(request, pk):
+    uvoz = get_object_or_404(
+        Uvoz.objects.select_related('kreirao'),
+        pk=pk,
+        izvor=Uvoz.Izvor.MAGACIN,
+    )
+    ajax = _popis_is_ajax(request)
+    current_id = None
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        try:
+            if uvoz.popis_status == Uvoz.PopisStatus.ZAVRSEN and action != 'select':
+                raise MagacinError('Popis je već završen.')
+            if action == 'scan':
+                stavka = match_uvoz_popis_stavka(uvoz, request.POST.get('q') or request.POST.get('barkod') or '')
+                current_id = stavka.pk
+                if request.POST.get('auto_plus') == '1':
+                    qty = (stavka.popisano or Decimal('0')) + 1
+                    set_uvoz_popis_qty(stavka, qty, user=request.user)
+                    stavka.refresh_from_db()
+            elif action in {'plus', 'minus', 'brzi', 'set_qty', 'confirm'}:
+                stavka = uvoz.stavke.filter(pk=request.POST.get('stavka_id')).first()
+                if stavka is None:
+                    raise MagacinError('Artikal nije pronađen u uvozu.')
+                current = stavka.popisano or Decimal('0')
+                if action == 'plus':
+                    qty = current + 1
+                elif action == 'minus':
+                    qty = current - 1
+                elif action == 'brzi':
+                    qty = current + _uvoz_popis_parse_qty(request.POST.get('delta') or '1')
+                else:
+                    qty = _uvoz_popis_parse_qty(request.POST.get('kolicina'))
+                set_uvoz_popis_qty(stavka, qty, user=request.user)
+                current_id = stavka.pk
+                if action == 'confirm':
+                    payload = _uvoz_popis_payload(uvoz, current_id=current_id)
+                    nxt = next((item for item in payload['items'] if item['status'] == 'nije'), None)
+                    current_id = nxt['id'] if nxt else current_id
+            elif action == 'select':
+                current_id = int(request.POST.get('stavka_id') or 0) or None
+            elif action == 'zavrsi':
+                result = finish_uvoz_popis(uvoz, user=request.user)
+                uvoz.refresh_from_db()
+                messages.success(
+                    request,
+                    'Popis uvoza je završen. '
+                    + (
+                        f'{_qty_num(result["applied_qty"])} kom dodano na lokaciju Uvoz. '
+                        if result['applied_qty']
+                        else ''
+                    )
+                    + f'Manjak {len(result["manjak"])}, višak {len(result["visak"])}.',
+                )
+                if ajax:
+                    payload = _uvoz_popis_payload(uvoz)
+                    payload['redirect'] = reverse('staff_magacin_uvoz')
+                    return JsonResponse(payload)
+                return redirect('staff_magacin_uvoz')
+            else:
+                raise MagacinError('Nepoznata akcija.')
+        except MagacinError as exc:
+            if ajax:
+                return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+            messages.error(request, str(exc))
+        except Exception as exc:
+            if ajax:
+                return JsonResponse({'ok': False, 'error': 'Zahtjev nije uspio.'}, status=500)
+            messages.error(request, str(exc))
+        if ajax:
+            uvoz.refresh_from_db()
+            return JsonResponse(_uvoz_popis_payload(uvoz, current_id=current_id))
+        if current_id:
+            return redirect(f'{reverse("staff_magacin_uvoz_popis", args=[uvoz.pk])}?s={current_id}')
+        return redirect('staff_magacin_uvoz_popis', pk=uvoz.pk)
+
+    raw_current = request.GET.get('s')
+    try:
+        current_id = int(raw_current) if raw_current else None
+    except (TypeError, ValueError):
+        current_id = None
+    payload = _uvoz_popis_payload(uvoz, current_id=current_id)
+    context = _magacin_context(request, section='uvoz', page_title=f'Popis uvoza #{uvoz.popis_broj}')
+    context.update({
+        'uvoz': uvoz,
+        'payload': payload,
+        'payload_json': json.dumps(payload, ensure_ascii=False, default=str),
+        'uvoz_popis_page': True,
+    })
+    return render(request, 'staff/magacin/uvoz_popis.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_uvoz_popis_stampa(request, pk):
+    uvoz = get_object_or_404(
+        Uvoz.objects.select_related('kreirao', 'popis_zavrsio'),
+        pk=pk,
+        izvor=Uvoz.Izvor.MAGACIN,
+    )
+    stavke = [
+        _uvoz_popis_item(row)
+        for row in uvoz.stavke.select_related('product')
+        .exclude(status__in=[UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR])
+        .order_by('redoslijed', 'id')
+    ]
+    manjak = [row for row in stavke if row['status'] == 'manjak']
+    visak = [row for row in stavke if row['status'] == 'visak']
+    nije = [row for row in stavke if row['status'] == 'nije']
+    return render(request, 'staff/magacin/uvoz_popis_print.html', {
+        'uvoz': uvoz,
+        'stavke': stavke,
+        'manjak': manjak,
+        'visak': visak,
+        'nije': nije,
+        'stats': _uvoz_popis_stats(list(uvoz.stavke.all())),
+        'print_mode': True,
+        'printed_at': timezone.localtime(),
+    })
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def magacin_nivelacije(request):
@@ -6090,6 +6530,26 @@ def magacin_nivelacije(request):
     show_done = (request.GET.get('izmjenjene') or request.POST.get('izmjenjene') or '') == '1'
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
+        pending, _done = _nivelacije_build(query)
+        if action == 'oznaci_sve':
+            created = 0
+            for row in pending:
+                _, was_created = NivelacijaOznaka.objects.get_or_create(
+                    kljuc=row['kljuc'],
+                    uvoz=row['uvoz'],
+                    defaults={'product': row.get('product'), 'kreirao': request.user},
+                )
+                if was_created:
+                    created += 1
+            if created:
+                messages.success(
+                    request,
+                    f'{created} artikala označeno kao izmjenjeno i prebačeno u arhivu.',
+                )
+            else:
+                messages.info(request, 'Nema artikala za označavanje.')
+            return redirect(_nivelacije_list_url(query, show_done=True))
+
         kljuc = (request.POST.get('kljuc') or '').strip()[:220]
         uvoz_id = request.POST.get('uvoz_id')
         product_id = request.POST.get('product_id')
@@ -6110,36 +6570,118 @@ def magacin_nivelacije(request):
             elif action == 'skini':
                 NivelacijaOznaka.objects.filter(kljuc=kljuc, uvoz=uvoz).delete()
                 messages.success(request, 'Artikal je vraćen na nivelacije.')
+            else:
+                messages.error(request, 'Nivelacija nije pronađena.')
         else:
             messages.error(request, 'Nivelacija nije pronađena.')
-        params = {}
-        if query:
-            params['pretraga'] = query
-        if show_done:
-            params['izmjenjene'] = '1'
-        url = reverse('staff_magacin_nivelacije')
-        if params:
-            url = f'{url}?{urlencode(params)}'
-        return redirect(url)
+        return redirect(_nivelacije_list_url(query, show_done=show_done))
 
-    rows = _nivelacije_rows(query)
-    marks = {
-        (oznaka.kljuc, oznaka.uvoz_id)
-        for oznaka in NivelacijaOznaka.objects.filter(
-            kljuc__in=[row['kljuc'] for row in rows],
-            uvoz_id__in=[row['uvoz'].pk for row in rows],
-        )
-    }
-    for row in rows:
-        row['izmjenjen'] = (row['kljuc'], row['uvoz'].pk) in marks
-    rows = [row for row in rows if row['izmjenjen'] == show_done]
+    pending, done = _nivelacije_build(query)
+    rows = done if show_done else pending
+    done_groups = _nivelacije_done_groups(done) if show_done else []
     context = _magacin_context(request, section='nivelacije', page_title='Nivelacije — Magacin')
     context.update({
         'rows': rows,
+        'done_groups': done_groups,
+        'done_uvoz': None,
+        'pending_count': len(pending),
+        'done_count': len(done),
+        'done_uvoz_count': len({row['uvoz'].pk for row in done}),
         'magacin_search': query,
         'show_done': show_done,
     })
     return render(request, 'staff/magacin/nivelacije.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_nivelacije_uvoz(request, pk):
+    query = _magacin_search_query(request)
+    uvoz = get_object_or_404(Uvoz, pk=pk)
+    pending, done = _nivelacije_build(query)
+    rows = [row for row in done if row['uvoz'].pk == uvoz.pk]
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        if action == 'skini_sve':
+            kljucevi = [row['kljuc'] for row in rows]
+            deleted, _ = NivelacijaOznaka.objects.filter(uvoz=uvoz, kljuc__in=kljucevi).delete()
+            if deleted:
+                messages.success(request, 'Artikli su vraćeni na nivelacije.')
+            else:
+                messages.info(request, 'Nema artikala za vraćanje.')
+            return redirect(_nivelacije_list_url(query, show_done=True))
+
+        kljuc = (request.POST.get('kljuc') or '').strip()[:220]
+        product_id = request.POST.get('product_id')
+        product = None
+        if product_id:
+            product = Product.objects.filter(pk=product_id).first()
+            if product:
+                kljuc = _nivelacija_kljuc(product)
+        if kljuc and action == 'skini':
+            NivelacijaOznaka.objects.filter(kljuc=kljuc, uvoz=uvoz).delete()
+            messages.success(request, 'Artikal je vraćen na nivelacije.')
+            remaining = [
+                row for row in rows
+                if row['kljuc'] != kljuc
+            ]
+            if remaining:
+                return redirect(_nivelacije_list_url(query, uvoz_id=uvoz.pk))
+            return redirect(_nivelacije_list_url(query, show_done=True))
+        messages.error(request, 'Nivelacija nije pronađena.')
+        return redirect(_nivelacije_list_url(query, uvoz_id=uvoz.pk))
+
+    if not rows:
+        if not query:
+            messages.info(request, 'Nema izmjenjenih artikala za ovaj uvoz.')
+            return redirect(_nivelacije_list_url(query, show_done=True))
+        _, all_done = _nivelacije_build('')
+        if not any(row['uvoz'].pk == uvoz.pk for row in all_done):
+            messages.info(request, 'Nema izmjenjenih artikala za ovaj uvoz.')
+            return redirect(_nivelacije_list_url('', show_done=True))
+
+    marked_times = [
+        row['oznaka'].kreiran
+        for row in rows
+        if row.get('oznaka') and row['oznaka'].kreiran
+    ]
+    marked_at = timezone.localtime(max(marked_times)) if marked_times else timezone.localtime(uvoz.kreiran)
+    context = _magacin_context(request, section='nivelacije', page_title=f'{uvoz.naziv} — Nivelacije')
+    context.update({
+        'rows': rows,
+        'done_groups': [],
+        'done_uvoz': uvoz,
+        'done_uvoz_marked_at': marked_at,
+        'pending_count': len(pending),
+        'done_count': len(done),
+        'done_uvoz_count': len({row['uvoz'].pk for row in done}),
+        'magacin_search': query,
+        'show_done': True,
+    })
+    return render(request, 'staff/magacin/nivelacije.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def magacin_nivelacije_stampa(request):
+    query = _magacin_search_query(request)
+    show_done = (request.GET.get('izmjenjene') or '') == '1'
+    uvoz_id = request.GET.get('uvoz')
+    pending, done = _nivelacije_build(query)
+    rows = done if show_done else pending
+    if uvoz_id:
+        rows = [row for row in rows if str(row['uvoz'].pk) == str(uvoz_id)]
+        show_done = True
+    done_for_groups = rows if show_done else []
+    return render(request, 'staff/magacin/nivelacije_print.html', {
+        'rows': rows,
+        'done_groups': _nivelacije_done_groups(done_for_groups) if show_done else [],
+        'show_done': show_done,
+        'magacin_search': query,
+        'print_mode': True,
+        'printed_at': timezone.localtime(),
+    })
 
 
 @login_required(login_url='login')

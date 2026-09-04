@@ -1,0 +1,91 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+
+{% block magacin_content %}
+<div class="up-page" id="upApp" data-url="{% url 'staff_magacin_uvoz_popis' uvoz.pk %}" data-print="{% url 'staff_magacin_uvoz_popis_stampa' uvoz.pk %}">
+    <script type="application/json" id="upPayload">{{ payload_json|safe }}</script>
+    {% csrf_token %}
+    <div class="up-crumb">
+        <a href="{% url 'staff_magacin_uvoz' %}">Uvoz</a>
+        <span>›</span>
+        <a href="{% url 'staff_magacin_uvoz_detail' uvoz.pk %}">{{ uvoz.naziv }}</a>
+        <span>›</span>
+        <strong>Popis uvoza</strong>
+    </div>
+    <div class="up-head">
+        <div>
+            <h1>POPIS UVOZA #{{ uvoz.popis_broj }}</h1>
+            <p class="up-meta">
+                Faktura: <strong id="upFaktura">{{ payload.stats.fakturna }} KM</strong>
+                <span>|</span> Artikala: <strong id="upArtikala">{{ payload.stats.artikala }}</strong>
+                <span>|</span> Ukupno komada: <strong id="upKomada">{{ payload.stats.ocekivano_kom }}</strong>
+            </p>
+        </div>
+        <div class="up-head-actions">
+            <a class="mg-btn" href="{% url 'staff_magacin_uvoz_detail' uvoz.pk %}">← Nazad na uvoz</a>
+            {% if payload.zavrsen %}
+            <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_uvoz_popis_stampa' uvoz.pk %}" target="_blank" rel="noopener">Štampaj manjak / višak</a>
+            {% else %}
+            <button type="button" class="mg-btn mg-btn-primary" id="upFinish">✓ Završi popis</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="up-progress">
+        <div class="up-progress-top">
+            <span>Napredak popisa</span>
+            <strong><span id="upProgDone">{{ payload.stats.popisano_artikala }}</span> / <span id="upProgAll">{{ payload.stats.artikala }}</span></strong>
+        </div>
+        <div class="up-progress-bar"><i id="upProgBar" style="width: {{ payload.stats.pct }}%"></i></div>
+        <div class="up-progress-pct" id="upProgPct">{{ payload.stats.pct }}% završeno</div>
+    </div>
+
+    <form class="up-scan" id="upScanForm" autocomplete="off">
+        <span class="up-scan-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        </span>
+        <input type="search" id="upScan" name="q" placeholder="Skeniraj barkod ili unesi šifru / naziv artikla..." {% if payload.zavrsen %}disabled{% endif %}>
+        <span class="up-scan-live" id="upScanLive">SKENER AKTIVAN</span>
+    </form>
+    <p class="up-error" id="upError" hidden></p>
+
+    <section class="up-current" id="upCurrent" hidden></section>
+
+    <div class="up-stats" id="upStats"></div>
+
+    <div class="up-toolbar">
+        <div class="up-tabs" id="upTabs">
+            <button type="button" data-filter="svi" class="is-active">Svi <span id="upTabSvi">{{ payload.stats.artikala }}</span></button>
+            <button type="button" data-filter="tacno">Tačno <span id="upTabTacno">{{ payload.stats.tacno }}</span></button>
+            <button type="button" data-filter="visak">Višak <span id="upTabVisak">{{ payload.stats.visak }}</span></button>
+            <button type="button" data-filter="manjak">Manjak <span id="upTabManjak">{{ payload.stats.manjak }}</span></button>
+            <button type="button" data-filter="nije">Nije popisano <span id="upTabNije">{{ payload.stats.nije }}</span></button>
+        </div>
+        <div class="up-find">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <input type="search" id="upFilterQ" placeholder="Pretraži rezultate...">
+        </div>
+    </div>
+
+    <div class="up-table-wrap">
+        <table class="up-table">
+            <thead>
+                <tr>
+                    <th>Šifra</th>
+                    <th>Artikal</th>
+                    <th>Barkod</th>
+                    <th class="num">U uvozu</th>
+                    <th class="num">Popisano</th>
+                    <th class="num">Razlika</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="upRows"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script src="{% static 'js/staff-uvoz-popis.js' %}?v=20260904popisMob"></script>
+{% endblock %}

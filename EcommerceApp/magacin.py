@@ -924,7 +924,24 @@ def _find_product_exact_name(name):
     return None
 
 
-def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
+def _cijene_prije_snapshot(product):
+    """Cijene na postojećem artiklu prije uvoza (za nivelacije)."""
+    if product is None or not getattr(product, 'pk', None):
+        return None
+    snap = {}
+    if product.cijena is not None:
+        snap['mpc'] = str(product.cijena)
+    meta = (
+        ProductWarehouseMeta.objects.filter(product=product)
+        .only('veleprodajna_cijena')
+        .first()
+    )
+    if meta is not None and meta.veleprodajna_cijena is not None:
+        snap['vpc'] = str(meta.veleprodajna_cijena)
+    return snap or None
+
+
+def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena='', apply_stock=True):
     """
     Primijeni jedan red uvoza na Magacin.
     Vraća dict: status, product, poruka, qty
@@ -954,6 +971,7 @@ def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
             product = product_guess
             created = False
             mpc_changed = False
+            cijene_prije = _cijene_prije_snapshot(product)
             now = timezone.now()
             if product is None:
                 if price is None or price <= 0:
@@ -998,22 +1016,28 @@ def apply_magacin_uvoz_row(row, *, location=None, user=None, napomena=''):
                     meta.veleprodajna_cijena = vpc
                     meta.save(update_fields=['veleprodajna_cijena'])
 
-            apply_movement(
-                product=product,
-                location=location,
-                tip=WarehouseMovement.Tip.PRIJEM,
-                kolicina=qty,
-                napomena=(napomena or 'Uvoz Excel')[:300],
-                user=user,
-            )
+            if apply_stock:
+                apply_movement(
+                    product=product,
+                    location=location,
+                    tip=WarehouseMovement.Tip.PRIJEM,
+                    kolicina=qty,
+                    napomena=(napomena or 'Uvoz Excel')[:300],
+                    user=user,
+                )
             status = UvozStavka.Status.CREATED if created else UvozStavka.Status.UPDATED
             price_label = f'{price} KM' if price is not None and price > 0 else 'cijena ista'
+            if apply_stock:
+                poruka = f'+{qty} kom na Novi uvoz, {price_label}'
+            else:
+                poruka = f'+{qty} kom za popis uvoza, {price_label}'
             return {
                 'status': status,
                 'product': product,
-                'poruka': f'+{qty} kom na Novi uvoz, {price_label}',
+                'poruka': poruka,
                 'qty': qty,
                 'mpc_changed': mpc_changed,
+                'cijene_prije': cijene_prije,
             }
     except Exception as exc:
         return {
@@ -1072,8 +1096,8 @@ def apply_magacin_uvoz(rows, *, user=None, filename=''):
     return stats
 
 
-def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
-    """Snimi Magacin uvoz + stavke i primijeni količine na lokaciju Novi uvoz."""
+def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None, apply_stock=True):
+    """Snimi Magacin uvoz + stavke. Količine na lokaciju Uvoz idu odmah ili poslije popisa."""
     named = [(row.get('artikal') or '').strip() for row in rows]
     if not any(named):
         raise MagacinError('Nema redova za uvoz. Zalijepi podatke iz Excela.')
@@ -1101,6 +1125,7 @@ def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
             naziv=naziv[:200],
             izvor=Uvoz.Izvor.MAGACIN,
             kreirao=user if getattr(user, 'is_authenticated', False) else None,
+            zaliha_primljena=bool(apply_stock),
         )
         stavke = []
         for i, row in enumerate(rows):
@@ -1109,7 +1134,7 @@ def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
                 continue
             stats['rows_total'] += 1
             result = apply_magacin_uvoz_row(
-                row, location=location, user=user, napomena=note,
+                row, location=location, user=user, napomena=note, apply_stock=apply_stock,
             )
             status = result['status']
             product = result['product']
@@ -1147,6 +1172,7 @@ def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
                 status=status,
                 poruka=(result['poruka'] or '')[:300],
                 redoslijed=i,
+                cijene_prije=result.get('cijene_prije'),
             ))
         UvozStavka.objects.bulk_create(stavke)
         uvoz.broj_redova = len(stavke)
@@ -1160,6 +1186,165 @@ def create_magacin_uvoz_from_rows(rows, *, naziv='', user=None):
 
     stats['uvoz'] = uvoz
     return uvoz, stats
+
+
+def uvoz_popis_delta(expected, counted):
+    exp = expected if expected is not None else Decimal('0')
+    got = counted if counted is not None else Decimal('0')
+    return got - exp
+
+
+def uvoz_popis_line_status(stavka):
+    if stavka.popisano is None:
+        return 'nije'
+    delta = uvoz_popis_delta(stavka.kolicina, stavka.popisano)
+    if delta == 0:
+        return 'tacno'
+    if delta > 0:
+        return 'visak'
+    return 'manjak'
+
+
+def match_uvoz_popis_stavka(uvoz, query):
+    q = (query or '').strip()
+    if not q:
+        raise MagacinError('Unesi barkod, šifru ili naziv.')
+    folded = q.casefold()
+    stavke = list(
+        uvoz.stavke.select_related('product')
+        .exclude(status__in=[UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR])
+        .order_by('redoslijed', 'id')
+    )
+    exact = []
+    loose = []
+    for stavka in stavke:
+        product = stavka.product
+        barkod = (product.barkod or '').strip() if product else ''
+        sifra = (product.sifra or '').strip() if product else ''
+        naziv = (product.naziv if product else stavka.artikal_naziv) or ''
+        if q == barkod or q == sifra or q == (stavka.artikal_naziv or '').strip():
+            exact.append(stavka)
+            continue
+        hay = f'{barkod} {sifra} {naziv} {stavka.artikal_naziv or ""}'.casefold()
+        if folded in hay:
+            loose.append(stavka)
+    hits = exact or loose
+    if len(hits) == 1:
+        return hits[0]
+    if len(hits) > 1:
+        raise MagacinError('Više artikala u uvozu. Unesi tačnu šifru ili barkod.')
+    raise MagacinError('Artikal nije u ovom uvozu.')
+
+
+def set_uvoz_popis_qty(stavka, qty, *, user=None):
+    if stavka.uvoz.popis_status == Uvoz.PopisStatus.ZAVRSEN:
+        raise MagacinError('Popis je već završen.')
+    amount = qty if isinstance(qty, Decimal) else Decimal(str(qty))
+    if amount < 0:
+        amount = Decimal('0')
+    stavka.popisano = amount
+    stavka.popisano_at = timezone.now()
+    stavka.save(update_fields=['popisano', 'popisano_at'])
+    uvoz = stavka.uvoz
+    if uvoz.popis_status == Uvoz.PopisStatus.NIJE:
+        uvoz.popis_status = Uvoz.PopisStatus.U_TOKU
+        uvoz.save(update_fields=['popis_status', 'azuriran'])
+    return stavka
+
+
+def finish_uvoz_popis(uvoz, *, user=None):
+    if uvoz.popis_status == Uvoz.PopisStatus.ZAVRSEN:
+        raise MagacinError('Popis je već završen.')
+    location = ensure_novi_uvoz_location()
+    stavke = list(
+        uvoz.stavke.select_related('product')
+        .exclude(status__in=[UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR])
+    )
+    applied = Decimal('0')
+    now = timezone.now()
+    for stavka in stavke:
+        if stavka.popisano is None:
+            stavka.popisano = Decimal('0')
+            stavka.popisano_at = now
+            stavka.save(update_fields=['popisano', 'popisano_at'])
+    if not uvoz.zaliha_primljena:
+        note = f'Popis uvoza: {uvoz.naziv}'[:300]
+        for stavka in stavke:
+            qty = stavka.popisano if stavka.popisano is not None else Decimal('0')
+            if qty > 0 and stavka.product_id:
+                apply_movement(
+                    product=stavka.product,
+                    location=location,
+                    tip=WarehouseMovement.Tip.PRIJEM,
+                    kolicina=qty,
+                    napomena=note,
+                    user=user,
+                )
+                applied += qty
+        uvoz.zaliha_primljena = True
+    uvoz.popis_status = Uvoz.PopisStatus.ZAVRSEN
+    uvoz.popis_zavrsen_at = timezone.now()
+    uvoz.popis_zavrsio = user if getattr(user, 'is_authenticated', False) else None
+    uvoz.save(update_fields=[
+        'zaliha_primljena', 'popis_status', 'popis_zavrsen_at', 'popis_zavrsio', 'azuriran',
+    ])
+    return {
+        'applied_qty': applied,
+        'manjak': [
+            row for row in stavke
+            if uvoz_popis_line_status(row) == 'manjak'
+        ],
+        'visak': [
+            row for row in stavke
+            if uvoz_popis_line_status(row) == 'visak'
+        ],
+    }
+
+
+def reverse_uvoz_location_stock(uvoz, *, user=None):
+    """Skini s lokacije Uvoz količine koje je ovaj uvoz tamo stavio."""
+    if not uvoz.zaliha_primljena:
+        return {'artikala': 0, 'qty': 0}
+    location = uvoz_location() or ensure_novi_uvoz_location()
+    used_popis = uvoz.popis_status == Uvoz.PopisStatus.ZAVRSEN
+    note = f'Brisanje uvoza: {uvoz.naziv}'[:300]
+    removed_qty = 0
+    removed_art = 0
+    stavke = (
+        uvoz.stavke.select_related('product')
+        .exclude(status__in=[UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR])
+    )
+    for stavka in stavke:
+        if not stavka.product_id:
+            continue
+        if used_popis:
+            raw = stavka.popisano if stavka.popisano is not None else Decimal('0')
+        else:
+            raw = stavka.kolicina or Decimal('0')
+        qty = _int(raw)
+        if qty <= 0:
+            continue
+        stock = WarehouseStock.objects.filter(
+            product=stavka.product,
+            location=location,
+        ).first()
+        if stock is None:
+            continue
+        dostupno = max(0, int(stock.kolicina or 0) - int(stock.rezervisano or 0))
+        take = min(qty, dostupno)
+        if take <= 0:
+            continue
+        apply_movement(
+            product=stavka.product,
+            location=location,
+            tip=WarehouseMovement.Tip.PRODAJA,
+            kolicina=take,
+            napomena=note,
+            user=user,
+        )
+        removed_qty += take
+        removed_art += 1
+    return {'artikala': removed_art, 'qty': removed_qty}
 
 
 def uvoz_location():
@@ -1460,10 +1645,13 @@ def search_products(query, *, limit=40, include_zero=False):
         folded = q.casefold()
         exact_qs = magacin_products_qs().filter(
             Q(sifra__iexact=q)
+            | Q(sifra_normalized__iexact=folded)
             | Q(barkod__iexact=q)
+            | Q(barkod_normalized__iexact=folded)
             | Q(naziv__iexact=q)
             | Q(naziv_normalized__iexact=folded)
             | Q(varijacije__sifra__iexact=q)
+            | Q(varijacije__sifra_normalized__iexact=folded)
             | Q(varijacije__naziv__iexact=q)
         ).distinct()
         exact = list(exact_qs[:2])

@@ -5346,6 +5346,33 @@ class Uvoz(models.Model):
     )
     log_detalji = models.JSONField(default=list, blank=True, verbose_name='Log')
 
+    class PopisStatus(models.TextChoices):
+        NIJE = 'nije', 'Nije popisano'
+        U_TOKU = 'u_toku', 'Popis u toku'
+        ZAVRSEN = 'zavrsen', 'Popis završen'
+
+    popis_status = models.CharField(
+        max_length=12,
+        choices=PopisStatus.choices,
+        default=PopisStatus.NIJE,
+        db_index=True,
+        verbose_name='Status popisa',
+    )
+    popis_zavrsen_at = models.DateTimeField(null=True, blank=True, verbose_name='Popis završen')
+    popis_zavrsio = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='zavrseni_uvoz_popisi',
+        verbose_name='Popis završio',
+    )
+    zaliha_primljena = models.BooleanField(
+        default=True,
+        verbose_name='Zaliha primljena',
+        help_text='Da li je količina već stavljena na lokaciju Uvoz.',
+    )
+
     class Meta:
         verbose_name = 'Uvoz'
         verbose_name_plural = 'Uvozi'
@@ -5357,6 +5384,11 @@ class Uvoz(models.Model):
     @property
     def stavke_count(self):
         return self.stavke.count()
+
+    @property
+    def popis_broj(self):
+        year = self.kreiran.year if self.kreiran else timezone.now().year
+        return f'{year}-{self.pk:04d}'
 
 
 class UvozStavka(models.Model):
@@ -5414,6 +5446,20 @@ class UvozStavka(models.Model):
     )
     poruka = models.CharField(max_length=300, blank=True, verbose_name='Poruka')
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Red')
+    cijene_prije = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name='Cijene prije uvoza',
+        help_text='MPC/VPC (i ostalo) na artiklu prije ovog uvoza, za nivelacije.',
+    )
+    popisano = models.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        verbose_name='Popisano',
+    )
+    popisano_at = models.DateTimeField(null=True, blank=True, verbose_name='Popisano u')
 
     class Meta:
         verbose_name = 'Stavka uvoza'
@@ -6193,7 +6239,7 @@ class MagacinDeklaracijaBrend(models.Model):
 
 
 class NivelacijaOznaka(models.Model):
-    """Artikal označen kao izmjenjen za konkretan uvoz (zadnju promjenu cijene)."""
+    """Artikal označen kao izmjenjen na kasi za konkretan uvoz (promjena cijene)."""
 
     kljuc = models.CharField(max_length=220, db_index=True)
     uvoz = models.ForeignKey(

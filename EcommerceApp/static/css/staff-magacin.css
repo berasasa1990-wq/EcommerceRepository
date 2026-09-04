@@ -8426,60 +8426,60 @@ a.bp-row-main { text-decoration: none; color: inherit; }
 }
 
 /* ——— Narudžbe restyle (samo ova stranica) ——— */
-.magacin-page.is-narudzbe {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) {
     --mg-accent: #FF5A00;
     --mg-accent-hover: #E65100;
     --mg-accent-soft: #fff4eb;
     --mg-accent-line: #ffd7b8;
 }
-.magacin-page.is-narudzbe .mg-sidebar {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-sidebar {
     background: #fafbfc;
     border-right-color: #eef0f2;
 }
-.magacin-page.is-narudzbe .mg-brand-lockup {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-brand-lockup {
     color: #8b9198;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: .14em;
     padding: 16px 16px 10px;
 }
-.magacin-page.is-narudzbe .mg-brand-cube {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-brand-cube {
     width: 22px;
     height: 22px;
     border-radius: 6px;
     background: #eceff2;
     color: #8b9198;
 }
-.magacin-page.is-narudzbe .mg-nav {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-nav {
     padding: 4px 10px 12px;
     gap: 4px;
 }
-.magacin-page.is-narudzbe .mg-nav a {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-nav a {
     border-radius: 12px;
     padding: 10px 12px;
     color: #4b5563;
 }
-.magacin-page.is-narudzbe .mg-nav a.is-active {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-nav a.is-active {
     background: var(--mg-accent);
     color: #fff;
     font-weight: 700;
 }
-.magacin-page.is-narudzbe .mg-nav a.is-active svg {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-nav a.is-active svg {
     color: #fff;
 }
-.magacin-page.is-narudzbe .mg-nav a:hover:not(.is-active) {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-nav a:hover:not(.is-active) {
     background: #f3f4f6;
 }
-.magacin-page.is-narudzbe .mg-main {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-main {
     background: #f4f6f8;
     padding: 22px 28px 40px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-page-head {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-page-head {
     align-items: center;
     margin-bottom: 18px;
     gap: 16px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-page-head h1 {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-page-head h1 {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -8488,7 +8488,7 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     letter-spacing: -.03em;
     color: #111;
 }
-.magacin-page.is-narudzbe .mg-orders-title-ico {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-title-ico {
     width: 36px;
     height: 36px;
     display: inline-flex;
@@ -8497,19 +8497,19 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     color: var(--mg-accent);
     flex-shrink: 0;
 }
-.magacin-page.is-narudzbe .mg-orders-title-ico svg {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-title-ico svg {
     width: 30px;
     height: 30px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-page-head .mg-count {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-page-head .mg-count {
     margin-top: 4px;
     font-size: 13.5px;
     color: #8b9198;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-toolbar-actions {
     gap: 10px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-pill {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-toolbar-actions .mg-btn-pill {
     min-height: 42px;
     padding: 8px 16px;
     border-radius: 12px;
@@ -8519,33 +8519,33 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     font-weight: 700;
     box-shadow: none;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-pill:hover {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-toolbar-actions .mg-btn-pill:hover {
     background: var(--mg-accent-soft);
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-primary {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-toolbar-actions .mg-btn-primary {
     background: var(--mg-accent);
     border-color: var(--mg-accent);
     color: #fff;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-primary:hover {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-toolbar-actions .mg-btn-primary:hover {
     background: var(--mg-accent-hover);
     border-color: var(--mg-accent-hover);
     filter: none;
 }
-.magacin-page.is-narudzbe .mg-orders-panel {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-panel {
     background: #fff;
     border: 1px solid #eef0f2;
     border-radius: 18px;
     padding: 6px 18px 18px;
     box-shadow: 0 1px 2px rgba(17, 17, 17, .03);
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-filter-tabs {
     gap: 4px 28px;
     margin: 0 0 16px;
     padding: 10px 4px 0;
     border-bottom: 1px solid #eef0f2;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs a {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-filter-tabs a {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -8555,29 +8555,29 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     font-weight: 650;
     box-shadow: none;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs a svg {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-filter-tabs a svg {
     width: 18px;
     height: 18px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs a.is-active {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-filter-tabs a.is-active {
     color: var(--mg-accent);
     box-shadow: inset 0 -2px 0 var(--mg-accent);
 }
-.magacin-page.is-narudzbe .mg-orders-find {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-find {
     gap: 10px;
     margin: 0 0 16px;
 }
-.magacin-page.is-narudzbe .mg-orders-find .mg-icon-field input {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-find .mg-icon-field input {
     height: 46px;
     border-radius: 12px;
     background: #fff;
     border: 1px solid #e5e7eb;
 }
-.magacin-page.is-narudzbe .mg-orders-find .mg-icon-field input:focus {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-find .mg-icon-field input:focus {
     border-color: var(--mg-accent);
     box-shadow: 0 0 0 3px rgba(255, 90, 0, .12);
 }
-.magacin-page.is-narudzbe .mg-orders-find .mg-btn-primary {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-find .mg-btn-primary {
     min-height: 46px;
     padding: 0 18px;
     border-radius: 12px;
@@ -8586,26 +8586,26 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     color: #fff;
     font-weight: 700;
 }
-.magacin-page.is-narudzbe .mg-orders-find .mg-btn-primary:hover {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-find .mg-btn-primary:hover {
     background: var(--mg-accent-hover);
     border-color: var(--mg-accent-hover);
     filter: none;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-bulk-bar {
     gap: 10px;
     margin: 0 0 14px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-check {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-bulk-bar .mg-check {
     font-weight: 700;
     color: #111;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-check input,
-.magacin-page.is-narudzbe .mg-order-check {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-bulk-bar .mg-check input,
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-order-check {
     accent-color: var(--mg-accent);
     width: 18px;
     height: 18px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-btn-pill {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-bulk-bar .mg-btn-pill {
     min-height: 40px;
     border-radius: 12px;
     border: 1px solid #e5e7eb;
@@ -8613,27 +8613,27 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     color: #111;
     font-weight: 700;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-btn-pill:hover {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-bulk-bar .mg-btn-pill:hover {
     background: #f8f9fa;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-btn-pill:disabled,
-.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar #mgPackingSelected.is-packing-idle {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-bulk-bar .mg-btn-pill:disabled,
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-bulk-bar #mgPackingSelected.is-packing-idle {
     background: #f3f4f6;
     border-color: #eceef1;
     color: #9aa0a6;
     opacity: 1;
 }
-.magacin-page.is-narudzbe .mg-orders-card {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-card {
     border: 0;
     padding: 0;
     border-radius: 0;
     box-shadow: none;
     background: transparent;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-table {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-table {
     width: 100%;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-table thead th {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-table thead th {
     background: #f6f7f9;
     color: #9aa0a6;
     font-size: 11px;
@@ -8642,61 +8642,61 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     padding: 12px 12px;
     border: 0;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-table thead th:first-child {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-table thead th:first-child {
     border-radius: 12px 0 0 12px;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-table thead th:last-child {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-table thead th:last-child {
     border-radius: 0 12px 12px 0;
 }
-.magacin-page.is-narudzbe .mg-orders-page .mg-table td {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-table td {
     border-top: 0;
     padding: 16px 12px;
 }
-.magacin-page.is-narudzbe .mg-orders-empty-row td {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-empty-row td {
     padding: 0;
     border: 0;
 }
-.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-state {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-empty-row .mg-empty-state {
     padding: 72px 16px 64px;
 }
-.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-icon {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-empty-row .mg-empty-icon {
     width: 88px;
     height: 88px;
     margin-bottom: 16px;
     background: #f3f4f6;
     color: #c4c9ce;
 }
-.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-icon svg {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-empty-row .mg-empty-icon svg {
     width: 40px;
     height: 40px;
 }
-.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-state strong {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-empty-row .mg-empty-state strong {
     font-size: 18px;
     font-weight: 800;
     color: #111;
     margin-bottom: 6px;
 }
-.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-state p {
+.magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-empty-row .mg-empty-state p {
     font-size: 14px;
     color: #9aa0a6;
 }
 @media (max-width: 860px) {
-    .magacin-page.is-narudzbe .mg-orders-page .mg-page-head {
+    .magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-page-head {
         flex-direction: column;
         align-items: stretch;
     }
-    .magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-pill {
+    .magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-page .mg-toolbar-actions .mg-btn-pill {
         flex: 1 1 calc(50% - 10px);
         justify-content: center;
     }
-    .magacin-page.is-narudzbe .mg-orders-panel {
+    .magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-panel {
         padding: 4px 12px 14px;
         border-radius: 14px;
     }
-    .magacin-page.is-narudzbe .mg-orders-find {
+    .magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-find {
         flex-wrap: wrap;
     }
-    .magacin-page.is-narudzbe .mg-orders-find .mg-btn-primary {
+    .magacin-page:is(.is-narudzbe, .is-nivelacije, .is-uvoz) .mg-orders-find .mg-btn-primary {
         width: 100%;
         justify-content: center;
     }
@@ -9163,4 +9163,517 @@ a.bp-row-main { text-decoration: none; color: inherit; }
     }
     .mg-order-foot-actions { margin-left: 0; }
     .mg-order-foot-actions .mg-btn { flex: 1 1 auto; justify-content: center; }
+}
+.magacin-page.is-nivelacije .mg-filter-tabs .pk-tab-n {
+    background: var(--mg-accent);
+}
+.magacin-page.is-nivelacije .mg-table a {
+    color: var(--mg-accent);
+    text-decoration: none;
+    font-weight: 700;
+}
+.magacin-page.is-nivelacije .mg-table a:hover { color: var(--mg-accent-hover); }
+.magacin-page.is-nivelacije .mg-table .mg-btn-pill {
+    min-height: 36px;
+    padding: 6px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--mg-accent);
+    background: #fff;
+    color: var(--mg-accent);
+    font-weight: 700;
+    box-shadow: none;
+}
+.magacin-page.is-nivelacije .mg-table .mg-btn-pill:hover {
+    background: var(--mg-accent-soft);
+}
+.magacin-page.is-nivelacije .mg-table .mg-btn-primary {
+    background: var(--mg-accent);
+    border-color: var(--mg-accent);
+    color: #fff;
+}
+.magacin-page.is-nivelacije .mg-table .mg-btn-primary:hover {
+    background: var(--mg-accent-hover);
+    border-color: var(--mg-accent-hover);
+    filter: none;
+}
+.mg-nivelacije-group { margin: 4px 0 18px; }
+.mg-nivelacije-group + .mg-nivelacije-group {
+    padding-top: 14px;
+    border-top: 1px solid var(--mg-accent-line, #ffd7b8);
+}
+.mg-nivelacije-date {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    color: #111;
+}
+.mg-nivelacije-uvoz {
+    margin: 0 0 10px;
+    color: #8b9198;
+    font-size: 13px;
+    font-weight: 600;
+}
+.mg-nivelacije-uvoz a {
+    color: var(--mg-accent, #FF5A00);
+    text-decoration: none;
+    font-weight: 700;
+}
+.mg-nivelacije-uvoz a:hover { color: var(--mg-accent-hover, #E65100); }
+.mg-nivelacije-group .mg-table-wrap { margin-bottom: 8px; }
+.magacin-page.is-nivelacije .mg-row-more {
+    color: var(--mg-accent);
+}
+.magacin-page.is-nivelacije .mg-table tr.is-clickable:hover .mg-row-more {
+    background: var(--mg-accent-soft);
+    color: var(--mg-accent-hover);
+}
+.magacin-page.is-uvoz .mg-btn-primary {
+    background: var(--mg-accent, #FF5A00);
+    border-color: var(--mg-accent, #FF5A00);
+    color: #fff;
+}
+.magacin-page.is-uvoz .mg-btn-primary:hover {
+    background: var(--mg-accent-hover, #E65100);
+    border-color: var(--mg-accent-hover, #E65100);
+    filter: none;
+}
+.up-page { color: #111; }
+.up-crumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin: 0 0 10px;
+    color: #9aa0a6;
+    font-size: 13px;
+}
+.up-crumb a { color: #6b7280; text-decoration: none; font-weight: 600; }
+.up-crumb a:hover { color: var(--mg-accent, #FF5A00); }
+.up-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+.up-head h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -.03em;
+}
+.up-meta {
+    margin: 6px 0 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+.up-meta span { margin: 0 8px; color: #d1d5db; }
+.up-head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.up-progress {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 14px;
+    padding: 14px 16px 12px;
+    margin-bottom: 14px;
+}
+.up-progress-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+.up-progress-bar {
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 999px;
+    overflow: hidden;
+}
+.up-progress-bar i {
+    display: block;
+    height: 100%;
+    background: #FF5A00;
+    border-radius: 999px;
+}
+.up-progress-pct {
+    margin-top: 6px;
+    text-align: right;
+    color: #9aa0a6;
+    font-size: 12px;
+}
+.up-scan {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 2px solid #FF5A00;
+    border-radius: 14px;
+    padding: 4px 8px 4px 4px;
+    margin-bottom: 10px;
+}
+.up-scan-ico {
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #FF5A00;
+    color: #fff;
+    border-radius: 10px;
+}
+.up-scan-ico svg { width: 22px; height: 22px; }
+.up-scan input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    min-height: 46px;
+    font: inherit;
+    font-size: 16px;
+    outline: none;
+    background: transparent;
+}
+.up-scan-live {
+    background: #ecfdf3;
+    color: #166534;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    padding: 8px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.up-error {
+    margin: 0 0 12px;
+    color: #b91c1c;
+    font-weight: 700;
+    font-size: 13px;
+}
+.up-card {
+    display: grid;
+    grid-template-columns: 92px minmax(180px, 1.4fr) minmax(320px, 1.6fr);
+    gap: 16px;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 16px;
+    padding: 16px;
+}
+.up-card-img {
+    width: 92px;
+    height: 92px;
+    border-radius: 12px;
+    background: #f8f9fa;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.up-card-img img { width: 100%; height: 100%; object-fit: contain; }
+.up-card-info strong { display: block; font-size: 18px; margin: 2px 0 6px; }
+.up-sifra, .up-barkod { color: #6b7280; font-size: 13px; }
+.up-card-qty {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.up-box {
+    min-width: 96px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    padding: 10px 12px;
+    text-align: center;
+}
+.up-box span {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    color: #9aa0a6;
+}
+.up-box b { display: block; font-size: 28px; line-height: 1.1; }
+.up-box small { color: #9aa0a6; }
+.up-box.is-count { background: #fff7ed; cursor: text; }
+.up-box.is-diff.is-down { background: #fef2f2; color: #b91c1c; }
+.up-box.is-diff.is-up { background: #eff6ff; color: #1d4ed8; }
+.up-box.is-diff.is-zero { background: #ecfdf3; color: #166534; }
+.up-arrow { color: #d1d5db; font-size: 22px; align-self: center; }
+.up-step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 4px 0;
+}
+.up-step button {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: #FF5A00;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.up-step input,
+.up-qty-input {
+    width: 72px;
+    height: 40px;
+    border: 1px solid #ffd7b8;
+    border-radius: 8px;
+    text-align: center;
+    font: inherit;
+    font-weight: 800;
+    font-size: 18px;
+    background: #fff;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.up-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 10px 0 16px;
+}
+.up-quick {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.up-stats {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.up-stat {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 14px;
+    padding: 12px 14px;
+    border-top: 3px solid #e5e7eb;
+}
+.up-stat span { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; color: #9aa0a6; }
+.up-stat b { display: block; font-size: 26px; margin: 2px 0; }
+.up-stat small { color: #9aa0a6; }
+.up-stat.is-pop { border-top-color: #FF5A00; }
+.up-stat.is-ok { border-top-color: #16a34a; }
+.up-stat.is-up { border-top-color: #2563eb; }
+.up-stat.is-down { border-top-color: #dc2626; }
+.up-stat.is-wait { border-top-color: #9aa0a6; }
+.up-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.up-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.up-tabs button {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 999px;
+    min-height: 36px;
+    padding: 0 12px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    color: #4b5563;
+}
+.up-tabs button span {
+    display: inline-flex;
+    min-width: 18px;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    font-size: 11px;
+}
+.up-tabs button.is-active {
+    background: #FF5A00;
+    border-color: #FF5A00;
+    color: #fff;
+}
+.up-tabs button.is-active span { background: rgba(255,255,255,.22); color: #fff; }
+.up-find {
+    position: relative;
+    min-width: 220px;
+}
+.up-find svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    transform: translateY(-50%);
+    color: #9aa0a6;
+}
+.up-find input {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 0 12px 0 32px;
+    font: inherit;
+}
+.up-table-wrap {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 14px;
+    overflow: auto;
+}
+.up-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.up-table th {
+    text-align: left;
+    padding: 12px;
+    color: #9aa0a6;
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: none;
+    background: #f8f9fa;
+}
+.up-table td { padding: 12px; border-top: 1px solid #f3f4f6; }
+.up-table .num { text-align: right; font-weight: 700; }
+.up-table tr.is-active td { background: #fff7ed; }
+.up-table tr.is-clickable { cursor: pointer; }
+.up-empty { text-align: center; color: #9aa0a6; }
+.up-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.up-pill.is-tacno { background: #ecfdf3; color: #166534; }
+.up-pill.is-visak { background: #eff6ff; color: #1d4ed8; }
+.up-pill.is-manjak { background: #fef2f2; color: #b91c1c; }
+.up-pill.is-nije { background: #f3f4f6; color: #6b7280; }
+.up-table .is-down { color: #b91c1c; }
+.up-table .is-up { color: #1d4ed8; }
+.magacin-page.is-uvoz-popis {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+@media (max-width: 980px) {
+    .magacin-page.is-uvoz-popis .mg-chrome-search,
+    .magacin-page.is-uvoz-popis #mgArticleScanBtn {
+        display: none !important;
+    }
+    .magacin-page.is-uvoz-popis .mg-main {
+        padding: 8px 8px calc(20px + env(safe-area-inset-bottom, 0px));
+        min-width: 0;
+        overflow-x: hidden;
+    }
+    .up-page { min-width: 0; }
+    .up-crumb { font-size: 12px; margin-bottom: 6px; }
+    .up-head {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .up-head h1 { font-size: 18px; }
+    .up-meta {
+        font-size: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 0;
+    }
+    .up-meta span { margin: 0 6px; }
+    .up-head-actions { width: 100%; }
+    .up-head-actions .mg-btn {
+        flex: 1 1 calc(50% - 8px);
+        justify-content: center;
+        min-height: 44px;
+    }
+    .up-progress { padding: 10px 12px; margin-bottom: 10px; }
+    .up-scan {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        margin-bottom: 8px;
+        gap: 6px;
+        padding: 3px 6px 3px 3px;
+    }
+    .up-scan-ico { width: 40px; height: 40px; border-radius: 9px; }
+    .up-scan-live { display: none; }
+    .up-card {
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: 10px;
+        padding: 12px;
+        border-radius: 12px;
+    }
+    .up-card-img { width: 56px; height: 56px; border-radius: 10px; }
+    .up-card-info strong { font-size: 15px; margin: 0 0 4px; line-height: 1.25; }
+    .up-card-qty {
+        grid-column: 1 / -1;
+        justify-content: stretch;
+        gap: 6px;
+    }
+    .up-box {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 8px 6px;
+    }
+    .up-box b { font-size: 20px; }
+    .up-box.is-count { flex: 1.4 1 0; }
+    .up-arrow { display: none; }
+    .up-step { gap: 4px; }
+    .up-step button {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+    }
+    .up-qty-input {
+        width: 100%;
+        max-width: 96px;
+        height: 44px;
+        font-size: 22px;
+    }
+    .up-card-actions {
+        justify-content: stretch;
+        flex-wrap: wrap;
+        margin: 8px 0 12px;
+        gap: 6px;
+    }
+    .up-quick {
+        flex: 1 1 auto;
+        min-height: 44px;
+    }
+    .up-card-actions .mg-btn-primary {
+        flex: 1 1 100%;
+        justify-content: center;
+        min-height: 44px;
+    }
+    .up-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+    .up-stat { padding: 8px 10px; border-radius: 12px; }
+    .up-stat b { font-size: 20px; }
+    .up-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .up-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+    }
+    .up-tabs button { flex: 0 0 auto; min-height: 40px; font-size: 13px; }
+    .up-find { min-width: 0; }
+    .up-find input { min-height: 42px; font-size: 16px; }
+    .up-table { font-size: 12px; min-width: 520px; }
+    .up-table th, .up-table td { padding: 8px 6px; }
+    .up-table th:nth-child(3),
+    .up-table td:nth-child(3) { display: none; }
 }
