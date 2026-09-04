@@ -1,0 +1,210 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{#
+  KLJUČNO: tabele početne (trust, izdvojeni, promo…) renderujemo NA VRHU forme,
+  prije dugih fieldseta — inače su "izgubljene" na dnu i često se ne vide.
+#}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  body.model-sitesettings .ozr-home-inlines {
+    margin: 0 0 1.5rem;
+  }
+  body.model-sitesettings .ozr-home-inlines > .inline-group,
+  body.model-sitesettings .ozr-home-inlines > .js-inline-admin-formset {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    margin: 0 0 1.25rem !important;
+    border: 2px solid #5BB805 !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    box-shadow: 0 2px 12px rgba(22, 101, 52, 0.08) !important;
+  }
+  body.model-sitesettings .ozr-home-inlines .inline-group h2 {
+    background: linear-gradient(180deg, #eef8e6, #dcf5c4) !important;
+    color: #14532d !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    padding: 14px 16px !important;
+    border-bottom: 1px solid #bbf7d0 !important;
+  }
+  body.model-sitesettings .ozr-home-inlines .tabular,
+  body.model-sitesettings .ozr-home-inlines .tabular table,
+  body.model-sitesettings .ozr-home-inlines .inline-related {
+    display: revert !important;
+    visibility: visible !important;
+    width: 100%;
+  }
+  body.model-sitesettings .ozr-home-inlines .add-row,
+  body.model-sitesettings .ozr-home-inlines tr,
+  body.model-sitesettings .ozr-home-inlines td {
+    visibility: visible !important;
+  }
+  body.model-sitesettings .ozr-inlines-banner {
+    background: #14532d;
+    color: #fff;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    line-height: 1.45;
+    font-weight: 600;
+  }
+  body.model-sitesettings .ozr-inlines-banner span {
+    display: block;
+    font-weight: 400;
+    font-size: 0.9rem;
+    opacity: 0.92;
+    margin-top: 6px;
+  }
+  body.model-sitesettings #content-main form > .submit-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
+    background: #fff !important;
+    border: 2px solid #5BB805 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.08) !important;
+  }
+  body.model-sitesettings #content-main form > .submit-row:first-of-type {
+    top: 0;
+    bottom: auto;
+    z-index: 1001;
+    margin-bottom: 1rem;
+  }
+  body.model-sitesettings .ozr-error-summary {
+    background: #fef2f2;
+    border: 2px solid #ef4444;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 0 0 1rem;
+    color: #991b1b;
+  }
+  body.model-sitesettings .ozr-error-summary h2 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    color: #b91c1c;
+  }
+  body.model-sitesettings .ozr-rest-heading {
+    margin: 1.5rem 0 0.75rem;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #334155;
+  }
+</style>
+{% endblock %}
+
+{% block form_top %}
+{{ block.super }}
+{% if errors %}
+<div class="ozr-error-summary" role="alert">
+  <h2>⚠️ Nije sačuvano — ispravi greške</h2>
+  <ul>
+    {% for error in adminform.form.non_field_errors %}
+    <li>{{ error }}</li>
+    {% endfor %}
+    {% for field in adminform.form %}
+      {% if field.errors %}
+      <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
+      {% endif %}
+    {% endfor %}
+    {% for inline_admin_formset in inline_admin_formsets %}
+      {% if inline_admin_formset.formset.non_form_errors %}
+      <li><strong>{{ inline_admin_formset.opts.verbose_name_plural }}:</strong>
+        {{ inline_admin_formset.formset.non_form_errors|striptags }}</li>
+      {% endif %}
+      {% for inline_form in inline_admin_formset %}
+        {% if inline_form.form.errors %}
+        <li><strong>{{ inline_admin_formset.opts.verbose_name }}:</strong>
+          {% for field in inline_form.form %}
+            {% if field.errors %}{{ field.label }}: {{ field.errors|striptags }}; {% endif %}
+          {% endfor %}
+        </li>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block field_sets %}
+{# —— 1) POČETNA TABELE ODMAH NA VRHU —— #}
+<div class="ozr-inlines-banner" id="ozr-home-tables">
+  Početna stranica — uredi sadržaj ovdje (①–⑥)
+  <span>Trust traka · Izdvojeni · Noviteti · Promo kartice (BESPLATNA DOSTAVA…) · Kategorije · Brendovi. Koristi „Add another” za novi red.</span>
+</div>
+
+<div class="ozr-home-inlines" id="ozrHomeInlines">
+{% for inline_admin_formset in inline_admin_formsets %}
+  {% include inline_admin_formset.opts.template %}
+{% empty %}
+  <div class="ozr-error-summary">
+    <h2>Tabele nisu učitane</h2>
+    <p>Nema inline formi u kontekstu. Osvježi stranicu ili provjeri da je deploy ažuran.</p>
+  </div>
+{% endfor %}
+</div>
+
+<div class="ozr-rest-heading">Ostala podešavanja sajta (logo, naslovi, SEO, chat…)</div>
+
+{# —— 2) Obični fieldseti —— #}
+{% for fieldset in adminform %}
+  {% include "admin/includes/fieldset.html" with heading_level=2 prefix="fieldset" id_prefix=0 id_suffix=forloop.counter0 %}
+{% endfor %}
+{% endblock %}
+
+{# Već renderovano gore — ne ponavljaj na dnu #}
+{% block inline_field_sets %}{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+(function () {
+  function unlock() {
+    var root = document.getElementById('ozrHomeInlines');
+    if (!root) return;
+    root.querySelectorAll('.inline-group, .js-inline-admin-formset').forEach(function (el) {
+      el.classList.remove('akcija-section-hidden', 'collapsed', 'hide');
+      el.removeAttribute('hidden');
+      el.style.setProperty('display', 'block', 'important');
+      el.style.setProperty('visibility', 'visible', 'important');
+      el.style.setProperty('height', 'auto', 'important');
+      el.style.setProperty('overflow', 'visible', 'important');
+      el.style.setProperty('opacity', '1', 'important');
+      el.querySelectorAll('input[type="hidden"]').forEach(function (inp) {
+        if (inp.name && /TOTAL_FORMS|INITIAL_FORMS|MIN_NUM_FORMS|MAX_NUM_FORMS/.test(inp.name)) {
+          inp.disabled = false;
+          inp.removeAttribute('disabled');
+        }
+      });
+    });
+  }
+  unlock();
+  [50, 200, 600, 1500].forEach(function (ms) { setTimeout(unlock, ms); });
+
+  var form = document.getElementById('sitesettings_form');
+  if (form) {
+    form.addEventListener('submit', function () { unlock(); }, true);
+  }
+
+  // Skok na tabele ako je u URL-u #ozr-home-tables
+  if (location.hash === '#ozr-home-tables') {
+    var el = document.getElementById('ozr-home-tables');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+})();
+</script>
+{% endblock %}

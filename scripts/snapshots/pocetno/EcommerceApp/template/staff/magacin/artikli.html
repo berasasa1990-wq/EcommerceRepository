@@ -1,0 +1,122 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Artikli</h1>
+        <p class="mg-count">
+            {% if searched %}
+            Rezultati za „{{ magacin_search }}” — {{ result_count }} artikl{{ result_count|pluralize:"a,a" }}{% if not include_zero %} na stanju{% endif %}
+            {% else %}
+            Pretraži ili skeniraj artikal. Lista se ne otvara dok ne potražiš.
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% if magacin_notice %}
+<p class="mg-mp-alert is-ok" role="status">{{ magacin_notice }}</p>
+{% endif %}
+
+{% if not searched %}
+<section class="mg-card">
+    <h2 class="mg-h">Zadnje izmjene količina</h2>
+    <div class="mg-table-wrap">
+    <table class="mg-table mg-table-stack mg-table-stack-moves">
+        <thead>
+            <tr>
+                <th>DATUM</th>
+                <th>ARTIKAL</th>
+                <th>TIP</th>
+                <th>LOKACIJA</th>
+                <th>KORISNIK</th>
+                <th class="num">KOL.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in recent_movements %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_artikal' m.product_id %}'">
+                <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
+                <td>
+                    {{ m.product.naziv }}
+                    {% if m.variation %}<span class="mg-muted">{{ m.variation.naziv }}</span>{% endif %}
+                </td>
+                <td>{{ m.get_tip_display }}</td>
+                <td>
+                    {% if m.tip == 'transfer' %}
+                    {{ m.location.sifra }} → {{ m.to_location.sifra }}
+                    {% else %}
+                    {{ m.location.sifra }}
+                    {% endif %}
+                </td>
+                <td class="mg-move-user">{% if m.korisnik_label %}{{ m.korisnik_label }}{% else %}—{% endif %}</td>
+                <td class="num {% if m.tip == 'prijem' %}num-plus{% elif m.tip == 'prodaja' %}num-out{% endif %}">
+                    {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' %}−{% endif %}{{ m.kolicina }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="mg-muted">Još nema izmjena količina.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% else %}
+<section class="mg-card" style="padding:14px 10px;">
+    <div class="mg-list-head">
+        <span></span>
+        <span>ARTIKAL</span>
+        <span>ŠIFRA</span>
+        <span>STANJE</span>
+        <span>MPC</span>
+        <span>STATUS</span>
+    </div>
+    {% for row in page %}
+    <a class="mg-product-row{% if row.na_stanju <= 0 %} is-out{% endif %}" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
+        {% if row.product.prikazna_slika %}
+        <img src="{{ row.product.prikazna_slika.url }}" alt="">
+        {% else %}
+        <span class="ph">—</span>
+        {% endif %}
+        <span>
+            <strong>{{ row.product.naziv }}</strong>
+            <span class="sub">{{ row.product.brend.naziv|default:"" }}</span>
+        </span>
+        <span>{{ row.product.sifra|default:"—" }}</span>
+        <span class="mg-loc-inline">
+            {% if row.na_stanju > 0 %}
+            <i>Na stanju</i>
+            {% else %}
+            <i class="is-empty">Nema zalihe</i>
+            {% endif %}
+        </span>
+        <span class="mg-mpc">{{ row.product.prikazna_cijena }} KM</span>
+        <span>
+            {% if row.na_stanju <= 0 %}
+            <span class="mg-pill is-out">Nije na stanju</span>
+            {% elif row.product.aktivan %}
+            <span class="mg-pill">Aktivan</span>
+            {% else %}
+            <span class="mg-pill is-off">Neaktivan</span>
+            {% endif %}
+        </span>
+    </a>
+    {% empty %}
+    <div class="mg-empty">
+        Nema sinhronizovanih artikala za ovu pretragu.
+    </div>
+    {% endfor %}
+</section>
+
+{% if page and page.has_other_pages %}
+<nav class="mg-pager">
+    {% if page.has_previous %}
+    <a href="?page={{ page.previous_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&bez_zalihe=1{% endif %}">← Prethodna</a>
+    {% endif %}
+    <span class="is-current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+    <a href="?page={{ page.next_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&bez_zalihe=1{% endif %}">Sljedeća →</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endif %}
+{% endblock %}

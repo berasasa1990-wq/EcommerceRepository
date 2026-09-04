@@ -1,0 +1,22 @@
+<p class="product-stock-label{% if product.na_stanju %} product-stock-label--in{% else %} product-stock-label--out{% endif %}">
+    <span class="product-stock-label__icon{% if product.na_stanju %} product-stock-label__icon--package{% endif %}" aria-hidden="true">
+        {% if product.na_stanju %}
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="#C48A4A" d="M4 9.1 12 4.8l8 4.3v9.8L12 23.2 4 18.9z"/>
+            <path fill="#A56E38" d="M4 9.1v9.8l8 4.3V13.4z"/>
+            <path fill="#D4A36A" d="M12 13.4v9.8l8-4.3V9.1z"/>
+            <path fill="#E2BE8A" d="M4 9.1 12 4.8l8 4.3-8 4.3z"/>
+            <path fill="#F0D7B0" d="M11.15 5.05h1.7V22.7h-1.7z"/>
+            <path fill="none" stroke="#8B5A2B" stroke-width="0.9" stroke-linejoin="round" d="M4 9.1 12 4.8l8 4.3v9.8L12 23.2 4 18.9z"/>
+        </svg>
+        {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 8l8 8M16 8l-8 8"/></svg>
+        {% endif %}
+    </span>
+    {% if product.na_stanju %}
+    <span class="product-stock-label__text">Dostupno:</span>
+    <span class="product-stock-label__qty">{{ product.stanje }} kom</span>
+    {% else %}
+    Nije na stanju
+    {% endif %}
+</p>

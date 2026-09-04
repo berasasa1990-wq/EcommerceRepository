@@ -1,0 +1,95 @@
+<aside class="catalog-sidebar">
+    <form class="catalog-filter" method="get" action="{{ filter_action }}">
+        <h2 class="catalog-filter-title">Filter</h2>
+
+        {% if filter_params.q %}
+        <input type="hidden" name="q" value="{{ filter_params.q }}">
+        <p class="filter-search-hint">Pretraga: <strong>{{ filter_params.q }}</strong></p>
+        {% endif %}
+
+        {% if filter_params.akcija %}
+        <input type="hidden" name="akcija" value="{{ filter_params.akcija }}">
+        <p class="filter-search-hint">Akcija: <strong>sniženi artikli</strong></p>
+        {% endif %}
+
+        {% if filter_params.noviteti %}
+        <input type="hidden" name="noviteti" value="{{ filter_params.noviteti }}">
+        <p class="filter-search-hint">Noviteti: <strong>novi artikli</strong></p>
+        {% endif %}
+
+        {% if filter_params.brend %}
+        <input type="hidden" name="brend" value="{{ filter_params.brend }}">
+        {% if selected_brand %}
+        <p class="filter-search-hint">Brend: <strong>{{ selected_brand.naziv }}</strong></p>
+        {% endif %}
+        {% endif %}
+
+        {% if filter_params.velicina %}
+        <input type="hidden" name="velicina" value="{{ filter_params.velicina }}">
+        {% endif %}
+
+        {% if not hide_category_filter %}
+        <div class="filter-group filter-group--categories">
+            <label class="filter-label" for="filter-kategorija">Kategorija</label>
+            <select id="filter-kategorija" name="kategorija" class="filter-input">
+                <option value="">Sve kategorije</option>
+                {% for cat in filter_categories %}
+                <option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>
+                    {% if cat.nivo == 1 %}— {% elif cat.nivo == 2 %}—— {% endif %}{{ cat.naziv }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        {% for group in filter_size_groups %}
+        <div class="filter-group filter-group--sizes filter-group--collapsible{% if group.has_selection %} is-open{% endif %}" data-filter-size-group="{{ group.key }}">
+            <button type="button" class="filter-size-toggle" aria-expanded="{% if group.has_selection %}true{% else %}false{% endif %}" aria-controls="filter-size-panel-{{ group.key }}">
+                <span class="filter-size-toggle-label">{{ group.label }}</span>
+                <span class="filter-size-toggle-meta">
+                    <span class="filter-size-toggle-count">{{ group.options|length }}</span>
+                    <svg class="filter-size-toggle-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </span>
+            </button>
+            <div class="filter-size-panel" id="filter-size-panel-{{ group.key }}">
+                {% for option in group.options %}
+                    {% if option.selected %}
+                    <p class="filter-selected-size">Odabrano: <strong>{{ option.label }}</strong></p>
+                    {% endif %}
+                {% endfor %}
+                <div class="filter-size-list">
+                    {% for option in group.options %}
+                    <a href="{{ option.url }}" class="filter-size-option{% if option.selected %} is-selected{% endif %}">{{ option.label }}</a>
+                    {% endfor %}
+                </div>
+                {% if group.clear_url %}
+                <a href="{{ group.clear_url }}" class="filter-size-clear">{{ group.clear_label }}</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="filter-group">
+            <span class="filter-label">Cijena (KM)</span>
+            <div class="filter-price-row">
+                <input type="number" name="cijena_od" class="filter-input" placeholder="Od" min="0" step="0.01" value="{{ filter_params.cijena_od }}">
+                <input type="number" name="cijena_do" class="filter-input" placeholder="Do" min="0" step="0.01" value="{{ filter_params.cijena_do }}">
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label" for="filter-sort">Sortiranje</label>
+            <select id="filter-sort" name="sort" class="filter-input">
+                <option value=""{% if filter_params.sort != 'opadajuca' %} selected{% endif %}>Cijena rastuća (zadano)</option>
+                <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Opadajuća cijena</option>
+            </select>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-filter">Primijeni</button>
+            <a href="{% if filter_reset_url %}{{ filter_reset_url }}{% else %}{{ filter_action }}{% endif %}" class="btn btn-secondary btn-filter">Poništi</a>
+        </div>
+    </form>
+</aside>

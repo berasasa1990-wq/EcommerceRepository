@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potvrda narudžbe #{{ order.broj }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #ffffff;
+            font-family: "Century Gothic", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #000000;
+            line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
+        }
+        table { border-collapse: collapse; }
+        img { border: 0; display: block; max-width: 100%; }
+        .invoice-section {
+            page-break-after: auto;
+            break-after: auto;
+        }
+        .doc {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+        .doc-header-table { width: 100%; }
+        .doc-logo {
+            max-height: 56px;
+            width: auto;
+        }
+        .doc-title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #28403d;
+            letter-spacing: -0.01em;
+        }
+        .doc-meta {
+            text-align: right;
+            font-size: 13px;
+            color: #000000;
+            vertical-align: top;
+            line-height: 1.6;
+        }
+        .doc-meta p {
+            margin: 0 0 4px;
+        }
+        .parties-table {
+            width: 100%;
+            margin: 28px 0 18px;
+        }
+        .parties-table td {
+            width: 50%;
+            vertical-align: top;
+            padding-right: 18px;
+            font-size: 13px;
+            color: #404040;
+            line-height: 1.55;
+        }
+        .party-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #28403d;
+        }
+        .party-name {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 700;
+            color: #28403d;
+        }
+        .items-table {
+            width: 100%;
+            margin-top: 8px;
+            border: 1px solid #c4bc96;
+        }
+        .items-table th {
+            padding: 10px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #000000;
+            text-align: center;
+            background: #d9d9d9;
+            border: 1px solid #c4bc96;
+        }
+        .items-table td {
+            padding: 12px 8px;
+            font-size: 13px;
+            vertical-align: top;
+            border: 1px solid #c4bc96;
+            color: #000000;
+        }
+        .items-table .col-name {
+            text-align: left;
+        }
+        .items-table .col-qty,
+        .items-table .col-price,
+        .items-table .col-total {
+            text-align: center;
+            white-space: nowrap;
+        }
+        .item-name {
+            display: block;
+            font-weight: 600;
+            color: #000000;
+        }
+        .item-variation {
+            display: block;
+            margin-top: 3px;
+            font-size: 12px;
+            color: #595959;
+        }
+        .totals-wrap {
+            margin-top: 18px;
+            width: 100%;
+        }
+        .totals-table {
+            width: 360px;
+            margin-left: auto;
+        }
+        .totals-table td {
+            padding: 5px 0;
+            font-size: 14px;
+            color: #000000;
+        }
+        .totals-table td:last-child {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .totals-table tr.total-row td {
+            padding-top: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #28403d;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .invoice-seal-block { margin-top: 18px; }
+        .invoice-warranty-box {
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            padding: 10px 12px;
+            background: #fafafa;
+        }
+        .invoice-warranty-box strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: #28403d;
+        }
+        .invoice-seal-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+        .invoice-sign { min-width: 180px; text-align: center; }
+        .invoice-sign-script {
+            display: block;
+            font-family: "Palatino Linotype", Palatino, "Times New Roman", serif;
+            font-size: 22px;
+            font-style: italic;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+            color: #1a1a1a;
+            margin-bottom: 2px;
+        }
+        .invoice-sign-line {
+            display: block;
+            border-bottom: 1px solid #111;
+            margin: 0 8px 6px;
+        }
+        .invoice-sign-label { display: block; font-size: 11px; color: #595959; }
+        .order-footer {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 1px solid #d9d9d9;
+            font-size: 12px;
+            color: #404040;
+            line-height: 1.6;
+        }
+        .order-footer a { color: #28403d; }
+        .invoice-warranty-note {
+            display: block;
+            margin-top: 6px;
+            padding-top: 0;
+            border: 0;
+            font-size: 12px;
+            color: #404040;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .page-separator {
+            max-width: 820px;
+            margin: 40px auto;
+            padding: 16px 0;
+            border-top: 3px dashed #c4bc96;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #28403d;
+        }
+
+        .warranty-section {
+            width: 210mm;
+            max-width: 100%;
+            margin: 0 auto;
+            page-break-before: always;
+            break-before: page;
+        }
+        .warranty-a4 {
+            width: 210mm;
+            max-width: 100%;
+            min-height: 277mm;
+            margin: 0 auto;
+            padding: 10mm 14mm;
+            background: #ffffff;
+            border: 2px solid #28403d;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .warranty-a4-head {
+            display: table;
+            width: 100%;
+            border-bottom: 2px solid #28403d;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .warranty-a4-head-left,
+        .warranty-a4-head-right {
+            display: table-cell;
+            vertical-align: top;
+        }
+        .warranty-a4-head-right {
+            text-align: right;
+            width: 40%;
+        }
+        .warranty-a4-title {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #28403d;
+        }
+        .warranty-a4-subtitle {
+            margin: 6px 0 0;
+            font-size: 12px;
+            color: #595959;
+        }
+        .warranty-a4-order {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 4px;
+            color: #28403d;
+        }
+        .warranty-a4-meta {
+            font-size: 11px;
+            color: #404040;
+            line-height: 1.5;
+        }
+        .warranty-a4-customer {
+            width: 100%;
+            margin-bottom: 16px;
+            font-size: 11px;
+            line-height: 1.55;
+        }
+        .warranty-a4-customer td {
+            vertical-align: top;
+            padding: 0 10px 0 0;
+            width: 33.33%;
+        }
+        .warranty-a4-customer strong {
+            display: block;
+            font-size: 9px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #28403d;
+            margin-bottom: 4px;
+        }
+        .warranty-order-ref {
+            margin: 0 0 14px;
+            padding: 12px 14px;
+            border: 1px solid #c4bc96;
+            background: #f7f7f7;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #111111;
+        }
+        .warranty-order-ref strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #28403d;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .warranty-terms {
+            margin: 0 0 16px;
+            padding: 14px 16px;
+            background: #f5f5f5;
+            font-size: 11px;
+            line-height: 1.65;
+            color: #222222;
+        }
+        .warranty-terms strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #28403d;
+        }
+        .warranty-terms p {
+            margin: 0 0 10px;
+        }
+        .warranty-terms p:last-child {
+            margin-bottom: 0;
+        }
+        .warranty-signatures {
+            width: 100%;
+            margin-top: 28px;
+        }
+        .warranty-signatures td {
+            width: 50%;
+            vertical-align: bottom;
+            padding-top: 36px;
+        }
+        .signature-line {
+            border-top: 1px solid #28403d;
+            padding-top: 6px;
+            font-size: 10px;
+            color: #595959;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .page-separator {
+                display: none;
+            }
+            .invoice-section {
+                page-break-after: always;
+                break-after: page;
+            }
+            .doc {
+                max-width: none;
+                margin: 0;
+            }
+            .warranty-section {
+                page-break-before: always;
+                break-before: page;
+                width: auto;
+                max-width: none;
+                margin: 0;
+            }
+            .warranty-a4 {
+                border: 1px solid #28403d;
+                margin: 0;
+                width: auto;
+                max-width: none;
+                min-height: auto;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="invoice-section">
+        {% include 'partials/order_invoice_document.html' %}
+    </div>
+
+</body>
+</html>

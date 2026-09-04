@@ -1,0 +1,244 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <a class="mg-back" href="{% url 'staff_magacin_artikal' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">← Nazad na artikal</a>
+        <h1>Izmjena artikla</h1>
+        <p class="mg-count">{{ product.naziv }}</p>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="mg-edit-form">
+    {% csrf_token %}
+    {% if magacin_search %}<input type="hidden" name="pretraga" value="{{ magacin_search }}">{% endif %}
+
+    <section class="mg-card">
+        <h2 class="mg-h">Osnovno</h2>
+        <div class="mg-form-grid">
+            <div class="mg-field" style="grid-column:1 / -1;">
+                <label for="id_naziv">Naziv *</label>
+                <input id="id_naziv" name="naziv" required maxlength="200" value="{{ product.naziv }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_sifra">Šifra</label>
+                <input id="id_sifra" name="sifra" maxlength="200" value="{{ product.sifra|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_barkod">Barkod</label>
+                <div class="mg-add-row">
+                    <input id="id_barkod" name="barkod" maxlength="200" value="{{ product.barkod|default:'' }}">
+                    <button type="button" class="mg-btn mg-scan-btn" data-mg-scan-target="id_barkod" title="Skeniraj barkod">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                            <path d="M7 8v8M10 8v8M13 8v5M16 8v8"/>
+                        </svg>
+                        Skener
+                    </button>
+                </div>
+            </div>
+            <div class="mg-field">
+                <label for="id_kategorija">Kategorija</label>
+                <select id="id_kategorija" name="kategorija_id">
+                    <option value="">—</option>
+                    {% for cat in kategorije %}
+                    <option value="{{ cat.pk }}"{% if product.kategorija_id == cat.pk %} selected{% endif %}>{{ cat.naziv }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mg-field">
+                <label for="id_brend">Brend</label>
+                <select id="id_brend" name="brend_id">
+                    <option value="">—</option>
+                    {% for brend in brendovi %}
+                    <option value="{{ brend.pk }}"{% if product.brend_id == brend.pk %} selected{% endif %}>{{ brend.naziv }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mg-field" style="grid-column:1 / -1;">
+                <label for="id_opis">Opis</label>
+                <textarea id="id_opis" name="opis">{{ product.opis }}</textarea>
+            </div>
+        </div>
+    </section>
+
+    <section class="mg-card">
+        <h2 class="mg-h">Slike</h2>
+        <div class="mg-form-grid">
+            <div class="mg-field">
+                <label>Glavna slika</label>
+                {% if product.slika %}
+                <img src="{{ product.slika.url }}" alt="" class="mg-edit-thumb">
+                <label class="mg-zero-check"><input type="checkbox" name="ukloni_sliku" value="1"> Ukloni sliku</label>
+                {% endif %}
+                <input type="file" name="slika" accept="image/*">
+            </div>
+            <div class="mg-field">
+                <label>Dodatne slike</label>
+                {% for img in dodatne_slike %}
+                <label class="mg-zero-check">
+                    <input type="checkbox" name="obrisi_sliku" value="{{ img.pk }}">
+                    Obriši
+                    <img src="{{ img.slika.url }}" alt="" class="mg-edit-thumb-sm">
+                </label>
+                {% endfor %}
+                <input type="file" name="dodatne_slike" accept="image/*" multiple>
+            </div>
+        </div>
+    </section>
+
+    <section class="mg-card">
+        <h2 class="mg-h">Cijene</h2>
+        <div class="mg-form-grid">
+            <div class="mg-field">
+                <label for="id_cijena">Osnovna cijena (KM) *</label>
+                <input id="id_cijena" name="cijena" required inputmode="decimal" value="{{ product.cijena }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_akcijska">Akcijska cijena (KM)</label>
+                <input id="id_akcijska" name="akcijska_cijena" inputmode="decimal" value="{{ product.akcijska_cijena|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_akcija_pct">Popust (%)</label>
+                <input id="id_akcija_pct" name="akcija_postotak" inputmode="decimal" value="{{ product.akcija_postotak|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_akcija_do">Akcija važi do</label>
+                <input id="id_akcija_do" name="akcija_do" type="date" value="{{ product.akcija_do|date:'Y-m-d' }}">
+            </div>
+            <div class="mg-field">
+                <label for="vp">Veleprodajna cijena (KM)</label>
+                <input id="vp" name="veleprodajna_cijena" inputmode="decimal" value="{{ meta.veleprodajna_cijena|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_pakovanje">Pakovanje (komada)</label>
+                <input id="id_pakovanje" name="pakovanje_komada" inputmode="numeric" value="{{ product.pakovanje_komada|default:'' }}">
+            </div>
+        </div>
+    </section>
+
+    <section class="mg-card">
+        <h2 class="mg-h">Magacin</h2>
+        <div class="mg-form-grid">
+            <div class="mg-field">
+                <label for="id_tezina">Težina</label>
+                <input id="id_tezina" name="tezina" value="{{ meta.tezina|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_jm">Jedinica mjere</label>
+                <input id="id_jm" name="jedinica_mjere" value="{{ meta.jedinica_mjere|default:'kom' }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_min">Min. zaliha</label>
+                <input id="id_min" name="min_zaliha" inputmode="numeric" value="{{ meta.min_zaliha|default:0 }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_dob">Dobavljač</label>
+                <select id="id_dob" name="dobavljac_id">
+                    <option value="">—</option>
+                    {% for d in dobavljaci %}
+                    <option value="{{ d.pk }}"{% if meta.dobavljac_id == d.pk %} selected{% endif %}>{{ d.naziv }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <section class="mg-card">
+        <h2 class="mg-h">Prikaz i status</h2>
+        <div class="mg-check-grid">
+            <label class="mg-zero-check"><input type="checkbox" name="aktivan" value="1"{% if product.aktivan %} checked{% endif %}> Aktivan</label>
+            <label class="mg-zero-check"><input type="checkbox" name="prikazi_na_pocetnoj" value="1"{% if product.prikazi_na_pocetnoj %} checked{% endif %}> Prikaži na početnoj</label>
+            <label class="mg-zero-check"><input type="checkbox" name="je_novitet" value="1"{% if product.je_novitet %} checked{% endif %}> Novitet</label>
+            <label class="mg-zero-check"><input type="checkbox" name="je_hit" value="1"{% if product.je_hit %} checked{% endif %}> HIT ponuda</label>
+            <label class="mg-zero-check"><input type="checkbox" name="proizvedeno_u_japanu" value="1"{% if product.proizvedeno_u_japanu %} checked{% endif %}> Proizvedeno u Japanu</label>
+        </div>
+        <div class="mg-field" style="margin-top:12px;max-width:360px;">
+            <label for="id_prio">Prioritet lagera</label>
+            <select id="id_prio" name="prioritet_lagera">
+                {% for value, label in prioriteti %}
+                <option value="{{ value }}"{% if product.prioritet_lagera == value %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mg-field" style="margin-top:12px;">
+            <label>Tagovi</label>
+            <select name="tagovi" multiple size="8">
+                {% for tag in svi_tagovi %}
+                <option value="{{ tag.pk }}"{% if tag.pk in tag_ids %} selected{% endif %}>{{ tag.naziv }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </section>
+
+    <section class="mg-card">
+        <h2 class="mg-h">SEO</h2>
+        <div class="mg-form-grid">
+            <div class="mg-field">
+                <label for="id_seo_title">SEO title</label>
+                <input id="id_seo_title" name="meta_title" maxlength="70" value="{{ product.meta_title }}">
+            </div>
+            <div class="mg-field">
+                <label for="id_h1">H1 naslov</label>
+                <input id="id_h1" name="h1_naslov" maxlength="200" value="{{ product.h1_naslov }}">
+            </div>
+            <div class="mg-field" style="grid-column:1 / -1;">
+                <label for="id_meta_desc">Meta description</label>
+                <input id="id_meta_desc" name="meta_description" maxlength="160" value="{{ product.meta_description }}">
+            </div>
+            <div class="mg-field" style="grid-column:1 / -1;">
+                <label for="id_seo_up">SEO tekst iznad</label>
+                <textarea id="id_seo_up" name="seo_tekst_iznad">{{ product.seo_tekst_iznad }}</textarea>
+            </div>
+            <div class="mg-field" style="grid-column:1 / -1;">
+                <label for="id_seo_down">SEO tekst ispod</label>
+                <textarea id="id_seo_down" name="seo_tekst_ispod">{{ product.seo_tekst_ispod }}</textarea>
+            </div>
+        </div>
+    </section>
+
+    <section class="mg-card">
+        <h2 class="mg-h">Varijacije</h2>
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>NAZIV</th>
+                    <th>ŠIFRA</th>
+                    <th>CIJENA</th>
+                    <th>AKCIJSKA</th>
+                    <th>PAKOVANJE</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for var in variations %}
+                <tr>
+                    <td>
+                        <input type="hidden" name="variation_id" value="{{ var.pk }}">
+                        <input name="var_naziv" value="{{ var.naziv }}" required>
+                    </td>
+                    <td><input name="var_sifra" value="{{ var.sifra|default:'' }}"></td>
+                    <td><input name="var_cijena" value="{{ var.cijena|default:'' }}" inputmode="decimal"></td>
+                    <td><input name="var_akcijska" value="{{ var.akcijska_cijena|default:'' }}" inputmode="decimal"></td>
+                    <td><input name="var_pakovanje" value="{{ var.pakovanje_komada|default:'' }}" inputmode="numeric"></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td>
+                        <input type="hidden" name="variation_id" value="">
+                        <input name="var_naziv" placeholder="Nova varijacija">
+                    </td>
+                    <td><input name="var_sifra" placeholder="Šifra"></td>
+                    <td><input name="var_cijena" placeholder="KM" inputmode="decimal"></td>
+                    <td><input name="var_akcijska" placeholder="KM" inputmode="decimal"></td>
+                    <td><input name="var_pakovanje" placeholder="kom" inputmode="numeric"></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <div class="mg-toolbar">
+        <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj izmjene</button>
+        <a class="mg-btn" href="{% url 'staff_magacin_artikal' product.pk %}">Otkaži</a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,958 @@
+/* Online nagrada — centrirani modal ili bočni pulsirajući */
+
+.og-overlay[hidden] {
+  display: none !important;
+}
+
+.og-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: rgba(15, 23, 42, 0.38) !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.og-overlay.is-open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.og-overlay:not(.is-open),
+.og-overlay:not(.is-open) * {
+  pointer-events: none !important;
+}
+
+/* —— Bočni pulsirajući popup (sa strane, ne fullscreen) —— */
+/* Overlay ne hvata touch/wheel — scroll stranice radi ispod */
+.og-overlay.og-side {
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: 16px !important;
+  bottom: 20px !important;
+  width: min(340px, calc(100vw - 24px)) !important;
+  max-width: 340px !important;
+  height: auto !important;
+  max-height: min(78vh, 520px) !important;
+  padding: 0 !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  /* ne blokira skrol ispod (pointer-events: none na overlay) */
+  overscroll-behavior: none;
+}
+
+.og-overlay.og-side.is-open {
+  pointer-events: none !important;
+  overflow: visible !important;
+}
+
+.og-overlay.og-side .og-card {
+  pointer-events: auto !important;
+  touch-action: auto;
+  overscroll-behavior: contain;
+  width: 100% !important;
+  max-width: 340px !important;
+  margin: 0 !important;
+  box-shadow:
+    0 16px 48px rgba(15, 23, 42, 0.28),
+    0 0 0 2px rgba(91, 184, 5, 0.35),
+    0 0 24px rgba(91, 184, 5, 0.25) !important;
+  animation: og-side-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes og-side-pulse {
+  0%, 100% {
+    box-shadow:
+      0 16px 48px rgba(15, 23, 42, 0.28),
+      0 0 0 2px rgba(91, 184, 5, 0.35),
+      0 0 18px rgba(91, 184, 5, 0.2);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow:
+      0 20px 56px rgba(15, 23, 42, 0.32),
+      0 0 0 3px rgba(91, 184, 5, 0.55),
+      0 0 32px rgba(91, 184, 5, 0.4);
+    transform: translateY(-3px);
+  }
+}
+
+/* —— Mobilni: kompaktan bočni / bottom card, skrol stranice radi —— */
+@media (max-width: 768px) {
+  .og-overlay.og-side {
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px) + 8px) !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: min(72vh, 520px) !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+  }
+
+  .og-overlay.og-side .og-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: min(70vh, 500px) !important;
+    padding: 16px 14px 14px !important;
+    border-radius: 18px !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .og-overlay.og-side .og-card::before {
+    border-radius: 18px 18px 0 0;
+  }
+
+  .og-x {
+    top: 8px;
+    right: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    /* veći touch target */
+  }
+
+  .og-gift-icon {
+    font-size: 40px !important;
+    margin: 2px 0 6px !important;
+  }
+
+  .og-kicker {
+    font-size: 10px;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+  }
+
+  .og-title {
+    font-size: 17px !important;
+    padding: 0 28px 0 8px !important;
+    margin-bottom: 6px !important;
+    line-height: 1.25 !important;
+  }
+
+  .og-text {
+    font-size: 13px;
+    margin-bottom: 8px;
+    max-width: 100%;
+  }
+
+  .og-choice-hint {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .og-register-msg {
+    font-size: 12.5px;
+    margin-bottom: 10px;
+  }
+
+  .og-register-gate,
+  #ogPlayGate,
+  .og-btn,
+  .og-actions,
+  .og-product {
+    max-width: 100%;
+  }
+
+  .og-btn {
+    padding: 13px 16px;
+    font-size: 15px;
+    min-height: 46px;
+    border-radius: 12px;
+  }
+
+  .og-btn-ghost {
+    min-height: 42px;
+    margin-top: 6px;
+  }
+
+  .og-result-emoji {
+    font-size: 42px;
+    margin: 4px 0 6px;
+  }
+
+  .og-result-title {
+    font-size: 20px;
+  }
+
+  .og-result-msg {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .og-product {
+    padding: 12px 10px;
+    margin-bottom: 12px;
+  }
+
+  .og-product-img-wrap {
+    width: min(112px, 36vw);
+    height: min(112px, 36vw);
+  }
+}
+
+@media (max-width: 380px) {
+  .og-overlay.og-side {
+    max-height: min(78vh, 540px) !important;
+  }
+
+  .og-overlay.og-side .og-card {
+    padding: 14px 12px 12px !important;
+    max-height: min(76vh, 520px) !important;
+  }
+
+  .og-title {
+    font-size: 16px !important;
+  }
+
+  .og-btn {
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+}
+
+/* Landscape phone — ne prekriva cijeli ekran */
+@media (max-height: 420px) and (orientation: landscape) {
+  .og-overlay.og-side {
+    max-height: min(92vh, 360px) !important;
+    bottom: 8px !important;
+  }
+
+  .og-overlay.og-side .og-card {
+    max-height: min(88vh, 340px) !important;
+    padding: 12px 12px 10px !important;
+  }
+
+  .og-gift-icon {
+    font-size: 28px !important;
+    margin: 0 0 4px !important;
+  }
+
+  .og-title {
+    font-size: 15px !important;
+  }
+}
+
+.og-card {
+  position: relative !important;
+  width: min(380px, 100%) !important;
+  max-width: 380px !important;
+  max-height: min(78vh, 560px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  margin: 0 auto !important;
+  padding: 22px 18px 18px !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow:
+    0 22px 56px rgba(15, 23, 42, 0.32),
+    0 0 0 1px rgba(91, 184, 5, 0.22) !important;
+  text-align: center !important;
+  transform: translateY(14px) scale(0.97);
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+}
+
+.og-overlay.is-open:not(.og-side) .og-card {
+  transform: none !important;
+}
+
+.og-overlay.og-side.is-open .og-card {
+  /* animacija pulse umjesto scale */
+}
+
+.og-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3d8a00, #5BB805 40%, #9be84a 60%, #5BB805);
+  border-radius: 20px 20px 0 0;
+}
+
+.og-register-gate {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.og-register-gate[hidden],
+#ogPlayGate[hidden] {
+  display: none !important;
+}
+
+.og-register-msg {
+  margin: 0 0 12px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.4;
+}
+
+#ogPlayGate {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.og-email-label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  text-align: left;
+}
+
+.og-email-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  background: #fff;
+  font-family: inherit;
+}
+
+.og-email-input:focus {
+  outline: none;
+  border-color: #5BB805;
+  box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.2);
+}
+
+.og-email-input--error {
+  border-color: #e11d48 !important;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15) !important;
+}
+
+.og-email-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.og-gift-icon {
+  font-size: 42px !important;
+  margin: 0 0 8px !important;
+}
+
+.og-title {
+  font-size: 18px !important;
+}
+
+.og-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #f0f9e8;
+  color: #3d7a0a;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  z-index: 5;
+}
+
+.og-x:hover {
+  background: #dcf7c4;
+}
+
+.og-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.og-step[hidden] {
+  display: none !important;
+}
+
+.og-gift-icon {
+  font-size: 56px;
+  line-height: 1;
+  margin: 4px 0 12px;
+  animation: og-bob 2s ease-in-out infinite;
+}
+
+@keyframes og-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.og-kicker {
+  margin: 0 0 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.og-title {
+  margin: 0 0 10px;
+  padding: 0 12px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.og-text {
+  margin: 0 0 12px;
+  padding: 0 8px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.45;
+  font-weight: 500;
+  max-width: 320px;
+}
+
+.og-choice-hint {
+  margin: 0 0 16px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.01em;
+}
+
+.og-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 280px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.og-btn-main {
+  background: linear-gradient(180deg, #6fd00f, #5BB805 50%, #3f8f00) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 0 #2f6b00, 0 10px 22px rgba(91, 184, 5, 0.35);
+}
+
+.og-btn-main:hover {
+  filter: brightness(1.05);
+}
+
+.og-btn-ghost {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border: 1.5px solid #e2e8f0 !important;
+  margin-top: 8px;
+}
+
+.og-link {
+  margin-top: 12px;
+  border: none;
+  background: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.og-spinner {
+  width: 48px;
+  height: 48px;
+  margin: 24px auto 16px;
+  border-radius: 50%;
+  border: 4px solid #e2e8f0;
+  border-top-color: #5BB805;
+  animation: og-spin 0.8s linear infinite;
+}
+
+@keyframes og-spin {
+  to { transform: rotate(360deg); }
+}
+
+.og-loading-text {
+  margin: 0 0 24px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.og-result-emoji {
+  font-size: 52px;
+  line-height: 1;
+  margin: 8px 0 10px;
+}
+
+.og-result-title {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+#ogResult.is-win .og-result-title {
+  color: #166534;
+}
+
+.og-result-msg {
+  margin: 0 0 16px;
+  max-width: 300px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.og-product {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto 16px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  box-sizing: border-box;
+}
+
+.og-product[hidden] {
+  display: none !important;
+}
+
+.og-product-img-wrap {
+  position: relative;
+  width: min(150px, 46vw);
+  height: min(150px, 46vw);
+  margin: 0 auto 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #d1fae5;
+}
+
+.og-product-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.og-product-tag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 5px;
+  background: #5BB805;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.og-product-name {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.og-product-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.og-product-price s {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.og-product-price b {
+  font-size: 18px;
+  font-weight: 900;
+  color: #5BB805;
+}
+
+.og-product-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #166534;
+}
+
+.og-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.online-gift-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .og-card {
+    padding: 22px 14px 16px !important;
+  }
+  .og-title {
+    font-size: 18px;
+  }
+  .og-gift-icon {
+    font-size: 44px;
+  }
+  .og-product-img-wrap {
+    width: min(130px, 42vw);
+    height: min(130px, 42vw);
+  }
+}
+
+/* —— Loyalty Club registracija (umjesto nagradne igre) —— */
+body.og-open {
+  overflow: hidden;
+}
+
+.lc-overlay {
+  align-items: center !important;
+  justify-content: center !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 16px !important;
+  background: rgba(8, 8, 8, 0.62) !important;
+  pointer-events: none;
+}
+.lc-overlay.is-open {
+  pointer-events: auto !important;
+}
+.lc-modal {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(300px, 1.05fr);
+  width: min(920px, calc(100vw - 24px));
+  max-height: min(92vh, 760px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+.lc-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f3f3;
+  color: #111;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lc-left {
+  background: #0a0a0a;
+  color: #fff;
+  padding: 28px 26px 30px;
+}
+.lc-card {
+  position: relative;
+  margin: 0 0 22px;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  border: 1.5px solid #FF5A00;
+  background: linear-gradient(160deg, #1a1a1a 0%, #0a0a0a 70%);
+  min-height: 132px;
+  overflow: hidden;
+}
+.lc-card-logo {
+  display: block;
+  height: 42px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+.lc-card-brand {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #FF5A00;
+}
+.lc-card-tag {
+  margin: 4px 0 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.lc-card-num {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #FF5A00;
+}
+.lc-left-title {
+  margin: 0 0 18px;
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.lc-left-title span {
+  color: #FF5A00;
+}
+.lc-perks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.lc-perks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.lc-perk-ico {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #FF5A00;
+  font-size: 16px;
+  font-weight: 800;
+}
+.lc-right {
+  padding: 28px 28px 24px;
+  background: #fff;
+}
+.lc-gift {
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 10px;
+  border-radius: 50%;
+  background: #FF5A00;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 8px 20px rgba(255, 90, 0, 0.28);
+}
+.lc-right-title {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #111;
+}
+.lc-right-title span {
+  color: #FF5A00;
+}
+.lc-right-lead {
+  margin: 0 0 18px;
+  text-align: center;
+  color: #555;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.lc-form {
+  display: grid;
+  gap: 10px;
+}
+.lc-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 12px;
+  background: #fff;
+}
+.lc-field:focus-within {
+  border-color: #FF5A00;
+}
+.lc-field-ico {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: #111;
+}
+.lc-field-ico svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.lc-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  color: #111;
+  height: 46px;
+}
+.lc-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 2px;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+}
+.lc-terms input {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: #FF5A00;
+}
+.lc-terms a {
+  color: #111;
+  font-weight: 700;
+}
+.lc-submit {
+  appearance: none;
+  border: 0;
+  border-radius: 12px;
+  min-height: 48px;
+  background: #FF5A00;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.lc-submit:hover {
+  background: #E04F00;
+}
+.lc-login {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+}
+.lc-login a,
+.lc-login-link {
+  color: #FF5A00;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+.lc-turnstile {
+  min-height: 0;
+}
+@media (max-width: 768px) {
+  .lc-modal {
+    grid-template-columns: 1fr;
+    max-height: min(94vh, 860px);
+  }
+  .lc-left {
+    padding: 20px 18px 16px;
+  }
+  .lc-card {
+    min-height: 0;
+    margin-bottom: 14px;
+  }
+  .lc-left-title {
+    font-size: 22px;
+  }
+  .lc-right {
+    padding: 18px 16px 20px;
+  }
+  .lc-right-title {
+    font-size: 22px;
+  }
+}

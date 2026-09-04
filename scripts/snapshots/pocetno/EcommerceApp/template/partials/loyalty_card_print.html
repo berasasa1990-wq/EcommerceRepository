@@ -1,0 +1,74 @@
+<div class="loyalty-card-sides" id="loyaltyPrintCard">
+    {# Prednja — veliki logo (pregled u panelu) #}
+    <div class="loyalty-physical-card loyalty-physical-card--front loyalty-physical-card--{{ loyalty.tier.nivo }}" data-side="front">
+        <div class="loyalty-physical-card__bg-pattern" aria-hidden="true"></div>
+        <div class="loyalty-physical-card__shine" aria-hidden="true"></div>
+        <header class="loyalty-physical-card__header loyalty-physical-card__header--front">
+            <span class="loyalty-physical-card__side-tag">Prednja</span>
+        </header>
+        <div class="loyalty-physical-card__logo-hero">
+            {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="loyalty-physical-card__logo-big" width="360" height="120">
+            {% else %}
+            <div class="loyalty-physical-card__logo-fallback">
+                <span class="loyalty-physical-card__brand-mark">OZ</span>
+                <span class="loyalty-physical-card__brand-text">opremazaribolov.ba</span>
+            </div>
+            {% endif %}
+        </div>
+        <footer class="loyalty-physical-card__footer loyalty-physical-card__footer--front">
+            <span>LOYALTY KARTICA</span>
+            <span class="loyalty-physical-card__tier">{{ loyalty.tier.label }}</span>
+        </footer>
+    </div>
+
+    {# Zadnja — šalje se kao JPG (bez QR) #}
+    <div class="loyalty-physical-card loyalty-physical-card--back loyalty-physical-card--slim loyalty-physical-card--{{ loyalty.tier.nivo }}" data-side="back">
+        <div class="loyalty-physical-card__bg-pattern" aria-hidden="true"></div>
+        <div class="loyalty-physical-card__shine" aria-hidden="true"></div>
+
+        <div class="loyalty-physical-card__slim-top">
+            <div>
+                <p class="loyalty-physical-card__label">Vlasnik</p>
+                <p class="loyalty-physical-card__name{% if '@' in cardholder_name %} loyalty-physical-card__name--email{% endif %}">{{ cardholder_name }}</p>
+            </div>
+            <div class="loyalty-physical-card__discount loyalty-physical-card__discount--compact">
+                <span class="loyalty-physical-card__discount-value">{{ loyalty.tier.postotak }}%</span>
+                <span class="loyalty-physical-card__discount-tier">{{ loyalty.tier.label }}</span>
+            </div>
+        </div>
+
+        <div class="loyalty-physical-card__codes loyalty-physical-card__codes--slim">
+            <div class="loyalty-physical-card__code-row">
+                <span class="loyalty-physical-card__code-label">Broj kartice</span>
+                <div class="loyalty-physical-card__code-value-row">
+                    <strong class="loyalty-physical-card__number" id="loyaltyCardCodeValue">{{ loyalty.kartica.kod }}</strong>
+                    <button type="button" class="loyalty-physical-card__copy-btn" data-copy-target="loyaltyCardCodeValue" aria-label="Kopiraj broj">Kopiraj</button>
+                </div>
+            </div>
+            <div class="loyalty-physical-card__barcode-block">
+                <span class="loyalty-physical-card__code-label">Barkod</span>
+                <div class="loyalty-physical-card__barcode-frame">
+                    <img
+                        class="loyalty-physical-card__barcode-img"
+                        src="{% url 'staff_loyalty_card_barcode' loyalty.kartica.pk %}"
+                        alt="Barkod {{ loyalty.kartica.barkod|default:loyalty.kartica.kod }}"
+                        width="420" height="72" loading="eager" decoding="async"
+                    >
+                </div>
+                <span class="loyalty-physical-card__barcode-text">{{ loyalty.kartica.barkod|default:loyalty.kartica.kod }}</span>
+            </div>
+        </div>
+
+        <ul class="loyalty-physical-card__tiers-mini">
+            {% for t in loyalty.tiers %}
+            <li class="{% if t.nivo == loyalty.tier.nivo %}is-active{% endif %}">{{ t.label }} {{ t.postotak }}%</li>
+            {% endfor %}
+        </ul>
+
+        <footer class="loyalty-physical-card__footer">
+            <span>Unesi broj u korpi · ne na akcije</span>
+            <span>Zadnja (JPG)</span>
+        </footer>
+    </div>
+</div>

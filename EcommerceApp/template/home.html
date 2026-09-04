@@ -1,5 +1,22 @@
 {% extends 'base.html' %}
 
+{% block extra_css %}
+<style>
+.hero-carousel {
+    border-bottom: 2px solid var(--ozr-orange, #FF5A00) !important;
+}
+.home-products--akcija,
+.home-brand-strip-section--mockup {
+    border-top: 2px solid var(--ozr-orange, #FF5A00) !important;
+    border-bottom: 2px solid var(--ozr-orange, #FF5A00);
+}
+.home-image-trio {
+    border-top: 2px solid var(--ozr-orange, #FF5A00);
+    border-bottom: 2px solid var(--ozr-orange, #FF5A00);
+}
+</style>
+{% endblock %}
+
 {% block lcp_preload %}
 {% if lcp_image_url %}
 <link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %}{% if lcp_image_sizes %} imagesizes="{{ lcp_image_sizes }}"{% endif %} fetchpriority="high">

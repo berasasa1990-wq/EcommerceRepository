@@ -1,0 +1,31 @@
+{% if filter_size_groups or category or catalog_title %}
+<form class="catalog-desktop-filter" method="get" action="{{ filter_action }}">
+    {% if filter_params.q %}<input type="hidden" name="q" value="{{ filter_params.q }}">{% endif %}
+    {% if filter_params.akcija %}<input type="hidden" name="akcija" value="{{ filter_params.akcija }}">{% endif %}
+    {% if filter_params.noviteti %}<input type="hidden" name="noviteti" value="{{ filter_params.noviteti }}">{% endif %}
+    {% if filter_params.brend %}<input type="hidden" name="brend" value="{{ filter_params.brend }}">{% endif %}
+    {% if filter_params.kategorija and hide_category_filter %}<input type="hidden" name="kategorija" value="{{ filter_params.kategorija }}">{% endif %}
+    {% if filter_params.velicina %}<input type="hidden" name="velicina" value="{{ filter_params.velicina }}">{% endif %}
+    {% if catalog_show_all %}<input type="hidden" name="all" value="1">{% endif %}
+    <label class="catalog-desktop-filter__field">
+        <span>Sortiranje</span>
+        <select name="sort">
+            <option value=""{% if not filter_params.sort %} selected{% endif %}>Preporučeno</option>
+            <option value="rastuca"{% if filter_params.sort == 'rastuca' %} selected{% endif %}>Od najjeftinijeg</option>
+            <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Od najskupljeg</option>
+        </select>
+    </label>
+    <label class="catalog-desktop-filter__field">
+        <span>Cijena od (KM)</span>
+        <input type="number" name="cijena_od" placeholder="npr. 10" min="0" step="1" inputmode="decimal" value="{{ filter_params.cijena_od }}">
+    </label>
+    <label class="catalog-desktop-filter__field">
+        <span>Cijena do (KM)</span>
+        <input type="number" name="cijena_do" placeholder="npr. 50" min="0" step="1" inputmode="decimal" value="{{ filter_params.cijena_do }}">
+    </label>
+    <button type="submit" class="catalog-desktop-filter__apply">Primijeni</button>
+    {% if filter_params.sort or filter_params.cijena_od or filter_params.cijena_do or filter_params.velicina %}
+    <a href="{% if filter_reset_url %}{{ filter_reset_url }}{% else %}{{ filter_action }}{% endif %}#product-showcase" class="catalog-desktop-filter__reset">Poništi</a>
+    {% endif %}
+</form>
+{% endif %}

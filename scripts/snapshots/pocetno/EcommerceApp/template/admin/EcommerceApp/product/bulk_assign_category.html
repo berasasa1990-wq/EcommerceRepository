@@ -1,0 +1,736 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .bulk-cat-page { max-width: 980px; margin-top: 8px; padding-bottom: 40px; }
+    .bulk-cat-intro {
+        color: #444;
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 0 0 16px;
+        max-width: 800px;
+        padding: 12px 14px;
+        background: #f0f7ff;
+        border: 1px solid #c5d9ed;
+        border-radius: 8px;
+    }
+    .bulk-cat-intro ol { margin: 8px 0 0 18px; padding: 0; }
+    .bulk-cat-intro li { margin-bottom: 4px; }
+    .bulk-meta-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        align-items: center;
+        margin: 0 0 14px;
+        font-size: 13px;
+        color: #333;
+    }
+    .bulk-meta-bar strong { font-weight: 700; }
+    .bulk-meta-bar .stat-ready { color: #15803d; }
+    .bulk-meta-bar .stat-pending { color: #b45309; }
+
+    .bulk-cat-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 16px;
+        padding: 14px 16px;
+        background: #fff;
+        border: 1px solid #d0d7de;
+        border-radius: 10px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    .bulk-cat-toolbar .field { flex: 1 1 300px; min-width: 0; }
+    .bulk-cat-toolbar label {
+        display: block;
+        font-weight: 700;
+        font-size: 12px;
+        margin-bottom: 6px;
+        color: #222;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .cat-picker-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .bulk-cat-toolbar input[type="text"],
+    .bulk-product-card input.cat-search {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        padding: 9px 11px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-family: inherit;
+    }
+    .bulk-cat-toolbar input[type="text"]:focus,
+    .bulk-product-card input.cat-search:focus {
+        border-color: #417690;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
+    }
+    .bulk-cat-toolbar .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+    .bulk-cat-toolbar button,
+    .bulk-product-card button.cat-search-btn,
+    .bulk-product-card button.cat-choose-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 5px;
+        border: 1px solid #417690;
+        background: #417690;
+        color: #fff;
+    }
+    .bulk-cat-toolbar button.primary-batch {
+        background: #15803d;
+        border-color: #15803d;
+    }
+    .bulk-cat-toolbar button.primary-batch:hover { background: #166534; }
+    .bulk-cat-toolbar button.secondary,
+    .bulk-product-card button.secondary {
+        background: #fff;
+        color: #333;
+        border-color: #bbb;
+        font-weight: 600;
+    }
+    .global-cat-chosen {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #15803d;
+        font-weight: 600;
+        min-height: 1.2em;
+    }
+
+    .bulk-product-card {
+        margin-bottom: 10px;
+        padding: 14px 16px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        background: #fff;
+        transition: opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .bulk-product-card.is-excluded {
+        opacity: 0.5;
+        border-style: dashed;
+        background: #fafafa;
+    }
+    .bulk-product-card.has-category {
+        border-color: #86efac;
+        box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.12);
+        opacity: 0.88;
+    }
+    .bulk-product-card__head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .bulk-product-card__check {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 700;
+        margin: 0;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .bulk-product-card__check input {
+        width: 17px;
+        height: 17px;
+        accent-color: #15803d;
+    }
+    .bulk-product-card h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        flex: 1 1 180px;
+        min-width: 0;
+    }
+    .bulk-product-card h3 .sifra {
+        color: #888;
+        font-weight: 400;
+        font-size: 12px;
+    }
+    .badge-ready {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #166534;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .badge-pending {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: #ffedd5;
+        color: #9a3412;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .product-current-meta {
+        color: #666;
+        font-size: 12px;
+        margin: 0 0 10px;
+    }
+    .field-block .lbl {
+        display: block;
+        font-weight: 600;
+        font-size: 12px;
+        margin-bottom: 6px;
+        color: #333;
+    }
+    .cat-results { margin-top: 6px; }
+    .cat-results .cat-result {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 10px;
+        border: 1px solid #ddd;
+        margin-top: 4px;
+        background: #fff;
+        border-radius: 4px;
+        max-width: 560px;
+    }
+    .cat-results .cat-result:hover { background: #f5f9fc; }
+    .cat-chosen {
+        margin-top: 6px;
+        padding: 8px 10px;
+        background: #e8f5e9;
+        border: 1px solid #4caf50;
+        border-radius: 5px;
+        font-size: 13px;
+        max-width: 560px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    .field-hint {
+        color: #888;
+        font-size: 11px;
+        margin: 6px 0 0;
+    }
+    .bulk-assign-actions {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        position: sticky;
+        bottom: 0;
+        z-index: 6;
+        background: #f8f8f8;
+        border-top: 1px solid #ddd;
+        padding: 14px 4px;
+    }
+    .bulk-assign-actions .default {
+        font-size: 14px;
+        font-weight: 700;
+        padding: 11px 20px;
+        background: #15803d !important;
+        border-color: #15803d !important;
+    }
+    .save-count {
+        font-size: 13px;
+        color: #444;
+    }
+    .bulk-section-label {
+        margin: 18px 0 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+    .bulk-section-label--pending {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #9a3412;
+    }
+    .bulk-section-label--ready {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        margin-top: 22px;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Dodjela kategorije
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="bulk-cat-page">
+    <h1>Dodjela kategorije — različite grupe</h1>
+    <div class="bulk-cat-intro">
+        <strong>Primjer:</strong> 10 artikala → jedna kategorija, 5 → druga, 3 → treća.
+        <ol>
+            <li>Označi (✓) samo one kojima treba <em>ista</em> kategorija (npr. prvih 10).</li>
+            <li>Gore pronađi kategoriju → <strong>Dodijeli označenima</strong>.</li>
+            <li>Ti artikli idu <strong>na dno</strong> (zeleno) — gore ostaju samo oni bez kategorije.</li>
+            <li>Ponovi za sljedeću grupu, pa na kraju <strong>Save</strong>.</li>
+        </ol>
+        Možeš i pojedinačno tražiti kategoriju ispod svakog artikla.
+    </div>
+
+    <div class="bulk-meta-bar" id="bulkMetaBar">
+        <span>Ukupno: <strong id="statTotal">{{ queryset|length }}</strong></span>
+        <span class="stat-ready">Spremno (ima kategoriju): <strong id="statReady">0</strong></span>
+        <span class="stat-pending">Označeno bez kategorije: <strong id="statPending">0</strong></span>
+        <span>Označeno: <strong id="statChecked">0</strong></span>
+    </div>
+
+    <form method="post" class="bulk-assign-form" id="bulkCatForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for product in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
+        {% endfor %}
+
+        <div class="bulk-cat-toolbar" id="bulkCatToolbar">
+            <div class="field">
+                <label>1) Odaberi kategoriju za grupu</label>
+                <div class="cat-picker-row">
+                    <input type="text" id="globalCatSearch" placeholder="npr. kape, spod, mašinice…" autocomplete="off">
+                    <button type="button" id="globalCatSearchBtn" class="secondary">Nađi</button>
+                </div>
+                <div class="cat-results" id="globalCatResults"></div>
+                <input type="hidden" id="globalCatId" value="">
+                <div class="global-cat-chosen" id="globalCatChosen">Još nije odabrana kategorija za grupu.</div>
+            </div>
+            <div class="btn-row">
+                <button type="button" id="applyToChecked" class="primary-batch">2) Dodijeli označenima (✓)</button>
+                <button type="button" id="selectAllProducts" class="secondary">✓ Svi</button>
+                <button type="button" id="deselectAllProducts" class="secondary">Poništi ✓</button>
+                <button type="button" id="selectWithoutCat" class="secondary">✓ Samo bez kategorije</button>
+            </div>
+        </div>
+
+        <div class="bulk-section-label bulk-section-label--pending" id="sectionPending" hidden>
+            Još bez nove kategorije — radi na ovima prvo
+        </div>
+        <div id="bulkCardsPending" class="bulk-cards-group"></div>
+        <div class="bulk-section-label bulk-section-label--ready" id="sectionReady" hidden>
+            Već dodijeljeno (pomaknuto na dno — ne smetaju)
+        </div>
+        <div id="bulkCardsReady" class="bulk-cards-group"></div>
+
+        {% for product in queryset %}
+        <div class="bulk-product-card{% if product.kategorija %} bulk-product-card--had-cat{% endif %}" data-product-card="{{ product.pk }}" data-had-category="{% if product.kategorija %}1{% else %}0{% endif %}">
+            <div class="bulk-product-card__head">
+                <label class="bulk-product-card__check" title="Samo za batch „Dodijeli označenima” — Save snima sve s odabranom kategorijom">
+                    <input type="checkbox" name="include_product" value="{{ product.pk }}" checked class="include-check">
+                    U grupi (batch)
+                </label>
+                <h3>
+                    {{ product.naziv }}
+                    {% if product.sifra %}<span class="sifra">({{ product.sifra }})</span>{% endif %}
+                </h3>
+                <span class="badge-pending status-badge" data-status-badge>Čeka kategoriju</span>
+            </div>
+            <p class="product-current-meta">
+                {% if product.kategorija %}
+                Trenutno na sajtu: <strong>{{ product.kategorija }}</strong>
+                {% else %}
+                Trenutno: <em>bez kategorije</em>
+                {% endif %}
+                {% if product.brend %} · {{ product.brend.naziv }}{% endif %}
+            </p>
+
+            <div class="field-block">
+                <span class="lbl">Nova kategorija (samo za ovaj artikal)</span>
+                <input type="hidden"
+                       name="kategorija_{{ product.pk }}"
+                       value=""
+                       class="cat-hidden-input"
+                       data-product-id="{{ product.pk }}">
+                <div class="cat-picker" data-product-id="{{ product.pk }}">
+                    <div class="cat-picker-row">
+                        <input type="text" class="cat-search" placeholder="Pretraži kategorije…" autocomplete="off">
+                        <button type="button" class="cat-search-btn secondary">Nađi</button>
+                        <button type="button" class="secondary cat-clear-btn">Obriši</button>
+                    </div>
+                    <div class="cat-results"></div>
+                </div>
+                <p class="field-hint">Save snima svaku karticu koja ima odabranu kategoriju (badge Spremno). ✓ služi samo za batch.</p>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="bulk-assign-actions">
+            <input type="submit" name="apply" value="Save — sačuvaj sve dodjele" class="default" id="bulkSaveBtn">
+            <span class="save-count" id="saveCountHint">0 artikala s novom kategorijom</span>
+            <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+
+{{ categories|json_script:"bulk-categories-data" }}
+
+<script>
+(function() {
+    var dataEl = document.getElementById('bulk-categories-data');
+    if (!dataEl) return;
+    var categories = JSON.parse(dataEl.textContent);
+
+    function filterCategories(term) {
+        term = (term || '').toLowerCase().trim();
+        if (!term) return [];
+        return categories.filter(function(cat) {
+            return (cat.label || '').toLowerCase().indexOf(term) !== -1;
+        }).slice(0, 50);
+    }
+
+    function cardHasNewCategory(card) {
+        var hidden = card.querySelector('.cat-hidden-input');
+        return !!(hidden && hidden.value && hidden.value !== '0' && hidden.value !== '__clear__');
+    }
+
+    /**
+     * Kartice sa dodijeljenom (novom) kategorijom → dno.
+     * One bez → vrh. Tako uvijek vidiš prvo one kojima još treba kategorija.
+     */
+    function resortProductCards() {
+        var pendingHost = document.getElementById('bulkCardsPending');
+        var readyHost = document.getElementById('bulkCardsReady');
+        var sectionPending = document.getElementById('sectionPending');
+        var sectionReady = document.getElementById('sectionReady');
+        if (!pendingHost || !readyHost) return;
+
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.bulk-product-card'));
+        var pending = [];
+        var ready = [];
+        cards.forEach(function(card) {
+            if (cardHasNewCategory(card)) ready.push(card);
+            else pending.push(card);
+        });
+
+        // Stabilan redoslijed unutar grupe (originalni DOM red)
+        pending.forEach(function(card) { pendingHost.appendChild(card); });
+        ready.forEach(function(card) { readyHost.appendChild(card); });
+
+        if (sectionPending) {
+            sectionPending.hidden = pending.length === 0;
+            sectionPending.textContent = pending.length
+                ? ('Još bez nove kategorije (' + pending.length + ') — radi na ovima prvo')
+                : 'Svi imaju kategoriju';
+        }
+        if (sectionReady) {
+            sectionReady.hidden = ready.length === 0;
+            sectionReady.textContent = ready.length
+                ? ('Već dodijeljeno — ' + ready.length + ' na dnu (ne smetaju)')
+                : '';
+        }
+    }
+
+    function updateStats(opts) {
+        opts = opts || {};
+        var total = 0, ready = 0, pending = 0, checked = 0;
+        document.querySelectorAll('.bulk-product-card').forEach(function(card) {
+            total += 1;
+            var include = card.querySelector('.include-check');
+            var hasCat = cardHasNewCategory(card);
+            var isOn = include && include.checked;
+            if (isOn) checked += 1;
+            if (hasCat) {
+                ready += 1;
+            } else if (isOn) {
+                pending += 1;
+            }
+            card.classList.toggle('has-category', !!hasCat);
+            card.classList.toggle('is-excluded', !isOn);
+            var badge = card.querySelector('[data-status-badge]');
+            if (badge) {
+                if (hasCat) {
+                    badge.className = 'badge-ready status-badge';
+                    var lab = card.getAttribute('data-cat-label') || 'Kategorija';
+                    badge.textContent = 'Spremno: ' + lab;
+                } else {
+                    badge.className = 'badge-pending status-badge';
+                    badge.textContent = isOn ? 'Čeka kategoriju' : 'Isključeno';
+                }
+            }
+        });
+        var el;
+        if ((el = document.getElementById('statTotal'))) el.textContent = String(total);
+        if ((el = document.getElementById('statReady'))) el.textContent = String(ready);
+        if ((el = document.getElementById('statPending'))) el.textContent = String(pending);
+        if ((el = document.getElementById('statChecked'))) el.textContent = String(checked);
+        if ((el = document.getElementById('saveCountHint'))) {
+            el.textContent = ready
+                ? (ready + ' artikala s novom kategorijom — Save ih sve snima (✓ nije potreban)')
+                : 'Nijedan još nema novu kategoriju';
+        }
+        var saveBtn = document.getElementById('bulkSaveBtn');
+        if (saveBtn) {
+            saveBtn.value = ready
+                ? ('Save — sačuvaj ' + ready + ' dodjel(e)')
+                : 'Save — sačuvaj sve dodjele';
+        }
+        if (opts.resort !== false) {
+            resortProductCards();
+        }
+    }
+
+    function showChosen(resultsDiv, hiddenInput, label, card) {
+        resultsDiv.innerHTML = '';
+        var chosen = document.createElement('div');
+        chosen.className = 'cat-chosen';
+        chosen.innerHTML = 'Nova: <strong></strong> <button type="button" class="secondary" style="padding:3px 8px;font-size:12px;">Promijeni</button>';
+        chosen.querySelector('strong').textContent = label;
+        chosen.querySelector('button').onclick = function() {
+            hiddenInput.value = '';
+            if (card) card.removeAttribute('data-cat-label');
+            resultsDiv.innerHTML = '';
+            updateStats();
+        };
+        resultsDiv.appendChild(chosen);
+        if (card) card.setAttribute('data-cat-label', label);
+        updateStats();
+    }
+
+    function showResults(resultsDiv, matches, hiddenInput, card, onPick) {
+        resultsDiv.innerHTML = '';
+        if (!matches.length) {
+            var noRes = document.createElement('div');
+            noRes.style.cssText = 'color:#666;font-size:13px;margin-top:6px;';
+            noRes.textContent = 'Nema rezultata.';
+            resultsDiv.appendChild(noRes);
+            return;
+        }
+        matches.forEach(function(cat) {
+            var row = document.createElement('div');
+            row.className = 'cat-result';
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = cat.label;
+            nameSpan.style.flex = '1';
+            var chooseBtn = document.createElement('button');
+            chooseBtn.type = 'button';
+            chooseBtn.className = 'cat-choose-btn';
+            chooseBtn.textContent = 'Izaberi';
+            chooseBtn.onclick = function() {
+                hiddenInput.value = String(cat.id);
+                showChosen(resultsDiv, hiddenInput, cat.label, card);
+                if (onPick) onPick(cat);
+            };
+            row.appendChild(nameSpan);
+            row.appendChild(chooseBtn);
+            resultsDiv.appendChild(row);
+        });
+    }
+
+    function bindPicker(picker) {
+        var productId = picker.dataset.productId;
+        var card = document.querySelector('[data-product-card="' + productId + '"]');
+        var hiddenInput = document.querySelector('.cat-hidden-input[data-product-id="' + productId + '"]');
+        var searchInput = picker.querySelector('.cat-search');
+        var searchBtn = picker.querySelector('.cat-search-btn');
+        var clearBtn = picker.querySelector('.cat-clear-btn');
+        var resultsDiv = picker.querySelector('.cat-results');
+        if (!hiddenInput || !searchInput || !searchBtn || !resultsDiv) return;
+
+        function runSearch() {
+            showResults(resultsDiv, filterCategories(searchInput.value), hiddenInput, card);
+        }
+        searchBtn.onclick = runSearch;
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                runSearch();
+            }
+        });
+        if (clearBtn) {
+            clearBtn.onclick = function() {
+                hiddenInput.value = '';
+                searchInput.value = '';
+                resultsDiv.innerHTML = '';
+                if (card) card.removeAttribute('data-cat-label');
+                updateStats();
+            };
+        }
+
+        picker._setCategory = function(cat) {
+            hiddenInput.value = String(cat.id);
+            searchInput.value = '';
+            showChosen(resultsDiv, hiddenInput, cat.label, card);
+        };
+    }
+
+    document.querySelectorAll('.cat-picker').forEach(bindPicker);
+
+    document.querySelectorAll('.include-check').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            updateStats({ resort: false });
+        });
+    });
+
+    document.getElementById('selectAllProducts')?.addEventListener('click', function() {
+        document.querySelectorAll('.include-check').forEach(function(cb) {
+            cb.checked = true;
+        });
+        updateStats({ resort: false });
+    });
+    document.getElementById('deselectAllProducts')?.addEventListener('click', function() {
+        document.querySelectorAll('.include-check').forEach(function(cb) {
+            cb.checked = false;
+        });
+        updateStats({ resort: false });
+    });
+    document.getElementById('selectWithoutCat')?.addEventListener('click', function() {
+        document.querySelectorAll('.bulk-product-card').forEach(function(card) {
+            var include = card.querySelector('.include-check');
+            if (include) include.checked = !cardHasNewCategory(card);
+        });
+        updateStats({ resort: false });
+    });
+
+    var globalSearch = document.getElementById('globalCatSearch');
+    var globalBtn = document.getElementById('globalCatSearchBtn');
+    var globalResults = document.getElementById('globalCatResults');
+    var globalId = document.getElementById('globalCatId');
+    var globalChosen = document.getElementById('globalCatChosen');
+
+    function setGlobalChosen(cat) {
+        if (globalId) globalId.value = String(cat.id);
+        if (globalChosen) {
+            globalChosen.textContent = 'Grupa: ' + cat.label + ' — sada označi artikle i klikni „Dodijeli označenima”.';
+        }
+    }
+
+    function runGlobalSearch() {
+        showResults(globalResults, filterCategories(globalSearch.value), globalId, null, function(cat) {
+            setGlobalChosen(cat);
+        });
+    }
+    globalBtn?.addEventListener('click', runGlobalSearch);
+    globalSearch?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            runGlobalSearch();
+        }
+    });
+
+    document.getElementById('applyToChecked')?.addEventListener('click', function() {
+        var id = (globalId && globalId.value) || '';
+        if (!id) {
+            alert('Prvo pronađi i izaberi kategoriju gore (korak 1).');
+            return;
+        }
+        var cat = categories.find(function(c) { return String(c.id) === String(id); });
+        if (!cat) {
+            alert('Kategorija nije pronađena.');
+            return;
+        }
+        var n = 0;
+        document.querySelectorAll('.bulk-product-card').forEach(function(card) {
+            var include = card.querySelector('.include-check');
+            if (!include || !include.checked) return;
+            var picker = card.querySelector('.cat-picker');
+            if (picker && picker._setCategory) {
+                picker._setCategory(cat);
+                n += 1;
+            }
+        });
+        if (!n) {
+            alert('Nijedan artikal nije označen (✓ U grupi / batch).');
+            return;
+        }
+        // Skini ✓ s onih koji već imaju kategoriju i pomakni ih na dno —
+        // gore ostaju samo oni kojima još treba kategorija.
+        // Save i dalje snima SVE s odabranom kategorijom (ne ovisi o ✓).
+        document.querySelectorAll('.bulk-product-card').forEach(function(card) {
+            var include = card.querySelector('.include-check');
+            if (include && cardHasNewCategory(card)) {
+                include.checked = false;
+            }
+        });
+        updateStats({ resort: true });
+        // Scroll na vrh liste (preostali bez kategorije)
+        var pendingHost = document.getElementById('bulkCardsPending');
+        if (pendingHost) {
+            pendingHost.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        alert(
+            '„' + cat.label + '” postavljena na ' + n + ' artikala.\n\n' +
+            'Ti su pomaknuti na dno. Gore su samo oni bez kategorije.\n' +
+            'Sljedeća grupa: ✓ → druga kategorija → Dodijeli označenima.\n' +
+            'Na kraju Save — snima sve spremne.'
+        );
+    });
+
+    document.getElementById('bulkCatForm')?.addEventListener('submit', function(e) {
+        var ready = 0;
+        document.querySelectorAll('.cat-hidden-input').forEach(function(h) {
+            if (h.value) ready += 1;
+        });
+        if (!ready) {
+            e.preventDefault();
+            alert('Nijedan artikal nema odabranu novu kategoriju. Dodijeli barem jednu pa Save.');
+            return;
+        }
+        if (!window.confirm('Sačuvati kategorije za ' + ready + ' artikal/a?')) {
+            e.preventDefault();
+        }
+    });
+
+    // Početni redoslijed: prvo bez kategorije na sajtu, pa oni koji već imaju
+    (function initialOrder() {
+        var pendingHost = document.getElementById('bulkCardsPending');
+        var readyHost = document.getElementById('bulkCardsReady');
+        if (!pendingHost || !readyHost) return;
+        var form = document.getElementById('bulkCatForm');
+        if (!form) return;
+        var cards = Array.prototype.slice.call(form.querySelectorAll('.bulk-product-card'));
+        cards.forEach(function(card) {
+            // Na load još nema "nove" kategorije — sortiraj po trenutnoj na sajtu
+            // (bez kategorije gore, s postojećom blago ispod unutar pending)
+            pendingHost.appendChild(card);
+        });
+        // Unutar pending: prvo bez postojeće kategorije na sajtu
+        var without = [];
+        var withExisting = [];
+        Array.prototype.slice.call(pendingHost.querySelectorAll('.bulk-product-card')).forEach(function(card) {
+            if (card.getAttribute('data-had-category') === '1') withExisting.push(card);
+            else without.push(card);
+        });
+        without.concat(withExisting).forEach(function(card) {
+            pendingHost.appendChild(card);
+        });
+    })();
+
+    updateStats({ resort: true });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar"><h1>Podešavanja</h1></div>
+<section class="mg-card">
+    <dl class="mg-kv">
+        <div class="mg-kv-row">
+            <dt>Izvor zaliha</dt>
+            <dd>Svaki server ima svoju bazu. Git push šalje samo kod, ne artikle. „Sync sada” uvodi nove artikle iz Odoo. „Sync zaliha” postavi količinu po Odoo ID. „Sync cijena” postavi MPC (list_price) po Odoo ID. „Sync šifri” nađe isti naziv u Magacinu i upiše Odoo referencu (Internal Reference) — ne pravi duplikate.</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Odoo veza</dt>
+            <dd>{% if odoo_configured %}Povezano{% else %}Nije konfigurisano (ODOO_URL / ODOO_DB / ODOO_USERNAME / ODOO_API_KEY){% endif %}</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Lokacija</dt>
+            <dd>{{ location_count }}</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Sync zapisa</dt>
+            <dd>{{ sync_count }}</dd>
+        </div>
+        <div class="mg-kv-row">
+            <dt>Katalog</dt>
+            <dd>Svako kretanje ažurira količinu artikla / varijacije na sajtu (stanje i „na stanju”).</dd>
+        </div>
+    </dl>
+    <div class="mg-toolbar-actions" style="margin-top:16px;">
+        <form method="post" action="{% url 'staff_magacin_sync' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="stock">
+            <input type="hidden" name="next" value="{% url 'staff_magacin_podesavanja' %}">
+            <button type="submit" class="mg-btn mg-btn-primary"{% if sync_job %} disabled{% endif %}>Sync zaliha iz Odoo</button>
+        </form>
+        <form method="post" action="{% url 'staff_magacin_sync' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="prices">
+            <input type="hidden" name="next" value="{% url 'staff_magacin_podesavanja' %}">
+            <button type="submit" class="mg-btn"{% if sync_job %} disabled{% endif %}>Sync cijena iz Odoo</button>
+        </form>
+        <form method="post" action="{% url 'staff_magacin_sync' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="sifre">
+            <input type="hidden" name="next" value="{% url 'staff_magacin_podesavanja' %}">
+            <button type="submit" class="mg-btn"{% if sync_job %} disabled{% endif %}>Sync šifri po nazivu</button>
+        </form>
+        <a class="mg-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
+        <a class="mg-btn" href="#backupBaze">Backup / restore baze</a>
+    </div>
+</section>
+{% include 'staff/magacin/_backup_panel.html' %}
+{% endblock %}

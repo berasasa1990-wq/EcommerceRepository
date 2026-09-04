@@ -6122,6 +6122,12 @@ class WarehouseCustomer(models.Model):
     grad = models.CharField(max_length=100, blank=True)
     email = models.EmailField(blank=True)
     postanski_broj = models.CharField(max_length=20, blank=True)
+    vp_kupac = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name='VP kupac',
+        help_text='Narudžbe ovog kupca idu kao VP narudžbe.',
+    )
     kreiran = models.DateTimeField(auto_now_add=True)
     azuriran = models.DateTimeField(auto_now=True)
 

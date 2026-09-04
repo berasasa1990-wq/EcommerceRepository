@@ -1,0 +1,60 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Uvozi</h1>
+        <p class="mg-count">Otvori sačuvani uvoz ili napravi novi i zalijepi Excel.</p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <form method="post" onsubmit="return confirm('Artikle koji su ostali SAMO na lokaciji Uvoz skidam s magacinskih lokacija. Na sajtu ostaju na stanju (fizički su u MP). Uvozi se ne brišu.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="uvoz_u_mp">
+            <button type="submit" class="mg-btn"{% if not uvoz_mp_count %} disabled{% endif %}>
+                Uvoz lokacija u MP{% if uvoz_mp_count %} ({{ uvoz_mp_count }} / {{ uvoz_mp_qty }} kom){% endif %}
+            </button>
+        </form>
+        <a href="{% url 'staff_magacin_uvoz_novi' %}" class="mg-btn mg-btn-primary">+ Novi uvoz</a>
+    </div>
+</div>
+
+<section class="mg-card">
+    <div class="mg-table-wrap">
+        <table class="mg-table mg-table-stack mg-table-stack-uvozi">
+            <thead>
+                <tr>
+                    <th>NAZIV</th>
+                    <th>DATUM</th>
+                    <th class="num">STAVKI</th>
+                    <th class="num">AŽURIRANO</th>
+                    <th class="num">KREIRANO</th>
+                    <th class="num">PROMJENA MPC</th>
+                    <th class="num">UKUPNA FAKTURNA</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in uvozi %}
+                <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_uvoz_detail' u.pk %}'">
+                    <td><strong>{{ u.naziv }}</strong></td>
+                    <td>{{ u.kreiran|date:"d.m.Y. H:i" }}</td>
+                    <td class="num">{{ u.list_stavki }}</td>
+                    <td class="num">{% if u.list_azurirano %}{{ u.list_azurirano }}{% else %}—{% endif %}</td>
+                    <td class="num">{% if u.list_kreirano %}{{ u.list_kreirano }}{% else %}—{% endif %}</td>
+                    <td class="num">{% if u.list_mpc %}{{ u.list_mpc }}{% else %}—{% endif %}</td>
+                    <td class="num">{% if u.list_fakturna %}{{ u.list_fakturna }} KM{% else %}—{% endif %}</td>
+                    <td class="mg-uvoz-row-actions" onclick="event.stopPropagation()">
+                        <a class="mg-btn" href="{% url 'staff_magacin_uvoz_detail' u.pk %}">Otvori</a>
+                        <a class="mg-btn" href="{% url 'staff_magacin_uvoz_stampa' u.pk %}" target="_blank" rel="noopener">Štampaj</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="mg-muted">Još nema uvoza. Klikni Novi uvoz i zalijepi kolone iz Excela.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

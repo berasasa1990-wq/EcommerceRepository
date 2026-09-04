@@ -40,7 +40,6 @@ from .loyalty import (
     izdaj_loyalty_karticu,
     kreiraj_loyalty_karticu,
     loyalty_kontekst,
-    maybe_apply_loyalty_coupon_from_phone,
     osiguraj_loyalty_karticu,
     validiraj_kupon,
 )
@@ -4363,6 +4362,24 @@ def _cart_context(request, cart):
         )
         for item in cart_items:
             item['slug'] = item.get('slug') or slug_map.get(item['product_id'], '')
+    loyalty = None
+    loyalty_progress = 0
+    if loyalty_card is not None:
+        loyalty = loyalty_kontekst(loyalty_card)
+        spend = loyalty_card.ukupna_potrosnja or Decimal('0')
+        nxt = loyalty.get('next_tier') or {}
+        tier = loyalty.get('tier') or {}
+        end = nxt.get('od')
+        start = tier.get('od')
+        if end is not None:
+            span = Decimal(str(end)) - Decimal(str(start or 0))
+            done = spend - Decimal(str(start or 0))
+            if span > 0:
+                loyalty_progress = int(max(0, min(100, (done / span) * 100)))
+            else:
+                loyalty_progress = 100
+        else:
+            loyalty_progress = 100
     return {
         'cart': cart,
         'cart_items': cart_items,
@@ -4372,6 +4389,8 @@ def _cart_context(request, cart):
         'coupon_form': CouponForm(initial={'kod': ''}),
         'applied_coupon_code': applied_code,
         'loyalty_card': loyalty_card,
+        'loyalty': loyalty,
+        'loyalty_progress': loyalty_progress,
     }
 
 
@@ -4574,17 +4593,9 @@ def checkout(request):
             return redirect('cart')
 
     form = CheckoutForm(initial=_checkout_initial(request))
-    if request.method != 'POST':
-        maybe_apply_loyalty_coupon_from_phone(
-            cart,
-            (form.initial or {}).get('telefon') or '',
-        )
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
         if form.is_valid():
-            maybe_apply_loyalty_coupon_from_phone(
-                cart, form.cleaned_data.get('telefon') or '',
-            )
             summary = cart.sazetak(user=request.user)
             popust_detalji = []
             for p_label in (summary.get('pogodnosti') or []):

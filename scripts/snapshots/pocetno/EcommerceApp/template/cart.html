@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}<title>{{ seo_title|default:"Korpa — opremazaribolov.ba" }}</title>{% endblock %}
+
+{% block meta_description %}
+{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="cart-page">
+    <h1>{{ seo_h1|default:"Korpa" }}</h1>
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
+
+    {% if cart_items %}
+    {% if online_gift_reward_label %}
+    <div class="online-gift-banner" role="status">
+        🎁 Online nagrada: {{ online_gift_reward_label }} — primjenjuje se na ovoj narudžbi
+    </div>
+    {% endif %}
+    {% include 'partials/cart_free_shipping_bar.html' with summary=summary %}
+    <div class="cart-layout">
+        <div class="cart-main">
+            {% include 'partials/upsell_cart_banner.html' with position='banner_iznad' upsell_offers=upsell_banners_above %}
+            <form method="post" action="{% url 'update_cart' %}" class="cart-form">
+                {% csrf_token %}
+                <div class="cart-items">
+                {% for item in cart_items %}
+                <article class="cart-item">
+                    <div class="cart-item-image">
+                        {% if item.slika %}
+                        <img src="{{ item.slika }}" alt="{{ item.naziv }}" width="120" height="120" loading="lazy" decoding="async">
+                        {% else %}
+                        <div class="product-image-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="cart-item-info">
+                        <h3 class="cart-item-title">
+                            {% include 'partials/cart_item_name.html' with item=item %}
+                        </h3>
+                        {% if item.deal_info and item.deal_info.message %}
+                        <div class="cart-item-deal-promo">{{ item.deal_info.message }}</div>
+                        {% endif %}
+                        {% if item.akcija_popup_discount %}
+                        <div class="cart-item-akcija-promo">
+                            <strong>{{ item.akcija_popup_discount.percent|floatformat:0 }}% popusta</strong> na 1 komad kad korpa (bez 1 kom. ovog artikla) dostigne <strong>{{ item.akcija_popup_discount.threshold|floatformat:2 }} KM</strong>
+                        </div>
+                        {% endif %}
+                        {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}
+                        {% if item.pakovanje_label %}
+                        <p class="cart-item-pack product-pack-line">
+                            <span class="product-pack-badge product-pack-badge--card">
+                                <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+                                <span class="product-pack-badge-text">{{ item.pakovanje_label }}</span>
+                            </span>
+                            <span class="product-pack-hint">{{ item.pakovanje_cijena_hint }}</span>
+                        </p>
+                        {% endif %}
+                        <p class="cart-item-price">
+                            {% if item.deal_info and item.deal_info.has_discount and item.deal_info.discounted_unit_price %}
+                                <span class="price-original">{{ item.deal_info.full_unit_price }} KM</span>
+                                <span class="price-deal">{{ item.deal_info.discounted_unit_price }} KM</span>
+                            {% elif item.discounted_unit_price %}
+                                <span class="price-original">{{ item.cijena_decimal }} KM</span>
+                                <span class="price-discounted">{{ item.discounted_unit_price }} KM</span>
+                            {% elif item.na_akciji and item.bazna_cijena_decimal > item.cijena_decimal %}
+                                <span class="price-original">{{ item.bazna_cijena_decimal }} KM</span>
+                                <span class="price-discounted">{{ item.cijena_decimal }} KM</span>
+                            {% else %}
+                                {{ item.cijena_decimal }} KM
+                            {% endif %}
+                        </p>
+                        {% include 'partials/korpa_nudjenje_inline.html' with nudjenje=item.korpa_nudjenje %}
+                    </div>
+                    <div class="cart-item-qty">
+                        <label for="qty-{{ item.key }}">Kol.</label>
+                        <input type="number" id="qty-{{ item.key }}" name="quantity_{{ item.key }}" value="{{ item.quantity }}" min="1" max="{{ item.max_quantity|default:99 }}" class="form-input form-input--qty">
+                    </div>
+                    <div class="cart-item-total">
+                        {% if item.deal_info and item.deal_info.has_discount %}
+                        <p>
+                            <span class="price-original">{{ item.deal_info.original_total }} KM</span>
+                            <span class="price-deal">{{ item.ukupno_stavka }} KM</span>
+                        </p>
+                        {% elif item.na_akciji and item.bazna_cijena_decimal > item.cijena_decimal %}
+                        <p><span class="price-discounted">{{ item.ukupno_stavka }} KM</span></p>
+                        {% else %}
+                        <p>{{ item.ukupno_stavka }} KM</p>
+                        {% endif %}
+                    </div>
+                    <button type="submit" formaction="{% url 'remove_from_cart' item.key %}" formmethod="post" class="cart-item-remove" aria-label="Ukloni">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </article>
+                {% endfor %}
+                </div>
+            </form>
+        </div>
+
+        <aside class="cart-summary">
+            {% include 'partials/coupon_form.html' with coupon_next='cart' %}
+            {% include 'partials/order_totals.html' with summary=summary %}
+            <div class="cart-summary-actions">
+                <a href="{% url 'checkout' %}" class="btn btn-primary btn-add-to-bag btn-cart-checkout">Nastavi na narudžbu</a>
+            </div>
+            {% include 'partials/upsell_cart_banner.html' with position='banner_ispod' upsell_offers=upsell_banners_below %}
+        </aside>
+    </div>
+    {% else %}
+    <p class="cart-empty">Korpa je prazna.</p>
+    <a href="{% url 'home' %}" class="btn btn-primary">Nastavi kupovinu</a>
+    {% endif %}
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cart-qty.min.js' %}" defer></script>
+{% endblock %}

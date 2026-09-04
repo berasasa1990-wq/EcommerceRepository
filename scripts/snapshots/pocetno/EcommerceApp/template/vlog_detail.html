@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block lcp_preload %}
+{% if lcp_image_url %}
+<link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
+{% endif %}
+{% endblock %}
+
+{% block page_title %}
+<title>{{ seo_title }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description }}">
+{% endblock %}
+
+{% block og_type %}article{% endblock %}
+
+{% block content %}
+<article class="vlog-article">
+    <div class="vlog-article-inner">
+        <nav class="vlog-breadcrumb" aria-label="Navigacija">
+            <a href="{% url 'home' %}">Početna</a>
+            <span class="vlog-breadcrumb-sep" aria-hidden="true">/</span>
+            <a href="{% url 'vlog_list' %}">Blog</a>
+            <span class="vlog-breadcrumb-sep" aria-hidden="true">/</span>
+            <span class="vlog-breadcrumb-current">{{ vlog.naslov }}</span>
+        </nav>
+
+        <header class="vlog-article-header">
+            <h1 class="vlog-article-title">{{ vlog.naslov }}</h1>
+        </header>
+
+        {% if vlog.slika %}
+        <figure class="vlog-article-media">
+            <img src="{{ vlog_image.src }}"
+                 {% if vlog_image.srcset %}srcset="{{ vlog_image.srcset }}"{% endif %}
+                 alt="{{ vlog.naslov }}"
+                 class="vlog-article-image"
+                 width="{{ image_width }}"
+                 height="{{ image_height }}"
+                 sizes="(max-width: 768px) 100vw, 360px"
+                 loading="eager"
+                 fetchpriority="high"
+                 decoding="async">
+        </figure>
+        {% endif %}
+
+        {% if vlog.sadrzaj %}
+        <div class="vlog-article-body">
+            {% if '<' in vlog.sadrzaj and '>' in vlog.sadrzaj %}
+            {{ vlog.sadrzaj|safe }}
+            {% else %}
+            <div class="vlog-article-text">{{ vlog.sadrzaj|linebreaksbr }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</article>
+
+{% if other_vlogs %}
+<section class="vlog-related">
+    <div class="vlog-related-inner">
+        <h2 class="vlog-related-title">Još vlogova</h2>
+        <div class="vlog-related-grid">
+            {% for item in other_vlogs %}
+            <a href="{% url 'vlog_detail' item.slug %}" class="vlog-related-card">
+                <span class="vlog-related-image-wrap">
+                    <img src="{{ item.slika_url }}"
+                         {% if item.slika_srcset %}srcset="{{ item.slika_srcset }}"{% endif %}
+                         alt="{{ item.naslov }}"
+                         width="{{ item.image_width }}"
+                         height="{{ item.image_height }}"
+                         sizes="(max-width: 768px) 50vw, 200px"
+                         loading="lazy"
+                         decoding="async">
+                </span>
+                <span class="vlog-related-card-title">{{ item.naslov }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

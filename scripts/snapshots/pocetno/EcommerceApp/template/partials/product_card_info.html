@@ -1,0 +1,29 @@
+<div class="product-info">
+    {% if user.is_superuser and not product.na_stanju %}
+    <span class="staff-stock-badge">Nije na stanju</span>
+    {% endif %}
+    <h2 data-product-name>{{ product.naziv }}</h2>
+    {% include 'partials/product_pack_label.html' with product=product %}
+    {% include 'partials/product_staff_missing.html' with product=product %}
+    {% include 'partials/product_stock_label.html' with product=product %}
+    {# Fiksna visina — samo Made in Japan #}
+    <div class="product-origin-slot">
+        {% if product.proizvedeno_u_japanu %}
+        <div class="made-in-japan made-in-japan--card" role="note" aria-label="Proizvedeno u Japanu">
+            <span class="made-in-japan__flag" aria-hidden="true"><span class="made-in-japan__sun"></span></span>
+            <span class="made-in-japan__text">
+                <span class="made-in-japan__label">Made in Japan</span>
+            </span>
+        </div>
+        {% endif %}
+    </div>
+    <div class="product-brand-slot">
+        {% include 'partials/brand_display.html' with brand=product.brend %}
+    </div>
+    {% if show_akcija_expiry and product.prikaz_akcija_istice %}
+    <p class="product-sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
+    {% endif %}
+    <div class="product-info__price-row{% if product.pakovanje_uz_cijenu_kartica %} product-info__price-row--pack{% endif %}">
+        {% include 'partials/product_card_dwell_price.html' with product=product %}
+    </div>
+</div>

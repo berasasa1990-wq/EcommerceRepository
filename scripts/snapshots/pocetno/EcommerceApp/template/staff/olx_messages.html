@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>OLX / Pik poruke — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-olx-page">
+    <div class="staff-olx-topbar">
+        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Admin panel</a>
+        <h1>OLX / Pik poruke</h1>
+        <div class="staff-olx-filter">
+            <a href="{% url 'staff_olx_messages' %}{% if selected_id %}?conv={{ selected_id }}{% endif %}"
+               class="staff-filter-btn{% if filter_status == 'kupci' %} is-active{% endif %}">
+                Kupci{% if unread_count and filter_status == 'kupci' %} <span class="staff-filter-count">{{ unread_count }}</span>{% endif %}
+            </a>
+            <a href="{% url 'staff_olx_messages' %}?filter=sve{% if selected_id %}&conv={{ selected_id }}{% endif %}"
+               class="staff-filter-btn{% if filter_status == 'sve' %} is-active{% endif %}">Sve</a>
+        </div>
+    </div>
+
+    {% if olx_error %}
+    <p class="staff-olx-error">{{ olx_error }}</p>
+    {% endif %}
+
+    <div class="staff-olx-messenger{% if selected_id %} has-chat{% endif %}">
+        <aside class="staff-olx-sidebar">
+            {% if conversations %}
+            <div class="staff-olx-sidebar-list">
+                {% for conversation in conversations %}
+                {% include 'staff/partials/olx_inbox_item.html' %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="staff-olx-empty">Nema poruka{% if filter_status == 'kupci' %} od kupaca{% endif %}.</p>
+            {% endif %}
+        </aside>
+
+        <div class="staff-olx-chatpane">
+            {% if selected_conversation %}
+            <div class="staff-olx-chat-head">
+                <a href="{% url 'staff_olx_messages' %}{% if filter_status == 'sve' %}?filter=sve{% endif %}"
+                   class="staff-olx-back-mobile">←</a>
+                <div class="staff-olx-chat-head-info">
+                    <strong>{{ selected_conversation.username }}</strong>
+                    {% if selected_conversation.listing_title %}
+                    <span>{{ selected_conversation.listing_title }}</span>
+                    {% endif %}
+                </div>
+                <a href="https://pik.ba/poruke" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Odgovori u Pik</a>
+            </div>
+
+            <div class="staff-olx-chat-body">
+                {% for message in thread_messages %}
+                {% include 'staff/partials/olx_message.html' %}
+                {% empty %}
+                <p class="staff-olx-empty">Nema poruka.</p>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="staff-olx-chat-empty">
+                <p>Odaberite poruku lijevo da otvorite razgovor.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

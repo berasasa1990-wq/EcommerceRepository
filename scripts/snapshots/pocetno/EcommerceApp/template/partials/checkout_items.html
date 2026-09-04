@@ -1,0 +1,9 @@
+{% for item in cart_items %}
+<li>
+    <span class="checkout-item-label">
+        {% include 'partials/cart_item_name.html' with item=item %}
+        <span class="checkout-item-qty">× {{ item.quantity }}</span>
+    </span>
+    <span>{{ item.ukupno_stavka }} KM</span>
+</li>
+{% endfor %}

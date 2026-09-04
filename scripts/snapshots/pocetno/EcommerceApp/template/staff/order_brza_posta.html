@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unos u Brzu poštu #{{ order.broj }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f3f4f6;
+            font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #111;
+            line-height: 1.45;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            max-width: 560px;
+            margin: 0 auto 16px;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+        }
+        .toolbar p { margin: 0; font-size: 14px; color: #374151; }
+        .toolbar a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #111;
+        }
+        .card {
+            max-width: 560px;
+            margin: 0 auto 16px;
+            padding: 22px 24px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+        }
+        .card h1, .card h2 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .card .sub {
+            margin: 0 0 18px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .field {
+            display: grid;
+            grid-template-columns: 130px 1fr auto;
+            gap: 8px 12px;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 15px;
+        }
+        .field:last-of-type { border-bottom: none; }
+        .field .label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+        .field .value {
+            font-weight: 600;
+            color: #111;
+            word-break: break-word;
+        }
+        .field .value.amount {
+            font-size: 18px;
+            color: #28403d;
+        }
+        .field .btn-copy-field {
+            flex-shrink: 0;
+            min-height: 32px;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #f9fafb;
+            color: #111;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .field .btn-copy-field:hover {
+            background: #111;
+            border-color: #111;
+            color: #fff;
+        }
+        .field .btn-copy-field.is-copied {
+            background: #16a34a;
+            border-color: #16a34a;
+            color: #fff;
+        }
+        .msg {
+            max-width: 560px;
+            margin: 0 auto 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .msg-ok { background: #ecfdf5; border: 1px solid #86efac; color: #14532d; }
+        .msg-err { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+        .msg-info { background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; }
+
+        .pack-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: 13px;
+        }
+        .pack-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .pack-list li:last-child { border-bottom: none; }
+        .pack-list .pick {
+            display: block;
+            margin-top: 2px;
+            font-weight: 700;
+            color: #111;
+        }
+        .pack-list .mp { color: #b91c1c; }
+
+        .btn-skini {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 44px;
+            margin-top: 12px;
+            padding: 10px 16px;
+            border: 1px solid #111;
+            border-radius: 8px;
+            background: #fff;
+            color: #111;
+            font: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-skini:hover { background: #f3f4f6; }
+        .btn-skini:disabled,
+        .btn-skini.is-done {
+            opacity: 0.55;
+            text-decoration: line-through;
+            cursor: not-allowed;
+            color: #6b7280;
+            border-color: #9ca3af;
+        }
+        .hint {
+            margin: 10px 0 0;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.45;
+        }
+        .toast {
+            display: none;
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            z-index: 50;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: #166534;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        }
+        .toast.is-visible { display: block; }
+
+        @media (max-width: 520px) {
+            .field {
+                grid-template-columns: 1fr auto;
+                gap: 6px 10px;
+            }
+            .field .label { grid-column: 1 / -1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <p><strong>Unos u Brzu poštu</strong> · #{{ order.broj }}</p>
+        <a href="{% url 'staff_magacin_narudzbe' %}">← Magacin narudžbe</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="msg {% if 'error' in message.tags %}msg-err{% elif 'success' in message.tags %}msg-ok{% else %}msg-info{% endif %}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <h1>Brza pošta</h1>
+        <p class="sub">Kopiraj polje pored unosa · {{ datum }} {{ vrijeme }}</p>
+
+        <div class="field">
+            <span class="label">Ime i prezime</span>
+            <span class="value" data-copy-value>{{ order.ime_prezime }}</span>
+            <button type="button" class="btn-copy-field" data-copy>Copy</button>
+        </div>
+        <div class="field">
+            <span class="label">Adresa</span>
+            <span class="value" data-copy-value>{{ order.adresa }}</span>
+            <button type="button" class="btn-copy-field" data-copy>Copy</button>
+        </div>
+        <div class="field">
+            <span class="label">Grad</span>
+            <span class="value" data-copy-value>{% if order.postanski_broj %}{{ order.postanski_broj }} {% endif %}{{ order.grad }}</span>
+            <button type="button" class="btn-copy-field" data-copy>Copy</button>
+        </div>
+        <div class="field">
+            <span class="label">Telefon</span>
+            <span class="value" data-copy-value>{{ order.telefon }}</span>
+            <button type="button" class="btn-copy-field" data-copy>Copy</button>
+        </div>
+        <div class="field">
+            <span class="label">Broj narudžbe</span>
+            <span class="value" data-copy-value>{{ order.broj }}</span>
+            <button type="button" class="btn-copy-field" data-copy>Copy</button>
+        </div>
+        <div class="field">
+            <span class="label">Iznos s dostavom</span>
+            <span class="value amount" data-copy-value>{{ iznos_copy }}</span>
+            <button type="button" class="btn-copy-field" data-copy>Copy</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Skini sa stanja</h2>
+        <p class="sub">
+            Kada je zapakovano i poslato — skida količine s Odoo lokacija iz pakovanja (abecedno).
+        </p>
+
+        {% if packing_error %}
+        <div class="msg msg-err">Odoo: {{ packing_error }}</div>
+        {% endif %}
+
+        <ul class="pack-list">
+            {% for line in packing_lines %}
+            <li>
+                <strong>{% if line.sifra %}{{ line.sifra }} — {% endif %}{{ line.naziv }}</strong>
+                (nar. {{ line.kolicina }})
+                <span class="pick{% if line.check_mp %} mp{% endif %}">{{ line.pick_text }}</span>
+            </li>
+            {% empty %}
+            <li>Nema stavki.</li>
+            {% endfor %}
+        </ul>
+
+        {% if order.stanje_skinuto %}
+        <button type="button" class="btn-skini is-done" disabled>
+            Skini sa stanja ✓
+        </button>
+        <p class="hint">
+            Već skinuto{% if order.stanje_skinuto_at %} — {{ order.stanje_skinuto_at|date:"d.m.Y. H:i" }}{% endif %}.
+            Ne može se ponoviti automatski.
+        </p>
+        {% else %}
+        <form method="post" id="skiniStanjeForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="skini_stanje">
+            <button type="submit" class="btn-skini" id="skiniStanjeBtn">Skini sa stanja</button>
+        </form>
+        <p class="hint">
+            Skida se samo sa lokacija koje pišu na packing listi (npr. 1× Vrata-2).
+            Artikli „Provjeri u MP” se ne diraju u Odoo.
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="toast" id="copyToast">Kopirano</div>
+
+    <script>
+    (function () {
+        var toast = document.getElementById('copyToast');
+        var toastTimer = null;
+
+        function showToast(msg) {
+            if (!toast) return;
+            toast.textContent = msg || 'Kopirano';
+            toast.classList.add('is-visible');
+            if (toastTimer) window.clearTimeout(toastTimer);
+            toastTimer = window.setTimeout(function () {
+                toast.classList.remove('is-visible');
+            }, 1400);
+        }
+
+        function copyText(text, btn) {
+            text = (text || '').replace(/\s+/g, ' ').trim();
+            if (!text) return;
+
+            function done() {
+                if (btn) {
+                    btn.classList.add('is-copied');
+                    var prev = btn.textContent;
+                    btn.textContent = 'OK';
+                    window.setTimeout(function () {
+                        btn.classList.remove('is-copied');
+                        btn.textContent = prev;
+                    }, 1200);
+                }
+                showToast('Kopirano');
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(function () {
+                    window.prompt('Kopiraj:', text);
+                });
+            } else {
+                window.prompt('Kopiraj:', text);
+                done();
+            }
+        }
+
+        document.querySelectorAll('[data-copy]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var row = btn.closest('.field');
+                var valueEl = row ? row.querySelector('[data-copy-value]') : null;
+                copyText(valueEl ? valueEl.textContent : '', btn);
+            });
+        });
+
+        var form = document.getElementById('skiniStanjeForm');
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                var ok = window.confirm(
+                    'Skini sa stanja u Odoo?\n\n' +
+                    'To znači da je zapakovano i poslato.\n' +
+                    'Količine se skidaju s lokacija sa packing liste.'
+                );
+                if (!ok) {
+                    event.preventDefault();
+                    return;
+                }
+                var btn = document.getElementById('skiniStanjeBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Skidam…';
+                }
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

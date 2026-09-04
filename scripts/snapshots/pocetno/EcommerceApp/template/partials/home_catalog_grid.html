@@ -1,0 +1,11 @@
+{% if products %}
+<div class="product-grid product-grid--catalog">
+    {% for product in products %}
+    {% if eager_first_image and forloop.first %}
+    {% include 'partials/product_catalog_card.html' with product=product hide_variations=True home_section_badge=home_section_badge image_loading='eager' image_sizes=image_sizes %}
+    {% else %}
+    {% include 'partials/product_catalog_card.html' with product=product hide_variations=True home_section_badge=home_section_badge image_sizes=image_sizes %}
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}

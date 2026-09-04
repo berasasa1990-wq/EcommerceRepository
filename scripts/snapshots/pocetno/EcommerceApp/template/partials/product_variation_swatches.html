@@ -1,0 +1,5 @@
+{% for var in product.varijacije.all %}
+<button type="button" class="variation-swatch{% if not var.slika %} variation-swatch--text{% endif %}" {% if var.slika %}data-image="{{ var.slika.url }}"{% endif %} data-name="{{ var.naziv }}" data-price="{{ var.prikazna_cijena }}" data-original-price="{{ var.bazna_cijena }}" data-on-sale="{{ var.na_akciji|yesno:'true,false' }}"{% if detail %} data-sifra="{{ var.sifra|default:'' }}" data-variation-id="{{ var.pk }}"{% endif %}{% if card %} data-variation-id="{{ var.pk }}" data-product-slug="{{ product.slug }}"{% endif %} aria-label="{{ var.naziv }}">
+    {% include 'partials/variation_swatch_content.html' with slika=var.slika label=var.naziv %}
+</button>
+{% endfor %}

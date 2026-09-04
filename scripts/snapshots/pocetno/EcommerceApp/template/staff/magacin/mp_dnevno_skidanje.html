@@ -1,0 +1,237 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Dnevno skidanje MP lagera</h1>
+        <p class="mg-count">Uploaduj sliku ili PDF. U polje šifra idu brojevi ispod kolone ŠIFRA, a količine pored njih ispod KOLIČINA. Ista šifra se sabira. Zeleno = ima u bazi, crveno = nema. Ostaje na MP ne ide ispod 0.</p>
+    </div>
+</div>
+
+{% if mp_error %}
+<p class="mg-mp-alert" role="alert">{{ mp_error }}</p>
+{% endif %}
+
+<form method="post" class="mg-uvoz-new" id="mpDailyUploadForm" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="ocitaj">
+    <section class="mg-card">
+        <div class="mg-field">
+            <label for="mpDailyFile">Slika ili PDF</label>
+            <input id="mpDailyFile" name="fajl" type="file" accept="image/*,.pdf,application/pdf" required>
+        </div>
+        <label class="mg-check" style="margin-top:12px;">
+            <input type="checkbox" name="samo_promjene" value="1"{% if samo_promjene %} checked{% endif %}>
+            Samo artikli kojima se stanje promijenilo
+        </label>
+        <button type="submit" class="mg-btn" id="mpDailyUploadBtn" style="margin-top:12px;">Učitaj i prepoznaj</button>
+        <p class="mg-count" id="mpDailyUploadHint" hidden>Čitam sliku — sačekaj, može potrajati do minute.</p>
+    </section>
+</form>
+
+{% if preview is not None %}
+<section class="mg-card">
+    <h2 class="mg-h">Prepoznato sa dokumenta</h2>
+    {% if preview_datum %}
+    <p class="mg-mp-daily-batch-head">Datum dokumenta: <strong>{{ preview_datum|date:"d.m.Y" }}</strong> — još nije skinuto sa stanja.</p>
+    {% endif %}
+    <form method="get" class="mg-mp-daily-filter">
+        <input type="hidden" name="samo_promjene" value="0">
+        <label class="mg-check">
+            <input type="checkbox" name="samo_promjene" value="1"{% if samo_promjene %} checked{% endif %} onchange="this.form.submit()">
+            Samo artikli kojima se stanje promijenilo
+        </label>
+        {% if odabrani_datum %}
+        <input type="hidden" name="datum" value="{{ odabrani_datum|date:'Y-m-d' }}">
+        {% endif %}
+        {% if samo_promjene %}
+        <span class="mg-count">Prikazano {{ preview|length }} od {{ preview_ukupno }}</span>
+        {% endif %}
+    </form>
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>ŠIFRA</th>
+                <th>ARTIKAL</th>
+                <th class="num">KOLIČINA SA SLIKE</th>
+                <th>U BAZI</th>
+                <th class="num">KOLIČINA U MP-u</th>
+                <th class="num">OSTAJE NA MP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in preview %}
+            <tr>
+                <td class="{% if row.found %}mg-sifra-ok{% else %}mg-sifra-bad{% endif %}">{{ row.sifra }}</td>
+                <td>{{ row.naziv|default:"—" }}</td>
+                <td class="num">{{ row.qty }}</td>
+                <td class="{% if row.found %}mg-sifra-ok{% else %}mg-sifra-bad{% endif %}">
+                    {% if row.found %}Pronađeno{% else %}Nema u bazi{% endif %}
+                </td>
+                <td class="num">{% if row.found %}{{ row.mp_dostupno }}{% else %}—{% endif %}</td>
+                <td class="num">{% if row.found %}{{ row.ostaje }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">Nijedan artikal na slici nema promjenu stanja.{% if preview_ukupno %} Prepoznato ukupno {{ preview_ukupno }} — isključi filter da ih vidiš.{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if preview|length %}
+    <div class="mg-mp-daily-actions">
+        <form method="post" onsubmit="return confirm('Skinuti pronađene šifre sa maloprodajne lokacije?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="skini">
+            <button type="submit" class="mg-btn mg-btn-primary">Skini sa stanja</button>
+        </form>
+        <form method="post" onsubmit="return confirm('Ukloniti ovaj unos? Ništa neće biti skinuto sa stanja.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="ukloni">
+            <button type="submit" class="mg-btn mg-btn-danger">Ukloni unos</button>
+        </form>
+    </div>
+    {% endif %}
+</section>
+{% endif %}
+
+{% if result %}
+<section class="mg-card">
+    <h2 class="mg-h">Skinuto sada</h2>
+    {% if result.taken %}
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>ŠIFRA</th>
+                <th>ARTIKAL</th>
+                <th class="num">TRAŽENO</th>
+                <th class="num">SKINUTO</th>
+                <th>LOKACIJA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in result.taken %}
+            <tr>
+                <td>{{ row.sifra }}</td>
+                <td>{{ row.naziv }}</td>
+                <td class="num">{{ row.qty }}</td>
+                <td class="num">{{ row.taken }}</td>
+                <td>{% for loc in row.lokacije %}{{ loc.location }} (−{{ loc.qty }}){% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="mg-empty">Ništa nije skinuto.</p>
+    {% endif %}
+</section>
+
+{% if result.skipped %}
+<section class="mg-card">
+    <h2 class="mg-h">Nije skinuto</h2>
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>ŠIFRA</th>
+                <th>ARTIKAL</th>
+                <th class="num">KOL.</th>
+                <th>RAZLOG</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in result.skipped %}
+            <tr>
+                <td>{{ row.sifra }}</td>
+                <td>{{ row.naziv|default:"—" }}</td>
+                <td class="num">{{ row.qty }}</td>
+                <td>{{ row.razlog }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+{% endif %}
+
+{% if odabrani_datum %}
+<section class="mg-card">
+    <p class="mg-mp-daily-back"><a href="{% url 'staff_magacin_mp_dnevno' %}">← Sva skidanja</a></p>
+    <h2 class="mg-h">Skidanje {{ odabrani_datum|date:"d.m.Y" }}</h2>
+    {% if skidanja %}
+    {% for batch in skidanja %}
+    <article class="mg-mp-daily-batch">
+        <p class="mg-mp-daily-batch-head">
+            <strong>{{ batch.datum|date:"d.m.Y" }}</strong>
+            {% if batch.kreiran %} · {{ batch.kreiran|date:"H:i" }}{% endif %}
+            · {{ batch.skinuto_stavki }} artikla · {{ batch.skinuto_komada }} kom.
+            {% if batch.fajl_naziv %} · {{ batch.fajl_naziv }}{% endif %}
+            {% if batch.kreirao %} · {{ batch.kreirao }}{% endif %}
+        </p>
+        {% if batch.stavke.all %}
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>ŠIFRA</th>
+                    <th>ARTIKAL</th>
+                    <th class="num">TRAŽENO</th>
+                    <th class="num">SKINUTO</th>
+                    <th>LOKACIJA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in batch.stavke.all %}
+                <tr>
+                    <td>{{ row.sifra }}</td>
+                    <td>{{ row.naziv|default:"—" }}</td>
+                    <td class="num">{{ row.trazeno }}</td>
+                    <td class="num">{{ row.kolicina }}</td>
+                    <td>{{ row.lokacija|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="mg-empty">Nema sačuvanih stavki.</p>
+        {% endif %}
+    </article>
+    {% endfor %}
+    {% else %}
+    <p class="mg-empty">Za ovaj datum nema urađenog skidanja.</p>
+    {% endif %}
+</section>
+{% else %}
+<section class="mg-card">
+    <h2 class="mg-h">Urađena skidanja</h2>
+    {% if datumi %}
+    <ul class="mg-mp-dates">
+        {% for d in datumi %}
+        <li>
+            <a class="mg-mp-date" href="?datum={{ d.datum|date:'Y-m-d' }}">
+                <strong>{{ d.datum|date:"d.m.Y" }}</strong>
+                <span>{{ d.stavki }} artikla · {{ d.komada }} kom.{% if d.broj > 1 %} · {{ d.broj }} skidanja{% endif %}</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mg-empty">Još nema sačuvanih skidanja. Pojaviće se ovdje nakon što klikneš Skini sa stanja.</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var form = document.getElementById('mpDailyUploadForm');
+    var btn = document.getElementById('mpDailyUploadBtn');
+    var hint = document.getElementById('mpDailyUploadHint');
+    if (!form || !btn) return;
+    form.addEventListener('submit', function () {
+        btn.disabled = true;
+        btn.textContent = 'Čitam sliku…';
+        if (hint) hint.hidden = false;
+    });
+})();
+</script>
+{% endblock %}

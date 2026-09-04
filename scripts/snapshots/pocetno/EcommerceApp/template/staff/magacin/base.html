@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>{{ page_title|default:"Magacin" }} — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260902ptCancel">
+{% endblock %}
+
+{% block flash_messages %}{% endblock %}
+
+{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% if magacin_section == 'popis_test' %} is-popis-test{% endif %}{% endblock %}
+
+{% block content %}
+<section class="mg-app" id="mgApp">
+    <button type="button" class="mg-nav-backdrop" id="mgNavBackdrop" hidden aria-label="Zatvori meni magacina"></button>
+    <aside class="mg-sidebar">
+        <div class="mg-side-top">
+            <a class="mg-brand-lockup" href="{% url 'staff_magacin_pregled' %}">
+                <span class="mg-brand-cube" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                </span>
+                MAGACIN
+            </a>
+            <button type="button" class="mg-btn mg-side-close" id="mgNavClose" hidden>Zatvori</button>
+        </div>
+        <nav class="mg-nav">
+            <a href="{% url 'staff_magacin_pregled' %}" class="{% if magacin_section == 'pregled' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                Pregled
+            </a>
+            <a href="{% url 'staff_magacin_artikli' %}" class="{% if magacin_section == 'artikli' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                Artikli
+            </a>
+            <a href="{% url 'staff_magacin_brzi_unos' %}" class="{% if magacin_section == 'brzi_unos' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                Brzi unos / Aktivacija
+            </a>
+            <a href="{% url 'staff_magacin_stampa_cijena' %}" class="{% if magacin_section == 'stampa_cijena' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                Štampaj cijenu
+            </a>
+            <a href="{% url 'staff_magacin_stampa_deklaracije' %}" class="{% if magacin_section == 'stampa_deklaracije' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+                Štampaj deklaracije
+            </a>
+            <a href="{% url 'staff_magacin_lokacije' %}" class="{% if magacin_section == 'lokacije' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+                Lokacije
+            </a>
+            <a href="{% url 'staff_magacin_zalihe' %}" class="{% if magacin_section == 'zalihe' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                Zalihe
+            </a>
+            <a href="{% url 'staff_magacin_rezervni_dijelovi' %}" class="{% if magacin_section == 'rezervni' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                Rezervni dijelovi
+            </a>
+            <a href="{% url 'staff_magacin_mp_dnevno' %}" class="{% if magacin_section == 'mp_dnevno' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
+                Dnevno skidanje MP lagera
+            </a>
+            <a href="{% url 'staff_magacin_transferi' %}" class="{% if magacin_section == 'transferi' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 7h13v10H2z"/><path d="M15 10h4l3 3v4h-7"/><circle cx="6.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></svg>
+                Transferi
+            </a>
+            <a href="{% url 'staff_magacin_popis_test' %}" class="{% if magacin_section == 'popis_test' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h8"/></svg>
+                Popis robe
+            </a>
+            <a href="{% url 'staff_magacin_provjera_lagera' %}" class="{% if magacin_section == 'provjera_lagera' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                Provjera LAGERA
+            </a>
+            <a href="{% url 'staff_magacin_fali_na_sajtu' %}" class="{% if magacin_section == 'fali_na_sajtu' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M12 8v5M12 16h.01"/></svg>
+                Fali u MP-u
+            </a>
+            <a href="{% url 'staff_magacin_narudzbe' %}" class="{% if magacin_section == 'narudzbe' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                Narudžbe
+            </a>
+            <a href="{% url 'staff_magacin_pakuj' %}" class="{% if magacin_section == 'pakuj' %}is-active{% endif %}{% if new_pack_orders_count %} is-blink-pack{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                Picking
+                {% if new_pack_orders_count %}
+                <span class="mg-nav-count" aria-label="{{ new_pack_orders_count }} za pakovanje">{{ new_pack_orders_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'staff_magacin_pakovanje' %}" class="{% if magacin_section == 'pakovanje' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Pretraga narudžbi
+            </a>
+            <a href="{% url 'staff_magacin_uvoz' %}" class="{% if magacin_section == 'uvoz' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 18V11M9 14l3-3 3 3"/></svg>
+                Uvoz
+            </a>
+            <a href="{% url 'staff_magacin_nivelacije' %}" class="{% if magacin_section == 'nivelacije' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 16l5-5 4 4 7-8"/><path d="M15 7h5v5"/></svg>
+                Nivelacije
+            </a>
+            <a href="{% url 'staff_magacin_kupci' %}" class="{% if magacin_section == 'kupci' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Kupci
+            </a>
+            <a href="{% url 'staff_magacin_ponude' %}" class="{% if magacin_section == 'ponude' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+                Kreiraj ponudu
+            </a>
+            <a href="{% url 'staff_magacin_izvjestaji' %}" class="{% if magacin_section == 'izvjestaji' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="11" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="9" rx=".5"/><rect x="17" y="13" width="3" height="4" rx=".5"/></svg>
+                Izvještaji
+            </a>
+            <a href="{% url 'staff_magacin_podesavanja' %}" class="{% if magacin_section == 'podesavanja' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.7 1 1.1 1.6 1.1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+                Podešavanja
+            </a>
+        </nav>
+
+        <div class="mg-side-foot">
+            <div class="mg-side-label">SINHRONIZACIJA</div>
+            {% if last_sync %}
+            <div class="mg-sync-status{% if last_sync.status == 'greska' %} is-bad{% endif %}">
+                <span class="dot"></span>
+                {{ last_sync.get_status_display }}
+            </div>
+            <p class="mg-sync-meta">Zadnji sync: <strong>{{ last_sync.started_at|date:"d.m.Y H:i" }}</strong></p>
+            <p class="mg-sync-meta mg-sync-extra">Trajanje: <strong>{{ last_sync.trajanje_label }}</strong></p>
+            <p class="mg-sync-meta mg-sync-extra">Izvor: <strong>{{ last_sync.izvor }}</strong></p>
+            {% else %}
+            <div class="mg-sync-status is-idle">
+                <span class="dot"></span>
+                Nije rađena
+            </div>
+            <p class="mg-sync-meta mg-sync-extra">Izvor: <strong>Odoo (ovaj server)</strong></p>
+            {% endif %}
+            <p class="mg-sync-meta mg-sync-extra">Push ne šalje artikle. Sync vuče iz Odoo na ovaj server.</p>
+            <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>{% if sync_job %}Sync u toku…{% else %}Sync sada{% endif %}</button>
+            </form>
+            <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="stock">
+                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync zaliha</button>
+            </form>
+            <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="prices">
+                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync cijena</button>
+            </form>
+            <form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="sifre">
+                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync šifri</button>
+            </form>
+            <form method="post" action="{% url 'staff_magacin_backup' %}" class="mg-sync-form" onsubmit="return confirm('Napraviti backup baze? Kasnije ga možeš vratiti Restore-om.');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <button type="submit" class="mg-history-btn">Backup baze</button>
+            </form>
+            {% if last_backup %}
+            <p class="mg-sync-meta mg-sync-extra">Zadnji backup: <strong>{{ last_backup.created_at|date:"d.m.Y H:i" }}</strong></p>
+            {% endif %}
+            <a class="mg-history-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>
+            <a class="mg-history-btn" href="{% url 'staff_magacin_backup' %}">Backupi / Restore</a>
+            <p class="mg-version">Verzija {{ site_version_label }}</p>
+        </div>
+    </aside>
+
+    <div class="mg-main">
+        {% if sync_job %}
+        <div class="mg-sync-banner">
+            <strong>Sinhronizacija iz Odoo</strong>
+            <span>{{ sync_job.label }}</span>
+            <div class="mg-sync-bar"><i style="width: {{ sync_job.percent }}%"></i></div>
+            <div class="mg-sync-banner-actions">
+                <form id="mgSyncContinue" method="post" action="{% url 'staff_magacin_sync' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="continue">
+                    <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                </form>
+                <form id="mgSyncCancel" method="post" action="{% url 'staff_magacin_sync' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel">
+                    <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
+                    <button type="submit" class="mg-btn mg-btn-danger">Prekini sync</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        <div class="mg-page-bar mg-chrome">
+            <button type="button" class="mg-chrome-burger" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+            {% if magacin_section == 'narudzbe' %}
+            <form class="mg-page-search mg-chrome-search" method="get" action="{% url 'staff_magacin_narudzbe' %}" role="search">
+                {% if show_validated %}<input type="hidden" name="validirane" value="1">{% endif %}
+                {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% elif show_validated and day and not is_today %}<input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">{% endif %}
+                {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
+                <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Pretraži po imenu ili broju narudžbe..." autocomplete="off">
+            </form>
+            {% else %}
+            <form class="mg-page-search mg-chrome-search" method="get" action="{% url 'staff_magacin_artikli' %}" role="search" id="mgArticleSearchForm">
+                <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Pretraži artikle po nazivu, šifri ili barkodu..." autocomplete="off" id="mgArticleSearch">
+                {% if magacin_section == 'artikli' %}
+                <label class="mg-zero-check">
+                    <input type="checkbox" name="bez_zalihe" value="1"{% if include_zero %} checked{% endif %} onchange="this.form.submit()">
+                    Prikaži i bez zalihe
+                </label>
+                {% endif %}
+            </form>
+            {% endif %}
+            <div class="mg-chrome-right">
+                <button type="button" class="mg-chrome-icon" id="mgArticleScanBtn" title="Skeniraj barkod" aria-label="Skeniraj barkod">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                        <path d="M7 8v8M10 8v8M13 8v5M16 8v8"/>
+                    </svg>
+                </button>
+                <a class="mg-chrome-icon" href="{% url 'staff_live_analytics' %}" title="Obavijesti" aria-label="Obavijesti">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+                    {% if notify_count %}<span class="mg-badge">{{ notify_count }}</span>{% endif %}
+                </a>
+                <div class="mg-user" id="mgUser">
+                    <span class="mg-avatar">{{ staff_display_name|default:"AD"|slice:":2"|upper }}</span>
+                    <div class="mg-user-menu">
+                        <a href="{% url 'staff_admin_panel' %}">Admin panel</a>
+                        <a href="{% url 'logout' %}">Odjava</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% block magacin_content %}{% endblock %}
+    </div>
+</section>
+<div class="mg-modal" id="mgScanModal" hidden>
+    <div class="mg-modal-bg" data-scan-close></div>
+    <div class="mg-modal-panel mg-scan-panel" role="dialog" aria-modal="true" aria-labelledby="mgScanTitle">
+        <h2 id="mgScanTitle">Skeniraj artikal</h2>
+        <p class="mg-muted">Drži barkod vodoravno u bijelom okviru, blizu kamere, uz dobro svjetlo.</p>
+        <div class="mg-scan-reader">
+            <video id="mgScanVideo" playsinline muted autoplay></video>
+            <div class="mg-scan-guide" aria-hidden="true"></div>
+        </div>
+        <p class="mg-scan-status" id="mgScanStatus" aria-live="polite"></p>
+        <div class="mg-modal-actions">
+            <label class="mg-btn" style="cursor:pointer;">
+                Učitaj sliku
+                <input type="file" id="mgBarcodeFile" accept="image/*" capture="environment" hidden>
+            </label>
+            <button type="button" class="mg-btn" data-scan-close>Zatvori</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var lockZoom = document.body.classList.contains('is-artikli')
+        || document.body.classList.contains('is-vp')
+        || document.body.classList.contains('is-popis')
+        || document.body.classList.contains('is-popis-test');
+    if (!lockZoom) return;
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+        meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    }
+    if (document.body.classList.contains('is-popis-test')) {
+        document.addEventListener('gesturestart', function (event) { event.preventDefault(); });
+        document.addEventListener('gesturechange', function (event) { event.preventDefault(); });
+        document.addEventListener('touchmove', function (event) {
+            if (event.touches && event.touches.length > 1) event.preventDefault();
+        }, { passive: false });
+    }
+})();
+</script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260902ptCancel"></script>
+{% block magacin_js %}{% endblock %}
+{% endblock %}

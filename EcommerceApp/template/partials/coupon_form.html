@@ -1,5 +1,35 @@
 <div class="coupon-box">
-    <h3 class="coupon-box-title">Loyalty kartica</h3>
+    <div class="coupon-box-head">
+        <h3 class="coupon-box-title">
+            <span class="coupon-box-crown" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8l4 3 5-7 5 7 4-3v11H3V8z"/></svg>
+            </span>
+            Loyalty kartica
+        </h3>
+        {% if user.is_authenticated and loyalty_card %}
+        <p class="coupon-box-tier">Vaš nivo: <strong>{{ loyalty_card.get_nivo_display }}</strong></p>
+        {% endif %}
+    </div>
+
+    {% if user.is_authenticated and loyalty_card %}
+    <div class="cart-loyalty-panel">
+        <div class="cart-loyalty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><circle cx="8" cy="15" r="1.2"/><circle cx="12" cy="15" r="1.2"/></svg>
+        </div>
+        <div class="cart-loyalty-copy">
+            <p class="cart-loyalty-points">Imate {{ loyalty_card.ukupna_potrosnja|floatformat:0 }} bodova</p>
+            <p class="cart-loyalty-rate">Ostvarujete {{ loyalty_card.postotak|floatformat:0 }}% popusta</p>
+        </div>
+        {% if loyalty and loyalty.next_tier %}
+        <p class="cart-loyalty-next">Do {{ loyalty.next_tier.label }} nivoa<br>još {{ loyalty.preostalo_do_sljedeceg|floatformat:0 }} bodova</p>
+        {% else %}
+        <p class="cart-loyalty-next">Najviši nivo</p>
+        {% endif %}
+        <div class="cart-loyalty-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ loyalty_progress|default:0 }}">
+            <span style="width: {{ loyalty_progress|default:0 }}%;"></span>
+        </div>
+    </div>
+    {% endif %}
 
     {% if applied_coupon_code %}
     <form method="post" action="{% url 'remove_coupon' %}" class="coupon-remove-form">
@@ -15,16 +45,11 @@
     <p class="loyalty-code-hint loyalty-code-hint--compact">Ne vrijedi na artikle koji su na akciji.</p>
 
     {% elif user.is_authenticated and loyalty_card %}
-    <p class="loyalty-code-hint">
-        Vaš nivo: <strong>{{ loyalty_card.get_nivo_display }}</strong>
-        · <strong>{{ loyalty_card.postotak }}%</strong> popusta
-        na artikle koji nisu na akciji.
-    </p>
     <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form coupon-form--loyalty-oneclick">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
         <input type="hidden" name="kod" value="{{ loyalty_card.kod }}">
-        <button type="submit" class="btn btn-coupon btn-coupon--full">Primjeni Loyalty karticu</button>
+        <button type="submit" class="btn btn-coupon btn-coupon--full">Primijeni loyalty karticu <span aria-hidden="true">›</span></button>
     </form>
 
     {% else %}
@@ -40,7 +65,7 @@
         <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
         <div class="coupon-form-row">
             {{ coupon_form.kod }}
-            <button type="submit" class="btn btn-coupon">Primjeni</button>
+            <button type="submit" class="btn btn-coupon">Primijeni</button>
         </div>
         {% for error in coupon_form.kod.errors %}
         <p class="form-error">{{ error }}</p>

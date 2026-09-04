@@ -8,12 +8,12 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260902ptCancel">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260904loyClick">
 {% endblock %}
 
 {% block flash_messages %}{% endblock %}
 
-{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% if magacin_section == 'popis_test' %} is-popis-test{% endif %}{% endblock %}
+{% block body_class %}staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'narudzbe' %} is-narudzbe{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% if magacin_section == 'popis_test' %} is-popis-test{% endif %}{% endblock %}
 
 {% block content %}
 <section class="mg-app" id="mgApp">
@@ -287,6 +287,6 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260902ptCancel"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260904loyClick"></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

@@ -1,0 +1,361 @@
+<style>
+    .staff-order-invoice {
+        margin: 0 auto;
+        padding: 24px;
+        background: #ffffff;
+        font-family: "Century Gothic", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #000000;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+    }
+    .staff-order-invoice table { border-collapse: collapse; }
+    .staff-order-invoice img { border: 0; display: block; max-width: 100%; }
+    .staff-order-invoice .doc {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        max-width: 820px;
+        margin: 0 auto;
+        background: #ffffff;
+    }
+    .staff-order-invoice .doc-header-table { width: 100%; }
+    .staff-order-invoice .doc-logo {
+        max-height: 56px;
+        width: auto;
+    }
+    .staff-order-invoice .doc-company {
+        margin: 0 0 4px;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #1f2a28;
+    }
+    .staff-order-invoice .doc-contact {
+        margin: 0;
+        font-size: 12px;
+        color: #4b5563;
+    }
+    .staff-order-invoice .doc-contact a { color: #28403d; text-decoration: none; }
+    .staff-order-invoice .doc-site-note {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+        color: #1f2a28;
+    }
+    .staff-order-invoice .doc-title {
+        margin: 0 0 6px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #28403d;
+        letter-spacing: -0.01em;
+    }
+    .staff-order-invoice .doc-meta {
+        text-align: right;
+        font-size: 13px;
+        color: #000000;
+        vertical-align: top;
+        line-height: 1.6;
+    }
+    .staff-order-invoice .doc-meta p {
+        margin: 0 0 4px;
+    }
+    .staff-order-invoice .doc-order-barcode {
+        display: inline-block;
+        margin-top: 8px;
+        text-align: center;
+    }
+    .staff-order-invoice .doc-order-barcode img {
+        display: block;
+        width: 180px;
+        height: 48px;
+        margin-left: auto;
+        object-fit: contain;
+    }
+    .staff-order-invoice .doc-order-barcode span {
+        display: block;
+        margin-top: 2px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        color: #28403d;
+    }
+    .staff-order-invoice .parties-table {
+        width: 100%;
+        margin: 28px 0 18px;
+    }
+    .staff-order-invoice .parties-table td {
+        width: 50%;
+        vertical-align: top;
+        padding-right: 18px;
+        font-size: 13px;
+        color: #404040;
+        line-height: 1.55;
+    }
+    .staff-order-invoice .party-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #28403d;
+    }
+    .staff-order-invoice .party-name {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 700;
+        color: #28403d;
+    }
+    .staff-order-invoice .items-table {
+        width: 100%;
+        margin-top: 8px;
+        border: 1px solid #c4bc96;
+    }
+    .staff-order-invoice .items-table th {
+        padding: 10px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #000000;
+        text-align: center;
+        background: #d9d9d9;
+        border: 1px solid #c4bc96;
+    }
+    .staff-order-invoice .items-table td {
+        padding: 12px 8px;
+        font-size: 13px;
+        vertical-align: top;
+        border: 1px solid #c4bc96;
+        color: #000000;
+    }
+    .staff-order-invoice .items-table .col-name {
+        text-align: left;
+    }
+    .staff-order-invoice .items-table .col-qty,
+    .staff-order-invoice .items-table .col-price,
+    .staff-order-invoice .items-table .col-total {
+        text-align: center;
+        white-space: nowrap;
+    }
+    .staff-order-invoice .item-name {
+        display: block;
+        font-weight: 600;
+        color: #000000;
+    }
+    .staff-order-invoice .item-variation {
+        display: block;
+        margin-top: 3px;
+        font-size: 12px;
+        color: #595959;
+    }
+    .staff-order-invoice .totals-wrap {
+        margin-top: 18px;
+        width: 100%;
+    }
+    .staff-order-invoice .totals-table {
+        width: 360px;
+        margin-left: auto;
+    }
+    .staff-order-invoice .totals-table td {
+        padding: 5px 0;
+        font-size: 14px;
+        color: #000000;
+    }
+    .staff-order-invoice .totals-table td:last-child {
+        text-align: right;
+        white-space: nowrap;
+    }
+    .staff-order-invoice .totals-table tr.total-row td {
+        padding-top: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #28403d;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .staff-order-invoice .invoice-totals-block {
+        margin-top: 18px;
+    }
+    .staff-order-invoice .invoice-seal-block {
+        margin-top: 18px;
+    }
+    .staff-order-invoice .invoice-warranty-box {
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        padding: 10px 12px;
+        background: #fafafa;
+    }
+    .staff-order-invoice .invoice-warranty-box strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 13px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #28403d;
+    }
+    .staff-order-invoice .invoice-seal-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+    .staff-order-invoice .invoice-sign { min-width: 180px; text-align: center; }
+    .staff-order-invoice .invoice-sign-script {
+        display: block;
+        font-family: "Palatino Linotype", Palatino, "Times New Roman", serif;
+        font-size: 22px;
+        font-style: italic;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+        color: #1a1a1a;
+        margin-bottom: 2px;
+    }
+    .staff-order-invoice .invoice-sign-line {
+        display: block;
+        border-bottom: 1px solid #111;
+        margin: 0 8px 6px;
+    }
+    .staff-order-invoice .invoice-sign-label {
+        display: block;
+        font-size: 11px;
+        color: #595959;
+    }
+    .staff-order-invoice .order-footer {
+        margin-top: 28px;
+        padding-top: 16px;
+        border-top: 1px solid #d9d9d9;
+        font-size: 12px;
+        color: #404040;
+        line-height: 1.6;
+        font-weight: 400;
+    }
+    .staff-order-invoice .order-footer a { color: #28403d; }
+    .staff-order-invoice .invoice-warranty-note {
+        display: block;
+        margin-top: 6px;
+        padding-top: 0;
+        border: 0;
+        font-size: 12px;
+        color: #404040;
+        line-height: 1.5;
+        font-weight: 400;
+    }
+
+    /* Mobilni pregled računa */
+    @media (max-width: 768px) {
+        .staff-order-invoice {
+            padding: 12px 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .staff-order-invoice .doc {
+            max-width: 100%;
+            min-width: 0;
+        }
+        .staff-order-invoice .doc-header-table,
+        .staff-order-invoice .parties-table {
+            display: block;
+            width: 100%;
+        }
+        .staff-order-invoice .doc-header-table tbody,
+        .staff-order-invoice .doc-header-table tr,
+        .staff-order-invoice .parties-table tbody,
+        .staff-order-invoice .parties-table tr {
+            display: block;
+            width: 100%;
+        }
+        .staff-order-invoice .doc-header-table td,
+        .staff-order-invoice .parties-table td {
+            display: block;
+            width: 100% !important;
+            padding-right: 0;
+            padding-bottom: 12px;
+            text-align: left !important;
+        }
+        .staff-order-invoice .doc-meta {
+            text-align: left;
+        }
+        .staff-order-invoice .doc-title {
+            font-size: 18px;
+        }
+        .staff-order-invoice .doc-logo {
+            max-height: 44px;
+        }
+        .staff-order-invoice .items-table {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #c4bc96;
+        }
+        .staff-order-invoice .items-table thead,
+        .staff-order-invoice .items-table tbody,
+        .staff-order-invoice .items-table tr {
+            width: 100%;
+        }
+        .staff-order-invoice .items-table th,
+        .staff-order-invoice .items-table td {
+            padding: 8px 6px;
+            font-size: 12px;
+        }
+        .staff-order-invoice .items-table th {
+            font-size: 10px;
+        }
+        .staff-order-invoice .totals-wrap {
+            margin-top: 14px;
+        }
+        .staff-order-invoice .totals-table {
+            width: 100%;
+            max-width: 100%;
+            margin-left: 0;
+        }
+        .staff-order-invoice .totals-table td {
+            font-size: 14px;
+        }
+        .staff-order-invoice .totals-table tr.total-row td {
+            font-size: 17px;
+        }
+        .staff-order-invoice .order-footer {
+            font-size: 11px;
+            margin-top: 18px;
+        }
+    }
+
+    @media print {
+        .staff-order-detail-toolbar,
+        .account-back-link,
+        .staff-order-detail-meta {
+            display: none !important;
+        }
+        .staff-order-detail-page {
+            padding: 0 !important;
+        }
+        .staff-order-invoice {
+            border: none;
+            padding: 0;
+        }
+        .staff-order-invoice .doc {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(297mm - 16mm);
+            max-width: none;
+        }
+        .staff-order-invoice .invoice-totals-block {
+            margin-top: 8px;
+        }
+        .staff-order-invoice .order-footer {
+            margin-top: auto;
+        }
+        .staff-order-invoice .invoice-warranty-note {
+            display: block;
+            margin-top: 4px;
+            padding-top: 0;
+            border: 0;
+            font-weight: 400;
+        }
+    }
+</style>

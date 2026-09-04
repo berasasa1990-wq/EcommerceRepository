@@ -1,0 +1,60 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <h1>Rezervni dijelovi</h1>
+    <form method="get" class="mg-page-search" style="margin:0;max-width:420px;flex:1;">
+        <svg class="mg-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Artikal, šifra, dio, kupac, broj narudžbe…" autocomplete="off">
+        <button type="submit" class="mg-btn">Filtriraj</button>
+    </form>
+</div>
+
+<p class="mg-count">Artikli kojima je na narudžbi poslan rezervni dio. Crveno je što fali / što je otišlo kupcu.</p>
+
+<section class="mg-card">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>ARTIKAL</th>
+                <th>ŠIFRA</th>
+                <th>FALI / POSLANO</th>
+                <th>NARUDŽBA</th>
+                <th>KUPAC</th>
+                <th>DATUM</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in page %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_order_detail' item.narudzba.broj %}'">
+                <td>
+                    <strong>{% if item.artikal %}{{ item.artikal.naziv }}{% else %}{{ item.product_naziv|default:item.naziv }}{% endif %}</strong>
+                    <span class="mg-spare-missing">Fali: {{ item.naziv }}{% if item.kolicina %} × {{ item.kolicina }}{% endif %}</span>
+                </td>
+                <td>{% if item.artikal %}{{ item.artikal.sifra|default:"—" }}{% else %}{{ item.sifra|default:"—" }}{% endif %}</td>
+                <td>
+                    <span class="mg-spare-missing">{{ item.naziv }}{% if item.kolicina %} × {{ item.kolicina }}{% endif %}</span>
+                </td>
+                <td>#{{ item.narudzba.broj }}</td>
+                <td>{{ item.narudzba.ime_prezime }}</td>
+                <td>{{ item.narudzba.kreirana|date:"d.m.Y. H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="mg-muted">Nema poslanih rezervnih dijelova.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% if page.has_other_pages %}
+<nav class="mg-pager">
+    {% if page.has_previous %}
+    <a href="?page={{ page.previous_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}">← Prethodna</a>
+    {% endif %}
+    <span class="is-current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+    <a href="?page={{ page.next_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}">Sljedeća →</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,526 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>{{ cardholder_name }} — Detalji člana — Admin</title>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.staff-shell-page,.staff-shell-page .site-main{background:#f5f6f8!important}
+.staff-shell-page .contact-float-group,
+.staff-shell-page .site-chat,
+.staff-shell-page .site-chat-launchers,
+.staff-shell-page .site-chat-launcher{display:none!important}
+body.loy-full #header,
+body.loy-full .header,
+body.loy-full .promo-bar,
+body.loy-full .site-chrome-backdrop,
+body.loy-full .header-row--categories,
+body.loy-full footer.site-footer,
+body.loy-full .site-footer,
+body.loy-full .footer{display:none!important}
+body.loy-full main{padding-top:28px!important;max-width:none}
+.lm{width:100%;max-width:none;margin:0;padding:12px 28px 48px;color:#111827;font-family:Inter,"Segoe UI",sans-serif;box-sizing:border-box}
+.lm-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px}
+.lm-top h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.03em}
+.lm-back{display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;color:#6b7280;text-decoration:none;font-size:13px;font-weight:600}
+.lm-back:hover{color:#111}
+.lm-search{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;color:#6b7280;text-decoration:none;font-size:13.5px;font-weight:600}
+.lm-search:hover{border-color:#d1d5db;color:#111}
+.lm-grid{display:grid;grid-template-columns:minmax(720px,1fr) 360px;gap:24px;align-items:start}
+.lm-hero{display:flex;align-items:center;justify-content:space-between;gap:28px;margin:0 0 18px;flex-wrap:nowrap}
+.lm-who{display:flex;align-items:center;gap:14px;min-width:0}
+.lm-av{width:72px;height:72px;border-radius:999px;background:#e8f8ee;color:#16a34a;display:grid;place-items:center;font-weight:800;font-size:22px;flex:0 0 auto}
+.lm-name{margin:0 0 6px;font-size:22px;font-weight:800;letter-spacing:-.03em}
+.lm-badges{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.lm-pill{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em}
+.lm-pill.on{background:#dcfce7;color:#15803d}
+.lm-pill.off{background:#fee2e2;color:#b91c1c}
+.lm-pill.gold,.lm-pill.zlatna{background:#fef3c7;color:#b45309}
+.lm-pill.bronze,.lm-pill.bronza{background:#fff7ed;color:#b45309}
+.lm-pill.silver,.lm-pill.srebrna{background:#f1f5f9;color:#475569}
+.lm-pill.platinum{background:#eef2ff;color:#4338ca}
+.lm-phone{margin:0 0 6px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.lm-phone a{color:#7c3aed;display:inline-flex}
+.lm-phone a.wa{color:#16a34a}
+.lm-meta{margin:0;color:#9aa3ad;font-size:13px}
+.lm-viz{width:min(400px,40%);min-width:280px;aspect-ratio:1.68;border-radius:18px;background:linear-gradient(145deg,#1a1a1a 0%,#0d0d0d 55%,#111 100%);color:#fff;padding:18px 18px 14px;box-sizing:border-box;box-shadow:0 18px 40px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08);position:relative;overflow:hidden;flex:0 0 auto;border:1px solid rgba(255,255,255,.06)}
+.lm-viz:after{content:"";position:absolute;top:-40%;right:-20%;width:70%;height:90%;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 68%);pointer-events:none}
+.lm-viz-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
+.lm-viz-brand{display:flex;align-items:center;gap:8px}
+.lm-viz-brand img{height:28px;width:auto;max-width:120px;object-fit:contain;filter:brightness(1.1)}
+.lm-viz-brand span{font-size:11px;font-weight:800;letter-spacing:.06em;line-height:1.15}
+.lm-viz-brand small{display:block;font-size:8px;letter-spacing:.14em;opacity:.65;font-weight:700}
+.lm-viz-tier{font-size:10px;letter-spacing:.16em;margin-top:8px;font-weight:800}
+.lm-medal{width:48px;height:48px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35))}
+.lm-viz-pct{position:relative;z-index:1;min-width:72px;padding:6px 8px 5px;border-radius:12px;text-align:center;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.lm-viz-pct b{display:block;font-size:28px;line-height:1;font-weight:800;letter-spacing:-.03em}
+.lm-viz-pct span{display:block;font-size:9px;font-weight:800;letter-spacing:.08em;margin-top:2px}
+.lm-viz.bronza{background:linear-gradient(145deg,#3a2a1c 0%,#1c140e 55%,#2a1c12 100%);border-color:rgba(205,127,50,.35)}
+.lm-viz.bronza .lm-viz-tier{color:#d4a574}
+.lm-viz.bronza .lm-viz-pct{background:linear-gradient(160deg,#e0b07a,#cd7f32 50%,#8b5a2b);color:#2a1608}
+.lm-viz.srebrna .lm-viz-tier{color:#cbd5e1}
+.lm-viz.srebrna .lm-viz-pct{background:linear-gradient(160deg,#f1f5f9,#94a3b8 55%,#64748b);color:#0f172a}
+.lm-viz.zlatna .lm-viz-tier{color:#eab308}
+.lm-viz.zlatna .lm-viz-pct{background:linear-gradient(160deg,#fde047,#eab308 55%,#ca8a04);color:#1a1300}
+.lm-viz.platinum .lm-viz-tier{color:#a5b4fc}
+.lm-viz.platinum .lm-viz-pct{background:linear-gradient(160deg,#e0e7ff,#818cf8 55%,#4f46e5);color:#111827}
+.lm-viz-no{position:relative;z-index:1;margin:16px 0 2px;font-size:36px;font-weight:800;letter-spacing:.12em;line-height:1;font-variant-numeric:tabular-nums}
+.lm-viz-nm{position:relative;z-index:1;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px;opacity:.92}
+.lm-viz-bar{position:relative;z-index:1;background:#fff;border-radius:6px;padding:6px 8px 4px;display:flex;flex-direction:column;align-items:center}
+.lm-viz-bar img{width:100%;height:38px;object-fit:contain;display:block}
+.lm-tabs{display:flex;gap:22px;border-bottom:1px solid #eceef1;margin:0 0 14px}
+.lm-tabs a{padding:8px 0 10px;color:#9aa3ad;text-decoration:none;font-size:14px;font-weight:600}
+.lm-tabs a.is-on{color:#16a34a;border-bottom:2px solid #16a34a;margin-bottom:-1px}
+.lm-years{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.lm-years a,.lm-years span{min-height:30px;padding:0 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;text-decoration:none;font-size:13px;font-weight:700;display:inline-flex;align-items:center}
+.lm-years a:hover{border-color:#86efac;color:#15803d}
+.lm-years .is-on{background:#16a34a;border-color:#16a34a;color:#fff}
+.lm-year-sum{margin:0 0 10px;color:#6b7280;font-size:12.5px}
+.lm-split{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px}
+.lm-table-wrap{overflow-x:auto}
+.lm-card{background:#fff;border:1px solid #eceef1;border-radius:16px;padding:16px 16px 12px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.lm-card h2,.lm-card h3{margin:0 0 12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;font-weight:800}
+.lm-card h2.plain{font-size:16px;letter-spacing:0;text-transform:none;color:#111;font-weight:800}
+.lm-table{width:100%;min-width:820px;border-collapse:collapse}
+.lm-del-buy{margin:0}
+.lm-del{min-height:32px;padding:0 10px;border:1px solid #fecaca;border-radius:8px;background:#fff;color:#dc2626;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.lm-del:hover{background:#fef2f2}
+.lm-table th{text-align:left;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#b0b6bd;padding:0 10px 10px;font-weight:700;white-space:nowrap}
+.lm-table td{padding:12px 10px;border-top:1px solid #f3f4f6;font-size:13.5px;color:#1f2937;vertical-align:middle;white-space:nowrap}
+.lm-table a.num{color:#111;font-weight:700;text-decoration:none}
+.lm-ok{display:inline-flex;align-items:center;gap:4px;color:#16a34a;font-weight:700;font-size:12.5px}
+.lm-foot{display:flex;justify-content:space-between;align-items:center;padding:12px 4px 4px;color:#9aa3ad;font-size:12.5px}
+.lm-pages{display:flex;gap:4px}
+.lm-pages a,.lm-pages span{min-width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;color:#6b7280}
+.lm-pages .is-on{background:#16a34a;color:#fff;font-weight:700}
+.lm-rank{text-align:center;padding-top:8px}
+.lm-rank .big{margin:8px 0 4px;font-size:22px;font-weight:800;letter-spacing:.04em}
+.lm-rank .sub{color:#9aa3ad;font-size:13px;line-height:1.4}
+.lm-rank .sub b{color:#16a34a;font-weight:700}
+.lm-bar{height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden;margin:10px 0 6px}
+.lm-bar i{display:block;height:100%;background:#f59e0b;border-radius:99px}
+.lm-row{display:flex;justify-content:space-between;color:#6b7280;font-size:13px;margin:8px 0 16px}
+.lm-next{display:flex;align-items:center;gap:10px;text-align:left;border-top:1px solid #f3f4f6;padding-top:12px}
+.lm-next b{display:block;font-size:13px;letter-spacing:.04em}
+.lm-next span{color:#9aa3ad;font-size:12.5px}
+.lm-next em{color:#16a34a;font-style:normal;font-weight:700}
+.lm-side{display:flex;flex-direction:column;gap:12px}
+.lm-stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lm-stat article{background:#fff;border:1px solid #eceef1;border-radius:14px;padding:12px}
+.lm-stat .ic{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;margin-bottom:6px}
+.lm-stat .g{background:#dcfce7;color:#16a34a}
+.lm-stat .p{background:#ede9fe;color:#7c3aed}
+.lm-stat .b{background:#e0f2fe;color:#0284c7}
+.lm-stat .o{background:#ffedd5;color:#ea580c}
+.lm-stat .lab{display:block;font-size:10px;color:#9aa3ad;font-weight:700;margin-bottom:4px}
+.lm-stat b{font-size:18px;letter-spacing:-.03em}
+.lm-send{display:grid;gap:8px}
+.lm-send a,.lm-send button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;border-radius:10px;color:#fff;font-weight:700;font-size:13px;border:0;cursor:pointer;text-decoration:none}
+.lm-send .viber{background:#7c3aed}
+.lm-send .wa{background:#16a34a}
+.lm-act{display:grid;gap:8px}
+.lm-act a,.lm-act button{display:flex;align-items:center;gap:10px;min-height:42px;padding:0 12px;border:1px solid #eceef1;border-radius:10px;background:#fff;color:#111;font:inherit;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;text-align:left}
+.lm-act a:hover,.lm-act button:hover{background:#fafafa}
+.lm-act .danger{color:#dc2626;border-color:#fecaca}
+.lm-dl{display:grid;grid-template-columns:110px 1fr;gap:8px 10px;margin:0;font-size:13px}
+.lm-dl dt{color:#9aa3ad}
+.lm-dl dd{margin:0;font-weight:600}
+.lm-dl .ok{color:#16a34a}
+.lm-form{width:100%;max-width:100%;box-sizing:border-box}
+.lm-form input[type=number],.lm-form input[type=text],.lm-form textarea{width:100%;max-width:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;font:inherit;margin:0 0 12px;display:block}
+.lm-form textarea{min-height:110px;resize:vertical}
+.lm-btn{min-height:40px;padding:0 16px;border:0;border-radius:10px;background:#16a34a;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.lm-btn-ghost{background:#fff;border:1px solid #e5e7eb;color:#111}
+.lm-empty{color:#9aa3ad;font-size:13px;padding:12px 0}
+.lm-banner{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:#dcfce7;color:#166534;font-weight:600}
+.lm-stat .note{color:#dc2626;font-size:13px;font-weight:700;line-height:1.35;word-break:break-word}
+.lm-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
+.lm-modal[hidden]{display:none}
+.lm-scrim{position:absolute;inset:0;background:rgba(15,23,42,.28)}
+.lm-panel{position:relative;width:min(360px,calc(100vw - 32px));max-width:100%;background:#fff;border-radius:16px;padding:20px;box-shadow:0 24px 60px rgba(15,23,42,.18);box-sizing:border-box}
+.lm-panel h2{margin:0 0 14px;font-size:18px;font-weight:800}
+.lm-pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px;width:100%;box-sizing:border-box}
+.lm-pay label{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 8px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;box-sizing:border-box;min-width:0}
+.lm-pay input[type=radio]{width:16px;height:16px;margin:0;flex:0 0 16px;accent-color:#16a34a}
+.lm-pay label:has(input:checked){border-color:#86efac;background:#f0fdf4}
+.lm-modal-actions{display:flex;justify-content:flex-end;gap:8px}
+@media (max-width:1100px){
+  .lm{padding:14px 12px 80px}
+  .lm-grid,.lm-split{grid-template-columns:1fr}
+  .lm-hero{flex-wrap:wrap}
+  .lm-viz{width:100%;min-width:0}
+  .lm-top h1{font-size:22px}
+  .lm-table{min-width:640px}
+}
+</style>
+{% endblock %}
+
+{% block body_class %}staff-shell-page loy-full{% endblock %}
+
+{% block content %}
+<section class="lm">
+    <a class="lm-back" href="{% url 'staff_loyalty_system' %}">← Loyalty program</a>
+    <div class="lm-top">
+        <h1>Detalji člana / kartica</h1>
+        <a class="lm-search" href="{% url 'staff_loyalty_system' %}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            Pretraga članova
+        </a>
+    </div>
+
+    {% if newly_issued %}
+    <p class="lm-banner">Kartica uspješno registrovana.</p>
+    {% endif %}
+
+    <div class="lm-grid">
+        <div>
+            <div class="lm-hero">
+                <div class="lm-who">
+                    <div class="lm-av">{{ member_initials }}</div>
+                    <div>
+                        <h2 class="lm-name">{{ cardholder_name }}</h2>
+                        <div class="lm-badges">
+                            {% if selected_card.user.is_active %}
+                            <span class="lm-pill on">AKTIVAN</span>
+                            {% else %}
+                            <span class="lm-pill off">NEAKTIVAN</span>
+                            {% endif %}
+                            <span class="lm-pill {{ selected_card.nivo }}">{{ member_tier_en }}</span>
+                        </div>
+                        <p class="lm-phone">
+                            {{ member_phone_fmt }}
+                            {% if loyalty.viber_url %}
+                            <a href="{{ loyalty.viber_url }}" title="Viber">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.3 2 1.7 6.1 1.7 11.2c0 2.7 1.2 5.1 3.2 6.8V22l3.3-1.8c1.2.3 2.5.5 3.8.5 5.7 0 10.3-4.1 10.3-9.2S17.7 2 12 2z"/></svg>
+                            </a>
+                            {% endif %}
+                            {% if loyalty.whatsapp_url %}
+                            <a class="wa" href="{{ loyalty.whatsapp_url }}" target="_blank" rel="noopener" title="WhatsApp">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+                            </a>
+                            {% endif %}
+                        </p>
+                        <p class="lm-meta">Kartica: {{ selected_card.kod }} &nbsp;|&nbsp; Član od: {{ member_since|date:"d.m.Y." }}</p>
+                    </div>
+                </div>
+                <div class="lm-viz {{ selected_card.nivo }}" aria-hidden="true">
+                    <div class="lm-viz-top">
+                        <div>
+                            <div class="lm-viz-brand">
+                                {% if site_settings.logo %}
+                                <img src="{{ site_settings.logo.url }}" alt="">
+                                {% else %}
+                                <span>OPREMA<small>ZA RIBOLOV.BA</small></span>
+                                {% endif %}
+                            </div>
+                            <div class="lm-viz-tier">LOYALTY · {{ member_tier_en }}</div>
+                        </div>
+                        <div class="lm-viz-pct">
+                            <b>{{ loyalty.tier.postotak|floatformat:0 }}%</b>
+                            <span>{{ member_tier_en }}</span>
+                        </div>
+                    </div>
+                    <div class="lm-viz-no">{{ selected_card.kod }}</div>
+                    <p class="lm-viz-nm">{{ cardholder_name }}</p>
+                    <div class="lm-viz-bar">
+                        <img src="{% url 'staff_loyalty_card_barcode' selected_card.pk %}" alt="">
+                    </div>
+                </div>
+            </div>
+
+            <div class="lm-split">
+                <div class="lm-card">
+                    <h2 class="plain">Evidencija kupovina</h2>
+                    {% if purchase_years %}
+                    <nav class="lm-years" aria-label="Godina kupovina">
+                        {% for year in purchase_years %}
+                        <a href="?godina={{ year }}" class="{% if year == purchase_year %}is-on{% endif %}">{{ year }}</a>
+                        {% endfor %}
+                    </nav>
+                    {% if purchase_year %}
+                    <p class="lm-year-sum">{{ purchase_year_count }} kupovina · {{ purchase_year_total_fmt }} KM u {{ purchase_year }}.</p>
+                    {% endif %}
+                    {% endif %}
+                    <div class="lm-table-wrap">
+                    <table class="lm-table">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Broj narudžbe</th>
+                                <th>Iznos</th>
+                                <th>Bodovi</th>
+                                <th>Plaćanje</th>
+                                <th>Kanal</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in purchase_page %}
+                            <tr>
+                                <td>{{ row.date|date:"d.m.Y. H:i" }}</td>
+                                <td>{% if row.order %}<a class="num" href="#">#{{ row.order.broj }}</a>{% else %}{{ row.label }}{% endif %}</td>
+                                <td>{{ row.amount_fmt }} KM</td>
+                                <td>{{ row.points_fmt }}</td>
+                                <td>{{ row.payment }}</td>
+                                <td>{{ row.channel }}</td>
+                                <td><span class="lm-ok">{{ row.status }} ›</span></td>
+                                <td>
+                                    {% if row.kind == 'manual' and row.purchase %}
+                                    <form method="post" class="lm-del-buy" onsubmit="return confirm('Obrisati evidentiranu kupovinu od {{ row.amount_fmt }} KM?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="obrisi_kupovinu">
+                                        <input type="hidden" name="purchase_id" value="{{ row.purchase.pk }}">
+                                        <button type="submit" class="lm-del">Obriši</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="8" class="lm-empty">{% if purchase_year %}Nema kupovina u {{ purchase_year }}.{% else %}Nema kupovina.{% endif %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                    <div class="lm-foot">
+                        <span>Prikazano {{ purchase_page.start_index|default:0 }} do {{ purchase_page.end_index|default:0 }} od {{ purchase_page.paginator.count|default:0 }} kupovina{% if purchase_year %} ({{ purchase_year }}){% endif %}</span>
+                        {% if purchase_page.paginator.num_pages > 1 %}
+                        <div class="lm-pages">
+                            {% if purchase_page.has_previous %}<a href="?godina={{ purchase_year }}&amp;page={{ purchase_page.previous_page_number }}">‹</a>{% endif %}
+                            {% for n in purchase_page.paginator.page_range %}
+                                {% if n == purchase_page.number %}<span class="is-on">{{ n }}</span>
+                                {% elif n <= 3 or n > purchase_page.paginator.num_pages|add:'-1' %}
+                                <a href="?godina={{ purchase_year }}&amp;page={{ n }}">{{ n }}</a>
+                                {% endif %}
+                            {% endfor %}
+                            {% if purchase_page.has_next %}<a href="?godina={{ purchase_year }}&amp;page={{ purchase_page.next_page_number }}">›</a>{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="lm-card lm-rank">
+                    <h3>Rang i napredak</h3>
+                    <svg class="lm-medal" viewBox="0 0 48 48" style="margin:0 auto">
+                        <circle cx="24" cy="28" r="13" fill="#eab308"/>
+                        <circle cx="24" cy="28" r="8" fill="#fde047"/>
+                        <path d="M16 6h7l2 14h-4z" fill="#ca8a04"/>
+                        <path d="M25 6h7l-5 14h-4z" fill="#a16207"/>
+                    </svg>
+                    <div class="big">{{ member_tier_en }}</div>
+                    <div class="sub">
+                        {{ member_tier_range }}<br>
+                        <b>{{ loyalty.tier.postotak }}% popusta</b>
+                    </div>
+                    <div class="lm-row"><span>Vaši bodovi</span><strong>{{ member_points_fmt }} bodova</strong></div>
+                    <div class="lm-bar"><i style="width:{{ member_progress_pct }}%"></i></div>
+                    {% if member_remain_fmt %}
+                    <p class="sub">{{ member_remain_fmt }} bodova do sljedećeg ranga</p>
+                    {% endif %}
+                    {% if loyalty.next_tier %}
+                    <div class="lm-next">
+                        <svg class="lm-medal" viewBox="0 0 48 48" width="36" height="36"><circle cx="24" cy="28" r="13" fill="#93c5fd"/><circle cx="24" cy="28" r="8" fill="#dbeafe"/></svg>
+                        <div>
+                            <b>{{ member_next_en }}</b>
+                            <span>{{ loyalty.next_tier.od|floatformat:0 }}+ bodova</span>
+                            <em>{{ loyalty.next_tier.postotak }}% popusta</em>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="lm-card" style="margin-top:16px">
+                <h3>Detalji člana</h3>
+                <dl class="lm-dl">
+                    <dt>Telefon:</dt><dd>{{ member_phone_fmt }}</dd>
+                    <dt>E-mail:</dt><dd>{{ selected_card.user.email|default:"—" }}</dd>
+                    <dt>Adresa:</dt><dd>{{ member_address|default:"—" }}</dd>
+                    <dt>Status:</dt><dd class="ok">{% if selected_card.user.is_active %}Aktivan{% else %}Neaktivan{% endif %}</dd>
+                </dl>
+                {% if edit_form %}
+                <details style="margin-top:12px">
+                    <summary style="cursor:pointer;font-weight:700;font-size:13px">Izmijeni podatke</summary>
+                    <form method="post" class="lm-form" style="margin-top:10px" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_profile">
+                        {% for field in edit_form %}
+                        <label style="display:block;font-size:12px;color:#6b7280;margin:0 0 4px">{{ field.label }}</label>
+                        {{ field }}
+                        {% endfor %}
+                        <button class="lm-btn" type="submit">Sačuvaj</button>
+                    </form>
+                </details>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <aside class="lm-side">
+            <div>
+                <h3 class="lm-card" style="box-shadow:none;border:0;padding:0 0 8px;background:transparent">Brzi pregled</h3>
+                <div class="lm-stat">
+                    <article>
+                        <div class="ic g"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 11.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.5L22 7H6"/></svg></div>
+                        <span class="lab">Ukupna potrošnja</span>
+                        <b>{{ member_spend_fmt }} KM</b>
+                    </article>
+                    <article>
+                        <div class="ic p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
+                        <span class="lab">Napomena</span>
+                        {% if member_note %}<span class="note">{{ member_note }}</span>{% else %}<b style="color:#9aa3ad;font-weight:600">—</b>{% endif %}
+                    </article>
+                    <article>
+                        <div class="ic b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/></svg></div>
+                        <span class="lab">Ukupno narudžbi</span>
+                        <b>{{ member_orders_count }}</b>
+                    </article>
+                    <article>
+                        <div class="ic o"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg></div>
+                        <span class="lab">Prosječna kupovina</span>
+                        <b>{{ member_avg_fmt }} KM</b>
+                    </article>
+                </div>
+            </div>
+
+            <div class="lm-card">
+                <h3>Pošalji karticu</h3>
+                <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Pošaljite digitalnu karticu putem Viber ili WhatsApp.</p>
+                {% if loyalty.card_caption or loyalty.viber_caption %}
+                {{ loyalty.card_caption|default:loyalty.viber_caption|json_script:"loyaltyCardCaption" }}
+                {% endif %}
+                <div class="lm-send">
+                    {% if loyalty.viber_url %}
+                    <a class="viber loyalty-card-send-btn" data-channel="viber"
+                       href="{{ loyalty.viber_url }}">Pošalji na Viber</a>
+                    {% endif %}
+                    {% if loyalty.whatsapp_url %}
+                    <a class="wa loyalty-card-send-btn" data-channel="whatsapp"
+                       href="{{ loyalty.whatsapp_url }}" target="_blank" rel="noopener">Pošalji na WhatsApp</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="lm-card">
+                <h3>Akcije</h3>
+                <div class="lm-act">
+                    <button type="button" id="lmBuyOpen">Evidentiraj kupovinu</button>
+                    <button type="button" id="lmNoteOpen">Dodaj napomenu</button>
+                    {% if selected_card.user.is_active %}
+                    <form method="post" onsubmit="return confirm('Deaktivirati karticu?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="deaktiviraj_karticu">
+                        <button type="submit" class="danger">Deaktiviraj karticu</button>
+                    </form>
+                    {% else %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="aktiviraj_nalog">
+                        <button type="submit">Aktiviraj nalog</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+        </aside>
+    </div>
+</section>
+
+<div class="lm-modal" id="lmBuyModal" hidden>
+    <div class="lm-scrim" data-buy-close></div>
+    <div class="lm-panel" role="dialog" aria-modal="true" aria-labelledby="lmBuyTitle">
+        <h2 id="lmBuyTitle">Evidentiraj kupovinu</h2>
+        <form method="post" class="lm-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="evidentiraj_kupovinu">
+            <input type="number" name="iznos" step="0.01" min="0.01" placeholder="Iznos u KM" required autofocus>
+            <div class="lm-pay">
+                <label><input type="radio" name="placanje" value="gotovina" checked> Gotovina</label>
+                <label><input type="radio" name="placanje" value="kartica"> Kartično</label>
+            </div>
+            <div class="lm-modal-actions">
+                <button type="button" class="lm-btn lm-btn-ghost" data-buy-close>Odustani</button>
+                <button type="submit" class="lm-btn">Evidentiraj</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="lm-modal" id="lmNoteModal" hidden>
+    <div class="lm-scrim" data-note-close></div>
+    <div class="lm-panel" role="dialog" aria-modal="true" aria-labelledby="lmNoteTitle">
+        <h2 id="lmNoteTitle">Napomena</h2>
+        <form method="post" class="lm-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_note">
+            <textarea name="napomena" placeholder="Unesi napomenu">{{ member_note }}</textarea>
+            <div class="lm-modal-actions">
+                <button type="button" class="lm-btn lm-btn-ghost" data-note-close>Odustani</button>
+                <button type="submit" class="lm-btn">Sačuvaj</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var buyModal = document.getElementById('lmBuyModal');
+    var buyOpen = document.getElementById('lmBuyOpen');
+    function closeBuy() {
+        if (!buyModal) return;
+        buyModal.hidden = true;
+        var inp = buyModal.querySelector('input[name="iznos"]');
+        if (inp) inp.value = '';
+        var cash = buyModal.querySelector('input[value="gotovina"]');
+        if (cash) cash.checked = true;
+    }
+    if (buyOpen && buyModal) {
+        buyOpen.addEventListener('click', function () {
+            buyModal.hidden = false;
+            var inp = buyModal.querySelector('input[name="iznos"]');
+            if (inp) inp.focus();
+        });
+        buyModal.querySelectorAll('[data-buy-close]').forEach(function (el) {
+            el.addEventListener('click', closeBuy);
+        });
+    }
+    var noteModal = document.getElementById('lmNoteModal');
+    var noteOpen = document.getElementById('lmNoteOpen');
+    function closeNote() { if (noteModal) noteModal.hidden = true; }
+    if (noteOpen && noteModal) {
+        noteOpen.addEventListener('click', function () {
+            noteModal.hidden = false;
+            var t = noteModal.querySelector('textarea');
+            if (t) t.focus();
+        });
+        noteModal.querySelectorAll('[data-note-close]').forEach(function (el) {
+            el.addEventListener('click', closeNote);
+        });
+    }
+    function cardCaption() {
+        var el = document.getElementById('loyaltyCardCaption');
+        try { return el ? JSON.parse(el.textContent) : ''; } catch (e) { return ''; }
+    }
+    document.querySelectorAll('.loyalty-card-send-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var text = cardCaption();
+            if (text && navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function () {});
+            }
+        });
+    });
+    document.querySelectorAll('.site-chat-launchers, .contact-float-group').forEach(function (el) { el.remove(); });
+})();
+</script>
+<style>
+body.staff-shell-page .site-chat-launchers,
+body.staff-shell-page .site-chat-launcher,
+body.staff-shell-page .contact-float-group{display:none!important}
+</style>
+{% endblock %}

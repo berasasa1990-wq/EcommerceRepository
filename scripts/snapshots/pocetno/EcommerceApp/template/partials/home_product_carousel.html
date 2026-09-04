@@ -1,0 +1,31 @@
+{% if products %}
+<div class="home-product-carousel home-product-carousel--catalog{% if carousel_no_arrows %} home-product-carousel--no-arrows{% endif %}" data-visible-desktop="{{ visible_desktop|default:5 }}" data-visible-mobile="{{ visible_mobile|default:2 }}" data-autoplay-ms="4500">
+    {% if not carousel_no_arrows %}
+    <button type="button" class="home-product-carousel__btn home-product-carousel__btn--prev" aria-label="Prethodni artikli" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+    </button>
+    {% endif %}
+    <div class="home-product-carousel__viewport">
+        <div class="home-product-carousel__track">
+            {% for product in products %}
+            <div class="home-product-carousel__slide">
+                {% if eager_first_image and forloop.first %}
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=True hide_brand=hide_brand home_section_badge=home_section_badge image_loading='eager' image_sizes='(max-width: 768px) 50vw, 20vw' %}
+                {% else %}
+                {% include 'partials/product_catalog_card.html' with product=product hide_variations=True hide_brand=hide_brand home_section_badge=home_section_badge image_sizes='(max-width: 768px) 50vw, 20vw' %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% if not carousel_no_arrows %}
+    <button type="button" class="home-product-carousel__btn home-product-carousel__btn--next" aria-label="Sljedeći artikli">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>
+    </button>
+    {% endif %}
+</div>
+{% endif %}

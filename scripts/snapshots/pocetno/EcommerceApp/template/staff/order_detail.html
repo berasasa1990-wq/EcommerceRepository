@@ -1,0 +1,186 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+{% include 'partials/order_invoice_embed_styles.html' %}
+{% endblock %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <a href="{% url 'staff_magacin_narudzbe' %}" class="mg-back" style="margin-bottom:8px;">← Nazad na Magacin narudžbe</a>
+        <h1>Narudžba #{{ order.broj }}</h1>
+        <p class="mg-count">
+            {% if order.izvor == 'magacin' %}Ručni unos (Magacin){% else %}Webshop{% endif %}
+            · {{ order.kreirana|date:"d.m.Y. H:i" }}
+            {% if order.pick_claimed_name %}
+            · Preuzeo {{ order.pick_claimed_name }}
+            {% endif %}
+        </p>
+        {% if order.pick_claimed_name and order.lager_status == 'rezervisano' %}
+        <form method="post" action="{% url 'staff_magacin_pakuj_oslobodi' order.broj %}" style="margin:8px 0 0">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="mg-btn">Skini preuzimanje</button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="mg-toolbar-actions">
+        {% if can_edit_order and edit_order_url %}
+        <a class="mg-btn" href="{{ edit_order_url }}">Izmijeni narudžbu</a>
+        {% endif %}
+        {% if order.lager_status == 'rezervisano' or order.lager_status == 'nije' %}
+        <a class="mg-btn" href="{% url 'staff_magacin_pakuj_detail' order.broj %}">Picking</a>
+        <form method="post" action="{% url 'staff_order_detail' broj=order.broj %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="validiraj">
+            <button type="submit" class="mg-btn mg-btn-primary">Validiraj narudžbu</button>
+        </form>
+        {% endif %}
+        {% if order.lager_status == 'rezervisano' %}
+        <form method="post" action="{% url 'staff_order_detail' broj=order.broj %}" class="staff-cancel-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="otkazi">
+            <button type="submit" class="mg-btn mg-btn-danger">Otkaži narudžbu</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'staff_order_detail' broj=order.broj %}" class="staff-odoo-form"{% if order.odoo_sale_order_id %} data-already-synced="1" data-odoo-name="{{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}"{% endif %}>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="odoo_narudzba">
+            <input type="hidden" name="force" value="0" class="staff-odoo-force">
+            <button type="submit" class="mg-btn mg-btn-odoo{% if order.odoo_sale_order_id %} is-done{% endif %}" title="{% if order.odoo_sale_order_id %}Već u Odoo: {{ order.odoo_sale_order_name }} — klik za ponovni unos{% else %}Kreiraj Sales narudžbu u Odoo{% endif %}">{% if order.odoo_sale_order_id %}Odoo ↻ {{ order.odoo_sale_order_name }}{% else %}Odoo narudžba{% endif %}</button>
+        </form>
+        {% if not order.xexpress_sifra %}
+        <form method="post" action="{% url 'staff_order_xexpress' broj=order.broj %}" class="staff-xexpress-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'staff_order_detail' broj=order.broj %}">
+            <button type="submit" class="mg-btn mg-btn-primary">Pošalji u X-Express</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if order.pick_shortages %}
+<p class="mg-pick-short mg-pick-short-detail">
+    Manje pokupljeno:
+    {% for short in order.pick_shortages %}
+    {{ short.naziv }} {{ short.got }}/{{ short.need }}{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</p>
+{% endif %}
+<div class="mg-order-meta">
+    {% if order.status == 'nova' %}
+    <span class="mg-pill">Nova</span>
+    {% else %}
+    <span class="mg-pill is-off">{{ order.get_status_label }}</span>
+    {% endif %}
+    {% if order.lager_status == 'rezervisano' %}
+    <span class="mg-pill is-manual">Rezervisano</span>
+    {% elif order.lager_status == 'validirano' %}
+    <span class="mg-pill">Validatovano</span>
+    {% elif order.lager_status == 'otkazano' %}
+    <span class="mg-pill is-out">Otkazano</span>
+    {% endif %}
+    {% if order.izvor == 'magacin' %}
+    <span class="mg-pill is-manual">Ručni unos</span>
+    {% else %}
+    <span class="mg-pill is-off">Webshop</span>
+    {% endif %}
+    {% if order.odoo_sale_order_id %}
+    <span class="mg-pill is-odoo">Odoo {{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}</span>
+    {% endif %}
+    {% if order.xexpress_sifra %}
+    <span class="mg-pill is-xexpress">X-Express {{ order.xexpress_sifra }}</span>
+    {% endif %}
+    {% if order.loyalty_popust_info %}
+    <span class="mg-pill is-loyalty">{{ order.loyalty_popust_info.label }}</span>
+    {% endif %}
+</div>
+
+{% if order.xexpress_sifra %}
+<section class="mg-card mg-xexpress-card">
+    <p class="mg-xexpress-label">X-Express šifra pošiljke</p>
+    <p class="mg-xexpress-code" id="xeSifra">{{ order.xexpress_sifra }}</p>
+    {% if order.xexpress_poslano_at %}
+    <p class="mg-muted">Poslano {{ order.xexpress_poslano_at|date:"d.m.Y. H:i" }}</p>
+    {% endif %}
+    <div class="mg-xexpress-actions">
+        <button type="button" class="mg-btn mg-btn-primary" id="xeCopy" data-sifra="{{ order.xexpress_sifra }}">Kopiraj šifru</button>
+        <a class="mg-btn" href="https://www.x-express.ba/pracenjeposiljaka.php?sifra={{ order.xexpress_sifra|urlencode }}" target="_blank" rel="noopener">Prati pošiljku</a>
+    </div>
+</section>
+{% endif %}
+
+<section class="mg-card mg-order-invoice-card">
+    <div class="staff-order-invoice">
+        {% include 'partials/order_invoice_document.html' %}
+    </div>
+</section>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+document.querySelectorAll('.staff-cancel-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        if (!window.confirm('Otkazati narudžbu i vratiti rezervaciju na lokacije?')) {
+            event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('.staff-odoo-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var already = form.getAttribute('data-already-synced') === '1';
+        var name = form.getAttribute('data-odoo-name') || '';
+        var forceInput = form.querySelector('.staff-odoo-force');
+        var msg = already
+            ? ('Narudžba je već unesena u Odoo' + (name ? ' (' + name + ')' : '') +
+               '.\n\nŽelite li kreirati NOVU Sales narudžbu (ponovni unos)?')
+            : 'Kreirati Sales narudžbu u Odoo sa istim artiklima i količinama?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+            return;
+        }
+        if (forceInput) {
+            forceInput.value = already ? '1' : '0';
+        }
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Odoo…';
+        }
+    });
+});
+document.querySelectorAll('.staff-xexpress-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        if (!window.confirm('Poslati ovu narudžbu u X-Express i kreirati pošiljku?')) {
+            event.preventDefault();
+            return;
+        }
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'X-Express…';
+        }
+    });
+});
+var xeCopy = document.getElementById('xeCopy');
+if (xeCopy) {
+    xeCopy.addEventListener('click', function () {
+        var text = xeCopy.getAttribute('data-sifra') || '';
+        if (!text) return;
+        function done() {
+            xeCopy.textContent = 'Kopirano';
+            window.setTimeout(function () { xeCopy.textContent = 'Kopiraj šifru'; }, 1400);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+                window.prompt('Kopiraj šifru:', text);
+            });
+        } else {
+            window.prompt('Kopiraj šifru:', text);
+        }
+    });
+}
+</script>
+{% endblock %}

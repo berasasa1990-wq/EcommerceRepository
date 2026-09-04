@@ -27,6 +27,7 @@
                 <tr>
                     <td>
                         <strong>{{ row.ime_prezime }}</strong>
+                        {% if row.vp_kupac %}<span class="mg-pill mg-src-vp">VP</span>{% endif %}
                         {% if row.adresa %}<div class="mg-muted">{{ row.adresa }}</div>{% endif %}
                     </td>
                     <td>{{ row.telefon }}</td>
@@ -39,7 +40,8 @@
                             data-adresa="{{ row.adresa }}"
                             data-grad="{{ row.grad }}"
                             data-email="{{ row.email }}"
-                            data-postanski="{{ row.postanski_broj }}">Izmijeni</button>
+                            data-postanski="{{ row.postanski_broj }}"
+                            data-vp="{% if row.vp_kupac %}1{% endif %}">Izmijeni</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -78,6 +80,10 @@
                 <label for="custEmail">Email</label>
                 <input name="email" id="custEmail" type="email" maxlength="254" value="{{ editing.email|default:'' }}">
             </div>
+            <label class="mg-check" for="custVp">
+                <input type="checkbox" name="vp_kupac" id="custVp" value="1"{% if editing.vp_kupac %} checked{% endif %}>
+                VP kupac
+            </label>
             <div style="display:flex;gap:8px;margin-top:14px;">
                 <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
                 <button type="button" class="mg-btn" id="custReset">Novi</button>
@@ -106,6 +112,7 @@
             document.getElementById('custGrad').value = btn.dataset.grad || '';
             document.getElementById('custEmail').value = btn.dataset.email || '';
             document.getElementById('custPost').value = btn.dataset.postanski || '';
+            document.getElementById('custVp').checked = btn.dataset.vp === '1';
             document.getElementById('custDelete').hidden = false;
             document.getElementById('custDeleteId').value = btn.dataset.id;
             title.textContent = 'Izmijeni kupca';

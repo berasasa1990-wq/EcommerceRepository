@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{{ seo_title }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description }}">
+{% endblock %}
+
+{% block structured_data %}
+{% if breadcrumb_json_ld %}
+<script type="application/ld+json">{{ breadcrumb_json_ld|safe }}</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="brands-page">
+    <nav class="shop-breadcrumb" aria-label="Putanja">
+        <a href="{% url 'home' %}">Početna</a>
+        <span aria-hidden="true">›</span>
+        <span class="shop-breadcrumb__current">Brendovi</span>
+    </nav>
+
+    <div class="brands-page__head">
+        <div>
+            <h1 class="brands-page__title">{{ seo_h1|default:"Svi brendovi" }}</h1>
+            <p class="brands-page__lead">Pronađite vrhunsku opremu poznatih brendova.</p>
+        </div>
+        <div class="brands-page__tools">
+            {% if brands_total %}
+            <p class="brands-page__count">Prikazano {{ brands_shown_start }}–{{ brands_shown_end }} od {{ brands_total }} brendova</p>
+            {% endif %}
+            <form class="brands-page__sort" method="get" action="{% url 'brands_list' %}">
+                <label class="visually-hidden" for="brandsSort">Sortiranje</label>
+                <select id="brandsSort" name="sort" onchange="this.form.submit()">
+                    <option value="az"{% if brands_sort != 'za' %} selected{% endif %}>Sortiraj po nazivu (A–Ž)</option>
+                    <option value="za"{% if brands_sort == 'za' %} selected{% endif %}>Sortiraj po nazivu (Ž–A)</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    {% if brands %}
+    <div class="brands-grid">
+        {% for brand in brands %}
+        <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase" class="brands-card" title="{{ brand.naziv }}">
+            <span class="brands-card__logo">
+                {% if brand.slika %}
+                <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="160" height="64" loading="lazy" decoding="async">
+                {% else %}
+                <span class="brands-card__fallback">{{ brand.naziv }}</span>
+                {% endif %}
+            </span>
+            <span class="brands-card__name">{{ brand.naziv }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="catalog-empty">Trenutno nema brendova.</p>
+    {% endif %}
+
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <nav class="brands-pagination" aria-label="Stranice brendova">
+        {% if page_obj.number > 1 %}
+        <a href="?sort={{ brands_sort }}" class="catalog-page-link catalog-page-link--edge" aria-label="Prva strana">«</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">«</span>
+        {% endif %}
+        {% if page_obj.has_previous %}
+        <a href="?sort={{ brands_sort }}&amp;page={{ page_obj.previous_page_number }}" class="catalog-page-link" aria-label="Prethodna">‹</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">‹</span>
+        {% endif %}
+        {% for page_num in elided_page_range %}
+            {% if page_num == '…' or page_num == page_obj.paginator.ELLIPSIS %}
+            <span class="catalog-page-ellipsis">…</span>
+            {% elif page_num == page_obj.number %}
+            <span class="catalog-page-link catalog-page-link--active">{{ page_num }}</span>
+            {% elif page_num == 1 %}
+            <a href="?sort={{ brands_sort }}" class="catalog-page-link">{{ page_num }}</a>
+            {% else %}
+            <a href="?sort={{ brands_sort }}&amp;page={{ page_num }}" class="catalog-page-link">{{ page_num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?sort={{ brands_sort }}&amp;page={{ page_obj.next_page_number }}" class="catalog-page-link" aria-label="Sljedeća">›</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">›</span>
+        {% endif %}
+        {% if page_obj.number < page_obj.paginator.num_pages %}
+        <a href="?sort={{ brands_sort }}&amp;page={{ page_obj.paginator.num_pages }}" class="catalog-page-link catalog-page-link--last" aria-label="Zadnja strana">Zadnja</a>
+        {% else %}
+        <span class="catalog-page-link catalog-page-link--disabled" aria-hidden="true">Zadnja</span>
+        {% endif %}
+    </nav>
+    {% endif %}
+</section>
+{% endblock %}

@@ -4,7 +4,12 @@
 <div class="mg-orders-page">
 <div class="mg-page-head">
     <div>
-        <h1>{% if show_validated %}Validatovane narudžbe{% else %}Narudžbe{% endif %}</h1>
+        <h1>
+            <span class="mg-orders-title-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.5L22 8H6.4"/></svg>
+            </span>
+            {% if show_validated %}Validatovane narudžbe{% else %}Narudžbe{% endif %}
+        </h1>
         <p class="mg-count">
             {% if show_validated and order_query %}
             Pretraga validatovanih — broj, ime ili telefon.
@@ -18,9 +23,14 @@
         </p>
     </div>
     <div class="mg-toolbar-actions">
-        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzba_nova' %}">+ Nova ručna narudžba</a>
-        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_vp_narudzba' %}">VP narudžbe</a>
-        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}">Pošalji u X-Express</a>
+        <a class="mg-btn mg-btn-pill mg-btn-primary" href="{% url 'staff_magacin_narudzba_nova' %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Nova ručna narudžba
+        </a>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>
+            Pošalji u X-Express
+        </a>
         {% if show_validated %}
         {% if show_all_validated %}
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}{% if qs_today %}?{{ qs_today }}{% endif %}">Samo danas</a>
@@ -30,15 +40,26 @@
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
         {% else %}
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}{% if qs_validated %}?{{ qs_validated }}{% else %}?validirane=1{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
             Pokaži validatovane{% if validated_count %} ({{ validated_count }}){% endif %}
         </a>
         {% endif %}
     </div>
 </div>
+<div class="mg-orders-panel">
 <div class="mg-filter-tabs">
-    <a href="{% url 'staff_magacin_narudzbe' %}{% if qs_sve %}?{{ qs_sve }}{% endif %}" class="{% if izvor_filter == 'sve' %}is-active{% endif %}">Sve</a>
-    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_magacin }}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">Ručne</a>
-    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_webshop }}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">Webshop</a>
+    <a href="{% url 'staff_magacin_narudzbe' %}{% if qs_sve %}?{{ qs_sve }}{% endif %}" class="{% if izvor_filter == 'sve' %}is-active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Sve
+    </a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_magacin }}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Ručne
+    </a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_webshop }}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        Webshop
+    </a>
 </div>
 {% if show_validated and not show_all_validated %}
 <nav class="bp-days" aria-label="Datum validacije">
@@ -66,7 +87,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
         <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Ime ili broj narudžbe..." autocomplete="off">
     </div>
-    <button type="submit" class="mg-btn">Traži</button>
+    <button type="submit" class="mg-btn mg-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        Traži
+    </button>
     {% if order_query %}
     <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}{% if qs_clear %}?{{ qs_clear }}{% endif %}">Poništi</a>
     {% endif %}
@@ -114,7 +138,7 @@
                     <th>STATUS</th>
                     <th>LAGER</th>
                     <th>DATUM</th>
-                    <th>X-EXPRESS</th>
+                    <th>NAPOMENA</th>
                     <th class="num">UKUPNO</th>
                     <th class="mg-more-col"></th>
                 </tr>
@@ -184,9 +208,9 @@
                         <span>{{ order.kreirana|date:"d.m.Y" }}</span>
                         <span class="sub">{{ order.kreirana|date:"H:i" }}</span>
                     </td>
-                    <td>
-                        {% if order.xexpress_sifra %}
-                        <span class="mg-pill is-xexpress">{{ order.xexpress_sifra }}</span>
+                    <td class="mg-order-note">
+                        {% if order.lista_napomena %}
+                        <span title="{{ order.lista_napomena }}">{{ order.lista_napomena }}</span>
                         {% else %}
                         <span class="mg-muted">—</span>
                         {% endif %}
@@ -207,19 +231,29 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="10" class="mg-muted">
-                        {% if order_query %}
-                        Nema narudžbi za „{{ order_query }}”.
-                        {% elif show_validated and not show_all_validated %}
-                        Nema validatovanih narudžbi za {{ day|date:"d.m.Y." }}.
-                        {% elif show_validated %}
-                        Nema validatovanih narudžbi.
-                        {% elif izvor_filter == 'magacin' %}
-                        Nema novih narudžbi. Unesi prvu ručnu narudžbu.
-                        {% else %}
-                        Nema novih narudžbi.
-                        {% endif %}
+                <tr class="mg-orders-empty-row">
+                    <td colspan="10">
+                        <div class="mg-empty-state">
+                            <span class="mg-empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                            </span>
+                            {% if order_query %}
+                            <strong>Nema narudžbi za „{{ order_query }}”.</strong>
+                            <p>Promijeni pretragu ili poništi filter.</p>
+                            {% elif show_validated and not show_all_validated %}
+                            <strong>Nema validatovanih narudžbi za {{ day|date:"d.m.Y." }}.</strong>
+                            <p>Validatovane narudžbe za ovaj dan će se prikazati ovdje.</p>
+                            {% elif show_validated %}
+                            <strong>Nema validatovanih narudžbi.</strong>
+                            <p>Validatovane narudžbe će se ovdje prikazati čim budu spremne.</p>
+                            {% elif izvor_filter == 'magacin' %}
+                            <strong>Nema novih narudžbi.</strong>
+                            <p>Unesi prvu ručnu narudžbu.</p>
+                            {% else %}
+                            <strong>Nema novih narudžbi.</strong>
+                            <p>Nove narudžbe će se ovdje prikazati čim budu kreirane.</p>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -228,6 +262,7 @@
         </div>
     </section>
 </form>
+</div>
 </div>
 {% if not show_validated %}
 <form id="mgValidateForm" method="post" action="{% url 'staff_magacin_narudzbe_validiraj' %}">

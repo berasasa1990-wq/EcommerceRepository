@@ -1,0 +1,19 @@
+{% if summary and summary.besplatna_dostava_od %}
+<div class="cart-shipping-progress{% if summary.medjuzbir >= summary.besplatna_dostava_od %} cart-shipping-progress--complete{% endif %}">
+    <div class="cart-shipping-progress-track" role="progressbar"
+         aria-valuemin="0"
+         aria-valuemax="100"
+         aria-valuenow="{{ summary.napredak_besplatne_postotak }}"
+         aria-label="Napredak do besplatne dostave">
+        <span class="cart-shipping-progress-fill" style="width: {{ summary.napredak_besplatne_postotak }}%;"></span>
+    </div>
+    <p class="cart-shipping-progress-text">
+        {% if summary.medjuzbir >= summary.besplatna_dostava_od %}
+        <strong>Dostava je BESPLATNA</strong>
+        {% else %}
+        Dodajte još <strong>{{ summary.preostalo_do_besplatne|floatformat:0 }} KM</strong>
+        i dostava je <strong>BESPLATNA</strong>
+        {% endif %}
+    </p>
+</div>
+{% endif %}

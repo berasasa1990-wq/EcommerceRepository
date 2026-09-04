@@ -1,0 +1,143 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="pl-page">
+    <header class="mg-page-head">
+        <div>
+            <h1>Provjera lagera</h1>
+            {% if lager_mode == 'mp' %}
+            <p class="mg-count">Uploaduj PDF maloprodaje. Šifru tražim na maloprodajnoj lokaciji i upoređujem količine.</p>
+            {% elif lager_mode == 'vp' %}
+            <p class="mg-count">Uploaduj PDF veleprodaje. Šifru tražim na svim lokacijama osim maloprodaje i upoređujem količine.</p>
+            {% else %}
+            <p class="mg-count">Izaberi Maloprodaju ili Veleprodaju, pa uploaduj PDF sa šiframa, nazivima i količinama.</p>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if not lager_mode %}
+    <div class="pl-choice">
+        <a href="{% url 'staff_magacin_provjera_lagera' %}?mode=mp" class="pl-choice-card">
+            <strong>Maloprodaja</strong>
+            <span>Upload PDF-a i uporedi šifre/količine sa maloprodajnom lokacijom.</span>
+        </a>
+        <a href="{% url 'staff_magacin_provjera_lagera' %}?mode=vp" class="pl-choice-card">
+            <strong>Veleprodaja</strong>
+            <span>Upload PDF-a i uporedi šifre/količine sa svim lokacijama osim maloprodaje.</span>
+        </a>
+    </div>
+    {% else %}
+    <div class="pp-mode-tabs" role="tablist">
+        <a href="{% url 'staff_magacin_provjera_lagera' %}?mode=mp" class="{% if lager_mode == 'mp' %}is-on{% endif %}">Maloprodaja</a>
+        <a href="{% url 'staff_magacin_provjera_lagera' %}?mode=vp" class="{% if lager_mode == 'vp' %}is-on{% endif %}">Veleprodaja</a>
+    </div>
+
+    {% if lager_mode == 'mp' and not has_mp_location %}
+    <p class="pp-paused-banner">Nema maloprodajne lokacije. Dodaj je pa ponovo otvori ovaj pregled.</p>
+    {% endif %}
+
+    {% if lager_error %}
+    <p class="mg-mp-alert" role="alert">{{ lager_error }}</p>
+    {% endif %}
+
+    <form method="post" class="mg-uvoz-new" id="plUploadForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="mode" value="{{ lager_mode }}">
+        <input type="hidden" name="action" value="uporedi">
+        <section class="mg-card">
+            <div class="mg-field">
+                <label for="plFile">PDF ili slika tabele</label>
+                <input id="plFile" name="fajl" type="file" accept=".pdf,application/pdf,image/*" required>
+            </div>
+            <p class="mg-count">Sa slike čitam kolone <strong>Šifra</strong>, <strong>Naziv</strong> i <strong>Količina</strong>.</p>
+            <button type="submit" class="mg-btn mg-btn-primary" id="plUploadBtn" style="margin-top:12px;">Učitaj i uporedi</button>
+            <p class="mg-count" id="plUploadHint" hidden>Čitam kolone Šifra, Naziv i Količina sa slike — sačekaj, može potrajati do minute.</p>
+        </section>
+    </form>
+
+    {% if result_rows or summary %}
+    <section class="mg-card">
+        <div class="mg-card-head">
+            <h2 class="mg-h">Uporedba{% if fajl_naziv %} — {{ fajl_naziv }}{% endif %}</h2>
+            <div class="mg-toolbar-actions">
+                <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_provjera_lagera_stampa' %}?mode={{ lager_mode }}" target="_blank">Štampaj manjak i višak</a>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="mode" value="{{ lager_mode }}">
+                    <input type="hidden" name="action" value="ukloni">
+                    <button type="submit" class="mg-btn">Ukloni unos</button>
+                </form>
+            </div>
+        </div>
+        {% if summary %}
+        <p class="pl-summary">
+            <span>{{ summary.ukupno }} šifara</span>
+            <span class="is-ok">{{ summary.tacno }} tačno</span>
+            <span class="is-low">{{ summary.manjak }} manjak</span>
+            <span class="is-high">{{ summary.visak }} višak</span>
+            <span>{{ summary.nema_sifre }} šifra nije pronađena</span>
+        </p>
+        {% endif %}
+        <div class="pl-filters" role="tablist">
+            <a href="{% url 'staff_magacin_provjera_lagera' %}?mode={{ lager_mode }}" class="{% if not lager_prikaz %}is-on{% endif %}">Sve</a>
+            <a href="{% url 'staff_magacin_provjera_lagera' %}?mode={{ lager_mode }}&amp;prikaz=razlike" class="{% if lager_prikaz == 'razlike' %}is-on{% endif %}">Prikaz samo Manjak i Višak</a>
+            <a href="{% url 'staff_magacin_provjera_lagera' %}?mode={{ lager_mode }}&amp;prikaz=nema_sifre" class="{% if lager_prikaz == 'nema_sifre' %}is-on{% endif %}">Šifra nije pronađena</a>
+            {% if lager_prikaz %}
+            <span class="mg-count">Prikazano {{ result_rows|length }} od {{ result_all_count }}</span>
+            {% endif %}
+        </div>
+        <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>ŠIFRA</th>
+                    <th>ARTIKAL</th>
+                    <th class="num">Količina iz uploadovanog fajla</th>
+                    <th class="num">LAGER</th>
+                    {% if lager_mode == 'vp' %}<th>LOKACIJE</th>{% endif %}
+                    <th>RAZLIKA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in result_rows %}
+                <tr class="pl-row is-{{ row.status }}" data-sifra="{{ row.sifra }}" data-status="{{ row.status }}" data-dokument="{{ row.dokument }}" data-lager="{{ row.lager|default_if_none:'' }}">
+                    <td class="{% if row.status == 'nema_sifre' %}mg-sifra-bad{% else %}mg-sifra-ok{% endif %}">{{ row.sifra }}</td>
+                    <td>
+                        {% if row.product_id %}
+                        <a href="{% url 'staff_magacin_artikal' row.product_id %}{% if row.variation_id %}?varijacija={{ row.variation_id }}{% endif %}">{{ row.naziv|default:"—" }}</a>
+                        {% else %}
+                        {{ row.naziv|default:"—" }}
+                        {% endif %}
+                    </td>
+                    <td class="num">{{ row.dokument }}</td>
+                    <td class="num">{% if row.lager is not None %}{{ row.lager }}{% else %}—{% endif %}</td>
+                    {% if lager_mode == 'vp' %}<td>{{ row.lokacije|default:"—" }}</td>{% endif %}
+                    <td class="pl-diff is-{{ row.status }}">{{ row.status_label }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if lager_mode == 'vp' %}6{% else %}5{% endif %}" class="mg-muted">
+                        {% if lager_prikaz == 'razlike' %}Nema manjka ni viška.{% elif lager_prikaz == 'nema_sifre' %}Nema nepronađenih šifara.{% else %}Nema prepoznatih šifara.{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {% endif %}
+    {% endif %}
+</div>
+<script>
+(function () {
+    var form = document.getElementById('plUploadForm');
+    var btn = document.getElementById('plUploadBtn');
+    var hint = document.getElementById('plUploadHint');
+    if (!form || !btn) return;
+    form.addEventListener('submit', function () {
+        btn.disabled = true;
+        if (hint) hint.hidden = false;
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,34 @@
+# opremazaribolov.ba — robots.txt
+# Javni katalog i sadržaj: dozvoljeno. Korpa, nalog, API: zabranjeno indeksiranje.
+
+User-agent: *
+Allow: /
+
+# Sitemap (Google / Bing)
+Sitemap: https://www.opremazaribolov.ba/sitemap.xml
+
+# —— Ne indeksirati (utility / privatno) ——
+Disallow: /korpa/
+Disallow: /narudzba/
+Disallow: /nalog/
+Disallow: /prijava/
+Disallow: /registracija/
+Disallow: /odjava/
+Disallow: /activate/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /priprema-pristup/
+Disallow: /uzivo/
+Disallow: /ponuda/
+Disallow: /preporuka/
+Disallow: /ai-dwell/
+Disallow: /online-nagrada/
+Disallow: /drustveni-dokaz/
+Disallow: /upsell/
+Disallow: /facebook-feed.xml
+
+# Filter query stringovi na početnoj su OK (akcija, noviteti) — ne blokiraj ? 
+
+# AI / pretraživači koji poštuju robots (opcionalno — ostavi otvoreno za brand)
+# User-agent: GPTBot
+# Allow: /

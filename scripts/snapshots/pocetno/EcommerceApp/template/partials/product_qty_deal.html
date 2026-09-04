@@ -1,0 +1,68 @@
+{% if qty_deal_page and qty_deal_page.columns %}
+{% with akcija=qty_deal_page.akcija product=qty_deal_page.product columns=qty_deal_page.columns %}
+<section class="pd-qtydeal" aria-label="Kupi više, uštedi više">
+    <h2 class="pd-qtydeal__title">
+        <span class="pd-qtydeal__tag" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 11.6 12.4 2.6A1.5 1.5 0 0 0 11.3 2H4.5A1.5 1.5 0 0 0 3 3.5v6.8a1.5 1.5 0 0 0 .4 1.1l9 9a1.5 1.5 0 0 0 2.1 0l7-7a1.5 1.5 0 0 0-.1-2.8ZM7.2 8.2A1.7 1.7 0 1 1 7.2 4.8a1.7 1.7 0 0 1 0 3.4Z"/></svg>
+        </span>
+        AKCIJSKA PONUDA – KUPI VIŠE, UŠTEDI VIŠE!
+    </h2>
+
+    <div class="pd-qtydeal__grid pd-qtydeal__grid--n{{ columns|length }}">
+        {% for col in columns %}
+        {% if product.stanje >= col.quantity %}
+        <form method="post" action="{% url 'add_to_cart' product.slug %}"
+              class="pd-qtydeal__card pd-qtydeal__form{% if col.is_single %} pd-qtydeal__card--single{% endif %}{% if col.is_best %} pd-qtydeal__card--best{% endif %}">
+            {% csrf_token %}
+            <input type="hidden" name="quantity" value="{{ col.quantity }}">
+            <input type="hidden" name="tier_id" value="{{ col.id }}">
+            <input type="hidden" name="stay" value="1">
+            <input type="hidden" name="akcija_id" value="{{ akcija.id }}">
+            {% if in_stock_variations %}
+            <input type="hidden" name="variation_id" value="{{ in_stock_variations.0.pk }}">
+            {% endif %}
+
+            <div class="pd-qtydeal__head">
+                <p class="pd-qtydeal__head-title">{{ col.title }}</p>
+                <p class="pd-qtydeal__head-sub">{{ col.subtitle }}</p>
+            </div>
+            {% if col.is_best %}
+            <span class="pd-qtydeal__star" aria-hidden="true">★</span>
+            {% endif %}
+
+            <div class="pd-qtydeal__media">
+                <span class="pd-qtydeal__mul">{{ col.qty_label }}</span>
+                {% if product.prikazna_slika %}
+                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" width="160" height="160" loading="lazy" decoding="async">
+                {% else %}
+                <span aria-hidden="true">📦</span>
+                {% endif %}
+                {% if col.pct_label %}
+                <span class="pd-qtydeal__pct">−{{ col.pct_label }}%</span>
+                {% endif %}
+            </div>
+
+            <p class="pd-qtydeal__prices">
+                <strong class="pd-qtydeal__now">{{ col.line_snizena|floatformat:2 }} KM{% if col.is_open %}+{% endif %}</strong>
+                {% if not col.is_single %}
+                <s class="pd-qtydeal__was">{{ col.line_bazna|floatformat:2 }} KM{% if col.is_open %}+{% endif %}</s>
+                {% endif %}
+            </p>
+
+            <button type="submit" class="pd-qtydeal__cta{% if col.is_single %} pd-qtydeal__cta--regular{% endif %}">
+                {{ col.cta }}
+            </button>
+        </form>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if qty_deal_page.usteda_po_komadu %}
+    <p class="pd-qtydeal__foot">
+        <span aria-hidden="true">🏷</span>
+        UŠTEDA DO <strong>{{ qty_deal_page.usteda_po_komadu|floatformat:2 }} KM</strong> PO KOMADU!
+    </p>
+    {% endif %}
+</section>
+{% endwith %}
+{% endif %}

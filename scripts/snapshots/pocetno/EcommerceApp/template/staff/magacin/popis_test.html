@@ -1,0 +1,203 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+
+{% block magacin_content %}
+<div class="pt-page" id="ptApp" data-url="{% url 'staff_magacin_popis_test' %}" data-lookup="{{ lookup_url }}" data-has-location="{% if location %}1{% else %}0{% endif %}">
+    {% csrf_token %}
+    <header class="pt-head">
+        <div>
+            <h1>Popisivanje artikala</h1>
+            {% if location %}
+            <p>Popisuješ <strong>{{ location.sifra }}</strong>{% if location.naziv %} — {{ location.naziv }}{% endif %}. Pronađi artikal po nazivu, šifri ili barkodu i unesi količinu.</p>
+            {% else %}
+            <p>Prvo izaberi lokaciju koju popisuješ, pa skeniraj artikle.</p>
+            {% endif %}
+        </div>
+        {% if location %}
+        <div class="pt-head-actions">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="clear_location">
+                <button type="submit" class="pt-finish pt-finish--ghost">Promijeni lokaciju</button>
+            </form>
+            <button type="button" class="pt-finish pt-finish--danger" id="ptCancel" title="Otkaži popis">
+                Otkaži popis
+            </button>
+            <button type="button" class="pt-finish" id="ptFinish" title="Završi popis">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                Završi popis
+            </button>
+        </div>
+        {% endif %}
+    </header>
+
+    {% if not location %}
+    <section class="mg-card mg-orders-card pp-start-card">
+        <p>Ukucaj šifru ili naziv lokacije, pa je izaberi. Tek onda skeniraj artikle na toj lokaciji.</p>
+        <form method="get" class="mg-page-search pp-loc-search" role="search">
+            <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <input type="search" name="q" value="{{ popis_lokacija_q }}" placeholder="Šifra ili naziv lokacije…" autocomplete="off" enterkeyhint="search" autofocus>
+            <button type="submit" class="mg-btn mg-btn-primary pt-loc-btn">Pronađi</button>
+        </form>
+        <ul class="pp-loc-list">
+            {% for loc in popis_lokacije %}
+            <li>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="set_location">
+                    <input type="hidden" name="location_id" value="{{ loc.pk }}">
+                    <button type="submit" class="pp-loc-choose pt-loc-choose">
+                        <span class="pp-loc-choose-text">
+                            <strong>{{ loc.sifra }}</strong>
+                            <span>{{ loc.naziv|default:"—" }}</span>
+                        </span>
+                        <em>Popisuj ovu lokaciju</em>
+                    </button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="is-empty">
+                {% if popis_lokacija_q %}Nema lokacija za „{{ popis_lokacija_q }}”.{% else %}Ukucaj šifru ili naziv lokacije pa pronađi.{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% if finished_popisi %}
+    <section class="pp-paused pp-finished pt-finished">
+        <h2>Završeni popisi</h2>
+        <ul>
+            {% for row in finished_popisi %}
+            <li{% if row.odstampan %} class="is-done"{% endif %}>
+                <a class="pp-paused-main" href="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    <strong>Popis #{{ row.pk }}{% if row.location %} · {{ row.location.sifra }}{% endif %}{% if row.odstampan %} <em class="pp-done-tag">Završeno</em>{% endif %}</strong>
+                    <span>završen {{ row.zavrsen_at|date:"d.m.Y H:i" }} · {{ row.n_stavke|default:0 }} stavki · {{ row.n_kom|default:0 }} kom</span>
+                </a>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <button type="submit" class="mg-btn" data-pp-print>Štampaj</button>
+                </form>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <input type="hidden" name="razlike" value="1">
+                    <button type="submit" class="mg-btn" data-pp-print>Razlike</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+    {% else %}
+
+    <p class="pt-loc-banner">Popisuješ lokaciju <strong>{{ location.sifra }}</strong>{% if location.naziv %} — {{ location.naziv }}{% endif %}</p>
+    <div class="pt-scan-wrap">
+        <div class="pt-scan">
+            <div class="pt-scan-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/><path d="M4 7V5a1 1 0 0 1 1-1h2M18 4h2a1 1 0 0 1 1 1v2M21 17v2a1 1 0 0 1-1 1h-2M6 21H4a1 1 0 0 1-1-1v-2"/></svg>
+            </div>
+            <input id="ptQuery" type="search" placeholder="Naziv, šifra ili barkod…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="go" autofocus>
+            <button type="button" class="pt-scan-btn" id="ptScanBtn" data-mg-scan-target="ptQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
+        </div>
+        <ul class="pt-suggest" id="ptSuggest" hidden></ul>
+    </div>
+    <p class="pt-toast" id="ptToast" hidden></p>
+
+    <section class="pt-current" id="ptCurrent"{% if not current %} hidden{% endif %}>
+        <div class="pt-qty-panel" id="ptQtyPanel">
+            <div class="pt-sistem">
+                <span>Trenutno stanje</span>
+                <strong><em id="ptSistem">{{ current.sistem|default:0 }}</em> kom</strong>
+                <i class="pt-box-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                </i>
+            </div>
+            <span class="pt-arrow" aria-hidden="true">→</span>
+            <div class="pt-count">
+                <span>Popisana količina</span>
+                <div class="pt-step">
+                    <button type="button" id="ptMinus" aria-label="Smanji">−</button>
+                    <input id="ptQtyInput" class="pt-qty-input" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" autocomplete="off" aria-label="Popisana količina" value="{% if current %}{{ current.popisano }}{% else %}1{% endif %}">
+                    <span class="pt-qty-unit">kom</span>
+                    <button type="button" id="ptPlus" aria-label="Povećaj">+</button>
+                </div>
+                <button type="button" class="pt-quick" id="ptNext">Sljedeći</button>
+            </div>
+        </div>
+
+        <h2>Trenutni artikal</h2>
+        <article class="pt-card">
+            <div class="pt-card-main">
+                <div class="pt-photo" id="ptPhoto">{% if current.slika %}<img src="{{ current.slika }}" alt="">{% endif %}</div>
+                <div class="pt-info">
+                    <h3 id="ptName">{% if current %}{{ current.naziv }}{% endif %}</h3>
+                    <p>Šifra: <strong id="ptSifra">{{ current.sifra|default:"—" }}</strong></p>
+                    <p>Barkod: <strong id="ptBarkod">{{ current.barkod|default:"—" }}</strong></p>
+                    <p>Brend: <strong id="ptBrend">{{ current.brend|default:"—" }}</strong></p>
+                    <p>Kategorija: <strong id="ptKat">{{ current.kategorija|default:"—" }}</strong></p>
+                    <span class="pt-stock{% if current and not current.na_stanju %} is-out{% endif %}" id="ptStock">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+                        <span id="ptStockLabel">{% if current and current.na_stanju %}Na stanju{% elif current %}Nije na stanju{% endif %}</span>
+                    </span>
+                </div>
+            </div>
+        </article>
+
+        <div class="pt-summary">
+            <p class="pt-sum-kicker">Rezime popisa</p>
+            <div class="pt-sum-grid">
+                <div>
+                    <span>Sistem</span>
+                    <strong id="ptSumSistem">{{ current.sistem|default:0 }} kom</strong>
+                </div>
+                <div class="is-ok">
+                    <span>Popisano</span>
+                    <strong id="ptSumPopisano">{{ current.popisano|default:0 }} kom</strong>
+                </div>
+                <div class="{% if current and current.razlika %}is-diff{% else %}is-zero{% endif %}" id="ptSumDiffBox">
+                    <span>Razlika</span>
+                    <strong id="ptSumDiff">{% if current %}{% if current.razlika > 0 %}+{% endif %}{{ current.razlika }} kom{% else %}0 kom{% endif %}</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pt-list-wrap" id="ptListWrap"{% if not items %} hidden{% endif %}>
+        <div class="pt-list-head">
+            <h2>Skenirani artikli (<span id="ptCount">{{ items|length }}</span>)</h2>
+            <button type="button" class="pt-showall" id="ptShowAll"{% if items|length <= 3 %} hidden{% endif %}>Prikaži sve</button>
+        </div>
+        <div class="pt-cols" id="ptCols"{% if not items %} hidden{% endif %}>
+            <span>Artikal</span>
+            <span>Sistem</span>
+            <span>Popisano</span>
+            <span>Razlika</span>
+            <span></span>
+        </div>
+        <div class="pt-list" id="ptList">
+            {% for row in items %}
+            <button type="button" class="pt-row{% if current and row.key == current.key %} is-on{% endif %}{% if forloop.counter > 3 %} is-hidden{% endif %}" data-key="{{ row.key }}">
+                <span class="pt-row-info">
+                    <span class="pt-thumb">{% if row.slika %}<img src="{{ row.slika }}" alt="">{% endif %}</span>
+                    <span>
+                        <strong>{{ row.naziv }}</strong>
+                        <em>Barkod: {{ row.barkod|default:"—" }}</em>
+                        <b class="pt-row-stock">Ukupno stanje: {{ row.sistem }} kom</b>
+                    </span>
+                </span>
+                <span class="pt-row-num">{{ row.sistem }}</span>
+                <span class="pt-row-num {% if row.razlika == 0 %}is-ok{% elif row.razlika < 0 %}is-low{% endif %}">{{ row.popisano }}</span>
+                <span class="pt-row-num {% if row.razlika < 0 %}is-low{% elif row.razlika > 0 %}is-ok{% endif %}">{% if row.razlika > 0 %}+{% endif %}{{ row.razlika }}</span>
+                <span class="pt-chev" aria-hidden="true">›</span>
+            </button>
+            {% empty %}
+            <p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

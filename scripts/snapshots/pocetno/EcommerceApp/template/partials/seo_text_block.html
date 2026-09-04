@@ -1,0 +1,47 @@
+{# SEO tekst (iznad ili ispod). Koristi: include ... with text=seo_tekst_iznad placement='above' #}
+{# Iznad: sažetak do 100 znakova; ispod: do 200. #}
+{% if text %}
+{% with plain=text|striptags %}
+{% if placement == 'above' %}
+{% with limit=100 %}
+<div class="seo-text-block seo-text-block--above{% if plain|length > limit %} is-collapsed{% endif %}"{% if plain|length > limit %} data-seo-collapse{% endif %}>
+    {% if plain|length > limit %}
+    <div class="seo-text-block__inner seo-text-block__preview" data-seo-preview>
+        <p>{{ plain|truncatechars:100 }}</p>
+    </div>
+    <div class="seo-text-block__inner seo-text-block__full" data-seo-full hidden>
+        {{ text|linebreaks }}
+    </div>
+    <button type="button" class="seo-text-block__toggle" data-seo-toggle aria-expanded="false">
+        Prikaži više
+    </button>
+    {% else %}
+    <div class="seo-text-block__inner">
+        {{ text|linebreaks }}
+    </div>
+    {% endif %}
+</div>
+{% endwith %}
+{% else %}
+{% with limit=200 %}
+<div class="seo-text-block seo-text-block--{{ placement|default:'body' }}{% if plain|length > limit %} is-collapsed{% endif %}"{% if plain|length > limit %} data-seo-collapse{% endif %}>
+    {% if plain|length > limit %}
+    <div class="seo-text-block__inner seo-text-block__preview" data-seo-preview>
+        <p>{{ plain|truncatechars:200 }}</p>
+    </div>
+    <div class="seo-text-block__inner seo-text-block__full" data-seo-full hidden>
+        {{ text|linebreaks }}
+    </div>
+    <button type="button" class="seo-text-block__toggle" data-seo-toggle aria-expanded="false">
+        Prikaži više
+    </button>
+    {% else %}
+    <div class="seo-text-block__inner">
+        {{ text|linebreaks }}
+    </div>
+    {% endif %}
+</div>
+{% endwith %}
+{% endif %}
+{% endwith %}
+{% endif %}

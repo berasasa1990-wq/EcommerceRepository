@@ -1,0 +1,88 @@
+{# Kartica artikla na početnoj — mockup + dodaj u korpu (ikona desno) #}
+{% with card_variations=product.varijacije.all %}
+<article
+    class="product-card product-card--home-mockup product-card--catalog{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
+    data-product-card
+    data-product-id="{{ product.pk }}"
+    {% if product.slika %}data-image-key="{{ product.slika.name }}"{% endif %}
+    {% if product.sakriven_do_stanja %}data-hidden-until-stock="1"{% endif %}
+    data-product-slug="{{ product.slug }}"
+    data-default-name="{{ product.naziv }}"
+    data-default-price="{{ product.katalog_prikazna_cijena }}"
+>
+    {# Badge: −% na akciji, inače NOVO #}
+    {% if product.katalog_akcija_postotak %}
+    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    {% elif product.katalog_na_akciji %}
+    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Akcija">Akcija</span>
+    {% elif home_section_badge == 'hit' %}
+    <span class="hm-badge hm-badge--top" aria-label="Hit">HIT</span>
+    {% elif product.je_novitet or home_section_badge == 'novo' %}
+    <span class="hm-badge hm-badge--novo" aria-label="Novo">NOVO</span>
+    {% endif %}
+
+    <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-media" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
+        {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 50vw, 16vw' %}
+        {% include 'partials/product_staff_overlay.html' with product=product %}
+    </a>
+
+    <div class="hm-body">
+        <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
+        <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
+        {% include 'partials/product_staff_missing.html' with product=product %}
+        {% include 'partials/product_stock_label.html' with product=product %}
+
+        <div class="hm-footer">
+            <div class="hm-price-col">
+                <div class="hm-price" data-product-price>
+                    {% if product.katalog_na_akciji %}
+                    <span class="hm-price__old">{{ product.katalog_bazna_cijena }} KM</span>
+                    <span class="hm-price__sale">{{ product.katalog_prikazna_cijena }} KM</span>
+                    {% else %}
+                    <span class="hm-price__now">{{ product.katalog_prikazna_cijena }} KM</span>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            {% if card_variations|length > 1 %}
+            <div class="catalog-variation-data" hidden aria-hidden="true">
+                {% for var in card_variations %}
+                <span data-catalog-variation data-variation-id="{{ var.pk }}" data-variation-name="{{ var.naziv }}"></span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if product.na_stanju %}
+            <button
+                type="button"
+                class="product-card-add-btn hm-cart-btn"
+                data-catalog-add
+                data-product-slug="{{ product.slug }}"
+                data-product-id="{{ product.pk }}"
+                data-product-name="{{ product.naziv }}"
+                data-almost-cart
+                aria-label="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }} — {{ product.naziv }}"
+                {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
+                {% if card_variations|length == 1 %}
+                    {% for variation in card_variations %}
+                data-variation-id="{{ variation.pk }}"
+                    {% endfor %}
+                {% endif %}
+            >
+                <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                    <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                    <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                </svg>
+                <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
+            </button>
+            {% else %}
+            <button type="button" class="product-card-add-btn hm-cart-btn product-card-add-btn--sold" disabled aria-label="Rasprodato — {{ product.naziv }}">
+                <span>Rasprodato</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</article>
+{% endwith %}

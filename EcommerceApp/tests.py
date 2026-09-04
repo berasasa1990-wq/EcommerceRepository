@@ -1653,3 +1653,40 @@ class LoyaltyPhoneAutoDiscountTests(TestCase):
         cart = self._cart()
         self.assertIsNone(maybe_apply_loyalty_coupon_from_phone(cart, '069999999'))
         self.assertFalse(cart.is_coupon_applied())
+
+    def test_checkout_does_not_auto_apply_loyalty(self):
+        from unittest.mock import patch
+
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.http import HttpResponse
+        from django.test import RequestFactory
+
+        from .models import Product
+        from .views import checkout
+
+        product = Product.objects.create(
+            naziv='Checkout loy',
+            sifra='CH-LOY',
+            cijena=Decimal('20.00'),
+            stanje=5,
+            na_stanju=True,
+        )
+        request = RequestFactory().get('/narudzba/')
+        request.user = self.user
+        session = self.client.session
+        session['cart'] = {
+            f'{product.pk}:0': {
+                'product_id': product.pk,
+                'quantity': 1,
+                'cijena': '20.00',
+                'bazna_cijena': '20.00',
+                'na_akciji': False,
+                'naziv': product.naziv,
+            },
+        }
+        session.save()
+        request.session = session
+        request._messages = FallbackStorage(request)
+        with patch('EcommerceApp.views.render', return_value=HttpResponse('ok')):
+            checkout(request)
+        self.assertFalse(request.session.get('applied_coupon'))

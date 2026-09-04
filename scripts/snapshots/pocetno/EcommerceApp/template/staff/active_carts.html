@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Aktivne korpe — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-active-carts.css' %}?v=20260708v2">
+{% endblock %}
+
+{% block content %}
+<section class="staff-active-carts-page">
+    <header class="staff-active-carts-header">
+        <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+        <h1>Aktivne korpe</h1>
+        <p class="staff-active-carts-subtitle">
+            Pored kupca koristite <strong>Upozori</strong> da mu na sajtu iskoči popup. Unesite % za poseban popust.
+        </p>
+    </header>
+
+    <div class="staff-active-carts-stats">
+        <div class="staff-active-carts-stat">
+            <span class="staff-active-carts-stat-value">{{ cart_group_count }}</span>
+            <span class="staff-active-carts-stat-label">Aktivnih korpi</span>
+        </div>
+        <div class="staff-active-carts-stat">
+            <span class="staff-active-carts-stat-value">{{ cart_item_count }}</span>
+            <span class="staff-active-carts-stat-label">Stavki ukupno</span>
+        </div>
+    </div>
+
+    <div class="staff-active-carts-controls">
+        <form method="get" class="staff-active-carts-search">
+            <label class="staff-active-carts-search-label" for="cart_q">Pretraži</label>
+            <div class="staff-active-carts-search-row">
+                <input
+                    type="search"
+                    name="q"
+                    id="cart_q"
+                    value="{{ search_query }}"
+                    placeholder="Email, artikal ili šifra"
+                    autocomplete="off"
+                >
+                <button type="submit" class="btn btn-primary">Pretraži</button>
+            </div>
+            {% if sort and sort != 'azurirano' %}
+            <input type="hidden" name="sort" value="{{ sort }}">
+            {% endif %}
+            {% if search_query %}
+            <a href="{% url 'staff_active_carts' %}{% if sort and sort != 'azurirano' %}?sort={{ sort }}{% endif %}" class="staff-active-carts-search-clear">Poništi pretragu</a>
+            {% endif %}
+        </form>
+
+        <div class="staff-active-carts-sort">
+            <span class="staff-active-carts-sort-label">Sortiraj</span>
+            <div class="staff-active-carts-sort-pills">
+                <a href="{% url 'staff_active_carts' %}?sort=azurirano{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-filter-btn{% if sort == 'azurirano' or not sort %} is-active{% endif %}">Zadnja izmjena</a>
+                <a href="{% url 'staff_active_carts' %}?sort=dodano{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-filter-btn{% if sort == 'dodano' %} is-active{% endif %}">Dodano u korpu</a>
+                <a href="{% url 'staff_active_carts' %}?sort=naziv{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-filter-btn{% if sort == 'naziv' %} is-active{% endif %}">Naziv artikla</a>
+            </div>
+        </div>
+    </div>
+
+    {% if cart_groups %}
+    <div class="staff-active-carts-list">
+        {% for group in cart_groups %}
+        <article class="staff-active-cart-row" data-cart-row>
+            <div class="staff-active-cart-row-head">
+                <div class="staff-active-cart-row-ident">
+                    <h2 class="staff-active-cart-row-name">
+                        {% if group.user_email %}
+                        {{ group.user_email }}
+                        {% else %}
+                        Gost
+                        {% endif %}
+                    </h2>
+                    <p class="staff-active-cart-row-meta">
+                        {{ group.items|length }} art. · {{ group.stavki }} kom · {{ group.ukupno }} KM · {{ group.azurirano|date:"d.m. H:i" }}
+                        {% if group.recovery_pending %}
+                        <span class="staff-active-cart-row-status">Podsjetnik aktivan</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="staff-active-cart-row-actions">
+                    <form method="post" class="staff-active-cart-warn-form" onsubmit="return confirm('Poslati podsjetnik ovom kupcu?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="warn">
+                        <input type="hidden" name="session_key" value="{{ group.session_key }}">
+                        <label class="visually-hidden" for="discount-{{ forloop.counter }}">Popust %</label>
+                        <input
+                            type="number"
+                            name="discount_percent"
+                            id="discount-{{ forloop.counter }}"
+                            class="staff-active-cart-discount-input"
+                            min="0"
+                            max="50"
+                            step="1"
+                            value="{% if group.recovery_alert and group.recovery_alert.discount_percent %}{{ group.recovery_alert.discount_percent|floatformat:0 }}{% else %}0{% endif %}"
+                            placeholder="%"
+                            title="Popust u postocima (0 = samo podsjetnik)"
+                        >
+                        <button type="submit" class="staff-btn-green">Upozori</button>
+                    </form>
+                    <button type="button" class="staff-btn-green staff-active-cart-toggle" data-cart-toggle aria-expanded="false">
+                        Otvori korpu
+                    </button>
+                </div>
+            </div>
+            <div class="staff-active-cart-row-panel" hidden>
+                {% include 'staff/partials/active_cart_preview.html' with group=group %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="staff-active-carts-empty">
+        <span class="staff-active-carts-empty-icon" aria-hidden="true">🧺</span>
+        <h2>Nema aktivnih korpi</h2>
+        <p>
+            {% if search_query %}
+            Nema rezultata za „{{ search_query }}”.
+            {% else %}
+            Trenutno nijedan posjetilac nema artikle u korpi.
+            {% endif %}
+        </p>
+        {% if search_query %}
+        <a href="{% url 'staff_active_carts' %}{% if sort and sort != 'azurirano' %}?sort={{ sort }}{% endif %}" class="btn btn-secondary">Poništi pretragu</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    document.querySelectorAll('[data-cart-toggle]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const row = btn.closest('[data-cart-row]');
+            const panel = row ? row.querySelector('.staff-active-cart-row-panel') : null;
+            if (!panel) return;
+            const open = panel.hasAttribute('hidden');
+            if (open) {
+                panel.removeAttribute('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+                btn.textContent = 'Zatvori korpu';
+            } else {
+                panel.setAttribute('hidden', '');
+                btn.setAttribute('aria-expanded', 'false');
+                btn.textContent = 'Otvori korpu';
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

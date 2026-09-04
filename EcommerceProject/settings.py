@@ -161,7 +161,12 @@ if _site_host:
 
 # Always allow common local development origins when DEBUG=True
 if DEBUG:
-    for origin in ['http://localhost', 'http://127.0.0.1', 'http://localhost:8000', 'http://127.0.0.1:8000']:
+    for origin in [
+        'http://localhost', 'http://127.0.0.1',
+        'http://localhost:8000', 'http://127.0.0.1:8000',
+        'http://localhost:8002', 'http://127.0.0.1:8002',
+        'http://192.168.1.103', 'http://192.168.1.103:8000', 'http://192.168.1.103:8002',
+    ]:
         if origin not in CSRF_TRUSTED_ORIGINS:
             CSRF_TRUSTED_ORIGINS.append(origin)
 

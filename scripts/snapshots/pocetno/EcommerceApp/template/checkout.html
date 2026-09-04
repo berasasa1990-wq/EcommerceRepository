@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}<title>{{ seo_title|default:"Narudžba — opremazaribolov.ba" }}</title>{% endblock %}
+
+{% block meta_description %}
+{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ cart_count|default:0 }}" data-value="{{ cart_total }}"{% endif %}>
+    <h1>{{ seo_h1|default:"Narudžba" }}</h1>
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
+    {% if not user.is_authenticated %}
+    <p class="checkout-auth-note">
+        <a href="{% url 'login' %}?next={% url 'checkout' %}">Prijavite se</a>
+        ili <a href="{% url 'register' %}">registrujte</a> da pratite narudžbe na svom nalogu.
+    </p>
+    {% endif %}
+    <div class="checkout-grid" id="checkout-grid">
+        <form method="post" class="checkout-form" id="checkout-form">
+            {% csrf_token %}
+            <h2>Podaci za dostavu</h2>
+            {% for field in form %}
+            <div class="form-group{% if field.errors %} form-group--error{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-add-to-bag">Pošalji narudžbu</button>
+        </form>
+
+        <aside class="checkout-summary">
+            <h2>Pregled korpe</h2>
+            <ul class="checkout-items" id="checkoutItemsList">
+                {% include 'partials/checkout_items.html' with cart_items=cart_items %}
+            </ul>
+            <div id="checkoutOrderTotals">
+                {% include 'partials/order_totals_checkout.html' with summary=summary %}
+            </div>
+            <div id="checkoutUpsellSection">
+                {% include 'partials/upsell_checkout.html' with upsell_offers=upsell_checkout_offers %}
+            </div>
+        </aside>
+    </div>
+
+    {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
+
+    <div id="order-loading" class="order-loading" style="display:none;">
+        <div class="fish-animation">🐟</div>
+        <div class="rod-animation">🎣</div>
+        <div class="loading-text">Slanje narudžbe... Molimo sačekajte.</div>
+    </div>
+</section>
+
+<script data-cfasync="false">
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('checkout-form');
+    const grid = document.getElementById('checkout-grid');
+    const loading = document.getElementById('order-loading');
+
+    if (form && grid && loading) {
+        form.addEventListener('submit', function() {
+            grid.style.display = 'none';
+            loading.style.display = 'block';
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+{% if meta_pixel_id and meta_initiate_checkout_event_id %}
+<script data-cfasync="false">
+(function () {
+    var el = document.querySelector('[data-meta-initiate-checkout]');
+    if (!el || typeof fbq !== 'function') return;
+    fbq('track', 'InitiateCheckout', {
+        currency: 'BAM',
+        value: parseFloat(el.dataset.value, 10),
+        num_items: parseInt(el.dataset.numItems, 10) || 0
+    }, { eventID: el.dataset.eventId });
+})();
+</script>
+{% endif %}
+{% endblock %}

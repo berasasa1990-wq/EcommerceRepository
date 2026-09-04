@@ -1,0 +1,1132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+{% if staff_product_tools %}
+<link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
+{% endif %}
+{% endblock %}
+
+{% block lcp_preload %}
+{% if lcp_image_url %}
+<link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
+{% endif %}
+{% endblock %}
+
+{% block page_title %}
+<title>{{ seo_title|default:product.seo_title }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description|default:product.seo_description }}">
+{% endblock %}
+
+{% block meta_robots %}
+{% if meta_robots_content %}
+<meta name="robots" content="{{ meta_robots_content }}">
+{% else %}
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+{% endif %}
+{% endblock %}
+
+{% block og_type %}product{% endblock %}
+
+{% block content %}
+{% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
+<section class="product-detail"{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
+    <div class="product-detail-grid">
+        <div class="product-gallery">
+            <div class="product-gallery-main" id="mainProductImageWrap">
+                <div class="product-gallery-overlays">
+                    {% if product.je_novitet %}
+                    <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
+                    {% elif product.je_hit %}
+                    <span class="product-detail-corner-badge product-detail-corner-badge--hit is-pulse" aria-label="Hit ponuda">HIT PONUDA</span>
+                    {% endif %}
+                </div>
+                {% if product.prikazna_slika %}
+                {% with img=product.prikazna_slika_responsive %}
+                <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 92vw, 50vw" loading="eager" fetchpriority="high" decoding="async" data-full-src="{{ product.prikazna_slika.url }}">
+                {% endwith %}
+                {% if product.je_pakovanje %}
+                <span class="pd-image-pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{{ product.pakovanje_label|default:"Pakovanje" }}</span>
+                {% endif %}
+                {% else %}
+                <div class="product-image-placeholder product-image-placeholder--large" id="mainProductImage">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                </div>
+                {% endif %}
+                {% if similar_name_products %}
+                <button type="button" class="product-other-options-btn pd-image-options" id="productOtherOptionsBtn" data-other-options-open>
+                    OPCIJE
+                    <span class="product-other-options-btn__count">{{ similar_name_products|length }}</span>
+                </button>
+                {% endif %}
+            </div>
+            {% if product.dodatne_slike.exists %}
+            <div class="pd-gallery-bar">
+                <div class="product-thumbnails" id="productThumbnails">
+                    {% for img in product.dodatne_slike.all %}
+                    {% with r=img.prikazna_slika_responsive %}
+                    <button type="button" class="product-thumbnail"
+                        data-src="{% if r %}{{ r.src }}{% else %}{{ img.slika.url }}{% endif %}"
+                        data-full="{{ img.slika.url }}"
+                        {% if r.srcset %}data-srcset="{{ r.srcset }}"{% endif %}
+                        data-width="{{ r.width|default:400 }}"
+                        data-height="{{ r.height|default:400 }}"
+                        aria-label="Prikaži sliku {{ forloop.counter }} kao glavnu">
+                        <img
+                            src="{% if r %}{{ r.src }}{% else %}{{ img.slika.url }}{% endif %}"
+                            alt="{{ product.naziv }} - dodatna slika {{ forloop.counter }}"
+                            width="64" height="64"
+                            loading="lazy">
+                    </button>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="product-detail-info" id="productDetailInfo"
+             data-product-id="{{ product.pk }}"
+             data-product-name="{{ product.naziv }}"
+             {% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
+            <div class="product-detail-title-row">
+                <h1>{{ seo_h1|default:product.naziv }}</h1>
+            </div>
+            <div class="product-detail-body">
+            {% if product.proizvedeno_u_japanu %}
+            <div class="made-in-japan made-in-japan--detail" role="note" aria-label="Proizvedeno u Japanu">
+                <span class="made-in-japan__flag" aria-hidden="true">
+                    <span class="made-in-japan__sun"></span>
+                </span>
+                <span class="made-in-japan__text">
+                    <span class="made-in-japan__label">Made in Japan</span>
+                </span>
+            </div>
+            {% endif %}
+
+            {% if staff_product_tools %}
+            <div class="staff-product-bar">
+                <div class="staff-product-bar-head">
+                    <span class="staff-product-label">Admin alati</span>
+                    {% if not product.aktivan %}
+                    <span class="staff-product-badge staff-product-badge--warn">Neaktivan artikal</span>
+                    {% endif %}
+                    {% if product.sakriven_do_stanja %}
+                    <span class="staff-product-badge staff-product-badge--warn">Sakriven sa sajta</span>
+                    {% endif %}
+                    {% if product.na_stanju %}
+                    <span class="staff-product-badge staff-product-badge--in">Na stanju</span>
+                    {% else %}
+                    <span class="staff-product-badge staff-product-badge--out">Nije na stanju</span>
+                    {% endif %}
+                </div>
+                <div class="staff-product-bar-actions">
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_stock">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
+                        <button type="submit" class="btn btn-sm staff-product-btn">
+                            {% if product.na_stanju %}Skini sa stanja{% else %}Vrati na stanje{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="hide_until_stock">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
+                        <button type="submit" class="btn btn-sm staff-product-btn">
+                            {% if product.sakriven_do_stanja %}Prikaži na sajtu{% else %}Sakrij sa sajta{% endif %}
+                        </button>
+                    </form>
+                    {% if product.na_akciji or product.akcija_postotak or product.akcijska_cijena %}
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form" onsubmit="return confirm('Skinuti akciju i vratiti redovnu cijenu?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="deactivate_akcija">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
+                        <button type="submit" class="btn btn-sm staff-product-btn staff-product-btn--clear-akcija" title="Ukloni popust, vrati redovnu cijenu">
+                            Skini akciju{% if product.akcija_postotak_prikaz %} (−{{ product.akcija_postotak_prikaz }}%){% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-product-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_japan">
+                        <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
+                        <button type="submit" class="btn btn-sm staff-product-btn{% if product.proizvedeno_u_japanu %} staff-product-btn--japan-on{% endif %}">
+                            {% if product.proizvedeno_u_japanu %}✓ Made in Japan{% else %}Made in Japan{% endif %}
+                        </button>
+                    </form>
+                    <button type="button"
+                            class="btn btn-sm staff-product-btn staff-objava-btn"
+                            id="staffObjavaBtn"
+                            data-product-name="{{ product.naziv|escape }}"
+                            data-product-slug="{{ product.slug }}"
+                            data-product-price="{{ product.cijena }}"
+                            data-product-image="{% if product.prikazna_slika %}{{ product.prikazna_slika.url }}{% endif %}"
+                            data-akcija-template="{% static 'img/objava-akcija-template-800.png' %}"
+                            data-regular-template="{% static 'img/objava-regular-template-800.png' %}"
+                            data-activate-url="{% url 'staff_product_quick_edit' product.slug %}"
+                            title="Generiši sliku 800×800 za objavu (Akcija / Regularno)">
+                        Objava
+                    </button>
+                    {% if olx_configured %}
+                    {% if product.olx_listing_url %}
+                    <a href="{{ product.olx_listing_url }}" class="staff-olx-link" target="_blank" rel="noopener">Na OLX / Pik</a>
+                    <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm staff-product-btn staff-olx-btn">Ažuriraj na OLX / Pik</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'staff_post_product_olx' product.slug %}" class="staff-olx-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm staff-product-btn staff-olx-btn staff-olx-btn--publish">Objavi na OLX / Pik</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </div>
+
+                {# Modal: generisanje objave 800×800 #}
+                <div class="staff-objava-overlay" id="staffObjavaOverlay" hidden>
+                    <div class="staff-objava-modal" role="dialog" aria-modal="true" aria-labelledby="staffObjavaTitle">
+                        <div class="staff-objava-modal__head">
+                            <h3 id="staffObjavaTitle">Objava za društvene mreže</h3>
+                            <button type="button" class="staff-objava-modal__close" id="staffObjavaClose" aria-label="Zatvori">×</button>
+                        </div>
+                        <p class="staff-objava-modal__hint">
+                            <strong>Akcija</strong> — template s popustom % (strane + precrtana/crvena cijena).
+                            <strong>Regularno</strong> — NOVO PONUDA (naziv, veliki artikal, cijena ispod, bez %).
+                            Izlaz: <strong>800×800</strong> PNG.
+                        </p>
+                        <div class="staff-objava-mode" role="radiogroup" aria-label="Tip objave">
+                            <label class="staff-objava-mode__opt">
+                                <input type="radio" name="staffObjavaMode" id="staffObjavaModeAkcija" value="akcija" checked>
+                                <span>Akcija</span>
+                            </label>
+                            <label class="staff-objava-mode__opt">
+                                <input type="radio" name="staffObjavaMode" id="staffObjavaModeRegular" value="regularno">
+                                <span>Regularno</span>
+                            </label>
+                        </div>
+                        <label class="staff-objava-modal__field" id="staffObjavaPctField">
+                            <span>Popust % <em id="staffObjavaPctReq">(obavezno za akciju)</em></span>
+                            <input type="number" id="staffObjavaPct" min="0.01" max="99.99" step="0.01" inputmode="decimal" placeholder="npr. 20">
+                        </label>
+                        <div class="staff-objava-akcija-activate" id="staffObjavaActivateWrap" hidden>
+                            <label class="staff-objava-modal__field">
+                                <span>Trajanje (opcionalno — sati <em>ili</em> datum, ne oba)</span>
+                                <div class="staff-objava-duration">
+                                    <input type="number" id="staffObjavaHours" min="1" max="8760" step="1" inputmode="numeric" placeholder="sati (npr. 24)">
+                                    <span class="staff-objava-duration__or">ili</span>
+                                    <input type="date" id="staffObjavaUntil" aria-label="Akcija važi do">
+                                </div>
+                                <small class="staff-objava-duration__hint">Unesi samo sate ili samo datum. Prazno = bez roka. Isti % kao u previewu.</small>
+                            </label>
+                            <button type="button" class="btn btn-sm staff-product-btn staff-objava-activate-btn" id="staffObjavaActivate">
+                                Aktiviraj akciju na artiklu
+                            </button>
+                        </div>
+                        <div class="staff-objava-modal__actions">
+                            <button type="button" class="btn btn-sm staff-product-btn" id="staffObjavaGenerate">Generiši preview</button>
+                            <a class="btn btn-sm staff-product-btn staff-objava-btn--download" id="staffObjavaDownload" hidden download>Preuzmi PNG</a>
+                        </div>
+                        <div class="staff-objava-preview-wrap">
+                            <canvas id="staffObjavaCanvas" width="800" height="800" aria-label="Preview objave"></canvas>
+                        </div>
+                        <p class="staff-objava-modal__status" id="staffObjavaStatus" hidden></p>
+                    </div>
+                </div>
+
+                {# Jedan Save: brend, kategorija, opis, cijena, slika, noviteti, tagovi #}
+                <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" enctype="multipart/form-data" class="staff-product-save-all-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_all">
+                    <input type="hidden" name="set_tags_with_save" value="1">
+                    <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
+
+                    <div class="staff-product-bar-sections">
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Osnovno (jedan Save)</h3>
+                            <label class="staff-product-price-label">
+                                <span>Cijena (KM)</span>
+                                <input type="text" name="cijena" value="{{ product.cijena }}" inputmode="decimal" pattern="[0-9.,]*" autocomplete="off" class="staff-product-price-input">
+                            </label>
+                            <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_category_search' %}">
+                                <label class="staff-product-price-label">
+                                    <span>Kategorija</span>
+                                    <div class="staff-lookup-field">
+                                        <input type="hidden" name="kategorija_id" value="{% if product.kategorija_id %}{{ product.kategorija_id }}{% endif %}" data-lookup-id>
+                                        <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.kategorija %}{{ product.kategorija }}{% endif %}" placeholder="Pretraži kategoriju…" autocomplete="off" inputmode="search">
+                                        <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="staff-lookup" data-staff-lookup data-search-url="{% url 'staff_brand_search' %}">
+                                <label class="staff-product-price-label">
+                                    <span>Brend</span>
+                                    <div class="staff-lookup-field">
+                                        <input type="hidden" name="brend_id" value="{% if product.brend_id %}{{ product.brend_id }}{% endif %}" data-lookup-id>
+                                        <input type="text" class="staff-lookup-input" data-lookup-input value="{% if product.brend %}{{ product.brend.naziv }}{% endif %}" placeholder="Pretraži brend…" autocomplete="off" inputmode="search">
+                                        <div class="staff-lookup-list" data-lookup-list hidden role="listbox"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <label class="staff-novitet-check">
+                                <input type="checkbox" name="je_novitet" value="1"{% if product.je_novitet %} checked{% endif %}>
+                                <span>Noviteti</span>
+                                <small>Zeleni pulsirajući natpis + prikaz na početnoj</small>
+                            </label>
+                            <label class="staff-novitet-check staff-hit-check">
+                                <input type="checkbox" name="je_hit" value="1"{% if product.je_hit %} checked{% endif %}>
+                                <span>HIT ponuda / Izdvojeno</span>
+                                <small>Crveni pulsirajući natpis + prikaz u Izdvojenim na početnoj</small>
+                            </label>
+                            <div class="staff-pakovanje-edit" data-staff-pakovanje>
+                                <label class="staff-novitet-check">
+                                    <input type="checkbox" name="je_pakovanje" value="1" data-pakovanje-toggle{% if product.pakovanje_komada and product.pakovanje_komada > 1 %} checked{% endif %}>
+                                    <span>Pakovanje</span>
+                                    <small>Cijena je za više komada, ne po komadu</small>
+                                </label>
+                                <label class="staff-product-price-label staff-pakovanje-qty" data-pakovanje-qty-wrap{% if not product.pakovanje_komada or product.pakovanje_komada <= 1 %} hidden{% endif %}>
+                                    <span>Količina u pakovanju (komada)</span>
+                                    <input type="number"
+                                           name="pakovanje_komada"
+                                           min="2"
+                                           max="999"
+                                           step="1"
+                                           inputmode="numeric"
+                                           class="staff-product-price-input"
+                                           data-pakovanje-qty
+                                           value="{% if product.pakovanje_komada and product.pakovanje_komada > 1 %}{{ product.pakovanje_komada }}{% endif %}"
+                                           placeholder="npr. 9">
+                                    <small class="staff-pakovanje-hint">Npr. 9 = cijena važi za 9 komada u pakovanju</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Slike</h3>
+                            <label class="staff-product-price-label">
+                                <span>Glavna slika</span>
+                                {% if product.prikazna_slika %}
+                                <div class="staff-image-preview staff-image-preview--main">
+                                    <img src="{{ product.prikazna_slika.url }}" alt="Glavna slika" loading="lazy">
+                                </div>
+                                {% endif %}
+                                <input type="file" name="glavna_slika" accept="image/*" class="staff-file-input" id="id_glavna_slika">
+                                <div class="img-fit" data-image-fit data-fit-files="id_glavna_slika" hidden>
+                                    <div class="img-fit-stage" data-fit-stage>
+                                        <img data-fit-img alt="Podesi sliku">
+                                    </div>
+                                    <div class="img-fit-tools">
+                                        <button type="button" data-fit-zoom-out aria-label="Odzumiraj">−</button>
+                                        <input type="range" data-fit-range min="45" max="320" value="100" aria-label="Zum">
+                                        <button type="button" data-fit-zoom-in aria-label="Zumiraj">+</button>
+                                        <button type="button" class="img-fit-reset" data-fit-reset>Reset</button>
+                                    </div>
+                                    <p class="img-fit-hint">Povuci sliku da je smjestiš u polje. Zumiraj sliderom, točkićem ili prstima.</p>
+                                    <input type="hidden" name="slika_rucno" value="0" data-fit-flag>
+                                </div>
+                            </label>
+                            {% if product.dodatne_slike.exists %}
+                            <div class="staff-extra-images">
+                                <span class="staff-product-price-label"><span>Dodatne slike</span></span>
+                                <div class="staff-image-grid">
+                                    {% for img in product.dodatne_slike.all %}
+                                    <div class="staff-image-thumb-wrap">
+                                        <img src="{{ img.slika.url }}" alt="Dodatna slika {{ forloop.counter }}" class="staff-image-thumb" loading="lazy">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            <label class="staff-product-price-label">
+                                <span>Dodaj dodatne slike</span>
+                                <input type="file" name="dodatne_slike" accept="image/*" multiple class="staff-file-input">
+                            </label>
+                        </div>
+
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Opis</h3>
+                            <label class="staff-product-price-label">
+                                <span>Tekst opisa</span>
+                                <textarea name="opis" rows="6" class="staff-product-textarea" placeholder="Unesite opis artikla…">{{ product.opis }}</textarea>
+                            </label>
+                        </div>
+
+                        <div class="staff-product-bar-section">
+                            <h3 class="staff-product-section-title">Tagovi</h3>
+                            <div class="staff-tag-picker" data-staff-tag-picker>
+                                <input type="hidden" name="set_tags_with_save" value="1">
+                                <div class="staff-tag-chips" data-tag-chips>
+                                    {% for tag in product.tagovi.all %}
+                                    <span class="staff-tag-chip" data-tag-id="{{ tag.pk }}">
+                                        <span class="staff-tag-chip-label">{{ tag }}</span>
+                                        <button type="button" class="staff-tag-chip-remove" aria-label="Ukloni tag">×</button>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                <div data-tag-hidden-inputs>
+                                    {% for tag in product.tagovi.all %}
+                                    <input type="hidden" name="tag_ids" value="{{ tag.pk }}" data-tag-id="{{ tag.pk }}">
+                                    {% endfor %}
+                                </div>
+                                <div class="staff-lookup staff-lookup--tags" data-staff-tag-search data-search-url="{% url 'staff_tag_search' %}">
+                                    <label class="staff-product-price-label">
+                                        <span>Pretraži postojeći tag</span>
+                                        <div class="staff-lookup-field">
+                                            <input type="text" class="staff-lookup-input" data-tag-search-input placeholder="Pretraži tag… (Enter = dodaj)" autocomplete="off" inputmode="search">
+                                            <div class="staff-lookup-list" data-tag-search-list hidden role="listbox"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <label class="staff-product-price-label staff-tag-manual">
+                                    <span>Ručni unos (zarezom)</span>
+                                    <textarea
+                                        name="tagovi_tekst"
+                                        rows="2"
+                                        class="staff-product-textarea"
+                                        data-tag-manual-input
+                                        placeholder="npr. som, fider strune, varalica za more"
+                                        autocomplete="off"></textarea>
+                                    <small class="staff-field-hint">Odvoji tagove zarezom ili novim redom. Novi se kreiraju automatski. Enter u polju pretrage također dodaje tag.</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="staff-product-save-all-footer">
+                        <button type="submit" class="btn staff-product-btn staff-product-btn--save-all">Sačuvaj sve</button>
+                    </div>
+                </form>
+
+                {% if product.dodatne_slike.exists %}
+                <div class="staff-product-bar-section staff-product-delete-images">
+                    <h3 class="staff-product-section-title">Ukloni dodatnu sliku</h3>
+                    <div class="staff-image-grid">
+                        {% for img in product.dodatne_slike.all %}
+                        <div class="staff-image-thumb-wrap">
+                            <img src="{{ img.slika.url }}" alt="Dodatna slika {{ forloop.counter }}" class="staff-image-thumb" loading="lazy">
+                            <form method="post" action="{% url 'staff_product_quick_edit' product.slug %}" class="staff-image-delete-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_extra_image">
+                                <input type="hidden" name="image_id" value="{{ img.pk }}">
+                                <input type="hidden" name="next" value="{{ staff_edit_return_url|default:product_back_url }}">
+                                <button type="submit" class="staff-image-delete-btn" title="Ukloni sliku" aria-label="Ukloni sliku">×</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="pd-options-price">
+                <div class="pd-options-price__price">
+                    {% if not product.varijacije.count %}
+                    {% if product.na_akciji %}
+                    <div class="card-dwell-deal is-active product-sale-card-deal product-sale-deal--detail" id="detailPrice"
+                         data-base-price="{{ product.prikazna_cijena }}"
+                         {% if dwell_flash_config.flash %}hidden{% endif %}>
+                        <div class="product-price product-price--detail card-dwell-prices">
+                            <span class="price-original card-dwell-was">{{ product.bazna_cijena }} KM</span>
+                            <div class="card-dwell-sale-cluster">
+                                <span class="price-sale card-dwell-now">{{ product.prikazna_cijena }} KM</span>
+                                {% if product.akcija_postotak_prikaz %}
+                                <span class="card-dwell-badge">−{{ product.akcija_postotak_prikaz }}%</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="product-detail-price product-price--detail" id="detailPrice"
+                         data-base-price="{{ product.prikazna_cijena }}"
+                         data-pack-suffix=""
+                         {% if dwell_flash_config.flash %}hidden{% endif %}>
+                        {% include 'partials/product_price.html' with item=product %}
+                    </div>
+                    {% endif %}
+                    <div class="card-dwell-deal pd-dwell-flash product-sale-deal--detail{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}"
+                         id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                        {% if dwell_ui.tag_text %}
+                        <span class="card-dwell-label">{{ dwell_ui.tag_text }}</span>
+                        {% elif dwell_ui.catalog_label %}
+                        <span class="card-dwell-label">{{ dwell_ui.catalog_label }}</span>
+                        {% endif %}
+                        <div class="product-price product-price--detail card-dwell-prices">
+                            <span class="price-original card-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>
+                            <div class="card-dwell-sale-cluster">
+                                <span class="price-sale card-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
+                                <span class="card-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                                <p class="card-dwell-timer" aria-live="polite">
+                                    {% if dwell_ui.timer_label %}<span class="card-dwell-timer-label">{{ dwell_ui.timer_label }}</span>{% endif %}
+                                    <strong class="card-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}{{ dwell_ui.flash_seconds|default:120 }}{% endif %}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="product-detail-price product-price--detail" id="detailPrice"
+                         data-base-price="{{ product.prikazna_cijena }}">
+                        {% include 'partials/product_price.html' with item=product %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="pd-price-stock{% if not product.na_stanju %} pd-price-stock--out{% endif %}">
+                    {% include 'partials/product_stock_label.html' with product=product %}
+                </div>
+            </div>
+
+            {% if not product.varijacije.count %}
+            {% if not product.na_stanju %}
+            <div class="product-detail-purchase">
+                <button type="button" class="btn btn-primary btn-add-to-bag btn-add-to-bag--sold" disabled>
+                    Rasprodato
+                </button>
+            </div>
+            {% else %}
+            <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form" id="mainAddToCartForm">
+                {% csrf_token %}
+                <div class="product-detail-purchase{% if gratis_akcija_hint or qty_deal_hint %} product-detail-purchase--with-ponuda{% endif %}">
+                    {% include 'partials/product_qty_selector.html' with qty_max=product.stanje %}
+                    <div class="product-detail-purchase__cta">
+                        <button type="submit" class="btn btn-primary btn-add-to-bag"
+                                data-product-id="{{ product.pk }}"
+                                data-product-name="{{ product.naziv }}"
+                                data-almost-cart
+                                id="mainAddToCartBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                            </svg>
+                            {{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}
+                        </button>
+                        {% include 'partials/qty_deal_promo.html' %}
+                        {% include 'partials/gratis_promo.html' %}
+                    </div>
+                </div>
+                {% if conversion_boost %}
+                <div class="pd-conversion-boost">
+                    {% if conversion_boost.free_shipping_hint %}
+                    <p class="pd-conversion-ship">🚚 {{ conversion_boost.free_shipping_hint|safe }}</p>
+                    {% endif %}
+                    <ul class="pd-conversion-trust">
+                        {% for line in conversion_boost.trust_lines %}
+                        <li>✓ {{ line }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if deal_promo %}
+                <div class="deal-promo">
+                    <div class="deal-promo-line1">{{ deal_promo.promo_text }}</div>
+                    <div class="deal-promo-line2">
+                        <del>{{ deal_promo.regular_str }} KM</del>
+                        <span class="deal-discount">-{{ deal_promo.pct_str }} na 
+                        {% if deal_promo.buy == 1 %}drugi{% elif deal_promo.buy == 2 %}treći{% else %}{{ deal_promo.buy|add:1 }}.{% endif %} artikal</span>
+                    </div>
+                </div>
+                {% endif %}
+            </form>
+            {% endif %}
+            {% endif %}
+
+            {% if product.varijacije.count and product_available %}
+            {# AI dwell: isti izgled kao na kartici + tajmer #}
+            <div class="card-dwell-deal pd-dwell-flash product-sale-deal--detail{% if dwell_flash_config.flash %} is-active{% endif %}{% if dwell_ui.sale_pulse %} is-pulse{% endif %}"
+                 id="pdDwellFlash"{% if not dwell_flash_config.flash %} hidden{% endif %}>
+                {% if dwell_ui.tag_text %}
+                <span class="card-dwell-label">{{ dwell_ui.tag_text }}</span>
+                {% elif dwell_ui.catalog_label %}
+                <span class="card-dwell-label">{{ dwell_ui.catalog_label }}</span>
+                {% endif %}
+                <div class="product-price product-price--detail card-dwell-prices">
+                    <span class="price-original card-dwell-was" id="pdDwellWas">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.base }} KM{% endif %}</span>
+                    <div class="card-dwell-sale-cluster">
+                        <span class="price-sale card-dwell-now" id="pdDwellNow">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.sale }} KM{% endif %}</span>
+                        <span class="card-dwell-badge" id="pdDwellBadge">{% if dwell_flash_config.flash %}−{{ dwell_flash_config.flash.percent|floatformat:0 }}%{% endif %}</span>
+                        <p class="card-dwell-timer" aria-live="polite">
+                            {% if dwell_ui.timer_label %}<span class="card-dwell-timer-label">{{ dwell_ui.timer_label }}</span>{% endif %}
+                            <strong class="card-dwell-countdown" id="pdDwellCountdown">{% if dwell_flash_config.flash %}{{ dwell_flash_config.flash.remaining_seconds }}{% else %}{{ dwell_ui.flash_seconds|default:120 }}{% endif %}</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if in_stock_variations %}
+            <div class="product-detail-variations-block">
+                <h2 class="product-detail-section-title">IZABERI OPCIJU</h2>
+                <div class="product-detail-variations" id="detailVariations">
+                    {% include 'partials/product_detail_variation_rows.html' with product=product in_stock_variations=in_stock_variations %}
+                </div>
+                {% include 'partials/qty_deal_promo.html' %}
+                {% include 'partials/gratis_promo.html' %}
+            </div>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% include 'partials/product_flash_offer.html' %}
+    {% include 'partials/product_bundle_set.html' %}
+    {% include 'partials/product_qty_deal.html' %}
+
+    {% if site_settings.politika_dostava or site_settings.politika_povrat %}
+    <div class="product-detail-policies">
+        {% if site_settings.politika_dostava %}
+        <div class="product-detail-policy-item">
+            <span class="product-detail-policy-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="1.5"/><path d="M16 10h3.2a1.5 1.5 0 0 1 1.3.7l1.7 2.6V17h-6"/><circle cx="6.5" cy="18.5" r="1.7"/><circle cx="18" cy="18.5" r="1.7"/><path d="M8.2 18.5h8"/></svg>
+            </span>
+            <span class="product-detail-policy-copy">
+                <span class="product-detail-policy-label">Uslovi dostave:</span>
+                <span class="product-detail-policy-text">{{ site_settings.politika_dostava }}</span>
+            </span>
+        </div>
+        {% endif %}
+        {% if site_settings.politika_povrat %}
+        <div class="product-detail-policy-item">
+            <span class="product-detail-policy-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 8.2 12 3.8l8.4 4.4v9.4L12 22l-8.4-4.4V8.2Z"/><path d="M3.6 8.2 12 12.6l8.4-4.4M12 12.6V22"/><path d="M8 10.2 12 8l4 2.2"/></svg>
+            </span>
+            <span class="product-detail-policy-copy">
+                <span class="product-detail-policy-label">Povrat robe:</span>
+                <span class="product-detail-policy-text">{{ site_settings.politika_povrat }}</span>
+            </span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="product-detail-content">
+        {% if product.opis %}
+        <div class="product-detail-opis-col">
+            <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
+            <div class="product-detail-description">
+                {% if '<' in product.opis and '>' in product.opis %}
+                {{ product.opis|safe }}
+                {% else %}
+                <div class="product-detail-description-text">{{ product.opis|linebreaks }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% include 'partials/product_why_buy.html' %}
+    </div>
+</section>
+
+{% if related_products %}
+<section class="home-products home-products--izdvojeno product-detail-related">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% if site_settings.naslov_povezani or povezani_podnaslov or staff_edit_mode %}
+                <div class="home-products-header home-products-header--izdvojeno">
+                    <h2 data-site-edit="naslov_povezani" data-site-edit-placeholder="Povezani artikli">{% if site_settings.naslov_povezani %}{{ site_settings.naslov_povezani }}{% endif %}</h2>
+                    <p data-site-edit="podnaslov_povezani" data-site-edit-placeholder="Podnaslov (opcionalno)"{% if not povezani_podnaslov and not staff_edit_mode %} hidden{% endif %}>{% if povezani_podnaslov %}{{ povezani_podnaslov }}{% endif %}</p>
+                </div>
+                {% endif %}
+                {% include 'partials/home_product_carousel.html' with products=related_products %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
+
+{% if similar_name_products %}
+<div class="product-other-options-modal" id="productOtherOptionsModal" hidden aria-hidden="true">
+    <div class="product-other-options-modal__backdrop" data-other-options-close></div>
+    <div class="product-other-options-modal__panel" role="dialog" aria-modal="true" aria-labelledby="productOtherOptionsTitle">
+        <button type="button" class="product-other-options-modal__close" data-other-options-close aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <h2 class="product-other-options-modal__title" id="productOtherOptionsTitle">Druge opcije artikla</h2>
+        <p class="product-other-options-modal__lead">Slične boje, veličine i modeli — dodaj u korpu bez izlaska sa stranice.</p>
+        <div class="product-other-options-list">
+            {% for opt in similar_name_products %}
+            {% with opt_vars=opt.varijacije.all %}
+            <article class="product-other-options-row">
+                <a href="{{ opt.get_absolute_url }}" class="product-other-options-row__media" aria-label="{{ opt.naziv }}">
+                    {% include 'partials/product_image.html' with product=opt image_loading='lazy' image_sizes='64px' %}
+                </a>
+                <div class="product-other-options-row__info">
+                    <a href="{{ opt.get_absolute_url }}" class="product-other-options-row__name">{{ opt.naziv }}</a>
+                    {% include 'partials/product_pack_label.html' with product=opt %}
+                    <div class="product-other-options-row__price">
+                        {% if opt.katalog_na_akciji %}
+                        <span class="price-original">{{ opt.katalog_bazna_cijena }} KM</span>
+                        <span class="price-sale">{{ opt.katalog_prikazna_cijena }} KM</span>
+                        {% else %}
+                        <span class="price-current">{{ opt.katalog_prikazna_cijena }} KM</span>
+                        {% endif %}
+                    </div>
+                    {% if opt_vars and opt_vars|length == 1 %}
+                    <p class="product-other-options-row__variant">{{ opt_vars.0.naziv }}</p>
+                    {% endif %}
+                </div>
+                {% if opt_vars %}
+                <form method="post" action="{% url 'add_to_cart' opt.slug %}" class="product-other-options-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="variation_id" value="{{ opt_vars.0.pk }}">
+                    {% include 'partials/product_qty_selector.html' with qty_max=opt_vars.0.stanje %}
+                    <button type="submit" class="btn btn-primary product-other-options-add"
+                            data-product-id="{{ opt.pk }}"
+                            data-product-name="{{ opt.naziv }}"
+                            data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                </form>
+                {% elif opt.na_stanju %}
+                <form method="post" action="{% url 'add_to_cart' opt.slug %}" class="product-other-options-form">
+                    {% csrf_token %}
+                    {% include 'partials/product_qty_selector.html' with qty_max=opt.stanje %}
+                    <button type="submit" class="btn btn-primary product-other-options-add"
+                            data-product-id="{{ opt.pk }}"
+                            data-product-name="{{ opt.naziv }}"
+                            data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                </form>
+                {% endif %}
+            </article>
+            {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/product-detail.min.js' %}?v=20260901nozoom" defer></script>
+{% if staff_product_tools %}
+<script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
+{% endif %}
+{% if staff_product_tools %}
+<script src="{% static 'js/staff-product-objava.js' %}?v=20260725v7" defer></script>
+{% endif %}
+{% if dwell_flash_config and dwell_flash_config.active %}
+{{ dwell_flash_config|json_script:"dwellFlashConfigData" }}
+{% endif %}
+{% if meta_pixel_id and meta_view_content_event_id %}
+<script data-cfasync="false">
+(function () {
+    var el = document.querySelector('[data-meta-view-content]');
+    if (!el || typeof fbq !== 'function') return;
+    fbq('track', 'ViewContent', {
+        content_ids: [el.dataset.contentId],
+        content_type: 'product',
+        content_name: el.dataset.contentName,
+        value: parseFloat(el.dataset.contentValue, 10),
+        currency: 'BAM'
+    }, { eventID: el.dataset.eventId });
+})();
+</script>
+{% endif %}
+{% if staff_product_tools %}
+<script>
+/* Pakovanje: prikaži polje količine kad je checkbox upaljen */
+document.querySelectorAll('[data-staff-pakovanje]').forEach(function (root) {
+    var toggle = root.querySelector('[data-pakovanje-toggle]');
+    var wrap = root.querySelector('[data-pakovanje-qty-wrap]');
+    var qty = root.querySelector('[data-pakovanje-qty]');
+    if (!toggle || !wrap) return;
+    function syncPakovanje() {
+        var on = toggle.checked;
+        wrap.hidden = !on;
+        if (qty) {
+            qty.required = on;
+            if (on && !qty.value) qty.focus();
+            if (!on) qty.required = false;
+        }
+    }
+    toggle.addEventListener('change', syncPakovanje);
+    syncPakovanje();
+});
+
+document.querySelectorAll('.staff-olx-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var msg = form.querySelector('.staff-olx-btn--publish')
+            ? 'Objaviti ovaj artikal na OLX / Pik profilu CarpologijaBH?'
+            : 'Ažurirati ovaj artikal na OLX / Pik?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('.staff-product-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var onStock = form.querySelector('button') && form.querySelector('button').textContent.indexOf('Skini') !== -1;
+        var msg = onStock
+            ? 'Skiniti artikal sa stanja?'
+            : 'Vratiti artikal na stanje?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+        }
+    });
+});
+
+(function () {
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function initStaffLookup(root) {
+        var input = root.querySelector('[data-lookup-input]');
+        var hidden = root.querySelector('[data-lookup-id]');
+        var list = root.querySelector('[data-lookup-list]');
+        var searchUrl = root.getAttribute('data-search-url');
+        var debounceTimer = null;
+        var fetchController = null;
+        if (!input || !hidden || !list || !searchUrl) return;
+
+        function closeList() {
+            list.hidden = true;
+            list.innerHTML = '';
+        }
+
+        function selectItem(id, label) {
+            hidden.value = String(id);
+            input.value = label;
+            closeList();
+        }
+
+        function renderResults(results) {
+            if (!results.length) {
+                list.innerHTML = '<div class="staff-lookup-empty" role="status">Nema rezultata.</div>';
+                list.hidden = false;
+                return;
+            }
+            list.innerHTML = results.map(function (item) {
+                return '<button type="button" class="staff-lookup-option" role="option" data-id="' +
+                    escapeHtml(item.id) + '" data-label="' + escapeHtml(item.label) + '">' +
+                    escapeHtml(item.label) + '</button>';
+            }).join('');
+            list.hidden = false;
+        }
+
+        function fetchResults(query) {
+            fetchController && fetchController.abort();
+            fetchController = new AbortController();
+            list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga…</div>';
+            list.hidden = false;
+            fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: fetchController.signal,
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('search failed');
+                    return response.json();
+                })
+                .then(function (data) {
+                    renderResults(data.results || []);
+                })
+                .catch(function (error) {
+                    if (error && error.name === 'AbortError') return;
+                    list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga nije dostupna.</div>';
+                    list.hidden = false;
+                });
+        }
+
+        function scheduleSearch() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                fetchResults(input.value.trim());
+            }, 220);
+        }
+
+        input.addEventListener('focus', function () {
+            fetchResults(input.value.trim());
+        });
+
+        input.addEventListener('input', function () {
+            hidden.value = '';
+            scheduleSearch();
+        });
+
+        list.addEventListener('click', function (event) {
+            var option = event.target.closest('.staff-lookup-option');
+            if (!option) return;
+            selectItem(option.getAttribute('data-id'), option.getAttribute('data-label'));
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!root.contains(event.target)) {
+                closeList();
+            }
+        });
+    }
+
+    document.querySelectorAll('[data-staff-lookup]').forEach(initStaffLookup);
+
+    function initStaffTagPicker(root) {
+        var chipsWrap = root.querySelector('[data-tag-chips]');
+        var hiddenWrap = root.querySelector('[data-tag-hidden-inputs]');
+        var searchRoot = root.querySelector('[data-staff-tag-search]');
+        var input = searchRoot && searchRoot.querySelector('[data-tag-search-input]');
+        var list = searchRoot && searchRoot.querySelector('[data-tag-search-list]');
+        var searchUrl = searchRoot && searchRoot.getAttribute('data-search-url');
+        var manualInput = root.querySelector('[data-tag-manual-input]');
+        var debounceTimer = null;
+        var fetchController = null;
+        if (!chipsWrap || !hiddenWrap || !input || !list || !searchUrl) return;
+
+        function hasTagId(id) {
+            return !!root.querySelector('.staff-tag-chip[data-tag-id="' + id + '"]');
+        }
+
+        function hasTagName(name) {
+            var key = (name || '').trim().toLowerCase();
+            if (!key) return false;
+            var found = false;
+            root.querySelectorAll('.staff-tag-chip').forEach(function (chip) {
+                var label = (chip.querySelector('.staff-tag-chip-label') || {}).textContent || '';
+                var chipName = chip.getAttribute('data-tag-name') || '';
+                if (label.trim().toLowerCase() === key || chipName.trim().toLowerCase() === key) {
+                    found = true;
+                }
+            });
+            return found;
+        }
+
+        function addTag(id, label) {
+            if (!id || hasTagId(id)) return;
+            var chip = document.createElement('span');
+            chip.className = 'staff-tag-chip';
+            chip.setAttribute('data-tag-id', id);
+            chip.innerHTML =
+                '<span class="staff-tag-chip-label">' + escapeHtml(label) + '</span>' +
+                '<button type="button" class="staff-tag-chip-remove" aria-label="Ukloni tag">×</button>';
+            chipsWrap.appendChild(chip);
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'tag_ids';
+            hidden.value = id;
+            hidden.setAttribute('data-tag-id', id);
+            hiddenWrap.appendChild(hidden);
+            input.value = '';
+            closeList();
+        }
+
+        function addTagByName(name) {
+            name = (name || '').replace(/\s+/g, ' ').trim();
+            if (!name || hasTagName(name)) return false;
+            var chip = document.createElement('span');
+            chip.className = 'staff-tag-chip staff-tag-chip--new';
+            chip.setAttribute('data-tag-name', name);
+            chip.innerHTML =
+                '<span class="staff-tag-chip-label">' + escapeHtml(name) + '</span>' +
+                '<button type="button" class="staff-tag-chip-remove" aria-label="Ukloni tag">×</button>';
+            chipsWrap.appendChild(chip);
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'tag_names';
+            hidden.value = name;
+            hidden.setAttribute('data-tag-name', name);
+            hiddenWrap.appendChild(hidden);
+            return true;
+        }
+
+        function addNamesFromText(text) {
+            if (!text) return 0;
+            var parts = String(text).split(/[,;\n|]+/);
+            var n = 0;
+            parts.forEach(function (part) {
+                if (addTagByName(part)) n += 1;
+            });
+            return n;
+        }
+
+        function removeTag(chip) {
+            if (!chip) return;
+            var id = chip.getAttribute('data-tag-id');
+            var name = chip.getAttribute('data-tag-name');
+            chip.remove();
+            if (id) {
+                var hiddenId = hiddenWrap.querySelector('input[data-tag-id="' + id + '"]');
+                if (hiddenId) hiddenId.remove();
+            }
+            if (name) {
+                hiddenWrap.querySelectorAll('input[name="tag_names"]').forEach(function (el) {
+                    if ((el.value || '').trim().toLowerCase() === name.trim().toLowerCase()) {
+                        el.remove();
+                    }
+                });
+            }
+        }
+
+        function closeList() {
+            list.hidden = true;
+            list.innerHTML = '';
+        }
+
+        function renderResults(results, query) {
+            var html = '';
+            if (results.length) {
+                html = results.map(function (item) {
+                    return '<button type="button" class="staff-lookup-option" role="option" data-id="' +
+                        escapeHtml(item.id) + '" data-label="' + escapeHtml(item.label) + '">' +
+                        escapeHtml(item.label) + '</button>';
+                }).join('');
+            }
+            var q = (query || '').trim();
+            if (q) {
+                html +=
+                    '<button type="button" class="staff-lookup-option staff-lookup-option--create" role="option" data-create-name="' +
+                    escapeHtml(q) + '">+ Dodaj „' + escapeHtml(q) + '”</button>';
+            }
+            if (!html) {
+                list.innerHTML = '<div class="staff-lookup-empty" role="status">Nema rezultata.</div>';
+            } else {
+                list.innerHTML = html;
+            }
+            list.hidden = false;
+        }
+
+        function fetchResults(query) {
+            fetchController && fetchController.abort();
+            fetchController = new AbortController();
+            list.innerHTML = '<div class="staff-lookup-empty" role="status">Pretraga…</div>';
+            list.hidden = false;
+            fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: fetchController.signal,
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('search failed');
+                    return response.json();
+                })
+                .then(function (data) {
+                    renderResults(data.results || [], query);
+                })
+                .catch(function (error) {
+                    if (error && error.name === 'AbortError') return;
+                    // I bez API-ja omogući ručni unos
+                    renderResults([], query);
+                });
+        }
+
+        chipsWrap.addEventListener('click', function (event) {
+            var removeBtn = event.target.closest('.staff-tag-chip-remove');
+            if (!removeBtn) return;
+            var chip = removeBtn.closest('.staff-tag-chip');
+            removeTag(chip);
+        });
+
+        input.addEventListener('focus', function () {
+            fetchResults(input.value.trim());
+        });
+
+        input.addEventListener('input', function () {
+            // Zarez u polju pretrage → odmah dodaj prethodni tag
+            var val = input.value;
+            if (val.indexOf(',') !== -1 || val.indexOf(';') !== -1) {
+                var parts = val.split(/[,;]+/);
+                var last = parts.pop();
+                parts.forEach(function (p) { addTagByName(p); });
+                input.value = last || '';
+            }
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                fetchResults(input.value.trim());
+            }, 220);
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                var val = input.value.trim();
+                if (!val) return;
+                // Ako ima tačan match u listi — uzmi prvi; inače kreiraj po imenu
+                var firstOpt = list.querySelector('.staff-lookup-option:not(.staff-lookup-option--create)');
+                var createOpt = list.querySelector('.staff-lookup-option--create');
+                if (firstOpt && (firstOpt.getAttribute('data-label') || '').toLowerCase() === val.toLowerCase()) {
+                    addTag(firstOpt.getAttribute('data-id'), firstOpt.getAttribute('data-label'));
+                } else if (val.indexOf(',') !== -1) {
+                    addNamesFromText(val);
+                    input.value = '';
+                    closeList();
+                } else {
+                    addTagByName(val);
+                    input.value = '';
+                    closeList();
+                }
+            }
+        });
+
+        list.addEventListener('click', function (event) {
+            var createBtn = event.target.closest('.staff-lookup-option--create');
+            if (createBtn) {
+                addTagByName(createBtn.getAttribute('data-create-name'));
+                input.value = '';
+                closeList();
+                return;
+            }
+            var option = event.target.closest('.staff-lookup-option');
+            if (!option) return;
+            addTag(option.getAttribute('data-id'), option.getAttribute('data-label'));
+        });
+
+        if (manualInput) {
+            manualInput.addEventListener('blur', function () {
+                var n = addNamesFromText(manualInput.value);
+                if (n) manualInput.value = '';
+            });
+            manualInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    var n = addNamesFromText(manualInput.value);
+                    if (n) manualInput.value = '';
+                }
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            if (!searchRoot.contains(event.target)) {
+                closeList();
+            }
+        });
+    }
+
+    document.querySelectorAll('[data-staff-tag-picker]').forEach(initStaffTagPicker);
+
+    document.querySelectorAll('.staff-image-delete-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Ukloniti ovu dodatnu sliku?')) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    document.querySelectorAll('.staff-product-media-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            var fileInput = form.querySelector('input[type="file"]');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                event.preventDefault();
+                window.alert('Odaberite sliku prije slanja.');
+            }
+        });
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}
+
+{% block structured_data %}
+{% if product_json_ld %}
+<script type="application/ld+json">{{ product_json_ld|safe }}</script>
+{% endif %}
+{% if breadcrumb_json_ld %}
+<script type="application/ld+json">{{ breadcrumb_json_ld|safe }}</script>
+{% endif %}
+{% endblock %}

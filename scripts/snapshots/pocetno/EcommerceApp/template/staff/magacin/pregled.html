@@ -1,0 +1,210 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<nav class="mg-crumb">Pregled</nav>
+<div class="mg-page-head">
+    <div>
+        <h1>Pregled magacina</h1>
+        <p class="mg-count">{{ period_label }}</p>
+    </div>
+</div>
+
+<section class="mg-card">
+    <h2 class="mg-h">Narudžbe — {{ period_label }}</h2>
+    <div class="mg-mode-tabs">
+        <a href="?period=day" class="{% if period == 'day' %}is-active{% endif %}">Danas</a>
+        <a href="?period=month" class="{% if period == 'month' %}is-active{% endif %}">Ovaj mjesec</a>
+        <a href="?period=year" class="{% if period == 'year' %}is-active{% endif %}">Ova godina</a>
+    </div>
+    <form method="get" class="mg-range-form">
+        <input type="hidden" name="period" value="range">
+        <input type="hidden" name="graf" value="{{ graf }}">
+        <label>Od <input type="date" name="from" value="{{ date_from }}" required></label>
+        <label>Do <input type="date" name="to" value="{{ date_to }}" required></label>
+        <button type="submit" class="mg-btn mg-btn-primary">Kalendar</button>
+    </form>
+    <div class="mg-stats-row">
+        <div class="mg-mini-stat"><span>{% if period == 'day' %}Današnje narudžbe{% else %}Narudžbe{% endif %}</span><strong>{{ orders_count }}</strong></div>
+        <div class="mg-mini-stat"><span>Poručeno</span><strong>{{ orders_iznos }} KM</strong></div>
+        <div class="mg-mini-stat"><span>Različitih artikala</span><strong>{{ orders_artikala }}</strong></div>
+        <div class="mg-mini-stat"><span>Prosječna cijena artikla</span><strong>{{ orders_prosjek }} KM</strong></div>
+    </div>
+    {% if period_orders %}
+    <div class="mg-table-wrap">
+    <table class="mg-table mg-table-stack mg-table-stack-orders">
+        <thead>
+            <tr>
+                <th>BROJ</th>
+                <th>KUPAC</th>
+                <th>STATUS</th>
+                <th>DATUM</th>
+                <th class="num">UKUPNO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in period_orders %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_order_detail' order.broj %}'">
+                <td>#{{ order.broj }}</td>
+                <td>{{ order.ime_prezime }}</td>
+                <td>{{ order.get_status_label }}</td>
+                <td>{{ order.kreirana|date:"d.m.Y H:i" }}</td>
+                <td class="num">{{ order.ukupno }} KM</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="mg-muted">Nema narudžbi u ovom periodu.</p>
+    {% endif %}
+</section>
+
+<section class="mg-card">
+    <div class="mg-card-head">
+        <h2 class="mg-h">Usporedba</h2>
+        <div class="mg-mode-tabs" style="margin:0;">
+            <a href="?period={{ period }}&amp;from={{ date_from }}&amp;to={{ date_to }}&amp;graf=dani" class="{% if graf == 'dani' %}is-active{% endif %}">Dani</a>
+            <a href="?period={{ period }}&amp;from={{ date_from }}&amp;to={{ date_to }}&amp;graf=mjeseci" class="{% if graf == 'mjeseci' %}is-active{% endif %}">Mjeseci</a>
+            <a href="?period={{ period }}&amp;from={{ date_from }}&amp;to={{ date_to }}&amp;graf=godine" class="{% if graf == 'godine' %}is-active{% endif %}">Godine</a>
+        </div>
+    </div>
+    <div class="mg-chart-wrap">
+        <canvas id="mgPregledChart"></canvas>
+    </div>
+    <script type="application/json" id="mgPregledChartData">{{ chart_json|safe }}</script>
+</section>
+
+<section class="mg-card">
+    <h2 class="mg-h">Zadnje izmjene artikala</h2>
+    <div class="mg-table-wrap">
+    <table class="mg-table mg-table-stack mg-table-stack-moves">
+        <thead>
+            <tr>
+                <th>DATUM</th>
+                <th>ARTIKAL</th>
+                <th>TIP</th>
+                <th>LOKACIJA</th>
+                <th class="num">KOLIČINA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in recent_movements %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_artikal' m.product_id %}'">
+                <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
+                <td>{{ m.product.naziv }}{% if m.variation %} <span class="mg-muted">{{ m.variation.naziv }}</span>{% endif %}</td>
+                <td>{{ m.get_tip_display }}</td>
+                <td>{{ m.location.sifra }}{% if m.to_location %} → {{ m.to_location.sifra }}{% endif %}</td>
+                <td class="num {% if m.tip == 'prijem' %}num-plus{% elif m.tip == 'prodaja' %}num-out{% endif %}">
+                    {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' %}−{% endif %}{{ m.kolicina }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="mg-muted">Još nema izmjena količina.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+
+<div class="mg-stats-row">
+    <div class="mg-mini-stat"><span>Artikli</span><strong>{{ stat_artikala }}</strong></div>
+    <div class="mg-mini-stat"><span>Na stanju</span><strong>{{ stat_na_stanju }}</strong></div>
+    <div class="mg-mini-stat"><span>Rezervisano</span><strong>{{ stat_rezervisano }}</strong></div>
+    <div class="mg-mini-stat"><span>Dostupno</span><strong>{{ stat_dostupno }}</strong></div>
+</div>
+{% if low_stock %}
+<section class="mg-card">
+    <h2 class="mg-h">Niske zalihe</h2>
+    <div class="mg-table-wrap">
+    <table class="mg-table">
+        <thead>
+            <tr><th>ARTIKAL</th><th class="num">NA STANJU</th><th class="num">MIN.</th></tr>
+        </thead>
+        <tbody>
+            {% for row in low_stock %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_artikal' row.product.pk %}'">
+                <td>{{ row.product.naziv }}</td>
+                <td class="num">{{ row.na_stanju }}</td>
+                <td class="num">{{ row.min_zaliha }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block magacin_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    var node = document.getElementById('mgPregledChartData');
+    var canvas = document.getElementById('mgPregledChart');
+    if (!node || !canvas || !window.Chart) return;
+    var data;
+    try { data = JSON.parse(node.textContent || '{}'); } catch (e) { return; }
+    var narrow = window.matchMedia('(max-width: 640px)').matches;
+    new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: data.labels || [],
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Iznos (KM)',
+                    data: data.iznos || [],
+                    backgroundColor: 'rgba(61, 143, 4, 0.28)',
+                    borderColor: '#3d8f04',
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                },
+                {
+                    type: 'line',
+                    label: 'Narudžbe',
+                    data: data.orders || [],
+                    borderColor: '#111',
+                    backgroundColor: '#111',
+                    tension: 0.25,
+                    yAxisID: 'y1',
+                    pointRadius: narrow ? 2 : 3,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 10, font: { size: narrow ? 11 : 12 } }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        maxRotation: narrow ? 50 : 0,
+                        minRotation: narrow ? 50 : 0,
+                        autoSkip: true,
+                        maxTicksLimit: narrow ? 7 : 14,
+                        font: { size: 10 }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: !narrow, text: 'KM' },
+                    ticks: { font: { size: 10 }, maxTicksLimit: 5 }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    ticks: { precision: 0, font: { size: 10 }, maxTicksLimit: 5 }
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

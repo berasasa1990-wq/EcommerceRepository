@@ -1,0 +1,50 @@
+<div class="coupon-box">
+    <h3 class="coupon-box-title">Loyalty kartica</h3>
+
+    {% if applied_coupon_code %}
+    <form method="post" action="{% url 'remove_coupon' %}" class="coupon-remove-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <p class="coupon-applied">
+            Aktivan loyalty popust
+            {% if summary.kupon_postotak %}<strong>{{ summary.kupon_postotak }}%</strong>{% endif %}
+            {% if summary.kupon_popust %}(−{{ summary.kupon_popust }} KM){% endif %}
+            <button type="submit" class="coupon-remove-btn">Ukloni</button>
+        </p>
+    </form>
+    <p class="loyalty-code-hint loyalty-code-hint--compact">Ne vrijedi na artikle koji su na akciji.</p>
+
+    {% elif user.is_authenticated and loyalty_card %}
+    <p class="loyalty-code-hint">
+        Vaš nivo: <strong>{{ loyalty_card.get_nivo_display }}</strong>
+        · <strong>{{ loyalty_card.postotak }}%</strong> popusta
+        na artikle koji nisu na akciji.
+    </p>
+    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form coupon-form--loyalty-oneclick">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <input type="hidden" name="kod" value="{{ loyalty_card.kod }}">
+        <button type="submit" class="btn btn-coupon btn-coupon--full">Primjeni Loyalty karticu</button>
+    </form>
+
+    {% else %}
+    <p class="loyalty-code-hint">
+        {% if user.is_authenticated %}
+        Nemate loyalty karticu. Unesite broj kartice ako ga imate.
+        {% else %}
+        <a href="{% url 'login' %}?next={% url 'cart' %}">Prijavite se</a> da primijenite loyalty popust jednim klikom, ili unesite broj kartice.
+        {% endif %}
+    </p>
+    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <div class="coupon-form-row">
+            {{ coupon_form.kod }}
+            <button type="submit" class="btn btn-coupon">Primjeni</button>
+        </div>
+        {% for error in coupon_form.kod.errors %}
+        <p class="form-error">{{ error }}</p>
+        {% endfor %}
+    </form>
+    {% endif %}
+</div>

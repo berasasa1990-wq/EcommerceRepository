@@ -7,14 +7,16 @@
         <span>PDV (17%)</span>
         <span>{{ summary.pdv_artikli.pdv }} KM</span>
     </div>
-    <div class="order-totals-row">
+    <div class="order-totals-row order-totals-row--gross">
         <span>Ukupno sa PDV-om</span>
         <span>{{ summary.medjuzbir }} KM</span>
     </div>
+    {% if summary.popust %}
     <div class="order-totals-row order-totals-row--discount">
         <span>{{ summary.popust_opis|default:"Popust" }}</span>
-        <span>{% if summary.popust %}-{{ summary.popust }}{% else %}0.00{% endif %} KM</span>
+        <span>-{{ summary.popust }} KM</span>
     </div>
+    {% endif %}
     {% if summary.pogodnosti %}
     <ul class="order-totals-benefits">
         {% for benefit in summary.pogodnosti %}

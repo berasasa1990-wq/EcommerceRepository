@@ -1299,7 +1299,7 @@ main {
     max-width: none;
     overflow: hidden;
     background: #0a0a0a;
-    border-bottom: 1px solid var(--gray-200);
+    border-bottom: 2px solid var(--ozr-orange, #FF5A00);
     margin-top: 0;
     margin-bottom: 0;
     margin-left: 0;
@@ -24367,6 +24367,8 @@ body.fish-advisor-open .public-online {
 .home-products--akcija {
     padding-top: 12px;
     padding-bottom: 4px;
+    border-top: 2px solid var(--ozr-orange, #FF5A00);
+    border-bottom: 2px solid var(--ozr-orange, #FF5A00);
 }
 
 /* Cleaner product cards on home */
@@ -24869,6 +24871,7 @@ a.home-promo-card:hover {
     background: #0a0a0a;
     box-shadow: 0 -6px 0 0 #0a0a0a;
     color: #fff;
+    border-bottom: 2px solid var(--ozr-orange, #FF5A00);
 }
 
 .header.scrolled {
@@ -25770,7 +25773,8 @@ a.home-promo-card:hover {
 
 .home-brand-strip-section--mockup {
     background: #fff;
-    border-top: 1px solid #f0f0f0;
+    border-top: 2px solid var(--ozr-orange, #FF5A00);
+    border-bottom: 2px solid var(--ozr-orange, #FF5A00);
     padding: 40px 0 48px;
 }
 

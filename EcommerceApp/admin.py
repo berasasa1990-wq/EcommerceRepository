@@ -4016,7 +4016,8 @@ class WarehouseSupplierAdmin(admin.ModelAdmin):
 
 @admin.register(WarehouseCustomer)
 class WarehouseCustomerAdmin(admin.ModelAdmin):
-    list_display = ('ime_prezime', 'telefon', 'grad', 'adresa', 'azuriran')
+    list_display = ('ime_prezime', 'telefon', 'grad', 'adresa', 'vp_kupac', 'azuriran')
+    list_filter = ('vp_kupac',)
     search_fields = ('ime_prezime', 'telefon', 'grad', 'adresa', 'email')
     ordering = ('ime_prezime', 'id')
     readonly_fields = ('kreiran', 'azuriran')

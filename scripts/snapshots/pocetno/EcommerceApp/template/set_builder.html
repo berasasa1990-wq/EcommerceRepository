@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/set-builder.css' %}?v=20260903set3">
+{% endblock %}
+
+{% block content %}
+<section class="setb is-start" id="setBuilder"
+         data-recommend-url="{% url 'set_builder_recommend' %}"
+         data-swap-url="{% url 'set_builder_alternatives' %}"
+         data-cart-url="{% url 'set_builder_add_cart' %}">
+    {% csrf_token %}
+    <ol class="setb-steps" aria-label="Koraci">
+        <li class="setb-steps__item is-active" data-step-dot="1">
+            <span class="setb-steps__num">1</span>
+            <span class="setb-steps__copy"><strong>Vrsta ribolova</strong><small>Odaberi svoj stil</small></span>
+        </li>
+        <li class="setb-steps__item" data-step-dot="2">
+            <span class="setb-steps__num">2</span>
+            <span class="setb-steps__copy"><strong>Nivo seta</strong><small>Odaberi nivo opreme</small></span>
+        </li>
+        <li class="setb-steps__item" data-step-dot="3">
+            <span class="setb-steps__num">3</span>
+            <span class="setb-steps__copy"><strong>Šta želiš u setu</strong><small>Odaberi šta ti treba</small></span>
+        </li>
+        <li class="setb-steps__item" data-step-dot="4">
+            <span class="setb-steps__num">4</span>
+            <span class="setb-steps__copy"><strong>Budžet</strong><small>Postavi maksimalni budžet</small></span>
+        </li>
+        <li class="setb-steps__item" data-step-dot="5">
+            <span class="setb-steps__num">5</span>
+            <span class="setb-steps__copy"><strong>Rezultat</strong><small>Tvoj preporučeni set</small></span>
+        </li>
+    </ol>
+
+    <div class="setb-toolbar">
+        <button type="button" class="setb-back" id="setbBack" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            Nazad
+        </button>
+    </div>
+
+    <div class="setb-board">
+        <article class="setb-col is-open" data-step="1">
+            <h2>1. Koju vrstu ribolova želiš?</h2>
+            <div class="setb-fish">
+                {% for fish in set_builder.fish_types %}
+                <button type="button" class="setb-fish__card" data-fish="{{ fish.id }}">
+                    {% if fish.image %}
+                    <img src="{% static fish.image %}" alt="" width="160" height="160">
+                    {% endif %}
+                    <span>{{ fish.label }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="setb-col" data-step="2" hidden>
+            <h2>2. Kakav set želiš?</h2>
+            <div class="setb-tiers">
+                {% for tier in set_builder.tiers %}
+                <button type="button" class="setb-tier{% if tier.id == set_builder.default_tier %} is-picked{% endif %}" data-tier="{{ tier.id }}">
+                    {% if tier.id == 'pristupacno' %}
+                    <span class="setb-tier__icon" aria-hidden="true">🏅</span>
+                    {% elif tier.id == 'preporuka' %}
+                    <span class="setb-tier__icon" aria-hidden="true">★</span>
+                    {% else %}
+                    <span class="setb-tier__icon" aria-hidden="true">👑</span>
+                    {% endif %}
+                    <strong>{{ tier.label }}</strong>
+                    <p>{{ tier.desc }}</p>
+                    {% if tier.id == 'preporuka' %}<em>Najpopularnije</em>{% endif %}
+                </button>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="setb-col" data-step="3" hidden>
+            <h2>3. Šta želiš u setu?</h2>
+            <p class="setb-col__hint">Označi sve preporučeno</p>
+            <div class="setb-slots">
+                {% for slot in set_builder.slots %}
+                <label class="setb-slot">
+                    <input type="checkbox" name="slot" value="{{ slot.id }}"{% if slot.id in set_builder.default_slots %} checked{% endif %}>
+                    <span class="setb-slot__box" aria-hidden="true"></span>
+                    <span class="setb-slot__label">{{ slot.label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <button type="button" class="setb-next" id="setbSlotsNext">Dalje</button>
+        </article>
+
+        <article class="setb-col" data-step="4" hidden>
+            <h2>4. Koliki ti je maksimalni budžet?</h2>
+            <p class="setb-budget-kicker">Maksimalni budžet</p>
+            <p class="setb-budget-value"><span id="setbBudgetLabel">300</span> KM</p>
+            <div class="setb-slider-wrap">
+                <span>50 KM</span>
+                <input type="range" id="setbBudget" min="{{ set_builder.budget_min }}" max="{{ set_builder.budget_max }}" step="10" value="{{ set_builder.default_budget }}">
+                <span>1.500 KM</span>
+            </div>
+            <div class="setb-presets">
+                {% for p in set_builder.budget_presets %}
+                <button type="button" class="setb-preset" data-budget="{{ p }}">{% if p >= 1000 %}1000+ KM{% else %}{{ p }} KM{% endif %}</button>
+                {% endfor %}
+            </div>
+            <button type="button" class="setb-find" id="setbFind">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                Pronađi moj set
+            </button>
+        </article>
+
+        <article class="setb-col" data-step="5" hidden>
+            <h2>5. Tvoj preporučeni set</h2>
+            <p class="setb-result-meta" id="setbResultMeta">Odaberi prethodne korake pa pronađi set.</p>
+            <p class="setb-result-note">Svaki artikal možeš promijeniti</p>
+            <div class="setb-result" id="setbResult"></div>
+            <div class="setb-total" id="setbTotal" hidden>
+                <span>UKUPNO:</span>
+                <strong id="setbTotalValue">0,00 KM</strong>
+                <small id="setbLeftover"></small>
+            </div>
+        </article>
+    </div>
+
+    <footer class="setb-foot">
+        <ul class="setb-trust">
+            <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="7" width="13" height="10" rx="1"/><path d="M16 10h3l2 3v4h-5"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>
+                <span><strong>Besplatna dostava</strong><small>Za narudžbe preko 250 KM</small></span>
+            </li>
+            <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 20 7v5c0 5-3.5 8.5-8 9.5C7.5 20.5 4 17 4 12V7z"/><path d="M9 12l2 2 4-4"/></svg>
+                <span><strong>Sigurna kupovina</strong><small>100% sigurno plaćanje</small></span>
+            </li>
+            <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1v-5zM20 14a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5z"/></svg>
+                <span><strong>Stručna podrška</strong><small>Tu smo za sva pitanja</small></span>
+            </li>
+        </ul>
+        <div class="setb-cta">
+            <button type="button" class="setb-cta__ghost" id="setbAddCart" disabled>Dodaj cijeli set u korpu</button>
+            <button type="button" class="setb-cta__solid" id="setbBuyNow" disabled>Kupi odmah</button>
+        </div>
+    </footer>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/set-builder.min.js' %}?v=20260903set3" defer></script>
+{% endblock %}

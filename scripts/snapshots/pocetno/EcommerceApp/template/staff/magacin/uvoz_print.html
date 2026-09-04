@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="utf-8">
+    <title>Uvoz — {{ uvoz.naziv }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 12mm; }
+        body { font: 12px/1.35 Arial, Helvetica, sans-serif; color: #111; margin: 0; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        .meta { color: #555; margin: 0 0 14px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #ddd; padding: 6px 5px; text-align: left; vertical-align: top; }
+        th { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #555; }
+        td.n { width: 28px; }
+        td.sifra, th.sifra { white-space: nowrap; }
+        .sifra { color: #444; font-size: 12px; }
+        td.q, th.q { text-align: right; white-space: nowrap; }
+        td.q { font-weight: 700; width: 88px; }
+        tfoot td { font-weight: 700; border-bottom: 0; padding-top: 10px; }
+        @media screen {
+            body { padding: 20px; }
+            .bar { margin-bottom: 16px; }
+            button {
+                min-height: 40px;
+                padding: 0 14px;
+                font: inherit;
+                font-weight: 700;
+            }
+        }
+        @media print { .bar { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="bar"><button type="button" onclick="window.print()">Štampaj</button></div>
+    <h1>{{ uvoz.naziv }}</h1>
+    <p class="meta">
+        {{ uvoz.kreiran|date:"d.m.Y. H:i" }}
+        {% if uvoz.kreirao %} · {{ uvoz.kreirao.get_full_name|default:uvoz.kreirao.email }}{% endif %}
+        · {{ stavke|length }} stavki
+        {% if uvoz.ukupna_fakturna %} · ukupna fakturna {{ uvoz.ukupna_fakturna }} KM{% endif %}
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th class="n">#</th>
+                <th>Artikal</th>
+                <th class="sifra">Šifra</th>
+                <th class="q">Količina</th>
+                <th class="q">Fakturna</th>
+                <th class="q">VPC netto</th>
+                <th class="q">MPC brutto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in stavke %}
+            <tr>
+                <td class="n">{{ forloop.counter }}</td>
+                <td>{{ s.artikal_naziv }}</td>
+                <td class="sifra">{% if s.product.sifra %}{{ s.product.sifra }}{% else %}—{% endif %}</td>
+                <td class="q">{% if s.kolicina != None %}{{ s.kolicina|floatformat:"-3" }}{% else %}—{% endif %}</td>
+                <td class="q">{% if s.fakturna != None %}{{ s.fakturna|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td class="q">{% if s.vpc_netto != None %}{{ s.vpc_netto|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td class="q">{% if s.mpc_brutto != None %}{{ s.mpc_brutto|floatformat:2 }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">Nema stavki.</td></tr>
+            {% endfor %}
+        </tbody>
+        {% if stavke %}
+        <tfoot>
+            <tr>
+                <td></td>
+                <td>UKUPNO</td>
+                <td></td>
+                <td class="q">{{ kolicina_ukupno|floatformat:"-3" }}</td>
+                <td class="q">{% if uvoz.ukupna_fakturna %}{{ uvoz.ukupna_fakturna|floatformat:2 }}{% endif %}</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+    <script>window.addEventListener('load', function () { window.print(); });</script>
+</body>
+</html>

@@ -1943,6 +1943,9 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'margin: 10mm')
         self.assertContains(page, 'grid-template-columns: repeat(4, 45mm)')
         self.assertContains(page, 'grid-template-rows: repeat(7, 36mm)')
+        self.assertContains(page, 'column-gap: 0')
+        self.assertContains(page, 'row-gap: 0')
+        self.assertContains(page, 'border-radius: 0')
         self.assertContains(page, 'class="label"', count=28)
         self.assertContains(page, 'Test braid', count=28)
         self.assertContains(page, 'font-size: 3mm')
@@ -2807,8 +2810,7 @@ class MagacinViewTests(TestCase):
     def test_vp_order_persists_customer_and_vp_price(self):
         self.client.force_login(self.user)
         listed = self.client.get(reverse('staff_magacin_narudzbe'))
-        self.assertContains(listed, 'VP narudžbe')
-        self.assertContains(listed, reverse('staff_magacin_vp_narudzba'))
+        self.assertNotContains(listed, reverse('staff_magacin_vp_narudzba'))
         start = self.client.post(reverse('staff_magacin_vp_narudzba'), {'action': 'novi'})
         self.assertEqual(start.status_code, 302)
         draft = MagacinVpNarudzba.objects.get()
@@ -3146,6 +3148,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(qty_page.status_code, 200)
         self.assertContains(qty_page, 'Količine za fakturu')
         self.assertContains(qty_page, self.product.naziv)
+        self.assertContains(qty_page, 'Šifra')
+        self.assertContains(qty_page, self.product.sifra)
         self.assertContains(qty_page, '>1<')
         self.assertNotContains(qty_page, 'KM')
         self.assertContains(qty_page, '@page { size: A4 portrait; margin: 16mm 24mm; }')
@@ -4149,6 +4153,39 @@ class MagacinViewTests(TestCase):
                 self.assertContains(listing, second['name'])
                 self.assertContains(listing, 'backup-a')
 
+    def test_stampa_kolicine_shows_name_sifra_qty(self):
+        self.client.force_login(self.user)
+        order = Order.objects.create(
+            ime_prezime='Faktura Qty',
+            telefon='061000111',
+            email='qty@example.com',
+            adresa='Test 1',
+            grad='Sarajevo',
+            ukupno=Decimal('20.00'),
+            izvor=Order.Izvor.MAGACIN,
+        )
+        OrderItem.objects.create(
+            narudzba=order,
+            artikal=self.product,
+            naziv=self.product.naziv,
+            product_naziv=self.product.naziv,
+            sifra=self.product.sifra,
+            cijena=Decimal('10.00'),
+            kolicina=2,
+        )
+        page = self.client.get(
+            reverse('staff_magacin_narudzbe_stampa_kolicine'),
+            {'b': order.broj},
+        )
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Naziv')
+        self.assertContains(page, 'Šifra')
+        self.assertContains(page, 'Količina')
+        self.assertContains(page, self.product.naziv)
+        self.assertContains(page, 'TST-1')
+        self.assertContains(page, '>2<')
+        self.assertNotContains(page, 'KM')
+
     def test_pregled_shows_order_stats_and_chart(self):
         self.client.force_login(self.user)
         order = Order.objects.create(
@@ -4851,7 +4888,11 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'id="mgOrderCatalogBtn"')
         self.assertContains(form, 'Katalog')
         self.assertContains(form, reverse('staff_magacin_artikli_lookup'))
-        self.assertContains(form, 'data-mg-scan-target="mgOrderSearch"')
+        self.assertContains(form, reverse('staff_magacin_narudzba_bulk'))
+        self.assertContains(form, 'id="mgOrderBulk"')
+        self.assertContains(form, 'id="mgOrderBulkModal"')
+        self.assertContains(form, 'Bulk unos')
+        self.assertNotContains(form, 'id="mgOrderScan"')
         self.assertContains(form, 'id="mgMpModal"')
         self.assertContains(form, 'id="mgMpAdd"')
         self.assertContains(form, 'Izbaci')
@@ -4867,6 +4908,52 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'Kartica')
         self.assertContains(form, 'value="gotovina"')
         self.assertContains(form, 'checked')
+        self.assertContains(form, 'id="id_napomena"')
+        self.assertContains(form, 'mg-order-meta-note')
+        self.assertContains(form, 'placeholder="Unesi napomenu"')
+
+    def test_order_list_napomena_strips_system_lines(self):
+        from .views_magacin import _order_list_napomena
+        self.assertEqual(_order_list_napomena(''), '')
+        self.assertEqual(_order_list_napomena('VP narudžba'), '')
+        self.assertEqual(
+            _order_list_napomena('VP narudžba\nPozvati prije dostave\nPlaćeno karticom'),
+            'Pozvati prije dostave',
+        )
+        self.assertEqual(
+            _order_list_napomena('Ostaviti kod susjeda\nNije popisan: Test braid'),
+            'Ostaviti kod susjeda',
+        )
+
+    def test_manual_order_bulk_resolves_names_without_creating_order(self):
+        self.client.force_login(self.user)
+        paste = (
+            '#,\tArtikal,\tKol.,\tCijena\t,Ukupno\n'
+            '1,\tTest braid\t,2\t,8.50 KM\t,17.00 KM\n'
+            '2,\tNepostojeci Artikal XYZ\n'
+            'Šifra: 9999\t,1\t,10.00 KM\t,10.00 KM\n'
+        )
+        empty = self.client.post(
+            reverse('staff_magacin_narudzba_bulk'),
+            {'tekst': '   '},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(empty.status_code, 400)
+        self.assertFalse(empty.json()['ok'])
+        imported = self.client.post(
+            reverse('staff_magacin_narudzba_bulk'),
+            {'tekst': paste},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(imported.status_code, 200)
+        data = imported.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(len(data['added']), 1)
+        self.assertEqual(data['added'][0]['item']['id'], self.product.pk)
+        self.assertEqual(data['added'][0]['qty'], 2)
+        self.assertEqual(len(data['skipped']), 1)
+        self.assertIn('Nepostojeci Artikal XYZ', data['skipped'][0]['naziv'])
+        self.assertFalse(Order.objects.filter(izvor=Order.Izvor.MAGACIN).exists())
 
     def test_order_barcode_opens_picking(self):
         self.client.force_login(self.user)
@@ -5106,6 +5193,46 @@ class MagacinViewTests(TestCase):
         form = self.client.get(reverse('staff_magacin_narudzba_nova'))
         self.assertContains(form, 'id="mgCustomerEdit"')
         self.assertContains(form, 'Izmijeni')
+        self.assertContains(form, 'VP kupac')
+        self.assertContains(form, 'id="mgNewVpKupac"')
+
+    def test_vp_customer_orders_are_vp(self):
+        self.client.force_login(self.user)
+        saved = self.client.post(reverse('staff_magacin_kupci_save'), {
+            'ime_prezime': 'VP Firma',
+            'telefon': '061999888',
+            'adresa': 'Industrijska 1',
+            'grad': 'Sarajevo',
+            'postanski_broj': '71000',
+            'vp_kupac': '1',
+        })
+        self.assertEqual(saved.status_code, 200)
+        self.assertTrue(saved.json()['customer']['vp_kupac'])
+        customer = WarehouseCustomer.objects.get(telefon='061999888')
+        self.assertTrue(customer.vp_kupac)
+        loc = WarehouseLocation.objects.create(sifra='VP-1', naziv='VP test', redoslijed=1)
+        apply_movement(product=self.product, location=loc, tip='prijem', kolicina=5)
+        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'VP Firma',
+            'telefon': '061999888',
+            'adresa': 'Industrijska 1',
+            'grad': 'Sarajevo',
+            'postanski_broj': '71000',
+            'vp_kupac': '1',
+            'product_id': [str(self.product.pk)],
+            'variation_id': [''],
+            'kolicina': ['1'],
+            'mp_ok': ['0'],
+            'rezervni': ['0'],
+            'spare_naziv': [''],
+            'spare_cijena': [''],
+            'action': 'sacuvaj',
+        })
+        self.assertEqual(created.status_code, 302)
+        order = Order.objects.get(ime_prezime='VP Firma')
+        self.assertTrue(order.napomena.startswith('VP narudžba'))
+        self.assertTrue(MagacinVpNarudzba.objects.filter(order=order).exists())
+        self.assertEqual(order.dostava, Decimal('0.00'))
 
     def test_lookup_returns_synced_and_zero_stock(self):
         self.client.force_login(self.user)
@@ -5352,7 +5479,7 @@ class MagacinViewTests(TestCase):
         azuriraj_loyalty_karticu(card)
 
         self.client.force_login(self.user)
-        created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+        skipped = self.client.post(reverse('staff_magacin_narudzba_nova'), {
             'ime_prezime': 'Loyalty Telefon',
             'telefon': '+387 61 234 567',
             'product_id': [str(self.product.pk)],
@@ -5360,15 +5487,12 @@ class MagacinViewTests(TestCase):
             'kolicina': ['2'],
             'mp_ok': ['0'],
         })
-        self.assertEqual(created.status_code, 302)
+        self.assertEqual(skipped.status_code, 302)
         order = Order.objects.get(ime_prezime='Loyalty Telefon')
         self.assertEqual(order.medjuzbir, Decimal('20.00'))
-        self.assertEqual(order.popust, Decimal('1.00'))
-        self.assertEqual(order.kupon_kod, card.kod)
-        self.assertIn('Loyalty član — 5% popusta', order.popust_detalji[0]['opis'])
-        info = order.loyalty_popust_info()
-        self.assertEqual(info['postotak'], '5')
-        self.assertEqual(info['label'], 'Loyalty član — 5% popusta')
+        self.assertEqual(order.popust, Decimal('0.00'))
+        self.assertFalse(order.kupon_kod)
+        self.assertFalse(order.loyalty_popust_info())
 
         staff_override = self.client.post(reverse('staff_magacin_narudzba_nova'), {
             'ime_prezime': 'Loyalty Override',
@@ -5407,7 +5531,7 @@ class MagacinViewTests(TestCase):
         self.assertIn('5% popusta', payload['loyalty']['label'])
 
         from .pricing import sazetak_iz_narudzbe
-        summary = sazetak_iz_narudzbe(order)
+        summary = sazetak_iz_narudzbe(auto_order)
         self.assertEqual(summary['loyalty_postotak'], '5')
         self.assertIn('5% popusta', summary['popust_opis'])
         self.assertEqual(summary['loyalty_label'], 'Loyalty član — 5% popusta')

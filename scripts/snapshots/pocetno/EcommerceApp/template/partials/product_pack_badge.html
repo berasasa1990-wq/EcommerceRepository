@@ -1,0 +1,7 @@
+{# Badge na kartici samo za artikle bez varijacija #}
+{% if product.pakovanje_uz_cijenu_kartica %}
+<span class="product-pack-badge" title="{{ product.pakovanje_cijena_hint }}">
+    <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+    <span class="product-pack-badge-text">{{ product.pakovanje_label }}</span>
+</span>
+{% endif %}

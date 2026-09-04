@@ -1,0 +1,499 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <a class="mg-back" href="{% url 'staff_magacin_artikli' %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
+        ← Nazad na rezultate
+    </a>
+    <div class="mg-toolbar-actions">
+        <button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>
+        <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena_ista' %}?artikal={{ product.pk }}{% if variation %}&varijacija={{ variation.pk }}{% endif %}">Štampaj Cijenu</a>
+        <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
+        <form method="post" class="mg-obrisi-artikal-form" onsubmit="return confirm('OBRISATI artikal „{{ product.naziv|escapejs }}”{% if product.sifra %} ({{ product.sifra|escapejs }}){% endif %} SKROZ iz baze?\n\nOvo nije skidanje sa sajta — artikal se briše trajno i ne može se vratiti.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="obrisi">
+            {% if magacin_search %}<input type="hidden" name="pretraga" value="{{ magacin_search }}">{% endif %}
+            <button type="submit" class="mg-btn mg-btn-danger">Obriši artikal</button>
+        </form>
+    </div>
+</div>
+{% if artikal_error %}
+<p class="mg-mp-alert" role="alert">{{ artikal_error }}</p>
+{% endif %}
+
+<section class="mg-card mg-artikal-top">
+    <div class="mg-phone-artikal{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
+        <div class="mg-phone-visual">
+            <div class="mg-phone-shot">
+                {% if product.prikazna_slika %}
+                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}">
+                {% else %}
+                <div class="ph">Nema slike</div>
+                {% endif %}
+            </div>
+            <div class="mg-stock-actions">
+                <form method="post" class="mg-skini-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="skini">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn">Skini sa stanja</button>
+                </form>
+                <form method="post" class="mg-ubaci-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="ubaci">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn{% if not product.na_stanju %} mg-btn-primary{% endif %}">Dodaj na stanje</button>
+                </form>
+            </div>
+        </div>
+        <h1>{{ product.naziv }}</h1>
+        <p class="mg-phone-price">
+            {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
+            <span class="mg-phone-vpc">Vpc {{ vpc }} KM</span>
+        </p>
+        {% if product.barkod or product.sifra %}
+        <p class="mg-phone-barkod">
+            <span>{{ product.barkod|default:product.sifra }}</span>
+            <a class="mg-print-barcode" href="{% url 'staff_magacin_artikal_stampa_barkod' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}" target="_blank" rel="noopener" title="Štampaj barkod na Zebra" aria-label="Štampaj barkod na Zebra">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+            </a>
+        </p>
+        {% endif %}
+        <ul class="mg-phone-locs">
+            {% for row in location_rows %}
+            <li>
+                <span>{{ row.location.sifra }}</span>
+                <b>{{ row.dostupno }}</b>
+            </li>
+            {% endfor %}
+            {% for row in mp_location_rows %}
+            <li class="is-mp">
+                <span>{{ row.location.sifra }} · MP</span>
+                <b>{{ row.dostupno }}</b>
+            </li>
+            {% endfor %}
+            {% if not location_rows and not mp_location_rows %}
+            <li class="is-empty">Nema zalihe</li>
+            {% endif %}
+        </ul>
+    </div>
+    <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
+        <div class="mg-hero-visual">
+            <div class="mg-hero-img">
+                {% if product.prikazna_slika %}
+                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}">
+                {% else %}
+                <div class="ph">Nema slike</div>
+                {% endif %}
+            </div>
+            <div class="mg-stock-actions">
+                <form method="post" class="mg-skini-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="skini">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn">Skini sa stanja</button>
+                </form>
+                <form method="post" class="mg-ubaci-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="ubaci">
+                    {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+                    <button type="submit" class="mg-btn{% if not product.na_stanju %} mg-btn-primary{% endif %}">Dodaj na stanje</button>
+                </form>
+            </div>
+        </div>
+        <div>
+            <h1 class="mg-hero-title">{{ product.naziv }}</h1>
+            <dl class="mg-meta-grid">
+                <dt>Šifra</dt>
+                <dd>{{ product.sifra|default:"—" }}</dd>
+                <dt>Barkod</dt>
+                <dd class="mg-barkod-cell">
+                    <span>{{ product.barkod|default:"—" }}</span>
+                    {% if product.barkod or product.sifra %}
+                    <a class="mg-print-barcode" href="{% url 'staff_magacin_artikal_stampa_barkod' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}" target="_blank" rel="noopener" title="Štampaj barkod na Zebra" aria-label="Štampaj barkod na Zebra">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+                    </a>
+                    {% endif %}
+                </dd>
+                <dt>Kategorija</dt>
+                <dd>{{ product.kategorija.naziv|default:"—" }}</dd>
+                <dt>Brend</dt>
+                <dd>{{ product.brend.naziv|default:"—" }}</dd>
+                <dt>Cijena</dt>
+                <dd class="mg-meta-price">
+                    {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
+                </dd>
+                <dt>Vpc</dt>
+                <dd>{{ vpc }} KM</dd>
+            </dl>
+        </div>
+        <div class="mg-hero-aside">
+            <div class="mg-status-row">
+                Status:
+                {% if totals.na_stanju <= 0 %}
+                <span class="mg-pill is-out">Nije na stanju</span>
+                {% elif product.aktivan %}
+                <span class="mg-pill">Na stanju</span>
+                {% else %}
+                <span class="mg-pill is-off">Neaktivan</span>
+                {% endif %}
+            </div>
+            <div class="mg-stats">
+                <div class="mg-stat">
+                    <span class="mg-stat-label">UKUPNO NA STANJU</span>
+                    <div class="mg-stat-value {% if totals.na_stanju > 0 %}is-ok{% else %}is-out{% endif %}">{{ totals.na_stanju }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
+                </div>
+                <div class="mg-stat">
+                    <span class="mg-stat-label">REZERVISANO</span>
+                    <div class="mg-stat-value">{{ totals.rezervisano }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
+                </div>
+                <div class="mg-stat">
+                    <span class="mg-stat-label">DOSTUPNO</span>
+                    <div class="mg-stat-value{% if totals.dostupno <= 0 %} is-out{% endif %}">{{ totals.dostupno }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="mg-artikal-main">
+    <section class="mg-card mg-artikal-stock">
+        <div class="mg-card-head">
+            <h2 class="mg-h">Zalihe po lokacijama</h2>
+        </div>
+        {% if variations %}
+        <p class="mg-sync-meta" style="margin-top:-6px;margin-bottom:10px;">
+            {% if variation %}Prikaz za varijaciju <strong>{{ variation.naziv }}</strong>{% else %}Zbir svih varijacija{% endif %}
+        </p>
+        {% endif %}
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>LOKACIJA</th>
+                    <th class="num">NA STANJU</th>
+                    <th class="num">REZERVISANO</th>
+                    <th class="num">DOSTUPNO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in location_rows %}
+                <tr class="is-clickable mg-stock-row" data-mg-open-move data-mode="remove" data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}" data-qty="{{ row.kolicina }}" data-available="{{ row.dostupno }}">
+                    <td><strong class="mg-loc-name">{{ row.location.sifra }}</strong></td>
+                    <td class="num">{{ row.kolicina }}</td>
+                    <td class="num">{{ row.rezervisano }}</td>
+                    <td class="num num-ok mg-loc-qty">{{ row.dostupno }}</td>
+                </tr>
+                {% empty %}
+                {% if not mp_location_rows %}
+                <tr><td colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
+                {% endif %}
+                {% endfor %}
+                {% for row in mp_location_rows %}
+                <tr class="is-clickable mg-stock-row is-mp" data-mg-open-move data-mode="remove" data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}" data-qty="{{ row.kolicina }}" data-available="{{ row.dostupno }}">
+                    <td>
+                        <strong class="mg-loc-name">{{ row.location.sifra }}</strong>
+                        <span class="mg-mp-tag">Maloprodaja</span>
+                    </td>
+                    <td class="num">{{ row.kolicina }}</td>
+                    <td class="num">{{ row.rezervisano }}</td>
+                    <td class="num mg-loc-qty">{{ row.dostupno }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if location_rows or mp_location_rows %}
+            <tfoot>
+                <tr>
+                    <td>UKUPNO</td>
+                    <td class="num">{{ totals.na_stanju }}</td>
+                    <td class="num">{{ totals.rezervisano }}</td>
+                    <td class="num num-ok">{{ totals.dostupno }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </section>
+
+    <section class="mg-card mg-artikal-price-history">
+        <div class="mg-card-head">
+            <h2 class="mg-h">Promjene cijena i marže (uvoz)</h2>
+        </div>
+        {% if price_history %}
+        <div class="mg-table-wrap">
+            <table class="mg-table">
+                <thead>
+                    <tr>
+                        <th>DATUM</th>
+                        <th>UVOZ</th>
+                        <th class="num">NABAVNA</th>
+                        <th class="num">VPC</th>
+                        <th class="num">MPC</th>
+                        <th class="num">MARŽA</th>
+                        <th>PROMJENA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in price_history %}
+                    <tr>
+                        <td>{{ row.uvoz.kreiran|date:"d.m.Y" }}</td>
+                        <td>
+                            {% if row.uvoz.izvor == 'magacin' %}
+                            <a href="{% url 'staff_magacin_uvoz_detail' row.uvoz.pk %}">{{ row.uvoz.naziv }}</a>
+                            {% else %}
+                            {{ row.uvoz.naziv }}
+                            {% endif %}
+                        </td>
+                        <td class="num">{% if row.nabavna %}{{ row.nabavna }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{% if row.vpc %}{{ row.vpc }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{% if row.mpc %}{{ row.mpc }} KM{% else %}—{% endif %}</td>
+                        <td class="num">{% if row.marza is not None %}{{ row.marza }}%{% else %}—{% endif %}</td>
+                        <td>
+                            {% if row.is_first %}
+                            <span class="mg-muted">Prvi uvoz</span>
+                            {% elif row.changes %}
+                            <ul class="mg-price-changes">
+                                {% for ch in row.changes %}
+                                <li class="is-{{ ch.direction }}"><strong>{{ ch.label }}:</strong> {{ ch.from }} → {{ ch.to }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span class="mg-muted">Bez izmjene</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="mg-muted">Još nema uvoza za ovaj artikal — cijene i marže će se pojaviti ovdje.</p>
+        {% endif %}
+    </section>
+
+<div class="mg-grid-3">
+    <section class="mg-card mg-artikal-prices">
+        <h2 class="mg-h">Cijene</h2>
+        <table class="mg-table">
+            <thead>
+                <tr><th>TIP CIJENE</th><th class="num">IZNOS</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Osnovna cijena</td>
+                    <td class="num">{{ product.cijena }} KM</td>
+                </tr>
+                <tr>
+                    <td>Vpc</td>
+                    <td class="num">{{ vpc }} KM</td>
+                </tr>
+                <tr>
+                    <td>Akcijska cijena</td>
+                    <td class="num">{% if product.akcijska_cijena %}{{ product.akcijska_cijena }} KM{% else %}—{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Posljednja promjena</td>
+                    <td class="num">{{ product.azuriran|date:"d.m.Y" }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <form method="post" style="margin-top:12px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="meta">
+            <input type="hidden" name="tezina" value="{{ meta.tezina|default:'' }}">
+            <input type="hidden" name="jedinica_mjere" value="{{ meta.jedinica_mjere|default:'kom' }}">
+            <input type="hidden" name="min_zaliha" value="{{ meta.min_zaliha|default:0 }}">
+            {% if meta.dobavljac_id %}<input type="hidden" name="dobavljac_id" value="{{ meta.dobavljac_id }}">{% endif %}
+            <div class="mg-field">
+                <label for="vp">Veleprodajna cijena (KM)</label>
+                <input id="vp" name="veleprodajna_cijena" value="{{ meta.veleprodajna_cijena|default:'' }}" inputmode="decimal">
+            </div>
+            <button type="submit" class="mg-btn" style="margin-top:8px;">Sačuvaj cijenu</button>
+        </form>
+    </section>
+
+    <section class="mg-card mg-artikal-history">
+        <h2 class="mg-h">Istorija kretanja (zadnjih 10)</h2>
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>DATUM</th>
+                    <th>TIP</th>
+                    <th>KUPAC</th>
+                    <th>LOKACIJA</th>
+                    <th class="num">KOLIČINA</th>
+                    <th>NAPOMENA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in movements %}
+                <tr>
+                    <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
+                    <td>{{ m.get_tip_display }}</td>
+                    <td>{% if m.kupac_label %}{{ m.kupac_label }}{% else %}—{% endif %}</td>
+                    <td>
+                        {{ m.location.sifra }}
+                        {% if m.to_location %} → {{ m.to_location.sifra }}{% endif %}
+                    </td>
+                    <td class="num {% if m.tip == 'prijem' or m.kolicina > 0 and m.tip != 'prodaja' and m.tip != 'transfer' %}num-plus{% elif m.tip == 'prodaja' or m.tip == 'transfer' or m.kolicina < 0 %}num-minus{% endif %}">
+                        {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' or m.tip == 'transfer' %}-{% elif m.kolicina > 0 %}+{% elif m.kolicina < 0 %}-{% endif %}{% if m.kolicina < 0 %}{{ m.kolicina|cut:"-" }}{% else %}{{ m.kolicina }}{% endif %}
+                    </td>
+                    <td>{{ m.napomena|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="mg-muted">Nema kretanja.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a class="mg-link" href="{% url 'staff_magacin_istorija' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}">Pogledaj kompletnu istoriju →</a>
+    </section>
+
+    <section class="mg-card mg-artikal-variants">
+        <h2 class="mg-h">Varijacije</h2>
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>NAZIV</th>
+                    <th>ŠIFRA</th>
+                    <th class="num">KOLIČINA</th>
+                    <th class="num">CIJENA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in variant_rows %}
+                <tr class="is-clickable{% if row.na_stanju <= 0 %} is-out{% endif %}" onclick="location.href='{% url 'staff_magacin_artikal' product.pk %}?varijacija={{ row.variation.pk }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}'">
+                    <td>{{ row.variation.naziv }}</td>
+                    <td>{{ row.variation.sifra|default:"—" }}</td>
+                    <td class="num{% if row.na_stanju <= 0 %} num-out{% endif %}">{{ row.na_stanju }} {{ meta.jedinica_mjere|default:"kom" }}</td>
+                    <td class="num">{{ row.cijena }} KM</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td>{{ product.naziv }}</td>
+                    <td>{{ product.sifra|default:"—" }}</td>
+                    <td class="num">{{ totals.na_stanju }} {{ meta.jedinica_mjere|default:"kom" }}</td>
+                    <td class="num">{{ product.cijena }} KM</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if variation %}
+        <a class="mg-link" href="{% url 'staff_magacin_artikal' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Prikaži zbir svih varijacija</a>
+        {% endif %}
+    </section>
+</div>
+</div>
+
+<div class="mg-modal" id="mgZaliheModal" hidden>
+    <div class="mg-modal-bg" data-mg-zalihe-close></div>
+    <div class="mg-modal-panel mg-zalihe-panel" role="dialog" aria-labelledby="mgZaliheTitle">
+        <p class="mg-zalihe-kicker">Zalihe</p>
+        <h2 id="mgZaliheTitle">
+            {% if variation %}{{ variation.prikazna_cijena }} KM{% else %}{{ product.prikazna_cijena }} KM{% endif %}
+        </h2>
+        {% if variation and variation.na_akciji %}
+        <p class="mg-zalihe-old"><s>{{ variation.cijena }} KM</s></p>
+        {% elif product.na_akciji %}
+        <p class="mg-zalihe-old"><s>{{ product.cijena }} KM</s></p>
+        {% endif %}
+        <div class="mg-zalihe-actions">
+            <button type="button" class="mg-btn" data-mg-open-move data-mode="mp"{% if not location_rows %} disabled{% endif %}>Prenos u MP</button>
+            <button type="button" class="mg-btn" data-mg-open-move data-mode="transfer"{% if not location_rows %} disabled{% endif %}>Transfer</button>
+            <button type="button" class="mg-btn" data-mg-open-move data-mode="add">Dodaj u novu lokaciju</button>
+        </div>
+        <button type="button" class="mg-zalihe-close" data-mg-zalihe-close>Zatvori</button>
+    </div>
+</div>
+
+<div class="mg-modal" id="mgMoveModal" hidden>
+    <div class="mg-modal-bg" data-mg-close></div>
+    <div class="mg-modal-panel mg-zalihe-move" role="dialog" aria-labelledby="mgMoveTitle">
+        <h2 id="mgMoveTitle">Zalihe</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="kretanje">
+            <input type="hidden" name="mode" id="mgLocMode" value="update">
+            {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
+            <div class="mg-form-grid" style="grid-template-columns:1fr;">
+                <div class="mg-field" id="mgLocUpdateField">
+                    <label id="mgLocUpdateLabel">Lokacija</label>
+                    <select name="location_id" id="mgMoveLocation">
+                        {% for row in location_rows %}
+                        <option value="{{ row.location.pk }}" data-qty="{{ row.kolicina }}"{% if forloop.first %} selected{% endif %}>{{ row.location.sifra }}</option>
+                        {% endfor %}
+                        {% for row in mp_location_rows %}
+                        <option value="{{ row.location.pk }}" data-qty="{{ row.kolicina }}"{% if not location_rows and forloop.first %} selected{% endif %}>{{ row.location.sifra }} · MP</option>
+                        {% endfor %}
+                        {% if not location_rows and not mp_location_rows %}
+                        <option value="" disabled>Nema lokacije sa zalihom</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="mg-field" id="mgLocAddField" hidden>
+                    <label id="mgLocAddLabel">Lokacija</label>
+                    <div class="mg-loc-search" id="mgLocSearch">
+                        <input type="hidden" name="add_location_id" id="mgAddLocation">
+                        <input type="hidden" name="to_location_id" id="mgToLocation">
+                        <input type="search" id="mgAddLocationQuery" placeholder="Kucaj šifru ili naziv lokacije..." autocomplete="off">
+                        <ul class="mg-loc-suggest" id="mgAddLocationList" hidden>
+                            {% for loc in locations %}
+                            <li data-id="{{ loc.pk }}" data-label="{{ loc.sifra }}">{{ loc.sifra }}</li>
+                            {% empty %}
+                            <li class="is-empty" data-empty="1">Nema lokacija</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="mg-field">
+                    <label>Količina</label>
+                    <p class="mg-qty-hint" id="mgQtyHint" hidden></p>
+                    <input name="kolicina" id="mgQtyInput" type="number" min="0" step="1" required>
+                </div>
+            </div>
+            <div class="mg-zalihe-move-btns">
+                <button type="button" class="mg-btn" data-mg-close>Otkaži</button>
+                <button type="submit" class="mg-btn mg-btn-primary">Potvrdi</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var btn = document.getElementById('mgZaliheBtn');
+    var modal = document.getElementById('mgZaliheModal');
+    if (!btn || !modal) return;
+    function openChooser() { modal.hidden = false; }
+    function closeChooser() { modal.hidden = true; }
+    btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openChooser();
+    });
+    modal.querySelectorAll('[data-mg-zalihe-close]').forEach(function (el) {
+        el.addEventListener('click', closeChooser);
+    });
+    modal.querySelectorAll('[data-mg-open-move]').forEach(function (el) {
+        el.addEventListener('click', closeChooser);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.hidden) closeChooser();
+    });
+
+    document.querySelectorAll('.mg-skini-form').forEach(function (skiniForm) {
+        skiniForm.addEventListener('submit', function (event) {
+            if (!window.confirm('Skinuti artikal sa sajta i staviti sve količine na 0?')) {
+                event.preventDefault();
+            }
+        });
+    });
+    document.querySelectorAll('.mg-ubaci-form').forEach(function (ubaciForm) {
+        ubaciForm.addEventListener('submit', function (event) {
+            if (!window.confirm('Staviti artikal na sajt? Magacinska zaliha se ne mijenja — za artikle koji su na stanju u radnji.')) {
+                event.preventDefault();
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

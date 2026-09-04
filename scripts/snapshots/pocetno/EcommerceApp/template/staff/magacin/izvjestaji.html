@@ -1,0 +1,81 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar"><h1>Izvještaji</h1></div>
+
+<section class="mg-card">
+    <h2 class="mg-h">Pronađi narudžbu</h2>
+    <form method="get" class="mg-page-search" style="position:relative;margin:0 0 14px;" role="search">
+        <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input type="search" name="narudzba" value="{{ order_query }}" placeholder="Ime, telefon ili broj narudžbe…" autocomplete="off">
+        <button type="submit" class="mg-btn mg-btn-primary">Pronađi</button>
+    </form>
+    {% if order_query %}
+    <div class="mg-table-wrap">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>BROJ</th>
+                <th>KUPAC</th>
+                <th>TELEFON</th>
+                <th>STATUS</th>
+                <th>DATUM</th>
+                <th class="num">UKUPNO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in found_orders %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_order_detail' order.broj %}'">
+                <td>#{{ order.broj }}</td>
+                <td>{{ order.ime_prezime }}</td>
+                <td>{{ order.telefon }}</td>
+                <td>{{ order.get_status_label }}</td>
+                <td>{{ order.kreirana|date:"d.m.Y H:i" }}</td>
+                <td class="num">{{ order.ukupno }} KM</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="mg-muted">Nema narudžbi za „{{ order_query }}”.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="mg-muted" style="margin:0;">Unesi ime, telefon ili broj da izlistaš narudžbe i otvoriš pregled.</p>
+    {% endif %}
+</section>
+
+<div class="mg-stats-row">
+    <div class="mg-mini-stat"><span>Artikli ukupno</span><strong>{{ products_total }}</strong></div>
+    <div class="mg-mini-stat"><span>Aktivni artikli</span><strong>{{ products_active }}</strong></div>
+    <div class="mg-mini-stat"><span>Kretanja danas</span><strong>{{ movements_today }}</strong></div>
+</div>
+<section class="mg-card">
+    <h2 class="mg-h">Lager po lokacijama</h2>
+    <div class="mg-table-wrap">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>LOKACIJA</th>
+                <th class="num">ARTIKALA</th>
+                <th class="num">NA STANJU</th>
+                <th class="num">REZERVISANO</th>
+                <th class="num">DOSTUPNO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in by_location %}
+            <tr>
+                <td>{{ row.location.label }}</td>
+                <td class="num">{{ row.artikala }}</td>
+                <td class="num">{{ row.na_stanju }}</td>
+                <td class="num">{{ row.rezervisano }}</td>
+                <td class="num num-ok">{{ row.dostupno }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="mg-muted">Nema podataka.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% endblock %}

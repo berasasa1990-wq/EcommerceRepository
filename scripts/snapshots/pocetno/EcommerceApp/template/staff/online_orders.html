@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Online narudžbe — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block content %}
+<section class="staff-orders-page staff-online-orders-page">
+    <div class="staff-orders-header">
+        <div>
+            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+            <h1>Online narudžbe</h1>
+            <p class="staff-orders-subtitle">Pregled novih narudžbi i pretraga po broju, emailu ili telefonu.</p>
+        </div>
+    </div>
+
+    <form class="staff-orders-search" method="get" action="{% url 'staff_online_orders' %}">
+        {% if filter_status != 'nove' and not searched %}
+        <input type="hidden" name="filter" value="{{ filter_status }}">
+        {% endif %}
+        <div class="staff-orders-search-row staff-orders-search-row--input">
+            <input type="search" name="q" id="staffOrderQuery" value="{{ search_query }}" placeholder="Broj narudžbe, email ili telefon" autocomplete="off">
+            <button type="submit" class="btn btn-primary">Pretraži</button>
+        </div>
+    </form>
+
+    {% if not searched %}
+    <div class="staff-online-orders-filter">
+        <a href="{% url 'staff_online_orders' %}" class="staff-filter-btn{% if filter_status == 'nove' %} is-active{% endif %}">
+            Nove
+            {% if nova_count %}<span class="staff-filter-count">{{ nova_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'staff_online_orders' %}?filter=validirane" class="staff-filter-btn{% if filter_status == 'zavrsene' %} is-active{% endif %}">
+            Validatovane
+            {% if zavrsena_count %}<span class="staff-filter-count">{{ zavrsena_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'staff_online_orders' %}?filter=sve" class="staff-filter-btn{% if filter_status == 'sve' %} is-active{% endif %}">
+            Sve
+        </a>
+    </div>
+    {% elif search_query %}
+    <p class="staff-online-search-meta">
+        Rezultati pretrage za „{{ search_query }}“
+        <a href="{% url 'staff_online_orders' %}{% if filter_status != 'nove' %}?filter={{ filter_status }}{% endif %}" class="staff-online-search-clear">Poništi pretragu</a>
+    </p>
+    {% endif %}
+
+    {% if orders %}
+    <div class="staff-orders-results">
+        {% if not searched %}
+        <h2>{{ orders|length }} narudžb{% if orders|length == 1 %}a{% else %}e{% endif %}</h2>
+        {% endif %}
+        <div class="staff-online-orders-list">
+            {% for order in orders %}
+            <article class="staff-online-order-row">
+                <div class="staff-online-order-main">
+                    <div class="staff-online-order-id">
+                        <span class="staff-online-order-number">#{{ order.broj }}</span>
+                        {% if order.status == 'nova' and not order.odstampana %}
+                        <span class="staff-badge-nova">NOVA</span>
+                        {% elif order.status != 'nova' %}
+                        <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+                        {% endif %}
+                        {% if order.izvor == 'magacin' %}
+                        <span class="staff-badge-nova" style="background:#e0e7ff;color:#3730a3;">RUČNI UNOS</span>
+                        {% endif %}
+                    </div>
+                    <div class="staff-online-order-meta">
+                        <span class="staff-online-order-customer">{{ order.ime_prezime }}</span>
+                        <span class="staff-online-order-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</span>
+                    </div>
+                    <div class="staff-online-order-amount" aria-label="Iznos narudžbe">
+                        {{ order.ukupno }} KM
+                    </div>
+                </div>
+                <div class="staff-online-order-actions">
+                    <a href="{% url 'staff_order_detail' broj=order.broj %}" class="btn btn-sm staff-order-preview-btn order-card-link">Pregled</a>
+                    <form method="post" action="{% url 'staff_online_orders' %}{% if searched %}?q={{ search_query|urlencode }}{% elif filter_status != 'nove' %}?filter={{ filter_status }}{% endif %}" class="staff-odoo-form"{% if order.odoo_sale_order_id %} data-already-synced="1" data-odoo-name="{{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }}"{% endif %}>
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="odoo_narudzba">
+                        <input type="hidden" name="broj" value="{{ order.broj }}">
+                        <input type="hidden" name="force" value="0" class="staff-odoo-force">
+                        <button type="submit" class="btn btn-sm staff-odoo-order-btn{% if order.odoo_sale_order_id %} is-done{% endif %}" title="{% if order.odoo_sale_order_id %}Već u Odoo: {{ order.odoo_sale_order_name|default:order.odoo_sale_order_id }} — klik za ponovni unos{% else %}Kreiraj Sales narudžbu u Odoo (isti artikli i količine){% endif %}">{% if order.odoo_sale_order_id %}Odoo ↻ {{ order.odoo_sale_order_name }}{% else %}Odoo narudžba{% endif %}</button>
+                    </form>
+                    <a href="{% url 'staff_order_print' broj=order.broj %}"
+                       class="btn btn-sm staff-print-order-btn{% if order.odstampana %} is-done{% endif %}"
+                       target="_blank"
+                       rel="noopener"
+                       data-order-print
+                       data-already-printed="{% if order.odstampana %}1{% else %}0{% endif %}"
+                       title="{% if order.odstampana %}Već odštampano{% if order.odstampana_at %} — {{ order.odstampana_at|date:'d.m.Y. H:i' }}{% endif %}{% else %}Štampaj narudžbu{% endif %}">{% if order.odstampana %}Štampanje ✓{% else %}Štampaj{% endif %}</a>
+                    <a href="{% url 'staff_order_brza_posta' broj=order.broj %}" class="btn btn-sm staff-brza-posta-btn" target="_blank" rel="noopener">Brza pošta</a>
+                    {% if order.status == 'nova' %}
+                    <form method="post" action="{% url 'staff_online_orders' %}{% if searched %}?q={{ search_query|urlencode }}{% elif filter_status != 'nove' %}?filter={{ filter_status }}{% endif %}" class="staff-complete-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="zavrsi">
+                        <input type="hidden" name="broj" value="{{ order.broj }}">
+                        <button type="submit" class="btn btn-secondary btn-sm staff-complete-btn">Validiraj</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <p class="staff-orders-empty">
+        {% if searched %}
+        Nema narudžbi za unesene podatke.
+        {% elif filter_status == 'nove' %}
+        Nema novih online narudžbi.
+        {% elif filter_status == 'zavrsene' %}
+        Nema validiranih online narudžbi.
+        {% else %}
+        Nema online narudžbi.
+        {% endif %}
+    </p>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.staff-complete-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        if (!window.confirm('Želite li validirati narudžbu?')) {
+            event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('[data-order-print]').forEach(function (link) {
+    link.addEventListener('click', function (event) {
+        if (link.getAttribute('data-already-printed') !== '1') return;
+        var ok = window.confirm('Već je odrađeno. Želite li ponovo?');
+        if (!ok) {
+            event.preventDefault();
+        }
+    });
+});
+document.querySelectorAll('.staff-odoo-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        var already = form.getAttribute('data-already-synced') === '1';
+        var name = form.getAttribute('data-odoo-name') || '';
+        var forceInput = form.querySelector('.staff-odoo-force');
+        var msg = already
+            ? ('Narudžba je već unesena u Odoo' + (name ? ' (' + name + ')' : '') +
+               '.\n\nŽelite li kreirati NOVU Sales narudžbu (ponovni unos)?')
+            : 'Kreirati Sales narudžbu u Odoo sa istim artiklima i količinama?';
+        if (!window.confirm(msg)) {
+            event.preventDefault();
+            return;
+        }
+        if (forceInput) {
+            forceInput.value = already ? '1' : '0';
+        }
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Odoo…';
+        }
+    });
+});
+</script>
+{% endblock %}

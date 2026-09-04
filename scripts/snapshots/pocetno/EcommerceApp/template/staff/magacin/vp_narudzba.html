@@ -1,0 +1,1137 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="vp-page{% if draft.ime_prezime %} is-customer-set{% endif %}">
+    {% if not draft %}
+    <div class="mg-page-head">
+        <div>
+            <h1>VP narudžbe</h1>
+            <p>Otvori VP narudžbu. Kupac i artikli ostaju dok ne obrišeš ili završiš.</p>
+        </div>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+    </div>
+    <section class="mg-card vp-start">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="novi">
+            <button type="submit" class="mg-btn mg-btn-primary">Nova VP narudžba</button>
+        </form>
+    </section>
+    {% else %}
+    <header class="vp-head mg-page-head">
+        <div>
+            <h1>VP narudžbe</h1>
+            <p id="vpHeadSum">{{ stavke|length }} stavki{% if ukupno %} · {{ ukupno }} KM{% if vp_bulk %} · sa PDV {{ ukupno_sa_pdv }} KM{% endif %}{% endif %}</p>
+        </div>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+    </header>
+
+    <section class="vp-box mg-card{% if draft.ime_prezime %} is-set{% endif %}" id="vpCustomerBox"
+             data-lookup="{{ customer_lookup_url }}"
+             data-save="{{ customer_save_url }}">
+        {% if draft.ime_prezime %}
+        <div class="vp-chip mg-customer-chip"
+             data-id="{{ draft.customer_id|default:'' }}"
+             data-ime="{{ draft.ime_prezime }}"
+             data-telefon="{{ draft.telefon }}"
+             data-adresa="{{ draft.adresa }}"
+             data-grad="{{ draft.grad }}"
+             data-email="{{ draft.email }}"
+             data-postanski="{{ draft.postanski_broj }}">
+            <div>
+                <span class="mg-locked-kicker">Kupac</span>
+                <strong class="vp-name">{{ draft.ime_prezime }}</strong>
+                <span>{{ draft.telefon }}{% if draft.grad %} · {{ draft.grad }}{% endif %}</span>
+            </div>
+            <div class="mg-chip-actions">
+                <button type="button" class="mg-btn" id="vpCustomerEdit">Izmijeni</button>
+                <button type="button" class="mg-btn" id="vpCustomerChange">Promijeni</button>
+            </div>
+        </div>
+        {% endif %}
+        <div class="vp-customer-edit">
+            <h2 class="mg-h">Kupac</h2>
+            <p class="mg-field-label">Pretraga kupca</p>
+            <div class="vp-row mg-input-row">
+                <div class="mg-icon-field">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input type="search" id="vpCustomerSearch" placeholder="Unesi ime, telefon ili odaberi postojećeg kupca..." autocomplete="off">
+                </div>
+                <button type="button" class="mg-btn mg-btn-pill" id="vpCustomerAdd">+ Novi kupac</button>
+            </div>
+            <ul class="vp-suggest" id="vpCustomerSuggest" hidden></ul>
+        </div>
+        <form method="post" id="vpCustomerForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="kupac">
+            <input type="hidden" name="customer_id" id="vpCustomerId">
+        </form>
+    </section>
+
+    <section class="vp-box vp-search mg-card" data-lookup="{{ lookup_url }}">
+        <h2 class="mg-h">Dodaj artikle</h2>
+        <div class="vp-row vp-entry has-catalog mg-input-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg>
+                <input type="search" id="vpQuery" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off" autofocus>
+            </div>
+            <button type="button" class="mg-btn mg-btn-pill" id="vpCatalogBtn" aria-pressed="false">Katalog</button>
+            <button type="button" class="mg-btn mg-btn-pill" id="vpBulkBtn">Bulk</button>
+            <button type="button" class="mg-btn mg-btn-pill vp-scan-btn" id="vpScanBtn" data-mg-scan-target="vpQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
+        </div>
+        <ul class="vp-suggest" id="vpSuggest" hidden></ul>
+        <div id="vpCatalog" class="mg-catalog" hidden></div>
+        <p class="vp-bulk-result" id="vpBulkResult" hidden></p>
+    </section>
+    <form method="post" id="vpAddForm" hidden>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="dodaj">
+        <input type="hidden" name="product_id" id="vpProductId">
+        <input type="hidden" name="variation_id" id="vpVariationId">
+        <input type="hidden" name="kolicina" id="vpAddQtyHidden" value="1">
+    </form>
+
+    <section class="vp-table mg-card">
+        <h2 class="mg-h">Stavke narudžbe</h2>
+        <div class="vp-cols" aria-hidden="true">
+            <span>Artikal</span>
+            <span>Šifra</span>
+            <span>Količina</span>
+            <span>Cijena</span>
+            <span></span>
+        </div>
+        <ul class="vp-lines" id="vpLines">
+            {% for row in stavke %}
+            <li data-id="{{ row.pk }}" data-pid="{{ row.product_id|default:'' }}" data-vid="{{ row.variation_id|default:'' }}">
+                <span class="vp-name">{{ row.naziv }}{% if row.mp_ok %} <i class="vp-mp">Maloprodaja</i>{% endif %}</span>
+                <span class="vp-code">{{ row.sifra|default:"—" }}</span>
+                <form method="post" class="vp-qty-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="kolicina">
+                    <input type="hidden" name="stavka_id" value="{{ row.pk }}">
+                    <input class="vp-qty" name="kolicina" type="number" min="1" step="1" value="{{ row.kolicina }}" inputmode="numeric" aria-label="Količina" tabindex="-1">
+                </form>
+                <span class="vp-price">{{ row.cijena }} KM</span>
+                <form method="post" class="vp-remove-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="ukloni">
+                    <input type="hidden" name="stavka_id" value="{{ row.pk }}">
+                    <button type="submit" class="mg-btn vp-remove" tabindex="-1">Ukloni</button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="is-empty">
+                <span class="mg-empty-state">
+                    <span class="mg-empty-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>
+                    </span>
+                    <strong>Nema stavki</strong>
+                    <p>Unesi artikal — predložiće se dok kucaš.</p>
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <div class="mg-order-foot">
+        <form method="post" id="vpDeleteForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="obrisi">
+            <button type="submit" class="mg-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                Obriši narudžbu
+            </button>
+        </form>
+        <div class="mg-order-foot-sum">
+            <div class="vp-total" id="vpTotal"{% if not stavke %} hidden{% endif %}>
+                <span>Ukupno: <strong><span id="vpSumNet">{{ ukupno }} KM</span></strong></span>
+                <span class="vp-pdv-line" id="vpPdvRow"{% if not vp_bulk %} hidden{% endif %}>PDV 17%: <strong><span id="vpSumPdv">{{ pdv }} KM</span></strong></span>
+                <span class="vp-pdv-line is-gross" id="vpGrossRow"{% if not vp_bulk %} hidden{% endif %}>Ukupno sa PDV: <strong><span id="vpSumGross">{{ ukupno_sa_pdv }} KM</span></strong></span>
+            </div>
+            <form method="post" id="vpReserveForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="rezervacija">
+                <button type="submit" class="mg-btn">Rezervacija</button>
+            </form>
+            <form method="post" id="vpFinishForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="zavrsi">
+                <input type="hidden" name="placanje" id="vpPlacanje" value="">
+                <button type="submit" class="mg-btn mg-btn-primary">Završi</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mg-modal" id="vpPayModal" hidden>
+    <div class="mg-modal-bg" data-vp-pay-close></div>
+    <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="vpPayTitle">
+        <h2 id="vpPayTitle">Način plaćanja</h2>
+        <p class="mg-muted">Kako je ova VP narudžba plaćena?</p>
+        <div class="vp-pay-choices">
+            <button type="button" class="vp-pay-choice" data-vp-pay="ziralno">Žiralno</button>
+            <button type="button" class="vp-pay-choice is-cash" data-vp-pay="gotovina">Gotovinski</button>
+        </div>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-vp-pay-close>Odustani</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="vpCustomerModal" hidden>
+    <div class="mg-modal-bg" data-vp-cust-close></div>
+    <div class="mg-modal-panel" role="dialog">
+        <h2 id="vpCustomerModalTitle">Dodaj kupca</h2>
+        <input type="hidden" id="vpEditCustomerId" value="">
+        <div class="mg-form-grid" style="grid-template-columns:1fr;">
+            <div class="mg-field">
+                <label for="vpNewIme">Ime i prezime *</label>
+                <input id="vpNewIme" maxlength="200">
+            </div>
+            <div class="mg-field">
+                <label for="vpNewTelefon">Telefon *</label>
+                <input id="vpNewTelefon" maxlength="30">
+            </div>
+            <div class="mg-field">
+                <label for="vpNewAdresa">Adresa</label>
+                <input id="vpNewAdresa" maxlength="300">
+            </div>
+            <div class="mg-field">
+                <label for="vpNewGrad">Grad</label>
+                <input id="vpNewGrad" maxlength="100">
+            </div>
+            <div class="mg-field">
+                <label for="vpNewPost">Poštanski broj *</label>
+                <input id="vpNewPost" required maxlength="20">
+            </div>
+            <div class="mg-field">
+                <label for="vpNewEmail">Email</label>
+                <input id="vpNewEmail" type="email" maxlength="254">
+            </div>
+        </div>
+        <p class="mg-qty-hint is-warn" id="vpCustomerHint" hidden></p>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-vp-cust-close>Odustani</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="vpCustomerSave">Sačuvaj kupca</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="vpBulkModal" hidden>
+    <div class="mg-modal-bg" data-vp-bulk-close></div>
+    <div class="mg-modal-panel vp-bulk-panel" role="dialog" aria-modal="true" aria-labelledby="vpBulkTitle">
+        <h2 id="vpBulkTitle">Bulk unos</h2>
+        <p class="mg-muted">Zalijepi tabelu narudžbe (#, Artikal, Kol., Cijena, Ukupno). Unose se samo artikli čiji je naziv isti u bazi.</p>
+        <textarea id="vpBulkText" rows="10" placeholder="#, Artikal, Kol., Cijena, Ukupno&#10;1, MT13982 MATE Goliath Camo Carp Line 1000m 0.31mm&#10;Šifra: 7943, 3, 19.20 KM, 57.60 KM"></textarea>
+        <p class="mg-qty-hint is-warn" id="vpBulkHint" hidden></p>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-vp-bulk-close>Odustani</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="vpBulkImport">Unesi</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="vpQtyModal" hidden>
+    <div class="mg-modal-bg" data-vp-qty-close></div>
+    <div class="mg-modal-panel vp-qty-panel" role="dialog">
+        <p class="vp-qty-kicker">Količina</p>
+        <h2 id="vpQtyName">Artikal</h2>
+        <p id="vpQtyMeta" class="vp-qty-meta"></p>
+        <input id="vpQtyModalInput" class="vp-qty-big" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Količina">
+        <div class="vp-qty-actions">
+            <button type="button" class="mg-btn" data-vp-qty-close>Otkaži</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="vpQtyAdd">Dodaj</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="vpMpModal" hidden>
+    <div class="mg-modal-bg" data-vp-mp-skip></div>
+    <div class="mg-modal-panel" role="dialog">
+        <h2>Nema dostupnog artikla</h2>
+        <p id="vpMpText" class="mg-mp-lead">
+            Artikal nije na nijednoj lokaciji.
+        </p>
+        <p class="mg-muted">
+            <strong>Nije popisan — dodaj</strong> = stavi na narudžbu. Na pickingu ide kao „Nije popisan”, bez evidencije zalihe.
+            <strong>Izbaci</strong> = ne dodaji / skini sa narudžbe.
+        </p>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn mg-btn-danger" id="vpMpSkip">Izbaci</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="vpMpAdd">Nije popisan — dodaj</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var vpMeta = document.querySelector('meta[name="viewport"]');
+    if (vpMeta) {
+        vpMeta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    }
+    document.body.classList.add('is-vp');
+
+    var finish = document.getElementById('vpFinishForm');
+    var payModal = document.getElementById('vpPayModal');
+    var payInput = document.getElementById('vpPlacanje');
+    function openPayModal() {
+        if (!payModal) return;
+        payModal.hidden = false;
+    }
+    function closePayModal() {
+        if (!payModal) return;
+        payModal.hidden = true;
+    }
+    if (finish) {
+        finish.addEventListener('submit', function (event) {
+            var pay = payInput && String(payInput.value || '').trim();
+            if (pay === 'ziralno' || pay === 'gotovina') return;
+            event.preventDefault();
+            openPayModal();
+        });
+    }
+    if (payModal) {
+        payModal.addEventListener('click', function (event) {
+            if (event.target.closest('[data-vp-pay-close]')) {
+                closePayModal();
+                return;
+            }
+            var choice = event.target.closest('[data-vp-pay]');
+            if (!choice || !finish) return;
+            if (payInput) payInput.value = choice.getAttribute('data-vp-pay') || '';
+            closePayModal();
+            if (typeof finish.requestSubmit === 'function') finish.requestSubmit();
+            else finish.submit();
+        });
+    }
+    var reserve = document.getElementById('vpReserveForm');
+    if (reserve) {
+        reserve.addEventListener('submit', function (event) {
+            if (!window.confirm('Sačuvati kao rezervaciju? Zaliha se drži, narudžba ostaje otvorena.')) event.preventDefault();
+        });
+    }
+    var del = document.getElementById('vpDeleteForm');
+    if (del) {
+        del.addEventListener('submit', function (event) {
+            if (!window.confirm('Obrisati cijelu VP narudžbu?')) event.preventDefault();
+        });
+    }
+    function csrfToken() {
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+
+    var custBox = document.getElementById('vpCustomerBox');
+    var custSearch = document.getElementById('vpCustomerSearch');
+    var custList = document.getElementById('vpCustomerSuggest');
+    var custForm = document.getElementById('vpCustomerForm');
+    var custId = document.getElementById('vpCustomerId');
+    var addBtn = document.getElementById('vpCustomerAdd');
+    var editBtn = document.getElementById('vpCustomerEdit');
+    var modal = document.getElementById('vpCustomerModal');
+    var modalTitle = document.getElementById('vpCustomerModalTitle');
+    var editId = document.getElementById('vpEditCustomerId');
+    var saveBtn = document.getElementById('vpCustomerSave');
+    var hint = document.getElementById('vpCustomerHint');
+    var newIme = document.getElementById('vpNewIme');
+    var newTel = document.getElementById('vpNewTelefon');
+    var newAdresa = document.getElementById('vpNewAdresa');
+    var newGrad = document.getElementById('vpNewGrad');
+    var newPost = document.getElementById('vpNewPost');
+    var newEmail = document.getElementById('vpNewEmail');
+    var custTimer = null;
+    var saving = false;
+
+    function pickCustomer(row) {
+        if (!row || !custId || !custForm) return;
+        custId.value = row.id;
+        custForm.submit();
+    }
+    function renderCustomers(rows) {
+        if (!custList) return;
+        custList.innerHTML = '';
+        if (!(rows || []).length) {
+            custList.innerHTML = '<li class="is-empty">Nema kupca. Dodaj novog.</li>';
+            custList.hidden = false;
+            return;
+        }
+        rows.forEach(function (row) {
+            var li = document.createElement('li');
+            li.innerHTML = '<span class="vp-name"></span><span></span>';
+            li.querySelector('.vp-name').textContent = row.ime_prezime || '';
+            li.querySelector('span:last-child').textContent = [row.telefon, row.grad].filter(Boolean).join(' · ');
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                pickCustomer(row);
+            });
+            custList.appendChild(li);
+        });
+        custList.hidden = false;
+    }
+    function searchCustomers(query) {
+        var url = custBox ? custBox.getAttribute('data-lookup') : '';
+        if (!url) {
+            if (custList) custList.hidden = true;
+            return;
+        }
+        var q = (query || '').trim();
+        fetch(url + (q ? '?q=' + encodeURIComponent(q) : ''), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            renderCustomers(data.results || []);
+        }).catch(function () {
+            if (custList) {
+                custList.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
+                custList.hidden = false;
+            }
+        });
+    }
+    function openAdd() {
+        if (!modal) return;
+        if (editId) editId.value = '';
+        if (modalTitle) modalTitle.textContent = 'Dodaj kupca';
+        if (newIme) newIme.value = (custSearch && custSearch.value) || '';
+        if (newTel) newTel.value = '';
+        if (newAdresa) newAdresa.value = '';
+        if (newGrad) newGrad.value = '';
+        if (newPost) newPost.value = '';
+        if (newEmail) newEmail.value = '';
+        if (hint) { hint.hidden = true; hint.textContent = ''; }
+        modal.hidden = false;
+        window.setTimeout(function () { if (newIme) newIme.focus(); }, 40);
+    }
+    function openEdit() {
+        if (!modal) return;
+        var chip = custBox ? custBox.querySelector('.vp-chip') : null;
+        if (editId) editId.value = (chip && chip.getAttribute('data-id')) || (custId && custId.value) || '';
+        if (modalTitle) modalTitle.textContent = 'Izmijeni kupca';
+        if (newIme) newIme.value = (chip && chip.getAttribute('data-ime')) || '';
+        if (newTel) newTel.value = (chip && chip.getAttribute('data-telefon')) || '';
+        if (newAdresa) newAdresa.value = (chip && chip.getAttribute('data-adresa')) || '';
+        if (newGrad) newGrad.value = (chip && chip.getAttribute('data-grad')) || '';
+        if (newPost) newPost.value = (chip && chip.getAttribute('data-postanski')) || '';
+        if (newEmail) newEmail.value = (chip && chip.getAttribute('data-email')) || '';
+        if (hint) { hint.hidden = true; hint.textContent = ''; }
+        modal.hidden = false;
+        window.setTimeout(function () { if (newIme) newIme.focus(); }, 40);
+    }
+    function closeAdd() { if (modal) modal.hidden = true; }
+    if (custSearch) {
+        custSearch.addEventListener('input', function () {
+            window.clearTimeout(custTimer);
+            custTimer = window.setTimeout(function () { searchCustomers(custSearch.value); }, 160);
+        });
+        custSearch.addEventListener('focus', function () {
+            searchCustomers(custSearch.value);
+        });
+    }
+    if (addBtn) addBtn.addEventListener('click', openAdd);
+    if (editBtn) editBtn.addEventListener('click', openEdit);
+    var changeBtn = document.getElementById('vpCustomerChange');
+    var vpPage = document.querySelector('.vp-page');
+    if (changeBtn && custBox) {
+        changeBtn.addEventListener('click', function () {
+            custBox.classList.remove('is-set');
+            if (vpPage) vpPage.classList.remove('is-customer-set');
+            if (custSearch) {
+                custSearch.focus();
+                searchCustomers(custSearch.value);
+            }
+        });
+    }
+    if (modal) {
+        modal.querySelectorAll('[data-vp-cust-close]').forEach(function (el) {
+            el.addEventListener('click', closeAdd);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal && !modal.hidden) closeAdd();
+        });
+    }
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function () {
+            var ime = (newIme && newIme.value || '').trim();
+            var tel = (newTel && newTel.value || '').trim();
+            var saveUrl = custBox ? custBox.getAttribute('data-save') : '';
+            if (!ime) {
+                if (hint) { hint.hidden = false; hint.textContent = 'Unesi ime i prezime.'; }
+                if (newIme) newIme.focus();
+                return;
+            }
+            if (!tel) {
+                if (hint) { hint.hidden = false; hint.textContent = 'Unesi telefon.'; }
+                if (newTel) newTel.focus();
+                return;
+            }
+            var post = (newPost && newPost.value || '').trim();
+            if (!post) {
+                if (hint) { hint.hidden = false; hint.textContent = 'Unesi poštanski broj.'; }
+                if (newPost) newPost.focus();
+                return;
+            }
+            if (saving || !saveUrl) return;
+            var body = new URLSearchParams();
+            body.set('ime_prezime', ime);
+            body.set('telefon', tel);
+            body.set('adresa', newAdresa ? newAdresa.value.trim() : '');
+            body.set('grad', newGrad ? newGrad.value.trim() : '');
+            body.set('email', newEmail ? newEmail.value.trim() : '');
+            body.set('postanski_broj', newPost ? newPost.value.trim() : '');
+            if (editId && editId.value) body.set('customer_id', editId.value);
+            saving = true;
+            saveBtn.disabled = true;
+            fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken(),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+              .then(function (result) {
+                  saving = false;
+                  saveBtn.disabled = false;
+                  if (!result.data || !result.data.ok || !result.data.customer) {
+                      if (hint) {
+                          hint.hidden = false;
+                          hint.textContent = (result.data && result.data.error) || 'Kupac nije sačuvan.';
+                      }
+                      return;
+                  }
+                  pickCustomer(result.data.customer);
+              }).catch(function () {
+                  saving = false;
+                  saveBtn.disabled = false;
+                  if (hint) { hint.hidden = false; hint.textContent = 'Kupac nije sačuvan.'; }
+              });
+        });
+    }
+    document.addEventListener('click', function (event) {
+        if (custBox && !custBox.contains(event.target) && custList) custList.hidden = true;
+    });
+
+    var wrap = document.querySelector('.vp-search');
+    var input = document.getElementById('vpQuery');
+    var qtyHidden = document.getElementById('vpAddQtyHidden');
+    var list = document.getElementById('vpSuggest');
+    var catalog = document.getElementById('vpCatalog');
+    var catalogBtn = document.getElementById('vpCatalogBtn');
+    var qtyModal = document.getElementById('vpQtyModal');
+    var qtyName = document.getElementById('vpQtyName');
+    var qtyMeta = document.getElementById('vpQtyMeta');
+    var qtyField = document.getElementById('vpQtyModalInput');
+    var qtyAddBtn = document.getElementById('vpQtyAdd');
+    var linesEl = document.getElementById('vpLines');
+    var totalEl = document.getElementById('vpTotal');
+    if (!wrap || !input || !list) return;
+    var lookup = wrap.getAttribute('data-lookup') || '';
+    var timer = null;
+    var adding = false;
+    var seq = 0;
+    var picked = null;
+    var lastSuggest = [];
+
+    function vpFromMpc(raw) {
+        var n = parseFloat(String(raw || '').replace(',', '.'));
+        if (!isFinite(n) || n <= 0) return '';
+        return (Math.round((n / 1.38) * 100) / 100).toFixed(2);
+    }
+    function norm(value) {
+        return String(value || '').replace(/\s+/g, '').toLowerCase();
+    }
+    function looksLikeBarcode(query) {
+        return /^\d{8,14}$/.test(String(query || '').replace(/\s+/g, ''));
+    }
+    function isBarcodeHit(item, query) {
+        var q = norm(query);
+        return !!q && norm(item.barkod) === q;
+    }
+    function isPrefixOfLongerBarcode(query, rows, hit) {
+        var q = norm(query);
+        if (!q) return false;
+        return rows.some(function (row) {
+            if (row === hit) return false;
+            var barkod = norm(row.barkod);
+            return barkod.length > q.length && barkod.indexOf(q) === 0;
+        });
+    }
+    function qtyValue() {
+        var n = parseInt(qtyField && qtyField.value, 10);
+        return n > 0 ? n : 1;
+    }
+    function closeQty() {
+        if (qtyModal) qtyModal.hidden = true;
+    }
+    function openQty(item) {
+        if (!item || !qtyModal) return;
+        picked = item;
+        list.hidden = true;
+        if (qtyName) qtyName.textContent = item.naziv || 'Artikal';
+        if (qtyMeta) qtyMeta.textContent = [item.sifra, item.vp ? item.vp + ' KM' : ''].filter(Boolean).join(' · ');
+        if (qtyField) qtyField.value = '1';
+        qtyModal.hidden = false;
+        window.setTimeout(function () {
+            if (!qtyField) return;
+            qtyField.focus();
+            qtyField.select();
+        }, 40);
+    }
+    function focusQuery() {
+        input.value = '';
+        if (qtyField) qtyField.value = '1';
+        if (qtyHidden) qtyHidden.value = '1';
+        picked = null;
+        list.hidden = true;
+        closeQty();
+        input.focus();
+    }
+    function flatten(data) {
+        var rows = [];
+        (data.results || []).forEach(function (prod) {
+            var vars = prod.varijacije || [];
+            if (vars.length > 1) {
+                vars.forEach(function (v) {
+                    rows.push({
+                        id: prod.id,
+                        variation_id: v.id,
+                        naziv: (prod.naziv || '') + ' ' + (v.naziv || ''),
+                        sifra: v.sifra || prod.sifra || '',
+                        barkod: prod.barkod || '',
+                        vp: vpFromMpc(v.cijena || prod.cijena || ''),
+                        dostupno: Number(v.na_stanju != null ? v.na_stanju : prod.dostupno) || 0,
+                    });
+                });
+            } else {
+                rows.push({
+                    id: prod.id,
+                    variation_id: '',
+                    naziv: prod.naziv,
+                    sifra: prod.sifra,
+                    barkod: prod.barkod || '',
+                    vp: vpFromMpc(prod.cijena || ''),
+                    dostupno: Number(prod.dostupno) || 0,
+                });
+            }
+        });
+        return rows;
+    }
+    function catalogOpen() {
+        return !!(catalog && !catalog.hidden);
+    }
+    function vpLineQty(pid, vid) {
+        if (!linesEl) return 0;
+        var li = linesEl.querySelector('li[data-pid="' + pid + '"][data-vid="' + (vid || '') + '"]');
+        if (!li) return 0;
+        var field = li.querySelector('.vp-qty');
+        return field ? (parseInt(field.value, 10) || 0) : 0;
+    }
+    function vpLineId(pid, vid) {
+        if (!linesEl) return '';
+        var li = linesEl.querySelector('li[data-pid="' + pid + '"][data-vid="' + (vid || '') + '"]');
+        return li ? (li.getAttribute('data-id') || '') : '';
+    }
+    function setCatalog(on) {
+        if (!catalog || !catalogBtn) return;
+        catalog.hidden = !on;
+        catalogBtn.classList.toggle('is-on', on);
+        catalogBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (list) list.hidden = true;
+        if (on) {
+            if ((input.value || '').trim()) search({});
+            else renderCatalog([]);
+        }
+    }
+    function renderCatalog(rows) {
+        if (!catalog) return;
+        catalog.innerHTML = '';
+        if (!rows || !rows.length) {
+            catalog.innerHTML = '<p class="mg-empty">Ukucaj naziv, šifru ili barkod — izlistaće se artikli.</p>';
+            return;
+        }
+        rows.forEach(function (row) {
+            var pid = String(row.id);
+            var vid = String(row.variation_id || '');
+            var qty = vpLineQty(pid, vid);
+            var card = document.createElement('article');
+            card.className = 'mg-catalog-item' + (qty ? ' is-added' : '') + ((row.dostupno || 0) <= 0 ? ' is-out' : '');
+            card.innerHTML =
+                '<strong></strong>' +
+                '<p class="mg-catalog-meta"></p>' +
+                '<div class="mg-catalog-qty">' +
+                '<button type="button" class="mg-btn" data-cat-minus aria-label="Manje">−</button>' +
+                '<em data-cat-qty></em>' +
+                '<button type="button" class="mg-btn" data-cat-plus aria-label="Više">+</button>' +
+                '</div>';
+            card.querySelector('strong').textContent = row.naziv || '';
+            card.querySelector('.mg-catalog-meta').textContent = [
+                row.sifra,
+                row.vp ? row.vp + ' KM' : '',
+                (row.dostupno || 0) + ' na stanju',
+            ].filter(Boolean).join(' · ');
+            card.querySelector('[data-cat-qty]').textContent = String(qty);
+            card.querySelector('[data-cat-minus]').disabled = qty <= 0;
+            card.querySelector('[data-cat-minus]').addEventListener('click', function (event) {
+                event.preventDefault();
+                shiftCatalogQty(row, -1);
+            });
+            card.querySelector('[data-cat-plus]').addEventListener('click', function (event) {
+                event.preventDefault();
+                shiftCatalogQty(row, 1);
+            });
+            catalog.appendChild(card);
+        });
+    }
+    function shiftCatalogQty(row, delta) {
+        var pid = String(row.id);
+        var vid = String(row.variation_id || '');
+        var current = vpLineQty(pid, vid);
+        var stavkaId = vpLineId(pid, vid);
+        if (delta > 0) {
+            picked = row;
+            if (qtyField) qtyField.value = '1';
+            addPicked();
+            return;
+        }
+        if (!stavkaId || current <= 0) {
+            renderCatalog(lastSuggest);
+            return;
+        }
+        var body = new URLSearchParams();
+        if (current <= 1) {
+            body.set('action', 'ukloni');
+            body.set('stavka_id', stavkaId);
+        } else {
+            body.set('action', 'kolicina');
+            body.set('stavka_id', stavkaId);
+            body.set('kolicina', String(current - 1));
+        }
+        postAction(body, function () { renderCatalog(lastSuggest); });
+    }
+    function renderSuggest(items) {
+        lastSuggest = items || [];
+        list.innerHTML = '';
+        if (!items.length) {
+            var empty = document.createElement('li');
+            empty.className = 'is-empty';
+            empty.textContent = 'Nema rezultata.';
+            list.appendChild(empty);
+            list.hidden = false;
+            return;
+        }
+        items.forEach(function (item) {
+            var li = document.createElement('li');
+            li.innerHTML = '<span class="vp-name"></span><span></span>';
+            li.querySelector('.vp-name').textContent = item.naziv || '';
+            li.querySelector('span:last-child').textContent = (item.sifra || '') + (item.vp ? ' · ' + item.vp + ' KM' : '');
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                openQty(item);
+            });
+            list.appendChild(li);
+        });
+        list.hidden = false;
+    }
+    function pickBarcode(rows, query) {
+        var hit = rows.filter(function (row) { return isBarcodeHit(row, query); })[0];
+        if (hit && !isPrefixOfLongerBarcode(query, rows, hit)) return hit;
+        if (looksLikeBarcode(query) && rows.length === 1) return rows[0];
+        return null;
+    }
+    var mpModal = document.getElementById('vpMpModal');
+    var mpText = document.getElementById('vpMpText');
+    var pendingMp = null;
+    function hideMp() {
+        pendingMp = null;
+        if (mpModal) mpModal.hidden = true;
+    }
+    function showMp(info) {
+        pendingMp = info || null;
+        if (!pendingMp) return;
+        if (mpText) {
+            mpText.innerHTML =
+                '„' + (pendingMp.naziv || 'Artikal') + '” nije na stanju u magacinu' +
+                (pendingMp.available != null ? ' (' + pendingMp.available + ' kom).' : '.') +
+                ' Provjeri u <strong>maloprodaji</strong> ima li ga.';
+        }
+        if (mpModal) mpModal.hidden = false;
+    }
+    function postAction(body, done) {
+        fetch(window.location.pathname, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken(),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            credentials: 'same-origin',
+            body: body.toString(),
+        }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+              adding = false;
+              if (result.data && result.data.need_mp) {
+                  closeQty();
+                  showMp(result.data);
+                  return;
+              }
+              if (!result.data || !result.data.ok) return;
+              renderLines(result.data.stavke || [], result.data.ukupno, result.data);
+              if (catalogOpen()) renderCatalog(lastSuggest);
+              if (done) done();
+          }).catch(function () { adding = false; });
+    }
+    function bindLineForms(root) {
+        (root || document).querySelectorAll('.vp-qty-form').forEach(function (form) {
+            var field = form.querySelector('.vp-qty');
+            if (!field || field.getAttribute('data-bound')) return;
+            field.setAttribute('data-bound', '1');
+            field.addEventListener('change', function () {
+                var body = new URLSearchParams();
+                body.set('action', 'kolicina');
+                body.set('stavka_id', form.querySelector('[name=stavka_id]').value);
+                body.set('kolicina', field.value || '1');
+                postAction(body);
+            });
+        });
+        (root || document).querySelectorAll('.vp-remove-form').forEach(function (form) {
+            if (form.getAttribute('data-bound')) return;
+            form.setAttribute('data-bound', '1');
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var body = new URLSearchParams();
+                body.set('action', 'ukloni');
+                body.set('stavka_id', form.querySelector('[name=stavka_id]').value);
+                postAction(body);
+            });
+        });
+    }
+    function renderLines(rows, ukupno, totals) {
+        if (!linesEl) return;
+        linesEl.innerHTML = '';
+        if (!rows.length) {
+            var empty = document.createElement('li');
+            empty.className = 'is-empty';
+            empty.textContent = 'Unesi artikal — predložiće se dok kucaš.';
+            linesEl.appendChild(empty);
+        } else {
+            rows.forEach(function (row) {
+                var li = document.createElement('li');
+                li.setAttribute('data-id', row.id);
+                li.setAttribute('data-pid', row.product_id || '');
+                li.setAttribute('data-vid', row.variation_id || '');
+                li.innerHTML =
+                    '<span class="vp-name"></span>' +
+                    '<span class="vp-code"></span>' +
+                    '<form method="post" class="vp-qty-form">' +
+                    '<input type="hidden" name="action" value="kolicina">' +
+                    '<input type="hidden" name="stavka_id">' +
+                    '<input class="vp-qty" name="kolicina" type="number" min="1" step="1" inputmode="numeric" aria-label="Količina" tabindex="-1">' +
+                    '</form>' +
+                    '<span class="vp-price"></span>' +
+                    '<form method="post" class="vp-remove-form">' +
+                    '<input type="hidden" name="action" value="ukloni">' +
+                    '<input type="hidden" name="stavka_id">' +
+                    '<button type="submit" class="mg-btn vp-remove" tabindex="-1">Ukloni</button>' +
+                    '</form>';
+                li.querySelector('.vp-name').textContent = row.naziv || '';
+                if (row.mp_ok) {
+                    var mark = document.createElement('i');
+                    mark.className = 'vp-mp';
+                    mark.textContent = 'Maloprodaja';
+                    li.querySelector('.vp-name').appendChild(document.createTextNode(' '));
+                    li.querySelector('.vp-name').appendChild(mark);
+                }
+                li.querySelector('.vp-code').textContent = row.sifra || '—';
+                li.querySelector('.vp-price').textContent = (row.cijena || '') + ' KM';
+                li.querySelectorAll('[name=stavka_id]').forEach(function (el) { el.value = row.id; });
+                li.querySelector('.vp-qty').value = row.kolicina;
+                linesEl.appendChild(li);
+            });
+            bindLineForms(linesEl);
+        }
+        var payload = totals || {};
+        payload.stavke = rows;
+        payload.ukupno = ukupno;
+        updateVpTotals(payload);
+    }
+    function km(value) {
+        var text = String(value == null || value === '' ? '0.00' : value);
+        if (text.indexOf(' KM') >= 0) return text;
+        return text + ' KM';
+    }
+    function updateVpTotals(data) {
+        data = data || {};
+        var rows = data.stavke || [];
+        var net = data.ukupno || '0.00';
+        var bulk = !!data.bulk;
+        if (totalEl) totalEl.hidden = !rows.length;
+        var netEl = document.getElementById('vpSumNet');
+        if (netEl) netEl.textContent = km(net);
+        var pdvRow = document.getElementById('vpPdvRow');
+        var grossRow = document.getElementById('vpGrossRow');
+        if (pdvRow) pdvRow.hidden = !bulk;
+        if (grossRow) grossRow.hidden = !bulk;
+        var pdvEl = document.getElementById('vpSumPdv');
+        var grossEl = document.getElementById('vpSumGross');
+        if (pdvEl) pdvEl.textContent = km(data.pdv || '0.00');
+        if (grossEl) grossEl.textContent = km(data.ukupno_sa_pdv || net);
+        var head = document.getElementById('vpHeadSum');
+        if (head) {
+            head.textContent = rows.length + ' stavki' + (rows.length ? ' · ' + km(net) : '') + (bulk && rows.length ? ' · sa PDV ' + km(data.ukupno_sa_pdv || net) : '');
+        }
+    }
+    function addPicked(mpOk) {
+        if (!picked || adding) return;
+        adding = true;
+        var body = new URLSearchParams();
+        body.set('action', 'dodaj');
+        body.set('product_id', picked.id || '');
+        body.set('variation_id', picked.variation_id || '');
+        body.set('kolicina', String(qtyValue()));
+        if (mpOk) body.set('mp_ok', '1');
+        postAction(body, function () {
+            hideMp();
+            if (catalogOpen()) {
+                picked = null;
+                if (qtyField) qtyField.value = '1';
+                closeQty();
+                return;
+            }
+            focusQuery();
+        });
+    }
+    function search(opts) {
+        opts = opts || {};
+        var q = (input.value || '').trim();
+        var ticket = ++seq;
+        if (q.length < 1) {
+            list.hidden = true;
+            lastSuggest = [];
+            if (catalogOpen()) renderCatalog([]);
+            return Promise.resolve(null);
+        }
+        var limit = catalogOpen() ? 80 : 20;
+        return fetch(lookup + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=' + limit, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            if (ticket !== seq) return null;
+            var rows = flatten(data);
+            lastSuggest = rows;
+            var hit = pickBarcode(rows, q);
+            if (hit && (opts.fromScan || looksLikeBarcode(q) || isBarcodeHit(hit, q))) {
+                openQty(hit);
+                return hit;
+            }
+            if (opts.takeFirst && rows.length && !catalogOpen()) {
+                openQty(rows[0]);
+                return rows[0];
+            }
+            if (catalogOpen()) {
+                list.hidden = true;
+                renderCatalog(rows);
+                return null;
+            }
+            renderSuggest(rows);
+            return null;
+        }).catch(function () { return null; });
+    }
+    input.addEventListener('input', function () {
+        picked = null;
+        lastSuggest = [];
+        window.clearTimeout(timer);
+        timer = window.setTimeout(function () { search({}); }, 160);
+    });
+    input.addEventListener('keydown', function (event) {
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            window.clearTimeout(timer);
+            if (lastSuggest.length) {
+                openQty(lastSuggest[0]);
+                return;
+            }
+            search({ takeFirst: true });
+            return;
+        }
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        window.clearTimeout(timer);
+        search({ fromScan: looksLikeBarcode(input.value) });
+    });
+    input.addEventListener('mg-scanned', function () {
+        window.clearTimeout(timer);
+        search({ fromScan: true });
+    });
+    if (catalogBtn) {
+        catalogBtn.addEventListener('click', function () {
+            setCatalog(!catalogOpen());
+            input.focus();
+        });
+    }
+    if (qtyField) {
+        qtyField.addEventListener('keydown', function (event) {
+            if (event.key === 'Tab' && event.shiftKey) return;
+            if (event.key !== 'Enter' && event.key !== 'Tab') return;
+            event.preventDefault();
+            addPicked();
+        });
+    }
+    if (qtyAddBtn) qtyAddBtn.addEventListener('click', function () { addPicked(); });
+    if (qtyModal) {
+        qtyModal.querySelectorAll('[data-vp-qty-close]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                closeQty();
+                input.focus();
+            });
+        });
+    }
+    document.addEventListener('click', function (event) {
+        if (wrap && !wrap.contains(event.target)) list.hidden = true;
+    });
+    var mpAdd = document.getElementById('vpMpAdd');
+    var mpSkip = document.getElementById('vpMpSkip');
+    if (mpAdd) {
+        mpAdd.addEventListener('click', function () {
+            if (!pendingMp) { hideMp(); return; }
+            if (pendingMp.stavka_id) {
+                var body = new URLSearchParams();
+                body.set('action', 'kolicina');
+                body.set('stavka_id', pendingMp.stavka_id);
+                body.set('kolicina', String(pendingMp.kolicina || qtyValue()));
+                body.set('mp_ok', '1');
+                hideMp();
+                postAction(body);
+                return;
+            }
+            hideMp();
+            addPicked(true);
+        });
+    }
+    if (mpSkip) mpSkip.addEventListener('click', function () { hideMp(); focusQuery(); });
+    if (mpModal) {
+        mpModal.querySelectorAll('[data-vp-mp-skip]').forEach(function (el) {
+            el.addEventListener('click', function () { hideMp(); focusQuery(); });
+        });
+        document.addEventListener('keydown', function (event) {
+            if (!mpModal || mpModal.hidden) return;
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                return;
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                hideMp();
+                focusQuery();
+            }
+        }, true);
+    }
+    bindLineForms(document);
+
+    var bulkBtn = document.getElementById('vpBulkBtn');
+    var bulkModal = document.getElementById('vpBulkModal');
+    var bulkText = document.getElementById('vpBulkText');
+    var bulkImport = document.getElementById('vpBulkImport');
+    var bulkHint = document.getElementById('vpBulkHint');
+    var bulkResult = document.getElementById('vpBulkResult');
+    var bulkBusy = false;
+    function closeBulk() {
+        if (bulkModal) bulkModal.hidden = true;
+        if (bulkHint) { bulkHint.hidden = true; bulkHint.textContent = ''; }
+    }
+    function openBulk() {
+        if (!bulkModal) return;
+        if (bulkText) bulkText.value = '';
+        if (bulkHint) { bulkHint.hidden = true; bulkHint.textContent = ''; }
+        bulkModal.hidden = false;
+        window.setTimeout(function () { if (bulkText) bulkText.focus(); }, 40);
+    }
+    function showBulkResult(data) {
+        if (!bulkResult) return;
+        var added = Number(data && data.added) || 0;
+        var skipped = (data && data.skipped) || [];
+        var mp = (data && data.mp) || [];
+        var parts = [];
+        if (added) parts.push('Uneseno ' + added + '.');
+        if (skipped.length) {
+            parts.push('Preskočeno ' + skipped.length + ' (nema u bazi): ' + skipped.map(function (row) {
+                return row.naziv || '';
+            }).filter(Boolean).slice(0, 8).join('; ') + (skipped.length > 8 ? '…' : ''));
+        }
+        if (mp.length) parts.push('Bez zalihe u magacinu (MP): ' + mp.join('; ') + '.');
+        if (!parts.length) {
+            bulkResult.hidden = true;
+            bulkResult.textContent = '';
+            return;
+        }
+        bulkResult.hidden = false;
+        bulkResult.textContent = parts.join(' ');
+    }
+    if (bulkBtn) bulkBtn.addEventListener('click', openBulk);
+    if (bulkModal) {
+        bulkModal.querySelectorAll('[data-vp-bulk-close]').forEach(function (el) {
+            el.addEventListener('click', closeBulk);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && bulkModal && !bulkModal.hidden) closeBulk();
+        });
+    }
+    if (bulkImport) {
+        bulkImport.addEventListener('click', function () {
+            var tekst = bulkText ? bulkText.value : '';
+            if (!(tekst || '').trim()) {
+                if (bulkHint) {
+                    bulkHint.hidden = false;
+                    bulkHint.textContent = 'Zalijepi tabelu narudžbe.';
+                }
+                if (bulkText) bulkText.focus();
+                return;
+            }
+            if (bulkBusy) return;
+            bulkBusy = true;
+            bulkImport.disabled = true;
+            var body = new URLSearchParams();
+            body.set('action', 'bulk');
+            body.set('tekst', tekst);
+            fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken(),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+              .then(function (result) {
+                  bulkBusy = false;
+                  bulkImport.disabled = false;
+                  if (!result.data || !result.data.ok) {
+                      if (bulkHint) {
+                          bulkHint.hidden = false;
+                          bulkHint.textContent = (result.data && result.data.error) || 'Bulk unos nije uspio.';
+                      }
+                      return;
+                  }
+                  renderLines(result.data.stavke || [], result.data.ukupno, result.data);
+                  showBulkResult(result.data);
+                  closeBulk();
+              }).catch(function () {
+                  bulkBusy = false;
+                  bulkImport.disabled = false;
+                  if (bulkHint) {
+                      bulkHint.hidden = false;
+                      bulkHint.textContent = 'Bulk unos nije uspio.';
+                  }
+              });
+        });
+    }
+})();
+</script>
+{% endblock %}

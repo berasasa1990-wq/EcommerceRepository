@@ -1,0 +1,743 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5GVT50WMXB');
+      gtag('config', 'AW-18301637370');
+      window.trackGooglePurchase = function (data) {
+        if (!data || typeof gtag !== 'function') return false;
+        var transactionId = String(data.transaction_id || '');
+        if (!transactionId) return false;
+        var dedupeKey = 'gtag_purchase_' + transactionId;
+        try {
+          if (localStorage.getItem(dedupeKey)) return false;
+          localStorage.setItem(dedupeKey, '1');
+        } catch (e) {}
+        gtag('event', 'purchase', {
+          transaction_id: transactionId,
+          value: data.value,
+          currency: data.currency || 'BAM',
+          shipping: data.shipping,
+          items: data.items || []
+        });
+        return true;
+      };
+      window.idleLoadScript = function (src) {
+        function go() {
+          var s = document.createElement('script');
+          s.src = src;
+          s.defer = true;
+          document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 1500); });
+        }
+      };
+      window.idleLoadStylesheet = function (href) {
+        function go() {
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = href;
+          document.head.appendChild(l);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 800); });
+        }
+      };
+      (function loadGtagLater() {
+        function go() {
+          if (window._gtagSrcLoaded) return;
+          window._gtagSrcLoaded = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-5GVT50WMXB';
+          document.head.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 1200); });
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    {% if meta_pixel_id %}
+    <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
+    <link rel="dns-prefetch" href="https://www.facebook.com">
+    {% endif %}
+    <meta name="facebook-domain-verification" content="kqrup8bjdtrxwf6mmy8bu5qp01g4tn" />
+    {% if site_settings.google_site_verification %}
+    <meta name="google-site-verification" content="{{ site_settings.google_site_verification }}">
+    {% endif %}
+    {% block meta_robots %}
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    {% endblock %}
+
+    {% with site_name=site_settings.seo_organizacija_naziv|default:"opremazaribolov.ba" %}
+    {% block page_title %}
+    <title>{{ seo_title|default:site_settings.seo_title|default:site_name }}</title>
+    {% endblock %}
+
+    {% block meta_description %}
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta name="description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
+    {% endblock %}
+
+    {# Canonical URL #}
+    {% block canonical %}
+    {% if canonical_url %}
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% else %}
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    {% endif %}
+    {% endblock %}
+
+    {# Open Graph / Facebook / WhatsApp / LinkedIn #}
+    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:locale" content="bs_BA">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{{ seo_title|default:site_settings.seo_title|default:site_name }}">
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta property="og:description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
+    {% block og_image %}
+    {% if og_image %}
+    <meta property="og:image" content="{{ og_image }}">
+    {% elif site_settings.og_image %}
+    <meta property="og:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
+    <meta property="og:image:secure_url" content="{{ site_url }}{{ site_settings.og_image.url }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    {% endif %}
+    {% endblock %}
+    <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
+
+    {# Twitter Cards #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_title|default:site_settings.seo_title|default:site_name }}">
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta name="twitter:description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
+    {% block twitter_image %}
+    {% if og_image %}
+    <meta name="twitter:image" content="{{ og_image }}">
+    {% elif site_settings.og_image %}
+    <meta name="twitter:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
+    {% endif %}
+    {% endblock %}
+    {% endwith %}
+
+    {% if site_settings.favicon %}
+    <link rel="icon" href="{{ site_settings.favicon.url }}" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
+    {% endif %}
+
+    {% block lcp_preload %}{% endblock %}
+    <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260903beta" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260903beta">
+    {% if theme_ui and theme_ui.css_vars %}
+    <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
+    {% endif %}
+    <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}</style>
+    {% if dwell_ui and dwell_ui.css_vars %}
+    <style id="ai-dwell-theme">:root{ {{ dwell_ui.css_vars }} }</style>
+    {% endif %}
+    {% block extra_css %}{% endblock %}
+
+    {% if meta_pixel_id %}
+    <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
+    <script data-cfasync="false">
+    window._fbqPending = [];
+    window.trackMetaAddToCart = function (meta) {
+        if (typeof fbq === 'function') {
+            fbq('track', 'AddToCart', {
+                content_ids: [String(meta.content_id)],
+                content_type: 'product',
+                content_name: meta.content_name,
+                contents: [{ id: String(meta.content_id), quantity: meta.quantity || 1 }],
+                value: meta.value,
+                currency: 'BAM'
+            }, meta.event_id ? { eventID: meta.event_id } : {});
+            return;
+        }
+        window._fbqPending.push(['atc', meta]);
+    };
+    window.trackMetaPurchase = function (el) {
+        window._fbqPending.push(['purchase', el]);
+    };
+    function loadMetaPixel() {
+        if (window.fbq) return;
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '{{ meta_pixel_id|escapejs }}');
+        var metaPageViewEventId = '{{ meta_page_view_event_id|default:""|escapejs }}';
+        if (metaPageViewEventId) {
+            fbq('track', 'PageView', {}, { eventID: metaPageViewEventId });
+        } else {
+            fbq('track', 'PageView');
+        }
+        window.trackMetaPurchase = function (el) {
+            if (!el || typeof fbq !== 'function') return;
+            var payload = {
+                value: parseFloat(el.dataset.value, 10),
+                currency: 'BAM',
+                content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean),
+                content_type: 'product',
+                num_items: parseInt(el.dataset.numItems, 10) || 0
+            };
+            if (el.dataset.orderId) payload.order_id = el.dataset.orderId;
+            if (el.dataset.contents) {
+                try { payload.contents = JSON.parse(el.dataset.contents); } catch (e) {}
+            }
+            fbq('track', 'Purchase', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
+        };
+        (window._fbqPending || []).forEach(function (item) {
+            if (item[0] === 'atc') window.trackMetaAddToCart(item[1]);
+            else if (item[0] === 'purchase') window.trackMetaPurchase(item[1]);
+        });
+        window._fbqPending = [];
+    }
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadMetaPixel, { timeout: 2500 });
+    } else {
+        window.addEventListener('load', loadMetaPixel);
+    }
+    </script>
+    {% endif %}
+</head>
+<body class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+    {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
+    <div class="site-chrome-backdrop" aria-hidden="true"></div>
+
+    <div class="promo-bar">
+        <p>
+            <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>
+            <a href="{% url 'register' %}"{% if staff_edit_mode %} data-site-edit="promo_bar_link_tekst" data-site-edit-placeholder="Link tekst"{% endif %}>{% if site_settings.promo_bar_link_tekst %}{{ site_settings.promo_bar_link_tekst }}{% elif not staff_edit_mode %}Pridruži se sada{% endif %}</a>
+        </p>
+    </div>
+
+    <header class="header" id="header">
+        <div class="header-shell">
+            <div class="header-row header-row--primary">
+                <div class="header-leading">
+                    <button class="nav-toggle" id="navToggle" aria-label="Otvori meni">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                    {% if user.is_superuser or user.is_staff %}
+                    <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn staff-admin-nav-btn" aria-label="Admin Panel" title="Admin Panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                        <span class="nav-action-label">Admin Panel</span>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="logo-brand">
+                    <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
+                        {% if site_settings.logo %}
+                        <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
+                        {% else %}
+                        <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                            <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M10 22c4-6 8-9 14-10-2 4-2 8 0 12-5-1-9-1-14-2z" fill="currentColor"/>
+                            <path d="M24 12c2 2 3 5 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <circle cx="13" cy="19" r="1" fill="currentColor"/>
+                        </svg>
+                        <span class="logo-text">
+                            <span class="logo-name">opremaza<span class="logo-accent">ribolov</span></span><span class="logo-tld">.ba</span>
+                        </span>
+                        {% endif %}
+                    </a>
+                    {% if site_settings.logo_glavni_sajt %}
+                    <div class="logo-byline">
+                        <span class="logo-by">by</span>
+                        <a href="https://www.carpologijabh.ba" class="logo-parent" target="_blank" rel="noopener noreferrer" aria-label="Carpologija BH">
+                            <img src="{{ site_settings.logo_glavni_sajt.url }}" alt="Carpologija BH" class="logo-parent-image" width="120" height="28" loading="eager" decoding="async">
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="header-search" id="headerSearch">
+                    <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">
+                        <span class="header-search-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="7"/>
+                                <path d="M20 20l-3-3"/>
+                            </svg>
+                        </span>
+                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri, brandu ili tagu..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                        </div>
+                        <button type="submit" class="header-search-submit">
+                            <span class="header-search-submit-label">TRAŽI</span>
+                        </button>
+                        <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </form>
+                    <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
+                </div>
+
+                <div class="nav-actions">
+                    {% if contact_phone %}
+                    <a href="tel:{{ contact_phone_digits|default:contact_phone }}" class="nav-action-link header-phone" aria-label="Telefon {{ contact_phone }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <span class="nav-action-label header-phone__text">
+                            <span class="header-phone__kicker">POZOVI NAS</span>
+                            <span class="header-phone__num">{{ contact_phone }}</span>
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Nalog">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Nalog</span>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="nav-action-link account-btn" aria-label="Prijava">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Nalog</span>
+                    </a>
+                    {% endif %}
+                    <div class="nav-cart-stack">
+                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
+                        <span class="nav-action-icon">
+                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                            </svg>
+                            <span class="cart-badge">{{ cart_count|default:0 }}</span>
+                        </span>
+                        <span class="nav-action-label">Korpa</span>
+                    </a>
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="staff-edit-toggle-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <input type="hidden" name="enabled" value="0">
+                        <label class="staff-edit-toggle">
+                            <input type="checkbox" name="enabled" value="1"{% if staff_edit_mode %} checked{% endif %} onchange="this.form.submit()">
+                            Edit
+                        </label>
+                    </form>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <nav class="header-row header-row--categories" aria-label="Kategorije">
+                <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
+                    <button type="button" class="cats-dropdown__btn" id="catsDropdownBtn" aria-expanded="{% if cats_sidebar_open %}true{% else %}false{% endif %}" aria-controls="catsDropdownPanel"{% if cats_sidebar_open %} aria-disabled="true"{% endif %}>
+                        <span class="cats-dropdown__burger" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                <line x1="4" y1="7" x2="20" y2="7"/>
+                                <line x1="4" y1="12" x2="20" y2="12"/>
+                                <line x1="4" y1="17" x2="20" y2="17"/>
+                            </svg>
+                        </span>
+                        <span class="cats-dropdown__btn-label">Sve kategorije</span>
+                        <span class="cats-dropdown__btn-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                    </button>
+                    <div class="cats-dropdown__panel" id="catsDropdownPanel"{% if not cats_sidebar_open %} hidden{% endif %}>
+                        <ul class="cats-dropdown__list">
+                            {% for nav_cat in nav_categories %}
+                            <li class="cats-dropdown__item{% if nav_cat.podkategorije.all %} cats-dropdown__item--has-sub{% endif %}{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %} is-open is-current{% endif %}{% endif %}">
+                                <a href="{{ nav_cat.get_absolute_url }}" class="cats-dropdown__link"{% if nav_cat.podkategorije.all %} data-cats-toggle="1" aria-expanded="{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %}true{% else %}false{% endif %}{% else %}false{% endif %}"{% endif %}>
+                                    {% include 'partials/nav_category_icon.html' with naziv=nav_cat.naziv slug=nav_cat.slug %}
+                                    <span class="cats-dropdown__name">{{ nav_cat.naziv }}</span>
+                                    {% if nav_cat.podkategorije.all %}
+                                    <span class="cats-dropdown__chevron" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                {% if nav_cat.podkategorije.all %}
+                                <ul class="cats-dropdown__sub">
+                                    <li class="cats-dropdown__sub-all">
+                                        <a href="{{ nav_cat.get_absolute_url }}?all=1"{% if category and category.pk == nav_cat.pk %} class="is-current"{% endif %}>
+                                            <span class="cats-dropdown__sub-arrow" aria-hidden="true">›</span>
+                                            Sve {{ nav_cat.naziv|lower }}
+                                        </a>
+                                    </li>
+                                    {% for sub in nav_cat.podkategorije.all %}
+                                    <li>
+                                        <a href="{{ sub.get_absolute_url }}"{% if category and category.pk == sub.pk %} class="is-current"{% endif %}>{{ sub.naziv }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                            <li class="cats-dropdown__item cats-dropdown__item--sale{% if filter_params.akcija %} is-current{% endif %}">
+                                <a href="{% url 'home' %}?akcija=1#product-showcase" class="cats-dropdown__link cats-dropdown__link--sale">
+                                    <span class="cat-ico" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><circle cx="16" cy="16" r="2.2"/><path d="M7 17L17 7"/></svg>
+                                    </span>
+                                    <span class="cats-dropdown__name">Akcije i popusti</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mobile-nav-panel" id="mobileNavPanel">
+                    <div class="mobile-nav-panel__header">
+                        <button type="button" class="mobile-nav-panel__back" id="mobileNavClose" aria-label="Zatvori meni kategorija">
+                            <span class="mobile-nav-panel__back-icon" aria-hidden="true">‹</span>
+                            Nazad
+                        </button>
+                    </div>
+                    <ul class="nav-menu" id="navLinks">
+                    {% for category in nav_categories %}
+                    <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
+                        data-nav-item
+                        {% if category.podkategorije.all %}data-mega-target="mega-{{ category.slug }}"{% endif %}>
+                        <a href="{{ category.get_absolute_url }}">
+                            {{ category.naziv }}
+                            {% if category.podkategorije.all %}
+                            <span class="nav-chevron" aria-hidden="true"></span>
+                            {% endif %}
+                        </a>
+                        {% if category.podkategorije.all %}
+                        <ul class="nav-submenu">
+                            <li class="nav-submenu-all">
+                                <a href="{{ category.get_absolute_url }}?all=1">Sve u {{ category.naziv }}</a>
+                            </li>
+                            {% for sub in category.podkategorije.all %}
+                            <li class="nav-submenu-group">
+                                <a href="{{ sub.get_absolute_url }}" class="nav-submenu-title">{{ sub.naziv }}</a>
+                                {% if sub.podkategorije.all %}
+                                <ul class="nav-submenu-nested">
+                                    {% for subsub in sub.podkategorije.all %}
+                                    <li><a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    <li class="nav-item nav-item--akcija">
+                        <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJE</a>
+                    </li>
+                    <li class="nav-item nav-item--brendovi">
+                        <a href="{% url 'brands_list' %}" class="nav-link-brendovi{% if request.resolver_match.url_name == 'brands_list' %} is-current{% endif %}">BRENDOVI</a>
+                    </li>
+                    <li class="nav-item nav-item--set">
+                        <a href="{% url 'set_builder' %}" class="nav-link-set{% if request.resolver_match.url_name == 'set_builder' %} is-current{% endif %}" data-set-builder-gate>
+                            Kreiraj svoj set
+                            <span class="nav-link-set__beta">BETA</span>
+                        </a>
+                    </li>
+                    <li class="nav-item nav-item--noviteti nav-item--akcija-mobile">
+                        <a href="{% url 'home' %}?noviteti=1#product-showcase" class="nav-link-noviteti">NOVITETI</a>
+                    </li>
+                    </ul>
+                </div>
+                <div class="mobile-nav-subview" id="mobileNavSubview" aria-hidden="true">
+                    <button type="button" class="mobile-nav-back" id="mobileNavBack">
+                        <span class="mobile-nav-back__icon" aria-hidden="true">‹</span>
+                        Nazad
+                    </button>
+                    <h2 class="mobile-nav-subview-title" id="mobileNavSubTitle"></h2>
+                    <div class="mobile-nav-subview-body" id="mobileNavSubBody"></div>
+                </div>
+            </nav>
+
+            {# Plutajuća dugmad Akcija/Noviteti uklonjena — sekcije su na početnoj #}
+        </div>
+
+        <div class="mega-menu-panel" id="megaMenuPanel">
+            {% for category in nav_categories %}
+            {% if category.podkategorije.all %}
+            <div class="mega-menu" id="mega-{{ category.slug }}" data-mega-menu>
+                <div class="mega-menu-inner">
+                    <div class="mega-menu-subcategories">
+                        {% for sub in category.podkategorije.all %}
+                        <div class="mega-menu-group">
+                            <p class="mega-menu-group-title">
+                                <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
+                            </p>
+                            {% if sub.podkategorije.all %}
+                            <ul>
+                                {% for subsub in sub.podkategorije.all %}
+                                <li>
+                                    <a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </header>
+
+    {# Visine promo + header — logo/meni NIKAD ispod „Besplatna dostava” trake #}
+    <script>
+    (function () {
+        function isVisible(el) {
+            if (!el) return false;
+            var st = window.getComputedStyle(el);
+            return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
+        }
+        function syncSiteChromeOffset() {
+            var root = document.documentElement;
+            var promo = document.querySelector('.promo-bar');
+            var header = document.getElementById('header');
+            var shell = header ? header.querySelector('.header-shell') : null;
+            var primary = header ? header.querySelector('.header-row--primary') : null;
+            var categories = header ? header.querySelector('.header-row--categories') : null;
+
+            // Edit banner uklonjen — ne pomiči header
+            var staffH = 0;
+            root.style.setProperty('--staff-edit-banner-height', '0px');
+
+            // Prirodna visina promo trake (scrollHeight hvata wrap teksta)
+            var promoH = 36;
+            if (isVisible(promo)) {
+                promoH = Math.max(32, Math.round(promo.scrollHeight || promo.offsetHeight) || 36);
+            }
+            root.style.setProperty('--promo-height', promoH + 'px');
+
+            // Reflow da header.top koristi novi --promo-height
+            void (header && header.offsetHeight);
+
+            var headerH = 56;
+            if (isVisible(header)) {
+                // Cijeli shell (logo red + kategorije) — bez mega-menu panela
+                // Prije se mjerio samo primary → baner je ulazio ispod nav reda i izgledao isječen
+                if (shell) {
+                    headerH = Math.max(48, Math.round(shell.getBoundingClientRect().height) || shell.offsetHeight || 56);
+                } else if (primary) {
+                    var primaryH = Math.round(primary.offsetHeight) || 56;
+                    var catH = (categories && isVisible(categories))
+                        ? (Math.round(categories.offsetHeight) || 0)
+                        : 0;
+                    headerH = Math.max(48, primaryH + catH);
+                } else {
+                    headerH = Math.max(48, Math.round(header.offsetHeight) || 56);
+                }
+            }
+            root.style.setProperty('--header-height', headerH + 'px');
+
+            var total = staffH + promoH + headerH;
+            root.style.setProperty('--site-chrome-top', (total + 2) + 'px');
+
+            // Ako header i dalje preklapa promo (bug), forsiraj top iz mjerenja
+            if (header && promo && isVisible(promo)) {
+                var promoBottom = Math.round(promo.getBoundingClientRect().bottom);
+                var headerTop = Math.round(header.getBoundingClientRect().top);
+                if (headerTop < promoBottom - 1) {
+                    root.style.setProperty(
+                        '--promo-height',
+                        Math.max(promoH, promoBottom - staffH) + 'px'
+                    );
+                    void header.offsetHeight;
+                    if (shell) {
+                        headerH = Math.max(48, Math.round(shell.getBoundingClientRect().height) || headerH);
+                        root.style.setProperty('--header-height', headerH + 'px');
+                    } else if (primary) {
+                        headerH = Math.max(48, Math.round(primary.offsetHeight) || headerH);
+                        root.style.setProperty('--header-height', headerH + 'px');
+                    }
+                    total = staffH + Math.max(promoH, promoBottom - staffH) + headerH;
+                    root.style.setProperty('--site-chrome-top', (total + 2) + 'px');
+                }
+            }
+        }
+        window.syncSiteChromeOffset = syncSiteChromeOffset;
+        syncSiteChromeOffset();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', syncSiteChromeOffset);
+        }
+        window.addEventListener('load', function () {
+            syncSiteChromeOffset();
+            // Fontovi/logo učitani — još jednom
+            setTimeout(syncSiteChromeOffset, 100);
+            setTimeout(syncSiteChromeOffset, 400);
+        });
+        window.addEventListener('resize', syncSiteChromeOffset);
+        if (window.ResizeObserver) {
+            try {
+                var ro = new ResizeObserver(function () { syncSiteChromeOffset(); });
+                var h = document.getElementById('header');
+                var p = document.querySelector('.promo-bar');
+                var shellEl = h && h.querySelector('.header-shell');
+                var primary = h && h.querySelector('.header-row--primary');
+                var cats = h && h.querySelector('.header-row--categories');
+                if (h) ro.observe(h);
+                if (p) ro.observe(p);
+                if (shellEl) ro.observe(shellEl);
+                if (primary) ro.observe(primary);
+                if (cats) ro.observe(cats);
+            } catch (e) {}
+        }
+    })();
+    </script>
+
+    {% block flash_messages %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for message in messages %}
+        <p class="flash-message flash-message--{{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endblock %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'partials/site_popup.html' %}
+    {% include 'partials/upsell_popup.html' %}
+    {% include 'partials/cart_recovery_popup.html' %}
+    {% include 'partials/cart_abandon_exit_popup.html' %}
+    {% include 'partials/cart_exit_popup.html' %}
+    {% include 'partials/live_visitor_offer_popup.html' %}
+    {% include 'partials/gratis_offer_modal.html' %}
+    {% include 'partials/qty_deal_offer_modal.html' %}
+    {% include 'partials/online_gift.html' %}
+    {% include 'partials/social_proof_toast.html' %}
+
+    {% include 'partials/footer.html' %}
+    {% include 'partials/contact_float.html' %}
+    {% include 'partials/site_chat.html' %}
+    {# Ribolovački savjetnik — uključuje se u Podešavanjima #}
+    {% if site_settings.savjetnik_aktivan %}
+    {% include 'partials/fishing_advisor.html' %}
+    {% endif %}
+    {% if site_settings.javno_online_posjetioci %}
+    {% include 'partials/public_online_visitors.html' %}
+    {% endif %}
+    {% include 'partials/catalog_variation_modal.html' %}
+
+    <button type="button" class="scroll-top-btn" id="scrollTopBtn" aria-label="Na vrh stranice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15"/>
+        </svg>
+    </button>
+
+    {% if organization_json_ld %}
+    <script type="application/ld+json">{{ organization_json_ld|safe }}</script>
+    {% endif %}
+    {% if website_json_ld %}
+    <script type="application/ld+json">{{ website_json_ld|safe }}</script>
+    {% endif %}
+    {% block structured_data %}{% endblock %}
+    <script src="{% static 'js/main.min.js' %}?v=20260901fast" defer></script>
+    {% if site_settings.savjetnik_aktivan %}
+    <script>idleLoadScript("{% static 'js/fishing-advisor.js' %}?v=20260716v4");</script>
+    {% endif %}
+    {% if site_settings.javno_online_posjetioci %}
+    <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20260716v1");</script>
+    {% endif %}
+    {% if not user.is_authenticated or not user.is_superuser %}
+    <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20260712v3");</script>
+    {% endif %}
+    {% if online_gift %}
+    <script>idleLoadScript("{% static 'js/online-gift.js' %}?v=20260901cart");</script>
+    {% endif %}
+    {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
+    {% if not user.is_authenticated or not user.is_superuser %}
+    <div id="visitorPresenceRoot" hidden
+         data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
+         data-leave-url="{% url 'live_visitor_leave' %}"
+         data-session-key="{{ request.session.session_key|default:'' }}"></div>
+    <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20260831fast");</script>
+    {% endif %}
+    {% if user.is_authenticated and user.is_superuser %}
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260831orderpop">
+    <div id="staffAlertsRoot" hidden
+         data-poll-url="{% url 'staff_site_events_poll' %}"
+         data-analytics-url="{% url 'staff_live_analytics' %}"
+         data-orders-url="{% url 'staff_online_orders' %}"
+         {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260831orderpop" defer></script>
+    {% endif %}
+    {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
+    {% include 'partials/staff_site_editor.html' %}
+    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260901bulkMainImg">
+    <script src="{% static 'js/staff-site-edit.js' %}?v=20260901bulkMainImg" defer></script>
+    {% endif %}
+    <div class="setb-gate" id="setBuilderGate" hidden
+         data-unlock-url="{% url 'set_builder_unlock' %}"
+         data-target-url="{% url 'set_builder' %}"
+         {% if request.session.set_builder_ok %}data-unlocked="1"{% endif %}
+         {% if set_builder_gate_open %}data-auto-open="1"{% endif %}>
+        <div class="setb-gate__backdrop" data-set-builder-close></div>
+        <div class="setb-gate__panel" role="dialog" aria-modal="true" aria-labelledby="setBuilderGateTitle">
+            <button type="button" class="setb-gate__close" data-set-builder-close aria-label="Zatvori">×</button>
+            <p class="setb-gate__beta">BETA</p>
+            <h2 id="setBuilderGateTitle">Kreiraj svoj set</h2>
+            <p class="setb-gate__msg">Funkcija je u test fazi i uskoro će biti dostupna svim kupcima.</p>
+            <form class="setb-gate__form" id="setBuilderGateForm">
+                <label for="setBuilderGatePassword">Lozinka za testni pristup</label>
+                <input type="password" id="setBuilderGatePassword" name="password" autocomplete="current-password" placeholder="Lozinka">
+                <p class="setb-gate__error" id="setBuilderGateError" hidden></p>
+                <button type="submit" class="setb-gate__submit">Uđi</button>
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'js/set-builder-gate.js' %}?v=20260903beta" defer></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponuda {{ ponuda.broj }} — opremazaribolov.ba</title>
+    <style>
+        :root {
+            --ink: #14181c;
+            --muted: #5b6570;
+            --line: #d8ddd4;
+            --green: #2f7a03;
+            --paper: #fff;
+            --wash: #f6f7f4;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #e8ebe4;
+            color: var(--ink);
+            font-family: "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+        }
+        .bar {
+            max-width: 210mm;
+            margin: 16px auto 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+        }
+        .bar p { margin: 0; font-size: 13px; color: #4b5563; }
+        .bar button, .bar a {
+            min-height: 36px;
+            padding: 7px 14px;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        .bar a { border: 1px solid #d1d5db; background: #fff; color: #111; }
+        .bar button { border: 0; background: #111; color: #fff; }
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 24px;
+            padding: 16mm 16mm 18mm;
+            background: var(--paper);
+            box-shadow: 0 18px 48px rgba(20, 24, 28, 0.12);
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            padding-bottom: 16px;
+            border-bottom: 4px solid var(--ink);
+        }
+        .brand strong {
+            display: block;
+            font-size: 20px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .brand span {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .meta { text-align: right; }
+        .meta .doc {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--green);
+        }
+        .meta h1 {
+            margin: 4px 0 8px;
+            font-size: 28px;
+            letter-spacing: -0.03em;
+        }
+        .meta p { margin: 0; font-size: 13px; color: var(--muted); }
+        .cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 22px 0 20px;
+        }
+        .box {
+            background: var(--wash);
+            border: 1px solid var(--line);
+            padding: 12px 14px;
+            min-height: 88px;
+        }
+        .box span {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .box strong { font-size: 14px; }
+        .box p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+        }
+        th {
+            text-align: left;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--ink);
+            padding: 0 8px 8px 0;
+        }
+        th.num, td.num { text-align: right; }
+        td {
+            padding: 10px 8px 10px 0;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+        }
+        td.name { font-weight: 600; }
+        td.code { color: var(--muted); font-size: 12px; }
+        .note {
+            margin: 18px 0 0;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .totals {
+            margin-top: 22px;
+            margin-left: auto;
+            width: min(280px, 100%);
+        }
+        .totals div {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 7px 0;
+            font-size: 13px;
+            border-bottom: 1px solid var(--line);
+        }
+        .totals .grand {
+            border-bottom: 0;
+            margin-top: 4px;
+            padding-top: 10px;
+            border-top: 2px solid var(--ink);
+            font-size: 15px;
+            font-weight: 800;
+        }
+        .totals .muted { color: var(--muted); }
+        footer {
+            margin-top: 36px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+        @page { size: A4; margin: 12mm; }
+        @media print {
+            body { background: #fff; }
+            .bar { display: none; }
+            .sheet {
+                width: auto;
+                min-height: 0;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bar">
+        <p>Ponuda {{ ponuda.broj }} · PDF prikaz</p>
+        <div>
+            <button type="button" onclick="window.print()">Štampaj / PDF</button>
+        </div>
+    </div>
+    <article class="sheet">
+        <header>
+            <div class="brand">
+                {% if site_settings.logo %}
+                <img src="{{ site_settings.logo.url }}" alt="" style="max-height:42px;max-width:180px;object-fit:contain;margin-bottom:8px;">
+                {% endif %}
+                <strong>opremazaribolov.ba</strong>
+                <span>
+                    Online shop — oprema za ribolov<br>
+                    {% if site_settings.kontakt_telefon %}Tel: {{ site_settings.kontakt_telefon }}<br>{% endif %}
+                    PDV 17%
+                </span>
+            </div>
+            <div class="meta">
+                <div class="doc">Komercijalna ponuda</div>
+                <h1>{{ ponuda.broj }}</h1>
+                <p>Datum: {{ ponuda.objavljena_at|date:"d.m.Y." }}</p>
+                <p>Važi 14 dana od datuma izdavanja</p>
+            </div>
+        </header>
+
+        <div class="cols">
+            <div class="box">
+                <span>Izdavalac</span>
+                <strong>opremazaribolov.ba</strong>
+                <p>Komercijalna ponuda artikala<br>Cijene navedene sa PDV-om</p>
+            </div>
+            <div class="box">
+                <span>Ponuda za</span>
+                {% if ponuda.ime_prezime %}
+                <strong>{{ ponuda.ime_prezime }}</strong>
+                <p>
+                    {% if ponuda.adresa %}{{ ponuda.adresa }}<br>{% endif %}
+                    {% if ponuda.grad %}{{ ponuda.grad }}<br>{% endif %}
+                    {% if ponuda.telefon %}Tel: {{ ponuda.telefon }}<br>{% endif %}
+                    {% if ponuda.email %}{{ ponuda.email }}{% endif %}
+                </p>
+                {% else %}
+                <strong>Kupac</strong>
+                <p>Nije naveden</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Artikal</th>
+                    <th>Šifra</th>
+                    <th class="num">Kol.</th>
+                    <th class="num">Cijena sa PDV</th>
+                    <th class="num">Iznos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in stavke %}
+                <tr>
+                    <td class="name">{{ row.naziv }}</td>
+                    <td class="code">{{ row.sifra|default:"—" }}</td>
+                    <td class="num">{{ row.kolicina }}</td>
+                    <td class="num">{{ row.cijena }} KM</td>
+                    <td class="num">{{ row.ukupno }} KM</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if ponuda.napomena %}
+        <p class="note"><strong>Napomena:</strong> {{ ponuda.napomena }}</p>
+        {% endif %}
+
+        <div class="totals">
+            <div class="muted"><span>Osnova</span><span>{{ totals.osnova }} KM</span></div>
+            {% if totals.popust %}
+            <div class="muted"><span>Popust</span><span>−{{ totals.popust }} KM</span></div>
+            {% endif %}
+            <div><span>Iznos bez PDV</span><strong>{{ totals.net }} KM</strong></div>
+            <div><span>PDV 17%</span><strong>{{ totals.pdv }} KM</strong></div>
+            <div class="grand"><span>Ukupno sa PDV</span><span>{{ totals.ukupno_sa_pdv }} KM</span></div>
+        </div>
+
+        <footer>
+            <span>Ponuda {{ ponuda.broj }} · opremazaribolov.ba</span>
+            <span>Ova ponuda nije fiskalni račun.</span>
+        </footer>
+    </article>
+    {% if print_mode %}
+    <script>window.addEventListener('load', function () { window.print(); });</script>
+    {% endif %}
+</body>
+</html>

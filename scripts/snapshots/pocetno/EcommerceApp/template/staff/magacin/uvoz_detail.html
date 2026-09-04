@@ -1,0 +1,81 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>{{ uvoz.naziv }}</h1>
+        <p class="mg-count">
+            {{ uvoz.kreiran|date:"d.m.Y. H:i" }}
+            {% if uvoz.kreirao %} · {{ uvoz.kreirao.get_full_name|default:uvoz.kreirao.email }}{% endif %}
+            · količine su otišle na <strong>Novi uvoz</strong>
+        </p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <a href="{% url 'staff_magacin_uvoz' %}" class="mg-btn">← Svi uvozi</a>
+        <a href="{% url 'staff_magacin_uvoz_stampa' uvoz.pk %}" class="mg-btn mg-btn-primary" target="_blank" rel="noopener">Štampaj</a>
+        <form method="post" onsubmit="return confirm('Obrisati ovaj uvoz iz liste? Zalihe na Novi uvoz ostaju.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="mg-btn mg-btn-danger">Obriši</button>
+        </form>
+    </div>
+</div>
+
+<div class="mg-stats-row">
+    <div class="mg-mini-stat"><span>Stavki</span><strong>{{ stavke|length }}</strong></div>
+    <div class="mg-mini-stat"><span>Ažurirano</span><strong>{{ uvoz.broj_azurirano }}</strong></div>
+    <div class="mg-mini-stat"><span>Kreirano</span><strong>{{ uvoz.broj_kreirano }}</strong></div>
+    <div class="mg-mini-stat"><span>Preskočeno</span><strong>{{ uvoz.broj_preskoceno }}</strong></div>
+</div>
+
+<section class="mg-card">
+    <div class="mg-table-wrap">
+        <table class="mg-table mg-uvoz-review">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Artikal</th>
+                    <th class="num">Kolicina</th>
+                    <th class="num">Fakturna</th>
+                    <th class="num">Nabavna</th>
+                    <th class="num">Vpc netto</th>
+                    <th class="num">Mpc brutto</th>
+                    <th class="num">Vpc marza</th>
+                    <th class="num">Ukupno Fakturna</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in stavke %}
+                <tr>
+                    <td class="mg-muted">{{ forloop.counter }}</td>
+                    <td>
+                        {% if s.product_id %}
+                        <a href="{% url 'staff_magacin_artikal' s.product_id %}">{{ s.artikal_naziv }}</a>
+                        {% else %}
+                        {{ s.artikal_naziv }}
+                        {% endif %}
+                        {% if s.poruka %}<div class="mg-muted">{{ s.poruka }}</div>{% endif %}
+                    </td>
+                    <td class="num">{{ s.kolicina|default:"—" }}</td>
+                    <td class="num">{{ s.fakturna|default:"—" }}</td>
+                    <td class="num">{{ s.nabavna|default:"—" }}</td>
+                    <td class="num">{{ s.vpc_netto|default:"—" }}</td>
+                    <td class="num">{% if s.mpc_brutto %}{{ s.mpc_brutto }} KM{% else %}—{% endif %}</td>
+                    <td class="num">{% if s.vpc_marza_pct_display %}{{ s.vpc_marza_pct_display }}{% else %}{{ s.vpc_marza|default:"—" }}{% endif %}</td>
+                    <td class="num">{{ s.ukupno_fakturna|default:"—" }}</td>
+                    <td>
+                        {% if s.status == 'created' %}<span class="mg-pill is-manual">Kreirano</span>
+                        {% elif s.status == 'updated' %}<span class="mg-pill">Ažurirano</span>
+                        {% elif s.status == 'error' %}<span class="mg-pill is-out">Greška</span>
+                        {% else %}<span class="mg-pill is-off">{{ s.get_status_display }}</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" class="mg-muted">Nema stavki.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

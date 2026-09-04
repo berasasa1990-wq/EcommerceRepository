@@ -1,0 +1,77 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-orders-page pk-mp-page" id="pkCheckApp">
+    <div class="mg-page-head">
+        <div>
+            <h1>Artikli u MP</h1>
+            <p class="mg-count">
+                {% if focus_order %}
+                {{ focus_order.ime_prezime }} · #{{ focus_broj }} · {{ groups|length }} artikl{{ groups|length|pluralize:"a,a" }}
+                {% elif customers %}
+                {{ customers|length }} kup{{ customers|length|pluralize:"ac,aca" }} čeka provjeru u MP.
+                {% else %}
+                Nema stavki za provjeru.
+                {% endif %}
+            </p>
+        </div>
+        {% if focus_order %}
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_pakuj_provjera' %}{% if next_print %}?next=stampa{% else %}?next=pick{% endif %}">← Kupci</a>
+        {% else %}
+        <a class="mg-btn mg-btn-pill" href="{% if next_print %}{% url 'staff_magacin_narudzbe' %}{% else %}{% url 'staff_magacin_pakuj' %}{% endif %}">← Picking</a>
+        {% endif %}
+    </div>
+
+    {% if not focus_order %}
+    <p class="pk-mp-lead">Izaberi kupca. Otvori šta mu treba, pa pokupi.</p>
+    <div class="pk-ops">
+        {% for c in customers %}
+        <a class="pk-check-card pk-mp-cust{% if forloop.first %} is-focus{% endif %}" href="{{ c.open_url }}">
+            <div class="pk-check-txt">
+                <h2>{{ c.ime }}</h2>
+                <p>#{{ c.broj }}{% if c.telefon %} · {{ c.telefon }}{% endif %}</p>
+            </div>
+            <span class="pk-check-qty">{{ c.artikala }}<small>art.</small></span>
+        </a>
+        {% empty %}
+        <p class="pk-empty">Nema artikala za provjeru u MP.</p>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="pk-mp-lead">Šta treba {{ focus_order.ime_prezime }}. Ako ima manje, unesi koliko si našao — to ide na račun. Nema se skida.</p>
+    <div class="pk-ops">
+        {% for group in groups %}
+        <article class="pk-check-card{% if forloop.first %} is-focus{% endif %}">
+            <div class="pk-check-head">
+                {% if group.slika %}
+                <div class="pk-img" style="background-image:url('{{ group.slika }}')"></div>
+                {% else %}
+                <div class="pk-img"></div>
+                {% endif %}
+                <div class="pk-check-txt">
+                    <h2>{{ group.naziv }}</h2>
+                    <p>{% if group.sifra %}{{ group.sifra }}{% else %}#{{ focus_broj }}{% endif %}</p>
+                </div>
+                <span class="pk-check-qty">{{ group.need }}<small>kom</small></span>
+            </div>
+            <form method="post" class="pk-check-actions">
+                {% csrf_token %}
+                <input type="hidden" name="group" value="{{ group.key }}">
+                {% if focus_broj %}<input type="hidden" name="narudzba" value="{{ focus_broj }}">{% endif %}
+                {% if next_print %}<input type="hidden" name="next" value="stampa">{% else %}<input type="hidden" name="next" value="pick">{% endif %}
+                <label class="pk-mp-found">
+                    Našao
+                    <input class="pk-mp-qty" type="number" name="kolicina" min="0" max="{{ group.need }}" step="1" value="{{ group.need }}" inputmode="numeric" aria-label="Količina u MP">
+                    <small>/ {{ group.need }}</small>
+                </label>
+                <button type="submit" name="action" value="ima" class="pk-all">Ima u MP</button>
+                <button type="submit" name="action" value="nema" class="pk-less">Nema — izbaci</button>
+            </form>
+        </article>
+        {% empty %}
+        <p class="pk-empty">Nema artikala za provjeru u MP.</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

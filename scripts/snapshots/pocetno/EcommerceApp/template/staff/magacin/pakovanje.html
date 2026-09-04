@@ -1,0 +1,110 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Pretraga narudžbi</h1>
+        <p class="mg-count">Broj narudžbe, ime kupca ili telefon. Otvori komplet: šta je naručeno i kako je pakovano.</p>
+    </div>
+</div>
+
+<section class="mg-card">
+    <form method="get" class="mg-page-search" style="position:relative;margin:0 0 14px;" role="search">
+        <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Broj narudžbe, ime ili telefon…" autocomplete="off">
+        <button type="submit" class="mg-btn mg-btn-primary">Pronađi</button>
+    </form>
+    {% if order_query %}
+    <div class="mg-table-wrap">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>BROJ</th>
+                <th>KUPAC</th>
+                <th>TELEFON</th>
+                <th>STATUS</th>
+                <th>DATUM</th>
+                <th class="num">UKUPNO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in orders %}
+            <tr class="is-clickable{% if selected_broj == row.broj %} is-active{% endif %}" onclick="location.href='{% url 'staff_magacin_pakovanje' %}?pretraga={{ order_query|urlencode }}&broj={{ row.broj }}'">
+                <td>#{{ row.broj }}</td>
+                <td>{{ row.ime_prezime }}</td>
+                <td>{{ row.telefon }}</td>
+                <td>{{ row.get_status_label }}</td>
+                <td>{{ row.kreirana|date:"d.m.Y H:i" }}</td>
+                <td class="num">{{ row.ukupno }} KM</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="mg-muted">Nema narudžbi za „{{ order_query }}”.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="mg-muted" style="margin:0;">Ukucaj broj, ime ili telefon da izlistaš narudžbe.</p>
+    {% endif %}
+</section>
+
+{% if order %}
+<section class="mg-card" style="margin-top:16px;">
+    <div class="mg-card-head">
+        <h2 class="mg-h">Narudžba #{{ order.broj }}</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="mg-btn" href="{% url 'staff_order_detail' order.broj %}">Otvori detalj</a>
+            <a class="mg-btn" href="{% url 'staff_order_packing' order.broj %}" target="_blank" rel="noopener">Štampaj pakovanje</a>
+        </div>
+    </div>
+    <p class="mg-count" style="margin:0 0 12px;">
+        {{ order.ime_prezime }} · {{ order.telefon }} · {{ order.adresa }}, {{ order.grad }}
+        · {{ order.get_status_label }}
+        {% if order.lager_status == 'validirano' %} · Validatovano{% elif order.lager_status == 'rezervisano' %} · Rezervisano{% endif %}
+    </p>
+    <h3 class="mg-h">Naručeno</h3>
+    <div class="mg-table-wrap">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>ARTIKAL</th>
+                <th>ŠIFRA</th>
+                <th class="num">KOL.</th>
+                <th class="num">CIJENA</th>
+                <th class="num">UKUPNO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.stavke.all %}
+            <tr>
+                <td>
+                    {{ item.product_naziv|default:item.naziv }}
+                    {% if item.varijacija_naziv %}<span class="sub">{{ item.varijacija_naziv }}</span>{% endif %}
+                </td>
+                <td>{{ item.sifra|default:"—" }}</td>
+                <td class="num">{{ item.kolicina }}</td>
+                <td class="num">{{ item.cijena }} KM</td>
+                <td class="num">{% widthratio item.cijena 1 item.kolicina %} KM</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="mg-muted">Nema stavki.</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4">Ukupno</td>
+                <td class="num">{{ order.ukupno }} KM</td>
+            </tr>
+        </tfoot>
+    </table>
+    </div>
+</section>
+
+<section class="mg-card" style="margin-top:16px;">
+    <h2 class="mg-h">Pakovanje — odakle je uzeto</h2>
+    {% include 'partials/order_packing_document.html' %}
+</section>
+{% endif %}
+{% endblock %}

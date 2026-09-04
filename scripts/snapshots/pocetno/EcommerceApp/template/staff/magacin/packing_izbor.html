@@ -1,0 +1,111 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-orders-page">
+<div class="mg-page-head">
+    <div>
+        <h1>Reprint packinga</h1>
+        <p class="mg-count">Izaberi datum, označi narudžbe, pa štampaj samo odabrane.</p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>
+    </div>
+</div>
+
+<form method="get" action="{% url 'staff_magacin_narudzbe_packing_izbor' %}" class="mg-orders-find">
+    <label class="mg-label" for="mgPackingDatum">Datum</label>
+    <input id="mgPackingDatum" type="date" name="datum" value="{{ datum }}" required>
+    <button type="submit" class="mg-btn">Prikaži</button>
+    <span class="mg-muted">{{ datum_label }} · {{ orders|length }} pošiljk{% if orders|length == 1 %}a{% else %}e{% endif %}</span>
+</form>
+
+<form id="mgPackingPickForm" method="post" action="{{ print_url }}" target="_blank" class="mg-orders-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="stampaj">
+    <input type="hidden" name="datum" value="{{ datum }}">
+    <div class="mg-bulk-bar">
+        <label class="mg-check">
+            <input type="checkbox" id="mgPackingPickAll"{% if not orders %} disabled{% endif %}>
+            Odaberi sve
+        </label>
+        <button type="submit" class="mg-btn mg-btn-pill" id="mgPackingPickPrint" disabled>
+            Štampaj odabrane
+        </button>
+        <span class="mg-muted" id="mgPackingPickCount">0 odabrano</span>
+    </div>
+    <section class="mg-card mg-orders-card">
+        <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th class="mg-check-col"></th>
+                    <th>BROJ</th>
+                    <th>KUPAC</th>
+                    <th>VRIJEME</th>
+                    <th class="num">STAVKI</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="mg-check-col">
+                        <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-packing-pick-check" checked>
+                    </td>
+                    <td><strong>#{{ order.broj }}</strong></td>
+                    <td>
+                        <strong>{{ order.ime_prezime }}</strong>
+                        {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
+                    </td>
+                    <td>{{ order.kreirana|date:"H:i" }}</td>
+                    <td class="num">{{ order.stavke.all|length }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="mg-muted">Nema packing pošiljki za ovaj datum.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+</form>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var form = document.getElementById('mgPackingPickForm');
+    var all = document.getElementById('mgPackingPickAll');
+    var printBtn = document.getElementById('mgPackingPickPrint');
+    var countEl = document.getElementById('mgPackingPickCount');
+    var datum = document.getElementById('mgPackingDatum');
+    if (datum) {
+        datum.addEventListener('change', function () { datum.form.submit(); });
+    }
+    if (!form) return;
+    function boxes() { return Array.prototype.slice.call(form.querySelectorAll('.mg-packing-pick-check')); }
+    function sync() {
+        var selected = boxes().filter(function (box) { return box.checked; });
+        if (printBtn) printBtn.disabled = selected.length === 0;
+        if (countEl) countEl.textContent = selected.length + ' odabrano';
+        if (all) {
+            all.checked = boxes().length > 0 && selected.length === boxes().length;
+            all.indeterminate = selected.length > 0 && selected.length < boxes().length;
+        }
+    }
+    if (all) {
+        all.addEventListener('change', function () {
+            boxes().forEach(function (box) { box.checked = all.checked; });
+            sync();
+        });
+    }
+    form.addEventListener('change', function (event) {
+        if (event.target.classList.contains('mg-packing-pick-check')) sync();
+    });
+    form.addEventListener('submit', function (event) {
+        var selected = boxes().filter(function (box) { return box.checked; });
+        if (!selected.length) event.preventDefault();
+    });
+    sync();
+})();
+</script>
+{% endblock %}

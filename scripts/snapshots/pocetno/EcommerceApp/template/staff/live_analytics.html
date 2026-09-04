@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Uživo analitika — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block body_class %}staff-shell-page{% endblock %}
+
+{% block content %}
+<section class="live-lite" id="liveLitePage"
+         data-poll-url="{% url 'staff_live_analytics_data' %}">
+    <header class="staff-page-hero">
+        <div class="staff-page-hero__inner">
+            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
+            <p class="staff-page-kicker">Live</p>
+            <h1 class="staff-page-title">Uživo analitika</h1>
+            <p class="staff-page-subtitle">
+                Ko je sada na sajtu, šta radi i odakle je došao.
+                Prozor: zadnjih {{ online_minutes }} min · osvježeno
+                <strong id="liveLiteUpdated">{{ generated_at_label }}</strong>
+            </p>
+        </div>
+    </header>
+
+    <div class="live-lite__body">
+        <div class="live-lite-summary">
+            <div class="live-lite-count">
+                <span class="live-lite-count__dot" aria-hidden="true"></span>
+                <strong id="liveLiteCount">{{ online_count }}</strong>
+                <span>live sada</span>
+            </div>
+            <ul class="live-lite-sources" id="liveLiteSources">
+                {% for src in sources %}
+                <li data-key="{{ src.key }}">
+                    <span>{{ src.label }}</span>
+                    <strong>{{ src.count }}</strong>
+                </li>
+                {% empty %}
+                <li class="live-lite-sources__empty">Nema izvora još</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="live-lite-list" id="liveLiteList">
+            {% for v in online_visitors %}
+            <article class="live-lite-row" data-session="{{ v.session_key }}">
+                <div class="live-lite-row__main">
+                    <p class="live-lite-row__name">{{ v.ime }}{% if v.grad %} · {{ v.grad }}{% endif %}</p>
+                    <p class="live-lite-row__doing"><strong>Sada:</strong> {{ v.current_page }}</p>
+                </div>
+                <div class="live-lite-row__meta">
+                    <span class="live-lite-pill live-lite-pill--src live-lite-pill--{{ v.source_key }}">{{ v.source_label }}</span>
+                    <span class="live-lite-pill live-lite-pill--ago">{{ v.ago_label }}</span>
+                </div>
+            </article>
+            {% empty %}
+            <div class="live-lite-empty" id="liveLiteEmpty">
+                <p>Niko nije online upravo sada.</p>
+                <span>Lista se osvježava automatski.</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <p class="live-lite-footnote">
+            Lagani mode · poll ~5 s · jedinstveni posjetioci (token/IP) · bez teških AI/gift/statistika.
+        </p>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var root = document.getElementById('liveLitePage');
+    if (!root) return;
+    var pollUrl = root.getAttribute('data-poll-url');
+    var listEl = document.getElementById('liveLiteList');
+    var countEl = document.getElementById('liveLiteCount');
+    var sourcesEl = document.getElementById('liveLiteSources');
+    var updatedEl = document.getElementById('liveLiteUpdated');
+    var inFlight = false;
+
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function render(data) {
+        if (countEl) countEl.textContent = String(data.online_count || 0);
+        if (updatedEl) updatedEl.textContent = data.generated_at_label || '';
+
+        if (sourcesEl) {
+            var sources = data.sources || [];
+            if (!sources.length) {
+                sourcesEl.innerHTML = '<li class="live-lite-sources__empty">Nema izvora još</li>';
+            } else {
+                sourcesEl.innerHTML = sources.map(function (s) {
+                    return '<li data-key="' + esc(s.key) + '"><span>' + esc(s.label) +
+                        '</span><strong>' + esc(s.count) + '</strong></li>';
+                }).join('');
+            }
+        }
+
+        if (!listEl) return;
+        var visitors = data.online_visitors || [];
+        if (!visitors.length) {
+            listEl.innerHTML =
+                '<div class="live-lite-empty" id="liveLiteEmpty">' +
+                '<p>Niko nije online upravo sada.</p>' +
+                '<span>Lista se osvježava automatski.</span></div>';
+            return;
+        }
+        listEl.innerHTML = visitors.map(function (v) {
+            var name = esc(v.ime || 'Gost');
+            if (v.grad) name += ' · ' + esc(v.grad);
+            return (
+                '<article class="live-lite-row" data-session="' + esc(v.session_key) + '">' +
+                '<div class="live-lite-row__main">' +
+                '<p class="live-lite-row__name">' + name + '</p>' +
+                '<p class="live-lite-row__doing"><strong>Sada:</strong> ' + esc(v.current_page || '—') + '</p>' +
+                '</div>' +
+                '<div class="live-lite-row__meta">' +
+                '<span class="live-lite-pill live-lite-pill--src live-lite-pill--' + esc(v.source_key || 'other') + '">' +
+                esc(v.source_label || '—') + '</span>' +
+                '<span class="live-lite-pill live-lite-pill--ago">' + esc(v.ago_label || '') + '</span>' +
+                '</div></article>'
+            );
+        }).join('');
+    }
+
+    async function poll() {
+        if (document.hidden || inFlight || !pollUrl) return;
+        inFlight = true;
+        try {
+            var res = await fetch(pollUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) return;
+            var data = await res.json();
+            render(data);
+        } catch (e) { /* tiho */ }
+        finally { inFlight = false; }
+    }
+
+    window.setInterval(poll, 12000);
+    window.setTimeout(poll, 1500);
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) poll();
+    });
+})();
+</script>
+{% endblock %}

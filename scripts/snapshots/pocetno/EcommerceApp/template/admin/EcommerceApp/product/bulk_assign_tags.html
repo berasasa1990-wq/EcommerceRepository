@@ -1,0 +1,232 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .bulk-tag-form {
+        max-width: 720px;
+        margin-top: 16px;
+    }
+    .help-intro {
+        color: #555;
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 8px 0 18px;
+        max-width: 720px;
+    }
+    .bulk-tag-field {
+        margin-bottom: 18px;
+        padding: 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+    }
+    .bulk-tag-field label.field-label {
+        display: block;
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+    .bulk-tag-field input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        font-size: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: inherit;
+    }
+    .bulk-tag-field input[type="text"]:focus {
+        border-color: #417690;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.18);
+    }
+    .field-hint {
+        color: #888;
+        font-size: 12px;
+        margin-top: 8px;
+    }
+    .suggested-box {
+        margin: 0 0 18px;
+        padding: 14px 16px;
+        background: #f0f7fb;
+        border: 1px solid #c5dce8;
+        border-radius: 8px;
+    }
+    .suggested-box h3 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e4a63;
+    }
+    .suggested-box .sub {
+        margin: 0 0 12px;
+        font-size: 12px;
+        color: #4a6a7a;
+        line-height: 1.4;
+    }
+    .suggested-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .suggested-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #fff;
+        border: 1px solid #9ec3d6;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .suggested-chip input {
+        margin: 0;
+    }
+    .suggested-chip:has(input:checked) {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        font-weight: 600;
+    }
+    .empty-suggest {
+        padding: 12px 14px;
+        background: #fafafa;
+        border: 1px dashed #ccc;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 16px;
+    }
+    .product-list {
+        margin: 16px 0 0;
+        padding: 12px 14px;
+        background: #f8f8f8;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+    .product-list h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .product-list ul {
+        margin: 0;
+        padding-left: 18px;
+    }
+    .product-list li {
+        margin-bottom: 4px;
+        font-size: 13px;
+    }
+    .product-list .has-tags {
+        color: #666;
+        font-size: 12px;
+    }
+    .bulk-tag-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Početna</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:EcommerceApp_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Bulk tag
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Bulk tag</h1>
+    <p class="help-intro">
+        Označeno artikala: <strong>{{ product_count }}</strong>.
+        {% if suggested_tags %}
+        Neki već imaju tagove — predloženi su ispod (čekirani).
+        <strong>Samo klikni Primjeni</strong> (polje može ostati prazno) i svi će dobiti iste tagove.
+        Artiklima koji već imaju taj tag ništa se ne duplira.
+        {% else %}
+        Nijedan označeni još nema tagova — unesi nove u polje ispod, pa Primjeni.
+        {% endif %}
+    </p>
+
+    <form method="post" class="bulk-tag-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        {% for product in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ product.pk }}">
+        {% endfor %}
+
+        <div class="bulk-tag-field">
+            {% if suggested_tags %}
+            <div class="suggested-box">
+                <h3>Postojeći tagovi na označenim — ponuđeni svima</h3>
+                <p class="sub">
+                    Ostavi ih označene i pritisni <strong>Primjeni</strong> bez unosa u polje —
+                    svi označeni artikli dobiju iste tagove (samo tamo gdje nedostaju).
+                </p>
+                <div class="suggested-chips">
+                    {% for tag in suggested_tags %}
+                    <label class="suggested-chip">
+                        <input type="checkbox" name="suggested_tag" value="{{ tag.naziv }}" checked>
+                        {{ tag.naziv }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-suggest">
+                Nema postojećih tagova na ovim artiklima. Unesi nove ispod.
+            </div>
+            {% endif %}
+
+            <label class="field-label" for="bulk_tags">Novi tagovi (opcionalno)</label>
+            <input
+                type="text"
+                id="bulk_tags"
+                name="bulk_tags"
+                value=""
+                placeholder="{% if suggested_tags %}ostavi prazno i samo Primjeni — ili dopiši nove{% else %}npr. multiplikator, casting{% endif %}"
+                autocomplete="off"
+                {% if not suggested_tags %}autofocus{% endif %}
+            >
+            <p class="field-hint">
+                Polje je za <strong>dodatne / nove</strong> tagove (zarezom).
+                {% if suggested_tags %}Ako ne treba ništa novo — ostavi prazno i klikni Primjeni.{% endif %}
+            </p>
+
+            <div class="product-list">
+                <h3>Označeni artikli ({{ product_count }})</h3>
+                <ul>
+                    {% for product in queryset %}
+                    <li>
+                        {{ product.naziv }}{% if product.sifra %} <span style="color:#888">({{ product.sifra }})</span>{% endif %}
+                        {% with tags=product.tagovi.all %}
+                        {% if tags %}
+                        <span class="has-tags">— već: {% for t in tags %}{{ t.naziv }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                        {% else %}
+                        <span class="has-tags">— bez tagova</span>
+                        {% endif %}
+                        {% endwith %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="bulk-tag-actions">
+            <input type="submit" name="apply" value="Primjeni" class="default">
+            <a href="{% url 'admin:EcommerceApp_product_changelist' %}">Odustani</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

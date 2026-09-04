@@ -1,0 +1,104 @@
+{% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
+<div id="staffSiteEditorRoot"
+     data-save-url="{% url 'staff_site_edit_save' %}"
+     data-bulk-url="{% url 'staff_product_bulk_edit' %}"
+     data-same-image-url="{% url 'staff_same_image_products' %}"
+     data-category-url="{% url 'staff_category_search' %}"
+     data-brand-url="{% url 'staff_brand_search' %}"
+     data-tekst-korpa="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}"
+     data-boja-korpa="{{ site_settings.boja_dugme_korpa|default:'#5BB805' }}"
+     data-boja-korpa-hover="{{ site_settings.boja_dugme_korpa_hover|default:'#4fa104' }}"
+     data-boja-banner="{{ site_settings.boja_dugme_banner|default:'#ff9500' }}"
+     data-boja-banner-hover="{{ site_settings.boja_dugme_banner_hover|default:'#e68600' }}"
+     data-boja-wa="{{ site_settings.kontakt_boja_whatsapp|default:'#25d366' }}"
+     data-boja-viber="{{ site_settings.kontakt_boja_viber|default:'#665cac' }}"
+     data-boja-msg="{{ site_settings.kontakt_boja_messenger|default:'#0084ff' }}"
+     style="display:none"
+     aria-hidden="true"></div>
+
+{# Popover na body nivou — fixed, otvara se samo na klik #}
+<div class="staff-edit-popover" id="staffEditPopover" hidden role="dialog" aria-modal="true" aria-label="Uredi">
+    <div class="staff-edit-popover-head">
+        <strong id="staffEditPopoverTitle">Uredi</strong>
+        <button type="button" class="staff-edit-popover-close" id="staffEditPopoverClose" aria-label="Zatvori">×</button>
+    </div>
+    <div class="staff-edit-popover-body" id="staffEditPopoverBody"></div>
+    <div class="staff-edit-popover-actions">
+        <button type="button" class="staff-edit-btn staff-edit-btn--ghost" id="staffEditPopoverCancel">Otkaži</button>
+        <button type="button" class="staff-edit-btn staff-edit-btn--primary" id="staffEditPopoverSave">Sačuvaj</button>
+    </div>
+    <p class="staff-edit-popover-status" id="staffEditPopoverStatus" hidden></p>
+</div>
+
+<aside class="staff-bulk-panel" id="staffBulkPanel" hidden>
+    <div class="staff-bulk-head">
+        <div>
+            <h2>Bulk izmjena</h2>
+            <p id="staffBulkCount">Odaberi artikle</p>
+        </div>
+        <button type="button" class="staff-edit-popover-close" id="staffBulkClose" aria-label="Zatvori">×</button>
+    </div>
+    <form id="staffBulkForm" class="staff-bulk-form" autocomplete="off">
+        <p class="staff-bulk-hint">Nijedno polje nije obavezno. Primjenjuje se samo ono što uneseš.</p>
+        <div id="staffBulkPicks" class="staff-bulk-picks"></div>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Kategorija</span>
+            <div class="staff-bulk-lookup" data-bulk-lookup="kategorija">
+                <input type="hidden" name="kategorija_id" id="staffBulkCatId">
+                <input type="search" class="staff-edit-input" id="staffBulkCat" placeholder="Pretraži kategoriju…" autocomplete="off">
+                <div class="staff-bulk-lookup-list" hidden></div>
+            </div>
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Brend</span>
+            <div class="staff-bulk-lookup" data-bulk-lookup="brend">
+                <input type="hidden" name="brend_id" id="staffBulkBrandId">
+                <input type="search" class="staff-edit-input" id="staffBulkBrand" placeholder="Pretraži brend…" autocomplete="off">
+                <div class="staff-bulk-lookup-list" hidden></div>
+            </div>
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Opis</span>
+            <textarea class="staff-edit-input staff-bulk-opis" name="opis" id="staffBulkOpis" rows="4" placeholder="Novi opis za odabrane artikle"></textarea>
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Akcijski %</span>
+            <input class="staff-edit-input" name="akcija_postotak" id="staffBulkPct" inputmode="decimal" placeholder="npr. 15 — prazno ne mijenja, 0 skida akciju">
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">HIT ponuda / Izdvojeno</span>
+            <select class="staff-edit-input" name="je_hit" id="staffBulkHit">
+                <option value="">Ne mijenjaj</option>
+                <option value="1">Uključi</option>
+                <option value="0">Isključi</option>
+            </select>
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Hide sa sajta</span>
+            <select class="staff-edit-input" name="sakriven_do_stanja" id="staffBulkHide">
+                <option value="">Ne mijenjaj</option>
+                <option value="1">Sakrij — ne prikazuj kupcima</option>
+                <option value="0">Prikaži na sajtu</option>
+            </select>
+            <span class="staff-bulk-hint">Sakriveni artikal se automatski vrati kad opet dođe na stanje.</span>
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Glavna slika</span>
+            <input type="file" class="staff-edit-input" name="glavna_slika" id="staffBulkMainImage" accept="image/*">
+            <span class="staff-bulk-hint">Mijenja sliku na karticama svih odabranih artikala.</span>
+        </label>
+        <label class="staff-edit-field">
+            <span class="staff-edit-field-label">Dodatne slike</span>
+            <input type="file" class="staff-edit-input" name="dodatne_slike" id="staffBulkExtraImages" accept="image/*" multiple>
+            <span class="staff-bulk-hint">Galerija — dodaje se svim odabranim artiklima, ne mijenja glavnu sliku.</span>
+        </label>
+        <button type="button" class="staff-edit-btn staff-edit-btn--ghost staff-bulk-same-image" id="staffBulkSameImage">Odaberi sve s istom slikom</button>
+        <p class="staff-edit-popover-status" id="staffBulkStatus" hidden></p>
+        <div class="staff-bulk-actions">
+            <button type="button" class="staff-edit-btn staff-edit-btn--ghost" id="staffBulkClear">Očisti odabir</button>
+            <button type="submit" class="staff-edit-btn staff-edit-btn--primary" id="staffBulkApply">Primijeni</button>
+        </div>
+    </form>
+</aside>
+
+{% endif %}

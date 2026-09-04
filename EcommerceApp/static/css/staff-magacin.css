@@ -5154,11 +5154,14 @@ tr.is-mp-lock {
         font-size: 15px;
     }
     .mg-table-stack-narudzbe td:nth-child(8) {
-        grid-column: 3;
-        grid-row: 1;
-        font-weight: 700;
-        text-align: right;
-        white-space: nowrap;
+        grid-column: 2 / -1;
+        grid-row: 5;
+        font-weight: 500;
+        text-align: left;
+        white-space: normal;
+        max-width: none;
+        color: #4b5563;
+        font-size: 13px;
     }
     .mg-table-stack-narudzbe td:nth-child(3) {
         grid-column: 2 / -1;
@@ -5536,6 +5539,7 @@ tr.is-mp-lock {
 .mg-order-page .vp-scan-btn,
 .mg-order-page #mgOrderCatalogBtn,
 .mg-order-page #mgSpareBtn,
+.mg-order-page #mgOrderBulk,
 .mg-order-page #mgCustomerAdd {
     min-height: 44px;
     border-radius: 12px;
@@ -5993,6 +5997,19 @@ tr.is-mp-lock {
     font-weight: 400;
 }
 .mg-order-loc { color: #4b5563; }
+.mg-order-note {
+    max-width: 280px;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+}
+.mg-order-note span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
 .mg-order-sum { font-weight: 700; white-space: nowrap; }
 .mg-more-col { width: 76px; text-align: right; white-space: nowrap; }
 .mg-row-more,
@@ -6036,10 +6053,13 @@ tr.is-mp-lock {
     }
     .mg-table-stack-narudzbe td:nth-child(9) {
         grid-column: 3;
-        grid-row: 2;
+        grid-row: 1;
         justify-self: end;
         align-self: start;
         width: auto;
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
     }
     .mg-table-stack-narudzbe .mg-row-more {
         width: 28px;
@@ -8403,4 +8423,744 @@ a.bp-row-main { text-decoration: none; color: inherit; }
 .pl-row.is-tacno { background: #f0fdf4; }
 @media (max-width: 720px) {
     .pl-choice { grid-template-columns: 1fr; }
+}
+
+/* ——— Narudžbe restyle (samo ova stranica) ——— */
+.magacin-page.is-narudzbe {
+    --mg-accent: #FF5A00;
+    --mg-accent-hover: #E65100;
+    --mg-accent-soft: #fff4eb;
+    --mg-accent-line: #ffd7b8;
+}
+.magacin-page.is-narudzbe .mg-sidebar {
+    background: #fafbfc;
+    border-right-color: #eef0f2;
+}
+.magacin-page.is-narudzbe .mg-brand-lockup {
+    color: #8b9198;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    padding: 16px 16px 10px;
+}
+.magacin-page.is-narudzbe .mg-brand-cube {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #eceff2;
+    color: #8b9198;
+}
+.magacin-page.is-narudzbe .mg-nav {
+    padding: 4px 10px 12px;
+    gap: 4px;
+}
+.magacin-page.is-narudzbe .mg-nav a {
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: #4b5563;
+}
+.magacin-page.is-narudzbe .mg-nav a.is-active {
+    background: var(--mg-accent);
+    color: #fff;
+    font-weight: 700;
+}
+.magacin-page.is-narudzbe .mg-nav a.is-active svg {
+    color: #fff;
+}
+.magacin-page.is-narudzbe .mg-nav a:hover:not(.is-active) {
+    background: #f3f4f6;
+}
+.magacin-page.is-narudzbe .mg-main {
+    background: #f4f6f8;
+    padding: 22px 28px 40px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-page-head {
+    align-items: center;
+    margin-bottom: 18px;
+    gap: 16px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-page-head h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    color: #111;
+}
+.magacin-page.is-narudzbe .mg-orders-title-ico {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mg-accent);
+    flex-shrink: 0;
+}
+.magacin-page.is-narudzbe .mg-orders-title-ico svg {
+    width: 30px;
+    height: 30px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-page-head .mg-count {
+    margin-top: 4px;
+    font-size: 13.5px;
+    color: #8b9198;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions {
+    gap: 10px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-pill {
+    min-height: 42px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 1.5px solid var(--mg-accent);
+    background: #fff;
+    color: var(--mg-accent);
+    font-weight: 700;
+    box-shadow: none;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-pill:hover {
+    background: var(--mg-accent-soft);
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-primary {
+    background: var(--mg-accent);
+    border-color: var(--mg-accent);
+    color: #fff;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-primary:hover {
+    background: var(--mg-accent-hover);
+    border-color: var(--mg-accent-hover);
+    filter: none;
+}
+.magacin-page.is-narudzbe .mg-orders-panel {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 18px;
+    padding: 6px 18px 18px;
+    box-shadow: 0 1px 2px rgba(17, 17, 17, .03);
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs {
+    gap: 4px 28px;
+    margin: 0 0 16px;
+    padding: 10px 4px 0;
+    border-bottom: 1px solid #eef0f2;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 2px 14px;
+    color: #6b7280;
+    font-size: 14.5px;
+    font-weight: 650;
+    box-shadow: none;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs a svg {
+    width: 18px;
+    height: 18px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-filter-tabs a.is-active {
+    color: var(--mg-accent);
+    box-shadow: inset 0 -2px 0 var(--mg-accent);
+}
+.magacin-page.is-narudzbe .mg-orders-find {
+    gap: 10px;
+    margin: 0 0 16px;
+}
+.magacin-page.is-narudzbe .mg-orders-find .mg-icon-field input {
+    height: 46px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+}
+.magacin-page.is-narudzbe .mg-orders-find .mg-icon-field input:focus {
+    border-color: var(--mg-accent);
+    box-shadow: 0 0 0 3px rgba(255, 90, 0, .12);
+}
+.magacin-page.is-narudzbe .mg-orders-find .mg-btn-primary {
+    min-height: 46px;
+    padding: 0 18px;
+    border-radius: 12px;
+    background: var(--mg-accent);
+    border-color: var(--mg-accent);
+    color: #fff;
+    font-weight: 700;
+}
+.magacin-page.is-narudzbe .mg-orders-find .mg-btn-primary:hover {
+    background: var(--mg-accent-hover);
+    border-color: var(--mg-accent-hover);
+    filter: none;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar {
+    gap: 10px;
+    margin: 0 0 14px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-check {
+    font-weight: 700;
+    color: #111;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-check input,
+.magacin-page.is-narudzbe .mg-order-check {
+    accent-color: var(--mg-accent);
+    width: 18px;
+    height: 18px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-btn-pill {
+    min-height: 40px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #111;
+    font-weight: 700;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-btn-pill:hover {
+    background: #f8f9fa;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar .mg-btn-pill:disabled,
+.magacin-page.is-narudzbe .mg-orders-page .mg-bulk-bar #mgPackingSelected.is-packing-idle {
+    background: #f3f4f6;
+    border-color: #eceef1;
+    color: #9aa0a6;
+    opacity: 1;
+}
+.magacin-page.is-narudzbe .mg-orders-card {
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-table {
+    width: 100%;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-table thead th {
+    background: #f6f7f9;
+    color: #9aa0a6;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    padding: 12px 12px;
+    border: 0;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-table thead th:first-child {
+    border-radius: 12px 0 0 12px;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-table thead th:last-child {
+    border-radius: 0 12px 12px 0;
+}
+.magacin-page.is-narudzbe .mg-orders-page .mg-table td {
+    border-top: 0;
+    padding: 16px 12px;
+}
+.magacin-page.is-narudzbe .mg-orders-empty-row td {
+    padding: 0;
+    border: 0;
+}
+.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-state {
+    padding: 72px 16px 64px;
+}
+.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-icon {
+    width: 88px;
+    height: 88px;
+    margin-bottom: 16px;
+    background: #f3f4f6;
+    color: #c4c9ce;
+}
+.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-icon svg {
+    width: 40px;
+    height: 40px;
+}
+.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-state strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 6px;
+}
+.magacin-page.is-narudzbe .mg-orders-empty-row .mg-empty-state p {
+    font-size: 14px;
+    color: #9aa0a6;
+}
+@media (max-width: 860px) {
+    .magacin-page.is-narudzbe .mg-orders-page .mg-page-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .magacin-page.is-narudzbe .mg-orders-page .mg-toolbar-actions .mg-btn-pill {
+        flex: 1 1 calc(50% - 10px);
+        justify-content: center;
+    }
+    .magacin-page.is-narudzbe .mg-orders-panel {
+        padding: 4px 12px 14px;
+        border-radius: 14px;
+    }
+    .magacin-page.is-narudzbe .mg-orders-find {
+        flex-wrap: wrap;
+    }
+    .magacin-page.is-narudzbe .mg-orders-find .mg-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ——— Nova narudžba restyle ——— */
+.mg-order-page {
+    --mg-accent: #FF5A00;
+    --mg-accent-hover: #E65100;
+}
+.mg-order-page .mg-crumb { display: none; }
+.mg-order-page .mg-page-head {
+    align-items: center;
+    margin-bottom: 18px;
+}
+.mg-order-page .mg-page-head h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -.04em;
+}
+.mg-order-page .mg-page-head .mg-count {
+    color: #8b9198;
+    font-size: 14px;
+}
+.mg-order-page .mg-page-head .mg-btn-pill {
+    min-height: 40px;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #374151;
+    font-weight: 650;
+    padding: 8px 16px;
+}
+.mg-order-page .mg-card {
+    border: 1px solid #eef0f2;
+    border-radius: 16px;
+    box-shadow: none;
+    padding: 18px 20px 20px;
+    margin-bottom: 14px;
+}
+.mg-order-page .mg-h {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0;
+}
+.mg-order-page .mg-h svg {
+    width: 22px;
+    height: 22px;
+    color: #111;
+}
+.mg-order-page .mg-card-head {
+    margin-bottom: 16px;
+}
+.mg-order-page .mg-card-head .mg-btn {
+    min-height: 36px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #111;
+    font-weight: 700;
+}
+.mg-order-page:has(#mgCustomerLocked:not([hidden])) #mgCustomerAdd,
+.mg-order-page:has(#mgCustomerLocked:not([hidden])) .mg-order-customer .mg-card-head {
+    display: none;
+}
+.mg-cust-grid {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.4fr);
+    gap: 12px 14px;
+    position: relative;
+}
+.mg-cust-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    position: relative;
+}
+.mg-cust-field > span:first-child {
+    font-size: 12px;
+    font-weight: 650;
+    color: #6b7280;
+}
+.mg-cust-field .mg-icon-field input {
+    height: 42px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+}
+.mg-cust-field .mg-icon-field input:focus {
+    border-color: var(--mg-accent);
+    box-shadow: 0 0 0 3px rgba(255, 90, 0, .12);
+}
+.mg-cust-search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.mg-cust-search-row .mg-icon-field {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.mg-order-page #mgCustomerAdd {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: #FF5A00;
+    border-color: #FF5A00;
+    color: #fff;
+    font-weight: 700;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+.mg-order-page #mgCustomerAdd[hidden] {
+    display: none !important;
+}
+.mg-order-page #mgCustomerSuggest {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    background: #fff;
+}
+.mg-order-page:has(#mgCustomerLocked:not([hidden])) .mg-order-customer {
+    padding: 10px 16px;
+}
+.mg-order-page .mg-customer-chip {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.mg-order-page .mg-customer-chip strong {
+    display: block;
+    margin-right: auto;
+    font-size: 16px;
+    font-weight: 800;
+    color: #111;
+    overflow-wrap: anywhere;
+}
+.mg-order-page .mg-customer-chip .mg-loyalty-flag {
+    display: inline-flex;
+    margin: 0;
+    cursor: pointer;
+    border: 0;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 750;
+}
+.mg-order-page .mg-customer-chip .mg-loyalty-flag[hidden] {
+    display: none !important;
+}
+.mg-order-page .mg-customer-chip .mg-loyalty-flag.is-on {
+    background: #FF5A00;
+    color: #fff;
+}
+.mg-order-page .mg-chip-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.mg-order-page .mg-chip-actions .mg-btn {
+    min-height: 38px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+.mg-add-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.mg-mode-toggle {
+    display: inline-flex;
+    background: #f3f4f6;
+    border-radius: 12px;
+    padding: 3px;
+    gap: 2px;
+}
+.mg-mode-toggle button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #4b5563;
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+.mg-mode-toggle button svg { width: 16px; height: 16px; }
+.mg-mode-toggle button.is-on {
+    background: var(--mg-accent);
+    color: #fff;
+}
+.mg-order-page #mgOrderCatalogBtn.is-on {
+    background: var(--mg-accent);
+    color: #fff;
+    border-color: var(--mg-accent);
+}
+.mg-order-page .mg-add-row .mg-icon-field {
+    flex: 1 1 240px;
+    min-width: 180px;
+}
+.mg-qty-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 650;
+}
+.mg-qty-step input {
+    width: 48px;
+    height: 40px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 700;
+}
+.mg-qty-step button {
+    width: 36px;
+    height: 40px;
+    border: 1px solid #e5e7eb;
+    background: #f8f9fa;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #111;
+}
+#mgOrderQtyModal #mgOrderQtyAdd,
+.mg-order-page #mgOrderQtyAdd {
+    min-height: 48px;
+    border-radius: 12px;
+    background: #FF5A00;
+    border-color: #FF5A00;
+    color: #fff;
+    font-weight: 700;
+    padding: 0 16px;
+}
+#mgOrderQtyModal #mgOrderQtyAdd:hover,
+.mg-order-page #mgOrderQtyAdd:hover {
+    background: #E65100;
+    border-color: #E65100;
+    color: #fff;
+    filter: none;
+}
+.mg-order-page .mg-order-lines tbody { counter-reset: n; }
+.mg-order-page .mg-order-lines tbody tr[data-line] { counter-increment: n; }
+.mg-order-page .mg-line-n::before { content: counter(n); }
+.mg-order-page .mg-order-lines thead th {
+    background: #f6f7f9;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    padding: 12px 12px;
+    border: 0;
+}
+.mg-order-page .mg-order-lines thead th:first-child { border-radius: 12px 0 0 12px; }
+.mg-order-page .mg-order-lines thead th:last-child { border-radius: 0 12px 12px 0; }
+.mg-order-page .mg-order-added { padding-bottom: 8px; }
+.mg-order-page .mg-empty-state {
+    padding: 48px 16px 40px;
+}
+.mg-order-page .mg-empty-icon {
+    width: 72px;
+    height: 72px;
+    background: #f3f4f6;
+    color: #c4c9ce;
+}
+.mg-order-page .mg-empty-state strong {
+    font-size: 16px;
+    color: #111;
+}
+.mg-order-meta-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(260px, .7fr);
+    gap: 14px;
+    margin: 4px 0 14px;
+    align-items: stretch;
+}
+.mg-order-meta-grid {
+    display: grid;
+    grid-template-columns: minmax(130px, 1fr) minmax(130px, 1fr) minmax(88px, .7fr) minmax(0, 2.4fr);
+    gap: 16px;
+    align-items: start;
+}
+.mg-order-meta-note {
+    min-width: 0;
+}
+.mg-order-meta-col h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 750;
+}
+.mg-order-meta-col h3 svg { width: 18px; height: 18px; }
+.mg-order-meta-col select,
+.mg-order-meta-col textarea {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    font: inherit;
+    color: #111;
+}
+.mg-order-meta-col select,
+.mg-order-meta-col .mg-order-disc input,
+.mg-order-meta-col textarea {
+    height: 42px;
+    min-height: 42px;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+.mg-order-meta-col textarea {
+    padding-top: 10px;
+    resize: none;
+    line-height: 1.3;
+}
+.mg-order-meta-note textarea {
+    width: 100%;
+    height: 42px;
+    min-height: 42px;
+    max-height: 42px;
+    padding: 10px 12px;
+    resize: none;
+    line-height: 1.3;
+}
+.mg-order-page .mg-order-disc {
+    display: block;
+    margin: 0;
+}
+.mg-order-page .mg-order-disc input {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 700;
+}
+.mg-order-page .mg-order-pay {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+.mg-order-page .mg-order-ship {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    margin: 0;
+    padding: 0 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 650;
+    color: #111;
+    background: #fff;
+    box-sizing: border-box;
+}
+.mg-order-page .mg-order-noship {
+    margin-top: 8px;
+    min-height: 32px;
+    font-size: 12px;
+}
+.mg-order-summary {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+}
+.mg-sum-line,
+.mg-sum-pay {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+.mg-sum-line b { color: #111; font-weight: 700; }
+.mg-sum-pay {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid #eef0f2;
+    color: #111;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+.mg-sum-pay strong {
+    font-size: 22px;
+    letter-spacing: -.02em;
+}
+.mg-order-page .mg-order-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    margin: 0;
+}
+.mg-order-foot-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-left: auto;
+}
+.mg-order-page .mg-order-foot .mg-btn {
+    min-height: 44px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+.mg-order-page .mg-order-foot .mg-btn-primary {
+    background: var(--mg-accent);
+    border-color: var(--mg-accent);
+    color: #fff;
+    padding: 0 18px;
+}
+.mg-order-page .mg-order-foot .mg-btn-primary:hover {
+    background: var(--mg-accent-hover);
+    border-color: var(--mg-accent-hover);
+    filter: none;
+}
+@media (max-width: 1100px) {
+    .mg-cust-grid,
+    .mg-cust-overview { grid-template-columns: 1fr 1fr; }
+    .mg-order-meta-row,
+    .mg-order-meta-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+    .mg-cust-grid,
+    .mg-cust-overview { grid-template-columns: 1fr; }
+    .mg-order-page .mg-order-foot {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .mg-order-foot-actions { margin-left: 0; }
+    .mg-order-foot-actions .mg-btn { flex: 1 1 auto; justify-content: center; }
 }

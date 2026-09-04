@@ -1,0 +1,306 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="pp-page mg-orders-page{% if popis and popis.location and popis.status == 'u_toku' %} is-live{% endif %}{% if provjera_mode %} is-provjera{% if provjera_location %} is-live{% endif %}{% endif %}" id="ppApp" data-lookup="{{ lookup_url }}" data-popis-id="{{ popis.pk|default:'' }}" data-live="{% if popis and popis.location_id and popis.status == 'u_toku' %}1{% elif provjera_mode and provjera_location %}1{% else %}0{% endif %}" data-mode="{% if provjera_mode %}provjera{% else %}popis{% endif %}" data-location-id="{{ provjera_location.pk|default:'' }}">
+    {% csrf_token %}
+    <div class="mg-page-head">
+        <div>
+            <h1>{% if provjera_mode and provjera_location %}Provjera {{ provjera_location.sifra }}{% elif provjera_mode %}Provjera{% elif popis and popis.location %}Popis {{ popis.location.sifra }} · #{{ popis.pk }}{% elif popis %}Popis #{{ popis.pk }}{% else %}Popis{% endif %}</h1>
+            {% if provjera_mode and not provjera_location %}
+            <p class="mg-count">Izaberi lokaciju, pa skeniraj artikal da vidiš stanje i potvrdiš ili izmijeniš količinu.</p>
+            {% elif not popis or not popis.location %}
+            <p class="mg-count">Prvo izaberi lokaciju koju popisuješ, pa u njoj broji artikle.</p>
+            {% elif popis.status == 'u_toku' %}
+            <p class="mg-count" id="ppMeta">U toku{% if popis.location %} · {{ popis.location.sifra }}{% endif %} · započet {{ popis.kreiran|date:"d.m.Y H:i" }} · <span id="ppCount">{{ stavke|length }}</span> stavki · <span id="ppTotal">{{ total_qty }}</span> kom</p>
+            {% elif popis.status == 'pauziran' %}
+            <p class="mg-count" id="ppMeta">Pauziran{% if popis.location %} · {{ popis.location.sifra }}{% endif %} · započet {{ popis.kreiran|date:"d.m.Y H:i" }} · {{ stavke|length }} stavki · {{ total_qty }} kom</p>
+            {% else %}
+            <p class="mg-count" id="ppMeta">Završen {{ popis.zavrsen_at|date:"d.m.Y H:i" }}{% if popis.location %} · {{ popis.location.sifra }}{% endif %} · započet {{ popis.kreiran|date:"d.m.Y H:i" }} · {{ stavke|length }} stavki · {{ total_qty }} kom</p>
+
+            {% endif %}
+        </div>
+        {% if provjera_mode and provjera_location %}
+        <div class="pp-actions">
+            <a class="mg-btn" href="{% url 'staff_magacin_popis' %}?mode=provjera">Promijeni lokaciju</a>
+            <a class="mg-btn" href="{% url 'staff_magacin_popis' %}">Nazad na popis</a>
+        </div>
+        {% elif popis and popis.location %}
+        <div class="pp-actions">
+            <a class="mg-btn" href="{% url 'staff_magacin_popis' %}?mode=provjera">Provjera</a>
+            {% if popis.status == 'u_toku' %}
+            <form method="post" id="ppPauseForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="pauziraj">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn">Pauziraj</button>
+            </form>
+            <button type="button" class="mg-btn" id="ppShowAll" aria-pressed="false">Prikaži sve</button>
+            <form method="post" id="ppFinishForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="zavrsi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn mg-btn-primary pp-confirm">Završeno</button>
+            </form>
+            <form method="post" id="ppDeleteForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="obrisi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn mg-btn-danger">Obriši</button>
+            </form>
+            {% elif popis.status == 'pauziran' %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="nastavi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn mg-btn-primary">Nastavi</button>
+            </form>
+            <a class="mg-btn" href="{% url 'staff_magacin_popis' %}?nova=1">Nova lokacija</a>
+            <form method="post" id="ppDeleteForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="obrisi">
+                <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn mg-btn-danger">Obriši</button>
+            </form>
+            {% else %}
+            <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_popis' %}?nova=1">Nova lokacija</a>
+            <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ popis.pk }}">
+                <button type="submit" class="mg-btn" data-pp-print>Štampaj</button>
+            </form>
+            <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ popis.pk }}">
+                <input type="hidden" name="razlike" value="1">
+                <button type="submit" class="mg-btn" data-pp-print>Razlike</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if provjera_mode and provjera_location %}
+    <p class="pp-loc-banner">Provjeravaš lokaciju <strong>{{ provjera_location.sifra }}</strong>{% if provjera_location.naziv %} — {{ provjera_location.naziv }}{% endif %}</p>
+    <div class="pp-dock">
+        <label class="pp-scan-label" for="ppQuery">Artikal</label>
+        <div class="mg-input-row pp-scan-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input id="ppQuery" type="search" placeholder="Šifra, barkod ili naziv…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="go" autofocus>
+            </div>
+            <button type="button" class="vp-scan-btn" id="ppScanBtn" data-mg-scan-target="ppQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
+            <ul class="pp-suggest" id="ppSuggest" hidden></ul>
+        </div>
+        <p class="mg-muted pp-hint">Skeniraj artikal. Ako se stanje poklapa, stisni Tačno. Ako ne, ispravi količinu pa Izmijeni.</p>
+        <p class="pp-toast" id="ppToast" hidden></p>
+    </div>
+    <section class="pp-check-card" id="ppCheckCard" hidden>
+        <p class="pp-check-kicker">Na stanju</p>
+        <h2 id="ppCheckName"></h2>
+        <p class="mg-muted" id="ppCheckSifra"></p>
+        <p class="pp-check-expected" id="ppCheckExpected"></p>
+        <div class="pp-qty-entry pp-check-step">
+            <button type="button" class="pp-step-btn" id="ppCheckMinus" aria-label="Smanji">−</button>
+            <input id="ppCheckQty" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" value="0" aria-label="Količina">
+            <button type="button" class="pp-step-btn" id="ppCheckPlus" aria-label="Povećaj">+</button>
+        </div>
+        <div class="pp-check-actions">
+            <button type="button" class="mg-btn mg-btn-primary" id="ppCheckOk">Tačno</button>
+            <button type="button" class="mg-btn" id="ppCheckEdit">Izmijeni</button>
+        </div>
+    </section>
+    {% elif not popis or not popis.location %}
+    <section class="mg-card mg-orders-card pp-start-card">
+        <div class="pp-mode-tabs" role="tablist">
+            <a href="{% url 'staff_magacin_popis' %}{% if nova %}?nova=1{% endif %}" class="{% if not provjera_mode %}is-on{% endif %}">Popis</a>
+            <a href="{% url 'staff_magacin_popis' %}?mode=provjera{% if nova %}&amp;nova=1{% endif %}" class="{% if provjera_mode %}is-on{% endif %}">Provjera</a>
+        </div>
+        <p>{% if provjera_mode %}Ukucaj šifru ili naziv lokacije, pa je izaberi. Skeniraš artikal po artikal i odmah vidiš stanje.{% else %}Ukucaj šifru ili naziv lokacije, pa je izaberi. Tek onda u njoj skeniraj artikle.{% endif %}</p>
+        <form method="get" class="mg-page-search pp-loc-search" role="search">
+            {% if nova %}<input type="hidden" name="nova" value="1">{% endif %}
+            {% if provjera_mode %}<input type="hidden" name="mode" value="provjera">{% endif %}
+            <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <input type="search" name="q" value="{{ popis_lokacija_q }}" placeholder="Šifra ili naziv lokacije…" autocomplete="off" enterkeyhint="search" autofocus>
+            <button type="submit" class="mg-btn mg-btn-primary">Pronađi</button>
+        </form>
+        <ul class="pp-loc-list">
+            {% for loc in popis_lokacije %}
+            <li>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="{% if provjera_mode %}provjera_start{% else %}novi{% endif %}">
+                    <input type="hidden" name="location_id" value="{{ loc.pk }}">
+                    <button type="submit" class="pp-loc-choose">
+                        <span class="pp-loc-choose-text">
+                            <strong>{{ loc.sifra }}</strong>
+                            <span>{{ loc.naziv|default:"—" }}</span>
+                        </span>
+                        <em>{% if provjera_mode %}Provjeri ovu lokaciju{% else %}Popisuj ovu lokaciju{% endif %}</em>
+                    </button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="is-empty">
+                {% if popis_lokacija_q %}Nema lokacija za „{{ popis_lokacija_q }}”.{% else %}Ukucaj šifru ili naziv lokacije pa pronađi.{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% if popis %}
+        <form method="post" class="pp-start-delete">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="obrisi">
+            <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+            <button type="submit" class="mg-btn mg-btn-danger" onclick="return confirm('Obrisati ovaj popis?');">Obriši ovaj popis</button>
+        </form>
+        {% endif %}
+    </section>
+    {% else %}
+
+    {% if popis.status == 'u_toku' %}
+    {% if popis.location %}
+    <p class="pp-loc-banner">Popisuješ lokaciju <strong>{{ popis.location.sifra }}</strong>{% if popis.location.naziv %} — {{ popis.location.naziv }}{% endif %}</p>
+    {% endif %}
+    <div class="pp-dock">
+        <form method="post" id="ppAddForm" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="dodaj">
+            <input type="hidden" name="popis_id" value="{{ popis.pk }}">
+            <input type="hidden" name="product_id" id="ppProductId">
+            <input type="hidden" name="variation_id" id="ppVariationId">
+            <input type="hidden" name="kolicina" id="ppHiddenQty" value="1">
+        </form>
+        <label class="pp-scan-label" for="ppQuery">Artikal</label>
+        <div class="mg-input-row pp-scan-row">
+            <div class="mg-icon-field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input id="ppQuery" type="search" placeholder="Šifra, barkod ili naziv…" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="go" autofocus>
+            </div>
+            <button type="button" class="vp-scan-btn" id="ppScanBtn" data-mg-scan-target="ppQuery" data-mg-scan-title="Skeniraj artikal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                Skeniraj
+            </button>
+            <ul class="pp-suggest" id="ppSuggest" hidden></ul>
+        </div>
+        <p class="mg-muted pp-hint">Skeniraj barkod ili izaberi artikal, pa unesi količinu.</p>
+        <p class="pp-toast" id="ppToast" hidden></p>
+    </div>
+    {% elif popis.status == 'pauziran' %}
+    <p class="pp-paused-banner">Popis je pauziran. Otvori ga s <b>Nastavi</b> da dodaješ artikle.</p>
+    {% endif %}
+
+    <ol class="pp-list{% if popis.status == 'u_toku' %} is-collapsed{% endif %}" id="ppList">
+        {% for row in stavke %}
+        <li data-id="{{ row.pk }}" data-qty="{{ row.kolicina }}" class="{% if row.razlika == 0 %}is-match {% elif row.razlika > 0 %}is-over {% else %}is-under {% endif %}{% if row.cekirano %}is-checked{% endif %}">
+            <label class="pp-check">
+                <input type="checkbox" data-pp-check {% if row.cekirano %}checked{% endif %} aria-label="Čekiraj {{ row.naziv }}">
+            </label>
+            <div class="pp-line-info">
+                <strong>{{ row.naziv }}</strong>
+                <span>{{ row.sifra|default:"—" }}</span>
+            </div>
+            <div class="pp-counts">
+                <span class="pp-count-box">Na stanju <b>{{ row.ocekivano }}</b></span>
+                <span class="pp-count-box is-got">Popisano <b>{{ row.kolicina }}</b></span>
+                <span class="pp-count-box {% if row.razlika == 0 %}is-ok{% else %}is-diff{% endif %}">Razlika <b>{% if row.razlika > 0 %}+{% endif %}{{ row.razlika }}</b></span>
+                {% if popis.status == 'zavrsen' %}
+                    {% if row.ocekivano == row.kolicina %}
+                    <em class="pp-ok">Tačna količina</em>
+                    {% else %}
+                    <em class="pp-diff">Ažurirano na {{ row.kolicina }}</em>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% if popis.status == 'u_toku' %}
+            <div class="pp-step">
+                <button type="button" class="pp-step-btn" data-pp-delta="-1" aria-label="Smanji">−</button>
+                <button type="button" class="pp-step-qty" data-pp-edit>{{ row.kolicina }}</button>
+                <button type="button" class="pp-step-btn" data-pp-delta="1" aria-label="Povećaj">+</button>
+            </div>
+            {% endif %}
+        </li>
+        {% empty %}
+        <li class="is-empty">{% if popis.status == 'u_toku' %}Još nema stavki. Skeniraj barkod ili unesi artikal.{% else %}Nema stavki.{% endif %}</li>
+        {% endfor %}
+    </ol>
+    {% if popis.status == 'u_toku' %}
+    <div class="pp-foot">
+        <button type="submit" form="ppFinishForm" class="mg-btn mg-btn-primary">Završeno</button>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if paused_popisi and not provjera_location and popis.status != 'u_toku' %}
+    <section class="pp-paused">
+        <h2>Pauzirani popisi</h2>
+        <ul>
+            {% for row in paused_popisi %}
+            <li>
+                <a class="pp-paused-main" href="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    <strong>Popis #{{ row.pk }}</strong>
+                    <span>{% if row.location %}{{ row.location.sifra }} · {% endif %}započet {{ row.kreiran|date:"d.m.Y H:i" }} · {{ row.n_stavke|default:0 }} stavki · {{ row.n_kom|default:0 }} kom</span>
+                </a>
+                <form method="post" action="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="nastavi">
+                    <input type="hidden" name="popis_id" value="{{ row.pk }}">
+                    <button type="submit" class="mg-btn mg-btn-primary">Nastavi</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if finished_popisi and not provjera_location and popis.status != 'u_toku' %}
+    <section class="pp-paused pp-finished">
+        <h2>Završeni popisi</h2>
+        <ul>
+            {% for row in finished_popisi %}
+            <li{% if row.odstampan %} class="is-done"{% endif %}>
+                <a class="pp-paused-main" href="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    <strong>Popis #{{ row.pk }}{% if row.location %} · {{ row.location.sifra }}{% endif %}{% if row.odstampan %} <em class="pp-done-tag">Završeno</em>{% endif %}</strong>
+                    <span>završen {{ row.zavrsen_at|date:"d.m.Y H:i" }} · započet {{ row.kreiran|date:"d.m.Y H:i" }} · {{ row.n_stavke|default:0 }} stavki · {{ row.n_kom|default:0 }} kom</span>
+                </a>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <button type="submit" class="mg-btn" data-pp-print>Štampaj</button>
+                </form>
+                <form method="post" action="{% url 'staff_magacin_popis_stampa' %}" target="_blank" class="pp-print-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ row.pk }}">
+                    <input type="hidden" name="razlike" value="1">
+                    <button type="submit" class="mg-btn" data-pp-print>Razlike</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+
+<div class="mg-modal pp-qty-modal" id="ppQtyModal" hidden>
+    <div class="mg-modal-bg" data-pp-close></div>
+    <div class="mg-modal-panel pp-qty-panel" role="dialog">
+        <h2 id="ppQtyName">Količina</h2>
+        <p id="ppQtySifra" class="mg-muted"></p>
+        <p id="ppQtyExpected" class="pp-qty-stock" hidden></p>
+        <div class="mg-field">
+            <label for="ppQty">Koliko komada?</label>
+            <div class="pp-qty-entry">
+                <button type="button" class="pp-step-btn" data-pp-modal-delta="-1" aria-label="Smanji">−</button>
+                <input id="ppQty" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" value="">
+                <button type="button" class="pp-step-btn" data-pp-modal-delta="1" aria-label="Povećaj">+</button>
+            </div>
+        </div>
+        <div class="pp-qty-btns">
+            <button type="button" class="mg-btn" data-pp-close>Otkaži</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="ppQtySave">Ubaci</button>
+        </div>
+    </div>
+</div>
+{{ pp_boot|json_script:"ppBoot" }}
+{% endblock %}

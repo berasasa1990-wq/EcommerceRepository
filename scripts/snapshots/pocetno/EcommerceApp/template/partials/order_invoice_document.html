@@ -1,0 +1,140 @@
+<div class="doc">
+    <table class="doc-header-table" role="presentation" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="doc-brand" style="vertical-align: top; width: 52%;">
+                <p class="doc-company">d.o.o. CarpologijaBH</p>
+                <p class="doc-contact">Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></p>
+            </td>
+            <td class="doc-meta">
+                <p class="doc-title">Online Narudžbe br. {{ order.broj }}</p>
+                <p>Datum narudžbe: {{ datum_kratko }} {{ vrijeme }}</p>
+                <p>Datum isporuke: {{ datum_kratko }}</p>
+                <div class="doc-order-barcode">
+                    <img src="{% url 'staff_magacin_narudzba_barkod' order.broj %}" alt="{{ order.barkod }}" width="180" height="48">
+                    <span>{{ order.barkod }}</span>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="parties-table" role="presentation" cellpadding="0" cellspacing="0">
+        <tr>
+            <td>
+                <span class="party-label">KUPAC</span>
+                <span class="party-name">{{ order.ime_prezime }}</span>
+                {{ order.adresa }}<br>
+                {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}<br>
+                Telefon: {{ order.telefon }}<br>
+                Email: {{ order.email }}
+                {% if summary.loyalty_label %}
+                <br><strong>{{ summary.loyalty_label }}</strong>
+                {% endif %}
+                {% if order.xexpress_sifra %}
+                <br>X-Express: {{ order.xexpress_sifra }}
+                {% endif %}
+                {% if order.napomena %}
+                <br><br>Napomena: {{ order.napomena }}
+                {% endif %}
+            </td>
+            <td>
+                <span class="party-label">PRODAVAC</span>
+                <span class="party-name">d.o.o. CarpologijaBH</span>
+                Email: carpologijabh@gmail.com<br>
+                Web: www.opremazaribolov.ba
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table" role="presentation" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr>
+                <th class="col-name" style="width: 52%;">Naziv</th>
+                <th class="col-qty" style="width: 10%;">Kol.</th>
+                <th class="col-price" style="width: 18%;">Cijena</th>
+                <th class="col-total" style="width: 20%;">Ukupno s PDV</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in stavke %}
+            <tr>
+                <td class="col-name">
+                    <span class="item-name">{{ item.product_naziv|default:item.naziv }}</span>
+                    {% if item.varijacija_naziv %}
+                    <span class="item-variation">{{ item.varijacija_naziv }}</span>
+                    {% endif %}
+                </td>
+                <td class="col-qty">{{ item.kolicina }}</td>
+                <td class="col-price">
+                    {% if item.is_deal_promo and item.discounted_unit_price %}
+                        <span style="text-decoration: line-through; color: #999;">{{ item.cijena }} KM</span>
+                        <span style="color: #c62828; font-weight: bold;">
+                            {{ item.deal_vrsta }}: {{ item.discounted_qty }} kom. po {{ item.discounted_unit_price }} KM
+                            {% if item.deal_pct %}({{ item.deal_pct }}% popust){% endif %}
+                        </span>
+                    {% elif item.is_akcija_promo and item.discounted_unit_price %}
+                        <span style="text-decoration: line-through; color: #999;">{{ item.cijena }} KM</span>
+                        <span style="color: #5BB805; font-weight: bold;"> sniženo na {{ item.discounted_unit_price }} KM za 1 kom.</span>
+                    {% elif item.ima_snizenje and item.bazna_cijena and item.bazna_cijena > item.cijena %}
+                        <span style="text-decoration: line-through; color: #999;">{{ item.bazna_cijena }} KM</span>
+                        <span style="color: #c62828; font-weight: bold;"> {{ item.cijena }} KM</span>
+                    {% else %}
+                        {{ item.cijena }} KM
+                    {% endif %}
+                    {% if item.popust_opis %}
+                    <div style="margin-top: 4px; font-size: 11px; color: #b91c1c; font-weight: 700;">
+                        ⚠ {{ item.popust_opis }}{% if item.popust_postotak %} (−{{ item.popust_postotak }}%){% endif %}{% if item.popust_iznos %} · ušteda {{ item.popust_iznos }} KM{% endif %}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="col-total">{{ item.ukupno }} KM</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="invoice-totals-block">
+        <div class="totals-wrap">
+            <table class="totals-table" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>Iznos sa PDV-om</td>
+                    <td>{{ summary.medjuzbir }} KM</td>
+                </tr>
+                {% if summary.popust %}
+                <tr>
+                    <td>{{ summary.popust_opis|default:"Popust" }}</td>
+                    <td>-{{ summary.popust }} KM</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td>Dostava{% if dostava_naziv %} — {{ dostava_naziv }}{% endif %}</td>
+                    <td>{% if summary.besplatna_dostava %}Besplatno{% else %}{{ summary.dostava }} KM{% endif %}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>UKUPNO ZA PLATITI</td>
+                    <td>{{ summary.ukupno }} KM</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="invoice-seal-block">
+            <div class="invoice-warranty-box">
+                <strong>Garancija</strong>
+                <span class="invoice-warranty-note">Ovaj papir je garantni list za narudžbu #{{ order.broj }} koja je poručena {{ datum }}. Garancija se odnosi na sve artikle s ovog računa, u skladu sa zakonima BiH i uslovima proizvođača. Reklamacije se podnose uz ovaj račun na carpologijabh@gmail.com.</span>
+            </div>
+            <div class="invoice-seal-row">
+                <div class="invoice-sign">
+                    <span class="invoice-sign-script">Saša B.</span>
+                    <span class="invoice-sign-line"></span>
+                    <span class="invoice-sign-label">Potpis prodavca</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="order-footer">
+        Način plaćanja: pouzećem pri preuzimanju pošiljke.
+        Hvala vam na kupovini.
+        Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a>.
+        <strong class="doc-site-note">Ovo je sajt www.opremazaribolov.ba.</strong>
+    </div>
+</div>

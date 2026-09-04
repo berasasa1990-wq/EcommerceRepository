@@ -1,0 +1,33 @@
+{% for var in in_stock_variations %}
+<div class="product-detail-variation-row"{% if var.slika %} data-image="{{ var.slika.url }}"{% endif %}>
+    <span class="product-detail-variation-name">
+        {{ var.naziv }}
+    </span>
+    <span class="product-detail-variation-price-wrap">
+        {% if var.na_akciji %}
+        <span class="product-detail-variation-price product-price--detail card-dwell-deal is-active is-pulse product-sale-card-deal pd-var-sale--card">
+            <span class="price-original card-dwell-was">{{ var.bazna_cijena }} KM</span>
+            <span class="card-dwell-sale-cluster">
+                <span class="price-sale card-dwell-now">{{ var.prikazna_cijena }} KM</span>
+                {% if var.akcija_postotak_prikaz %}
+                <span class="card-dwell-badge">−{{ var.akcija_postotak_prikaz }}%</span>
+                {% endif %}
+            </span>
+        </span>
+        {% else %}
+        <span class="product-detail-variation-price product-price--detail">
+            {% include 'partials/product_price.html' with item=var %}
+        </span>
+        {% endif %}
+    </span>
+    <form method="post" action="{% url 'add_to_cart' product.slug %}" class="product-detail-variation-form">
+        {% csrf_token %}
+        <input type="hidden" name="variation_id" value="{{ var.pk }}">
+        {% include 'partials/product_qty_selector.html' with qty_max=var.stanje %}
+        <button type="submit" class="btn btn-detail-variation-add"
+                data-product-id="{{ product.pk }}"
+                data-product-name="{{ product.naziv }}"
+                data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+    </form>
+</div>
+{% endfor %}

@@ -1,0 +1,9 @@
+{% if staff_edit_mode %}
+{% with missing=product.missing_storefront_fields %}
+{% if missing %}
+<p class="staff-missing" aria-label="Nedostaje na artiklu">
+    {% for field in missing %}<span>Fali {{ field }}</span>{% endfor %}
+</p>
+{% endif %}
+{% endwith %}
+{% endif %}

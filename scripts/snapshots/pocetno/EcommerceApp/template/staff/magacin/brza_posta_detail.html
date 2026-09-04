@@ -1,0 +1,139 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-orders-page bp-page">
+<div class="mg-page-head">
+    <div>
+        <h1>X-Express #{{ order.broj }}</h1>
+        <p class="mg-count">Podaci za pošiljku. Pošalji u X-Express ili kopiraj polje.</p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}?datum={{ day|date:'Y-m-d' }}">← Lista {{ day|date:"d.m.Y." }}</a>
+        {% if order.xexpress_sifra %}
+        <a class="mg-btn mg-btn-primary" href="https://www.x-express.ba/pracenjeposiljaka.php?sifra={{ order.xexpress_sifra|urlencode }}" target="_blank" rel="noopener">{{ order.xexpress_sifra }}</a>
+        {% else %}
+        <form method="post" action="{% url 'staff_order_xexpress' broj=order.broj %}" class="staff-xexpress-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="mg-btn mg-btn-primary">Pošalji u X-Express</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<section class="mg-card bp-card">
+    <div class="bp-field">
+        <span class="bp-label">Ime</span>
+        <span class="bp-value">{{ order.ime_prezime }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ order.ime_prezime }}">Copy</button>
+    </div>
+    <div class="bp-field">
+        <span class="bp-label">Adresa</span>
+        <span class="bp-value">{{ order.adresa }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ order.adresa }}">Copy</button>
+    </div>
+    <div class="bp-field">
+        <span class="bp-label">Grad</span>
+        <span class="bp-value">{{ grad_value }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ grad_value }}">Copy</button>
+    </div>
+    <div class="bp-field">
+        <span class="bp-label">Kontakt</span>
+        <span class="bp-value">{{ order.email|default:"—" }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ order.email }}">Copy</button>
+    </div>
+    <div class="bp-field">
+        <span class="bp-label">Telefon</span>
+        <span class="bp-value">{{ order.telefon }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ order.telefon }}">Copy</button>
+    </div>
+    <div class="bp-field">
+        <span class="bp-label">Broj narudžbe</span>
+        <span class="bp-value">{{ order.broj }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ order.broj }}">Copy</button>
+    </div>
+    {% if order.xexpress_sifra %}
+    <div class="bp-field">
+        <span class="bp-label">X-Express šifra</span>
+        <span class="bp-value">{{ order.xexpress_sifra }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ order.xexpress_sifra }}">Copy</button>
+    </div>
+    {% endif %}
+    <div class="bp-field">
+        <span class="bp-label">Iznos</span>
+        <span class="bp-value bp-value--sum">{{ iznos_copy }}</span>
+        <button type="button" class="mg-btn bp-copy" data-copy="{{ iznos_copy }}">Copy</button>
+    </div>
+</section>
+
+{% if order.brza_posta_unijeta %}
+<p class="bp-done">Unijeto{% if order.brza_posta_unijeta_at %} — {{ order.brza_posta_unijeta_at|date:"d.m.Y. H:i" }}{% endif %}.</p>
+<button type="button" class="mg-btn mg-btn-primary bp-mark" disabled>Unijeto ✓</button>
+{% else %}
+<form method="post" class="bp-mark-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="unesi">
+    <input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">
+    <button type="submit" class="mg-btn mg-btn-primary bp-mark">Unijeto</button>
+</form>
+{% endif %}
+</div>
+<div class="bp-toast" id="bpCopyToast" hidden>Kopirano</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var toast = document.getElementById('bpCopyToast');
+    var timer = null;
+    function showToast() {
+        if (!toast) return;
+        toast.hidden = false;
+        if (timer) window.clearTimeout(timer);
+        timer = window.setTimeout(function () { toast.hidden = true; }, 1200);
+    }
+    document.querySelectorAll('.staff-xexpress-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Poslati ovu narudžbu u X-Express i kreirati pošiljku?')) {
+                event.preventDefault();
+                return;
+            }
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'X-Express…';
+            }
+        });
+    });
+    function copyText(text, btn) {
+        text = String(text || '').replace(/\s+/g, ' ').trim();
+        if (!text) return;
+        function done() {
+            if (btn) {
+                var prev = btn.textContent;
+                btn.textContent = 'OK';
+                btn.classList.add('is-copied');
+                window.setTimeout(function () {
+                    btn.textContent = prev;
+                    btn.classList.remove('is-copied');
+                }, 1100);
+            }
+            showToast();
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+                window.prompt('Kopiraj:', text);
+            });
+        } else {
+            window.prompt('Kopiraj:', text);
+            done();
+        }
+    }
+    document.querySelectorAll('[data-copy]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            copyText(btn.getAttribute('data-copy') || '', btn);
+        });
+    });
+})();
+</script>
+{% endblock %}

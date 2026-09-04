@@ -1,0 +1,14 @@
+<a href="{% url 'staff_olx_messages' %}?{% if filter_status == 'sve' %}filter=sve&amp;{% endif %}conv={{ conversation.id }}"
+   class="staff-olx-inbox-item{% if selected_id == conversation.id %} is-active{% endif %}{% if conversation.unread %} is-unread{% endif %}">
+    <div class="staff-olx-inbox-lines">
+        <div class="staff-olx-inbox-sender">{{ conversation.username }}</div>
+        <div class="staff-olx-inbox-artikal" title="{{ conversation.subject }}">{{ conversation.subject }}</div>
+        <div class="staff-olx-inbox-text">{{ conversation.preview|default:'—' }}</div>
+    </div>
+    {% if conversation.updated_at %}
+    <time class="staff-olx-inbox-time" datetime="{{ conversation.updated_at|date:'c' }}">{{ conversation.updated_at|date:'d.m.' }}</time>
+    {% endif %}
+    {% if conversation.unread %}
+    <span class="staff-olx-unread-dot" aria-label="Nepročitano"></span>
+    {% endif %}
+</a>

@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block lcp_preload %}
+{% if lcp_image_url %}
+<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %}{% if lcp_image_sizes %} imagesizes="{{ lcp_image_sizes }}"{% endif %} fetchpriority="high">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not filters_active %}
+{% if hero_slides %}
+<section class="hero-carousel" id="heroCarousel">
+    <div class="carousel-track">
+        {% for slide in hero_slides %}
+        <div class="carousel-slide {% if forloop.first %}active{% endif %}{% if slide.title or slide.subtitle or slide.actions %} carousel-slide--has-content{% endif %}" data-index="{{ forloop.counter0 }}">
+            <div class="slide-image">
+                {% if slide.url %}
+                <a href="{{ slide.url }}" class="slide-image-link" aria-label="{{ slide.title|default:'Banner' }}">
+                {% endif %}
+                {% if slide.has_video %}
+                <video class="slide-image-img slide-image-video" src="{{ slide.video }}" autoplay muted loop playsinline preload="metadata"{% if slide.image %} poster="{{ slide.image }}"{% endif %} width="{{ slide.image_width }}" height="{{ slide.image_height }}"></video>
+                {% elif slide.has_mobile_image %}
+                <picture>
+                    <source
+                        media="(max-width: 768px)"
+                        srcset="{% if slide.image_mobile_srcset %}{{ slide.image_mobile_srcset }}{% else %}{{ slide.image_mobile }}{% endif %}"
+                        sizes="100vw"
+                    >
+                    <img
+                        src="{{ slide.image }}"
+                        {% if slide.image_srcset %}srcset="{{ slide.image_srcset }}"{% endif %}
+                        alt="{{ slide.title|default:'Banner' }}"
+                        class="slide-image-img"
+                        width="{{ slide.image_width }}"
+                        height="{{ slide.image_height }}"
+                        sizes="100vw"
+                        {% if forloop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                        decoding="async"
+                    >
+                </picture>
+                {% else %}
+                <img src="{{ slide.image }}"{% if slide.image_srcset %} srcset="{{ slide.image_srcset }}"{% endif %} alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+                {% endif %}
+                {% if slide.url %}
+                </a>
+                {% endif %}
+            </div>
+            {% if slide.title or slide.subtitle or slide.actions %}
+            <div class="slide-content">
+                {% if slide.title %}<h2>{{ slide.title }}</h2>{% endif %}
+                {% if slide.subtitle %}
+                <p class="slide-subtitle">{{ slide.subtitle }}</p>
+                {% endif %}
+                {% if slide.actions %}
+                <div class="slide-actions">
+                    {% for action in slide.actions %}
+                    <a href="{{ action.url|default:'#' }}" class="btn btn-banner"{% if slide.url and action.url == slide.url %} tabindex="-1"{% endif %}>
+                        {{ action.label }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <button class="carousel-btn carousel-prev" id="carouselPrev" aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+    </button>
+    <button class="carousel-btn carousel-next" id="carouselNext" aria-label="Next slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>
+    </button>
+    <div class="carousel-dots" id="carouselDots">
+        {% for slide in hero_slides %}
+        <button class="dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" aria-label="Go to slide {{ forloop.counter }}">
+            <span class="dot-inner" aria-hidden="true"></span>
+        </button>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if home_trust_items %}
+{% include 'partials/home_trust_bar.html' %}
+{% endif %}
+
+
+
+{% if featured_cards %}
+<section class="featured-grid">
+    {% for card in featured_cards %}
+    {% if card.url %}
+    <a href="{{ card.url }}" class="featured-card featured-card--linked{% if card.wide %} featured-card--wide{% endif %}">
+    {% else %}
+    <article class="featured-card{% if card.wide %} featured-card--wide{% endif %}">
+    {% endif %}
+        {% include 'partials/banner_media.html' with card=card video_class='card-image card-image--featured banner-media-video' image_class='card-image card-image--featured' image_sizes='(max-width: 768px) 100vw, 50vw' image_loading='lazy' %}
+        {% if card.title or card.subtitle or card.actions %}
+        <div class="card-overlay">
+            {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}
+            {% if card.subtitle %}<p>{{ card.subtitle }}</p>{% endif %}
+            {% if card.actions %}
+            <div class="card-actions">
+                {% for action in card.actions %}
+                {% if card.url %}
+                <span class="btn btn-banner">{{ action.label }}</span>
+                {% else %}
+                <a href="{{ action.url }}" class="btn btn-banner">{{ action.label }}</a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% if card.url %}
+    </a>
+    {% else %}
+    </article>
+    {% endif %}
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if spotlight %}
+<section class="spotlight">
+    <div class="spotlight-inner">
+        {% if spotlight.url %}
+        <a href="{{ spotlight.url }}" class="spotlight-image-link" aria-label="{{ spotlight.title|default:'Banner' }}">
+        {% endif %}
+        {% include 'partials/banner_media.html' with card=spotlight video_class='spotlight-image banner-media-video' image_class='spotlight-image' image_sizes='(max-width: 768px) 100vw, 80vw' image_loading='lazy' %}
+        {% if spotlight.url %}
+        </a>
+        {% endif %}
+        <div class="spotlight-content">
+            {% if spotlight.title %}<h2>{{ spotlight.title }}</h2>{% endif %}
+            {% if spotlight.description %}<p>{{ spotlight.description }}</p>{% endif %}
+            {% if spotlight.cta and spotlight.url %}
+            <span class="btn btn-banner">{{ spotlight.cta }}</span>
+            {% elif spotlight.cta %}
+            <a href="{{ spotlight.url|default:'#' }}" class="btn btn-banner">{{ spotlight.cta }}</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endif %}
+
+{% if filters_active %}
+<section class="category-page category-page--shop home-search-results" id="product-showcase">
+    {% include 'partials/product_catalog.html' with products=search_products filter_action=filter_action filter_categories=filter_categories filter_reset_url=filter_reset_url catalog_compact=True hide_variations=True show_akcija_expiry=filter_params.akcija catalog_title=catalog_title catalog_subtitle=catalog_subtitle page_obj=page_obj elided_page_range=elided_page_range catalog_query=catalog_query filter_size_groups=filter_size_groups filter_params=filter_params selected_brand=selected_brand seo_h1=seo_h1 seo_tekst_iznad=seo_tekst_iznad seo_tekst_ispod=seo_tekst_ispod %}
+</section>
+{% else %}
+
+{% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
+
+{% if latest_products %}
+<section class="category-page category-page--shop home-products home-products--novo">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title=site_settings.naslov_novo subtitle=site_settings.podnaslov_novo edit_title='naslov_novo' edit_title_placeholder='Noviteti' edit_subtitle='podnaslov_novo' header_mod='novo' see_all_url='/?noviteti=1' %}
+                {% include 'partials/home_product_carousel.html' with products=latest_products eager_first_image=eager_first_novo_image home_section_badge='novo' %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if featured_products %}
+<section class="category-page category-page--shop home-products home-products--izdvojeno">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title=site_settings.naslov_izdvojeno subtitle=site_settings.podnaslov_izdvojeno edit_title='naslov_izdvojeno' edit_title_placeholder='HIT ponude' edit_subtitle='podnaslov_izdvojeno' header_mod='izdvojeno' %}
+                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if sale_products %}
+<section class="category-page category-page--shop home-products home-products--akcija">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title=site_settings.naslov_akcija subtitle=site_settings.podnaslov_akcija edit_title='naslov_akcija' edit_title_placeholder='Akcijska ponuda' edit_subtitle='podnaslov_akcija' header_mod='akcija' see_all_url='/?akcija=1' %}
+                {% include 'partials/home_product_carousel.html' with products=sale_products home_section_badge='' %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if grid_banners %}
+<section class="home-image-trio" aria-label="Izdvojene slike">
+    {% for card in grid_banners %}
+    {% if card.url %}
+    <a href="{{ card.url }}" class="home-image-trio__item">
+    {% else %}
+    <article class="home-image-trio__item">
+    {% endif %}
+        {% if card.has_video %}
+        <video class="home-image-trio__media" src="{{ card.video }}" autoplay muted loop playsinline preload="metadata"{% if card.image %} poster="{{ card.image }}"{% endif %} width="800" height="500" aria-label="{{ card.title|default:'Banner' }}"></video>
+        {% else %}
+        <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="home-image-trio__media" width="800" height="500" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" decoding="async">
+        {% endif %}
+    {% if card.url %}
+    </a>
+    {% else %}
+    </article>
+    {% endif %}
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if home_category_showcases %}
+{% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}
+{% endif %}
+
+{% if home_brand_showcases %}
+{% include 'partials/home_brand_showcase.html' with sections=home_brand_showcases %}
+{% endif %}
+
+{% if home_vlogs or site_settings.prikazi_newsletter %}
+{% include 'partials/home_vlog.html' %}
+{% endif %}
+
+{% if showcase_brands %}
+<section class="home-brand-strip-section home-brand-strip-section--mockup" id="brendovi">
+    {% if site_settings.naslov_brendovi %}
+    <div class="home-section-header home-section-header--brands">
+        <div class="home-section-header__text">
+            <h2 class="home-section-header__title"
+                data-site-edit="naslov_brendovi"
+                data-site-edit-placeholder="Naši brendovi">{{ site_settings.naslov_brendovi }}</h2>
+        </div>
+    </div>
+    {% endif %}
+    {% include 'partials/home_brand_carousel.html' with brands=showcase_brands %}
+</section>
+{% endif %}
+
+{% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
+{% endif %}
+{% endblock %}

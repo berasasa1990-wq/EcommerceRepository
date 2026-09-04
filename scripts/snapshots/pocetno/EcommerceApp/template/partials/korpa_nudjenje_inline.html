@@ -1,0 +1,38 @@
+{% if nudjenje %}
+<div class="cart-korpa-nudjenje">
+    <form method="post" action="{% url 'add_to_cart' nudjenje.slug %}" class="cart-korpa-nudjenje-form">
+        {% csrf_token %}
+        <input type="hidden" name="quantity" value="1">
+        <input type="hidden" name="akcija_id" value="{{ nudjenje.akcija_id }}">
+        <input type="hidden" name="redirect_to" value="cart">
+        <div class="cart-korpa-nudjenje-media">
+            {% if nudjenje.slika_url %}
+            <img src="{{ nudjenje.slika_url }}" alt="{{ nudjenje.naziv }}" width="56" height="56" loading="lazy" decoding="async">
+            {% else %}
+            <span class="cart-korpa-nudjenje-placeholder" aria-hidden="true"></span>
+            {% endif %}
+            <span class="cart-korpa-nudjenje-badge">-{{ nudjenje.popust_postotak|floatformat:0 }}%</span>
+        </div>
+        <div class="cart-korpa-nudjenje-info">
+            <span class="cart-korpa-nudjenje-name">{{ nudjenje.naziv }}</span>
+            <span class="cart-korpa-nudjenje-prices">
+                <span class="original">{{ nudjenje.original_price }} KM</span>
+                <span class="discounted">{{ nudjenje.discounted_price }} KM</span>
+            </span>
+        </div>
+        <div class="cart-korpa-nudjenje-actions">
+            {% if nudjenje.has_variations %}
+            <select name="variation_id" class="cart-korpa-nudjenje-select" required aria-label="Varijacija za {{ nudjenje.naziv }}">
+                <option value="">Varijacija</option>
+                {% for v in nudjenje.variations %}
+                <option value="{{ v.id }}">{{ v.naziv }} — {{ v.discounted_price }} KM</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <input type="hidden" name="variation_id" value="">
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-small cart-korpa-nudjenje-btn">Kupi po sniženju!</button>
+        </div>
+    </form>
+</div>
+{% endif %}

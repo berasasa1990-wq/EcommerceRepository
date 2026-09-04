@@ -4777,16 +4777,15 @@ def _vp_bulk_match(naziv, index):
     return hits[0]
 
 
-def add_vp_bulk_stavke(draft, text):
-    if draft is None or draft.status != MagacinVpNarudzba.Status.U_TOKU:
-        raise MagacinError('Nema otvorene VP narudžbe.')
+def match_vp_bulk_rows(text):
+    """Parsiraj VP/bulk tabelu i spoji nazive s artiklima u magacinu."""
     rows = parse_vp_bulk_text(text)
     if not rows:
         raise MagacinError(
             'Nema stavki za unos. Zalijepi tabelu s kolonama Artikal, Kol., Cijena.'
         )
     index = _vp_bulk_name_index()
-    added = []
+    matched = []
     skipped = []
     for row in rows:
         hit = _vp_bulk_match(row['naziv'], index)
@@ -4794,6 +4793,22 @@ def add_vp_bulk_stavke(draft, text):
             skipped.append({'naziv': row['naziv'], 'razlog': 'nema u bazi'})
             continue
         product, variation = hit
+        matched.append({
+            'product': product,
+            'variation': variation,
+            'qty': row['qty'],
+            'cijena': row['cijena'],
+        })
+    return matched, skipped
+
+
+def add_vp_bulk_stavke(draft, text):
+    if draft is None or draft.status != MagacinVpNarudzba.Status.U_TOKU:
+        raise MagacinError('Nema otvorene VP narudžbe.')
+    matched, skipped = match_vp_bulk_rows(text)
+    added = []
+    for row in matched:
+        product, variation = row['product'], row['variation']
         available = stock_totals(product, variation)['dostupno']
         existing = draft.stavke.filter(product=product, variation=variation).first()
         needed = row['qty'] + (existing.kolicina if existing else 0)

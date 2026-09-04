@@ -1,0 +1,7 @@
+{% if staff_edit_mode %}
+{% if product.sakriven_do_stanja %}
+<span class="staff-stock-badge staff-stock-badge--photo staff-stock-badge--hidden">Sakriven sa sajta</span>
+{% elif not product.na_stanju %}
+<span class="staff-stock-badge staff-stock-badge--photo">Nije na stanju</span>
+{% endif %}
+{% endif %}

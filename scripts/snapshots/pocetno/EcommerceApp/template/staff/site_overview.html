@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Pregled sajta — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block body_class %}staff-shell-page{% endblock %}
+
+{% block content %}
+<section class="staff-dash">
+    <header class="staff-page-hero">
+        <div class="staff-page-hero__inner">
+            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
+            <p class="staff-page-kicker">Analitika</p>
+            <h1 class="staff-page-title">Pregled sajta</h1>
+            <p class="staff-page-subtitle">
+                {{ period_label }} · jedinstveni posjetioci, kupovine, izvor dolaska.
+                Ažurirano {{ generated_at|date:"H:i" }}{% if from_cache %} · cache{% endif %}.
+            </p>
+        </div>
+    </header>
+
+    <div class="staff-dash__body">
+        {# —— Period filter —— #}
+        <nav class="staff-dash-periods" aria-label="Period">
+            <a href="?period=day"
+               class="staff-dash-period{% if period == 'day' %} is-active{% endif %}">Danas</a>
+            <a href="?period=month"
+               class="staff-dash-period{% if period == 'month' %} is-active{% endif %}">Ovaj mjesec</a>
+            <a href="?period=year"
+               class="staff-dash-period{% if period == 'year' %} is-active{% endif %}">Ova godina</a>
+            <span class="staff-dash-period staff-dash-period--label{% if period == 'range' %} is-active{% endif %}">Datumi</span>
+        </nav>
+
+        <form class="staff-dash-range" method="get" action="">
+            <input type="hidden" name="period" value="range">
+            <label class="staff-dash-range__field">
+                <span>Od</span>
+                <input type="date" name="from" value="{{ date_from }}" required>
+            </label>
+            <label class="staff-dash-range__field">
+                <span>Do</span>
+                <input type="date" name="to" value="{{ date_to }}" required>
+            </label>
+            <button type="submit" class="staff-dash-range__btn">Prikaži</button>
+        </form>
+
+        {# —— KPI kartice —— #}
+        <div class="staff-dash-kpis">
+            <article class="staff-dash-kpi staff-dash-kpi--visitors">
+                <span class="staff-dash-kpi__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="22" height="22"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                <span class="staff-dash-kpi__label">Ušlo na sajt</span>
+                <strong class="staff-dash-kpi__value">{{ visitors }}</strong>
+                <span class="staff-dash-kpi__hint">
+                    jedinstvenih (cookie/IP)
+                    {% if sessions_raw and sessions_raw != visitors %}
+                    · {{ sessions_raw }} sesija
+                    {% endif %}
+                    {% if bots_filtered %}
+                    · −{{ bots_filtered }} bot
+                    {% endif %}
+                </span>
+            </article>
+
+            <article class="staff-dash-kpi staff-dash-kpi--orders">
+                <span class="staff-dash-kpi__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="22" height="22"><path d="M6 2h12l1 7H5L6 2z"/><path d="M5 9h14l-1.2 10.2A2 2 0 0 1 15.81 21H8.19a2 2 0 0 1-1.99-1.8L5 9z"/></svg>
+                </span>
+                <span class="staff-dash-kpi__label">Kupilo</span>
+                <strong class="staff-dash-kpi__value">{{ orders }}</strong>
+                <span class="staff-dash-kpi__hint">
+                    {% if buyers %}{{ buyers }} kupac{% if buyers != 1 %}a{% endif %} · {% endif %}
+                    konverzija {{ conversion }}%
+                </span>
+            </article>
+
+            <article class="staff-dash-kpi staff-dash-kpi--revenue">
+                <span class="staff-dash-kpi__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="22" height="22"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </span>
+                <span class="staff-dash-kpi__label">Promet</span>
+                <strong class="staff-dash-kpi__value">{{ revenue }} <span class="staff-dash-kpi__unit">KM</span></strong>
+                <span class="staff-dash-kpi__hint">prosjek {{ avg_order }} KM / narudžba</span>
+            </article>
+        </div>
+
+        {# —— Izvori dolaska —— #}
+        <section class="staff-dash-panel">
+            <div class="staff-dash-panel__head">
+                <div>
+                    <h2 class="staff-dash-panel__title">Odakle su ušli</h2>
+                    <p class="staff-dash-panel__desc">{{ period_label }} · first-touch (direct, Google, Ads, Meta…)</p>
+                </div>
+                <span class="staff-dash-panel__badge">{{ visitors }} ljudi</span>
+            </div>
+
+            {% if traffic_sources %}
+            <ul class="staff-dash-sources">
+                {% for src in traffic_sources %}
+                <li class="staff-dash-source staff-dash-source--{{ src.key }}">
+                    <div class="staff-dash-source__top">
+                        <span class="staff-dash-source__name">{{ src.short_label }}</span>
+                        <span class="staff-dash-source__meta">
+                            <strong>{{ src.visitors }}</strong>
+                            <span>{{ src.share }}%</span>
+                        </span>
+                    </div>
+                    <div class="staff-dash-source__bar" aria-hidden="true">
+                        <span style="width: {{ src.share }}%;"></span>
+                    </div>
+                    <p class="staff-dash-source__label">{{ src.label }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="staff-dash-empty">
+                <p>Nema posjeta u ovom periodu.</p>
+                <span>Promijeni period ili sačekaj nove posjetioce.</span>
+            </div>
+            {% endif %}
+        </section>
+
+        <p class="staff-dash-footnote">
+            Posjetilac = <strong>jedinstvena osoba</strong> (cookie ili IP). Botovi (UA) se ne bilježe;
+            sesije bez IP/tokena se ne broje. Custom raspon max 92 dana · cache ~45 s.
+        </p>
+    </div>
+</section>
+{% endblock %}

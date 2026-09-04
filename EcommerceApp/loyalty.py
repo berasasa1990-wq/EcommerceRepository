@@ -429,6 +429,9 @@ def maybe_apply_loyalty_coupon_from_phone(cart, telefon):
     """
     Ako u korpi još nema kupona, a telefon se poklapa s loyalty karticom —
     primijeni popust s te kartice.
+
+    Checkout i korpa ovo ne zovu sami — kupac mora kliknuti
+    „Primjeni Loyalty karticu“.
     """
     if cart is None or cart.is_coupon_applied():
         return None

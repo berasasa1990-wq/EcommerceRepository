@@ -1,0 +1,23 @@
+<article class="staff-olx-chat-msg{% if message.is_mine %} is-mine{% elif message.is_system %} is-system{% endif %}">
+    {% if message.has_listing_context %}
+    <div class="staff-olx-chat-listing">
+        {% if message.listing_url %}
+        <a href="{{ message.listing_url }}" target="_blank" rel="noopener">{{ message.listing_title }}</a>
+        {% else %}
+        <span>{{ message.listing_title }}</span>
+        {% endif %}
+        {% if message.listing_price %}<span class="staff-olx-chat-price">{{ message.listing_price }}</span>{% endif %}
+    </div>
+    {% endif %}
+    {% if message.content %}
+    <div class="staff-olx-chat-bubble">
+        <p>{{ message.content }}</p>
+        {% if message.created_at %}
+        <time datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:'d.m.Y H:i' }}</time>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% if not message.is_mine and not message.is_system %}
+    <span class="staff-olx-chat-author">{{ message.username }}</span>
+    {% endif %}
+</article>

@@ -1,0 +1,7 @@
+{% with order=job.order stavke=job.stavke summary=job.summary logo_url=job.logo_url site_name=job.site_name datum=job.datum datum_kratko=job.datum_kratko vrijeme=job.vrijeme dostava_naziv=job.dostava_naziv site_url=job.site_url store_email=job.store_email store_phone=job.store_phone %}
+<div class="print-job">
+    <div class="invoice-sheet">
+        {% include 'partials/order_invoice_document.html' %}
+    </div>
+</div>
+{% endwith %}

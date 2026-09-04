@@ -1,0 +1,25 @@
+{% if sections %}
+{% for section in sections %}
+<section class="category-page category-page--shop home-products home-products--category-showcase">
+    <div class="product-catalog product-catalog--compact home-product-catalog home-category-showcase">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                <div class="home-products-header home-products-header--category-showcase">
+                    <h2>
+                        <a href="{{ section.category_url }}">{{ section.title }}</a>
+                    </h2>
+                </div>
+                <div class="product-grid product-grid--catalog product-grid--category-showcase">
+                    {% for product in section.products %}
+                    {% include 'partials/product_catalog_card.html' with product=product hide_variations=True %}
+                    {% endfor %}
+                </div>
+                <div class="home-category-showcase-footer">
+                    <a href="{{ section.category_url }}" class="home-category-showcase-link">Pogledaj sve</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endfor %}
+{% endif %}

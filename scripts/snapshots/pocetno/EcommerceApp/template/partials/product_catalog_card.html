@@ -1,0 +1,119 @@
+<article
+    class="product-card product-card--catalog{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
+    data-product-card
+    data-product-id="{{ product.pk }}"
+    {% if product.slika %}data-image-key="{{ product.slika.name }}"{% endif %}
+    {% if product.sakriven_do_stanja %}data-hidden-until-stock="1"{% endif %}
+    data-product-slug="{{ product.slug }}"
+    {% if not hide_variations %}data-cart-on-swatch{% endif %}
+    data-default-name="{{ product.naziv }}"
+    data-default-price="{{ product.katalog_prikazna_cijena }}"
+>
+    {% if product.je_novitet or home_section_badge == 'novo' %}
+    <span class="product-card-corner-badge product-card-corner-badge--novitet" aria-label="Novo">NOVO</span>
+    {% elif product.katalog_akcija_postotak %}
+    <span class="product-card-corner-badge product-card-corner-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    {% elif product.je_hit or home_section_badge == 'hit' %}
+    <span class="product-card-corner-badge product-card-corner-badge--hit" aria-label="Izdvojeno">HIT</span>
+    {% endif %}
+    <div class="product-card__top">
+        <div class="product-card__media">
+            <div class="product-image">
+                <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__media-link" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
+                    {% if not product.je_novitet and not product.katalog_akcija_postotak and not product.je_hit and home_section_badge != 'novo' and home_section_badge != 'hit' %}
+                    {% include 'partials/product_sale_ribbon.html' with product=product %}
+                    {% endif %}
+                    {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}
+                    {% include 'partials/product_staff_overlay.html' with product=product %}
+                </a>
+            </div>
+            <div class="variation-swatches{% if hide_variations or not product.variation_count %} variation-swatches--empty{% endif %}">
+                {% if not hide_variations and product.variation_count %}
+                {% include 'partials/product_variation_swatches.html' with product=product card=True %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="product-card__body">
+            <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
+            <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
+            {% include 'partials/product_staff_missing.html' with product=product %}
+
+            {% include 'partials/product_stock_label.html' with product=product %}
+
+            {# Fiksna visina — samo Made in Japan (ne pomjera brend/cijena) #}
+            <div class="product-origin-slot product-card__origin-slot">
+                {% if product.proizvedeno_u_japanu %}
+                <div class="made-in-japan made-in-japan--card product-card__origin" role="note" aria-label="Proizvedeno u Japanu">
+                    <span class="made-in-japan__flag" aria-hidden="true"><span class="made-in-japan__sun"></span></span>
+                    <span class="made-in-japan__text">
+                        <span class="made-in-japan__label">Made in Japan</span>
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            {% if show_akcija_expiry and product.prikaz_akcija_istice %}
+            <p class="product-sale-expiry product-card__sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% with card_variations=product.varijacije.all %}
+    {% if card_variations|length > 1 %}
+    <div class="catalog-variation-data" hidden aria-hidden="true">
+        {% for var in card_variations %}
+        <span data-catalog-variation data-variation-id="{{ var.pk }}" data-variation-name="{{ var.naziv }}"></span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
+        <div class="product-card__price-row">
+            <div class="product-card__price-block">
+                {% if card_variations|length > 1 %}
+                {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
+                {% else %}
+                {% include 'partials/product_card_dwell_price.html' with product=product %}
+                {% endif %}
+            </div>
+            <div class="product-card__brand-row{% if hide_brand %} product-card__brand-row--hidden{% endif %}">
+                {% if not hide_brand and product.brend %}
+                {% include 'partials/brand_display.html' with brand=product.brend %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="product-card__cart-row">
+        {% if product.na_stanju %}
+        <button
+            type="button"
+            class="product-card-add-btn"
+            data-catalog-add
+            data-product-slug="{{ product.slug }}"
+            data-product-id="{{ product.pk }}"
+            data-product-name="{{ product.naziv }}"
+            data-almost-cart
+            aria-label="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }} — {{ product.naziv }}"
+            {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
+            {% if card_variations|length == 1 %}
+                {% for variation in card_variations %}
+            data-variation-id="{{ variation.pk }}"
+                {% endfor %}
+            {% endif %}
+        >
+            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
+                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
+            </svg>
+            <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
+        </button>
+        {% else %}
+        <button type="button" class="product-card-add-btn product-card-add-btn--sold" disabled aria-label="Rasprodato — {{ product.naziv }}">
+            <span>Rasprodato</span>
+        </button>
+        {% endif %}
+        </div>
+    </div>
+    {% endwith %}
+</article>

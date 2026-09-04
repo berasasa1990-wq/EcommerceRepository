@@ -1,0 +1,86 @@
+{% if flash_offer %}
+{% with akcija=flash_offer.akcija related=flash_offer.related %}
+<section class="pd-flash" aria-label="Akcijska ponuda" data-flash-expires="{{ flash_offer.expires_ts|default:0 }}">
+    <div class="pd-flash__banner">
+        <div class="pd-flash__brand">
+            <span class="pd-flash__flame" aria-hidden="true">🔥</span>
+            <div class="pd-flash__brand-text">
+                <strong>AKCIJSKA</strong>
+                <strong>PONUDA</strong>
+                <span>VRIJEDI JOŠ</span>
+            </div>
+        </div>
+        <div class="pd-flash__timer" aria-label="Preostalo vrijeme">
+            <div class="pd-flash__tbox">
+                <span class="pd-flash__tval" data-flash-h>00</span>
+                <span class="pd-flash__tlab">SATI</span>
+            </div>
+            <span class="pd-flash__tsep">:</span>
+            <div class="pd-flash__tbox">
+                <span class="pd-flash__tval" data-flash-m>00</span>
+                <span class="pd-flash__tlab">MINUTA</span>
+            </div>
+            <span class="pd-flash__tsep">:</span>
+            <div class="pd-flash__tbox">
+                <span class="pd-flash__tval" data-flash-s>00</span>
+                <span class="pd-flash__tlab">SEKUNDI</span>
+            </div>
+        </div>
+        <div class="pd-flash__copy">
+            <h2 class="pd-flash__title">{{ flash_offer.naslov }}</h2>
+            <p class="pd-flash__lead">{% if flash_offer.podnaslov %}{{ flash_offer.podnaslov }}{% else %}Iskoristite dodatni popust na artikle ispod.{% endif %}</p>
+        </div>
+        <p class="pd-flash__foot">
+            <span class="pd-flash__clock" aria-hidden="true">⏱</span>
+            {% if flash_offer.podnaslov %}
+            {{ flash_offer.podnaslov }}
+            {% else %}
+            Ponuda vrijedi za artikle ispod i traje još
+            {% if flash_offer.hours_left == 1 %}1 sat{% elif flash_offer.hours_left < 5 %}{{ flash_offer.hours_left }} sata{% else %}{{ flash_offer.hours_left }} sati{% endif %}.
+            Ne propustite priliku!
+            {% endif %}
+        </p>
+    </div>
+
+    {% if related %}
+    <div class="pd-flash__related">
+        <button type="button" class="pd-flash__nav pd-flash__nav--prev" data-flash-prev aria-label="Prethodni">‹</button>
+        <div class="pd-flash__track" data-flash-track>
+            {% for item in related %}
+            <article class="pd-flash__card">
+                <h3 class="pd-flash__card-name">{{ item.product.naziv }}</h3>
+                <a href="{{ item.product.get_absolute_url }}" class="pd-flash__card-media">
+                    {% if item.product.prikazna_slika %}
+                    <img src="{{ item.product.prikazna_slika.url }}" alt="{{ item.product.naziv }}" width="180" height="180" loading="lazy" decoding="async">
+                    {% else %}
+                    <span aria-hidden="true">📦</span>
+                    {% endif %}
+                    {% if item.pricing.pct_label %}
+                    <span class="pd-flash__badge">−{{ item.pricing.pct_label }}%</span>
+                    {% endif %}
+                </a>
+                {% include 'partials/product_pack_label.html' with product=item.product %}
+                <p class="pd-flash__card-prices">
+                    <strong>{{ item.pricing.snizena|floatformat:2 }} KM</strong>
+                    {% if item.pricing.has_discount %}
+                    <s>{{ item.pricing.bazna|floatformat:2 }} KM</s>
+                    {% endif %}
+                </p>
+                {% if item.in_stock %}
+                <form method="post" action="{% url 'add_to_cart' item.product.slug %}" class="pd-flash__form">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="1">
+                    <input type="hidden" name="stay" value="1">
+                    <input type="hidden" name="flash_offer_id" value="{{ akcija.id }}">
+                    <button type="submit" class="pd-flash__cta">+ DODAJ U KORPU</button>
+                </form>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        <button type="button" class="pd-flash__nav pd-flash__nav--next" data-flash-next aria-label="Sljedeći">›</button>
+    </div>
+    {% endif %}
+</section>
+{% endwith %}
+{% endif %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+<title>{{ seo_title }}</title>
+{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="{{ seo_description }}">
+{% endblock %}
+
+{% block content %}
+<article class="info-page">
+    <div class="info-page-inner">
+        <nav class="info-breadcrumb" aria-label="Navigacija">
+            <a href="{% url 'home' %}">Početna</a>
+            <span class="info-breadcrumb-sep" aria-hidden="true">/</span>
+            <span class="info-breadcrumb-current">Način plaćanja</span>
+        </nav>
+
+        <header class="info-page-header">
+            <h1>{{ seo_h1|default:"Način plaćanja" }}</h1>
+        </header>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
+
+        <div class="info-page-body">
+            <ul class="info-page-list">
+                <li>Plaćanje prilikom preuzimanja pošiljke.</li>
+                <li>Dostava brzom poštom na kućnu adresu u roku 48h.</li>
+                <li>Sigurnost slanja je visoka — svaka pošiljka pažljivo se pakuje i šalje provjerenim kurirskim uslugama.</li>
+            </ul>
+        </div>
+
+        {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
+    </div>
+</article>
+{% endblock %}

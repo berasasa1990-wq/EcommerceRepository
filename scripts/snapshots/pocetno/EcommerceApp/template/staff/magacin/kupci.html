@@ -1,0 +1,124 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Kupci</h1>
+        <p class="mg-count">{{ customer_count }} sačuvanih u bazi.</p>
+    </div>
+</div>
+<div class="mg-grid-2">
+    <section class="mg-card">
+        <form method="get" class="mg-page-search" style="margin-bottom:14px;">
+            <input type="search" name="q" value="{{ customer_query }}" placeholder="Ime, telefon ili grad..." aria-label="Pretraga kupaca">
+            <button type="submit" class="mg-btn">Traži</button>
+        </form>
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>IME</th>
+                    <th>TELEFON</th>
+                    <th>GRAD</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in customers %}
+                <tr>
+                    <td>
+                        <strong>{{ row.ime_prezime }}</strong>
+                        {% if row.adresa %}<div class="mg-muted">{{ row.adresa }}</div>{% endif %}
+                    </td>
+                    <td>{{ row.telefon }}</td>
+                    <td>{{ row.grad|default:"—" }}</td>
+                    <td class="num">
+                        <button type="button" class="mg-btn" data-edit-cust
+                            data-id="{{ row.pk }}"
+                            data-ime="{{ row.ime_prezime }}"
+                            data-telefon="{{ row.telefon }}"
+                            data-adresa="{{ row.adresa }}"
+                            data-grad="{{ row.grad }}"
+                            data-email="{{ row.email }}"
+                            data-postanski="{{ row.postanski_broj }}">Izmijeni</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="mg-muted">Nema kupaca.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <section class="mg-card">
+        <h2 class="mg-h" id="custTitle">{% if editing %}Izmijeni kupca{% else %}Novi kupac{% endif %}</h2>
+        <form method="post" id="custForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="customer_id" id="custId" value="{{ editing.pk|default:'' }}">
+            <div class="mg-field">
+                <label for="custIme">Ime i prezime *</label>
+                <input name="ime_prezime" id="custIme" required maxlength="200" value="{{ editing.ime_prezime|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="custTel">Telefon *</label>
+                <input name="telefon" id="custTel" required maxlength="30" value="{{ editing.telefon|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="custAdresa">Adresa</label>
+                <input name="adresa" id="custAdresa" maxlength="300" value="{{ editing.adresa|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="custGrad">Grad</label>
+                <input name="grad" id="custGrad" maxlength="100" value="{{ editing.grad|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="custPost">Poštanski broj *</label>
+                <input name="postanski_broj" id="custPost" required maxlength="20" value="{{ editing.postanski_broj|default:'' }}">
+            </div>
+            <div class="mg-field">
+                <label for="custEmail">Email</label>
+                <input name="email" id="custEmail" type="email" maxlength="254" value="{{ editing.email|default:'' }}">
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+                <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
+                <button type="button" class="mg-btn" id="custReset">Novi</button>
+            </div>
+        </form>
+        <form method="post" id="custDelete" style="margin-top:12px;"{% if not editing %} hidden{% endif %}>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="customer_id" id="custDeleteId" value="{{ editing.pk|default:'' }}">
+            <button class="mg-btn mg-btn-danger" onclick="return confirm('Obrisati kupca?');">Obriši</button>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var title = document.getElementById('custTitle');
+    document.querySelectorAll('[data-edit-cust]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('custId').value = btn.dataset.id;
+            document.getElementById('custIme').value = btn.dataset.ime || '';
+            document.getElementById('custTel').value = btn.dataset.telefon || '';
+            document.getElementById('custAdresa').value = btn.dataset.adresa || '';
+            document.getElementById('custGrad').value = btn.dataset.grad || '';
+            document.getElementById('custEmail').value = btn.dataset.email || '';
+            document.getElementById('custPost').value = btn.dataset.postanski || '';
+            document.getElementById('custDelete').hidden = false;
+            document.getElementById('custDeleteId').value = btn.dataset.id;
+            title.textContent = 'Izmijeni kupca';
+            document.getElementById('custIme').focus();
+        });
+    });
+    document.getElementById('custReset').addEventListener('click', function () {
+        document.getElementById('custForm').reset();
+        document.getElementById('custId').value = '';
+        document.getElementById('custDelete').hidden = true;
+        title.textContent = 'Novi kupac';
+        document.getElementById('custIme').focus();
+    });
+})();
+</script>
+{% endblock %}

@@ -334,6 +334,9 @@ function initCustomerPicker() {
     var newEmail = document.getElementById('mgNewEmail');
     var modalHint = document.getElementById('mgCustomerModalHint');
     var saveBtn = document.getElementById('mgCustomerSave');
+    var newVp = document.getElementById('mgNewVpKupac');
+    var vpInput = document.getElementById('mgVpKupac');
+    var vpFlag = document.getElementById('mgCustomerVpFlag');
     var form = document.getElementById('mgOrderForm');
     var page = document.getElementById('mgOrderPage');
     var customerCard = document.getElementById('mgCustomerCard');
@@ -370,6 +373,7 @@ function initCustomerPicker() {
         if (newGrad) newGrad.value = '';
         if (newPost) newPost.value = '';
         if (newEmail) newEmail.value = '';
+        if (newVp) newVp.checked = false;
         showHint('');
         if (list) list.hidden = true;
         if (modal) modal.hidden = false;
@@ -385,6 +389,7 @@ function initCustomerPicker() {
         if (newGrad) newGrad.value = (gradInput && gradInput.value) || '';
         if (newPost) newPost.value = (postInput && postInput.value) || '';
         if (newEmail) newEmail.value = (emailInput && emailInput.value) || '';
+        if (newVp) newVp.checked = !!(vpInput && vpInput.value === '1');
         showHint('');
         if (modal) modal.hidden = false;
         if (newIme) newIme.focus();
@@ -406,11 +411,23 @@ function initCustomerPicker() {
         if (adresaInput) adresaInput.value = data.adresa || '';
         if (emailInput) emailInput.value = data.email || '';
         if (postInput) postInput.value = data.postanski_broj || '';
+        if (vpInput) vpInput.value = data.vp_kupac ? '1' : '';
+        if (vpFlag) vpFlag.hidden = !data.vp_kupac;
         if (nameEl) nameEl.textContent = ime;
+        var dash = function (v) { return (v || '').trim() || '—'; };
+        var telEl = document.getElementById('mgLockTel');
+        var adrEl = document.getElementById('mgLockAdresa');
+        var postEl = document.getElementById('mgLockPost');
+        var grdEl = document.getElementById('mgLockGrad');
+        if (telEl) telEl.textContent = dash(data.telefon);
+        if (adrEl) adrEl.textContent = dash(data.adresa);
+        if (postEl) postEl.textContent = dash(data.postanski_broj);
+        if (grdEl) grdEl.textContent = dash(data.grad);
         if (metaEl) {
             var bits = [data.telefon, data.grad, data.adresa].filter(Boolean);
             metaEl.textContent = bits.join(' · ');
         }
+        setAddCustomerVisible(false);
         if (wrap) wrap.hidden = true;
         if (locked) locked.hidden = false;
         if (noteWrap) noteWrap.hidden = true;
@@ -439,31 +456,40 @@ function initCustomerPicker() {
         var discInput = document.getElementById('mgOrderDisc');
         var chip = document.getElementById('mgCustomerLocked');
         var pct = info && (info.postotak_label || info.postotak);
-        var label = info && info.label;
+        var applied = !!(autoInput && autoInput.value === '1');
         if (info && pct) {
             if (flag) {
                 flag.hidden = false;
-                flag.textContent = label || ('Loyalty član — ' + pct + '% popusta');
+                flag.textContent = 'Loyalty ' + pct + '%';
+                flag.title = applied ? 'Klikni da skineš loyalty popust' : 'Klikni da primijeniš loyalty popust';
+                flag.classList.toggle('is-on', applied);
             }
             if (note) {
-                note.hidden = false;
-                note.textContent = 'Loyalty ' + pct + '%';
+                note.hidden = !applied;
+                note.textContent = applied ? ('Loyalty ' + pct + '%') : '';
             }
             if (chip) chip.classList.add('is-loyalty');
             if (autoInput) autoInput.setAttribute('data-loyalty-pct', String(pct));
             if (applyDiscount && discInput) {
-                var current = String(discInput.value || '').trim();
-                var alreadyAuto = !!(autoInput && autoInput.value === '1');
-                if (!current || alreadyAuto) {
-                    discInput.value = String(pct);
-                    if (autoInput) autoInput.value = '1';
-                    refreshOrderTotal();
+                discInput.value = String(pct);
+                if (autoInput) autoInput.value = '1';
+                if (flag) {
+                    flag.classList.add('is-on');
+                    flag.title = 'Klikni da skineš loyalty popust';
                 }
+                if (note) {
+                    note.hidden = false;
+                    note.textContent = 'Loyalty ' + pct + '%';
+                }
+                refreshOrderTotal();
             }
         } else {
+            var wasApplied = applied;
             if (flag) {
                 flag.hidden = true;
                 flag.textContent = '';
+                flag.classList.remove('is-on');
+                flag.title = '';
             }
             if (note) {
                 note.hidden = true;
@@ -474,7 +500,7 @@ function initCustomerPicker() {
                 autoInput.removeAttribute('data-loyalty-pct');
                 autoInput.value = '';
             }
-            if (applyDiscount && discInput) {
+            if (applyDiscount && wasApplied && discInput) {
                 discInput.value = '';
                 refreshOrderTotal();
             }
@@ -482,8 +508,10 @@ function initCustomerPicker() {
     }
     function applyLoyaltyForPhone(telefon) {
         var tel = String(telefon || '').trim();
+        var autoInput = document.getElementById('mgLoyaltyAuto');
+        var keepApplied = !!(autoInput && autoInput.value === '1');
         if (!tel || !loyaltyUrl) {
-            setLoyaltyUi(null, true);
+            setLoyaltyUi(null, keepApplied);
             return;
         }
         var req = ++loyaltyReq;
@@ -494,7 +522,7 @@ function initCustomerPicker() {
             .then(function (res) { return res.json(); })
             .then(function (data) {
                 if (req !== loyaltyReq) return;
-                setLoyaltyUi(data && data.loyalty, true);
+                setLoyaltyUi(data && data.loyalty, keepApplied);
             })
             .catch(function () {
                 if (req !== loyaltyReq) return;
@@ -512,18 +540,39 @@ function initCustomerPicker() {
         }
         if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         if (idInput) idInput.value = '';
+        if (vpInput) vpInput.value = '';
+        if (vpFlag) vpFlag.hidden = true;
         setLoyaltyUi(null, true);
         if (search) {
             search.value = (imeInput && imeInput.value) || search.value || '';
             search.focus();
         }
     }
+    function queryMatchesCustomer(rows, q) {
+        q = (q || '').trim().toLowerCase();
+        if (!q) return true;
+        var qTel = q.replace(/\s/g, '');
+        return (rows || []).some(function (row) {
+            var ime = (row.ime_prezime || '').trim().toLowerCase();
+            var tel = (row.telefon || '').replace(/\s/g, '');
+            return ime === q || ime.indexOf(q) === 0 || (qTel.length >= 3 && tel.indexOf(qTel) !== -1);
+        });
+    }
+    function setAddCustomerVisible(on) {
+        if (addBtn) addBtn.hidden = !on;
+    }
     function renderList(rows) {
         lastResults = rows || [];
         if (!list) return;
         list.innerHTML = '';
+        var q = (search && search.value || '').trim();
+        var missing = !!q && !queryMatchesCustomer(lastResults, q);
+        setAddCustomerVisible(missing);
         if (!lastResults.length) {
-            list.innerHTML = '<li class="is-empty">Nema sačuvanog kupca. Klikni Dodaj kupca.</li>';
+            var empty = document.createElement('li');
+            empty.className = 'is-empty';
+            empty.textContent = q ? 'Nema kupca u sistemu.' : 'Nema sačuvanog kupca.';
+            list.appendChild(empty);
             list.hidden = false;
             return;
         }
@@ -549,6 +598,7 @@ function initCustomerPicker() {
             .then(function (res) { return res.json(); })
             .then(function (data) { renderList(data.results || []); })
             .catch(function () {
+                setAddCustomerVisible(!!(search && search.value.trim()));
                 if (list) {
                     list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
                     list.hidden = false;
@@ -557,6 +607,8 @@ function initCustomerPicker() {
     }
 
     search.addEventListener('input', function () {
+        if (imeInput) imeInput.value = search.value;
+        if (!(search.value || '').trim()) setAddCustomerVisible(false);
         window.clearTimeout(timer);
         timer = window.setTimeout(function () { searchCustomers(search.value); }, 160);
     });
@@ -566,6 +618,28 @@ function initCustomerPicker() {
     });
     if (addBtn) addBtn.addEventListener('click', openAddModal);
     if (editBtn) editBtn.addEventListener('click', openEditModal);
+    var loyaltyFlag = document.getElementById('mgCustomerLoyalty');
+    if (loyaltyFlag) {
+        loyaltyFlag.addEventListener('click', function () {
+            var autoEl = document.getElementById('mgLoyaltyAuto');
+            var discEl = document.getElementById('mgOrderDisc');
+            var noteEl = document.getElementById('mgOrderLoyaltyNote');
+            var pct = autoEl && autoEl.getAttribute('data-loyalty-pct');
+            if (!pct || !autoEl) return;
+            var on = autoEl.value !== '1';
+            autoEl.value = on ? '1' : '';
+            if (discEl) discEl.value = on ? String(pct) : '';
+            loyaltyFlag.classList.toggle('is-on', on);
+            loyaltyFlag.title = on
+                ? 'Klikni da skineš loyalty popust'
+                : 'Klikni da primijeniš loyalty popust';
+            if (noteEl) {
+                noteEl.hidden = !on;
+                noteEl.textContent = on ? ('Loyalty ' + pct + '%') : '';
+            }
+            refreshOrderTotal();
+        });
+    }
     if (saveBtn) {
         saveBtn.addEventListener('click', function () {
             var ime = (newIme && newIme.value || '').trim();
@@ -587,7 +661,12 @@ function initCustomerPicker() {
                 return;
             }
             if (saving) return;
-            var csrf = form.querySelector('[name=csrfmiddlewaretoken]');
+            var csrfEl = form.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = (csrfEl && csrfEl.value) || '';
+            if (!csrf) {
+                var cookie = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+                csrf = cookie ? decodeURIComponent(cookie[1]) : '';
+            }
             var body = new URLSearchParams();
             body.set('ime_prezime', ime);
             body.set('telefon', tel);
@@ -595,7 +674,9 @@ function initCustomerPicker() {
             body.set('grad', newGrad ? newGrad.value.trim() : '');
             body.set('email', newEmail ? newEmail.value.trim() : '');
             body.set('postanski_broj', newPost ? newPost.value.trim() : '');
+            body.set('vp_kupac', (newVp && newVp.checked) ? '1' : '0');
             if (editId && editId.value) body.set('customer_id', editId.value);
+            if (csrf) body.set('csrfmiddlewaretoken', csrf);
             saving = true;
             saveBtn.disabled = true;
             showHint('');
@@ -603,18 +684,27 @@ function initCustomerPicker() {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrf ? csrf.value : '',
+                    'X-CSRFToken': csrf,
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 credentials: 'same-origin',
                 body: body.toString(),
             })
-                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (res) {
+                    return res.text().then(function (text) {
+                        var data = null;
+                        try { data = text ? JSON.parse(text) : null; } catch (err) { data = null; }
+                        return { ok: res.ok, status: res.status, data: data };
+                    });
+                })
                 .then(function (result) {
                     saving = false;
                     saveBtn.disabled = false;
                     if (!result.data || !result.data.ok || !result.data.customer) {
-                        showHint((result.data && result.data.error) || 'Kupac nije sačuvan.');
+                        var msg = (result.data && result.data.error) || '';
+                        if (!msg && result.status === 403) msg = 'Sesija je istekla. Osvježi stranicu i pokušaj ponovo.';
+                        if (!msg && result.status === 401) msg = 'Nisi prijavljen. Osvježi stranicu i prijavi se.';
+                        showHint(msg || 'Kupac nije sačuvan.');
                         return;
                     }
                     lockCustomer(result.data.customer);
@@ -665,6 +755,7 @@ function initCustomerPicker() {
             adresa: adresaInput ? adresaInput.value : '',
             email: emailInput ? emailInput.value : '',
             postanski_broj: postInput ? postInput.value : '',
+            vp_kupac: !!(vpInput && vpInput.value === '1'),
         });
     }
 }
@@ -1282,20 +1373,26 @@ function initManualOrderForm() {
             sum += lineTotal;
         });
         var card = payByCard();
-        var ship = (sum > 0 && sum < shipFreeFrom) ? shipFee : 0;
-        if (shipWaived() || card) ship = 0;
+        var ship = 0;
+        if (!(shipWaived() || card)) {
+            if (sum === 0 || sum < shipFreeFrom) ship = shipFee;
+        }
         var pct = card ? 100 : discountPct();
         var discount = card ? sum : (sum * pct / 100);
         if (page) page.classList.toggle('is-card-pay', card);
         if (shipEl) {
             if ((shipWaived() || card) && sum > 0) {
-                shipEl.textContent = 'Dostava: skinuta';
+                shipEl.textContent = 'Bez dostave';
             } else {
                 shipEl.textContent = ship > 0
-                    ? ('Dostava: ' + money(ship) + ' KM')
-                    : (sum > 0 ? 'Dostava: besplatna' : ('Dostava: ' + money(shipFee) + ' KM'));
+                    ? ('XExpress (' + money(ship).replace('.', ',') + ' KM)')
+                    : (sum > 0 ? 'Besplatna dostava' : ('XExpress (' + money(shipFee).replace('.', ',') + ' KM)'));
             }
         }
+        var goodsEl = document.getElementById('mgOrderGoods');
+        var shipVal = document.getElementById('mgOrderShipVal');
+        if (goodsEl) goodsEl.textContent = money(sum).replace('.', ',') + ' KM';
+        if (shipVal) shipVal.textContent = money(ship).replace('.', ',') + ' KM';
         if (noShipBtn) {
             noShipBtn.disabled = card;
             noShipBtn.classList.toggle('is-on', shipWaived() || card);
@@ -1308,7 +1405,7 @@ function initManualOrderForm() {
                 ? ('Kartica: −' + money(discount) + ' KM')
                 : ('Popust: −' + money(discount) + ' KM');
         }
-        if (totalEl) totalEl.textContent = money(sum - discount + ship) + ' KM';
+        if (totalEl) totalEl.textContent = money(sum - discount + ship).replace('.', ',') + ' KM';
         if (empty) empty.hidden = lineCount() > 0;
         if (addedCount) {
             var n = lineCount();
@@ -1426,6 +1523,8 @@ function initManualOrderForm() {
         tr.setAttribute('data-available', available);
         if (available <= 0) tr.classList.add('is-out-row');
         tr.innerHTML =
+            '<td class="mg-line-n"></td>' +
+            '<td>' + escapeHtml(sifra) + '</td>' +
             '<td><strong>' + escapeHtml(naziv) + '</strong>' +
             (varNaziv ? '<span class="sub">' + escapeHtml(varNaziv) + '</span>' : '') +
             (mpOk ? '<span class="mg-pill is-manual">Nije popisan</span>' : '') +
@@ -1436,9 +1535,8 @@ function initManualOrderForm() {
             '<input type="hidden" name="spare_naziv" value="">' +
             '<input type="hidden" name="spare_cijena" value="">' +
             '</td>' +
-            '<td>' + escapeHtml(sifra) + '</td>' +
-            '<td class="num ' + (available <= 0 ? 'num-out' : 'num-ok') + '">' + available + '</td>' +
             '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" data-prev="' + qty + '" required></td>' +
+            '<td class="num mg-line-disc">—</td>' +
             '<td class="num">' + escapeHtml(cijena) + ' KM</td>' +
             '<td class="num" data-line-total>' + money(cijena * qty) + ' KM</td>' +
             '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
@@ -1488,6 +1586,8 @@ function initManualOrderForm() {
         tr.setAttribute('data-rezervni', '1');
         tr.className = 'is-spare-row' + (available <= 0 ? ' is-out-row' : '');
         tr.innerHTML =
+            '<td class="mg-line-n"></td>' +
+            '<td>' + escapeHtml(sifra) + '</td>' +
             '<td><strong>' + escapeHtml(productName || naziv) + '</strong>' +
             (productName ? '<span class="sub mg-spare-missing">Fali: ' + escapeHtml(naziv) + '</span>' : '') +
             '<span class="mg-pill is-spare">Rezervni dio</span>' +
@@ -1499,9 +1599,8 @@ function initManualOrderForm() {
             '<input type="hidden" name="spare_naziv" value="' + escapeHtml(naziv) + '">' +
             '<input type="hidden" name="spare_cijena" value="' + escapeHtml(cijena) + '">' +
             '</td>' +
-            '<td>' + escapeHtml(sifra) + '</td>' +
-            '<td class="num ' + (available <= 0 ? 'num-out' : 'num-ok') + '">' + available + '</td>' +
             '<td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="' + qty + '" data-prev="' + qty + '" required></td>' +
+            '<td class="num mg-line-disc">—</td>' +
             '<td class="num">' + escapeHtml(cijena) + ' KM</td>' +
             '<td class="num" data-line-total>' + money(Number(cijena) * qty) + ' KM</td>' +
             '<td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>';
@@ -1632,6 +1731,11 @@ function initManualOrderForm() {
         catalog.hidden = !on;
         catalogBtn.classList.toggle('is-on', on);
         catalogBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        var soloBtn = document.getElementById('mgOrderSoloBtn');
+        if (soloBtn) {
+            soloBtn.classList.toggle('is-on', !on);
+            soloBtn.setAttribute('aria-pressed', on ? 'false' : 'true');
+        }
         if (list) list.hidden = true;
         if (on) {
             if ((search && search.value || '').trim()) searchProducts({});
@@ -1814,6 +1918,34 @@ function initManualOrderForm() {
             if (search) search.focus();
         });
     }
+    var soloBtn = document.getElementById('mgOrderSoloBtn');
+    if (soloBtn) {
+        soloBtn.addEventListener('click', function () {
+            setCatalog(false);
+            if (search) search.focus();
+        });
+    }
+    var qtyMinus = document.getElementById('mgOrderQtyMinus');
+    var qtyPlus = document.getElementById('mgOrderQtyPlus');
+    function bumpQty(delta) {
+        if (!qtyInput) return;
+        var n = parseInt(qtyInput.value, 10) || 1;
+        n += delta;
+        if (n < 1) n = 1;
+        qtyInput.value = String(n);
+    }
+    if (qtyMinus) qtyMinus.addEventListener('click', function () { bumpQty(-1); });
+    if (qtyPlus) qtyPlus.addEventListener('click', function () { bumpQty(1); });
+    var paySelect = document.getElementById('mgPaySelect');
+    if (paySelect) {
+        paySelect.addEventListener('change', function () {
+            var val = paySelect.value;
+            form.querySelectorAll('input[name="placanje"]').forEach(function (el) {
+                el.checked = el.value === val;
+            });
+            refreshTotal();
+        });
+    }
     if (qtyInput) {
         qtyInput.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
@@ -1834,6 +1966,128 @@ function initManualOrderForm() {
                 closeQty();
                 if (search) search.focus();
             });
+        });
+    }
+    var bulkBtn = document.getElementById('mgOrderBulk');
+    var bulkModal = document.getElementById('mgOrderBulkModal');
+    var bulkText = document.getElementById('mgOrderBulkText');
+    var bulkImport = document.getElementById('mgOrderBulkImport');
+    var bulkHint = document.getElementById('mgOrderBulkHint');
+    var bulkResult = document.getElementById('mgOrderBulkResult');
+    var bulkUrl = form.getAttribute('data-bulk-url') || '';
+    var bulkBusy = false;
+    function closeBulk() {
+        if (bulkModal) bulkModal.hidden = true;
+        if (bulkHint) { bulkHint.hidden = true; bulkHint.textContent = ''; }
+    }
+    function openBulk() {
+        if (!bulkModal) return;
+        if (bulkText) bulkText.value = '';
+        if (bulkHint) { bulkHint.hidden = true; bulkHint.textContent = ''; }
+        bulkModal.hidden = false;
+        window.setTimeout(function () { if (bulkText) bulkText.focus(); }, 40);
+    }
+    function showBulkResult(data) {
+        if (!bulkResult) return;
+        var addedRows = (data && data.added) || [];
+        var skipped = (data && data.skipped) || [];
+        var mp = (data && data.mp) || [];
+        var parts = [];
+        if (addedRows.length) parts.push('Uneseno ' + addedRows.length + '.');
+        if (skipped.length) {
+            parts.push('Preskočeno ' + skipped.length + ' (nema u bazi): ' + skipped.map(function (row) {
+                return row.naziv || '';
+            }).filter(Boolean).slice(0, 8).join('; ') + (skipped.length > 8 ? '…' : ''));
+        }
+        if (mp.length) parts.push('Bez zalihe u magacinu (MP): ' + mp.join('; ') + '.');
+        if (!parts.length) {
+            bulkResult.hidden = true;
+            bulkResult.textContent = '';
+            return;
+        }
+        bulkResult.hidden = false;
+        bulkResult.textContent = parts.join(' ');
+    }
+    if (bulkBtn) bulkBtn.addEventListener('click', openBulk);
+    if (bulkModal) {
+        bulkModal.querySelectorAll('[data-mg-bulk-close]').forEach(function (el) {
+            el.addEventListener('click', closeBulk);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && bulkModal && !bulkModal.hidden) closeBulk();
+        });
+    }
+    if (bulkImport) {
+        bulkImport.addEventListener('click', function () {
+            var tekst = bulkText ? bulkText.value : '';
+            if (!(tekst || '').trim()) {
+                if (bulkHint) {
+                    bulkHint.hidden = false;
+                    bulkHint.textContent = 'Zalijepi tabelu narudžbe.';
+                }
+                if (bulkText) bulkText.focus();
+                return;
+            }
+            if (bulkBusy || !bulkUrl) return;
+            var csrfEl = form.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = (csrfEl && csrfEl.value) || '';
+            var body = new URLSearchParams();
+            body.set('tekst', tekst);
+            if (csrf) body.set('csrfmiddlewaretoken', csrf);
+            bulkBusy = true;
+            bulkImport.disabled = true;
+            if (bulkHint) { bulkHint.hidden = true; bulkHint.textContent = ''; }
+            fetch(bulkUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrf,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+                body: body.toString(),
+            })
+                .then(function (res) {
+                    return res.text().then(function (text) {
+                        var data = null;
+                        try { data = text ? JSON.parse(text) : null; } catch (err) { data = null; }
+                        return { ok: res.ok, data: data };
+                    });
+                })
+                .then(function (result) {
+                    bulkBusy = false;
+                    bulkImport.disabled = false;
+                    if (!result.data || !result.data.ok) {
+                        if (bulkHint) {
+                            bulkHint.hidden = false;
+                            bulkHint.textContent = (result.data && result.data.error) || 'Bulk unos nije uspio.';
+                        }
+                        return;
+                    }
+                    (result.data.added || []).forEach(function (row) {
+                        if (!row || !row.item) return;
+                        var qty = parseInt(row.qty, 10) || 1;
+                        var vid = row.variation ? String(row.variation.id) : '';
+                        var existing = findRow(String(row.item.id), vid);
+                        var already = existing
+                            ? (parseInt(existing.querySelector('[name="kolicina"]').value, 10) || 0)
+                            : 0;
+                        var available = Number(row.dostupno) || 0;
+                        var mpOk = !!(row.mp_ok || (already + qty > available));
+                        addLine(row.item, row.variation, mpOk, qty);
+                    });
+                    showBulkResult(result.data);
+                    closeBulk();
+                    if (catalogOpen()) renderCatalog(lastResults);
+                })
+                .catch(function () {
+                    bulkBusy = false;
+                    bulkImport.disabled = false;
+                    if (bulkHint) {
+                        bulkHint.hidden = false;
+                        bulkHint.textContent = 'Bulk unos nije uspio.';
+                    }
+                });
         });
     }
     document.addEventListener('click', function (event) {
@@ -1951,11 +2205,20 @@ function initManualOrderForm() {
             if (parseInt(cleaned, 10) > 100) discInput.value = '100';
             var autoInput = document.getElementById('mgLoyaltyAuto');
             var note = document.getElementById('mgOrderLoyaltyNote');
-            if (autoInput) {
+            var loyaltyFlag = document.getElementById('mgCustomerLoyalty');
+            if (autoInput && autoInput.value === '1') {
                 var expected = autoInput.getAttribute('data-loyalty-pct') || '';
-                var isAuto = !!(expected && String(discInput.value || '').trim() === expected);
-                autoInput.value = isAuto ? '1' : '';
-                if (note && expected) note.hidden = !isAuto;
+                if (String(discInput.value || '').trim() !== expected) {
+                    autoInput.value = '';
+                    if (loyaltyFlag) {
+                        loyaltyFlag.classList.remove('is-on');
+                        loyaltyFlag.title = 'Klikni da primijeniš loyalty popust';
+                    }
+                    if (note) {
+                        note.hidden = true;
+                        note.textContent = '';
+                    }
+                }
             }
             refreshTotal();
         });

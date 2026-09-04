@@ -1,0 +1,246 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Lokacije</h1>
+        <p class="mg-count">Klikni lokaciju da vidiš artikle. Nova lokacija ide preko dugmeta.</p>
+    </div>
+    <button type="button" class="mg-btn mg-btn-primary" id="locOpenNew">+ Nova lokacija</button>
+</div>
+
+<div class="mg-grid-2">
+    <section class="mg-card">
+        <h2 class="mg-h">Lokacije</h2>
+        <form method="get" class="mg-page-search" style="position:relative;margin:0 0 14px;" role="search">
+            {% if selected_location %}<input type="hidden" name="lokacija" value="{{ selected_location.pk }}">{% endif %}
+            <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <input type="search" name="pretraga" value="{{ location_query }}" placeholder="Šifra ili naziv lokacije…" autocomplete="off">
+            <button type="submit" class="mg-btn mg-btn-primary">Pronađi</button>
+        </form>
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>ŠIFRA</th>
+                    <th>NAZIV</th>
+                    <th class="num">ARTIKALA</th>
+                    <th class="num">NA STANJU</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in locations %}
+                <tr class="is-clickable{% if selected_location and selected_location.pk == row.location.pk %} is-active{% endif %}" onclick="location.href='{% url 'staff_magacin_lokacije' %}?lokacija={{ row.location.pk }}{% if location_query %}&pretraga={{ location_query|urlencode }}{% endif %}'">
+                    <td>{{ row.location.sifra }}</td>
+                    <td>{{ row.location.naziv }}{% if not row.location.aktivan %} <span class="mg-pill is-off">Neaktivna</span>{% endif %}</td>
+                    <td class="num">{{ row.artikala }}</td>
+                    <td class="num">{{ row.na_stanju }}</td>
+                    <td class="num" data-stop-row>
+                        <button type="button" class="mg-btn" data-edit-loc
+                            data-id="{{ row.location.pk }}"
+                            data-sifra="{{ row.location.sifra }}"
+                            data-naziv="{{ row.location.naziv }}"
+                            data-opis="{{ row.location.opis }}"
+                            data-redoslijed="{{ row.location.redoslijed }}"
+                            data-aktivan="{{ row.location.aktivan|yesno:'1,0' }}">Izmijeni</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="mg-muted">{% if location_query %}Nema lokacija za „{{ location_query }}”.{% else %}Ukucaj šifru ili naziv da izlistaš lokacije.{% endif %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="mg-card">
+        {% if selected_location %}
+        <div class="mg-card-head">
+            <h2 class="mg-h">Artikli u {{ selected_location.label }}</h2>
+            <div class="mg-toolbar-actions">
+                <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_lokacija_stampa' selected_location.pk %}" target="_blank">Štampaj popis</a>
+                <a class="mg-btn" href="{% url 'staff_magacin_lokacije' %}">Zatvori</a>
+            </div>
+        </div>
+        <p class="mg-muted" style="margin:-4px 0 12px;">Klikni artikal da skineš količinu s ove lokacije.</p>
+        <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>ARTIKAL</th>
+                    <th>ŠIFRA</th>
+                    <th class="num">NA STANJU</th>
+                    <th class="num">REZ.</th>
+                    <th class="num">DOSTUPNO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in location_stock %}
+                <tr class="is-clickable" data-loc-skini
+                    data-product-id="{{ row.product_id }}"
+                    data-variation-id="{{ row.variation_id|default:'' }}"
+                    data-location-id="{{ selected_location.pk }}"
+                    data-location-label="{{ selected_location.sifra }}"
+                    data-naziv="{{ row.product.naziv }}{% if row.variation %} — {{ row.variation.naziv }}{% endif %}"
+                    data-qty="{{ row.kolicina }}"
+                    data-available="{{ row.dostupno }}">
+                    <td>
+                        <strong>{{ row.product.naziv }}</strong>
+                        {% if row.variation %}<span class="sub">{{ row.variation.naziv }}</span>{% endif %}
+                    </td>
+                    <td>{{ row.variation.sifra|default:row.product.sifra|default:"—" }}</td>
+                    <td class="num">{{ row.kolicina }}</td>
+                    <td class="num">{{ row.rezervisano }}</td>
+                    <td class="num num-ok">{{ row.dostupno }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="mg-muted">Nema artikala na ovoj lokaciji.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <h2 class="mg-h">Artikli</h2>
+        <p class="mg-muted" style="margin:0;">Klikni lokaciju lijevo da vidiš artikle i količine.</p>
+        {% endif %}
+    </section>
+</div>
+
+{% if selected_location %}
+<form method="post" id="locSkiniForm" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="action" value="skini">
+    <input type="hidden" name="location_id" id="locSkiniLocation" value="{{ selected_location.pk }}">
+    <input type="hidden" name="product_id" id="locSkiniProduct" value="">
+    <input type="hidden" name="variation_id" id="locSkiniVariation" value="">
+    <input type="hidden" name="kolicina" id="locSkiniQty" value="">
+    <input type="hidden" name="pretraga" value="{{ location_query }}">
+</form>
+{% endif %}
+
+<div class="mg-modal" id="locModal" hidden>
+    <div class="mg-modal-bg" data-loc-close></div>
+    <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="locFormTitle">
+        <h2 id="locFormTitle">Nova lokacija</h2>
+        <form method="post" id="locForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="location_id" id="locId" value="">
+            <div class="mg-form-grid" style="grid-template-columns:1fr;">
+                <div class="mg-field">
+                    <label>Šifra</label>
+                    <input name="sifra" id="locSifra" required maxlength="20" placeholder="npr. A-10">
+                </div>
+                <div class="mg-field">
+                    <label>Naziv</label>
+                    <input name="naziv" id="locNaziv" required maxlength="120" placeholder="npr. Glavni magacin">
+                </div>
+                <div class="mg-field">
+                    <label>Opis</label>
+                    <input name="opis" id="locOpis" maxlength="300">
+                </div>
+                <div class="mg-field">
+                    <label>Redoslijed</label>
+                    <input name="redoslijed" id="locOrder" type="number" value="0">
+                </div>
+                <label style="display:flex;gap:8px;align-items:center;">
+                    <input type="checkbox" name="aktivan" id="locAktivan" value="1" checked>
+                    Aktivna
+                </label>
+            </div>
+            <div class="mg-modal-actions">
+                <button type="button" class="mg-btn" data-loc-close>Odustani</button>
+                <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
+            </div>
+        </form>
+        <form method="post" id="locDeleteForm" style="margin-top:8px;" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="location_id" id="locDeleteId">
+            <button type="submit" class="mg-btn mg-btn-danger" onclick="return confirm('Obrisati lokaciju?');">Obriši lokaciju</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var modal = document.getElementById('locModal');
+    var formTitle = document.getElementById('locFormTitle');
+    var locId = document.getElementById('locId');
+    var delForm = document.getElementById('locDeleteForm');
+    var delId = document.getElementById('locDeleteId');
+    function openModal() { if (modal) modal.hidden = false; }
+    function closeModal() { if (modal) modal.hidden = true; }
+    function fill(btn) {
+        locId.value = btn.dataset.id || '';
+        document.getElementById('locSifra').value = btn.dataset.sifra || '';
+        document.getElementById('locNaziv').value = btn.dataset.naziv || '';
+        document.getElementById('locOpis').value = btn.dataset.opis || '';
+        document.getElementById('locOrder').value = btn.dataset.redoslijed || '0';
+        document.getElementById('locAktivan').checked = btn.dataset.aktivan === '1';
+        formTitle.textContent = 'Izmijeni lokaciju';
+        delForm.hidden = false;
+        delId.value = btn.dataset.id || '';
+        openModal();
+    }
+    function reset() {
+        locId.value = '';
+        document.getElementById('locForm').reset();
+        document.getElementById('locAktivan').checked = true;
+        formTitle.textContent = 'Nova lokacija';
+        delForm.hidden = true;
+        openModal();
+        var sifra = document.getElementById('locSifra');
+        if (sifra) sifra.focus();
+    }
+    var openNew = document.getElementById('locOpenNew');
+    if (openNew) openNew.addEventListener('click', reset);
+    document.querySelectorAll('[data-edit-loc]').forEach(function (btn) {
+        btn.addEventListener('click', function () { fill(btn); });
+    });
+    document.querySelectorAll('[data-loc-close]').forEach(function (el) {
+        el.addEventListener('click', closeModal);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && modal && !modal.hidden) closeModal();
+    });
+    document.querySelectorAll('[data-stop-row]').forEach(function (cell) {
+        cell.addEventListener('click', function (event) { event.stopPropagation(); });
+    });
+    var skiniForm = document.getElementById('locSkiniForm');
+    document.querySelectorAll('[data-loc-skini]').forEach(function (row) {
+        row.addEventListener('click', function () {
+            if (!skiniForm) return;
+            var available = parseInt(row.getAttribute('data-available') || '0', 10) || 0;
+            var onHand = parseInt(row.getAttribute('data-qty') || '0', 10) || 0;
+            var loc = row.getAttribute('data-location-label') || '';
+            var name = row.getAttribute('data-naziv') || 'Artikal';
+            if (available <= 0) {
+                window.alert(name + ' na ' + loc + ' nema slobodne zalihe (na stanju ' + onHand + ').');
+                return;
+            }
+            var raw = window.prompt(
+                name + '\nLokacija ' + loc + '\nNa stanju ' + onHand + ', dostupno ' + available + '.\n\nKoliko skidaš?',
+                '1'
+            );
+            if (raw === null) return;
+            var qty = parseInt(String(raw).trim(), 10);
+            if (!qty || qty < 1) {
+                window.alert('Unesi količinu veću od nule.');
+                return;
+            }
+            if (qty > available) {
+                window.alert('Dostupno je ' + available + ' kom.');
+                return;
+            }
+            document.getElementById('locSkiniLocation').value = row.getAttribute('data-location-id') || '';
+            document.getElementById('locSkiniProduct').value = row.getAttribute('data-product-id') || '';
+            document.getElementById('locSkiniVariation').value = row.getAttribute('data-variation-id') || '';
+            document.getElementById('locSkiniQty').value = String(qty);
+            skiniForm.submit();
+        });
+    });
+})();
+</script>
+{% endblock %}

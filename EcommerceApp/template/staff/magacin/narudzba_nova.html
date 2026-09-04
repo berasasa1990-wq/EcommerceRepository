@@ -5,8 +5,8 @@
     <nav class="mg-crumb">Narudžbe / {% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</nav>
     <div class="mg-page-head">
         <div>
-            <h1>{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</h1>
-            <p class="mg-count" id="mgOrderIntro">{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Zaliha je rezervisana. Dodaj ili izbaci artikle, pa Sačuvaj kad je narudžba gotova.{% else %}Ako si greškom ubacio artikal, izbaci ga ili dodaj ispravan. Sačuvaj — picking se usklađuje.{% endif %}{% else %}Kreiraj narudžbu dodavanjem kupca i artikla.{% endif %}</p>
+            <h1>{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova narudžba{% endif %}</h1>
+            <p class="mg-count" id="mgOrderIntro">{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Zaliha je rezervisana. Dodaj ili izbaci artikle, pa Sačuvaj kad je narudžba gotova.{% else %}Ako si greškom ubacio artikal, izbaci ga ili dodaj ispravan. Sačuvaj — picking se usklađuje.{% endif %}{% else %}Kreiraj narudžbu dodavanjem kupca i artikala.{% endif %}</p>
         </div>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
@@ -14,66 +14,78 @@
         </a>
     </div>
 
-<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
+<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
     {% if existing_order %}<input type="hidden" name="order_broj" value="{{ existing_order.broj }}">{% endif %}
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
-        <h2 class="mg-h">Kupac</h2>
-        <p class="mg-field-label">Pretraga kupca</p>
-        <div class="mg-field mg-loc-search mg-input-row" id="mgCustomerSearchWrap">
-            <label class="mg-sr-only" for="mgCustomerSearch">Ime ili telefon</label>
-            <div class="mg-icon-field">
+        <div class="mg-card-head">
+            <h2 class="mg-h">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <input id="mgCustomerSearch" type="search" placeholder="Unesi ime, telefon ili odaberi postojećeg kupca..." autocomplete="off" value="{{ form.ime_prezime|default:'' }}">
-            </div>
-            <button type="button" class="mg-btn" id="mgCustomerAdd">+ Novi kupac</button>
-            <ul id="mgCustomerSuggest" class="mg-loc-suggest" hidden></ul>
+                Kupac
+            </h2>
+        </div>
+        <div class="mg-cust-grid" id="mgCustomerSearchWrap">
+            <label class="mg-cust-field">
+                <span>Ime i prezime / Naziv firme</span>
+                <span class="mg-cust-search-row">
+                    <span class="mg-icon-field">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input id="mgCustomerSearch" type="search" placeholder="Unesi ime, prezime ili naziv firme..." autocomplete="off" value="{{ form.ime_prezime|default:'' }}">
+                    </span>
+                    <button type="button" class="mg-btn" id="mgCustomerAdd" hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        Dodaj kupca
+                    </button>
+                </span>
+                <ul id="mgCustomerSuggest" class="mg-loc-suggest" hidden></ul>
+            </label>
         </div>
         <div id="mgCustomerLocked" class="mg-customer-chip" hidden>
-            <div>
-                <span class="mg-locked-kicker">Kupac</span>
-                <strong id="mgCustomerLockedName"></strong>
-                <p class="mg-muted" id="mgCustomerLockedMeta"></p>
-                <p class="mg-loyalty-flag" id="mgCustomerLoyalty"{% if not form.loyalty_auto %} hidden{% endif %}>{% if form.loyalty_auto %}Loyalty član — {{ form.popust_pct }}% popusta{% endif %}</p>
-            </div>
+            <strong id="mgCustomerLockedName"></strong>
+            <p class="mg-muted" id="mgCustomerLockedMeta" hidden></p>
+            <button type="button" class="mg-loyalty-flag" id="mgCustomerLoyalty" hidden></button>
             <div class="mg-chip-actions">
                 <button type="button" class="mg-btn" id="mgCustomerEdit">Izmijeni</button>
-                <button type="button" class="mg-btn" id="mgCustomerChange">Promijeni</button>
+                <button type="button" class="mg-btn" id="mgCustomerChange">Promijeni kupca</button>
             </div>
         </div>
         <input type="hidden" name="customer_id" id="id_customer_id" value="{{ form.customer_id|default:'' }}">
         <input type="hidden" name="ime_prezime" id="id_ime_prezime" value="{{ form.ime_prezime|default:'' }}">
         <input type="hidden" name="telefon" id="id_telefon" value="{{ form.telefon|default:'' }}">
-        <input type="hidden" name="grad" id="id_grad" value="{{ form.grad|default:'' }}">
         <input type="hidden" name="adresa" id="id_adresa" value="{{ form.adresa|default:'' }}">
         <input type="hidden" name="postanski_broj" id="id_postanski_broj" value="{{ form.postanski_broj|default:'' }}">
+        <input type="hidden" name="grad" id="id_grad" value="{{ form.grad|default:'' }}">
         <input type="hidden" name="email" id="id_email" value="{{ form.email|default:'' }}">
-        <div class="mg-field" id="mgOrderNoteWrap" hidden style="margin-top:12px;">
-            <label for="id_napomena">Napomena</label>
-            <textarea id="id_napomena" name="napomena" maxlength="2000">{{ form.napomena|default:'' }}</textarea>
-        </div>
+        <input type="hidden" name="vp_kupac" id="mgVpKupac" value="{% if form.vp_kupac %}1{% endif %}">
     </section>
 
     <div class="mg-order-build" id="mgOrderBuild">
     <section class="mg-card vp-box vp-search" id="mgOrderSearchBox">
-        <h2 class="mg-h">Dodaj artikle</h2>
-        <div class="vp-row vp-entry has-catalog mg-input-row">
+        <h2 class="mg-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+            Dodavanje artikala
+        </h2>
+        <div class="vp-row vp-entry has-catalog mg-input-row mg-add-row">
+            <div class="mg-mode-toggle" role="group" aria-label="Način dodavanja">
+                <button type="button" class="is-on" id="mgOrderSoloBtn" aria-pressed="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                    Posebno
+                </button>
+                <button type="button" id="mgOrderCatalogBtn" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    Katalog pregled
+                </button>
+            </div>
             <div class="mg-icon-field">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
                 <input type="search" id="mgOrderSearch" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off">
             </div>
-            <button type="button" class="mg-btn" id="mgOrderCatalogBtn" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg>
-                Katalog
-            </button>
             <button type="button" class="mg-btn" id="mgSpareBtn">Slanje rezervnog dijela</button>
-            <button type="button" class="vp-scan-btn" id="mgOrderScan" data-mg-scan-target="mgOrderSearch" data-mg-scan-title="Skeniraj artikal">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
-                Skeniraj
-            </button>
+            <button type="button" class="mg-btn" id="mgOrderBulk">Bulk</button>
         </div>
         <ul class="vp-suggest" id="mgOrderSuggest" hidden></ul>
         <div id="mgOrderCatalog" class="mg-catalog" hidden></div>
+        <p class="vp-bulk-result" id="mgOrderBulkResult" hidden></p>
         <p id="mgOrderQtyHint" class="mg-qty-hint" hidden></p>
     </section>
 
@@ -86,12 +98,13 @@
         <table class="mg-table mg-order-lines">
             <thead>
                 <tr>
-                    <th>ARTIKAL</th>
-                    <th>ŠIFRA</th>
-                    <th>LOKACIJA</th>
-                    <th class="num">KOLIČINA</th>
-                    <th class="num">CIJENA</th>
-                    <th class="num">UKUPNO</th>
+                    <th class="mg-line-n">#</th>
+                    <th>Šifra</th>
+                    <th>Naziv artikla</th>
+                    <th class="num">Količina</th>
+                    <th class="num">Popust %</th>
+                    <th class="num">Cijena (KM)</th>
+                    <th class="num">Ukupno (KM)</th>
                     <th></th>
                 </tr>
             </thead>
@@ -99,6 +112,8 @@
                 {% for line in form_lines %}
                 {% if line.rezervni %}
                 <tr data-line="1" data-pid="{{ line.product.pk|default:'' }}" data-vid="" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}" data-rezervni="1" class="is-spare-row{% if line.dostupno <= 0 %} is-out-row{% endif %}">
+                    <td class="mg-line-n"></td>
+                    <td>{{ line.product.sifra|default:"REZERVNI" }}</td>
                     <td>
                         <strong>{{ line.product.naziv|default:line.naziv }}</strong>
                         {% if line.product %}<span class="sub mg-spare-missing">Fali: {{ line.naziv }}</span>{% endif %}
@@ -111,15 +126,16 @@
                         <input type="hidden" name="spare_naziv" value="{{ line.naziv }}">
                         <input type="hidden" name="spare_cijena" value="{{ line.cijena }}">
                     </td>
-                    <td>{{ line.product.sifra|default:"REZERVNI" }}</td>
-                    <td class="num {% if line.dostupno <= 0 %}num-out{% else %}num-ok{% endif %}">{{ line.dostupno }}</td>
                     <td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="{{ line.qty }}" data-prev="{{ line.qty }}" required></td>
+                    <td class="num mg-line-disc">—</td>
                     <td class="num">{{ line.cijena }} KM</td>
                     <td class="num" data-line-total>{{ line.cijena }} KM</td>
                     <td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>
                 </tr>
                 {% else %}
                 <tr data-line="1" data-pid="{{ line.product.pk }}" data-vid="{{ line.variation.pk|default:'' }}" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}"{% if line.dostupno <= 0 %} class="is-out-row"{% endif %}>
+                    <td class="mg-line-n"></td>
+                    <td>{{ line.variation.sifra|default:line.product.sifra|default:"—" }}</td>
                     <td>
                         <strong>{{ line.product.naziv }}</strong>
                         {% if line.variation %}<span class="sub">{{ line.variation.naziv }}</span>{% endif %}
@@ -131,9 +147,8 @@
                         <input type="hidden" name="spare_naziv" value="">
                         <input type="hidden" name="spare_cijena" value="">
                     </td>
-                    <td>{{ line.variation.sifra|default:line.product.sifra|default:"—" }}</td>
-                    <td class="num {% if line.dostupno <= 0 %}num-out{% else %}num-ok{% endif %}">{{ line.dostupno }}</td>
                     <td class="num"><input class="mg-qty-input" name="kolicina" type="number" min="1" step="1" value="{{ line.qty }}" data-prev="{{ line.qty }}" required></td>
+                    <td class="num mg-line-disc">—</td>
                     <td class="num">{{ line.cijena }} KM</td>
                     <td class="num" data-line-total>{{ line.cijena }} KM</td>
                     <td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>
@@ -153,6 +168,65 @@
     </section>
     </div>
 
+    <div class="mg-order-meta-row">
+        <section class="mg-card mg-order-meta">
+            <div class="mg-order-meta-grid">
+                <div class="mg-order-meta-col">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                        Način plaćanja
+                    </h3>
+                    <select id="mgPaySelect" aria-label="Način plaćanja">
+                        <option value="gotovina"{% if form.placanje != 'kartica' %} selected{% endif %}>Gotovinski</option>
+                        <option value="kartica"{% if form.placanje == 'kartica' %} selected{% endif %}>Kartica</option>
+                    </select>
+                    <div class="mg-order-pay" role="group" aria-label="Način plaćanja">
+                        <span>Plaćanje</span>
+                        <label>
+                            <input type="radio" name="placanje" value="gotovina"{% if form.placanje != 'kartica' %} checked{% endif %}>
+                            Gotovina
+                        </label>
+                        <label>
+                            <input type="radio" name="placanje" value="kartica"{% if form.placanje == 'kartica' %} checked{% endif %}>
+                            Kartica
+                        </label>
+                    </div>
+                    <input type="hidden" name="loyalty_auto" id="mgLoyaltyAuto" value="{{ form.loyalty_auto|default:'' }}">
+                    <span class="mg-order-loyalty-note" id="mgOrderLoyaltyNote"{% if not form.loyalty_auto %} hidden{% endif %}>{% if form.loyalty_auto %}Loyalty {{ form.popust_pct }}%{% endif %}</span>
+                    <span class="mg-order-disc-amt" id="mgOrderDiscAmt" hidden></span>
+                </div>
+                <div class="mg-order-meta-col">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>
+                        Dostava
+                    </h3>
+                    <p class="mg-order-ship" id="mgOrderShip">XExpress (11 KM)</p>
+                    <input type="hidden" name="bez_dostave" id="mgOrderNoShip" value="{% if form.bez_dostave == '1' %}1{% endif %}">
+                    <button type="button" class="mg-btn mg-order-noship" id="mgOrderNoShipBtn">Skini dostavu</button>
+                </div>
+                <div class="mg-order-meta-col">
+                    <h3>Popust %</h3>
+                    <label class="mg-order-disc" for="mgOrderDisc">
+                        <input type="number" name="popust_pct" id="mgOrderDisc" min="0" max="100" step="1" inputmode="numeric" placeholder="0" value="{{ form.popust_pct|default:'' }}">
+                    </label>
+                </div>
+                <div class="mg-order-meta-col mg-order-meta-note">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+                        Napomena
+                    </h3>
+                    <textarea id="id_napomena" name="napomena" rows="1" maxlength="2000" placeholder="Unesi napomenu">{{ form.napomena|default:'' }}</textarea>
+                    <div id="mgOrderNoteWrap" hidden></div>
+                </div>
+            </div>
+        </section>
+        <aside class="mg-card mg-order-summary">
+            <div class="mg-sum-line"><span>Ukupno artikli:</span><b id="mgOrderGoods">0,00 KM</b></div>
+            <div class="mg-sum-line"><span>Dostava:</span><b id="mgOrderShipVal">11,00 KM</b></div>
+            <div class="mg-sum-pay"><span>ZA PLAĆANJE:</span><strong id="mgOrderTotal">11,00 KM</strong></div>
+        </aside>
+    </div>
+
     <div class="mg-order-foot">
         <button type="button" class="mg-btn" id="mgOrderClear">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
@@ -163,34 +237,24 @@
             Otkaži narudžbu
         </button>
         {% endif %}
-        <div class="mg-order-foot-sum">
-            <div class="mg-order-pay" role="group" aria-label="Način plaćanja">
-                <span>Plaćanje</span>
-                <label>
-                    <input type="radio" name="placanje" value="gotovina"{% if form.placanje != 'kartica' %} checked{% endif %}>
-                    Gotovina
-                </label>
-                <label>
-                    <input type="radio" name="placanje" value="kartica"{% if form.placanje == 'kartica' %} checked{% endif %}>
-                    Kartica
-                </label>
-            </div>
-            <label class="mg-order-disc" for="mgOrderDisc">
-                Popust %
-                <input type="number" name="popust_pct" id="mgOrderDisc" min="0" max="100" step="1" inputmode="numeric" placeholder="0" value="{{ form.popust_pct|default:'' }}">
-            </label>
-            <input type="hidden" name="loyalty_auto" id="mgLoyaltyAuto" value="{{ form.loyalty_auto|default:'' }}">
-            <span class="mg-order-loyalty-note" id="mgOrderLoyaltyNote"{% if not form.loyalty_auto %} hidden{% endif %}>{% if form.loyalty_auto %}Loyalty {{ form.popust_pct }}%{% endif %}</span>
-            <span class="mg-order-disc-amt" id="mgOrderDiscAmt" hidden></span>
-            <input type="hidden" name="bez_dostave" id="mgOrderNoShip" value="{% if form.bez_dostave == '1' %}1{% endif %}">
-            <button type="button" class="mg-btn mg-order-noship" id="mgOrderNoShipBtn">Skini dostavu</button>
-            <span class="mg-order-ship" id="mgOrderShip">Dostava: 11.00 KM</span>
-            <span>Ukupno: <strong id="mgOrderTotal">0.00 KM</strong></span>
+        <div class="mg-order-foot-actions">
+            {% if existing_order %}
+            <a class="mg-btn" href="{% url 'staff_magacin_narudzbe_stampa' %}?b={{ existing_order.broj }}" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
+                Štampaj predračun
+            </a>
+            {% else %}
+            <button type="button" class="mg-btn" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
+                Štampaj predračun
+            </button>
+            {% endif %}
             <button type="submit" name="action" value="rezervacija" class="mg-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
                 Rezervacija
             </button>
             <button type="submit" name="action" value="sacuvaj" class="mg-btn mg-btn-primary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
                 Sačuvaj narudžbu
             </button>
         </div>
@@ -228,6 +292,10 @@
                 <label for="mgNewEmail">Email</label>
                 <input id="mgNewEmail" type="email" maxlength="254">
             </div>
+            <label class="mg-check" for="mgNewVpKupac">
+                <input type="checkbox" id="mgNewVpKupac">
+                VP kupac
+            </label>
         </div>
         <p class="mg-qty-hint is-warn" id="mgCustomerModalHint" hidden></p>
         <div class="mg-modal-actions">
@@ -270,6 +338,20 @@
         <div class="mg-modal-actions">
             <button type="button" class="mg-btn" data-spare-close>Otkaži</button>
             <button type="button" class="mg-btn mg-btn-primary" id="mgSpareAdd">Dodaj</button>
+        </div>
+    </div>
+</div>
+
+<div class="mg-modal" id="mgOrderBulkModal" hidden>
+    <div class="mg-modal-bg" data-mg-bulk-close></div>
+    <div class="mg-modal-panel vp-bulk-panel" role="dialog" aria-modal="true" aria-labelledby="mgOrderBulkTitle">
+        <h2 id="mgOrderBulkTitle">Bulk unos</h2>
+        <p class="mg-muted">Zalijepi tabelu narudžbe (#, Artikal, Kol., Cijena, Ukupno). Unose se samo artikli čiji je naziv isti u bazi.</p>
+        <textarea id="mgOrderBulkText" rows="10" placeholder="#, Artikal, Kol., Cijena, Ukupno&#10;1, MT13982 MATE Goliath Camo Carp Line 1000m 0.31mm&#10;Šifra: 7943, 3, 19.20 KM, 57.60 KM"></textarea>
+        <p class="mg-qty-hint is-warn" id="mgOrderBulkHint" hidden></p>
+        <div class="mg-modal-actions">
+            <button type="button" class="mg-btn" data-mg-bulk-close>Odustani</button>
+            <button type="button" class="mg-btn mg-btn-primary" id="mgOrderBulkImport">Unesi</button>
         </div>
     </div>
 </div>

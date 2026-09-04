@@ -1,0 +1,2484 @@
+/* Pop-up bundle / Kupi više — AI dwell stil (pulsirajuće snizenje) */
+
+/* ─── Osnova (kao card-dwell) ─────────────────────────── */
+.site-popup--bundle {
+  max-width: min(96vw, 640px) !important;
+  width: min(96vw, 640px) !important;
+  max-height: min(92vh, 900px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.site-popup--bundle .site-popup-akcija,
+.site-popup-bundle-pack {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 22px 16px 16px !important;
+  gap: 0 !important;
+  overflow: visible;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 32%, transparent);
+  background: linear-gradient(
+    165deg,
+    var(--dwell-card-bg, #fff7f8) 0%,
+    var(--dwell-card-bg2, #ffffff) 55%,
+    var(--dwell-card-bg, #fff7f8) 100%
+  ) !important;
+  box-shadow:
+    0 12px 40px color-mix(in srgb, var(--dwell-card-border, #e11d48) 16%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.site-popup-bundle-pack::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--dwell-card-border, #e11d48),
+    transparent
+  );
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* Pulsirajuće cijene / badge kao AI dwell */
+.site-popup--bundle .bundle-pack-deal-now,
+.site-popup--bundle .bundle-pack-now,
+.site-popup--bundle .price-sale,
+.site-popup--qty-deal .bundle-pack-deal-now,
+.site-popup--qty-deal .price-sale {
+  color: var(--dwell-card-sale, #e11d48) !important;
+  font-weight: 900 !important;
+  animation: dwell-akcija-price-pulse 1.3s ease-in-out infinite;
+}
+
+.site-popup--bundle .bundle-pack-deal-pct,
+.site-popup--bundle .bundle-pack-ribbon,
+.site-popup--qty-deal .qty-deal-tier-badge,
+.site-popup--qty-deal .bundle-pack-ribbon {
+  animation: dwell-akcija-badge-pulse 1.35s ease-in-out infinite;
+}
+
+/* ─── Bundle SET ONLY: nema cijena po artiklu, jedna snizena cijena seta ─ */
+.site-popup-bundle-pack--set-only {
+  background: linear-gradient(165deg, #f0fdf4 0%, #ffffff 45%, #ecfdf5 100%) !important;
+  border-color: color-mix(in srgb, #5BB805 40%, #e11d48 20%) !important;
+}
+
+.bundle-set-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+}
+
+.bundle-set-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(180deg, #6ecf20, #5BB805 55%, #3d8a04);
+  box-shadow: 0 4px 14px rgba(91, 184, 5, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.bundle-set-badge--akcija {
+  background: linear-gradient(180deg, #ff5a5a, #e11d48 55%, #9f1239);
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.45);
+}
+
+.bundle-set-title {
+  margin: 0 0 4px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.bundle-set-sub {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4d7c0f;
+}
+
+.bundle-pack-row--set {
+  margin-bottom: 6px;
+}
+
+.bundle-pack-card--set {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  padding: 8px 6px 10px;
+  border: 1px solid rgba(91, 184, 5, 0.2);
+}
+
+.bundle-pack-card--set .bundle-pack-card-name {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1e293b;
+  text-align: center;
+}
+
+/* Sakrij bilo kakve pojedinačne cijene u set-only modu */
+.site-popup-bundle-pack--set-only .bundle-pack-card-price,
+.site-popup-bundle-pack--set-only .bundle-pack-was,
+.site-popup-bundle-pack--set-only .bundle-pack-now:not(.bundle-set-price-now) {
+  display: none !important;
+}
+
+/* Velika cijena kompletnog seta — bijelo/zelena + crveno snizeno */
+/* Set-only: 1:1 kvadrati, veće slike, contain = sve se vidi bez cropa */
+.site-popup-bundle-pack--set-only .bundle-pack-row--set {
+  display: flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  width: 100%;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-row--set .bundle-pack-card--set {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  padding: 8px 6px 10px;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-row--set .bundle-pack-plus {
+  display: flex !important;
+  flex: 0 0 auto;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-media {
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-card-img {
+  position: relative;
+  width: 100% !important;
+  max-width: none !important;
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-card-img img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+/* 2–3 artikla: veći kvadrati */
+.site-popup-bundle-pack--set-only .bundle-pack-row--n2 .bundle-pack-card--set,
+.site-popup-bundle-pack--set-only .bundle-pack-row--pair .bundle-pack-card--set {
+  max-width: 46%;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-row--n3 .bundle-pack-card--set,
+.site-popup-bundle-pack--set-only .bundle-pack-row--triple .bundle-pack-card--set {
+  max-width: 31%;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-row--n4 .bundle-pack-card--set {
+  max-width: 23%;
+}
+
+.site-popup-bundle-pack--set-only .bundle-pack-card--set .bundle-pack-card-name {
+  font-size: 12px;
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.site-popup-bundle-pack--set-only .bundle-set-title {
+  font-size: 17px;
+  margin-bottom: 2px;
+}
+
+.site-popup-bundle-pack--set-only .bundle-set-sub {
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.bundle-set-price-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  margin: 8px 0 10px;
+  padding: 10px 12px 10px;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 80% 100% at 50% 0%, rgba(91, 184, 5, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f7fee7 55%, #ecfccb 100%);
+  border: 2px solid rgba(91, 184, 5, 0.45);
+  box-shadow:
+    0 8px 20px rgba(91, 184, 5, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.bundle-set-price-box--sale {
+  border-color: color-mix(in srgb, #5BB805 35%, #e11d48 45%);
+  box-shadow:
+    0 8px 22px rgba(225, 29, 72, 0.12),
+    0 0 0 1px rgba(91, 184, 5, 0.2),
+    inset 0 1px 0 #fff;
+}
+
+.bundle-set-price-kicker {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #3f6212;
+}
+
+.bundle-set-price-tag {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e11d48;
+}
+
+.bundle-set-price-now {
+  display: block;
+  font-size: clamp(22px, 5.5vw, 30px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #e11d48 !important;
+  text-shadow:
+    0 0 14px rgba(225, 29, 72, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.bundle-set-price-pct {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  min-height: 24px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, #ff5a5a, #e11d48 55%, #9f1239);
+  box-shadow: 0 3px 10px rgba(225, 29, 72, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+.site-popup-bundle-pack--set-only .bundle-set-price-now.is-pulse,
+.site-popup-bundle-pack--set-only .bundle-set-price-tag.is-pulse,
+.site-popup-bundle-pack--set-only .bundle-set-price-pct.is-pulse,
+.site-popup-bundle-pack--set-only .bundle-set-badge.is-pulse {
+  animation: bundle-hit-price-pulse 1.15s ease-in-out infinite !important;
+}
+
+/* ─── Bundle HIT (legacy / ostalo) ───────── */
+.site-popup-bundle-pack--hit .bundle-pack-was,
+.site-popup-bundle-pack--hit .bundle-pack-deal-was,
+.site-popup-bundle-pack--hit .bundle-pack-deal-label:not(.bundle-pack-deal-label--now),
+.site-popup-bundle-pack--hit .bundle-pack-deal-arrow {
+  display: none !important;
+}
+
+.bundle-pack-hit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+
+.bundle-pack-hit-tag,
+.bundle-pack-hit-akcija {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(180deg, #ff4d4d, #e11d48 55%, #9f1239);
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+.bundle-pack-hit-akcija {
+  font-size: 15px;
+  min-height: 36px;
+  padding: 7px 18px;
+  background: linear-gradient(180deg, #ff6b6b, #dc2626 50%, #b91c1c);
+}
+
+.bundle-pack-kicker--hit {
+  color: #e11d48 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-align: center;
+}
+
+/* Hero: samo snizena cijena seta (bez „inače”) */
+.bundle-pack-deal--hit-only {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px 18px;
+  margin: 0 0 14px !important;
+  padding: 16px 14px !important;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 90% 120% at 50% 40%, rgba(225, 29, 72, 0.28) 0%, transparent 60%),
+    linear-gradient(145deg, #1a0a0c 0%, #0f172a 55%, #1a0a0c 100%) !important;
+  border: 2px solid rgba(225, 29, 72, 0.55) !important;
+  box-shadow: 0 10px 32px rgba(225, 29, 72, 0.28);
+}
+
+.bundle-pack-deal--hit-only .bundle-pack-deal-col--now {
+  text-align: center;
+}
+
+.bundle-pack-deal--hit-only .bundle-pack-deal-label--now {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em;
+  color: #fda4af !important;
+}
+
+.bundle-pack-deal--hit-only .bundle-pack-deal-now {
+  display: block;
+  font-size: clamp(28px, 7vw, 40px) !important;
+  font-weight: 900 !important;
+  color: #ff2d55 !important;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-shadow:
+    0 0 18px rgba(255, 45, 85, 0.55),
+    0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.bundle-pack-deal--hit-only .bundle-pack-deal-pct {
+  min-width: 92px;
+  padding: 10px 14px;
+}
+
+.bundle-pack-deal--hit-only .bundle-pack-deal-pct-label {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.bundle-pack-deal--hit-only .bundle-pack-deal-pct-val {
+  font-size: 22px;
+}
+
+/* Kartica artikla — samo hit cijena */
+.bundle-pack-card-price--hit {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin: 6px 0 0 !important;
+  padding: 8px 6px 6px !important;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff5f5, #ffe4e6);
+  border: 1.5px solid rgba(225, 29, 72, 0.35);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.12);
+}
+
+.bundle-pack-hit-label,
+.bundle-pack-hit-snizeno {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e11d48;
+  line-height: 1.2;
+}
+
+.bundle-pack-hit-snizeno {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #be123c;
+}
+
+.bundle-pack-card-price--hit .bundle-pack-now {
+  display: block !important;
+  font-size: clamp(17px, 3.2vw, 22px) !important;
+  font-weight: 900 !important;
+  color: #e11d48 !important;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-shadow: 0 0 10px rgba(225, 29, 72, 0.35);
+}
+
+.bundle-pack-card-badge--hit {
+  background: linear-gradient(180deg, #ff5a5a, #e11d48) !important;
+}
+
+/* 3 artikla u setu — jasan red, veće cijene */
+.bundle-pack-row--triple {
+  display: flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+}
+
+.bundle-pack-row--triple .bundle-pack-card {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 32%;
+}
+
+.bundle-pack-row--triple .bundle-pack-card-name {
+  font-size: 12px;
+  line-height: 1.3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.bundle-pack-row--triple .bundle-pack-card-price--hit .bundle-pack-now {
+  font-size: clamp(15px, 2.8vw, 19px) !important;
+}
+
+/* Jaci pulse na HIT elementima */
+.site-popup-bundle-pack--hit .is-pulse,
+.site-popup-bundle-pack--hit .bundle-pack-now.is-pulse,
+.site-popup-bundle-pack--hit .bundle-pack-deal-now.is-pulse,
+.site-popup-bundle-pack--hit .bundle-pack-hit-tag,
+.site-popup-bundle-pack--hit .bundle-pack-hit-akcija,
+.site-popup-bundle-pack--hit .bundle-pack-hit-label,
+.site-popup-bundle-pack--hit .bundle-pack-hit-snizeno,
+.site-popup-bundle-pack--hit .bundle-pack-card-badge {
+  animation: bundle-hit-price-pulse 1.15s ease-in-out infinite !important;
+}
+
+@keyframes bundle-hit-price-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    transform: scale(1.07);
+    filter: brightness(1.15);
+    text-shadow: 0 0 16px rgba(255, 45, 85, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-popup-bundle-pack--hit .is-pulse,
+  .site-popup-bundle-pack--hit .bundle-pack-now,
+  .site-popup-bundle-pack--hit .bundle-pack-deal-now,
+  .site-popup-bundle-pack--hit .bundle-pack-card-badge,
+  .site-popup-bundle-pack--set-only .is-pulse,
+  .site-popup-bundle-pack--set-only .bundle-set-price-now {
+    animation: none !important;
+  }
+}
+
+@keyframes dwell-akcija-price-pulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    transform: scale(1.04);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--dwell-card-sale, #e11d48) 45%, transparent);
+  }
+}
+
+@keyframes dwell-akcija-badge-pulse {
+  0%, 100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.12);
+    transform: scale(1.05);
+  }
+}
+
+/* + Ponuda modal — već card-dwell; pojačaj pulse na cijeni */
+.site-popup--ponuda-dwell .card-dwell-now,
+.gratis-offer-popup .card-dwell-now {
+  animation: dwell-akcija-price-pulse 1.3s ease-in-out infinite;
+}
+
+.site-popup--ponuda-dwell .card-dwell-badge,
+.gratis-offer-popup .card-dwell-badge {
+  animation: dwell-akcija-badge-pulse 1.35s ease-in-out infinite;
+}
+
+/* Crveni % seta — gore desno, lijevo od X */
+.bundle-pack-ribbon,
+.bundle-pack-ribbon--left {
+  position: absolute;
+  top: 12px;
+  right: 48px;
+  left: auto;
+  z-index: 3;
+  width: auto;
+  min-width: 52px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ff5a5a, #e11d48 55%, #be123c);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.04em;
+  transform: none;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.bundle-pack-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #dc2626;
+}
+
+.bundle-pack-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.site-popup-bundle-pack .bundle-pack-kicker,
+.site-popup-bundle-pack .bundle-pack-title,
+.site-popup-bundle-pack .bundle-pack-sub {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Bundle bez ribbona — puni naslov */
+.site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-kicker,
+.site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-title {
+  padding-right: 8px;
+}
+
+.bundle-pack-title-save {
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.bundle-pack-sub {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Traka cijena — hero usporedba (inače → sada + ušteda) */
+.bundle-pack-deal {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 12px 10px;
+  border-radius: 16px;
+  background: #0f172a;
+}
+
+.bundle-pack-deal--compact {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #0f172a;
+}
+
+.bundle-pack-deal--compact .bundle-pack-deal-was {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f87171;
+  text-decoration: line-through;
+}
+
+.bundle-pack-deal--compact .bundle-pack-deal-now {
+  font-size: 20px;
+  font-weight: 900;
+  color: #4ade80;
+}
+
+.bundle-pack-deal--compact .bundle-pack-deal-arrow {
+  color: #86efac;
+  font-size: 14px;
+  padding: 0;
+}
+
+/* Hero deal bar — inače → sada set (+ Akcija do -% na bundle) */
+.bundle-pack-deal--hero {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 14px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 80% 120% at 70% 50%, rgba(34, 197, 94, 0.22) 0%, transparent 55%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35);
+}
+
+/* Bundle: % pored Inače / Sada (umjesto naslova gore) */
+.bundle-pack-deal-pct {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ff5a5a, #e11d48 55%, #be123c);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.bundle-pack-deal-pct-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+.bundle-pack-deal-pct-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-col {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-label--now {
+  color: #86efac;
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-was {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fca5a5;
+  /* dijagonalni precrt — jasnije snizenje */
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-was::after {
+  content: '';
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 50%;
+  height: 0;
+  border-top: 2.5px solid #f87171;
+  transform: rotate(-14deg);
+  pointer-events: none;
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-now {
+  font-size: 32px;
+  font-weight: 900;
+  color: #4ade80;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-shadow: 0 0 24px rgba(74, 222, 128, 0.35);
+}
+
+.bundle-pack-deal--hero .bundle-pack-deal-arrow {
+  font-size: 22px;
+  font-weight: 900;
+  color: #86efac;
+  align-self: center;
+  padding-top: 12px;
+}
+
+/* Ušteda pločica — zadržano za qty_deal (ako se koristi) */
+.bundle-pack-deal-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #22c55e, #15803d);
+  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.bundle-pack-deal-save-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2px;
+}
+
+.bundle-pack-deal-save-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.bundle-pack-card-pack {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0369a1;
+  line-height: 1.2;
+}
+
+.bundle-pack-deal-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.bundle-pack-deal-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.bundle-pack-deal-was {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f87171;
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+
+.bundle-pack-deal-was::after {
+  content: '';
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 50%;
+  border-top: 2.5px solid #f87171;
+  transform: rotate(-14deg);
+  pointer-events: none;
+}
+
+.bundle-pack-deal-now {
+  font-size: 26px;
+  font-weight: 900;
+  color: #4ade80;
+}
+
+.bundle-pack-deal-arrow {
+  align-self: center;
+  font-size: 18px;
+  font-weight: 900;
+  color: #5BB805;
+}
+
+/* ─── Grid artikala (desktop default = 2×2) ──────────── */
+.bundle-pack-grid,
+.bundle-pack-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 14px 16px;
+  width: 100%;
+  margin: 0 0 14px;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.bundle-pack-row--single,
+.bundle-pack-row--n1 {
+  grid-template-columns: 1fr;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bundle-pack-row--n2,
+.bundle-pack-row--n3,
+.bundle-pack-row--n4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 3. artikal centriran ispod */
+.bundle-pack-row--n3 .bundle-pack-card:last-of-type {
+  grid-column: 1 / -1;
+  max-width: 260px;
+  justify-self: center;
+  width: 100%;
+}
+
+/* + sakriven po defaultu; uključen za par (2 kartice) i mobilni n2 */
+.bundle-pack-plus {
+  display: none !important;
+}
+
+/* 2 kartice: artikal + artikal (ne ×2) — plus uvijek vidljiv */
+.bundle-pack-row--pair,
+.bundle-pack-row--n2 {
+  display: flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+}
+
+.bundle-pack-row--pair .bundle-pack-card,
+.bundle-pack-row--n2 .bundle-pack-card {
+  flex: 1 1 0;
+  max-width: 280px;
+}
+
+.bundle-pack-row--pair .bundle-pack-plus,
+.bundle-pack-row--n2 .bundle-pack-plus {
+  display: flex !important;
+  position: static;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  align-self: center;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #22c55e, #15803d);
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 900;
+  box-shadow: 0 3px 10px rgba(21, 128, 61, 0.4);
+  pointer-events: none;
+}
+
+.bundle-pack-row .bundle-pack-card {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.bundle-pack-grid--2,
+.bundle-pack-grid--3,
+.bundle-pack-grid--4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ─── Kartica ────────────────────────────────────────── */
+.bundle-pack-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 10px 10px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  min-width: 0;
+}
+
+/*
+ * Media: puna slika.
+ * % = gore desno na slici
+ * ×N = dolje desno na slici (van centra proizvoda)
+ */
+.bundle-pack-media {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.bundle-pack-card-img {
+  position: relative;
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  height: auto;
+  min-height: 0;
+  border-radius: 14px;
+  /* visible da badge-ovi na uglu ne budu odrezani border-radiusom previše */
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bundle-pack-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+}
+
+.bundle-pack-card-ph {
+  font-size: 36px;
+  opacity: 0.45;
+}
+
+/* % badge — gore desno */
+.bundle-pack-card-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  left: auto;
+  bottom: auto;
+  z-index: 2;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
+  line-height: 1.1;
+  pointer-events: none;
+}
+
+.bundle-pack-row--single .bundle-pack-card {
+  max-width: 280px;
+  justify-self: center;
+}
+
+/* ×N — dolje desno na slici (ne pored, da slika ostane velika) */
+.bundle-pack-card-qty {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  left: auto;
+  top: auto;
+  z-index: 2;
+  min-width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #22c55e, #15803d);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(21, 128, 61, 0.45);
+  border: 2px solid #fff;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.bundle-pack-card-qty-text {
+  color: #15803d;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.bundle-pack-card-unit {
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.bundle-pack-card-name {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
+}
+
+.bundle-pack-card-price {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  margin-top: auto;
+}
+
+.bundle-pack-was {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+  order: -1;
+}
+
+/* Ukoso precrtana stara cijena — bolje se vidi snizenje */
+.bundle-pack-was::after {
+  content: '';
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  top: 50%;
+  border-top: 2px solid #e11d48;
+  transform: rotate(-15deg);
+  pointer-events: none;
+}
+
+.bundle-pack-now {
+  font-size: 16px;
+  font-weight: 900;
+  color: #16a34a;
+  letter-spacing: -0.02em;
+}
+
+/* Footer + CTA uvijek na dnu, vidljiv */
+.bundle-pack-footer {
+  width: 100%;
+  padding-top: 2px;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.bundle-pack-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.bundle-pack-hint--deal {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+}
+
+.bundle-pack-hint--deal s {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.bundle-pack-hint-now {
+  color: #15803d;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.bundle-pack-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.bundle-pack-qty-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.bundle-pack-qty-input {
+  width: 72px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+  color: #0f172a;
+  background: #fff;
+  font-family: inherit;
+}
+
+.bundle-pack-qty-input:focus {
+  outline: none;
+  border-color: #5BB805;
+  box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.2);
+}
+
+.bundle-pack-cta {
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 6px 0 #2f6b00, 0 12px 24px rgba(91, 184, 5, 0.35) !important;
+  letter-spacing: 0.01em;
+  width: 100%;
+}
+
+.bundle-pack-cta:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════
+   DESKTOP — 2×2, veće slike, sve + dugme vidljivo
+   ═══════════════════════════════════════════════════════ */
+@media (min-width: 769px) {
+  .site-popup--bundle {
+    max-width: min(94vw, 680px) !important;
+    width: min(94vw, 680px) !important;
+    max-height: min(90vh, 860px) !important;
+  }
+
+  .site-popup--bundle .site-popup-akcija,
+  .site-popup-bundle-pack {
+    padding: 18px 16px 14px !important;
+  }
+
+  /* Bundle (ne qty): kompaktnije gore da se vidi „Setova” + CTA */
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) {
+    padding: 12px 14px 10px !important;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-kicker {
+    margin: 0 0 6px;
+    font-size: 11px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-deal--hero {
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    gap: 10px 12px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-deal--hero .bundle-pack-deal-was {
+    font-size: 16px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-deal--hero .bundle-pack-deal-now {
+    font-size: 26px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-deal-pct {
+    min-width: 76px;
+    padding: 6px 10px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-deal-pct-val {
+    font-size: 16px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-row {
+    margin: 0 0 8px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal):not(.site-popup-bundle-pack--set-only) .bundle-pack-card-img {
+    max-height: min(150px, 17vh);
+    min-height: 110px;
+  }
+
+  /* Set-only desktop: veći 1:1 kvadrati, contain, sve vidljivo */
+  .site-popup--bundle:has(.site-popup-bundle-pack--set-only) {
+    max-width: min(96vw, 720px) !important;
+    width: min(96vw, 720px) !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-card-img {
+    aspect-ratio: 1 / 1 !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-card-img img {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    padding: 8px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--n2 .bundle-pack-card--set,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--pair .bundle-pack-card--set {
+    max-width: 48%;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--n3 .bundle-pack-card--set,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--triple .bundle-pack-card--set {
+    max-width: 32%;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-price-now {
+    font-size: clamp(22px, 4.5vw, 28px) !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-price-box {
+    margin: 8px 0 10px;
+    padding: 10px 12px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-footer {
+    margin-top: 0;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-qty-row {
+    margin: 0 0 8px;
+    padding: 6px 10px;
+  }
+
+  .bundle-pack-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+    margin: 0 0 12px;
+  }
+
+  .bundle-pack-row--n1,
+  .bundle-pack-row--single {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+  }
+
+  /* Par: flex + plus; 3–4: grid bez plusa */
+  .bundle-pack-row--pair,
+  .bundle-pack-row--n2 {
+    display: flex !important;
+    gap: 12px;
+  }
+
+  .bundle-pack-row--n3 .bundle-pack-plus,
+  .bundle-pack-row--n4 .bundle-pack-plus {
+    display: none !important;
+  }
+
+  .bundle-pack-row--pair .bundle-pack-plus,
+  .bundle-pack-row--n2 .bundle-pack-plus {
+    display: flex !important;
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+
+  .bundle-pack-deal--hero .bundle-pack-deal-was {
+    font-size: 22px;
+  }
+
+  .bundle-pack-deal--hero .bundle-pack-deal-now {
+    font-size: 36px;
+  }
+
+  .bundle-pack-card {
+    padding: 12px 12px 10px;
+  }
+
+  /* Puna slika u kartici — badge-ovi preko uglova */
+  .bundle-pack-media {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .bundle-pack-card-img {
+    max-width: 100%;
+    width: 100%;
+    /* ograniči visinu da 2×2 + footer stanu u viewport */
+    max-height: min(200px, 22vh);
+    aspect-ratio: 1;
+    min-height: 140px;
+  }
+
+  .bundle-pack-card-badge {
+    top: 8px;
+    right: 8px;
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+
+  .bundle-pack-card-qty {
+    right: 8px;
+    bottom: 8px;
+    min-width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .bundle-pack-card-name {
+    font-size: 13.5px;
+  }
+
+  .bundle-pack-now {
+    font-size: 17px;
+  }
+
+  .bundle-pack-footer {
+    margin-top: 4px;
+  }
+
+  .bundle-pack-qty-row {
+    margin-bottom: 10px;
+  }
+}
+
+/* Desktop niži ekran — malo manje slike da CTA ostane u viewu */
+@media (min-width: 769px) and (max-height: 800px) {
+  .bundle-pack-card-img {
+    max-height: min(160px, 20vh);
+    min-height: 120px;
+  }
+
+  .bundle-pack-title {
+    font-size: 16px;
+  }
+
+  .bundle-pack-kicker {
+    margin-bottom: 2px;
+  }
+
+  .bundle-pack-deal--compact {
+    margin-bottom: 8px;
+    padding: 6px 10px;
+  }
+
+  .bundle-pack-row {
+    gap: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  .bundle-pack-card {
+    padding: 8px 8px 8px;
+  }
+
+  .bundle-pack-card-name {
+    font-size: 12.5px;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MOBILNI — kompaktan: % gore desno, ×N dolje desno,
+   slike vidljive, dugme u viewu
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .site-popup--bundle {
+    max-width: min(calc(100vw - 10px), 480px) !important;
+    width: min(calc(100vw - 10px), 480px) !important;
+    max-height: min(90dvh, 90vh) !important;
+  }
+
+  .site-popup--bundle .site-popup-akcija,
+  .site-popup-bundle-pack {
+    padding: 12px 10px 10px !important;
+  }
+
+  /* Bundle mobilni: bez „Specijalna cijena seta” — više mjesta za 4 artikla + cijene */
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-kicker {
+    display: none !important;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) {
+    padding: 10px 8px 8px !important;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-deal--hero {
+    margin: 0 0 8px;
+    padding: 8px 8px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-row--n4 {
+    margin: 0 0 6px;
+    gap: 6px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-row--n4 .bundle-pack-card {
+    padding: 5px 4px 5px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-row--n4 .bundle-pack-card-name {
+    font-size: 10px;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-row--n4 .bundle-pack-now {
+    font-size: 12px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-row--n4 .bundle-pack-was {
+    font-size: 9px;
+  }
+
+  .bundle-pack-ribbon,
+  .bundle-pack-ribbon--left {
+    font-size: 12px;
+    top: 8px;
+    right: 44px;
+    left: auto;
+    min-width: 44px;
+    padding: 5px 10px;
+    border-radius: 8px;
+  }
+
+  .bundle-pack-kicker {
+    font-size: 10px;
+    margin: 0 0 2px;
+  }
+
+  .bundle-pack-title {
+    font-size: 14px !important;
+    margin: 0 0 6px !important;
+    line-height: 1.25;
+  }
+
+  .site-popup-bundle-pack .bundle-pack-kicker,
+  .site-popup-bundle-pack .bundle-pack-title,
+  .site-popup-bundle-pack .bundle-pack-sub {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  /* qty_deal na mobilnom: header/ribbon sakriven — bez rezervisanog paddinga desno */
+  .site-popup-qty-deal .bundle-pack-kicker,
+  .site-popup-qty-deal .bundle-pack-title,
+  .site-popup-qty-deal .bundle-pack-sub {
+    padding-right: 6px !important;
+  }
+
+  .bundle-pack-deal--compact {
+    margin: 0 0 8px;
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .bundle-pack-deal--compact .bundle-pack-deal-was {
+    font-size: 13px;
+  }
+
+  .bundle-pack-deal--compact .bundle-pack-deal-now {
+    font-size: 17px;
+  }
+
+  .bundle-pack-deal--hero {
+    margin: 0 0 10px;
+    padding: 10px 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .bundle-pack-deal--hero .bundle-pack-deal-was {
+    font-size: 14px;
+  }
+
+  .bundle-pack-deal--hero .bundle-pack-deal-now {
+    font-size: 22px;
+  }
+
+  .bundle-pack-deal--hero .bundle-pack-deal-arrow {
+    font-size: 16px;
+    padding-top: 10px;
+  }
+
+  .bundle-pack-deal-pct {
+    min-width: 70px;
+    padding: 6px 8px;
+  }
+
+  .bundle-pack-deal-pct-label {
+    font-size: 9px;
+  }
+
+  .bundle-pack-deal-pct-val {
+    font-size: 14px;
+  }
+
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-kicker,
+  .site-popup-bundle-pack:not(.site-popup-qty-deal) .bundle-pack-title {
+    padding-right: 6px !important;
+  }
+
+  /* 2 artikla: jedan red + plus; 3–4: 2 kolone */
+  .bundle-pack-row {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin: 0 0 8px;
+    max-width: none;
+  }
+
+  .bundle-pack-row--pair,
+  .bundle-pack-row--n2 {
+    display: flex !important;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .bundle-pack-row--n3:not(.bundle-pack-row--set),
+  .bundle-pack-row--n4:not(.bundle-pack-row--set) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 6px;
+  }
+
+  .bundle-pack-row--n3:not(.bundle-pack-row--set) .bundle-pack-card:last-of-type {
+    grid-column: 1 / -1;
+    max-width: 160px;
+  }
+
+  /* Set-only mobilni: 2 artikla u redu; 3–4 prelomi u 2×2 radi čitljivosti */
+  .site-popup-bundle-pack--set-only {
+    padding: 12px 10px 10px !important;
+    overflow-x: hidden;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-title {
+    font-size: 16px !important;
+    margin: 4px 0 2px !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-sub {
+    font-size: 12px !important;
+    margin: 0 0 10px !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-badge-row {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n2,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--pair {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n3,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n4,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--triple {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px 6px !important;
+    flex-wrap: unset !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--n3 .bundle-pack-card:last-of-type,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--triple .bundle-pack-card:last-of-type {
+    grid-column: 1 / -1;
+    max-width: 52% !important;
+    justify-self: center;
+  }
+
+  /* Plus između kartica u gridu sakrij da ne lomi layout */
+  .site-popup-bundle-pack--set-only .bundle-pack-row--n3 .bundle-pack-plus,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--n4 .bundle-pack-plus,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--triple .bundle-pack-plus {
+    display: none !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-card--set {
+    min-width: 0;
+    max-width: 100% !important;
+    padding: 6px 4px 8px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-card-img {
+    aspect-ratio: 1 / 1 !important;
+    width: 100% !important;
+    max-height: min(38vw, 140px) !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-card-img img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    max-height: none !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-card--set .bundle-pack-card-name {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    min-height: 2.5em;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-row--set.bundle-pack-row--n2 .bundle-pack-plus,
+  .site-popup-bundle-pack--set-only .bundle-pack-row--pair .bundle-pack-plus {
+    display: flex !important;
+    width: 20px;
+    height: 20px;
+    font-size: 13px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-price-box {
+    margin: 8px 0 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-set-price-now {
+    font-size: 22px !important;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-footer {
+    margin-top: 4px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-cta {
+    min-height: 48px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+
+  .site-popup-bundle-pack--set-only .bundle-pack-qty-row {
+    margin-bottom: 8px;
+    justify-content: center;
+  }
+
+  .bundle-pack-row--pair .bundle-pack-plus,
+  .bundle-pack-row--n2 .bundle-pack-plus {
+    display: flex !important;
+    position: static;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    flex-shrink: 0;
+    align-self: center;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #22c55e, #15803d);
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 900;
+    pointer-events: none;
+  }
+
+  .bundle-pack-row--n3 .bundle-pack-plus,
+  .bundle-pack-row--n4 .bundle-pack-plus {
+    display: none !important;
+  }
+
+  .bundle-pack-row .bundle-pack-card {
+    flex: 1 1 0;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .bundle-pack-card {
+    padding: 6px 5px 6px;
+    border-radius: 10px;
+  }
+
+  .bundle-pack-media {
+    display: block;
+    position: relative;
+    margin-bottom: 4px;
+    width: 100%;
+  }
+
+  /* Puna širina slike u kartici — badge-ovi preko uglova */
+  .bundle-pack-card-img {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    margin: 0 auto;
+  }
+
+  .bundle-pack-card-img img {
+    padding: 4px;
+  }
+
+  /* % dolje desno na slici artikla */
+  .bundle-pack-card-badge {
+    top: auto;
+    bottom: 4px;
+    right: 4px;
+    left: auto;
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 6px;
+  }
+
+  /* ×N dolje lijevo kad ima i % (da se ne preklapaju) */
+  .bundle-pack-card-qty {
+    top: auto;
+    left: 4px;
+    right: auto;
+    bottom: 4px;
+    min-width: 28px;
+    height: 28px;
+    font-size: 12px;
+    padding: 0 6px;
+    border-width: 1.5px;
+  }
+
+  /* Samo ×N bez % — i dalje dolje desno */
+  .bundle-pack-card-img:not(:has(.bundle-pack-card-badge)) .bundle-pack-card-qty {
+    left: auto;
+    right: 4px;
+  }
+
+  .bundle-pack-card-name {
+    font-size: 11px;
+    margin-bottom: 2px;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .bundle-pack-card-pack {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .bundle-pack-was {
+    font-size: 10px;
+  }
+
+  .bundle-pack-now {
+    font-size: 13px;
+  }
+
+  .bundle-pack-footer {
+    padding-top: 0;
+    margin-top: auto;
+  }
+
+  .bundle-pack-qty-row {
+    margin: 0 0 8px;
+    padding: 6px 10px;
+  }
+
+  .bundle-pack-qty-label {
+    font-size: 12px;
+  }
+
+  .bundle-pack-qty-input {
+    width: 60px;
+    min-height: 36px;
+    font-size: 15px;
+  }
+
+  .bundle-pack-cta {
+    min-height: 48px !important;
+    padding: 12px 10px !important;
+    font-size: 14px !important;
+    border-radius: 12px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .bundle-pack-title {
+    font-size: 13px !important;
+  }
+
+  .bundle-pack-deal--compact .bundle-pack-deal-now {
+    font-size: 16px;
+  }
+
+  .bundle-pack-card-qty {
+    min-width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}
+
+/* Niski telefoni — još kraće da CTA stane */
+@media (max-height: 700px) and (max-width: 768px) {
+  .site-popup--bundle .site-popup-akcija,
+  .site-popup-bundle-pack {
+    padding: 10px 8px 8px !important;
+  }
+
+  .bundle-pack-kicker {
+    display: none;
+  }
+
+  .bundle-pack-title {
+    font-size: 13px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .bundle-pack-deal--compact {
+    margin-bottom: 6px;
+    padding: 5px 8px;
+  }
+
+  .bundle-pack-card-name {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .bundle-pack-card-pack {
+    display: none;
+  }
+}
+
+/* 4 artikla na uskom ekranu — 2×2 wrap */
+@media (max-width: 480px) {
+  .bundle-pack-row--n4 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .bundle-pack-row:has(.bundle-pack-card:nth-child(5)) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   KUPI VIŠE (qty_deal) — AI dwell stil, bijela pozadina
+   ═══════════════════════════════════════════════════════ */
+.site-popup--qty-deal {
+  max-width: min(96vw, 560px) !important;
+  width: min(96vw, 560px) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.site-popup--qty-deal .site-popup-akcija,
+.site-popup-qty-deal.site-popup-bundle-pack {
+  background: #ffffff !important;
+  border: 1px solid color-mix(in srgb, var(--dwell-card-border, #e11d48) 28%, #e5e7eb) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 12px 40px color-mix(in srgb, var(--dwell-card-border, #e11d48) 12%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.site-popup-qty-deal .qty-deal-product {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.qty-deal-product-img {
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-deal-product-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+}
+
+.qty-deal-product-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.qty-deal-product-name {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.qty-deal-product-base {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.qty-deal-tiers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 4px;
+}
+
+.qty-deal-tiers--n2,
+.qty-deal-tiers--n3,
+.qty-deal-tiers--n4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.qty-deal-tier-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  margin: 0;
+  padding: 12px 10px 10px;
+  border-radius: 14px;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.qty-deal-tier-card:hover {
+  border-color: #86efac;
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.12);
+}
+
+.qty-deal-tier-card--best {
+  border-color: #22c55e;
+  background: linear-gradient(180deg, #f0fdf4 0%, #fff 40%);
+  box-shadow: 0 8px 22px rgba(22, 163, 74, 0.18);
+}
+
+/* 1 kom — regularna cijena (neutralno, bez „akcije”) */
+.qty-deal-tier-card--single {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.qty-deal-tier-card--single:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.qty-deal-tier-best-tag,
+.qty-deal-tier-single-tag {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.qty-deal-tier-best-tag {
+  background: linear-gradient(180deg, #22c55e, #15803d);
+  box-shadow: 0 2px 8px rgba(21, 128, 61, 0.4);
+}
+
+.qty-deal-tier-single-tag {
+  background: linear-gradient(180deg, #64748b, #475569);
+  box-shadow: 0 2px 8px rgba(71, 85, 105, 0.35);
+}
+
+.qty-deal-tier-badge--regular {
+  background: #64748b !important;
+  box-shadow: none !important;
+}
+
+.qty-deal-tier-regular-price {
+  color: #0f172a !important;
+  font-size: 20px !important;
+}
+
+.qty-deal-tier-cta--single {
+  background: #334155 !important;
+  box-shadow: 0 4px 0 #1e293b, 0 8px 16px rgba(15, 23, 42, 0.2) !important;
+}
+
+.qty-deal-tier-cta--single:hover {
+  filter: brightness(1.08);
+}
+
+.qty-deal-tier-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.qty-deal-tier-qty {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.qty-deal-tier-badge {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35);
+}
+
+.qty-deal-tier-price {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.qty-deal-tier-price .bundle-pack-was {
+  font-size: 13px;
+  color: #f87171;
+  font-weight: 700;
+}
+
+.qty-deal-tier-price .bundle-pack-now {
+  font-size: 22px;
+  font-weight: 900;
+  color: #16a34a;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* Ušteda — uvijek zelena */
+.qty-deal-tier-save {
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  font-size: 12px;
+  font-weight: 700;
+  color: #166534;
+  text-align: center;
+}
+
+.qty-deal-tier-save strong {
+  font-size: 14px;
+  font-weight: 900;
+  color: #16a34a !important;
+}
+
+.site-popup--qty-deal .bundle-pack-title-save,
+.site-popup-qty-deal .bundle-pack-title-save {
+  color: #16a34a !important;
+}
+
+.site-popup--qty-deal .bundle-pack-deal-save,
+.site-popup-qty-deal .bundle-pack-deal-save {
+  background: linear-gradient(180deg, #22c55e, #15803d) !important;
+  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.45) !important;
+}
+
+.site-popup--qty-deal .bundle-pack-deal-save-label,
+.site-popup--qty-deal .bundle-pack-deal-save-val,
+.site-popup-qty-deal .bundle-pack-deal-save-label,
+.site-popup-qty-deal .bundle-pack-deal-save-val {
+  color: #fff !important;
+}
+
+.site-popup--qty-deal .qty-deal-tier-card {
+  background: #ffffff !important;
+  border-color: #e5e7eb;
+}
+
+.site-popup--qty-deal .qty-deal-tier-card--best {
+  border-color: color-mix(in srgb, #16a34a 55%, #e5e7eb);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.15);
+}
+
+.site-popup--qty-deal .bundle-pack-kicker {
+  color: var(--dwell-card-label, #be123c);
+}
+
+.site-popup--qty-deal .bundle-pack-title {
+  color: #0f172a;
+}
+
+/* Najveća ušteda u prvom planu — namami kupca */
+.qty-deal-max-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 0%, rgba(34, 197, 94, 0.14) 0%, transparent 70%),
+    #ffffff;
+  border: 2px solid color-mix(in srgb, #16a34a 35%, #e5e7eb);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.12);
+}
+
+.qty-deal-max-save-kicker {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.qty-deal-max-save-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 0;
+  line-height: 1.05;
+}
+
+.qty-deal-max-save-label {
+  font-size: clamp(18px, 4.5vw, 26px);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.qty-deal-max-save-amount {
+  font-size: clamp(28px, 7vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #16a34a;
+  text-shadow: 0 2px 12px rgba(22, 163, 74, 0.2);
+  animation: qty-deal-save-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qty-deal-save-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qty-deal-max-save-amount {
+    animation: none;
+  }
+}
+
+.qty-deal-tier-unit {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.qty-deal-tier-cta {
+  margin-top: auto;
+  font-size: 13px !important;
+  padding: 11px 10px !important;
+  min-height: 44px !important;
+}
+
+.site-popup-qty-deal .qty-deal-deal-hero {
+  margin-bottom: 12px;
+}
+
+@media (min-width: 769px) {
+  .site-popup--qty-deal {
+    max-width: min(94vw, 600px) !important;
+    width: min(94vw, 600px) !important;
+  }
+
+  .qty-deal-product-img {
+    width: 104px;
+    height: 104px;
+    flex-basis: 104px;
+  }
+
+  .qty-deal-tiers--n2,
+  .qty-deal-tiers--n3,
+  .qty-deal-tiers--n4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  /* 5 opcija (1 regular + 4 tier) — i dalje 2 kolone */
+  .qty-deal-tiers--n5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .qty-deal-tier-qty {
+    font-size: 26px;
+  }
+
+  .qty-deal-tier-price .bundle-pack-now {
+    font-size: 24px;
+  }
+
+  .qty-deal-tier-save strong {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .site-popup--qty-deal {
+    max-width: min(calc(100vw - 8px), 520px) !important;
+    width: min(calc(100vw - 8px), 520px) !important;
+    max-height: min(94dvh, 94vh) !important;
+  }
+
+  /* Mobilni: zadrži „UŠTEDI DO” (namamljuje), sakrij stari kicker/naslov ako postoji */
+  .site-popup-qty-deal .qty-deal-deal-hero,
+  .site-popup-qty-deal .bundle-pack-kicker,
+  .site-popup-qty-deal .bundle-pack-title {
+    display: none !important;
+  }
+
+  .site-popup-qty-deal .qty-deal-max-save {
+    display: flex !important;
+    margin-bottom: 10px;
+    padding: 10px 12px 12px;
+  }
+
+  .site-popup-qty-deal .qty-deal-max-save-label {
+    font-size: 16px;
+  }
+
+  .site-popup-qty-deal .qty-deal-max-save-amount {
+    font-size: 28px;
+  }
+
+  /* Ribbon % gore desno — nije potreban (ima na karticama) */
+  .site-popup-qty-deal .bundle-pack-ribbon,
+  .site-popup-qty-deal .bundle-pack-ribbon--left {
+    display: none !important;
+  }
+
+  /* Veći prozor + veća slika artikla */
+  .site-popup-qty-deal {
+    padding: 12px 10px 10px !important;
+  }
+
+  .site-popup-qty-deal .qty-deal-product {
+    gap: 12px;
+    padding: 10px 12px;
+    margin: 0 0 10px;
+  }
+
+  .qty-deal-product-img {
+    width: 96px;
+    height: 96px;
+    flex-basis: 96px;
+    border-radius: 14px;
+  }
+
+  .qty-deal-product-name {
+    font-size: 14px;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .qty-deal-product-base {
+    font-size: 12px;
+  }
+
+  .qty-deal-tiers {
+    gap: 10px 8px;
+  }
+
+  .qty-deal-tiers--n2,
+  .qty-deal-tiers--n3,
+  .qty-deal-tiers--n4,
+  .qty-deal-tiers--n5 {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 6px;
+  }
+
+  .qty-deal-tier-card {
+    padding: 10px 6px 6px;
+    gap: 3px;
+  }
+
+  .qty-deal-tier-qty {
+    font-size: 16px;
+  }
+
+  .qty-deal-tier-badge {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  .qty-deal-tier-price .bundle-pack-was {
+    font-size: 11px;
+  }
+
+  .qty-deal-tier-price .bundle-pack-now {
+    font-size: 15px;
+  }
+
+  .qty-deal-tier-save {
+    padding: 3px 5px;
+    font-size: 10px;
+  }
+
+  .qty-deal-tier-save strong {
+    font-size: 12px;
+  }
+
+  .qty-deal-tier-unit {
+    font-size: 10px;
+    margin: 0 0 2px;
+  }
+
+  .qty-deal-tier-cta {
+    font-size: 11px !important;
+    padding: 8px 4px !important;
+    min-height: 38px !important;
+  }
+
+  .qty-deal-tier-best-tag,
+  .qty-deal-tier-single-tag {
+    font-size: 9px;
+    padding: 2px 7px;
+    top: -8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .qty-deal-tiers--n3,
+  .qty-deal-tiers--n4 {
+    grid-template-columns: 1fr;
+  }
+}

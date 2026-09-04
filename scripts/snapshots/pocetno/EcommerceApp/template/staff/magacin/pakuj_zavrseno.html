@@ -1,0 +1,50 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-page-head">
+    <div>
+        <h1>Pick lista PL-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</h1>
+        <p class="mg-count">Završeno — odakle je uzeto i koliko.</p>
+    </div>
+    <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_pakuj' %}?status=zavrseno">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        Nazad na Završeno
+    </a>
+</div>
+
+<section class="mg-card pk-done-summary">
+    <div class="pk-done-meta">
+        <p><span>Narudžba</span><strong>#{{ order.broj }}</strong></p>
+        <p><span>Kupac</span><strong>{{ order.ime_prezime }}</strong></p>
+        <p><span>Status</span><strong>Završeno</strong></p>
+        <p><span>Datum</span><strong>{{ order.zapakovana_at|default:order.kreirana|date:"d.m.Y. H:i" }}</strong></p>
+    </div>
+    <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>ARTIKAL</th>
+                    <th>ŠIFRA</th>
+                    <th>LOKACIJA</th>
+                    <th class="num">KOLIČINA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in pick_rows %}
+                <tr{% if row.rezervni %} class="is-spare-row"{% endif %}>
+                    <td>
+                        <strong>{{ row.naziv }}</strong>
+                        {% if row.rezervni %}<span class="mg-pill is-spare">Rezervni dio</span>{% endif %}
+                    </td>
+                    <td>{{ row.sifra|default:"—" }}</td>
+                    <td>{{ row.loc }}</td>
+                    <td class="num">{{ row.qty }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="mg-muted">Nema podataka o pickingu.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

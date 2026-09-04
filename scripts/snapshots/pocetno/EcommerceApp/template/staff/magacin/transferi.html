@@ -1,0 +1,187 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-orders-page mg-transfer-page">
+<div class="mg-page-head">
+    <div>
+        <h1>Transferi</h1>
+        <p class="mg-count">Ubaci artikle na lokaciju ili premjesti zalihu. Skeniraj barkod ili unesi ručno.</p>
+    </div>
+</div>
+
+<div class="mg-filter-tabs">
+    <a href="?tab=ubaci" class="{% if tab != 'prenos' %}is-active{% endif %}">Ubaci u lokaciju</a>
+    <a href="?tab=prenos" class="{% if tab == 'prenos' %}is-active{% endif %}">Prenos iz lokacije u lokaciju</a>
+</div>
+
+<div class="mg-transfer-grid">
+    {% if tab != 'prenos' %}
+    <section class="mg-card mg-orders-card" id="mgInsertPanel" data-lookup-url="{{ lookup_url }}" data-loc-lookup-url="{{ loc_lookup_url }}">
+        <h2 class="mg-h">Ubaci u lokaciju</h2>
+        <form id="mgInsertForm" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="ubaci">
+            <input type="hidden" name="tab" value="ubaci">
+            <input type="hidden" name="location_id" id="mgInsertLocId" required>
+
+            <div class="mg-field mg-loc-search" id="mgInsertLocSearchWrap">
+                <label for="mgInsertLocSearch">Lokacija</label>
+                <div class="mg-input-row">
+                    <div class="mg-icon-field">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                        <input id="mgInsertLocSearch" type="search" placeholder="Šifra, naziv ili barkod lokacije…" autocomplete="off">
+                    </div>
+                    <button type="button" class="vp-scan-btn" data-mg-scan-target="mgInsertLocSearch" data-mg-scan-title="Skeniraj lokaciju">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                        Skeniraj
+                    </button>
+                </div>
+                <ul id="mgInsertLocSuggest" class="mg-loc-suggest" hidden></ul>
+            </div>
+            <div class="mg-locked-loc" id="mgInsertLocLocked" hidden>
+                <div>
+                    <span class="mg-locked-kicker">Lokacija</span>
+                    <strong id="mgInsertLocLabel"></strong>
+                </div>
+                <button type="button" class="mg-btn mg-btn-pill" id="mgInsertLocChange">Promijeni</button>
+            </div>
+
+            <div class="mg-field mg-loc-search" id="mgInsertArtWrap" hidden>
+                <label for="mgInsertSearch">Artikal</label>
+                <div class="mg-input-row">
+                    <div class="mg-icon-field">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                        <input id="mgInsertSearch" type="search" placeholder="Naziv, šifra ili barkod…" autocomplete="off">
+                    </div>
+                    <button type="button" class="vp-scan-btn" data-mg-scan-target="mgInsertSearch" data-mg-scan-title="Skeniraj artikal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                        Skeniraj
+                    </button>
+                    <input id="mgInsertQty" class="mg-qty-input" type="number" min="1" step="1" inputmode="numeric" placeholder="Kol." hidden aria-label="Količina">
+                </div>
+                <p id="mgInsertPickLabel" class="mg-pick-label" hidden></p>
+                <ul id="mgInsertSuggest" class="mg-loc-suggest" hidden></ul>
+                <p class="mg-muted mg-transfer-hint">Skeniraj ili ukucaj. Tab odabere artikal, količina, pa Tab ubaci sljedeći.</p>
+            </div>
+
+            <div class="mg-table-wrap">
+            <table class="mg-table mg-order-lines mg-table-stack mg-table-stack-transfer-lines" id="mgInsertTable" hidden>
+                <thead>
+                    <tr>
+                        <th>ARTIKAL</th>
+                        <th>ŠIFRA</th>
+                        <th class="num">KOL.</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="mgInsertLines"></tbody>
+            </table>
+            </div>
+            <p id="mgInsertEmpty" class="mg-empty" hidden>Još nema artikala. Odaberi lokaciju, pa skeniraj ili unesi artikle.</p>
+
+            <div class="mg-field" style="margin-top:12px;">
+                <label for="mgInsertNote">Napomena</label>
+                <input id="mgInsertNote" name="napomena" maxlength="300" placeholder="npr. Prijem robe">
+            </div>
+            <button type="submit" class="mg-btn mg-btn-primary" style="margin-top:14px;" id="mgInsertSubmit" disabled>Završi i ubaci</button>
+        </form>
+    </section>
+    {% else %}
+    <section class="mg-card mg-orders-card" id="mgMovePanel" data-lookup-url="{{ lookup_url }}" data-loc-lookup-url="{{ loc_lookup_url }}">
+        <h2 class="mg-h">Prenos iz lokacije u lokaciju</h2>
+        <form id="mgMoveForm" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="transfer">
+            <input type="hidden" name="tab" value="prenos">
+            <input type="hidden" name="product_id" id="mgMovePid">
+            <input type="hidden" name="variation_id" id="mgMoveVid">
+            <input type="hidden" name="location_id" id="mgMoveFromId">
+            <input type="hidden" name="to_location_id" id="mgMoveToId">
+
+            <div class="mg-field mg-loc-search">
+                <label for="mgMoveSearch">Artikal</label>
+                <div class="mg-input-row">
+                    <div class="mg-icon-field">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                        <input id="mgMoveSearch" type="search" placeholder="Naziv, šifra ili barkod…" autocomplete="off">
+                    </div>
+                    <button type="button" class="vp-scan-btn" data-mg-scan-target="mgMoveSearch" data-mg-scan-title="Skeniraj artikal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                        Skeniraj
+                    </button>
+                </div>
+                <ul id="mgMoveSuggest" class="mg-loc-suggest" hidden></ul>
+                <p id="mgMovePickLabel" class="mg-pick-label" hidden></p>
+            </div>
+
+            <div class="mg-field" id="mgMoveFromWrap" hidden>
+                <label>Iz lokacije — odaberi gdje ima količine</label>
+                <div id="mgMoveFromList" class="mg-from-locs"></div>
+                <p id="mgMoveFromEmpty" class="mg-muted" hidden>Artikal nema količine ni na jednoj lokaciji.</p>
+            </div>
+
+            <div class="mg-field" id="mgMoveQtyWrap" hidden>
+                <label for="mgMoveQty">Količina prenosa</label>
+                <input id="mgMoveQty" name="kolicina" type="number" min="1" step="1" inputmode="numeric">
+            </div>
+
+            <div class="mg-field mg-loc-search" id="mgMoveToWrap" hidden>
+                <label for="mgMoveToSearch">Lokacija destinacije</label>
+                <div class="mg-input-row">
+                    <div class="mg-icon-field">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                        <input id="mgMoveToSearch" type="search" placeholder="Šifra, naziv ili barkod lokacije…" autocomplete="off">
+                    </div>
+                    <button type="button" class="vp-scan-btn" data-mg-scan-target="mgMoveToSearch" data-mg-scan-title="Skeniraj destinaciju">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+                        Skeniraj
+                    </button>
+                </div>
+                <ul id="mgMoveToSuggest" class="mg-loc-suggest" hidden></ul>
+            </div>
+
+            <div class="mg-field">
+                <label for="mgMoveNote">Napomena</label>
+                <input id="mgMoveNote" name="napomena" maxlength="300" placeholder="npr. Premještaj u vanjski lager">
+            </div>
+            <button type="submit" class="mg-btn mg-btn-primary" style="margin-top:14px;" id="mgMoveSubmit" disabled>Evidentiraj transfer</button>
+        </form>
+    </section>
+    {% endif %}
+
+    <section class="mg-card mg-orders-card">
+        <h2 class="mg-h">Zadnja kretanja</h2>
+        <div class="mg-table-wrap">
+        <table class="mg-table mg-table-stack mg-table-stack-transferi">
+            <thead>
+                <tr>
+                    <th>DATUM</th>
+                    <th>ARTIKAL</th>
+                    <th>PUT</th>
+                    <th class="num">KOL.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in transfers %}
+                <tr>
+                    <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
+                    <td>{{ m.product.naziv }}{% if m.variation %} <span class="sub">{{ m.variation.naziv }}</span>{% endif %}</td>
+                    <td>
+                        {% if m.tip == 'transfer' %}
+                        {{ m.location.sifra }} → {{ m.to_location.sifra }}
+                        {% else %}
+                        → {{ m.location.sifra }}
+                        {% endif %}
+                    </td>
+                    <td class="num">{{ m.kolicina }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="mg-muted">Nema kretanja.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>opremazaribolov.ba</title>
+    <link>{{ request.build_absolute_uri|escape }}</link>
+    <description>Product catalog feed for Meta Commerce</description>
+{% for item in feed_items %}
+    <item>
+      <g:id>{{ item.id }}</g:id>
+      <g:title>{{ item.title }}</g:title>
+      <g:description>{{ item.description }}</g:description>
+      <g:availability>{{ item.availability }}</g:availability>
+      <g:condition>{{ item.condition }}</g:condition>
+      <g:price>{{ item.price }}</g:price>
+{% if item.brand %}
+      <g:brand>{{ item.brand }}</g:brand>
+{% endif %}
+      <g:link>{{ item.link }}</g:link>
+{% if item.image_link %}
+      <g:image_link>{{ item.image_link }}</g:image_link>
+{% endif %}
+{% if item.product_type %}
+      <g:product_type>{{ item.product_type }}</g:product_type>
+{% endif %}
+{% if item.mpn %}
+      <g:mpn>{{ item.mpn }}</g:mpn>
+{% endif %}
+    </item>
+{% endfor %}
+  </channel>
+</rss>

@@ -36,6 +36,7 @@ from .magacin import (
     active_vp_narudzba,
     add_vp_stavka,
     add_vp_bulk_stavke,
+    match_vp_bulk_rows,
     ponuda_totals,
     accept_ponuda,
     vp_draft_totals,
@@ -2831,6 +2832,7 @@ def magacin_narudzbe(request):
             if sifra and sifra not in seen:
                 seen.append(sifra)
         order.lager_lokacije = seen
+        order.lista_napomena = _order_list_napomena(order.napomena)
     base_qs = Order.objects.exclude(status=Order.Status.OTKAZANA).exclude(_prenos_mp_q())
 
     def _list_qs(
@@ -3094,7 +3096,9 @@ def magacin_narudzbe_stampa_kolicine(request):
     orders = list(
         Order.objects.filter(broj__in=brojevi)
         .exclude(status=Order.Status.OTKAZANA)
-        .prefetch_related('stavke')
+        .prefetch_related(
+            Prefetch('stavke', queryset=OrderItem.objects.select_related('artikal', 'varijacija'))
+        )
     )
     by_broj = {order.broj: order for order in orders}
     ordered = [by_broj[broj] for broj in brojevi if broj in by_broj]
@@ -3108,8 +3112,14 @@ def magacin_narudzbe_stampa_kolicine(request):
             qty = int(item.kolicina_faktura or 0)
             if qty <= 0:
                 continue
+            sifra = (item.sifra or '').strip()
+            if not sifra and item.varijacija_id:
+                sifra = (getattr(item.varijacija, 'sifra', None) or '').strip()
+            if not sifra and item.artikal_id:
+                sifra = (getattr(item.artikal, 'sifra', None) or '').strip()
             stavke.append({
                 'naziv': item.puni_naziv,
+                'sifra': sifra,
                 'kolicina': qty,
             })
         print_jobs.append({
@@ -3539,6 +3549,10 @@ def magacin_kupci_lookup(request):
     return JsonResponse({'results': results, 'query': query})
 
 
+def _post_flag(data, name):
+    return str(data.get(name) or '').strip().lower() in ('1', 'on', 'true', 'da')
+
+
 def _customer_payload(customer):
     return {
         'id': customer.pk,
@@ -3548,6 +3562,7 @@ def _customer_payload(customer):
         'grad': customer.grad,
         'email': customer.email,
         'postanski_broj': customer.postanski_broj,
+        'vp_kupac': bool(customer.vp_kupac),
     }
 
 
@@ -3584,19 +3599,26 @@ def magacin_kupci_save(request):
             postanski_broj=postanski_broj,
             customer_id=customer_id,
             replace=bool(customer_id),
+            vp_kupac=_post_flag(request.POST, 'vp_kupac'),
         )
+        if not customer:
+            return JsonResponse({'ok': False, 'error': 'Kupac nije sačuvan.'}, status=400)
+        return JsonResponse({'ok': True, 'customer': _customer_payload(customer)})
     except MagacinError as exc:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
     except (TypeError, ValueError):
         return JsonResponse({'ok': False, 'error': 'Kupac nije sačuvan.'}, status=400)
-    if not customer:
-        return JsonResponse({'ok': False, 'error': 'Kupac nije sačuvan.'}, status=400)
-    return JsonResponse({'ok': True, 'customer': _customer_payload(customer)})
+    except Exception as exc:
+        logger.exception('Čuvanje magacin kupca nije uspjelo')
+        return JsonResponse(
+            {'ok': False, 'error': f'Kupac nije sačuvan. {exc}'},
+            status=500,
+        )
 
 
 def _save_warehouse_customer(
     *, ime, telefon, adresa='', grad='', email='', postanski_broj='',
-    customer_id=None, replace=False,
+    customer_id=None, replace=False, vp_kupac=None,
 ):
     ime = (ime or '').strip()
     telefon = (telefon or '').strip()
@@ -3627,6 +3649,8 @@ def _save_warehouse_customer(
         'email': (email or '').strip()[:254],
         'postanski_broj': (postanski_broj or '').strip()[:20],
     }
+    if vp_kupac is not None:
+        fields['vp_kupac'] = bool(vp_kupac)
     if customer:
         changed = []
         for key, value in fields.items():
@@ -3665,6 +3689,7 @@ def magacin_kupci(request):
                     postanski_broj=request.POST.get('postanski_broj') or '',
                     customer_id=request.POST.get('customer_id') or None,
                     replace=True,
+                    vp_kupac=_post_flag(request.POST, 'vp_kupac'),
                 )
                 if not customer:
                     raise MagacinError('Ime i telefon su obavezni.')
@@ -3700,6 +3725,58 @@ def magacin_kupci(request):
         'customer_count': qs.count(),
     })
     return render(request, 'staff/magacin/kupci.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def magacin_narudzba_bulk(request):
+    try:
+        matched, skipped = match_vp_bulk_rows(request.POST.get('tekst') or '')
+    except MagacinError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    except Exception:
+        logger.exception('Bulk unos na ručnoj narudžbi nije uspio')
+        return JsonResponse({'ok': False, 'error': 'Bulk unos nije uspio.'}, status=500)
+    added = []
+    mp_names = []
+    for row in matched:
+        product = row['product']
+        variation = row['variation']
+        available = display_stock_totals(product, variation)['dostupno']
+        qty = int(row['qty'] or 0)
+        mp_ok = qty > available
+        item = {
+            'id': product.pk,
+            'naziv': product.naziv,
+            'sifra': product.sifra or '',
+            'cijena': str(product.prikazna_cijena),
+            'dostupno': available,
+        }
+        var_payload = None
+        if variation is not None:
+            var_payload = {
+                'id': variation.pk,
+                'naziv': variation.naziv,
+                'sifra': variation.sifra or '',
+                'cijena': str(variation.prikazna_cijena),
+                'na_stanju': available,
+            }
+        added.append({
+            'item': item,
+            'variation': var_payload,
+            'qty': qty,
+            'dostupno': available,
+            'mp_ok': mp_ok,
+        })
+        if mp_ok:
+            mp_names.append(product.naziv)
+    return JsonResponse({
+        'ok': True,
+        'added': added,
+        'skipped': skipped,
+        'mp': mp_names,
+    })
 
 
 @login_required(login_url='login')
@@ -3915,14 +3992,18 @@ def _create_manual_order(request, *, existing=None):
     email = (request.POST.get('email') or '').strip() or 'carpologijabh@gmail.com'
     adresa = (request.POST.get('adresa') or '').strip() or 'Ručni unos'
     grad = (request.POST.get('grad') or '').strip() or '—'
-    _save_warehouse_customer(
+    vp_kupac = _post_flag(request.POST, 'vp_kupac')
+    customer = _save_warehouse_customer(
         ime=ime,
         telefon=telefon,
         adresa=adresa,
         grad=grad,
         email='' if email == 'carpologijabh@gmail.com' else email,
         postanski_broj=(request.POST.get('postanski_broj') or '').strip(),
+        vp_kupac=vp_kupac,
     )
+    if customer is not None:
+        vp_kupac = bool(customer.vp_kupac)
     product_ids = request.POST.getlist('product_id')
     variation_ids = request.POST.getlist('variation_id')
     kolicine = request.POST.getlist('kolicina')
@@ -4019,10 +4100,10 @@ def _create_manual_order(request, *, existing=None):
         '1', 'on', 'true', 'da',
     )
     loyalty_coupon = None
-    if loyalty_auto or not popust_pct:
+    if loyalty_auto:
         loyalty_coupon = loyalty_coupon_za_telefon(telefon)
         if loyalty_coupon and loyalty_coupon.postotak and loyalty_coupon.postotak > 0:
-            if loyalty_auto and popust_pct and popust_pct != loyalty_coupon.postotak:
+            if popust_pct and popust_pct != loyalty_coupon.postotak:
                 loyalty_coupon = None
             else:
                 popust_pct = loyalty_coupon.postotak
@@ -4067,6 +4148,9 @@ def _create_manual_order(request, *, existing=None):
     else:
         keep_reservation = False
     with transaction.atomic():
+        if vp_kupac:
+            dostava = Decimal('0.00')
+            bez_dostave = True
         order = _save_manual_order(
             request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
             existing=existing,
@@ -4076,6 +4160,8 @@ def _create_manual_order(request, *, existing=None):
             bez_dostave=bez_dostave,
             placanje=placanje,
             loyalty_coupon=loyalty_coupon,
+            vp_kupac=vp_kupac,
+            customer=customer,
         )
     return order
 
@@ -4120,6 +4206,25 @@ def _strip_card_pay_note(napomena):
     return '\n'.join(lines).strip()
 
 
+def _order_list_napomena(napomena):
+    skip = {
+        'vp narudžba',
+        'vp narudzba',
+        'plaćeno karticom',
+        'placeno karticom',
+    }
+    kept = []
+    for line in (napomena or '').splitlines():
+        text = line.strip()
+        if not text:
+            continue
+        folded = text.casefold()
+        if folded in skip or folded.startswith('nije popisan'):
+            continue
+        kept.append(text)
+    return ' '.join(kept)
+
+
 def _clear_order_items_and_holds(order, user=None):
     for item in list(order.stavke.all()):
         product = item.artikal
@@ -4135,8 +4240,11 @@ def _save_manual_order(
     request, ime, telefon, email, adresa, grad, medjuzbir, dostava, lines,
     *, existing=None, rezervacija=False, popust=None, popust_pct=None,
     bez_dostave=False, placanje='gotovina', loyalty_coupon=None,
+    vp_kupac=False, customer=None,
 ):
     napomena = _strip_card_pay_note((request.POST.get('napomena') or '').strip())
+    if vp_kupac and not (napomena or '').startswith('VP narudžba'):
+        napomena = f'VP narudžba\n{napomena}'.strip() if napomena else 'VP narudžba'
     mp_names = [
         (f"{line['product'].naziv} {line['variation'].naziv}".strip() if line['variation'] else line['product'].naziv)
         for line in lines
@@ -4201,8 +4309,7 @@ def _save_manual_order(
         existing.popust_detalji = popust_detalji
         existing.ukupno = ukupno
         existing.status = status
-        if loyalty_coupon:
-            existing.kupon_kod = loyalty_coupon.kod
+        existing.kupon_kod = loyalty_coupon.kod if loyalty_coupon else ''
         existing.save()
         order = existing
     else:
@@ -4277,6 +4384,31 @@ def _save_manual_order(
             raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
     order.lager_status = Order.LagerStatus.REZERVISANO
     order.save(update_fields=['lager_status'])
+    if vp_kupac:
+        pay = MagacinVpNarudzba.Placanje.GOTOVINA if placanje == 'gotovina' else ''
+        vp_fields = {
+            'status': MagacinVpNarudzba.Status.ZAVRSENA,
+            'customer': customer,
+            'ime_prezime': ime[:200],
+            'telefon': telefon[:30],
+            'adresa': (adresa or '')[:300],
+            'grad': (grad or '')[:100],
+            'email': (email or '')[:254],
+            'postanski_broj': (request.POST.get('postanski_broj') or '').strip()[:20],
+            'zavrsen_at': timezone.now(),
+            'placanje': pay,
+        }
+        draft = MagacinVpNarudzba.objects.filter(order=order).order_by('-id').first()
+        if draft:
+            for key, value in vp_fields.items():
+                setattr(draft, key, value)
+            draft.save(update_fields=list(vp_fields))
+        else:
+            MagacinVpNarudzba.objects.create(
+                order=order,
+                kreirao=request.user if getattr(request.user, 'is_authenticated', False) else None,
+                **vp_fields,
+            )
     invalidate_magacin_nav_counts()
     return order
 

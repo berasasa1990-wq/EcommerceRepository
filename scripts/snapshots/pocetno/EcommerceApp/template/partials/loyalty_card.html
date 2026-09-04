@@ -1,0 +1,49 @@
+<section class="loyalty-card loyalty-card--{{ loyalty.tier.nivo }}">
+    <div class="loyalty-card-top">
+        <div>
+            <p class="loyalty-card-label">Loyalty kartica</p>
+            <h2 class="loyalty-card-tier">{{ loyalty.tier.label }}</h2>
+            <p class="loyalty-card-benefit">{{ loyalty.tier.postotak }}% popusta na narudžbe</p>
+        </div>
+        <div class="loyalty-card-stats">
+            <p><span>Ukupna potrošnja</span><strong>{{ loyalty.kartica.ukupna_potrosnja }} KM</strong></p>
+            {% if loyalty.next_tier %}
+            <p><span>Do {{ loyalty.next_tier.label }}</span><strong>{{ loyalty.preostalo_do_sljedeceg }} KM</strong></p>
+            {% else %}
+            <p><span>Status</span><strong>Maksimalni nivo</strong></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="loyalty-card-codes">
+        <div class="loyalty-code-block">
+            <span class="loyalty-code-label">Online kod</span>
+            <strong class="loyalty-online-code">{{ loyalty.kartica.kod }}</strong>
+        </div>
+        <div class="loyalty-code-block loyalty-barcode-wrap">
+            <span class="loyalty-code-label">Barkod</span>
+            <div class="loyalty-barcode" aria-label="Barkod {{ loyalty.kartica.barkod }}">
+                {% for sirina in loyalty.barkod_trake %}
+                <span class="loyalty-bar" style="width: {{ sirina }}px;"></span>
+                {% endfor %}
+            </div>
+            <span class="loyalty-barcode-text">{{ loyalty.kartica.barkod }}</span>
+        </div>
+    </div>
+
+    <ul class="loyalty-tier-list">
+        {% for tier in loyalty.tiers %}
+        <li class="loyalty-tier-item{% if tier.nivo == loyalty.tier.nivo %} loyalty-tier-item--active{% endif %}">
+            <span>{{ tier.label }}</span>
+            <span>{{ tier.postotak }}%</span>
+            <span>
+                {% if tier.do %}
+                {{ tier.od }}–{{ tier.do }} KM
+                {% else %}
+                {{ tier.od }}+ KM
+                {% endif %}
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
