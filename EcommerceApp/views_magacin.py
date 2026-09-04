@@ -9,6 +9,7 @@ from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
@@ -1213,7 +1214,52 @@ def _etiketa_barcode_data_uri(code):
     return 'data:image/png;base64,' + base64.b64encode(png).decode('ascii')
 
 
-def _artikal_etiketa_payload(product, variation=None):
+def _artikal_site_url(product, request=None):
+    slug = (getattr(product, 'slug', None) or '').strip()
+    if not slug:
+        return ''
+    try:
+        path = product.get_absolute_url()
+    except Exception:
+        return ''
+    if request is not None:
+        try:
+            return request.build_absolute_uri(path)
+        except Exception:
+            pass
+    base = (getattr(settings, 'SITE_URL', '') or '').rstrip('/')
+    return f'{base}{path}' if base else path
+
+
+def _etiketa_qr_data_uri(url):
+    raw = (url or '').strip()
+    if not raw:
+        return ''
+    import io as _io
+    import qrcode
+
+    try:
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=4,
+            border=1,
+        )
+        qr.add_data(raw)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='black', back_color='white')
+        if getattr(img, 'mode', 'RGB') != 'RGB':
+            img = img.convert('RGB')
+        out = _io.BytesIO()
+        img.save(out, format='PNG', optimize=True)
+        png = out.getvalue()
+    except Exception:
+        logger.exception('QR etikete nije generisan: %s', raw)
+        return ''
+    return 'data:image/png;base64,' + base64.b64encode(png).decode('ascii')
+
+
+def _artikal_etiketa_payload(product, variation=None, request=None):
     naziv = (product.naziv or '').strip()
     if variation:
         var_name = (variation.naziv or '').strip()
@@ -1230,6 +1276,7 @@ def _artikal_etiketa_payload(product, variation=None):
         cijena = Decimal(cijena).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         cijena_label = format(cijena, '.2f').replace('.', ',')
     barkod = (product.barkod or '').strip() or sifra
+    product_url = _artikal_site_url(product, request)
     return {
         'naziv': naziv,
         'sifra': sifra,
@@ -1237,6 +1284,8 @@ def _artikal_etiketa_payload(product, variation=None):
         'cijena_label': cijena_label,
         'barkod': barkod,
         'barcode_src': _etiketa_barcode_data_uri(barkod),
+        'product_url': product_url,
+        'qr_src': _etiketa_qr_data_uri(product_url),
     }
 
 
@@ -1271,11 +1320,14 @@ def _zebra_price_zpl(payload):
     sifra = _zpl_text(payload.get('sifra'), 24) or '-'
     barkod = _zpl_text(payload.get('barkod'), 40)
     cijena = _zpl_text(payload.get('cijena_label'), 12) or '-'
+    product_url = _zpl_text(payload.get('product_url'), 180)
     width = int((ZEBRA_BARCODE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
-    left = 42
-    text_w = max(200, width - left - 24)
+    left = 28
+    qr_size = 148
+    qr_x = width - qr_size - 12
+    text_w = max(180, qr_x - left - 16)
     lines = [
         '^XA',
         '^MNY',
@@ -1289,10 +1341,13 @@ def _zebra_price_zpl(payload):
         f'^FO{left},50^A0N,20,20^FDSIFRA: {sifra}^FS',
     ]
     if barkod:
-        lines.append(f'^FO{left},74^BY2,2.0,56^BCN,56,N,N,N^FD{barkod}^FS')
-        lines.append(f'^FO{left},136^A0N,18,18^FD{barkod}^FS')
-    lines.append(f'^FO{left + 380},148^A0N,44,44^FD{cijena}^FS')
-    lines.append(f'^FO{left + 580},166^A0N,24,24^FDKM^FS')
+        lines.append(f'^FO{left},74^BY2,2.0,48^BCN,48,N,N,N^FD{barkod}^FS')
+        lines.append(f'^FO{left},128^A0N,16,16^FD{barkod}^FS')
+    lines.append(f'^FO{left},154^A0N,40,40^FD{cijena}^FS')
+    cijena_w = max(48, min(220, 18 * max(1, len(cijena))))
+    lines.append(f'^FO{left + cijena_w},172^A0N,22,22^FDKM^FS')
+    if product_url:
+        lines.append(f'^FO{qr_x},28^BQN,2,4^FDQA,{product_url}^FS')
     lines.append('^XZ')
     return '\n'.join(lines) + '\n'
 
@@ -1438,7 +1493,7 @@ def magacin_artikal_stampa(request, pk):
         if variation is None:
             messages.error(request, 'Varijacija nije pronađena.')
             return redirect('staff_magacin_artikal', pk=product.pk)
-    payload = _artikal_etiketa_payload(product, variation)
+    payload = _artikal_etiketa_payload(product, variation, request=request)
     n = _etiketa_copy_count(request.GET.get('n'), default=ETIKETA_A4_COUNT)
     return _render_etiketa_print(request, [payload] * n)
 
@@ -1493,7 +1548,7 @@ def magacin_stampa_cijena_print(request):
             if key in seen:
                 continue
             seen.add(key)
-            items.append(_artikal_etiketa_payload(product, variation))
+            items.append(_artikal_etiketa_payload(product, variation, request=request))
         if not items:
             messages.error(request, 'Unesi barem jedan artikal.')
             return redirect('staff_magacin_stampa_cijena_razlicite')
@@ -1512,7 +1567,7 @@ def magacin_stampa_cijena_print(request):
             params['varijacija'] = variation.pk
         return redirect(f'{url}?{urlencode(params)}')
     n = _etiketa_copy_count(raw_n)
-    payload = _artikal_etiketa_payload(product, variation)
+    payload = _artikal_etiketa_payload(product, variation, request=request)
     return _render_etiketa_print(request, [payload] * n, papir=data.get('papir'))
 
 

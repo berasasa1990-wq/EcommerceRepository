@@ -39,10 +39,12 @@
             width: {{ label_width }}in;
             height: {{ label_height }}in;
             margin: 12px auto;
-            padding: {{ label_top }}in 0.10in 0.04in 0.16in;
+            padding: {{ label_top }}in 0.08in 0.04in 0.10in;
             background: #fff;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 0.06in;
             font-family: Arial, Helvetica, sans-serif;
             color: #111;
             overflow: hidden;
@@ -52,6 +54,25 @@
         .label:last-child {
             page-break-after: auto;
             break-after: auto;
+        }
+        .label-main {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .label-qr {
+            flex: 0 0 0.82in;
+            width: 0.82in;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .label-qr img {
+            display: block;
+            width: 0.78in;
+            height: 0.78in;
+            object-fit: contain;
         }
         .naziv {
             flex: 0 0 auto;
@@ -88,29 +109,29 @@
             align-items: stretch;
             justify-content: center;
             min-height: 0;
-            max-width: 92%;
+            max-width: 100%;
         }
         .barcode img {
             display: block;
             width: 100%;
-            height: 0.38in;
+            height: 0.32in;
             object-fit: contain;
             object-position: left center;
         }
         .barcode span {
             display: block;
             margin-top: 0.02in;
-            font-size: 8pt;
+            font-size: 7.5pt;
             font-weight: 800;
             letter-spacing: .06em;
         }
         .cijena-row {
             display: flex;
             align-items: baseline;
-            justify-content: space-between;
-            gap: 0.08in;
+            justify-content: flex-start;
+            gap: 0.06in;
             flex-shrink: 0;
-            padding-top: 0.03in;
+            padding-top: 0.02in;
         }
         .cijena-iznos {
             font-size: 16pt;
@@ -138,27 +159,34 @@
 </head>
 <body>
     <div class="bar">
-        <button type="button" onclick="window.print()">Štampaj na Zebra</button>
+        <button type="button" id="zebraPrintBtn">Štampaj na Zebra</button>
         <span>Zebra · 3,559" × 1,224" · Label with gaps · rotacija 0 · top 0,1" · left 0" · {{ etiketa_count }} etiketa</span>
     </div>
     {% for e in items %}
     <article class="label">
-        <h1 class="naziv">{{ e.naziv }}</h1>
-        <p class="sifra">ŠIFRA: {% if e.sifra %}{{ e.sifra }}{% else %}—{% endif %}</p>
-        <div class="barcode">
-            {% if e.barcode_src %}
-            <img src="{{ e.barcode_src }}" alt="{{ e.barkod }}">
-            {% endif %}
-            {% if e.barkod %}<span>{{ e.barkod }}</span>{% endif %}
+        <div class="label-main">
+            <h1 class="naziv">{{ e.naziv }}</h1>
+            <p class="sifra">ŠIFRA: {% if e.sifra %}{{ e.sifra }}{% else %}—{% endif %}</p>
+            <div class="barcode">
+                {% if e.barcode_src %}
+                <img src="{{ e.barcode_src }}" alt="{{ e.barkod }}">
+                {% endif %}
+                {% if e.barkod %}<span>{{ e.barkod }}</span>{% endif %}
+            </div>
+            <div class="cijena-row">
+                {% if e.cijena_label %}
+                <span class="cijena-iznos">{{ e.cijena_label }}</span>
+                <span class="cijena-km">KM</span>
+                {% else %}
+                <span class="cijena-iznos">—</span>
+                {% endif %}
+            </div>
         </div>
-        <div class="cijena-row">
-            {% if e.cijena_label %}
-            <span class="cijena-iznos">{{ e.cijena_label }}</span>
-            <span class="cijena-km">KM</span>
-            {% else %}
-            <span class="cijena-iznos">—</span>
-            {% endif %}
+        {% if e.qr_src %}
+        <div class="label-qr">
+            <img src="{{ e.qr_src }}" alt="QR {{ e.naziv }}" data-url="{{ e.product_url }}">
         </div>
+        {% endif %}
     </article>
     {% endfor %}
     <script>
@@ -177,6 +205,8 @@
                 device.send(zpl, function () {}, function () { window.print(); });
             }, function () { window.print(); });
         }
+        var btn = document.getElementById('zebraPrintBtn');
+        if (btn) btn.addEventListener('click', doPrint);
         window.addEventListener('load', function () {
             document.title = ' ';
             doPrint();

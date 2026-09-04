@@ -2087,13 +2087,16 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(zebra.status_code, 200)
         self.assertContains(zebra, 'size: 3.559in 1.224in')
-        self.assertContains(zebra, 'padding: 0.100in 0.10in 0.04in 0.16in')
+        self.assertContains(zebra, 'padding: 0.100in 0.08in 0.04in 0.10in')
         self.assertContains(zebra, '-webkit-line-clamp: 2')
         self.assertContains(zebra, 'class="label"', count=3)
         self.assertContains(zebra, '3 etiketa')
         self.assertContains(zebra, 'Test braid')
         self.assertContains(zebra, '10,00')
         self.assertContains(zebra, '^MNY')
+        self.assertContains(zebra, '^BQN')
+        self.assertContains(zebra, 'label-qr')
+        self.assertContains(zebra, 'BrowserPrint.getDefaultDevice')
         self.assertContains(zebra, 'Štampaj na Zebra')
         self.assertNotContains(zebra, 'size: A4 portrait')
 
@@ -2109,6 +2112,29 @@ class MagacinViewTests(TestCase):
         self.assertContains(zebra_mixed, 'Prazan lager')
         self.assertContains(mixed, '10,00')
         self.assertContains(mixed, '2,00')
+
+    def test_stampa_cijena_zebra_qr_and_print(self):
+        self.client.force_login(self.user)
+        zebra = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+            'mod': 'ista',
+            'artikal': self.product.pk,
+            'n': '2',
+            'papir': 'zebra',
+        })
+        self.assertEqual(zebra.status_code, 200)
+        self.assertContains(zebra, 'size: 3.559in 1.224in')
+        self.assertContains(zebra, 'padding: 0.100in 0.08in 0.04in 0.10in')
+        self.assertContains(zebra, 'class="label"', count=2)
+        self.assertContains(zebra, 'label-qr')
+        self.assertContains(zebra, '^BQN')
+        self.assertContains(zebra, f'data-url="')
+        self.assertContains(zebra, f'/artikal/{self.product.slug}/')
+        self.assertContains(zebra, 'BrowserPrint.getDefaultDevice')
+        self.assertContains(zebra, 'zebraPrintBtn')
+        self.assertContains(zebra, 'Test braid')
+        self.assertContains(zebra, '10,00')
+        html = zebra.content.decode()
+        self.assertGreater(html.count('data:image/png;base64,'), 2)
 
     def test_stampa_deklaracije_brands_and_print(self):
         self.client.force_login(self.user)

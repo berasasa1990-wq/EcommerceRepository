@@ -93,7 +93,7 @@
 <body>
     {% if barkod %}
     <div class="bar">
-        <button type="button" onclick="window.print()">Štampaj na Zebra</button>
+        <button type="button" id="zebraPrintBtn">Štampaj na Zebra</button>
         <p>Zebra · 3,559" × 1,224" · Label with gaps · rotacija 0 · top 0,1" · left 0"</p>
     </div>
     <article class="label">
@@ -120,6 +120,8 @@
                 device.send(zpl, function () {}, function () { window.print(); });
             }, function () { window.print(); });
         }
+        var btn = document.getElementById('zebraPrintBtn');
+        if (btn) btn.addEventListener('click', doPrint);
         window.addEventListener('load', function () {
             document.title = ' ';
             doPrint();
