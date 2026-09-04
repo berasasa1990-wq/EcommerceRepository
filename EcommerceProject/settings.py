@@ -193,6 +193,7 @@ SESSION_SAVE_EVERY_REQUEST = False
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_FAILURE_VIEW = 'EcommerceApp.csrf.csrf_failure'
 
 # Production security settings
 if not DEBUG:

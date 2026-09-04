@@ -5681,24 +5681,28 @@ function initPopisProvjera() {
         Object.keys(extra).forEach(function (k) {
             if (extra[k] != null && extra[k] !== '') body.set(k, String(extra[k]));
         });
-        return fetch(url, {
+        var token = csrfToken();
+        if (token) body.set('csrfmiddlewaretoken', token);
+        return fetch(url || window.location.pathname, {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrfToken(),
+                'X-CSRFToken': token,
                 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
             },
             credentials: 'same-origin',
             body: body.toString(),
         }).then(function (res) {
-            return res.json().then(function (data) {
-                return { ok: res.ok, data: data };
-            }, function () {
-                return { ok: false, data: { error: 'Zahtjev nije uspio.' } };
+            return res.text().then(function (text) {
+                var data = null;
+                try { data = text ? JSON.parse(text) : null; } catch (err) { data = null; }
+                return { ok: res.ok, status: res.status, data: data };
             });
         }).then(function (result) {
             if (!result.data || result.data.ok === false || !result.ok) {
-                showToast((result.data && result.data.error) || 'Greška na popisu.', false);
+                var msg = (result.data && result.data.error) || '';
+                if (!msg && result.status === 403) msg = 'Sesija je istekla. Osvježi stranicu.';
+                showToast(msg || 'Greška na popisu.', false);
                 return null;
             }
             showToast('');

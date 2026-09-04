@@ -6719,6 +6719,15 @@ def magacin_popis(request, pk=None):
                 )
             messages.error(request, str(exc) if str(exc) else 'Greška na popisu.')
             return _popis_redirect(popis)
+        except Exception:
+            logger.exception('Popis: zahtjev nije uspio')
+            if ajax:
+                return JsonResponse(
+                    {'ok': False, 'error': 'Popis nije uspio. Osvježi stranicu i pokušaj ponovo.'},
+                    status=500,
+                )
+            messages.error(request, 'Popis nije uspio. Pokušaj ponovo.')
+            return _popis_redirect(popis)
 
     if pk and popis is None:
         messages.error(request, 'Popis nije pronađen.')
@@ -6872,6 +6881,14 @@ def _popis_test_image_url(product, variation=None):
     return ''
 
 
+def _related_naziv(obj, field):
+    try:
+        rel = getattr(obj, field, None)
+        return (getattr(rel, 'naziv', None) or '') if rel else ''
+    except Exception:
+        return ''
+
+
 def _popis_test_item_key(product_id, variation_id, location_id):
     return f'p{int(product_id)}:v{int(variation_id or 0)}:l{int(location_id or 0)}'
 
@@ -6892,8 +6909,8 @@ def _popis_test_build_item(product, variation, location):
         'naziv': naziv,
         'sifra': sifra or '',
         'barkod': barkod,
-        'brend': product.brend.naziv if getattr(product, 'brend', None) else '',
-        'kategorija': product.kategorija.naziv if getattr(product, 'kategorija', None) else '',
+        'brend': _related_naziv(product, 'brend'),
+        'kategorija': _related_naziv(product, 'kategorija'),
         'slika': _popis_test_image_url(product, variation),
         'sistem': int(sistem),
         'popisano': max(1, int(sistem)),
@@ -7217,6 +7234,15 @@ def magacin_popis_test(request):
                     status=400,
                 )
             messages.error(request, str(exc) if str(exc) else 'Greška na popisu.')
+            return redirect('staff_magacin_popis_test')
+        except Exception:
+            logger.exception('Popis robe: zahtjev nije uspio')
+            if ajax:
+                return JsonResponse(
+                    {'ok': False, 'error': 'Popis nije uspio. Osvježi stranicu i pokušaj ponovo.'},
+                    status=500,
+                )
+            messages.error(request, 'Popis nije uspio. Pokušaj ponovo.')
             return redirect('staff_magacin_popis_test')
 
     payload = _popis_test_payload(state)
