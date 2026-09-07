@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-manual-reference{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-manual-order-reference.css' %}?v=20260906-3">
+<link rel="stylesheet" href="{% static 'css/staff-manual-order-reference.css' %}?v=20260907retroPayment">
 {% endblock %}
 
 {% block magacin_content %}
@@ -48,6 +48,7 @@
         </div>
         <div id="mgCustomerLocked" class="mg-customer-chip" hidden>
             <strong id="mgCustomerLockedName"></strong>
+            <span id="mgCustomerVpFlag" class="mg-pill" role="status" hidden>Veleprodajni kupac</span>
             <p class="mg-muted" id="mgCustomerLockedMeta" hidden></p>
             <button type="button" class="mg-loyalty-flag" id="mgCustomerLoyalty" hidden></button>
             <div class="mg-chip-actions">
@@ -55,6 +56,7 @@
                 <button type="button" class="mg-btn" id="mgCustomerChange">Promijeni kupca</button>
             </div>
         </div>
+        {% if order_error %}<p class="mg-qty-hint is-warn" role="alert">{{ order_error }}</p>{% endif %}
         <p id="mgCustomerRefused" class="mg-customer-refused" role="alert" data-initial="{{ customer_refused|yesno:'1,0' }}"{% if not customer_refused %} hidden{% endif %}>UPOZORENJE: Ovaj kupac je odbio pošiljku.</p>
         <input type="hidden" name="customer_id" id="id_customer_id" value="{{ form.customer_id|default:'' }}">
         <input type="hidden" name="ime_prezime" id="id_ime_prezime" value="{{ form.ime_prezime|default:'' }}">
@@ -275,6 +277,16 @@
     </div>
 </form>
 </div>
+
+<dialog id="mgVpPaymentDialog" aria-labelledby="mgVpPaymentTitle" aria-describedby="mgVpPaymentDescription">
+    <h2 id="mgVpPaymentTitle">Način plaćanja</h2>
+    <p id="mgVpPaymentDescription">Veleprodajni kupac — kako se plaća ova narudžba?</p>
+    <div class="mg-modal-actions">
+        <button type="button" class="mg-btn mg-btn-primary" data-vp-payment="ziralno">Žiralno</button>
+        <button type="button" class="mg-btn mg-btn-primary" data-vp-payment="gotovina">Gotovinski</button>
+        <button type="button" class="mg-btn" id="mgVpPaymentCancel">Odustani</button>
+    </div>
+</dialog>
 
 <div class="mg-modal" id="mgCustomerModal" hidden>
     <div class="mg-modal-bg" data-customer-close></div>

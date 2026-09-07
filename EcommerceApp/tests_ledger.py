@@ -34,6 +34,39 @@ class WarehouseLedgerTests(TestCase):
     def balance(self):
         return self.partner.entries.aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
+    def test_amount_only_debt_and_partial_payments(self):
+        self.client.force_login(self.user)
+        url = reverse('staff_magacin_duguje')
+        token = str(uuid4())
+        data = {'action': 'entry', 'kind': 'debit', 'amount_only': '1',
+                'partner_id': self.partner.pk, 'amount': '1000,00', 'token': token}
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        self.assertEqual(self.balance(), Decimal('1000'))
+        entry = self.partner.entries.get()
+        self.assertFalse(entry.lines.exists())
+        self.assertEqual(entry.description, 'Dug kupca')
+        page = self.client.get(url, {'partner': self.partner.pk})
+        self.assertContains(page, '↓ DUGUJE')
+        self.assertContains(page, 'Unesi dug kupca')
+        for amount, remaining in [('200', '800'), ('300', '500'), ('500', '0')]:
+            response = self.client.post(url, {
+                'action': 'entry', 'kind': 'receipt', 'partner_id': self.partner.pk,
+                'amount': amount, 'token': str(uuid4()),
+            })
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(self.balance(), Decimal(remaining))
+            page = self.client.get(url, {'partner': self.partner.pk})
+            self.assertContains(page, '↓ DUGUJE' if remaining != '0' else 'IZMIRENO UPLATOM')
+        self.assertEqual(self.partner.entries.count(), 4)
+        self.stock.refresh_from_db()
+        self.assertEqual(self.stock.kolicina, 10)
+        self.assertFalse(WarehouseMovement.objects.exists())
+        bad = self.client.post(url, {**data, 'amount': '-5', 'token': str(uuid4())})
+        self.assertEqual(bad.status_code, 200)
+        self.assertContains(bad, 'id="ldDebt" class="ld-dialog" data-ld-reopen')
+        self.assertEqual(self.balance(), Decimal('0'))
+
     def test_goods_and_partial_returns_are_atomic_and_audited(self):
         entry = self.goods()
         self.stock.refresh_from_db()
@@ -523,7 +556,7 @@ class WarehouseLedgerTests(TestCase):
             post_entry(partner_id=other.pk, user=self.user, data={'action':'delete_line', 'line_id':line.pk, 'token':str(uuid4())})
         self.assertEqual(self.balance(), Decimal('30'))
 
-    def test_no_active_articles_shows_settled_without_changing_history(self):
+    def test_amount_only_balance_is_outstanding_without_articles(self):
         from .views_ledger import partners_with_balance
         self.post(kind='credit', amount='10')
         partner = partners_with_balance().get(pk=self.partner.pk)
@@ -531,8 +564,8 @@ class WarehouseLedgerTests(TestCase):
         self.assertEqual(partner.balance, Decimal('-10'))
         self.client.force_login(self.user)
         response = self.client.get(reverse('staff_magacin_duguje'), {'partner':self.partner.pk})
-        self.assertContains(response, '<strong>IZMIRENO</strong>', html=True)
-        self.assertContains(response, 'Nema aktivnih artikala')
+        self.assertContains(response, '<strong>↑ POTRAŽUJE</strong>', html=True)
+        self.assertContains(response, 'Mi dugujemo partneru')
         entry = self.goods(kind='credit')
         self.assertTrue(partners_with_balance().get(pk=self.partner.pk).has_active_articles)
         self.post(action='delete_line', line_id=entry.lines.get().pk)

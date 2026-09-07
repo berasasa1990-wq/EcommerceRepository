@@ -5463,6 +5463,39 @@ class MagacinViewTests(TestCase):
         self.assertContains(form, 'VP kupac')
         self.assertContains(form, 'id="mgNewVpKupac"')
 
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
+    def test_vp_manual_payment_required_and_persisted(self):
+        self.client.force_login(self.user)
+        customer = WarehouseCustomer.objects.create(
+            ime_prezime='VP Payment', telefon='061555444', vp_kupac=True,
+        )
+        url = reverse('staff_magacin_narudzba_nova')
+        data = {
+            'customer_id': customer.pk, 'ime_prezime': customer.ime_prezime,
+            'telefon': customer.telefon, 'product_id': [str(self.product.pk)],
+            'variation_id': [''], 'kolicina': ['1'], 'mp_ok': ['0'],
+            'action': 'sacuvaj',
+        }
+        for payment in ['', 'kartica', 'invalid']:
+            response = self.client.post(url, {**data, 'placanje': payment})
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, 'Za veleprodajnog kupca odaberi')
+            self.assertContains(response, 'id="mgVpKupac" value="1"')
+            self.assertFalse(Order.objects.filter(telefon=customer.telefon).exists())
+        for payment in ['ziralno', 'gotovina']:
+            response = self.client.post(url, {**data, 'placanje': payment})
+            self.assertEqual(response.status_code, 302)
+            order = Order.objects.filter(telefon=customer.telefon).latest('pk')
+            self.assertEqual(MagacinVpNarudzba.objects.get(order=order).placanje, payment)
+            self.assertEqual(order.dostava, Decimal('0.00'))
+            edit = self.client.get(url, {'broj': order.broj})
+            self.assertContains(edit, 'id="mgVpKupac" value="1"')
+            self.assertContains(edit, 'Veleprodajni kupac')
+            self.assertContains(edit, 'id="mgVpPaymentDialog"')
+
     def test_vp_customer_orders_are_vp(self):
         self.client.force_login(self.user)
         saved = self.client.post(reverse('staff_magacin_kupci_save'), {
@@ -5494,6 +5527,7 @@ class MagacinViewTests(TestCase):
             'spare_naziv': [''],
             'spare_cijena': [''],
             'action': 'sacuvaj',
+            'placanje': 'gotovina',
         })
         self.assertEqual(created.status_code, 302)
         order = Order.objects.get(ime_prezime='VP Firma')
@@ -8253,6 +8287,34 @@ class MagacinUvozTests(TestCase):
         self.assertEqual(save('999999').status_code, 400)
         self.existing.refresh_from_db()
         self.assertEqual(self.existing.barkod, '0012345678905')
+
+    def test_uvoz_popis_confirm_stays_on_item_and_leaves_other_items_uncounted(self):
+        from .magacin import create_magacin_uvoz_from_rows
+
+        self.client.force_login(self.user)
+        uvoz, _ = create_magacin_uvoz_from_rows(
+            [{'artikal': product.naziv, 'kolicina': Decimal('20'),
+              'mpc_brutto': Decimal('7.50')} for product in (self.existing, self.site_only)],
+            naziv='Potvrda bez prelaska', user=self.user, apply_stock=False,
+        )
+        current = uvoz.stavke.get(product=self.existing)
+        other = uvoz.stavke.get(product=self.site_only)
+        url = reverse('staff_magacin_uvoz_popis', args=[uvoz.pk])
+        for quantity in ['18', '18', '19']:
+            response = self.client.post(url, {
+                'action': 'confirm', 'stavka_id': current.pk, 'kolicina': quantity,
+            }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()['current_id'], current.pk)
+            current.refresh_from_db()
+            other.refresh_from_db()
+            self.assertEqual(current.popisano, Decimal(quantity))
+            self.assertIsNone(other.popisano)
+        response = self.client.post(url, {
+            'action': 'select', 'stavka_id': other.pk,
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.json()['current_id'], other.pk)
+        self.assertIsNone(response.json()['current']['popisano'])
 
     def test_uvoz_popis_applies_counted_qty_and_records_diff(self):
         from .magacin import create_magacin_uvoz_from_rows

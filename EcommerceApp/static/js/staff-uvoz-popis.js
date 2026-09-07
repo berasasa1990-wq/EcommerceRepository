@@ -79,7 +79,7 @@
             });
         });
     }
-    function apply(data) {
+    function apply(data, focusQty) {
         if (!data || !data.ok) return;
         state = data;
         finished = !!data.zavrsen;
@@ -88,7 +88,9 @@
             return;
         }
         render();
-        if (scan && !finished) scan.focus();
+        var savedQty = focusQty && document.getElementById('upQty');
+        if (savedQty && !finished) savedQty.focus();
+        else if (scan && !finished) scan.focus();
     }
     function currentItem() {
         var id = state.current_id;
@@ -121,7 +123,7 @@
                         '<span>POPISANO</span>' +
                         '<div class="up-step">' +
                             '<button type="button" data-act="minus"' + disabled + '>−</button>' +
-                            '<input id="upQty" class="up-qty-input" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="' + (item.popisano == null ? '' : item.popisano) + '" placeholder="0"' + disabled + '>' +
+                            '<input id="upQty" data-stavka-id="' + item.id + '" class="up-qty-input" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" value="' + (item.popisano == null ? '' : item.popisano) + '" placeholder="0"' + disabled + '>' +
                             '<button type="button" data-act="plus"' + disabled + '>+</button>' +
                         '</div>' +
                         '<small>kom</small>' +
@@ -197,7 +199,7 @@
     }
     function run(action, extra) {
         showError('');
-        return post(action, extra).then(apply).catch(function (err) {
+        return post(action, extra).then(function (data) { apply(data, action === 'confirm'); }).catch(function (err) {
             showError(err.message || 'Zahtjev nije uspio.');
         });
     }
@@ -260,13 +262,14 @@
         event.preventDefault();
         var item = currentItem();
         if (!item) return;
-        run('confirm', { stavka_id: item.id, kolicina: event.target.value || '0' });
+        if (event.repeat) return;
+        run('confirm', { stavka_id: event.target.getAttribute('data-stavka-id'), kolicina: event.target.value || '0' });
     });
     currentEl.addEventListener('change', function (event) {
         if (event.target.id !== 'upQty' || finished) return;
         var item = currentItem();
         if (!item) return;
-        run('set_qty', { stavka_id: item.id, kolicina: event.target.value || '0' });
+        run('set_qty', { stavka_id: event.target.getAttribute('data-stavka-id'), kolicina: event.target.value || '0' });
     });
     rowsEl.addEventListener('click', function (event) {
         var row = event.target.closest('tr[data-id]');

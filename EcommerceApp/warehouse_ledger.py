@@ -237,6 +237,8 @@ def post_entry(*, partner_id, data, user):
     previous_balance = None
     if kind in (Entry.Kind.PAYMENT, Entry.Kind.RECEIPT):
         previous_balance = partner.entries.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    if kind == Entry.Kind.DEBIT and not goods and not description:
+        description = 'Dug kupca'
     entry = Entry.objects.create(**common, kind=kind,
                                  amount=amount if kind in (Entry.Kind.DEBIT, Entry.Kind.PAYMENT) else -amount,
                                  description=description or Entry.Kind(kind).label)

@@ -4051,7 +4051,10 @@ def magacin_narudzba_nova(request):
         except MagacinError as exc:
             messages.error(request, str(exc))
             context['customer_refused'] = WarehouseCustomer.objects.filter(pk=request.POST.get('customer_id')).filter(odbio_posiljku=True).exists() if str(request.POST.get('customer_id') or '').isdigit() else False
-            context['form'] = request.POST
+            context['order_error'] = str(exc)
+            context['form'] = request.POST.copy()
+            customer = WarehouseCustomer.objects.filter(telefon=request.POST.get('telefon') or '').first()
+            context['form']['vp_kupac'] = bool(customer and customer.vp_kupac)
             context['form_lines'] = _posted_display_lines(request)
             return render(request, 'staff/magacin/narudzba_nova.html', context)
         if order.status == Order.Status.REZERVACIJA:
@@ -4077,7 +4080,10 @@ def magacin_narudzba_nova(request):
 
         context['customer_refused'] = WarehouseCustomer.objects.filter(telefon=existing.telefon, odbio_posiljku=True).exists()
         loyalty_info = existing.loyalty_popust_info()
+        customer = WarehouseCustomer.objects.filter(telefon=existing.telefon).first()
         context['form'] = {
+            'customer_id': customer.pk if customer else '',
+            'vp_kupac': bool(customer and customer.vp_kupac),
             'ime_prezime': existing.ime_prezime,
             'telefon': existing.telefon,
             'email': existing.email,
@@ -4327,6 +4333,9 @@ def _create_manual_order(request, *, existing=None):
         medjuzbir += sum((item.ukupno for item in existing.stavke.filter(ledger_excess_line__isnull=False)), Decimal('0.00'))
     from .pricing import _loyalty_osnovica_iz_korpe, _postotni_popust, _standardna_dostava
     from .loyalty import loyalty_coupon_za_telefon
+    if vp_kupac and request.POST.get('action') != 'rezervacija':
+        if (request.POST.get('placanje') or '').strip().lower() not in ('gotovina', 'ziralno'):
+            raise MagacinError('Za veleprodajnog kupca odaberi način plaćanja: žiralno ili gotovinski.')
     placanje = (request.POST.get('placanje') or 'gotovina').strip().lower()
     if placanje not in ('gotovina', 'kartica', 'ziralno'):
         placanje = 'gotovina'
@@ -4658,7 +4667,7 @@ def _save_manual_order(
     order.lager_status = Order.LagerStatus.REZERVISANO
     order.save(update_fields=['lager_status'])
     if vp_kupac:
-        pay = MagacinVpNarudzba.Placanje.GOTOVINA if placanje == 'gotovina' else ''
+        pay = MagacinVpNarudzba.Placanje.ZIRALNO if placanje == 'ziralno' else MagacinVpNarudzba.Placanje.GOTOVINA
         vp_fields = {
             'status': MagacinVpNarudzba.Status.ZAVRSENA,
             'customer': customer,
@@ -6497,10 +6506,6 @@ def magacin_uvoz_popis(request, pk):
                     qty = _uvoz_popis_parse_qty(request.POST.get('kolicina'))
                 set_uvoz_popis_qty(stavka, qty, user=request.user)
                 current_id = stavka.pk
-                if action == 'confirm':
-                    payload = _uvoz_popis_payload(uvoz, current_id=current_id)
-                    nxt = next((item for item in payload['items'] if item['status'] == 'nije'), None)
-                    current_id = nxt['id'] if nxt else current_id
             elif action == 'select':
                 current_id = int(request.POST.get('stavka_id') or 0) or None
             elif action == 'zavrsi':

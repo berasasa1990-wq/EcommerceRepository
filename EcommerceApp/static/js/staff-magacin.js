@@ -2232,6 +2232,37 @@ function initManualOrderForm() {
             if (search) search.focus();
         }
     });
+    var vpPaymentDialog = document.getElementById('mgVpPaymentDialog');
+    var vpPaymentConfirmed = false;
+    var vpPaymentSubmitter = null;
+    if (vpPaymentDialog) {
+        form.addEventListener('submit', function (event) {
+            if (event.defaultPrevented || vpPaymentConfirmed) return;
+            var vpCustomer = document.getElementById('mgVpKupac');
+            var action = event.submitter ? event.submitter.value : 'sacuvaj';
+            if (!vpCustomer || vpCustomer.value !== '1' || action !== 'sacuvaj') return;
+            event.preventDefault();
+            vpPaymentSubmitter = event.submitter || form.querySelector('[name="action"][value="sacuvaj"]');
+            vpPaymentDialog.showModal();
+        });
+        vpPaymentDialog.querySelectorAll('[data-vp-payment]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var value = button.getAttribute('data-vp-payment');
+                form.querySelectorAll('input[name="placanje"]').forEach(function (input) {
+                    input.checked = input.value === value;
+                });
+                if (paySelect) paySelect.value = value;
+                refreshTotal();
+                vpPaymentDialog.close();
+                vpPaymentConfirmed = true;
+                try { form.requestSubmit(vpPaymentSubmitter); }
+                finally { vpPaymentConfirmed = false; }
+            });
+        });
+        document.getElementById('mgVpPaymentCancel').addEventListener('click', function () {
+            vpPaymentDialog.close();
+        });
+    }
     if (mpModal) {
         document.getElementById('mgMpAdd').addEventListener('click', function () {
             if (!pending) {

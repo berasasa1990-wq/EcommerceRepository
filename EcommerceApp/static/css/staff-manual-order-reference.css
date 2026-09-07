@@ -35,3 +35,16 @@ body.magacin-page.is-manual-reference .mg-order-page #mgCustomerAdd:hover{backgr
 /* Match the add-item actions to the silver buttons. */
 body.magacin-page.is-manual-reference .mg-modal :is(#mgOrderQtyAdd,#mgSpareAdd){min-height:36px;padding:6px 14px;border:1px solid #92949a;border-radius:0;background:var(--mo-metal);box-shadow:var(--mo-bevel);color:#111;font-size:14px;font-weight:750}
 body.magacin-page.is-manual-reference .mg-modal :is(#mgOrderQtyAdd,#mgSpareAdd):hover{background:linear-gradient(#fff,#dce1e8);color:#111}
+
+/* Centered silver payment window with raised retro controls. */
+#mgVpPaymentDialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;width:calc(100% - 32px);max-width:460px;height:fit-content;max-height:calc(100dvh - 32px);overflow:auto;padding:6px;border:1px solid #686b70;border-radius:0;background:#d4d5d7;color:#202124;box-shadow:inset 2px 2px #fff,inset -2px -2px #85878c,8px 12px 0 #0002,0 20px 60px #0005;font-family:Arial,Helvetica,sans-serif}
+#mgVpPaymentDialog::backdrop{background:rgba(31,34,39,.52)}
+#mgVpPaymentDialog h2{margin:0;padding:13px 16px;border:1px solid #85888e;background:linear-gradient(100deg,#a8abb0,#e4e5e7);box-shadow:inset 1px 1px #f8f8f9;color:#22252a;font-size:19px;line-height:1.3;font-weight:700;text-align:left}
+#mgVpPaymentDescription{margin:0;padding:22px 18px 18px;color:#363a40;font-size:15px;line-height:1.6;text-align:center}
+#mgVpPaymentDialog .mg-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0;padding:0 18px 18px}
+#mgVpPaymentDialog .mg-btn{display:flex;align-items:center;justify-content:center;min-height:52px;padding:12px 10px;border:1px solid #777b82;border-radius:0;background:linear-gradient(120deg,#f0f0f1,#bfc1c5);box-shadow:inset 2px 2px #fff,inset -2px -2px #92959b;color:#24272c;font:700 16px Arial,Helvetica,sans-serif;cursor:pointer;white-space:normal}
+#mgVpPaymentDialog .mg-btn:hover{background:linear-gradient(120deg,#fff,#d1d3d6)}
+#mgVpPaymentDialog .mg-btn:active{background:#c4c6c9;box-shadow:inset 2px 2px #878b91,inset -2px -2px #fff}
+#mgVpPaymentDialog .mg-btn:focus-visible{outline:2px solid #343940;outline-offset:3px}
+#mgVpPaymentDialog #mgVpPaymentCancel{grid-column:1/-1;justify-self:center;min-height:38px;min-width:120px;margin-top:4px;padding:8px 18px;font-size:13px;font-weight:400}
+@media(max-width:360px){#mgVpPaymentDialog .mg-modal-actions{padding:0 10px 14px;gap:8px}#mgVpPaymentDialog .mg-btn{font-size:14px}#mgVpPaymentDescription{padding:18px 10px}}
